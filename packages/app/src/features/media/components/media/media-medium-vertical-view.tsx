@@ -14,6 +14,7 @@ import { MediaEntityHeader } from './media-entity-header';
 import { MediaMarqueeText } from './media-marquee-text';
 import { getMediaReadableForeground } from './media-readable-foreground';
 import { MediaVisualizerButton } from './media-visualizer-button';
+import { useArtworkEdgeBlur } from './use-artwork-edge-blur';
 import {
   getMediaArtworkPaletteSource,
   useMediaArtworkColors,
@@ -79,12 +80,16 @@ export function MediaMediumVerticalView({
   const displayVolume = getMediaDisplayVolume(volume, isMuted);
   const stateSurface = getCardStateSurfaceTokens(theme, isActive);
   const stableArtwork = useStableMediaArtwork(artwork);
+  const artworkEdgeAnalysis = useArtworkEdgeBlur(stableArtwork, {
+    preferEdge: 'bottom',
+  });
   const paletteArtwork = getMediaArtworkPaletteSource(stableArtwork, artworkResource);
   const palette = useMediaArtworkColors(paletteArtwork, theme, entityId, `${title}::${artist}`);
+  const textSideBackgroundColor = artworkEdgeAnalysis.preferredEdgeColor ?? palette.gradientEnd;
   const textTokens = getCardReadableTextTokens({
     theme,
     baseColor: palette.highlight,
-    backgroundColor: palette.gradientEnd,
+    backgroundColor: textSideBackgroundColor,
   });
   const iconTone = stateSurface.primaryTextClassName;
   const subtitleTone = stateSurface.secondaryTextClassName;
@@ -101,6 +106,7 @@ export function MediaMediumVerticalView({
     titleColor: fallbackTitleColor,
     subtitleColor: fallbackSubtitleColor,
     hasArtwork: Boolean(stableArtwork),
+    backgroundColorOverride: textSideBackgroundColor,
   });
   const resolvedTitleColor = readableForeground.titleColor;
   const resolvedSubtitleColor = readableForeground.subtitleColor;
@@ -109,6 +115,11 @@ export function MediaMediumVerticalView({
     backgroundColor: withAlpha(palette.darkMuted, 0.18),
     borderColor: withAlpha(resolvedSubtitleColor, 0.18),
     boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.12)}`,
+  };
+  const playButtonStyle = {
+    backgroundColor: withAlpha(palette.vibrant, 0.24),
+    borderColor: withAlpha(resolvedSubtitleColor, 0.22),
+    boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.14)}`,
   };
   const volumeToggleButtonStyle = isVolumeMode
     ? {
@@ -122,7 +133,7 @@ export function MediaMediumVerticalView({
           0.18
         )}`,
       }
-    : neutralButtonStyle;
+    : playButtonStyle;
   const muteButtonStyle = isMuted
     ? {
         background: `linear-gradient(180deg, ${withAlpha(palette.highlight, 0.26)} 0%, ${withAlpha(
@@ -136,11 +147,6 @@ export function MediaMediumVerticalView({
         )}`,
       }
     : neutralButtonStyle;
-  const playButtonStyle = {
-    backgroundColor: withAlpha(palette.vibrant, 0.24),
-    borderColor: withAlpha(resolvedSubtitleColor, 0.22),
-    boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.14)}`,
-  };
   const trackBaseStyle = { backgroundColor: withAlpha(resolvedSubtitleColor, 0.24) };
   const trackFillStyle = {
     background: `linear-gradient(90deg, ${resolvedTitleColor} 0%, ${resolvedSubtitleColor} 100%)`,
@@ -317,7 +323,7 @@ export function MediaMediumVerticalView({
                   }}
                   className="border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
                   iconStyle={controlIconStyle}
-                  style={neutralButtonStyle}
+                  style={subduedFallback ? undefined : playButtonStyle}
                 >
                   <SkipBack className={controlSizes.icon} />
                 </RoundControlButton>
@@ -334,7 +340,7 @@ export function MediaMediumVerticalView({
                   }}
                   className="border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
                   iconStyle={controlIconStyle}
-                  style={neutralButtonStyle}
+                  style={subduedFallback ? undefined : playButtonStyle}
                 >
                   <SkipForward className={controlSizes.icon} />
                 </RoundControlButton>

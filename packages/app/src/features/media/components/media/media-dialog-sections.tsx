@@ -1,8 +1,7 @@
+import { CardDialogHeader } from '@navet/app/components/patterns';
 import { RoundControlButton } from '@navet/app/components/primitives/round-control-button';
-import { EntityRoomSelector } from '@navet/app/components/shared/entity-room-selector';
+import { Slider } from '@navet/app/components/primitives/slider';
 import { useI18n } from '@navet/app/hooks';
-import { getEntityTypeLabel } from '@navet/app/utils/entity-type-label';
-import * as Dialog from '@radix-ui/react-dialog';
 import {
   Pause,
   Play,
@@ -14,65 +13,38 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react';
+import { type CSSProperties, useEffect, useState } from 'react';
 import { getMediaDisplayVolume } from './media-card-style-utils';
 import type { MediaDialogGroupingPlayer, MediaDialogProps } from './media-dialog.types';
 import { MediaFallbackArtwork } from './media-fallback-artwork';
+import { formatMediaTime } from './media-time';
 import type { MediaDialogController } from './use-media-dialog-controller';
 
 interface MediaDialogHeaderProps {
-  artist: string;
   controller: MediaDialogController;
+  entityName: string;
+  entityType: string;
   entityId: string;
-  title: string;
 }
 
-export function MediaDialogHeader({ artist, controller, entityId, title }: MediaDialogHeaderProps) {
-  const { t } = useI18n();
-  const entityType = getEntityTypeLabel(entityId);
-
+export function MediaDialogHeader({
+  controller,
+  entityName,
+  entityType,
+  entityId,
+}: MediaDialogHeaderProps) {
   return (
-    <div className="flex items-start justify-between gap-4">
-      <div className="min-w-0">
-        <div className="mb-2">
-          <EntityRoomSelector
-            entityId={entityId}
-            label={t('media.room')}
-            compact
-            className={controller.surface.textSecondary}
-          />
-        </div>
-        <Dialog.Title
-          className={`truncate text-xl font-semibold ${controller.surface.textPrimary}`}
-        >
-          {title}
-        </Dialog.Title>
-        <Dialog.Description className={`mt-1 truncate text-sm ${controller.surface.textSecondary}`}>
-          {entityType}
-        </Dialog.Description>
-        {artist ? (
-          <div className={`mt-2 truncate text-sm ${controller.surface.textSecondary}`}>
-            {artist}
-          </div>
-        ) : null}
-      </div>
-
-      <Dialog.Close asChild>
-        <button
-          type="button"
-          className={`shrink-0 rounded-full p-2 transition-all duration-300 ${controller.isGlass ? 'bg-white/10 hover:bg-white/14' : 'bg-white/8 hover:bg-white/12'} ${controller.surface.textPrimary}`}
-          aria-label={t('common.close')}
-        >
-          <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className="h-5 w-5">
-            <path
-              d="M6 6 14 14M14 6 6 14"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-          </svg>
-        </button>
-      </Dialog.Close>
-    </div>
+    <CardDialogHeader
+      title={entityName}
+      description={entityType}
+      entityId={entityId}
+      forceDarkRoomSelector={controller.theme !== 'light'}
+      roomSelectorCompactContentStyle={controller.readableForeground.subtitleStyle}
+      titleStyle={controller.readableForeground.titleStyle}
+      descriptionStyle={controller.readableForeground.subtitleStyle}
+      actionButtonStyle={controller.readableForeground.titleStyle}
+      className="mb-0"
+    />
   );
 }
 
@@ -100,12 +72,12 @@ export function MediaDialogArtwork({
           src={artwork}
           alt={t('media.artworkAlt', { title, artist })}
           onError={() => onArtworkError?.(artwork)}
-          className="h-44 w-44 rounded-3xl object-cover shadow-2xl md:h-48 md:w-48"
+          className="aspect-square w-full max-w-[19.5rem] rounded-[2rem] object-cover shadow-[0_30px_60px_-30px_rgba(0,0,0,0.6)]"
         />
       ) : (
         <MediaFallbackArtwork
           palette={controller.palette}
-          className="relative h-44 w-44 rounded-3xl shadow-2xl md:h-48 md:w-48"
+          className="relative aspect-square w-full max-w-[19.5rem] rounded-[2rem] shadow-[0_30px_60px_-30px_rgba(0,0,0,0.6)]"
         />
       )}
     </div>
@@ -113,13 +85,18 @@ export function MediaDialogArtwork({
 }
 
 interface MediaDialogPlaybackControlsProps {
+  artist: string;
+  title: string;
   controller: MediaDialogController;
   isPlaying: boolean;
   canNextTrack: boolean;
   canPreviousTrack: boolean;
+  durationSeconds: number;
+  elapsedSeconds: number;
   onCycleRepeat: () => void;
   onNext: () => void;
   onPrevious: () => void;
+  onSeek: (elapsedSeconds: number) => void;
   onTogglePlay: () => void;
   onToggleShuffle: () => void;
   repeatMode: MediaDialogProps['repeatMode'];
@@ -127,91 +104,163 @@ interface MediaDialogPlaybackControlsProps {
 }
 
 export function MediaDialogPlaybackControls({
+  artist,
+  title,
   controller,
   isPlaying,
   canNextTrack,
   canPreviousTrack,
+  durationSeconds,
+  elapsedSeconds,
   onCycleRepeat,
   onNext,
   onPrevious,
+  onSeek,
   onTogglePlay,
   onToggleShuffle,
   repeatMode,
   shuffleEnabled,
 }: MediaDialogPlaybackControlsProps) {
   const { t } = useI18n();
+  const transportIconStyle = controller.readableForeground.titleStyle;
+  const [pendingSeek, setPendingSeek] = useState(elapsedSeconds);
+  const [isSeeking, setIsSeeking] = useState(false);
+  const timelineTrackStyle: CSSProperties = {
+    backgroundColor: `${controller.readableForeground.subtitleColor}33`,
+  };
+  const timelineRangeStyle: CSSProperties = {
+    background: `linear-gradient(90deg, ${controller.readableForeground.titleColor} 0%, ${controller.readableForeground.subtitleColor} 100%)`,
+    boxShadow: `0 0 18px ${controller.readableForeground.titleColor}2e`,
+  };
+  const timelineThumbStyle: CSSProperties = {
+    backgroundColor: controller.readableForeground.titleColor,
+    boxShadow: `0 0 0 1px ${controller.readableForeground.titleColor}38, 0 0 14px ${controller.readableForeground.titleColor}52`,
+  };
+
+  useEffect(() => {
+    if (!isSeeking) {
+      setPendingSeek(elapsedSeconds);
+    }
+  }, [elapsedSeconds, isSeeking]);
 
   return (
-    <div className="flex items-center justify-center gap-2 md:gap-3">
-      <RoundControlButton
-        theme={controller.theme}
-        size="medium"
-        variant="soft"
-        aria-label={t('media.shuffle')}
-        onClick={onToggleShuffle}
-        className={`h-10 w-10 transition-colors ${shuffleEnabled ? '!border-0 text-white' : ''}`}
-        style={shuffleEnabled ? controller.activeMiniControlStyle : controller.subtleControlStyle}
-      >
-        <Shuffle className="h-4 w-4" />
-      </RoundControlButton>
-      <RoundControlButton
-        theme={controller.theme}
-        size="large"
-        variant="soft"
-        aria-label={t('media.previousTrack')}
-        disabled={!canPreviousTrack}
-        onClick={onPrevious}
-        className="h-12 w-12 transition-colors !border-0 text-white disabled:cursor-not-allowed disabled:opacity-45"
-        style={controller.subtleControlStyle}
-      >
-        <SkipBack className="h-6 w-6" />
-      </RoundControlButton>
-      <RoundControlButton
-        theme={controller.theme}
-        size="large"
-        variant="emphasis"
-        onClick={onTogglePlay}
-        aria-label={isPlaying ? t('media.pausePlayback') : t('media.resumePlayback')}
-        className="h-16 w-16 transition-colors !border-0 text-white"
-        style={controller.activeTransportStyle}
-      >
-        {isPlaying ? (
-          <Pause className="h-7 w-7" fill="currentColor" />
-        ) : (
-          <Play className="h-7 w-7" fill="currentColor" />
-        )}
-      </RoundControlButton>
-      <RoundControlButton
-        theme={controller.theme}
-        size="large"
-        variant="soft"
-        aria-label={t('media.nextTrack')}
-        disabled={!canNextTrack}
-        onClick={onNext}
-        className="h-12 w-12 transition-colors !border-0 text-white disabled:cursor-not-allowed disabled:opacity-45"
-        style={controller.subtleControlStyle}
-      >
-        <SkipForward className="h-6 w-6" />
-      </RoundControlButton>
-      <RoundControlButton
-        theme={controller.theme}
-        size="medium"
-        variant="soft"
-        aria-label={
-          repeatMode === 'one'
-            ? t('media.repeatOne')
-            : repeatMode === 'all'
-              ? t('media.repeatAll')
-              : t('media.repeatOff')
-        }
-        onClick={onCycleRepeat}
-        className={`h-10 w-10 transition-colors ${repeatMode !== 'off' ? '!border-0 text-white' : ''}`}
-        style={
-          repeatMode !== 'off' ? controller.activeMiniControlStyle : controller.subtleControlStyle
-        }
-      >
-        {repeatMode === 'one' ? <Repeat1 className="h-4 w-4" /> : <Repeat className="h-4 w-4" />}
-      </RoundControlButton>
+    <div className="space-y-6">
+      <div className="space-y-1.5">
+        <div
+          className={`truncate text-[1.95rem] font-semibold leading-tight ${controller.surface.textPrimary}`}
+          style={controller.readableForeground.titleStyle}
+        >
+          {title}
+        </div>
+        {artist ? (
+          <div
+            className={`truncate text-[1.05rem] ${controller.surface.textSecondary}`}
+            style={controller.readableForeground.subtitleStyle}
+          >
+            {artist}
+          </div>
+        ) : null}
+      </div>
+      {durationSeconds > 0 ? (
+        <div className="space-y-2">
+          <Slider
+            value={Math.min(durationSeconds, pendingSeek)}
+            min={0}
+            max={Math.max(durationSeconds, elapsedSeconds, pendingSeek)}
+            step={1}
+            ariaLabel={t('media.seek')}
+            onValueChange={(value) => setPendingSeek(value)}
+            onValueCommit={(value) => onSeek(value)}
+            onInteractionStart={() => setIsSeeking(true)}
+            onInteractionEnd={() => setIsSeeking(false)}
+            rootClassName="relative flex h-6 w-full items-center touch-none select-none"
+            trackClassName="relative h-[3px] grow rounded-full"
+            rangeClassName="absolute h-full rounded-full"
+            thumbClassName="block h-4 w-4 rounded-full outline-none"
+            touchThumbClassName="block h-6 w-6 rounded-full outline-none"
+            trackStyle={timelineTrackStyle}
+            rangeStyle={timelineRangeStyle}
+            thumbStyle={timelineThumbStyle}
+          />
+          <div
+            className={`flex items-center justify-between text-sm ${controller.surface.textSecondary}`}
+            style={controller.readableForeground.subtitleStyle}
+          >
+            <span>{formatMediaTime(Math.max(0, pendingSeek))}</span>
+            <span>-{controller.displayRemaining}</span>
+          </div>
+        </div>
+      ) : null}
+      <div className="flex items-center justify-between gap-2">
+        <RoundControlButton
+          theme={controller.theme}
+          size="medium"
+          variant="soft"
+          aria-label={t('media.shuffle')}
+          onClick={onToggleShuffle}
+          className={`h-10 w-10 transition-colors ${shuffleEnabled ? '!border-0' : ''}`}
+          iconStyle={transportIconStyle}
+          style={shuffleEnabled ? controller.activeMiniControlStyle : controller.subtleControlStyle}
+        >
+          <Shuffle className="h-4 w-4" />
+        </RoundControlButton>
+        <button
+          type="button"
+          aria-label={t('media.previousTrack')}
+          disabled={!canPreviousTrack}
+          onClick={onPrevious}
+          className="flex h-14 w-14 items-center justify-center rounded-full transition-opacity disabled:cursor-not-allowed disabled:opacity-45"
+          style={transportIconStyle}
+        >
+          <SkipBack className="h-9 w-9" />
+        </button>
+        <button
+          type="button"
+          onClick={onTogglePlay}
+          aria-label={isPlaying ? t('media.pausePlayback') : t('media.resumePlayback')}
+          className="flex h-20 w-20 items-center justify-center rounded-full transition-colors"
+          style={{
+            ...controller.activeTransportStyle,
+            ...transportIconStyle,
+          }}
+        >
+          {isPlaying ? (
+            <Pause className="h-10 w-10" fill="currentColor" />
+          ) : (
+            <Play className="ml-1 h-10 w-10" fill="currentColor" />
+          )}
+        </button>
+        <button
+          type="button"
+          aria-label={t('media.nextTrack')}
+          disabled={!canNextTrack}
+          onClick={onNext}
+          className="flex h-14 w-14 items-center justify-center rounded-full transition-opacity disabled:cursor-not-allowed disabled:opacity-45"
+          style={transportIconStyle}
+        >
+          <SkipForward className="h-9 w-9" />
+        </button>
+        <RoundControlButton
+          theme={controller.theme}
+          size="medium"
+          variant="soft"
+          aria-label={
+            repeatMode === 'one'
+              ? t('media.repeatOne')
+              : repeatMode === 'all'
+                ? t('media.repeatAll')
+                : t('media.repeatOff')
+          }
+          onClick={onCycleRepeat}
+          className={`h-10 w-10 transition-colors ${repeatMode !== 'off' ? '!border-0' : ''}`}
+          iconStyle={transportIconStyle}
+          style={
+            repeatMode !== 'off' ? controller.activeMiniControlStyle : controller.subtleControlStyle
+          }
+        >
+          {repeatMode === 'one' ? <Repeat1 className="h-4 w-4" /> : <Repeat className="h-4 w-4" />}
+        </RoundControlButton>
+      </div>
     </div>
   );
 }
@@ -221,7 +270,6 @@ interface MediaDialogVolumeControlProps {
   canSetVolume: boolean;
   controller: MediaDialogController;
   isMuted: boolean;
-  isPlaying: boolean;
   onToggleMute: () => void;
   onVolumeChange: (value: number) => void;
   onVolumeInteractionEnd: () => void;
@@ -234,7 +282,6 @@ export function MediaDialogVolumeControl({
   canSetVolume,
   controller,
   isMuted,
-  isPlaying,
   onToggleMute,
   onVolumeChange,
   onVolumeInteractionEnd,
@@ -243,30 +290,29 @@ export function MediaDialogVolumeControl({
 }: MediaDialogVolumeControlProps) {
   const { t } = useI18n();
   const displayVolume = getMediaDisplayVolume(volume, isMuted);
+  const volumeTrackStyle = {
+    backgroundColor: `${controller.readableForeground.subtitleColor}33`,
+  };
+  const volumeFillStyle = {
+    width: `${displayVolume}%`,
+    background: `linear-gradient(90deg, ${controller.readableForeground.titleColor} 0%, ${controller.readableForeground.subtitleColor} 100%)`,
+  };
+  const volumeThumbStyle: CSSProperties = {
+    backgroundColor: controller.readableForeground.titleColor,
+    boxShadow: `0 0 0 1px ${controller.readableForeground.titleColor}38, 0 0 14px ${controller.readableForeground.titleColor}52`,
+  };
 
   if (!canMuteVolume && !canSetVolume) {
     return null;
   }
 
   return (
-    <div>
-      {isPlaying ? (
-        <div className="mb-3 flex items-center justify-between">
-          <span className={`text-sm ${controller.surface.textSecondary}`}>
-            {controller.displayRemaining}
-          </span>
-          <span className={`text-sm ${controller.surface.textSecondary}`}>
-            {controller.displayDuration}
-          </span>
-        </div>
-      ) : null}
-      <div className="mb-3 flex items-center justify-between">
-        <span className={`text-sm font-medium ${controller.surface.textSecondary}`}>
-          {t('media.volume')}
-        </span>
-        <span className={`text-sm font-semibold ${controller.surface.textPrimary}`}>
-          {displayVolume}%
-        </span>
+    <div className="space-y-2">
+      <div
+        className={`text-xs font-medium uppercase tracking-[0.18em] ${controller.surface.textMuted}`}
+        style={controller.readableForeground.subtitleStyle}
+      >
+        {t('media.volume')}
       </div>
       <div className="flex items-center gap-3">
         <RoundControlButton
@@ -276,33 +322,36 @@ export function MediaDialogVolumeControl({
           onClick={onToggleMute}
           disabled={!canMuteVolume && !canSetVolume}
           aria-label={isMuted ? t('media.unmuteVolume') : t('media.muteVolume')}
-          className="h-10 w-10 transition-colors !border-0 text-white"
+          className="h-10 w-10 transition-colors !border-0"
+          iconStyle={controller.readableForeground.titleStyle}
           style={isMuted ? controller.subtleControlStyle : controller.accentControlStyle}
         >
           {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
         </RoundControlButton>
-        <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-white/20">
-          <div
-            className="absolute left-0 top-0 h-full bg-white transition-all duration-150"
-            style={{ width: `${displayVolume}%` }}
-          />
-          <input
+        <div className="relative flex-1">
+          <Slider
             disabled={!canSetVolume}
-            type="range"
-            min="0"
-            max="100"
             value={displayVolume}
-            onMouseDown={onVolumeInteractionStart}
-            onTouchStart={onVolumeInteractionStart}
-            onKeyDown={onVolumeInteractionStart}
-            onMouseUp={onVolumeInteractionEnd}
-            onTouchEnd={onVolumeInteractionEnd}
-            onKeyUp={onVolumeInteractionEnd}
-            onBlur={onVolumeInteractionEnd}
-            onChange={(event) => onVolumeChange(Number.parseInt(event.target.value, 10))}
-            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            ariaLabel={t('media.volume')}
+            onValueChange={onVolumeChange}
+            onInteractionStart={onVolumeInteractionStart}
+            onInteractionEnd={onVolumeInteractionEnd}
+            rootClassName="relative flex h-6 w-full items-center touch-none select-none"
+            trackClassName="relative h-[3px] grow rounded-full"
+            rangeClassName="absolute h-full rounded-full"
+            thumbClassName="block h-4 w-4 rounded-full outline-none"
+            touchThumbClassName="block h-6 w-6 rounded-full outline-none"
+            trackStyle={volumeTrackStyle}
+            rangeStyle={volumeFillStyle}
+            thumbStyle={volumeThumbStyle}
           />
         </div>
+        <span
+          className={`w-10 text-right text-sm font-medium ${controller.surface.textSecondary}`}
+          style={controller.readableForeground.subtitleStyle}
+        >
+          {displayVolume}%
+        </span>
       </div>
     </div>
   );
@@ -318,11 +367,15 @@ export function MediaDialogUpNext({ controller, title }: MediaDialogUpNextProps)
 
   return (
     <div>
-      <span className={`mb-2 block text-sm font-medium ${controller.surface.textSecondary}`}>
+      <span
+        className={`mb-2 block text-sm font-medium ${controller.surface.textSecondary}`}
+        style={controller.readableForeground.subtitleStyle}
+      >
         {t('media.upNext')}
       </span>
       <div
         className={`rounded-2xl border px-4 py-3 text-sm ${controller.surface.textPrimary} ${controller.isGlass ? 'bg-white/10' : 'bg-white/5'} ${controller.surface.border}`}
+        style={controller.readableForeground.titleStyle}
       >
         {title}
       </div>
@@ -353,6 +406,7 @@ function GroupingChip({
       type="button"
       onClick={onClick}
       className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${controller.surface.border} ${controller.surface.textPrimary} ${controller.isGlass ? 'bg-white/10 hover:bg-white/14' : 'bg-white/5 hover:bg-white/10'}`}
+      style={controller.readableForeground.titleStyle}
     >
       {label}
     </button>
@@ -374,7 +428,10 @@ export function MediaDialogGrouping({
 
   return (
     <div>
-      <span className={`mb-3 block text-sm font-medium ${controller.surface.textSecondary}`}>
+      <span
+        className={`mb-3 block text-sm font-medium ${controller.surface.textSecondary}`}
+        style={controller.readableForeground.subtitleStyle}
+      >
         {t('media.group.title')}
       </span>
 
@@ -382,6 +439,7 @@ export function MediaDialogGrouping({
         <div>
           <div
             className={`mb-2 text-xs uppercase tracking-[0.14em] ${controller.surface.textMuted}`}
+            style={controller.readableForeground.subtitleStyle}
           >
             {t('media.group.attached')}
           </div>
@@ -396,7 +454,10 @@ export function MediaDialogGrouping({
                 />
               ))
             ) : (
-              <div className={`text-sm ${controller.surface.textMuted}`}>
+              <div
+                className={`text-sm ${controller.surface.textMuted}`}
+                style={controller.readableForeground.subtitleStyle}
+              >
                 {t('media.group.noAttached')}
               </div>
             )}
@@ -406,6 +467,7 @@ export function MediaDialogGrouping({
         <div>
           <div
             className={`mb-2 text-xs uppercase tracking-[0.14em] ${controller.surface.textMuted}`}
+            style={controller.readableForeground.subtitleStyle}
           >
             {t('media.group.available')}
           </div>
@@ -420,7 +482,10 @@ export function MediaDialogGrouping({
                 />
               ))
             ) : (
-              <div className={`text-sm ${controller.surface.textMuted}`}>
+              <div
+                className={`text-sm ${controller.surface.textMuted}`}
+                style={controller.readableForeground.subtitleStyle}
+              >
                 {t('media.group.noAvailable')}
               </div>
             )}

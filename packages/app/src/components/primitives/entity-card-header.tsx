@@ -61,26 +61,26 @@ export function EntityCardHeader({
   });
   const isTiny = isTinyCardSize(size);
   const isExtraSmall = isExtraSmallCardSize(size);
-  const useCompactExtraSmallLayout = compact && isExtraSmall;
+  const useCompactLayout = compact && !isTiny;
   const isStandardCompact = size === 'small' || size === 'medium' || size === 'medium-vertical';
   const marginBottom =
     marginBottomClassName ??
-    (isTiny || isExtraSmall ? 'mb-1' : isStandardCompact ? 'mb-2' : 'mb-2');
+    (isTiny || isExtraSmall || useCompactLayout ? 'mb-1' : isStandardCompact ? 'mb-2' : 'mb-2');
   const headerGap = isTiny
     ? 'gap-1.5'
-    : useCompactExtraSmallLayout
+    : useCompactLayout
       ? 'gap-1.5'
       : isExtraSmall
         ? 'gap-2'
         : isStandardCompact
           ? 'gap-2'
           : 'gap-2';
-  const subtitleClassBase = useCompactExtraSmallLayout
+  const subtitleClassBase = useCompactLayout
     ? 'truncate text-[10px] leading-[12px] tracking-normal'
     : layout === 'eyebrow-first'
       ? 'truncate text-[11px] leading-[14px] tracking-normal'
       : 'truncate text-[11px] leading-[14px]';
-  const titleClassBase = useCompactExtraSmallLayout
+  const titleClassBase = useCompactLayout
     ? 'truncate text-[11px] font-semibold leading-[13px]'
     : 'truncate text-[12px] font-semibold leading-[18px]';
   const crossAxisAlignment = align === 'center' ? 'items-center' : 'items-start';
@@ -89,10 +89,10 @@ export function EntityCardHeader({
     <div className={`flex ${crossAxisAlignment} ${headerGap} ${marginBottom} ${className}`}>
       {leading ? <div className="shrink-0">{leading}</div> : null}
       <div
-        className={`${isTiny || isExtraSmall ? '' : 'flex min-h-8 items-center'} min-w-0 flex-1 overflow-hidden ${contentClassName}`}
+        className={`${isTiny || isExtraSmall || useCompactLayout ? '' : 'flex min-h-8 items-center'} min-w-0 flex-1 overflow-hidden ${contentClassName}`}
       >
         <div
-          className={`${isTiny || isExtraSmall ? '' : 'flex h-8 min-w-0 flex-col justify-center overflow-hidden'} min-w-0`}
+          className={`${isTiny || isExtraSmall || useCompactLayout ? '' : 'flex h-8 min-w-0 flex-col justify-center overflow-hidden'} min-w-0`}
         >
           <EntityCardTitleBlock
             title={title}

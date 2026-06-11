@@ -495,7 +495,7 @@ describe('useMediaArtworkResolution', () => {
       }
 
       if (
-        url === 'https://coverartarchive.org/release/8c7b18fe-c68b-3bcf-980d-9d75208615e5/front'
+        url === 'https://coverartarchive.org/release/8c7b18fe-c68b-3bcf-980d-9d75208615e5/front-500'
       ) {
         return Promise.resolve(
           new Response('image', {
@@ -575,11 +575,11 @@ describe('useMediaArtworkResolution', () => {
         );
       }
 
-      if (url === 'https://coverartarchive.org/release/release-id/front') {
+      if (url === 'https://coverartarchive.org/release/release-id/front-500') {
         return Promise.resolve(new Response('', { status: 404 }));
       }
 
-      if (url === 'https://coverartarchive.org/release-group/release-group-id/front') {
+      if (url === 'https://coverartarchive.org/release-group/release-group-id/front-500') {
         return Promise.resolve(
           new Response('image', {
             status: 200,
@@ -611,11 +611,11 @@ describe('useMediaArtworkResolution', () => {
       );
     });
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://coverartarchive.org/release/release-id/front',
+      'https://coverartarchive.org/release/release-id/front-500',
       expect.objectContaining({ cache: 'force-cache' })
     );
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://coverartarchive.org/release-group/release-group-id/front',
+      'https://coverartarchive.org/release-group/release-group-id/front-500',
       expect.objectContaining({ cache: 'force-cache' })
     );
   });
@@ -653,7 +653,7 @@ describe('useMediaArtworkResolution', () => {
         );
       }
 
-      if (url === 'https://coverartarchive.org/release/title-only-release-id/front') {
+      if (url === 'https://coverartarchive.org/release/title-only-release-id/front-500') {
         return Promise.resolve(
           new Response('image', {
             status: 200,
@@ -691,7 +691,7 @@ describe('useMediaArtworkResolution', () => {
     );
   });
 
-  it('prefers MusicBrainz album art over YouTube thumbnails when HomePod artwork only exposes an opaque cache key', async () => {
+  it('uses the fast thumbnail path before metadata fallbacks when HomePod artwork only exposes an opaque cache key', async () => {
     installRuntimeProxyConfig();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue('data:image/jpeg;base64,youtube-thumbnail');
     vi.spyOn(URL, 'createObjectURL').mockReturnValue(
@@ -729,7 +729,7 @@ describe('useMediaArtworkResolution', () => {
         );
       }
 
-      if (url === 'https://coverartarchive.org/release/bright-eyes-release-id/front') {
+      if (url === 'https://coverartarchive.org/release/bright-eyes-release-id/front-500') {
         return Promise.resolve(
           new Response('image', {
             status: 200,
@@ -759,18 +759,14 @@ describe('useMediaArtworkResolution', () => {
     );
 
     await waitFor(() => {
-      expect(result.current.albumArt).toBe('blob:http://navet.local/youtube-musicbrainz-cover-art');
+      expect(result.current.albumArt).toBe('data:image/jpeg;base64,youtube-thumbnail');
     });
-    expect(fetchMediaThumbnailDataUrlMock).not.toHaveBeenCalled();
+    expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('https://musicbrainz.org/ws/2/release'),
       expect.objectContaining({
         headers: { Accept: 'application/json' },
       })
-    );
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://coverartarchive.org/release/bright-eyes-release-id/front',
-      expect.objectContaining({ cache: 'force-cache' })
     );
   });
 

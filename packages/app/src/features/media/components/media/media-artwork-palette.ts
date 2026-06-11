@@ -54,6 +54,15 @@ function getSaturation([r, g, b]: [number, number, number]) {
   return (Math.max(r, g, b) - Math.min(r, g, b)) / 255;
 }
 
+function parseRgbString(color: string): [number, number, number] {
+  const match = color.match(/\d+(\.\d+)?/g);
+  if (!match || match.length < 3) {
+    return [0, 0, 0];
+  }
+
+  return [Number.parseFloat(match[0]), Number.parseFloat(match[1]), Number.parseFloat(match[2])];
+}
+
 // --- Quantization & palette selection ----------------------------------------
 
 interface QuantizedBucket {
@@ -130,6 +139,18 @@ export function createPaletteFromImageData(imageData: ImageData): MediaArtworkPa
 
   if (candidates.length === 0) return null;
   const totalSampleCount = candidates.reduce((sum, candidate) => sum + candidate.count, 0);
+  const overallLightCoverage =
+    totalSampleCount > 0
+      ? candidates
+          .filter((candidate) => candidate.luminance >= 0.72)
+          .reduce((sum, candidate) => sum + candidate.count, 0) / totalSampleCount
+      : 0;
+  const overallDarkCoverage =
+    totalSampleCount > 0
+      ? candidates
+          .filter((candidate) => candidate.luminance <= 0.42)
+          .reduce((sum, candidate) => sum + candidate.count, 0) / totalSampleCount
+      : 0;
 
   const dominantCandidate =
     pickCandidate(candidates, (c) => {
@@ -139,6 +160,15 @@ export function createPaletteFromImageData(imageData: ImageData): MediaArtworkPa
       if (c.luminance < 0.07) score *= 0.32;
       return score;
     }) ?? candidates[0];
+  const darkBackgroundCandidate =
+    pickCandidate(candidates, (c) => {
+      let score =
+        c.count * (0.72 + c.saturation * 0.9) * Math.max(0.18, 1 - Math.abs(c.luminance - 0.24));
+      if (c.luminance > 0.58) score *= 0.06;
+      else if (c.luminance > 0.46) score *= 0.18;
+      if (c.luminance < 0.05) score *= 0.4;
+      return score;
+    }) ?? dominantCandidate;
 
   const vibrantCandidate =
     pickCandidate(
@@ -164,14 +194,33 @@ export function createPaletteFromImageData(imageData: ImageData): MediaArtworkPa
     lightNeutralCandidate && totalSampleCount > 0
       ? lightNeutralCandidate.count / totalSampleCount
       : 0;
+  const shouldAnchorToDarkBackground =
+    darkBackgroundCandidate.luminance <= 0.42 &&
+    (overallDarkCoverage >= 0.34 ||
+      darkBackgroundCandidate.count >= dominantCandidate.count * 0.72 ||
+      darkBackgroundCandidate.luminance <= dominantCandidate.luminance - 0.12 ||
+      (lightNeutralCandidate !== null &&
+        lightNeutralCoverage < 0.52 &&
+        darkBackgroundCandidate.count >= lightNeutralCandidate.count * 0.6));
+  const baseCandidate = shouldAnchorToDarkBackground ? darkBackgroundCandidate : dominantCandidate;
   const shouldFavorLightNeutral =
     lightNeutralCandidate !== null &&
-    (lightNeutralCoverage >= 0.22 || lightNeutralCandidate.count >= dominantCandidate.count * 0.9);
+    !shouldAnchorToDarkBackground &&
+    (lightNeutralCoverage >= 0.4 ||
+      (overallLightCoverage >= 0.56 &&
+        lightNeutralCandidate.count >= baseCandidate.count * 0.9 &&
+        lightNeutralCandidate.luminance >= 0.82));
   const shouldUseNeutralLedPalette =
     lightNeutralCandidate !== null &&
-    (lightNeutralCoverage >= 0.34 || lightNeutralCandidate.count >= dominantCandidate.count * 1.1);
+    !shouldAnchorToDarkBackground &&
+    (lightNeutralCoverage >= 0.54 ||
+      (overallLightCoverage >= 0.68 &&
+        lightNeutralCandidate.count >= baseCandidate.count * 1.05 &&
+        lightNeutralCandidate.luminance >= 0.84));
 
-  const dominantSourceBase = blend(dominantCandidate.color, vibrantCandidate.color, 0.16);
+  const dominantSourceBase = shouldAnchorToDarkBackground
+    ? blend(baseCandidate.color, vibrantCandidate.color, 0.06)
+    : blend(baseCandidate.color, vibrantCandidate.color, 0.16);
   const dominantSource = shouldFavorLightNeutral
     ? blend(
         dominantSourceBase,
@@ -182,19 +231,57 @@ export function createPaletteFromImageData(imageData: ImageData): MediaArtworkPa
   const dominant = blend(
     dominantSource,
     shouldFavorLightNeutral ? lightNeutralCandidate.color : highlightCandidate.color,
-    shouldUseNeutralLedPalette ? 0.36 : shouldFavorLightNeutral ? 0.18 : 0.06
+    shouldUseNeutralLedPalette
+      ? 0.36
+      : shouldFavorLightNeutral
+        ? 0.16
+        : shouldAnchorToDarkBackground
+          ? 0.02
+          : 0.06
   );
-  const vibrant = brighten(desaturate(vibrantCandidate.color, 0.04), 8);
+  const baseSourceSaturation = getSaturation(baseCandidate.color);
+  const shouldMuteVibrantAccent =
+    shouldAnchorToDarkBackground &&
+    vibrantCandidate.luminance >= baseCandidate.luminance + 0.16 &&
+    vibrantCandidate.saturation >= baseSourceSaturation + 0.18;
+  const vibrantSource = shouldMuteVibrantAccent
+    ? blend(vibrantCandidate.color, dominantSource, 0.58)
+    : blend(vibrantCandidate.color, dominantSource, shouldAnchorToDarkBackground ? 0.22 : 0.08);
+  const vibrant = brighten(
+    desaturate(
+      vibrantSource,
+      shouldMuteVibrantAccent ? 0.3 : shouldAnchorToDarkBackground ? 0.14 : 0.04
+    ),
+    shouldMuteVibrantAccent ? 2 : shouldAnchorToDarkBackground ? 4 : 8
+  );
   const darkMuted = darken(
     desaturate(
       blend(
         dominantSource,
         shouldFavorLightNeutral ? lightNeutralCandidate.color : vibrantCandidate.color,
-        shouldUseNeutralLedPalette ? 0.18 : shouldFavorLightNeutral ? 0.08 : 0.14
+        shouldUseNeutralLedPalette
+          ? 0.18
+          : shouldFavorLightNeutral
+            ? 0.08
+            : shouldAnchorToDarkBackground
+              ? 0.06
+              : 0.14
       ),
-      shouldUseNeutralLedPalette ? 0.42 : shouldFavorLightNeutral ? 0.22 : 0.12
+      shouldUseNeutralLedPalette
+        ? 0.42
+        : shouldFavorLightNeutral
+          ? 0.22
+          : shouldAnchorToDarkBackground
+            ? 0.22
+            : 0.12
     ),
-    shouldUseNeutralLedPalette ? 0.08 : shouldFavorLightNeutral ? 0.22 : 0.34
+    shouldUseNeutralLedPalette
+      ? 0.08
+      : shouldFavorLightNeutral
+        ? 0.22
+        : shouldAnchorToDarkBackground
+          ? 0.28
+          : 0.34
   );
   const highlight = shouldFavorLightNeutral
     ? brighten(
@@ -205,10 +292,20 @@ export function createPaletteFromImageData(imageData: ImageData): MediaArtworkPa
         ),
         shouldUseNeutralLedPalette ? 4 : 10
       )
-    : brighten(blend(highlightCandidate.color, vibrantCandidate.color, 0.22), 14);
+    : brighten(
+        blend(
+          highlightCandidate.color,
+          shouldAnchorToDarkBackground ? dominantSource : vibrantCandidate.color,
+          shouldAnchorToDarkBackground ? 0.32 : 0.22
+        ),
+        shouldAnchorToDarkBackground ? 10 : 14
+      );
   const gradientEnd = shouldUseNeutralLedPalette
     ? darken(blend(darkMuted, dominant, 0.2), 0.04)
-    : darken(blend(darkMuted, dominant, 0.12), 0.14);
+    : darken(
+        blend(darkMuted, dominant, shouldAnchorToDarkBackground ? 0.08 : 0.12),
+        shouldAnchorToDarkBackground ? 0.18 : 0.14
+      );
 
   return {
     dominant: toRgbString(dominant),
@@ -217,6 +314,14 @@ export function createPaletteFromImageData(imageData: ImageData): MediaArtworkPa
     highlight: toRgbString(highlight),
     gradientEnd: toRgbString(gradientEnd),
   };
+}
+
+export function getPaletteLuminance(color: string) {
+  return getLuminance(parseRgbString(color));
+}
+
+export function getPaletteSaturation(color: string) {
+  return getSaturation(parseRgbString(color));
 }
 
 // --- Image loading & palette resolution --------------------------------------

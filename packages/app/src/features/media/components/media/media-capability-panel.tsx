@@ -5,6 +5,7 @@ import type { PlatformMediaBrowseResult } from '@navet/app/platform/provider-fea
 import { integrationMediaFeatureService } from '@navet/app/services/integration-media-feature.service';
 import { ListMusic, Search, Trash2 } from 'lucide-react';
 import { useId, useState } from 'react';
+import { withAlpha } from './use-media-artwork-colors';
 import type { MediaDialogController } from './use-media-dialog-controller';
 
 type EnqueueMode = 'play' | 'next' | 'add' | 'replace';
@@ -126,6 +127,20 @@ export function MediaCapabilityPanel({
   const itemButtonClassName = `w-full rounded-xl border px-3 py-2 text-left text-sm transition-colors ${controller.surface.border} ${controller.surface.textPrimary} ${
     controller.isGlass ? 'bg-white/8 hover:bg-white/12' : 'bg-white/5 hover:bg-white/10'
   }`;
+  const fieldStyle = {
+    backgroundColor: withAlpha(controller.palette.darkMuted, 0.22),
+    borderColor: withAlpha(controller.readableForeground.subtitleColor, 0.18),
+    color: controller.readableForeground.titleColor,
+    boxShadow: `inset 0 1px 0 ${withAlpha(controller.readableForeground.titleColor, 0.08)}`,
+  } as const;
+  const primaryActionStyle = {
+    ...controller.activeTransportStyle,
+    ...controller.readableForeground.titleStyle,
+  } as const;
+  const secondaryActionStyle = {
+    ...controller.subtleControlStyle,
+    ...controller.readableForeground.titleStyle,
+  } as const;
   const browsedItems = flattenPlayableItems(browseResult ?? undefined);
   const searchedItems = flattenPlayableItems(searchResult ?? undefined);
 
@@ -136,15 +151,19 @@ export function MediaCapabilityPanel({
       }`}
     >
       <div className="flex items-center justify-between gap-3">
-        <span className={`text-sm font-semibold ${controller.surface.textPrimary}`}>
+        <span
+          className={`text-sm font-semibold ${controller.surface.textPrimary}`}
+          style={controller.readableForeground.titleStyle}
+        >
           {t('media.capabilities.title')}
         </span>
         {capabilities.canClearPlaylist && supportsMediaControls ? (
           <Button
             size="compact"
-            variant="ghost"
+            variant="soft"
             onClick={onClearPlaylist}
             leading={<Trash2 className="h-3.5 w-3.5" />}
+            style={secondaryActionStyle}
           >
             {t('media.clearPlaylist')}
           </Button>
@@ -154,10 +173,16 @@ export function MediaCapabilityPanel({
       {capabilities.canSeek && durationSeconds > 0 && supportsMediaControls ? (
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <span className={`text-xs font-medium ${controller.surface.textSecondary}`}>
+            <span
+              className={`text-xs font-medium ${controller.surface.textSecondary}`}
+              style={controller.readableForeground.subtitleStyle}
+            >
               {t('media.seek')}
             </span>
-            <span className={`text-xs ${controller.surface.textMuted}`}>
+            <span
+              className={`text-xs ${controller.surface.textMuted}`}
+              style={controller.readableForeground.subtitleStyle}
+            >
               {Math.round(pendingSeek)}s
             </span>
           </div>
@@ -180,6 +205,11 @@ export function MediaCapabilityPanel({
           value={source ?? sourceList[0]}
           onChange={(event) => onSelectSource(event.target.value)}
           aria-label={t('media.source')}
+          style={fieldStyle}
+          selectClassName="placeholder:opacity-70"
+          indicatorClassName={controller.surface.textSecondary}
+          containerClassName="w-full"
+          accentColorOverride={controller.palette.highlight}
         >
           {sourceList.map((entry) => (
             <option key={entry} value={entry}>
@@ -195,6 +225,11 @@ export function MediaCapabilityPanel({
           value={soundMode ?? soundModeList[0]}
           onChange={(event) => onSelectSoundMode(event.target.value)}
           aria-label={t('media.soundMode')}
+          style={fieldStyle}
+          selectClassName="placeholder:opacity-70"
+          indicatorClassName={controller.surface.textSecondary}
+          containerClassName="w-full"
+          accentColorOverride={controller.palette.highlight}
         >
           {soundModeList.map((entry) => (
             <option key={entry} value={entry}>
@@ -214,6 +249,9 @@ export function MediaCapabilityPanel({
               onChange={(event) => setMediaContentId(event.target.value)}
               placeholder={t('media.playMedia.placeholder')}
               aria-label={t('media.playMedia.content')}
+              style={fieldStyle}
+              inputClassName="placeholder:opacity-70"
+              variant="soft"
             />
             <Input
               type="text"
@@ -222,6 +260,9 @@ export function MediaCapabilityPanel({
               onChange={(event) => setMediaContentType(event.target.value)}
               aria-label={t('media.playMedia.type')}
               containerClassName="w-28 shrink-0"
+              style={fieldStyle}
+              inputClassName="placeholder:opacity-70"
+              variant="soft"
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -232,6 +273,9 @@ export function MediaCapabilityPanel({
                 onChange={(event) => setEnqueue(event.target.value as EnqueueMode)}
                 aria-label={t('media.enqueue')}
                 containerClassName="min-w-32"
+                style={fieldStyle}
+                accentColorOverride={controller.palette.highlight}
+                indicatorClassName={controller.surface.textSecondary}
               >
                 <option value="play">{t('media.enqueue.play')}</option>
                 <option value="next">{t('media.enqueue.next')}</option>
@@ -243,6 +287,7 @@ export function MediaCapabilityPanel({
               <label
                 htmlFor={announceCheckboxId}
                 className={`flex items-center gap-2 text-sm ${controller.surface.textPrimary}`}
+                style={controller.readableForeground.titleStyle}
               >
                 <Checkbox
                   id={announceCheckboxId}
@@ -252,7 +297,12 @@ export function MediaCapabilityPanel({
                 {t('media.announce')}
               </label>
             ) : null}
-            <Button size="small" onClick={() => playMedia(mediaContentId, mediaContentType)}>
+            <Button
+              size="small"
+              variant="soft"
+              onClick={() => playMedia(mediaContentId, mediaContentType)}
+              style={primaryActionStyle}
+            >
               {t('media.playMedia.action')}
             </Button>
           </div>
@@ -266,6 +316,7 @@ export function MediaCapabilityPanel({
             variant="secondary"
             onClick={() => browseMedia()}
             leading={<ListMusic className="h-4 w-4" />}
+            style={secondaryActionStyle}
           >
             {t('media.browse')}
           </Button>
@@ -276,6 +327,7 @@ export function MediaCapabilityPanel({
                   key={`${item.mediaContentType}:${item.mediaContentId}`}
                   type="button"
                   className={itemButtonClassName}
+                  style={controller.readableForeground.titleStyle}
                   onClick={() =>
                     item.canExpand && !item.canPlay
                       ? browseMedia(item)
@@ -300,12 +352,16 @@ export function MediaCapabilityPanel({
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder={t('media.search.placeholder')}
               aria-label={t('media.search')}
+              style={fieldStyle}
+              inputClassName="placeholder:opacity-70"
+              variant="soft"
             />
             <Button
               size="small"
               variant="secondary"
               onClick={searchMedia}
               leading={<Search className="h-4 w-4" />}
+              style={secondaryActionStyle}
             >
               {t('media.search')}
             </Button>
@@ -317,6 +373,7 @@ export function MediaCapabilityPanel({
                   key={`${item.mediaContentType}:${item.mediaContentId}`}
                   type="button"
                   className={itemButtonClassName}
+                  style={controller.readableForeground.titleStyle}
                   onClick={() => playMedia(item.mediaContentId ?? '', item.mediaContentType)}
                 >
                   {item.title ?? item.mediaContentId}

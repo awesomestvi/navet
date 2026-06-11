@@ -26,11 +26,15 @@ interface CardDialogHeaderProps {
   eyebrow?: ReactNode;
   showRoomSelector?: boolean;
   forceDarkRoomSelector?: boolean;
+  roomSelectorCompactContentStyle?: CSSProperties;
   editableTitle?: boolean;
   onTitleChange?: (title: string) => void | Promise<void>;
   trailing?: ReactNode;
   supportingContent?: ReactNode;
   className?: string;
+  titleStyle?: CSSProperties;
+  descriptionStyle?: CSSProperties;
+  actionButtonStyle?: CSSProperties;
 }
 
 interface CardDialogSectionProps {
@@ -54,6 +58,7 @@ interface CardDialogTabTriggerProps {
   icon?: LucideIcon;
   onClick?: () => void;
   className?: string;
+  style?: CSSProperties;
 }
 
 interface CardDialogChoicePillProps
@@ -78,11 +83,15 @@ export const CardDialogHeader = memo(function CardDialogHeader({
   eyebrow,
   showRoomSelector = true,
   forceDarkRoomSelector = true,
+  roomSelectorCompactContentStyle,
   editableTitle = true,
   onTitleChange,
   trailing,
   supportingContent,
   className,
+  titleStyle,
+  descriptionStyle,
+  actionButtonStyle,
 }: CardDialogHeaderProps) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -163,7 +172,12 @@ export const CardDialogHeader = memo(function CardDialogHeader({
       <div className="min-w-0">
         {eyebrow ??
           (showRoomSelector && entityId ? (
-            <EntityRoomSelector entityId={entityId} compact forceDark={forceDarkRoomSelector} />
+            <EntityRoomSelector
+              entityId={entityId}
+              compact
+              forceDark={forceDarkRoomSelector}
+              compactContentStyle={roomSelectorCompactContentStyle}
+            />
           ) : null)}
         <div
           className={cn(
@@ -179,6 +193,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
                 'min-w-0 text-white',
                 isEditingTitle ? 'flex-1' : 'truncate'
               )}
+              style={titleStyle}
             >
               {isEditingTitle ? (
                 <Input
@@ -217,6 +232,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
                   aria-label={t('entityNameEditor.save')}
                   disabled={isSavingTitle}
                   onClick={() => void saveTitleEdit()}
+                  style={actionButtonStyle}
                 >
                   <Check className="h-4 w-4" />
                 </button>
@@ -226,6 +242,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
                   aria-label={t('common.cancel')}
                   disabled={isSavingTitle}
                   onClick={cancelTitleEdit}
+                  style={actionButtonStyle}
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -236,6 +253,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
                 className="shrink-0 rounded-full border border-white/12 bg-white/8 p-1.5 text-white/82 transition-colors hover:bg-white/12 hover:text-white"
                 aria-label={t('entityNameEditor.edit', { name: displayTitle })}
                 onClick={() => setIsEditingTitle(true)}
+                style={actionButtonStyle}
               >
                 <Pencil className="h-4 w-4" />
               </button>
@@ -245,6 +263,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
         {resolvedDescription ? (
           <Dialog.Description
             className={cn('mt-1 truncate', navetTypographyTokens.compactHelper, 'text-white/82')}
+            style={descriptionStyle}
           >
             {resolvedDescription}
           </Dialog.Description>
@@ -259,6 +278,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
             type="button"
             className="shrink-0 rounded-full border border-white/12 bg-white/8 p-2 text-white/82 transition-colors hover:bg-white/12 hover:text-white"
             aria-label={t('common.close')}
+            style={actionButtonStyle}
           >
             <X className="h-5 w-5" />
           </button>
@@ -316,6 +336,7 @@ export const CardDialogTabTrigger = memo(function CardDialogTabTrigger({
   icon,
   onClick,
   className,
+  style,
 }: CardDialogTabTriggerProps) {
   return (
     <InteractivePill
@@ -325,6 +346,7 @@ export const CardDialogTabTrigger = memo(function CardDialogTabTrigger({
       className={cn('text-xs', className)}
       icon={icon}
       onClick={onClick}
+      style={style}
     >
       {children}
     </InteractivePill>

@@ -7,6 +7,23 @@ function clamp(value: number, min: number, max: number) {
 }
 
 function parseRgbChannels(color: string) {
+  const hexMatch = color.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (hexMatch) {
+    const normalized =
+      hexMatch[1].length === 3
+        ? hexMatch[1]
+            .split('')
+            .map((channel) => `${channel}${channel}`)
+            .join('')
+        : hexMatch[1];
+
+    return {
+      r: Number.parseInt(normalized.slice(0, 2), 16),
+      g: Number.parseInt(normalized.slice(2, 4), 16),
+      b: Number.parseInt(normalized.slice(4, 6), 16),
+    };
+  }
+
   const match = color.match(/\d+(\.\d+)?/g);
   if (!match || match.length < 3) {
     return { r: 127, g: 127, b: 127 };
@@ -33,28 +50,86 @@ function getLuminance(color: string) {
   return 0.2126 * rLinear + 0.7152 * gLinear + 0.0722 * bLinear;
 }
 
+function getContrastRatio(foreground: string, background: string) {
+  const foregroundLuminance = getLuminance(foreground);
+  const backgroundLuminance = getLuminance(background);
+  const lighter = Math.max(foregroundLuminance, backgroundLuminance);
+  const darker = Math.min(foregroundLuminance, backgroundLuminance);
+
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function findReadableDarkColor(
+  backgroundColor: string,
+  candidates: string[],
+  targetContrast: number
+) {
+  for (const candidate of candidates) {
+    if (getContrastRatio(candidate, backgroundColor) >= targetContrast) {
+      return candidate;
+    }
+  }
+
+  return candidates[candidates.length - 1] ?? '#111827';
+}
+
 function getArtworkSurfaceLuminance(palette: MediaArtworkPalette) {
   return (
-    getLuminance(palette.highlight) * 0.46 +
-    getLuminance(palette.dominant) * 0.34 +
-    getLuminance(palette.gradientEnd) * 0.2
+    getLuminance(palette.highlight) * 0.12 +
+    getLuminance(palette.dominant) * 0.46 +
+    getLuminance(palette.gradientEnd) * 0.42
   );
 }
 
+function getForegroundReferenceBackground(palette: MediaArtworkPalette) {
+  return getLuminance(palette.dominant) >= getLuminance(palette.gradientEnd)
+    ? palette.dominant
+    : palette.gradientEnd;
+}
+
+function shouldPreferDarkForeground({
+  currentColor,
+  currentContrastTarget,
+  darkCandidateColor,
+  darkContrastTarget,
+  backgroundColor,
+  surfaceLuminance,
+}: {
+  currentColor: string;
+  currentContrastTarget: number;
+  darkCandidateColor: string;
+  darkContrastTarget: number;
+  backgroundColor: string;
+  surfaceLuminance: number;
+}) {
+  const currentContrast = getContrastRatio(currentColor, backgroundColor);
+  const darkContrast = getContrastRatio(darkCandidateColor, backgroundColor);
+  const currentFails = currentContrast < currentContrastTarget;
+  const darkPasses = darkContrast >= darkContrastTarget;
+
+  if (currentFails) {
+    return darkPasses && darkContrast > currentContrast;
+  }
+
+  return surfaceLuminance > 0.46 && darkPasses && darkContrast > currentContrast + 1.2;
+}
+
 export function getMediaReadableForeground({
-  theme,
+  theme: _theme,
   palette,
   titleColor,
   subtitleColor,
   hasArtwork = true,
+  backgroundColorOverride,
 }: {
   theme: ThemeType;
   palette: MediaArtworkPalette;
   titleColor: string;
   subtitleColor: string;
   hasArtwork?: boolean;
+  backgroundColorOverride?: string;
 }) {
-  if (theme !== 'glass' || !hasArtwork) {
+  if (!hasArtwork) {
     return {
       titleColor,
       subtitleColor,
@@ -64,12 +139,36 @@ export function getMediaReadableForeground({
   }
 
   const surfaceLuminance = getArtworkSurfaceLuminance(palette);
-  const useDarkForeground = surfaceLuminance > 0.5;
-  const resolvedTitleColor = useDarkForeground ? '#1f2937' : titleColor;
-  const resolvedSubtitleColor = useDarkForeground ? '#475569' : subtitleColor;
-  const textShadow = useDarkForeground
-    ? '0 1px 0 rgba(255,255,255,0.22), 0 1px 10px rgba(255,255,255,0.12)'
-    : '0 1px 10px rgba(0,0,0,0.32)';
+  const backgroundColor = backgroundColorOverride ?? getForegroundReferenceBackground(palette);
+  const darkTitleColor = findReadableDarkColor(
+    backgroundColor,
+    ['#1f2937', '#111827', '#0f172a'],
+    7
+  );
+  const darkSubtitleColor = findReadableDarkColor(
+    backgroundColor,
+    ['#334155', '#1f2937', '#0f172a'],
+    5.2
+  );
+  const titleNeedsDarkerForeground = shouldPreferDarkForeground({
+    currentColor: titleColor,
+    currentContrastTarget: 4.5,
+    darkCandidateColor: darkTitleColor,
+    darkContrastTarget: 7,
+    backgroundColor,
+    surfaceLuminance,
+  });
+  const subtitleNeedsDarkerForeground = shouldPreferDarkForeground({
+    currentColor: subtitleColor,
+    currentContrastTarget: 4.5,
+    darkCandidateColor: darkSubtitleColor,
+    darkContrastTarget: 5.2,
+    backgroundColor,
+    surfaceLuminance,
+  });
+  const resolvedTitleColor = titleNeedsDarkerForeground ? darkTitleColor : titleColor;
+  const resolvedSubtitleColor = subtitleNeedsDarkerForeground ? darkSubtitleColor : subtitleColor;
+  const textShadow = 'none';
 
   return {
     titleColor: resolvedTitleColor,

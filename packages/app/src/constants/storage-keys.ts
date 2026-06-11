@@ -51,6 +51,7 @@ export const STORE_STORAGE_KEYS = {
   navigation: 'navet-navigation',
   editMode: 'navet-edit-mode',
   customCards: 'navet-custom-cards',
+  entityRoomOverrides: 'navet-entity-room-overrides',
   lightPresetSettings: 'navet-light-preset-settings',
 } as const;
 
@@ -60,5 +61,6 @@ export const LEGACY_STORE_STORAGE_KEYS = {
   navigation: 'ha-dashboard-navigation',
   editMode: 'ha-dashboard-edit-mode',
   customCards: 'ha-dashboard-custom-cards',
+  entityRoomOverrides: 'ha-dashboard-entity-room-overrides',
   lightPresetSettings: 'ha-dashboard-light-preset-settings',
 } as const;

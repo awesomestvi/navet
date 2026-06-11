@@ -1,11 +1,12 @@
 import { BaseCard } from '@navet/app/components/primitives';
 import { type CardSize, getCompactCardSize } from '@navet/app/components/shared/card-size-selector';
 import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
+import { useEntityCardInteractionController } from '@navet/app/components/shared/entity-card-interaction-controller';
 import { getCardShellSurfaceTokens } from '@navet/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceTokens } from '@navet/app/components/shared/theme/card-state-surface-tokens';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import type { NavetMediaCapabilities } from '@navet/app/core/navet-device-state';
-import { useTheme } from '@navet/app/hooks';
+import { useI18n, useTheme } from '@navet/app/hooks';
 import type { ThemeMode } from '@navet/app/stores/theme-store';
 import type { CSSProperties } from 'react';
 import { lazy, memo, Suspense } from 'react';
@@ -135,7 +136,9 @@ export const MediaCard = memo(function MediaCard({
   simulateTvRemote = false,
 }: MediaCardProps) {
   const { theme } = useTheme();
+  const { t } = useI18n();
   const mediaEntityTypeKey = getMediaEntityTypeKey(entityType, deviceClass);
+  const mediaEntityTypeLabel = t(mediaEntityTypeKey);
   const resolvedPlayerName = resolveMediaPlayerName({
     entityId: id,
     entityName: name,
@@ -271,6 +274,7 @@ export const MediaCard = memo(function MediaCard({
   };
   const mediaControlProps = {
     onOpenDialog: openDialog,
+    onSeek: seekTo,
     onToggleMute: toggleMute,
     onPrevious: handlePrevious,
     canPreviousTrack,
@@ -281,27 +285,20 @@ export const MediaCard = memo(function MediaCard({
     onVolumeInteractionStart: startVolumeInteraction,
     onVolumeInteractionEnd: endVolumeInteraction,
   };
-  const handleCardActivate = isTv ? toggleTvPower : openDialog;
+  const cardInteraction = useEntityCardInteractionController({
+    ariaLabel: resolvedPlayerName,
+    isEditMode,
+    onToggle: isTv ? toggleTvPower : undefined,
+    onOpenControls: openDialog,
+    onOpenSettings: openDialog,
+  });
   useEditModeSettingsRequest(id, openDialog, isEditMode);
-  const interactiveShellProps = isEditMode
-    ? {}
-    : {
-        role: 'button' as const,
-        tabIndex: 0,
-        onClick: handleCardActivate,
-        onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            handleCardActivate();
-          }
-        },
-      };
 
   return (
     <>
       <BaseCard
         size={size}
-        {...interactiveShellProps}
+        {...cardInteraction.cardProps}
         interactive={!isEditMode}
         className={`${isEditMode ? '' : 'cursor-pointer'}`}
         backgroundClassName={backgroundClassName}
@@ -371,6 +368,8 @@ export const MediaCard = memo(function MediaCard({
             artwork={resolvedAlbumArt}
             artworkResource={artworkResource}
             onArtworkError={handleArtworkError}
+            entityName={resolvedPlayerName}
+            entityType={mediaEntityTypeLabel}
             title={displayTitle}
             artist={displayArtist}
             isPlaying={isPlaying}

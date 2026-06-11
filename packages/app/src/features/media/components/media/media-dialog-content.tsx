@@ -1,8 +1,4 @@
 import { CardDialogTabList, CardDialogTabTrigger } from '@navet/app/components/patterns';
-import {
-  CustomDialogDoneButton,
-  DialogFooter,
-} from '@navet/app/components/primitives/dialog-shell';
 import { ModalSurface } from '@navet/app/components/primitives/modal-surface';
 import { TabPanel, Tabs } from '@navet/app/components/primitives/tabs';
 import { useProviderMediaPlaybackData } from '@navet/app/features/media/hooks/use-provider-media-playback-data';
@@ -54,6 +50,8 @@ export function MediaDialogContent({
   capabilities,
   controller,
   durationSeconds,
+  entityName,
+  entityType,
   elapsedSeconds,
   entityId,
   groupMembers,
@@ -109,7 +107,7 @@ export function MediaDialogContent({
     hasSpotifyControls;
   const shouldRenderTabs = shouldRenderMediaTab || hasGroupingControls;
   const playbackPanel = (
-    <div className="space-y-5 md:space-y-6">
+    <div className="space-y-6 pt-2 md:space-y-7 md:pt-3">
       <MediaDialogArtwork
         artist={artist}
         artwork={artwork}
@@ -118,13 +116,18 @@ export function MediaDialogContent({
         title={title}
       />
       <MediaDialogPlaybackControls
+        artist={artist}
+        title={title}
         controller={controller}
         isPlaying={isPlaying}
         canNextTrack={canNextTrack}
         canPreviousTrack={canPreviousTrack}
+        durationSeconds={durationSeconds}
+        elapsedSeconds={elapsedSeconds}
         onCycleRepeat={onCycleRepeat}
         onNext={onNext}
         onPrevious={onPrevious}
+        onSeek={onSeek}
         onTogglePlay={onTogglePlay}
         onToggleShuffle={onToggleShuffle}
         repeatMode={repeatMode}
@@ -135,7 +138,6 @@ export function MediaDialogContent({
         canMuteVolume={capabilities.canMuteVolume}
         canSetVolume={capabilities.canSetVolume}
         isMuted={isMuted}
-        isPlaying={isPlaying}
         onToggleMute={onToggleMute}
         onVolumeChange={onVolumeChange}
         onVolumeInteractionEnd={onVolumeInteractionEnd}
@@ -180,11 +182,11 @@ export function MediaDialogContent({
     <ModalSurface
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      title={title}
-      description={artist ?? title}
-      bodyClassName="px-5 py-5 md:p-7"
+      title={entityName}
+      description={entityType}
+      bodyClassName="px-5 py-5 md:px-7 md:py-6"
       overlayClassName={`animate-in fade-in ${controller.surface.dialogBackdrop}`}
-      contentClassName={`max-h-[85vh] max-w-md overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${
+      contentClassName={`max-h-[88vh] w-[min(92vw,30rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${
         controller.isGlass ? 'bg-white/8 border-white/18' : 'bg-zinc-950/92 border-white/10'
       }`}
       contentStyle={controller.dialogSurfaceStyle}
@@ -199,68 +201,73 @@ export function MediaDialogContent({
         }}
       />
 
-      <div className="relative space-y-5 md:space-y-6">
+      <div className="relative space-y-6">
         <MediaDialogHeader
-          artist={artist}
           controller={controller}
+          entityName={entityName}
+          entityType={entityType}
           entityId={entityId}
-          title={title}
         />
 
         {shouldRenderTabs ? (
           <Tabs value={activeTab} defaultValue="playback" onValueChange={setActiveTab}>
-            <CardDialogTabList>
-              <CardDialogTabTrigger
-                active={activeTab === 'playback'}
-                icon={Sliders}
-                onClick={() => setActiveTab('playback')}
-              >
-                {t('media.tabs.playback')}
-              </CardDialogTabTrigger>
-              {shouldRenderMediaTab ? (
-                <CardDialogTabTrigger
-                  active={activeTab === 'media'}
-                  icon={Music2}
-                  onClick={() => setActiveTab('media')}
-                >
-                  {t('media.tabs.media')}
-                </CardDialogTabTrigger>
-              ) : null}
-              {hasGroupingControls ? (
-                <CardDialogTabTrigger
-                  active={activeTab === 'group'}
-                  icon={Users}
-                  onClick={() => setActiveTab('group')}
-                >
-                  {t('media.tabs.group')}
-                </CardDialogTabTrigger>
-              ) : null}
-            </CardDialogTabList>
-
-            <TabPanel value="playback" className="mt-5">
+            <TabPanel value="playback" className="mt-0">
               {playbackPanel}
             </TabPanel>
             {shouldRenderMediaTab ? (
-              <TabPanel value="media" className="mt-5">
+              <TabPanel value="media" className="mt-0">
                 {mediaPanel}
               </TabPanel>
             ) : null}
             {hasGroupingControls ? (
-              <TabPanel value="group" className="mt-5">
+              <TabPanel value="group" className="mt-0">
                 {groupingPanel}
               </TabPanel>
             ) : null}
+
+            <div className="flex justify-center pt-1">
+              <CardDialogTabList
+                className={`rounded-full border p-1 ${controller.surface.border} ${
+                  controller.isGlass ? 'bg-white/10' : 'bg-white/[0.06]'
+                }`}
+              >
+                <CardDialogTabTrigger
+                  active={activeTab === 'playback'}
+                  className="min-w-[5.5rem] justify-center rounded-full"
+                  icon={Sliders}
+                  onClick={() => setActiveTab('playback')}
+                  style={controller.readableForeground.titleStyle}
+                >
+                  {t('media.tabs.playback')}
+                </CardDialogTabTrigger>
+                {shouldRenderMediaTab ? (
+                  <CardDialogTabTrigger
+                    active={activeTab === 'media'}
+                    className="min-w-[5rem] justify-center rounded-full"
+                    icon={Music2}
+                    onClick={() => setActiveTab('media')}
+                    style={controller.readableForeground.titleStyle}
+                  >
+                    {t('media.tabs.media')}
+                  </CardDialogTabTrigger>
+                ) : null}
+                {hasGroupingControls ? (
+                  <CardDialogTabTrigger
+                    active={activeTab === 'group'}
+                    className="min-w-[5rem] justify-center rounded-full"
+                    icon={Users}
+                    onClick={() => setActiveTab('group')}
+                    style={controller.readableForeground.titleStyle}
+                  >
+                    {t('media.tabs.group')}
+                  </CardDialogTabTrigger>
+                ) : null}
+              </CardDialogTabList>
+            </div>
           </Tabs>
         ) : (
           playbackPanel
         )}
-
-        <DialogFooter>
-          <CustomDialogDoneButton
-            label={t('common.done')}
-            style={controller.activeMiniControlStyle}
-          />
-        </DialogFooter>
       </div>
     </ModalSurface>
   );

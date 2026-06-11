@@ -7,6 +7,8 @@ export function MediaDialog({
   artworkResource,
   artist,
   durationSeconds,
+  entityName,
+  entityType,
   elapsedSeconds,
   entityId,
   repeatMode,
@@ -34,6 +36,8 @@ export function MediaDialog({
       artist={artist}
       controller={controller}
       durationSeconds={durationSeconds}
+      entityName={entityName}
+      entityType={entityType}
       elapsedSeconds={elapsedSeconds}
       entityId={entityId}
       repeatMode={repeatMode}

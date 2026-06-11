@@ -1,6 +1,8 @@
+import { getCardReadableTextTokens } from '@navet/app/components/shared/theme/card-readable-text-tokens';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@navet/app/hooks';
 import type { MediaDialogProps } from './media-dialog.types';
+import { getMediaReadableForeground } from './media-readable-foreground';
 import { formatMediaTime } from './media-time';
 import {
   getMediaArtworkPaletteSource,
@@ -37,6 +39,18 @@ export function useMediaDialogController({
   const isGlass = theme === 'glass';
   const paletteArtwork = getMediaArtworkPaletteSource(artwork, artworkResource);
   const palette = useMediaArtworkColors(paletteArtwork, theme, entityId, `${title}::${artist}`);
+  const textTokens = getCardReadableTextTokens({
+    theme,
+    baseColor: palette.highlight,
+    backgroundColor: palette.gradientEnd,
+  });
+  const readableForeground = getMediaReadableForeground({
+    theme,
+    palette,
+    titleColor: textTokens.titleColor,
+    subtitleColor: textTokens.subtitleColor,
+    hasArtwork: true,
+  });
   const displayRemaining = formatMediaTime(Math.max(0, durationSeconds - elapsedSeconds));
   const displayDuration = durationSeconds > 0 ? formatMediaTime(durationSeconds) : '--:--';
   const dialogSurfaceStyle = {
@@ -105,6 +119,7 @@ export function useMediaDialogController({
     displayRemaining,
     isGlass,
     palette,
+    readableForeground,
     subtleControlStyle,
     surface,
     theme,

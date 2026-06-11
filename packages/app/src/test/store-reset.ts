@@ -2,6 +2,7 @@ import { useHabitStore } from '@navet/app/features/habits/habit-store';
 import { authSessionManager } from '@navet/app/infrastructure/home-assistant/auth/auth-session-manager';
 import { homeyService } from '@navet/app/services/homey.service';
 import { useEditModeStore } from '@navet/app/stores/edit-mode-store';
+import { useEntityRoomOverridesStore } from '@navet/app/stores/entity-room-overrides-store';
 import { useErrorStore } from '@navet/app/stores/error-store';
 import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
 import { integrationStore } from '@navet/app/stores/integration-store';
@@ -26,6 +27,7 @@ export async function resetAppStores() {
   resetStore(useEditModeStore);
   resetStore(useErrorStore);
   resetStore(useHabitStore);
+  resetStore(useEntityRoomOverridesStore);
   resetStore(homeAssistantStore);
   resetStore(integrationStore);
   homeyService.setClient(null);
@@ -38,8 +40,13 @@ export async function resetAppStores() {
   resetStore(useThemeStore);
 
   await Promise.all(
-    [useEditModeStore, useHabitStore, useNavigationStore, useSettingsStore, useThemeStore].map(
-      (store) => store.persist.rehydrate()
-    )
+    [
+      useEditModeStore,
+      useHabitStore,
+      useEntityRoomOverridesStore,
+      useNavigationStore,
+      useSettingsStore,
+      useThemeStore,
+    ].map((store) => store.persist.rehydrate())
   );
 }

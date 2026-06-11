@@ -6,10 +6,10 @@ import { getCardStateSurfaceTokens } from '@navet/app/components/shared/theme/ca
 import { useI18n } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
-import { isMediaPlayerProxyUrl } from '@navet/app/utils/home-assistant-url';
 import { Pause, Play, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import type { MediaEntityTypeKey } from '../media-card/get-media-entity-type-key';
-import { getMediaDisplayVolume, getMediaProgressPercent } from './media-card-style-utils';
+import { getMediaDisplayVolume } from './media-card-style-utils';
 import { MediaEntityHeader } from './media-entity-header';
 import { MediaFallbackArtwork } from './media-fallback-artwork';
 import { getMediaReadableForeground } from './media-readable-foreground';
@@ -39,6 +39,7 @@ interface MediaLargeViewProps {
   durationSeconds: number;
   theme: ThemeType;
   onOpenDialog: () => void;
+  onSeek: (elapsedSeconds: number) => void;
   onPrevious: () => void;
   canPreviousTrack: boolean;
   onTogglePlay: () => void;
@@ -67,6 +68,7 @@ export function MediaLargeView({
   durationSeconds,
   theme,
   onOpenDialog,
+  onSeek,
   onPrevious,
   canPreviousTrack,
   onTogglePlay,
@@ -90,8 +92,9 @@ export function MediaLargeView({
   const iconTone = stateSurface.primaryTextClassName;
   const subtitleTone = stateSurface.secondaryTextClassName;
   const displayVolume = getMediaDisplayVolume(volume, isMuted);
-  const elapsedLabel = formatMediaTime(Math.max(0, elapsedSeconds));
   const durationLabel = formatMediaTime(Math.max(durationSeconds, elapsedSeconds));
+  const [pendingSeek, setPendingSeek] = useState(elapsedSeconds);
+  const [isSeeking, setIsSeeking] = useState(false);
   const controlSizes = getCardActionControlSizes('small');
   const primaryControlSizes = getCardActionControlSizes('large');
   const subduedFallback = !stableArtwork && !isActive;
@@ -109,15 +112,6 @@ export function MediaLargeView({
   const resolvedTitleColor = readableForeground.titleColor;
   const resolvedSubtitleColor = readableForeground.subtitleColor;
   const controlIconStyle = { color: resolvedTitleColor };
-  const shouldRenderDecorativeArtworkLayers =
-    stableArtwork !== null &&
-    stableArtwork !== undefined &&
-    (import.meta.env.DEV || !isMediaPlayerProxyUrl(stableArtwork));
-  const neutralButtonStyle = {
-    backgroundColor: withAlpha(palette.darkMuted, 0.18),
-    borderColor: withAlpha(resolvedSubtitleColor, 0.18),
-    boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.12)}`,
-  };
   const playButtonStyle = {
     backgroundColor: withAlpha(palette.vibrant, 0.24),
     borderColor: withAlpha(resolvedSubtitleColor, 0.22),
@@ -185,30 +179,24 @@ export function MediaLargeView({
       </>
     ) : null;
 
+  useEffect(() => {
+    if (!isSeeking) {
+      setPendingSeek(elapsedSeconds);
+    }
+  }, [elapsedSeconds, isSeeking]);
+
   return (
     <div className="relative -m-3 flex h-[calc(100%+1.5rem)] flex-col overflow-hidden rounded-[inherit]">
       <div className="pointer-events-none absolute inset-0" style={backgroundBaseStyle} />
       {stableArtwork ? (
-        shouldRenderDecorativeArtworkLayers ? (
-          <>
-            <img
-              src={stableArtwork}
-              alt=""
-              aria-hidden="true"
-              onError={() => onArtworkError?.(stableArtwork)}
-              className="pointer-events-none absolute inset-0 h-full w-full scale-[1.04] object-cover opacity-58 saturate-[1.02] contrast-[0.98]"
-              decoding="async"
-            />
-            <img
-              src={stableArtwork}
-              alt=""
-              aria-hidden="true"
-              onError={() => onArtworkError?.(stableArtwork)}
-              className="pointer-events-none absolute inset-0 h-full w-full scale-[1.12] object-cover opacity-16 blur-[26px] saturate-[1.02]"
-              decoding="async"
-            />
-          </>
-        ) : null
+        <img
+          src={stableArtwork}
+          alt=""
+          aria-hidden="true"
+          onError={() => onArtworkError?.(stableArtwork)}
+          className="pointer-events-none absolute inset-0 h-full w-full scale-[1.03] object-cover opacity-56 saturate-[1.01] contrast-[0.98]"
+          decoding="async"
+        />
       ) : (
         <MediaFallbackArtwork
           palette={palette}
@@ -246,7 +234,7 @@ export function MediaLargeView({
             </div>
           </div>
 
-          <div className="mt-3 min-w-0">
+          <div className="mt-2.5 min-w-0">
             <div
               className={`truncate text-sm font-semibold ${iconTone}`}
               style={readableForeground.titleStyle}
@@ -261,34 +249,39 @@ export function MediaLargeView({
             </div>
           </div>
 
-          <div className="mt-3">
-            <div className="relative">
-              <div
-                className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2"
-                style={trackBaseStyle}
+          {durationSeconds > 0 ? (
+            <div className="mt-1.5">
+              <Slider
+                value={Math.min(durationSeconds, pendingSeek)}
+                min={0}
+                max={Math.max(durationSeconds, elapsedSeconds, pendingSeek)}
+                step={1}
+                ariaLabel={t('media.seek')}
+                onValueChange={(value) => setPendingSeek(value)}
+                onValueCommit={(value) => onSeek(value)}
+                onInteractionStart={() => setIsSeeking(true)}
+                onInteractionEnd={() => setIsSeeking(false)}
+                rootClassName="relative flex h-4.5 w-full items-center touch-none select-none"
+                trackClassName="relative h-[3px] grow rounded-full"
+                rangeClassName="absolute h-full rounded-full"
+                thumbClassName="block h-3.5 w-3.5 rounded-full outline-none"
+                touchThumbClassName="block h-6 w-6 rounded-full outline-none"
+                trackStyle={trackBaseStyle}
+                rangeStyle={trackFillStyle}
+                thumbStyle={trackThumbStyle}
               />
               <div
-                className="absolute left-0 top-1/2 h-px -translate-y-1/2"
-                style={{
-                  ...trackFillStyle,
-                  width:
-                    durationSeconds > 0
-                      ? `${getMediaProgressPercent(elapsedSeconds, durationSeconds)}%`
-                      : '0%',
-                }}
-              />
+                className={`mt-px flex items-center justify-between text-[10px] ${subtitleTone}`}
+                style={readableForeground.subtitleStyle}
+              >
+                <span>{formatMediaTime(Math.max(0, pendingSeek))}</span>
+                <span>{durationLabel}</span>
+              </div>
             </div>
-            <div
-              className={`mt-1.5 flex items-center justify-between text-xs ${subtitleTone}`}
-              style={readableForeground.subtitleStyle}
-            >
-              <span>{elapsedLabel}</span>
-              <span>{durationLabel}</span>
-            </div>
-          </div>
+          ) : null}
         </div>
 
-        <div className="mt-4 flex shrink-0 items-center justify-between gap-3">
+        <div className="mt-2.5 flex shrink-0 items-center justify-between gap-3">
           <div className="flex items-center gap-1.5">
             <RoundControlButton
               theme={theme}
@@ -302,7 +295,7 @@ export function MediaLargeView({
               }}
               className="border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
               iconStyle={controlIconStyle}
-              style={neutralButtonStyle}
+              style={subduedFallback ? undefined : playButtonStyle}
             >
               <SkipBack className={controlSizes.icon} />
             </RoundControlButton>
@@ -341,7 +334,7 @@ export function MediaLargeView({
               }}
               className="border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
               iconStyle={controlIconStyle}
-              style={neutralButtonStyle}
+              style={subduedFallback ? undefined : playButtonStyle}
             >
               <SkipForward className={controlSizes.icon} />
             </RoundControlButton>
@@ -359,7 +352,7 @@ export function MediaLargeView({
               }}
               className="border backdrop-blur-xl transition-colors"
               iconStyle={controlIconStyle}
-              style={neutralButtonStyle}
+              style={subduedFallback ? undefined : playButtonStyle}
             >
               {isMuted ? (
                 <VolumeX className={controlSizes.icon} />

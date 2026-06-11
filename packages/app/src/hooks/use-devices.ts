@@ -3,10 +3,12 @@ import {
   mapNavetEntitiesToDeviceCollection,
 } from '@navet/app/core/navet-device-collections';
 import { useMemo } from 'react';
+import { useEntityRoomOverridesStore } from '../stores/entity-room-overrides-store';
 import { integrationSelectors } from '../stores/selectors';
 import type { DeviceCollection } from '../types/device.types';
 import type { IntegrationProviderId } from '../types/provider';
 import { getAllRooms } from '../utils/device-location';
+import { createProviderScopedId } from '../utils/provider-ids';
 import { areArraysEqual } from '../utils/structural-equality';
 import { useIntegrationStore } from './use-integration-store';
 import { useProviderCalendarDevicesCollection } from './use-provider-calendar-devices';
@@ -42,6 +44,185 @@ export type DeviceCollectionKey = (typeof DEVICE_COLLECTION_KEYS)[number];
 interface UseDevicesOptions {
   enabled?: boolean;
   includeFeatureCollections?: boolean;
+}
+
+function buildRoomNamesById(
+  roomDescriptors: ReadonlyArray<{
+    id: string;
+    canonicalId: string;
+    normalizedName: string;
+    name: string;
+    sources: ReadonlyArray<{
+      providerId: IntegrationProviderId;
+      nativeId: string;
+      canonicalId?: string;
+    }>;
+  }>
+) {
+  const roomNamesById: Record<string, string> = {};
+
+  roomDescriptors.forEach((room) => {
+    roomNamesById[room.id] = room.name;
+    roomNamesById[room.canonicalId] = room.name;
+    roomNamesById[room.normalizedName] = room.name;
+
+    room.sources.forEach((source) => {
+      roomNamesById[createProviderScopedId(source.providerId, source.nativeId)] = room.name;
+      if (typeof source.canonicalId === 'string' && source.canonicalId.length > 0) {
+        roomNamesById[source.canonicalId] = room.name;
+      }
+    });
+  });
+
+  return roomNamesById;
+}
+
+function getRoomOverrideIdForDevice(
+  device: {
+    id: string;
+    canonicalId?: string;
+    nativeId?: string;
+    providerId?: IntegrationProviderId;
+  },
+  roomIdsByEntityId: Record<string, string>
+) {
+  const directRoomId = roomIdsByEntityId[device.id];
+  if (directRoomId) {
+    return directRoomId;
+  }
+
+  if (typeof device.canonicalId === 'string' && device.canonicalId.length > 0) {
+    const canonicalRoomId = roomIdsByEntityId[device.canonicalId];
+    if (canonicalRoomId) {
+      return canonicalRoomId;
+    }
+  }
+
+  if (
+    typeof device.nativeId === 'string' &&
+    device.nativeId.length > 0 &&
+    typeof device.providerId === 'string'
+  ) {
+    return roomIdsByEntityId[createProviderScopedId(device.providerId, device.nativeId)];
+  }
+
+  return undefined;
+}
+
+function applyRoomOverridesToDevices<
+  T extends {
+    id: string;
+    room: string;
+    canonicalId?: string;
+    nativeId?: string;
+    providerId?: IntegrationProviderId;
+  },
+>(
+  devices: T[],
+  roomIdsByEntityId: Record<string, string>,
+  roomNamesById: Record<string, string>
+): T[] {
+  let nextDevices: T[] | null = null;
+
+  devices.forEach((device, index) => {
+    const roomId = getRoomOverrideIdForDevice(device, roomIdsByEntityId);
+    const roomName = roomId ? roomNamesById[roomId] : undefined;
+    if (!roomName || roomName === device.room) {
+      return;
+    }
+
+    if (!nextDevices) {
+      nextDevices = [...devices];
+    }
+
+    nextDevices[index] = { ...device, room: roomName };
+  });
+
+  return nextDevices ?? devices;
+}
+
+function applyRoomOverrides(
+  collection: DeviceCollection,
+  roomIdsByEntityId: Record<string, string>,
+  roomNamesById: Record<string, string>
+): DeviceCollection {
+  if (Object.keys(roomIdsByEntityId).length === 0 || Object.keys(roomNamesById).length === 0) {
+    return collection;
+  }
+
+  const lights = applyRoomOverridesToDevices(collection.lights, roomIdsByEntityId, roomNamesById);
+  const fans = applyRoomOverridesToDevices(collection.fans, roomIdsByEntityId, roomNamesById);
+  const hvac = applyRoomOverridesToDevices(collection.hvac, roomIdsByEntityId, roomNamesById);
+  const climate = applyRoomOverridesToDevices(collection.climate, roomIdsByEntityId, roomNamesById);
+  const media = applyRoomOverridesToDevices(collection.media, roomIdsByEntityId, roomNamesById);
+  const weather = applyRoomOverridesToDevices(collection.weather, roomIdsByEntityId, roomNamesById);
+  const switches = applyRoomOverridesToDevices(
+    collection.switches,
+    roomIdsByEntityId,
+    roomNamesById
+  );
+  const helpers = applyRoomOverridesToDevices(collection.helpers, roomIdsByEntityId, roomNamesById);
+  const covers = applyRoomOverridesToDevices(collection.covers, roomIdsByEntityId, roomNamesById);
+  const locks = applyRoomOverridesToDevices(collection.locks, roomIdsByEntityId, roomNamesById);
+  const scenes = applyRoomOverridesToDevices(collection.scenes, roomIdsByEntityId, roomNamesById);
+  const persons = applyRoomOverridesToDevices(collection.persons, roomIdsByEntityId, roomNamesById);
+  const sensors = applyRoomOverridesToDevices(collection.sensors, roomIdsByEntityId, roomNamesById);
+  const vacuums = applyRoomOverridesToDevices(collection.vacuums, roomIdsByEntityId, roomNamesById);
+  const calendars = applyRoomOverridesToDevices(
+    collection.calendars,
+    roomIdsByEntityId,
+    roomNamesById
+  );
+  const cameras = applyRoomOverridesToDevices(collection.cameras, roomIdsByEntityId, roomNamesById);
+  const groupedSensors = applyRoomOverridesToDevices(
+    collection['grouped-sensors'],
+    roomIdsByEntityId,
+    roomNamesById
+  );
+
+  const unchanged =
+    lights === collection.lights &&
+    fans === collection.fans &&
+    hvac === collection.hvac &&
+    climate === collection.climate &&
+    media === collection.media &&
+    weather === collection.weather &&
+    switches === collection.switches &&
+    helpers === collection.helpers &&
+    covers === collection.covers &&
+    locks === collection.locks &&
+    scenes === collection.scenes &&
+    persons === collection.persons &&
+    sensors === collection.sensors &&
+    vacuums === collection.vacuums &&
+    calendars === collection.calendars &&
+    cameras === collection.cameras &&
+    groupedSensors === collection['grouped-sensors'];
+
+  if (unchanged) {
+    return collection;
+  }
+
+  return {
+    ...collection,
+    lights,
+    fans,
+    hvac,
+    climate,
+    media,
+    weather,
+    switches,
+    helpers,
+    covers,
+    locks,
+    scenes,
+    persons,
+    sensors,
+    vacuums,
+    calendars,
+    cameras,
+    'grouped-sensors': groupedSensors,
+  };
 }
 
 function useSelectedProviderFeatureCollections({
@@ -174,6 +355,9 @@ export const useDeviceCollectionsByKeys = (
     },
     (left, right) => areArraysEqual(left, right, Object.is)
   );
+  const roomDescriptors = useIntegrationStore(integrationSelectors.roomDescriptors);
+  const roomIdsByEntityId = useEntityRoomOverridesStore((state) => state.roomIdsByEntityId);
+  const roomNamesById = useMemo(() => buildRoomNamesById(roomDescriptors), [roomDescriptors]);
   const { calendars, weather } = useSelectedProviderFeatureCollections({
     selectedProviderIds,
     enabled,
@@ -207,7 +391,11 @@ export const useDeviceCollectionsByKeys = (
       selectedProviderCollections.push(collection);
     }
 
-    const collection = buildDeviceCollectionForKeys(keys, selectedProviderCollections);
+    const collection = applyRoomOverrides(
+      buildDeviceCollectionForKeys(keys, selectedProviderCollections),
+      roomIdsByEntityId,
+      roomNamesById
+    );
     if (keys.includes('calendars')) {
       collection.calendars = calendars;
     }
@@ -216,7 +404,16 @@ export const useDeviceCollectionsByKeys = (
     }
 
     return collection;
-  }, [calendars, enabled, keys, providerGroupSlices, selectedProviderIds, weather]);
+  }, [
+    calendars,
+    enabled,
+    keys,
+    providerGroupSlices,
+    roomIdsByEntityId,
+    roomNamesById,
+    selectedProviderIds,
+    weather,
+  ]);
 };
 
 export const useAggregatedDevices = (options?: UseDevicesOptions): DeviceCollection => {
@@ -238,6 +435,9 @@ export const useAggregatedDevices = (options?: UseDevicesOptions): DeviceCollect
         : EMPTY_DEVICE_COLLECTIONS,
     (left, right) => areArraysEqual(left, right, Object.is)
   );
+  const roomDescriptors = useIntegrationStore(integrationSelectors.roomDescriptors);
+  const roomIdsByEntityId = useEntityRoomOverridesStore((state) => state.roomIdsByEntityId);
+  const roomNamesById = useMemo(() => buildRoomNamesById(roomDescriptors), [roomDescriptors]);
   const { calendars, weather } = useSelectedProviderFeatureCollections({
     selectedProviderIds,
     enabled,
@@ -262,8 +462,8 @@ export const useAggregatedDevices = (options?: UseDevicesOptions): DeviceCollect
     collection.calendars = calendars;
     collection.weather = weather;
 
-    return collection;
-  }, [calendars, enabled, selectedProviderCollections, weather]);
+    return applyRoomOverrides(collection, roomIdsByEntityId, roomNamesById);
+  }, [calendars, enabled, roomIdsByEntityId, roomNamesById, selectedProviderCollections, weather]);
 };
 export const useDevices = (options?: UseDevicesOptions): DeviceCollection =>
   useDeviceCollectionsByKeys(DEVICE_COLLECTION_KEYS, options);

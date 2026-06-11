@@ -73,7 +73,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
         disabled={disabled}
         aria-invalid={invalid || props['aria-invalid'] === true ? true : undefined}
         onFocus={(event) => {
-          setIsFocused(true);
+          setIsFocused(event.currentTarget.matches(':focus-visible'));
           onFocus?.(event);
         }}
         onBlur={(event) => {

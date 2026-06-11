@@ -1,6 +1,5 @@
-import { isMediaPlayerProxyUrl } from '@navet/app/utils/home-assistant-url';
-import { useEffect, useState } from 'react';
 import { MediaFallbackArtwork } from './media-fallback-artwork';
+import { useArtworkEdgeBlur } from './use-artwork-edge-blur';
 import type { MediaArtworkPalette } from './use-media-artwork-colors';
 import { withAlpha } from './use-media-artwork-colors';
 
@@ -51,43 +50,35 @@ export function MediaArtworkSurface({
   artRegionClassName = 'w-[44%]',
   subduedFallback = false,
 }: MediaArtworkSurfaceProps) {
-  const [showDeferredBackdrop, setShowDeferredBackdrop] = useState(false);
-
-  useEffect(() => {
-    setShowDeferredBackdrop(false);
-
-    if (!artwork) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      setShowDeferredBackdrop(true);
-    }, 300);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [artwork]);
-
   const useSubduedFallback = subduedFallback && !artwork;
   const useSoftGlassFallback = theme === 'glass' && useSubduedFallback;
-  const shouldRenderDecorativeArtworkLayers =
-    artwork !== null &&
-    artwork !== undefined &&
-    (import.meta.env.DEV || !isMediaPlayerProxyUrl(artwork));
-  const splitSurfaceColor = getSplitSurfaceColor(palette);
+  const fallbackSplitSurfaceColor = getSplitSurfaceColor(palette);
+  const layoutSurfaceMatchColor =
+    layout === 'split'
+      ? fallbackSplitSurfaceColor
+      : layout === 'stacked'
+        ? palette.darkMuted
+        : null;
+  const layoutBlendEdge =
+    layout === 'split' ? 'right' : layout === 'stacked' ? 'bottom' : undefined;
+  const artworkEdgeAnalysis = useArtworkEdgeBlur(artwork, {
+    matchColor: layoutSurfaceMatchColor,
+    preferEdge: layoutBlendEdge,
+  });
+  const splitSurfaceColor =
+    layout === 'split' && artworkEdgeAnalysis.preferredEdgeColor
+      ? artworkEdgeAnalysis.preferredEdgeColor
+      : fallbackSplitSurfaceColor;
+  const stackedSurfaceColor =
+    layout === 'stacked' && artworkEdgeAnalysis.preferredEdgeColor
+      ? artworkEdgeAnalysis.preferredEdgeColor
+      : palette.darkMuted;
   const edgeFadeMask =
     layout === 'split'
       ? 'linear-gradient(90deg, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 55%, rgba(0,0,0,0.9) 68%, rgba(0,0,0,0.54) 84%, rgba(0,0,0,0.14) 95%, rgba(0,0,0,0) 100%)'
       : layout === 'stacked'
         ? 'linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 56%, rgba(0,0,0,0.9) 70%, rgba(0,0,0,0.54) 84%, rgba(0,0,0,0.14) 95%, rgba(0,0,0,0) 100%)'
         : 'linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 16%, rgba(0,0,0,1) 84%, rgba(0,0,0,0) 100%)';
-  const deferredBackdropMask =
-    layout === 'split'
-      ? 'linear-gradient(90deg, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 44%, rgba(0,0,0,0.45) 58%, rgba(0,0,0,0) 72%)'
-      : layout === 'stacked'
-        ? 'linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 48%, rgba(0,0,0,0.45) 62%, rgba(0,0,0,0) 76%)'
-        : undefined;
 
   return (
     <div
@@ -116,31 +107,14 @@ export function MediaArtworkSurface({
                       0.18
                     )} 100%)`
                   : layout === 'split'
-                    ? `radial-gradient(circle at 76% 24%, ${withAlpha(splitSurfaceColor, 0.16)} 0%, transparent 30%), radial-gradient(circle at 68% 66%, ${withAlpha(palette.vibrant, 0.08)} 0%, transparent 34%), linear-gradient(90deg, ${withAlpha(palette.dominant, 0.96)} 0%, ${withAlpha(palette.dominant, 0.94)} 38%, ${withAlpha(splitSurfaceColor, 0.96)} 76%, ${withAlpha(splitSurfaceColor, 0.98)} 100%)`
+                    ? `linear-gradient(90deg, ${withAlpha(palette.dominant, 0.99)} 0%, ${withAlpha(palette.dominant, 0.985)} 26%, ${withAlpha(splitSurfaceColor, 0.995)} 44%, ${withAlpha(splitSurfaceColor, 1)} 100%)`
                     : layout === 'stacked'
-                      ? `radial-gradient(circle at 22% 20%, ${withAlpha(palette.highlight, 0.18)} 0%, transparent 24%), radial-gradient(circle at 68% 54%, ${withAlpha(palette.vibrant, 0.22)} 0%, transparent 32%), linear-gradient(180deg, ${withAlpha(palette.dominant, 0.96)} 0%, ${withAlpha(palette.dominant, 0.94)} 34%, ${withAlpha(palette.darkMuted, 0.94)} 68%, ${withAlpha(palette.gradientEnd, 0.98)} 100%)`
+                      ? `linear-gradient(180deg, ${withAlpha(palette.dominant, 0.96)} 0%, ${withAlpha(palette.dominant, 0.94)} 34%, ${withAlpha(stackedSurfaceColor, 0.96)} 68%, ${withAlpha(palette.gradientEnd, 0.98)} 100%)`
                       : `linear-gradient(135deg, ${palette.dominant} 0%, ${palette.gradientEnd} 100%)`,
           }}
         />
       ) : null}
-      {artwork && showDeferredBackdrop && shouldRenderDecorativeArtworkLayers ? (
-        <img
-          src={artwork}
-          alt=""
-          aria-hidden="true"
-          onError={() => onArtworkError?.(artwork)}
-          className="absolute inset-0 h-full w-full scale-[1.22] object-cover opacity-38 blur-[84px] saturate-[1.24]"
-          decoding="async"
-          style={
-            deferredBackdropMask
-              ? {
-                  WebkitMaskImage: deferredBackdropMask,
-                  maskImage: deferredBackdropMask,
-                }
-              : undefined
-          }
-        />
-      ) : !artwork ? (
+      {!artwork ? (
         <MediaFallbackArtwork
           palette={palette}
           className={`absolute inset-0 scale-[1.08] blur-[42px] ${
@@ -167,16 +141,22 @@ export function MediaArtworkSurface({
               onError={() => onArtworkError?.(artwork)}
               className={`h-full w-full object-contain object-left ${imageClassName}`}
               decoding="async"
-              style={{
-                WebkitMaskImage: edgeFadeMask,
-                maskImage: edgeFadeMask,
-              }}
+              style={
+                artworkEdgeAnalysis.shouldFadeEdge
+                  ? {
+                      WebkitMaskImage: edgeFadeMask,
+                      maskImage: edgeFadeMask,
+                    }
+                  : undefined
+              }
             />
             {layout === 'split' ? (
               <div
                 className="absolute inset-y-0 right-0 w-[48%]"
                 style={{
-                  background: `linear-gradient(90deg, ${withAlpha(palette.dominant, 0)} 0%, ${withAlpha(palette.dominant, 0.012)} 42%, ${withAlpha(splitSurfaceColor, 0.035)} 100%)`,
+                  background: artworkEdgeAnalysis.edgeMatchesSurface
+                    ? 'none'
+                    : `linear-gradient(90deg, ${withAlpha(palette.dominant, 0)} 0%, ${withAlpha(splitSurfaceColor, 0.02)} 52%, ${withAlpha(splitSurfaceColor, 0.06)} 100%)`,
                 }}
               />
             ) : layout === 'stacked' ? (
@@ -227,7 +207,7 @@ export function MediaArtworkSurface({
         style={{
           background:
             layout === 'split'
-              ? `linear-gradient(180deg, ${withAlpha(splitSurfaceColor, useSoftGlassFallback ? 0.012 : useSubduedFallback ? 0.01 : 0.02)} 0%, rgba(0,0,0,0) 58%, ${withAlpha(useSoftGlassFallback ? palette.highlight : splitSurfaceColor, useSoftGlassFallback ? 0.018 : useSubduedFallback ? 0.015 : 0.025)} 100%)`
+              ? `linear-gradient(180deg, ${withAlpha(splitSurfaceColor, useSoftGlassFallback ? 0.006 : useSubduedFallback ? 0.006 : 0.01)} 0%, rgba(0,0,0,0) 44%, ${withAlpha(splitSurfaceColor, useSoftGlassFallback ? 0.01 : useSubduedFallback ? 0.01 : 0.014)} 100%)`
               : `linear-gradient(180deg, ${withAlpha(palette.highlight, useSoftGlassFallback ? 0.02 : useSubduedFallback ? 0.015 : 0.03)} 0%, ${withAlpha(useSoftGlassFallback ? palette.dominant : palette.darkMuted, useSoftGlassFallback ? 0.028 : useSubduedFallback ? 0.04 : 0.08)} 52%, ${withAlpha(useSoftGlassFallback ? palette.gradientEnd : palette.darkMuted, useSoftGlassFallback ? 0.04 : useSubduedFallback ? 0.08 : 0.18)} 100%)`,
         }}
       />
@@ -256,7 +236,7 @@ export function MediaArtworkSurface({
                         0.02
                       )} 82%, ${withAlpha(palette.darkMuted, 0.05)} 100%)`
                     : layout === 'split'
-                      ? `linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 72%, ${withAlpha(splitSurfaceColor, 0.018)} 100%)`
+                      ? `linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 82%, ${withAlpha(splitSurfaceColor, 0.008)} 100%)`
                       : layout === 'stacked'
                         ? `linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 56%, ${withAlpha(palette.darkMuted, 0.04)} 78%, ${withAlpha(palette.darkMuted, 0.1)} 100%)`
                         : `linear-gradient(180deg, rgba(0,0,0,0) 0%, ${withAlpha(palette.darkMuted, 0.12)} 64%, ${withAlpha(palette.darkMuted, 0.28)} 100%)`,

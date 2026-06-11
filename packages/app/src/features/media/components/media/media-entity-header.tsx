@@ -26,6 +26,7 @@ export function MediaEntityHeader({
       <EntityCardHeader
         title={entityName}
         subtitle={entityType}
+        compact
         layout="eyebrow-first"
         size={size}
         tone={isActive ? 'primary' : 'neutral'}
@@ -34,7 +35,7 @@ export function MediaEntityHeader({
         subtitleStyle={subtitleStyle}
         marginBottomClassName="mb-0"
         titleClassName="text-left"
-        subtitleClassName="text-left font-normal opacity-75"
+        subtitleClassName="text-left font-normal"
       />
     </div>
   );

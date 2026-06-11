@@ -7,14 +7,16 @@ import { useI18n } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
 import { Pause, Play, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import type { MediaEntityTypeKey } from '../media-card/get-media-entity-type-key';
 import { MediaArtworkSurface } from './media-artwork-surface';
-import { getMediaDisplayVolume, getMediaProgressPercent } from './media-card-style-utils';
+import { getMediaDisplayVolume } from './media-card-style-utils';
 import { MediaEntityHeader } from './media-entity-header';
 import { MediaMarqueeText } from './media-marquee-text';
 import { getMediaReadableForeground } from './media-readable-foreground';
 import { formatMediaTime } from './media-time';
 import { MediaVisualizerButton } from './media-visualizer-button';
+import { useArtworkEdgeBlur } from './use-artwork-edge-blur';
 import {
   getMediaArtworkPaletteSource,
   useMediaArtworkColors,
@@ -39,6 +41,7 @@ interface MediaMediumViewProps {
   durationSeconds: number;
   theme: ThemeType;
   onOpenDialog: () => void;
+  onSeek: (elapsedSeconds: number) => void;
   onPrevious: () => void;
   canPreviousTrack: boolean;
   onTogglePlay: () => void;
@@ -67,6 +70,7 @@ export function MediaMediumView({
   durationSeconds,
   theme,
   onOpenDialog,
+  onSeek,
   onPrevious,
   canPreviousTrack,
   onTogglePlay,
@@ -81,17 +85,22 @@ export function MediaMediumView({
   const displayVolume = getMediaDisplayVolume(volume, isMuted);
   const stateSurface = getCardStateSurfaceTokens(theme, isActive);
   const stableArtwork = useStableMediaArtwork(artwork);
+  const artworkEdgeAnalysis = useArtworkEdgeBlur(stableArtwork, {
+    preferEdge: 'right',
+  });
   const paletteArtwork = getMediaArtworkPaletteSource(stableArtwork, artworkResource);
   const palette = useMediaArtworkColors(paletteArtwork, theme, entityId, `${title}::${artist}`);
+  const textSideBackgroundColor = artworkEdgeAnalysis.preferredEdgeColor ?? palette.gradientEnd;
   const textTokens = getCardReadableTextTokens({
     theme,
     baseColor: palette.highlight,
-    backgroundColor: palette.gradientEnd,
+    backgroundColor: textSideBackgroundColor,
   });
   const iconTone = stateSurface.primaryTextClassName;
   const subtitleTone = stateSurface.secondaryTextClassName;
-  const elapsedLabel = formatMediaTime(Math.max(0, elapsedSeconds));
   const durationLabel = formatMediaTime(Math.max(durationSeconds, elapsedSeconds));
+  const [pendingSeek, setPendingSeek] = useState(elapsedSeconds);
+  const [isSeeking, setIsSeeking] = useState(false);
   const controlSizes = getCardActionControlSizes('small');
   const primaryControlSizes = getCardActionControlSizes('medium');
   const subduedFallback = !stableArtwork;
@@ -105,15 +114,11 @@ export function MediaMediumView({
     titleColor: fallbackTitleColor,
     subtitleColor: fallbackSubtitleColor,
     hasArtwork: Boolean(stableArtwork),
+    backgroundColorOverride: textSideBackgroundColor,
   });
   const resolvedTitleColor = readableForeground.titleColor;
   const resolvedSubtitleColor = readableForeground.subtitleColor;
   const controlIconStyle = { color: resolvedTitleColor };
-  const neutralButtonStyle = {
-    backgroundColor: withAlpha(palette.darkMuted, 0.18),
-    borderColor: withAlpha(resolvedSubtitleColor, 0.18),
-    boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.12)}`,
-  };
   const playButtonStyle = {
     backgroundColor: withAlpha(palette.vibrant, 0.24),
     borderColor: withAlpha(resolvedSubtitleColor, 0.22),
@@ -139,6 +144,12 @@ export function MediaMediumView({
       </>
     ) : null;
 
+  useEffect(() => {
+    if (!isSeeking) {
+      setPendingSeek(elapsedSeconds);
+    }
+  }, [elapsedSeconds, isSeeking]);
+
   return (
     <div className="relative -m-3 flex flex-1 overflow-hidden rounded-[inherit]">
       {glassDepthOverlay}
@@ -157,7 +168,7 @@ export function MediaMediumView({
       <div className="relative z-[2] grid h-full w-full grid-cols-[44%_minmax(0,1fr)]">
         <div />
 
-        <div className="flex min-w-0 flex-col pl-3 pr-3 py-3">
+        <div className="flex min-w-0 flex-col pl-1 pr-3 py-3">
           <div className="flex items-start justify-between gap-3">
             <MediaEntityHeader
               entityName={entityName}
@@ -181,7 +192,7 @@ export function MediaMediumView({
             </div>
           </div>
 
-          <div className="mt-auto flex flex-col gap-2.5">
+          <div className="mt-auto flex flex-col gap-1.5">
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0">
                 <MediaMarqueeText
@@ -220,31 +231,36 @@ export function MediaMediumView({
               </div>
             </div>
 
-            <div>
-              <div className="relative">
-                <div
-                  className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2"
-                  style={trackBaseStyle}
+            {durationSeconds > 0 ? (
+              <div className="-mt-1">
+                <Slider
+                  value={Math.min(durationSeconds, pendingSeek)}
+                  min={0}
+                  max={Math.max(durationSeconds, elapsedSeconds, pendingSeek)}
+                  step={1}
+                  ariaLabel={t('media.seek')}
+                  onValueChange={(value) => setPendingSeek(value)}
+                  onValueCommit={(value) => onSeek(value)}
+                  onInteractionStart={() => setIsSeeking(true)}
+                  onInteractionEnd={() => setIsSeeking(false)}
+                  rootClassName="relative flex h-4 w-full items-center touch-none select-none"
+                  trackClassName="relative h-[3px] grow rounded-full"
+                  rangeClassName="absolute h-full rounded-full"
+                  thumbClassName="block h-3 w-3 rounded-full outline-none"
+                  touchThumbClassName="block h-6 w-6 rounded-full outline-none"
+                  trackStyle={trackBaseStyle}
+                  rangeStyle={trackFillStyle}
+                  thumbStyle={trackThumbStyle}
                 />
                 <div
-                  className="absolute left-0 top-1/2 h-px -translate-y-1/2"
-                  style={{
-                    ...trackFillStyle,
-                    width:
-                      durationSeconds > 0
-                        ? `${getMediaProgressPercent(elapsedSeconds, durationSeconds)}%`
-                        : '0%',
-                  }}
-                />
+                  className={`mt-px flex items-center justify-between text-[10px] ${subtitleTone}`}
+                  style={readableForeground.subtitleStyle}
+                >
+                  <span>{formatMediaTime(Math.max(0, pendingSeek))}</span>
+                  <span>{durationLabel}</span>
+                </div>
               </div>
-              <div
-                className={`mt-1 flex items-center justify-between text-xs ${subtitleTone}`}
-                style={readableForeground.subtitleStyle}
-              >
-                <span>{elapsedLabel}</span>
-                <span>{durationLabel}</span>
-              </div>
-            </div>
+            ) : null}
 
             <div className="flex items-center gap-1">
               <RoundControlButton
@@ -258,7 +274,7 @@ export function MediaMediumView({
                 }}
                 className="h-8 w-8 border backdrop-blur-xl transition-colors"
                 iconStyle={controlIconStyle}
-                style={neutralButtonStyle}
+                style={subduedFallback ? undefined : playButtonStyle}
               >
                 {isMuted ? (
                   <VolumeX className={controlSizes.icon} />
@@ -297,7 +313,7 @@ export function MediaMediumView({
                 }}
                 className="h-8 w-8 border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
                 iconStyle={controlIconStyle}
-                style={neutralButtonStyle}
+                style={subduedFallback ? undefined : playButtonStyle}
               >
                 <SkipBack className={controlSizes.icon} />
               </RoundControlButton>
@@ -314,7 +330,7 @@ export function MediaMediumView({
                 }}
                 className="h-8 w-8 border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
                 iconStyle={controlIconStyle}
-                style={neutralButtonStyle}
+                style={subduedFallback ? undefined : playButtonStyle}
               >
                 <SkipForward className={controlSizes.icon} />
               </RoundControlButton>

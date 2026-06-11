@@ -285,7 +285,7 @@ export const FanCard = memo(function FanCard({
       return entity ? { id: entityId, entity } : null;
     })
     .filter((entry): entry is SwitchSiblingEntity => entry !== null);
-  const showsSettingsButton = siblingEntities.length > 0 || isEditMode;
+  const showsSettingsButton = supportsFanSpeed || siblingEntities.length > 0 || isEditMode;
 
   useEffect(() => {
     if (!providerState) {
@@ -636,7 +636,7 @@ export const FanCard = memo(function FanCard({
                     ) : undefined
                   }
                   rightContent={
-                    hasActionRowButtons ? (
+                    showsSettingsButton ? (
                       <div className="relative z-[3]">
                         <CardSettingsActionButton
                           {...cardInteraction.settingsButtonProps}
@@ -655,7 +655,7 @@ export const FanCard = memo(function FanCard({
                 theme={theme}
                 size={isSmall ? 'small' : 'medium'}
                 rightContent={
-                  hasActionRowButtons ? (
+                  showsSettingsButton ? (
                     <div className="relative z-[3]">
                       <CardSettingsActionButton
                         {...cardInteraction.settingsButtonProps}

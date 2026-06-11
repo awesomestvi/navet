@@ -1,5 +1,6 @@
 import { createEmptyDeviceCollection } from '@navet/app/core/navet-device-collections';
 import { homeyService } from '@navet/app/services/homey.service';
+import { useEntityRoomOverridesStore } from '@navet/app/stores/entity-room-overrides-store';
 import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { renderHookWithProviders } from '@navet/app/test/render';
@@ -412,5 +413,107 @@ describe('useDevices', () => {
     );
 
     expect(result.current).toEqual(keyedResult.current);
+  });
+
+  it('applies Navet-local room overrides for unmanaged entities', async () => {
+    await resetAppStores();
+
+    integrationStore.setState({
+      selectedProviderIds: ['home_assistant'],
+      roomDescriptors: [
+        {
+          id: 'home_assistant:office',
+          name: 'Office',
+          providerIds: ['home_assistant'],
+          memberIds: [],
+          canonicalId: 'room-office',
+          normalizedName: 'office',
+          sources: [],
+        },
+      ],
+      providerDeviceCollectionsByProviderId: {
+        home_assistant: {
+          ...createEmptyDeviceCollection(),
+          media: [
+            {
+              id: 'home_assistant:media_player.lounge_room',
+              canonicalId: 'home_assistant:media_player.lounge_room',
+              providerId: 'home_assistant',
+              nativeId: 'media_player.lounge_room',
+              name: 'Lounge room',
+              room: 'Unassigned',
+              size: 'medium',
+              title: 'Netflix',
+              artist: '',
+              state: 'playing',
+              volume: 100,
+              isMuted: false,
+            },
+          ],
+        },
+      },
+    });
+    useEntityRoomOverridesStore
+      .getState()
+      .setRoomOverride('home_assistant:media_player.lounge_room', 'home_assistant:office');
+
+    const { result } = renderHookWithProviders(() => useAggregatedDevices());
+
+    expect(result.current.media[0]?.room).toBe('Office');
+  });
+
+  it('applies Navet-local room overrides when collection ids differ from override ids', async () => {
+    await resetAppStores();
+
+    integrationStore.setState({
+      selectedProviderIds: ['home_assistant'],
+      roomDescriptors: [
+        {
+          id: 'office',
+          name: 'Office',
+          providerIds: ['home_assistant'],
+          memberIds: [],
+          canonicalId: 'office',
+          normalizedName: 'office',
+          sources: [
+            {
+              providerId: 'home_assistant',
+              nativeId: 'office',
+              sourceType: 'provider_managed',
+              supportsOrdering: true,
+              supportsDeletion: true,
+            },
+          ],
+        },
+      ],
+      providerDeviceCollectionsByProviderId: {
+        home_assistant: {
+          ...createEmptyDeviceCollection(),
+          media: [
+            {
+              id: 'media_player.walkman',
+              canonicalId: 'home_assistant:media_player.walkman',
+              providerId: 'home_assistant',
+              nativeId: 'media_player.walkman',
+              name: 'Walkman',
+              room: 'Unassigned',
+              size: 'medium',
+              title: 'Bounzz',
+              artist: '',
+              state: 'playing',
+              volume: 100,
+              isMuted: false,
+            },
+          ],
+        },
+      },
+    });
+    useEntityRoomOverridesStore
+      .getState()
+      .setRoomOverride('home_assistant:media_player.walkman', 'home_assistant:office');
+
+    const { result } = renderHookWithProviders(() => useAggregatedDevices());
+
+    expect(result.current.media[0]?.room).toBe('Office');
   });
 });

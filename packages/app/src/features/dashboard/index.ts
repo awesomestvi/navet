@@ -16,6 +16,7 @@ export {
   useCustomCardsStore,
 } from './stores/custom-cards-store';
 export { useDashboardEntitiesStore } from './stores/dashboard-entities-store';
+export { useEntityRoomOverridesStore } from './stores/entity-room-overrides-store';
 export {
   type HomeDashboardLayoutState,
   useHomeDashboardLayoutStore,

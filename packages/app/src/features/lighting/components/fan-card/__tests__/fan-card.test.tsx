@@ -217,6 +217,34 @@ describe('FanCard', () => {
     );
   });
 
+  it('opens the fan settings dialog from the card settings action', () => {
+    setFanProviderEntity(['toggle', 'fan_speed']);
+    homeAssistantStore.setState({
+      entities: {
+        'fan.ceiling_fan': createFanEntity(66),
+      },
+    });
+
+    renderWithProviders(
+      <FanCard
+        id="fan.ceiling_fan"
+        name="Ceiling Fan"
+        room="Bedroom"
+        initialState
+        initialPercentage={66}
+        size="small"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open settings for Ceiling Fan' }));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getAllByText('Ceiling Fan').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Customize' })).toBeInTheDocument();
+  });
+
   it('hides speed presets, slider, and settings when fan speed is unsupported', () => {
     setFanProviderEntity(['toggle']);
     homeAssistantStore.setState({

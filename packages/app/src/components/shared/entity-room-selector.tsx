@@ -9,9 +9,14 @@ import {
 } from '@navet/app/hooks';
 import { buildManageableRoomReferences } from '@navet/app/platform/provider-room-management';
 import { integrationAdminService } from '@navet/app/services/integration-admin.service';
+import { useEntityRoomOverridesStore } from '@navet/app/stores/entity-room-overrides-store';
 import { integrationSelectors } from '@navet/app/stores/selectors';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
-import { createProviderScopedId, parseProviderScopedId } from '@navet/app/utils/provider-ids';
+import {
+  createProviderScopedId,
+  getProviderNativeId,
+  parseProviderScopedId,
+} from '@navet/app/utils/provider-ids';
 import { Loader2 } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { memo, useMemo, useState } from 'react';
@@ -47,15 +52,20 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const roomDescriptors = useIntegrationStore(integrationSelectors.roomDescriptors);
   const roomRegistry = useProviderEntityRoomContext(entityId);
+  const roomIdsByEntityId = useEntityRoomOverridesStore((state) => state.roomIdsByEntityId);
+  const setRoomOverride = useEntityRoomOverridesStore((state) => state.setRoomOverride);
+  const clearRoomOverride = useEntityRoomOverridesStore((state) => state.clearRoomOverride);
   const surface = getThemeSurfaceTokens(theme);
   const [isSaving, setIsSaving] = useState(false);
-  const [isEyebrowFocused, setIsEyebrowFocused] = useState(false);
-  const [isKeyboardFocus, setIsKeyboardFocus] = useState(false);
+  const [isCompactFocused, setIsCompactFocused] = useState(false);
   const resolvedLabel = label ?? t('common.room');
-
   const entityProviderId = useMemo<IntegrationProviderId>(
     () => parseProviderScopedId(entityId)?.providerId ?? currentProviderId,
     [currentProviderId, entityId]
+  );
+  const resolvedEntityId = useMemo(
+    () => createProviderScopedId(entityProviderId, getProviderNativeId(entityId)),
+    [entityId, entityProviderId]
   );
   const manageableRooms = useMemo(
     () =>
@@ -64,7 +74,14 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
       ),
     [entityProviderId, roomDescriptors]
   );
+  const localRoomOverrideId = roomIdsByEntityId[resolvedEntityId] ?? null;
+  const canManageRoom = manageableRooms.length > 0;
+  const usesProviderRoomAssignment = roomRegistry.entry != null;
   const selectedRoomId = useMemo(() => {
+    if (localRoomOverrideId) {
+      return localRoomOverrideId;
+    }
+
     const entityEntry = roomRegistry.entry;
     if (!entityEntry) {
       return '';
@@ -81,19 +98,16 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
     return roomRegistry.deviceAreaId
       ? createProviderScopedId(entityProviderId, roomRegistry.deviceAreaId)
       : '';
-  }, [entityProviderId, roomRegistry.deviceAreaId, roomRegistry.entry]);
-  const selectedRoomLabel = useMemo(() => {
-    if (!selectedRoomId) {
-      return t('common.noRoom');
-    }
-
-    return manageableRooms.find((room) => room.id === selectedRoomId)?.name ?? t('common.noRoom');
-  }, [manageableRooms, selectedRoomId, t]);
-
+  }, [entityProviderId, localRoomOverrideId, roomRegistry.deviceAreaId, roomRegistry.entry]);
   const baseSelectClassName = compact
     ? `h-9 rounded-xl px-3 py-0 pr-8 text-xs leading-none ${surface.textPrimary}`
     : `h-10 rounded-xl px-3 py-0 pr-8 text-sm leading-none ${surface.textPrimary}`;
   const handleChange = async (nextValue: string) => {
+    if (!canManageRoom) {
+      toast.error('Room assignment is unavailable for this entity');
+      return;
+    }
+
     if (nextValue === CREATE_ROOM_VALUE) {
       const roomName = window.prompt(t('entityRoomSelector.createPrompt'));
       if (!roomName) {
@@ -109,7 +123,12 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
       setIsSaving(true);
       try {
         const createdRoom = await integrationAdminService.createRoom(trimmedRoomName);
-        await integrationAdminService.updateEntityRoom(entityId, createdRoom.id);
+        if (usesProviderRoomAssignment) {
+          await integrationAdminService.updateEntityRoom(entityId, createdRoom.id);
+          clearRoomOverride(resolvedEntityId);
+        } else {
+          setRoomOverride(resolvedEntityId, createdRoom.id);
+        }
         toast.success(t('entityRoomSelector.movedTo', { room: createdRoom.name }));
       } catch (error) {
         const message =
@@ -129,7 +148,14 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
       manageableRooms.find((room) => room.id === nextRoomId)?.name ?? t('common.noRoom');
     setIsSaving(true);
     try {
-      await integrationAdminService.updateEntityRoom(entityId, nextRoomId);
+      if (usesProviderRoomAssignment) {
+        await integrationAdminService.updateEntityRoom(entityId, nextRoomId);
+        clearRoomOverride(resolvedEntityId);
+      } else if (nextRoomId) {
+        setRoomOverride(resolvedEntityId, nextRoomId);
+      } else {
+        clearRoomOverride(resolvedEntityId);
+      }
 
       toast.success(t('entityRoomSelector.movedTo', { room: nextRoomName }));
     } catch (error) {
@@ -151,21 +177,28 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
 
       <div className="relative">
         {compact ? (
-          <>
+          <div className={`relative inline-block min-w-0 ${compactContentClassName ?? ''}`}>
+            <RoomEyebrow
+              room={
+                manageableRooms.find((room) => room.id === selectedRoomId)?.name ??
+                t('common.noRoom')
+              }
+              isLoading={isSaving}
+              forceDark={forceDark}
+              visualOnly
+              focused={isCompactFocused}
+              style={compactContentStyle}
+            />
             <select
-              name="room"
               aria-label={resolvedLabel}
               value={selectedRoomId}
-              disabled={isSaving}
+              disabled={isSaving || !canManageRoom}
               onChange={(event) => void handleChange(event.target.value)}
-              onKeyDown={() => setIsKeyboardFocus(true)}
-              onPointerDown={() => setIsKeyboardFocus(false)}
-              onFocus={() => setIsEyebrowFocused(true)}
-              onBlur={() => {
-                setIsEyebrowFocused(false);
-                setIsKeyboardFocus(false);
-              }}
-              className="absolute inset-0 z-10 w-full cursor-pointer appearance-none bg-white text-slate-900 opacity-0 disabled:cursor-not-allowed"
+              onFocus={(event) =>
+                setIsCompactFocused(event.currentTarget.matches(':focus-visible'))
+              }
+              onBlur={() => setIsCompactFocused(false)}
+              className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none opacity-0 disabled:cursor-not-allowed"
             >
               <option value="">{t('common.noRoom')}</option>
               {manageableRooms.map((room) => (
@@ -175,22 +208,13 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
               ))}
               <option value={CREATE_ROOM_VALUE}>{t('entityRoomSelector.createAction')}</option>
             </select>
-            <RoomEyebrow
-              room={selectedRoomLabel}
-              isLoading={isSaving}
-              forceDark={forceDark}
-              visualOnly
-              focused={isEyebrowFocused && isKeyboardFocus}
-              className={compactContentClassName}
-              style={compactContentStyle}
-            />
-          </>
+          </div>
         ) : (
           <>
             <Select
               aria-label={resolvedLabel}
               value={selectedRoomId}
-              disabled={isSaving}
+              disabled={isSaving || !canManageRoom}
               onChange={(event) => void handleChange(event.target.value)}
               containerClassName="w-full"
               accentColorOverride={accentColorOverride}

@@ -14,6 +14,8 @@ export interface MediaDialogProps {
   artwork?: string | null;
   artworkResource?: ResolvedPlatformResource | null;
   onArtworkError?: (imageUrl?: string | null) => void;
+  entityName: string;
+  entityType: string;
   title: string;
   artist: string;
   isPlaying: boolean;

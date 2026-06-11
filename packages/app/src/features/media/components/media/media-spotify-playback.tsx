@@ -11,6 +11,7 @@ import type {
 import { integrationMediaFeatureService } from '@navet/app/services/integration-media-feature.service';
 import { Music2, Play } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { withAlpha } from './use-media-artwork-colors';
 import type { MediaDialogController } from './use-media-dialog-controller';
 
 interface SpotifyPlaybackTarget {
@@ -150,6 +151,16 @@ export function MediaSpotifyPlayback({
     mediaContentId.trim().length > 0 &&
     ((resolvedTarget !== null && (sourceList.length === 0 || resolvedSource.length > 0)) ||
       directPlaybackSupported);
+  const fieldStyle = {
+    backgroundColor: withAlpha(controller.palette.darkMuted, 0.22),
+    borderColor: withAlpha(controller.readableForeground.subtitleColor, 0.18),
+    color: controller.readableForeground.titleColor,
+    boxShadow: `inset 0 1px 0 ${withAlpha(controller.readableForeground.titleColor, 0.08)}`,
+  } as const;
+  const actionButtonStyle = {
+    ...controller.activeMiniControlStyle,
+    ...controller.readableForeground.titleStyle,
+  } as const;
 
   const handlePlay = () => {
     const trimmedMediaContentId = mediaContentId.trim();
@@ -201,6 +212,8 @@ export function MediaSpotifyPlayback({
               setSelectedSource(inferSpotifySource(entityName, target?.sourceList ?? []));
             }}
             aria-label={t('media.spotify.player')}
+            style={fieldStyle}
+            indicatorClassName={controller.surface.textSecondary}
           >
             {spotifyTargets.map((target) => (
               <option key={target.entityId} value={target.entityId}>
@@ -216,6 +229,8 @@ export function MediaSpotifyPlayback({
             value={resolvedSource}
             onChange={(event) => setSelectedSource(event.target.value)}
             aria-label={t('media.spotify.output')}
+            style={fieldStyle}
+            indicatorClassName={controller.surface.textSecondary}
           >
             {sourceList.map((source) => (
               <option key={source} value={source}>
@@ -233,15 +248,17 @@ export function MediaSpotifyPlayback({
             onChange={(event) => setMediaContentId(event.target.value)}
             placeholder={t('media.spotify.uriPlaceholder')}
             aria-label={t('media.spotify.uri')}
-            inputClassName="text-sm"
+            inputClassName="text-sm placeholder:opacity-70"
+            style={fieldStyle}
           />
           <Button
             type="button"
             size="small"
-            variant="primary"
+            variant="soft"
             disabled={!canSubmit}
             onClick={handlePlay}
             leading={<Play className="h-4 w-4" fill="currentColor" />}
+            style={actionButtonStyle}
           >
             {t('media.spotify.play')}
           </Button>

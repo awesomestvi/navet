@@ -18,6 +18,7 @@ import {
 import { useLightPresetStore } from '@navet/app/features/lighting/stores/light-preset-store';
 import { resolveAppLanguage } from '@navet/app/i18n/config';
 import { isSection } from '@navet/app/navigation/sections';
+import { useEntityRoomOverridesStore } from '@navet/app/stores/entity-room-overrides-store';
 import { useNavigationStore } from '@navet/app/stores/navigation-store';
 import {
   type CameraDashboardViewMode,
@@ -64,6 +65,9 @@ export interface DashboardConfigPayload {
     ReturnType<typeof useDashboardEntitiesStore.getState>,
     'hiddenEntityIds' | 'lockedCardIds' | 'onboardingCompleted'
   >;
+  entityRoomOverrides?: ReturnType<
+    typeof useEntityRoomOverridesStore.getState
+  >['roomIdsByEntityId'];
   lightPresets?: Pick<
     ReturnType<typeof useLightPresetStore.getState>,
     'globalBrightnessPresetValues' | 'globalBrightnessPresetOrder' | 'lightPresetConfigs'
@@ -281,6 +285,7 @@ export const exportDashboardConfig = (): DashboardConfigPayload => {
   const navigationState = useNavigationStore.getState();
   const customCardsState = useCustomCardsStore.getState();
   const dashboardEntitiesState = useDashboardEntitiesStore.getState();
+  const entityRoomOverridesState = useEntityRoomOverridesStore.getState();
   const homeDashboardLayoutState = useHomeDashboardLayoutStore.getState();
   const lightPresetState = useLightPresetStore.getState();
 
@@ -312,6 +317,7 @@ export const exportDashboardConfig = (): DashboardConfigPayload => {
             onboardingCompleted: dashboardEntitiesState.onboardingCompleted,
           }
         : undefined,
+    entityRoomOverrides: pruneEmptyRecord(entityRoomOverridesState.roomIdsByEntityId),
     lightPresets:
       Object.keys(lightPresetState.lightPresetConfigs).length > 0
         ? {
@@ -820,6 +826,9 @@ export const importDashboardConfig = (
         ? dashboardEntities.onboardingCompleted
         : true,
   });
+  useEntityRoomOverridesStore
+    .getState()
+    .replaceRoomOverrides(sanitizeStringRecord(value.entityRoomOverrides));
 
   useLightPresetStore.getState().replacePresetState({
     globalBrightnessPresetValues:

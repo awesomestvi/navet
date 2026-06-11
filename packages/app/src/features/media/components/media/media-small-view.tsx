@@ -6,9 +6,7 @@ import { getCardStateSurfaceTokens } from '@navet/app/components/shared/theme/ca
 import { useI18n } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
-import { isMediaPlayerProxyUrl } from '@navet/app/utils/home-assistant-url';
 import { Pause, Play, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
-import { useEffect, useState } from 'react';
 import type { MediaEntityTypeKey } from '../media-card/get-media-entity-type-key';
 import { getMediaDisplayVolume } from './media-card-style-utils';
 import { MediaEntityHeader } from './media-entity-header';
@@ -76,26 +74,9 @@ export function MediaSmallView({
   onOpenDialog,
 }: MediaSmallViewProps) {
   const { t } = useI18n();
-  const [showDeferredBackdrop, setShowDeferredBackdrop] = useState(false);
   const { containerRef, isVolumeMode, registerVolumeInteraction, toggleVolumeMode } =
     useMediaVolumeMode();
   const stableArtwork = useStableMediaArtwork(artwork);
-
-  useEffect(() => {
-    setShowDeferredBackdrop(false);
-
-    if (!stableArtwork) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      setShowDeferredBackdrop(true);
-    }, 300);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [stableArtwork]);
 
   const displayVolume = getMediaDisplayVolume(volume, isMuted);
   const stateSurface = getCardStateSurfaceTokens(theme, isActive);
@@ -130,6 +111,11 @@ export function MediaSmallView({
     borderColor: withAlpha(resolvedSubtitleColor, 0.18),
     boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.12)}`,
   };
+  const playButtonStyle = {
+    backgroundColor: withAlpha(palette.vibrant, 0.24),
+    borderColor: withAlpha(resolvedSubtitleColor, 0.22),
+    boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.14)}`,
+  };
   const volumeToggleButtonStyle = isVolumeMode
     ? {
         background: `linear-gradient(180deg, ${withAlpha(palette.highlight, 0.26)} 0%, ${withAlpha(
@@ -142,7 +128,7 @@ export function MediaSmallView({
           0.18
         )}`,
       }
-    : neutralButtonStyle;
+    : playButtonStyle;
   const muteButtonStyle = isMuted
     ? {
         background: `linear-gradient(180deg, ${withAlpha(palette.highlight, 0.26)} 0%, ${withAlpha(
@@ -156,11 +142,6 @@ export function MediaSmallView({
         )}`,
       }
     : neutralButtonStyle;
-  const playButtonStyle = {
-    backgroundColor: withAlpha(palette.vibrant, 0.24),
-    borderColor: withAlpha(resolvedSubtitleColor, 0.22),
-    boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.14)}`,
-  };
   const trackBaseStyle = { backgroundColor: withAlpha(resolvedSubtitleColor, 0.24) };
   const trackFillStyle = {
     background: `linear-gradient(90deg, ${resolvedTitleColor} 0%, ${resolvedSubtitleColor} 100%)`,
@@ -173,10 +154,6 @@ export function MediaSmallView({
       0.32
     )}`,
   };
-  const shouldRenderDecorativeArtworkLayers =
-    stableArtwork !== null &&
-    stableArtwork !== undefined &&
-    (import.meta.env.DEV || !isMediaPlayerProxyUrl(stableArtwork));
   const backgroundBaseStyle = {
     background: subduedFallback
       ? `linear-gradient(165deg, ${withAlpha(palette.dominant, 0.18)} 0%, ${withAlpha(
@@ -243,26 +220,14 @@ export function MediaSmallView({
     >
       <div className="pointer-events-none absolute inset-0" style={backgroundBaseStyle} />
       {stableArtwork ? (
-        showDeferredBackdrop && shouldRenderDecorativeArtworkLayers ? (
-          <>
-            <img
-              src={stableArtwork}
-              alt=""
-              aria-hidden="true"
-              onError={() => onArtworkError?.(stableArtwork)}
-              className="pointer-events-none absolute inset-0 h-full w-full scale-[1.04] object-cover opacity-58 saturate-[1.02] contrast-[0.98]"
-              decoding="async"
-            />
-            <img
-              src={stableArtwork}
-              alt=""
-              aria-hidden="true"
-              onError={() => onArtworkError?.(stableArtwork)}
-              className="pointer-events-none absolute inset-0 h-full w-full scale-[1.12] object-cover opacity-16 blur-[26px] saturate-[1.02]"
-              decoding="async"
-            />
-          </>
-        ) : null
+        <img
+          src={stableArtwork}
+          alt=""
+          aria-hidden="true"
+          onError={() => onArtworkError?.(stableArtwork)}
+          className="pointer-events-none absolute inset-0 h-full w-full scale-[1.03] object-cover opacity-56 saturate-[1.01] contrast-[0.98]"
+          decoding="async"
+        />
       ) : (
         <MediaFallbackArtwork
           palette={palette}
@@ -412,7 +377,7 @@ export function MediaSmallView({
                 }}
                 className="border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
                 iconStyle={controlIconStyle}
-                style={neutralButtonStyle}
+                style={subduedFallback ? undefined : playButtonStyle}
               >
                 <SkipBack className={controlSizes.icon} />
               </RoundControlButton>
@@ -429,7 +394,7 @@ export function MediaSmallView({
                 }}
                 className="border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
                 iconStyle={controlIconStyle}
-                style={neutralButtonStyle}
+                style={subduedFallback ? undefined : playButtonStyle}
               >
                 <SkipForward className={controlSizes.icon} />
               </RoundControlButton>

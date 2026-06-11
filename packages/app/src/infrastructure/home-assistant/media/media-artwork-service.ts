@@ -10,6 +10,7 @@ const CACHE_ARTWORK_SIZE = 512;
 const MUSICBRAINZ_LOOKUP_TTL_MS = 12 * 60 * 60_000;
 const MUSICBRAINZ_LOOKUP_LIMIT = 5;
 const THUMBNAIL_LOOKUP_TIMEOUT_MS = 1_200;
+const COVER_ART_ARCHIVE_THUMBNAIL_SIZE = 500;
 const MUSICBRAINZ_API_URL = 'https://musicbrainz.org/ws/2/release';
 const COVER_ART_ARCHIVE_RELEASE_URL = 'https://coverartarchive.org/release';
 const COVER_ART_ARCHIVE_RELEASE_GROUP_URL = 'https://coverartarchive.org/release-group';
@@ -66,7 +67,7 @@ async function cropImageToSquareBlob(blob: Blob): Promise<Blob | null> {
       const width = bitmap.width;
       const height = bitmap.height;
       const squareSize = Math.min(width, height);
-      if (squareSize > 0) {
+      if (Number.isFinite(squareSize) && squareSize > 0) {
         const x = Math.max(0, Math.floor((width - squareSize) / 2));
         const y = Math.max(0, Math.floor((height - squareSize) / 2));
         const canvas =
@@ -615,7 +616,7 @@ export class MediaArtworkService {
       for (const candidate of rankedCandidates) {
         const candidateResources = [
           {
-            url: `${COVER_ART_ARCHIVE_RELEASE_URL}/${candidate.id}/front`,
+            url: `${COVER_ART_ARCHIVE_RELEASE_URL}/${candidate.id}/front-${COVER_ART_ARCHIVE_THUMBNAIL_SIZE}`,
             metadata: {
               source: 'musicbrainz_cover_art_archive' as const,
               releaseId: candidate.id,
@@ -624,7 +625,7 @@ export class MediaArtworkService {
           ...(candidate['release-group']?.id
             ? [
                 {
-                  url: `${COVER_ART_ARCHIVE_RELEASE_GROUP_URL}/${candidate['release-group'].id}/front`,
+                  url: `${COVER_ART_ARCHIVE_RELEASE_GROUP_URL}/${candidate['release-group'].id}/front-${COVER_ART_ARCHIVE_THUMBNAIL_SIZE}`,
                   metadata: {
                     source: 'musicbrainz_cover_art_archive_release_group' as const,
                     releaseId: candidate.id,
@@ -723,17 +724,10 @@ export class MediaArtworkService {
     }
 
     const prefersMetadataFallback = shouldPreferMetadataFallback(picture, attrs);
-    const heuristicFallback = await this.resolveYouTubeArtworkFallback(fingerprint, attrs);
+    const heuristicFallbackPromise = this.resolveYouTubeArtworkFallback(fingerprint, attrs);
     const preferredMetadataFallbackPromise = prefersMetadataFallback
       ? this.resolveMusicBrainzArtworkFallback(fingerprint, attrs)
       : null;
-
-    if (preferredMetadataFallbackPromise) {
-      const preferredMetadataFallback = await preferredMetadataFallbackPromise;
-      if (preferredMetadataFallback) {
-        return preferredMetadataFallback;
-      }
-    }
 
     const thumbnailDataUrl = await withTimeout(
       fetchMediaThumbnailDataUrl(entityId),
@@ -762,6 +756,14 @@ export class MediaArtworkService {
       };
     }
 
+    if (preferredMetadataFallbackPromise) {
+      const preferredMetadataFallback = await preferredMetadataFallbackPromise;
+      if (preferredMetadataFallback) {
+        return preferredMetadataFallback;
+      }
+    }
+
+    const heuristicFallback = await heuristicFallbackPromise;
     if (heuristicFallback) {
       return heuristicFallback;
     }
