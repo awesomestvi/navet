@@ -34,6 +34,7 @@
     "release:notes": "node scripts/extract-release-notes.mjs",
     "release:version-sync": "node scripts/sync-release-versions.mjs",
     "release:dev-version": "node scripts/set-dev-addon-version.mjs",
+    "release:dev-publish": "node scripts/create-dev-release.mjs",
     "export:hacs": "node scripts/export-hacs-integration.mjs",
     "sync:hacs": "node scripts/sync-hacs-repo.mjs",
     "release:export-hacs": "node scripts/export-hacs-integration.mjs",

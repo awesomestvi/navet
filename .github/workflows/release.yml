@@ -228,7 +228,7 @@ jobs:
           platforms: ${{ steps.target.outputs.platform }}
           push: true
           cache-from: type=gha,scope=navet-addon-${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=navet-addon-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=navet-addon-${{ matrix.arch }},ignore-error=true
           build-args: |
             BUILD_FROM=${{ steps.target.outputs.build_from }}
             BUILD_VERSION=${{ steps.tags.outputs.version }}

@@ -10,13 +10,14 @@ Navet currently uses pre-`1.0` semantic versioning.
 - current version: `0.7.1`
 - current phase: public beta
 - shared release line: standalone app, custom panel, and add-on ship from the same tagged version
-- release channels: `edge` from `main`, `dev` as nightly add-on builds, `beta` from prerelease tags, `latest` from stable tags
+- release channels: `edge` from manual edge publishes, `dev` as manual edge and dev-tag builds, `beta` from prerelease tags, `latest` from stable tags
 
 ## Scheme
 
 - `0.x.y` for stable beta-line releases
 - `0.x.y-beta.n` for prerelease milestones
 - `0.x.y-rc.n` for release candidates
+- `0.x.y-dev.YYYYMMDDHHMMSS` for immutable Navet Dev publish versions
 - `1.0.0` only when compatibility expectations are stable enough for a major stable line
 
 ## Bump Rules

@@ -50,8 +50,16 @@ Recommended operator flow:
     custom panel assets, and attaches `navet-panel-<tag>.tar.gz` to the GitHub release.
 13. The tagged release workflow also syncs `awesomestvi/navet-hacs/main` and refreshes the matching
     `awesomestvi/navet-hacs` tag.
-14. For developer hardware testing from `main`, use
+14. For developer hardware testing or manual edge publishes, use
     [../../.github/workflows/edge-publish.yml](../../.github/workflows/edge-publish.yml).
+
+Optional immutable Navet Dev tag flow:
+
+1. Run `pnpm release:dev-publish` to refresh `platform/home-assistant/addons/navet-dev/config.yaml`,
+   commit that metadata change if needed, and create the matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` tag.
+2. Push `main` and the created tag, or use `pnpm release:dev-publish -- --push` to do both directly.
+3. Push the tag to trigger
+   [../../.github/workflows/dev-tag-publish.yml](../../.github/workflows/dev-tag-publish.yml).
 
 ## Release Note Style
 
@@ -139,7 +147,7 @@ internal, or release-only changes into the fewest useful user-facing bullets.
 - Publish and release workflows should require Tier 1 validation before shipping.
 - Tagged releases should build the custom-panel artifact in workflow before creating the GitHub
   release.
-- Pushes to `main` and tagged releases should also sync the exported HACS payload into
+- Manual edge publishes and tagged releases should also sync the exported HACS payload into
   `awesomestvi/navet-hacs/main`.
 - Tagged releases should also create or refresh the matching Git tag in `awesomestvi/navet-hacs`
   so both repositories expose the same release tag name.
@@ -155,13 +163,19 @@ internal, or release-only changes into the fewest useful user-facing bullets.
 
 - Cloudflare Pages deploys the demo at `/demo/` and Storybook at `/storybook/` from the website bundle.
 - Cloudflare Pages builds directly from the repo; GitHub Pages is retired and there is no GitHub Pages or GitHub deploy workflow for the website bundle.
-- Pushes to `main` publish edge app images: `ghcr.io/awesomestvi/navet:edge`, temporary `dev`,
+- Manual edge publishes create edge app images: `ghcr.io/awesomestvi/navet:edge`, temporary `dev`,
   and `sha-*`.
+- Dev tags publish immutable app images using the committed `0.x.y-dev.YYYYMMDDHHMMSS` version and
+  a matching GitHub prerelease.
 - Standalone app prerelease tags publish the exact tag, `beta`, and `sha-*`.
 - Standalone app stable tags publish the exact tag, `X.Y`, `latest`, and `sha-*`.
-- Pushes to `main` publish the committed `Navet Dev` add-on version such as
+- Manual edge publishes create the committed `Navet Dev` add-on version such as
   `0.x.y-dev.YYYYMMDDHHMMSS`, plus moving `edge`, temporary `dev`, and `sha-*` tags.
-- Before pushing `main`, refresh that committed dev version locally with `pnpm release:dev-version`.
+- Dev tags publish immutable add-on images using that same committed `0.x.y-dev.YYYYMMDDHHMMSS`
+  version without moving `edge`, `dev`, `beta`, or `latest`.
+- `pnpm release:version-sync` refreshes the committed Navet Dev version when the package version changes.
+- Use `pnpm release:dev-version` only when you need to refresh `platform/home-assistant/addons/navet-dev/config.yaml`
+  without changing the release-managed versioned surfaces.
 - Tagged releases also update `awesomestvi/navet-hacs/main` and sync the same Git tag there.
 - Tagged releases rebuild the committed custom-panel output and attach the downloadable panel
   archive to the GitHub release.

@@ -1,9 +1,12 @@
 import {
+  addonDevConfigPath,
   addonConfigPath,
   assertValidVersion,
+  buildDevAddonVersion,
   getPackageVersion,
   manifestPath,
   readJson,
+  readAddonVersion,
   updateAddonVersion,
   updateVersioningCurrentVersion,
   writeJson,
@@ -19,4 +22,12 @@ writeJson(manifestPath, manifest);
 updateAddonVersion(packageVersion, addonConfigPath);
 updateVersioningCurrentVersion(packageVersion);
 
-console.log(`Synchronized release-managed versions to ${packageVersion}.`);
+const nextDevAddonVersion = buildDevAddonVersion(packageVersion);
+const currentDevAddonVersion = readAddonVersion(addonDevConfigPath);
+if (currentDevAddonVersion !== nextDevAddonVersion) {
+  updateAddonVersion(nextDevAddonVersion, addonDevConfigPath);
+}
+
+console.log(
+  `Synchronized release-managed versions to ${packageVersion} and refreshed Navet Dev to ${nextDevAddonVersion}.`
+);

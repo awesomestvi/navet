@@ -9,6 +9,7 @@ export const changelogPath = resolve(root, 'CHANGELOG.md');
 export const manifestPath = homeAssistantPaths.platformNavetManifest;
 export const addonConfigPath = homeAssistantPaths.addonConfig;
 export const addonChangelogPath = homeAssistantPaths.addonChangelog;
+export const addonDevConfigPath = resolve(homeAssistantPaths.addonNavetDev, 'config.yaml');
 export const versioningDocPath = resolve(root, 'docs/VERSIONING.md');
 export const appVersionPath = resolve(root, 'packages/app/src/constants/app-version.ts');
 export const repositoryMetadataPath = homeAssistantPaths.rootRepositoryMetadata;
@@ -103,6 +104,26 @@ export function updateAddonVersion(version, filePath = addonConfigPath) {
   }
 
   writeText(filePath, nextContent);
+}
+
+export function formatUtcTimestamp(date) {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  const hours = String(date.getUTCHours()).padStart(2, '0');
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+
+  return `${year}${month}${day}${hours}${minutes}${seconds}`;
+}
+
+export function buildDevAddonVersion(packageVersion, date = new Date()) {
+  return `${packageVersion}-dev.${formatUtcTimestamp(date)}`;
+}
+
+export function isValidDevAddonVersion(version, packageVersion) {
+  const pattern = new RegExp(`^${packageVersion.replace(/\./g, '\\.')}-dev\\.\\d{14}$`);
+  return pattern.test(version);
 }
 
 export function hasChangelogVersion(version, filePath = changelogPath) {

@@ -5,7 +5,7 @@ This directory is the monorepo source for the add-on published from `awesomestvi
 
 ## Current Behavior
 
-- pulls the current dev `Navet Dev` add-on image published from every `main` push
+- pulls the current dev `Navet Dev` add-on image published from manual edge publishes
 - uses the authenticated Home Assistant Ingress session
 - does not require manual Home Assistant URL or token entry
 - supports optional `dashboard_config_url` import on first launch
@@ -17,9 +17,29 @@ Published image tag shape:
 ghcr.io/awesomestvi/{arch}-navet-addon:0.x.y-dev.YYYYMMDDHHMMSS
 ```
 
-Before pushing `main`, run `pnpm release:dev-version` so `platform/home-assistant/addons/navet-dev/config.yaml`
-contains a fresh dev version. Each push to `main` publishes that committed dev version and refreshes
-the `dev` and `edge` tags as moving aliases for that same image.
+When the package version changes, run `pnpm release:version-sync` so
+`platform/home-assistant/addons/navet-dev/config.yaml` moves to the matching
+`0.x.y-dev.YYYYMMDDHHMMSS` line. Use `pnpm release:dev-version` only when you need to refresh the
+dev add-on metadata without changing the main release-managed versioned surfaces. Each manual edge
+publish uses that committed dev version and refreshes the `dev` and `edge` tags as moving aliases
+for that same image.
+
+If you want an immutable Navet Dev publish, the local helper command is:
+
+```bash
+pnpm release:dev-publish
+```
+
+It refreshes the committed `config.yaml`, creates the matching commit if needed, and creates the
+matching tag in this format:
+
+```text
+navet-dev-0.x.y-dev.YYYYMMDDHHMMSS
+```
+
+That tag triggers a dedicated workflow which publishes exact-version dev images and creates a
+GitHub prerelease without moving the normal `edge` or `dev` aliases. Add `-- --push` to push
+`main` and the new tag in one step.
 
 If opened outside Ingress through an optional direct port, Navet behaves like the standalone
 runtime and uses OAuth login instead.

@@ -3,12 +3,14 @@ import process from 'node:process';
 import {
   addonConfigPath,
   addonChangelogPath,
+  addonDevConfigPath,
   appVersionPath,
   assertMainRepositoryMetadata,
   assertValidVersion,
   fail,
   getPackageVersion,
   hasChangelogVersion,
+  isValidDevAddonVersion,
   manifestPath,
   normalizeTagVersion,
   readAddonVersion,
@@ -27,6 +29,7 @@ try {
 
   const manifest = readJson(manifestPath);
   const addonVersion = readAddonVersion(addonConfigPath);
+  const addonDevVersion = readAddonVersion(addonDevConfigPath);
   const versioningVersion = readVersioningCurrentVersion();
 
   if (manifest.version !== packageVersion) {
@@ -44,6 +47,12 @@ try {
   if (versioningVersion !== packageVersion) {
     throw new Error(
       `docs/VERSIONING.md current version ${versioningVersion} does not match package.json ${packageVersion}.`
+    );
+  }
+
+  if (!isValidDevAddonVersion(addonDevVersion, packageVersion)) {
+    throw new Error(
+      `platform/home-assistant/addons/navet-dev/config.yaml version ${addonDevVersion} must match ${packageVersion}-dev.YYYYMMDDHHMMSS.`
     );
   }
 

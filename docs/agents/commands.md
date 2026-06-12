@@ -40,7 +40,8 @@ pnpm sync:hacs             # export to ../navet-hacs and show that repo's pendin
 pnpm release:check         # validate release-managed files and release surfaces
 pnpm release:linear        # fetch release-scope Linear issues
 pnpm release:notes         # extract release-note candidates
-pnpm release:version-sync  # align release-managed versions from package.json
+pnpm release:version-sync  # align release-managed versions from package.json and refresh Navet Dev metadata
+pnpm release:dev-publish   # create the Navet Dev commit + tag locally, optionally push with -- --push
 pnpm wallpapers:audit      # audit wallpaper source/output inventory
 pnpm wallpapers:optimize   # optimize wallpaper assets
 pnpm wallpapers:check      # verify optimized wallpaper outputs
