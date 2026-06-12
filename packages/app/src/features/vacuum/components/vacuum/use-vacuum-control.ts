@@ -18,6 +18,7 @@ interface UseVacuumControlReturn {
   isUpdatingFanSpeed: boolean;
   displayFanSpeed?: string;
   handleStartCleaning: () => void;
+  handleStartAreaCleaning: (areaIds: string[]) => void;
   handlePause: () => void;
   handleStop: () => void;
   handleReturnHome: () => void;
@@ -94,6 +95,19 @@ export function useVacuumControl({
     }, t('vacuum.feedback.cleanSpotFailed'));
   }, [entityId, providerId, runAction, t]);
 
+  const handleStartAreaCleaning = useCallback(
+    (areaIds: string[]) => {
+      if (areaIds.length === 0) {
+        return;
+      }
+
+      void runAction(async () => {
+        await dispatchEntityCommand({ type: 'clean_vacuum_areas', entityId, areaIds }, providerId);
+      }, t('vacuum.feedback.startFailed'));
+    },
+    [entityId, providerId, runAction, t]
+  );
+
   const handleSetFanSpeed = useCallback(
     (fanSpeed: string) => {
       if (fanSpeed.length === 0 || isUpdatingFanSpeed) {
@@ -126,6 +140,7 @@ export function useVacuumControl({
     isUpdatingFanSpeed,
     displayFanSpeed: pendingFanSpeed ?? currentFanSpeed,
     handleStartCleaning,
+    handleStartAreaCleaning,
     handlePause,
     handleStop,
     handleReturnHome,

@@ -8,8 +8,14 @@ const VACUUM_FEATURES = {
   fanSpeed: 32,
   locate: 512,
   cleanSpot: 1024,
+  map: 2048,
   start: 8192,
 } as const;
+
+export interface VacuumCleaningArea {
+  id: string;
+  label: string;
+}
 
 export interface VacuumCapabilities {
   canStart: boolean;
@@ -22,6 +28,10 @@ export interface VacuumCapabilities {
   currentFanSpeed?: string;
   fanSpeedOptions: string[];
   canCycleFanSpeed: boolean;
+  canShowMap: boolean;
+  canCleanByArea: boolean;
+  canOrderAreaCleaning: boolean;
+  availableCleaningAreas: VacuumCleaningArea[];
 }
 
 function readSupportedFeatures(
@@ -83,6 +93,57 @@ function readFanSpeedOptions(
     : [];
 }
 
+function readAvailableCleaningAreas(
+  providerEntity?: NavetEntity | null,
+  vacuumEntity?: PlatformEntitySnapshot
+): VacuumCleaningArea[] {
+  const readCandidate = (value: unknown): VacuumCleaningArea[] => {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value.flatMap((entry) => {
+      if (!entry || typeof entry !== 'object') {
+        return [];
+      }
+
+      const id = 'id' in entry && typeof entry.id === 'string' ? entry.id : null;
+      const label =
+        'label' in entry && typeof entry.label === 'string'
+          ? entry.label
+          : 'name' in entry && typeof entry.name === 'string'
+            ? entry.name
+            : null;
+
+      return id && label ? [{ id, label }] : [];
+    });
+  };
+
+  const providerAttrs = providerEntity?.attributes as Record<string, unknown> | undefined;
+  const snapshotAttrs = vacuumEntity?.attributes as Record<string, unknown> | undefined;
+
+  const providerAreas = readCandidate(providerAttrs?.availableCleaningAreas);
+  if (providerAreas.length > 0) {
+    return providerAreas;
+  }
+
+  const snapshotAreas = readCandidate(snapshotAttrs?.availableCleaningAreas);
+  return snapshotAreas.length > 0 ? snapshotAreas : [];
+}
+
+function readAreaOrderingSupport(
+  providerEntity?: NavetEntity | null,
+  vacuumEntity?: PlatformEntitySnapshot
+): boolean {
+  const providerAttrs = providerEntity?.attributes as Record<string, unknown> | undefined;
+  if (typeof providerAttrs?.canOrderAreaCleaning === 'boolean') {
+    return providerAttrs.canOrderAreaCleaning;
+  }
+
+  const snapshotAttrs = vacuumEntity?.attributes as Record<string, unknown> | undefined;
+  return snapshotAttrs?.canOrderAreaCleaning === true;
+}
+
 export function resolveVacuumCapabilities({
   providerEntity,
   vacuumEntity,
@@ -93,6 +154,8 @@ export function resolveVacuumCapabilities({
   const supportedFeatures = readSupportedFeatures(providerEntity, vacuumEntity);
   const fanSpeedOptions = readFanSpeedOptions(providerEntity, vacuumEntity);
   const currentFanSpeed = readFanSpeedValue(providerEntity, vacuumEntity);
+  const availableCleaningAreas = readAvailableCleaningAreas(providerEntity, vacuumEntity);
+  const canOrderAreaCleaning = readAreaOrderingSupport(providerEntity, vacuumEntity);
   const hasFanSpeedList = fanSpeedOptions.length > 0;
   const canSetFanSpeed =
     hasFeature(supportedFeatures, VACUUM_FEATURES.fanSpeed) || hasFanSpeedList === true;
@@ -110,5 +173,9 @@ export function resolveVacuumCapabilities({
     currentFanSpeed,
     fanSpeedOptions,
     canCycleFanSpeed: canSetFanSpeed && fanSpeedOptions.length >= 2,
+    canShowMap: hasFeature(supportedFeatures, VACUUM_FEATURES.map),
+    canCleanByArea: availableCleaningAreas.length > 0,
+    canOrderAreaCleaning: canOrderAreaCleaning && availableCleaningAreas.length > 1,
+    availableCleaningAreas,
   };
 }

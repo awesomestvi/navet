@@ -39,6 +39,10 @@ type SwitchMetricState = {
   category: 'measurement';
 };
 
+const HOME_ASSISTANT_VACUUM_FEATURES = {
+  CLEAN_AREA: 16384,
+} as const;
+
 function normalizeRoomName(name: string) {
   return name.trim().toLocaleLowerCase();
 }
@@ -444,6 +448,45 @@ function readStringList(value: unknown): string[] | undefined {
   return entries.length > 0 ? entries : undefined;
 }
 
+function readVacuumCleaningAreas(
+  entityEntry: HomeAssistantEntityRegistryEntry | undefined,
+  areaMap: Map<string, string>,
+  supportedFeatures: number | undefined
+): Array<{ id: string; label: string }> | undefined {
+  if (
+    typeof supportedFeatures !== 'number' ||
+    (supportedFeatures & HOME_ASSISTANT_VACUUM_FEATURES.CLEAN_AREA) !==
+      HOME_ASSISTANT_VACUUM_FEATURES.CLEAN_AREA
+  ) {
+    return undefined;
+  }
+
+  const areaMapping = entityEntry?.options?.vacuum?.area_mapping;
+  if (!areaMapping || typeof areaMapping !== 'object') {
+    return undefined;
+  }
+
+  const areas = Object.entries(areaMapping).flatMap(([areaId, segmentIds]) => {
+    if (typeof areaId !== 'string' || areaId.length === 0) {
+      return [];
+    }
+
+    const segments = readStringList(segmentIds);
+    if (!segments || segments.length === 0) {
+      return [];
+    }
+
+    return [
+      {
+        id: areaId,
+        label: areaMap.get(areaId) ?? areaId,
+      },
+    ];
+  });
+
+  return areas.length > 0 ? areas : undefined;
+}
+
 function readEntityIdList(value: unknown): string[] | undefined {
   if (Array.isArray(value)) {
     const entries = value.filter((entry): entry is string => typeof entry === 'string');
@@ -700,6 +743,7 @@ function createHomeAssistantState(
   entityId: string,
   entity: HassEntity,
   entityEntry?: HomeAssistantEntityRegistryEntry,
+  areaMap: Map<string, string> = new Map(),
   switchMetricsByDeviceId?: Map<string, SwitchMetricState[]>
 ): Record<string, unknown> {
   const domain = getDomain(entityId);
@@ -999,6 +1043,7 @@ function createHomeAssistantState(
   }
 
   if (domain === 'vacuum') {
+    const supportedFeatures = readNumberish(entity.attributes?.supported_features);
     const batteryLevel =
       readNumberish(entity.attributes?.battery_level) ??
       readNumberish(entity.attributes?.battery) ??
@@ -1011,6 +1056,7 @@ function createHomeAssistantState(
       readNumberish(entity.attributes?.cleaning_time) ??
       readNumberish(entity.attributes?.clean_time) ??
       readNumberish(entity.attributes?.cleaning_duration);
+    const availableCleaningAreas = readVacuumCleaningAreas(entityEntry, areaMap, supportedFeatures);
 
     return {
       ...commonState,
@@ -1048,7 +1094,10 @@ function createHomeAssistantState(
         typeof entity.attributes?.bin_level === 'number'
           ? entity.attributes.bin_level
           : undefined,
-      supportedFeatures: readNumberish(entity.attributes?.supported_features),
+      supportedFeatures,
+      availableCleaningAreas,
+      canCleanByArea: Boolean(availableCleaningAreas?.length),
+      canOrderAreaCleaning: false,
       size: 'medium',
     };
   }
@@ -1277,7 +1326,7 @@ export function mapHomeAssistantEntitiesToNavetEntities(
         name,
         room || UNKNOWN_ROOM_LABEL,
         capabilities,
-        createHomeAssistantState(entityId, entity, entityEntry, switchMetricsByDeviceId),
+        createHomeAssistantState(entityId, entity, entityEntry, areaMap, switchMetricsByDeviceId),
         resources
       )
     );

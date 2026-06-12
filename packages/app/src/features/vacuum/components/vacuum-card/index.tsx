@@ -21,7 +21,7 @@ import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { resolveEffectsQuality } from '@navet/app/utils/effects-quality';
 import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
-import { Battery, Bot, Clock3, Gauge, History, ScanSearch } from 'lucide-react';
+import { Battery, Bot, Clock3, Fan, History, ScanSearch } from 'lucide-react';
 import { type CSSProperties, memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useVacuumControl } from '../vacuum/use-vacuum-control';
 import { resolveVacuumCardSummary } from '../vacuum/vacuum-card-summary';
@@ -45,6 +45,7 @@ type IllustrationPalette = {
 };
 type IllustrationSurface = {
   background: string;
+  baseColor: string;
   shadow: string;
 };
 
@@ -116,6 +117,44 @@ function readRotationDegrees(transform: string): number {
 
   const angle = (Math.atan2(b, a) * 180) / Math.PI;
   return Math.round(angle);
+}
+
+function VacuumSideBrush({
+  subtitleColor,
+  compact = false,
+}: {
+  subtitleColor: string;
+  compact?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        'pointer-events-none absolute z-0 animate-[navet-vacuum-side-brush-spin_720ms_linear_infinite]',
+        compact
+          ? 'top-[0.72rem] right-[0.02rem] h-[1.05rem] w-[1.05rem]'
+          : 'top-[0.72rem] right-[0.02rem] h-[1.2rem] w-[1.2rem]'
+      )}
+      aria-hidden="true"
+      data-testid="vacuum-side-brush"
+    >
+      <span
+        className="absolute left-1/2 top-1/2 h-[1px] w-[110%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{ backgroundColor: subtitleColor, opacity: 0.9 }}
+      />
+      <span
+        className="absolute left-1/2 top-1/2 h-[1px] w-[110%] -translate-x-1/2 -translate-y-1/2 rounded-full rotate-60"
+        style={{ backgroundColor: subtitleColor, opacity: 0.72 }}
+      />
+      <span
+        className="absolute left-1/2 top-1/2 h-[1px] w-[110%] -translate-x-1/2 -translate-y-1/2 rounded-full -rotate-60"
+        style={{ backgroundColor: subtitleColor, opacity: 0.72 }}
+      />
+      <span
+        className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full border bg-zinc-950/90"
+        style={{ borderColor: subtitleColor, opacity: 0.9 }}
+      />
+    </div>
+  );
 }
 
 function useVacuumMotionLevel(): MotionLevel {
@@ -197,6 +236,7 @@ function resolveVacuumIllustrationSurface({
   if (displayState === 'error') {
     return {
       background: 'radial-gradient(circle at top, rgba(251,191,36,0.16), rgba(15,23,42,0.92) 66%)',
+      baseColor: '#0f172a',
       shadow: `0 24px 54px -28px ${titleColor}33`,
     };
   }
@@ -208,15 +248,18 @@ function resolveVacuumIllustrationSurface({
         : theme === 'glass'
           ? 'rgba(24,24,27,0.86)'
           : 'rgba(24,24,27,0.96)';
+    const restingBaseColor = theme === 'light' ? '#27272a' : '#18181b';
 
     return {
       background: `radial-gradient(circle at top, rgba(255,255,255,0.06), ${restingBase} 68%)`,
+      baseColor: restingBaseColor,
       shadow: `0 18px 38px -28px ${titleColor}1f`,
     };
   }
 
   return {
     background: 'radial-gradient(circle at top, rgba(255,255,255,0.18), rgba(15,23,42,0.94) 66%)',
+    baseColor: '#0f172a',
     shadow: `0 24px 54px -28px ${titleColor}33`,
   };
 }
@@ -392,9 +435,20 @@ function VacuumRobotVisual({
 
   return (
     <div className={cn(visualContainerClassName, className)}>
-      {isCompact ? (
-        <style>
-          {`
+      <style>
+        {`
+              @keyframes navet-vacuum-side-brush-spin {
+                from {
+                  transform: rotate(0deg);
+                }
+                to {
+                  transform: rotate(360deg);
+                }
+              }
+
+              ${
+                isCompact
+                  ? `
               @keyframes navet-vacuum-cleaning-border-loop {
                 0% {
                   left: calc(100% - 5.45rem);
@@ -406,44 +460,34 @@ function VacuumRobotVisual({
                   top: 0.1rem;
                   transform: rotate(-90deg);
                 }
-                30% {
+                38% {
                   left: 0.9rem;
                   top: 0.1rem;
                   transform: rotate(-90deg);
                 }
-                32% {
+                42% {
                   left: 0.9rem;
                   top: 0.1rem;
                   transform: rotate(-180deg);
                 }
-                46% {
+                54% {
                   left: 0.9rem;
                   top: calc(100% - 5.95rem);
                   transform: rotate(-180deg);
                 }
-                48% {
+                58% {
                   left: 0.9rem;
                   top: calc(100% - 5.95rem);
                   transform: rotate(-270deg);
                 }
-                78% {
+                86% {
                   left: calc(100% - 5.45rem);
                   top: calc(100% - 5.95rem);
                   transform: rotate(-270deg);
                 }
-                80% {
+                90% {
                   left: calc(100% - 5.45rem);
                   top: calc(100% - 5.95rem);
-                  transform: rotate(-360deg);
-                }
-                94% {
-                  left: calc(100% - 5.45rem);
-                  top: 0.1rem;
-                  transform: rotate(-360deg);
-                }
-                96% {
-                  left: calc(100% - 5.45rem);
-                  top: 0.1rem;
                   transform: rotate(-360deg);
                 }
                 100% {
@@ -485,9 +529,11 @@ function VacuumRobotVisual({
                   transform: rotate(0deg);
                 }
               }
+            `
+                  : ''
+              }
             `}
-        </style>
-      ) : null}
+      </style>
       <div
         className={cn(
           'absolute right-2 -top-4 h-5 w-16 transition-all duration-700',
@@ -525,9 +571,10 @@ function VacuumRobotVisual({
       ) : null}
       {isCompact ? (
         <div ref={compactRobotRef} style={compactRobotWrapperStyle}>
+          {isCleaning ? <VacuumSideBrush subtitleColor={subtitleColor} compact /> : null}
           <div
             className={cn(
-              'relative flex h-[4.9rem] w-[4.9rem] items-center justify-center rounded-full border transition-all duration-700',
+              'relative z-[1] flex h-[4.9rem] w-[4.9rem] items-center justify-center rounded-full border transition-all duration-700',
               isUnavailable && 'opacity-45 grayscale-[0.25]',
               isPaused && 'scale-[0.98]',
               displayState === 'error' && 'ring-1 ring-amber-400/30'
@@ -535,6 +582,7 @@ function VacuumRobotVisual({
             style={{
               borderColor: titleColor,
               background: robotSurface.background,
+              backgroundColor: robotSurface.baseColor,
               boxShadow: robotSurface.shadow,
             }}
             data-testid="vacuum-robot-surface"
@@ -573,51 +621,54 @@ function VacuumRobotVisual({
         </div>
       ) : null}
       {!isCompact ? (
-        <div
-          className={cn(
-            'relative flex h-[4.9rem] w-[4.9rem] items-center justify-center rounded-full border transition-all duration-700',
-            isUnavailable && 'opacity-45 grayscale-[0.25]',
-            isPaused && 'scale-[0.98]',
-            displayState === 'error' && 'ring-1 ring-amber-400/30'
-          )}
-          style={{
-            borderColor: titleColor,
-            background: robotSurface.background,
-            boxShadow: robotSurface.shadow,
-            ...detailRobotStyle,
-          }}
-          data-testid="vacuum-robot-surface"
-        >
-          {showSweep ? (
-            <div
-              className="absolute inset-[0.32rem] rounded-full opacity-70"
-              style={{
-                background: `conic-gradient(from 210deg, transparent 0deg, transparent 228deg, ${titleColor}18 270deg, transparent 318deg, transparent 360deg)`,
-              }}
-            />
-          ) : null}
+        <div className="relative" style={detailRobotStyle}>
+          {isCleaning ? <VacuumSideBrush subtitleColor={subtitleColor} /> : null}
           <div
-            className="absolute top-[0.88rem] h-[0.5rem] w-[0.5rem] rounded-full border bg-black/15"
-            style={{ borderColor: subtitleColor }}
-          />
-          <div
-            className="absolute bottom-[0.72rem] left-1/2 h-[0.28rem] w-[2.6rem] -translate-x-1/2 rounded-full"
-            style={{ backgroundColor: subtitleColor, opacity: 0.55 }}
-          />
-          <div
-            className="flex h-5 w-5 items-center justify-center rounded-full border text-[9px] font-semibold"
-            style={{ borderColor: subtitleColor, color: titleColor }}
+            className={cn(
+              'relative z-[1] flex h-[4.9rem] w-[4.9rem] items-center justify-center rounded-full border transition-all duration-700',
+              isUnavailable && 'opacity-45 grayscale-[0.25]',
+              isPaused && 'scale-[0.98]',
+              displayState === 'error' && 'ring-1 ring-amber-400/30'
+            )}
+            style={{
+              borderColor: titleColor,
+              background: robotSurface.background,
+              backgroundColor: robotSurface.baseColor,
+              boxShadow: robotSurface.shadow,
+            }}
+            data-testid="vacuum-robot-surface"
           >
-            N
-          </div>
-          {isPaused ? (
+            {showSweep ? (
+              <div
+                className="absolute inset-[0.32rem] rounded-full opacity-70"
+                style={{
+                  background: `conic-gradient(from 210deg, transparent 0deg, transparent 228deg, ${titleColor}18 270deg, transparent 318deg, transparent 360deg)`,
+                }}
+              />
+            ) : null}
             <div
-              className="absolute inset-x-0 -bottom-5 text-center text-[10px]"
-              style={{ color: subtitleColor }}
+              className="absolute top-[0.88rem] h-[0.5rem] w-[0.5rem] rounded-full border bg-black/15"
+              style={{ borderColor: subtitleColor }}
+            />
+            <div
+              className="absolute bottom-[0.72rem] left-1/2 h-[0.28rem] w-[2.6rem] -translate-x-1/2 rounded-full"
+              style={{ backgroundColor: subtitleColor, opacity: 0.55 }}
+            />
+            <div
+              className="flex h-5 w-5 items-center justify-center rounded-full border text-[9px] font-semibold"
+              style={{ borderColor: subtitleColor, color: titleColor }}
             >
-              Pause
+              N
             </div>
-          ) : null}
+            {isPaused ? (
+              <div
+                className="absolute inset-x-0 -bottom-5 text-center text-[10px]"
+                style={{ color: subtitleColor }}
+              >
+                Pause
+              </div>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </div>
@@ -669,7 +720,7 @@ function VacuumStatusMetric({
                     : fact.kind === 'time'
                       ? Clock3
                       : fact.kind === 'speed'
-                        ? Gauge
+                        ? Fan
                         : History;
 
               return (
@@ -767,10 +818,6 @@ export const VacuumCard = memo(function VacuumCard({
     parseProviderScopedId(id)?.providerId ??
     currentProviderId;
   const isHomeAssistantProvider = resolvedProviderId === 'home_assistant';
-  const readStringList = (value: unknown) =>
-    Array.isArray(value)
-      ? value.filter((entry): entry is string => typeof entry === 'string' && entry.length > 0)
-      : undefined;
   const liveEntity = useProviderEntitySnapshot(id);
   const allEntities = useProviderEntitySnapshots({
     providerId: resolvedProviderId,
@@ -800,6 +847,7 @@ export const VacuumCard = memo(function VacuumCard({
     isUpdatingFanSpeed,
     displayFanSpeed,
     handleStartCleaning,
+    handleStartAreaCleaning,
     handlePause,
     handleStop,
     handleReturnHome,
@@ -855,20 +903,6 @@ export const VacuumCard = memo(function VacuumCard({
   const liveCleanedArea = glanceMetrics.cleanedArea;
   const liveCleaningTime = glanceMetrics.cleaningTime;
   const liveLastCleaned = glanceMetrics.lastCleaned ?? lastCleaned;
-  const liveCleaningMode =
-    typeof liveAttrs?.cleaning_mode === 'string'
-      ? liveAttrs.cleaning_mode
-      : typeof liveAttrs?.clean_mode === 'string'
-        ? liveAttrs.clean_mode
-        : undefined;
-  const availableRooms =
-    readStringList(liveAttrs?.rooms) ??
-    readStringList(liveAttrs?.room_names) ??
-    readStringList(liveAttrs?.segments);
-  const availableZones =
-    readStringList(liveAttrs?.zones) ??
-    readStringList(liveAttrs?.zone_names) ??
-    readStringList(liveAttrs?.available_zones);
   const isUnavailable =
     availability === 'unavailable' ||
     providerEntity?.availability === 'unavailable' ||
@@ -1054,25 +1088,16 @@ export const VacuumCard = memo(function VacuumCard({
           theme={theme}
           accentColorValue={accentColor}
           currentStatus={computedStatus}
-          battery={liveBattery}
-          cleanedArea={liveCleanedArea}
-          cleaningTime={liveCleaningTime}
-          cleaningMode={
-            liveCleaningMode === 'spot' ||
-            liveCleaningMode === 'edge' ||
-            liveCleaningMode === 'room' ||
-            liveCleaningMode === 'auto'
-              ? liveCleaningMode
-              : 'auto'
-          }
           fanSpeed={liveFanSpeed}
           fanSpeeds={liveFanSpeeds}
           supportsFanSpeed={vacuumCapabilities.canSetFanSpeed}
           capabilities={vacuumCapabilities}
           onSetFanSpeed={handleSetFanSpeed}
           isUpdatingFanSpeed={isUpdatingFanSpeed}
-          availableRooms={availableRooms}
-          availableZones={availableZones}
+          availableCleaningAreas={vacuumCapabilities.availableCleaningAreas}
+          onStartAreaCleaning={handleStartAreaCleaning}
+          onLocate={handleLocate}
+          onCleanSpot={handleCleanSpot}
         />
       ) : null}
     </div>

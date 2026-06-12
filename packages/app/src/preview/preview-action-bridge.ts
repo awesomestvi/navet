@@ -135,6 +135,13 @@ function applyPreviewCommand(command: NavetCommand): boolean {
           attributes: { fan_speed: command.fanSpeed },
         })
       );
+    case 'clean_vacuum_areas':
+      return updatePreviewEntity(command.entityId, (entity) =>
+        withEntityPatch(entity, {
+          state: 'cleaning',
+          attributes: { active_cleaning_area_ids: command.areaIds },
+        })
+      );
     case 'play_pause':
       return updatePreviewEntity(command.entityId, (entity) =>
         withEntityPatch(entity, { state: togglePlaybackState(entity.state) })

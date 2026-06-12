@@ -4,7 +4,7 @@ import { CardSettingsActionButton } from '@navet/app/components/shared/card-sett
 import { useI18n } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { LucideIcon } from 'lucide-react';
-import { Crosshair, HousePlug, Pause, Play, Sparkles, Square, Wind } from 'lucide-react';
+import { Crosshair, Fan, HousePlug, Pause, Play, ScanSearch, Square } from 'lucide-react';
 import type { VacuumCapabilities } from './vacuum-features';
 import type { VacuumStatus } from './vacuum-utils';
 
@@ -69,6 +69,9 @@ export function VacuumControlsSmall({
     currentFanSpeed && currentFanSpeed.length > 0
       ? currentFanSpeed.charAt(0).toUpperCase() + currentFanSpeed.slice(1)
       : undefined;
+  const currentFanSpeedIndex =
+    currentFanSpeed == null ? -1 : capabilities.fanSpeedOptions.indexOf(currentFanSpeed);
+  const fanSpeedBadge = currentFanSpeedIndex >= 0 ? String(currentFanSpeedIndex + 1) : undefined;
   const fanSpeedLabel = fanSpeedValue
     ? `${t('vacuum.summary.speed')}: ${fanSpeedValue}`
     : t('vacuum.summary.speed');
@@ -114,7 +117,7 @@ export function VacuumControlsSmall({
     actions.push({
       key: 'clean-spot',
       label: t('vacuum.action.cleanSpot'),
-      icon: Sparkles,
+      icon: ScanSearch,
       onSelect: onCleanSpot,
       disabled,
     });
@@ -124,7 +127,7 @@ export function VacuumControlsSmall({
     actions.push({
       key: 'fan-speed',
       label: fanSpeedLabel,
-      icon: Wind,
+      icon: Fan,
       onSelect: handleCycleFanSpeed,
       disabled: disabled || isUpdatingFanSpeed,
     });
@@ -151,9 +154,17 @@ export function VacuumControlsSmall({
             aria-label={action.label}
             title={action.label}
             disabled={action.disabled}
-            className="transition-colors"
+            className="relative transition-colors"
           >
             <Icon className="h-3 w-3" />
+            {action.key === 'fan-speed' && fanSpeedBadge ? (
+              <span
+                className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full border border-white/14 bg-zinc-950 px-1 text-[8px] font-semibold leading-none text-white"
+                aria-hidden="true"
+              >
+                {fanSpeedBadge}
+              </span>
+            ) : null}
           </RoundControlButton>
         );
       })}

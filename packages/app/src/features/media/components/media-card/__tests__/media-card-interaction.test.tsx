@@ -1,5 +1,5 @@
 import { renderWithProviders } from '@navet/app/test/render';
-import { fireEvent } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { MediaCard } from '../index';
 
@@ -30,7 +30,10 @@ vi.mock('../use-media-card-controller', () => ({
     isPlaying: false,
     isMuted: false,
     isOpen: false,
-    mediaCapabilities: {},
+    mediaCapabilities: {
+      canRepeat: true,
+      canShuffle: true,
+    },
     openDialog: openDialogMock,
     remoteAvailable: false,
     repeatMode: 'off',
@@ -61,6 +64,37 @@ vi.mock('../use-media-card-controller', () => ({
 }));
 
 describe('MediaCard interactions', () => {
+  it('keeps the seek slider visible for idle medium cards', () => {
+    renderWithProviders(
+      <MediaCard
+        id="media_player.living_room_speaker"
+        name="Living Room Speaker"
+        room="Living Room"
+        title="Ready to play"
+        artist="Spotify"
+        entityType="Speaker"
+        deviceClass="speaker"
+        state="idle"
+        volume={24}
+        isMuted={false}
+        size="medium"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.getByRole('slider', { name: /seek/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('slider')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: /shuffle/i })).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    );
+    expect(screen.getByRole('button', { name: /repeat off/i })).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    );
+  });
+
   it('opens the media dialog when a speaker card is clicked', () => {
     const { container } = renderWithProviders(
       <MediaCard

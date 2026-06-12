@@ -15,9 +15,14 @@ describe('resolveVacuumCapabilities', () => {
         availability: 'available',
         capabilities: [],
         attributes: {
-          supportedFeatures: 4 | 16 | 32 | 512 | 1024 | 8192,
+          supportedFeatures: 4 | 16 | 32 | 512 | 1024 | 2048 | 8192,
           fanSpeed: 'balanced',
           fanSpeedList: ['quiet', 'balanced', 'turbo'],
+          availableCleaningAreas: [
+            { id: 'kitchen', label: 'Kitchen' },
+            { id: 'hallway', label: 'Hallway' },
+          ],
+          canOrderAreaCleaning: true,
         },
       },
     });
@@ -33,6 +38,13 @@ describe('resolveVacuumCapabilities', () => {
       currentFanSpeed: 'balanced',
       fanSpeedOptions: ['quiet', 'balanced', 'turbo'],
       canCycleFanSpeed: true,
+      canShowMap: true,
+      canCleanByArea: true,
+      canOrderAreaCleaning: true,
+      availableCleaningAreas: [
+        { id: 'kitchen', label: 'Kitchen' },
+        { id: 'hallway', label: 'Hallway' },
+      ],
     });
   });
 
@@ -65,6 +77,10 @@ describe('resolveVacuumCapabilities', () => {
       currentFanSpeed: undefined,
       fanSpeedOptions: [],
       canCycleFanSpeed: false,
+      canShowMap: false,
+      canCleanByArea: false,
+      canOrderAreaCleaning: false,
+      availableCleaningAreas: [],
     });
   });
 });

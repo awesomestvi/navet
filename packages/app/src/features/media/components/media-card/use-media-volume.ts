@@ -4,6 +4,8 @@ import type { TranslateFn } from '@navet/app/hooks';
 import { useServiceActionHandler } from '@navet/app/hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+const VOLUME_SYNC_SETTLE_MS = 800;
+
 interface UseMediaVolumeParams {
   canMuteVolume: boolean;
   canSetVolume: boolean;
@@ -28,16 +30,57 @@ export function useMediaVolume({
   const pendingVolumeRef = useRef<number | null>(null);
   const isAdjustingVolumeRef = useRef(false);
   const volumeCommitTimeoutRef = useRef<number | null>(null);
+  const syncSettleTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
       if (volumeCommitTimeoutRef.current !== null) {
         window.clearTimeout(volumeCommitTimeoutRef.current);
       }
+      if (syncSettleTimeoutRef.current !== null) {
+        window.clearTimeout(syncSettleTimeoutRef.current);
+      }
     };
   }, []);
 
   const runVolumeAction = useServiceActionHandler();
+
+  const setVolumeAdjusting = useCallback((nextAdjusting: boolean) => {
+    if (syncSettleTimeoutRef.current !== null) {
+      window.clearTimeout(syncSettleTimeoutRef.current);
+      syncSettleTimeoutRef.current = null;
+    }
+    isAdjustingVolumeRef.current = nextAdjusting;
+    setIsAdjustingVolume(nextAdjusting);
+  }, []);
+
+  const releaseVolumeAdjustingAfterSettle = useCallback(() => {
+    if (syncSettleTimeoutRef.current !== null) {
+      window.clearTimeout(syncSettleTimeoutRef.current);
+    }
+    syncSettleTimeoutRef.current = window.setTimeout(() => {
+      syncSettleTimeoutRef.current = null;
+      isAdjustingVolumeRef.current = false;
+      setIsAdjustingVolume(false);
+    }, VOLUME_SYNC_SETTLE_MS);
+  }, []);
+
+  const commitPendingVolume = useCallback(
+    (pendingVolume: number, shouldUnmute: boolean) => {
+      setVolumeAdjusting(true);
+      void runVolumeAction(async () => {
+        try {
+          if (shouldUnmute) {
+            await dispatchEntityCommand({ type: 'unmute', entityId });
+          }
+          await dispatchEntityCommand({ type: 'set_volume', entityId, volume: pendingVolume });
+        } finally {
+          releaseVolumeAdjustingAfterSettle();
+        }
+      }, t('media.feedback.updateVolumeFailed'));
+    },
+    [entityId, releaseVolumeAdjustingAfterSettle, runVolumeAction, setVolumeAdjusting, t]
+  );
 
   const toggleMute = useCallback(() => {
     if (!canMuteVolume && !canSetVolume) {
@@ -99,50 +142,38 @@ export function useMediaVolume({
         const pendingVolume = pendingVolumeRef.current;
         volumeCommitTimeoutRef.current = null;
         if (pendingVolume === null) return;
-        void runVolumeAction(async () => {
-          if (shouldUnmute) {
-            await dispatchEntityCommand({ type: 'unmute', entityId });
-          }
-          await dispatchEntityCommand({ type: 'set_volume', entityId, volume: pendingVolume });
-        }, t('media.feedback.updateVolumeFailed'));
+        commitPendingVolume(pendingVolume, shouldUnmute);
       }, HA_CONTROL_DEBOUNCE_MS);
     },
-    [canMuteVolume, canSetVolume, entityId, isMuted, runVolumeAction, t]
+    [canMuteVolume, canSetVolume, commitPendingVolume, isMuted]
   );
 
   const startVolumeInteraction = useCallback(() => {
-    isAdjustingVolumeRef.current = true;
-    setIsAdjustingVolume(true);
-  }, []);
+    setVolumeAdjusting(true);
+  }, [setVolumeAdjusting]);
 
   const endVolumeInteraction = useCallback(() => {
     if (!canSetVolume) {
-      isAdjustingVolumeRef.current = false;
-      setIsAdjustingVolume(false);
+      setVolumeAdjusting(false);
       pendingVolumeRef.current = null;
       return;
     }
-
-    isAdjustingVolumeRef.current = false;
-    setIsAdjustingVolume(false);
     if (volumeCommitTimeoutRef.current !== null) {
       window.clearTimeout(volumeCommitTimeoutRef.current);
       volumeCommitTimeoutRef.current = null;
     }
     const pendingVolume = pendingVolumeRef.current;
     pendingVolumeRef.current = null;
-    if (pendingVolume === null) return;
+    if (pendingVolume === null) {
+      setVolumeAdjusting(false);
+      return;
+    }
     const shouldUnmute = pendingVolume > 0 && isMuted && canMuteVolume;
     if (shouldUnmute) {
       setIsMuted(false);
     }
-    void runVolumeAction(async () => {
-      if (shouldUnmute) {
-        await dispatchEntityCommand({ type: 'unmute', entityId });
-      }
-      await dispatchEntityCommand({ type: 'set_volume', entityId, volume: pendingVolume });
-    }, t('media.feedback.updateVolumeFailed'));
-  }, [canMuteVolume, canSetVolume, entityId, isMuted, runVolumeAction, t]);
+    commitPendingVolume(pendingVolume, shouldUnmute);
+  }, [canMuteVolume, canSetVolume, commitPendingVolume, isMuted, setVolumeAdjusting]);
 
   return {
     volume,

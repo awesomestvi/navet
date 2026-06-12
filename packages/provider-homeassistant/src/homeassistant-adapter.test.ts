@@ -41,7 +41,7 @@ function vacuumEntityFactory() {
     state: 'idle',
     attributes: {
       friendly_name: 'Roborock',
-      supported_features: 4 | 16 | 32 | 512 | 1024 | 8192,
+      supported_features: 4 | 16 | 32 | 512 | 1024 | 8192 | 16384,
     },
     last_changed: '2026-05-30T10:00:00.000Z',
     last_updated: '2026-05-30T10:00:00.000Z',
@@ -223,6 +223,23 @@ describe('homeassistant-adapter', () => {
       'vacuum',
       'set_fan_speed',
       { fan_speed: 'turbo' },
+      { entityId: 'vacuum.roborock' }
+    );
+  });
+
+  it('maps provider-neutral vacuum area-cleaning commands to vacuum.clean_area', async () => {
+    const adapter = createHomeAssistantContractAdapter();
+
+    await adapter.execute({
+      type: 'clean_vacuum_areas',
+      entityId: createProviderScopedId('home_assistant', 'vacuum.roborock'),
+      areaIds: ['kitchen', 'hallway'],
+    });
+
+    expect(callHomeAssistantServiceMock).toHaveBeenCalledWith(
+      'vacuum',
+      'clean_area',
+      { cleaning_area_id: ['kitchen', 'hallway'] },
       { entityId: 'vacuum.roborock' }
     );
   });

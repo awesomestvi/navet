@@ -171,6 +171,14 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
         { entityId: entity.externalId }
       );
       return;
+    case 'clean_vacuum_areas':
+      await callHomeAssistantService(
+        'vacuum',
+        'clean_area',
+        { cleaning_area_id: command.areaIds },
+        { entityId: entity.externalId }
+      );
+      return;
     case 'play_pause':
       await callHomeAssistantService(
         'media_player',

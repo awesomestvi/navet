@@ -1,4 +1,5 @@
 import { renderHookWithProviders } from '@navet/app/test/render';
+import type { CommandResult } from '@navet/core/types';
 import { act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -181,5 +182,50 @@ describe('useMediaVolume', () => {
       type: 'set_volume',
       volume: 30,
     });
+  });
+
+  it('keeps volume adjustment active until the volume commit resolves', async () => {
+    let resolveDispatch: ((value: CommandResult) => void) | null = null;
+    dispatchEntityCommandMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveDispatch = resolve;
+        })
+    );
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaVolume({
+        canMuteVolume: true,
+        canSetVolume: true,
+        entityId: 'media_player.office',
+        initialVolume: 0,
+        initialMuted: true,
+        t: (key) => key,
+      })
+    );
+
+    act(() => {
+      result.current.startVolumeInteraction();
+      result.current.handleVolumeChange(50);
+      result.current.endVolumeInteraction();
+    });
+
+    expect(result.current.isAdjustingVolume).toBe(true);
+
+    await act(async () => {
+      resolveDispatch?.({
+        accepted: true,
+        requiresEventConfirmation: true,
+      });
+      await Promise.resolve();
+    });
+
+    expect(result.current.isAdjustingVolume).toBe(true);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(800);
+    });
+
+    expect(result.current.isAdjustingVolume).toBe(false);
   });
 });

@@ -9,8 +9,7 @@ interface VacuumStatusHeaderProps {
   plannerSummaryLabel: string;
   cleaningMode: string;
   selectedFanSpeed: string;
-  roomTargets: string[];
-  plannerView: 'all' | 'rooms' | 'zones';
+  plannerView: 'all' | 'areas';
   primaryActionLabel: string;
   onStartCleaning: () => void;
   onPauseCleaning?: () => void;
@@ -43,7 +42,6 @@ export function VacuumStatusHeader({
   plannerSummaryLabel,
   cleaningMode,
   selectedFanSpeed,
-  roomTargets,
   plannerView,
   primaryActionLabel,
   onStartCleaning,
@@ -82,7 +80,7 @@ export function VacuumStatusHeader({
           </div>
           <div className="mt-1 truncate text-sm text-white/76">
             {plannerView === 'all'
-              ? `${roomTargets.length || 1} ${t('vacuum.plan.rooms')} · ${selectedFanSpeed}`
+              ? `${selectedFanSpeed}`
               : `${t('vacuum.settings.cleaningMode')} · ${cleaningMode}`}
           </div>
         </div>

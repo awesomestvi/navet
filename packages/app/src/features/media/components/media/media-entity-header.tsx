@@ -26,8 +26,6 @@ export function MediaEntityHeader({
       <EntityCardHeader
         title={entityName}
         subtitle={entityType}
-        compact
-        layout="eyebrow-first"
         size={size}
         tone={isActive ? 'primary' : 'neutral'}
         accentColor={accentColor}

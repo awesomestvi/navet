@@ -31,6 +31,7 @@ const {
 }));
 
 let mockedDisplayFanSpeed: string | undefined;
+let mockedCurrentStatus: string = 'idle';
 
 vi.mock('@navet/app/hooks', () => ({
   useI18n: () => ({ t: (key: string) => key }),
@@ -103,10 +104,11 @@ vi.mock('@navet/app/stores/settings-store', async () => {
 
 vi.mock('../../vacuum/use-vacuum-control', () => ({
   useVacuumControl: () => ({
-    currentStatus: 'idle',
+    currentStatus: mockedCurrentStatus,
     isDialogOpen: false,
     setIsDialogOpen: vi.fn(),
     handleStartCleaning: vi.fn(),
+    handleStartAreaCleaning: vi.fn(),
     handlePause: vi.fn(),
     handleStop: vi.fn(),
     handleReturnHome: vi.fn(),
@@ -183,6 +185,7 @@ describe('VacuumCard', () => {
     useProviderEntitySnapshotMock.mockReset();
     handleSetFanSpeedMock.mockReset();
     mockedDisplayFanSpeed = undefined;
+    mockedCurrentStatus = 'idle';
   });
 
   it('renders a fan-speed control only when the vacuum supports multiple fan speeds', () => {
@@ -464,6 +467,36 @@ describe('VacuumCard', () => {
     expect(style).toContain('rgba(255, 255, 255, 0.06)');
     expect(style).toContain('rgba(24, 24, 27, 0.96)');
     expect(style).toContain('0 18px 38px -28px');
+  });
+
+  it('shows the side brush only while the vacuum is cleaning', () => {
+    mockedCurrentStatus = 'cleaning';
+    const { rerender } = render(
+      <VacuumCard
+        id="vacuum.cleaning"
+        name="Robot"
+        status="cleaning"
+        size="medium"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.getByTestId('vacuum-side-brush')).toBeInTheDocument();
+
+    mockedCurrentStatus = 'idle';
+    rerender(
+      <VacuumCard
+        id="vacuum.cleaning"
+        name="Robot"
+        status="idle"
+        size="medium"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.queryByTestId('vacuum-side-brush')).not.toBeInTheDocument();
   });
 
   it('does not infer Home Assistant from arbitrary dotted ids', () => {

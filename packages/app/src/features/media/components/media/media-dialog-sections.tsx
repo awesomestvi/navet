@@ -7,9 +7,11 @@ import {
   Play,
   Repeat,
   Repeat1,
+  RepeatOff,
   Shuffle,
   SkipBack,
   SkipForward,
+  Slash,
   Volume2,
   VolumeX,
 } from 'lucide-react';
@@ -143,6 +145,9 @@ export function MediaDialogPlaybackControls({
     }
   }, [elapsedSeconds, isSeeking]);
 
+  const offToggleSlashClassName = 'absolute inset-0 m-auto h-3.5 w-3.5 stroke-[2.25]';
+  const mirroredOffToggleSlashStyle = { transform: 'scaleX(-1)' } as const;
+
   return (
     <div className="space-y-6">
       <div className="space-y-1.5">
@@ -196,13 +201,21 @@ export function MediaDialogPlaybackControls({
           theme={controller.theme}
           size="medium"
           variant="soft"
-          aria-label={t('media.shuffle')}
+          aria-label={shuffleEnabled ? t('media.shuffle') : t('media.linearPlayback')}
+          aria-pressed={shuffleEnabled}
           onClick={onToggleShuffle}
           className={`h-10 w-10 transition-colors ${shuffleEnabled ? '!border-0' : ''}`}
           iconStyle={transportIconStyle}
           style={shuffleEnabled ? controller.activeMiniControlStyle : controller.subtleControlStyle}
         >
-          <Shuffle className="h-4 w-4" />
+          {shuffleEnabled ? (
+            <Shuffle className="h-4 w-4" />
+          ) : (
+            <span className="relative flex items-center justify-center">
+              <Shuffle className="h-4 w-4" />
+              <Slash className={offToggleSlashClassName} style={mirroredOffToggleSlashStyle} />
+            </span>
+          )}
         </RoundControlButton>
         <button
           type="button"
@@ -251,6 +264,7 @@ export function MediaDialogPlaybackControls({
                 ? t('media.repeatAll')
                 : t('media.repeatOff')
           }
+          aria-pressed={repeatMode !== 'off'}
           onClick={onCycleRepeat}
           className={`h-10 w-10 transition-colors ${repeatMode !== 'off' ? '!border-0' : ''}`}
           iconStyle={transportIconStyle}
@@ -258,7 +272,13 @@ export function MediaDialogPlaybackControls({
             repeatMode !== 'off' ? controller.activeMiniControlStyle : controller.subtleControlStyle
           }
         >
-          {repeatMode === 'one' ? <Repeat1 className="h-4 w-4" /> : <Repeat className="h-4 w-4" />}
+          {repeatMode === 'off' ? (
+            <RepeatOff className="h-4 w-4" />
+          ) : repeatMode === 'one' ? (
+            <Repeat1 className="h-4 w-4" />
+          ) : (
+            <Repeat className="h-4 w-4" />
+          )}
         </RoundControlButton>
       </div>
     </div>

@@ -2,8 +2,27 @@ import { renderWithProviders } from '@navet/app/test/render';
 import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { VacuumControlsCompact } from '../vacuum-controls-compact';
+import type { VacuumCapabilities } from '../vacuum-features';
 
 describe('VacuumControlsCompact', () => {
+  const createCapabilities = (overrides: Partial<VacuumCapabilities> = {}): VacuumCapabilities => ({
+    canStart: true,
+    canPause: true,
+    canStop: false,
+    canReturnHome: true,
+    canLocate: false,
+    canCleanSpot: false,
+    canSetFanSpeed: true,
+    currentFanSpeed: 'quiet',
+    fanSpeedOptions: ['quiet'],
+    canCycleFanSpeed: false,
+    canShowMap: false,
+    canCleanByArea: false,
+    canOrderAreaCleaning: false,
+    availableCleaningAreas: [],
+    ...overrides,
+  });
+
   it('renders the fan-speed cycle control only when at least two options are available', () => {
     const onCycleFanSpeed = vi.fn();
     const baseProps = {
@@ -21,21 +40,7 @@ describe('VacuumControlsCompact', () => {
     };
 
     const { rerender } = renderWithProviders(
-      <VacuumControlsCompact
-        {...baseProps}
-        capabilities={{
-          canStart: true,
-          canPause: true,
-          canStop: false,
-          canReturnHome: true,
-          canLocate: false,
-          canCleanSpot: false,
-          canSetFanSpeed: true,
-          currentFanSpeed: 'quiet',
-          fanSpeedOptions: ['quiet'],
-          canCycleFanSpeed: false,
-        }}
-      />
+      <VacuumControlsCompact {...baseProps} capabilities={createCapabilities()} />
     );
 
     expect(
@@ -47,18 +52,10 @@ describe('VacuumControlsCompact', () => {
     rerender(
       <VacuumControlsCompact
         {...baseProps}
-        capabilities={{
-          canStart: true,
-          canPause: true,
-          canStop: false,
-          canReturnHome: true,
-          canLocate: false,
-          canCleanSpot: false,
-          canSetFanSpeed: true,
-          currentFanSpeed: 'quiet',
+        capabilities={createCapabilities({
           fanSpeedOptions: ['quiet', 'balanced'],
           canCycleFanSpeed: true,
-        }}
+        })}
       />
     );
 
@@ -88,18 +85,10 @@ describe('VacuumControlsCompact', () => {
     const { rerender } = renderWithProviders(
       <VacuumControlsCompact
         {...baseProps}
-        capabilities={{
-          canStart: true,
-          canPause: true,
-          canStop: false,
-          canReturnHome: true,
-          canLocate: false,
-          canCleanSpot: false,
-          canSetFanSpeed: true,
-          currentFanSpeed: 'quiet',
+        capabilities={createCapabilities({
           fanSpeedOptions: ['quiet', 'balanced', 'turbo'],
           canCycleFanSpeed: true,
-        }}
+        })}
       />
     );
 
@@ -109,18 +98,11 @@ describe('VacuumControlsCompact', () => {
     rerender(
       <VacuumControlsCompact
         {...baseProps}
-        capabilities={{
-          canStart: true,
-          canPause: true,
-          canStop: false,
-          canReturnHome: true,
-          canLocate: false,
-          canCleanSpot: false,
-          canSetFanSpeed: true,
+        capabilities={createCapabilities({
           currentFanSpeed: 'balanced',
           fanSpeedOptions: ['quiet', 'balanced', 'turbo'],
           canCycleFanSpeed: true,
-        }}
+        })}
       />
     );
 
@@ -130,23 +112,41 @@ describe('VacuumControlsCompact', () => {
     rerender(
       <VacuumControlsCompact
         {...baseProps}
-        capabilities={{
-          canStart: true,
-          canPause: true,
-          canStop: false,
-          canReturnHome: true,
-          canLocate: false,
-          canCleanSpot: false,
-          canSetFanSpeed: true,
+        capabilities={createCapabilities({
           currentFanSpeed: 'turbo',
           fanSpeedOptions: ['quiet', 'balanced', 'turbo'],
           canCycleFanSpeed: true,
-        }}
+        })}
       />
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Fan Speed: turbo' }));
     expect(onCycleFanSpeed).toHaveBeenNthCalledWith(3, 'quiet');
+  });
+
+  it('shows the current fan-speed position as a badge on the control', () => {
+    renderWithProviders(
+      <VacuumControlsCompact
+        currentStatus="idle"
+        onStartCleaning={vi.fn()}
+        onPause={vi.fn()}
+        onStop={vi.fn()}
+        onReturnHome={vi.fn()}
+        onLocate={vi.fn()}
+        onCleanSpot={vi.fn()}
+        onCycleFanSpeed={vi.fn()}
+        onOpenSettings={vi.fn()}
+        theme="dark"
+        isUpdatingFanSpeed={false}
+        capabilities={createCapabilities({
+          currentFanSpeed: 'balanced',
+          fanSpeedOptions: ['quiet', 'balanced', 'turbo'],
+          canCycleFanSpeed: true,
+        })}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'Fan Speed: balanced' })).toHaveTextContent('2');
   });
 
   it('disables the compact controls when the card is unavailable', () => {
@@ -166,18 +166,12 @@ describe('VacuumControlsCompact', () => {
         theme="dark"
         isUpdatingFanSpeed={false}
         disabled
-        capabilities={{
-          canStart: true,
-          canPause: true,
-          canStop: false,
-          canReturnHome: true,
+        capabilities={createCapabilities({
           canLocate: true,
           canCleanSpot: true,
-          canSetFanSpeed: true,
-          currentFanSpeed: 'quiet',
           fanSpeedOptions: ['quiet', 'balanced'],
           canCycleFanSpeed: true,
-        }}
+        })}
       />
     );
 
@@ -203,18 +197,14 @@ describe('VacuumControlsCompact', () => {
         onOpenSettings={vi.fn()}
         theme="dark"
         isUpdatingFanSpeed={false}
-        capabilities={{
-          canStart: true,
+        capabilities={createCapabilities({
           canPause: false,
           canStop: true,
-          canReturnHome: true,
-          canLocate: false,
-          canCleanSpot: false,
           canSetFanSpeed: false,
           currentFanSpeed: undefined,
           fanSpeedOptions: [],
           canCycleFanSpeed: false,
-        }}
+        })}
       />
     );
 

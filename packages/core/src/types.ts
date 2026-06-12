@@ -80,6 +80,7 @@ export type NavetCommand =
   | { type: 'turn_off'; entityId: string }
   | { type: 'set_fan_speed'; entityId: string; percentage: number }
   | { type: 'set_vacuum_fan_speed'; entityId: string; fanSpeed: string }
+  | { type: 'clean_vacuum_areas'; entityId: string; areaIds: string[] }
   | { type: 'play_pause'; entityId: string }
   | { type: 'previous_track'; entityId: string }
   | { type: 'next_track'; entityId: string }

@@ -31,6 +31,7 @@ export interface HomeAssistantEntityRegistryEntry {
   original_name?: string | null;
   platform?: string | null;
   entity_category?: 'config' | 'diagnostic' | null;
+  options?: Record<string, Record<string, unknown>>;
 }
 
 export interface HomeAssistantStoreState {

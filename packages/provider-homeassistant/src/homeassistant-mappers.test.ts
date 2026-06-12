@@ -564,28 +564,87 @@ describe('homeassistant-mappers', () => {
     ]);
   });
 
-  it('preserves Home Assistant vacuum supported_features in normalized state', () => {
+  it('maps Home Assistant vacuum area metadata from entity-registry area mapping', () => {
     const entities = mapHomeAssistantEntitiesToNavetEntities({
       entities: {
         'vacuum.roborock': makeEntity('vacuum.roborock', 'idle', {
           friendly_name: 'Roborock',
-          supported_features: 4 | 16 | 32 | 512 | 1024 | 8192,
+          supported_features: 4 | 16 | 32 | 512 | 1024 | 8192 | 16384,
           cleaned_area_today: 0,
           clean_time: 0,
         }),
       },
-      areas: [],
+      areas: [
+        { area_id: 'area_kitchen', name: 'Kitchen' },
+        { area_id: 'area_hallway', name: 'Hallway' },
+      ],
       deviceRegistry: [],
-      entityRegistry: [],
+      entityRegistry: [
+        {
+          entity_id: 'vacuum.roborock',
+          options: {
+            vacuum: {
+              area_mapping: {
+                area_kitchen: ['0_16'],
+                area_hallway: ['0_17'],
+              },
+              last_seen_segments: [
+                { id: '0_16', name: 'Kitchen' },
+                { id: '0_17', name: 'Hallway' },
+              ],
+            },
+          },
+        },
+      ],
     });
 
     expect(entities).toEqual([
       expect.objectContaining({
         externalId: 'vacuum.roborock',
         attributes: expect.objectContaining({
-          supportedFeatures: 4 | 16 | 32 | 512 | 1024 | 8192,
+          supportedFeatures: 4 | 16 | 32 | 512 | 1024 | 8192 | 16384,
           cleanedArea: '0.0 m²',
           cleaningTime: '0 min',
+          canCleanByArea: true,
+          canOrderAreaCleaning: false,
+          availableCleaningAreas: [
+            { id: 'area_kitchen', label: 'Kitchen' },
+            { id: 'area_hallway', label: 'Hallway' },
+          ],
+        }),
+      }),
+    ]);
+  });
+
+  it('keeps Home Assistant area cleaning hidden when no mapped areas are configured', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'vacuum.roborock': makeEntity('vacuum.roborock', 'idle', {
+          friendly_name: 'Roborock',
+          supported_features: 8192 | 16384,
+        }),
+      },
+      areas: [{ area_id: 'area_kitchen', name: 'Kitchen' }],
+      deviceRegistry: [],
+      entityRegistry: [
+        {
+          entity_id: 'vacuum.roborock',
+          options: {
+            vacuum: {
+              area_mapping: {},
+            },
+          },
+        },
+      ],
+    });
+
+    expect(entities).toEqual([
+      expect.objectContaining({
+        externalId: 'vacuum.roborock',
+        attributes: expect.objectContaining({
+          canCleanByArea: false,
+          canOrderAreaCleaning: false,
+          availableCleaningAreas: undefined,
         }),
       }),
     ]);

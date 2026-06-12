@@ -6,7 +6,19 @@ import { getCardStateSurfaceTokens } from '@navet/app/components/shared/theme/ca
 import { useI18n } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
-import { Pause, Play, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import {
+  Pause,
+  Play,
+  Repeat,
+  Repeat1,
+  RepeatOff,
+  Shuffle,
+  SkipBack,
+  SkipForward,
+  Slash,
+  Volume2,
+  VolumeX,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { MediaEntityTypeKey } from '../media-card/get-media-entity-type-key';
 import { MediaArtworkSurface } from './media-artwork-surface';
@@ -22,6 +34,7 @@ import {
   useMediaArtworkColors,
   withAlpha,
 } from './use-media-artwork-colors';
+import { useMediaVolumeMode } from './use-media-volume-mode';
 import { useStableMediaArtwork } from './use-stable-media-artwork';
 
 interface MediaMediumViewProps {
@@ -40,8 +53,14 @@ interface MediaMediumViewProps {
   elapsedSeconds: number;
   durationSeconds: number;
   theme: ThemeType;
+  repeatMode: 'off' | 'one' | 'all';
+  shuffleEnabled: boolean;
+  canRepeat: boolean;
+  canShuffle: boolean;
   onOpenDialog: () => void;
+  onCycleRepeat: () => void;
   onSeek: (elapsedSeconds: number) => void;
+  onToggleShuffle: () => void;
   onPrevious: () => void;
   canPreviousTrack: boolean;
   onTogglePlay: () => void;
@@ -69,8 +88,14 @@ export function MediaMediumView({
   elapsedSeconds,
   durationSeconds,
   theme,
+  repeatMode,
+  shuffleEnabled,
+  canRepeat,
+  canShuffle,
   onOpenDialog,
+  onCycleRepeat,
   onSeek,
+  onToggleShuffle,
   onPrevious,
   canPreviousTrack,
   onTogglePlay,
@@ -82,6 +107,8 @@ export function MediaMediumView({
   onVolumeInteractionEnd,
 }: MediaMediumViewProps) {
   const { t } = useI18n();
+  const { containerRef, isVolumeMode, registerVolumeInteraction, toggleVolumeMode } =
+    useMediaVolumeMode();
   const displayVolume = getMediaDisplayVolume(volume, isMuted);
   const stateSurface = getCardStateSurfaceTokens(theme, isActive);
   const stableArtwork = useStableMediaArtwork(artwork);
@@ -99,6 +126,7 @@ export function MediaMediumView({
   const iconTone = stateSurface.primaryTextClassName;
   const subtitleTone = stateSurface.secondaryTextClassName;
   const durationLabel = formatMediaTime(Math.max(durationSeconds, elapsedSeconds));
+  const hasSeekDuration = durationSeconds > 0;
   const [pendingSeek, setPendingSeek] = useState(elapsedSeconds);
   const [isSeeking, setIsSeeking] = useState(false);
   const controlSizes = getCardActionControlSizes('small');
@@ -124,6 +152,24 @@ export function MediaMediumView({
     borderColor: withAlpha(resolvedSubtitleColor, 0.22),
     boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.14)}`,
   };
+  const neutralButtonStyle = {
+    backgroundColor: withAlpha(palette.darkMuted, 0.18),
+    borderColor: withAlpha(resolvedSubtitleColor, 0.18),
+    boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.12)}`,
+  };
+  const activeUtilityButtonStyle = {
+    background: `linear-gradient(180deg, ${withAlpha(palette.highlight, 0.26)} 0%, ${withAlpha(
+      palette.vibrant,
+      0.44
+    )} 100%)`,
+    borderColor: withAlpha(resolvedSubtitleColor, 0.22),
+    boxShadow: `0 10px 28px -18px ${withAlpha(palette.vibrant, 0.55)}, inset 0 1px 0 ${withAlpha(
+      resolvedTitleColor,
+      0.18
+    )}`,
+  };
+  const volumeToggleButtonStyle = isVolumeMode ? activeUtilityButtonStyle : neutralButtonStyle;
+  const muteButtonStyle = isMuted ? activeUtilityButtonStyle : neutralButtonStyle;
   const trackBaseStyle = { backgroundColor: withAlpha(resolvedSubtitleColor, 0.24) };
   const trackFillStyle = {
     background: `linear-gradient(90deg, ${resolvedTitleColor} 0%, ${resolvedSubtitleColor} 100%)`,
@@ -150,8 +196,11 @@ export function MediaMediumView({
     }
   }, [elapsedSeconds, isSeeking]);
 
+  const offToggleSlashClassName = 'absolute inset-0 m-auto h-3.5 w-3.5 stroke-[2.25]';
+  const mirroredOffToggleSlashStyle = { transform: 'scaleX(-1)' };
+
   return (
-    <div className="relative -m-3 flex flex-1 overflow-hidden rounded-[inherit]">
+    <div ref={containerRef} className="relative -m-3 flex flex-1 overflow-hidden rounded-[inherit]">
       {glassDepthOverlay}
       <MediaArtworkSurface
         artwork={stableArtwork}
@@ -159,16 +208,16 @@ export function MediaMediumView({
         palette={palette}
         theme={theme}
         layout="split"
-        artRegionClassName="w-[42%]"
+        artRegionClassName="w-[39%]"
         imagePaddingClassName=""
         imageClassName="object-cover object-left"
         subduedFallback={!stableArtwork && !isActive}
       />
 
-      <div className="relative z-[2] grid h-full w-full grid-cols-[44%_minmax(0,1fr)]">
+      <div className="relative z-[2] grid h-full w-full grid-cols-[40%_minmax(0,1fr)]">
         <div />
 
-        <div className="flex min-w-0 flex-col pl-1 pr-3 py-3">
+        <div className="flex min-w-0 flex-col pl-2 pr-3 py-3">
           <div className="flex items-start justify-between gap-3">
             <MediaEntityHeader
               entityName={entityName}
@@ -192,7 +241,7 @@ export function MediaMediumView({
             </div>
           </div>
 
-          <div className="mt-auto flex flex-col gap-1.5">
+          <div className="mt-auto flex flex-col gap-2">
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0">
                 <MediaMarqueeText
@@ -202,7 +251,7 @@ export function MediaMediumView({
                 />
                 <MediaMarqueeText
                   text={artist}
-                  className={`mt-0.5 text-xs ${subtitleTone}`}
+                  className={`text-xs ${subtitleTone}`}
                   threshold={24}
                   style={readableForeground.subtitleStyle}
                 />
@@ -218,7 +267,7 @@ export function MediaMediumView({
                     event.stopPropagation();
                     onTogglePlay();
                   }}
-                  className="h-9 w-9 border backdrop-blur-xl transition-colors"
+                  className="h-8.5 w-8.5 border backdrop-blur-xl transition-colors"
                   iconStyle={controlIconStyle}
                   style={subduedFallback ? undefined : playButtonStyle}
                 >
@@ -231,109 +280,241 @@ export function MediaMediumView({
               </div>
             </div>
 
-            {durationSeconds > 0 ? (
-              <div className="-mt-1">
-                <Slider
-                  value={Math.min(durationSeconds, pendingSeek)}
-                  min={0}
-                  max={Math.max(durationSeconds, elapsedSeconds, pendingSeek)}
-                  step={1}
-                  ariaLabel={t('media.seek')}
-                  onValueChange={(value) => setPendingSeek(value)}
-                  onValueCommit={(value) => onSeek(value)}
-                  onInteractionStart={() => setIsSeeking(true)}
-                  onInteractionEnd={() => setIsSeeking(false)}
-                  rootClassName="relative flex h-4 w-full items-center touch-none select-none"
-                  trackClassName="relative h-[3px] grow rounded-full"
-                  rangeClassName="absolute h-full rounded-full"
-                  thumbClassName="block h-3 w-3 rounded-full outline-none"
-                  touchThumbClassName="block h-6 w-6 rounded-full outline-none"
-                  trackStyle={trackBaseStyle}
-                  rangeStyle={trackFillStyle}
-                  thumbStyle={trackThumbStyle}
-                />
-                <div
-                  className={`mt-px flex items-center justify-between text-[10px] ${subtitleTone}`}
-                  style={readableForeground.subtitleStyle}
-                >
-                  <span>{formatMediaTime(Math.max(0, pendingSeek))}</span>
-                  <span>{durationLabel}</span>
-                </div>
-              </div>
-            ) : null}
+            <div className="flex items-center gap-2">
+              <span
+                className={`shrink-0 text-[10px] tabular-nums ${subtitleTone}`}
+                style={readableForeground.subtitleStyle}
+              >
+                {formatMediaTime(hasSeekDuration ? Math.max(0, pendingSeek) : 0)}
+              </span>
+              <Slider
+                value={hasSeekDuration ? Math.min(durationSeconds, pendingSeek) : 0}
+                min={0}
+                max={hasSeekDuration ? Math.max(durationSeconds, elapsedSeconds, pendingSeek) : 1}
+                step={1}
+                ariaLabel={t('media.seek')}
+                onValueChange={(value) => {
+                  if (hasSeekDuration) {
+                    setPendingSeek(value);
+                  }
+                }}
+                onValueCommit={(value) => {
+                  if (hasSeekDuration) {
+                    onSeek(value);
+                  }
+                }}
+                onInteractionStart={() => {
+                  if (hasSeekDuration) {
+                    setIsSeeking(true);
+                  }
+                }}
+                onInteractionEnd={() => {
+                  if (hasSeekDuration) {
+                    setIsSeeking(false);
+                  }
+                }}
+                disabled={!hasSeekDuration}
+                rootClassName="relative flex h-4 min-w-0 flex-1 items-center touch-none select-none"
+                trackClassName="relative h-[3px] grow rounded-full"
+                rangeClassName="absolute h-full rounded-full"
+                thumbClassName="block h-3 w-3 rounded-full outline-none"
+                touchThumbClassName="block h-6 w-6 rounded-full outline-none"
+                trackStyle={trackBaseStyle}
+                rangeStyle={trackFillStyle}
+                thumbStyle={trackThumbStyle}
+              />
+              <span
+                className={`shrink-0 text-[10px] tabular-nums ${subtitleTone}`}
+                style={readableForeground.subtitleStyle}
+              >
+                {hasSeekDuration ? durationLabel : formatMediaTime(0)}
+              </span>
+            </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5 pt-0.5">
               <RoundControlButton
                 theme={theme}
                 size="small"
                 variant="neutral"
-                aria-label={isMuted ? t('media.unmuteVolume') : t('media.muteVolume')}
+                aria-label={isVolumeMode ? t('media.muteVolume') : t('media.volume')}
                 onClick={(event) => {
                   event.stopPropagation();
-                  onToggleMute();
+                  if (isVolumeMode) {
+                    registerVolumeInteraction();
+                    onToggleMute();
+                    return;
+                  }
+                  toggleVolumeMode();
                 }}
-                className="h-8 w-8 border backdrop-blur-xl transition-colors"
+                className="h-7.5 w-7.5 border backdrop-blur-xl transition-colors"
                 iconStyle={controlIconStyle}
-                style={subduedFallback ? undefined : playButtonStyle}
+                style={
+                  subduedFallback
+                    ? undefined
+                    : isVolumeMode
+                      ? muteButtonStyle
+                      : volumeToggleButtonStyle
+                }
               >
-                {isMuted ? (
+                {isVolumeMode ? (
                   <VolumeX className={controlSizes.icon} />
                 ) : (
                   <Volume2 className={controlSizes.icon} />
                 )}
               </RoundControlButton>
 
-              <div className="relative flex-1 px-1">
-                <Slider
-                  value={displayVolume}
-                  ariaLabel={t('media.volume')}
-                  onValueChange={onVolumeChange}
-                  onInteractionStart={onVolumeInteractionStart}
-                  onInteractionEnd={onVolumeInteractionEnd}
-                  rootClassName="relative flex h-5 w-full items-center touch-none select-none"
-                  trackClassName="relative h-[3px] grow rounded-full"
-                  rangeClassName="absolute h-full rounded-full"
-                  thumbClassName="block h-3.5 w-3.5 rounded-full outline-none"
-                  touchThumbClassName="block h-6 w-6 rounded-full outline-none"
-                  trackStyle={trackBaseStyle}
-                  rangeStyle={trackFillStyle}
-                  thumbStyle={trackThumbStyle}
-                />
+              <div className="relative flex-1 px-1.5">
+                {isVolumeMode ? (
+                  <Slider
+                    value={displayVolume}
+                    ariaLabel={t('media.volume')}
+                    onValueChange={(value) => {
+                      registerVolumeInteraction();
+                      onVolumeChange(value);
+                    }}
+                    onInteractionStart={() => {
+                      registerVolumeInteraction();
+                      onVolumeInteractionStart();
+                    }}
+                    onInteractionEnd={onVolumeInteractionEnd}
+                    rootClassName="relative flex h-5 w-full items-center touch-none select-none"
+                    trackClassName="relative h-[3px] grow rounded-full"
+                    rangeClassName="absolute h-full rounded-full"
+                    thumbClassName="block h-3.5 w-3.5 rounded-full outline-none"
+                    touchThumbClassName="block h-6 w-6 rounded-full outline-none"
+                    trackStyle={trackBaseStyle}
+                    rangeStyle={trackFillStyle}
+                    thumbStyle={trackThumbStyle}
+                  />
+                ) : null}
               </div>
 
-              <RoundControlButton
-                theme={theme}
-                size="small"
-                variant="neutral"
-                aria-label={t('media.previousTrack')}
-                disabled={!canPreviousTrack}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onPrevious();
-                }}
-                className="h-8 w-8 border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
-                iconStyle={controlIconStyle}
-                style={subduedFallback ? undefined : playButtonStyle}
-              >
-                <SkipBack className={controlSizes.icon} />
-              </RoundControlButton>
+              {isVolumeMode ? (
+                <RoundControlButton
+                  theme={theme}
+                  size="small"
+                  variant="neutral"
+                  aria-label={t('media.volume')}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    registerVolumeInteraction();
+                    onVolumeChange(100);
+                  }}
+                  className="h-7.5 w-7.5 border backdrop-blur-xl transition-colors"
+                  iconStyle={controlIconStyle}
+                  style={subduedFallback ? undefined : activeUtilityButtonStyle}
+                >
+                  <Volume2 className={controlSizes.icon} />
+                </RoundControlButton>
+              ) : (
+                <>
+                  {canShuffle ? (
+                    <RoundControlButton
+                      theme={theme}
+                      size="small"
+                      variant="neutral"
+                      aria-label={shuffleEnabled ? t('media.shuffle') : t('media.linearPlayback')}
+                      aria-pressed={shuffleEnabled}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onToggleShuffle();
+                      }}
+                      className={`h-7.5 w-7.5 border backdrop-blur-xl transition-colors ${shuffleEnabled ? '!border-0' : ''}`}
+                      iconStyle={controlIconStyle}
+                      style={
+                        subduedFallback
+                          ? undefined
+                          : shuffleEnabled
+                            ? activeUtilityButtonStyle
+                            : neutralButtonStyle
+                      }
+                    >
+                      {shuffleEnabled ? (
+                        <Shuffle className={controlSizes.icon} />
+                      ) : (
+                        <span className="relative flex items-center justify-center">
+                          <Shuffle className={controlSizes.icon} />
+                          <Slash
+                            className={offToggleSlashClassName}
+                            style={mirroredOffToggleSlashStyle}
+                          />
+                        </span>
+                      )}
+                    </RoundControlButton>
+                  ) : null}
 
-              <RoundControlButton
-                theme={theme}
-                size="small"
-                variant="neutral"
-                aria-label={t('media.nextTrack')}
-                disabled={!canNextTrack}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onNext();
-                }}
-                className="h-8 w-8 border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
-                iconStyle={controlIconStyle}
-                style={subduedFallback ? undefined : playButtonStyle}
-              >
-                <SkipForward className={controlSizes.icon} />
-              </RoundControlButton>
+                  {canRepeat ? (
+                    <RoundControlButton
+                      theme={theme}
+                      size="small"
+                      variant="neutral"
+                      aria-label={
+                        repeatMode === 'one'
+                          ? t('media.repeatOne')
+                          : repeatMode === 'all'
+                            ? t('media.repeatAll')
+                            : t('media.repeatOff')
+                      }
+                      aria-pressed={repeatMode !== 'off'}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onCycleRepeat();
+                      }}
+                      className={`h-7.5 w-7.5 border backdrop-blur-xl transition-colors ${repeatMode !== 'off' ? '!border-0' : ''}`}
+                      iconStyle={controlIconStyle}
+                      style={
+                        subduedFallback
+                          ? undefined
+                          : repeatMode !== 'off'
+                            ? activeUtilityButtonStyle
+                            : neutralButtonStyle
+                      }
+                    >
+                      {repeatMode === 'off' ? (
+                        <RepeatOff className={controlSizes.icon} />
+                      ) : repeatMode === 'one' ? (
+                        <Repeat1 className={controlSizes.icon} />
+                      ) : (
+                        <Repeat className={controlSizes.icon} />
+                      )}
+                    </RoundControlButton>
+                  ) : null}
+
+                  <RoundControlButton
+                    theme={theme}
+                    size="small"
+                    variant="neutral"
+                    aria-label={t('media.previousTrack')}
+                    disabled={!canPreviousTrack}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onPrevious();
+                    }}
+                    className="h-7.5 w-7.5 border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+                    iconStyle={controlIconStyle}
+                    style={subduedFallback ? undefined : playButtonStyle}
+                  >
+                    <SkipBack className={controlSizes.icon} />
+                  </RoundControlButton>
+
+                  <RoundControlButton
+                    theme={theme}
+                    size="small"
+                    variant="neutral"
+                    aria-label={t('media.nextTrack')}
+                    disabled={!canNextTrack}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onNext();
+                    }}
+                    className="h-7.5 w-7.5 border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+                    iconStyle={controlIconStyle}
+                    style={subduedFallback ? undefined : playButtonStyle}
+                  >
+                    <SkipForward className={controlSizes.icon} />
+                  </RoundControlButton>
+                </>
+              )}
             </div>
           </div>
         </div>

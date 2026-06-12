@@ -361,7 +361,11 @@ export function MediaSmallView({
               iconStyle={controlIconStyle}
               style={muteButtonStyle}
             >
-              <VolumeX className={controlSizes.icon} />
+              {isMuted ? (
+                <Volume2 className={controlSizes.icon} />
+              ) : (
+                <VolumeX className={controlSizes.icon} />
+              )}
             </RoundControlButton>
           ) : (
             <>

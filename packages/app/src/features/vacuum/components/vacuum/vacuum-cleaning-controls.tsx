@@ -1,94 +1,109 @@
 import { CardDialogChoicePill, CardDialogSection } from '@navet/app/components/patterns';
-import { Button } from '@navet/app/components/primitives';
 import { useI18n } from '@navet/app/hooks';
-import { Home, Pause, Play, Square } from 'lucide-react';
+import { Crosshair, Home, Sparkles } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import type { VacuumCapabilities } from './vacuum-features';
-import type { VacuumStatus } from './vacuum-utils';
-
-type CleaningMode = 'auto' | 'spot' | 'edge' | 'room';
 
 interface VacuumCleaningControlsProps {
-  cleaningMode: CleaningMode;
-  onCleaningModeChange: (mode: CleaningMode) => void;
   fanSpeed: string;
   onFanSpeedChange: (speed: string) => void;
   fanSpeedOptions: string[];
   supportsFanSpeed: boolean;
   isUpdatingFanSpeed?: boolean;
-  currentStatus: VacuumStatus;
-  onStartCleaning: () => void;
-  onPauseCleaning?: () => void;
-  onStopCleaning?: () => void;
   onReturnHome: () => void;
+  onLocate?: () => void;
+  onCleanSpot?: () => void;
   capabilities?: VacuumCapabilities;
   activePillStyle?: CSSProperties;
-  softControlStyle?: CSSProperties;
-  activeControlColor: string;
-  theme: 'light' | 'dark' | 'glass' | 'black';
+}
+
+export function hasVacuumDialogControls(options: {
+  supportsFanSpeed: boolean;
+  fanSpeedOptions: string[];
+  capabilities?: VacuumCapabilities;
+}) {
+  const canReturnHome = options.capabilities?.canReturnHome ?? false;
+  const hasFanSpeedChoices = options.supportsFanSpeed && options.fanSpeedOptions.length > 1;
+  const hasSecondaryActions = Boolean(
+    options.capabilities?.canLocate || options.capabilities?.canCleanSpot
+  );
+
+  return canReturnHome || hasFanSpeedChoices || hasSecondaryActions;
 }
 
 export function VacuumCleaningControls({
-  cleaningMode,
-  onCleaningModeChange,
   fanSpeed,
   onFanSpeedChange,
   fanSpeedOptions,
   supportsFanSpeed,
   isUpdatingFanSpeed = false,
-  currentStatus,
-  onStartCleaning,
-  onPauseCleaning,
-  onStopCleaning,
   onReturnHome,
+  onLocate,
+  onCleanSpot,
   capabilities,
   activePillStyle,
-  softControlStyle,
-  activeControlColor,
-  theme,
 }: VacuumCleaningControlsProps) {
   const { t } = useI18n();
-  const isRunning = currentStatus === 'cleaning' || currentStatus === 'mopping';
-  const shouldStop = Boolean(capabilities?.canStop);
+  const canReturnHome = capabilities?.canReturnHome ?? false;
+  const hasFanSpeedChoices = supportsFanSpeed && fanSpeedOptions.length > 1;
+  const hasSecondaryActions = Boolean(capabilities?.canLocate || capabilities?.canCleanSpot);
 
-  const primaryActionLabel = isRunning
-    ? shouldStop
-      ? t('vacuum.action.stop')
-      : t('vacuum.action.pause')
-    : t('vacuum.action.startCleaning');
-
-  const handlePrimaryAction = () => {
-    if (isRunning) {
-      if (shouldStop) {
-        onStopCleaning?.();
-      } else {
-        onPauseCleaning?.();
-      }
-    } else {
-      onStartCleaning();
-    }
-  };
+  if (
+    !hasVacuumDialogControls({
+      supportsFanSpeed,
+      fanSpeedOptions,
+      capabilities,
+    })
+  ) {
+    return null;
+  }
 
   return (
-    <div className="flex flex-col gap-5 mt-5">
-      <CardDialogSection label={t('vacuum.settings.profile')} className="mb-0">
-        <div className="flex flex-wrap gap-2">
-          {(['auto', 'spot', 'edge', 'room'] as CleaningMode[]).map((mode) => (
-            <CardDialogChoicePill
-              key={mode}
-              active={cleaningMode === mode}
-              onClick={() => onCleaningModeChange(mode)}
-              size="compact"
-              className="min-w-18"
-              style={cleaningMode === mode ? activePillStyle : undefined}
-            >
-              {t(`vacuum.mode.${mode}`)}
-            </CardDialogChoicePill>
-          ))}
-        </div>
-      </CardDialogSection>
+    <div className="mt-5 flex flex-col gap-5">
+      {canReturnHome ? (
+        <CardDialogSection label={t('vacuum.settings.actions')} className="mb-0">
+          <CardDialogChoicePill
+            active={false}
+            onClick={onReturnHome}
+            size="compact"
+            className="min-w-24"
+          >
+            <Home className="mr-1.5 h-3.5 w-3.5" />
+            {t('vacuum.action.returnToDock')}
+          </CardDialogChoicePill>
+        </CardDialogSection>
+      ) : null}
 
-      {supportsFanSpeed ? (
+      {hasSecondaryActions ? (
+        <CardDialogSection label={t('vacuum.settings.moreActions')} className="mb-0">
+          <div className="flex flex-wrap gap-2">
+            {capabilities?.canLocate ? (
+              <CardDialogChoicePill
+                active={false}
+                onClick={() => onLocate?.()}
+                size="compact"
+                className="min-w-24"
+              >
+                <Crosshair className="mr-1.5 h-3.5 w-3.5" />
+                {t('vacuum.action.locate')}
+              </CardDialogChoicePill>
+            ) : null}
+            {capabilities?.canCleanSpot ? (
+              <CardDialogChoicePill
+                active={false}
+                onClick={() => onCleanSpot?.()}
+                size="compact"
+                className="min-w-24"
+              >
+                <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                {t('vacuum.action.cleanSpot')}
+              </CardDialogChoicePill>
+            ) : null}
+          </div>
+        </CardDialogSection>
+      ) : null}
+
+      {hasFanSpeedChoices ? (
         <CardDialogSection label={t('vacuum.settings.fanSpeed')} className="mb-0">
           <div className="flex flex-wrap gap-2">
             {fanSpeedOptions.map((speed) => (
@@ -110,41 +125,6 @@ export function VacuumCleaningControls({
           </div>
         </CardDialogSection>
       ) : null}
-
-      <CardDialogSection label={t('vacuum.settings.actions')} className="mb-0">
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Button
-            variant="primary"
-            size="default"
-            leading={
-              isRunning ? (
-                shouldStop ? (
-                  <Square className="h-4 w-4" />
-                ) : (
-                  <Pause className="h-4 w-4" />
-                )
-              ) : (
-                <Play className="h-4 w-4" />
-              )
-            }
-            onClick={handlePrimaryAction}
-            style={{ backgroundColor: activeControlColor }}
-          >
-            {primaryActionLabel}
-          </Button>
-
-          <Button
-            variant="secondary"
-            size="default"
-            leading={<Home className="h-4 w-4" />}
-            onClick={onReturnHome}
-            className={theme !== 'light' ? 'border-white/10 bg-white/8 hover:bg-white/12' : ''}
-            style={softControlStyle}
-          >
-            {t('vacuum.action.returnToDock')}
-          </Button>
-        </div>
-      </CardDialogSection>
     </div>
   );
 }

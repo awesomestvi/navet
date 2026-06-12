@@ -71,6 +71,17 @@ vi.mock('@navet/app/provider-contract-registry', () => ({
         );
       }
 
+      if (command.type === 'clean_vacuum_areas') {
+        await serviceCaller(
+          'vacuum',
+          'clean_area',
+          { cleaning_area_id: command.areaIds },
+          {
+            entity_id: nativeEntityId,
+          }
+        );
+      }
+
       if (command.type === 'play_pause') {
         await serviceCaller('media_player', 'media_play_pause', {}, { entity_id: nativeEntityId });
       }
@@ -379,6 +390,23 @@ describe('integration-action.service', () => {
       'vacuum',
       'set_fan_speed',
       { fan_speed: 'turbo' },
+      { entity_id: 'vacuum.roborock' }
+    );
+  });
+
+  it('dispatches provider-neutral vacuum area-cleaning commands through the Home Assistant adapter', async () => {
+    const { dispatchEntityCommand } = await import('../integration-action.service');
+
+    await dispatchEntityCommand({
+      type: 'clean_vacuum_areas',
+      entityId: 'vacuum.roborock',
+      areaIds: ['kitchen', 'hallway'],
+    });
+
+    expect(callServiceMock).toHaveBeenCalledWith(
+      'vacuum',
+      'clean_area',
+      { cleaning_area_id: ['kitchen', 'hallway'] },
       { entity_id: 'vacuum.roborock' }
     );
   });

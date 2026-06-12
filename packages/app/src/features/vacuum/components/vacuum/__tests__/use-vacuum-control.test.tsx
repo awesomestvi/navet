@@ -26,9 +26,11 @@ vi.mock('@navet/app/commands', () => ({
     type,
     entityId,
     fanSpeed,
+    areaIds,
   }: {
     type:
       | 'start'
+      | 'clean_vacuum_areas'
       | 'pause'
       | 'stop'
       | 'return_home'
@@ -37,25 +39,32 @@ vi.mock('@navet/app/commands', () => ({
       | 'set_vacuum_fan_speed';
     entityId: string;
     fanSpeed?: string;
+    areaIds?: string[];
   }) => {
     const service =
       type === 'start'
         ? 'start'
-        : type === 'pause'
-          ? 'pause'
-          : type === 'stop'
-            ? 'stop'
-            : type === 'return_home'
-              ? 'return_to_base'
-              : type === 'locate'
-                ? 'locate'
-                : type === 'clean_spot'
-                  ? 'clean_spot'
-                  : 'set_fan_speed';
+        : type === 'clean_vacuum_areas'
+          ? 'clean_area'
+          : type === 'pause'
+            ? 'pause'
+            : type === 'stop'
+              ? 'stop'
+              : type === 'return_home'
+                ? 'return_to_base'
+                : type === 'locate'
+                  ? 'locate'
+                  : type === 'clean_spot'
+                    ? 'clean_spot'
+                    : 'set_fan_speed';
     await serviceMock.callService(
       'vacuum',
       service,
-      type === 'set_vacuum_fan_speed' ? { fan_speed: fanSpeed } : {},
+      type === 'set_vacuum_fan_speed'
+        ? { fan_speed: fanSpeed }
+        : type === 'clean_vacuum_areas'
+          ? { cleaning_area_id: areaIds }
+          : {},
       { entity_id: entityId }
     );
     return {
@@ -82,6 +91,24 @@ describe('useVacuumControl', () => {
       'vacuum',
       'start',
       {},
+      { entity_id: roborockFixtures.vacuum.entity_id }
+    );
+  });
+
+  it('starts an area clean through the documented Home Assistant vacuum.clean_area service', () => {
+    const { result } = renderHookWithProviders(() =>
+      useVacuumControl({
+        entityId: roborockFixtures.vacuum.entity_id,
+        initialStatus: 'idle',
+      })
+    );
+
+    act(() => result.current.handleStartAreaCleaning(['kitchen', 'living_room']));
+
+    expect(serviceMock.callService).toHaveBeenCalledWith(
+      'vacuum',
+      'clean_area',
+      { cleaning_area_id: ['kitchen', 'living_room'] },
       { entity_id: roborockFixtures.vacuum.entity_id }
     );
   });

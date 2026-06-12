@@ -93,6 +93,7 @@ export function MediaLargeView({
   const subtitleTone = stateSurface.secondaryTextClassName;
   const displayVolume = getMediaDisplayVolume(volume, isMuted);
   const durationLabel = formatMediaTime(Math.max(durationSeconds, elapsedSeconds));
+  const hasSeekDuration = durationSeconds > 0;
   const [pendingSeek, setPendingSeek] = useState(elapsedSeconds);
   const [isSeeking, setIsSeeking] = useState(false);
   const controlSizes = getCardActionControlSizes('small');
@@ -249,36 +250,51 @@ export function MediaLargeView({
             </div>
           </div>
 
-          {durationSeconds > 0 ? (
-            <div className="mt-1.5">
-              <Slider
-                value={Math.min(durationSeconds, pendingSeek)}
-                min={0}
-                max={Math.max(durationSeconds, elapsedSeconds, pendingSeek)}
-                step={1}
-                ariaLabel={t('media.seek')}
-                onValueChange={(value) => setPendingSeek(value)}
-                onValueCommit={(value) => onSeek(value)}
-                onInteractionStart={() => setIsSeeking(true)}
-                onInteractionEnd={() => setIsSeeking(false)}
-                rootClassName="relative flex h-4.5 w-full items-center touch-none select-none"
-                trackClassName="relative h-[3px] grow rounded-full"
-                rangeClassName="absolute h-full rounded-full"
-                thumbClassName="block h-3.5 w-3.5 rounded-full outline-none"
-                touchThumbClassName="block h-6 w-6 rounded-full outline-none"
-                trackStyle={trackBaseStyle}
-                rangeStyle={trackFillStyle}
-                thumbStyle={trackThumbStyle}
-              />
-              <div
-                className={`mt-px flex items-center justify-between text-[10px] ${subtitleTone}`}
-                style={readableForeground.subtitleStyle}
-              >
-                <span>{formatMediaTime(Math.max(0, pendingSeek))}</span>
-                <span>{durationLabel}</span>
-              </div>
+          <div className="mt-1.5">
+            <Slider
+              value={hasSeekDuration ? Math.min(durationSeconds, pendingSeek) : 0}
+              min={0}
+              max={hasSeekDuration ? Math.max(durationSeconds, elapsedSeconds, pendingSeek) : 1}
+              step={1}
+              ariaLabel={t('media.seek')}
+              onValueChange={(value) => {
+                if (hasSeekDuration) {
+                  setPendingSeek(value);
+                }
+              }}
+              onValueCommit={(value) => {
+                if (hasSeekDuration) {
+                  onSeek(value);
+                }
+              }}
+              onInteractionStart={() => {
+                if (hasSeekDuration) {
+                  setIsSeeking(true);
+                }
+              }}
+              onInteractionEnd={() => {
+                if (hasSeekDuration) {
+                  setIsSeeking(false);
+                }
+              }}
+              disabled={!hasSeekDuration}
+              rootClassName="relative flex h-4.5 w-full items-center touch-none select-none"
+              trackClassName="relative h-[3px] grow rounded-full"
+              rangeClassName="absolute h-full rounded-full"
+              thumbClassName="block h-3.5 w-3.5 rounded-full outline-none"
+              touchThumbClassName="block h-6 w-6 rounded-full outline-none"
+              trackStyle={trackBaseStyle}
+              rangeStyle={trackFillStyle}
+              thumbStyle={trackThumbStyle}
+            />
+            <div
+              className={`mt-px flex items-center justify-between text-[10px] ${subtitleTone}`}
+              style={readableForeground.subtitleStyle}
+            >
+              <span>{formatMediaTime(hasSeekDuration ? Math.max(0, pendingSeek) : 0)}</span>
+              <span>{hasSeekDuration ? durationLabel : formatMediaTime(0)}</span>
             </div>
-          ) : null}
+          </div>
         </div>
 
         <div className="mt-2.5 flex shrink-0 items-center justify-between gap-3">

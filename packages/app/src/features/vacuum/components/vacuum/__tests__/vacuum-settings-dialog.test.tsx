@@ -1,9 +1,292 @@
 import { renderWithProviders } from '@navet/app/test/render';
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { VacuumSettingsDialog } from '../vacuum-settings-dialog';
 
 describe('VacuumSettingsDialog', () => {
+  it('renders the map tab only when map support is available', () => {
+    const { rerender } = renderWithProviders(
+      <VacuumSettingsDialog
+        entityId="vacuum.roborock"
+        isOpen
+        onClose={vi.fn()}
+        onStartCleaning={vi.fn()}
+        onStartAreaCleaning={vi.fn()}
+        onPauseCleaning={vi.fn()}
+        onReturnHome={vi.fn()}
+        name="Robot"
+        room=""
+        theme="dark"
+        accentColorValue="#06b6d4"
+        currentStatus="idle"
+        supportsFanSpeed={false}
+        capabilities={{
+          canStart: true,
+          canPause: true,
+          canStop: false,
+          canReturnHome: true,
+          canLocate: false,
+          canCleanSpot: false,
+          canSetFanSpeed: false,
+          currentFanSpeed: undefined,
+          fanSpeedOptions: [],
+          canCycleFanSpeed: false,
+          canShowMap: true,
+          canCleanByArea: true,
+          canOrderAreaCleaning: false,
+          availableCleaningAreas: [{ id: 'kitchen', label: 'Kitchen' }],
+        }}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'Map' })).toBeInTheDocument();
+
+    rerender(
+      <VacuumSettingsDialog
+        entityId="vacuum.roborock"
+        isOpen
+        onClose={vi.fn()}
+        onStartCleaning={vi.fn()}
+        onStartAreaCleaning={vi.fn()}
+        onPauseCleaning={vi.fn()}
+        onReturnHome={vi.fn()}
+        name="Robot"
+        room=""
+        theme="dark"
+        accentColorValue="#06b6d4"
+        currentStatus="idle"
+        supportsFanSpeed={false}
+        capabilities={{
+          canStart: true,
+          canPause: true,
+          canStop: false,
+          canReturnHome: true,
+          canLocate: false,
+          canCleanSpot: false,
+          canSetFanSpeed: false,
+          currentFanSpeed: undefined,
+          fanSpeedOptions: [],
+          canCycleFanSpeed: false,
+          canShowMap: false,
+          canCleanByArea: false,
+          canOrderAreaCleaning: false,
+          availableCleaningAreas: [],
+        }}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Map' })).not.toBeInTheDocument();
+  });
+
+  it('selects areas in the map tab and starts area cleaning from controls', () => {
+    const onStartAreaCleaning = vi.fn();
+
+    renderWithProviders(
+      <VacuumSettingsDialog
+        entityId="vacuum.roborock"
+        isOpen
+        onClose={vi.fn()}
+        onStartCleaning={vi.fn()}
+        onStartAreaCleaning={onStartAreaCleaning}
+        onPauseCleaning={vi.fn()}
+        onReturnHome={vi.fn()}
+        name="Robot"
+        room=""
+        theme="dark"
+        accentColorValue="#06b6d4"
+        currentStatus="idle"
+        capabilities={{
+          canStart: true,
+          canPause: true,
+          canStop: false,
+          canReturnHome: true,
+          canLocate: false,
+          canCleanSpot: false,
+          canSetFanSpeed: false,
+          currentFanSpeed: undefined,
+          fanSpeedOptions: [],
+          canCycleFanSpeed: false,
+          canShowMap: true,
+          canCleanByArea: true,
+          canOrderAreaCleaning: false,
+          availableCleaningAreas: [
+            { id: 'kitchen', label: 'Kitchen' },
+            { id: 'hallway', label: 'Hallway' },
+          ],
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Map' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Kitchen/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Hallway/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Start Cleaning' }));
+
+    expect(onStartAreaCleaning).toHaveBeenCalledWith(['kitchen', 'hallway']);
+    expect(screen.getAllByText('Hallway').length).toBeGreaterThan(0);
+  });
+
+  it('shows area reorder affordances only when ordered cleaning is supported', () => {
+    const { rerender } = renderWithProviders(
+      <VacuumSettingsDialog
+        entityId="vacuum.roborock"
+        isOpen
+        onClose={vi.fn()}
+        onStartCleaning={vi.fn()}
+        onStartAreaCleaning={vi.fn()}
+        onPauseCleaning={vi.fn()}
+        onReturnHome={vi.fn()}
+        name="Robot"
+        room=""
+        theme="dark"
+        accentColorValue="#06b6d4"
+        currentStatus="idle"
+        capabilities={{
+          canStart: true,
+          canPause: true,
+          canStop: false,
+          canReturnHome: true,
+          canLocate: false,
+          canCleanSpot: false,
+          canSetFanSpeed: false,
+          currentFanSpeed: undefined,
+          fanSpeedOptions: [],
+          canCycleFanSpeed: false,
+          canShowMap: true,
+          canCleanByArea: true,
+          canOrderAreaCleaning: true,
+          availableCleaningAreas: [
+            { id: 'kitchen', label: 'Kitchen' },
+            { id: 'hallway', label: 'Hallway' },
+          ],
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Map' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Kitchen/ }));
+    expect(screen.getByLabelText('Reorder Kitchen')).toBeInTheDocument();
+
+    rerender(
+      <VacuumSettingsDialog
+        entityId="vacuum.roborock"
+        isOpen
+        onClose={vi.fn()}
+        onStartCleaning={vi.fn()}
+        onStartAreaCleaning={vi.fn()}
+        onPauseCleaning={vi.fn()}
+        onReturnHome={vi.fn()}
+        name="Robot"
+        room=""
+        theme="dark"
+        accentColorValue="#06b6d4"
+        currentStatus="idle"
+        capabilities={{
+          canStart: true,
+          canPause: true,
+          canStop: false,
+          canReturnHome: true,
+          canLocate: false,
+          canCleanSpot: false,
+          canSetFanSpeed: false,
+          currentFanSpeed: undefined,
+          fanSpeedOptions: [],
+          canCycleFanSpeed: false,
+          canShowMap: true,
+          canCleanByArea: true,
+          canOrderAreaCleaning: false,
+          availableCleaningAreas: [
+            { id: 'kitchen', label: 'Kitchen' },
+            { id: 'hallway', label: 'Hallway' },
+          ],
+        }}
+      />
+    );
+
+    expect(screen.queryByLabelText('Reorder Kitchen')).not.toBeInTheDocument();
+  });
+
+  it('keeps the selected map tab active during live dialog rerenders', () => {
+    const { rerender } = renderWithProviders(
+      <VacuumSettingsDialog
+        entityId="vacuum.roborock"
+        isOpen
+        onClose={vi.fn()}
+        onStartCleaning={vi.fn()}
+        onStartAreaCleaning={vi.fn()}
+        onPauseCleaning={vi.fn()}
+        onReturnHome={vi.fn()}
+        name="Robot"
+        room=""
+        theme="dark"
+        accentColorValue="#06b6d4"
+        currentStatus="idle"
+        fanSpeed="quiet"
+        fanSpeeds={['quiet', 'balanced', 'turbo']}
+        capabilities={{
+          canStart: true,
+          canPause: true,
+          canStop: false,
+          canReturnHome: true,
+          canLocate: false,
+          canCleanSpot: false,
+          canSetFanSpeed: true,
+          currentFanSpeed: 'quiet',
+          fanSpeedOptions: ['quiet', 'balanced', 'turbo'],
+          canCycleFanSpeed: false,
+          canShowMap: true,
+          canCleanByArea: true,
+          canOrderAreaCleaning: false,
+          availableCleaningAreas: [{ id: 'kitchen', label: 'Kitchen' }],
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Map' }));
+    expect(
+      within(screen.getByRole('tabpanel')).getByRole('button', { name: /^Kitchen/ })
+    ).toBeInTheDocument();
+
+    rerender(
+      <VacuumSettingsDialog
+        entityId="vacuum.roborock"
+        isOpen
+        onClose={vi.fn()}
+        onStartCleaning={vi.fn()}
+        onStartAreaCleaning={vi.fn()}
+        onPauseCleaning={vi.fn()}
+        onReturnHome={vi.fn()}
+        name="Robot"
+        room=""
+        theme="dark"
+        accentColorValue="#06b6d4"
+        currentStatus="cleaning"
+        fanSpeed="turbo"
+        fanSpeeds={['quiet', 'balanced', 'turbo']}
+        capabilities={{
+          canStart: true,
+          canPause: true,
+          canStop: false,
+          canReturnHome: true,
+          canLocate: false,
+          canCleanSpot: false,
+          canSetFanSpeed: true,
+          currentFanSpeed: 'turbo',
+          fanSpeedOptions: ['quiet', 'balanced', 'turbo'],
+          canCycleFanSpeed: false,
+          canShowMap: true,
+          canCleanByArea: true,
+          canOrderAreaCleaning: false,
+          availableCleaningAreas: [{ id: 'kitchen', label: 'Kitchen' }],
+        }}
+      />
+    );
+
+    expect(
+      within(screen.getByRole('tabpanel')).getByRole('button', { name: /^Kitchen/ })
+    ).toBeInTheDocument();
+  });
+
   it('dispatches fan-speed changes immediately when a speed is selected', async () => {
     const onSetFanSpeed = vi.fn();
 
@@ -30,11 +313,7 @@ describe('VacuumSettingsDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'balanced' }));
 
     expect(onSetFanSpeed).toHaveBeenCalledWith('balanced');
-    expect(
-      screen.queryAllByText(
-        (_, element) => element?.textContent?.trim().endsWith('· balanced') ?? false
-      ).length
-    ).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'balanced' })).toBeInTheDocument();
   });
 
   it('reflects live fan-speed updates back into the selected state', () => {
@@ -58,11 +337,7 @@ describe('VacuumSettingsDialog', () => {
       />
     );
 
-    expect(
-      screen.queryAllByText(
-        (_, element) => element?.textContent?.trim().endsWith('· quiet') ?? false
-      ).length
-    ).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'quiet' })).toBeInTheDocument();
 
     rerender(
       <VacuumSettingsDialog
@@ -84,10 +359,78 @@ describe('VacuumSettingsDialog', () => {
       />
     );
 
-    expect(
-      screen.queryAllByText(
-        (_, element) => element?.textContent?.trim().endsWith('· turbo') ?? false
-      ).length
-    ).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'turbo' })).toBeInTheDocument();
+  });
+
+  it('hides the return-to-dock action when the vacuum does not support it', () => {
+    renderWithProviders(
+      <VacuumSettingsDialog
+        entityId="vacuum.basic"
+        isOpen
+        onClose={vi.fn()}
+        onStartCleaning={vi.fn()}
+        onReturnHome={vi.fn()}
+        name="Basic Vacuum"
+        room=""
+        theme="dark"
+        accentColorValue="#06b6d4"
+        currentStatus="idle"
+        supportsFanSpeed={false}
+        capabilities={{
+          canStart: true,
+          canPause: false,
+          canStop: false,
+          canReturnHome: false,
+          canLocate: false,
+          canCleanSpot: false,
+          canSetFanSpeed: false,
+          currentFanSpeed: undefined,
+          fanSpeedOptions: [],
+          canCycleFanSpeed: false,
+          canShowMap: false,
+          canCleanByArea: false,
+          canOrderAreaCleaning: false,
+          availableCleaningAreas: [],
+        }}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Return to Dock' })).not.toBeInTheDocument();
+  });
+
+  it('hides the controls tab when the vacuum has no dialog controls', () => {
+    renderWithProviders(
+      <VacuumSettingsDialog
+        entityId="vacuum.minimal"
+        isOpen
+        onClose={vi.fn()}
+        onStartCleaning={vi.fn()}
+        onReturnHome={vi.fn()}
+        name="Minimal Vacuum"
+        room=""
+        theme="dark"
+        accentColorValue="#06b6d4"
+        currentStatus="idle"
+        supportsFanSpeed={false}
+        capabilities={{
+          canStart: true,
+          canPause: false,
+          canStop: false,
+          canReturnHome: false,
+          canLocate: false,
+          canCleanSpot: false,
+          canSetFanSpeed: false,
+          currentFanSpeed: undefined,
+          fanSpeedOptions: [],
+          canCycleFanSpeed: false,
+          canShowMap: false,
+          canCleanByArea: false,
+          canOrderAreaCleaning: false,
+          availableCleaningAreas: [],
+        }}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Controls' })).not.toBeInTheDocument();
   });
 });
