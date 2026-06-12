@@ -1,10 +1,15 @@
 import { iconMap } from '@navet/app/features/sensors/components/sensors';
 import type { DeviceMetric } from '@navet/app/types/device.types';
+import {
+  compactRepeatedDeviceLabel,
+  compactRepeatedLabelGroup,
+} from '@navet/app/utils/compact-device-label';
 import { Power } from 'lucide-react';
 import { useCallback } from 'react';
 
 interface UseSwitchMetricFormattersParams {
   deviceName: string;
+  metricLabels?: readonly string[];
   labels: {
     power: string;
     voltage: string;
@@ -16,7 +21,7 @@ function normalizePrefixWord(word: string) {
   return word.replace(/[^a-z0-9]/gi, '').toLowerCase();
 }
 
-export function getSwitchMetricDisplayLabel(metricLabel: string, deviceName: string) {
+function compactLabelByDeviceName(metricLabel: string, deviceName: string) {
   const labelWords = metricLabel.trim().split(/\s+/);
   const deviceWords = deviceName.trim().split(/\s+/);
   let sharedPrefixWordCount = 0;
@@ -39,7 +44,29 @@ export function getSwitchMetricDisplayLabel(metricLabel: string, deviceName: str
   return labelWords.slice(sharedPrefixWordCount).join(' ');
 }
 
-export function useSwitchMetricFormatters({ deviceName, labels }: UseSwitchMetricFormattersParams) {
+export function getSwitchMetricDisplayLabel(
+  metricLabel: string,
+  deviceName: string,
+  metricLabels: readonly string[] = []
+) {
+  const compactByExactDeviceName = compactLabelByDeviceName(metricLabel, deviceName);
+  if (compactByExactDeviceName !== metricLabel) {
+    return compactByExactDeviceName;
+  }
+
+  const compactByDeviceName = compactRepeatedDeviceLabel(metricLabel, deviceName, metricLabels);
+  if (compactByDeviceName !== metricLabel) {
+    return compactByDeviceName;
+  }
+
+  return compactRepeatedLabelGroup(metricLabel, metricLabels);
+}
+
+export function useSwitchMetricFormatters({
+  deviceName,
+  metricLabels = [],
+  labels,
+}: UseSwitchMetricFormattersParams) {
   const formatPower = useCallback((watts?: number) => {
     if (watts == null) {
       return null;
@@ -76,10 +103,10 @@ export function useSwitchMetricFormatters({ deviceName, labels }: UseSwitchMetri
         case 'Energy':
           return labels.energy;
         default:
-          return getSwitchMetricDisplayLabel(metric.label, deviceName);
+          return getSwitchMetricDisplayLabel(metric.label, deviceName, metricLabels);
       }
     },
-    [deviceName, labels.energy, labels.power, labels.voltage]
+    [deviceName, labels.energy, labels.power, labels.voltage, metricLabels]
   );
 
   const renderMetricIcon = useCallback((metric: DeviceMetric, className: string) => {

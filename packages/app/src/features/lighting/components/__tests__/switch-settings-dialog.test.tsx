@@ -40,7 +40,7 @@ describe('SwitchSettingsDialog', () => {
         entityId="switch.kitchen"
         isOpen
         onOpenChange={vi.fn()}
-        name="Kitchen Switch"
+        name="Pax Calima Boost mode"
         entityType="Switch"
         isOn
         metricSectionTitle="Metrics"
@@ -59,7 +59,19 @@ describe('SwitchSettingsDialog', () => {
               entityId: 'switch.coffee',
               state: 'on',
               attributes: {
-                friendly_name: 'Coffee Maker',
+                friendly_name: 'Pax Calima Power-on behaviour',
+              },
+              lastChanged: '2026-05-17T00:00:00.000Z',
+              lastUpdated: '2026-05-17T00:00:00.000Z',
+            },
+          },
+          {
+            id: 'switch.weekend',
+            entity: {
+              entityId: 'switch.weekend',
+              state: 'off',
+              attributes: {
+                friendly_name: 'Pax Calima TrickleDays Weekends',
               },
               lastChanged: '2026-05-17T00:00:00.000Z',
               lastUpdated: '2026-05-17T00:00:00.000Z',
@@ -71,7 +83,9 @@ describe('SwitchSettingsDialog', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /Coffee Maker/i }));
+    expect(screen.getByText('Power-on behaviour')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Power-on behaviour/i }));
 
     expect(serviceMock.callService).toHaveBeenCalledWith(
       'switch',

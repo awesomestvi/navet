@@ -58,6 +58,8 @@ Path resolution rule:
 ## Non-Negotiable Rules
 
 - Home Assistant official documentation is the source of truth for Home Assistant adapter behavior.
+- Use `/homeassistant/core` as the local implementation reference for Home Assistant edge cases,
+  payload shapes, service behavior, and undocumented runtime details.
 - Home Assistant documentation does not define Navet's overall architecture.
 - Treat Home Assistant as one provider adapter inside Navet, not as the application architecture.
 - Navet uses a package architecture direction with `@navet/core`, `@navet/ui`, provider packages,
@@ -72,7 +74,8 @@ Path resolution rule:
   is explicitly adapter-internal.
 - Do not expose Home Assistant service payloads as the public UI command model.
 - Prefer provider-neutral entities and commands before adding backend-specific conditionals.
-- Do not use Navet's current implementation as the source of truth for Home Assistant behavior.
+- When Home Assistant behavior is unclear, check official docs first, then confirm against
+  `/homeassistant/core`; do not infer behavior from Navet's current implementation.
 - Do not change tests just to match the current implementation.
 - Never use or suggest `git commit --no-verify`, `git push --no-verify`, or any equivalent hook-bypass flag.
 - Treat `IntegrationProviderId`, `NavetDevice`, `NavetRoom`, `NavetRoomDescriptor`,
@@ -81,3 +84,10 @@ Path resolution rule:
   resolution as the current architecture vocabulary.
 - Prefer incremental extraction over a rewrite.
 - Follow [`docs/agents/commands.md`](docs/agents/commands.md) before running repo commands.
+
+Practical Home Assistant verification:
+
+- Inspect `/homeassistant/core/homeassistant/` for concrete implementation behavior.
+- Inspect `/homeassistant/core/tests/` for regression coverage and realistic behavior examples.
+- Use `/homeassistant/core` to understand Home Assistant itself, not to define Navet architecture
+  or justify provider-specific code leaking into shared layers.

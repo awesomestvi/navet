@@ -20,6 +20,8 @@ on Home Assistant raw payloads.
   - [`/docs/testing/provider-testing-strategy.md`](../docs/testing/provider-testing-strategy.md)
   - [`/docs/roadmap/provider-platform-roadmap.md`](../docs/roadmap/provider-platform-roadmap.md)
 - Home Assistant official documentation is the source of truth for Home Assistant adapter behavior.
+- Use `/homeassistant/core` as the local implementation reference for Home Assistant edge cases,
+  payload shapes, service behavior, and undocumented runtime details.
 - Home Assistant documentation does not define Navet's overall architecture.
 - Treat Home Assistant as one provider adapter inside Navet.
 - Navet uses a package architecture direction with provider-neutral `@navet/core` and `@navet/ui`,
@@ -32,13 +34,21 @@ on Home Assistant raw payloads.
 - Do not add new shared-UI dependencies on `HassEntity` or other backend raw types unless the code
   is explicitly adapter-internal.
 - Do not expose Home Assistant service payloads as the public UI command surface.
-- Navet's current implementation is not the behavioral source of truth for Home Assistant-facing
-  work.
+- When Home Assistant behavior is unclear, check official docs first, then confirm against
+  `/homeassistant/core`; Navet's current implementation is not the behavioral source of truth for
+  Home Assistant-facing work.
 - Do not update tests only to make them pass.
 - Never use or suggest `git commit --no-verify`, `git push --no-verify`, or any equivalent
   hook-bypass flag.
 - Prefer realistic payloads, realistic fixtures, and real regressions over invented happy-path
   mocks.
+
+Practical Home Assistant verification:
+
+- Inspect `/homeassistant/core/homeassistant/` for concrete implementation behavior.
+- Inspect `/homeassistant/core/tests/` for regression coverage and realistic behavior examples.
+- Use `/homeassistant/core` to understand Home Assistant itself, not to define Navet architecture
+  or justify provider-specific code leaking into shared layers.
 
 ## Current Vocabulary
 

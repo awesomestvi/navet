@@ -14,6 +14,9 @@ const defaultProps = {
   isMuted: false,
   theme: 'glass' as const,
   remoteAvailable: true,
+  canSetVolume: true,
+  canMuteVolume: true,
+  canSelectSource: true,
   onTogglePlay: vi.fn(),
   onToggleMute: vi.fn(),
   onVolumeChange: vi.fn(),
@@ -41,5 +44,29 @@ describe('MediaTvView', () => {
 
     expect(screen.getByRole('button', { name: 'Hide navigation pad' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Select' })).toBeInTheDocument();
+  });
+
+  it('hides unsupported remote, volume, and source controls', () => {
+    renderWithProviders(
+      <MediaTvView
+        {...defaultProps}
+        remoteAvailable={false}
+        canSetVolume={false}
+        canMuteVolume={false}
+        canSelectSource={false}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Volume down' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Volume up' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Mute volume' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Channel down' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Channel up' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Menu' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Home' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Show navigation pad' })).not.toBeInTheDocument();
+    expect(screen.queryByText('HDMI 1')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Resume playback' })).toBeInTheDocument();
   });
 });

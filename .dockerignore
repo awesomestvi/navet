@@ -13,6 +13,7 @@ storybook-static
 .idea
 .vscode
 .claude
+.husky
 
 .env
 .env.*
@@ -22,6 +23,13 @@ storybook-static
 *.tsbuildinfo
 .DS_Store
 Thumbs.db
+
+# Maintainer and reference-only content that is not needed for standalone or add-on image builds.
+ai
+docs
+homeassistant
+working_files
+AGENTS.md
 
 platform
 !platform/home-assistant

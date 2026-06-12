@@ -30,39 +30,42 @@ export function TvTransportControls({
 
   return (
     <>
-      <TvControlButton
-        theme={theme}
-        size="small"
-        label="Menu"
-        disabled={!remoteAvailable}
-        style={controlStyle}
-        iconClassName={iconClassName}
-        onPress={() => onRemoteCommand('menu')}
-      >
-        <Menu className={tvIconClass} />
-      </TvControlButton>
-      <TvControlButton
-        theme={theme}
-        size="small"
-        label="Home"
-        disabled={!remoteAvailable}
-        style={controlStyle}
-        iconClassName={iconClassName}
-        onPress={() => onRemoteCommand('home')}
-      >
-        <House className={tvIconClass} />
-      </TvControlButton>
-      <TvControlButton
-        theme={theme}
-        size="small"
-        label="Back"
-        disabled={!remoteAvailable}
-        style={controlStyle}
-        iconClassName={iconClassName}
-        onPress={() => onRemoteCommand('back')}
-      >
-        <Undo2 className={tvIconClass} />
-      </TvControlButton>
+      {remoteAvailable ? (
+        <TvControlButton
+          theme={theme}
+          size="small"
+          label="Menu"
+          style={controlStyle}
+          iconClassName={iconClassName}
+          onPress={() => onRemoteCommand('menu')}
+        >
+          <Menu className={tvIconClass} />
+        </TvControlButton>
+      ) : null}
+      {remoteAvailable ? (
+        <TvControlButton
+          theme={theme}
+          size="small"
+          label="Home"
+          style={controlStyle}
+          iconClassName={iconClassName}
+          onPress={() => onRemoteCommand('home')}
+        >
+          <House className={tvIconClass} />
+        </TvControlButton>
+      ) : null}
+      {remoteAvailable ? (
+        <TvControlButton
+          theme={theme}
+          size="small"
+          label="Back"
+          style={controlStyle}
+          iconClassName={iconClassName}
+          onPress={() => onRemoteCommand('back')}
+        >
+          <Undo2 className={tvIconClass} />
+        </TvControlButton>
+      ) : null}
       <TvControlButton
         theme={theme}
         size="small"

@@ -679,6 +679,7 @@ export const FanCard = memo(function FanCard({
           isOpen={isSettingsOpen}
           onOpenChange={setIsSettingsOpen}
           name={name}
+          labelContextName={name}
           entityType={t('climate.mode.fan')}
           isOn={isOn}
           metricSectionTitle=""

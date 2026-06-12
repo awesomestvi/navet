@@ -68,7 +68,8 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
         entityId={props.id}
         isOpen={controller.isDialogOpen}
         onOpenChange={controller.setIsDialogOpen}
-        name={props.name}
+        name={controller.displayName}
+        labelContextName={props.name}
         entityType={controller.entityType}
         isOn={controller.isOn}
         metricSectionTitle={controller.metricSectionTitle}
@@ -132,7 +133,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
           <div className="relative flex h-full w-full flex-col justify-between text-left">
             <div className="min-w-0 w-full">
               <EntityCardTitleBlock
-                title={props.name}
+                title={controller.displayName}
                 subtitle={controller.entityType}
                 layout="eyebrow-first"
                 titleClassName={`mt-1 line-clamp-2 text-xs font-semibold leading-tight ${stateSurface.primaryTextClassName}`}
@@ -189,7 +190,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
         >
           <div className="relative w-full">
             <EntityCardHeader
-              title={props.name}
+              title={controller.displayName}
               subtitle={controller.entityType}
               size="extra-small"
               align="center"
@@ -258,7 +259,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
       >
         <div className="relative h-full flex flex-col">
           <EntityCardHeader
-            title={props.name}
+            title={controller.displayName}
             subtitle={controller.entityType}
             layout="eyebrow-first"
             size={controller.isExtraSmall ? 'extra-small' : 'small'}

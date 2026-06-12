@@ -27,6 +27,10 @@ import {
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import type { DeviceMetric } from '@navet/app/types/device.types';
+import {
+  compactRepeatedDeviceLabel,
+  compactRepeatedLabelGroup,
+} from '@navet/app/utils/compact-device-label';
 import { getEntityTypeLabel } from '@navet/app/utils/entity-type-label';
 import { Palette, Sliders, ToggleLeft } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
@@ -38,6 +42,7 @@ interface SwitchSettingsDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   name: string;
+  labelContextName?: string;
   entityType: string;
   isOn: boolean;
   metricSectionTitle: string;
@@ -63,6 +68,7 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
   isOpen,
   onOpenChange,
   name,
+  labelContextName,
   entityType,
   isOn,
   metricSectionTitle,
@@ -102,6 +108,9 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
     : 'bg-linear-to-br from-gray-900/95 to-gray-950/95 border-gray-500/10';
   const dialogSurfaceOverrideClassName = isOn ? (dialogSurfaceClassName ?? '') : '';
   const resolvedDialogSurfaceStyle = isOn ? dialogSurfaceStyle : undefined;
+  const siblingLabels = siblingEntities
+    .map((entry) => entry.entity.attributes?.friendly_name)
+    .filter((label): label is string => typeof label === 'string' && label.trim().length > 0);
 
   return (
     <DialogShell
@@ -160,7 +169,12 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
                       <SwitchControlRow
                         key={id}
                         entityId={id}
-                        label={getSiblingDisplayName(id, entity)}
+                        label={getSiblingDisplayName(
+                          labelContextName ?? name,
+                          siblingLabels,
+                          id,
+                          entity
+                        )}
                         typeLabel={getEntityTypeLabel(id)}
                         isOn={entity.state === 'on'}
                       />
@@ -234,10 +248,20 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
   );
 });
 
-function getSiblingDisplayName(entityId: string, entity: SwitchSiblingEntity['entity']): string {
+function getSiblingDisplayName(
+  primaryLabel: string,
+  siblingLabels: readonly string[],
+  entityId: string,
+  entity: SwitchSiblingEntity['entity']
+): string {
   const friendly = entity.attributes?.friendly_name;
   if (typeof friendly === 'string' && friendly.trim().length > 0) {
-    return friendly;
+    const compactByPrimaryLabel = compactRepeatedDeviceLabel(friendly, primaryLabel, siblingLabels);
+    if (compactByPrimaryLabel !== friendly) {
+      return compactByPrimaryLabel;
+    }
+
+    return compactRepeatedLabelGroup(friendly, siblingLabels);
   }
 
   return entityId

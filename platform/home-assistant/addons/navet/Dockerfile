@@ -20,9 +20,22 @@ ENV NAVET_RELEASE_CHANNEL=$NAVET_RELEASE_CHANNEL
 ENV NAVET_BUILD_VERSION=$NAVET_BUILD_VERSION
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/standalone/package.json apps/standalone/package.json
+COPY packages/app/package.json packages/app/package.json
+COPY packages/core/package.json packages/core/package.json
+COPY packages/provider-homeassistant/package.json packages/provider-homeassistant/package.json
+COPY packages/provider-homey/package.json packages/provider-homey/package.json
+COPY packages/provider-hubitat/package.json packages/provider-hubitat/package.json
+COPY packages/provider-openhab/package.json packages/provider-openhab/package.json
+COPY packages/provider-smartthings/package.json packages/provider-smartthings/package.json
+COPY packages/ui/package.json packages/ui/package.json
 RUN corepack enable && pnpm install --frozen-lockfile
 
-COPY . .
+COPY tsconfig.json tsconfig.node.json postcss.config.mjs vite.config.ts ./
+COPY apps/standalone apps/standalone
+COPY packages packages
+COPY assets assets
+COPY scripts scripts
 RUN NAVET_ENABLE_DEMO=$NAVET_ENABLE_DEMO pnpm build
 
 FROM ${BUILD_FROM}

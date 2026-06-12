@@ -17,6 +17,10 @@ import { useI18n, useTheme } from '@navet/app/hooks';
 import { callIntegrationService } from '@navet/app/services/integration-service-call.service';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
+import {
+  compactRepeatedDeviceLabel,
+  compactRepeatedLabelGroup,
+} from '@navet/app/utils/compact-device-label';
 import { getEntityTypeLabel } from '@navet/app/utils/entity-type-label';
 import {
   convertDisplayTemperatureToSourceUnit,
@@ -133,6 +137,9 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
       convertDisplayTemperatureToSourceUnit(nextTemp, temperatureUnit, sourceTemperatureUnit)
     );
   };
+  const siblingLabels = siblingEntities
+    .map((entry) => entry.entity.attributes?.friendly_name)
+    .filter((label): label is string => typeof label === 'string' && label.trim().length > 0);
 
   return (
     <DialogShell
@@ -293,7 +300,12 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
                       <ClimateSiblingControlRow
                         key={id}
                         entityId={id}
-                        label={getSiblingDisplayName(id, entity.attributes?.friendly_name)}
+                        label={getSiblingDisplayName(
+                          name,
+                          siblingLabels,
+                          id,
+                          entity.attributes?.friendly_name
+                        )}
                         typeLabel={getEntityTypeLabel(id)}
                         state={entity.state}
                         attributes={entity.attributes}
@@ -320,9 +332,23 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
   );
 });
 
-function getSiblingDisplayName(entityId: string, friendlyName: unknown): string {
+function getSiblingDisplayName(
+  primaryLabel: string,
+  siblingLabels: readonly string[],
+  entityId: string,
+  friendlyName: unknown
+): string {
   if (typeof friendlyName === 'string' && friendlyName.trim().length > 0) {
-    return friendlyName;
+    const compactByPrimaryLabel = compactRepeatedDeviceLabel(
+      friendlyName,
+      primaryLabel,
+      siblingLabels
+    );
+    if (compactByPrimaryLabel !== friendlyName) {
+      return compactByPrimaryLabel;
+    }
+
+    return compactRepeatedLabelGroup(friendlyName, siblingLabels);
   }
 
   return entityId

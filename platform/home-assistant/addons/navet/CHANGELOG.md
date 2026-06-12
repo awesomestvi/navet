@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.1
+
+- Updated Navet to `0.7.1`
+- Added richer Roborock-friendly vacuum controls, including area cleaning support on supported devices
+- Added repeat and shuffle controls across media cards, with cleaner TV control handling
+- Fixed Apple Music and Music Assistant artwork recovery, including grouped-player cases
+- Improved repeated device labels and room/media control readability on mixed-device dashboards
+
 ## 0.7.0
 
 - Updated Navet to `0.7.0`

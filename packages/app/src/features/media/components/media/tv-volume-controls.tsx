@@ -9,6 +9,8 @@ interface TvVolumeControlsProps {
   theme: ThemeType;
   isMuted: boolean;
   volume: number;
+  canSetVolume: boolean;
+  canMuteVolume: boolean;
   controlStyle: CSSProperties;
   iconClassName: string;
   tvIconClass: string;
@@ -23,6 +25,8 @@ export function TvVolumeControls({
   theme,
   isMuted,
   volume,
+  canSetVolume,
+  canMuteVolume,
   controlStyle,
   iconClassName,
   tvIconClass,
@@ -43,38 +47,48 @@ export function TvVolumeControls({
   const handleVolumeUp = () => updateVolume(Math.min(100, volume + 10));
   const handleVolumeDown = () => updateVolume(Math.max(0, volume - 10));
 
+  if (!canSetVolume && !canMuteVolume) {
+    return null;
+  }
+
   return (
     <div className={`flex min-w-0 items-center ${tvControlClusterGap}`}>
-      <TvControlButton
-        theme={theme}
-        size="small"
-        label="Volume down"
-        style={controlStyle}
-        iconClassName={iconClassName}
-        onPress={handleVolumeDown}
-      >
-        <Minus className={tvIconClass} />
-      </TvControlButton>
-      <TvControlButton
-        theme={theme}
-        size="small"
-        label={isMuted ? t('media.unmuteVolume') : t('media.muteVolume')}
-        style={controlStyle}
-        iconClassName={iconClassName}
-        onPress={onToggleMute}
-      >
-        {isMuted ? <VolumeX className={tvIconClass} /> : <Volume2 className={tvIconClass} />}
-      </TvControlButton>
-      <TvControlButton
-        theme={theme}
-        size="small"
-        label="Volume up"
-        style={controlStyle}
-        iconClassName={iconClassName}
-        onPress={handleVolumeUp}
-      >
-        <Plus className={tvIconClass} />
-      </TvControlButton>
+      {canSetVolume ? (
+        <TvControlButton
+          theme={theme}
+          size="small"
+          label="Volume down"
+          style={controlStyle}
+          iconClassName={iconClassName}
+          onPress={handleVolumeDown}
+        >
+          <Minus className={tvIconClass} />
+        </TvControlButton>
+      ) : null}
+      {canMuteVolume ? (
+        <TvControlButton
+          theme={theme}
+          size="small"
+          label={isMuted ? t('media.unmuteVolume') : t('media.muteVolume')}
+          style={controlStyle}
+          iconClassName={iconClassName}
+          onPress={onToggleMute}
+        >
+          {isMuted ? <VolumeX className={tvIconClass} /> : <Volume2 className={tvIconClass} />}
+        </TvControlButton>
+      ) : null}
+      {canSetVolume ? (
+        <TvControlButton
+          theme={theme}
+          size="small"
+          label="Volume up"
+          style={controlStyle}
+          iconClassName={iconClassName}
+          onPress={handleVolumeUp}
+        >
+          <Plus className={tvIconClass} />
+        </TvControlButton>
+      ) : null}
     </div>
   );
 }
@@ -98,15 +112,16 @@ export function TvChannelControls({
   tvControlClusterGap,
   onRemoteCommand,
 }: TvChannelControlsProps) {
+  if (!remoteAvailable) {
+    return null;
+  }
+
   return (
-    <div
-      className={`flex min-w-0 items-center ${tvControlClusterGap} ${!remoteAvailable ? 'opacity-70' : ''}`}
-    >
+    <div className={`flex min-w-0 items-center ${tvControlClusterGap}`}>
       <TvControlButton
         theme={theme}
         size="small"
         label="Channel down"
-        disabled={!remoteAvailable}
         style={controlStyle}
         iconClassName={iconClassName}
         onPress={() => onRemoteCommand('channelDown')}
@@ -117,7 +132,6 @@ export function TvChannelControls({
         theme={theme}
         size="small"
         label="Channel up"
-        disabled={!remoteAvailable}
         style={controlStyle}
         iconClassName={iconClassName}
         onPress={() => onRemoteCommand('channelUp')}

@@ -27,6 +27,9 @@ interface MediaTvViewProps {
   isMuted: boolean;
   theme: ThemeType;
   remoteAvailable: boolean;
+  canSetVolume: boolean;
+  canMuteVolume: boolean;
+  canSelectSource: boolean;
   onTogglePlay: () => void;
   onToggleMute: () => void;
   onVolumeChange: (value: number) => void;
@@ -48,6 +51,9 @@ export function MediaTvView({
   isMuted,
   theme,
   remoteAvailable,
+  canSetVolume,
+  canMuteVolume,
+  canSelectSource,
   onTogglePlay,
   onToggleMute,
   onVolumeChange,
@@ -79,6 +85,11 @@ export function MediaTvView({
   const tvCardActionRowSize = isSmallTvCard ? 'small' : 'medium';
   const iconClassName = tvSurface.iconClassName;
   const separatorColor = tvSurface.separatorColor;
+  const showRemoteControls = remoteAvailable;
+  const showVolumeControls = canSetVolume || canMuteVolume;
+  const showChannelControls = remoteAvailable;
+  const showUtilitySeparator = showVolumeControls && showChannelControls;
+  const showSourceSelector = canSelectSource;
 
   const controlStyle: CSSProperties = tvSurface.controlStyle;
   const panelStyle: CSSProperties = tvSurface.panelStyle;
@@ -96,57 +107,30 @@ export function MediaTvView({
     />
   );
 
-  const tvDpadToggleButton = isSmallTvCard ? (
-    <TvControlButton
-      theme={theme}
-      size="small"
-      label={dpadOpen ? t('media.tv.hideDpad') : t('media.tv.showDpad')}
-      style={controlStyle}
-      iconClassName={iconClassName}
-      className={dpadOpen ? 'ring-1 ring-fuchsia-400/35' : ''}
-      onPress={() => setDpadOpen((open) => !open)}
-    >
-      <Gamepad2 className={tvIconClass} />
-    </TvControlButton>
-  ) : null;
-
-  const utilityControls = (
-    <div className={`flex min-w-0 items-center justify-start ${tvControlClusterGap}`}>
-      <TvVolumeControls
+  const tvDpadToggleButton =
+    isSmallTvCard && showRemoteControls ? (
+      <TvControlButton
         theme={theme}
-        isMuted={isMuted}
-        volume={volume}
-        controlStyle={controlStyle}
+        size="small"
+        label={dpadOpen ? t('media.tv.hideDpad') : t('media.tv.showDpad')}
+        style={controlStyle}
         iconClassName={iconClassName}
-        tvIconClass={tvIconClass}
-        tvControlClusterGap={tvControlClusterGap}
-        onToggleMute={onToggleMute}
-        onVolumeChange={onVolumeChange}
-        onVolumeInteractionStart={onVolumeInteractionStart}
-        onVolumeInteractionEnd={onVolumeInteractionEnd}
-      />
-      {!isSmallTvCard ? (
-        <div className="h-6 w-px shrink-0" style={{ backgroundColor: separatorColor }} />
-      ) : null}
-      <TvChannelControls
-        theme={theme}
-        remoteAvailable={remoteAvailable}
-        controlStyle={controlStyle}
-        iconClassName={iconClassName}
-        tvIconClass={tvIconClass}
-        tvControlClusterGap={tvControlClusterGap}
-        onRemoteCommand={onRemoteCommand}
-      />
-    </div>
-  );
+        className={dpadOpen ? 'ring-1 ring-fuchsia-400/35' : ''}
+        onPress={() => setDpadOpen((open) => !open)}
+      >
+        <Gamepad2 className={tvIconClass} />
+      </TvControlButton>
+    ) : null;
 
-  const utilityControlsVertical = (
-    <div className={`flex flex-col ${tvSectionStackGap}`}>
-      <div className="flex items-center justify-center">
+  const utilityControls =
+    showVolumeControls || showChannelControls ? (
+      <div className={`flex min-w-0 items-center justify-start ${tvControlClusterGap}`}>
         <TvVolumeControls
           theme={theme}
           isMuted={isMuted}
           volume={volume}
+          canSetVolume={canSetVolume}
+          canMuteVolume={canMuteVolume}
           controlStyle={controlStyle}
           iconClassName={iconClassName}
           tvIconClass={tvIconClass}
@@ -156,9 +140,9 @@ export function MediaTvView({
           onVolumeInteractionStart={onVolumeInteractionStart}
           onVolumeInteractionEnd={onVolumeInteractionEnd}
         />
-      </div>
-      <div className="h-px w-full" style={{ backgroundColor: separatorColor }} />
-      <div className="flex items-center justify-center">
+        {!isSmallTvCard && showUtilitySeparator ? (
+          <div className="h-6 w-px shrink-0" style={{ backgroundColor: separatorColor }} />
+        ) : null}
         <TvChannelControls
           theme={theme}
           remoteAvailable={remoteAvailable}
@@ -169,8 +153,48 @@ export function MediaTvView({
           onRemoteCommand={onRemoteCommand}
         />
       </div>
-    </div>
-  );
+    ) : null;
+
+  const utilityControlsVertical =
+    showVolumeControls || showChannelControls ? (
+      <div className={`flex flex-col ${tvSectionStackGap}`}>
+        {showVolumeControls ? (
+          <div className="flex items-center justify-center">
+            <TvVolumeControls
+              theme={theme}
+              isMuted={isMuted}
+              volume={volume}
+              canSetVolume={canSetVolume}
+              canMuteVolume={canMuteVolume}
+              controlStyle={controlStyle}
+              iconClassName={iconClassName}
+              tvIconClass={tvIconClass}
+              tvControlClusterGap={tvControlClusterGap}
+              onToggleMute={onToggleMute}
+              onVolumeChange={onVolumeChange}
+              onVolumeInteractionStart={onVolumeInteractionStart}
+              onVolumeInteractionEnd={onVolumeInteractionEnd}
+            />
+          </div>
+        ) : null}
+        {showUtilitySeparator ? (
+          <div className="h-px w-full" style={{ backgroundColor: separatorColor }} />
+        ) : null}
+        {showChannelControls ? (
+          <div className="flex items-center justify-center">
+            <TvChannelControls
+              theme={theme}
+              remoteAvailable={remoteAvailable}
+              controlStyle={controlStyle}
+              iconClassName={iconClassName}
+              tvIconClass={tvIconClass}
+              tvControlClusterGap={tvControlClusterGap}
+              onRemoteCommand={onRemoteCommand}
+            />
+          </div>
+        ) : null}
+      </div>
+    ) : null;
 
   const header = (
     <EntityCardHeader
@@ -193,7 +217,7 @@ export function MediaTvView({
     />
   );
 
-  const sourceSelector = (
+  const sourceSelector = showSourceSelector ? (
     <TvSourceSelector
       source={source}
       sourceList={sourceList}
@@ -203,7 +227,7 @@ export function MediaTvView({
       tvTextTokens={tvTextTokens}
       onSelectSource={onSelectSource}
     />
-  );
+  ) : null;
 
   const transportControls = (
     <TvTransportControls
@@ -232,31 +256,33 @@ export function MediaTvView({
     />
   );
 
-  const renderDpadOverlay = () => (
-    <div className="pointer-events-none absolute right-0 top-0 z-20 flex justify-end">
-      <div className="pointer-events-auto">
-        <TvDpad
-          theme={theme}
-          remoteAvailable={remoteAvailable}
-          style={controlStyle}
-          shellStyle={navShellStyle}
-          layout={tvDpadLayout}
-          onRemoteCommand={onRemoteCommand}
-        />
+  const renderDpadOverlay = () =>
+    showRemoteControls ? (
+      <div className="pointer-events-none absolute right-0 top-0 z-20 flex justify-end">
+        <div className="pointer-events-auto">
+          <TvDpad
+            theme={theme}
+            remoteAvailable={remoteAvailable}
+            style={controlStyle}
+            shellStyle={navShellStyle}
+            layout={tvDpadLayout}
+            onRemoteCommand={onRemoteCommand}
+          />
+        </div>
       </div>
-    </div>
-  );
+    ) : null;
 
-  const renderDpadInline = () => (
-    <TvDpad
-      theme={theme}
-      remoteAvailable={remoteAvailable}
-      style={controlStyle}
-      shellStyle={navShellStyle}
-      layout={tvDpadLayout}
-      onRemoteCommand={onRemoteCommand}
-    />
-  );
+  const renderDpadInline = () =>
+    showRemoteControls ? (
+      <TvDpad
+        theme={theme}
+        remoteAvailable={remoteAvailable}
+        style={controlStyle}
+        shellStyle={navShellStyle}
+        layout={tvDpadLayout}
+        onRemoteCommand={onRemoteCommand}
+      />
+    ) : null;
 
   if (isCompact) {
     return (

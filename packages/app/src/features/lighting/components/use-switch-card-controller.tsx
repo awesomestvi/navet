@@ -14,6 +14,7 @@ import {
 } from '@navet/app/hooks';
 import { useIntegrationStore } from '@navet/app/hooks/use-integration-store';
 import type { PlatformEntitySnapshot } from '@navet/app/platform/provider-feature-models';
+import { compactRepeatedDeviceLabel } from '@navet/app/utils/compact-device-label';
 import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SwitchCardProps } from './switch-card.types';
@@ -101,6 +102,16 @@ export function useSwitchCardController({
         .filter((entry): entry is SwitchSiblingEntity => entry !== null),
     [siblingEntityIds, siblingEntityRecord]
   );
+  const displayName = useMemo(() => {
+    const siblingNames = siblingEntities
+      .map((entry) => {
+        const friendlyName = entry.entity.attributes?.friendly_name;
+        return typeof friendlyName === 'string' ? friendlyName : '';
+      })
+      .filter((label) => label.trim().length > 0);
+
+    return compactRepeatedDeviceLabel(name, name, siblingNames);
+  }, [name, siblingEntities]);
 
   const cardColors = isOn ? colors.switch.on : colors.switch.off;
   const hasControlsDialog = true;
@@ -142,6 +153,7 @@ export function useSwitchCardController({
 
   const { formatMetricValue, getMetricLabel, renderMetricIcon } = useSwitchMetricFormatters({
     deviceName: name,
+    metricLabels: metricState.availableMetrics.map((metric) => metric.label),
     labels: {
       power: t('lighting.metrics.power'),
       voltage: t('lighting.metrics.voltage'),
@@ -154,6 +166,7 @@ export function useSwitchCardController({
     accentColor,
     cardColors,
     cardInteraction,
+    displayName,
     entityType: resolvedEntityType,
     formatMetricValue,
     getMetricLabel,

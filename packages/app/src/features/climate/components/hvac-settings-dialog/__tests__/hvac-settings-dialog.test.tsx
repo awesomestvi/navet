@@ -181,6 +181,7 @@ describe('HVACSettingsDialog', () => {
 
   it('renders fan sibling controls and calls Home Assistant fan services', () => {
     renderDialog({
+      name: 'Hallway Boost',
       siblingEntities: [
         {
           id: 'fan.hallway',
@@ -203,10 +204,10 @@ describe('HVACSettingsDialog', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /^Controls$/ }));
 
-    expect(screen.getByText('Hallway Fan')).toBeInTheDocument();
+    expect(screen.getByText('Fan')).toBeInTheDocument();
     expect(screen.getByText('Fan · 50%')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /Hallway Fan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Fan/i }));
     expect(serviceMock.callService).toHaveBeenCalledWith(
       'fan',
       'turn_off',

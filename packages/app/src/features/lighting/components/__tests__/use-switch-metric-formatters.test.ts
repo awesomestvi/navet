@@ -21,10 +21,22 @@ describe('getSwitchMetricDisplayLabel', () => {
     );
   });
 
+  it('falls back to the metric group prefix when the card name is already compact', () => {
+    expect(
+      getSwitchMetricDisplayLabel('Pax Calima Humidity', 'BoostMode', [
+        'Pax Calima Humidity',
+        'Pax Calima Temperature',
+        'Pax Calima Light',
+        'Pax Calima RPM',
+      ])
+    ).toBe('Humidity');
+  });
+
   it('formats zero power as a visible reading', () => {
     const { result } = renderHookWithProviders(() =>
       useSwitchMetricFormatters({
         deviceName: 'Espresso Machine',
+        metricLabels: [],
         labels: {
           power: 'Power',
           voltage: 'Voltage',
@@ -48,6 +60,7 @@ describe('getSwitchMetricDisplayLabel', () => {
     const { result } = renderHookWithProviders(() =>
       useSwitchMetricFormatters({
         deviceName: 'Server Rack',
+        metricLabels: [],
         labels: {
           power: 'Power',
           voltage: 'Voltage',

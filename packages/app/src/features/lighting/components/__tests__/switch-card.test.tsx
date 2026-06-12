@@ -27,6 +27,7 @@ vi.mock('../use-switch-card-controller', () => ({
       glow: 'from-orange-500/25',
     },
     entityType: 'Switch',
+    displayName: props.name,
     hasControlsDialog: true,
     isDialogOpen: dialogState.isOpen,
     setIsDialogOpen: vi.fn(),

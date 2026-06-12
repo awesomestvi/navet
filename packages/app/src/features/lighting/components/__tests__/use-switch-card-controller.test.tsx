@@ -1,12 +1,17 @@
 import { renderHookWithProviders } from '@navet/app/test/render';
 import { describe, expect, it, vi } from 'vitest';
 
+const testState = vi.hoisted(() => ({
+  siblingIds: [] as string[],
+  siblingEntityRecord: {} as Record<string, unknown>,
+}));
+
 vi.mock('@navet/app/hooks', () => ({
   useI18n: () => ({ t: (key: string) => key }),
   useProviderEntityModel: vi.fn(() => null),
   useProviderEntitySnapshot: vi.fn(() => undefined),
-  useProviderEntitySnapshotRecord: vi.fn(() => ({})),
-  useProviderSwitchTopology: () => ({ deviceId: null, siblingIds: [] }),
+  useProviderEntitySnapshotRecord: vi.fn(() => testState.siblingEntityRecord),
+  useProviderSwitchTopology: () => ({ deviceId: null, siblingIds: testState.siblingIds }),
   useTheme: () => ({
     accentColor: 'blue',
     colors: {
@@ -69,6 +74,8 @@ import { useSwitchCardController } from '../use-switch-card-controller';
 
 describe('useSwitchCardController', () => {
   it('does not infer Home Assistant from arbitrary dotted ids', () => {
+    testState.siblingIds = [];
+    testState.siblingEntityRecord = {};
     const { result } = renderHookWithProviders(() =>
       useSwitchCardController({
         id: 'custom.metric',
@@ -80,5 +87,29 @@ describe('useSwitchCardController', () => {
 
     expect(result.current.isOn).toBe(false);
     expect(result.current.siblingEntities).toEqual([]);
+  });
+
+  it('compacts repeated device prefixes for switch card titles', () => {
+    testState.siblingIds = ['switch.pax_calima_power_on_behaviour'];
+    testState.siblingEntityRecord = {
+      'switch.pax_calima_power_on_behaviour': {
+        entityId: 'switch.pax_calima_power_on_behaviour',
+        state: 'off',
+        attributes: {
+          friendly_name: 'Pax Calima Power-on behaviour',
+        },
+      },
+    };
+
+    const { result } = renderHookWithProviders(() =>
+      useSwitchCardController({
+        id: 'switch.pax_calima_boost_mode',
+        name: 'Pax Calima Boost mode',
+        size: 'small',
+        initialState: false,
+      })
+    );
+
+    expect(result.current.displayName).toBe('Boost mode');
   });
 });
