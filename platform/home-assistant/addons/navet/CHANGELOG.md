@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.4
+
+- Updated Navet to `0.7.4`
+- Reduced unnecessary dashboard rerenders so larger dashboards stay steadier during routine updates
+- Deferred heavier card work on dense or low-power dashboards for smoother loading
+- Improved media cards so artwork palette and accent colors carry through more clearly in playback surfaces
+- Improved media and camera card behavior under load
+
 ## 0.7.3
 
 - Updated Navet to `0.7.3`

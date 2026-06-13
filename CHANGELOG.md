@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.4 - 2026-06-14
+
+## Fixed
+
+- Dashboard updates now reuse unchanged provider-backed data more aggressively, which reduces unnecessary rerenders and keeps larger dashboards steadier during routine syncs.
+
+## Improved
+
+- Offscreen and dense dashboards now defer more heavy card work, helping mixed-device layouts load and stay responsive on lower-power displays.
+- Media cards now pick up artwork palette and accent colors more effectively, giving album art and playback surfaces a clearer visual match.
+- Media, camera, and shared device cards now adapt their visual effects and update behavior more carefully under load for smoother everyday use.
+
 ## 0.7.3 - 2026-06-13
 
 ## New
