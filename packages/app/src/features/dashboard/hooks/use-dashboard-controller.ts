@@ -27,6 +27,7 @@ import { isStandaloneMode } from '@navet/app/runtime/app-mode';
 import { providerRuntimeSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceCollection, DeviceWithType } from '@navet/app/types/device.types';
+import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { buildAggregatedRooms } from '@navet/app/utils/provider-rooms';
 import { startTransition, useCallback, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
@@ -48,6 +49,7 @@ import { useDashboardDerivedState } from './use-dashboard-derived-state';
 import { useDashboardDevicesLoaded } from './use-dashboard-devices-loaded';
 import { useDashboardDialogs } from './use-dashboard-dialogs';
 import { useDashboardEntityVisibility } from './use-dashboard-entity-visibility';
+import { resolveDenseDashboardPerformanceMode } from './use-dashboard-performance-mode';
 import { useDashboardRoomCounts } from './use-dashboard-room-counts';
 import { useDashboardRoomNavigation } from './use-dashboard-room-navigation';
 import { useEditModeBeforeUnload } from './use-edit-mode-beforeunload';
@@ -105,6 +107,7 @@ export function useDashboardController(): DashboardController {
   const { activeSection, setActiveSection } = useNavigation();
   const { t } = useI18n();
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
+  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const currentProviderRuntime = useIntegrationStore(
     providerRuntimeSelectors.currentProviderRuntime
   );
@@ -237,6 +240,7 @@ export function useDashboardController(): DashboardController {
       hiddenEntityIds,
       rooms,
     });
+  const deviceTier = useMemo(() => detectDeviceTier(), []);
   const sectionData = useDashboardSectionData({
     activeSection,
     allCustomCards,
@@ -245,6 +249,57 @@ export function useDashboardController(): DashboardController {
     deviceMap,
     hiddenEntityIds,
   });
+  const denseVisibleCardCount = useMemo(
+    () =>
+      resolveDenseVisibleCardCount({
+        activeRoom,
+        activeSection,
+        customCards,
+        deviceMap,
+        lightDeviceMap,
+        orderedCardIds,
+        sectionData,
+        homeLayoutCardIds: homeLayoutController.layout.cardIds,
+      }),
+    [
+      activeRoom,
+      activeSection,
+      customCards,
+      deviceMap,
+      homeLayoutController.layout.cardIds,
+      lightDeviceMap,
+      orderedCardIds,
+      sectionData,
+    ]
+  );
+  const densePerformanceMode = useMemo(
+    () =>
+      resolveDenseDashboardPerformanceMode({
+        activeSection,
+        deviceTier,
+        effectsQuality,
+        isEditMode,
+        lowPowerMode,
+        visibleCardCount: denseVisibleCardCount,
+        visibleDevices:
+          activeSection === 'lights'
+            ? lightDeviceMap.values()
+            : activeSection === 'climate'
+              ? sectionData.climateDeviceMap.values()
+              : deviceMap.values(),
+      }),
+    [
+      activeSection,
+      denseVisibleCardCount,
+      deviceMap,
+      deviceTier,
+      effectsQuality,
+      isEditMode,
+      lightDeviceMap,
+      lowPowerMode,
+      sectionData.climateDeviceMap,
+    ]
+  );
   const securityAlertCount = useMemo(() => {
     const expandedHiddenSecurityIds = new Set(
       getExpandedHiddenDashboardEntityIds(allDevices, hiddenEntityIds)
@@ -317,6 +372,8 @@ export function useDashboardController(): DashboardController {
     customCards,
     deviceMap,
     connecting,
+    densePerformanceMode,
+    denseVisibleCardCount,
     devicesLoaded,
     handleAddCard,
     handleAddLibraryCard,
@@ -359,6 +416,43 @@ export function useDashboardController(): DashboardController {
     ...onboarding,
     ...dialogs,
   };
+}
+
+function resolveDenseVisibleCardCount({
+  activeRoom,
+  activeSection,
+  customCards,
+  deviceMap,
+  lightDeviceMap,
+  orderedCardIds,
+  sectionData,
+  homeLayoutCardIds,
+}: {
+  activeRoom: string;
+  activeSection: Section;
+  customCards: DashboardController['customCards'];
+  deviceMap: DashboardController['deviceMap'];
+  lightDeviceMap: DashboardController['lightDeviceMap'];
+  orderedCardIds: DashboardController['orderedCardIds'];
+  sectionData: DashboardController['sectionData'];
+  homeLayoutCardIds: string[];
+}): number {
+  if (activeSection === 'lights') {
+    return lightDeviceMap.size;
+  }
+
+  if (activeSection === 'climate') {
+    return sectionData.climateSections.reduce(
+      (count, section) => count + section.orderedIds.length,
+      0
+    );
+  }
+
+  if (activeSection === 'home' && isAllRooms(activeRoom)) {
+    return homeLayoutCardIds.length;
+  }
+
+  return orderedCardIds.length > 0 ? orderedCardIds.length : deviceMap.size + customCards.length;
 }
 
 function useDashboardSectionData({

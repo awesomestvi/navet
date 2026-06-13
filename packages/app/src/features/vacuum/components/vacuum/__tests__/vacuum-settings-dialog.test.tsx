@@ -3,7 +3,134 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { VacuumSettingsDialog } from '../vacuum-settings-dialog';
 
+const { entityRoomSelectorMock } = vi.hoisted(() => ({
+  entityRoomSelectorMock: vi.fn((_props?: unknown) => <div>Kitchen</div>),
+}));
+
+vi.mock('@navet/app/components/shared/entity-room-selector', () => ({
+  EntityRoomSelector: (props: unknown) => entityRoomSelectorMock(props),
+}));
+
 describe('VacuumSettingsDialog', () => {
+  it('passes the assigned room as the eyebrow fallback room name', () => {
+    entityRoomSelectorMock.mockClear();
+
+    renderWithProviders(
+      <VacuumSettingsDialog
+        entityId="vacuum.roborock"
+        isOpen
+        onClose={vi.fn()}
+        onStartCleaning={vi.fn()}
+        onPauseCleaning={vi.fn()}
+        onReturnHome={vi.fn()}
+        name="Robot"
+        room="Kitchen"
+        theme="dark"
+        accentColorValue="#06b6d4"
+        currentStatus="idle"
+        supportsFanSpeed={false}
+      />
+    );
+
+    expect(entityRoomSelectorMock.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({
+        entityId: 'vacuum.roborock',
+        fallbackRoomName: 'Kitchen',
+      })
+    );
+  });
+
+  it('uses a constrained scroll shell so long mobile content can scroll', () => {
+    renderWithProviders(
+      <VacuumSettingsDialog
+        entityId="vacuum.roborock"
+        isOpen
+        onClose={vi.fn()}
+        onStartCleaning={vi.fn()}
+        onPauseCleaning={vi.fn()}
+        onReturnHome={vi.fn()}
+        name="Robot"
+        room="Kitchen"
+        theme="dark"
+        accentColorValue="#06b6d4"
+        currentStatus="idle"
+        supportsFanSpeed={false}
+        capabilities={{
+          canStart: true,
+          canPause: true,
+          canStop: false,
+          canReturnHome: true,
+          canLocate: false,
+          canCleanSpot: false,
+          canSetFanSpeed: false,
+          currentFanSpeed: undefined,
+          fanSpeedOptions: [],
+          canCycleFanSpeed: false,
+          canShowMap: true,
+          canCleanByArea: true,
+          canOrderAreaCleaning: false,
+          availableCleaningAreas: Array.from({ length: 12 }, (_, index) => ({
+            id: `room-${index}`,
+            label: `Room ${index + 1}`,
+          })),
+        }}
+      />
+    );
+
+    expect(screen.getByRole('dialog')).toHaveClass('flex', 'flex-col', 'max-h-[85vh]');
+    expect(
+      document.body.querySelector('.relative.flex.min-h-0.flex-1.flex-col.overflow-y-auto')
+    ).not.toBeNull();
+  });
+
+  it('renders the footer as part of the scrollable dialog body', () => {
+    renderWithProviders(
+      <VacuumSettingsDialog
+        entityId="vacuum.roborock"
+        isOpen
+        onClose={vi.fn()}
+        onStartCleaning={vi.fn()}
+        onPauseCleaning={vi.fn()}
+        onReturnHome={vi.fn()}
+        name="Robot"
+        room="Kitchen"
+        theme="dark"
+        accentColorValue="#06b6d4"
+        currentStatus="idle"
+        supportsFanSpeed={false}
+        capabilities={{
+          canStart: true,
+          canPause: true,
+          canStop: false,
+          canReturnHome: true,
+          canLocate: false,
+          canCleanSpot: false,
+          canSetFanSpeed: false,
+          currentFanSpeed: undefined,
+          fanSpeedOptions: [],
+          canCycleFanSpeed: false,
+          canShowMap: true,
+          canCleanByArea: true,
+          canOrderAreaCleaning: false,
+          availableCleaningAreas: Array.from({ length: 12 }, (_, index) => ({
+            id: `room-${index}`,
+            label: `Room ${index + 1}`,
+          })),
+        }}
+      />
+    );
+
+    const startButton = screen.getByRole('button', { name: 'Start Cleaning' });
+    const scrollRoot = document.body.querySelector(
+      '.relative.flex.min-h-0.flex-1.flex-col.overflow-y-auto'
+    );
+    const footer = startButton.closest('.mt-6.flex.justify-end');
+
+    expect(scrollRoot).not.toBeNull();
+    expect(scrollRoot?.contains(startButton)).toBe(true);
+    expect(footer).not.toBeNull();
+  });
+
   it('renders the map tab only when map support is available', () => {
     const { rerender } = renderWithProviders(
       <VacuumSettingsDialog
@@ -204,6 +331,51 @@ describe('VacuumSettingsDialog', () => {
     );
 
     expect(screen.queryByLabelText('Reorder Kitchen')).not.toBeInTheDocument();
+  });
+
+  it('does not add a nested scroll region to the selected areas section', () => {
+    const { container } = renderWithProviders(
+      <VacuumSettingsDialog
+        entityId="vacuum.roborock"
+        isOpen
+        onClose={vi.fn()}
+        onStartCleaning={vi.fn()}
+        onStartAreaCleaning={vi.fn()}
+        onPauseCleaning={vi.fn()}
+        onReturnHome={vi.fn()}
+        name="Robot"
+        room="Kitchen"
+        theme="dark"
+        accentColorValue="#06b6d4"
+        currentStatus="idle"
+        supportsFanSpeed={false}
+        capabilities={{
+          canStart: true,
+          canPause: true,
+          canStop: false,
+          canReturnHome: true,
+          canLocate: false,
+          canCleanSpot: false,
+          canSetFanSpeed: false,
+          currentFanSpeed: undefined,
+          fanSpeedOptions: [],
+          canCycleFanSpeed: false,
+          canShowMap: true,
+          canCleanByArea: true,
+          canOrderAreaCleaning: true,
+          availableCleaningAreas: [
+            { id: 'kitchen', label: 'Kitchen' },
+            { id: 'hallway', label: 'Hallway' },
+          ],
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Map' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Kitchen/ }));
+
+    expect(screen.getByLabelText('Reorder Kitchen')).toBeInTheDocument();
+    expect(container.querySelector('.max-h-28.overflow-auto')).toBeNull();
   });
 
   it('keeps the selected map tab active during live dialog rerenders', () => {

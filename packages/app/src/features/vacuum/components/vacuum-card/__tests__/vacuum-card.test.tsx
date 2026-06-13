@@ -31,7 +31,7 @@ const {
 }));
 
 let mockedDisplayFanSpeed: string | undefined;
-let mockedCurrentStatus: string = 'idle';
+let mockedCurrentStatus: string | undefined;
 
 vi.mock('@navet/app/hooks', () => ({
   useI18n: () => ({ t: (key: string) => key }),
@@ -103,8 +103,8 @@ vi.mock('@navet/app/stores/settings-store', async () => {
 });
 
 vi.mock('../../vacuum/use-vacuum-control', () => ({
-  useVacuumControl: () => ({
-    currentStatus: mockedCurrentStatus,
+  useVacuumControl: (options: { initialStatus: string }) => ({
+    currentStatus: mockedCurrentStatus ?? options.initialStatus,
     isDialogOpen: false,
     setIsDialogOpen: vi.fn(),
     handleStartCleaning: vi.fn(),
@@ -185,7 +185,7 @@ describe('VacuumCard', () => {
     useProviderEntitySnapshotMock.mockReset();
     handleSetFanSpeedMock.mockReset();
     mockedDisplayFanSpeed = undefined;
-    mockedCurrentStatus = 'idle';
+    mockedCurrentStatus = undefined;
   });
 
   it('renders a fan-speed control only when the vacuum supports multiple fan speeds', () => {
@@ -312,6 +312,73 @@ describe('VacuumCard', () => {
     expect(screen.queryByText(/vacuum\.metric\.area /)).not.toBeInTheDocument();
     expect(screen.queryByText(/vacuum\.settings\.battery /)).not.toBeInTheDocument();
     expect(screen.queryByText(/vacuum\.metric\.runTime /)).not.toBeInTheDocument();
+  });
+
+  it('shows the live cleaning state when the status attribute is stale', () => {
+    useProviderEntitySnapshotMock.mockReturnValueOnce({
+      state: 'cleaning',
+      attributes: {
+        status: 'idle',
+      },
+    });
+
+    render(
+      <VacuumCard
+        id="vacuum.partial"
+        name="Robot"
+        status="idle"
+        size="small"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.getAllByText('vacuum.status.cleaning').length).toBeGreaterThan(0);
+  });
+
+  it('shows the current room in the primary text while cleaning', () => {
+    useProviderEntitySnapshotMock.mockReturnValueOnce({
+      state: 'cleaning',
+      attributes: {
+        current_room: 'Bathroom',
+      },
+    });
+
+    render(
+      <VacuumCard
+        id="vacuum.partial"
+        name="Robot"
+        room="Hallway"
+        status="idle"
+        size="small"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.getAllByText('vacuum.status.cleaning bathroom').length).toBeGreaterThan(0);
+  });
+
+  it('keeps the generic cleaning label when no current room is available', () => {
+    useProviderEntitySnapshotMock.mockReturnValueOnce({
+      state: 'cleaning',
+      attributes: {},
+    });
+
+    render(
+      <VacuumCard
+        id="vacuum.partial"
+        name="Robot"
+        room="Hallway"
+        status="idle"
+        size="small"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.getAllByText('vacuum.status.cleaning').length).toBeGreaterThan(0);
+    expect(screen.queryByText('vacuum.status.cleaning hallway')).not.toBeInTheDocument();
   });
 
   it('renders explicit zero area and runtime values in the summary', () => {
@@ -449,6 +516,15 @@ describe('VacuumCard', () => {
     useProviderEntitySnapshotMock.mockReturnValueOnce({
       state: 'docked',
       attributes: {},
+    });
+    resolveVacuumGlanceMetricsMock.mockReturnValueOnce({
+      battery: undefined,
+      cleanedArea: '42 m²',
+      cleaningTime: '38 min',
+      nextCleaning: null,
+      lastCleaned: undefined,
+      waterLevel: null,
+      binLevel: null,
     });
 
     render(

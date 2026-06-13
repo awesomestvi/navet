@@ -58,4 +58,36 @@ describe('buildUpdateNotifications', () => {
       }),
     ]);
   });
+
+  it('shows restart-required update candidates even when the entity still reports on', () => {
+    const notifications = buildUpdateNotifications({
+      pendingUpdateInstalls: [],
+      readNotifications: [],
+      t,
+      updateCandidates: [
+        {
+          entityId: 'update.navet_dashboard',
+          state: 'on',
+          friendlyName: 'Navet Dashboard',
+          installedVersion: '4862fcb',
+          latestVersion: 'ee8ccc9',
+          releaseNotes: 'Restart of Home Assistant required',
+          detailsUrl: null,
+          progress: null,
+          inProgress: false,
+          requiresRestart: true,
+          lastChanged: '2026-05-29T10:00:00.000Z',
+        },
+      ],
+    });
+
+    expect(notifications).toEqual([
+      expect.objectContaining({
+        id: 'update.navet_dashboard',
+        isBusy: true,
+        requiresRestart: true,
+        statusLabel: 'notifications.update.restartToFinish',
+      }),
+    ]);
+  });
 });

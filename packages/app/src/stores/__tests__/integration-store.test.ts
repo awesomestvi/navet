@@ -663,6 +663,78 @@ describe('integrationStore', () => {
     );
   });
 
+  it('reuses unchanged device entries inside a changed provider collection', async () => {
+    await resetAppStores();
+
+    homeAssistantStore.setState({
+      connected: true,
+      entities: {
+        'light.kitchen': {
+          entity_id: 'light.kitchen',
+          state: 'off',
+          attributes: { friendly_name: 'Kitchen Light', brightness: 0 },
+          last_changed: '2024-01-01T00:00:00.000Z',
+          last_updated: '2024-01-01T00:00:00.000Z',
+          context: { id: 'ctx-1', parent_id: null, user_id: null },
+        },
+        'light.hall': {
+          entity_id: 'light.hall',
+          state: 'on',
+          attributes: { friendly_name: 'Hall Light', brightness: 200 },
+          last_changed: '2024-01-01T00:00:00.000Z',
+          last_updated: '2024-01-01T00:00:00.000Z',
+          context: { id: 'ctx-2', parent_id: null, user_id: null },
+        },
+      },
+    });
+
+    const previousLights =
+      integrationStore.getState().providerDeviceCollectionsByProviderId.home_assistant?.lights ??
+      [];
+    const previousKitchenLight = previousLights.find(
+      (device) => device.canonicalId === 'home_assistant:light.kitchen'
+    );
+    const previousHallLight = previousLights.find(
+      (device) => device.canonicalId === 'home_assistant:light.hall'
+    );
+
+    homeAssistantStore.setState({
+      connected: true,
+      entities: {
+        'light.kitchen': {
+          entity_id: 'light.kitchen',
+          state: 'on',
+          attributes: { friendly_name: 'Kitchen Light', brightness: 255 },
+          last_changed: '2024-01-01T00:00:00.000Z',
+          last_updated: '2024-01-01T00:05:00.000Z',
+          context: { id: 'ctx-1', parent_id: null, user_id: null },
+        },
+        'light.hall': {
+          entity_id: 'light.hall',
+          state: 'on',
+          attributes: { friendly_name: 'Hall Light', brightness: 200 },
+          last_changed: '2024-01-01T00:00:00.000Z',
+          last_updated: '2024-01-01T00:00:00.000Z',
+          context: { id: 'ctx-2', parent_id: null, user_id: null },
+        },
+      },
+    });
+
+    const nextLights =
+      integrationStore.getState().providerDeviceCollectionsByProviderId.home_assistant?.lights ??
+      [];
+    const nextKitchenLight = nextLights.find(
+      (device) => device.canonicalId === 'home_assistant:light.kitchen'
+    );
+    const nextHallLight = nextLights.find(
+      (device) => device.canonicalId === 'home_assistant:light.hall'
+    );
+
+    expect(nextLights).not.toBe(previousLights);
+    expect(nextKitchenLight).not.toBe(previousKitchenLight);
+    expect(nextHallLight).toBe(previousHallLight);
+  });
+
   it('updates only the changed provider slice when Homey publishes a device update', async () => {
     await resetAppStores();
 

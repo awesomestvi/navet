@@ -1061,7 +1061,7 @@ function createHomeAssistantState(
     return {
       ...commonState,
       value: entity.state,
-      status: normalizeVacuumStatus(entity.attributes?.status ?? entity.state),
+      status: normalizeVacuumStatus(entity.state ?? entity.attributes?.status),
       battery:
         typeof batteryLevel === 'number' ? Math.max(0, Math.min(100, batteryLevel)) : undefined,
       cleanedArea:

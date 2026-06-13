@@ -35,6 +35,7 @@ interface HomePresentationProps {
   surface: ReturnType<typeof getThemeSurfaceTokens>;
   emptyTitle: string;
   emptyDescription: string;
+  densePerformanceMode?: boolean;
   onToggleEditMode?: () => void;
 }
 
@@ -53,6 +54,7 @@ export function HomePresentation({
   surface,
   emptyTitle,
   emptyDescription,
+  densePerformanceMode = false,
   onToggleEditMode,
 }: HomePresentationProps) {
   const hasCards = flowCards.length > 0 || sections.some((section) => section.cardIds.length > 0);
@@ -132,6 +134,7 @@ export function HomePresentation({
         updateCardSize={updateCardSize}
         onUpdateCard={onUpdateCard}
         showHero={showHero}
+        densePerformanceMode={densePerformanceMode}
       />
     );
   }
@@ -185,6 +188,7 @@ export function HomePresentation({
                         updateCardSize={updateCardSize}
                         onUpdateCard={onUpdateCard}
                         showHero={showHero}
+                        densePerformanceMode={densePerformanceMode}
                       />
                     </div>
                   ))}

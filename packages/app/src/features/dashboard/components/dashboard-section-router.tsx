@@ -235,6 +235,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                     customCards={sectionData.energyCustomCards}
                     onDeleteCard={handleDeleteCard}
                     onUpdateCard={handleUpdateCard}
+                    densePerformanceMode={controller.densePerformanceMode}
                   />
                 ) : isEditMode ? (
                   <div className="flex h-full items-center justify-center p-6">
@@ -310,6 +311,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                       onRemoveEntity={handleRemoveEntity}
                       allowEntityRemoval
                       usesHideAction
+                      densePerformanceMode={controller.densePerformanceMode}
                       getDeviceHeaderSubtitle={getDeviceRoomLabel}
                     />
                   </section>
@@ -400,6 +402,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                   onRemoveEntity={handleRemoveEntity}
                   allowEntityRemoval
                   usesHideAction
+                  densePerformanceMode={controller.densePerformanceMode}
                 />
               </Suspense>
             </RenderProfiler>
@@ -509,6 +512,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                 onNavigateSection={controller.setActiveSection}
                 routineCount={totalRoutineCount}
                 securityAlertCount={controller.securityAlertCount}
+                densePerformanceMode={controller.densePerformanceMode}
               />
             </Suspense>
           </RenderProfiler>
@@ -538,6 +542,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                 onRemoveEntity={handleRemoveEntity}
                 allowEntityRemoval
                 usesHideAction
+                densePerformanceMode={controller.densePerformanceMode}
               />
             </div>
           </RenderProfiler>
@@ -548,6 +553,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
 
   return (
     <DashboardLayout
+      densePerformanceMode={controller.densePerformanceMode}
       mobileEditActions={{
         isEditMode,
         onToggleEditMode,
@@ -612,7 +618,8 @@ function areDashboardSectionRouterPropsEqual(
     previousController.setActiveSection === nextController.setActiveSection &&
     previousController.updateCardSize === nextController.updateCardSize &&
     previousController.availableDeviceMap === nextController.availableDeviceMap &&
-    previousController.deviceMap === nextController.deviceMap;
+    previousController.deviceMap === nextController.deviceMap &&
+    previousController.densePerformanceMode === nextController.densePerformanceMode;
 
   if (!hasSameCommonFields) {
     return false;

@@ -8,6 +8,55 @@ import { integrationSelectors } from '@navet/app/stores/selectors';
 
 const EMPTY_UPDATE_ENTITIES: PlatformEntitySnapshotMap = {};
 
+const HTML_ENTITY_REPLACEMENTS: Record<string, string> = {
+  '&amp;': '&',
+  '&apos;': "'",
+  '&gt;': '>',
+  '&lt;': '<',
+  '&nbsp;': ' ',
+  '&quot;': '"',
+};
+
+function decodeHtmlEntities(value: string) {
+  return value.replace(
+    /&(amp|apos|gt|lt|nbsp|quot);/g,
+    (entity) => HTML_ENTITY_REPLACEMENTS[entity] ?? entity
+  );
+}
+
+function normalizeUpdateText(value: unknown): string | null {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return null;
+  }
+
+  return decodeHtmlEntities(
+    value
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/(ha-alert|p|div|li|ul|ol|h[1-6])>/gi, '\n')
+      .replace(/<li\b[^>]*>/gi, '- ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/[ \t]+\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/[ \t]{2,}/g, ' ')
+      .trim()
+  );
+}
+
+function detectRestartRequired(...values: Array<string | null | undefined>): boolean {
+  const normalized = values.filter(Boolean).join('\n').toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+
+  return (
+    normalized.includes('restart of home assistant required') ||
+    normalized.includes('restart home assistant to finish update') ||
+    (normalized.includes('restart') &&
+      normalized.includes('home assistant') &&
+      normalized.includes('required'))
+  );
+}
+
 function selectNoUpdateEntities(): PlatformEntitySnapshotMap {
   return EMPTY_UPDATE_ENTITIES;
 }
@@ -16,16 +65,21 @@ export function mapHomeAssistantUpdateCandidates(
   updateEntities: PlatformEntitySnapshotMap
 ): PlatformUpdateNotificationCandidate[] {
   return Object.entries(updateEntities).map(([entityId, entity]) => {
-    const releaseNotes =
+    const rawReleaseNotes =
       typeof entity.attributes?.release_notes === 'string' ? entity.attributes.release_notes : null;
     const detailsUrl =
       typeof entity.attributes?.release_url === 'string'
         ? entity.attributes.release_url
         : typeof entity.attributes?.release_notes_url === 'string'
           ? entity.attributes.release_notes_url
-          : releaseNotes && /^https?:\/\//i.test(releaseNotes)
-            ? releaseNotes
+          : rawReleaseNotes && /^https?:\/\//i.test(rawReleaseNotes)
+            ? rawReleaseNotes
             : null;
+    const releaseNotes =
+      rawReleaseNotes && !/^https?:\/\//i.test(rawReleaseNotes)
+        ? normalizeUpdateText(rawReleaseNotes)
+        : null;
+    const releaseSummary = normalizeUpdateText(entity.attributes?.release_summary);
     const rawProgress =
       typeof entity.attributes?.update_percentage === 'number'
         ? entity.attributes.update_percentage
@@ -51,17 +105,14 @@ export function mapHomeAssistantUpdateCandidates(
       typeof entity.attributes?.latest_version === 'string'
         ? entity.attributes.latest_version
         : null;
-    candidate.releaseSummary =
-      typeof entity.attributes?.release_summary === 'string'
-        ? entity.attributes.release_summary
-        : null;
-    candidate.releaseNotes =
-      releaseNotes && !/^https?:\/\//i.test(releaseNotes) ? releaseNotes : null;
+    candidate.releaseSummary = releaseSummary;
+    candidate.releaseNotes = releaseNotes;
     candidate.detailsUrl = detailsUrl;
     candidate.progress =
       typeof rawProgress === 'number' && !Number.isNaN(rawProgress)
         ? Math.max(0, Math.min(100, Math.round(rawProgress)))
         : null;
+    candidate.requiresRestart = detectRestartRequired(releaseSummary, releaseNotes);
 
     if (typeof entity.lastChanged === 'string') {
       candidate.lastChanged = entity.lastChanged;

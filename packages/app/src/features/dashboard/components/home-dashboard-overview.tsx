@@ -42,6 +42,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   onNavigateSection,
   routineCount,
   securityAlertCount,
+  densePerformanceMode = false,
 }: HomeDashboardOverviewProps) {
   const { t } = useI18n();
   const theme = useThemeMode();
@@ -100,6 +101,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
           surface={surface}
           emptyTitle={t('dashboard.homeOverview.emptyTitle')}
           emptyDescription={t('dashboard.homeOverview.emptyDescription')}
+          densePerformanceMode={densePerformanceMode}
           onToggleEditMode={onToggleEditMode}
         />
       </div>

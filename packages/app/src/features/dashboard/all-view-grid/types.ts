@@ -18,6 +18,7 @@ export interface AllViewGridProps {
   onRemoveEntity?: (entityId: string) => void;
   allowEntityRemoval?: boolean;
   usesHideAction?: boolean;
+  densePerformanceMode?: boolean;
 }
 
 export interface AllViewSectionData {

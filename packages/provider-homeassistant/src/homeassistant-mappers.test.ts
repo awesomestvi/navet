@@ -616,6 +616,29 @@ describe('homeassistant-mappers', () => {
     ]);
   });
 
+  it('prefers the Home Assistant vacuum state over a stale status attribute', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'vacuum.roborock': makeEntity('vacuum.roborock', 'cleaning', {
+          friendly_name: 'Roborock',
+          status: 'idle',
+        }),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [],
+    });
+
+    expect(entities).toEqual([
+      expect.objectContaining({
+        externalId: 'vacuum.roborock',
+        attributes: expect.objectContaining({
+          status: 'cleaning',
+        }),
+      }),
+    ]);
+  });
+
   it('keeps Home Assistant area cleaning hidden when no mapped areas are configured', () => {
     const entities = mapHomeAssistantEntitiesToNavetEntities({
       entities: {

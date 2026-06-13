@@ -38,6 +38,7 @@ interface DashboardCardItemProps {
   allowEntityRemoval?: boolean;
   allowExtraLargeSizes?: boolean;
   usesHideAction?: boolean;
+  densePerformanceMode?: boolean;
   headerSubtitleOverride?: string;
 }
 
@@ -61,6 +62,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   allowEntityRemoval = false,
   allowExtraLargeSizes = zone === 'hero' || zone === undefined,
   usesHideAction = false,
+  densePerformanceMode = false,
   headerSubtitleOverride,
 }: DashboardCardItemProps) {
   const { t } = useI18n();
@@ -80,6 +82,8 @@ export const DashboardCardItem = memo(function DashboardCardItem({
     useState<PortalActionDockAnchorRect | null>(null);
   const RemoveActionIcon = usesHideAction ? EyeOff : X;
   const removeAriaLabel = t('dashboard.edit.removeEntityFromDashboard');
+  const resolvedEffectsQuality = densePerformanceMode || lowPowerMode ? 'low' : effectsQuality;
+  const resolvedAmbientLightBleed = densePerformanceMode ? false : ambientLightBleed;
   const allowedSizes = getAllowedSizes(device, card, allowExtraLargeSizes);
   const resolvedSize = resolveAllowedSize(size, allowedSizes);
   const spanClass = getCardSpanClass(resolvedSize);
@@ -195,7 +199,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
           <EditModeActionDock
             cardSize={editControlSize}
             accentColor={accentColor}
-            effectsQuality={lowPowerMode ? 'low' : effectsQuality}
+            effectsQuality={resolvedEffectsQuality}
             theme={theme}
           >
             {renderEditModeDockActions({
@@ -230,7 +234,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
     </>
   );
 
-  const containerClassName = `relative h-full ${resolveDashboardCardContainmentClass(device, ambientLightBleed)} ${spanClass} [&>*]:cursor-inherit`;
+  const containerClassName = `relative h-full ${resolveDashboardCardContainmentClass(device, resolvedAmbientLightBleed)} ${spanClass} [&>*]:cursor-inherit`;
 
   if (draggable && zone) {
     return (
@@ -245,7 +249,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
           id={id}
           zone={zone}
           spanClass={spanClass}
-          ambientLightBleed={device?.type === 'lights' && ambientLightBleed}
+          ambientLightBleed={device?.type === 'lights' && resolvedAmbientLightBleed}
         >
           {cardContent}
         </DashboardCardItemDraggable>
@@ -826,6 +830,7 @@ function areDashboardCardItemPropsEqual(
     previous.allowEntityRemoval === next.allowEntityRemoval &&
     previous.allowExtraLargeSizes === next.allowExtraLargeSizes &&
     previous.usesHideAction === next.usesHideAction &&
+    previous.densePerformanceMode === next.densePerformanceMode &&
     previous.headerSubtitleOverride === next.headerSubtitleOverride
   );
 }

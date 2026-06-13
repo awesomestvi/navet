@@ -137,4 +137,22 @@ describe('EntityRoomSelector', () => {
     );
     expect(updateEntityRoomMock).not.toHaveBeenCalled();
   });
+
+  it('shows a fallback room name when the entity room context is missing', () => {
+    mockRoomContext = {
+      entry: null,
+      deviceAreaId: null,
+    };
+
+    render(
+      <EntityRoomSelector
+        entityId="home_assistant:media_player.walkman"
+        compact
+        fallbackRoomName="Bathroom"
+      />
+    );
+
+    expect(screen.getAllByText('Bathroom')).toHaveLength(2);
+    expect(screen.getByRole('combobox', { name: 'Room' })).toHaveValue('home_assistant:bathroom');
+  });
 });

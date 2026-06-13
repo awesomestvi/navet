@@ -116,7 +116,7 @@ export function VacuumPlannerSection({
               ) : null}
             </div>
 
-            <div className="max-h-28 overflow-auto pr-1">
+            <div>
               {selectedAreas.length === 0 ? (
                 <div className="px-0 py-1 text-sm text-white/62">
                   {t('vacuum.plan.noAreasSelected')}

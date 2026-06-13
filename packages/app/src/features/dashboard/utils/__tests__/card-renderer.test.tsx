@@ -19,6 +19,12 @@ vi.mock('@navet/app/features/security', () => ({
   ),
 }));
 
+vi.mock('@navet/app/features/lighting', () => ({
+  LightCard: ({ id }: { id: string }) => <div data-testid="light-card">{id}</div>,
+  FanCard: () => null,
+  SwitchCard: () => null,
+}));
+
 describe('card availability lookup', () => {
   beforeEach(async () => {
     await resetAppStores();
@@ -131,5 +137,66 @@ describe('card availability lookup', () => {
     expect(await screen.findByTestId('security-panel-card')).toHaveTextContent(
       'home_assistant:alarm_control_panel.home:Home Alarm:large'
     );
+  });
+
+  it('uses a compact unavailable overlay pill on tiny cards', async () => {
+    integrationStore.setState({
+      ...integrationStore.getState(),
+      currentProviderId: 'home_assistant',
+      providerEntitiesByProviderId: {
+        ...integrationStore.getState().providerEntitiesByProviderId,
+        home_assistant: {
+          'home_assistant:light.kitchen': {
+            id: 'home_assistant:light.kitchen',
+            canonicalId: 'home_assistant:light.kitchen',
+            providerId: 'home_assistant',
+            externalId: 'light.kitchen',
+            type: 'light',
+            name: 'Kitchen Light',
+            room: 'Kitchen',
+            primaryState: 'unavailable',
+            availability: 'unavailable',
+            capabilities: [],
+            attributes: {},
+          },
+        },
+      },
+      providerEntityLookupByProviderId: {
+        ...integrationStore.getState().providerEntityLookupByProviderId,
+        home_assistant: {
+          'light.kitchen': 'home_assistant:light.kitchen',
+          'home_assistant:light.kitchen': 'home_assistant:light.kitchen',
+        },
+      },
+    });
+
+    const card = renderCard({
+      device: {
+        id: 'light.kitchen',
+        name: 'Kitchen Light',
+        room: 'Kitchen',
+        type: 'lights',
+        state: false,
+      },
+      size: 'tiny',
+      handleSizeChange: () => undefined,
+      isEditMode: false,
+    });
+
+    expect(card).not.toBeNull();
+    if (!card) {
+      throw new Error('Expected renderCard to return a light card');
+    }
+
+    renderWithProviders(card);
+
+    const unavailablePill = await screen.findByText('Unavailable');
+    expect(unavailablePill).toHaveClass(
+      'max-w-[calc(100%-1rem)]',
+      'px-1.5',
+      'py-0.5',
+      'text-[10px]'
+    );
+    expect(unavailablePill).not.toHaveClass('uppercase');
   });
 });

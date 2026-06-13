@@ -25,7 +25,7 @@ vi.mock('../home-dashboard-overview', () => ({
   HomeDashboardOverview: () => <main>Home dashboard</main>,
 }));
 
-vi.mock('@navet/app/features/dashboard/all-view-grid', () => ({
+vi.mock('../../all-view-grid', () => ({
   AllViewGrid: () => {
     allViewGridRenderCount += 1;
     return <div>All view grid</div>;
@@ -132,7 +132,7 @@ describe('DashboardSectionRouter kiosk mode', () => {
     expect(screen.queryByRole('heading', { name: 'Living Room' })).not.toBeInTheDocument();
   });
 
-  it('does not rerender the lights section for unrelated home-layout controller churn', () => {
+  it('does not rerender the lights section for unrelated home-layout controller churn', async () => {
     const controller = createController();
     const light = createDevice({
       id: 'light.kitchen',
@@ -152,6 +152,7 @@ describe('DashboardSectionRouter kiosk mode', () => {
     controller.cardOrders = { Kitchen: [light.id] };
 
     const { rerender } = renderWithProviders(<DashboardSectionRouter controller={controller} />);
+    expect(await screen.findByText('All view grid')).toBeInTheDocument();
 
     expect(allViewGridRenderCount).toBe(1);
 
@@ -175,6 +176,7 @@ describe('DashboardSectionRouter kiosk mode', () => {
 
     rerender(<DashboardSectionRouter controller={nextController} />);
 
+    expect(await screen.findByText('All view grid')).toBeInTheDocument();
     expect(allViewGridRenderCount).toBe(1);
   });
 });

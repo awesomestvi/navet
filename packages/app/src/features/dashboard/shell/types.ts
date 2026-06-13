@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 
 export interface DashboardLayoutProps {
   children: ReactNode;
+  densePerformanceMode?: boolean;
   mobileEditActions?: MobileHeaderEditActions;
   mobileRoomNavigation?: MobileRoomNavigation;
 }

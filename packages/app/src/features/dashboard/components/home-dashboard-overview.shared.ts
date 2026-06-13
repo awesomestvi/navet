@@ -53,6 +53,7 @@ export interface HomeDashboardOverviewProps {
   onNavigateSection?: (section: Section) => void;
   routineCount?: number;
   securityAlertCount?: number;
+  densePerformanceMode?: boolean;
   infoBadgeStrip?: ReactNode;
 }
 

@@ -113,6 +113,8 @@ function createController(overrides: Partial<DashboardController> = {}): Dashboa
     customCards: [],
     deviceMap: new Map(),
     connecting: false,
+    densePerformanceMode: false,
+    denseVisibleCardCount: 0,
     devicesLoaded: true,
     handleAddCard: vi.fn(),
     handleAddLibraryCard: vi.fn(),

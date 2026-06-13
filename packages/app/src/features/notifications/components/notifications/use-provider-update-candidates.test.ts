@@ -50,7 +50,8 @@ describe('useProviderUpdateCandidates', () => {
         state: 'off',
         attributes: {
           friendly_name: 'Navet OS',
-          release_notes: 'Maintenance release',
+          release_notes:
+            "<ha-alert alert-type='error'>Restart of Home Assistant required</ha-alert>",
           release_notes_url: 'https://example.com/os-notes',
         },
         last_changed: '2026-05-29T06:00:00.000Z',
@@ -82,8 +83,9 @@ describe('useProviderUpdateCandidates', () => {
       }),
       expect.objectContaining({
         entityId: 'update.navet_os',
-        releaseNotes: 'Maintenance release',
+        releaseNotes: 'Restart of Home Assistant required',
         detailsUrl: 'https://example.com/os-notes',
+        requiresRestart: true,
       }),
     ]);
   });

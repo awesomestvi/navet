@@ -52,6 +52,8 @@ export type DashboardController = OnboardingController &
     customCards: CustomCard[];
     deviceMap: ReturnType<typeof useDeviceMap>['deviceMap'];
     connecting: boolean;
+    densePerformanceMode: boolean;
+    denseVisibleCardCount: number;
     devicesLoaded: boolean;
     handleAddCard: (template: CardTemplate, size: CardSize) => void;
     handleAddLibraryCard: (cardId: string) => void;

@@ -129,6 +129,37 @@ type ProviderScopedState = {
   roomsByCanonicalId: Record<string, NavetRoom>;
 };
 
+const DEVICE_COLLECTION_KEYS = [
+  'lights',
+  'fans',
+  'hvac',
+  'climate',
+  'media',
+  'weather',
+  'switches',
+  'helpers',
+  'covers',
+  'locks',
+  'scenes',
+  'persons',
+  'sensors',
+  'vacuums',
+  'calendars',
+  'cameras',
+  'grouped-sensors',
+] as const;
+
+type DeviceCollectionKey = (typeof DEVICE_COLLECTION_KEYS)[number];
+type DeviceCollectionEntry = DeviceCollection[DeviceCollectionKey][number];
+
+function assignDeviceCollectionEntry<K extends DeviceCollectionKey>(
+  collection: DeviceCollection,
+  key: K,
+  value: DeviceCollection[K]
+) {
+  collection[key] = value;
+}
+
 function addLookupAlias(
   index: Record<string, string>,
   alias: string | undefined,
@@ -177,6 +208,66 @@ function reuseValue<T>(previousValue: T | undefined, nextValue: T): T {
     : nextValue;
 }
 
+function reuseDeviceArrayEntries<T extends { id: string }>(previous: T[], next: T[]): T[] {
+  if (previous === next) {
+    return previous;
+  }
+
+  if (previous.length === 0) {
+    return next;
+  }
+
+  const previousById = new Map(previous.map((device) => [device.id, device]));
+  let changed = previous.length !== next.length;
+
+  const merged = next.map((device, index) => {
+    const previousDevice = previousById.get(device.id);
+    if (previousDevice && areDataEqual(previousDevice, device)) {
+      if (previous[index] !== previousDevice) {
+        changed = true;
+      }
+      return previousDevice;
+    }
+
+    if (previous[index] !== device) {
+      changed = true;
+    }
+    return device;
+  });
+
+  return changed ? merged : previous;
+}
+
+function reuseDeviceCollection(
+  previousCollection: DeviceCollection | undefined,
+  nextCollection: DeviceCollection
+): DeviceCollection {
+  if (!previousCollection) {
+    return nextCollection;
+  }
+
+  let changed = false;
+  const mergedCollection = { ...nextCollection };
+
+  for (const key of DEVICE_COLLECTION_KEYS) {
+    const previousDevices = previousCollection[key] as DeviceCollectionEntry[];
+    const nextDevices = nextCollection[key] as DeviceCollectionEntry[];
+    const mergedDevices = reuseDeviceArrayEntries(previousDevices, nextDevices);
+
+    if (mergedDevices !== previousDevices) {
+      changed = true;
+    }
+
+    assignDeviceCollectionEntry(
+      mergedCollection,
+      key,
+      mergedDevices as DeviceCollection[typeof key]
+    );
+  }
+
+  return changed ? mergedCollection : previousCollection;
+}
+
 function buildProviderScopedState(
   providerId: IntegrationProviderId,
   _homeAssistantState: HomeAssistantStore,
@@ -217,7 +308,10 @@ function buildProviderScopedState(
   const nextDeviceCollection = mapNavetEntitiesToDeviceCollection(
     Object.values(entitiesByCanonicalId)
   );
-  const deviceCollection = reuseValue(previousState?.deviceCollection, nextDeviceCollection);
+  const deviceCollection = reuseDeviceCollection(
+    previousState?.deviceCollection,
+    nextDeviceCollection
+  );
   const entityLookupByCanonicalId = reuseValue(
     previousState?.entityLookupByCanonicalId,
     buildEntityLookupIndex(providerId, entitiesByCanonicalId)

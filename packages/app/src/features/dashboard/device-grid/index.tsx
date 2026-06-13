@@ -27,6 +27,7 @@ export const DeviceGrid = memo(function DeviceGrid({
   onRemoveEntity,
   allowEntityRemoval = false,
   usesHideAction = false,
+  densePerformanceMode = false,
   getDeviceHeaderSubtitle,
 }: DeviceGridProps) {
   const { isSearchActive, filteredDeviceIds } = useSearch();
@@ -82,9 +83,26 @@ export const DeviceGrid = memo(function DeviceGrid({
   );
 
   const visibleCards = allCards.slice(0, visibleCount);
+  const estimatedRows = Math.max(
+    1,
+    Math.ceil(displayedCardIds.length / Math.max(1, breakpointCols))
+  );
+  const placeholderHeight = estimatedRows * 120;
 
   const gridContent = (
-    <div ref={outerRef} className="relative w-full" style={outerContainerStyle}>
+    <div
+      ref={outerRef}
+      className="relative w-full"
+      style={{
+        ...outerContainerStyle,
+        ...(densePerformanceMode
+          ? ({
+              contentVisibility: 'auto',
+              containIntrinsicBlockSize: `${placeholderHeight}px`,
+            } as CSSProperties)
+          : undefined),
+      }}
+    >
       <div
         ref={innerRef}
         className={`w-full${isAutoScaled ? ' absolute left-0 top-0 origin-top-left' : ''}`}
@@ -112,6 +130,7 @@ export const DeviceGrid = memo(function DeviceGrid({
                   onRemoveEntity={onRemoveEntity}
                   allowEntityRemoval={allowEntityRemoval}
                   usesHideAction={usesHideAction}
+                  densePerformanceMode={densePerformanceMode}
                   headerSubtitleOverride={getDeviceHeaderSubtitle?.(device)}
                 />
               );
@@ -135,6 +154,7 @@ export const DeviceGrid = memo(function DeviceGrid({
                 onRemoveEntity={onRemoveEntity}
                 allowEntityRemoval={allowEntityRemoval}
                 usesHideAction={usesHideAction}
+                densePerformanceMode={densePerformanceMode}
               />
             );
           })}

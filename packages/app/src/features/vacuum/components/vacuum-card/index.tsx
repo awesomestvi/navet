@@ -830,10 +830,10 @@ export const VacuumCard = memo(function VacuumCard({
   const use24HourTime = useSettingsStore(settingsSelectors.use24HourTime);
   const liveAttrs = liveEntity?.attributes;
   const liveStatus = normalizeVacuumStatus(
-    (typeof liveAttrs?.status === 'string' && liveAttrs.status) ||
+    liveEntity?.state ||
+      (typeof liveAttrs?.status === 'string' && liveAttrs.status) ||
       (typeof liveAttrs?.state === 'string' && liveAttrs.state) ||
-      (typeof liveAttrs?.activity === 'string' && liveAttrs.activity) ||
-      liveEntity?.state,
+      (typeof liveAttrs?.activity === 'string' && liveAttrs.activity),
     status
   );
   const vacuumCapabilities = resolveVacuumCapabilities({
@@ -900,6 +900,12 @@ export const VacuumCard = memo(function VacuumCard({
         : typeof liveAttrs?.room === 'string' && liveAttrs.room.length > 0
           ? liveAttrs.room
           : room;
+  const liveCurrentRoom =
+    typeof liveAttrs?.current_room === 'string' && liveAttrs.current_room.length > 0
+      ? liveAttrs.current_room
+      : typeof liveAttrs?.current_zone === 'string' && liveAttrs.current_zone.length > 0
+        ? liveAttrs.current_zone
+        : undefined;
   const liveCleanedArea = glanceMetrics.cleanedArea;
   const liveCleaningTime = glanceMetrics.cleaningTime;
   const liveLastCleaned = glanceMetrics.lastCleaned ?? lastCleaned;
@@ -949,7 +955,7 @@ export const VacuumCard = memo(function VacuumCard({
   });
   const cardSummary = resolveVacuumCardSummary({
     status: displayState,
-    room: liveRoom,
+    currentRoom: liveCurrentRoom,
     battery: liveBattery,
     cleanedArea: liveCleanedArea,
     cleaningTime: liveCleaningTime,

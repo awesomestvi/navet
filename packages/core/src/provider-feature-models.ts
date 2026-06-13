@@ -191,6 +191,7 @@ export interface PlatformUpdateNotificationCandidate {
   detailsUrl?: string | null;
   progress?: number | null;
   inProgress: boolean;
+  requiresRestart?: boolean;
   lastChanged?: string;
   lastUpdated?: string;
 }

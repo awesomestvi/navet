@@ -26,6 +26,7 @@ interface PresentationCardGridProps {
   updateCardSize: (id: string, size: CardSize) => void;
   onUpdateCard?: (cardId: string, data: Record<string, unknown>) => void;
   showHero: boolean;
+  densePerformanceMode?: boolean;
 }
 
 export const PresentationCardGrid = memo(function PresentationCardGrid({
@@ -36,6 +37,7 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
   updateCardSize,
   onUpdateCard,
   showHero,
+  densePerformanceMode = false,
 }: PresentationCardGridProps) {
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const breakpointCols = useBreakpointCols();
@@ -93,7 +95,7 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
     [breakpointCols, microCardMinWidth, renderedGridCols]
   );
 
-  const visibleCount = useProgressiveBatching(cardIds.length, lowPowerMode);
+  const visibleCount = useProgressiveBatching(cardIds.length, lowPowerMode || densePerformanceMode);
   const visibleCardIds = useMemo(() => {
     if (!Number.isFinite(visibleCount)) {
       return cardIds;
@@ -103,7 +105,19 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
   }, [cardIds, visibleCount]);
 
   return (
-    <div ref={outerRef} className="relative w-full" style={outerContainerStyle}>
+    <div
+      ref={outerRef}
+      className="relative w-full"
+      style={
+        densePerformanceMode
+          ? ({
+              ...outerContainerStyle,
+              contentVisibility: 'auto',
+              containIntrinsicBlockSize: `${Math.max(1, Math.ceil(cardIds.length / Math.max(1, renderedGridCols))) * 120}px`,
+            } as CSSProperties)
+          : outerContainerStyle
+      }
+    >
       <div
         ref={innerRef}
         className={`w-full${isAutoScaled ? ' absolute left-0 top-0 origin-top-left' : ''}`}
@@ -127,6 +141,7 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
                 isEditMode={false}
                 handleSizeChange={updateCardSize}
                 allowExtraLargeSizes={showHero}
+                densePerformanceMode={densePerformanceMode}
               />
             ) : (
               <DashboardCardItem
@@ -138,6 +153,7 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
                 handleSizeChange={updateCardSize}
                 onUpdateCard={onUpdateCard}
                 allowExtraLargeSizes={showHero}
+                densePerformanceMode={densePerformanceMode}
               />
             );
           })}
@@ -156,6 +172,7 @@ function arePresentationCardGridPropsEqual(
     previous.updateCardSize === next.updateCardSize &&
     previous.onUpdateCard === next.onUpdateCard &&
     previous.showHero === next.showHero &&
+    previous.densePerformanceMode === next.densePerformanceMode &&
     areCardIdsStable(
       previous.cardIds,
       next.cardIds,

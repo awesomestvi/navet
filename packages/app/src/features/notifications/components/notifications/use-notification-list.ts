@@ -61,15 +61,16 @@ export function buildUpdateNotifications({
       (candidate) =>
         candidate.state === 'on' ||
         candidate.inProgress ||
+        candidate.requiresRestart ||
         pendingUpdateInstalls.includes(candidate.entityId)
     )
     .map((candidate) => {
       const title = candidate.friendlyName || t('notifications.update.available');
-      const isBusy = candidate.inProgress || pendingUpdateInstalls.includes(candidate.entityId);
+      const isPendingInstall = pendingUpdateInstalls.includes(candidate.entityId);
       const requiresRestart =
-        pendingUpdateInstalls.includes(candidate.entityId) &&
-        !candidate.inProgress &&
-        candidate.state !== 'on';
+        candidate.requiresRestart ||
+        (isPendingInstall && !candidate.inProgress && candidate.state !== 'on');
+      const isBusy = candidate.inProgress || isPendingInstall || requiresRestart;
       const versionMessage =
         candidate.installedVersion && candidate.latestVersion
           ? t('notifications.update.availableFromTo', {

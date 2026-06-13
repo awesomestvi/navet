@@ -19,6 +19,7 @@ export const AllViewGrid = memo(function AllViewGrid({
   onRemoveEntity,
   allowEntityRemoval = false,
   usesHideAction = false,
+  densePerformanceMode = false,
 }: AllViewGridProps) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
@@ -56,6 +57,7 @@ export const AllViewGrid = memo(function AllViewGrid({
           onRemoveEntity={onRemoveEntity}
           allowEntityRemoval={allowEntityRemoval}
           usesHideAction={usesHideAction}
+          densePerformanceMode={densePerformanceMode}
         />
       ))}
     </div>

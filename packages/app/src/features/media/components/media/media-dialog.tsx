@@ -6,11 +6,13 @@ export function MediaDialog({
   artwork,
   artworkResource,
   artist,
+  deviceClass,
   durationSeconds,
   entityName,
   entityType,
   elapsedSeconds,
   entityId,
+  remoteAvailable,
   repeatMode,
   shuffleEnabled,
   title,
@@ -35,11 +37,13 @@ export function MediaDialog({
       artworkResource={artworkResource}
       artist={artist}
       controller={controller}
+      deviceClass={deviceClass}
       durationSeconds={durationSeconds}
       entityName={entityName}
       entityType={entityType}
       elapsedSeconds={elapsedSeconds}
       entityId={entityId}
+      remoteAvailable={remoteAvailable}
       repeatMode={repeatMode}
       shuffleEnabled={shuffleEnabled}
       title={title}

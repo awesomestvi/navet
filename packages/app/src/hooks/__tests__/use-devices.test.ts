@@ -6,6 +6,7 @@ import { integrationStore } from '@navet/app/stores/integration-store';
 import { renderHookWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import type { DeviceCollection } from '@navet/app/types/device.types';
+import { act } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
   DEVICE_COLLECTION_KEYS,
@@ -371,6 +372,75 @@ describe('useDevices', () => {
     ]);
     expect(result.current.cameras).toEqual([]);
     expect(result.current.lights).toEqual([]);
+  });
+
+  it('keeps requested device-group arrays stable when unrelated groups update', async () => {
+    await resetAppStores();
+
+    const lights = [
+      {
+        id: 'home_assistant:light.kitchen',
+        nativeId: 'light.kitchen',
+        canonicalId: 'home_assistant:light.kitchen',
+        providerId: 'home_assistant' as const,
+        name: 'Kitchen Light',
+        room: 'Kitchen',
+        size: 'small' as const,
+        state: true,
+        brightness: 100,
+        temp: 3200,
+      },
+    ];
+
+    integrationStore.setState({
+      providerDeviceCollectionsByProviderId: {
+        home_assistant: {
+          ...createEmptyDeviceCollection(),
+          lights,
+          switches: [
+            {
+              id: 'home_assistant:switch.coffee',
+              nativeId: 'switch.coffee',
+              canonicalId: 'home_assistant:switch.coffee',
+              providerId: 'home_assistant',
+              name: 'Coffee Machine',
+              room: 'Kitchen',
+              size: 'small',
+              state: false,
+            },
+          ],
+        },
+      },
+      selectedProviderIds: ['home_assistant'],
+    });
+
+    const { result } = renderHookWithProviders(() => useDeviceCollectionsByKeys(['lights']));
+    const previousLights = result.current.lights;
+
+    act(() => {
+      integrationStore.setState({
+        providerDeviceCollectionsByProviderId: {
+          home_assistant: {
+            ...createEmptyDeviceCollection(),
+            lights,
+            switches: [
+              {
+                id: 'home_assistant:switch.coffee',
+                nativeId: 'switch.coffee',
+                canonicalId: 'home_assistant:switch.coffee',
+                providerId: 'home_assistant',
+                name: 'Coffee Machine',
+                room: 'Kitchen',
+                size: 'small',
+                state: true,
+              },
+            ],
+          },
+        },
+      });
+    });
+
+    expect(result.current.lights).toBe(previousLights);
   });
 
   it('returns an empty device collection when disabled', async () => {

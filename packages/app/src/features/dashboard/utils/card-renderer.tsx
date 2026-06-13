@@ -251,16 +251,20 @@ export function useAvailabilityEntitiesForCard(
 function EntityAvailabilityFrame({
   device,
   isEditMode,
+  size,
   children,
 }: {
   device: DeviceData;
   isEditMode: boolean;
+  size: CardSize;
   children: ReactNode;
 }) {
   const { t } = useI18n();
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const shouldReducePaintEffects = effectsQuality !== 'high';
+  const isTinyAvailabilityCard = size === 'tiny';
+  const isCompactAvailabilityCard = isTinyAvailabilityCard || size === 'extra-small';
   const entityIds = useMemo(() => {
     const sourceIds = device.sourceIds;
     if (Array.isArray(sourceIds) && sourceIds.every((value) => typeof value === 'string')) {
@@ -308,9 +312,13 @@ function EntityAvailabilityFrame({
       ) : null}
       <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
         <div
-          className={`inline-flex items-center rounded-full border border-white/12 bg-black/45 px-2.5 py-1 text-xs font-semibold tracking-[0.06em] text-white/92 uppercase ${
-            shouldReducePaintEffects ? '' : 'backdrop-blur-md'
-          }`}
+          className={`inline-flex max-w-[calc(100%-1rem)] items-center justify-center truncate rounded-full border border-white/12 bg-black/45 font-semibold text-white/92 ${
+            isTinyAvailabilityCard
+              ? 'px-1.5 py-0.5 text-[10px] leading-none tracking-[0.02em]'
+              : isCompactAvailabilityCard
+                ? 'px-2 py-0.5 text-[11px] leading-none tracking-[0.04em]'
+                : 'px-2.5 py-1 text-xs tracking-[0.06em] uppercase'
+          } ${shouldReducePaintEffects ? '' : 'backdrop-blur-md'}`}
         >
           {t('camera.status.unavailable')}
         </div>
@@ -689,7 +697,11 @@ export const renderCard = (options: CardRendererOptions): ReactElement | null =>
   if (!card) return null;
   return (
     <CardErrorBoundary>
-      <EntityAvailabilityFrame device={options.device} isEditMode={options.isEditMode}>
+      <EntityAvailabilityFrame
+        device={options.device}
+        isEditMode={options.isEditMode}
+        size={options.size}
+      >
         <Suspense fallback={<EntityCardFallback size={options.size} />}>{card}</Suspense>
       </EntityAvailabilityFrame>
     </CardErrorBoundary>

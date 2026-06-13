@@ -1,13 +1,14 @@
 import {
   CardDialogBody,
+  CardDialogFooter,
   CardDialogHeader,
   CardDialogSection,
   CardDialogTabList,
   CardDialogTabTrigger,
 } from '@navet/app/components/patterns';
-import { Button, DialogFooter, ModalSurface } from '@navet/app/components/primitives';
+import { Button, ModalSurface } from '@navet/app/components/primitives';
 import { TabPanel, Tabs } from '@navet/app/components/primitives/tabs';
-import { CustomCardTintPicker, CustomScrollbar } from '@navet/app/components/shared/device-editor';
+import { CustomCardTintPicker } from '@navet/app/components/shared/device-editor';
 import {
   getInheritedDialogSectionStyle,
   normalizeCustomCardTint,
@@ -87,9 +88,9 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
   onCleanSpot,
   onSetFanSpeed,
   name,
+  room,
   theme,
   accentColorValue,
-  currentStatus = 'idle',
   fanSpeed,
   fanSpeeds,
   supportsFanSpeed = true,
@@ -102,8 +103,6 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
   const entityType = getEntityTypeLabel(entityId);
-  const isActive =
-    currentStatus === 'cleaning' || currentStatus === 'mopping' || currentStatus === 'returning';
   const cleaningAreas = useMemo(
     () => availableCleaningAreas ?? capabilities?.availableCleaningAreas ?? [],
     [availableCleaningAreas, capabilities?.availableCleaningAreas]
@@ -128,6 +127,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
     fanSpeed ?? speedOptions[1] ?? speedOptions[0] ?? ''
   );
   const [localTintColor, setLocalTintColor] = useState<string>(tintColor ?? accentColorValue);
+  const [shouldLockMobileSheetHeight, setShouldLockMobileSheetHeight] = useState(false);
   const [activeTab, setActiveTab] = useState<VacuumSettingsTab>(() =>
     getDefaultVacuumSettingsTab({ shouldShowControlsTab, shouldShowMapTab })
   );
@@ -172,6 +172,49 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
       setActiveTab(shouldShowControlsTab ? 'controls' : 'card');
     }
   }, [activeTab, isOpen, shouldShowControlsTab, shouldShowMapTab]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setShouldLockMobileSheetHeight(false);
+      return;
+    }
+
+    const node = document.querySelector<HTMLElement>('.vacuum-settings-dialog-body');
+    if (!node) {
+      return;
+    }
+
+    const updateStickyState = () => {
+      const viewportCap = Math.min(window.innerHeight * 0.85, window.innerHeight - 16);
+      const hasOverflow = node.scrollHeight > viewportCap + 1;
+      setShouldLockMobileSheetHeight(hasOverflow);
+    };
+
+    updateStickyState();
+
+    const resizeObserver =
+      typeof ResizeObserver === 'function' ? new ResizeObserver(updateStickyState) : null;
+    resizeObserver?.observe(node);
+    Array.from(node.children).forEach((child) => {
+      resizeObserver?.observe(child);
+    });
+
+    window.addEventListener('resize', updateStickyState);
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', updateStickyState);
+    };
+  }, [
+    activeTab,
+    cleaningAreas.length,
+    isOpen,
+    selectedAreaIds.length,
+    shouldShowControlsTab,
+    shouldShowMapTab,
+    speedOptions.length,
+    supportsFanSpeed,
+  ]);
 
   const resolvedTintColor =
     normalizeCustomCardTint(tintColor) ?? normalizeCustomCardTint(localTintColor);
@@ -225,107 +268,111 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
       title={name}
       description={entityType}
       disableOpenAutoFocus
-      bodyClassName="p-6 max-sm:px-3.5 max-sm:pt-2 max-sm:pb-3"
+      bodyClassName={`vacuum-settings-dialog-body relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain ${
+        shouldLockMobileSheetHeight ? 'h-full' : ''
+      }`}
       overlayClassName={surface.dialogBackdrop}
-      contentClassName="h-auto max-h-[85vh] max-w-md"
+      contentClassName={`flex h-auto max-h-[85vh] max-w-md flex-col max-sm:!max-h-[min(85dvh,calc(100dvh-1rem))] ${
+        shouldLockMobileSheetHeight ? 'max-sm:!h-[min(85dvh,calc(100dvh-1rem))]' : ''
+      }`}
     >
-      <CustomScrollbar isOn={isActive} className="max-sm:min-h-0 max-sm:flex-1">
-        <CardDialogBody className="p-0">
-          <CardDialogHeader title={name} description={entityType} entityId={entityId} />
+      <CardDialogBody>
+        <CardDialogHeader
+          title={name}
+          description={entityType}
+          entityId={entityId}
+          roomSelectorFallbackRoomName={room}
+        />
 
-          <Tabs value={activeTab} defaultValue="controls" onValueChange={handleTabChange}>
-            <CardDialogTabList>
-              {shouldShowControlsTab ? (
-                <CardDialogTabTrigger
-                  active={activeTab === 'controls'}
-                  icon={Sliders}
-                  onClick={() => setActiveTab('controls')}
-                >
-                  {t('common.controls')}
-                </CardDialogTabTrigger>
-              ) : null}
-              {shouldShowMapTab ? (
-                <CardDialogTabTrigger
-                  active={activeTab === 'map'}
-                  icon={MapIcon}
-                  onClick={() => setActiveTab('map')}
-                >
-                  {t('vacuum.settings.map')}
-                </CardDialogTabTrigger>
-              ) : null}
-              <CardDialogTabTrigger
-                active={activeTab === 'card'}
-                icon={Palette}
-                onClick={() => setActiveTab('card')}
-              >
-                {t('common.customize')}
-              </CardDialogTabTrigger>
-            </CardDialogTabList>
-
+        <Tabs value={activeTab} defaultValue="controls" onValueChange={handleTabChange}>
+          <CardDialogTabList>
             {shouldShowControlsTab ? (
-              <TabPanel value="controls" className="mt-5 space-y-5">
-                <VacuumCleaningControls
-                  fanSpeed={selectedFanSpeed}
-                  onFanSpeedChange={(speed) => {
-                    setSelectedFanSpeed(speed);
-                    onSetFanSpeed?.(speed);
-                  }}
-                  fanSpeedOptions={speedOptions}
-                  supportsFanSpeed={supportsFanSpeed}
-                  isUpdatingFanSpeed={isUpdatingFanSpeed}
-                  onReturnHome={onReturnHome}
-                  onLocate={onLocate}
-                  onCleanSpot={onCleanSpot}
-                  capabilities={capabilities}
-                  activePillStyle={activePillStyle}
-                />
-              </TabPanel>
+              <CardDialogTabTrigger
+                active={activeTab === 'controls'}
+                icon={Sliders}
+                onClick={() => setActiveTab('controls')}
+              >
+                {t('common.controls')}
+              </CardDialogTabTrigger>
             ) : null}
-
             {shouldShowMapTab ? (
-              <TabPanel value="map" className="mt-5">
-                <CardDialogSection className="mb-0">
-                  <div className="mb-3">
-                    <div className="text-sm font-medium text-white">
-                      {t('vacuum.settings.plan')}
-                    </div>
-                  </div>
-                  <VacuumPlannerSection
-                    availableAreas={cleaningAreas}
-                    selectedAreaIds={selectedAreaIds}
-                    onSelectedAreaIdsChange={setSelectedAreaIds}
-                    canOrderAreaCleaning={capabilities?.canOrderAreaCleaning ?? false}
-                  />
-                </CardDialogSection>
-              </TabPanel>
+              <CardDialogTabTrigger
+                active={activeTab === 'map'}
+                icon={MapIcon}
+                onClick={() => setActiveTab('map')}
+              >
+                {t('vacuum.settings.map')}
+              </CardDialogTabTrigger>
             ) : null}
+            <CardDialogTabTrigger
+              active={activeTab === 'card'}
+              icon={Palette}
+              onClick={() => setActiveTab('card')}
+            >
+              {t('common.customize')}
+            </CardDialogTabTrigger>
+          </CardDialogTabList>
 
-            <TabPanel value="card" className="mt-5">
-              <CustomCardTintPicker
-                value={resolvedTintColor}
-                onChange={handleTintChange}
-                isOn={theme !== 'light'}
-                defaultColor={accentColorValue}
+          {shouldShowControlsTab ? (
+            <TabPanel value="controls" className="mt-5 space-y-5">
+              <VacuumCleaningControls
+                fanSpeed={selectedFanSpeed}
+                onFanSpeedChange={(speed) => {
+                  setSelectedFanSpeed(speed);
+                  onSetFanSpeed?.(speed);
+                }}
+                fanSpeedOptions={speedOptions}
+                supportsFanSpeed={supportsFanSpeed}
+                isUpdatingFanSpeed={isUpdatingFanSpeed}
+                onReturnHome={onReturnHome}
+                onLocate={onLocate}
+                onCleanSpot={onCleanSpot}
+                capabilities={capabilities}
+                activePillStyle={activePillStyle}
               />
             </TabPanel>
-          </Tabs>
+          ) : null}
 
-          <DialogFooter>
-            <Button
-              variant="secondary"
-              size="small"
-              onClick={handlePlannerStart}
-              className={theme !== 'light' ? 'border-white/10 bg-white/8 hover:bg-white/12' : ''}
-              style={softControlStyle}
-            >
-              {t('vacuum.action.startCleaning')}
-            </Button>
-            <Button variant="soft" size="small" onClick={onClose}>
-              {t('common.done')}
-            </Button>
-          </DialogFooter>
-        </CardDialogBody>
-      </CustomScrollbar>
+          {shouldShowMapTab ? (
+            <TabPanel value="map" className="mt-5">
+              <CardDialogSection className="mb-0">
+                <div className="mb-3">
+                  <div className="text-sm font-medium text-white">{t('vacuum.settings.plan')}</div>
+                </div>
+                <VacuumPlannerSection
+                  availableAreas={cleaningAreas}
+                  selectedAreaIds={selectedAreaIds}
+                  onSelectedAreaIdsChange={setSelectedAreaIds}
+                  canOrderAreaCleaning={capabilities?.canOrderAreaCleaning ?? false}
+                />
+              </CardDialogSection>
+            </TabPanel>
+          ) : null}
+
+          <TabPanel value="card" className="mt-5">
+            <CustomCardTintPicker
+              value={resolvedTintColor}
+              onChange={handleTintChange}
+              isOn={theme !== 'light'}
+              defaultColor={accentColorValue}
+            />
+          </TabPanel>
+        </Tabs>
+        <CardDialogFooter className="mt-6 items-center justify-end gap-2">
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={handlePlannerStart}
+            className={theme !== 'light' ? 'border-white/10 bg-white/8 hover:bg-white/12' : ''}
+            style={softControlStyle}
+          >
+            {t('vacuum.action.startCleaning')}
+          </Button>
+          <Button variant="soft" size="small" onClick={onClose}>
+            {t('common.done')}
+          </Button>
+        </CardDialogFooter>
+      </CardDialogBody>
     </ModalSurface>
   );
 });

@@ -29,6 +29,7 @@ interface RoomSectionProps {
   onRemoveEntity?: (entityId: string) => void;
   allowEntityRemoval?: boolean;
   usesHideAction?: boolean;
+  densePerformanceMode?: boolean;
 }
 
 export const RoomSection = memo(function RoomSection({
@@ -49,6 +50,7 @@ export const RoomSection = memo(function RoomSection({
   onRemoveEntity,
   allowEntityRemoval = false,
   usesHideAction = false,
+  densePerformanceMode = false,
 }: RoomSectionProps) {
   const { t } = useI18n();
   const breakpointCols = useBreakpointCols();
@@ -120,6 +122,7 @@ export const RoomSection = memo(function RoomSection({
                   onRemoveEntity={onRemoveEntity}
                   allowEntityRemoval={allowEntityRemoval}
                   usesHideAction={usesHideAction}
+                  densePerformanceMode={densePerformanceMode}
                 />
               );
             }
@@ -144,6 +147,7 @@ export const RoomSection = memo(function RoomSection({
                 onRemoveEntity={onRemoveEntity}
                 allowEntityRemoval={allowEntityRemoval}
                 usesHideAction={usesHideAction}
+                densePerformanceMode={densePerformanceMode}
               />
             );
           })}
@@ -156,7 +160,7 @@ export const RoomSection = memo(function RoomSection({
     <div
       ref={containerRef}
       style={
-        effectsQuality !== 'high'
+        effectsQuality !== 'high' || densePerformanceMode
           ? ({
               contentVisibility: 'auto',
               containIntrinsicBlockSize: `${placeholderHeight}px`,
@@ -211,7 +215,8 @@ function areRoomSectionPropsEqual(prev: RoomSectionProps, next: RoomSectionProps
     prev.onUpdateCard !== next.onUpdateCard ||
     prev.onRemoveEntity !== next.onRemoveEntity ||
     prev.allowEntityRemoval !== next.allowEntityRemoval ||
-    prev.usesHideAction !== next.usesHideAction
+    prev.usesHideAction !== next.usesHideAction ||
+    prev.densePerformanceMode !== next.densePerformanceMode
   ) {
     return false;
   }

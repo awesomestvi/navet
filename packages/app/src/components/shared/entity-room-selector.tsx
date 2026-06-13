@@ -27,6 +27,7 @@ interface EntityRoomSelectorProps {
   label?: string;
   compact?: boolean;
   forceDark?: boolean;
+  fallbackRoomName?: string;
   className?: string;
   accentColorOverride?: string;
   selectStyle?: CSSProperties;
@@ -41,6 +42,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
   label,
   compact = false,
   forceDark = false,
+  fallbackRoomName,
   className = '',
   accentColorOverride,
   selectStyle,
@@ -77,6 +79,18 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
   const localRoomOverrideId = roomIdsByEntityId[resolvedEntityId] ?? null;
   const canManageRoom = manageableRooms.length > 0;
   const usesProviderRoomAssignment = roomRegistry.entry != null;
+  const fallbackManagedRoom = useMemo(() => {
+    const normalizedFallbackRoomName = fallbackRoomName?.trim().toLowerCase();
+    if (!normalizedFallbackRoomName) {
+      return null;
+    }
+
+    return (
+      manageableRooms.find(
+        (room) => room.name.trim().toLowerCase() === normalizedFallbackRoomName
+      ) ?? null
+    );
+  }, [fallbackRoomName, manageableRooms]);
   const selectedRoomId = useMemo(() => {
     if (localRoomOverrideId) {
       return localRoomOverrideId;
@@ -84,7 +98,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
 
     const entityEntry = roomRegistry.entry;
     if (!entityEntry) {
-      return '';
+      return fallbackManagedRoom?.id ?? '';
     }
 
     if (entityEntry.area_id) {
@@ -92,13 +106,24 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
     }
 
     if (!entityEntry.device_id) {
-      return '';
+      return fallbackManagedRoom?.id ?? '';
     }
 
     return roomRegistry.deviceAreaId
       ? createProviderScopedId(entityProviderId, roomRegistry.deviceAreaId)
-      : '';
-  }, [entityProviderId, localRoomOverrideId, roomRegistry.deviceAreaId, roomRegistry.entry]);
+      : (fallbackManagedRoom?.id ?? '');
+  }, [
+    entityProviderId,
+    fallbackManagedRoom?.id,
+    localRoomOverrideId,
+    roomRegistry.deviceAreaId,
+    roomRegistry.entry,
+  ]);
+  const selectedRoomLabel =
+    manageableRooms.find((room) => room.id === selectedRoomId)?.name ??
+    fallbackManagedRoom?.name ??
+    fallbackRoomName?.trim() ??
+    t('common.noRoom');
   const baseSelectClassName = compact
     ? `h-9 rounded-xl px-3 py-0 pr-8 text-xs leading-none ${surface.textPrimary}`
     : `h-10 rounded-xl px-3 py-0 pr-8 text-sm leading-none ${surface.textPrimary}`;
@@ -179,10 +204,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
         {compact ? (
           <div className={`relative inline-block min-w-0 ${compactContentClassName ?? ''}`}>
             <RoomEyebrow
-              room={
-                manageableRooms.find((room) => room.id === selectedRoomId)?.name ??
-                t('common.noRoom')
-              }
+              room={selectedRoomLabel}
               isLoading={isSaving}
               forceDark={forceDark}
               visualOnly

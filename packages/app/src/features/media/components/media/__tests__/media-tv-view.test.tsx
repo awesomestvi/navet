@@ -31,14 +31,27 @@ describe('MediaTvView', () => {
   it('renders the small TV control buttons and toggles the D-pad controls', () => {
     renderWithProviders(<MediaTvView {...defaultProps} />);
 
-    expect(screen.getByRole('button', { name: 'Volume down' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Volume up' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Channel down' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Channel up' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show volume controls' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show channel controls' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Volume down' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Channel down' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Menu' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Home' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Resume playback' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show volume controls' }));
+
+    expect(screen.getByRole('button', { name: 'Hide volume controls' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Volume down' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Volume up' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show channel controls' }));
+
+    expect(screen.getByRole('button', { name: 'Hide channel controls' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Channel down' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Channel up' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Volume down' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Show navigation pad' }));
 

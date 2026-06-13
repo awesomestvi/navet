@@ -26,6 +26,7 @@ interface CardDialogHeaderProps {
   eyebrow?: ReactNode;
   showRoomSelector?: boolean;
   forceDarkRoomSelector?: boolean;
+  roomSelectorFallbackRoomName?: string;
   roomSelectorCompactContentStyle?: CSSProperties;
   editableTitle?: boolean;
   onTitleChange?: (title: string) => void | Promise<void>;
@@ -83,6 +84,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
   eyebrow,
   showRoomSelector = true,
   forceDarkRoomSelector = true,
+  roomSelectorFallbackRoomName,
   roomSelectorCompactContentStyle,
   editableTitle = true,
   onTitleChange,
@@ -176,6 +178,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
               entityId={entityId}
               compact
               forceDark={forceDarkRoomSelector}
+              fallbackRoomName={roomSelectorFallbackRoomName}
               compactContentStyle={roomSelectorCompactContentStyle}
             />
           ) : null)}

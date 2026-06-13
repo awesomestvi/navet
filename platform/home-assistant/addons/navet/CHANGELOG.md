@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.3
+
+- Updated Navet to `0.7.3`
+- Added clearer TV-focused media dialogs with better source badges and compact remote controls
+- Cleaned up Home Assistant update release notes and restart-required update messaging
+- Fixed vacuum status and current-room handling so active cleaning runs stay more accurate
+- Improved dense-dashboard rendering and device update stability on heavier dashboards
+
 ## 0.7.2
 
 - Updated Navet to `0.7.2`

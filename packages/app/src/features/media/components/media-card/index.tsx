@@ -372,6 +372,9 @@ export const MediaCard = memo(function MediaCard({
         <Suspense fallback={null}>
           <MediaDialog
             entityId={id}
+            room={_room}
+            deviceClass={deviceClass}
+            remoteAvailable={tvRemoteAvailable}
             isOpen={isOpen}
             onOpenChange={closeDialog}
             artwork={resolvedAlbumArt}
@@ -408,6 +411,7 @@ export const MediaCard = memo(function MediaCard({
             source={source}
             sourceList={sourceList}
             onSelectSource={selectSource}
+            onRemoteCommand={sendRemoteCommand}
             capabilities={mediaCapabilities}
             soundMode={soundMode}
             soundModeList={soundModeList}

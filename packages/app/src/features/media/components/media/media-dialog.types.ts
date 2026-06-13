@@ -1,4 +1,5 @@
 import type { MediaPlayerCapabilities } from '@navet/app/constants/media-player-features';
+import type { TvRemoteAction } from '@navet/app/features/media/tv-remote-commands';
 import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
 
 export interface MediaDialogGroupingPlayer {
@@ -9,6 +10,9 @@ export interface MediaDialogGroupingPlayer {
 
 export interface MediaDialogProps {
   entityId: string;
+  room?: string;
+  deviceClass?: string;
+  remoteAvailable?: boolean;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   artwork?: string | null;
@@ -43,6 +47,7 @@ export interface MediaDialogProps {
   soundMode?: string;
   soundModeList: string[];
   onSelectSoundMode: (soundMode: string) => void;
+  onRemoteCommand?: (action: TvRemoteAction) => void;
   onSeek: (elapsedSeconds: number) => void;
   onClearPlaylist: () => void;
   onToggleMute: () => void;

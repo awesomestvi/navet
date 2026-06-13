@@ -8,7 +8,7 @@ import { getMediaTVViewSurfaceTokens } from '@navet/app/components/shared/theme/
 import type { TvRemoteAction } from '@navet/app/features/media/tv-remote-commands';
 import { useI18n } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
-import { Gamepad2, Tv2 } from 'lucide-react';
+import { ChevronsUpDown, Gamepad2, Tv2, Volume2 } from 'lucide-react';
 import { type CSSProperties, useState } from 'react';
 import { TvControlButton } from './tv-control-button';
 import { getTvDpadLayout, TvDpad } from './tv-dpad';
@@ -74,10 +74,27 @@ export function MediaTvView({
   const isCompact = isCompactCardSize(size);
   const isSmallTvCard = size === 'small';
   const isMediumVerticalTv = size === 'medium-vertical';
-  const tvDpadLayout = getTvDpadLayout(
-    size as 'small' | 'medium' | 'medium-vertical' | 'large' | 'extra-large'
-  );
+  const isCompactCardSourceSelector = isSmallTvCard || isMediumVerticalTv;
+  const constrainCardSourceSelector =
+    size === 'small' || size === 'medium' || size === 'medium-vertical';
+  const sourceSelectorWidthClass = isSmallTvCard
+    ? 'w-[72px]'
+    : isMediumVerticalTv
+      ? 'w-[112px]'
+      : 'w-[140px]';
+  const tvDpadLayout = isMediumVerticalTv
+    ? {
+        ...getTvDpadLayout('medium'),
+        shell: 'h-[92px] w-[92px] rounded-[20px]',
+        innerInset: 'inset-[23px]',
+        centerClassName: 'h-8 w-8',
+        crosshairMarginPx: 28,
+        edgeIconClassName: 'h-3.5 w-3.5',
+      }
+    : getTvDpadLayout(size as 'small' | 'medium' | 'medium-vertical' | 'large' | 'extra-large');
   const [dpadOpen, setDpadOpen] = useState(false);
+  const [volumeControlsOpen, setVolumeControlsOpen] = useState(false);
+  const [channelControlsOpen, setChannelControlsOpen] = useState(false);
   /** 6px standard gap between TV control buttons */
   const tvControlClusterGap = 'gap-1.5';
   const tvSectionStackGap = isSmallTvCard || isMediumVerticalTv ? 'gap-2' : 'gap-3';
@@ -122,37 +139,110 @@ export function MediaTvView({
       </TvControlButton>
     ) : null;
 
+  const volumeToggleButton =
+    isSmallTvCard && showVolumeControls ? (
+      <TvControlButton
+        theme={theme}
+        size="small"
+        label={volumeControlsOpen ? 'Hide volume controls' : 'Show volume controls'}
+        style={controlStyle}
+        iconClassName={iconClassName}
+        className={volumeControlsOpen ? 'ring-1 ring-fuchsia-400/35' : ''}
+        onPress={() => {
+          setVolumeControlsOpen((open) => !open);
+          setChannelControlsOpen(false);
+        }}
+      >
+        <Volume2 className={tvIconClass} />
+      </TvControlButton>
+    ) : null;
+
+  const channelToggleButton =
+    isSmallTvCard && showChannelControls ? (
+      <TvControlButton
+        theme={theme}
+        size="small"
+        label={channelControlsOpen ? 'Hide channel controls' : 'Show channel controls'}
+        style={controlStyle}
+        iconClassName={iconClassName}
+        className={channelControlsOpen ? 'ring-1 ring-fuchsia-400/35' : ''}
+        onPress={() => {
+          setChannelControlsOpen((open) => !open);
+          setVolumeControlsOpen(false);
+        }}
+      >
+        <ChevronsUpDown className={tvIconClass} />
+      </TvControlButton>
+    ) : null;
+
   const utilityControls =
     showVolumeControls || showChannelControls ? (
-      <div className={`flex min-w-0 items-center justify-start ${tvControlClusterGap}`}>
-        <TvVolumeControls
-          theme={theme}
-          isMuted={isMuted}
-          volume={volume}
-          canSetVolume={canSetVolume}
-          canMuteVolume={canMuteVolume}
-          controlStyle={controlStyle}
-          iconClassName={iconClassName}
-          tvIconClass={tvIconClass}
-          tvControlClusterGap={tvControlClusterGap}
-          onToggleMute={onToggleMute}
-          onVolumeChange={onVolumeChange}
-          onVolumeInteractionStart={onVolumeInteractionStart}
-          onVolumeInteractionEnd={onVolumeInteractionEnd}
-        />
-        {!isSmallTvCard && showUtilitySeparator ? (
-          <div className="h-6 w-px shrink-0" style={{ backgroundColor: separatorColor }} />
-        ) : null}
-        <TvChannelControls
-          theme={theme}
-          remoteAvailable={remoteAvailable}
-          controlStyle={controlStyle}
-          iconClassName={iconClassName}
-          tvIconClass={tvIconClass}
-          tvControlClusterGap={tvControlClusterGap}
-          onRemoteCommand={onRemoteCommand}
-        />
-      </div>
+      isSmallTvCard ? (
+        <div className={`flex flex-col ${tvSectionStackGap}`}>
+          <div className={`flex min-w-0 items-center justify-start ${tvControlClusterGap}`}>
+            {volumeToggleButton}
+            {channelToggleButton}
+          </div>
+          {volumeControlsOpen ? (
+            <TvVolumeControls
+              theme={theme}
+              isMuted={isMuted}
+              volume={volume}
+              canSetVolume={canSetVolume}
+              canMuteVolume={canMuteVolume}
+              controlStyle={controlStyle}
+              iconClassName={iconClassName}
+              tvIconClass={tvIconClass}
+              tvControlClusterGap={tvControlClusterGap}
+              onToggleMute={onToggleMute}
+              onVolumeChange={onVolumeChange}
+              onVolumeInteractionStart={onVolumeInteractionStart}
+              onVolumeInteractionEnd={onVolumeInteractionEnd}
+            />
+          ) : null}
+          {channelControlsOpen ? (
+            <TvChannelControls
+              theme={theme}
+              remoteAvailable={remoteAvailable}
+              controlStyle={controlStyle}
+              iconClassName={iconClassName}
+              tvIconClass={tvIconClass}
+              tvControlClusterGap={tvControlClusterGap}
+              onRemoteCommand={onRemoteCommand}
+            />
+          ) : null}
+        </div>
+      ) : (
+        <div className={`flex min-w-0 items-center justify-start ${tvControlClusterGap}`}>
+          <TvVolumeControls
+            theme={theme}
+            isMuted={isMuted}
+            volume={volume}
+            canSetVolume={canSetVolume}
+            canMuteVolume={canMuteVolume}
+            controlStyle={controlStyle}
+            iconClassName={iconClassName}
+            tvIconClass={tvIconClass}
+            tvControlClusterGap={tvControlClusterGap}
+            onToggleMute={onToggleMute}
+            onVolumeChange={onVolumeChange}
+            onVolumeInteractionStart={onVolumeInteractionStart}
+            onVolumeInteractionEnd={onVolumeInteractionEnd}
+          />
+          {showUtilitySeparator ? (
+            <div className="h-6 w-px shrink-0" style={{ backgroundColor: separatorColor }} />
+          ) : null}
+          <TvChannelControls
+            theme={theme}
+            remoteAvailable={remoteAvailable}
+            controlStyle={controlStyle}
+            iconClassName={iconClassName}
+            tvIconClass={tvIconClass}
+            tvControlClusterGap={tvControlClusterGap}
+            onRemoteCommand={onRemoteCommand}
+          />
+        </div>
+      )
     ) : null;
 
   const utilityControlsVertical =
@@ -222,6 +312,9 @@ export function MediaTvView({
       source={source}
       sourceList={sourceList}
       isSmallTvCard={isSmallTvCard}
+      constrainCardWidth={constrainCardSourceSelector}
+      compactCardSelector={isCompactCardSourceSelector}
+      hideBadge={isSmallTvCard}
       theme={theme}
       panelStyle={panelStyle}
       tvTextTokens={tvTextTokens}
@@ -248,7 +341,7 @@ export function MediaTvView({
       size={tvCardActionRowSize}
       leftContent={transportControls}
       rightContent={
-        <div className={`flex items-center ${tvControlClusterGap}`}>
+        <div className={`flex min-w-0 items-center ${tvControlClusterGap}`}>
           {sourceSelector}
           {tvSettingsButton}
         </div>
@@ -317,7 +410,9 @@ export function MediaTvView({
                   <div className="relative flex w-full min-w-0 items-center justify-between">
                     <div className="relative z-10 shrink-0">{tvDpadToggleButton}</div>
                     <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 flex -translate-x-1/2 -translate-y-1/2 justify-center">
-                      <div className="pointer-events-auto min-w-0 max-w-32">{sourceSelector}</div>
+                      <div className={`pointer-events-auto min-w-0 ${sourceSelectorWidthClass}`}>
+                        {sourceSelector}
+                      </div>
                     </div>
                     <div className="relative z-10 shrink-0">{tvSettingsButton}</div>
                   </div>
@@ -337,7 +432,9 @@ export function MediaTvView({
       <div className="relative flex h-full flex-col">
         {header}
         <div className="relative flex min-h-0 flex-1 flex-col gap-5">
-          <div className="flex min-h-0 flex-1 items-end justify-center">{renderDpadInline()}</div>
+          <div className="flex min-h-0 flex-1 items-center justify-center pt-3">
+            {renderDpadInline()}
+          </div>
           <div className={`flex flex-col ${tvSectionStackGap}`}>
             {utilityControlsVertical}
             <div
@@ -348,7 +445,7 @@ export function MediaTvView({
             <div
               className={`mt-3 flex w-full min-w-0 items-center justify-center ${tvControlClusterGap}`}
             >
-              <div className="min-w-0 max-w-36">{sourceSelector}</div>
+              <div className={`min-w-0 ${sourceSelectorWidthClass}`}>{sourceSelector}</div>
               <div className="shrink-0">{tvSettingsButton}</div>
             </div>
           </div>

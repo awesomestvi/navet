@@ -5,7 +5,7 @@ type VacuumSummaryFactKind = 'area' | 'battery' | 'time' | 'speed' | 'lastCleane
 
 interface ResolveVacuumCardSummaryOptions {
   status: VacuumDisplayStatus;
-  room?: string;
+  currentRoom?: string;
   battery?: number;
   cleanedArea?: string;
   cleaningTime?: string;
@@ -44,9 +44,13 @@ function capitalizeSummaryValue(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+function formatCleaningRoomLabel(room: string): string {
+  return room.trim().toLocaleLowerCase();
+}
+
 export function resolveVacuumCardSummary({
   status,
-  room: _room,
+  currentRoom,
   battery,
   cleanedArea,
   cleaningTime,
@@ -76,11 +80,14 @@ export function resolveVacuumCardSummary({
     appendSummaryFact(facts, 'lastCleaned', t('vacuum.detail.lastCleaned'), lastCleaned);
   }
 
+  const statusLabel =
+    status === 'unavailable' ? t('vacuum.status.unavailable') : t(getVacuumStatusLabelKey(status));
+
   return {
     primaryText:
-      status === 'unavailable'
-        ? t('vacuum.status.unavailable')
-        : t(getVacuumStatusLabelKey(status)),
+      status === 'cleaning' && typeof currentRoom === 'string' && currentRoom.trim().length > 0
+        ? `${statusLabel} ${formatCleaningRoomLabel(currentRoom)}`
+        : statusLabel,
     secondaryFacts: facts,
   };
 }

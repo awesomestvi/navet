@@ -12,13 +12,21 @@ const loadNotificationIds = (storageKey: string): string[] => storage.get<string
 const areNotificationIdListsEqual = (left: string[], right: string[]) =>
   left.length === right.length && left.every((value, index) => value === right[index]);
 
-export const persistNotificationIds = (storageKey: string, ids: string[]) => {
-  storage.set(storageKey, ids);
-  if (typeof window !== 'undefined') {
+function scheduleNotificationStorageSync(storageKey: string, ids: string[]) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  queueMicrotask(() => {
     window.dispatchEvent(
       new CustomEvent(NOTIFICATION_STORAGE_SYNC_EVENT, { detail: { storageKey, ids } })
     );
-  }
+  });
+}
+
+export const persistNotificationIds = (storageKey: string, ids: string[]) => {
+  storage.set(storageKey, ids);
+  scheduleNotificationStorageSync(storageKey, ids);
 };
 
 export const persistReadNotifications = (ids: string[]) =>
@@ -96,9 +104,8 @@ export function useNotificationStorage(options?: {
       const nextHidden = loadNotificationIds(HIDDEN_NOTIFICATIONS_STORAGE_KEY);
       const nextPending = loadNotificationIds(PENDING_UPDATE_INSTALLS_STORAGE_KEY);
 
-      // Use state setters directly — not the persist wrappers. Otherwise this
-      // same-tab CustomEvent runs synchronously after persist, and setHiddenNotifications
-      // would persist + dispatch again → unbounded recursion.
+      // Use state setters directly — not the persist wrappers. Otherwise a
+      // sync event from another hook instance would persist + dispatch again.
       setReadNotificationsState((c) => (areNotificationIdListsEqual(c, nextRead) ? c : nextRead));
       setHiddenNotificationsState((c) =>
         areNotificationIdListsEqual(c, nextHidden) ? c : nextHidden

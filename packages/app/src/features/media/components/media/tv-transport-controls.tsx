@@ -12,6 +12,10 @@ interface TvTransportControlsProps {
   controlStyle: CSSProperties;
   iconClassName: string;
   tvIconClass: string;
+  playPauseSize?: 'small' | 'large';
+  playPauseIconClass?: string;
+  playPauseClassName?: string;
+  showPlayPause?: boolean;
   onRemoteCommand: (action: TvRemoteAction) => void;
   onTogglePlay: () => void;
 }
@@ -23,6 +27,10 @@ export function TvTransportControls({
   controlStyle,
   iconClassName,
   tvIconClass,
+  playPauseSize = 'small',
+  playPauseIconClass,
+  playPauseClassName,
+  showPlayPause = true,
   onRemoteCommand,
   onTogglePlay,
 }: TvTransportControlsProps) {
@@ -58,6 +66,23 @@ export function TvTransportControls({
         <TvControlButton
           theme={theme}
           size="small"
+          label={isPlaying ? t('media.pausePlayback') : t('media.resumePlayback')}
+          style={controlStyle}
+          className={playPauseClassName}
+          iconClassName={iconClassName}
+          onPress={onTogglePlay}
+        >
+          {isPlaying ? (
+            <Pause className={playPauseIconClass ?? tvIconClass} fill="currentColor" />
+          ) : (
+            <Play className={playPauseIconClass ?? tvIconClass} fill="currentColor" />
+          )}
+        </TvControlButton>
+      ) : null}
+      {remoteAvailable ? (
+        <TvControlButton
+          theme={theme}
+          size="small"
           label="Back"
           style={controlStyle}
           iconClassName={iconClassName}
@@ -66,20 +91,23 @@ export function TvTransportControls({
           <Undo2 className={tvIconClass} />
         </TvControlButton>
       ) : null}
-      <TvControlButton
-        theme={theme}
-        size="small"
-        label={isPlaying ? t('media.pausePlayback') : t('media.resumePlayback')}
-        style={controlStyle}
-        iconClassName={iconClassName}
-        onPress={onTogglePlay}
-      >
-        {isPlaying ? (
-          <Pause className={tvIconClass} fill="currentColor" />
-        ) : (
-          <Play className={tvIconClass} fill="currentColor" />
-        )}
-      </TvControlButton>
+      {!remoteAvailable && showPlayPause ? (
+        <TvControlButton
+          theme={theme}
+          size={playPauseSize}
+          label={isPlaying ? t('media.pausePlayback') : t('media.resumePlayback')}
+          style={controlStyle}
+          className={playPauseClassName}
+          iconClassName={iconClassName}
+          onPress={onTogglePlay}
+        >
+          {isPlaying ? (
+            <Pause className={playPauseIconClass ?? tvIconClass} fill="currentColor" />
+          ) : (
+            <Play className={playPauseIconClass ?? tvIconClass} fill="currentColor" />
+          )}
+        </TvControlButton>
+      ) : null}
     </>
   );
 }

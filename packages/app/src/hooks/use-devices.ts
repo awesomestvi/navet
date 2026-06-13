@@ -314,19 +314,55 @@ function buildDeviceCollectionForKeys(
 ): DeviceCollection {
   const nextCollection = createEmptyDeviceCollection();
 
-  for (const collection of collections) {
-    for (const key of keys) {
-      assignDeviceCollectionKey(
-        nextCollection,
-        key,
-        collection[key].length === 0
-          ? nextCollection[key]
-          : [...nextCollection[key], ...collection[key]]
-      );
+  for (const key of keys) {
+    const nonEmptySlices = collections
+      .map((collection) => collection[key])
+      .filter((slice) => slice.length > 0);
+
+    if (nonEmptySlices.length === 0) {
+      continue;
     }
+
+    if (nonEmptySlices.length === 1) {
+      assignDeviceCollectionKey(nextCollection, key, nonEmptySlices[0]);
+      continue;
+    }
+
+    assignDeviceCollectionKey(
+      nextCollection,
+      key,
+      nonEmptySlices.flat() as DeviceCollection[typeof key]
+    );
   }
 
   return nextCollection;
+}
+
+function createSelectedProviderCollections(
+  keys: readonly DeviceCollectionKey[],
+  selectedProviderIds: readonly IntegrationProviderId[],
+  providerGroupSlices: ReadonlyArray<readonly unknown[]>
+): DeviceCollection[] {
+  const selectedProviderCollections: DeviceCollection[] = [];
+  let sliceIndex = 0;
+
+  for (let providerIndex = 0; providerIndex < selectedProviderIds.length; providerIndex += 1) {
+    const collection = createEmptyDeviceCollection();
+
+    for (const key of keys) {
+      const slice = providerGroupSlices[sliceIndex];
+      assignDeviceCollectionKey(
+        collection,
+        key,
+        Array.isArray(slice) ? (slice as DeviceCollection[typeof key]) : []
+      );
+      sliceIndex += 1;
+    }
+
+    selectedProviderCollections.push(collection);
+  }
+
+  return selectedProviderCollections;
 }
 
 export const useDeviceCollectionsByKeys = (
@@ -374,22 +410,11 @@ export const useDeviceCollectionsByKeys = (
       return createEmptyDeviceCollection();
     }
 
-    const selectedProviderCollections: DeviceCollection[] = [];
-    let sliceIndex = 0;
-
-    for (let providerIndex = 0; providerIndex < selectedProviderIds.length; providerIndex += 1) {
-      const collection = createEmptyDeviceCollection();
-      for (const key of keys) {
-        const slice = providerGroupSlices[sliceIndex];
-        assignDeviceCollectionKey(
-          collection,
-          key,
-          Array.isArray(slice) ? (slice as DeviceCollection[typeof key]) : []
-        );
-        sliceIndex += 1;
-      }
-      selectedProviderCollections.push(collection);
-    }
+    const selectedProviderCollections = createSelectedProviderCollections(
+      keys,
+      selectedProviderIds,
+      providerGroupSlices
+    );
 
     const collection = applyRoomOverrides(
       buildDeviceCollectionForKeys(keys, selectedProviderCollections),

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.7.3 - 2026-06-13
+
+## New
+
+- TV media dialogs now split TV controls from music playback, with clearer source badges and better compact remote layouts.
+- Home Assistant update notifications now clean up HTML-heavy release notes and surface restart-required updates more clearly.
+
+## Fixed
+
+- Vacuum cards now prefer the live entity state, so cleaning status and current room details stay more accurate while a run is active.
+- Room assignment dialogs now keep the intended room selected more reliably when only a fallback room name is available.
+
+## Improved
+
+- Dense dashboards now switch into a lighter performance mode on lower-tier or low-power devices to reduce heavy rendering work.
+- Device collection updates now preserve unchanged entries more aggressively, which cuts unnecessary dashboard rerenders during provider updates.
+
 ## 0.7.2 - 2026-06-13
 
 ## New
