@@ -64,15 +64,18 @@ jobs:
         with:
           node-version: 22
 
-      - name: Read committed dev version
-        id: dev_version
+      - name: Ensure workflow runs from main
         run: |
-          DEV_VERSION=$(node --input-type=module -e 'import fs from "node:fs"; const content = fs.readFileSync("platform/home-assistant/addons/navet-dev/config.yaml", "utf8"); const match = content.match(/^version:\s*"?(.*?)"?\s*$/m); if (!match?.[1]) { throw new Error("Unable to read Navet Dev add-on version"); } process.stdout.write(match[1].trim());')
-          PACKAGE_VERSION=$(node -p 'JSON.parse(require("node:fs").readFileSync("package.json", "utf8")).version')
-          if [[ ! "$DEV_VERSION" =~ ^${PACKAGE_VERSION//./\\.}-dev\.[0-9]{14}$ ]]; then
-            echo "Expected platform/home-assistant/addons/navet-dev/config.yaml version to match ${PACKAGE_VERSION}-dev.YYYYMMDDHHMMSS but received: $DEV_VERSION"
+          if [[ "${GITHUB_REF_NAME}" != "main" ]]; then
+            echo "Publish Edge Builds must be dispatched from main. Received ref: ${GITHUB_REF_NAME}"
             exit 1
           fi
+
+      - name: Generate dev version
+        id: dev_version
+        run: |
+          PACKAGE_VERSION=$(node -p 'JSON.parse(require("node:fs").readFileSync("package.json", "utf8")).version')
+          DEV_VERSION="${PACKAGE_VERSION}-dev.$(date -u +%Y%m%d%H%M%S)"
           echo "value=$DEV_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Capture release sha

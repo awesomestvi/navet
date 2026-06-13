@@ -109,7 +109,8 @@ Trigger:
 Behavior:
 
 - requires Tier 1 validation
-- reads the committed `platform/home-assistant/addons/navet-dev/config.yaml` version
+- generates an exact `0.x.y-dev.YYYYMMDDHHMMSS` build version from the current `main` commit at
+  workflow runtime
 - publishes standalone app edge artifacts
 - publishes add-on edge artifacts, including the exact dev version tag plus the moving `edge` and `dev` aliases
 - exports the current HACS payload into `awesomestvi/navet-hacs` and pushes it to `main`
@@ -128,12 +129,14 @@ Expected dev version shape:
 
 Trigger:
 
-- push a `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` tag
+- manual workflow dispatch from `main`
 
 Behavior:
 
-- validates that the Git tag matches the committed `platform/home-assistant/addons/navet-dev/config.yaml` version
 - requires Tier 1 validation
+- creates the exact `platform/home-assistant/addons/navet-dev/config.yaml` version commit on `main`
+- creates the matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` tag from that commit
+- validates that the committed Navet Dev version and created tag match
 - publishes immutable standalone and add-on dev-tag images for that exact dev version
 - creates a GitHub prerelease for the dev tag
 - does not move `latest`, `beta`, `edge`, or `dev`
@@ -181,8 +184,6 @@ promotion in phase 1.
 
 1. Decide the release bump and update `package.json`.
 2. Run `pnpm release:version-sync`.
-   This also refreshes `platform/home-assistant/addons/navet-dev/config.yaml` to
-   `0.x.y-dev.YYYYMMDDHHMMSS` for the new release line.
 3. Fetch Linear issues in the `Ready for Release` workflow state with `pnpm release:linear` and
    treat them as the primary release-note source.
 4. Draft the changelog section for the target version from those Linear issues. If no matching
@@ -200,10 +201,11 @@ promotion in phase 1.
 
 Optional immutable Navet Dev publish:
 
-1. Run `pnpm release:dev-publish` to refresh `platform/home-assistant/addons/navet-dev/config.yaml`,
-   create the matching commit if needed, and create the matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` tag.
-2. Push `main` and the created tag, or run `pnpm release:dev-publish -- --push` to do both in one step.
-3. Let the dev-tag workflow publish the exact dev-tag images and GitHub prerelease.
+1. Dispatch `/.github/workflows/dev-tag-publish.yml` from `main`.
+2. Let the workflow create the `platform/home-assistant/addons/navet-dev/config.yaml` metadata
+   commit, create the matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` tag, and publish the exact
+   dev-tag images and GitHub prerelease.
+3. Use `pnpm release:dev-publish` only as a local fallback if the GitHub workflow cannot be used.
 
 ## What Stays Manual
 

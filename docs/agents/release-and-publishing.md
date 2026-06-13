@@ -53,13 +53,15 @@ Recommended operator flow:
 14. For developer hardware testing or manual edge publishes, use
     [../../.github/workflows/edge-publish.yml](../../.github/workflows/edge-publish.yml).
 
-Optional immutable Navet Dev tag flow:
+Preferred immutable Navet Dev flow:
 
-1. Run `pnpm release:dev-publish` to refresh `platform/home-assistant/addons/navet-dev/config.yaml`,
-   commit that metadata change if needed, and create the matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` tag.
-2. Push `main` and the created tag, or use `pnpm release:dev-publish -- --push` to do both directly.
-3. Push the tag to trigger
-   [../../.github/workflows/dev-tag-publish.yml](../../.github/workflows/dev-tag-publish.yml).
+1. Dispatch [../../.github/workflows/dev-tag-publish.yml](../../.github/workflows/dev-tag-publish.yml)
+   from `main`.
+2. Let the workflow create the matching `platform/home-assistant/addons/navet-dev/config.yaml`
+   metadata commit on `main`, create the matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` tag, and
+   publish the matching prerelease artifacts.
+3. Use the local `pnpm release:dev-publish` helper only as a fallback when the GitHub workflow
+   cannot be used.
 
 ## Release Note Style
 
@@ -173,9 +175,12 @@ internal, or release-only changes into the fewest useful user-facing bullets.
   `0.x.y-dev.YYYYMMDDHHMMSS`, plus moving `edge`, temporary `dev`, and `sha-*` tags.
 - Dev tags publish immutable add-on images using that same committed `0.x.y-dev.YYYYMMDDHHMMSS`
   version without moving `edge`, `dev`, `beta`, or `latest`.
-- `pnpm release:version-sync` refreshes the committed Navet Dev version when the package version changes.
-- Use `pnpm release:dev-version` only when you need to refresh `platform/home-assistant/addons/navet-dev/config.yaml`
-  without changing the release-managed versioned surfaces.
+- `pnpm release:version-sync` now updates only the stable release-managed files for tagged releases.
+- `platform/home-assistant/addons/navet-dev/config.yaml` should be refreshed by the Navet Dev
+  publish workflow so the committed version always corresponds to a published immutable dev artifact.
+- Use `pnpm release:dev-version` only when you intentionally need to refresh
+  `platform/home-assistant/addons/navet-dev/config.yaml` outside the automated Navet Dev publish
+  flow.
 - Tagged releases also update `awesomestvi/navet-hacs/main` and sync the same Git tag there.
 - Tagged releases rebuild the committed custom-panel output and attach the downloadable panel
   archive to the GitHub release.
