@@ -6,8 +6,10 @@ import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceWithType } from '@navet/app/types/device.types';
+import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { type CSSProperties, memo, useMemo } from 'react';
 import { useAutoScaledGridMeasurements } from '../hooks/use-auto-scaled-grid-measurements';
+import { resolveDashboardPerformanceProfile } from '../hooks/use-dashboard-performance-mode';
 import { useProgressiveBatching } from '../hooks/use-progressive-batching';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { DashboardCardItem } from './dashboard-card-item';
@@ -40,6 +42,7 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
   densePerformanceMode = false,
 }: PresentationCardGridProps) {
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
+  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const breakpointCols = useBreakpointCols();
   const logicalGridCols = Math.max(1, Math.min(gridCols ?? breakpointCols, breakpointCols));
   const gridGapPx = getCardGridGapPx(breakpointCols);
@@ -94,8 +97,26 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
       }) as CSSProperties,
     [breakpointCols, microCardMinWidth, renderedGridCols]
   );
-
-  const visibleCount = useProgressiveBatching(cardIds.length, lowPowerMode || densePerformanceMode);
+  const performanceProfile = useMemo(
+    () =>
+      resolveDashboardPerformanceProfile({
+        activeSection: 'home',
+        deviceTier: detectDeviceTier(),
+        effectsQuality,
+        isEditMode: false,
+        lowPowerMode,
+        visibleCardCount: cardIds.length,
+        visibleDevices: Array.from(allCards.values()).filter(
+          (entry): entry is DeviceWithType => !isCustomCard(entry)
+        ),
+      }),
+    [allCards, cardIds.length, effectsQuality, lowPowerMode]
+  );
+  const visibleCount = useProgressiveBatching(cardIds.length, false, {
+    enabled: performanceProfile.batchHeavyCards || densePerformanceMode,
+    initialBatch: performanceProfile.progressiveBatchInitialCount,
+    batchSize: performanceProfile.progressiveBatchSize,
+  });
   const visibleCardIds = useMemo(() => {
     if (!Number.isFinite(visibleCount)) {
       return cardIds;

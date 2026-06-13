@@ -7,7 +7,7 @@ import { integrationAdminService } from '@navet/app/services/integration-admin.s
 import { integrationSelectors } from '@navet/app/stores/selectors';
 import { getProviderEntityTypeLabel } from '@navet/app/utils/provider-entity-label';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Check, type LucideIcon, Pencil, X } from 'lucide-react';
+import { Check, type LucideIcon, X } from 'lucide-react';
 import {
   type ButtonHTMLAttributes,
   type CSSProperties,
@@ -106,6 +106,18 @@ export const CardDialogHeader = memo(function CardDialogHeader({
   const connectedProviderCount = Object.keys(providerSessions).length;
   const resolvedDescription =
     getProviderEntityTypeLabel(entityId, description, connectedProviderCount > 1) ?? description;
+  const roomSelector =
+    showRoomSelector && entityId ? (
+      <EntityRoomSelector
+        entityId={entityId}
+        compact
+        forceDark={forceDarkRoomSelector}
+        fallbackRoomName={roomSelectorFallbackRoomName}
+        compactContentStyle={roomSelectorCompactContentStyle}
+        className="shrink-0"
+      />
+    ) : null;
+  const editLabel = t('entityNameEditor.edit', { name: '' }).trim();
 
   useEffect(() => {
     setDisplayTitle(title);
@@ -170,23 +182,14 @@ export const CardDialogHeader = memo(function CardDialogHeader({
   };
 
   return (
-    <div className={cn('mb-5 flex items-start justify-between gap-4', className)}>
+    <div className={cn('mb-4 flex items-start justify-between gap-4', className)}>
       <div className="min-w-0">
-        {eyebrow ??
-          (showRoomSelector && entityId ? (
-            <EntityRoomSelector
-              entityId={entityId}
-              compact
-              forceDark={forceDarkRoomSelector}
-              fallbackRoomName={roomSelectorFallbackRoomName}
-              compactContentStyle={roomSelectorCompactContentStyle}
-            />
-          ) : null)}
+        {eyebrow}
         <div
           className={cn(
             'flex min-w-0 items-center',
             isEditingTitle ? 'gap-4' : 'gap-2',
-            eyebrow || (showRoomSelector && entityId) ? 'mt-1' : undefined
+            eyebrow ? 'mt-1' : undefined
           )}
         >
           <Dialog.Title asChild>
@@ -250,40 +253,59 @@ export const CardDialogHeader = memo(function CardDialogHeader({
                   <X className="h-4 w-4" />
                 </button>
               </div>
-            ) : (
-              <button
-                type="button"
-                className="shrink-0 rounded-full border border-white/12 bg-white/8 p-1.5 text-white/82 transition-colors hover:bg-white/12 hover:text-white"
-                aria-label={t('entityNameEditor.edit', { name: displayTitle })}
-                onClick={() => setIsEditingTitle(true)}
-                style={actionButtonStyle}
-              >
-                <Pencil className="h-4 w-4" />
-              </button>
-            )
+            ) : null
           ) : null}
         </div>
-        {resolvedDescription ? (
-          <Dialog.Description
-            className={cn('mt-1 truncate', navetTypographyTokens.compactHelper, 'text-white/82')}
-            style={descriptionStyle}
-          >
-            {resolvedDescription}
+        {resolvedDescription || (canEditTitle && !isEditingTitle) ? (
+          <Dialog.Description asChild>
+            <div
+              className={cn(
+                '-mt-0.5 flex min-w-0 items-center gap-1.5',
+                navetTypographyTokens.compactHelper,
+                'text-white/82'
+              )}
+              style={descriptionStyle}
+            >
+              {resolvedDescription ? <span className="truncate">{resolvedDescription}</span> : null}
+              {canEditTitle && !isEditingTitle ? (
+                <>
+                  {resolvedDescription ? (
+                    <span aria-hidden="true" className="text-white/40">
+                      •
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="shrink-0 text-inherit [font:inherit] transition-colors hover:text-white"
+                    aria-label={t('entityNameEditor.edit', { name: displayTitle })}
+                    onClick={() => setIsEditingTitle(true)}
+                  >
+                    {editLabel}
+                  </button>
+                </>
+              ) : null}
+            </div>
           </Dialog.Description>
         ) : null}
         {supportingContent ? <div className="mt-2 min-w-0">{supportingContent}</div> : null}
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
+      <div
+        className={cn(
+          'flex shrink-0 items-center gap-2',
+          isEditingTitle ? 'max-sm:hidden' : undefined
+        )}
+      >
+        {!eyebrow ? roomSelector : null}
         {trailing}
         <Dialog.Close asChild>
           <button
             type="button"
-            className="shrink-0 rounded-full border border-white/12 bg-white/8 p-2 text-white/82 transition-colors hover:bg-white/12 hover:text-white"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/12 bg-white/8 text-white/82 transition-colors hover:bg-white/12 hover:text-white"
             aria-label={t('common.close')}
             style={actionButtonStyle}
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </Dialog.Close>
       </div>

@@ -11,6 +11,7 @@ import { integrationCameraFeatureService } from '@navet/app/services/integration
 import { normalizeResourceUrl } from '@navet/app/services/integration-resource.service';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { type CameraViewMode, useSettingsStore } from '@navet/app/stores/settings-store';
+import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import {
   memo,
   useCallback,
@@ -20,6 +21,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
+import { resolveDashboardPerformanceProfile } from '../../../dashboard/hooks/use-dashboard-performance-mode';
 import { CameraLiveViewer } from './camera-live-viewer';
 import { CameraSettingsDialog } from './camera-settings-dialog';
 import { CameraStreamPlayer } from './camera-stream-player';
@@ -137,6 +139,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
 }: CameraCardProps) {
   const providerEntity = useProviderEntityModel(id);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
+  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const cameraDashboardViewMode = useSettingsStore(
     settingsSelectors.cameraDashboardViewModeForEntity(id)
   );
@@ -180,9 +183,26 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     liveState.isStreamCapable ||
     providerState?.isStreamCapable === true ||
     (initialIsStreamCapable ?? false);
+  const performanceProfile = useMemo(
+    () =>
+      resolveDashboardPerformanceProfile({
+        activeSection: 'security',
+        deviceTier: detectDeviceTier(),
+        effectsQuality,
+        isEditMode,
+        lowPowerMode,
+        visibleCardCount: 1,
+        visibleDevices: [],
+      }),
+    [effectsQuality, isEditMode, lowPowerMode]
+  );
   const effectiveDashboardCameraViewMode = resolveDashboardCameraViewMode({
-    cameraDashboardViewMode,
+    cameraDashboardViewMode:
+      performanceProfile.preferSnapshotOverLive && hasSnapshot
+        ? 'snapshot'
+        : cameraDashboardViewMode,
     lowPowerMode,
+    effectsQuality: performanceProfile.effectiveEffectsQuality,
     hasSnapshot,
   });
   const playbackOptionsModel = useCameraPlaybackPlan({
@@ -251,8 +271,14 @@ export const CameraCardContainer = memo(function CameraCardContainer({
 
   useEffect(() => {
     const refreshIntervalMs = playbackModel?.refreshPolicy.snapshotRefreshMs ?? null;
+    const effectiveRefreshIntervalMs =
+      refreshIntervalMs === null
+        ? null
+        : performanceProfile.reducePolling
+          ? Math.max(refreshIntervalMs, 45_000)
+          : refreshIntervalMs;
     if (
-      !refreshIntervalMs ||
+      !effectiveRefreshIntervalMs ||
       !snapshotUrl ||
       !isVisible ||
       cameraState === 'unavailable' ||
@@ -266,12 +292,13 @@ export const CameraCardContainer = memo(function CameraCardContainer({
         setRefreshKey((key) => key + 1);
       }
     };
-    const interval = window.setInterval(refreshIfVisible, refreshIntervalMs);
+    const interval = window.setInterval(refreshIfVisible, effectiveRefreshIntervalMs);
 
     return () => window.clearInterval(interval);
   }, [
     cameraState,
     isVisible,
+    performanceProfile.reducePolling,
     playbackModel?.refreshPolicy.snapshotRefreshMs,
     playbackModel?.selectedTransport,
     snapshotUrl,

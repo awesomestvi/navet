@@ -347,7 +347,12 @@ export const MediaCard = memo(function MediaCard({
               onOpenDialog={openDialog}
             />
           ) : isSmall ? (
-            <MediaSmallView {...mediaIdentityProps} {...mediaControlProps} />
+            <MediaSmallView
+              {...mediaIdentityProps}
+              {...mediaControlProps}
+              elapsedSeconds={elapsedSeconds}
+              durationSeconds={durationSeconds}
+            />
           ) : isMedium ? (
             <MediaMediumView
               {...mediaIdentityProps}
@@ -356,7 +361,12 @@ export const MediaCard = memo(function MediaCard({
               durationSeconds={durationSeconds}
             />
           ) : isMediumVertical ? (
-            <MediaMediumVerticalView {...mediaIdentityProps} {...mediaControlProps} />
+            <MediaMediumVerticalView
+              {...mediaIdentityProps}
+              {...mediaControlProps}
+              elapsedSeconds={elapsedSeconds}
+              durationSeconds={durationSeconds}
+            />
           ) : isLarge ? (
             <MediaLargeView
               {...mediaIdentityProps}

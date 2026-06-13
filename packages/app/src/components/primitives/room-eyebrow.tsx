@@ -1,5 +1,4 @@
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { navetTypographyTokens } from '@navet/app/components/system/tokens';
 import { useTheme } from '@navet/app/hooks';
 import { ChevronDown, Loader2 } from 'lucide-react';
 import type { CSSProperties } from 'react';
@@ -30,8 +29,11 @@ export function RoomEyebrow({
 }: RoomEyebrowProps) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const textClassName = forceDark ? 'text-white/72' : surface.textMuted;
-  const sharedClassName = `inline-flex items-center gap-1.5 rounded-full px-0 py-0.5 ${navetTypographyTokens.eyebrow} ${textClassName} ${className}`;
+  const textClassName = forceDark ? 'text-white/82' : surface.textPrimary;
+  const shellClassName = forceDark
+    ? 'border border-white/12 bg-white/8'
+    : `${surface.border} ${surface.subtleBg}`;
+  const sharedClassName = `inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium capitalize tracking-normal ${textClassName} ${shellClassName} ${className}`;
   const content = (
     <>
       {room}

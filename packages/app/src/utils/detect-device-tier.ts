@@ -1,5 +1,7 @@
 import type { EffectsQuality } from '@navet/app/stores/settings-store';
 
+let cachedDeviceTier: EffectsQuality | null = null;
+
 /**
  * Estimates the device's rendering tier using hardware signals and a
  * synchronous micro-benchmark. Runs once at store creation time (before
@@ -11,6 +13,10 @@ import type { EffectsQuality } from '@navet/app/stores/settings-store';
  *   high   — modern tablets and computers
  */
 export function detectDeviceTier(): EffectsQuality {
+  if (cachedDeviceTier) {
+    return cachedDeviceTier;
+  }
+
   if (typeof window === 'undefined' || typeof performance === 'undefined') {
     return 'high';
   }
@@ -27,10 +33,17 @@ export function detectDeviceTier(): EffectsQuality {
   const benchMs = performance.now() - t0;
 
   if (benchMs >= 8 || cores <= 2 || (memoryGb !== undefined && memoryGb <= 1)) {
-    return 'low';
+    cachedDeviceTier = 'low';
+    return cachedDeviceTier;
   }
   if (benchMs >= 2.5 || (memoryGb !== undefined && memoryGb <= 2)) {
-    return 'medium';
+    cachedDeviceTier = 'medium';
+    return cachedDeviceTier;
   }
-  return 'high';
+  cachedDeviceTier = 'high';
+  return cachedDeviceTier;
+}
+
+export function resetDetectedDeviceTierCache() {
+  cachedDeviceTier = null;
 }

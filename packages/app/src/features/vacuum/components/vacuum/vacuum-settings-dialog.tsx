@@ -336,7 +336,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
           {shouldShowMapTab ? (
             <TabPanel value="map" className="mt-5">
               <CardDialogSection className="mb-0">
-                <div className="mb-3">
+                <div className="mb-0">
                   <div className="text-sm font-medium text-white">{t('vacuum.settings.plan')}</div>
                 </div>
                 <VacuumPlannerSection
@@ -344,6 +344,8 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
                   selectedAreaIds={selectedAreaIds}
                   onSelectedAreaIdsChange={setSelectedAreaIds}
                   canOrderAreaCleaning={capabilities?.canOrderAreaCleaning ?? false}
+                  accentColor={activeControlColor}
+                  activePillStyle={activePillStyle}
                 />
               </CardDialogSection>
             </TabPanel>

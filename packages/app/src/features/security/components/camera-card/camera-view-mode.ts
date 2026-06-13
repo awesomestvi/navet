@@ -1,7 +1,8 @@
-import type { CameraViewMode } from '@navet/app/stores/settings-store';
+import type { CameraViewMode, EffectsQuality } from '@navet/app/stores/settings-store';
 
 export const CAMERA_AUTO_REFRESH_INTERVAL_MS = 10_000;
 export const CAMERA_LIVE_FALLBACK_REFRESH_INTERVAL_MS = 30_000;
+export const CAMERA_REDUCED_REFRESH_INTERVAL_MS = 45_000;
 export const CAMERA_STREAM_TYPES = ['web_rtc', 'hls', 'mjpeg'] as const;
 
 export type CameraStreamType = (typeof CAMERA_STREAM_TYPES)[number];
@@ -16,13 +17,15 @@ export interface CameraImageSource {
 export function resolveDashboardCameraViewMode({
   cameraDashboardViewMode,
   lowPowerMode,
+  effectsQuality = 'high',
   hasSnapshot,
 }: {
   cameraDashboardViewMode: CameraViewMode;
   lowPowerMode: boolean;
+  effectsQuality?: EffectsQuality;
   hasSnapshot: boolean;
 }): CameraViewMode {
-  if (lowPowerMode && hasSnapshot) {
+  if ((lowPowerMode || effectsQuality === 'low') && hasSnapshot) {
     return 'snapshot';
   }
 
@@ -85,21 +88,25 @@ export function getCameraAutoRefreshInterval({
   cameraViewMode,
   imageSourceKind,
   isFallback,
+  reducePolling = false,
 }: {
   cameraViewMode: CameraViewMode;
   imageSourceKind: CameraImageSourceKind;
   isFallback: boolean;
+  reducePolling?: boolean;
 }) {
   if (cameraViewMode === 'snapshot') {
     return null;
   }
 
   if (cameraViewMode === 'auto') {
-    return CAMERA_AUTO_REFRESH_INTERVAL_MS;
+    return reducePolling ? CAMERA_REDUCED_REFRESH_INTERVAL_MS : CAMERA_AUTO_REFRESH_INTERVAL_MS;
   }
 
   if (cameraViewMode === 'live' && (imageSourceKind === 'snapshot' || isFallback)) {
-    return CAMERA_LIVE_FALLBACK_REFRESH_INTERVAL_MS;
+    return reducePolling
+      ? CAMERA_REDUCED_REFRESH_INTERVAL_MS
+      : CAMERA_LIVE_FALLBACK_REFRESH_INTERVAL_MS;
   }
 
   return null;

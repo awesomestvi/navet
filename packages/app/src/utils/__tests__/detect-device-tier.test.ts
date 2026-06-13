@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { detectDeviceTier } from '../detect-device-tier';
+import { detectDeviceTier, resetDetectedDeviceTierCache } from '../detect-device-tier';
 
 describe('detectDeviceTier', () => {
   const originalHardwareConcurrency = navigator.hardwareConcurrency;
   const originalDeviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
 
   beforeEach(() => {
+    resetDetectedDeviceTierCache();
     vi.spyOn(performance, 'now').mockReturnValueOnce(0).mockReturnValueOnce(1);
     Object.defineProperty(navigator, 'hardwareConcurrency', {
       configurable: true,
@@ -18,6 +19,7 @@ describe('detectDeviceTier', () => {
   });
 
   afterEach(() => {
+    resetDetectedDeviceTierCache();
     Object.defineProperty(navigator, 'hardwareConcurrency', {
       configurable: true,
       value: originalHardwareConcurrency,

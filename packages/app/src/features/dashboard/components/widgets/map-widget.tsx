@@ -11,13 +11,15 @@ import {
 import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, usePrimaryColor, useThemeMode } from '@navet/app/hooks';
+import { useDeferredVisibility } from '@navet/app/hooks/use-deferred-visibility';
 import { normalizeResourceUrl } from '@navet/app/services/integration-resource.service';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
-import { resolveEffectsQuality } from '@navet/app/utils/effects-quality';
+import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { MapPin } from 'lucide-react';
 import { lazy, memo, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { resolveDashboardPerformanceProfile } from '../../hooks/use-dashboard-performance-mode';
 import { getCompactHomeAssistantImageUrl } from './map-image-url';
 import { mapMarkersEqual } from './map-markers';
 import { getTileUrl } from './map-tiles';
@@ -88,12 +90,24 @@ export const MapWidget = memo(function MapWidget({
       effectsQuality: settingsSelectors.effectsQuality(state),
     }))
   );
-  const resolvedEffectsQuality = resolveEffectsQuality(
-    effectsQuality,
-    disableAnimations || lowPowerMode
+  const performanceProfile = useMemo(
+    () =>
+      resolveDashboardPerformanceProfile({
+        activeSection: 'home',
+        deviceTier: detectDeviceTier(),
+        effectsQuality,
+        isEditMode: false,
+        lowPowerMode,
+        reducedEffectsEnabled: disableAnimations || lowPowerMode,
+        visibleCardCount: staticMarkers?.length ?? 0,
+        visibleDevices: [],
+      }),
+    [disableAnimations, effectsQuality, lowPowerMode, staticMarkers?.length]
   );
-  const shouldReduceMapEffects = resolvedEffectsQuality !== 'high';
-  const mapViewportRef = useRef<HTMLDivElement | null>(null);
+  const shouldReduceMapEffects = !performanceProfile.allowBackdropBlur;
+  const { ref: mapViewportRef, isVisible: isMapVisible } = useDeferredVisibility<HTMLDivElement>({
+    rootMargin: '180px 0px',
+  });
   const surface = getDashboardWidgetSurfaceTokens(theme, tintColor);
   const baseSurface = getThemeSurfaceTokens(theme);
   const cardShell = getCardShellSurfaceTokens(theme);
@@ -114,7 +128,6 @@ export const MapWidget = memo(function MapWidget({
     };
   }, [shouldReduceMapEffects, theme]);
   const mapControlSurface = getMapControlSurfaceTokens(theme, baseSurface, cardShell);
-  const [isMapVisible, setIsMapVisible] = useState(false);
   const [isMapDeferredReady, setIsMapDeferredReady] = useState(false);
   const mapFrameStyle = useMemo(
     () => ({
@@ -162,33 +175,6 @@ export const MapWidget = memo(function MapWidget({
   const defaultCenter = useMemo<[number, number]>(() => [20, 0], []);
 
   useEffect(() => {
-    const node = mapViewportRef.current;
-    if (!node || resolvedMarkers.length === 0) {
-      setIsMapVisible(false);
-      return;
-    }
-
-    if (typeof IntersectionObserver === 'undefined') {
-      setIsMapVisible(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) {
-          setIsMapVisible(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: '180px 0px' }
-    );
-
-    observer.observe(node);
-
-    return () => observer.disconnect();
-  }, [resolvedMarkers.length]);
-
-  useEffect(() => {
     if (!isMapVisible || resolvedMarkers.length === 0) {
       setIsMapDeferredReady(false);
       return;
@@ -198,7 +184,13 @@ export const MapWidget = memo(function MapWidget({
   }, [isMapVisible, resolvedMarkers.length]);
 
   return (
-    <RenderProfiler id={`MapWidget:${size}`}>
+    <RenderProfiler
+      id={`MapWidget:${size}`}
+      metadata={{
+        effectiveEffectsQuality: performanceProfile.effectiveEffectsQuality,
+        reducePolling: performanceProfile.reducePolling,
+      }}
+    >
       <BaseCard
         size={size}
         fullBleed

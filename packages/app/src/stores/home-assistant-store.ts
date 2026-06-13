@@ -71,7 +71,7 @@ function clonePanelEntities(entities: HassEntities | null): HassEntities | null 
   );
 }
 
-export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) => {
+export const homeAssistantStore = createStore<HomeAssistantStore>()((set, get) => {
   let entityDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   let connectionGraceTimer: ReturnType<typeof setTimeout> | null = null;
   let activeServiceUnsubscribe: (() => void) | null = null;
@@ -151,11 +151,17 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
                 return;
               }
               entityDebounceTimer = null;
+              if (get().entities === entities) {
+                return;
+              }
               set({ entities });
             }, ENTITY_DEBOUNCE_MS);
           }),
           homeAssistantService.addListener('config', (config) => {
             if (attemptId !== connectAttemptId) {
+              return;
+            }
+            if (get().config === config) {
               return;
             }
             set({ config });
@@ -164,6 +170,15 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
             'registries',
             ({ areas, devices, entities: entityRegistry }) => {
               if (attemptId !== connectAttemptId) {
+                return;
+              }
+              const current = get();
+              if (
+                current.areas === areas &&
+                current.deviceRegistry === devices &&
+                current.entityRegistry === entityRegistry &&
+                current.registriesHydrated
+              ) {
                 return;
               }
               set({ areas, deviceRegistry: devices, entityRegistry, registriesHydrated: true });
@@ -175,11 +190,29 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, _get) 
               if (attemptId !== connectAttemptId) {
                 return;
               }
+              const current = get();
+              if (
+                current.connected === connected &&
+                current.connection === connection &&
+                current.connecting === reconnecting &&
+                current.reconnecting === reconnecting
+              ) {
+                return;
+              }
               set({ connected, connection, connecting: reconnecting, reconnecting });
             }
           ),
           homeAssistantService.addListener('error', ({ message }) => {
             if (attemptId !== connectAttemptId) {
+              return;
+            }
+            const current = get();
+            if (
+              current.error === message &&
+              current.connecting === false &&
+              current.reconnecting === false &&
+              current.connected === false
+            ) {
               return;
             }
             set({

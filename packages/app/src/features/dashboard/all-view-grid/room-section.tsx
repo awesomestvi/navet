@@ -1,12 +1,15 @@
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { useI18n } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
+import { useDeferredVisibility } from '@navet/app/hooks/use-deferred-visibility';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceWithType } from '@navet/app/types/device.types';
-import { type CSSProperties, memo, startTransition, useEffect, useRef, useState } from 'react';
+import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
+import { type CSSProperties, memo, useMemo } from 'react';
 import { DashboardCardItem } from '../components/dashboard-card-item';
 import { DashboardEditActions } from '../components/dashboard-edit-actions';
+import { resolveDashboardPerformanceProfile } from '../hooks/use-dashboard-performance-mode';
 import { useFitDashboardGrid } from '../hooks/use-fit-dashboard-grid';
 import { useProgressiveBatching } from '../hooks/use-progressive-batching';
 import type { CustomCard } from '../stores/custom-cards-store';
@@ -32,6 +35,8 @@ interface RoomSectionProps {
   densePerformanceMode?: boolean;
 }
 
+const ROOM_SECTION_VISIBILITY_ROOT_MARGIN = '150px 0px';
+
 export const RoomSection = memo(function RoomSection({
   title,
   orderedIds,
@@ -54,47 +59,35 @@ export const RoomSection = memo(function RoomSection({
 }: RoomSectionProps) {
   const { t } = useI18n();
   const breakpointCols = useBreakpointCols();
-  const dashboardSpaceMode = useSettingsStore(settingsSelectors.dashboardSpaceMode);
-  const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
-    useFitDashboardGrid(breakpointCols, dashboardSpaceMode === 'more_space');
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [isVisible, setIsVisible] = useState(isEditMode);
-
-  useEffect(() => {
-    if (isEditMode) {
-      setIsVisible(true);
-      return;
-    }
-
-    const node = containerRef.current;
-    if (!node) {
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) {
-          startTransition(() => {
-            setIsVisible(true);
-          });
-          observer.disconnect();
-        }
-      },
-      { rootMargin: '400px 0px' }
-    );
-
-    observer.observe(node);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [isEditMode]);
-
-  const visibleCount = useProgressiveBatching(orderedIds.length, isEditMode, isVisible);
+  const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
+  const { ref: containerRef, isVisible } = useDeferredVisibility<HTMLDivElement>({
+    initiallyVisible: isEditMode,
+    rootMargin: ROOM_SECTION_VISIBILITY_ROOT_MARGIN,
+  });
+  const performanceProfile = useMemo(
+    () =>
+      resolveDashboardPerformanceProfile({
+        activeSection: 'lights',
+        deviceTier: detectDeviceTier(),
+        effectsQuality,
+        isEditMode,
+        lowPowerMode,
+        visibleCardCount: totalItems,
+        visibleDevices: deviceMap.values(),
+      }),
+    [deviceMap, effectsQuality, isEditMode, lowPowerMode, totalItems]
+  );
+  const visibleCount = useProgressiveBatching(orderedIds.length, isEditMode, {
+    enabled: isVisible,
+    initialBatch: performanceProfile.progressiveBatchInitialCount,
+    batchSize: performanceProfile.progressiveBatchSize,
+  });
   const estimatedRows = Math.max(1, Math.ceil(totalItems / 4));
   const placeholderHeight = estimatedRows * 120;
   const visibleOrderedIds = orderedIds.slice(0, visibleCount);
+  const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
+    useFitDashboardGrid(breakpointCols, isVisible);
   const gridContent = (
     <div ref={outerRef} className="relative w-full" style={outerContainerStyle}>
       <div
@@ -160,7 +153,7 @@ export const RoomSection = memo(function RoomSection({
     <div
       ref={containerRef}
       style={
-        effectsQuality !== 'high' || densePerformanceMode
+        performanceProfile.optimizeOffscreenPaint
           ? ({
               contentVisibility: 'auto',
               containIntrinsicBlockSize: `${placeholderHeight}px`,

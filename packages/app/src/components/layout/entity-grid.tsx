@@ -5,8 +5,6 @@ import { DashboardCardItem, DashboardEditActions } from '@navet/app/features/das
 import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit-dashboard-grid';
 import { useCardState, useTheme } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
-import { settingsSelectors } from '@navet/app/stores/selectors';
-import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceCollection, DeviceWithType } from '@navet/app/types/device.types';
 import { type CSSProperties, memo, type ReactNode } from 'react';
 
@@ -38,9 +36,8 @@ export const EntityGrid = memo(function EntityGrid({
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const breakpointCols = useBreakpointCols();
-  const dashboardSpaceMode = useSettingsStore(settingsSelectors.dashboardSpaceMode);
   const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
-    useFitDashboardGrid(breakpointCols, dashboardSpaceMode === 'more_space');
+    useFitDashboardGrid(breakpointCols);
   const { cardSizes, updateCardSize } = useCardState(rawDevices, cardSizeStorageKey);
 
   return (

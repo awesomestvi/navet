@@ -1,6 +1,10 @@
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
+import { settingsSelectors } from '@navet/app/stores/selectors';
+import { useSettingsStore } from '@navet/app/stores/settings-store';
+import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { useEffect, useState } from 'react';
+import { resolveDashboardPerformanceProfile } from '../../../dashboard/hooks/use-dashboard-performance-mode';
 import { resolveArtworkPalette } from './media-artwork-palette';
 
 export interface MediaArtworkPalette {
@@ -122,6 +126,17 @@ export function useMediaArtworkColors(
   artworkKey?: string
 ) {
   const [colors, setColors] = useState<MediaArtworkPalette>(FALLBACK_COLORS[theme]);
+  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
+  const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
+  const performanceProfile = resolveDashboardPerformanceProfile({
+    activeSection: 'media',
+    deviceTier: detectDeviceTier(),
+    effectsQuality,
+    isEditMode: false,
+    lowPowerMode,
+    visibleCardCount: 1,
+    visibleDevices: [],
+  });
   const artworkUrl = artworkSource?.url ?? null;
   const requestKey = [entityId, artworkSource?.cacheKey ?? artworkUrl, artworkKey]
     .filter(Boolean)
@@ -136,6 +151,11 @@ export function useMediaArtworkColors(
       return () => {
         window.clearTimeout(timeoutId);
       };
+    }
+
+    if (performanceProfile.effectiveEffectsQuality === 'low') {
+      setColors(FALLBACK_COLORS[theme]);
+      return;
     }
 
     const fallbackColors = FALLBACK_COLORS[theme];
@@ -192,7 +212,7 @@ export function useMediaArtworkColors(
     return () => {
       cancelled = true;
     };
-  }, [artworkSource, artworkUrl, requestKey, theme]);
+  }, [artworkSource, artworkUrl, performanceProfile.effectiveEffectsQuality, requestKey, theme]);
 
   return colors;
 }

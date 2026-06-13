@@ -35,6 +35,30 @@ describe('useProgressiveBatching', () => {
     vi.useRealTimers();
   });
 
+  it('respects custom batch sizes', async () => {
+    vi.useFakeTimers();
+    Object.defineProperty(window, 'requestIdleCallback', {
+      configurable: true,
+      value: undefined,
+    });
+
+    const { result } = renderHookWithProviders(() =>
+      useProgressiveBatching(20, false, {
+        initialBatch: 4,
+        batchSize: 4,
+      })
+    );
+
+    expect(result.current).toBe(4);
+
+    act(() => {
+      vi.advanceTimersByTime(96);
+    });
+
+    expect(result.current).toBe(8);
+    vi.useRealTimers();
+  });
+
   it('stops at the total count when idle callbacks are available', async () => {
     Object.defineProperty(window, 'requestIdleCallback', {
       configurable: true,

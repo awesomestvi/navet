@@ -129,7 +129,7 @@ describe('useMediaArtworkResolution', () => {
     expectFetchUrl(fetchMock, '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen');
   });
 
-  it('falls back to same-origin media proxy artwork in panel mode when thumbnail loading fails', async () => {
+  it('keeps same-origin media proxy artwork in panel mode when thumbnail loading fails', async () => {
     window.__NAVET_PANEL__ = true;
     resetRuntimeContextForTests();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
@@ -147,7 +147,7 @@ describe('useMediaArtworkResolution', () => {
       expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
     });
     await waitFor(() => {
-      expect(result.current.albumArt).toBeNull();
+      expect(result.current.albumArt).toBe('/api/media_player_proxy/media_player.kitchen');
     });
     expectFetchUrl(fetchMock, '/api/media_player_proxy/media_player.kitchen');
   });
@@ -350,7 +350,7 @@ describe('useMediaArtworkResolution', () => {
     );
   });
 
-  it('does not render a broken add-on ingress proxy fallback when empty-runtime artwork fetch fails', async () => {
+  it('keeps add-on ingress proxy artwork when empty-runtime artwork fetch fails', async () => {
     installIngressBase();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('fetch failed'));
@@ -370,7 +370,11 @@ describe('useMediaArtworkResolution', () => {
       fetchMock,
       '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen'
     );
-    expect(result.current.albumArt).toBeNull();
+    await waitFor(() => {
+      expect(result.current.albumArt).toBe(
+        '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen'
+      );
+    });
   });
 
   it('fetches absolute Home Assistant media proxy artwork through the Docker proxy', async () => {
@@ -402,7 +406,7 @@ describe('useMediaArtworkResolution', () => {
     expectFetchUrl(fetchMock, '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen');
   });
 
-  it('does not render a broken Docker proxy artwork fallback when authenticated fetch fails', async () => {
+  it('keeps Docker proxy artwork when authenticated fetch fails', async () => {
     installRuntimeProxyConfig();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('fetch failed'));
@@ -419,7 +423,11 @@ describe('useMediaArtworkResolution', () => {
     await waitFor(() => {
       expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
     });
-    expect(result.current.albumArt).toBeNull();
+    await waitFor(() => {
+      expect(result.current.albumArt).toBe(
+        '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen'
+      );
+    });
   });
 
   it('falls back to normalized cache artwork URLs when Home Assistant media proxy artwork returns a broken response', async () => {
@@ -457,13 +465,9 @@ describe('useMediaArtworkResolution', () => {
     });
   });
 
-  it('falls back to MusicBrainz cover art when Home Assistant proxy artwork fails and metadata is available', async () => {
+  it('keeps Home Assistant proxy artwork when non-YouTube opaque cache artwork has music metadata', async () => {
     installRuntimeProxyConfig();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
-    vi.spyOn(URL, 'createObjectURL').mockReturnValue(
-      'blob:http://navet.local/musicbrainz-cover-art'
-    );
-    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
       const url = String(input);
 
@@ -494,17 +498,6 @@ describe('useMediaArtworkResolution', () => {
         );
       }
 
-      if (
-        url === 'https://coverartarchive.org/release/8c7b18fe-c68b-3bcf-980d-9d75208615e5/front-500'
-      ) {
-        return Promise.resolve(
-          new Response('image', {
-            status: 200,
-            headers: { 'Content-Type': 'image/jpeg' },
-          })
-        );
-      }
-
       return Promise.reject(new Error(`Unexpected fetch: ${url}`));
     });
 
@@ -524,26 +517,18 @@ describe('useMediaArtworkResolution', () => {
     );
 
     await waitFor(() => {
-      expect(result.current.albumArt).toBe('blob:http://navet.local/musicbrainz-cover-art');
+      expect(result.current.albumArt).toBe(
+        '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?token=test-token&cache=be07c2bb6494d520'
+      );
     });
-    expect(fetchMock.mock.calls.map((call) => call[0])).not.toContain(
-      '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?token=test-token&cache=opaque'
-    );
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('https://musicbrainz.org/ws/2/release'),
-      expect.objectContaining({
-        headers: { Accept: 'application/json' },
-      })
+    expect(fetchMock.mock.calls.map((call) => String(call[0]))).not.toContainEqual(
+      expect.stringContaining('https://musicbrainz.org/ws/2/release')
     );
   });
 
-  it('falls back to MusicBrainz release-group art when the release cover is missing', async () => {
+  it('keeps Home Assistant proxy artwork when non-YouTube opaque cache artwork has album metadata', async () => {
     installRuntimeProxyConfig();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
-    vi.spyOn(URL, 'createObjectURL').mockReturnValue(
-      'blob:http://navet.local/musicbrainz-release-group-cover-art'
-    );
-    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
       const url = String(input);
 
@@ -575,19 +560,6 @@ describe('useMediaArtworkResolution', () => {
         );
       }
 
-      if (url === 'https://coverartarchive.org/release/release-id/front-500') {
-        return Promise.resolve(new Response('', { status: 404 }));
-      }
-
-      if (url === 'https://coverartarchive.org/release-group/release-group-id/front-500') {
-        return Promise.resolve(
-          new Response('image', {
-            status: 200,
-            headers: { 'Content-Type': 'image/jpeg' },
-          })
-        );
-      }
-
       return Promise.reject(new Error(`Unexpected fetch: ${url}`));
     });
 
@@ -607,26 +579,17 @@ describe('useMediaArtworkResolution', () => {
 
     await waitFor(() => {
       expect(result.current.albumArt).toBe(
-        'blob:http://navet.local/musicbrainz-release-group-cover-art'
+        '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?token=test-token&cache=be07c2bb6494d520'
       );
     });
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://coverartarchive.org/release/release-id/front-500',
-      expect.objectContaining({ cache: 'force-cache' })
-    );
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://coverartarchive.org/release-group/release-group-id/front-500',
-      expect.objectContaining({ cache: 'force-cache' })
+    expect(fetchMock.mock.calls.map((call) => String(call[0]))).not.toContainEqual(
+      expect.stringContaining('https://musicbrainz.org/ws/2/release')
     );
   });
 
-  it('falls back to MusicBrainz when only artist and title metadata are available', async () => {
+  it('keeps Home Assistant proxy artwork when non-YouTube opaque cache artwork only has title and artist metadata', async () => {
     installRuntimeProxyConfig();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
-    vi.spyOn(URL, 'createObjectURL').mockReturnValue(
-      'blob:http://navet.local/musicbrainz-title-only-cover-art'
-    );
-    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
       const url = String(input);
 
@@ -653,15 +616,6 @@ describe('useMediaArtworkResolution', () => {
         );
       }
 
-      if (url === 'https://coverartarchive.org/release/title-only-release-id/front-500') {
-        return Promise.resolve(
-          new Response('image', {
-            status: 200,
-            headers: { 'Content-Type': 'image/jpeg' },
-          })
-        );
-      }
-
       return Promise.reject(new Error(`Unexpected fetch: ${url}`));
     });
 
@@ -680,14 +634,11 @@ describe('useMediaArtworkResolution', () => {
 
     await waitFor(() => {
       expect(result.current.albumArt).toBe(
-        'blob:http://navet.local/musicbrainz-title-only-cover-art'
+        '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen?token=test-token&cache=be07c2bb6494d520'
       );
     });
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('recording%3A%22Creep%22'),
-      expect.objectContaining({
-        headers: { Accept: 'application/json' },
-      })
+    expect(fetchMock.mock.calls.map((call) => String(call[0]))).not.toContainEqual(
+      expect.stringContaining('https://musicbrainz.org/ws/2/release')
     );
   });
 
@@ -770,6 +721,42 @@ describe('useMediaArtworkResolution', () => {
     );
   });
 
+  it('does not prefer MusicBrainz first for non-YouTube opaque cache artwork', async () => {
+    installRuntimeProxyConfig();
+    fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:http://navet.local/resolved-artwork');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('image', {
+        status: 200,
+        headers: { 'Content-Type': 'image/jpeg' },
+      })
+    );
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.kitchen',
+        liveEntityPicture:
+          '/api/media_player_proxy/media_player.kitchen?token=test-token&cache=a94e2d54cff36dd0',
+        liveAttrs: {
+          app_name: 'Spotify',
+          media_title: 'Land Locked Blues',
+          media_artist: 'Bright Eyes',
+          media_album_name: "I'm Wide Awake, It's Morning",
+        },
+        homeAssistantUrl: 'http://homeassistant.local:8123',
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.albumArt).toBe('blob:http://navet.local/resolved-artwork');
+    });
+
+    expect(fetchMock.mock.calls.map((call) => String(call[0]))).not.toContainEqual(
+      expect.stringContaining('https://musicbrainz.org/ws/2/release')
+    );
+  });
+
   it('falls back to YouTube Music thumbnails when MusicBrainz has no usable match', async () => {
     installRuntimeProxyConfig();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
@@ -837,7 +824,7 @@ describe('useMediaArtworkResolution', () => {
     );
   });
 
-  it('does not render proxy artwork when the response body fails image decode despite returning 200', async () => {
+  it('keeps resolved proxy artwork when blob normalization fails despite returning 200', async () => {
     installIngressBase();
     installRuntimeProxyConfig();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
@@ -864,7 +851,9 @@ describe('useMediaArtworkResolution', () => {
     await waitFor(() => {
       expect(createImageBitmapMock).toHaveBeenCalled();
     });
-    expect(result.current.albumArt).toBeNull();
+    expect(result.current.albumArt).toBe(
+      '/api/hassio_ingress/navet_dev/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen'
+    );
   });
 
   it('reloads authenticated artwork when the track key changes but the proxy URL stays stable', async () => {

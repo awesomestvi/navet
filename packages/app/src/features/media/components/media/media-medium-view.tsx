@@ -147,11 +147,6 @@ export function MediaMediumView({
   const resolvedTitleColor = readableForeground.titleColor;
   const resolvedSubtitleColor = readableForeground.subtitleColor;
   const controlIconStyle = { color: resolvedTitleColor };
-  const playButtonStyle = {
-    backgroundColor: withAlpha(palette.vibrant, 0.24),
-    borderColor: withAlpha(resolvedSubtitleColor, 0.22),
-    boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.14)}`,
-  };
   const neutralButtonStyle = {
     backgroundColor: withAlpha(palette.darkMuted, 0.18),
     borderColor: withAlpha(resolvedSubtitleColor, 0.18),
@@ -168,8 +163,8 @@ export function MediaMediumView({
       0.18
     )}`,
   };
-  const volumeToggleButtonStyle = isVolumeMode ? activeUtilityButtonStyle : neutralButtonStyle;
-  const muteButtonStyle = isMuted ? activeUtilityButtonStyle : neutralButtonStyle;
+  const volumeToggleButtonStyle = activeUtilityButtonStyle;
+  const muteButtonStyle = activeUtilityButtonStyle;
   const trackBaseStyle = { backgroundColor: withAlpha(resolvedSubtitleColor, 0.24) };
   const trackFillStyle = {
     background: `linear-gradient(90deg, ${resolvedTitleColor} 0%, ${resolvedSubtitleColor} 100%)`,
@@ -267,9 +262,9 @@ export function MediaMediumView({
                     event.stopPropagation();
                     onTogglePlay();
                   }}
-                  className="h-8.5 w-8.5 border backdrop-blur-xl transition-colors"
+                  className="h-8.5 w-8.5 backdrop-blur-xl transition-colors"
                   iconStyle={controlIconStyle}
-                  style={subduedFallback ? undefined : playButtonStyle}
+                  style={subduedFallback ? undefined : activeUtilityButtonStyle}
                 >
                   {isPlaying ? (
                     <Pause className={primaryControlSizes.icon} fill="currentColor" />
@@ -346,7 +341,7 @@ export function MediaMediumView({
                   }
                   toggleVolumeMode();
                 }}
-                className="h-7.5 w-7.5 border backdrop-blur-xl transition-colors"
+                className="h-7.5 w-7.5 backdrop-blur-xl transition-colors"
                 iconStyle={controlIconStyle}
                 style={
                   subduedFallback
@@ -400,7 +395,7 @@ export function MediaMediumView({
                     registerVolumeInteraction();
                     onVolumeChange(100);
                   }}
-                  className="h-7.5 w-7.5 border backdrop-blur-xl transition-colors"
+                  className="h-7.5 w-7.5 backdrop-blur-xl transition-colors"
                   iconStyle={controlIconStyle}
                   style={subduedFallback ? undefined : activeUtilityButtonStyle}
                 >
@@ -419,7 +414,7 @@ export function MediaMediumView({
                         event.stopPropagation();
                         onToggleShuffle();
                       }}
-                      className={`h-7.5 w-7.5 border backdrop-blur-xl transition-colors ${shuffleEnabled ? '!border-0' : ''}`}
+                      className="h-7.5 w-7.5 backdrop-blur-xl transition-colors"
                       iconStyle={controlIconStyle}
                       style={
                         subduedFallback
@@ -460,7 +455,7 @@ export function MediaMediumView({
                         event.stopPropagation();
                         onCycleRepeat();
                       }}
-                      className={`h-7.5 w-7.5 border backdrop-blur-xl transition-colors ${repeatMode !== 'off' ? '!border-0' : ''}`}
+                      className="h-7.5 w-7.5 backdrop-blur-xl transition-colors"
                       iconStyle={controlIconStyle}
                       style={
                         subduedFallback
@@ -490,9 +485,9 @@ export function MediaMediumView({
                       event.stopPropagation();
                       onPrevious();
                     }}
-                    className="h-7.5 w-7.5 border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+                    className="h-7.5 w-7.5 backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
                     iconStyle={controlIconStyle}
-                    style={subduedFallback ? undefined : playButtonStyle}
+                    style={subduedFallback ? undefined : activeUtilityButtonStyle}
                   >
                     <SkipBack className={controlSizes.icon} />
                   </RoundControlButton>
@@ -507,9 +502,9 @@ export function MediaMediumView({
                       event.stopPropagation();
                       onNext();
                     }}
-                    className="h-7.5 w-7.5 border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+                    className="h-7.5 w-7.5 backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
                     iconStyle={controlIconStyle}
-                    style={subduedFallback ? undefined : playButtonStyle}
+                    style={subduedFallback ? undefined : activeUtilityButtonStyle}
                   >
                     <SkipForward className={controlSizes.icon} />
                   </RoundControlButton>

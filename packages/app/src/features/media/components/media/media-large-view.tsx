@@ -6,7 +6,19 @@ import { getCardStateSurfaceTokens } from '@navet/app/components/shared/theme/ca
 import { useI18n } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
-import { Pause, Play, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import {
+  Pause,
+  Play,
+  Repeat,
+  Repeat1,
+  RepeatOff,
+  Shuffle,
+  SkipBack,
+  SkipForward,
+  Slash,
+  Volume2,
+  VolumeX,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { MediaEntityTypeKey } from '../media-card/get-media-entity-type-key';
 import { getMediaDisplayVolume } from './media-card-style-utils';
@@ -39,7 +51,13 @@ interface MediaLargeViewProps {
   durationSeconds: number;
   theme: ThemeType;
   onOpenDialog: () => void;
+  repeatMode: 'off' | 'one' | 'all';
+  shuffleEnabled: boolean;
+  canRepeat: boolean;
+  canShuffle: boolean;
+  onCycleRepeat: () => void;
   onSeek: (elapsedSeconds: number) => void;
+  onToggleShuffle: () => void;
   onPrevious: () => void;
   canPreviousTrack: boolean;
   onTogglePlay: () => void;
@@ -68,7 +86,13 @@ export function MediaLargeView({
   durationSeconds,
   theme,
   onOpenDialog,
+  repeatMode,
+  shuffleEnabled,
+  canRepeat,
+  canShuffle,
+  onCycleRepeat,
   onSeek,
+  onToggleShuffle,
   onPrevious,
   canPreviousTrack,
   onTogglePlay,
@@ -113,11 +137,23 @@ export function MediaLargeView({
   const resolvedTitleColor = readableForeground.titleColor;
   const resolvedSubtitleColor = readableForeground.subtitleColor;
   const controlIconStyle = { color: resolvedTitleColor };
-  const playButtonStyle = {
-    backgroundColor: withAlpha(palette.vibrant, 0.24),
-    borderColor: withAlpha(resolvedSubtitleColor, 0.22),
-    boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.14)}`,
+  const neutralButtonStyle = {
+    backgroundColor: withAlpha(palette.darkMuted, 0.18),
+    borderColor: withAlpha(resolvedSubtitleColor, 0.18),
+    boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.12)}`,
   };
+  const activeUtilityButtonStyle = {
+    background: `linear-gradient(180deg, ${withAlpha(palette.highlight, 0.26)} 0%, ${withAlpha(
+      palette.vibrant,
+      0.44
+    )} 100%)`,
+    borderColor: withAlpha(resolvedSubtitleColor, 0.22),
+    boxShadow: `0 10px 28px -18px ${withAlpha(palette.vibrant, 0.55)}, inset 0 1px 0 ${withAlpha(
+      resolvedTitleColor,
+      0.18
+    )}`,
+  };
+  const muteButtonStyle = activeUtilityButtonStyle;
   const trackBaseStyle = { backgroundColor: withAlpha(resolvedSubtitleColor, 0.24) };
   const trackFillStyle = {
     background: `linear-gradient(90deg, ${resolvedTitleColor} 0%, ${resolvedSubtitleColor} 100%)`,
@@ -185,6 +221,9 @@ export function MediaLargeView({
       setPendingSeek(elapsedSeconds);
     }
   }, [elapsedSeconds, isSeeking]);
+
+  const offToggleSlashClassName = 'absolute inset-0 m-auto h-3.5 w-3.5 stroke-[2.25]';
+  const mirroredOffToggleSlashStyle = { transform: 'scaleX(-1)' };
 
   return (
     <div className="relative -m-3 flex h-[calc(100%+1.5rem)] flex-col overflow-hidden rounded-[inherit]">
@@ -299,6 +338,41 @@ export function MediaLargeView({
 
         <div className="mt-2.5 flex shrink-0 items-center justify-between gap-3">
           <div className="flex items-center gap-1.5">
+            {canShuffle ? (
+              <RoundControlButton
+                theme={theme}
+                size="small"
+                variant="neutral"
+                aria-label={shuffleEnabled ? t('media.shuffle') : t('media.linearPlayback')}
+                aria-pressed={shuffleEnabled}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggleShuffle();
+                }}
+                className="backdrop-blur-xl transition-colors"
+                iconStyle={controlIconStyle}
+                style={
+                  subduedFallback
+                    ? undefined
+                    : shuffleEnabled
+                      ? activeUtilityButtonStyle
+                      : neutralButtonStyle
+                }
+              >
+                {shuffleEnabled ? (
+                  <Shuffle className={controlSizes.icon} />
+                ) : (
+                  <span className="relative flex items-center justify-center">
+                    <Shuffle className={controlSizes.icon} />
+                    <Slash
+                      className={offToggleSlashClassName}
+                      style={mirroredOffToggleSlashStyle}
+                    />
+                  </span>
+                )}
+              </RoundControlButton>
+            ) : null}
+
             <RoundControlButton
               theme={theme}
               size="small"
@@ -309,9 +383,9 @@ export function MediaLargeView({
                 event.stopPropagation();
                 onPrevious();
               }}
-              className="border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+              className="backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
               iconStyle={controlIconStyle}
-              style={subduedFallback ? undefined : playButtonStyle}
+              style={subduedFallback ? undefined : activeUtilityButtonStyle}
             >
               <SkipBack className={controlSizes.icon} />
             </RoundControlButton>
@@ -326,9 +400,9 @@ export function MediaLargeView({
                   event.stopPropagation();
                   onTogglePlay();
                 }}
-                className="h-10.5 w-10.5 border backdrop-blur-xl transition-colors"
+                className="h-10.5 w-10.5 backdrop-blur-xl transition-colors"
                 iconStyle={controlIconStyle}
-                style={subduedFallback ? undefined : playButtonStyle}
+                style={subduedFallback ? undefined : activeUtilityButtonStyle}
               >
                 {isPlaying ? (
                   <Pause className={primaryControlSizes.icon} fill="currentColor" />
@@ -348,12 +422,49 @@ export function MediaLargeView({
                 event.stopPropagation();
                 onNext();
               }}
-              className="border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+              className="backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
               iconStyle={controlIconStyle}
-              style={subduedFallback ? undefined : playButtonStyle}
+              style={subduedFallback ? undefined : activeUtilityButtonStyle}
             >
               <SkipForward className={controlSizes.icon} />
             </RoundControlButton>
+
+            {canRepeat ? (
+              <RoundControlButton
+                theme={theme}
+                size="small"
+                variant="neutral"
+                aria-label={
+                  repeatMode === 'one'
+                    ? t('media.repeatOne')
+                    : repeatMode === 'all'
+                      ? t('media.repeatAll')
+                      : t('media.repeatOff')
+                }
+                aria-pressed={repeatMode !== 'off'}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onCycleRepeat();
+                }}
+                className="backdrop-blur-xl transition-colors"
+                iconStyle={controlIconStyle}
+                style={
+                  subduedFallback
+                    ? undefined
+                    : repeatMode !== 'off'
+                      ? activeUtilityButtonStyle
+                      : neutralButtonStyle
+                }
+              >
+                {repeatMode === 'off' ? (
+                  <RepeatOff className={controlSizes.icon} />
+                ) : repeatMode === 'one' ? (
+                  <Repeat1 className={controlSizes.icon} />
+                ) : (
+                  <Repeat className={controlSizes.icon} />
+                )}
+              </RoundControlButton>
+            ) : null}
           </div>
 
           <div className="flex min-w-[34%] items-center gap-1.5">
@@ -366,9 +477,9 @@ export function MediaLargeView({
                 event.stopPropagation();
                 onToggleMute();
               }}
-              className="border backdrop-blur-xl transition-colors"
+              className="backdrop-blur-xl transition-colors"
               iconStyle={controlIconStyle}
-              style={subduedFallback ? undefined : playButtonStyle}
+              style={subduedFallback ? undefined : muteButtonStyle}
             >
               {isMuted ? (
                 <VolumeX className={controlSizes.icon} />

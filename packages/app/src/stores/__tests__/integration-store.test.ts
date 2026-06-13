@@ -1,7 +1,8 @@
 import { homeyService } from '@navet/app/services/homey.service';
+import { lightEntityFactory } from '@navet/app/test/fixtures/home-assistant/entities/light';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import { openhabService } from '@navet/provider-openhab/openhab-service';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { homeAssistantStore } from '../home-assistant-store';
 import { integrationStore } from '../integration-store';
 import { homeAssistantSelectors } from '../selectors';
@@ -299,6 +300,36 @@ describe('integrationStore', () => {
         brightness: 0,
       }),
     ]);
+  });
+
+  it('skips integration-store fan-out for repeated Home Assistant entity references', async () => {
+    await resetAppStores();
+
+    const entity = lightEntityFactory({
+      friendly_name: 'Kitchen',
+    });
+    entity.entity_id = 'light.kitchen';
+    entity.state = 'on';
+
+    homeAssistantStore.setState({
+      connected: true,
+      entities: {
+        'light.kitchen': entity,
+      },
+    });
+
+    const listener = vi.fn();
+    const unsubscribe = integrationStore.subscribe(listener);
+
+    homeAssistantStore.setState({
+      entities: {
+        'light.kitchen': entity,
+      },
+    });
+
+    expect(listener).not.toHaveBeenCalled();
+
+    unsubscribe();
   });
 
   it('marks openHAB as reconnecting while cached snapshot data remains available', async () => {

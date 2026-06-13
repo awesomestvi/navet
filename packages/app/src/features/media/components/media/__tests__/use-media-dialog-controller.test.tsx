@@ -41,8 +41,6 @@ describe('useMediaDialogController', () => {
         durationSeconds: 213,
         elapsedSeconds: 12,
         entityId: 'media_player.walkman',
-        repeatMode: 'off',
-        shuffleEnabled: false,
         title: 'Track',
       })
     );

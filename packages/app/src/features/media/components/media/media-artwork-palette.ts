@@ -176,6 +176,18 @@ export function createPaletteFromImageData(imageData: ImageData): MediaArtworkPa
       (c) =>
         c.count * (0.45 + c.saturation * 2.25) * Math.max(0.18, 1 - Math.abs(c.luminance - 0.48))
     ) ?? dominantCandidate;
+  const accentCandidate =
+    pickCandidate(candidates, (c) => {
+      if (c.luminance < 0.14 || c.luminance > 0.78) {
+        return -1;
+      }
+
+      return (
+        c.count ** 0.52 *
+        (0.2 + c.saturation * 4.6) *
+        Math.max(0.28, 1 - Math.abs(c.luminance - 0.42))
+      );
+    }) ?? vibrantCandidate;
 
   const highlightCandidate =
     pickCandidate(
@@ -190,10 +202,19 @@ export function createPaletteFromImageData(imageData: ImageData): MediaArtworkPa
 
       return c.count * (1 + c.luminance * 1.8) * Math.max(0.22, 0.24 - c.saturation);
     }) ?? null;
+  const lightSurfaceCandidate =
+    pickCandidate(candidates, (c) => {
+      if (c.luminance < 0.56 || c.saturation > 0.36) {
+        return -1;
+      }
+
+      return c.count * (0.9 + c.luminance * 1.5) * Math.max(0.18, 0.38 - c.saturation);
+    }) ?? null;
   const lightNeutralCoverage =
     lightNeutralCandidate && totalSampleCount > 0
       ? lightNeutralCandidate.count / totalSampleCount
       : 0;
+  const accentCoverage = totalSampleCount > 0 ? accentCandidate.count / totalSampleCount : 0;
   const shouldAnchorToDarkBackground =
     darkBackgroundCandidate.luminance <= 0.42 &&
     (overallDarkCoverage >= 0.34 ||
@@ -217,10 +238,42 @@ export function createPaletteFromImageData(imageData: ImageData): MediaArtworkPa
       (overallLightCoverage >= 0.68 &&
         lightNeutralCandidate.count >= baseCandidate.count * 1.05 &&
         lightNeutralCandidate.luminance >= 0.84));
+  const shouldUseLightSurfaceBase =
+    !shouldAnchorToDarkBackground &&
+    lightSurfaceCandidate !== null &&
+    (overallLightCoverage >= 0.42 || shouldFavorLightNeutral || shouldUseNeutralLedPalette);
+  const shouldPreferAccentCandidate =
+    !shouldAnchorToDarkBackground &&
+    shouldUseLightSurfaceBase &&
+    accentCoverage >= 0.006 &&
+    accentCandidate.luminance >= 0.14 &&
+    accentCandidate.luminance <= 0.62 &&
+    accentCandidate.saturation >= 0.34 &&
+    accentCandidate.saturation >= vibrantCandidate.saturation + 0.04 &&
+    accentCandidate.saturation >= baseCandidate.saturation + 0.12 &&
+    (overallLightCoverage >= 0.42 || shouldFavorLightNeutral || shouldUseNeutralLedPalette);
+  const shouldPreserveLightSurfaceAccent =
+    !shouldAnchorToDarkBackground &&
+    shouldUseLightSurfaceBase &&
+    lightSurfaceCandidate !== null &&
+    accentCoverage >= 0.004 &&
+    accentCandidate.luminance >= 0.12 &&
+    accentCandidate.luminance <= 0.62 &&
+    accentCandidate.saturation >= 0.22 &&
+    accentCandidate.saturation >= baseCandidate.saturation + 0.08 &&
+    (overallLightCoverage >= 0.46 || lightNeutralCoverage >= 0.3);
+  const selectedVibrantCandidate = shouldPreferAccentCandidate ? accentCandidate : vibrantCandidate;
 
-  const dominantSourceBase = shouldAnchorToDarkBackground
-    ? blend(baseCandidate.color, vibrantCandidate.color, 0.06)
-    : blend(baseCandidate.color, vibrantCandidate.color, 0.16);
+  const dominantSourceBase =
+    shouldUseLightSurfaceBase && lightSurfaceCandidate !== null
+      ? blend(
+          lightSurfaceCandidate.color,
+          baseCandidate.color,
+          shouldPreferAccentCandidate ? 0.06 : 0.12
+        )
+      : shouldAnchorToDarkBackground
+        ? blend(baseCandidate.color, vibrantCandidate.color, 0.06)
+        : blend(baseCandidate.color, vibrantCandidate.color, 0.16);
   const dominantSource = shouldFavorLightNeutral
     ? blend(
         dominantSourceBase,
@@ -242,17 +295,43 @@ export function createPaletteFromImageData(imageData: ImageData): MediaArtworkPa
   const baseSourceSaturation = getSaturation(baseCandidate.color);
   const shouldMuteVibrantAccent =
     shouldAnchorToDarkBackground &&
-    vibrantCandidate.luminance >= baseCandidate.luminance + 0.16 &&
-    vibrantCandidate.saturation >= baseSourceSaturation + 0.18;
+    selectedVibrantCandidate.luminance >= baseCandidate.luminance + 0.16 &&
+    selectedVibrantCandidate.saturation >= baseSourceSaturation + 0.18;
   const vibrantSource = shouldMuteVibrantAccent
-    ? blend(vibrantCandidate.color, dominantSource, 0.58)
-    : blend(vibrantCandidate.color, dominantSource, shouldAnchorToDarkBackground ? 0.22 : 0.08);
+    ? blend(selectedVibrantCandidate.color, dominantSource, 0.58)
+    : shouldPreserveLightSurfaceAccent
+      ? blend(
+          accentCandidate.color,
+          lightSurfaceCandidate.color,
+          shouldPreferAccentCandidate ? 0.04 : 0.08
+        )
+      : blend(
+          selectedVibrantCandidate.color,
+          dominantSource,
+          shouldAnchorToDarkBackground ? 0.22 : shouldPreferAccentCandidate ? 0.04 : 0.08
+        );
   const vibrant = brighten(
     desaturate(
       vibrantSource,
-      shouldMuteVibrantAccent ? 0.3 : shouldAnchorToDarkBackground ? 0.14 : 0.04
+      shouldMuteVibrantAccent
+        ? 0.3
+        : shouldPreserveLightSurfaceAccent
+          ? 0.02
+          : shouldAnchorToDarkBackground
+            ? 0.14
+            : shouldPreferAccentCandidate
+              ? 0.02
+              : 0.04
     ),
-    shouldMuteVibrantAccent ? 2 : shouldAnchorToDarkBackground ? 4 : 8
+    shouldMuteVibrantAccent
+      ? 2
+      : shouldPreserveLightSurfaceAccent
+        ? 2
+        : shouldAnchorToDarkBackground
+          ? 4
+          : shouldPreferAccentCandidate
+            ? 4
+            : 8
   );
   const darkMuted = darken(
     desaturate(
@@ -306,13 +385,49 @@ export function createPaletteFromImageData(imageData: ImageData): MediaArtworkPa
         blend(darkMuted, dominant, shouldAnchorToDarkBackground ? 0.08 : 0.12),
         shouldAnchorToDarkBackground ? 0.18 : 0.14
       );
+  const resolvedDominant =
+    shouldUseLightSurfaceBase && lightSurfaceCandidate !== null
+      ? blend(lightSurfaceCandidate.color, dominant, shouldPreferAccentCandidate ? 0.14 : 0.22)
+      : dominant;
+  const resolvedHighlight =
+    shouldUseLightSurfaceBase && lightSurfaceCandidate !== null
+      ? brighten(
+          blend(lightSurfaceCandidate.color, highlight, shouldPreferAccentCandidate ? 0.08 : 0.14),
+          shouldPreferAccentCandidate ? 4 : 8
+        )
+      : highlight;
+  const resolvedGradientEnd =
+    shouldUseLightSurfaceBase && lightSurfaceCandidate !== null
+      ? darken(
+          blend(darkMuted, lightSurfaceCandidate.color, shouldPreferAccentCandidate ? 0.28 : 0.22),
+          shouldPreferAccentCandidate ? 0.08 : 0.1
+        )
+      : gradientEnd;
+  const resolvedVibrant =
+    accentCoverage >= 0.004 &&
+    accentCandidate.luminance >= 0.12 &&
+    accentCandidate.luminance <= 0.62 &&
+    accentCandidate.saturation >= 0.22 &&
+    getSaturation(vibrant) < Math.max(0.2, accentCandidate.saturation * 0.66)
+      ? brighten(
+          desaturate(
+            blend(
+              accentCandidate.color,
+              lightSurfaceCandidate?.color ?? highlightCandidate.color,
+              lightNeutralCoverage >= 0.28 ? 0.08 : 0.12
+            ),
+            0.02
+          ),
+          2
+        )
+      : vibrant;
 
   return {
-    dominant: toRgbString(dominant),
-    vibrant: toRgbString(vibrant),
+    dominant: toRgbString(resolvedDominant),
+    vibrant: toRgbString(resolvedVibrant),
     darkMuted: toRgbString(darkMuted),
-    highlight: toRgbString(highlight),
-    gradientEnd: toRgbString(gradientEnd),
+    highlight: toRgbString(resolvedHighlight),
+    gradientEnd: toRgbString(resolvedGradientEnd),
   };
 }
 
@@ -370,6 +485,23 @@ async function fetchArtworkObjectUrl(imageUrl: string): Promise<string> {
   return URL.createObjectURL(blob);
 }
 
+function shouldRetryPaletteSamplingViaFetch(source: MediaArtworkPaletteSource, imageUrl: string) {
+  if (source.authStrategy && source.authStrategy !== 'none') {
+    return true;
+  }
+
+  if (imageUrl.startsWith('/')) {
+    return true;
+  }
+
+  try {
+    const resolvedUrl = new URL(imageUrl, window.location.href);
+    return resolvedUrl.origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
 function normalizePaletteSource(
   input: MediaArtworkPaletteSource | string | null | undefined
 ): MediaArtworkPaletteSource | null {
@@ -405,7 +537,7 @@ export async function resolveArtworkPalette(
   const directPalette = await samplePaletteFromImageUrl(imageUrl).catch(() => null);
   if (directPalette) return directPalette;
 
-  if (source.authStrategy === 'none') {
+  if (!shouldRetryPaletteSamplingViaFetch(source, imageUrl)) {
     return null;
   }
 

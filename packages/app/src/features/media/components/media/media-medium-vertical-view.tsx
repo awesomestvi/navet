@@ -7,12 +7,14 @@ import { useI18n } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
 import { Pause, Play, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import type { MediaEntityTypeKey } from '../media-card/get-media-entity-type-key';
 import { MediaArtworkSurface } from './media-artwork-surface';
 import { getMediaDisplayVolume } from './media-card-style-utils';
 import { MediaEntityHeader } from './media-entity-header';
 import { MediaMarqueeText } from './media-marquee-text';
 import { getMediaReadableForeground } from './media-readable-foreground';
+import { formatMediaTime } from './media-time';
 import { MediaVisualizerButton } from './media-visualizer-button';
 import { useArtworkEdgeBlur } from './use-artwork-edge-blur';
 import {
@@ -36,6 +38,8 @@ interface MediaMediumVerticalViewProps {
   isPlaying: boolean;
   volume: number;
   isMuted: boolean;
+  elapsedSeconds: number;
+  durationSeconds: number;
   theme: ThemeType;
   onOpenDialog?: () => void;
   onToggleMute: () => void;
@@ -44,6 +48,7 @@ interface MediaMediumVerticalViewProps {
   onTogglePlay: () => void;
   onNext: () => void;
   canNextTrack: boolean;
+  onSeek: (elapsedSeconds: number) => void;
   onVolumeChange: (value: number) => void;
   onVolumeInteractionStart: () => void;
   onVolumeInteractionEnd: () => void;
@@ -62,6 +67,8 @@ export function MediaMediumVerticalView({
   isPlaying,
   volume,
   isMuted,
+  elapsedSeconds,
+  durationSeconds,
   theme,
   onOpenDialog,
   onToggleMute,
@@ -70,6 +77,7 @@ export function MediaMediumVerticalView({
   onTogglePlay,
   onNext,
   canNextTrack,
+  onSeek,
   onVolumeChange,
   onVolumeInteractionStart,
   onVolumeInteractionEnd,
@@ -78,6 +86,10 @@ export function MediaMediumVerticalView({
   const { containerRef, isVolumeMode, registerVolumeInteraction, toggleVolumeMode } =
     useMediaVolumeMode();
   const displayVolume = getMediaDisplayVolume(volume, isMuted);
+  const durationLabel = formatMediaTime(Math.max(durationSeconds, elapsedSeconds));
+  const hasSeekDuration = durationSeconds > 0;
+  const [pendingSeek, setPendingSeek] = useState(elapsedSeconds);
+  const [isSeeking, setIsSeeking] = useState(false);
   const stateSurface = getCardStateSurfaceTokens(theme, isActive);
   const stableArtwork = useStableMediaArtwork(artwork);
   const artworkEdgeAnalysis = useArtworkEdgeBlur(stableArtwork, {
@@ -111,42 +123,19 @@ export function MediaMediumVerticalView({
   const resolvedTitleColor = readableForeground.titleColor;
   const resolvedSubtitleColor = readableForeground.subtitleColor;
   const controlIconStyle = { color: resolvedTitleColor };
-  const neutralButtonStyle = {
-    backgroundColor: withAlpha(palette.darkMuted, 0.18),
-    borderColor: withAlpha(resolvedSubtitleColor, 0.18),
-    boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.12)}`,
-  };
-  const playButtonStyle = {
-    backgroundColor: withAlpha(palette.vibrant, 0.24),
+  const activeUtilityButtonStyle = {
+    background: `linear-gradient(180deg, ${withAlpha(palette.highlight, 0.26)} 0%, ${withAlpha(
+      palette.vibrant,
+      0.44
+    )} 100%)`,
     borderColor: withAlpha(resolvedSubtitleColor, 0.22),
-    boxShadow: `inset 0 1px 0 ${withAlpha(resolvedTitleColor, 0.14)}`,
+    boxShadow: `0 10px 28px -18px ${withAlpha(palette.vibrant, 0.55)}, inset 0 1px 0 ${withAlpha(
+      resolvedTitleColor,
+      0.18
+    )}`,
   };
-  const volumeToggleButtonStyle = isVolumeMode
-    ? {
-        background: `linear-gradient(180deg, ${withAlpha(palette.highlight, 0.26)} 0%, ${withAlpha(
-          palette.vibrant,
-          0.44
-        )} 100%)`,
-        borderColor: withAlpha(resolvedSubtitleColor, 0.22),
-        boxShadow: `0 10px 28px -18px ${withAlpha(palette.vibrant, 0.55)}, inset 0 1px 0 ${withAlpha(
-          resolvedTitleColor,
-          0.18
-        )}`,
-      }
-    : playButtonStyle;
-  const muteButtonStyle = isMuted
-    ? {
-        background: `linear-gradient(180deg, ${withAlpha(palette.highlight, 0.26)} 0%, ${withAlpha(
-          palette.vibrant,
-          0.44
-        )} 100%)`,
-        borderColor: withAlpha(resolvedSubtitleColor, 0.22),
-        boxShadow: `0 10px 28px -18px ${withAlpha(palette.vibrant, 0.55)}, inset 0 1px 0 ${withAlpha(
-          resolvedTitleColor,
-          0.18
-        )}`,
-      }
-    : neutralButtonStyle;
+  const volumeToggleButtonStyle = activeUtilityButtonStyle;
+  const muteButtonStyle = activeUtilityButtonStyle;
   const trackBaseStyle = { backgroundColor: withAlpha(resolvedSubtitleColor, 0.24) };
   const trackFillStyle = {
     background: `linear-gradient(90deg, ${resolvedTitleColor} 0%, ${resolvedSubtitleColor} 100%)`,
@@ -166,6 +155,13 @@ export function MediaMediumVerticalView({
         <div className="pointer-events-none absolute inset-0 z-[1] shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-16px_30px_rgba(255,255,255,0.03)]" />
       </>
     ) : null;
+
+  useEffect(() => {
+    if (!isSeeking) {
+      setPendingSeek(elapsedSeconds);
+    }
+  }, [elapsedSeconds, isSeeking]);
+
   return (
     <div
       ref={containerRef}
@@ -211,45 +207,98 @@ export function MediaMediumVerticalView({
             </div>
           </div>
 
-          <div className="mt-auto flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <MediaMarqueeText
-                text={title}
-                className={`text-xs font-semibold ${iconTone}`}
-                style={readableForeground.titleStyle}
-              />
-              <MediaMarqueeText
-                text={artist}
-                className={`mt-0.5 text-xs ${subtitleTone}`}
-                threshold={24}
-                style={readableForeground.subtitleStyle}
-              />
+          <div className="mt-auto flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <MediaMarqueeText
+                  text={title}
+                  className={`text-xs font-semibold ${iconTone}`}
+                  style={readableForeground.titleStyle}
+                />
+                <MediaMarqueeText
+                  text={artist}
+                  className={`mt-0.5 text-xs ${subtitleTone}`}
+                  threshold={24}
+                  style={readableForeground.subtitleStyle}
+                />
+              </div>
+
+              <div className="relative">
+                <RoundControlButton
+                  theme={theme}
+                  size="large"
+                  variant="neutral"
+                  aria-label={isPlaying ? t('media.pausePlayback') : t('media.resumePlayback')}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onTogglePlay();
+                  }}
+                  className="h-10 w-10 backdrop-blur-xl transition-colors"
+                  iconStyle={controlIconStyle}
+                  style={subduedFallback ? undefined : activeUtilityButtonStyle}
+                >
+                  {isPlaying ? (
+                    <Pause className={primaryControlSizes.icon} fill="currentColor" />
+                  ) : (
+                    <Play className={primaryControlSizes.icon} fill="currentColor" />
+                  )}
+                </RoundControlButton>
+              </div>
             </div>
 
-            <div className="relative">
-              <RoundControlButton
-                theme={theme}
-                size="large"
-                variant="neutral"
-                aria-label={isPlaying ? t('media.pausePlayback') : t('media.resumePlayback')}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onTogglePlay();
-                }}
-                className="h-10 w-10 border backdrop-blur-xl transition-colors"
-                iconStyle={controlIconStyle}
-                style={subduedFallback ? undefined : playButtonStyle}
+            <div className="flex items-center gap-2">
+              <span
+                className={`shrink-0 text-[10px] tabular-nums ${subtitleTone}`}
+                style={readableForeground.subtitleStyle}
               >
-                {isPlaying ? (
-                  <Pause className={primaryControlSizes.icon} fill="currentColor" />
-                ) : (
-                  <Play className={primaryControlSizes.icon} fill="currentColor" />
-                )}
-              </RoundControlButton>
+                {formatMediaTime(hasSeekDuration ? Math.max(0, pendingSeek) : 0)}
+              </span>
+              <Slider
+                value={hasSeekDuration ? Math.min(durationSeconds, pendingSeek) : 0}
+                min={0}
+                max={hasSeekDuration ? Math.max(durationSeconds, elapsedSeconds, pendingSeek) : 1}
+                step={1}
+                ariaLabel={t('media.seek')}
+                onValueChange={(value) => {
+                  if (hasSeekDuration) {
+                    setPendingSeek(value);
+                  }
+                }}
+                onValueCommit={(value) => {
+                  if (hasSeekDuration) {
+                    onSeek(value);
+                  }
+                }}
+                onInteractionStart={() => {
+                  if (hasSeekDuration) {
+                    setIsSeeking(true);
+                  }
+                }}
+                onInteractionEnd={() => {
+                  if (hasSeekDuration) {
+                    setIsSeeking(false);
+                  }
+                }}
+                disabled={!hasSeekDuration}
+                rootClassName="relative flex h-4 min-w-0 flex-1 items-center touch-none select-none"
+                trackClassName="relative h-[3px] grow rounded-full"
+                rangeClassName="absolute h-full rounded-full"
+                thumbClassName="block h-3 w-3 rounded-full outline-none"
+                touchThumbClassName="block h-6 w-6 rounded-full outline-none"
+                trackStyle={trackBaseStyle}
+                rangeStyle={trackFillStyle}
+                thumbStyle={trackThumbStyle}
+              />
+              <span
+                className={`shrink-0 text-[10px] tabular-nums ${subtitleTone}`}
+                style={readableForeground.subtitleStyle}
+              >
+                {hasSeekDuration ? durationLabel : formatMediaTime(0)}
+              </span>
             </div>
           </div>
 
-          <div className="mt-6 flex items-center gap-1.5">
+          <div className="mt-2 flex items-center justify-between gap-1.5">
             <RoundControlButton
               theme={theme}
               size="small"
@@ -259,15 +308,15 @@ export function MediaMediumVerticalView({
                 event.stopPropagation();
                 toggleVolumeMode();
               }}
-              className="border backdrop-blur-xl transition-colors"
+              className="backdrop-blur-xl transition-colors"
               iconStyle={controlIconStyle}
               style={volumeToggleButtonStyle}
             >
               <Volume2 className={controlSizes.icon} />
             </RoundControlButton>
 
-            <div className="relative flex-1">
-              {isVolumeMode ? (
+            {isVolumeMode ? (
+              <div className="relative min-w-0 flex-1">
                 <Slider
                   value={displayVolume}
                   ariaLabel={t('media.volume')}
@@ -289,8 +338,8 @@ export function MediaMediumVerticalView({
                   rangeStyle={trackFillStyle}
                   thumbStyle={trackThumbStyle}
                 />
-              ) : null}
-            </div>
+              </div>
+            ) : null}
 
             {isVolumeMode ? (
               <RoundControlButton
@@ -303,14 +352,14 @@ export function MediaMediumVerticalView({
                   registerVolumeInteraction();
                   onToggleMute();
                 }}
-                className="border backdrop-blur-xl transition-colors"
+                className="backdrop-blur-xl transition-colors"
                 iconStyle={controlIconStyle}
                 style={muteButtonStyle}
               >
                 <VolumeX className={controlSizes.icon} />
               </RoundControlButton>
             ) : (
-              <>
+              <div className="flex shrink-0 items-center gap-1.5">
                 <RoundControlButton
                   theme={theme}
                   size="small"
@@ -321,9 +370,9 @@ export function MediaMediumVerticalView({
                     event.stopPropagation();
                     onPrevious();
                   }}
-                  className="border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+                  className="backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
                   iconStyle={controlIconStyle}
-                  style={subduedFallback ? undefined : playButtonStyle}
+                  style={subduedFallback ? undefined : activeUtilityButtonStyle}
                 >
                   <SkipBack className={controlSizes.icon} />
                 </RoundControlButton>
@@ -338,13 +387,13 @@ export function MediaMediumVerticalView({
                     event.stopPropagation();
                     onNext();
                   }}
-                  className="border backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+                  className="backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
                   iconStyle={controlIconStyle}
-                  style={subduedFallback ? undefined : playButtonStyle}
+                  style={subduedFallback ? undefined : activeUtilityButtonStyle}
                 >
                   <SkipForward className={controlSizes.icon} />
                 </RoundControlButton>
-              </>
+              </div>
             )}
           </div>
         </div>

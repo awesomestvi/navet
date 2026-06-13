@@ -12,10 +12,12 @@ import { useAccentColor, useI18n, useTheme } from '@navet/app/hooks';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceWithType } from '@navet/app/types/device.types';
+import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { EyeOff, Lock, Settings2, SlidersHorizontal, Unlock, X } from 'lucide-react';
 import type { MouseEvent, ReactNode } from 'react';
-import { lazy, memo, Suspense, useEffect, useState } from 'react';
+import { lazy, memo, Suspense, useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { resolveDashboardPerformanceProfile } from '../hooks/use-dashboard-performance-mode';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { useDashboardEntitiesStore } from '../stores/dashboard-entities-store';
 import { renderCard } from '../utils/card-renderer';
@@ -82,8 +84,23 @@ export const DashboardCardItem = memo(function DashboardCardItem({
     useState<PortalActionDockAnchorRect | null>(null);
   const RemoveActionIcon = usesHideAction ? EyeOff : X;
   const removeAriaLabel = t('dashboard.edit.removeEntityFromDashboard');
-  const resolvedEffectsQuality = densePerformanceMode || lowPowerMode ? 'low' : effectsQuality;
-  const resolvedAmbientLightBleed = densePerformanceMode ? false : ambientLightBleed;
+  const performanceProfile = useMemo(
+    () =>
+      resolveDashboardPerformanceProfile({
+        activeSection: 'home',
+        deviceTier: detectDeviceTier(),
+        effectsQuality,
+        isEditMode,
+        lowPowerMode,
+        visibleCardCount: 1,
+        visibleDevices: device ? [device] : [],
+      }),
+    [device, effectsQuality, isEditMode, lowPowerMode]
+  );
+  const resolvedEffectsQuality =
+    densePerformanceMode || lowPowerMode ? 'low' : performanceProfile.effectiveEffectsQuality;
+  const resolvedAmbientLightBleed =
+    !densePerformanceMode && ambientLightBleed && performanceProfile.allowAmbientBleed;
   const allowedSizes = getAllowedSizes(device, card, allowExtraLargeSizes);
   const resolvedSize = resolveAllowedSize(size, allowedSizes);
   const spanClass = getCardSpanClass(resolvedSize);

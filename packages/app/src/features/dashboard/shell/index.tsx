@@ -7,9 +7,10 @@ import { resolveWallpaperBackgroundImage } from '@navet/app/constants/built-in-w
 import { usePrimaryColor, useThemeMode, useWallpaper } from '@navet/app/hooks';
 import { useSettingsStore } from '@navet/app/stores';
 import { settingsSelectors } from '@navet/app/stores/selectors';
-import { resolveEffectsQuality } from '@navet/app/utils/effects-quality';
-import { memo } from 'react';
+import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
+import { memo, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { resolveDashboardPerformanceProfile } from '../hooks/use-dashboard-performance-mode';
 import { KioskOrbitMenu } from './kiosk-orbit-menu';
 import type { DashboardLayoutProps } from './types';
 
@@ -38,10 +39,24 @@ export const DashboardLayout = memo(function DashboardLayout({
   const surface = getThemeSurfaceTokens(theme);
   const isGlass = theme === 'glass';
   const isBlack = theme === 'black';
-  const resolvedEffectsQuality = resolveEffectsQuality(effectsQuality, lowPowerMode);
+  const performanceProfile = useMemo(
+    () =>
+      resolveDashboardPerformanceProfile({
+        activeSection: 'home',
+        deviceTier: detectDeviceTier(),
+        effectsQuality,
+        isEditMode: false,
+        lowPowerMode,
+        visibleCardCount: 0,
+        visibleDevices: [],
+      }),
+    [effectsQuality, lowPowerMode]
+  );
+  const resolvedEffectsQuality = performanceProfile.effectiveEffectsQuality;
   const isMediumEffects = resolvedEffectsQuality === 'medium';
   const isLowEffects = resolvedEffectsQuality === 'low';
-  const showSharedGlassBlur = isGlass && resolvedEffectsQuality === 'high' && !densePerformanceMode;
+  const showSharedGlassBlur =
+    isGlass && performanceProfile.allowBackdropBlur && !densePerformanceMode;
   const headerController = useHeaderController();
   const wallpaperBackgroundImage = resolveWallpaperBackgroundImage(wallpaper);
   const accentColorValue = getThemeColorValue(primaryColor);
@@ -76,7 +91,7 @@ export const DashboardLayout = memo(function DashboardLayout({
           {/* Color Blend Overlay — skipped in LOW: no mixBlendMode is applied and
               the readability layer above it is opaque enough to cover it fully,
               so rendering this div in LOW mode is wasted paint work. */}
-          {!isLowEffects && !densePerformanceMode && (
+          {!isLowEffects && !densePerformanceMode && performanceProfile.allowAnimatedGradients && (
             <div
               data-testid="dashboard-wallpaper-accent-overlay"
               className="absolute inset-0"
@@ -130,7 +145,7 @@ export const DashboardLayout = memo(function DashboardLayout({
             className="absolute inset-0"
             style={{
               background:
-                resolvedEffectsQuality === 'high' && !densePerformanceMode
+                performanceProfile.allowAnimatedGradients && !densePerformanceMode
                   ? 'radial-gradient(circle at 12% 10%, rgba(255,255,255,0.20) 0%, transparent 18%), radial-gradient(circle at 14% 18%, rgba(255,255,255,0.10) 0%, transparent 26%), radial-gradient(circle at 18% 80%, rgba(59,130,246,0.20) 0%, transparent 28%), radial-gradient(circle at 82% 14%, rgba(255,255,255,0.10) 0%, transparent 24%), radial-gradient(circle at 78% 72%, rgba(255,255,255,0.06) 0%, transparent 22%), linear-gradient(180deg, rgba(12,18,32,0.95), rgba(7,10,18,0.98))'
                   : isMediumEffects
                     ? 'linear-gradient(180deg, rgba(18,24,38,0.96), rgba(10,14,24,0.98)), linear-gradient(135deg, rgba(255,255,255,0.05), transparent 42%)'

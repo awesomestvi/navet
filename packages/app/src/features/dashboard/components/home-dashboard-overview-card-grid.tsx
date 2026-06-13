@@ -11,10 +11,12 @@ import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceWithType } from '@navet/app/types/device.types';
+import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { Plus } from 'lucide-react';
 import { type CSSProperties, memo, type ReactNode, useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAutoScaledGridMeasurements } from '../hooks/use-auto-scaled-grid-measurements';
+import { resolveDashboardPerformanceProfile } from '../hooks/use-dashboard-performance-mode';
 import type { DropMeta } from '../hooks/use-home-dashboard-editor';
 import { useProgressiveBatching } from '../hooks/use-progressive-batching';
 import type { CustomCard } from '../stores/custom-cards-store';
@@ -151,7 +153,22 @@ export const CardGrid = memo(function CardGrid({
       lowPowerMode: settingsSelectors.lowPowerMode(state),
     }))
   );
-  const optimizeOffscreenPaint = !isEditMode && effectsQuality !== 'high';
+  const performanceProfile = useMemo(
+    () =>
+      resolveDashboardPerformanceProfile({
+        activeSection: 'home',
+        deviceTier: detectDeviceTier(),
+        effectsQuality,
+        isEditMode,
+        lowPowerMode,
+        visibleCardCount: cardIds.length,
+        visibleDevices: Array.from(allCards.values()).filter(
+          (entry): entry is DeviceWithType => !isCustomCard(entry)
+        ),
+      }),
+    [allCards, cardIds.length, effectsQuality, isEditMode, lowPowerMode]
+  );
+  const optimizeOffscreenPaint = performanceProfile.optimizeOffscreenPaint;
   const breakpointCols = useBreakpointCols();
   const logicalGridCols = Math.max(1, Math.min(gridCols ?? breakpointCols, breakpointCols));
   const gridGapPx = getCardGridGapPx(breakpointCols);
@@ -223,11 +240,11 @@ export const CardGrid = memo(function CardGrid({
     [addCardSlotCols]
   );
 
-  const visibleCount = useProgressiveBatching(
-    cardIds.length,
-    isEditMode || lowPowerMode,
-    !sortable
-  );
+  const visibleCount = useProgressiveBatching(cardIds.length, isEditMode, {
+    enabled: !sortable && performanceProfile.batchHeavyCards,
+    initialBatch: performanceProfile.progressiveBatchInitialCount,
+    batchSize: performanceProfile.progressiveBatchSize,
+  });
   const visibleCardIds = useMemo(() => {
     // Sortable home sections must render every `HomeCardSlot` so `SortableContext`
     // items match the mounted sortable nodes during drag measurement.

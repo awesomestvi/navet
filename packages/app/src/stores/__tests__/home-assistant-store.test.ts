@@ -446,4 +446,35 @@ describe('homeAssistantStore', () => {
     expect(secondAlarmEntity).not.toBe(firstAlarmEntity);
     expect(secondAlarmEntity?.state).toBe('armed_home');
   });
+
+  it('does not emit a new store state for no-op entity listener payloads', async () => {
+    vi.useFakeTimers();
+
+    await homeAssistantStore.getState().connect({
+      providerId: 'home_assistant',
+      runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://ha.example.com',
+      hassUrl: 'https://ha.example.com',
+    });
+
+    const entities = {
+      'light.kitchen': createPanelEntity('on'),
+    };
+    homeAssistantStore.setState({ entities });
+
+    const listener = vi.fn();
+    const unsubscribe = homeAssistantStore.subscribe(listener);
+
+    homeAssistantServiceStub.listeners.entities.forEach((callback) => {
+      callback(entities);
+    });
+
+    vi.advanceTimersByTime(60);
+
+    expect(listener).not.toHaveBeenCalled();
+
+    unsubscribe();
+    vi.useRealTimers();
+  });
 });

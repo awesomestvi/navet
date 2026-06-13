@@ -228,6 +228,89 @@ describe('resolveArtworkPalette', () => {
     }
   });
 
+  it('falls back to a same-origin fetch when direct sampling fails for a proxy artwork URL without explicit auth', async () => {
+    const RealImage = globalThis.Image;
+    const originalCreateElement = document.createElement.bind(document);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('image', {
+        status: 200,
+        headers: { 'Content-Type': 'image/jpeg' },
+      })
+    );
+    const createObjectUrlMock = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockReturnValue('blob:http://navet.local/fetched-same-origin-artwork');
+    const revokeObjectUrlMock = vi
+      .spyOn(URL, 'revokeObjectURL')
+      .mockImplementation(() => undefined);
+
+    class FailingThenSuccessfulImage {
+      decoding = 'async';
+      onload: null | (() => void) = null;
+      onerror: null | (() => void) = null;
+
+      set src(value: string) {
+        queueMicrotask(() => {
+          if (value.startsWith('blob:')) {
+            this.onload?.();
+            return;
+          }
+
+          this.onerror?.();
+        });
+      }
+    }
+
+    const canvasContext = {
+      drawImage: vi.fn(),
+      getImageData: vi.fn(() => ({
+        data: new Uint8ClampedArray([122, 48, 36, 255]),
+      })),
+    };
+    const createElementMock = vi.spyOn(document, 'createElement').mockImplementation(((
+      tagName: string
+    ) => {
+      if (tagName === 'canvas') {
+        return {
+          getContext: vi.fn(() => canvasContext),
+          width: 0,
+          height: 0,
+        } as unknown as HTMLCanvasElement;
+      }
+
+      return originalCreateElement(tagName);
+    }) as typeof document.createElement);
+
+    try {
+      // @ts-expect-error test image stub
+      globalThis.Image = FailingThenSuccessfulImage;
+
+      const palette = await resolveArtworkPalette({
+        url: '/__navet_ha_proxy__/api/media_player_proxy/media_player.bathroom?token=test-token&cache=a94e2d54cff36dd0',
+        authStrategy: 'none',
+        source: 'ha_proxy_relative',
+      });
+
+      expect(palette?.dominant).toMatch(/^rgb\(/);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/__navet_ha_proxy__/api/media_player_proxy/media_player.bathroom?token=test-token&cache=a94e2d54cff36dd0',
+        {
+          credentials: 'same-origin',
+          mode: 'cors',
+        }
+      );
+      expect(createObjectUrlMock).toHaveBeenCalledTimes(1);
+      expect(revokeObjectUrlMock).toHaveBeenCalledWith(
+        'blob:http://navet.local/fetched-same-origin-artwork'
+      );
+    } finally {
+      globalThis.Image = RealImage;
+      createElementMock.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('keeps dark-background artwork with bright text anchored to a dark surface', () => {
     const imageData = createSyntheticImageData(48, 48, (x, y) => {
       const centerText = x >= 12 && x <= 35 && y >= 15 && y <= 30;
@@ -268,5 +351,29 @@ describe('resolveArtworkPalette', () => {
     expect(getPaletteLuminance(palette.dominant)).toBeGreaterThan(0.5);
     expect(getPaletteLuminance(palette.highlight)).toBeGreaterThan(0.7);
     expect(getPaletteLuminance(palette.gradientEnd)).toBeGreaterThan(0.28);
+  });
+
+  it('keeps a small strong accent available on light-led artwork', () => {
+    const imageData = createSyntheticImageData(48, 48, (x, y) => {
+      const inMoon = (x - 29) ** 2 + (y - 11) ** 2 <= 25;
+      const inLinework = x <= 15 && y >= 18;
+
+      if (inMoon) {
+        return [156, 52, 36, 255];
+      }
+
+      if (inLinework) {
+        return [132, 120, 102, 255];
+      }
+
+      return [222, 212, 194, 255];
+    });
+
+    const palette = expectPalette(createPaletteFromImageData(imageData));
+
+    expect(getPaletteSaturation(palette.vibrant)).toBeGreaterThan(0.25);
+    expect(palette.vibrant).toMatch(
+      /^rgb\((1[0-9]{2}|[2-9][0-9]), ([0-9]{1,2}|1[0-1][0-9]), ([0-9]{1,2}|1[0-1][0-9])\)$/
+    );
   });
 });

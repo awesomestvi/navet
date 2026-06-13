@@ -55,7 +55,6 @@ export function MediaDialogHeader({
       titleStyle={controller.readableForeground.titleStyle}
       descriptionStyle={controller.readableForeground.subtitleStyle}
       actionButtonStyle={controller.readableForeground.titleStyle}
-      className="mb-0"
     />
   );
 }
@@ -159,10 +158,10 @@ export function MediaDialogPlaybackControls({
   const mirroredOffToggleSlashStyle = { transform: 'scaleX(-1)' } as const;
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1.5">
+    <div className="space-y-4">
+      <div className="space-y-1">
         <div
-          className={`truncate text-[1.3rem] font-semibold leading-tight md:text-[1.45rem] ${controller.surface.textPrimary}`}
+          className={`truncate text-base font-semibold leading-tight sm:text-lg ${controller.surface.textPrimary}`}
           style={controller.readableForeground.titleStyle}
         >
           {title}
@@ -177,7 +176,7 @@ export function MediaDialogPlaybackControls({
         ) : null}
       </div>
       {durationSeconds > 0 ? (
-        <div className="space-y-2">
+        <div className="space-y-1">
           <Slider
             value={Math.min(durationSeconds, pendingSeek)}
             min={0}
@@ -198,7 +197,7 @@ export function MediaDialogPlaybackControls({
             thumbStyle={timelineThumbStyle}
           />
           <div
-            className={`flex items-center justify-between text-sm ${controller.surface.textSecondary}`}
+            className={`flex items-center justify-between text-[0.82rem] ${controller.surface.textSecondary}`}
             style={controller.readableForeground.subtitleStyle}
           >
             <span>{formatMediaTime(Math.max(0, pendingSeek))}</span>
@@ -206,7 +205,7 @@ export function MediaDialogPlaybackControls({
           </div>
         </div>
       ) : null}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-1.5">
         <RoundControlButton
           theme={controller.theme}
           size="medium"
@@ -227,42 +226,48 @@ export function MediaDialogPlaybackControls({
             </span>
           )}
         </RoundControlButton>
-        <button
-          type="button"
+        <RoundControlButton
+          theme={controller.theme}
+          size="medium"
+          variant="neutral"
           aria-label={t('media.previousTrack')}
           disabled={!canPreviousTrack}
           onClick={onPrevious}
-          className="flex h-14 w-14 items-center justify-center rounded-full transition-opacity disabled:cursor-not-allowed disabled:opacity-45"
-          style={transportIconStyle}
+          className="h-14 w-14 backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+          iconStyle={transportIconStyle}
+          style={controller.activeMiniControlStyle}
         >
-          <SkipBack className="h-9 w-9" />
-        </button>
-        <button
-          type="button"
-          onClick={onTogglePlay}
+          <SkipBack className="h-6.5 w-6.5" />
+        </RoundControlButton>
+        <RoundControlButton
+          theme={controller.theme}
+          size="large"
+          variant="neutral"
           aria-label={isPlaying ? t('media.pausePlayback') : t('media.resumePlayback')}
-          className="flex h-20 w-20 items-center justify-center rounded-full transition-colors"
-          style={{
-            ...controller.activeTransportStyle,
-            ...transportIconStyle,
-          }}
+          onClick={onTogglePlay}
+          className="h-20 w-20 backdrop-blur-xl transition-colors"
+          iconStyle={transportIconStyle}
+          style={controller.activeTransportStyle}
         >
           {isPlaying ? (
-            <Pause className="h-10 w-10" fill="currentColor" />
+            <Pause className="h-8 w-8" fill="currentColor" />
           ) : (
-            <Play className="ml-1 h-10 w-10" fill="currentColor" />
+            <Play className="ml-0.5 h-8 w-8" fill="currentColor" />
           )}
-        </button>
-        <button
-          type="button"
+        </RoundControlButton>
+        <RoundControlButton
+          theme={controller.theme}
+          size="medium"
+          variant="neutral"
           aria-label={t('media.nextTrack')}
           disabled={!canNextTrack}
           onClick={onNext}
-          className="flex h-14 w-14 items-center justify-center rounded-full transition-opacity disabled:cursor-not-allowed disabled:opacity-45"
-          style={transportIconStyle}
+          className="h-14 w-14 backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+          iconStyle={transportIconStyle}
+          style={controller.activeMiniControlStyle}
         >
-          <SkipForward className="h-9 w-9" />
-        </button>
+          <SkipForward className="h-6.5 w-6.5" />
+        </RoundControlButton>
         <RoundControlButton
           theme={controller.theme}
           size="medium"
@@ -338,7 +343,7 @@ export function MediaDialogVolumeControl({
 
   return (
     <div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
         <RoundControlButton
           theme={controller.theme}
           size="medium"

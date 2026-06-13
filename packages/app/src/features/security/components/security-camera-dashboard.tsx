@@ -25,10 +25,12 @@ import { normalizeResourceUrl } from '@navet/app/services/integration-resource.s
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { type CameraViewMode, useSettingsStore } from '@navet/app/stores/settings-store';
 import type { CameraDevice, DeviceWithType, SecuritySeverity } from '@navet/app/types/device.types';
+import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import type { NavetAlarmEntity } from '@navet/core/alarm-types';
 import { ChevronDown, Plus } from 'lucide-react';
 import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { resolveDashboardPerformanceProfile } from '../../dashboard/hooks/use-dashboard-performance-mode';
 import type {
   CameraDashboardModel,
   SecurityGroupSummary,
@@ -960,19 +962,35 @@ function DetailsGrid({
   onRemoveEntity?: (entityId: string) => void;
 }) {
   const breakpointCols = useBreakpointCols();
-  const { dashboardSpaceMode, effectsQuality, lowPowerMode } = useSettingsStore(
+  const { effectsQuality, lowPowerMode } = useSettingsStore(
     useShallow((state) => ({
-      dashboardSpaceMode: settingsSelectors.dashboardSpaceMode(state),
       effectsQuality: settingsSelectors.effectsQuality(state),
       lowPowerMode: settingsSelectors.lowPowerMode(state),
     }))
   );
   const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
-    useFitDashboardGrid(breakpointCols, dashboardSpaceMode === 'more_space');
-  const shouldBatch = devices.length >= 12;
-  const batchedVisibleCount = useProgressiveBatching(devices.length, isEditMode, shouldBatch);
+    useFitDashboardGrid(breakpointCols);
+  const performanceProfile = useMemo(
+    () =>
+      resolveDashboardPerformanceProfile({
+        activeSection: 'security',
+        deviceTier: detectDeviceTier(),
+        effectsQuality,
+        isEditMode,
+        lowPowerMode,
+        visibleCardCount: devices.length,
+        visibleDevices: devices,
+      }),
+    [devices, effectsQuality, isEditMode, lowPowerMode]
+  );
+  const shouldBatch = performanceProfile.batchHeavyCards;
+  const batchedVisibleCount = useProgressiveBatching(devices.length, isEditMode, {
+    enabled: shouldBatch,
+    initialBatch: performanceProfile.progressiveBatchInitialCount,
+    batchSize: performanceProfile.progressiveBatchSize,
+  });
   const visibleDevices = shouldBatch ? devices.slice(0, batchedVisibleCount) : devices;
-  const optimizeOffscreenPaint = !isEditMode && (lowPowerMode || effectsQuality !== 'high');
+  const optimizeOffscreenPaint = performanceProfile.optimizeOffscreenPaint;
 
   return (
     <DashboardEditActions isEditMode={isEditMode} onRemoveEntity={onRemoveEntity}>
@@ -1121,7 +1139,6 @@ export function SecurityCameraDashboard({
   surface,
 }: SecurityCameraDashboardProps) {
   const breakpointCols = useBreakpointCols();
-  const dashboardSpaceMode = useSettingsStore(settingsSelectors.dashboardSpaceMode);
   const {
     outerRef: nowOuterRef,
     innerRef: nowInnerRef,
@@ -1129,7 +1146,7 @@ export function SecurityCameraDashboard({
     innerContainerStyle: nowInnerContainerStyle,
     isAutoScaled: isNowAutoScaled,
     gridStyle: nowGridStyle,
-  } = useFitDashboardGrid(breakpointCols, dashboardSpaceMode === 'more_space');
+  } = useFitDashboardGrid(breakpointCols);
   const [viewerCamera, setViewerCamera] = useState<CameraDevice | null>(null);
   const detailsRef = useRef<HTMLDivElement | null>(null);
   const [collapsedSections, setCollapsedSections] = usePersistedState<Record<string, boolean>>(

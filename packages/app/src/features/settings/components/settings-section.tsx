@@ -82,7 +82,10 @@ export function SettingsSection({ hiddenTabs = [] }: SettingsSectionProps) {
             });
           }}
         >
-          <TabList size="compact" className="md:gap-2 md:rounded-[28px] md:px-4 md:py-3">
+          <TabList
+            size="compact"
+            className="md:!flex-nowrap md:!overflow-x-auto md:!overflow-y-hidden md:gap-2 md:rounded-[28px] md:px-4 md:py-3"
+          >
             {navItems.map(({ id, label, icon: Icon }) => (
               <TabTrigger
                 key={id}

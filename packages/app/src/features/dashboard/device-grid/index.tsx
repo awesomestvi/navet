@@ -1,11 +1,14 @@
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { useSearch } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
+import { useDeferredVisibility } from '@navet/app/hooks/use-deferred-visibility';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
+import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { type CSSProperties, memo, useCallback, useDeferredValue, useMemo } from 'react';
 import { DashboardCardItem } from '../components/dashboard-card-item';
 import { DashboardEditActions } from '../components/dashboard-edit-actions';
+import { resolveDashboardPerformanceProfile } from '../hooks/use-dashboard-performance-mode';
 import { useFitDashboardGrid } from '../hooks/use-fit-dashboard-grid';
 import { useProgressiveBatching } from '../hooks/use-progressive-batching';
 import type { DeviceGridProps } from './types';
@@ -32,9 +35,13 @@ export const DeviceGrid = memo(function DeviceGrid({
 }: DeviceGridProps) {
   const { isSearchActive, filteredDeviceIds } = useSearch();
   const breakpointCols = useBreakpointCols();
-  const dashboardSpaceMode = useSettingsStore(settingsSelectors.dashboardSpaceMode);
+  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
+  const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
+  const { ref: visibilityRef, isVisible } = useDeferredVisibility<HTMLDivElement>({
+    initiallyVisible: isEditMode,
+  });
   const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
-    useFitDashboardGrid(breakpointCols, dashboardSpaceMode === 'more_space');
+    useFitDashboardGrid(breakpointCols);
   const deferredFilteredDeviceIds = useDeferredValue(filteredDeviceIds);
 
   const handleSizeChange = useCallback(
@@ -58,8 +65,24 @@ export const DeviceGrid = memo(function DeviceGrid({
     () => new Map(customCards.map((card) => [card.id, card])),
     [customCards]
   );
-
-  const visibleCount = useProgressiveBatching(displayedCardIds.length, isEditMode);
+  const performanceProfile = useMemo(
+    () =>
+      resolveDashboardPerformanceProfile({
+        activeSection: 'home',
+        deviceTier: detectDeviceTier(),
+        effectsQuality,
+        isEditMode,
+        lowPowerMode,
+        visibleCardCount: displayedCardIds.length,
+        visibleDevices: deviceMap.values(),
+      }),
+    [deviceMap, displayedCardIds.length, effectsQuality, isEditMode, lowPowerMode]
+  );
+  const visibleCount = useProgressiveBatching(displayedCardIds.length, isEditMode, {
+    enabled: isVisible,
+    initialBatch: performanceProfile.progressiveBatchInitialCount,
+    batchSize: performanceProfile.progressiveBatchSize,
+  });
 
   // Combine device cards and custom widget cards using the shared ordering model.
   const allCards = useMemo(
@@ -91,11 +114,14 @@ export const DeviceGrid = memo(function DeviceGrid({
 
   const gridContent = (
     <div
-      ref={outerRef}
+      ref={(node) => {
+        visibilityRef.current = node;
+        outerRef.current = node;
+      }}
       className="relative w-full"
       style={{
         ...outerContainerStyle,
-        ...(densePerformanceMode
+        ...(performanceProfile.optimizeOffscreenPaint || densePerformanceMode
           ? ({
               contentVisibility: 'auto',
               containIntrinsicBlockSize: `${placeholderHeight}px`,

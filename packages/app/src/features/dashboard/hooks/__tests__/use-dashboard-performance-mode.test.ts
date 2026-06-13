@@ -2,6 +2,7 @@ import type { DeviceWithType } from '@navet/app/types/device.types';
 import { describe, expect, it } from 'vitest';
 import {
   countHeavyDashboardDevices,
+  resolveDashboardPerformanceProfile,
   resolveDenseDashboardPerformanceMode,
 } from '../use-dashboard-performance-mode';
 
@@ -89,5 +90,47 @@ describe('useDashboardPerformanceMode helpers', () => {
         ),
       })
     ).toBe(false);
+  });
+
+  it('keeps premium visual features on high-tier hardware with full effects', () => {
+    expect(
+      resolveDashboardPerformanceProfile({
+        activeSection: 'home',
+        deviceTier: 'high',
+        effectsQuality: 'high',
+        isEditMode: false,
+        lowPowerMode: false,
+        visibleCardCount: 6,
+        visibleDevices: [createDevice('light.kitchen', 'lights')],
+      })
+    ).toMatchObject({
+      effectiveEffectsQuality: 'high',
+      allowAmbientBleed: true,
+      allowBackdropBlur: true,
+      allowAnimatedGradients: true,
+      densePerformanceMode: false,
+    });
+  });
+
+  it('pushes medium-tier dashboards into reduced batching and paint policy', () => {
+    expect(
+      resolveDashboardPerformanceProfile({
+        activeSection: 'lights',
+        deviceTier: 'medium',
+        effectsQuality: 'medium',
+        isEditMode: false,
+        lowPowerMode: false,
+        visibleCardCount: 12,
+        visibleDevices: Array.from({ length: 8 }, (_, index) =>
+          createDevice(`light.${index}`, 'lights')
+        ),
+      })
+    ).toMatchObject({
+      effectiveEffectsQuality: 'low',
+      optimizeOffscreenPaint: true,
+      batchHeavyCards: true,
+      reducePolling: true,
+      densePerformanceModeReason: 'card-density',
+    });
   });
 });

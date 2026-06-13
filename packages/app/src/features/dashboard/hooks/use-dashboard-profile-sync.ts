@@ -292,9 +292,11 @@ export function useDashboardProfileSync() {
         classNames: {
           toast:
             'max-w-[min(34rem,calc(100vw-1rem))] sm:min-w-[29rem] rounded-[28px] border-white/10 bg-[linear-gradient(180deg,rgba(18,18,20,0.96)_0%,rgba(12,12,14,0.94)_100%)] shadow-2xl',
-          content: 'basis-[18rem] pr-3',
-          title: 'truncate whitespace-nowrap pr-8 text-[15px] font-semibold leading-5',
-          description: 'max-w-none text-sm leading-6',
+          content: 'min-w-0 basis-full pr-8',
+          title: 'max-w-none whitespace-normal pr-0 text-[15px] font-semibold leading-5',
+          description: 'max-w-none whitespace-normal text-sm leading-6',
+          actionButton: 'order-3 self-start',
+          cancelButton: 'order-4 self-start',
         },
         action: {
           label: t('dashboard.profileSync.keepMine'),

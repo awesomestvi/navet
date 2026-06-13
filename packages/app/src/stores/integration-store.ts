@@ -278,51 +278,119 @@ function buildProviderScopedState(
   const entityViewsByCanonicalId: Record<string, DashboardEntityView> = {};
   const devicesByCanonicalId: Record<string, NavetDevice> = {};
   const roomsByCanonicalId: Record<string, NavetRoom> = {};
+  const previousEntityCount = previousState
+    ? Object.keys(previousState.entitiesByCanonicalId).length
+    : 0;
+  const previousRoomCount = previousState
+    ? Object.keys(previousState.roomsByCanonicalId).length
+    : 0;
+  let entitiesChanged = !previousState;
+  let entityViewsChanged = !previousState;
+  let devicesChanged = !previousState;
+  let roomsChanged = !previousState;
 
   for (const entity of providerState?.entities ?? []) {
     const previousEntity = previousState?.entitiesByCanonicalId[entity.canonicalId];
     const nextEntity = reuseValue(previousEntity, entity);
+    if (previousEntity !== nextEntity) {
+      entitiesChanged = true;
+    }
     entitiesByCanonicalId[nextEntity.canonicalId] = nextEntity;
 
     const previousView = previousState?.entityViewsByCanonicalId[nextEntity.canonicalId];
-    entityViewsByCanonicalId[nextEntity.canonicalId] =
+    const nextView =
       previousView && previousEntity === nextEntity
         ? previousView
         : createDashboardEntityView(nextEntity);
+    if (previousView !== nextView) {
+      entityViewsChanged = true;
+    }
+    entityViewsByCanonicalId[nextEntity.canonicalId] = nextView;
 
     const previousDevice = previousState?.devicesByCanonicalId[nextEntity.canonicalId];
-    devicesByCanonicalId[nextEntity.canonicalId] =
+    const nextDevice =
       previousDevice && previousEntity === nextEntity
         ? previousDevice
         : mapProviderEntityToNavetDevice(nextEntity);
+    if (previousDevice !== nextDevice) {
+      devicesChanged = true;
+    }
+    devicesByCanonicalId[nextEntity.canonicalId] = nextDevice;
   }
 
   for (const room of providerState?.rooms ?? []) {
     const mappedRoom = mapProviderRoomToNavetRoom(room);
-    roomsByCanonicalId[mappedRoom.canonicalId] = reuseValue(
-      previousState?.roomsByCanonicalId[mappedRoom.canonicalId],
-      mappedRoom
-    );
+    const previousRoom = previousState?.roomsByCanonicalId[mappedRoom.canonicalId];
+    const nextRoom = reuseValue(previousRoom, mappedRoom);
+    if (previousRoom !== nextRoom) {
+      roomsChanged = true;
+    }
+    roomsByCanonicalId[mappedRoom.canonicalId] = nextRoom;
   }
 
-  const nextDeviceCollection = mapNavetEntitiesToDeviceCollection(
-    Object.values(entitiesByCanonicalId)
-  );
+  if (
+    !entitiesChanged &&
+    previousState &&
+    previousEntityCount === Object.keys(entitiesByCanonicalId).length
+  ) {
+    return {
+      deviceCollection: previousState.deviceCollection,
+      devicesByCanonicalId: previousState.devicesByCanonicalId,
+      entityLookupByCanonicalId: previousState.entityLookupByCanonicalId,
+      entityViewsByCanonicalId: previousState.entityViewsByCanonicalId,
+      entitiesByCanonicalId: previousState.entitiesByCanonicalId,
+      roomsByCanonicalId:
+        !roomsChanged && previousRoomCount === Object.keys(roomsByCanonicalId).length
+          ? previousState.roomsByCanonicalId
+          : roomsByCanonicalId,
+    };
+  }
+
+  const stableEntitiesByCanonicalId =
+    !entitiesChanged &&
+    previousState &&
+    previousEntityCount === Object.keys(entitiesByCanonicalId).length
+      ? previousState.entitiesByCanonicalId
+      : entitiesByCanonicalId;
+  const stableEntityViewsByCanonicalId =
+    !entityViewsChanged &&
+    previousState &&
+    previousEntityCount === Object.keys(entityViewsByCanonicalId).length
+      ? previousState.entityViewsByCanonicalId
+      : entityViewsByCanonicalId;
+  const stableDevicesByCanonicalId =
+    !devicesChanged &&
+    previousState &&
+    previousEntityCount === Object.keys(devicesByCanonicalId).length
+      ? previousState.devicesByCanonicalId
+      : devicesByCanonicalId;
+  const stableRoomsByCanonicalId =
+    !roomsChanged && previousState && previousRoomCount === Object.keys(roomsByCanonicalId).length
+      ? previousState.roomsByCanonicalId
+      : roomsByCanonicalId;
+
+  const nextDeviceCollection =
+    stableEntitiesByCanonicalId === previousState?.entitiesByCanonicalId && previousState
+      ? previousState.deviceCollection
+      : mapNavetEntitiesToDeviceCollection(Object.values(stableEntitiesByCanonicalId));
   const deviceCollection = reuseDeviceCollection(
     previousState?.deviceCollection,
     nextDeviceCollection
   );
-  const entityLookupByCanonicalId = reuseValue(
-    previousState?.entityLookupByCanonicalId,
-    buildEntityLookupIndex(providerId, entitiesByCanonicalId)
-  );
+  const entityLookupByCanonicalId =
+    stableEntitiesByCanonicalId === previousState?.entitiesByCanonicalId && previousState
+      ? previousState.entityLookupByCanonicalId
+      : reuseValue(
+          previousState?.entityLookupByCanonicalId,
+          buildEntityLookupIndex(providerId, stableEntitiesByCanonicalId)
+        );
   return {
     deviceCollection,
-    devicesByCanonicalId,
+    devicesByCanonicalId: stableDevicesByCanonicalId,
     entityLookupByCanonicalId,
-    entityViewsByCanonicalId,
-    entitiesByCanonicalId,
-    roomsByCanonicalId,
+    entityViewsByCanonicalId: stableEntityViewsByCanonicalId,
+    entitiesByCanonicalId: stableEntitiesByCanonicalId,
+    roomsByCanonicalId: stableRoomsByCanonicalId,
   };
 }
 
@@ -380,7 +448,7 @@ function collectProviderEntityEvents(
       continue;
     }
 
-    if (!areDataEqual(previousEntity, entity)) {
+    if (previousEntity !== entity) {
       events.push({
         type: 'entity_updated',
         providerId,
@@ -732,7 +800,10 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
     homeAssistantState: HomeAssistantStore,
     nextProviderRuntime: NavetProviderRuntimeState,
     nextProviderHealth: ProviderHealth,
-    extraState: Partial<IntegrationStore> = {}
+    extraState: Partial<IntegrationStore> = {},
+    options: {
+      shouldRebuildRoomDescriptors?: boolean;
+    } = {}
   ): IntegrationStore => {
     const previousEntities = current.providerEntitiesByProviderId[providerId] ?? {};
     const previousViews = current.providerEntityViewsByProviderId[providerId] ?? {};
@@ -798,8 +869,15 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
       previousEntities,
       nextProviderScopedState.entitiesByCanonicalId
     );
-    const nextRoomDescriptors = buildRoomDescriptors(homeAssistantState, roomsByCanonicalId);
-    const roomDescriptors = reuseValue(current.roomDescriptors, nextRoomDescriptors);
+    const shouldRebuildRoomDescriptors =
+      options.shouldRebuildRoomDescriptors === true ||
+      previousRooms !== nextProviderScopedState.roomsByCanonicalId;
+    const roomDescriptors = shouldRebuildRoomDescriptors
+      ? reuseValue(
+          current.roomDescriptors,
+          buildRoomDescriptors(homeAssistantState, roomsByCanonicalId)
+        )
+      : current.roomDescriptors;
     const mergedProviderRuntime = reuseValue(
       current.providerRuntime[providerId],
       nextProviderRuntime
@@ -819,6 +897,27 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
             ...current.providerHealth,
             [providerId]: mergedProviderHealth,
           };
+
+    const hasExtraStateChanges = Object.entries(extraState).some(
+      ([key, value]) => current[key as keyof IntegrationStore] !== value
+    );
+    const hasProviderChanges =
+      providerDeviceCollectionsByProviderId !== current.providerDeviceCollectionsByProviderId ||
+      providerEntityLookupByProviderId !== current.providerEntityLookupByProviderId ||
+      providerEntitiesByProviderId !== current.providerEntitiesByProviderId ||
+      providerEntityViewsByProviderId !== current.providerEntityViewsByProviderId ||
+      providerRoomsByProviderId !== current.providerRoomsByProviderId ||
+      providerEntitiesByCanonicalId !== current.providerEntitiesByCanonicalId ||
+      providerEntityViewsByCanonicalId !== current.providerEntityViewsByCanonicalId ||
+      providerRuntime !== current.providerRuntime ||
+      roomsByCanonicalId !== current.roomsByCanonicalId ||
+      roomDescriptors !== current.roomDescriptors ||
+      providerHealth !== current.providerHealth ||
+      providerEvents.length > 0;
+
+    if (!hasExtraStateChanges && !hasProviderChanges) {
+      return current;
+    }
 
     return {
       ...current,
@@ -842,6 +941,8 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
   };
 
   const syncHomeAssistantState = (state: HomeAssistantStore) => {
+    const shouldRebuildRoomDescriptors = state.areas !== previousHomeAssistantAreas;
+    previousHomeAssistantAreas = state.areas;
     set((current) => {
       const nextHomeAssistantState = buildProviderScopedState(
         'home_assistant',
@@ -857,7 +958,8 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
         createProviderHealthFromHomeAssistant(state, getImplementationStatus('home_assistant')),
         {
           currentUser: current.currentUser ?? state.user,
-        }
+        },
+        { shouldRebuildRoomDescriptors }
       );
     });
   };
@@ -865,6 +967,8 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
   const syncHomeyState = () => {
     const snapshot = getSafeHomeySnapshot();
     const homeAssistantState = homeAssistantStore.getState();
+    const shouldRebuildRoomDescriptors = snapshot.zones !== previousHomeyZones;
+    previousHomeyZones = snapshot.zones;
     set((current) => {
       const nextHomeyState = buildProviderScopedState(
         'homey',
@@ -882,7 +986,8 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
           homey: {
             connected: snapshot.connected,
           },
-        }
+        },
+        { shouldRebuildRoomDescriptors }
       );
     });
   };
@@ -908,6 +1013,8 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
   };
 
   const currentHomeAssistantState = homeAssistantStore.getState();
+  let previousHomeAssistantAreas = currentHomeAssistantState.areas;
+  let previousHomeyZones = getSafeHomeySnapshot().zones;
   const initialCanonicalState = buildInitialProviderScopedState(currentHomeAssistantState);
   const initialProviderRuntime = buildProviderRuntime(currentHomeAssistantState);
   const initialProviderEntitiesByCanonicalId = flattenProviderRecords(

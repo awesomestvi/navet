@@ -14,6 +14,18 @@ describe('camera-view-mode', () => {
       resolveDashboardCameraViewMode({
         cameraDashboardViewMode: 'live',
         lowPowerMode: true,
+        effectsQuality: 'high',
+        hasSnapshot: true,
+      })
+    ).toBe('snapshot');
+  });
+
+  it('forces snapshot mode in low visual quality when a snapshot exists', () => {
+    expect(
+      resolveDashboardCameraViewMode({
+        cameraDashboardViewMode: 'live',
+        lowPowerMode: false,
+        effectsQuality: 'low',
         hasSnapshot: true,
       })
     ).toBe('snapshot');
@@ -41,7 +53,7 @@ describe('camera-view-mode', () => {
   });
 
   it('reads only documented HA-native stream types', () => {
-    expect(readCameraStreamTypes(['hls', 'web_rtc', 'mjpeg'])).toEqual(['hls', 'web_rtc']);
+    expect(readCameraStreamTypes(['hls', 'web_rtc', 'mjpeg'])).toEqual(['hls', 'web_rtc', 'mjpeg']);
   });
 
   it('refreshes live snapshot fallbacks more slowly than explicit snapshot mode', () => {
@@ -50,6 +62,7 @@ describe('camera-view-mode', () => {
         cameraViewMode: 'live',
         imageSourceKind: 'snapshot',
         isFallback: true,
+        reducePolling: false,
       })
     ).toBe(30_000);
     expect(
@@ -57,7 +70,19 @@ describe('camera-view-mode', () => {
         cameraViewMode: 'snapshot',
         imageSourceKind: 'snapshot',
         isFallback: false,
+        reducePolling: false,
       })
     ).toBeNull();
+  });
+
+  it('uses a slower refresh cadence when polling should be reduced', () => {
+    expect(
+      getCameraAutoRefreshInterval({
+        cameraViewMode: 'auto',
+        imageSourceKind: 'snapshot',
+        isFallback: false,
+        reducePolling: true,
+      })
+    ).toBe(45_000);
   });
 });

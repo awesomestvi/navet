@@ -18,6 +18,36 @@ type WindowWithIdleCallback = Window & {
   cancelIdleCallback?: (handle: IdleCallbackHandle) => void;
 };
 
+interface ProgressiveBatchingOptions {
+  enabled?: boolean;
+  initialBatch?: number;
+  batchSize?: number;
+  idleTimeoutMs?: number;
+  timeoutFallbackMs?: number;
+}
+
+type ProgressiveBatchingConfig = boolean | ProgressiveBatchingOptions | undefined;
+
+function normalizeProgressiveBatchingConfig(config: ProgressiveBatchingConfig) {
+  if (typeof config === 'boolean') {
+    return {
+      enabled: config,
+      initialBatch: INITIAL_BATCH,
+      batchSize: BATCH_SIZE,
+      idleTimeoutMs: IDLE_CALLBACK_TIMEOUT,
+      timeoutFallbackMs: SET_TIMEOUT_FALLBACK,
+    };
+  }
+
+  return {
+    enabled: config?.enabled ?? true,
+    initialBatch: config?.initialBatch ?? INITIAL_BATCH,
+    batchSize: config?.batchSize ?? BATCH_SIZE,
+    idleTimeoutMs: config?.idleTimeoutMs ?? IDLE_CALLBACK_TIMEOUT,
+    timeoutFallbackMs: config?.timeoutFallbackMs ?? SET_TIMEOUT_FALLBACK,
+  };
+}
+
 /**
  * Progressively reveals items in batches using idle callbacks (with setTimeout fallback).
  * Returns the number of items that should be visible. In edit mode or when disabled,
@@ -26,12 +56,14 @@ type WindowWithIdleCallback = Window & {
 export function useProgressiveBatching(
   totalCount: number,
   isEditMode: boolean,
-  enabled = true
+  config: ProgressiveBatchingConfig = true
 ): number {
+  const { enabled, initialBatch, batchSize, idleTimeoutMs, timeoutFallbackMs } =
+    normalizeProgressiveBatchingConfig(config);
   const [visibleCount, setVisibleCount] = useState(() => {
     if (!enabled) return 0;
     if (isEditMode) return Infinity;
-    return Math.min(INITIAL_BATCH, totalCount);
+    return Math.min(initialBatch, totalCount);
   });
 
   useEffect(() => {
@@ -45,10 +77,10 @@ export function useProgressiveBatching(
       return;
     }
 
-    const initialBatch = isEditMode ? EDIT_MODE_INITIAL_BATCH : INITIAL_BATCH;
-    setVisibleCount(Math.min(initialBatch, totalCount));
+    const effectiveInitialBatch = isEditMode ? EDIT_MODE_INITIAL_BATCH : initialBatch;
+    setVisibleCount(Math.min(effectiveInitialBatch, totalCount));
 
-    if (totalCount <= initialBatch) {
+    if (totalCount <= effectiveInitialBatch) {
       return;
     }
 
@@ -60,11 +92,11 @@ export function useProgressiveBatching(
     const scheduleNextBatch = () => {
       const runBatch = () => {
         if (cancelled) return;
-        const batchSize = isEditMode ? EDIT_MODE_BATCH_SIZE : BATCH_SIZE;
+        const effectiveBatchSize = isEditMode ? EDIT_MODE_BATCH_SIZE : batchSize;
         startTransition(() => {
           setVisibleCount((current) => {
             if (current >= totalCount) return current;
-            const next = Math.min(current + batchSize, totalCount);
+            const next = Math.min(current + effectiveBatchSize, totalCount);
             if (next < totalCount) scheduleNextBatch();
             return next;
           });
@@ -81,7 +113,7 @@ export function useProgressiveBatching(
               scheduleNextBatch();
             }
           },
-          { timeout: IDLE_CALLBACK_TIMEOUT }
+          { timeout: idleTimeoutMs }
         );
         return;
       }
@@ -89,7 +121,7 @@ export function useProgressiveBatching(
       timeoutId = window.setTimeout(() => {
         timeoutId = null;
         runBatch();
-      }, SET_TIMEOUT_FALLBACK);
+      }, timeoutFallbackMs);
     };
 
     scheduleNextBatch();
@@ -101,7 +133,7 @@ export function useProgressiveBatching(
         idleWindow.cancelIdleCallback(idleId);
       }
     };
-  }, [enabled, isEditMode, totalCount]);
+  }, [batchSize, enabled, idleTimeoutMs, initialBatch, isEditMode, timeoutFallbackMs, totalCount]);
 
   return visibleCount;
 }

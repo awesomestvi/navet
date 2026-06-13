@@ -85,7 +85,7 @@ describe('MediaCard interactions', () => {
 
     expect(screen.getByRole('slider', { name: /seek/i })).toBeInTheDocument();
     expect(screen.getAllByRole('slider')).toHaveLength(1);
-    expect(screen.getByRole('button', { name: /shuffle/i })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /linear playback/i })).toHaveAttribute(
       'aria-pressed',
       'false'
     );

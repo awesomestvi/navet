@@ -25,8 +25,6 @@ export function MediaDialog({
     durationSeconds,
     elapsedSeconds,
     entityId,
-    repeatMode,
-    shuffleEnabled,
     title,
   });
 

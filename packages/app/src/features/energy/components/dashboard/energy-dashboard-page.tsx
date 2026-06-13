@@ -20,6 +20,7 @@ import {
 } from '@navet/app/features/energy/utils/energy-formatters';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
+import { useDeferredVisibility } from '@navet/app/hooks/use-deferred-visibility';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { AlertTriangle, ExternalLink, Flame, Leaf, PlugZap, Sun, Zap } from 'lucide-react';
@@ -150,12 +151,14 @@ function CompactLoadSparklines({
   wholeHomeTodayKWh: number;
 }) {
   const breakpointCols = useBreakpointCols();
-  const dashboardSpaceMode = useSettingsStore(settingsSelectors.dashboardSpaceMode);
+  const { ref: viewportRef, isVisible } = useDeferredVisibility<HTMLDivElement>({
+    rootMargin: '180px 0px',
+  });
   const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
-    useFitDashboardGrid(breakpointCols, dashboardSpaceMode === 'more_space');
+    useFitDashboardGrid(breakpointCols);
 
   return (
-    <div>
+    <div ref={viewportRef}>
       <div className="mb-3 flex items-center gap-3">
         <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>Sparklines</h2>
         <div className={`h-px flex-1 ${surface.borderStrong}`} />
@@ -182,7 +185,12 @@ function CompactLoadSparklines({
               />
             </div>
             {consumers.map((consumer) => (
-              <DeviceSparklineRow key={consumer.id} accentColor={accentColor} consumer={consumer} />
+              <DeviceSparklineRow
+                key={consumer.id}
+                accentColor={accentColor}
+                consumer={consumer}
+                enabled={isVisible}
+              />
             ))}
           </div>
         </div>
@@ -194,11 +202,13 @@ function CompactLoadSparklines({
 function DeviceSparklineRow({
   accentColor,
   consumer,
+  enabled,
 }: {
   accentColor: string;
   consumer: EnergyConsumer;
+  enabled: boolean;
 }) {
-  const points = useEnergyLoadHistory(consumer.powerEntityId, consumer.powerW);
+  const points = useEnergyLoadHistory(consumer.powerEntityId, consumer.powerW, enabled);
 
   return (
     <div className={`${getCardSpanClass('medium')} min-w-0`}>

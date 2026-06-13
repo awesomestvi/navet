@@ -148,11 +148,11 @@ export const Sidebar = memo(function Sidebar({
   const searchAccessoryBackground = undefined;
   const mobileDockShadow = isGlass
     ? isHighEffects
-      ? 'inset 0 1px 0 rgba(255,255,255,0.1), 0 18px 34px -24px rgba(0,0,0,0.55)'
+      ? 'inset 0 1px 0 rgba(255,255,255,0.14), 0 24px 44px -24px rgba(0,0,0,0.62), 0 10px 20px -16px rgba(0,0,0,0.42)'
       : undefined
     : isLight
-      ? '0 16px 32px -26px rgba(15,23,42,0.18)'
-      : '0 18px 36px -28px rgba(0,0,0,0.58)';
+      ? '0 20px 36px -24px rgba(15,23,42,0.2), 0 8px 16px -14px rgba(15,23,42,0.12)'
+      : '0 24px 40px -24px rgba(0,0,0,0.62), 0 10px 18px -14px rgba(0,0,0,0.36)';
   const mobileSearchFieldBg = resolvedInputBg;
   const mobileSearchFieldText = resolvedTextPrimary;
   const mobileSearchFieldIcon = resolvedTextSecondary;
@@ -216,9 +216,10 @@ export const Sidebar = memo(function Sidebar({
       >
         {isMobileSearchOpen ? (
           <div
-            className={`flex w-full max-w-[26rem] items-center gap-2 overflow-hidden rounded-[22px] border-transparent p-0.75 ${surface.panel} ${cardShell.backdropClassName} ${surface.cardShadow}`}
+            className={`relative flex w-full max-w-[26rem] items-center gap-2 overflow-hidden rounded-[22px] border ${surface.borderStrong} p-0.75 ${surface.panel} ${cardShell.backdropClassName} ${surface.cardShadow}`}
             style={{ boxShadow: mobileDockShadow }}
           >
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/10" />
             <div className="min-w-0 flex-1">
               <HeaderSearchInput
                 activeColorValue={activeColorValue ?? 'currentColor'}
@@ -253,9 +254,10 @@ export const Sidebar = memo(function Sidebar({
           </div>
         ) : (
           <div
-            className={`relative overflow-hidden rounded-[22px] border-transparent ${surface.panel} ${cardShell.backdropClassName} ${surface.cardShadow}`}
+            className={`relative overflow-hidden rounded-[22px] border ${surface.borderStrong} ${surface.panel} ${cardShell.backdropClassName} ${surface.cardShadow}`}
             style={{ boxShadow: mobileDockShadow }}
           >
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/10" />
             {isGlass ? (
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_42%)]" />
             ) : null}

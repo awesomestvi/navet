@@ -28,8 +28,9 @@ import { providerRuntimeSelectors, settingsSelectors } from '@navet/app/stores/s
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceCollection, DeviceWithType } from '@navet/app/types/device.types';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
+import { logPerformanceDecision } from '@navet/app/utils/performance-diagnostics';
 import { buildAggregatedRooms } from '@navet/app/utils/provider-rooms';
-import { startTransition, useCallback, useMemo, useState } from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { getClimateDashboardGroup } from '../../climate/utils/climate-dashboard-group';
 import { buildSecurityCameraDashboardModel } from '../../security/utils/security-camera-dashboard-model';
@@ -49,7 +50,7 @@ import { useDashboardDerivedState } from './use-dashboard-derived-state';
 import { useDashboardDevicesLoaded } from './use-dashboard-devices-loaded';
 import { useDashboardDialogs } from './use-dashboard-dialogs';
 import { useDashboardEntityVisibility } from './use-dashboard-entity-visibility';
-import { resolveDenseDashboardPerformanceMode } from './use-dashboard-performance-mode';
+import { resolveDashboardPerformanceProfile } from './use-dashboard-performance-mode';
 import { useDashboardRoomCounts } from './use-dashboard-room-counts';
 import { useDashboardRoomNavigation } from './use-dashboard-room-navigation';
 import { useEditModeBeforeUnload } from './use-edit-mode-beforeunload';
@@ -272,9 +273,9 @@ export function useDashboardController(): DashboardController {
       sectionData,
     ]
   );
-  const densePerformanceMode = useMemo(
+  const performanceProfile = useMemo(
     () =>
-      resolveDenseDashboardPerformanceMode({
+      resolveDashboardPerformanceProfile({
         activeSection,
         deviceTier,
         effectsQuality,
@@ -300,6 +301,18 @@ export function useDashboardController(): DashboardController {
       sectionData.climateDeviceMap,
     ]
   );
+  const densePerformanceMode = performanceProfile.densePerformanceMode;
+  useEffect(() => {
+    logPerformanceDecision('DashboardController', {
+      activeSection,
+      deviceTier,
+      denseMode: performanceProfile.densePerformanceMode,
+      denseReason: performanceProfile.densePerformanceModeReason,
+      effectiveEffectsQuality: performanceProfile.effectiveEffectsQuality,
+      heavyDeviceCount: performanceProfile.heavyDeviceCount,
+      visibleCardCount: denseVisibleCardCount,
+    });
+  }, [activeSection, denseVisibleCardCount, deviceTier, performanceProfile]);
   const securityAlertCount = useMemo(() => {
     const expandedHiddenSecurityIds = new Set(
       getExpandedHiddenDashboardEntityIds(allDevices, hiddenEntityIds)

@@ -17,12 +17,11 @@ Published image tag shape:
 ghcr.io/awesomestvi/{arch}-navet-addon:0.x.y-dev.YYYYMMDDHHMMSS
 ```
 
-When the package version changes, run `pnpm release:version-sync` so
-`platform/home-assistant/addons/navet-dev/config.yaml` moves to the matching
-`0.x.y-dev.YYYYMMDDHHMMSS` line. Use `pnpm release:dev-version` only when you need to refresh the
-dev add-on metadata without changing the main release-managed versioned surfaces. Each manual edge
-publish uses that committed dev version and refreshes the `dev` and `edge` tags as moving aliases
-for that same image.
+`platform/home-assistant/addons/navet-dev/config.yaml` should move only through the Navet Dev
+publish flow so the committed `0.x.y-dev.YYYYMMDDHHMMSS` value always corresponds to a published
+immutable add-on image. Use `pnpm release:dev-version` only when you intentionally need to refresh
+the dev add-on metadata outside that workflow. Each manual edge publish uses that committed dev
+version and refreshes the `dev` and `edge` tags as moving aliases for that same image.
 
 If you want an immutable Navet Dev publish, the local helper command is:
 

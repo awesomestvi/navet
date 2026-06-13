@@ -345,7 +345,7 @@ function shouldPreferMetadataFallback(picture: string | undefined, attrs: Record
 
   const appName = getMetadataString(attrs, 'app_name').toLowerCase();
   const hasOpaqueCacheKey = /^[a-f0-9]{8,}$/i.test(cacheValue);
-  return hasOpaqueCacheKey && appName !== 'music';
+  return hasOpaqueCacheKey && appName.includes('youtube');
 }
 
 function scoreMusicBrainzRelease(release: MusicBrainzRelease, attrs: Record<string, unknown>) {
@@ -524,49 +524,24 @@ export class MediaArtworkService {
     }
   }
 
-  private async fetchPublicArtworkResource(
+  private buildPublicArtworkResource(
     fingerprint: string,
     sourceUrl: string,
     metadata: ResolvedMediaResource['metadata']
-  ): Promise<ResolvedMediaResource | null> {
+  ): ResolvedMediaResource | null {
     const safeUrl = sanitizeImageUrl(sourceUrl);
     if (!safeUrl) {
       return null;
     }
 
-    try {
-      const response = await fetch(safeUrl, {
-        cache: 'force-cache',
-      });
-      if (!response.ok) {
-        return null;
-      }
-
-      const blob = await response.blob();
-      if (!(await isRenderableImageBlob(blob))) {
-        return null;
-      }
-
-      const objectUrl = URL.createObjectURL(blob);
-      this.objectUrlCache.set(fingerprint, {
-        url: objectUrl,
-        expiresAt: Date.now() + OBJECT_URL_TTL_MS,
-      });
-
-      return {
-        id: safeUrl,
-        kind: 'image',
-        url: objectUrl,
-        cacheKey: fingerprint,
-        authStrategy: 'none',
-        metadata: {
-          ...metadata,
-          mimeType: blob.type,
-        },
-      };
-    } catch {
-      return null;
-    }
+    return {
+      id: safeUrl,
+      kind: 'image',
+      url: safeUrl,
+      cacheKey: fingerprint,
+      authStrategy: 'none',
+      metadata,
+    };
   }
 
   private async resolveMusicBrainzArtworkFallback(
@@ -637,7 +612,7 @@ export class MediaArtworkService {
         ];
 
         for (const candidateResource of candidateResources) {
-          const resource = await this.fetchPublicArtworkResource(
+          const resource = this.buildPublicArtworkResource(
             fingerprint,
             candidateResource.url,
             candidateResource.metadata
@@ -648,10 +623,7 @@ export class MediaArtworkService {
 
           this.lookupCache.set(lookupKey, {
             expiresAt: Date.now() + MUSICBRAINZ_LOOKUP_TTL_MS,
-            resource: {
-              ...resource,
-              url: candidateResource.url,
-            },
+            resource,
           });
           return resource;
         }
@@ -813,19 +785,9 @@ export class MediaArtworkService {
           return cacheFallback;
         }
 
-        const musicBrainzFallback = await this.resolveMusicBrainzArtworkFallback(
-          fingerprint,
-          attrs
-        );
-        if (musicBrainzFallback) {
-          return musicBrainzFallback;
-        }
-
-        this.negativeCache.set(fingerprint, Date.now() + NEGATIVE_CACHE_TTL_MS);
         return {
           ...resolved,
-          kind: 'unavailable',
-          url: undefined,
+          cacheKey: fingerprint,
         };
       }
 
@@ -852,16 +814,9 @@ export class MediaArtworkService {
         return cacheFallback;
       }
 
-      const musicBrainzFallback = await this.resolveMusicBrainzArtworkFallback(fingerprint, attrs);
-      if (musicBrainzFallback) {
-        return musicBrainzFallback;
-      }
-
-      this.negativeCache.set(fingerprint, Date.now() + NEGATIVE_CACHE_TTL_MS);
       return {
         ...resolved,
-        kind: 'unavailable',
-        url: undefined,
+        cacheKey: fingerprint,
       };
     }
   }

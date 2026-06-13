@@ -3,7 +3,11 @@ import {
   getIntegrationHistoryMessageClient,
   supportsIntegrationEnergyStatistics,
 } from '@navet/app/services/integration-history.service';
+import { settingsSelectors } from '@navet/app/stores/selectors';
+import { useSettingsStore } from '@navet/app/stores/settings-store';
+import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { useEffect, useRef, useState } from 'react';
+import { resolveDashboardPerformanceProfile } from '../../dashboard/hooks/use-dashboard-performance-mode';
 import { getCachedEnergyStatistics } from '../services/energy-statistics-cache';
 import { getPowerStatisticsHistory } from '../services/energy-statistics-service';
 import type { EnergySeriesPoint } from '../types/energy.types';
@@ -73,6 +77,17 @@ export function useEnergyLoadHistory(
   const [points, setPoints] = useState<EnergySeriesPoint[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const supportsStatistics = supportsIntegrationEnergyStatistics(entityId);
+  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
+  const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
+  const performanceProfile = resolveDashboardPerformanceProfile({
+    activeSection: 'energy',
+    deviceTier: detectDeviceTier(),
+    effectsQuality,
+    isEditMode: false,
+    lowPowerMode,
+    visibleCardCount: 1,
+    visibleDevices: [],
+  });
 
   useEffect(() => {
     const fallbackSeedKey = entityId ?? `load:${Math.round(fallbackCurrentLoadW)}`;
@@ -119,14 +134,23 @@ export function useEnergyLoadHistory(
     }
 
     void fetchHistory();
-    timerRef.current = setInterval(() => void fetchHistory(), REFRESH_MS);
+    timerRef.current = setInterval(
+      () => void fetchHistory(),
+      performanceProfile.reducePolling ? REFRESH_MS * 2 : REFRESH_MS
+    );
 
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
     };
-  }, [enabled, entityId, fallbackCurrentLoadW, supportsStatistics]);
+  }, [
+    enabled,
+    entityId,
+    fallbackCurrentLoadW,
+    performanceProfile.reducePolling,
+    supportsStatistics,
+  ]);
 
   return points;
 }

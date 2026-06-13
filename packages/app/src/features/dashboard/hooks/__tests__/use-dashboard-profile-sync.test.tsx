@@ -304,7 +304,8 @@ describe('useDashboardProfileSync', () => {
       expect.objectContaining({
         classNames: expect.objectContaining({
           toast: expect.stringContaining('sm:min-w-[29rem]'),
-          title: expect.stringContaining('whitespace-nowrap'),
+          title: expect.stringContaining('whitespace-normal'),
+          content: expect.stringContaining('basis-full'),
         }),
       })
     );
