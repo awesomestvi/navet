@@ -61,8 +61,8 @@ repo must not contain `repository.yaml`.
 
 ## Channels
 
-- `edge`: published from manual edge publishes
-- `dev`: published from manual edge publishes and immutable dev tags
+- `edge`: published from Navet Dev publishes
+- `dev`: published from Navet Dev publishes
 - `beta`: published from prerelease tags
 - `latest`: published from stable tags only
 - `sha-*`: immutable publish trace for every artifact push
@@ -70,6 +70,7 @@ repo must not contain `repository.yaml`.
 Standalone app image tags:
 
 - edge: `edge`, `dev`, `sha-*`
+- dev tag: exact `0.x.y-dev.YYYYMMDDHHMMSS`, `edge`, `dev`, `sha-*`
 - prerelease: exact `vX.Y.Z-beta.N` or `vX.Y.Z-rc.N`, `beta`, `sha-*`
 - stable: exact `vX.Y.Z`, `X.Y`, `latest`, `sha-*`
 
@@ -98,31 +99,6 @@ Visible but non-blocking:
 
 - Tier 3 broad regression coverage
 
-### Dev publish
-
-`/.github/workflows/edge-publish.yml`
-
-Trigger:
-
-- manual workflow dispatch
-
-Behavior:
-
-- requires Tier 1 validation
-- generates an exact `0.x.y-dev.YYYYMMDDHHMMSS` build version from the current `main` commit at
-  workflow runtime
-- publishes standalone app edge artifacts
-- publishes add-on edge artifacts, including the exact dev version tag plus the moving `edge` and `dev` aliases
-- exports the current HACS payload into `awesomestvi/navet-hacs` and pushes it to `main`
-- uses a GitHub App token for `awesomestvi/navet-hacs` checkout and push
-- pins Node 22 anywhere the workflow runs repo JavaScript
-- does not create a GitHub release
-- does not update `latest`
-
-Expected dev version shape:
-
-- `0.x.y-dev.YYYYMMDDHHMMSS`
-
 ### Dev tag publish
 
 `/.github/workflows/dev-tag-publish.yml`
@@ -137,9 +113,11 @@ Behavior:
 - creates the exact `platform/home-assistant/addons/navet-dev/config.yaml` version commit on `main`
 - creates the matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` tag from that commit
 - validates that the committed Navet Dev version and created tag match
-- publishes immutable standalone and add-on dev-tag images for that exact dev version
+- publishes immutable standalone dev-tag images for that exact dev version and refreshes the moving standalone `edge` and `dev` aliases
+- publishes immutable add-on dev-tag images for that exact dev version and refreshes the moving add-on `edge` and `dev` aliases
 - creates a GitHub prerelease for the dev tag
-- does not move `latest`, `beta`, `edge`, or `dev`
+- expected dev version shape: `0.x.y-dev.YYYYMMDDHHMMSS`
+- does not move `latest` or `beta`
 - does not sync HACS or create a custom-panel release artifact
 
 ### Release publish

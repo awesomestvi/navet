@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.5 - 2026-06-14
+
+## Fixed
+
+- Homey sign-in now recovers more reliably in standalone and Docker installs when the provider session handoff needs a fallback path.
+- Media cards in standalone Docker installs now apply artwork-derived accent colors more reliably instead of missing the intended palette.
+
+## Improved
+
+- First-run onboarding now includes wallpaper theme selection, which makes initial dashboard setup more polished and easier to personalize.
+
 ## 0.7.4 - 2026-06-14
 
 ## Fixed

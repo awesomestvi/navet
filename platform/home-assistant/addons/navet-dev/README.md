@@ -5,7 +5,7 @@ This directory is the monorepo source for the add-on published from `awesomestvi
 
 ## Current Behavior
 
-- pulls the current dev `Navet Dev` add-on image published from manual edge publishes
+- pulls the current dev `Navet Dev` add-on image published from the Navet Dev workflow
 - uses the authenticated Home Assistant Ingress session
 - does not require manual Home Assistant URL or token entry
 - supports optional `dashboard_config_url` import on first launch
@@ -20,7 +20,7 @@ ghcr.io/awesomestvi/{arch}-navet-addon:0.x.y-dev.YYYYMMDDHHMMSS
 `platform/home-assistant/addons/navet-dev/config.yaml` should move only through the Navet Dev
 publish flow so the committed `0.x.y-dev.YYYYMMDDHHMMSS` value always corresponds to a published
 immutable add-on image. Use `pnpm release:dev-version` only when you intentionally need to refresh
-the dev add-on metadata outside that workflow. Each manual edge publish uses that committed dev
+the dev add-on metadata outside that workflow. Each Navet Dev publish uses that committed dev
 version and refreshes the `dev` and `edge` tags as moving aliases for that same image.
 
 If you want an immutable Navet Dev publish, the local helper command is:

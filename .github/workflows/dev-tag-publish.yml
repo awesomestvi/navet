@@ -128,6 +128,8 @@ jobs:
           {
             echo "value<<EOF"
             echo "$IMAGE:${{ needs.prepare-dev-release.outputs.dev_version }}"
+            echo "$IMAGE:edge"
+            echo "$IMAGE:dev"
             echo "$IMAGE:sha-${{ needs.prepare-dev-release.outputs.release_sha_short }}"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
@@ -209,6 +211,8 @@ jobs:
           {
             echo "value<<EOF"
             echo "$IMAGE:$VERSION"
+            echo "$IMAGE:edge"
+            echo "$IMAGE:dev"
             echo "$IMAGE:sha-${{ needs.prepare-dev-release.outputs.release_sha_short }}"
             echo "EOF"
             echo "version=$VERSION"

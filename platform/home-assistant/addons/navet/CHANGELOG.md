@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.5
+
+- Updated Navet to `0.7.5`
+- Fixed Homey sign-in recovery for standalone and Docker installs
+- Fixed missing artwork accent colors on media cards in standalone Docker installs
+- Improved onboarding with wallpaper theme selection during setup
+
 ## 0.7.4
 
 - Updated Navet to `0.7.4`
