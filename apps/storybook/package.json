@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "storybook": "storybook dev --ci -c ./.storybook",
+    "storybook": "storybook dev --ci --port 6006 -c ./.storybook",
     "build": "storybook build -c ./.storybook -o ./dist"
   }
 }

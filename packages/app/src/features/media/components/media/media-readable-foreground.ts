@@ -174,70 +174,107 @@ function getDarkAccentBaseCandidates(palette: MediaArtworkPalette, backgroundCol
   );
 }
 
-function getArtworkAccentForegroundCandidates(
+function buildAccentFamilyCandidates(
+  accentBase: string,
   palette: MediaArtworkPalette,
-  backgroundColor: string
+  prefersBrightAccent: boolean
 ) {
-  const accentBaseCandidates = getDarkAccentBaseCandidates(palette, backgroundColor);
-  const title: string[] = [];
-  const subtitle: string[] = [];
-  const backgroundLuminance = getLuminance(backgroundColor);
-  const prefersBrightAccent = backgroundLuminance < 0.34;
+  const titleAccent = prefersBrightAccent
+    ? mixColors(accentBase, 'rgb(255, 255, 255)', 0.16)
+    : mixColors(accentBase, 'rgb(0, 0, 0)', 0.12);
+  const titleAccentDeep = prefersBrightAccent
+    ? mixColors(accentBase, 'rgb(255, 255, 255)', 0.28)
+    : mixColors(accentBase, 'rgb(0, 0, 0)', 0.24);
+  const subtitleAccent = prefersBrightAccent
+    ? mixColors(accentBase, 'rgb(255, 255, 255)', 0.22)
+    : mixColors(accentBase, 'rgb(0, 0, 0)', 0.18);
+  const subtitleAccentDeep = prefersBrightAccent
+    ? mixColors(accentBase, 'rgb(255, 255, 255)', 0.34)
+    : mixColors(accentBase, 'rgb(0, 0, 0)', 0.28);
+  const groundedAccent = mixColors(accentBase, palette.gradientEnd, 0.08);
 
-  for (const accentBase of accentBaseCandidates) {
-    const titleAccent = prefersBrightAccent
-      ? mixColors(accentBase, 'rgb(255, 255, 255)', 0.16)
-      : mixColors(accentBase, 'rgb(0, 0, 0)', 0.12);
-    const titleAccentDeep = prefersBrightAccent
-      ? mixColors(accentBase, 'rgb(255, 255, 255)', 0.28)
-      : mixColors(accentBase, 'rgb(0, 0, 0)', 0.24);
-    const subtitleAccent = prefersBrightAccent
-      ? mixColors(accentBase, 'rgb(255, 255, 255)', 0.22)
-      : mixColors(accentBase, 'rgb(0, 0, 0)', 0.18);
-    const subtitleAccentDeep = prefersBrightAccent
-      ? mixColors(accentBase, 'rgb(255, 255, 255)', 0.34)
-      : mixColors(accentBase, 'rgb(0, 0, 0)', 0.28);
-    const groundedAccent = mixColors(accentBase, palette.gradientEnd, 0.08);
+  if (prefersBrightAccent) {
+    return {
+      title: Array.from(
+        new Set([
+          titleAccentDeep,
+          titleAccent,
+          accentBase,
+          mixColors(accentBase, 'rgb(255, 255, 255)', 0.42),
+          mixColors(groundedAccent, 'rgb(255, 255, 255)', 0.24),
+        ])
+      ),
+      subtitle: Array.from(
+        new Set([
+          subtitleAccentDeep,
+          subtitleAccent,
+          titleAccentDeep,
+          mixColors(accentBase, 'rgb(255, 255, 255)', 0.42),
+          mixColors(groundedAccent, 'rgb(255, 255, 255)', 0.3),
+        ])
+      ),
+    };
+  }
 
-    if (prefersBrightAccent) {
-      title.push(
-        titleAccentDeep,
-        titleAccent,
-        accentBase,
-        mixColors(accentBase, 'rgb(255, 255, 255)', 0.42),
-        mixColors(groundedAccent, 'rgb(255, 255, 255)', 0.24)
-      );
-      subtitle.push(
-        subtitleAccentDeep,
-        subtitleAccent,
-        titleAccentDeep,
-        mixColors(accentBase, 'rgb(255, 255, 255)', 0.42),
-        mixColors(groundedAccent, 'rgb(255, 255, 255)', 0.3)
-      );
-    } else {
-      title.push(
+  return {
+    title: Array.from(
+      new Set([
         accentBase,
         titleAccent,
         titleAccentDeep,
         darkenColor(accentBase, 0.28),
         mixColors(groundedAccent, 'rgb(0, 0, 0)', 0.18),
-        mixColors(accentBase, 'rgb(0, 0, 0)', 0.36)
-      );
-      subtitle.push(
+        mixColors(accentBase, 'rgb(0, 0, 0)', 0.36),
+      ])
+    ),
+    subtitle: Array.from(
+      new Set([
         subtitleAccent,
         subtitleAccentDeep,
         titleAccentDeep,
         mixColors(groundedAccent, 'rgb(0, 0, 0)', 0.24),
-        mixColors(accentBase, 'rgb(0, 0, 0)', 0.36)
-      );
+        mixColors(accentBase, 'rgb(0, 0, 0)', 0.36),
+      ])
+    ),
+  };
+}
+
+function findReadableAccentFamily(
+  palette: MediaArtworkPalette,
+  backgroundColor: string,
+  titleContrastTarget: number,
+  subtitleContrastTarget: number
+) {
+  const accentBaseCandidates = getDarkAccentBaseCandidates(palette, backgroundColor);
+  const prefersBrightAccent = getLuminance(backgroundColor) < 0.34;
+
+  for (const accentBase of accentBaseCandidates) {
+    if (getSaturation(accentBase) < 0.16) {
+      continue;
+    }
+
+    const family = buildAccentFamilyCandidates(accentBase, palette, prefersBrightAccent);
+    const titleColor = findReadableDarkColor(backgroundColor, family.title, titleContrastTarget);
+    const subtitleColor = findReadableDarkColor(
+      backgroundColor,
+      family.subtitle,
+      subtitleContrastTarget
+    );
+    const titleContrast = getContrastRatio(titleColor, backgroundColor);
+    const subtitleContrast = getContrastRatio(subtitleColor, backgroundColor);
+
+    if (titleContrast >= titleContrastTarget && subtitleContrast >= subtitleContrastTarget) {
+      return {
+        accentBase,
+        titleColor,
+        subtitleColor,
+        titleContrast,
+        subtitleContrast,
+      };
     }
   }
 
-  return {
-    accentBase: accentBaseCandidates[0] ?? palette.vibrant,
-    title: Array.from(new Set(title)),
-    subtitle: Array.from(new Set(subtitle)),
-  };
+  return null;
 }
 
 export function getMediaReadableForeground({
@@ -267,16 +304,11 @@ export function getMediaReadableForeground({
   const backgroundColor = backgroundColorOverride ?? getForegroundReferenceBackground(palette);
   const titleContrastTarget = 4.5;
   const subtitleContrastTarget = 4.5;
-  const accentCandidates = getArtworkAccentForegroundCandidates(palette, backgroundColor);
   const darkCandidates = getArtworkDarkForegroundCandidates(palette);
-  const accentTitleColor = findReadableDarkColor(
+  const readableAccentFamily = findReadableAccentFamily(
+    palette,
     backgroundColor,
-    accentCandidates.title,
-    titleContrastTarget
-  );
-  const accentSubtitleColor = findReadableDarkColor(
-    backgroundColor,
-    accentCandidates.subtitle,
+    titleContrastTarget,
     subtitleContrastTarget
   );
   const darkTitleColor = findReadableDarkColor(
@@ -291,37 +323,34 @@ export function getMediaReadableForeground({
   );
   const currentTitleContrast = getContrastRatio(titleColor, backgroundColor);
   const currentSubtitleContrast = getContrastRatio(subtitleColor, backgroundColor);
-  const accentTitleContrast = getContrastRatio(accentTitleColor, backgroundColor);
-  const accentSubtitleContrast = getContrastRatio(accentSubtitleColor, backgroundColor);
   const darkTitleContrast = getContrastRatio(darkTitleColor, backgroundColor);
   const darkSubtitleContrast = getContrastRatio(darkSubtitleColor, backgroundColor);
-  const accentFamilyPasses =
-    accentTitleContrast >= titleContrastTarget && accentSubtitleContrast >= subtitleContrastTarget;
   const darkFamilyPasses =
     darkTitleContrast >= titleContrastTarget && darkSubtitleContrast >= subtitleContrastTarget;
   const currentFamilyFails =
     currentTitleContrast < titleContrastTarget || currentSubtitleContrast < subtitleContrastTarget;
   const currentAverageContrast = (currentTitleContrast + currentSubtitleContrast) / 2;
   const darkAverageContrast = (darkTitleContrast + darkSubtitleContrast) / 2;
-  const accentBaseSaturation = getSaturation(accentCandidates.accentBase);
-  const preferAccentFamily = accentFamilyPasses && accentBaseSaturation >= 0.16;
+  const preferAccentFamily = readableAccentFamily !== null;
   const preferDarkFamilyFromSurface =
     !preferAccentFamily && darkAverageContrast > currentAverageContrast + 1.2;
   const useDarkForegroundFamily =
     darkFamilyPasses && (currentFamilyFails || preferDarkFamilyFromSurface);
   const accentOrDarkTitleColor = preferAccentFamily
-    ? accentTitleColor
+    ? readableAccentFamily.titleColor
     : useDarkForegroundFamily
       ? darkTitleColor
       : titleColor;
   const accentOrDarkSubtitleColor = preferAccentFamily
-    ? accentSubtitleColor
+    ? readableAccentFamily.subtitleColor
     : useDarkForegroundFamily
       ? darkSubtitleColor
       : subtitleColor;
-  const resolvedTitleColor = preferAccentFamily ? accentTitleColor : accentOrDarkTitleColor;
+  const resolvedTitleColor = preferAccentFamily
+    ? readableAccentFamily.titleColor
+    : accentOrDarkTitleColor;
   const resolvedSubtitleColor = preferAccentFamily
-    ? accentSubtitleColor
+    ? readableAccentFamily.subtitleColor
     : accentOrDarkSubtitleColor;
   const textShadow = 'none';
 

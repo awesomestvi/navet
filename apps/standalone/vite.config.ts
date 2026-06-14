@@ -1460,12 +1460,22 @@ function homeySessionStorePlugin() {
         }
 
         if (homeys.length === 1) {
-          const selection = await createHomeySession(session.accessToken, homeys[0])
-          session = {
-            ...session,
-            selectedHomeyId: homeys[0].id,
-            homeyBaseUrl: selection.homeyBaseUrl,
-            homeySessionToken: selection.homeySessionToken,
+          try {
+            const selection = await createHomeySession(session.accessToken, homeys[0])
+            session = {
+              ...session,
+              selectedHomeyId: homeys[0].id,
+              homeyBaseUrl: selection.homeyBaseUrl,
+              homeySessionToken: selection.homeySessionToken,
+            }
+          } catch {
+            session = {
+              ...session,
+              selectedHomeyId: homeys[0].id,
+              homeyBaseUrl:
+                homeys[0].localUrlSecure ?? homeys[0].localUrl ?? homeys[0].remoteUrl ?? null,
+              homeySessionToken: null,
+            }
           }
         }
 
@@ -1851,6 +1861,14 @@ export default defineConfig(({ mode }) => {
           },
           workbox: {
             navigateFallback: './index.html',
+            navigateFallbackDenylist: [
+              /^\/__navet_auth__\//,
+              /^\/__navet_homey__\//,
+              /^\/__navet_openhab__\//,
+              /^\/__navet_ha_proxy__\//,
+              /^\/__navet_homey_proxy__\//,
+              /^\/__navet_openhab_proxy__\//,
+            ],
             globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
             globIgnores: ['config.js'],
           },

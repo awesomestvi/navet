@@ -859,6 +859,34 @@ describe('App Home Assistant connection recovery', () => {
     expect(screen.getByText('Choose a Homey')).toBeInTheDocument();
     expect(homeAssistantServiceStub.authenticate).not.toHaveBeenCalled();
   });
+
+  it('shows a Homey chooser when a stored Homey selection has no active Homey session yet', async () => {
+    vi.useRealTimers();
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/__navet_auth__/session')) {
+        return new Response(null, { status: 204 });
+      }
+
+      return new Response(
+        JSON.stringify({
+          userId: 'user-1',
+          homeys: [{ id: 'homey-1', name: 'Living Room Homey' }],
+          selectedHomeyId: 'homey-1',
+          homeyBaseUrl: 'https://homey.example.com',
+          hasActiveHomeySession: false,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    });
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    expect(screen.getByText('Choose a Homey')).toBeInTheDocument();
+    expect(homeAssistantServiceStub.authenticate).not.toHaveBeenCalled();
+  });
 });
 
 function setAuthenticatedSession() {

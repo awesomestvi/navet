@@ -293,9 +293,9 @@
   /* Cut transition/animation durations. Hover feedback and state changes still
      animate, but the GPU spends less time per transition. 150 ms feels instant
      on mid-range hardware while still communicating interactivity. */
-  html[data-effects-quality="medium"] *,
-  html[data-effects-quality="medium"] *::before,
-  html[data-effects-quality="medium"] *::after {
+  html[data-effects-quality="medium"] *:not([data-preserve-animation-duration="true"]),
+  html[data-effects-quality="medium"] *:not([data-preserve-animation-duration="true"])::before,
+  html[data-effects-quality="medium"] *:not([data-preserve-animation-duration="true"])::after {
     /* biome-ignore lint/complexity/noImportantStyles: must cap Tailwind transition/animation durations to reduce GPU workload on mid-range hardware */
     transition-duration: 150ms !important;
     /* biome-ignore lint/complexity/noImportantStyles: must cap Tailwind transition/animation durations to reduce GPU workload on mid-range hardware */

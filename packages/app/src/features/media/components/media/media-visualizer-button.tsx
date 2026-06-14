@@ -30,6 +30,7 @@ export function MediaVisualizerButton({
           {BAR_DELAYS.map((delay, index) => (
             <span
               key={delay}
+              data-preserve-animation-duration="true"
               className={`media-visualizer-bar rounded-full bg-current ${
                 isPlaying ? 'media-visualizer-bar-active' : ''
               } ${index === 1 ? 'h-5 w-[3px]' : index === 2 ? 'h-3 w-[3px]' : 'h-4 w-[3px]'}`}
@@ -57,7 +58,10 @@ export function MediaVisualizerButton({
           }
 
           .media-visualizer-bar-active {
-            animation: navet-media-visualizer 920ms ease-in-out infinite;
+            animation-name: navet-media-visualizer;
+            animation-duration: 920ms !important;
+            animation-timing-function: ease-in-out;
+            animation-iteration-count: infinite;
           }
         `}
       </style>

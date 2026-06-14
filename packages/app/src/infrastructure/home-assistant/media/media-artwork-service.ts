@@ -227,6 +227,19 @@ function extractMediaProxyCacheValue(picture?: string) {
   }
 }
 
+function isSameOriginMediaProxyUrl(resourceUrl?: string | null) {
+  if (!resourceUrl) {
+    return false;
+  }
+
+  return (
+    resourceUrl.startsWith('/api/media_player_proxy/') ||
+    resourceUrl.startsWith('/__navet_ha_proxy__/api/media_player_proxy/') ||
+    resourceUrl.includes('/__navet_ha_proxy__/api/media_player_proxy/') ||
+    resourceUrl.includes('/api/media_player_proxy/')
+  );
+}
+
 function extractYouTubeMusicArtworkUrl(attrs: Record<string, unknown>) {
   const appName = typeof attrs.app_name === 'string' ? attrs.app_name : '';
   const mediaContentId =
@@ -761,8 +774,11 @@ export class MediaArtworkService {
       return resolved;
     }
 
+    const shouldMaterializeSameOriginMediaProxy =
+      resolved.authStrategy === 'none' && isSameOriginMediaProxyUrl(resolved.url);
+
     if (
-      resolved.authStrategy === 'none' ||
+      (resolved.authStrategy === 'none' && !shouldMaterializeSameOriginMediaProxy) ||
       resolved.url.startsWith('blob:') ||
       resolved.url.startsWith('data:')
     ) {
@@ -775,7 +791,7 @@ export class MediaArtworkService {
     try {
       const blob = await this.httpGateway.getBlob({
         url: resolved.url,
-        authStrategy: resolved.authStrategy,
+        authStrategy: shouldMaterializeSameOriginMediaProxy ? 'same_origin' : resolved.authStrategy,
         cache: 'force-cache',
       });
 

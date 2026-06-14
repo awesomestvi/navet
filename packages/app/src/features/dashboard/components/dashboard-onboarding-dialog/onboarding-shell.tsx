@@ -12,7 +12,6 @@ interface OnboardingShellProps {
   textColor: string;
   title: string;
   body: string;
-  welcomeLabel: string;
 }
 
 export function OnboardingShell({
@@ -25,7 +24,6 @@ export function OnboardingShell({
   step: _step,
   textColor,
   title,
-  welcomeLabel,
 }: OnboardingShellProps) {
   return (
     <div
@@ -76,14 +74,7 @@ export function OnboardingShell({
           <div className="mb-4 flex items-center sm:mb-5">
             <img src={getPublicAssetUrl('logo.svg')} alt="" className="h-10 w-10 sm:h-12 sm:w-12" />
           </div>
-          <p
-            className={`text-xs font-semibold uppercase tracking-[0.18em] sm:tracking-[0.24em] ${mutedColor}`}
-          >
-            {welcomeLabel}
-          </p>
-          <h2
-            className={`mt-2 text-[1.75rem] font-semibold tracking-tight sm:mt-3 sm:text-3xl ${textColor}`}
-          >
+          <h2 className={`text-[1.75rem] font-semibold tracking-tight sm:text-3xl ${textColor}`}>
             {title}
           </h2>
           <p className={`mt-2 max-w-2xl text-sm leading-relaxed sm:mt-3 ${mutedColor}`}>{body}</p>

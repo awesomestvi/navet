@@ -1,3 +1,7 @@
+import {
+  type BuiltInWallpaperToken,
+  resolveBuiltInWallpaperToken,
+} from '@navet/app/constants/built-in-wallpapers';
 import { useI18n } from '@navet/app/hooks';
 import type { PrimaryColor, ThemeType } from '@navet/app/hooks/use-theme';
 import { useEffect, useRef, useState } from 'react';
@@ -11,6 +15,7 @@ interface UseOnboardingWizardStepsProps {
   theme: ThemeType;
   primaryColor: PrimaryColor;
   customPrimaryColor: string | null;
+  wallpaper: string | null;
 }
 
 export function useOnboardingWizardSteps({
@@ -21,6 +26,7 @@ export function useOnboardingWizardSteps({
   theme,
   primaryColor,
   customPrimaryColor,
+  wallpaper,
 }: UseOnboardingWizardStepsProps) {
   const { t } = useI18n();
   const [isImporting, setIsImporting] = useState(false);
@@ -30,6 +36,9 @@ export function useOnboardingWizardSteps({
   const [selectedAccent, setSelectedAccent] = useState<PrimaryColor>(primaryColor);
   const [selectedCustomAccent, setSelectedCustomAccent] = useState<string | null>(
     customPrimaryColor
+  );
+  const [selectedWallpaper, setSelectedWallpaper] = useState<BuiltInWallpaperToken | null>(
+    resolveBuiltInWallpaperToken(wallpaper)
   );
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -43,7 +52,8 @@ export function useOnboardingWizardSteps({
     setSelectedTheme(theme);
     setSelectedAccent(primaryColor);
     setSelectedCustomAccent(customPrimaryColor);
-  }, [customPrimaryColor, open, primaryColor, theme]);
+    setSelectedWallpaper(resolveBuiltInWallpaperToken(wallpaper));
+  }, [customPrimaryColor, open, primaryColor, theme, wallpaper]);
 
   useEffect(() => {
     if (phase !== 'closing' || !onClosingAnimationComplete) {
@@ -94,6 +104,7 @@ export function useOnboardingWizardSteps({
     setSelectedTheme(theme);
     setSelectedAccent(primaryColor);
     setSelectedCustomAccent(customPrimaryColor);
+    setSelectedWallpaper(resolveBuiltInWallpaperToken(wallpaper));
     setStep('localization');
   };
 
@@ -118,9 +129,12 @@ export function useOnboardingWizardSteps({
     selectedCustomAccent,
     selectedRoute,
     selectedTheme,
+    selectedWallpaper,
     setSelectedAccent,
     setSelectedCustomAccent,
     setSelectedTheme,
+    setSelectedWallpaper: (nextWallpaper: BuiltInWallpaperToken | null) =>
+      setSelectedWallpaper(nextWallpaper),
     step,
   };
 }

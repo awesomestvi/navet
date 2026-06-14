@@ -1,8 +1,40 @@
 import { ColorInputSwatch } from '@navet/app/components/primitives/color-input-swatch';
+import {
+  BUILT_IN_WALLPAPERS,
+  type BuiltInWallpaperToken,
+  resolveWallpaperPreviewSources,
+} from '@navet/app/constants/built-in-wallpapers';
 import { PRIMARY_COLOR_OPTIONS, THEME_OPTIONS } from '@navet/app/constants/theme-options';
 import type { TranslateFn } from '@navet/app/hooks';
 import type { PrimaryColor, ThemeType } from '@navet/app/hooks/use-theme';
 import { Palette } from 'lucide-react';
+
+function WallpaperPreviewImage({
+  value,
+  alt,
+  className,
+}: {
+  value: string;
+  alt: string;
+  className: string;
+}) {
+  const preview = resolveWallpaperPreviewSources(value);
+  if (!preview) {
+    return null;
+  }
+
+  if (preview.kind === 'custom') {
+    return <img src={preview.imgSrc} alt={alt} className={className} />;
+  }
+
+  return (
+    <picture>
+      <source srcSet={preview.avifSrc} type="image/avif" />
+      <source srcSet={preview.webpSrc} type="image/webp" />
+      <img src={preview.imgSrc} alt={alt} className={className} />
+    </picture>
+  );
+}
 
 export function OnboardingThemeStep({
   accentColor,
@@ -13,9 +45,11 @@ export function OnboardingThemeStep({
   selectedAccent,
   selectedCustomAccent,
   selectedTheme,
+  selectedWallpaper,
   setSelectedAccent,
   setSelectedCustomAccent,
   setSelectedTheme,
+  setSelectedWallpaper,
   staticCardBg,
   textColor,
   t,
@@ -28,9 +62,11 @@ export function OnboardingThemeStep({
   selectedAccent: PrimaryColor;
   selectedCustomAccent: string | null;
   selectedTheme: ThemeType;
+  selectedWallpaper: BuiltInWallpaperToken | null;
   setSelectedAccent: (accent: PrimaryColor) => void;
   setSelectedCustomAccent: (accent: string | null) => void;
   setSelectedTheme: (theme: ThemeType) => void;
+  setSelectedWallpaper: (wallpaper: BuiltInWallpaperToken | null) => void;
   staticCardBg: string;
   textColor: string;
   t: TranslateFn;
@@ -149,6 +185,77 @@ export function OnboardingThemeStep({
                 title={option.label}
                 aria-label={`Select ${option.label} accent color`}
               />
+            );
+          })}
+        </div>
+      </section>
+
+      <section className={sectionCardClassName}>
+        <div>
+          <p className={`text-sm font-semibold ${textColor}`}>
+            {t('settings.appearance.wallpaper.title')}
+          </p>
+          <p className={`mt-0.5 text-sm leading-relaxed ${mutedColor}`}>
+            {t('settings.appearance.wallpaper.description')}
+          </p>
+        </div>
+
+        {selectedWallpaper ? (
+          <div
+            className="mt-4 overflow-hidden rounded-[22px] border"
+            style={{ borderColor: `${accentColor}40` }}
+          >
+            <div className="relative h-28">
+              <WallpaperPreviewImage
+                value={selectedWallpaper}
+                alt={t('settings.appearance.wallpaper.previewAlt')}
+                className="h-full w-full object-cover"
+              />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: `linear-gradient(135deg, ${accentColor}50, ${accentColor}10)`,
+                }}
+              />
+            </div>
+          </div>
+        ) : null}
+
+        <div className="mt-4 flex flex-wrap gap-3">
+          {BUILT_IN_WALLPAPERS.map((option) => {
+            const isActive = selectedWallpaper === option.token;
+
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setSelectedWallpaper(option.token)}
+                aria-pressed={isActive}
+                aria-label={t('settings.appearance.wallpaper.optionAria', { id: option.id })}
+                className="group relative h-14 w-14 overflow-hidden rounded-full border transition-all md:h-16 md:w-16"
+                style={{
+                  borderColor: isActive ? `${accentColor}88` : undefined,
+                  boxShadow: isActive ? `0 0 0 1px ${accentColor}55` : undefined,
+                }}
+              >
+                <WallpaperPreviewImage
+                  value={option.token}
+                  alt=""
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.06]"
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: `linear-gradient(180deg, transparent, ${accentColor}18)`,
+                  }}
+                />
+                {isActive ? (
+                  <div
+                    className="absolute inset-0 rounded-full"
+                    style={{ boxShadow: `inset 0 0 0 2px ${accentColor}` }}
+                  />
+                ) : null}
+              </button>
             );
           })}
         </div>

@@ -2,6 +2,7 @@ import {
   getThemeColorValue,
   sanitizeCustomPrimaryColor,
 } from '@navet/app/components/shared/theme/theme-colors';
+import { resolveBuiltInWallpaperToken } from '@navet/app/constants/built-in-wallpapers';
 import type { PrimaryColor, ThemeType } from '@navet/app/hooks/use-theme';
 import { useSettingsStore } from '@navet/app/stores';
 import { useShallow } from 'zustand/react/shallow';
@@ -20,7 +21,9 @@ export function useDashboardOnboardingController({
   setCustomPrimaryColor,
   setPrimaryColor,
   setTheme,
+  setWallpaper,
   theme,
+  wallpaper,
 }: Pick<
   DashboardOnboardingDialogProps,
   | 'onChooseAll'
@@ -35,7 +38,9 @@ export function useDashboardOnboardingController({
   setCustomPrimaryColor: (color: string | null) => void;
   setPrimaryColor: (color: PrimaryColor) => void;
   setTheme: (theme: ThemeType) => void;
+  setWallpaper: (wallpaper: string | null) => void;
   theme: ThemeType;
+  wallpaper: string | null;
 }) {
   const { language, use24HourTime, temperatureUnit, updateSettings } = useSettingsStore(
     useShallow((state) => ({
@@ -59,9 +64,11 @@ export function useDashboardOnboardingController({
     selectedCustomAccent,
     selectedRoute,
     selectedTheme,
+    selectedWallpaper,
     setSelectedAccent,
     setSelectedCustomAccent,
     setSelectedTheme,
+    setSelectedWallpaper,
     step,
   } = useOnboardingWizardSteps({
     open,
@@ -71,6 +78,7 @@ export function useDashboardOnboardingController({
     theme,
     primaryColor,
     customPrimaryColor,
+    wallpaper,
   });
 
   const previewTheme = step === 'theme' ? selectedTheme : theme;
@@ -84,6 +92,7 @@ export function useDashboardOnboardingController({
     setTheme(selectedTheme);
     setPrimaryColor(selectedAccent);
     setCustomPrimaryColor(sanitizeCustomPrimaryColor(selectedCustomAccent));
+    setWallpaper(resolveBuiltInWallpaperToken(selectedWallpaper) ?? null);
 
     if (selectedRoute === 'all') {
       onChooseAll();
@@ -111,9 +120,11 @@ export function useDashboardOnboardingController({
     selectedAccent,
     selectedCustomAccent,
     selectedTheme,
+    selectedWallpaper,
     setSelectedAccent,
     setSelectedCustomAccent,
     setSelectedTheme,
+    setSelectedWallpaper,
     step,
     temperatureUnit,
     updateSettings,

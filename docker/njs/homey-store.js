@@ -212,8 +212,22 @@ function encodeClientCredentials(clientId, clientSecret) {
 }
 
 function getHomeyBaseUrlCandidates(homey) {
-  const candidates = [homey.localUrlSecure, homey.localUrl, homey.remoteUrl].filter(Boolean);
-  return Array.from(new Set(candidates));
+  const source = [homey.localUrlSecure, homey.localUrl, homey.remoteUrl];
+  const candidates = [];
+  let index;
+
+  for (index = 0; index < source.length; index += 1) {
+    const value = source[index];
+    if (!value) {
+      continue;
+    }
+
+    if (candidates.indexOf(value) === -1) {
+      candidates.push(value);
+    }
+  }
+
+  return candidates;
 }
 
 function cloneWithOverrides(source, overrides) {
@@ -427,18 +441,31 @@ async function handleCallback(r) {
     };
 
     if (homeys.length === 1) {
-      const selection = await createHomeySession(session.accessToken, homeys[0]);
-      session = cloneWithOverrides(session, {
-        selectedHomeyId: homeys[0].id,
-        homeyBaseUrl: selection.homeyBaseUrl,
-        homeySessionToken: selection.homeySessionToken,
-      });
+      try {
+        const selection = await createHomeySession(session.accessToken, homeys[0]);
+        session = cloneWithOverrides(session, {
+          selectedHomeyId: homeys[0].id,
+          homeyBaseUrl: selection.homeyBaseUrl,
+          homeySessionToken: selection.homeySessionToken,
+        });
+      } catch (_error) {
+        session = cloneWithOverrides(session, {
+          selectedHomeyId: homeys[0].id,
+          homeyBaseUrl:
+            homeys[0].localUrlSecure || homeys[0].localUrl || homeys[0].remoteUrl || null,
+          homeySessionToken: null,
+        });
+      }
     }
 
     writeStoredSession(session);
     sendRedirect(r, getRequestOrigin(r) + getNavetReturnPath(oauth) + '?homey_oauth_callback=1');
-  } catch (_error) {
-    sendJson(r, 502, { error: 'Unable to complete Homey OAuth callback' });
+  } catch (error) {
+    const detail =
+      error && typeof error.message === 'string' && error.message.trim()
+        ? error.message.trim()
+        : 'Unknown error';
+    sendJson(r, 502, { error: 'Unable to complete Homey OAuth callback', details: detail });
   }
 }
 
@@ -515,8 +542,12 @@ async function handleSelection(r) {
     });
     writeStoredSession(nextSession);
     sendJson(r, 200, sanitizeSession(nextSession));
-  } catch (_error) {
-    sendJson(r, 502, { error: 'Unable to select Homey' });
+  } catch (error) {
+    const detail =
+      error && typeof error.message === 'string' && error.message.trim()
+        ? error.message.trim()
+        : 'Unknown error';
+    sendJson(r, 502, { error: 'Unable to select Homey', details: detail });
   }
 }
 

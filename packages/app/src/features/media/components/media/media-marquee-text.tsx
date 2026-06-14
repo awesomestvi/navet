@@ -27,6 +27,7 @@ export const MediaMarqueeText = memo(function MediaMarqueeText({
   return (
     <div className="overflow-hidden">
       <div
+        data-preserve-animation-duration="true"
         className={`flex min-w-max items-center whitespace-nowrap motion-safe:animate-[media-track-marquee_18s_linear_infinite] ${className}`}
         style={style}
       >

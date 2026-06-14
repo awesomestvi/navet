@@ -20,6 +20,8 @@ export function DashboardOnboardingDialog({
     setCustomPrimaryColor,
     setPrimaryColor,
     setTheme,
+    setWallpaper,
+    wallpaper,
   } = useTheme();
   const {
     accentColor,
@@ -37,9 +39,11 @@ export function DashboardOnboardingDialog({
     selectedAccent,
     selectedCustomAccent,
     selectedTheme,
+    selectedWallpaper,
     setSelectedAccent,
     setSelectedCustomAccent,
     setSelectedTheme,
+    setSelectedWallpaper,
     step,
     temperatureUnit,
     updateSettings,
@@ -56,7 +60,9 @@ export function DashboardOnboardingDialog({
     setCustomPrimaryColor,
     setPrimaryColor,
     setTheme,
+    setWallpaper,
     theme,
+    wallpaper,
   });
   if (!open) return null;
 
@@ -119,7 +125,6 @@ export function DashboardOnboardingDialog({
             ? t('dashboard.onboarding.body.localization')
             : t('dashboard.onboarding.body.theme')
       }
-      welcomeLabel={t('dashboard.onboarding.welcome')}
     >
       {step === 'route' ? (
         <RouteStep
@@ -162,9 +167,11 @@ export function DashboardOnboardingDialog({
           selectedAccent={selectedAccent}
           selectedCustomAccent={selectedCustomAccent}
           selectedTheme={selectedTheme}
+          selectedWallpaper={selectedWallpaper}
           setSelectedAccent={setSelectedAccent}
           setSelectedCustomAccent={setSelectedCustomAccent}
           setSelectedTheme={setSelectedTheme}
+          setSelectedWallpaper={setSelectedWallpaper}
           staticCardBg={staticCardBg}
           textColor={textColor}
           t={t}
