@@ -301,7 +301,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
         <Dialog.Close asChild>
           <button
             type="button"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/12 bg-white/8 text-white/82 transition-colors hover:bg-white/12 hover:text-white"
+            className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full border border-white/12 bg-white/8 text-white/82 transition-colors hover:bg-white/12 hover:text-white"
             aria-label={t('common.close')}
             style={actionButtonStyle}
           >

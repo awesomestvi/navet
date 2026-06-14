@@ -720,6 +720,7 @@ export const svMessages = {
   'media.search.placeholder': 'Search media',
   'media.room': 'Rum',
   'media.group.title': 'Högtalargrupp',
+  'media.group.action': 'Gruppera högtalare',
   'media.group.attached': 'Anslutna',
   'media.group.available': 'Tillgängliga',
   'media.group.attach': 'Lägg till',
@@ -1293,6 +1294,31 @@ export const svMessages = {
   'widgets.energyNow.settings.group.sources': 'Källor',
   'widgets.energyNow.settings.group.devices': 'Enheter',
   'widgets.energyNow.empty.sparkline': 'Inte tillräckligt med data för att visa sparkline ännu.',
+  'widgets.mediaStack.settings.title': 'Media stack',
+  'widgets.mediaStack.settings.players': 'Media players',
+  'widgets.mediaStack.settings.help': 'Choose which media players this widget can rotate between.',
+  'widgets.mediaStack.settings.noneAvailable': 'No media players are available right now.',
+  'widgets.mediaStack.settings.priority': 'Priority',
+  'widgets.mediaStack.settings.priorityHelp':
+    'When more than one player is active, higher entries win ties.',
+  'widgets.mediaStack.settings.priorityEmpty':
+    'Select at least one media player to define the priority order.',
+  'widgets.mediaStack.settings.priorityPosition': 'Priority {position}',
+  'widgets.mediaStack.settings.idleBehavior': 'Idle behavior',
+  'widgets.mediaStack.settings.idleBehaviorHelp':
+    'Choose what this widget should do when nothing is actively playing.',
+  'widgets.mediaStack.settings.idleBehavior.compact': 'Show a compact fallback card',
+  'widgets.mediaStack.settings.idleBehavior.hidden': 'Hide the widget when idle',
+  'widgets.mediaStack.settings.idleBehavior.top-priority': 'Always show the top-priority player',
+  'widgets.mediaStack.settings.moveUp': 'Move up',
+  'widgets.mediaStack.settings.moveDown': 'Move down',
+  'widgets.mediaStack.badge': 'Stack',
+  'widgets.mediaStack.empty.title': 'No media players selected',
+  'widgets.mediaStack.empty.description':
+    'Pick the media players this widget should surface for the room.',
+  'widgets.mediaStack.empty.unavailableTitle': 'Selected media players unavailable',
+  'widgets.mediaStack.empty.unavailableDescription':
+    'Navet cannot currently resolve any of the selected media players.',
   'widgets.button.title': 'Åtgärdsknapp',
   'widgets.button.labelPlaceholder': 'Knappetikett',
   'widgets.button.servicePlaceholder': 't.ex. scene.turn_on',
@@ -1316,6 +1342,9 @@ export const svMessages = {
   'dashboard.addCard.templates.energyNow.name': 'Energi nu',
   'dashboard.addCard.templates.energyNow.description':
     'Fullskarmsgraf i realtid med aktuell effekt i tydligt fokus.',
+  'dashboard.addCard.templates.mediaStack.name': 'Media Stack',
+  'dashboard.addCard.templates.mediaStack.description':
+    'One media card that surfaces the most relevant player for the room.',
   'dashboard.addCard.templates.button.name': 'Åtgärdsknapp',
   'dashboard.addCard.templates.button.description':
     'Tryck för att aktivera en Home Assistant-tjänst, scen eller skript.',

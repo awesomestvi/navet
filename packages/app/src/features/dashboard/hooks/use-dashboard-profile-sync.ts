@@ -23,7 +23,6 @@ import {
 } from '@navet/app/utils/dashboard-config';
 import { PERSISTED_STATE_EVENT } from '@navet/app/utils/persisted-state-events';
 import { storage } from '@navet/app/utils/storage';
-import { reloadWindow } from '@navet/app/utils/window-reload';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
@@ -31,6 +30,7 @@ import { useShallow } from 'zustand/react/shallow';
 const PROFILE_SAVE_DEBOUNCE_MS = 2000;
 const PROFILE_REMOTE_POLL_INTERVAL_MS = 60_000;
 const PROFILE_REMOTE_POLL_BACKOFF_MS = [60_000, 120_000, 300_000] as const;
+const PROFILE_REMOTE_RELOAD_GUARD_KEY = 'navet-dashboard-profile-reload-guard';
 
 const SYNC_RELEVANT_PERSISTED_KEYS = new Set<string>([
   STORAGE_KEYS.cardSizes,
@@ -66,6 +66,18 @@ function getProfileSignature(profile: DashboardConfigPayload) {
   });
 }
 
+function isRemoteProfileAlreadyActive(
+  profileSignature: string,
+  currentSignature: string | null,
+  metadata: DashboardProfileSyncMetadata
+) {
+  if (profileSignature !== currentSignature) {
+    return false;
+  }
+
+  return profileSignature === metadata.lastSavedSignature || currentSignature !== null;
+}
+
 function getProfileForSync(): DashboardConfigPayload {
   const profile = exportDashboardConfig();
   return {
@@ -95,6 +107,30 @@ function getConflictKey(
   lastModified: string | null
 ) {
   return etag ?? profile.exportedAt ?? lastModified ?? getProfileSignature(profile);
+}
+
+function readReloadGuard() {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  return sessionStorage.getItem(PROFILE_REMOTE_RELOAD_GUARD_KEY);
+}
+
+function writeReloadGuard(conflictKey: string) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  sessionStorage.setItem(PROFILE_REMOTE_RELOAD_GUARD_KEY, conflictKey);
+}
+
+function clearReloadGuard() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  sessionStorage.removeItem(PROFILE_REMOTE_RELOAD_GUARD_KEY);
 }
 
 function getNextPollDelay(failureCount: number) {
@@ -237,8 +273,42 @@ export function useDashboardProfileSync() {
     ) => {
       const profileSignature = getProfileSignature(profile);
       const currentMetadata = readSyncMetadata();
+      const currentSignature = currentSignatureRef.current ?? getCurrentProfileSnapshot().signature;
+      const conflictKey = getConflictKey(profile, metadata.etag, metadata.lastModified);
       const remoteTimestamp = getProfileTimestamp(profile);
       const localTimestamp = Date.parse(currentMetadata.lastAppliedAt ?? '');
+
+      if (isRemoteProfileAlreadyActive(profileSignature, currentSignature, currentMetadata)) {
+        hasPendingLocalChangesRef.current = false;
+        currentSignatureRef.current = profileSignature;
+        clearConflictToast();
+        clearReloadGuard();
+        writeSyncMetadata({
+          ...currentMetadata,
+          lastAppliedAt: profile.exportedAt,
+          lastSavedSignature: profileSignature,
+          lastRemoteVersion: profile.exportedAt,
+          lastRemoteEtag: metadata.etag ?? currentMetadata.lastRemoteEtag,
+          lastRemoteLastModified: metadata.lastModified ?? currentMetadata.lastRemoteLastModified,
+        });
+        return false;
+      }
+
+      if (readReloadGuard() === conflictKey) {
+        hasPendingLocalChangesRef.current = false;
+        currentSignatureRef.current = profileSignature;
+        clearConflictToast();
+        writeSyncMetadata({
+          ...currentMetadata,
+          lastAppliedAt: profile.exportedAt,
+          lastSavedSignature: profileSignature,
+          lastRemoteVersion: profile.exportedAt,
+          lastRemoteEtag: metadata.etag ?? currentMetadata.lastRemoteEtag,
+          lastRemoteLastModified: metadata.lastModified ?? currentMetadata.lastRemoteLastModified,
+        });
+        return false;
+      }
+
       const shouldApply =
         !onboardingCompletedRef.current ||
         !Number.isFinite(localTimestamp) ||
@@ -262,6 +332,7 @@ export function useDashboardProfileSync() {
       hasPendingLocalChangesRef.current = false;
       currentSignatureRef.current = profileSignature;
       clearConflictToast();
+      writeReloadGuard(conflictKey);
       writeSyncMetadata({
         ...currentMetadata,
         lastAppliedAt: profile.exportedAt,
@@ -271,10 +342,10 @@ export function useDashboardProfileSync() {
         lastRemoteLastModified: metadata.lastModified ?? currentMetadata.lastRemoteLastModified,
       });
       importDashboardConfig(profile, { applyNavigation: false });
-      reloadWindow();
+      applyingRemoteProfileRef.current = false;
       return true;
     },
-    [clearConflictToast, updateRemoteMetadata]
+    [clearConflictToast, getCurrentProfileSnapshot, updateRemoteMetadata]
   );
 
   const showConflictToast = useCallback(
@@ -356,6 +427,7 @@ export function useDashboardProfileSync() {
       });
 
       if (result.notModified || !result.profile) {
+        clearReloadGuard();
         schedulePollRef.current(PROFILE_REMOTE_POLL_INTERVAL_MS);
         return;
       }
@@ -366,6 +438,26 @@ export function useDashboardProfileSync() {
         lastModified: result.lastModified,
         conflictKey: getConflictKey(result.profile, result.etag, result.lastModified),
       };
+      const remoteSignature = getProfileSignature(result.profile);
+      const currentSignature = currentSignatureRef.current ?? getCurrentProfileSnapshot().signature;
+      const currentMetadata = readSyncMetadata();
+
+      if (isRemoteProfileAlreadyActive(remoteSignature, currentSignature, currentMetadata)) {
+        hasPendingLocalChangesRef.current = false;
+        currentSignatureRef.current = remoteSignature;
+        clearConflictToast();
+        clearReloadGuard();
+        writeSyncMetadata({
+          ...currentMetadata,
+          lastAppliedAt: result.profile.exportedAt,
+          lastSavedSignature: remoteSignature,
+          lastRemoteVersion: result.profile.exportedAt,
+          lastRemoteEtag: result.etag ?? currentMetadata.lastRemoteEtag,
+          lastRemoteLastModified: result.lastModified ?? currentMetadata.lastRemoteLastModified,
+        });
+        schedulePollRef.current(PROFILE_REMOTE_POLL_INTERVAL_MS);
+        return;
+      }
 
       if (hasPendingLocalChangesRef.current) {
         showConflictToast(remoteProfile);
@@ -378,7 +470,14 @@ export function useDashboardProfileSync() {
         lastModified: result.lastModified,
       });
     },
-    [applyRemoteProfile, shouldRunRemoteChecks, showConflictToast, updateRemoteMetadata]
+    [
+      applyRemoteProfile,
+      clearConflictToast,
+      getCurrentProfileSnapshot,
+      shouldRunRemoteChecks,
+      showConflictToast,
+      updateRemoteMetadata,
+    ]
   );
 
   const schedulePoll = useCallback(
@@ -434,6 +533,7 @@ export function useDashboardProfileSync() {
 
       hasPendingLocalChangesRef.current = false;
       profileSyncAvailableRef.current = true;
+      clearReloadGuard();
       updateRemoteMetadata({
         etag: result.etag,
         lastModified: result.lastModified,

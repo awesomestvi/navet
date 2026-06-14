@@ -9,6 +9,7 @@ import type { BatteryOverviewWidgetData } from './widgets/battery-overview-widge
 import type { EnergyNowWidgetData } from './widgets/energy-now-dashboard-widget';
 import type { InfoWidgetData } from './widgets/info-widget';
 import type { MapMarker } from './widgets/map-types';
+import type { MediaStackWidgetData } from './widgets/media-stack-widget-data';
 import type { PhotoFrameImage } from './widgets/photo-frame-image';
 import type { PhotoFrameSourceMode } from './widgets/photo-frame-types';
 import type { UpsWidgetData } from './widgets/ups-widget';
@@ -63,6 +64,11 @@ const UpsWidget = lazy(async () => {
 const EnergyNowDashboardWidget = lazy(async () => {
   const module = await import('./widgets/energy-now-dashboard-widget');
   return { default: module.EnergyNowDashboardWidget };
+});
+
+const MediaStackWidget = lazy(async () => {
+  const module = await import('./widgets/media-stack-widget');
+  return { default: module.MediaStackWidget };
 });
 
 const ButtonWidget = lazy(async () => {
@@ -237,6 +243,18 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           data={card.data as EnergyNowWidgetData | undefined}
           onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
           isEditMode={isEditMode}
+          openSettingsRequestKey={openSettingsRequestKey}
+        />
+      );
+      break;
+    case 'media-stack':
+      widgetContent = (
+        <MediaStackWidget
+          size={card.size}
+          room={card.room}
+          onRoomChange={(room) => handleCardUpdate(card.id, { room })}
+          data={card.data as MediaStackWidgetData | undefined}
+          onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
           openSettingsRequestKey={openSettingsRequestKey}
         />
       );

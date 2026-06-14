@@ -38,6 +38,7 @@ Navet currently uses pre-`1.0` semantic versioning.
 - `package.json` is the canonical app version
 - `packages/app/src/constants/app-version.ts` is the app-facing version surface
 - `CHANGELOG.md` tracks released history
+- immutable Navet Dev versions come from the publish workflow and `navet-dev-*` tag, not from committed add-on metadata
 
 ## Release Notes Rule
 

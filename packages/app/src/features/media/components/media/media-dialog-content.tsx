@@ -2,8 +2,9 @@ import { CardDialogTabList, CardDialogTabTrigger } from '@navet/app/components/p
 import { ModalSurface } from '@navet/app/components/primitives/modal-surface';
 import { TabPanel, Tabs } from '@navet/app/components/primitives/tabs';
 import { useI18n } from '@navet/app/hooks';
-import { Sliders, Tv2, Users } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import * as Popover from '@radix-ui/react-popover';
+import { Layers3, Sliders, Speaker, Tv2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MediaDialogProps } from './media-dialog.types';
 import {
   MediaDialogArtwork,
@@ -14,6 +15,7 @@ import {
   MediaDialogUpNext,
   MediaDialogVolumeControl,
 } from './media-dialog-sections';
+import { MediaStackDialogSettings } from './media-stack-dialog-settings';
 import type { MediaDialogController } from './use-media-dialog-controller';
 
 interface MediaDialogContentProps extends MediaDialogProps {
@@ -97,7 +99,9 @@ export function MediaDialogContent({
   entityType,
   elapsedSeconds,
   entityId,
+  initialTab,
   room,
+  mediaStackSettings,
   groupMembers,
   isMuted,
   isOpen,
@@ -131,14 +135,71 @@ export function MediaDialogContent({
   volume,
 }: MediaDialogContentProps) {
   const { t } = useI18n();
+  const groupingTriggerRef = useRef<HTMLButtonElement | null>(null);
   const isTvDevice = deviceClass?.trim().toLowerCase() === 'tv';
   const defaultTvDialogMode = useMemo(
     () => resolveTvDialogMode({ artist, entityName, source, title }),
     [artist, entityName, source, title]
   );
-  const [activeTab, setActiveTab] = useState<string>(isTvDevice ? defaultTvDialogMode : 'playback');
+  const defaultTab = useMemo(() => {
+    if (initialTab) {
+      return initialTab;
+    }
+
+    return isTvDevice ? defaultTvDialogMode : 'playback';
+  }, [defaultTvDialogMode, initialTab, isTvDevice]);
+  const [activeTab, setActiveTab] = useState<string>(defaultTab);
+  const [isGroupingPickerOpen, setIsGroupingPickerOpen] = useState(false);
   const hasGroupingControls = supportsGrouping;
-  const shouldRenderTabs = isTvDevice || hasGroupingControls;
+  const shouldRenderTabs = isTvDevice || Boolean(mediaStackSettings);
+  const groupingLabel = groupMembers.length > 1 ? t('media.group.title') : t('media.group.action');
+  const groupingTrigger = hasGroupingControls ? (
+    <button
+      ref={groupingTriggerRef}
+      type="button"
+      aria-label={groupingLabel}
+      aria-pressed={isGroupingPickerOpen}
+      aria-expanded={isGroupingPickerOpen}
+      onClick={() => setIsGroupingPickerOpen((current) => !current)}
+      className={`relative inline-flex h-[38px] items-center justify-center gap-2 rounded-full border px-3 transition-colors ${
+        controller.surface.border
+      } ${
+        isGroupingPickerOpen
+          ? controller.isGlass
+            ? 'bg-white/16'
+            : 'bg-white/12'
+          : controller.isGlass
+            ? 'bg-white/8 hover:bg-white/12'
+            : 'bg-white/[0.05] hover:bg-white/[0.09]'
+      }`}
+      style={controller.readableForeground.titleStyle}
+    >
+      <Speaker className="h-[0.95rem] w-[0.95rem]" />
+      <span className="text-xs font-medium leading-none tracking-[0.01em]">{groupingLabel}</span>
+      {groupMembers.length > 1 ? (
+        <span
+          className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full px-1 text-[0.62rem] font-semibold"
+          style={{
+            backgroundColor: controller.palette.vibrant,
+            color: controller.readableForeground.titleColor,
+          }}
+        >
+          {groupMembers.length}
+        </span>
+      ) : null}
+    </button>
+  ) : null;
+  const groupingPanel = supportsGrouping ? (
+    <MediaDialogGrouping
+      availableGroupingPlayers={availableGroupingPlayers}
+      controller={controller}
+      entityId={entityId}
+      entityName={entityName}
+      groupMembers={groupMembers}
+      onAttachGroupMember={onAttachGroupMember}
+      onDetachGroupMember={onDetachGroupMember}
+    />
+  ) : null;
 
   const musicPlaybackPanel = (
     <div className="space-y-6 pt-2 md:space-y-7 md:pt-3">
@@ -179,6 +240,43 @@ export function MediaDialogContent({
         volume={volume}
       />
       {upNextTitle ? <MediaDialogUpNext controller={controller} title={upNextTitle} /> : null}
+      {hasGroupingControls ? (
+        <div className="flex justify-center pt-3">
+          <Popover.Root open={isGroupingPickerOpen} onOpenChange={setIsGroupingPickerOpen}>
+            <Popover.Anchor asChild>{groupingTrigger}</Popover.Anchor>
+            {groupingPanel ? (
+              <Popover.Portal>
+                <Popover.Content
+                  side="top"
+                  align="center"
+                  sideOffset={10}
+                  className="z-[920] w-[min(19.5rem,calc(100vw-2.5rem))] outline-none"
+                  onInteractOutside={(event) => {
+                    if (
+                      groupingTriggerRef.current &&
+                      event.target instanceof Node &&
+                      groupingTriggerRef.current.contains(event.target)
+                    ) {
+                      event.preventDefault();
+                    }
+                  }}
+                >
+                  {groupingPanel}
+                  <Popover.Arrow
+                    width={18}
+                    height={10}
+                    className={
+                      controller.isGlass
+                        ? 'fill-slate-700/90 stroke-white/22 [stroke-width:1.25] drop-shadow-[0_-2px_6px_rgba(0,0,0,0.22)]'
+                        : 'fill-[rgba(24,24,27,0.96)] stroke-[rgba(161,161,170,0.18)] [stroke-width:1.25] drop-shadow-[0_-2px_6px_rgba(0,0,0,0.28)]'
+                    }
+                  />
+                </Popover.Content>
+              </Popover.Portal>
+            ) : null}
+          </Popover.Root>
+        </div>
+      ) : null}
     </div>
   );
   const tvControlsPanel = (
@@ -204,26 +302,45 @@ export function MediaDialogContent({
       />
     </div>
   );
-  const groupingPanel = supportsGrouping ? (
-    <MediaDialogGrouping
-      availableGroupingPlayers={availableGroupingPlayers}
-      controller={controller}
-      entityId={entityId}
-      groupMembers={groupMembers}
-      onAttachGroupMember={onAttachGroupMember}
-      onDetachGroupMember={onDetachGroupMember}
-    />
+  const stackSettingsPanel = mediaStackSettings ? (
+    <MediaStackDialogSettings controller={controller} settings={mediaStackSettings} />
   ) : null;
 
   useEffect(() => {
     setActiveTab((current) => {
-      if (isTvDevice) {
-        return current === 'group' ? current : defaultTvDialogMode;
+      if (mediaStackSettings && current === 'stack') {
+        return current;
       }
 
-      return current === 'tv' ? 'playback' : current;
+      if (isTvDevice) {
+        if (current === 'group') {
+          return current;
+        }
+
+        if (current === 'stack' && mediaStackSettings) {
+          return current;
+        }
+
+        return defaultTvDialogMode;
+      }
+
+      if (mediaStackSettings) {
+        return current === 'tv' ? 'stack' : current;
+      }
+
+      return current === 'tv' || current === 'stack' ? 'playback' : current;
     });
-  }, [defaultTvDialogMode, entityId, isTvDevice]);
+  }, [defaultTab, defaultTvDialogMode, entityId, isTvDevice, mediaStackSettings]);
+
+  useEffect(() => {
+    setIsGroupingPickerOpen(false);
+  }, [entityId, isOpen, supportsGrouping]);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   return (
     <ModalSurface
@@ -233,7 +350,7 @@ export function MediaDialogContent({
       description={entityType}
       bodyClassName="media-dialog-body relative flex h-full min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-6 py-6 max-sm:px-3.5 max-sm:pt-2 max-sm:pb-3 md:px-7 md:py-6"
       overlayClassName={`animate-in fade-in ${controller.surface.dialogBackdrop}`}
-      contentClassName="flex h-auto max-h-[88vh] w-[min(92vw,30rem)] flex-col max-sm:!h-[min(88dvh,calc(100dvh-1rem))] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+      contentClassName="flex h-auto max-h-[88vh] w-[min(92vw,27rem)] flex-col max-sm:!h-[min(88dvh,calc(100dvh-1rem))] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
       contentStyle={controller.dialogSurfaceStyle}
     >
       <div className="relative space-y-6">
@@ -245,69 +362,63 @@ export function MediaDialogContent({
           room={room}
         />
 
-        {shouldRenderTabs ? (
-          <Tabs
-            value={activeTab}
-            defaultValue={isTvDevice ? defaultTvDialogMode : 'playback'}
-            onValueChange={setActiveTab}
-          >
-            {isTvDevice ? (
+        <div className="relative">
+          {shouldRenderTabs ? (
+            <Tabs value={activeTab} defaultValue={defaultTab} onValueChange={setActiveTab}>
               <TabPanel value="tv" className="mt-0">
                 {tvControlsPanel}
               </TabPanel>
-            ) : null}
-            <TabPanel value="playback" className="mt-0">
-              {musicPlaybackPanel}
-            </TabPanel>
-            {hasGroupingControls ? (
-              <TabPanel value="group" className="mt-0">
-                {groupingPanel}
+              <TabPanel value="playback" className="mt-0">
+                {musicPlaybackPanel}
               </TabPanel>
-            ) : null}
+              {stackSettingsPanel ? (
+                <TabPanel value="stack" className="mt-0">
+                  {stackSettingsPanel}
+                </TabPanel>
+              ) : null}
 
-            <div className="flex justify-center pt-1">
-              <CardDialogTabList
-                className={`rounded-full border p-1 ${controller.surface.border} ${
-                  controller.isGlass ? 'bg-white/10' : 'bg-white/[0.06]'
-                }`}
-              >
-                {isTvDevice ? (
+              <div className="flex justify-center pt-1">
+                <CardDialogTabList>
+                  {isTvDevice ? (
+                    <CardDialogTabTrigger
+                      active={activeTab === 'tv'}
+                      className="min-w-[4.75rem] justify-center rounded-full"
+                      icon={Tv2}
+                      onClick={() => setActiveTab('tv')}
+                      style={controller.readableForeground.titleStyle}
+                    >
+                      {t('media.type.tv')}
+                    </CardDialogTabTrigger>
+                  ) : null}
                   <CardDialogTabTrigger
-                    active={activeTab === 'tv'}
-                    className="min-w-[4.75rem] justify-center rounded-full"
-                    icon={Tv2}
-                    onClick={() => setActiveTab('tv')}
+                    active={activeTab === 'playback'}
+                    className="min-w-[5.5rem] justify-center rounded-full"
+                    icon={Sliders}
+                    onClick={() => setActiveTab('playback')}
                     style={controller.readableForeground.titleStyle}
                   >
-                    {t('media.type.tv')}
+                    {t('media.tabs.playback')}
                   </CardDialogTabTrigger>
-                ) : null}
-                <CardDialogTabTrigger
-                  active={activeTab === 'playback'}
-                  className="min-w-[5.5rem] justify-center rounded-full"
-                  icon={Sliders}
-                  onClick={() => setActiveTab('playback')}
-                  style={controller.readableForeground.titleStyle}
-                >
-                  {t('media.tabs.playback')}
-                </CardDialogTabTrigger>
-                {hasGroupingControls ? (
-                  <CardDialogTabTrigger
-                    active={activeTab === 'group'}
-                    className="min-w-[5rem] justify-center rounded-full"
-                    icon={Users}
-                    onClick={() => setActiveTab('group')}
-                    style={controller.readableForeground.titleStyle}
-                  >
-                    {t('media.tabs.group')}
-                  </CardDialogTabTrigger>
-                ) : null}
-              </CardDialogTabList>
-            </div>
-          </Tabs>
-        ) : (
-          musicPlaybackPanel
-        )}
+                  {stackSettingsPanel ? (
+                    <CardDialogTabTrigger
+                      active={activeTab === 'stack'}
+                      className="min-w-[5.5rem] justify-center rounded-full"
+                      icon={Layers3}
+                      onClick={() => setActiveTab('stack')}
+                      style={controller.readableForeground.titleStyle}
+                    >
+                      {t('dashboard.addCard.templates.mediaStack.name')}
+                    </CardDialogTabTrigger>
+                  ) : null}
+                </CardDialogTabList>
+              </div>
+            </Tabs>
+          ) : mediaStackSettings ? (
+            stackSettingsPanel
+          ) : (
+            musicPlaybackPanel
+          )}
+        </div>
       </div>
     </ModalSurface>
   );

@@ -41,7 +41,7 @@ pnpm release:check         # validate release-managed files and release surfaces
 pnpm release:linear        # fetch release-scope Linear issues
 pnpm release:notes         # extract release-note candidates
 pnpm release:version-sync  # align stable release-managed versions from package.json
-pnpm release:dev-publish   # create the Navet Dev commit + tag locally, optionally push with -- --push
+pnpm release:dev-publish   # create the Navet Dev tag locally from the current HEAD, optionally push with -- --push
 pnpm wallpapers:audit      # audit wallpaper source/output inventory
 pnpm wallpapers:optimize   # optimize wallpaper assets
 pnpm wallpapers:check      # verify optimized wallpaper outputs

@@ -110,15 +110,15 @@ Trigger:
 Behavior:
 
 - requires Tier 1 validation
-- creates the exact `platform/home-assistant/addons/navet-dev/config.yaml` version commit on `main`
-- creates the matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` tag from that commit
-- validates that the committed Navet Dev version and created tag match
+- creates the matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` tag from the current `main` SHA
+- validates that the computed Navet Dev version and created tag match
 - publishes immutable standalone dev-tag images for that exact dev version and refreshes the moving standalone `edge` and `dev` aliases
 - publishes immutable add-on dev-tag images for that exact dev version and refreshes the moving add-on `edge` and `dev` aliases
 - creates a GitHub prerelease for the dev tag
 - expected dev version shape: `0.x.y-dev.YYYYMMDDHHMMSS`
 - does not move `latest` or `beta`
 - does not sync HACS or create a custom-panel release artifact
+- does not update `platform/home-assistant/addons/navet-dev/config.yaml` on `main`
 
 ### Release publish
 
@@ -180,10 +180,13 @@ promotion in phase 1.
 Optional immutable Navet Dev publish:
 
 1. Dispatch `/.github/workflows/dev-tag-publish.yml` from `main`.
-2. Let the workflow create the `platform/home-assistant/addons/navet-dev/config.yaml` metadata
-   commit, create the matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` tag, and publish the exact
-   dev-tag images and GitHub prerelease.
+2. Let the workflow create the matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` tag from the current
+   `main` SHA and publish the exact dev-tag images and GitHub prerelease without adding a commit.
 3. Use `pnpm release:dev-publish` only as a local fallback if the GitHub workflow cannot be used.
+4. Because this flow does not change `platform/home-assistant/addons/navet-dev/config.yaml` on
+   `main`, Home Assistant repository metadata for `Navet Dev` will not advance on every immutable
+   dev publish. The moving `dev` and `edge` images still refresh for manual installs and direct tag
+   usage.
 
 ## What Stays Manual
 

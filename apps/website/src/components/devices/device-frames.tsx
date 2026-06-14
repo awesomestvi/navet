@@ -1,8 +1,9 @@
-import type { HTMLAttributes, ImgHTMLAttributes } from 'react';
+import type { ComponentProps, HTMLAttributes } from 'react';
 import { cn } from '@navet/app/components/ui/utils';
 import { MarketingResponsiveImage, type MarketingResponsiveImageSource } from '@navet/app/marketing/components/MarketingResponsiveImage';
 
-interface DeviceImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'src' | 'alt'> {
+interface DeviceImageProps
+  extends Omit<ComponentProps<typeof MarketingResponsiveImage>, 'src' | 'alt' | 'sources'> {
   src: string;
   alt: string;
   sources?: readonly MarketingResponsiveImageSource[];

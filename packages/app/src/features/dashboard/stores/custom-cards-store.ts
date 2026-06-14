@@ -8,6 +8,7 @@ import {
 } from '@navet/app/utils/local-storage-migration';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { normalizeMediaStackWidgetData } from '../components/widgets/media-stack-widget-data';
 
 export { ENERGY_WIDGET_ROOM, HOME_WIDGET_ROOM } from '@navet/app/constants/rooms';
 
@@ -21,6 +22,7 @@ export type CardType =
   | 'battery'
   | 'ups'
   | 'energy-now'
+  | 'media-stack'
   | 'button'
   | 'map';
 
@@ -71,7 +73,12 @@ function normalizeInfoCardData(data: Record<string, unknown> | undefined) {
 
 export function normalizeCustomCard(card: NormalizableCustomCard): CustomCard {
   const normalizedType = card.type === 'sensor-group' ? 'info' : card.type;
-  const normalizedData = normalizedType === 'info' ? normalizeInfoCardData(card.data) : card.data;
+  const normalizedData =
+    normalizedType === 'info'
+      ? normalizeInfoCardData(card.data)
+      : normalizedType === 'media-stack'
+        ? normalizeMediaStackWidgetData(card.data)
+        : card.data;
   const normalizedCard =
     normalizedType === card.type && normalizedData === card.data
       ? (card as CustomCard)
@@ -109,6 +116,15 @@ export function normalizeCustomCard(card: NormalizableCustomCard): CustomCard {
   if (
     normalizedCard.type === 'info' &&
     normalizedCard.size !== 'extra-small' &&
+    normalizedCard.size !== 'small' &&
+    normalizedCard.size !== 'medium' &&
+    normalizedCard.size !== 'large'
+  ) {
+    return { ...normalizedCard, size: 'medium' };
+  }
+
+  if (
+    normalizedCard.type === 'media-stack' &&
     normalizedCard.size !== 'small' &&
     normalizedCard.size !== 'medium' &&
     normalizedCard.size !== 'large'

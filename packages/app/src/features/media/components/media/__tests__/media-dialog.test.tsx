@@ -1,6 +1,6 @@
 import { getMediaPlayerCapabilities } from '@navet/app/constants/media-player-features';
 import { renderWithProviders } from '@navet/app/test/render';
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { MediaDialog } from '../media-dialog';
 
@@ -117,6 +117,155 @@ describe('MediaDialog', () => {
     expect(screen.queryByRole('button', { name: 'Done' })).not.toBeInTheDocument();
   });
 
+  it('keeps the seek slider visible when the media dialog is idle', () => {
+    entityRoomSelectorMock.mockClear();
+    useThemeMock.mockReturnValue({ theme: 'dark' });
+    useMediaArtworkColorsMock.mockReturnValue({
+      dominant: 'rgb(32, 32, 35)',
+      vibrant: 'rgb(80, 80, 86)',
+      darkMuted: 'rgb(18, 18, 20)',
+      highlight: 'rgb(242, 242, 245)',
+      gradientEnd: 'rgb(10, 10, 12)',
+    });
+
+    renderWithProviders(
+      <MediaDialog
+        entityId="media_player.living_room"
+        room="Living Room"
+        isOpen
+        onOpenChange={vi.fn()}
+        artwork={null}
+        entityName="Living Room"
+        entityType="Speaker"
+        title="Nothing playing"
+        artist=""
+        isPlaying={false}
+        volume={10}
+        isMuted={false}
+        elapsedSeconds={0}
+        durationSeconds={0}
+        supportsGrouping={false}
+        groupMembers={[]}
+        availableGroupingPlayers={[]}
+        onPrevious={vi.fn()}
+        canPreviousTrack
+        onTogglePlay={vi.fn()}
+        onNext={vi.fn()}
+        canNextTrack
+        shuffleEnabled={false}
+        repeatMode="off"
+        onToggleShuffle={vi.fn()}
+        onCycleRepeat={vi.fn()}
+        capabilities={getMediaPlayerCapabilities(4 | 8 | 16 | 32 | 2 | 32768 | 262144)}
+        sourceList={[]}
+        onSelectSource={vi.fn()}
+        soundModeList={[]}
+        onSelectSoundMode={vi.fn()}
+        onSeek={vi.fn()}
+        onClearPlaylist={vi.fn()}
+        onToggleMute={vi.fn()}
+        onVolumeChange={vi.fn()}
+        onVolumeInteractionStart={vi.fn()}
+        onVolumeInteractionEnd={vi.fn()}
+        onAttachGroupMember={vi.fn()}
+        onDetachGroupMember={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('slider', { name: 'Seek' })).toBeInTheDocument();
+  });
+
+  it('renders media stack settings inside the media dialog', () => {
+    useThemeMock.mockReturnValue({ theme: 'dark' });
+    useMediaArtworkColorsMock.mockReturnValue({
+      dominant: 'rgb(32, 32, 35)',
+      vibrant: 'rgb(80, 80, 86)',
+      darkMuted: 'rgb(18, 18, 20)',
+      highlight: 'rgb(242, 242, 245)',
+      gradientEnd: 'rgb(10, 10, 12)',
+    });
+    const onUpdate = vi.fn();
+
+    renderWithProviders(
+      <MediaDialog
+        entityId="media_player.living_room"
+        room="Living Room"
+        isOpen
+        onOpenChange={vi.fn()}
+        entityName="Living Room TV"
+        entityType="TV"
+        title="Apple TV"
+        artist=""
+        isPlaying={false}
+        volume={10}
+        isMuted={false}
+        elapsedSeconds={0}
+        durationSeconds={0}
+        supportsGrouping={false}
+        groupMembers={[]}
+        availableGroupingPlayers={[]}
+        onPrevious={vi.fn()}
+        canPreviousTrack={false}
+        onTogglePlay={vi.fn()}
+        onNext={vi.fn()}
+        canNextTrack={false}
+        shuffleEnabled={false}
+        repeatMode="off"
+        onToggleShuffle={vi.fn()}
+        onCycleRepeat={vi.fn()}
+        capabilities={getMediaPlayerCapabilities(0)}
+        sourceList={[]}
+        onSelectSource={vi.fn()}
+        soundModeList={[]}
+        onSelectSoundMode={vi.fn()}
+        onSeek={vi.fn()}
+        onClearPlaylist={vi.fn()}
+        onToggleMute={vi.fn()}
+        onVolumeChange={vi.fn()}
+        onVolumeInteractionStart={vi.fn()}
+        onVolumeInteractionEnd={vi.fn()}
+        onAttachGroupMember={vi.fn()}
+        onDetachGroupMember={vi.fn()}
+        mediaStackSettings={{
+          entityIds: ['media_player.living_room', 'media_player.speaker'],
+          priorityOrder: ['media_player.speaker', 'media_player.living_room'],
+          idleBehavior: 'compact',
+          playerOptions: [
+            {
+              id: 'media_player.living_room',
+              name: 'Living Room TV',
+              room: 'Living Room',
+              subtitle: 'TV',
+            },
+            {
+              id: 'media_player.speaker',
+              name: 'Living Room Speaker',
+              room: 'Living Room',
+              subtitle: 'Speaker',
+            },
+          ],
+          onUpdate,
+        }}
+        initialTab="stack"
+      />
+    );
+
+    expect(screen.getByText('Media players')).toBeInTheDocument();
+    const [firstCheckbox] = screen.getAllByRole('checkbox');
+
+    expect(firstCheckbox).toBeDefined();
+    if (!firstCheckbox) {
+      throw new Error('Expected media stack checkbox to be rendered');
+    }
+
+    fireEvent.click(firstCheckbox);
+    expect(onUpdate).toHaveBeenCalledWith({
+      entityIds: ['media_player.speaker'],
+      priorityOrder: ['media_player.speaker'],
+      idleBehavior: 'compact',
+    });
+  });
+
   it('uses a fixed-height mobile dialog shell with a scrollable body', () => {
     entityRoomSelectorMock.mockClear();
     useThemeMock.mockReturnValue({ theme: 'dark' });
@@ -179,6 +328,78 @@ describe('MediaDialog', () => {
     expect(screen.getByRole('dialog')).toHaveClass('flex', 'flex-col', 'max-h-[88vh]');
     expect(screen.getByRole('dialog')).toHaveClass('max-sm:!h-[min(88dvh,calc(100dvh-1rem))]');
     expect(document.body.querySelector('.media-dialog-body.h-full.overflow-y-auto')).not.toBeNull();
+  });
+
+  it('opens speaker grouping from a single control and closes when toggled again', () => {
+    entityRoomSelectorMock.mockClear();
+    useThemeMock.mockReturnValue({ theme: 'dark' });
+    useMediaArtworkColorsMock.mockReturnValue({
+      dominant: 'rgb(32, 32, 35)',
+      vibrant: 'rgb(80, 80, 86)',
+      darkMuted: 'rgb(18, 18, 20)',
+      highlight: 'rgb(242, 242, 245)',
+      gradientEnd: 'rgb(10, 10, 12)',
+    });
+
+    renderWithProviders(
+      <MediaDialog
+        entityId="media_player.bathroom"
+        room="Bathroom"
+        isOpen
+        onOpenChange={vi.fn()}
+        artwork="data:image/png;base64,artwork"
+        entityName="Bathroom"
+        entityType="Speaker"
+        title="Touch"
+        artist="Cigarettes After Sex"
+        isPlaying
+        volume={10}
+        isMuted={false}
+        elapsedSeconds={93}
+        durationSeconds={293}
+        supportsGrouping
+        groupMembers={['media_player.bathroom', 'media_player.kitchen']}
+        availableGroupingPlayers={[
+          { id: 'media_player.kitchen', name: 'Kitchen', isAttached: true },
+          { id: 'media_player.living_room', name: 'Living Room', isAttached: false },
+        ]}
+        onPrevious={vi.fn()}
+        canPreviousTrack
+        onTogglePlay={vi.fn()}
+        onNext={vi.fn()}
+        canNextTrack
+        shuffleEnabled={false}
+        repeatMode="off"
+        onToggleShuffle={vi.fn()}
+        onCycleRepeat={vi.fn()}
+        capabilities={getMediaPlayerCapabilities(4 | 8 | 16 | 32 | 2 | 32768 | 262144)}
+        sourceList={[]}
+        onSelectSource={vi.fn()}
+        soundModeList={[]}
+        onSelectSoundMode={vi.fn()}
+        onSeek={vi.fn()}
+        onClearPlaylist={vi.fn()}
+        onToggleMute={vi.fn()}
+        onVolumeChange={vi.fn()}
+        onVolumeInteractionStart={vi.fn()}
+        onVolumeInteractionEnd={vi.fn()}
+        onAttachGroupMember={vi.fn()}
+        onDetachGroupMember={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Playback' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Group' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Speaker Group' }));
+
+    expect(screen.getAllByText('Touch').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('Kitchen')).toBeInTheDocument();
+    expect(screen.getByText('Living Room')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Speaker Group' }));
+
+    expect(screen.queryByText('Kitchen')).not.toBeInTheDocument();
   });
 
   it('defaults TVs to remote controls when the current source looks like video playback', () => {

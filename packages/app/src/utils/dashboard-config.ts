@@ -357,6 +357,7 @@ const cardTypes = new Set<CardType>([
   'battery',
   'ups',
   'energy-now',
+  'media-stack',
   'button',
   'map',
 ]);

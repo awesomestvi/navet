@@ -1,10 +1,8 @@
 import fs from 'node:fs';
 import process from 'node:process';
-import { execFileSync } from 'node:child_process';
 import {
   addonConfigPath,
   addonChangelogPath,
-  addonDevConfigPath,
   appVersionPath,
   assertMainRepositoryMetadata,
   assertValidVersion,
@@ -29,7 +27,6 @@ try {
 
   const manifest = readJson(manifestPath);
   const addonVersion = readAddonVersion(addonConfigPath);
-  const addonDevVersion = readAddonVersion(addonDevConfigPath);
   const versioningVersion = readVersioningCurrentVersion();
 
   if (manifest.version !== packageVersion) {
@@ -58,27 +55,6 @@ try {
     throw new Error(
       `platform/home-assistant/addons/navet/CHANGELOG.md does not contain a section for ${packageVersion}.`
     );
-  }
-
-  const addonDevVersionMatchesPackage = addonDevVersion.startsWith(`${packageVersion}-dev.`);
-  if (addonDevVersionMatchesPackage) {
-    const expectedDevTag = `navet-dev-${addonDevVersion}`;
-    let hasMatchingDevTag = false;
-
-    try {
-      execFileSync('git', ['rev-parse', '-q', '--verify', `refs/tags/${expectedDevTag}`], {
-        stdio: 'ignore',
-      });
-      hasMatchingDevTag = true;
-    } catch {
-      hasMatchingDevTag = false;
-    }
-
-    if (!hasMatchingDevTag) {
-      throw new Error(
-        `platform/home-assistant/addons/navet-dev/config.yaml version ${addonDevVersion} implies a published Navet Dev artifact, but git tag ${expectedDevTag} does not exist. Refresh Navet Dev through the dev publish flow instead of advancing this file during stable release prep.`
-      );
-    }
   }
 
   const source = fs.readFileSync(appVersionPath, 'utf8');

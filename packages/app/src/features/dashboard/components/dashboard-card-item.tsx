@@ -631,7 +631,7 @@ function getAllowedSizes(
     if (extraLargeAllowed && (card.type === 'photo' || card.type === 'rss')) {
       return ['small', 'medium', 'large', 'extra-large'];
     }
-    if (card.type === 'energy-now') {
+    if (card.type === 'energy-now' || card.type === 'media-stack') {
       return ['small', 'medium', 'large'];
     }
     if (card.type === 'map') {
@@ -737,7 +737,9 @@ function supportsCustomCardEditModeSettingsDock(card?: CustomCard) {
     return false;
   }
 
-  return ['info', 'rss', 'photo', 'battery', 'ups', 'energy-now', 'button'].includes(card.type);
+  return ['info', 'rss', 'photo', 'battery', 'ups', 'energy-now', 'media-stack', 'button'].includes(
+    card.type
+  );
 }
 
 function getDeviceTypeEditLabel(type: DeviceWithType['type'], t: ReturnType<typeof useI18n>['t']) {

@@ -55,6 +55,24 @@ describe('DashboardSectionRouter home controls', () => {
     expect(layoutProps.mobileEditActions).not.toHaveProperty('allViewGrouping');
     expect(layoutProps.mobileEditActions).not.toHaveProperty('onAllViewGroupingChange');
   });
+
+  it('uses add card in edit mode for a room-scoped home view', async () => {
+    const controller = createController();
+    controller.isEditMode = true;
+    controller.activeRoom = 'Kitchen';
+
+    renderWithProviders(<DashboardSectionRouter controller={controller} />);
+
+    const roomNavProps = roomNavMock.mock.calls[0]?.[0] as Record<string, unknown>;
+    const layoutProps = dashboardLayoutMock.mock.calls[0]?.[0] as {
+      mobileEditActions?: Record<string, unknown>;
+    };
+
+    expect(roomNavProps.onAddEntity).toBe(controller.onOpenAddCardDialog);
+    expect(roomNavProps.addEntityLabel).toBe('Add Card');
+    expect(layoutProps.mobileEditActions?.onAddEntity).toBe(controller.onOpenAddCardDialog);
+    expect(layoutProps.mobileEditActions?.addEntityLabel).toBe('Add Card');
+  });
 });
 
 function createController(): DashboardController {

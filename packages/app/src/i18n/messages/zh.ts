@@ -520,6 +520,7 @@ export const zhMessages = {
     'Pin any sensor or binary sensor as a standalone info card.',
   'dashboard.addCard.templates.battery.name': '电池',
   'dashboard.addCard.templates.energyNow.name': '当前能耗',
+  'dashboard.addCard.templates.mediaStack.name': 'Media Stack',
   'dashboard.addCard.templates.button.name': '按钮',
   'dashboard.addCard.templates.scene.name': '场景',
   'dashboard.addCard.templates.map.name': '地图',
@@ -783,6 +784,7 @@ export const zhMessages = {
   'media.size.verticalTile': '竖向磁贴',
   'media.size.largeTile': '大磁贴',
   'media.group.title': '扬声器组',
+  'media.group.action': '组合扬声器',
   'media.group.attached': '已连接',
   'media.group.available': '可用',
   'media.group.attach': '连接',
@@ -1200,6 +1202,31 @@ export const zhMessages = {
   'widgets.energyNow.settings.group.sources': '来源',
   'widgets.energyNow.settings.group.devices': '设备',
   'widgets.energyNow.empty.sparkline': '小组件能源空状态',
+  'widgets.mediaStack.settings.title': 'Media stack',
+  'widgets.mediaStack.settings.players': 'Media players',
+  'widgets.mediaStack.settings.help': 'Choose which media players this widget can rotate between.',
+  'widgets.mediaStack.settings.noneAvailable': 'No media players are available right now.',
+  'widgets.mediaStack.settings.priority': 'Priority',
+  'widgets.mediaStack.settings.priorityHelp':
+    'When more than one player is active, higher entries win ties.',
+  'widgets.mediaStack.settings.priorityEmpty':
+    'Select at least one media player to define the priority order.',
+  'widgets.mediaStack.settings.priorityPosition': 'Priority {position}',
+  'widgets.mediaStack.settings.idleBehavior': 'Idle behavior',
+  'widgets.mediaStack.settings.idleBehaviorHelp':
+    'Choose what this widget should do when nothing is actively playing.',
+  'widgets.mediaStack.settings.idleBehavior.compact': 'Show a compact fallback card',
+  'widgets.mediaStack.settings.idleBehavior.hidden': 'Hide the widget when idle',
+  'widgets.mediaStack.settings.idleBehavior.top-priority': 'Always show the top-priority player',
+  'widgets.mediaStack.settings.moveUp': 'Move up',
+  'widgets.mediaStack.settings.moveDown': 'Move down',
+  'widgets.mediaStack.badge': 'Stack',
+  'widgets.mediaStack.empty.title': 'No media players selected',
+  'widgets.mediaStack.empty.description':
+    'Pick the media players this widget should surface for the room.',
+  'widgets.mediaStack.empty.unavailableTitle': 'Selected media players unavailable',
+  'widgets.mediaStack.empty.unavailableDescription':
+    'Navet cannot currently resolve any of the selected media players.',
   'widgets.button.title': '操作按钮',
   'widgets.button.labelPlaceholder': '按钮标签',
   'widgets.button.servicePlaceholder': '小组件按钮',
@@ -1216,6 +1243,8 @@ export const zhMessages = {
   'dashboard.addCard.templates.ups.description':
     'Monitor battery, load, status, voltage, and runtime from a discovered UPS device.',
   'dashboard.addCard.templates.energyNow.description': '能源说明',
+  'dashboard.addCard.templates.mediaStack.description':
+    'One media card that surfaces the most relevant player for the room.',
   'dashboard.addCard.templates.button.description': '按钮说明',
   'dashboard.addCard.templates.scene.description':
     '创建一个已预填 scene.turn_on 的单击场景触发器。',

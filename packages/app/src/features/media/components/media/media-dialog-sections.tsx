@@ -1,10 +1,12 @@
 import { CardDialogHeader } from '@navet/app/components/patterns';
+import { InteractivePill } from '@navet/app/components/primitives';
 import { RoundControlButton } from '@navet/app/components/primitives/round-control-button';
 import { Slider } from '@navet/app/components/primitives/slider';
 import { getCardReadableTextTokens } from '@navet/app/components/shared/theme/card-readable-text-tokens';
 import { getMediaTVViewSurfaceTokens } from '@navet/app/components/shared/theme/media-tv-view-surface-tokens';
 import { useI18n } from '@navet/app/hooks';
 import {
+  Check,
   Pause,
   Play,
   Repeat,
@@ -14,6 +16,7 @@ import {
   SkipBack,
   SkipForward,
   Slash,
+  Speaker,
   Tv2,
   Volume2,
   VolumeX,
@@ -147,6 +150,7 @@ export function MediaDialogPlaybackControls({
     backgroundColor: controller.readableForeground.titleColor,
     boxShadow: `0 0 0 1px ${controller.readableForeground.titleColor}38, 0 0 14px ${controller.readableForeground.titleColor}52`,
   };
+  const sliderMax = Math.max(1, durationSeconds, elapsedSeconds, pendingSeek);
 
   useEffect(() => {
     if (!isSeeking) {
@@ -175,36 +179,34 @@ export function MediaDialogPlaybackControls({
           </div>
         ) : null}
       </div>
-      {durationSeconds > 0 ? (
-        <div className="space-y-1">
-          <Slider
-            value={Math.min(durationSeconds, pendingSeek)}
-            min={0}
-            max={Math.max(durationSeconds, elapsedSeconds, pendingSeek)}
-            step={1}
-            ariaLabel={t('media.seek')}
-            onValueChange={(value) => setPendingSeek(value)}
-            onValueCommit={(value) => onSeek(value)}
-            onInteractionStart={() => setIsSeeking(true)}
-            onInteractionEnd={() => setIsSeeking(false)}
-            rootClassName="relative flex h-6 w-full items-center touch-none select-none"
-            trackClassName="relative h-[3px] grow rounded-full"
-            rangeClassName="absolute h-full rounded-full"
-            thumbClassName="block h-4 w-4 rounded-full outline-none"
-            touchThumbClassName="block h-6 w-6 rounded-full outline-none"
-            trackStyle={timelineTrackStyle}
-            rangeStyle={timelineRangeStyle}
-            thumbStyle={timelineThumbStyle}
-          />
-          <div
-            className={`flex items-center justify-between text-[0.82rem] ${controller.surface.textSecondary}`}
-            style={controller.readableForeground.subtitleStyle}
-          >
-            <span>{formatMediaTime(Math.max(0, pendingSeek))}</span>
-            <span>-{controller.displayRemaining}</span>
-          </div>
+      <div className="space-y-1">
+        <Slider
+          value={Math.min(sliderMax, pendingSeek)}
+          min={0}
+          max={sliderMax}
+          step={1}
+          ariaLabel={t('media.seek')}
+          onValueChange={(value) => setPendingSeek(value)}
+          onValueCommit={(value) => onSeek(value)}
+          onInteractionStart={() => setIsSeeking(true)}
+          onInteractionEnd={() => setIsSeeking(false)}
+          rootClassName="relative flex h-6 w-full items-center touch-none select-none"
+          trackClassName="relative h-[3px] grow rounded-full"
+          rangeClassName="absolute h-full rounded-full"
+          thumbClassName="block h-4 w-4 rounded-full outline-none"
+          touchThumbClassName="block h-6 w-6 rounded-full outline-none"
+          trackStyle={timelineTrackStyle}
+          rangeStyle={timelineRangeStyle}
+          thumbStyle={timelineThumbStyle}
+        />
+        <div
+          className={`flex items-center justify-between text-[0.82rem] ${controller.surface.textSecondary}`}
+          style={controller.readableForeground.subtitleStyle}
+        >
+          <span>-{controller.displayRemaining}</span>
+          <span>{formatMediaTime(Math.max(0, pendingSeek))}</span>
         </div>
-      ) : null}
+      </div>
       <div className="flex items-center justify-between gap-1.5">
         <RoundControlButton
           theme={controller.theme}
@@ -594,29 +596,82 @@ interface MediaDialogGroupingProps {
   availableGroupingPlayers: MediaDialogGroupingPlayer[];
   controller: MediaDialogController;
   entityId: string;
+  entityName: string;
   groupMembers: string[];
   onAttachGroupMember: (entityId: string) => void;
   onDetachGroupMember: (entityId: string) => void;
 }
 
-function GroupingChip({
+function SpeakerDestinationRow({
   controller,
-  label,
+  active = false,
+  disabled = false,
+  icon,
   onClick,
+  subtitle,
+  title,
 }: {
   controller: MediaDialogController;
-  label: string;
+  active?: boolean;
+  disabled?: boolean;
+  icon: React.ReactNode;
   onClick: () => void;
+  subtitle?: string;
+  title: string;
 }) {
   return (
-    <button
-      type="button"
+    <InteractivePill
       onClick={onClick}
-      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${controller.surface.border} ${controller.surface.textPrimary} ${controller.isGlass ? 'bg-white/10 hover:bg-white/14' : 'bg-white/5 hover:bg-white/10'}`}
+      disabled={disabled}
+      active={active}
+      intent="navigation"
+      variant="default"
+      className={`min-h-12 w-full items-center justify-start gap-3 rounded-[1.35rem] px-3.5 py-2.5 text-left ${
+        disabled ? 'cursor-default disabled:opacity-100' : ''
+      }`}
       style={controller.readableForeground.titleStyle}
     >
-      {label}
-    </button>
+      <div
+        className={`flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-full ${
+          active
+            ? controller.isGlass
+              ? 'bg-white/16'
+              : 'bg-white/12'
+            : controller.isGlass
+              ? 'bg-white/10'
+              : 'bg-white/[0.06]'
+        }`}
+        style={controller.readableForeground.titleStyle}
+      >
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div
+          className={`truncate text-sm font-medium ${controller.surface.textPrimary}`}
+          style={controller.readableForeground.titleStyle}
+        >
+          {title}
+        </div>
+        {subtitle ? (
+          <div
+            className={`truncate pt-0.5 text-xs ${controller.surface.textSecondary}`}
+            style={controller.readableForeground.subtitleStyle}
+          >
+            {subtitle}
+          </div>
+        ) : null}
+      </div>
+      {active ? (
+        <div
+          className={`flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-full ${
+            controller.isGlass ? 'bg-white/14' : 'bg-white/10'
+          }`}
+          style={controller.readableForeground.titleStyle}
+        >
+          <Check className="h-4 w-4" />
+        </div>
+      ) : null}
+    </InteractivePill>
   );
 }
 
@@ -624,79 +679,63 @@ export function MediaDialogGrouping({
   availableGroupingPlayers,
   controller,
   entityId,
+  entityName,
   groupMembers,
   onAttachGroupMember,
   onDetachGroupMember,
 }: MediaDialogGroupingProps) {
-  const { t } = useI18n();
   const attachedPlayers = availableGroupingPlayers.filter((player) => player.isAttached);
   const availablePlayers = availableGroupingPlayers.filter((player) => !player.isAttached);
   const hasAttachedMembers = groupMembers.some((memberId) => memberId !== entityId);
 
   return (
-    <div>
-      <span
-        className={`mb-3 block text-sm font-medium ${controller.surface.textSecondary}`}
-        style={controller.readableForeground.subtitleStyle}
-      >
-        {t('media.group.title')}
-      </span>
-
+    <div
+      className={`overflow-hidden rounded-[2rem] border p-3 backdrop-blur-xl ${controller.surface.border}`}
+      style={{
+        ...controller.dialogSurfaceStyle,
+        boxShadow: `${controller.dialogSurfaceStyle.boxShadow}, 0 22px 46px -28px rgba(0, 0, 0, 0.52)`,
+      }}
+    >
       <div className="space-y-3">
-        <div>
-          <div
-            className={`mb-2 text-xs uppercase tracking-[0.14em] ${controller.surface.textMuted}`}
-            style={controller.readableForeground.subtitleStyle}
-          >
-            {t('media.group.attached')}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {hasAttachedMembers ? (
-              attachedPlayers.map((player) => (
-                <GroupingChip
-                  key={player.id}
-                  controller={controller}
-                  label={`${player.name} · ${t('media.group.detach')}`}
-                  onClick={() => onDetachGroupMember(player.id)}
-                />
-              ))
-            ) : (
-              <div
-                className={`text-sm ${controller.surface.textMuted}`}
-                style={controller.readableForeground.subtitleStyle}
-              >
-                {t('media.group.noAttached')}
-              </div>
-            )}
+        <div className="space-y-2">
+          <div className="space-y-2">
+            <SpeakerDestinationRow
+              controller={controller}
+              title={entityName}
+              active
+              disabled
+              icon={<Volume2 className="h-4 w-4" />}
+              onClick={() => undefined}
+            />
+            {hasAttachedMembers
+              ? attachedPlayers.map((player) => (
+                  <SpeakerDestinationRow
+                    key={player.id}
+                    controller={controller}
+                    title={player.name}
+                    active
+                    icon={<Speaker className="h-4 w-4" />}
+                    onClick={() => onDetachGroupMember(player.id)}
+                  />
+                ))
+              : null}
           </div>
         </div>
 
-        <div>
-          <div
-            className={`mb-2 text-xs uppercase tracking-[0.14em] ${controller.surface.textMuted}`}
-            style={controller.readableForeground.subtitleStyle}
-          >
-            {t('media.group.available')}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {availablePlayers.length > 0 ? (
-              availablePlayers.map((player) => (
-                <GroupingChip
+        <div className="space-y-2 pt-1">
+          {availablePlayers.length > 0 ? (
+            <div className="space-y-2">
+              {availablePlayers.map((player) => (
+                <SpeakerDestinationRow
                   key={player.id}
                   controller={controller}
-                  label={`${player.name} · ${t('media.group.attach')}`}
+                  title={player.name}
+                  icon={<Speaker className="h-4 w-4" />}
                   onClick={() => onAttachGroupMember(player.id)}
                 />
-              ))
-            ) : (
-              <div
-                className={`text-sm ${controller.surface.textMuted}`}
-                style={controller.readableForeground.subtitleStyle}
-              >
-                {t('media.group.noAvailable')}
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

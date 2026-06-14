@@ -2,7 +2,7 @@ import type { NavetLightState } from '@navet/app/core/navet-device-state';
 import { useLightMemoryStore } from '@navet/app/features/lighting/stores/light-memory-store';
 import { useHaCommandQueue } from '@navet/app/hooks';
 import type { PlatformEntitySnapshot } from '@navet/app/platform/provider-feature-models';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { clampPercentage, getBrightnessPercent } from './light-card-utils';
 
 type SyncLightOptions = {
@@ -42,7 +42,7 @@ export function useLightBrightnessSync({
   const pendingBrightnessRef = useRef<number | null>(null);
   const brightnessSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (liveEntity) return;
     if (
       pendingOnStateRef.current !== null &&
@@ -78,7 +78,7 @@ export function useLightBrightnessSync({
     rememberLightState,
   ]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!liveEntity && typeof providerState?.brightnessPct === 'number' && !isAdjustingBrightness) {
       if (
         pendingOnStateRef.current !== null &&
@@ -170,7 +170,7 @@ export function useLightBrightnessSync({
     };
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isAdjustingBrightness) {
       return;
     }

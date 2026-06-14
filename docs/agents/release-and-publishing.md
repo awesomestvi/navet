@@ -54,11 +54,13 @@ Preferred immutable Navet Dev flow:
 
 1. Dispatch [../../.github/workflows/dev-tag-publish.yml](../../.github/workflows/dev-tag-publish.yml)
    from `main`.
-2. Let the workflow create the matching `platform/home-assistant/addons/navet-dev/config.yaml`
-   metadata commit on `main`, create the matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` tag, and
-   publish the matching prerelease artifacts.
+2. Let the workflow create the matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` tag from the current
+   `main` SHA and publish the matching prerelease artifacts without creating a release commit.
 3. Use the local `pnpm release:dev-publish` helper only as a fallback when the GitHub workflow
    cannot be used.
+4. Because this flow does not update `platform/home-assistant/addons/navet-dev/config.yaml` on
+   `main`, Home Assistant repository metadata for `Navet Dev` may lag behind immutable dev-tag
+   publishes even though the moving `dev` and `edge` images refresh.
 
 ## Release Note Style
 
@@ -162,16 +164,17 @@ internal, or release-only changes into the fewest useful user-facing bullets.
 
 - Cloudflare Pages deploys the demo at `/demo/` and Storybook at `/storybook/` from the website bundle.
 - Cloudflare Pages builds directly from the repo; GitHub Pages is retired and there is no GitHub Pages or GitHub deploy workflow for the website bundle.
-- Dev tags publish immutable app images using the committed `0.x.y-dev.YYYYMMDDHHMMSS` version,
-  refresh the moving standalone `edge` and `dev` tags, and create a matching GitHub prerelease.
+- Dev tags publish immutable app images using the workflow-generated
+  `0.x.y-dev.YYYYMMDDHHMMSS` version, refresh the moving standalone `edge` and `dev` tags, and
+  create a matching GitHub prerelease.
 - Standalone app prerelease tags publish the exact tag, `beta`, and `sha-*`.
 - Standalone app stable tags publish the exact tag, `X.Y`, `latest`, and `sha-*`.
-- Dev tags publish immutable add-on images using that same committed `0.x.y-dev.YYYYMMDDHHMMSS`
-  version while also refreshing the moving `edge` and `dev` tags, without moving `beta` or
-  `latest`.
+- Dev tags publish immutable add-on images using that same workflow-generated
+  `0.x.y-dev.YYYYMMDDHHMMSS` version while also refreshing the moving `edge` and `dev` tags,
+  without moving `beta` or `latest`.
 - `pnpm release:version-sync` now updates only the stable release-managed files for tagged releases.
-- `platform/home-assistant/addons/navet-dev/config.yaml` should be refreshed by the Navet Dev
-  publish workflow so the committed version always corresponds to a published dev artifact.
+- `platform/home-assistant/addons/navet-dev/config.yaml` is no longer the immutable Navet Dev
+  source of truth. Dev-tag versioning comes from the publish workflow and tag name.
 - Use `pnpm release:dev-version` only when you intentionally need to refresh
   `platform/home-assistant/addons/navet-dev/config.yaml` outside the automated Navet Dev publish
   flow.

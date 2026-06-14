@@ -108,6 +108,7 @@ export type CardType =
   | 'battery'
   | 'ups'
   | 'energy-now'
+  | 'media-stack'
   | 'button'
   | 'map';
 

@@ -1,6 +1,6 @@
 import type { NavetLightState } from '@navet/app/core/navet-device-state';
 import type { PlatformEntitySnapshot } from '@navet/app/platform/provider-feature-models';
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
 
 interface UseLightOnStateSyncParams {
   initialState: boolean;
@@ -37,7 +37,7 @@ export function useLightOnStateSync({
     return true;
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (liveEntity) return;
     if (providerState?.value === 'on' || providerState?.value === 'off') {
       const nextIsOn = providerState.value === 'on';
@@ -57,7 +57,7 @@ export function useLightOnStateSync({
     setIsOn,
   ]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!liveEntity) return;
     const nextIsOn = liveEntity.state === 'on';
     if (!resolvePendingOnState(nextIsOn)) {

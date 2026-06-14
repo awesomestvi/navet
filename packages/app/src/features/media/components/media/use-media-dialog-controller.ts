@@ -56,11 +56,11 @@ export function useMediaDialogController({
   const resolvedSubtitleColor = readableForeground.subtitleColor;
   const displayRemaining = formatMediaTime(Math.max(0, durationSeconds - elapsedSeconds));
   const displayDuration = durationSeconds > 0 ? formatMediaTime(durationSeconds) : '--:--';
-  const dialogSurfaceStyle = {
-    background:
-      theme === 'light'
-        ? `linear-gradient(180deg, rgba(255,255,255,0.985) 0%, rgba(255,255,255,0.965) 100%)`
-        : subduedFallback
+  const dialogBackground =
+    theme === 'light'
+      ? `linear-gradient(180deg, rgba(255,255,255,0.985) 0%, rgba(255,255,255,0.965) 100%)`
+      : subduedFallback
+        ? theme === 'glass'
           ? `linear-gradient(180deg, rgba(0,0,0,0.24) 0%, rgba(0,0,0,0.1) 42%, rgba(0,0,0,0.16) 68%, rgba(0,0,0,0.28) 100%), linear-gradient(160deg, ${withAlpha(
               palette.dominant,
               0.12
@@ -71,19 +71,30 @@ export function useMediaDialogController({
               palette.dominant,
               0.14
             )} 42%, ${withAlpha(palette.gradientEnd, 0.2)} 100%)`
-          : `linear-gradient(180deg, rgba(0,0,0,0.035) 0%, rgba(0,0,0,0.01) 42%, rgba(0,0,0,0.03) 68%, rgba(0,0,0,0.07) 100%), linear-gradient(160deg, ${withAlpha(
-              palette.dominant,
-              0.12
-            )} 0%, ${withAlpha(palette.dominant, 0.06)} 48%, ${withAlpha(
-              palette.darkMuted,
-              0.08
-            )} 100%), linear-gradient(165deg, ${withAlpha(
-              palette.dominant,
-              0.72
-            )} 0%, ${withAlpha(palette.dominant, 0.62)} 42%, ${withAlpha(
-              palette.gradientEnd,
-              0.68
-            )} 100%)`,
+          : theme === 'black'
+            ? `linear-gradient(180deg, rgba(0,0,0,0.985) 0%, rgba(0,0,0,0.985) 100%), linear-gradient(160deg, ${withAlpha(
+                palette.dominant,
+                0.04
+              )} 0%, ${withAlpha(palette.darkMuted, 0.06)} 100%)`
+            : `linear-gradient(180deg, rgba(24,24,27,0.985) 0%, rgba(24,24,27,0.975) 100%), linear-gradient(160deg, ${withAlpha(
+                palette.dominant,
+                0.05
+              )} 0%, ${withAlpha(palette.darkMuted, 0.08)} 100%)`
+        : `linear-gradient(180deg, rgba(0,0,0,0.035) 0%, rgba(0,0,0,0.01) 42%, rgba(0,0,0,0.03) 68%, rgba(0,0,0,0.07) 100%), linear-gradient(160deg, ${withAlpha(
+            palette.dominant,
+            0.12
+          )} 0%, ${withAlpha(palette.dominant, 0.06)} 48%, ${withAlpha(
+            palette.darkMuted,
+            0.08
+          )} 100%), linear-gradient(165deg, ${withAlpha(
+            palette.dominant,
+            0.72
+          )} 0%, ${withAlpha(palette.dominant, 0.62)} 42%, ${withAlpha(
+            palette.gradientEnd,
+            0.68
+          )} 100%)`;
+  const dialogSurfaceStyle = {
+    background: dialogBackground,
     borderColor:
       theme === 'light' ? 'rgba(15, 23, 42, 0.08)' : withAlpha(resolvedSubtitleColor, 0.18),
     boxShadow:

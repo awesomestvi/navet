@@ -258,6 +258,93 @@ describe('useDashboardProfileSync', () => {
     expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
   });
 
+  it('does not reload when the fetched remote profile already matches the active local dashboard', async () => {
+    const remoteProfile = buildProfile({
+      exportedAt: '2024-01-01T00:01:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'green' },
+    });
+
+    currentProfile = remoteProfile;
+    loadDashboardProfile.mockResolvedValueOnce({
+      available: true,
+      profile: remoteProfile,
+      notModified: false,
+      etag: '"remote-1"',
+      lastModified: 'Mon, 01 Jan 2024 00:01:00 GMT',
+    });
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    expect(importDashboardConfig).not.toHaveBeenCalled();
+    expect(reloadWindow).not.toHaveBeenCalled();
+  });
+
+  it('does not show a conflict toast when the remote profile matches current local edits', async () => {
+    const remoteProfile = buildProfile({
+      exportedAt: '2024-01-01T00:01:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'green' },
+    });
+    loadDashboardProfile
+      .mockResolvedValueOnce({
+        available: true,
+        profile: null,
+        notModified: false,
+        etag: '"initial"',
+        lastModified: 'Mon, 01 Jan 2024 00:00:00 GMT',
+      })
+      .mockResolvedValue({
+        available: true,
+        profile: remoteProfile,
+        notModified: false,
+        etag: '"remote-1"',
+        lastModified: 'Mon, 01 Jan 2024 00:01:00 GMT',
+      });
+    saveDashboardProfile.mockResolvedValue({
+      saved: false,
+      permanentFailure: false,
+      etag: null,
+      lastModified: null,
+    });
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    currentProfile = remoteProfile;
+    act(() => {
+      useThemeStore.setState({ ...useThemeStore.getState(), primaryColor: 'green' });
+    });
+
+    await advanceTime(2_000);
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
+
+    await advanceTime(60_000);
+    expect(toast).not.toHaveBeenCalled();
+    expect(reloadWindow).not.toHaveBeenCalled();
+  });
+
+  it('does not reload twice for the same remote profile in one browser session', async () => {
+    const remoteProfile = buildProfile({
+      exportedAt: '2024-01-01T00:01:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'green' },
+    });
+
+    sessionStorage.setItem('navet-dashboard-profile-reload-guard', '"remote-1"');
+    loadDashboardProfile.mockResolvedValueOnce({
+      available: true,
+      profile: remoteProfile,
+      notModified: false,
+      etag: '"remote-1"',
+      lastModified: 'Mon, 01 Jan 2024 00:01:00 GMT',
+    });
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    expect(importDashboardConfig).not.toHaveBeenCalled();
+    expect(reloadWindow).not.toHaveBeenCalled();
+  });
+
   it('shows one conflict toast for the same remote profile when local edits are still pending', async () => {
     loadDashboardProfile
       .mockResolvedValueOnce({
@@ -378,7 +465,7 @@ describe('useDashboardProfileSync', () => {
     expect(reloadWindow).not.toHaveBeenCalled();
   });
 
-  it('loads the remote profile when the conflict toast cancel action is chosen', async () => {
+  it('loads the remote profile in place when the conflict toast cancel action is chosen', async () => {
     const remoteProfile = buildProfile({
       exportedAt: '2024-01-01T00:01:00.000Z',
       theme: { theme: 'glass', primaryColor: 'green' },
@@ -429,6 +516,6 @@ describe('useDashboardProfileSync', () => {
     expect(importDashboardConfig).toHaveBeenCalledWith(remoteProfile, {
       applyNavigation: false,
     });
-    expect(reloadWindow).toHaveBeenCalledTimes(1);
+    expect(reloadWindow).not.toHaveBeenCalled();
   });
 });

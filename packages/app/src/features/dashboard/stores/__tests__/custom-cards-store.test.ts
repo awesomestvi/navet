@@ -75,6 +75,25 @@ describe('normalizeCustomCard', () => {
     ).toBe('small');
   });
 
+  it('normalizes persisted media stack card data', () => {
+    expect(
+      normalizeCustomCard(
+        buildCard({
+          id: 'custom-media-stack',
+          type: 'media-stack',
+          data: {
+            entityIds: ['media_player.tv', 12, 'media_player.speaker'],
+            priorityOrder: ['media_player.speaker', 'missing', 'media_player.tv'],
+          },
+        })
+      ).data
+    ).toEqual({
+      entityIds: ['media_player.tv', 'media_player.speaker'],
+      priorityOrder: ['media_player.speaker', 'media_player.tv'],
+      idleBehavior: 'compact',
+    });
+  });
+
   it('allows single-sensor info cards to keep medium', () => {
     expect(
       normalizeCustomCard(

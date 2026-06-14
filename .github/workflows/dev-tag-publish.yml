@@ -55,27 +55,17 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Create Navet Dev commit and tag
+      - name: Create Navet Dev tag
         id: version
         run: |
           PACKAGE_VERSION=$(node -p 'JSON.parse(require("node:fs").readFileSync("package.json", "utf8")).version')
           DEV_VERSION="${PACKAGE_VERSION}-dev.$(date -u +%Y%m%d%H%M%S)"
           TAG_NAME="navet-dev-${DEV_VERSION}"
 
-          node scripts/set-dev-addon-version.mjs --version "$DEV_VERSION"
-          git add platform/home-assistant/addons/navet-dev/config.yaml
-
-          if git diff --cached --quiet -- platform/home-assistant/addons/navet-dev/config.yaml; then
-            echo "Expected Navet Dev metadata to change for ${DEV_VERSION}, but no staged diff was created."
-            exit 1
-          fi
-
-          git commit -m "chore(release): publish navet dev ${DEV_VERSION}"
           git tag -a "$TAG_NAME" -m "Navet Dev ${TAG_NAME}"
 
-          node scripts/check-dev-release-surfaces.mjs --tag "$TAG_NAME"
+          node scripts/check-dev-release-surfaces.mjs --tag "$TAG_NAME" --version "$DEV_VERSION"
 
-          git push origin HEAD:main
           git push origin "refs/tags/${TAG_NAME}"
 
           {

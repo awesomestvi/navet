@@ -12,6 +12,8 @@ export function MediaDialog({
   entityType,
   elapsedSeconds,
   entityId,
+  initialTab,
+  mediaStackSettings,
   remoteAvailable,
   repeatMode,
   shuffleEnabled,
@@ -41,6 +43,8 @@ export function MediaDialog({
       entityType={entityType}
       elapsedSeconds={elapsedSeconds}
       entityId={entityId}
+      initialTab={initialTab}
+      mediaStackSettings={mediaStackSettings}
       remoteAvailable={remoteAvailable}
       repeatMode={repeatMode}
       shuffleEnabled={shuffleEnabled}

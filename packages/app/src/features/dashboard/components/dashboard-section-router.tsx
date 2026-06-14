@@ -169,13 +169,13 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     [handleAddEntity]
   );
   const canOpenAddEntityDialog = addableEntityIds.length > 0;
-  const isHomeAllRooms = activeSection === 'home' && isAllRooms(activeRoom);
-  const headerAddAction = isHomeAllRooms
+  const canOpenAddCardDialog = isEditMode && activeSection === 'home';
+  const headerAddAction = canOpenAddCardDialog
     ? controller.onOpenAddCardDialog
     : canOpenAddEntityDialog
       ? onOpenAddEntityDialog
       : undefined;
-  const headerAddLabel = isHomeAllRooms
+  const headerAddLabel = canOpenAddCardDialog
     ? t('dashboard.roomNav.addCard')
     : t('dashboard.addEntity.title');
 

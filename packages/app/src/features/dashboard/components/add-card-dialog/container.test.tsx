@@ -45,4 +45,31 @@ describe('AddCardDialogContainer', () => {
       'small'
     );
   });
+
+  it('shows the media stack template and adds it with the selected size', () => {
+    const onAddCard = vi.fn();
+
+    renderWithProviders(
+      <AddCardDialogContainer
+        open
+        onClose={() => {}}
+        onAddCard={onAddCard}
+        onAddLibraryCard={() => {}}
+        currentRoom="Living Room"
+        libraryCards={demoLibraryCards}
+        showCardsTab={false}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Media Stack').closest('button') as HTMLButtonElement);
+    fireEvent.click(screen.getByRole('button', { name: /add widget/i }));
+
+    expect(onAddCard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'media-stack',
+        cardType: 'media-stack',
+      }),
+      'medium'
+    );
+  });
 });

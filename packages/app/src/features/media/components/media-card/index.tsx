@@ -9,7 +9,8 @@ import type { NavetMediaCapabilities } from '@navet/app/core/navet-device-state'
 import { useI18n, useTheme } from '@navet/app/hooks';
 import type { ThemeMode } from '@navet/app/stores/theme-store';
 import type { CSSProperties } from 'react';
-import { lazy, memo, Suspense } from 'react';
+import { lazy, memo, Suspense, useEffect, useState } from 'react';
+import type { MediaDialogMediaStackSettings } from '../media/media-dialog.types';
 import { MediaLargeView } from '../media/media-large-view';
 import { MediaMediumVerticalView } from '../media/media-medium-vertical-view';
 import { MediaMediumView } from '../media/media-medium-view';
@@ -100,6 +101,9 @@ interface MediaCardProps {
   size: CardSize;
   onSizeChange: (id: string, size: CardSize) => void;
   isEditMode: boolean;
+  mediaStackAppearance?: boolean;
+  mediaStackSettings?: MediaDialogMediaStackSettings;
+  openSettingsRequestKey?: number;
   /**
    * When true, TV remote UI (D-pad, channel keys) renders as if a `remote.*` entity exists.
    * Use in Storybook where HA is not connected; ignored for non-TV cards.
@@ -133,6 +137,9 @@ export const MediaCard = memo(function MediaCard({
   size,
   onSizeChange: _onSizeChange,
   isEditMode,
+  mediaStackAppearance = false,
+  mediaStackSettings,
+  openSettingsRequestKey = 0,
   simulateTvRemote = false,
 }: MediaCardProps) {
   const { theme } = useTheme();
@@ -228,6 +235,7 @@ export const MediaCard = memo(function MediaCard({
   const isGlass = theme === 'glass';
   const hasArtwork = Boolean(resolvedAlbumArt);
   const isActiveTv = isTv && !isOff;
+  const [dialogInitialTab, setDialogInitialTab] = useState<string | undefined>(undefined);
   const inactiveShellBorder = surface.border;
   const cardBorder =
     theme === 'glass' && !isOff && !isActiveTv
@@ -295,10 +303,48 @@ export const MediaCard = memo(function MediaCard({
     ariaLabel: resolvedPlayerName,
     isEditMode,
     onToggle: isTv ? toggleTvPower : undefined,
-    onOpenControls: openDialog,
-    onOpenSettings: openDialog,
+    onOpenControls: () => {
+      setDialogInitialTab(undefined);
+      openDialog();
+    },
+    onOpenSettings: () => {
+      setDialogInitialTab(mediaStackSettings ? 'stack' : undefined);
+      openDialog();
+    },
   });
   useEditModeSettingsRequest(id, openDialog, isEditMode);
+  useEffect(() => {
+    if (openSettingsRequestKey > 0) {
+      setDialogInitialTab(mediaStackSettings ? 'stack' : undefined);
+      openDialog();
+    }
+  }, [mediaStackSettings, openDialog, openSettingsRequestKey]);
+
+  const stackBackplates = mediaStackAppearance ? (
+    <>
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none absolute inset-[8px] translate-x-2 translate-y-2 rounded-[1.35rem] border ${shellBorder} opacity-30`}
+      />
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none absolute inset-[4px] translate-x-1 translate-y-1 rounded-[1.45rem] border ${shellBorder} opacity-45`}
+      />
+    </>
+  ) : null;
+  const stackBadge = mediaStackAppearance ? (
+    <div className="pointer-events-none absolute right-3 top-3 z-[1]">
+      <span
+        className={`inline-flex items-center rounded-full border px-2 py-1 text-[0.65rem] font-medium uppercase tracking-[0.14em] ${surface.textPrimary}`}
+        style={{
+          backgroundColor: theme === 'light' ? 'rgba(255,255,255,0.84)' : 'rgba(24,24,27,0.58)',
+          borderColor: theme === 'light' ? 'rgba(24,24,27,0.08)' : 'rgba(255,255,255,0.14)',
+        }}
+      >
+        {t('widgets.mediaStack.badge')}
+      </span>
+    </div>
+  ) : null;
 
   return (
     <>
@@ -322,6 +368,8 @@ export const MediaCard = memo(function MediaCard({
         contentClassName="h-full"
       >
         <div className="relative h-full flex flex-col">
+          {stackBackplates}
+          {stackBadge}
           {isTv ? (
             <MediaTvView
               size={mediaSize}
@@ -384,9 +432,16 @@ export const MediaCard = memo(function MediaCard({
             entityId={id}
             room={_room}
             deviceClass={deviceClass}
+            initialTab={dialogInitialTab}
+            mediaStackSettings={mediaStackSettings}
             remoteAvailable={tvRemoteAvailable}
             isOpen={isOpen}
-            onOpenChange={closeDialog}
+            onOpenChange={(open) => {
+              if (!open) {
+                setDialogInitialTab(undefined);
+              }
+              closeDialog(open);
+            }}
             artwork={resolvedAlbumArt}
             artworkResource={artworkResource}
             onArtworkError={handleArtworkError}

@@ -726,6 +726,7 @@ export const esMessages = {
   'media.search.placeholder': 'Search media',
   'media.room': 'Habitación',
   'media.group.title': 'Grupo de altavoces',
+  'media.group.action': 'Agrupar altavoces',
   'media.group.attached': 'Conectados',
   'media.group.available': 'Disponibles',
   'media.group.attach': 'Agregar',
@@ -1306,6 +1307,31 @@ export const esMessages = {
   'widgets.energyNow.settings.group.devices': 'Dispositivos',
   'widgets.energyNow.empty.sparkline':
     'Todavía no hay suficientes datos para mostrar la línea sparkline.',
+  'widgets.mediaStack.settings.title': 'Media stack',
+  'widgets.mediaStack.settings.players': 'Media players',
+  'widgets.mediaStack.settings.help': 'Choose which media players this widget can rotate between.',
+  'widgets.mediaStack.settings.noneAvailable': 'No media players are available right now.',
+  'widgets.mediaStack.settings.priority': 'Priority',
+  'widgets.mediaStack.settings.priorityHelp':
+    'When more than one player is active, higher entries win ties.',
+  'widgets.mediaStack.settings.priorityEmpty':
+    'Select at least one media player to define the priority order.',
+  'widgets.mediaStack.settings.priorityPosition': 'Priority {position}',
+  'widgets.mediaStack.settings.idleBehavior': 'Idle behavior',
+  'widgets.mediaStack.settings.idleBehaviorHelp':
+    'Choose what this widget should do when nothing is actively playing.',
+  'widgets.mediaStack.settings.idleBehavior.compact': 'Show a compact fallback card',
+  'widgets.mediaStack.settings.idleBehavior.hidden': 'Hide the widget when idle',
+  'widgets.mediaStack.settings.idleBehavior.top-priority': 'Always show the top-priority player',
+  'widgets.mediaStack.settings.moveUp': 'Move up',
+  'widgets.mediaStack.settings.moveDown': 'Move down',
+  'widgets.mediaStack.badge': 'Stack',
+  'widgets.mediaStack.empty.title': 'No media players selected',
+  'widgets.mediaStack.empty.description':
+    'Pick the media players this widget should surface for the room.',
+  'widgets.mediaStack.empty.unavailableTitle': 'Selected media players unavailable',
+  'widgets.mediaStack.empty.unavailableDescription':
+    'Navet cannot currently resolve any of the selected media players.',
   'widgets.button.title': 'Botón de acción',
   'widgets.button.labelPlaceholder': 'Etiqueta del botón',
   'widgets.button.servicePlaceholder': 'ej. scene.turn_on',
@@ -1329,6 +1355,9 @@ export const esMessages = {
   'dashboard.addCard.templates.energyNow.name': 'Energia ahora',
   'dashboard.addCard.templates.energyNow.description':
     'Grafico en vivo a pantalla completa con la potencia actual como foco.',
+  'dashboard.addCard.templates.mediaStack.name': 'Media Stack',
+  'dashboard.addCard.templates.mediaStack.description':
+    'One media card that surfaces the most relevant player for the room.',
   'dashboard.addCard.templates.button.name': 'Botón de acción',
   'dashboard.addCard.templates.button.description':
     'Toca para activar cualquier servicio, escena o script de Home Assistant.',

@@ -1,17 +1,11 @@
 import { execFileSync } from 'node:child_process';
 import process from 'node:process';
 import {
-  addonDevConfigPath,
   buildDevAddonVersion,
   fail,
   getPackageVersion,
-  readAddonVersion,
-  updateAddonVersion,
 } from './release-surfaces.mjs';
 import { repoRoot } from './repo-paths.mjs';
-
-const DEV_CONFIG_REPO_PATH = 'platform/home-assistant/addons/navet-dev/config.yaml';
-const DEFAULT_COMMIT_MESSAGE = 'chore(release): refresh navet dev version';
 
 function runGit(args, options = {}) {
   return execFileSync('git', args, {
@@ -38,7 +32,6 @@ function parseArgs(argv) {
   const options = {
     push: false,
     remote: 'origin',
-    commitMessage: DEFAULT_COMMIT_MESSAGE,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -63,16 +56,6 @@ function parseArgs(argv) {
       continue;
     }
 
-    if (arg === '--message') {
-      const value = argv[index + 1];
-      if (!value?.trim()) {
-        throw new Error('Missing value for --message.');
-      }
-      options.commitMessage = value.trim();
-      index += 1;
-      continue;
-    }
-
     throw new Error(`Unknown argument: ${arg}`);
   }
 
@@ -85,10 +68,9 @@ function ensureNoUnrelatedStagedChanges() {
     .map((value) => value.trim())
     .filter(Boolean);
 
-  const unrelatedStagedFiles = stagedFiles.filter((filePath) => filePath !== DEV_CONFIG_REPO_PATH);
-  if (unrelatedStagedFiles.length > 0) {
+  if (stagedFiles.length > 0) {
     throw new Error(
-      `Refusing to create a dev release with unrelated staged changes: ${unrelatedStagedFiles.join(', ')}`
+      `Refusing to create a dev release with staged changes: ${stagedFiles.join(', ')}`
     );
   }
 }
@@ -102,20 +84,6 @@ function ensureMainBranchForPush() {
   }
 }
 
-function createCommitIfNeeded(commitMessage) {
-  runGit(['add', DEV_CONFIG_REPO_PATH]);
-
-  if (gitSucceeds(['diff', '--cached', '--quiet', '--', DEV_CONFIG_REPO_PATH])) {
-    return false;
-  }
-
-  execFileSync('git', ['commit', '-m', commitMessage, '--', DEV_CONFIG_REPO_PATH], {
-    cwd: repoRoot,
-    stdio: 'inherit',
-  });
-  return true;
-}
-
 function createTag(tagName) {
   if (gitSucceeds(['rev-parse', '-q', '--verify', `refs/tags/${tagName}`])) {
     throw new Error(`Tag already exists: ${tagName}`);
@@ -125,10 +93,6 @@ function createTag(tagName) {
 }
 
 function pushRelease(remote, tagName) {
-  execFileSync('git', ['push', remote, 'main'], {
-    cwd: repoRoot,
-    stdio: 'inherit',
-  });
   execFileSync('git', ['push', remote, tagName], {
     cwd: repoRoot,
     stdio: 'inherit',
@@ -144,12 +108,8 @@ try {
   }
 
   const packageVersion = getPackageVersion();
-  const nextDevVersion = buildDevAddonVersion(packageVersion);
-  updateAddonVersion(nextDevVersion, addonDevConfigPath);
-
-  const committedDevVersion = readAddonVersion(addonDevConfigPath);
-  const tagName = `navet-dev-${committedDevVersion}`;
-  const createdCommit = createCommitIfNeeded(options.commitMessage);
+  const devVersion = buildDevAddonVersion(packageVersion);
+  const tagName = `navet-dev-${devVersion}`;
 
   createTag(tagName);
 
@@ -159,14 +119,12 @@ try {
 
   process.stdout.write(
     [
-      `Prepared Navet Dev release ${committedDevVersion}.`,
-      createdCommit
-        ? `Created commit with message: ${options.commitMessage}`
-        : 'No new commit was needed; reused the current HEAD.',
+      `Prepared Navet Dev release ${devVersion}.`,
+      `Reused the current HEAD without creating a release commit.`,
       `Created tag: ${tagName}`,
       options.push
-        ? `Pushed main and ${tagName} to ${options.remote}.`
-        : `Next: git push ${options.remote} main && git push ${options.remote} ${tagName}`,
+        ? `Pushed ${tagName} to ${options.remote}.`
+        : `Next: git push ${options.remote} ${tagName}`,
     ].join('\n') + '\n'
   );
 } catch (error) {

@@ -9,7 +9,7 @@ This directory is the monorepo source for the add-on published from `awesomestvi
 - uses the authenticated Home Assistant Ingress session
 - does not require manual Home Assistant URL or token entry
 - supports optional `dashboard_config_url` import on first launch
-- exposes a changing dev add-on version so Home Assistant can detect updates
+- refreshes the moving `dev` and `edge` image tags on each Navet Dev publish
 
 Published image tag shape:
 
@@ -17,11 +17,11 @@ Published image tag shape:
 ghcr.io/awesomestvi/{arch}-navet-addon:0.x.y-dev.YYYYMMDDHHMMSS
 ```
 
-`platform/home-assistant/addons/navet-dev/config.yaml` should move only through the Navet Dev
-publish flow so the committed `0.x.y-dev.YYYYMMDDHHMMSS` value always corresponds to a published
-immutable add-on image. Use `pnpm release:dev-version` only when you intentionally need to refresh
-the dev add-on metadata outside that workflow. Each Navet Dev publish uses that committed dev
-version and refreshes the `dev` and `edge` tags as moving aliases for that same image.
+`platform/home-assistant/addons/navet-dev/config.yaml` is channel metadata, not the immutable
+Navet Dev release source of truth. Immutable dev publishes use workflow-generated versions in the
+form `0.x.y-dev.YYYYMMDDHHMMSS` and matching `navet-dev-*` tags. Use `pnpm release:dev-version`
+only when you intentionally need to refresh the repository metadata outside that publish flow.
+Each Navet Dev publish refreshes the `dev` and `edge` tags as moving aliases for that same image.
 
 If you want an immutable Navet Dev publish, the local helper command is:
 
@@ -29,16 +29,19 @@ If you want an immutable Navet Dev publish, the local helper command is:
 pnpm release:dev-publish
 ```
 
-It refreshes the committed `config.yaml`, creates the matching commit if needed, and creates the
-matching tag in this format:
+It creates the matching tag from the current `HEAD` in this format:
 
 ```text
 navet-dev-0.x.y-dev.YYYYMMDDHHMMSS
 ```
 
 That tag triggers a dedicated workflow which publishes exact-version dev images and creates a
-GitHub prerelease without moving the normal `edge` or `dev` aliases. Add `-- --push` to push
-`main` and the new tag in one step.
+GitHub prerelease while also refreshing the moving `edge` and `dev` aliases. The helper now reuses
+the current `HEAD` without creating a release commit. Add `-- --push` to push the new tag.
+
+Because Home Assistant reads add-on repository metadata from the tracked repo contents, immutable
+Navet Dev publishes do not automatically advance the `Navet Dev` add-on version shown by Home
+Assistant unless `config.yaml` is refreshed separately.
 
 If opened outside Ingress through an optional direct port, Navet behaves like the standalone
 runtime and uses OAuth login instead.

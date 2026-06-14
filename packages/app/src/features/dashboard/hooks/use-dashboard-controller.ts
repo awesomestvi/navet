@@ -35,6 +35,10 @@ import { useShallow } from 'zustand/react/shallow';
 import { getClimateDashboardGroup } from '../../climate/utils/climate-dashboard-group';
 import { buildSecurityCameraDashboardModel } from '../../security/utils/security-camera-dashboard-model';
 import type { AllViewGrouping } from '../all-view-grid';
+import {
+  normalizeMediaStackWidgetData,
+  shouldShowMediaStackWidget,
+} from '../components/widgets/media-stack-widget-data';
 import { useCustomCardsStore } from '../stores/custom-cards-store';
 import { useHomeDashboardLayoutStore } from '../stores/home-dashboard-layout-store';
 import { useAvailableRooms } from './use-available-rooms';
@@ -205,16 +209,37 @@ export function useDashboardController(): DashboardController {
   const { isEditMode, toggleEditMode } = useEditMode();
   useEditModeBeforeUnload(isEditMode);
   const allCards = useCustomCardsStore((state) => state.cards);
+  const mediaDevices = useDeviceCollectionsByKeys(['media'], { enabled: true });
+  const mediaDevicesById = useMemo(
+    () => new Map(mediaDevices.media.map((device) => [device.id, device])),
+    [mediaDevices.media]
+  );
+  const visibleCards = useMemo(
+    () =>
+      allCards.filter((card) => {
+        if (isEditMode || card.type !== 'media-stack') {
+          return true;
+        }
+
+        const data = normalizeMediaStackWidgetData(card.data);
+        const configuredDevices = (data?.entityIds ?? [])
+          .map((entityId) => mediaDevicesById.get(entityId))
+          .filter((device): device is NonNullable<typeof device> => Boolean(device));
+
+        return shouldShowMediaStackWidget(configuredDevices, data);
+      }),
+    [allCards, isEditMode, mediaDevicesById]
+  );
   const allCustomCards = useMemo(
-    () => allCards.filter((card) => isAllRooms(card.room) || card.room === HOME_WIDGET_ROOM),
-    [allCards]
+    () => visibleCards.filter((card) => isAllRooms(card.room) || card.room === HOME_WIDGET_ROOM),
+    [visibleCards]
   );
   const customCards = useMemo(
-    () => allCards.filter((card) => card.room === activeRoom || isAllRooms(card.room)),
-    [allCards, activeRoom]
+    () => visibleCards.filter((card) => card.room === activeRoom || isAllRooms(card.room)),
+    [activeRoom, visibleCards]
   );
   const { cardSizes, updateCardSize } = useCardState(devices);
-  const { cardOrders } = useCardOrdering(devices, rooms, allCustomCards);
+  const { cardOrders } = useCardOrdering(devices, rooms, visibleCards);
   const { cardZones, updateCardZone } = useCardZones();
   const { deviceMap } = useDeviceMap(isDeviceHeavySection ? devices : EMPTY_DEVICE_COLLECTION);
   const { deviceMap: availableDeviceMap } = useDeviceMap(
@@ -244,7 +269,7 @@ export function useDashboardController(): DashboardController {
   const deviceTier = useMemo(() => detectDeviceTier(), []);
   const sectionData = useDashboardSectionData({
     activeSection,
-    allCustomCards,
+    allCustomCards: visibleCards,
     availableDeviceMap,
     cardOrders,
     deviceMap,
