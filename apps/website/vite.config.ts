@@ -40,6 +40,7 @@ export default defineConfig({
     __NAVET_ENABLE_DEMO__: JSON.stringify(false),
   },
   resolve: {
+    dedupe: ['react', 'react-dom'],
     alias: {
       '@assets': path.resolve(repoRoot, 'assets'),
       '@': path.resolve(repoRoot, 'src'),
