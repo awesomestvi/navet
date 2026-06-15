@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Settings2 } from 'lucide-react';
+import { Settings2, Trash2 } from 'lucide-react';
 import { Button } from './button';
+import { InteractivePill } from './interactive-pill';
 
 const meta = {
   title: 'Components/Primitives/Button',
@@ -66,6 +67,30 @@ export const Secondary: Story = {
     docs: {
       description: {
         story: 'Secondary-emphasis action for supporting or lower-priority operations.',
+      },
+    },
+  },
+};
+
+export const DestructiveButton: Story = {
+  render: () => (
+    <div className="flex flex-wrap items-center gap-3">
+      <Button variant="ghost" size="small">
+        Cancel
+      </Button>
+      <Button variant="soft" size="small">
+        Save changes
+      </Button>
+      <InteractivePill size="small" icon={Trash2} active accentColor="#e11d48">
+        Delete
+      </InteractivePill>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Destructive action treatment used when a footer action should feel like Navet’s interactive pill tabs instead of a standard button. This is the delete treatment used in the custom sidebar edit flow.',
       },
     },
   },

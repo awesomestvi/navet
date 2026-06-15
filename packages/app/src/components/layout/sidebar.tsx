@@ -13,12 +13,30 @@ import {
 } from '@navet/app/components/ui/dropdown-menu';
 import { getDashboardRoomLabel, isAllRooms } from '@navet/app/constants/rooms';
 import { useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
-import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
+import { useEditModeStore, useNavigationStore, useSettingsStore } from '@navet/app/stores';
+import { settingsSelectors } from '@navet/app/stores/selectors';
+import {
+  ADVANCED_CUSTOM_SIDEBAR_ACTION_LIMIT,
+  getCustomExtensionIcon,
+  isSidebarActionVisible,
+  openCustomExtensionUrl,
+} from '@navet/app/utils/custom-extensions';
 import { resolveEffectsQuality } from '@navet/app/utils/effects-quality';
 import { getPublicAssetUrl } from '@navet/app/utils/public-assets';
-import { Check, ChevronDown, Compass, DoorOpen, type LucideIcon, Search, X } from 'lucide-react';
+import {
+  Check,
+  ChevronDown,
+  Compass,
+  DoorOpen,
+  type LucideIcon,
+  Pencil,
+  Plus,
+  Search,
+  X,
+} from 'lucide-react';
 import { memo, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { CustomExtensionsDialog } from '../../features/settings/components/custom-extensions-dialog';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import type { MobileRoomNavigation } from './mobile-room-dropdown';
 import { getVisibleRoomNavRooms } from './room-nav.utils';
@@ -77,6 +95,11 @@ export const Sidebar = memo(function Sidebar({
       lowPowerMode: state.lowPowerMode,
     }))
   );
+  const advancedCustomizationEnabled = useSettingsStore(
+    settingsSelectors.advancedCustomizationEnabled
+  );
+  const customSidebarActions = useSettingsStore(settingsSelectors.customSidebarActions);
+  const isEditMode = useEditModeStore((state) => state.isEditMode);
   const resolvedEffectsQuality = resolveEffectsQuality(effectsQuality, lowPowerMode);
   const surface = useMemo(
     () => getThemeSurfaceTokens(theme, resolvedEffectsQuality),
@@ -93,6 +116,8 @@ export const Sidebar = memo(function Sidebar({
   const inactiveColor = `${surface.textMuted} ${resolvedHoverBg}`;
   const [isMobileNavHidden, setIsMobileNavHidden] = useState(false);
   const [isOrbitOpen, setIsOrbitOpen] = useState(false);
+  const [isSidebarCustomizationOpen, setIsSidebarCustomizationOpen] = useState(false);
+  const [editingSidebarActionId, setEditingSidebarActionId] = useState<string | null>(null);
   const lastScrollYRef = useRef(0);
   const isMobile = useMediaQuery('(max-width: 767px)');
 
@@ -128,10 +153,50 @@ export const Sidebar = memo(function Sidebar({
   const menuItems = useMemo(
     () =>
       getSectionNavigationItems(t).map((item) => ({
+        id: item.section,
         ...item,
         onClick: () => setActiveSection(item.section),
       })),
     [setActiveSection, t]
+  );
+  const customMenuItems = useMemo(
+    () =>
+      (advancedCustomizationEnabled ? customSidebarActions : [])
+        .filter((item) => isSidebarActionVisible(item, isMobile))
+        .map((item) => ({
+          id: item.id,
+          icon: getCustomExtensionIcon(item.icon),
+          label: item.label,
+          section: item.targetType === 'section' ? item.targetSection : undefined,
+          onEdit: () => {
+            setEditingSidebarActionId(item.id);
+            setIsSidebarCustomizationOpen(true);
+          },
+          onClick: () => {
+            if (isEditMode) {
+              setEditingSidebarActionId(item.id);
+              setIsSidebarCustomizationOpen(true);
+              return;
+            }
+
+            if (item.targetType === 'section' && item.targetSection) {
+              setActiveSection(item.targetSection);
+              return;
+            }
+
+            if (item.targetType === 'url' && item.targetUrl) {
+              openCustomExtensionUrl(item.targetUrl);
+            }
+          },
+        })),
+    [
+      advancedCustomizationEnabled,
+      customSidebarActions,
+      isEditMode,
+      isMobile,
+      setActiveSection,
+      setIsSidebarCustomizationOpen,
+    ]
   );
   const dockItems = useMemo(
     () =>
@@ -185,20 +250,81 @@ export const Sidebar = memo(function Sidebar({
           <div className="flex flex-col gap-4">
             {menuItems.map((item) => (
               <InteractivePill
-                key={item.section}
+                key={item.id}
                 onClick={item.onClick}
                 aria-label={item.label}
-                aria-current={activeSection === item.section ? 'page' : undefined}
+                aria-current={item.section && activeSection === item.section ? 'page' : undefined}
                 title={item.label}
-                active={activeSection === item.section}
+                active={Boolean(item.section && activeSection === item.section)}
                 variant="ghost"
-                className={`flex h-10 w-10 items-center justify-center rounded-[22px] px-0 py-0 transition-colors ${
-                  activeSection === item.section ? '' : inactiveColor
+                className={`flex h-10 w-10 items-center justify-center rounded-[22px] gap-0 px-0 py-0 md:gap-0 md:px-0 transition-colors ${
+                  item.section && activeSection === item.section ? '' : inactiveColor
                 }`}
               >
                 <item.icon className="h-5 w-5" />
               </InteractivePill>
             ))}
+            {customMenuItems.length > 0 ? (
+              <div
+                aria-hidden="true"
+                className={`mx-auto h-px w-6 rounded-full ${
+                  theme === 'light' ? 'bg-slate-300/90' : 'bg-white/14'
+                }`}
+              />
+            ) : null}
+            {customMenuItems.map((item) => (
+              <div key={item.id} className="relative">
+                <InteractivePill
+                  onClick={item.onClick}
+                  aria-label={item.label}
+                  aria-current={item.section && activeSection === item.section ? 'page' : undefined}
+                  title={item.label}
+                  active={Boolean(item.section && activeSection === item.section)}
+                  variant="ghost"
+                  className={`flex h-10 w-10 items-center justify-center rounded-[22px] gap-0 px-0 py-0 md:gap-0 md:px-0 transition-colors ${
+                    item.section && activeSection === item.section ? '' : inactiveColor
+                  }`}
+                >
+                  <item.icon className="h-5 w-5" />
+                </InteractivePill>
+                {isEditMode ? (
+                  <button
+                    type="button"
+                    aria-label={`Edit ${item.label}`}
+                    title={`Edit ${item.label}`}
+                    className={`absolute -right-1 -top-1 flex h-4.5 w-4.5 items-center justify-center rounded-full border ${
+                      theme === 'light'
+                        ? 'border-slate-300 bg-white text-slate-700'
+                        : 'border-white/16 bg-black/75 text-white/82'
+                    }`}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setEditingSidebarActionId(item.id);
+                      setIsSidebarCustomizationOpen(true);
+                    }}
+                  >
+                    <Pencil className="h-2.5 w-2.5" />
+                  </button>
+                ) : null}
+              </div>
+            ))}
+            {isEditMode ? (
+              <InteractivePill
+                onClick={() => {
+                  setEditingSidebarActionId(null);
+                  setIsSidebarCustomizationOpen(true);
+                }}
+                aria-label="Customize sidebar"
+                title="Customize sidebar"
+                active={false}
+                variant="ghost"
+                className={`flex h-10 w-10 items-center justify-center rounded-[22px] gap-0 px-0 py-0 md:gap-0 md:px-0 transition-colors ${inactiveColor}`}
+                disabled={customSidebarActions.length >= ADVANCED_CUSTOM_SIDEBAR_ACTION_LIMIT}
+              >
+                <Plus className="h-5 w-5" />
+              </InteractivePill>
+            ) : null}
           </div>
         </div>
       </div>
@@ -292,7 +418,7 @@ export const Sidebar = memo(function Sidebar({
                       aria-label={activeHomeLabel}
                       className="flex h-full w-full flex-col items-center justify-center gap-1 px-2 py-1.5 pr-7"
                     >
-                      <ActiveHomeIcon className="h-[0.94rem] w-[0.94rem] shrink-0" />
+                      <ActiveHomeIcon className="h-4 w-4 shrink-0" />
                       <span className="max-w-full truncate px-0.5 text-[11px] leading-none tracking-[-0.01em] font-semibold">
                         {activeHomeLabel}
                       </span>
@@ -367,9 +493,30 @@ export const Sidebar = memo(function Sidebar({
 
       <MobileSectionOrbitSheet
         activeSection={activeSection}
+        customItems={customMenuItems}
         isOpen={isOrbitOpen}
         onOpenChange={setIsOrbitOpen}
         onSelectSection={setActiveSection}
+        onCustomizeSidebar={
+          isEditMode
+            ? () => {
+                setIsOrbitOpen(false);
+                setEditingSidebarActionId(null);
+                setIsSidebarCustomizationOpen(true);
+              }
+            : undefined
+        }
+      />
+      <CustomExtensionsDialog
+        editingActionId={editingSidebarActionId}
+        isOpen={isSidebarCustomizationOpen}
+        onOpenChange={(open) => {
+          setIsSidebarCustomizationOpen(open);
+          if (!open) {
+            setEditingSidebarActionId(null);
+          }
+        }}
+        mode="sidebar"
       />
     </>
   );
@@ -400,7 +547,7 @@ function MobileDockButton({
       className={`flex min-h-11 min-w-[4.25rem] shrink-0 flex-col items-center justify-center gap-1 rounded-[20px] px-2 py-1.5 transition-all ${pill.className}`}
       style={pill.style}
     >
-      <Icon className="h-[0.94rem] w-[0.94rem] shrink-0" />
+      <Icon className="h-4 w-4 shrink-0" />
       <span
         className={`max-w-full whitespace-nowrap px-0.5 text-[11px] leading-none tracking-[-0.01em] ${
           isActive ? 'font-semibold' : 'font-medium'

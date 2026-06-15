@@ -8,6 +8,7 @@ const meta = {
   tags: ['autodocs'],
   args: {
     currentStep: 1,
+    size: 'default',
     items: [
       { id: 'essentials', label: 'Essentials' },
       { id: 'sources', label: 'Extra sources', optional: true },
@@ -43,6 +44,16 @@ type Story = StoryObj<typeof meta>;
 
 export const InProgress: Story = {};
 export const CompletedFirstStep: Story = { args: { currentStep: 2 } };
+export const Compact: Story = {
+  args: {
+    size: 'compact',
+    items: [
+      { id: 'essentials', label: 'Essentials', compactLabel: 'Basics' },
+      { id: 'sources', label: 'Extra sources', compactLabel: 'Sources', optional: true },
+      { id: 'devices', label: 'Device tracking', compactLabel: 'Devices', optional: true },
+    ],
+  },
+};
 
 export const Docs: Story = {
   parameters: {

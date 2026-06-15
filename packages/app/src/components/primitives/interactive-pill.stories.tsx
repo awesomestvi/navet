@@ -1,6 +1,6 @@
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import type { Meta, StoryObj } from '@storybook/react';
-import { Circle, Droplets, Moon, Palette, Sliders, Star, Sun } from 'lucide-react';
+import { Circle, Droplets, Moon, Palette, Sliders, Star, Sun, Trash2 } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { useState } from 'react';
 import { InteractivePill } from './interactive-pill';
@@ -228,6 +228,30 @@ export const GhostRow: Story = {
     variant: 'ghost',
   },
   render: (args) => <InteractiveGroupedRowStory {...args} />,
+};
+
+export const DestructiveAction: Story = {
+  render: () => (
+    <div className="flex flex-wrap items-center gap-3">
+      <InteractivePill size="small" icon={Sliders}>
+        Cancel
+      </InteractivePill>
+      <InteractivePill size="small" icon={Star} active>
+        Save changes
+      </InteractivePill>
+      <InteractivePill size="small" icon={Trash2} active accentColor="#e11d48">
+        Delete
+      </InteractivePill>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Destructive actions should use the same interactive-pill language as selection rows, with a red accent replacing the default accent instead of switching to a heavy button treatment.',
+      },
+    },
+  },
 };
 
 export const Docs: Story = {

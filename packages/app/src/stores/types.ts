@@ -1,6 +1,7 @@
 import type { CardSize } from '../components/shared/card-size-selector';
 import type { AppLanguage } from '../i18n';
 import type { Section } from '../navigation/sections';
+import type { CustomSidebarAction, CustomSummaryPill } from '../utils/custom-extensions';
 import type {
   CameraDashboardViewMode,
   CameraFitMode,
@@ -89,6 +90,9 @@ interface UserSettings {
   ambientLightBleed: boolean;
   weatherForecastMode: WeatherForecastMode;
   weatherMetricIds: WeatherMetricId[];
+  advancedCustomizationEnabled: boolean;
+  customSidebarActions: CustomSidebarAction[];
+  customSummaryPills: CustomSummaryPill[];
 }
 
 export interface SettingsState extends UserSettings {

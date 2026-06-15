@@ -1,5 +1,5 @@
-import type { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import type { ReactNode } from 'react';
+import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
+import type { ElementType } from 'react';
 
 export { CardGrid, EmptyCanvas, FlowCanvas } from './home-dashboard-overview-card-grid';
 export { HomePresentation, SectionCanvasGrid } from './home-dashboard-overview-sections';
@@ -9,21 +9,21 @@ export function ModeChip({
   icon,
   label,
   onClick,
-  surface,
   accentColor,
 }: {
   active: boolean;
-  icon: ReactNode;
+  icon: ElementType;
   label: string;
   onClick: () => void;
-  surface: ReturnType<typeof getThemeSurfaceTokens>;
   accentColor: string;
 }) {
   return (
-    <button
-      type="button"
+    <InteractivePill
+      size="default"
+      icon={icon}
+      active={active}
       onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-colors ${surface.border} ${surface.hoverBg}`}
+      className="h-8 gap-1 px-3 text-xs leading-5 md:h-10 md:gap-1.5 md:px-4 md:text-sm [&_svg]:h-3.5 [&_svg]:w-3.5 md:[&_svg]:h-4 md:[&_svg]:w-4"
       style={
         active
           ? {
@@ -33,8 +33,7 @@ export function ModeChip({
           : undefined
       }
     >
-      {icon}
-      <span className={surface.textPrimary}>{label}</span>
-    </button>
+      {label}
+    </InteractivePill>
   );
 }

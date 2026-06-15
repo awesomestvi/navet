@@ -1,5 +1,5 @@
 import { Sidebar } from '@navet/app/components/layout/sidebar';
-import { useNavigationStore } from '@navet/app/stores';
+import { useEditModeStore, useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { setMediaQueryMatch } from '@navet/app/test/browser-mocks';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
@@ -84,5 +84,118 @@ describe('Sidebar mobile navigation', () => {
 
     expect(screen.queryByText('Recent sections')).not.toBeInTheDocument();
     expect(screen.queryByText('Current room')).not.toBeInTheDocument();
+  });
+
+  it('renders saved custom sidebar actions in the more sheet when advanced customization is enabled', () => {
+    useSettingsStore.getState().updateSettings({
+      advancedCustomizationEnabled: true,
+      customSidebarActions: [
+        {
+          id: 'movie-status',
+          label: 'Movie status',
+          icon: 'link',
+          targetType: 'url',
+          targetUrl: 'https://example.com/status',
+          visibility: 'always',
+        },
+      ],
+    });
+
+    const { container } = renderWithProviders(
+      <Sidebar mobileRoomNavigation={mobileRoomNavigation} />
+    );
+    const dock = getMobileDock(container);
+
+    fireEvent.click(within(dock).getByRole('button', { name: 'More' }));
+
+    expect(
+      within(screen.getByRole('dialog')).getByRole('button', { name: /^Movie status/ })
+    ).toBeInTheDocument();
+  });
+
+  it('renders a customize sidebar action in the more sheet', () => {
+    useEditModeStore.getState().setEditMode(true);
+    const { container } = renderWithProviders(
+      <Sidebar mobileRoomNavigation={mobileRoomNavigation} />
+    );
+    const dock = getMobileDock(container);
+
+    fireEvent.click(within(dock).getByRole('button', { name: 'More' }));
+
+    expect(
+      within(screen.getByRole('dialog')).getByRole('button', { name: /^Customize sidebar/ })
+    ).toBeInTheDocument();
+  });
+
+  it('does not render the desktop customize sidebar button outside edit mode', () => {
+    setMediaQueryMatch('(max-width: 767px)', false);
+
+    renderWithProviders(<Sidebar mobileRoomNavigation={mobileRoomNavigation} />);
+
+    expect(screen.queryByRole('button', { name: 'Customize sidebar' })).not.toBeInTheDocument();
+  });
+
+  it('renders a pencil affordance for custom desktop sidebar actions in edit mode', () => {
+    setMediaQueryMatch('(max-width: 767px)', false);
+    useEditModeStore.getState().setEditMode(true);
+    useSettingsStore.getState().updateSettings({
+      advancedCustomizationEnabled: true,
+      customSidebarActions: [
+        {
+          id: 'movie-status',
+          label: 'Movie status',
+          icon: 'link',
+          targetType: 'url',
+          targetUrl: 'https://example.com/status',
+          visibility: 'always',
+        },
+      ],
+    });
+
+    renderWithProviders(<Sidebar mobileRoomNavigation={mobileRoomNavigation} />);
+
+    expect(screen.getByRole('button', { name: 'Edit Movie status' })).toBeInTheDocument();
+  });
+
+  it('opens the customization dialog instead of triggering a custom desktop sidebar action in edit mode', () => {
+    setMediaQueryMatch('(max-width: 767px)', false);
+    useEditModeStore.getState().setEditMode(true);
+    useSettingsStore.getState().updateSettings({
+      advancedCustomizationEnabled: true,
+      customSidebarActions: [
+        {
+          id: 'movie-status',
+          label: 'Movie status',
+          icon: 'link',
+          targetType: 'section',
+          targetSection: 'media',
+          visibility: 'always',
+        },
+      ],
+    });
+
+    renderWithProviders(<Sidebar mobileRoomNavigation={mobileRoomNavigation} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Movie status' }));
+
+    expect(useNavigationStore.getState().activeSection).toBe('home');
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByText('Edit sidebar action')).toBeInTheDocument();
+    expect(within(dialog).getByDisplayValue('Movie status')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Save changes' })).toBeInTheDocument();
+  });
+
+  it('does not render a customize sidebar action in the more sheet outside edit mode', () => {
+    const { container } = renderWithProviders(
+      <Sidebar mobileRoomNavigation={mobileRoomNavigation} />
+    );
+    const dock = getMobileDock(container);
+
+    fireEvent.click(within(dock).getByRole('button', { name: 'More' }));
+
+    expect(
+      within(screen.getByRole('dialog')).queryByRole('button', { name: /^Customize sidebar/ })
+    ).not.toBeInTheDocument();
   });
 });

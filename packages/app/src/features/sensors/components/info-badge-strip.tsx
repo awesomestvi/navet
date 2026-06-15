@@ -2,6 +2,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { useI18n, useTheme } from '@navet/app/hooks';
 import type { Section } from '@navet/app/navigation/sections';
 import { darkenColor } from '@navet/app/utils/color-utils';
+import { openCustomExtensionUrl } from '@navet/app/utils/custom-extensions';
 import { memo } from 'react';
 import type { HomeStatusSummaryItem } from './home-status-summary-model';
 
@@ -32,21 +33,15 @@ export const InfoBadgeStrip = memo(function InfoBadgeStrip({
         {items.map((item) => {
           const IconComponent = item.icon;
           const iconColor = theme === 'light' ? darkenColor(item.iconColor, 68) : item.iconColor;
+          const isInteractive = Boolean(item.targetSection || item.targetUrl);
           const chipClassName =
             theme === 'light'
               ? 'border-slate-200/70 bg-white/55 text-slate-900 shadow-[0_12px_28px_-24px_rgba(15,23,42,0.28)] hover:bg-white/75'
               : theme === 'black'
                 ? 'border-white/10 bg-white/[0.035] text-white/88 hover:bg-white/[0.065]'
                 : 'border-white/10 bg-white/[0.055] text-white/88 backdrop-blur-xl hover:bg-white/[0.085]';
-
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onNavigate(item.targetSection)}
-              className={`group inline-grid min-h-8 shrink-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-1 rounded-full border px-1.5 py-1 pr-2 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/25 md:min-h-9 md:gap-1.5 md:px-2 md:py-1.5 md:pr-3 ${chipClassName}`}
-              aria-label={t('dashboard.summary.openSection', { name: item.title })}
-            >
+          const content = (
+            <>
               <span
                 data-testid={`info-badge-strip-icon-${item.id}`}
                 className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-current/10 bg-current/[0.08] transition-transform group-hover:scale-[1.03] md:h-6 md:w-6"
@@ -65,6 +60,38 @@ export const InfoBadgeStrip = memo(function InfoBadgeStrip({
                   {item.value}
                 </span>
               </span>
+            </>
+          );
+
+          if (!isInteractive) {
+            return (
+              <div
+                key={item.id}
+                className={`group inline-grid min-h-8 shrink-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-1 rounded-full border px-1.5 py-1 pr-2 text-left md:min-h-9 md:gap-1.5 md:px-2 md:py-1.5 md:pr-3 ${chipClassName}`}
+              >
+                {content}
+              </div>
+            );
+          }
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                if (item.targetUrl) {
+                  openCustomExtensionUrl(item.targetUrl);
+                  return;
+                }
+
+                if (item.targetSection) {
+                  onNavigate(item.targetSection);
+                }
+              }}
+              className={`group inline-grid min-h-8 shrink-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-1 rounded-full border px-1.5 py-1 pr-2 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/25 md:min-h-9 md:gap-1.5 md:px-2 md:py-1.5 md:pr-3 ${chipClassName}`}
+              aria-label={t('dashboard.summary.openSection', { name: item.title })}
+            >
+              {content}
             </button>
           );
         })}

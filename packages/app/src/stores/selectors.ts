@@ -140,6 +140,9 @@ export const settingsSelectors = {
   ambientLightBleed: (state: SettingsState) => state.ambientLightBleed,
   weatherForecastMode: (state: SettingsState) => state.weatherForecastMode,
   weatherMetricIds: (state: SettingsState) => state.weatherMetricIds,
+  advancedCustomizationEnabled: (state: SettingsState) => state.advancedCustomizationEnabled,
+  customSidebarActions: (state: SettingsState) => state.customSidebarActions,
+  customSummaryPills: (state: SettingsState) => state.customSummaryPills,
 
   // Actions
   updateSettings: (state: SettingsState) => state.updateSettings,
@@ -170,6 +173,9 @@ export const settingsSelectors = {
     ambientLightBleed: state.ambientLightBleed,
     weatherForecastMode: state.weatherForecastMode,
     weatherMetricIds: state.weatherMetricIds,
+    advancedCustomizationEnabled: state.advancedCustomizationEnabled,
+    customSidebarActions: state.customSidebarActions,
+    customSummaryPills: state.customSummaryPills,
   }),
 };
 

@@ -468,9 +468,9 @@ export const enMessages = {
   'dashboard.homeOverview.stats.featuredCards': 'Featured cards',
   'dashboard.homeOverview.stats.hiddenDevices': 'Hidden devices',
   'dashboard.homePersonal.eyebrow': 'Personal Home',
-  'dashboard.homePersonal.title': 'Make Home feel like your dashboard, not ours.',
+  'dashboard.homePersonal.title': 'Shape Home around how you use it.',
   'dashboard.homePersonal.description':
-    'Start with an empty canvas, pull in the cards you actually care about, and switch between free-flowing bento and sectioned layouts whenever it suits you.',
+    'Rearrange cards, add what matters, and switch between flowing bento and sectioned bento whenever it fits your layout better.',
   'dashboard.homePersonal.switchToSections': 'Use Sections',
   'dashboard.homePersonal.switchToFlow': 'Use Flow Layout',
   'dashboard.homePersonal.hideHero': 'Hide Hero',

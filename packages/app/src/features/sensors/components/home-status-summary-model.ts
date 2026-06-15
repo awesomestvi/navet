@@ -2,6 +2,8 @@ import { getClimateDashboardGroup } from '@navet/app/features/climate/utils/clim
 import { getSecurityAlertCount } from '@navet/app/features/security/utils/security-alert-count';
 import type { Section } from '@navet/app/navigation/sections';
 import type { DeviceWithType } from '@navet/app/types/device.types';
+import type { CustomSummaryPill } from '@navet/app/utils/custom-extensions';
+import { getCustomExtensionIcon } from '@navet/app/utils/custom-extensions';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
 import {
   convertTemperatureUnitValue,
@@ -18,7 +20,8 @@ export interface HomeStatusSummaryItem {
   value: string;
   icon: LucideIcon;
   iconColor: string;
-  targetSection: Section;
+  targetSection?: Section;
+  targetUrl?: string;
 }
 
 export interface StatusSummaryOptions {
@@ -27,6 +30,7 @@ export interface StatusSummaryOptions {
   routineCount?: number;
   securityAlertCount?: number;
   temperatureUnit?: TemperatureUnit;
+  customSummaryPills?: CustomSummaryPill[];
 }
 
 const NON_AMBIENT_CLIMATE_SENSOR_PATTERN =
@@ -155,7 +159,22 @@ function getSecuritySummary(devices: DeviceWithType[]): HomeStatusSummaryItem | 
       device.type === 'locks' ||
       device.type === 'covers' ||
       device.type === 'cameras' ||
-      device.type === 'sensors'
+      (device.type === 'sensors' &&
+        [
+          'door',
+          'garage_door',
+          'gas',
+          'moisture',
+          'motion',
+          'occupancy',
+          'opening',
+          'presence',
+          'problem',
+          'safety',
+          'smoke',
+          'tamper',
+          'window',
+        ].includes(String(device.deviceClass ?? '').toLowerCase()))
   );
   if (!hasSecurityCandidates) {
     return null;
@@ -192,6 +211,71 @@ function getMediaSummary(devices: DeviceWithType[]): HomeStatusSummaryItem | nul
     iconColor: playingCount > 0 ? '#60a5fa' : '#cbd5e1',
     targetSection: 'media',
   };
+}
+
+function formatCustomSummaryDeviceValue(device: DeviceWithType | undefined): string | null {
+  if (!device) {
+    return null;
+  }
+
+  switch (device.type) {
+    case 'sensors': {
+      const value = String(device.value ?? '').trim();
+      const unit = String(device.unit ?? '').trim();
+      if (!value) {
+        return null;
+      }
+      return unit ? `${value} ${unit}` : value;
+    }
+    case 'lights':
+    case 'switches':
+    case 'locks':
+      return device.state ? 'On' : 'Off';
+    case 'media':
+      return device.state === 'playing' ? 'Playing' : device.state === 'paused' ? 'Paused' : 'Idle';
+    case 'climate':
+      return `${formatDisplayTemperature(Math.round(device.currentTemperature ?? device.temperature))}°`;
+    case 'hvac':
+      return `${formatDisplayTemperature(Math.round(device.temp))}°`;
+    case 'weather':
+      return `${formatDisplayTemperature(Math.round(device.temperature))}°`;
+    default:
+      return null;
+  }
+}
+
+function buildCustomSummaryItems(
+  deviceMap: Map<string, DeviceWithType>,
+  customSummaryPills: CustomSummaryPill[] = []
+): HomeStatusSummaryItem[] {
+  return customSummaryPills.flatMap((item) => {
+    const value =
+      item.valueSourceType === 'static'
+        ? (item.staticValue ?? '')
+        : item.entityId
+          ? formatCustomSummaryDeviceValue(deviceMap.get(item.entityId))
+          : null;
+
+    if (!value && item.visibility === 'when_value_available') {
+      return [];
+    }
+
+    if (!value) {
+      return [];
+    }
+
+    return [
+      {
+        id: item.id,
+        title: item.label,
+        value,
+        icon: getCustomExtensionIcon(item.icon),
+        iconColor: '#a78bfa',
+        targetSection: item.actionType === 'section' ? item.actionSection : undefined,
+        targetUrl: item.actionType === 'url' ? item.actionUrl : undefined,
+      },
+    ];
+  });
 }
 
 function isAmbientTemperatureSensor(
@@ -334,9 +418,10 @@ function getClimateSummary(
 }
 
 function buildStatusSummaryItems(
-  devices: DeviceWithType[],
+  deviceMap: Map<string, DeviceWithType>,
   options: StatusSummaryOptions = {}
 ): HomeStatusSummaryItem[] {
+  const devices = Array.from(deviceMap.values());
   const securitySummary =
     options.securityAlertCount !== undefined
       ? {
@@ -360,6 +445,7 @@ function buildStatusSummaryItems(
     securitySummary,
     getLightSummary(devices),
     getMediaSummary(devices),
+    ...buildCustomSummaryItems(deviceMap, options.customSummaryPills),
   ].filter((item): item is HomeStatusSummaryItem => item !== null);
 }
 
@@ -367,7 +453,7 @@ export function buildHomeStatusSummaryItems(
   deviceMap: Map<string, DeviceWithType>,
   options: StatusSummaryOptions = {}
 ): HomeStatusSummaryItem[] {
-  return buildStatusSummaryItems(Array.from(deviceMap.values()), options);
+  return buildStatusSummaryItems(deviceMap, options);
 }
 
 export function buildRoomStatusSummaryItems(
@@ -378,5 +464,8 @@ export function buildRoomStatusSummaryItems(
   const roomDevices = Array.from(deviceMap.values()).filter(
     (device) => getDeviceRoomLabel(device) === room
   );
-  return buildStatusSummaryItems(roomDevices, options);
+  return buildStatusSummaryItems(
+    new Map(roomDevices.map((device) => [device.id, device] as const)),
+    options
+  );
 }

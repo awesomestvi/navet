@@ -1,6 +1,8 @@
+import { CardDialogHeader } from '@navet/app/components/patterns';
 import {
   DialogShell,
   Input,
+  RoomEyebrow,
   TabList,
   TabPanel,
   Tabs,
@@ -11,8 +13,7 @@ import { getAddCardDialogSurfaceTokens } from '@navet/app/components/shared/them
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { isAllRooms } from '@navet/app/constants/rooms';
 import { type ThemeType, useI18n } from '@navet/app/hooks';
-import * as Dialog from '@radix-ui/react-dialog';
-import { ArrowLeft, Layers2, Search, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, Layers2, Search, Sparkles } from 'lucide-react';
 import { type DashboardLibraryCard, DashboardLibraryList } from '../dashboard-library-list';
 import type { CardTemplate, CardTemplateId } from './types';
 
@@ -86,6 +87,10 @@ export function AddCardDialogView({
     : t('dashboard.addCard.librarySummary.available', { count: libraryCount });
   const selectedTemplate = cardTemplates.find((template) => template.id === selectedType);
   const sizeOptions = selectedTemplate?.supportedSizes ?? [];
+  const roomLabel = isAllRooms(currentRoom) ? t('dashboard.addCard.allRooms') : currentRoom;
+  const headerEyebrow = cardsTabActive
+    ? t('dashboard.addCard.header.library')
+    : t('dashboard.addCard.header.widgets');
 
   return (
     <DialogShell
@@ -106,42 +111,28 @@ export function AddCardDialogView({
         onValueChange={(value) => setActiveTab(value as 'cards' | 'widgets')}
       >
         <div className="sticky top-0 z-10 border-b border-white/10 bg-inherit/95 px-4 pb-3 pt-2 backdrop-blur-xl sm:px-5 sm:pb-4 sm:pt-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
+          <CardDialogHeader
+            title={t('dashboard.addCard.title')}
+            description={
+              cardsTabActive
+                ? t('dashboard.addCard.libraryDescription')
+                : t('dashboard.addCard.description', { room: roomLabel })
+            }
+            eyebrow={
               <div
-                className={`mb-1 text-[0.7rem] font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
+                className={`text-[0.7rem] font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
               >
-                {cardsTabActive
-                  ? t('dashboard.addCard.header.library')
-                  : t('dashboard.addCard.header.widgets')}
+                {headerEyebrow}
               </div>
-              <Dialog.Title
-                className={`text-base font-semibold leading-tight sm:text-2xl sm:leading-none ${textColor}`}
-              >
-                {t('dashboard.addCard.title')}
-              </Dialog.Title>
-              <Dialog.Description
-                className={`mt-0.5 max-w-[32rem] text-xs leading-5 sm:mt-2 sm:text-sm sm:leading-6 ${mutedColor}`}
-              >
-                {cardsTabActive
-                  ? t('dashboard.addCard.libraryDescription')
-                  : t('dashboard.addCard.description', {
-                      room: isAllRooms(currentRoom) ? t('dashboard.addCard.allRooms') : currentRoom,
-                    })}
-              </Dialog.Description>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] border transition-colors ${hoverBg}`}
-              style={{
-                borderColor: 'rgba(255,255,255,0.08)',
-                backgroundColor: 'rgba(255,255,255,0.04)',
-              }}
-            >
-              <X className={`h-4 w-4 ${mutedColor}`} />
-            </button>
-          </div>
+            }
+            editableTitle={false}
+            showRoomSelector={false}
+            trailing={<RoomEyebrow room={roomLabel} forceDark visualOnly />}
+            className="mb-0"
+            titleStyle={{ color: 'inherit' }}
+            descriptionStyle={{ color: 'inherit' }}
+            actionButtonStyle={{ color: 'inherit' }}
+          />
 
           {showCardsTab ? (
             <TabList variant="segmented" size="compact" className="mt-3 grid-cols-2 sm:mt-5">

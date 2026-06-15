@@ -74,6 +74,58 @@ describe('home status summary model', () => {
     ]);
   });
 
+  it('appends validated custom summary pills and hides missing entity pills', () => {
+    const items = buildHomeStatusSummaryItems(
+      new Map(
+        [
+          device({
+            id: 'sensor.entryway_temperature',
+            type: 'sensors',
+            deviceClass: 'temperature',
+            value: '21.5',
+            unit: 'C',
+          }),
+        ].map((entry) => [entry.id, entry])
+      ),
+      {
+        customSummaryPills: [
+          {
+            id: 'entry-temp',
+            label: 'Entry',
+            icon: 'sparkles',
+            valueSourceType: 'entity',
+            entityId: 'sensor.entryway_temperature',
+            actionType: 'section',
+            actionSection: 'climate',
+            visibility: 'when_value_available',
+          },
+          {
+            id: 'missing',
+            label: 'Missing',
+            icon: 'bell',
+            valueSourceType: 'entity',
+            entityId: 'sensor.missing',
+            actionType: 'none',
+            visibility: 'when_value_available',
+          },
+        ],
+      }
+    );
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        id: 'climate',
+        targetSection: 'climate',
+      }),
+      expect.objectContaining({
+        id: 'entry-temp',
+        title: 'Entry',
+        value: '21.5 C',
+        targetSection: 'climate',
+      }),
+    ]);
+  });
+
   it('ignores inactive scenes and scripts in the summary bar', () => {
     const scene = device({ id: 'scene.goodnight', type: 'scenes' });
     const script = device({

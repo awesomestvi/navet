@@ -1,11 +1,11 @@
 import type { LucideIcon } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import {
   Circle,
   CircleDashed,
   CircleDot,
   Flame,
   Flashlight,
-  Gauge,
   Lamp,
   LampCeiling,
   LampDesk,
@@ -16,8 +16,6 @@ import {
   Moon,
   MoonStar,
   Orbit,
-  Play,
-  Power,
   Sparkle,
   Star,
   StarHalf,
@@ -60,36 +58,13 @@ export const LIGHT_ICON_MAP: Record<string, LucideIcon> = {
 
 export const DEFAULT_LIGHT_ICON = 'Zap';
 const emojiIconRegex = /\p{Extended_Pictographic}/u;
-const lucideIconRegistry = new Map<string, LucideIcon>([
-  ['Circle', Circle],
-  ['CircleDashed', CircleDashed],
-  ['CircleDot', CircleDot],
-  ['Flame', Flame],
-  ['Flashlight', Flashlight],
-  ['Gauge', Gauge],
-  ['Lamp', Lamp],
-  ['LampCeiling', LampCeiling],
-  ['LampDesk', LampDesk],
-  ['LampFloor', LampFloor],
-  ['LampWallDown', LampWallDown],
-  ['LampWallUp', LampWallUp],
-  ['Lightbulb', Lightbulb],
-  ['Moon', Moon],
-  ['MoonStar', MoonStar],
-  ['Orbit', Orbit],
-  ['Play', Play],
-  ['Power', Power],
-  ['Sparkle', Sparkle],
-  ['Star', Star],
-  ['StarHalf', StarHalf],
-  ['SunDim', SunDim],
-  ['SunMedium', SunMedium],
-  ['SunMoon', SunMoon],
-  ['Sunrise', Sunrise],
-  ['Sunset', Sunset],
-  ['Zap', Zap],
-  ['ZapOff', ZapOff],
-]);
+const lucideIconRegistry = new Map<string, LucideIcon>(
+  Object.entries(LucideIcons).flatMap(([key, value]) =>
+    /^[A-Z]/.test(key) && (typeof value === 'function' || typeof value === 'object')
+      ? [[key, value as LucideIcon]]
+      : []
+  )
+);
 const lowerCaseLightIconMap = new Map(
   Object.keys(LIGHT_ICON_MAP).map((key) => [key.toLowerCase(), key] as const)
 );

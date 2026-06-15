@@ -7,6 +7,7 @@ import { useMemo } from 'react';
 export interface StepperItem {
   id: string;
   label: string;
+  compactLabel?: string;
   optional?: boolean;
 }
 
@@ -14,21 +15,30 @@ export interface StepperProps {
   items: StepperItem[];
   currentStep: number;
   className?: string;
+  size?: 'default' | 'compact';
 }
 
 // Status: in-progress. Compact horizontal stepper for short multi-step flows.
-export function Stepper({ items, currentStep, className }: StepperProps) {
+export function Stepper({ items, currentStep, className, size = 'default' }: StepperProps) {
   const { theme, accentColor } = useTheme();
   const currentIndex = useMemo(
     () => Math.max(0, Math.min(items.length - 1, currentStep)),
     [currentStep, items.length]
   );
+  const isCompact = size === 'compact';
 
   return (
-    <ol className={cn('flex items-center gap-2 overflow-x-auto pb-1', className)}>
+    <ol
+      className={cn(
+        'flex items-center pb-1',
+        isCompact ? 'w-full gap-1 overflow-hidden' : 'gap-2 overflow-x-auto',
+        className
+      )}
+    >
       {items.map((item, index) => {
         const status =
           index < currentIndex ? 'complete' : index === currentIndex ? 'current' : 'upcoming';
+        const resolvedLabel = isCompact ? (item.compactLabel ?? item.label) : item.label;
         const capsuleClassName =
           status === 'current'
             ? theme === 'light'
@@ -55,10 +65,14 @@ export function Stepper({ items, currentStep, className }: StepperProps) {
                     : 'border-zinc-800 bg-transparent text-zinc-500';
 
         return (
-          <li key={item.id} className="flex items-center gap-2">
+          <li
+            key={item.id}
+            className={cn('flex items-center', isCompact ? 'min-w-0 flex-1 gap-1' : 'gap-2')}
+          >
             <div
               className={cn(
-                'flex min-w-0 items-center gap-3 border px-3 py-2 backdrop-blur-xl',
+                'flex min-w-0 items-center border backdrop-blur-xl',
+                isCompact ? 'flex-1 justify-center gap-1.5 px-2 py-1.5' : 'gap-3 px-3 py-2',
                 navetRadiusTokens.action,
                 capsuleClassName
               )}
@@ -66,7 +80,8 @@ export function Stepper({ items, currentStep, className }: StepperProps) {
             >
               <span
                 className={cn(
-                  'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold',
+                  'flex shrink-0 items-center justify-center rounded-full border font-semibold',
+                  isCompact ? 'h-5 w-5 text-[10px]' : 'h-6 w-6 text-[11px]',
                   status === 'current'
                     ? 'border-transparent text-white'
                     : status === 'complete'
@@ -80,12 +95,25 @@ export function Stepper({ items, currentStep, className }: StepperProps) {
                 style={status === 'current' ? { backgroundColor: accentColor } : undefined}
                 aria-hidden="true"
               >
-                {status === 'complete' ? <Check className="h-3.5 w-3.5" /> : index + 1}
+                {status === 'complete' ? (
+                  <Check className={isCompact ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
+                ) : (
+                  index + 1
+                )}
               </span>
               <div className="min-w-0">
-                <div className="truncate text-sm font-medium">{item.label}</div>
-                {item.optional ? (
-                  <div className="text-[11px] uppercase tracking-[0.14em] opacity-60">Optional</div>
+                <div
+                  className={cn(
+                    'truncate font-medium whitespace-nowrap',
+                    isCompact ? 'text-[10px]' : 'text-sm'
+                  )}
+                >
+                  {resolvedLabel}
+                </div>
+                {item.optional && !isCompact ? (
+                  <div className={cn('uppercase tracking-[0.14em] opacity-60', 'text-[11px]')}>
+                    Optional
+                  </div>
                 ) : null}
               </div>
             </div>
@@ -93,7 +121,7 @@ export function Stepper({ items, currentStep, className }: StepperProps) {
               <div
                 aria-hidden="true"
                 className={cn(
-                  'hidden h-px w-6 shrink-0 sm:block',
+                  isCompact ? 'h-px min-w-1 flex-1' : 'hidden h-px w-6 shrink-0 sm:block',
                   index < currentIndex
                     ? theme === 'light'
                       ? 'bg-gray-300'

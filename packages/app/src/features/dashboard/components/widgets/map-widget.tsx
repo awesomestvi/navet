@@ -175,8 +175,12 @@ export const MapWidget = memo(function MapWidget({
   const defaultCenter = useMemo<[number, number]>(() => [20, 0], []);
 
   useEffect(() => {
-    if (!isMapVisible || resolvedMarkers.length === 0) {
+    if (resolvedMarkers.length === 0) {
       setIsMapDeferredReady(false);
+      return;
+    }
+
+    if (!isMapVisible) {
       return;
     }
 

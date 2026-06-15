@@ -14,6 +14,23 @@ const demoLibraryCards = [
 ];
 
 describe('AddCardDialogContainer', () => {
+  it('uses the card-dialog header pattern with the current room chip', () => {
+    renderWithProviders(
+      <AddCardDialogContainer
+        open
+        onClose={() => {}}
+        onAddCard={vi.fn()}
+        onAddLibraryCard={() => {}}
+        currentRoom="Living Room"
+        libraryCards={demoLibraryCards}
+      />
+    );
+
+    expect(screen.getByText('Add Card')).toBeInTheDocument();
+    expect(screen.getByText('ENTITY LIBRARY')).toBeInTheDocument();
+    expect(screen.getAllByText('Living Room').length).toBeGreaterThan(0);
+  });
+
   it('shows the scene template and forwards its preset data when added', () => {
     const onAddCard = vi.fn();
 

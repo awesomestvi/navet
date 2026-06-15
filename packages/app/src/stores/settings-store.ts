@@ -1,6 +1,12 @@
 import { STORE_STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { type AppLanguage, getNavigatorLanguage } from '@navet/app/i18n/config';
 import type { PlatformCameraTransport } from '@navet/app/platform/provider-feature-models';
+import {
+  type CustomSidebarAction,
+  type CustomSummaryPill,
+  normalizeCustomSidebarActions,
+  normalizeCustomSummaryPills,
+} from '@navet/app/utils/custom-extensions';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import {
   readLocalStorageWithMigration,
@@ -61,6 +67,9 @@ export interface UserSettings {
   ambientLightBleed: boolean;
   weatherForecastMode: WeatherForecastMode;
   weatherMetricIds: WeatherMetricId[];
+  advancedCustomizationEnabled: boolean;
+  customSidebarActions: CustomSidebarAction[];
+  customSummaryPills: CustomSummaryPill[];
 }
 
 interface SettingsState extends UserSettings {
@@ -102,6 +111,9 @@ export const defaultSettings: UserSettings = {
   ambientLightBleed: true,
   weatherForecastMode: 'weekly',
   weatherMetricIds: ['precipitation', 'humidity', 'wind'],
+  advancedCustomizationEnabled: false,
+  customSidebarActions: [],
+  customSummaryPills: [],
 };
 
 function isCameraViewMode(value: unknown): value is CameraViewMode {
@@ -252,6 +264,14 @@ export const useSettingsStore = create<SettingsState>()(
             newSettings.cameraFitMode !== undefined && isCameraFitMode(newSettings.cameraFitMode)
               ? newSettings.cameraFitMode
               : state.cameraFitMode,
+          customSidebarActions:
+            newSettings.customSidebarActions !== undefined
+              ? normalizeCustomSidebarActions(newSettings.customSidebarActions)
+              : state.customSidebarActions,
+          customSummaryPills:
+            newSettings.customSummaryPills !== undefined
+              ? normalizeCustomSummaryPills(newSettings.customSummaryPills)
+              : state.customSummaryPills,
         })),
       updateCameraViewMode: (entityId, mode) =>
         set((state) => ({
@@ -304,6 +324,10 @@ export const useSettingsStore = create<SettingsState>()(
             ? supportedSettings.cameraFitMode
             : defaultSettings.cameraFitMode,
           cameraFitModes: normalizeCameraFitModes(supportedSettings.cameraFitModes),
+          customSidebarActions: normalizeCustomSidebarActions(
+            supportedSettings.customSidebarActions
+          ),
+          customSummaryPills: normalizeCustomSummaryPills(supportedSettings.customSummaryPills),
         }));
       },
       resetSettings: () => set(defaultSettings),
@@ -343,6 +367,8 @@ export const useSettingsStore = create<SettingsState>()(
             ? next.cameraFitMode
             : current.cameraFitMode,
           cameraFitModes: normalizeCameraFitModes(next.cameraFitModes),
+          customSidebarActions: normalizeCustomSidebarActions(next.customSidebarActions),
+          customSummaryPills: normalizeCustomSummaryPills(next.customSummaryPills),
         };
       },
     }

@@ -1,6 +1,6 @@
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { useI18n, usePersistedState, useProviderCalendarDevicesCollection } from '@navet/app/hooks';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   getCalendarEventSortValue,
   isCalendarEventVisibleInWindow,
@@ -35,6 +35,7 @@ export function useCalendarCardSources(cardId?: string, fallbackEvents: Calendar
   );
   const [calendarTintColors, setCalendarTintColors] =
     usePersistedState<PersistedCalendarTintColors>(STORAGE_KEYS.calendarCardTintColors, {});
+  const lastResolvedSelectedEventsRef = useRef<CalendarEvent[]>(fallbackEvents);
 
   useEffect(() => {
     const timerId = window.setInterval(() => {
@@ -104,7 +105,11 @@ export function useCalendarCardSources(cardId?: string, fallbackEvents: Calendar
       selectedIdSet.has(calendar.id)
     );
     if (matchedCalendars.length === 0) {
-      return fallbackEvents;
+      if (fallbackEvents.length > 0) {
+        return fallbackEvents;
+      }
+
+      return lastResolvedSelectedEventsRef.current;
     }
 
     const now = new Date(timeWindowTick);
@@ -126,6 +131,12 @@ export function useCalendarCardSources(cardId?: string, fallbackEvents: Calendar
       })
       .slice(0, viewMode === 'week' ? 7 : 12);
   }, [availableCalendars, cardId, fallbackEvents, selectedCalendarIds, timeWindowTick, viewMode]);
+
+  useEffect(() => {
+    if (selectedEvents.length > 0 || fallbackEvents.length === 0) {
+      lastResolvedSelectedEventsRef.current = selectedEvents;
+    }
+  }, [fallbackEvents.length, selectedEvents]);
 
   const selectedCalendarLabel = useMemo(() => {
     const matchedCalendars = availableCalendars.filter((calendar) =>

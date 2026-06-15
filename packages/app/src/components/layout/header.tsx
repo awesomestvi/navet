@@ -1,6 +1,6 @@
 import { AppReleaseBadge } from '@navet/app/components/shared/app-release-badge';
 import { NotificationPanel } from '@navet/app/features/notifications';
-import { useMediaQuery } from '@navet/app/hooks';
+import { useMediaQuery, useTheme } from '@navet/app/hooks';
 import { Bell, CalendarDays, Check, Clock3, Edit3, Menu } from 'lucide-react';
 import { memo, useMemo } from 'react';
 import { HeaderDesktopActions } from './header-actions';
@@ -24,6 +24,7 @@ function HeaderView({
   controller,
   mobileEditActions,
 }: Omit<HeaderProps, 'controller'> & { controller: HeaderController }) {
+  const { theme } = useTheme();
   const isMobileViewport = useMediaQuery('(max-width: 767px)');
   const mobileAvailability = useMemo(
     () => getMobileHeaderActionAvailability(mobileEditActions),
@@ -35,7 +36,6 @@ function HeaderView({
   const {
     activeColorValue,
     avatarUrl,
-    border,
     closeNotifications,
     desktopNotificationButtonRef,
     dividerColor,
@@ -83,6 +83,12 @@ function HeaderView({
     headerTitle.mode === 'clock' ? `${greetingText} · ${weekLabel}` : headerTitle.secondaryText;
   const showTimeMetadata = headerTitle.showTimeMetadata;
   const headerTitleText = headerTitle.text;
+  const mobileSummaryPillClassName =
+    theme === 'light'
+      ? 'border-slate-200/70 bg-white/55 text-slate-900 shadow-[0_12px_28px_-24px_rgba(15,23,42,0.28)] hover:bg-white/75'
+      : theme === 'black'
+        ? 'border-white/10 bg-white/[0.035] text-white/88 hover:bg-white/[0.065]'
+        : 'border-white/10 bg-white/[0.055] text-white/88 backdrop-blur-xl hover:bg-white/[0.085]';
 
   return (
     <>
@@ -91,15 +97,11 @@ function HeaderView({
           <button
             type="button"
             onClick={openMobileUtility}
-            className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${hoverBg} transition-colors`}
+            className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors ${mobileSummaryPillClassName}`}
             aria-label={t('common.moreActions')}
             aria-expanded={isMobileUtilityOpen}
           >
-            <span
-              className={`flex h-8 w-8 items-center justify-center rounded-full border ${border} ${inputBg}`}
-            >
-              <Menu className={`h-[1.125rem] w-[1.125rem] ${textSecondary}`} />
-            </span>
+            <Menu className="h-[1.05rem] w-[1.05rem]" />
           </button>
         ) : null}
         <div className="min-w-0 flex-1">

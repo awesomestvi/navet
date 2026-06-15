@@ -335,7 +335,9 @@ export const CardDialogSection = memo(function CardDialogSection({
         <div className={cn('mb-1 text-sm font-medium text-white', labelClassName)}>{label}</div>
       ) : null}
       {helperText ? (
-        <p className={cn('mb-3', navetTypographyTokens.body, 'text-white/82', helperTextClassName)}>
+        <p
+          className={cn('mb-3', navetTypographyTokens.helper, 'text-white/82', helperTextClassName)}
+        >
           {helperText}
         </p>
       ) : null}
@@ -408,7 +410,16 @@ export function CardDialogFooter({
   children: ReactNode;
   className?: string;
 }) {
-  return <div className={cn('mt-6 flex justify-end', className)}>{children}</div>;
+  return (
+    <div
+      className={cn(
+        'mt-6 flex justify-end max-sm:pb-[calc(env(safe-area-inset-bottom,0px)+0.5rem)]',
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
 }
 
 export function CardDialogDoneFooter({ label, className }: CardDialogDoneFooterProps) {

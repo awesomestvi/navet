@@ -166,10 +166,12 @@ export function RSSFeedSettingsDialog({
       >
         <CardDialogBody>
           <CardDialogHeader
-            title={title}
-            description={t('rss.settings.title')}
+            title={t('rss.settings.title')}
+            description={t('rss.settings.description', { title })}
             className="max-sm:mb-3"
-            eyebrow={
+            editableTitle={false}
+            showRoomSelector={false}
+            trailing={
               <CompactRoomSelector
                 value={roomValue}
                 label={roomLabel}

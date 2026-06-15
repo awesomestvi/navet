@@ -105,6 +105,67 @@ describe('useSettingsStore', () => {
     });
   });
 
+  it('sanitizes advanced customization items before persisting them', () => {
+    useSettingsStore.getState().updateSettings({
+      advancedCustomizationEnabled: true,
+      customSidebarActions: [
+        {
+          id: 'quick-home',
+          label: ' Home ',
+          icon: 'home',
+          targetType: 'section',
+          targetSection: 'home',
+          visibility: 'always',
+        },
+        {
+          id: 'bad-url',
+          label: 'Bad',
+          icon: 'link',
+          targetType: 'url',
+          targetUrl: 'javascript:alert(1)',
+          visibility: 'always',
+        },
+      ],
+      customSummaryPills: [
+        {
+          id: 'temp',
+          label: ' Entry ',
+          icon: 'sparkles',
+          valueSourceType: 'entity',
+          entityId: 'sensor.entryway_temperature',
+          actionType: 'none',
+          visibility: 'when_value_available',
+        },
+        {
+          id: 'bad-pill',
+          label: 'Broken',
+          icon: 'sparkles',
+          valueSourceType: 'static',
+          staticValue: '',
+          actionType: 'none',
+        },
+      ],
+    });
+
+    expect(useSettingsStore.getState().advancedCustomizationEnabled).toBe(true);
+    expect(useSettingsStore.getState().customSidebarActions).toEqual([
+      expect.objectContaining({
+        id: 'quick-home',
+        label: 'Home',
+        targetType: 'section',
+        targetSection: 'home',
+      }),
+    ]);
+    expect(useSettingsStore.getState().customSummaryPills).toEqual([
+      expect.objectContaining({
+        id: 'temp',
+        label: 'Entry',
+        valueSourceType: 'entity',
+        entityId: 'sensor.entryway_temperature',
+      }),
+    ]);
+  });
+
   it('rehydrates persisted settings', async () => {
     localStorage.removeItem(STORE_STORAGE_KEYS.settings);
     localStorage.setItem(

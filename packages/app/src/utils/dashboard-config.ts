@@ -32,6 +32,10 @@ import {
 } from '@navet/app/stores/settings-store';
 import { useThemeStore } from '@navet/app/stores/theme-store';
 import {
+  normalizeCustomSidebarActions,
+  normalizeCustomSummaryPills,
+} from '@navet/app/utils/custom-extensions';
+import {
   parseDashboardConfigYaml,
   stringifyDashboardConfigYaml,
 } from '@navet/app/utils/dashboard-config-yaml';
@@ -272,6 +276,16 @@ const buildExportedSettings = (
     )
       ? settingsState.weatherMetricIds
       : undefined,
+    advancedCustomizationEnabled:
+      settingsState.advancedCustomizationEnabled !== defaultSettings.advancedCustomizationEnabled
+        ? settingsState.advancedCustomizationEnabled
+        : undefined,
+    customSidebarActions: pruneEmptyArray(
+      normalizeCustomSidebarActions(settingsState.customSidebarActions)
+    ),
+    customSummaryPills: pruneEmptyArray(
+      normalizeCustomSummaryPills(settingsState.customSummaryPills)
+    ),
     ambientLightBleed:
       settingsState.ambientLightBleed !== defaultSettings.ambientLightBleed
         ? settingsState.ambientLightBleed
@@ -804,6 +818,12 @@ export const importDashboardConfig = (
         ? settings.weatherForecastMode
         : defaultSettings.weatherForecastMode,
     weatherMetricIds: resolveWeatherMetricIds(settings.weatherMetricIds),
+    advancedCustomizationEnabled:
+      typeof settings.advancedCustomizationEnabled === 'boolean'
+        ? settings.advancedCustomizationEnabled
+        : defaultSettings.advancedCustomizationEnabled,
+    customSidebarActions: normalizeCustomSidebarActions(settings.customSidebarActions),
+    customSummaryPills: normalizeCustomSummaryPills(settings.customSummaryPills),
     ambientLightBleed:
       typeof settings.ambientLightBleed === 'boolean'
         ? settings.ambientLightBleed

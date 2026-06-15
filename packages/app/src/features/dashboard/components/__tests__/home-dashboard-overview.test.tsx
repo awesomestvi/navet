@@ -21,8 +21,19 @@ vi.mock('@navet/app/stores', async () => {
   return {
     ...actual,
     useSettingsStore: (
-      selector: (state: { showHomeSummaryBar: boolean; temperatureUnit: 'C' }) => unknown
-    ) => selector({ showHomeSummaryBar: true, temperatureUnit: 'C' }),
+      selector: (state: {
+        showHomeSummaryBar: boolean;
+        temperatureUnit: 'C';
+        advancedCustomizationEnabled: boolean;
+        customSummaryPills: [];
+      }) => unknown
+    ) =>
+      selector({
+        showHomeSummaryBar: true,
+        temperatureUnit: 'C',
+        advancedCustomizationEnabled: false,
+        customSummaryPills: [],
+      }),
   };
 });
 
@@ -34,6 +45,10 @@ vi.mock('../hooks/use-home-energy-summary', () => ({
 
 vi.mock('../home-dashboard-overview-presentation', () => ({
   HomePresentation: () => <div data-testid="home-presentation" />,
+}));
+
+vi.mock('../home-dashboard-overview-edit', () => ({
+  default: () => <div data-testid="home-edit" />,
 }));
 
 vi.mock('../home-dashboard-overview.shared', async () => {
@@ -113,5 +128,46 @@ describe('HomeDashboardOverview', () => {
 
     expect(screen.getByLabelText('Status summary')).toHaveTextContent('No Alerts');
     expect(screen.queryByText('1 Alert')).not.toBeInTheDocument();
+  });
+
+  it('keeps both presentation and edit trees mounted across mode toggles', async () => {
+    const props = {
+      deviceMap: new Map(),
+      summaryDeviceMap: new Map(),
+      cardSizes: {},
+      updateCardSize: vi.fn(),
+      hiddenEntityCount: 0,
+      allCustomCards: [],
+      homeLayout: {
+        mode: 'flow' as const,
+        showHero: true,
+        cardIds: [],
+        sections: [],
+        cardSectionAssignments: {},
+      },
+      removeHomeCard: vi.fn(),
+      moveHomeCard: vi.fn(),
+      setHomeLayoutMode: vi.fn(),
+      addHomeSection: vi.fn(),
+      addHomeColumnSection: vi.fn(),
+      addHomeSectionBelow: vi.fn(),
+      moveHomeSection: vi.fn(),
+      moveHomeColumn: vi.fn(),
+      renameHomeSection: vi.fn(),
+      removeHomeSection: vi.fn(),
+      resizeHomeSection: vi.fn(),
+    };
+    const { rerender } = renderWithProviders(<HomeDashboardOverview {...props} isEditMode />);
+
+    expect(await screen.findByTestId('home-edit')).toBeInTheDocument();
+    const presentation = screen.getByTestId('home-presentation');
+    expect(presentation).toBeInTheDocument();
+    expect(presentation.parentElement).toHaveClass('hidden');
+    expect(presentation.parentElement).toHaveAttribute('aria-hidden', 'true');
+
+    rerender(<HomeDashboardOverview {...props} isEditMode={false} />);
+
+    expect(screen.getByTestId('home-presentation')).toBeInTheDocument();
+    expect(screen.getByTestId('home-edit')).toBeInTheDocument();
   });
 });

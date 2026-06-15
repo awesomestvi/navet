@@ -23,7 +23,7 @@ import {
 } from '@navet/app/utils/dashboard-config';
 import { PERSISTED_STATE_EVENT } from '@navet/app/utils/persisted-state-events';
 import { storage } from '@navet/app/utils/storage';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { createElement, useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -358,38 +358,60 @@ export function useDashboardProfileSync() {
       pendingConflictRef.current = remoteProfile;
       activeConflictKeyRef.current = remoteProfile.conflictKey;
       conflictToastIdRef.current = toast(t('dashboard.profileSync.conflictTitle'), {
-        description: t('dashboard.profileSync.conflictDescription'),
+        description: createElement(
+          'div',
+          { className: 'space-y-4' },
+          createElement(
+            'p',
+            { className: 'max-w-none whitespace-normal text-sm leading-6 text-white/82' },
+            t('dashboard.profileSync.conflictDescription')
+          ),
+          createElement(
+            'div',
+            { className: 'flex flex-wrap items-center gap-3' },
+            createElement(
+              'button',
+              {
+                type: 'button',
+                className:
+                  'inline-flex min-h-9 items-center justify-center rounded-[16px] border border-white/10 bg-white/16 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/22',
+                onClick: () => {
+                  void flushPendingSaveRef.current({
+                    dismissConflict: true,
+                  });
+                },
+              },
+              t('dashboard.profileSync.keepMine')
+            ),
+            createElement(
+              'button',
+              {
+                type: 'button',
+                className:
+                  'inline-flex min-h-9 items-center justify-center rounded-[16px] border border-white/10 bg-white/[0.03] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/[0.08]',
+                onClick: () => {
+                  const pendingConflict = pendingConflictRef.current;
+                  if (!pendingConflict) {
+                    return;
+                  }
+
+                  applyRemoteProfile(pendingConflict.profile, {
+                    etag: pendingConflict.etag,
+                    lastModified: pendingConflict.lastModified,
+                  });
+                },
+              },
+              t('dashboard.profileSync.loadRemote')
+            )
+          )
+        ),
         duration: Infinity,
         classNames: {
           toast:
             'max-w-[min(34rem,calc(100vw-1rem))] sm:min-w-[29rem] rounded-[28px] border-white/10 bg-[linear-gradient(180deg,rgba(18,18,20,0.96)_0%,rgba(12,12,14,0.94)_100%)] shadow-2xl',
-          content: 'min-w-0 basis-full pr-8',
+          content: 'min-w-0 basis-full pr-0',
           title: 'max-w-none whitespace-normal pr-0 text-[15px] font-semibold leading-5',
           description: 'max-w-none whitespace-normal text-sm leading-6',
-          actionButton: 'order-3 self-start',
-          cancelButton: 'order-4 self-start',
-        },
-        action: {
-          label: t('dashboard.profileSync.keepMine'),
-          onClick: () => {
-            void flushPendingSaveRef.current({
-              dismissConflict: true,
-            });
-          },
-        },
-        cancel: {
-          label: t('dashboard.profileSync.loadRemote'),
-          onClick: () => {
-            const pendingConflict = pendingConflictRef.current;
-            if (!pendingConflict) {
-              return;
-            }
-
-            applyRemoteProfile(pendingConflict.profile, {
-              etag: pendingConflict.etag,
-              lastModified: pendingConflict.lastModified,
-            });
-          },
         },
       });
     },

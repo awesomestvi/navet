@@ -5,7 +5,7 @@ import { InfoBadgeStrip } from '@navet/app/features/sensors/components/info-badg
 import { useAccentColor, useI18n, useThemeMode } from '@navet/app/hooks';
 import { useSettingsStore } from '@navet/app/stores';
 import { settingsSelectors } from '@navet/app/stores/selectors';
-import { lazy, memo, Suspense, useMemo } from 'react';
+import { lazy, memo, Suspense, useEffect, useMemo, useState } from 'react';
 import { useHomeEnergySummary } from '../hooks/use-home-energy-summary';
 import {
   buildHomeOverviewCollections,
@@ -49,6 +49,10 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   const accentColor = useAccentColor();
   const showHomeSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
   const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
+  const advancedCustomizationEnabled = useSettingsStore(
+    settingsSelectors.advancedCustomizationEnabled
+  );
+  const customSummaryPills = useSettingsStore(settingsSelectors.customSummaryPills);
   const energySummary = useHomeEnergySummary();
   const { effectiveCols: sectionGridCols, isPortrait: isPortraitHome } = useHomeLayoutViewport();
   const surface = getThemeSurfaceTokens(theme);
@@ -68,8 +72,11 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
         routineCount,
         securityAlertCount,
         temperatureUnit,
+        customSummaryPills: advancedCustomizationEnabled ? customSummaryPills : [],
       }),
     [
+      advancedCustomizationEnabled,
+      customSummaryPills,
       summaryDeviceMap,
       energySummary.gridImportTodayKWh,
       routineCount,
@@ -81,60 +88,112 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
     showHomeSummaryBar && onNavigateSection ? (
       <InfoBadgeStrip items={statusSummaryItems} onNavigate={onNavigateSection} />
     ) : null;
+  const [hasActivatedEditMode, setHasActivatedEditMode] = useState(isEditMode);
+
+  useEffect(() => {
+    if (isEditMode) {
+      setHasActivatedEditMode(true);
+    }
+  }, [isEditMode]);
+
+  const presentation = (
+    <div
+      className={`space-y-3 lg:space-y-4${isEditMode ? ' hidden' : ''}`}
+      aria-hidden={isEditMode}
+    >
+      {infoBadgeStrip}
+      <HomePresentation
+        flowCards={flowCards}
+        sections={sectionCards}
+        allCards={allCards}
+        cardSizes={cardSizes}
+        updateCardSize={updateCardSize}
+        onUpdateCard={onUpdateCard}
+        showHero={homeLayout.showHero}
+        isSectioned={homeLayout.mode === 'sectioned'}
+        gridCols={sectionGridCols}
+        isPortraitHome={isPortraitHome}
+        accentColor={accentColor}
+        surface={surface}
+        emptyTitle={t('dashboard.homeOverview.emptyTitle')}
+        emptyDescription={t('dashboard.homeOverview.emptyDescription')}
+        densePerformanceMode={densePerformanceMode}
+        onToggleEditMode={onToggleEditMode}
+      />
+    </div>
+  );
 
   if (!isEditMode) {
     return (
-      <div className="space-y-3 lg:space-y-4">
-        {infoBadgeStrip}
-        <HomePresentation
-          flowCards={flowCards}
-          sections={sectionCards}
-          allCards={allCards}
-          cardSizes={cardSizes}
-          updateCardSize={updateCardSize}
-          onUpdateCard={onUpdateCard}
-          showHero={homeLayout.showHero}
-          isSectioned={homeLayout.mode === 'sectioned'}
-          gridCols={sectionGridCols}
-          isPortraitHome={isPortraitHome}
-          accentColor={accentColor}
-          surface={surface}
-          emptyTitle={t('dashboard.homeOverview.emptyTitle')}
-          emptyDescription={t('dashboard.homeOverview.emptyDescription')}
-          densePerformanceMode={densePerformanceMode}
-          onToggleEditMode={onToggleEditMode}
-        />
-      </div>
+      <>
+        {presentation}
+        {hasActivatedEditMode ? (
+          <div className="hidden" aria-hidden="true">
+            <Suspense fallback={null}>
+              <HomeDashboardOverviewEdit
+                deviceMap={deviceMap}
+                summaryDeviceMap={summaryDeviceMap}
+                cardSizes={cardSizes}
+                updateCardSize={updateCardSize}
+                isEditMode={isEditMode}
+                hiddenEntityCount={hiddenEntityCount}
+                allCustomCards={allCustomCards}
+                homeLayout={homeLayout}
+                removeHomeCard={removeHomeCard}
+                moveHomeCard={moveHomeCard}
+                setHomeLayoutMode={setHomeLayoutMode}
+                addHomeSection={addHomeSection}
+                addHomeColumnSection={addHomeColumnSection}
+                addHomeSectionBelow={addHomeSectionBelow}
+                moveHomeSection={moveHomeSection}
+                moveHomeColumn={moveHomeColumn}
+                renameHomeSection={renameHomeSection}
+                removeHomeSection={removeHomeSection}
+                resizeHomeSection={resizeHomeSection}
+                onOpenAddCardDialog={onOpenAddCardDialog}
+                onUpdateCard={onUpdateCard}
+                onToggleEditMode={onToggleEditMode}
+                infoBadgeStrip={infoBadgeStrip}
+              />
+            </Suspense>
+          </div>
+        ) : null}
+      </>
     );
   }
 
   return (
-    <Suspense fallback={<LoadingSpinner message={t('common.loading')} />}>
-      <HomeDashboardOverviewEdit
-        deviceMap={deviceMap}
-        summaryDeviceMap={summaryDeviceMap}
-        cardSizes={cardSizes}
-        updateCardSize={updateCardSize}
-        isEditMode={isEditMode}
-        hiddenEntityCount={hiddenEntityCount}
-        allCustomCards={allCustomCards}
-        homeLayout={homeLayout}
-        removeHomeCard={removeHomeCard}
-        moveHomeCard={moveHomeCard}
-        setHomeLayoutMode={setHomeLayoutMode}
-        addHomeSection={addHomeSection}
-        addHomeColumnSection={addHomeColumnSection}
-        addHomeSectionBelow={addHomeSectionBelow}
-        moveHomeSection={moveHomeSection}
-        moveHomeColumn={moveHomeColumn}
-        renameHomeSection={renameHomeSection}
-        removeHomeSection={removeHomeSection}
-        resizeHomeSection={resizeHomeSection}
-        onOpenAddCardDialog={onOpenAddCardDialog}
-        onUpdateCard={onUpdateCard}
-        onToggleEditMode={onToggleEditMode}
-        infoBadgeStrip={infoBadgeStrip}
-      />
-    </Suspense>
+    <>
+      {presentation}
+      <div aria-hidden={false}>
+        <Suspense fallback={<LoadingSpinner message={t('common.loading')} />}>
+          <HomeDashboardOverviewEdit
+            deviceMap={deviceMap}
+            summaryDeviceMap={summaryDeviceMap}
+            cardSizes={cardSizes}
+            updateCardSize={updateCardSize}
+            isEditMode={isEditMode}
+            hiddenEntityCount={hiddenEntityCount}
+            allCustomCards={allCustomCards}
+            homeLayout={homeLayout}
+            removeHomeCard={removeHomeCard}
+            moveHomeCard={moveHomeCard}
+            setHomeLayoutMode={setHomeLayoutMode}
+            addHomeSection={addHomeSection}
+            addHomeColumnSection={addHomeColumnSection}
+            addHomeSectionBelow={addHomeSectionBelow}
+            moveHomeSection={moveHomeSection}
+            moveHomeColumn={moveHomeColumn}
+            renameHomeSection={renameHomeSection}
+            removeHomeSection={removeHomeSection}
+            resizeHomeSection={resizeHomeSection}
+            onOpenAddCardDialog={onOpenAddCardDialog}
+            onUpdateCard={onUpdateCard}
+            onToggleEditMode={onToggleEditMode}
+            infoBadgeStrip={infoBadgeStrip}
+          />
+        </Suspense>
+      </div>
+    </>
   );
 });

@@ -8,7 +8,13 @@ import { getDashboardRoomLabel } from '@navet/app/constants/rooms';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import type { TranslationKey } from '@navet/app/i18n';
 import type { Section } from '@navet/app/navigation/sections';
-import { useNavigationStore } from '@navet/app/stores';
+import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
+import { settingsSelectors } from '@navet/app/stores/selectors';
+import {
+  getCustomExtensionIcon,
+  isSidebarActionVisible,
+  openCustomExtensionUrl,
+} from '@navet/app/utils/custom-extensions';
 import {
   Check,
   Compass,
@@ -59,6 +65,10 @@ export const KioskOrbitMenu = memo(function KioskOrbitMenu({
       setActiveSection: state.setActiveSection,
     }))
   );
+  const advancedCustomizationEnabled = useSettingsStore(
+    settingsSelectors.advancedCustomizationEnabled
+  );
+  const customSidebarActions = useSettingsStore(settingsSelectors.customSidebarActions);
   const visibleRooms =
     activeSection === 'home' && roomNavigation
       ? getVisibleRoomNavRooms(
@@ -85,6 +95,26 @@ export const KioskOrbitMenu = memo(function KioskOrbitMenu({
     setIsOpen(false);
     setIsReorderDialogOpen(true);
   };
+  const customActionItems = (advancedCustomizationEnabled ? customSidebarActions : [])
+    .filter((item) => isSidebarActionVisible(item, true))
+    .map((item) => ({
+      id: item.id,
+      active: item.targetType === 'section' && item.targetSection === activeSection,
+      icon: getCustomExtensionIcon(item.icon),
+      label: item.label,
+      onClick: () => {
+        if (item.targetType === 'section' && item.targetSection) {
+          const targetSection = item.targetSection;
+          closeAfter(() => setActiveSection(targetSection));
+          return;
+        }
+
+        if (item.targetType === 'url' && item.targetUrl) {
+          const targetUrl = item.targetUrl;
+          closeAfter(() => openCustomExtensionUrl(targetUrl));
+        }
+      },
+    }));
 
   return (
     <>
@@ -143,6 +173,23 @@ export const KioskOrbitMenu = memo(function KioskOrbitMenu({
                         </InteractivePill>
                       );
                     })}
+                  </div>
+                </section>
+              ) : null}
+
+              {customActionItems.length > 0 ? (
+                <section className="space-y-2">
+                  <OrbitSectionLabel>Custom extensions</OrbitSectionLabel>
+                  <div className="grid grid-cols-2 gap-2">
+                    {customActionItems.map((item) => (
+                      <OrbitActionButton
+                        key={item.id}
+                        active={item.active}
+                        icon={item.icon}
+                        label={item.label}
+                        onClick={item.onClick}
+                      />
+                    ))}
                   </div>
                 </section>
               ) : null}

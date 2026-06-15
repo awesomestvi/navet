@@ -92,7 +92,14 @@ export function useEnergyLoadHistory(
   useEffect(() => {
     const fallbackSeedKey = entityId ?? `load:${Math.round(fallbackCurrentLoadW)}`;
 
-    if (!enabled || !supportsStatistics || !entityId) {
+    if (!enabled) {
+      setPoints((current) =>
+        current.length > 0 ? current : buildFallbackPoints(fallbackCurrentLoadW, fallbackSeedKey)
+      );
+      return;
+    }
+
+    if (!supportsStatistics || !entityId) {
       setPoints(buildFallbackPoints(fallbackCurrentLoadW, fallbackSeedKey));
       return;
     }
