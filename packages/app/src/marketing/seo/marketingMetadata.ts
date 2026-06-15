@@ -4,7 +4,7 @@ import type { MarketingWebsiteRoute } from '@navet/app/marketing/routing/marketi
 
 const DEFAULT_TITLE = 'Navet - A beautiful smart-home dashboard';
 const DEFAULT_DESCRIPTION =
-  'Navet is a provider-neutral smart-home dashboard with polished UI for wall panels, tablets, desktops, and phones, with the most mature support today centered on Home Assistant.';
+  'Navet is a provider-neutral smart-home dashboard with polished UI for wall panels, tablets, desktops, and phones, with support today for Home Assistant, Homey, and openHAB.';
 
 export interface MarketingWebsiteMetadata {
   title: string;
@@ -49,7 +49,7 @@ export function getMarketingWebsiteMetadata(
     return {
       title: 'Install Navet',
       description:
-        'Start with the most mature Navet install path today, then choose add-on or standalone deployment options when they better match your provider setup.',
+        'Choose the Navet install path that fits your provider and how you want the dashboard to be hosted.',
       canonicalUrl: new URL(route.pathname.slice(1), siteUrl).toString(),
       socialImageUrl,
     };

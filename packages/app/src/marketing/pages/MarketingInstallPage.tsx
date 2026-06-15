@@ -8,11 +8,11 @@ const INSTALL_PILLS = ['Home Assistant', 'Homey', 'openHAB', 'Docker'] as const;
 
 const PRIMARY_INSTALL_PATHS = [
   {
-    badge: 'Recommended',
+    badge: 'Home Assistant',
     title: 'Home Assistant Custom Panel',
     summary:
       'Best when you want Navet inside the Home Assistant sidebar with the cleanest native setup.',
-    fit: 'Use this when Home Assistant is your main smart-home stack and you want the most mature Navet path today.',
+    fit: 'Use this when Home Assistant is your main smart-home stack and you want Navet inside the Home Assistant sidebar through HACS.',
     href: MARKETING_URLS.install.homeAssistantCustomPanel,
   },
   {
@@ -84,7 +84,7 @@ function InstallPathCard({
 }) {
   return (
     <Panel as="article" className="flex h-full flex-col gap-4">
-      <Badge tone={badge === 'Recommended' ? 'accent' : 'neutral'}>{badge}</Badge>
+      <Badge tone="neutral">{badge}</Badge>
       <div className="space-y-2">
         <Text className="text-base font-semibold">{title}</Text>
         <Text tone="muted">{summary}</Text>
@@ -172,9 +172,9 @@ export function MarketingInstallPage() {
                 <div className="space-y-4">
                   <div className="space-y-1.5">
                     <Text className="text-sm font-semibold text-white">
-                      Want the best-supported path?
+                      Want Navet in the Home Assistant sidebar?
                     </Text>
-                    <Text tone="muted">Use the Home Assistant custom panel.</Text>
+                    <Text tone="muted">Use the Home Assistant custom panel through HACS.</Text>
                   </div>
                   <div className="space-y-1.5">
                     <Text className="text-sm font-semibold text-white">
@@ -199,7 +199,7 @@ export function MarketingInstallPage() {
 
       <MarketingSectionShell
         title="Pick the install path that fits the home."
-        description="Navet already runs in multiple deployment shapes. Start with the mature Home Assistant path, or use standalone Docker when you want one app shell across providers."
+        description="Navet already runs in multiple deployment shapes. Choose the path that fits your provider and how you want Navet to be hosted."
         variant="editorial"
       >
         <div className="grid gap-4 lg:grid-cols-3">

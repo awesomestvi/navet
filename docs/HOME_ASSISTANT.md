@@ -1,23 +1,36 @@
-# Deployment Guide
+# Home Assistant
 
-This guide is for Home Assistant users.
+Use this guide when you want Navet to connect to Home Assistant.
 
-Navet has three Home Assistant deployment paths:
+## Overview
 
-- Home Assistant custom panel
-- Home Assistant add-on
+Navet currently supports three Home Assistant deployment paths:
+
+- custom panel via HACS
+- add-on
 - standalone Docker connected to Home Assistant
 
-Use the custom panel if you want the cleanest Home Assistant-native experience. Use the add-on if
-you specifically want Navet packaged and managed as an add-on. Use standalone Docker when you want
-Navet to run as its own app while still connecting to Home Assistant.
+## Which Path Should You Choose?
+
+| Path | Best when | Notes |
+|---|---|---|
+| Custom panel | you want Navet in the Home Assistant sidebar through HACS | Home Assistant-hosted experience |
+| Add-on | you want Home Assistant to package and manage Navet | runs behind Ingress |
+| Standalone Docker | you want Navet as its own app while still connecting to Home Assistant | uses OAuth and stores app state under `/data` |
 
 ## Home Assistant Custom Panel
 
-This is the recommended setup for Home Assistant users who want Navet in the Home Assistant
-sidebar through HACS.
+### When To Choose It
 
-Setup:
+Use the custom panel if you want Navet in the Home Assistant sidebar through HACS with the most
+integrated Home Assistant experience.
+
+### Prerequisites
+
+- Home Assistant
+- HACS
+
+### Setup Steps
 
 1. Add `https://github.com/awesomestvi/navet-hacs` as a custom HACS repository with category
    `Integration`.
@@ -26,23 +39,27 @@ Setup:
 4. Add the `Navet` integration from `Settings -> Devices & services`.
 5. Open Navet from the Home Assistant sidebar.
 
-Migration note:
+### What To Expect
+
+- Navet appears in the Home Assistant sidebar
+- Home Assistant remains the host environment
+
+### Troubleshooting
 
 - If you previously added `https://github.com/awesomestvi/navet` to HACS, remove that custom
   repository and add `https://github.com/awesomestvi/navet-hacs` with category `Integration`.
 
 ## Home Assistant Add-on
 
-What to expect:
+### When To Choose It
 
-- Navet runs behind Home Assistant Ingress
-- the Home Assistant frontend session is reused through the parent `hass` runtime bridge
-- Navet does not open its own Home Assistant websocket while running inside Ingress
-- the direct host port is off by default
-- if you expose the app outside Ingress, Navet falls back to the standalone-style OAuth flow
+Use the add-on if you want Navet packaged and managed from Home Assistant itself.
 
+### Prerequisites
 
-Setup:
+- Home Assistant with add-on support
+
+### Setup Steps
 
 1. Open `Settings -> Add-ons -> Add-on Store`.
 2. Open the repository menu and choose `Repositories`.
@@ -50,22 +67,34 @@ Setup:
 4. Install `Navet` for stable releases or `Navet Dev` for the nightly development surface.
 5. Start the add-on and open Navet from the Home Assistant sidebar.
 
+### What To Expect
+
+- Navet runs behind Home Assistant Ingress
+- the Home Assistant frontend session is reused through the parent `hass` runtime bridge
+- Navet does not open its own Home Assistant websocket while running inside Ingress
+- the direct host port is off by default
+- if you expose the app outside Ingress, Navet falls back to the standalone-style OAuth flow
+
+### Troubleshooting
+
+- If the add-on opens outside Ingress, expect standalone-style OAuth behavior instead of the
+  parent-session bridge.
+
 ## Standalone Docker
 
+### When To Choose It
 
-What to expect:
+Use standalone Docker when you want Navet to run as its own app while still connecting to Home
+Assistant.
 
-- Home Assistant login uses OAuth
-- dashboard/profile state is stored through same-origin runtime endpoints under `/data`
-- if the stored OAuth session becomes invalid during token refresh, Navet clears it and returns to login
+### Prerequisites
 
-Troubleshooting:
+- Docker
+- a Home Assistant instance reachable from the browser that will open Navet
 
-- if Navet repeatedly returns to login, verify that the saved Home Assistant URL still matches your current instance URL
-- if you recently changed reverse-proxy, TLS, hostname, or port settings for Home Assistant, sign in again so Navet can obtain a fresh OAuth session
-- if the Home Assistant authorization was revoked or the refresh token became invalid, sign in again to recreate the stored session under `/data`
+### Setup Steps
 
-Example `docker-compose.yml`:
+Use this `docker-compose.yml`:
 
 ```yaml
 services:
@@ -82,10 +111,22 @@ volumes:
   navet-data:
 ```
 
-Start it with:
+Start it:
 
 ```bash
 docker compose up -d
 ```
 
 Then open `http://localhost:8080`.
+
+### What To Expect
+
+- Home Assistant login uses OAuth
+- dashboard and profile state are stored through same-origin runtime endpoints under `/data`
+- if the stored OAuth session becomes invalid during token refresh, Navet clears it and returns to login
+
+### Troubleshooting
+
+- If Navet repeatedly returns to login, verify that the saved Home Assistant URL still matches your current instance URL.
+- If you recently changed reverse-proxy, TLS, hostname, or port settings for Home Assistant, sign in again so Navet can obtain a fresh OAuth session.
+- If the Home Assistant authorization was revoked or the refresh token became invalid, sign in again to recreate the stored session under `/data`.

@@ -3,6 +3,13 @@
 This folder owns the shared UI authoring layers under `packages/app/src/components/`. It also works
 alongside the separate `packages/app/src/ui-kit/` discovery/import surface.
 
+Architecture note:
+
+- `@navet/ui` is the target package boundary for provider-neutral shared UI
+- this folder is still a major current implementation surface while the extraction continues
+- treat these paths as current implementation and stable import surfaces, not as the final package
+  boundary
+
 - `primitives/`
   Low-level reusable UI building blocks with one clear responsibility.
   Examples: `Input`, `Button`, `ColorInputSwatch`, `LoadingSpinner`, `BaseCard`, `BodyText`.
@@ -21,7 +28,7 @@ alongside the separate `packages/app/src/ui-kit/` discovery/import surface.
 
 - `../ui-kit/`
   Sibling discovery and import surface for Navet developers.
-  Prefer `@/app/ui-kit/primitives`, `@/app/ui-kit/patterns`, and `@/app/ui-kit/tokens`
+  Prefer `@navet/app/ui-kit/primitives`, `@navet/app/ui-kit/patterns`, and `@navet/app/ui-kit/tokens`
   in new docs, examples, and shared UI consumption. `system/` remains the curated export layer.
 
 - `shared/`

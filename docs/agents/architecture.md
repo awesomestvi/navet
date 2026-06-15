@@ -1,8 +1,8 @@
 # Contributor Architecture
 
-This is the short architecture guide for contributors.
+Use this file for the short version of how the repo is supposed to be organized.
 
-## The Important Split
+## The Main Model
 
 Navet is organized around four layers:
 
@@ -17,23 +17,31 @@ packages/
 - `@navet/core`
   Shared contracts, IDs, types, and adapter semantics. No React. No provider SDKs.
 - `@navet/ui`
-  Shared React UI that renders normalized entities and emits generic commands.
+  Target package boundary for provider-neutral shared React UI.
 - provider packages
   Provider-specific runtime, auth, transport, mapping, and command translation.
 - `@navet/app`
-  The product shell: provider registration, runtime selection, settings, persistence, and boot
-  wiring.
+  Product shell, runtime selection, provider registration, settings, persistence, and boot wiring.
 
 Home Assistant is the first implemented provider, not the application architecture.
 
-## What That Means In Practice
+## Current Reality
 
-- Shared UI should render from normalized Navet data, not raw Home Assistant payloads.
-- Provider packages should own provider auth, clients, live updates, and request translation.
-- The app layer should own deployment modes, session bootstrap, and product-level composition.
-- Compatibility models that still exist are app-internal support code, not the target shared API.
+The package direction is established, but the shared UI extraction is still in flight.
 
-## Rules
+- much of the active shared UI authoring surface still lives in
+  `packages/app/src/components/*` and `packages/app/src/ui-kit/*`
+- those app-owned paths are current implementation and stable import surfaces
+- they should be treated as migration seams, not as final ownership
+
+## Practical Rules
+
+- shared UI should render normalized Navet data, not raw Home Assistant payloads
+- provider packages should own provider auth, clients, live updates, and request translation
+- the app layer should own deployment modes, session bootstrap, and product-level composition
+- compatibility-only models that still exist in `@navet/app` are support code, not target public APIs
+
+## Hard Boundaries
 
 - do not let `@navet/ui` import provider-specific code
 - do not move provider-specific details into `@navet/core`
@@ -42,7 +50,7 @@ Home Assistant is the first implemented provider, not the application architectu
   is explicitly adapter-internal
 - keep current Home Assistant users working while continuing to clean up boundaries
 
-## Current Provider Status
+## Provider Status
 
 - Home Assistant: implemented
 - Homey: implemented

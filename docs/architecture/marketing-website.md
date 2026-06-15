@@ -30,7 +30,11 @@ Homepage structure and copy should reinforce that message.
 
 ## Boundaries And Reuse
 
-- Shared primitives stay in `packages/app/src/components/primitives/` or `packages/app/src/components/patterns/`.
+- `@navet/ui` is the target provider-neutral shared UI boundary.
+- The current website implementation still primarily reuses app-owned shared UI from
+  `packages/app/src/components/primitives/`, `packages/app/src/components/patterns/`, and
+  `packages/app/src/ui-kit/`.
+- Shared primitives currently stay in `packages/app/src/components/primitives/` or `packages/app/src/components/patterns/` unless the work is explicitly extracting shared UI into `@navet/ui`.
 - Theme tokens and surface logic stay in the existing theme/token layers.
 - Dashboard cards stay in dashboard or feature layers.
 - Marketing sections live under `packages/app/src/marketing/`.
@@ -43,13 +47,15 @@ Strict reuse rules:
 - Do not fork theme tokens for the website.
 - If a missing primitive is needed, add it to the shared UI layer first and then consume it from
   marketing.
+- When documenting or reviewing reuse, distinguish the current app-owned implementation surface
+  from the long-term `@navet/ui` ownership target.
 - Marketing sections should compose existing primitives and existing dashboard cards.
 - Marketing previews must use static demo data and must not depend on live Home Assistant state,
   user tokens, or external APIs.
 
 ## Storybook Relationship
 
-- Storybook is the source of truth for primitives, themes, dashboard cards, and marketing sections.
+- Storybook is the main review surface for primitives, themes, dashboard cards, and marketing sections.
 - Marketing stories live under the `Pages/Marketing/` title root.
 - New primitives required by marketing must be documented in Storybook.
 - Storybook is a secondary credibility link in the website footer, not a primary CTA.
@@ -96,9 +102,8 @@ Routing and links:
 
 Install/support rules:
 
-- Present the most stable install path first.
-- Home Assistant Custom Panel is the recommended path today because current docs explicitly mark it
-  that way.
+- Present supported install paths clearly without implying that one path is the universal default.
+- Keep setup messaging accurate about what each install path trades off.
 - Advanced or experimental paths must be labeled honestly.
 - Do not promote unsupported features or fragile paths as mature.
 

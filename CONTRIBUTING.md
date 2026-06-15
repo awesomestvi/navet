@@ -1,5 +1,17 @@
 # Contributing To Navet
 
+Use this file for the shortest path from clone to productive work.
+
+## Start Here
+
+Before changing code, read:
+
+- [`AGENTS.md`](AGENTS.md)
+- [`ai/agents.md`](ai/agents.md)
+- [`docs/README.md`](docs/README.md)
+
+Then read the focused docs for the area you are touching.
+
 ## Prerequisites
 
 - Node.js `^20.19.0` or `>=22.12.0`
@@ -17,31 +29,21 @@ pnpm dev
 
 Open the Vite URL shown in the terminal, usually `http://localhost:5173`.
 
-For live Home Assistant testing, enter the Home Assistant base URL in Navet and complete the OAuth
-flow. For Homey testing, configure `NAVET_HOMEY_CLIENT_ID` and `NAVET_HOMEY_CLIENT_SECRET`, then
-use the Homey login option. For openHAB testing, use the openHAB login option with a
-browser-reachable base URL plus username/password.
+Provider testing basics:
+
+- Home Assistant: enter the Home Assistant base URL and complete OAuth
+- Homey: set `NAVET_HOMEY_CLIENT_ID` and `NAVET_HOMEY_CLIENT_SECRET`, then use the Homey login option
+- openHAB: use the openHAB login option with a browser-reachable base URL plus username/password
 
 ## Workflow
 
 1. Create a branch from `main`.
-2. Make changes using existing architecture, feature, and shared-UI patterns.
-3. Update docs when behavior, architecture, commands, or public setup changes.
-4. Run the relevant fast checks for the area you changed.
+2. Make changes using the current package architecture and shared UI conventions.
+3. Update docs when behavior, commands, architecture, or setup guidance changes.
+4. Run the smallest relevant validation surface for the area you changed.
 5. Open a pull request.
 
-## Required Reading
-
-Before changing code, read:
-
-- [`AGENTS.md`](AGENTS.md)
-- [`ai/agents.md`](ai/agents.md)
-
-Then read the relevant focused docs for the area you are touching.
-
-For user-facing setup and deployment docs, start with [`docs/README.md`](docs/README.md).
-
-## Checks
+## Command Policy
 
 Common commands:
 
@@ -64,23 +66,27 @@ pnpm check:docker
 pnpm check:lockfile
 pnpm test:coverage
 pnpm release:check
-pnpm build:ha-panel
-pnpm sync:hacs
 ```
 
-Per repo policy, `pnpm typecheck` and `pnpm check` are user-run gates rather than default
-agent-run commands. See [`docs/agents/commands.md`](docs/agents/commands.md).
+Important repo policy:
+
+- `pnpm typecheck` and `pnpm check` are user-run gates rather than default agent-run commands
+- release and packaging commands are maintainer workflows unless the task explicitly calls for them
+- use [`docs/agents/commands.md`](docs/agents/commands.md) as the source of truth for command restrictions
 
 ## Architecture Rules
 
-- treat Home Assistant as one provider adapter, not as the whole app architecture
+- treat Home Assistant as one provider adapter, not as the application architecture
 - prefer Navet-owned contracts and provider/runtime seams in shared UI
 - keep provider-specific auth, transport, resource resolution, and action translation in
   provider-specific layers
+- `@navet/ui` is the target provider-neutral shared UI boundary
+- `packages/app/src/components/*` and `packages/app/src/ui-kit/*` are still current implementation
+  and stable import surfaces, not final ownership
 - do not use current implementation drift as the source of truth for Home Assistant behavior
 
-## Tests
+## Testing Rules
 
 - prefer realistic fixtures and contract-focused assertions
 - do not update tests only to match the current implementation
-- read `ai/skills/testing-architecture.md` and `docs/agents/testing.md` for testing work
+- use `ai/skills/testing-architecture.md` and `docs/agents/testing.md` for test work

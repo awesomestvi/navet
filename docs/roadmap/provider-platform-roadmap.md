@@ -1,18 +1,25 @@
 # Provider Platform Roadmap
 
-This is an internal engineering roadmap for provider work. The big package split is already in
-place, so this file is about follow-up work, not about arguing for the architecture itself.
+This is an internal engineering roadmap for provider work. The package-direction split is already
+established, so this file is about follow-up work, not about arguing for the architecture itself.
 
 ## Current State
 
 Navet already has:
 
 - `@navet/core` for shared contracts and IDs
-- `@navet/ui` for shared rendering
+- `@navet/ui` as the target provider-neutral shared UI package boundary
 - `@navet/provider-homeassistant` as the first implemented provider
 - `@navet/provider-homey` as a working standalone provider
 - `@navet/provider-openhab` as a working standalone provider
 - `@navet/app` for product wiring, runtime selection, settings, and persistence
+
+Current implementation note:
+
+- much of the active shared UI authoring surface still lives under
+  `packages/app/src/components/*` and `packages/app/src/ui-kit/*`
+- those app-owned surfaces are migration seams and stable import surfaces, not proof that the UI
+  extraction is complete
 
 Hubitat and SmartThings have planned provider contracts and registration entries, but full runtime
 support is not implemented yet.

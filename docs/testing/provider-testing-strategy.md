@@ -35,6 +35,8 @@ Do not test:
 
 ### `@navet/ui`
 
+Target shared-UI package boundary.
+
 Test:
 
 - rendering from fake normalized entities
@@ -46,6 +48,14 @@ Do not test:
 
 - backend-native payload fields
 - provider-native service calls
+
+Current-state note:
+
+- `packages/ui/src` is still a small export surface today
+- most current UI regression coverage still lives in app-owned tests under
+  `packages/app/src/components/**`, `packages/app/src/features/**`, `packages/app/src/hooks/**`,
+  and Storybook coverage
+- that is the current implementation reality, not a reason to collapse the `@navet/ui` boundary
 
 ### Provider packages
 
@@ -77,7 +87,7 @@ Test:
 
 Typical tier split inside `@navet/app`:
 
-- Tier 1 for runtime/auth/resource/security edges
+- Tier 1 for runtime, auth, resource, and security edges
 - Tier 2 for shared stores and service contracts
 - Tier 3 for broad feature and UI regression coverage
 - Tier 4 for weak fixture-driven or implementation-shaped tests
@@ -86,8 +96,8 @@ Typical tier split inside `@navet/app`:
 
 - use provider-neutral fixtures in shared-layer tests
 - use realistic provider fixtures in provider package tests
-- include edge cases like `unknown`, `unavailable`, missing fields, malformed payloads, and
-  resource differences when relevant
+- include `unknown`, `unavailable`, missing fields, malformed payloads, and resource differences
+  when relevant
 
 ## Boundary Checks
 
@@ -99,5 +109,5 @@ Validation should keep failing if:
 
 ## Release Validation
 
-The focused release-oriented validation flow lives in
+The focused release-oriented workflow lives in
 [../agents/release-and-publishing.md](../agents/release-and-publishing.md).

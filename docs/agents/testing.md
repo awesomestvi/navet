@@ -1,12 +1,6 @@
 # Testing
 
-Internal maintainer and agent reference. This file is not part of the normal user or contributor
-reading path.
-
-This file defines Navet's general testing workflow. The canonical test strategy lives in
-`docs/testing/provider-testing-strategy.md`.
-
-For package-boundary and provider-facing test strategy, also read
+Use this file as the short workflow guide for test work. The deeper strategy lives in
 [../testing/provider-testing-strategy.md](../testing/provider-testing-strategy.md).
 
 ## Core Rules
@@ -15,15 +9,14 @@ For package-boundary and provider-facing test strategy, also read
 - do not rewrite tests only to make the suite pass
 - prefer behavior, contract, and regression coverage over implementation-shaped assertions
 - reuse shared fixtures instead of repeating inline mock builders
-- keep test tiers honest; do not promote broad regression tests into blocking gates without a clear
-  contract or release reason
+- keep test tiers honest
 
-## Test Tiers
+## Tier Model
 
-Navet now uses four test tiers:
+Navet uses four test tiers:
 
 - `Tier 1: Release-critical`
-  Provider contracts, auth/runtime flows, resource/security-runtime edges, provider boundary
+  Provider contracts, auth/runtime flows, resource/security-runtime edges, provider-boundary
   checks, and Docker validation.
 - `Tier 2: Blocking app contracts`
   High-signal store, service, and adapter tests that protect stable app behavior.
@@ -32,15 +25,15 @@ Navet now uses four test tiers:
 - `Tier 4: Rewrite/Delete candidates`
   Weak, implementation-shaped, or already-audited rewrite/delete cases.
 
-Workflow intent:
+Workflow expectations:
 
 - release and publish workflows depend on Tier 1 only
 - main CI blocks on Tier 1 and Tier 2
-- Tier 3 stays visible in CI but is not a release prerequisite
+- Tier 3 remains useful signal, but it is not a release prerequisite
 
 ## Source Of Truth
 
-Tests should be grounded in one or more of:
+Ground tests in one or more of:
 
 1. explicit product requirements
 2. provider-neutral contracts
@@ -54,8 +47,8 @@ Navet's current implementation is not the source of truth for those assertions.
 
 - use provider-neutral fixtures for shared-layer tests
 - use realistic provider-specific fixtures for provider package tests
-- include edge cases such as `unknown`, `unavailable`, missing fields, resource-path differences,
-  and malformed-but-plausible payloads when relevant
+- include `unknown`, `unavailable`, missing fields, malformed-but-plausible fields, and
+  resource-path differences when they matter
 
 ## Review Rules
 
@@ -65,5 +58,5 @@ Classify existing tests before editing them:
 - rewrite
 - delete
 
-Use `ai/testing-review.md` when the file is already part of the audit baseline.
-Use `docs/testing/test-tier-inventory.md` for the current tier map by subsystem.
+Use `ai/testing-review.md` when the file is already in the audit baseline.
+Use [../testing/test-tier-inventory.md](../testing/test-tier-inventory.md) for the grouped tier map.

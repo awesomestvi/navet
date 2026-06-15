@@ -137,14 +137,14 @@ export const MARKETING_CURRENT_SUPPORT = {
 
 export const MARKETING_INSTALL_OPTIONS = [
   {
-    label: 'Most mature',
+    label: 'Home Assistant',
     title: 'Home Assistant Custom Panel',
     description:
-      'Start where Navet is strongest today. It runs inside Home Assistant and reuses the session people already trust.',
+      'Run Navet in the Home Assistant sidebar through HACS when you want a Home Assistant-hosted experience.',
     href: MARKETING_URLS.install.homeAssistantCustomPanel,
   },
   {
-    label: 'Managed ingress',
+    label: 'Home Assistant',
     title: 'Home Assistant Add-on',
     description:
       'Use Ingress when you want Home Assistant to own installation, updates, and the local app lifecycle.',

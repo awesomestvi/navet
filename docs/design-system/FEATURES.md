@@ -2,6 +2,12 @@
 
 This document maps the current product and UI ownership at a high level.
 
+Architecture note:
+
+- `@navet/ui` is the target provider-neutral shared UI package boundary.
+- The paths in this document under `packages/app/src/...` describe the current implementation
+  layout, not the final ownership destination for every shared UI surface.
+
 ## Active Feature Folders
 
 Current feature folders under `packages/app/src/features/`:
@@ -94,11 +100,12 @@ when the widget is domain-specific.
 
 ## Shared UI Ownership
 
-- `packages/app/src/components/primitives/`: low-level reusable building blocks
-- `packages/app/src/components/patterns/`: composed shared structures
-- `packages/app/src/components/shared/`: app-specific shared UI
-- `packages/app/src/components/system/`: curated internal export surface
-- `packages/app/src/ui-kit/`: stable docs/story import surface
+- `packages/app/src/components/primitives/`: current low-level reusable building blocks
+- `packages/app/src/components/patterns/`: current composed shared structures
+- `packages/app/src/components/shared/`: current app-specific shared UI
+- `packages/app/src/components/system/`: current curated internal export surface
+- `packages/app/src/ui-kit/`: current stable docs/story import surface
+- `packages/ui/src/`: target provider-neutral shared UI package boundary
 
 ## Provider-Aware Behavior
 
@@ -113,6 +120,12 @@ Provider-specific runtime, auth, media, and resource behavior should remain in:
 
 - provider packages (`packages/provider-*/`) for runtime-capable providers
 - app-owned compatibility seams (`packages/app/src/services/`, `packages/app/src/infrastructure/home-assistant/`) only where extraction to provider packages is still in progress
+
+Ownership rule of thumb:
+
+- if the work is generic shared UI and provider-neutral, the long-term destination is `@navet/ui`
+- if the work is staying in app-owned shared UI for now, document it as a current implementation
+  seam rather than as the final architecture
 
 ## Testing And Stories
 

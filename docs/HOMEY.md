@@ -1,40 +1,48 @@
-# Homey Setup
+# Homey
 
-This guide is for Homey users connecting to Navet in standalone mode.
+Use this guide when you want Navet to connect to Homey in standalone mode.
 
-## Before You Start
+## Overview
+
+Navet uses the Homey cloud OAuth flow. You run Navet yourself, configure an Athom Web API client,
+and sign in through the provider picker.
+
+## When To Choose This Path
+
+Choose this path when:
+
+- you want Navet in standalone mode
+- you use Homey as the provider
+- you are comfortable creating an Athom Web API client
+
+## Prerequisites
 
 You need:
 
-- a Homey Cloud app/client from Athom
-- the client ID and client secret for that app
-
-## Get Your Homey Client ID And Secret
-
-Homey’s official Web API docs say you need to create your own Web API client to receive a client
-ID and client secret.
+- a Homey Cloud app or client from Athom
+- the generated client ID and client secret for that app
 
 Start here:
 
 - [Homey Developer Tools](https://tools.developer.homey.app/)
 - [Homey Web API documentation](https://api.developer.homey.app/)
 
-Typical flow:
+## Setup Steps
+
+### 1. Create the Homey API client
 
 1. Sign in to the Homey Developer Tools with the Athom account you want to use for Navet.
 2. Create a new Web API client.
 3. Set the client name to something recognizable such as `Navet`.
-4. Set the redirect URL to the exact Navet callback URL that will receive the OAuth callback.
-   Example: `http://localhost:8080/__navet_homey__/callback` for a local Docker test,
+4. Set the redirect URL to the exact Navet callback URL that should receive the OAuth callback.
+   Example: `http://localhost:8080/__navet_homey__/callback` for local Docker,
    `https://navet.example.com/__navet_homey__/callback` for a hosted deployment.
 5. Save the client.
-6. Copy the generated client ID and client secret into your Navet Docker compose file as
-   `NAVET_HOMEY_CLIENT_ID` and `NAVET_HOMEY_CLIENT_SECRET`.
+6. Copy the generated client ID and client secret.
 
-Use the same exact callback URL for `NAVET_HOMEY_REDIRECT_URI` when you need to override Navet’s
-automatic callback detection.
+### 2. Configure Navet
 
-`docker-compose.yaml`
+Use this `docker-compose.yaml`:
 
 ```yaml
 services:
@@ -55,18 +63,19 @@ services:
 volumes:
   navet-data:
 ```
-Use `NAVET_HOMEY_REDIRECT_URI` only when Navet cannot infer the public callback URL correctly, for
-example when it sits behind a reverse proxy or the public callback URL differs from the browser
+
+Set `NAVET_HOMEY_REDIRECT_URI` only when Navet cannot infer the public callback URL correctly,
+such as when Navet sits behind a reverse proxy or the public callback URL differs from the browser
 origin users open. Navet also supports a custom callback path if you register a different exact URL
 with Athom, such as `https://navet.example.com/callback`.
 
-Then run:
+### 3. Start Navet
 
 ```bash
 docker compose up -d
 ```
 
-## Login Flow
+### 4. Sign in
 
 1. Open Navet.
 2. Choose `Homey` on the provider screen.
@@ -77,7 +86,8 @@ docker compose up -d
 ## What To Expect
 
 - Navet stores the Homey session through same-origin runtime endpoints in the Navet app.
-- Homey devices and zones load after sign-in; no separate Homey URL entry is required.
+- Homey devices and zones load after sign-in.
+- You do not need to enter a separate Homey base URL.
 - If you sign out from Navet, the stored Homey session is cleared from the Navet side.
 
 ## Troubleshooting

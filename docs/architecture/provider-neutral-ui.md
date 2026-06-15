@@ -1,11 +1,20 @@
 # Provider-Neutral UI
 
-This document covers the rules for shared UI.
+This document defines what shared UI is supposed to depend on, and what it must not depend on.
 
-## Core Idea
+## Boundary
 
 Shared UI renders normalized Navet data and emits generic Navet commands. Provider-specific
 translation happens outside the shared components.
+
+`@navet/ui` is the target provider-neutral shared UI boundary.
+
+Current implementation note:
+
+- much of today’s shared UI still lives in `packages/app/src/components/*` and
+  `packages/app/src/ui-kit/*`
+- those paths are current implementation and stable import surfaces
+- the same boundary rules still apply there
 
 ## Shared UI Inputs
 
@@ -17,7 +26,7 @@ Shared UI should work from:
 - normalized runtime status
 - generic command callbacks
 
-A simplified mental model looks like this:
+Mental model:
 
 ```tsx
 <NavetDashboard
@@ -29,13 +38,14 @@ A simplified mental model looks like this:
 />
 ```
 
-The exact props may differ. The important part is the boundary.
+The exact props may differ. The boundary is the important part.
 
 ## Do
 
 - render from normalized entity types, state, capabilities, attributes, and resources
 - keep shared cards reusable across providers
 - use provider-neutral view models for advanced cards when raw entities are not enough
+- treat app-owned shared UI as `@navet/ui`-shaped work, even when the extraction is not complete
 
 ## Do Not
 
@@ -44,7 +54,7 @@ The exact props may differ. The important part is the boundary.
 - emit service-style payloads from UI components
 - branch on backend-specific naming conventions as the main behavior model
 
-## Advanced Features
+## Provider-Aware Work
 
 Some features still need provider-aware services, for example:
 
@@ -54,12 +64,12 @@ Some features still need provider-aware services, for example:
 - energy
 - notifications
 
-That is fine. The provider-aware work should stay in provider packages, or temporarily in
-legacy app-owned compatibility seams while extraction is in flight. The shared card should still
-consume a stable view model.
+That is acceptable. Provider-aware work should stay in provider packages, or temporarily in
+app-owned compatibility seams while extraction is in flight. Shared cards should still consume a
+stable view model.
 
 ## Compatibility Note
 
 The repo still contains compatibility hooks and derived device snapshots inside `@navet/app`. They
-exist to support the current product shell during ongoing compatibility cleanup. They are not the
-preferred API for new shared UI work.
+exist to support the current product shell during ongoing cleanup. They are not the preferred API
+for new shared UI work.

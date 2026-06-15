@@ -1,13 +1,15 @@
 # Product Roadmap
 
-This is the public roadmap for Navet. It is meant to answer a simple question: what is in the app
-today, and what is likely next.
+This is the public roadmap for Navet. It answers two questions:
 
-## Today
+- what ships today
+- what is likely next
 
-Navet already ships:
+## Shipping Today
 
-- Home Assistant support across custom panel, add-on, and standalone modes
+Navet currently ships:
+
+- Home Assistant support across custom panel via HACS, add-on, and standalone modes
 - Homey support through the standalone OAuth flow
 - openHAB support through the standalone base-URL and username/password flow
 - dedicated `home`, `lights`, `media`, `energy`, `climate`, `security`, `tasks`, and `settings`
@@ -16,9 +18,9 @@ Navet already ships:
 - custom widgets including RSS, photo, note, battery, UPS, energy-now, button, and map
 - cards for lights, switches, fans, climate, covers, locks, cameras, media, weather, calendars,
   people, sensors, scenes, and vacuums
-- PWA install support, themes, localization, and public demo/Storybook publishing
+- PWA install support, themes, localization, and public demo and Storybook publishing
 
-## Next Up
+## Likely Next
 
 ### Layout And Navigation
 
@@ -58,7 +60,7 @@ Navet already ships:
 ## Notes
 
 - Home Assistant is still the most mature provider experience.
-- Homey and openHAB are real supported paths, but not at the same maturity level as Home
+- Homey and openHAB are supported paths today, but not at the same maturity level as Home
   Assistant.
 - Hubitat and SmartThings have planned provider contracts and registration entries, but full runtime
-  providers are not implemented yet.
+  support is not implemented yet.

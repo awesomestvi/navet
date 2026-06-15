@@ -12,81 +12,79 @@ A smart-home dashboard frontend for wall panels, tablets, phones, and desktop sc
 
 ## What Navet Is
 
-Navet turns supported smart-home platforms into a dedicated control surface with a room-first home
-dashboard plus focused `energy`, `climate`, `security`, `lights`, `media`, `tasks`, and
-`settings` sections.
+Navet turns supported smart-home platforms into a room-first control surface with dedicated
+`home`, `lights`, `media`, `energy`, `climate`, `security`, `tasks`, and `settings` sections.
 
-Home Assistant is the first implemented provider, but Navet is not a Home Assistant-only frontend.
-The repo is organized around provider-neutral `@navet/core` and `@navet/ui` packages, provider
-packages, an `@navet/app` composition layer, and thin app workspaces for each runtime surface.
+It is built for people who want a cleaner daily control surface than the default admin-first smart
+home UI.
 
-## Provider Status
+## What You Get
+
+- room-first dashboards for everyday household control
+- dedicated views for lights, media, energy, climate, security, tasks, and settings
+- cards for common smart-home device types such as lights, climate, cameras, locks, media players,
+  weather, sensors, scenes, calendars, and vacuums
+- built-in widgets such as RSS, photo, note, battery, UPS, energy-now, button, and map
+- support for wall panels, tablets, phones, and desktop browsers
+- PWA install support, themes, and localization
+
+## Supported Today
 
 |  | Provider | Status | Runtime modes |
 |---|---|---|---|
-| <img src="packages/app/src/assets/providers/home-assistant.svg" alt="Home Assistant" width="50"> | Home Assistant | implemented | custom panel, add-on, standalone |
+| <img src="packages/app/src/assets/providers/home-assistant.svg" alt="Home Assistant" width="50"> | Home Assistant | implemented | custom panel via HACS, add-on, standalone |
 | <img src="packages/app/src/assets/providers/homey.png" alt="Homey" width="50"> | Homey | implemented | standalone |
 | <img src="packages/app/src/assets/providers/openhab.svg" alt="openHAB" width="50"> | openHAB | implemented | standalone |
 | <img src="packages/app/src/assets/providers/hubitat.svg" alt="Hubitat" width="50"> | Hubitat | planned | contract + registration entry only |
 | <img src="packages/app/src/assets/providers/smartthings-icon.svg" alt="SmartThings" width="50"> | SmartThings | planned | contract + registration entry only |
 
-## What You Get
+## Choose Your Setup
 
-- room-driven dashboards with dedicated views for energy, climate, security, lights, media, tasks, and settings
-- cards for common smart-home entities including lights, switches, fans, climate, covers, locks, cameras, media, weather, people, scenes, and vacuums
-- dashboard editing with ordering, sizing, locking, visibility, room assignment, and import/export
-- custom widgets including RSS, photo, note, battery, UPS, energy-now, button, and map
-- PWA install support, themes, localization, and persisted app state for standalone and add-on deployments
+Most people should start with one of these guides:
 
-## Getting Started
+- Home Assistant users: start with [docs/HOME_ASSISTANT.md](docs/HOME_ASSISTANT.md)
+- Homey users: start with [docs/HOMEY.md](docs/HOMEY.md)
+- openHAB users: start with [docs/OPENHAB.md](docs/OPENHAB.md)
 
-Choose the setup guide that matches your provider and deployment mode:
+## Need More Details?
 
-### Home Assistant
+Use these docs if you want more context:
 
-- [Custom panel via HACS](docs/HOME_ASSISTANT.md#home-assistant-custom-panel)
-- [Home Assistant Add-on Store](docs/HOME_ASSISTANT.md#home-assistant-add-on)
-- [Standalone Docker](docs/HOME_ASSISTANT.md#standalone-docker)
+- [Home Assistant setup](docs/HOME_ASSISTANT.md)
+- [Homey setup](docs/HOMEY.md)
+- [openHAB setup](docs/OPENHAB.md)
+- [Widgets guide](docs/WIDGETS.md)
+- [Public roadmap](docs/ROADMAP.md)
+- [Full docs map](docs/README.md)
 
-### Homey
+## Screenshots
 
-- [Standalone setup](docs/HOMEY.md)
+| Home | Energy | Security |
+|---|---|---|
+| ![Navet home dashboard on iPad](assets/reference/marketing/screenshots/navet-ipad-landscape-home.jpg) | ![Navet energy dashboard on iPad](assets/reference/marketing/screenshots/navet-ipad-landscape-energy.jpg) | ![Navet security dashboard on iPad](assets/reference/marketing/screenshots/navet-ipad-landscape-security.jpg) |
 
-### openHAB
+| Tablet | Mobile home | Mobile controls |
+|---|---|---|
+| ![Navet tablet portrait dashboard](assets/reference/marketing/screenshots/navet-tablet-portrait-home.jpg) | ![Navet mobile PWA home dashboard](assets/reference/marketing/screenshots/navet-mobile-pwa-home.jpg) | ![Navet mobile PWA media or lights dashboard](assets/reference/marketing/screenshots/navet-mobile-pwa-media-or-lights.jpg) |
 
-- [Standalone setup](docs/OPENHAB.md)
+## For Contributors
 
-## Development
+If you want to work on the repo:
 
-Prerequisites:
+- start with [CONTRIBUTING.md](CONTRIBUTING.md)
+- then use [docs/README.md](docs/README.md) for the full docs map
 
-- Node.js `^20.19.0` or `>=22.12.0`
-- pnpm `11.5.0` from the pinned `packageManager`
+Short architecture note:
 
-Install dependencies and start the Vite app:
+- Navet is organized around provider-neutral `@navet/core` and `@navet/ui`, provider packages,
+  and an `@navet/app` composition layer
+- `@navet/ui` is the target shared UI boundary
+- much of the current shared UI implementation still lives in
+  `packages/app/src/components/*` and `packages/app/src/ui-kit/*`
 
-```bash
-pnpm install
-pnpm dev
-```
+## Repo Layout
 
-Open the local URL shown by Vite, usually `http://localhost:5173`.
-
-For local provider testing:
-
-- Home Assistant: enter the base URL in Navet and complete OAuth
-- Homey: configure `NAVET_HOMEY_CLIENT_ID` and `NAVET_HOMEY_CLIENT_SECRET`, then use the Homey login option
-- openHAB: use the openHAB login option and provide the browser-reachable base URL plus username/password
-
-Additional local surfaces:
-
-- `pnpm storybook` runs the component/workflow review surface
-- `pnpm website:dev` runs the marketing website workspace
-- `pnpm preview` writes preview config and serves the standalone production build locally
-
-## Package Architecture
-
-Navet’s reusable package layout is:
+Reusable packages:
 
 ```text
 packages/
@@ -100,7 +98,7 @@ packages/
   app/
 ```
 
-Deployable and published surfaces live under `apps/`:
+Deployable surfaces:
 
 ```text
 apps/
@@ -111,7 +109,7 @@ apps/
   website/
 ```
 
-Home Assistant release surfaces and shared static assets live outside `apps/`:
+Home Assistant release surfaces and shared assets:
 
 ```text
 platform/
@@ -122,74 +120,4 @@ platform/
 assets/
   public/
   reference/
-    marketing/
-    media/
-    wallpapers/
-      source/
 ```
-
-Contributor mental model:
-
-- `@navet/core` owns shared contracts, IDs, and adapter semantics
-- `@navet/ui` owns provider-neutral React UI
-- provider packages own provider-specific runtime, auth, mapping, and command translation
-- `@navet/app` owns runtime selection, provider registration, settings, persistence, and product wiring
-- `apps/*` own host-specific bootstrapping, build config, and publishing surfaces
-
-The repo still contains migration seams and app-internal compatibility code, but package ownership
-is the right default model for new work.
-
-## Commands
-
-Common local commands:
-
-```bash
-pnpm dev
-pnpm preview
-pnpm test
-pnpm test:tier1
-pnpm test:tier2
-pnpm test:tier3
-pnpm storybook
-pnpm website:dev
-pnpm website:build
-pnpm storybook:build
-pnpm check:stories
-pnpm check:ui-kit
-pnpm check:provider-boundaries
-pnpm check:bundle-budget
-pnpm check:docker
-pnpm build:ha-panel
-pnpm sync:hacs
-```
-
-Contributor policy lives in [docs/agents/commands.md](docs/agents/commands.md). In particular,
-`pnpm typecheck` and `pnpm check` are user-run gates rather than default agent-run commands.
-
-## Docs
-
-Start with [docs/README.md](docs/README.md).
-
-Useful entry points:
-
-- [Home Assistant deployment guide](docs/HOME_ASSISTANT.md)
-- [Homey setup guide](docs/HOMEY.md)
-- [openHAB setup guide](docs/OPENHAB.md)
-- [Contributor onboarding](CONTRIBUTING.md)
-- [Widgets guide](docs/WIDGETS.md)
-- [Architecture overview for contributors](docs/agents/architecture.md)
-- [Package boundaries](docs/architecture/package-boundaries.md)
-- [Provider testing strategy](docs/testing/provider-testing-strategy.md)
-- [Roadmap](docs/ROADMAP.md)
-- [Release workflow](docs/release-workflow.md)
-- [Rollback guidance](docs/rollback.md)
-
-## Screenshots
-
-| Home | Energy | Security |
-|---|---|---|
-| ![Navet home dashboard on iPad](assets/reference/marketing/screenshots/navet-ipad-landscape-home.jpg) | ![Navet energy dashboard on iPad](assets/reference/marketing/screenshots/navet-ipad-landscape-energy.jpg) | ![Navet security dashboard on iPad](assets/reference/marketing/screenshots/navet-ipad-landscape-security.jpg) |
-
-| Tablet | Mobile home | Mobile controls |
-|---|---|---|
-| ![Navet tablet portrait dashboard](assets/reference/marketing/screenshots/navet-tablet-portrait-home.jpg) | ![Navet mobile PWA home dashboard](assets/reference/marketing/screenshots/navet-mobile-pwa-home.jpg) | ![Navet mobile PWA media or lights dashboard](assets/reference/marketing/screenshots/navet-mobile-pwa-media-or-lights.jpg) |

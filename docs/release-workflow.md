@@ -1,6 +1,6 @@
 # Release Workflow
 
-Navet uses one repo, one shared version, and many release artifacts.
+Navet uses one repo, one shared version, and multiple release artifacts.
 
 Versioned release surfaces:
 

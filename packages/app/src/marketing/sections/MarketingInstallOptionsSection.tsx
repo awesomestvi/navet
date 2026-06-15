@@ -10,15 +10,13 @@ export function MarketingInstallOptionsSection() {
   return (
     <MarketingSectionShell
       title="Start with the path that fits the home."
-      description="Navet already runs in several deployment shapes. Start with the most mature route today, or choose the app boundary that matches how your smart-home stack is managed."
+      description="Navet already runs in several deployment shapes. Choose the app boundary that matches your provider and how your smart-home stack is managed."
       variant="editorial"
     >
       <div className="grid gap-4 lg:grid-cols-3">
         {MARKETING_INSTALL_OPTIONS.map((option) => (
           <Panel key={option.title} className="space-y-4">
-            <Badge tone={option.label === 'Most mature' ? 'accent' : 'neutral'}>
-              {option.label}
-            </Badge>
+            <Badge tone="neutral">{option.label}</Badge>
             <div className="space-y-2">
               <Text className="text-base font-semibold">{option.title}</Text>
               <Text tone="muted">{option.description}</Text>

@@ -2,6 +2,12 @@
 
 This document describes the current visual and interaction rules for Navet's shared UI.
 
+Architecture note:
+
+- `@navet/ui` is the target provider-neutral shared UI package boundary.
+- The app-owned paths below are the current implementation surface for most shared UI and token
+  work while that extraction continues.
+
 ## Product Goals
 
 Navet should feel:
@@ -49,6 +55,12 @@ Prefer these surfaces for:
 - motion and focus treatment
 - semantic surface decisions
 
+Target ownership:
+
+- long-term provider-neutral token and shared UI ownership belongs under `@navet/ui`
+- until that extraction happens, keep docs explicit about which guidance refers to current
+  implementation paths versus target package ownership
+
 ## Density And Input Rules
 
 - optimize for mixed-input tablets and wall displays first
@@ -66,10 +78,13 @@ Prefer these surfaces for:
 
 ## Shared UI Placement
 
-- new generic reusable UI belongs in `packages/app/src/components/primitives/` or `patterns/`
+- new generic reusable UI currently starts in `packages/app/src/components/primitives/` or
+  `patterns/` unless the task is explicitly extracting UI into `@navet/ui`
 - app-specific shared UI belongs in `packages/app/src/components/shared/`
 - `packages/app/src/components/system/` is the curated export layer, not the default authoring location
-- docs and story examples should prefer `@/app/ui-kit/*` when a stable shared export exists
+- docs and story examples should prefer `@navet/app/ui-kit/*` when a stable shared export exists
+- provider-neutral shared UI should still be treated as `@navet/ui` work in the long-term package
+  model, even when the current implementation lives under `packages/app/src/components/*`
 
 ## Performance Rules
 
