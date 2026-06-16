@@ -1,5 +1,4 @@
 import type { PlatformRoom } from '@navet/app/platform/types';
-import type { NavetDevice } from '@navet/app/provider-models';
 import type { DeviceCollection } from '@navet/app/types/device.types';
 import type { NavetEntity } from '@navet/core/types';
 import { getDeviceRoomLabel } from './device-location';
@@ -66,36 +65,6 @@ export function buildAggregatedRoomsFromProviderEntities(entities: NavetEntity[]
       name: roomName,
       providerIds: [entity.providerId],
       canonicalMemberIds: [entity.canonicalId],
-    });
-  }
-
-  return Array.from(roomMap.values()).sort((left, right) => left.name.localeCompare(right.name));
-}
-
-// Compatibility-only bridge while app-internal callers still center NavetDevice.
-export function buildAggregatedRoomsFromNavetDevices(devices: NavetDevice[]): PlatformRoom[] {
-  const roomMap = new Map<string, PlatformRoom>();
-
-  for (const device of devices) {
-    const roomKey = normalizeRoomName(device.room);
-    const existing = roomMap.get(roomKey);
-
-    if (existing) {
-      if (!existing.providerIds.includes(device.providerId)) {
-        existing.providerIds.push(device.providerId);
-      }
-      if (!existing.canonicalMemberIds.includes(device.canonicalId)) {
-        existing.canonicalMemberIds.push(device.canonicalId);
-      }
-      continue;
-    }
-
-    roomMap.set(roomKey, {
-      id: roomKey,
-      key: roomKey,
-      name: device.room,
-      providerIds: [device.providerId],
-      canonicalMemberIds: [device.canonicalId],
     });
   }
 

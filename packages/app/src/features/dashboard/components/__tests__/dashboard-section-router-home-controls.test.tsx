@@ -4,7 +4,7 @@ import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { DashboardSectionRouter } from '../dashboard-section-router';
+import { DashboardSectionRouter, shouldSubscribeTaskRoutines } from '../dashboard-section-router';
 
 const roomNavMock = vi.fn();
 const dashboardLayoutMock = vi.fn();
@@ -72,6 +72,15 @@ describe('DashboardSectionRouter home controls', () => {
     expect(roomNavProps.addEntityLabel).toBe('Add Card');
     expect(layoutProps.mobileEditActions?.onAddEntity).toBe(controller.onOpenAddCardDialog);
     expect(layoutProps.mobileEditActions?.addEntityLabel).toBe('Add Card');
+  });
+});
+
+describe('shouldSubscribeTaskRoutines', () => {
+  it('subscribes only on home and tasks sections', () => {
+    expect(shouldSubscribeTaskRoutines('home')).toBe(true);
+    expect(shouldSubscribeTaskRoutines('tasks')).toBe(true);
+    expect(shouldSubscribeTaskRoutines('lights')).toBe(false);
+    expect(shouldSubscribeTaskRoutines('security')).toBe(false);
   });
 });
 

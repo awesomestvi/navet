@@ -2,7 +2,8 @@ import type {
   IntegrationProviderRuntimeRegistration,
   ProviderContractRegistration,
 } from '@navet/core/provider-runtime-types';
-import { callHomeyService, getHomeyEntityRuntimeService } from './homey-bridge';
+import { getHomeyEntityRuntimeService } from './homey-bridge';
+import { homeyNativeActionFeatureService } from './homey-native-action-feature.service';
 
 export function createHomeyRuntimeRegistration(
   registration: ProviderContractRegistration
@@ -12,7 +13,6 @@ export function createHomeyRuntimeRegistration(
     contract: registration.contract,
     implementationStatus: 'implemented',
     capabilities: {
-      serviceActions: true,
       pathSigning: false,
       cameraStreams: false,
     },
@@ -32,8 +32,7 @@ export function createHomeyRuntimeRegistration(
       notifications: false,
       tasks: false,
     },
-    invokeService: async (domain, service, serviceData = {}, target) =>
-      await callHomeyService(domain, service, serviceData, target),
     entityRuntimeService: getHomeyEntityRuntimeService(),
+    nativeActionFeatureService: homeyNativeActionFeatureService,
   };
 }

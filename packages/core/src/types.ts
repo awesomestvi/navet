@@ -111,17 +111,9 @@ export type NavetCommand =
   | { type: 'stop'; entityId: string }
   | { type: 'return_home'; entityId: string }
   | { type: 'locate'; entityId: string }
-  | { type: 'clean_spot'; entityId: string }
-  | {
-      type: 'service';
-      entityId: string;
-      domain: string;
-      service: string;
-      serviceData?: Record<string, unknown>;
-      target?: Record<string, unknown>;
-    };
+  | { type: 'clean_spot'; entityId: string };
 
-export type NavetUiCommand = Exclude<NavetCommand, { type: 'service' }>;
+export type NavetUiCommand = NavetCommand;
 
 export interface CommandResult {
   accepted: boolean;

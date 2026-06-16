@@ -490,17 +490,30 @@ describe('useDevices', () => {
 
     integrationStore.setState({
       selectedProviderIds: ['home_assistant'],
-      roomDescriptors: [
-        {
-          id: 'home_assistant:office',
-          name: 'Office',
-          providerIds: ['home_assistant'],
-          memberIds: [],
-          canonicalId: 'room-office',
-          normalizedName: 'office',
-          sources: [],
+      providerNormalizedRoomsByProviderId: {
+        home_assistant: {
+          'home_assistant:office': {
+            id: 'home_assistant:office',
+            canonicalId: 'home_assistant:office',
+            providerId: 'home_assistant',
+            externalId: 'office',
+            name: 'Office',
+            normalizedName: 'office',
+            memberIds: [],
+          },
         },
-      ],
+      },
+      normalizedRoomsByCanonicalId: {
+        'home_assistant:office': {
+          id: 'home_assistant:office',
+          canonicalId: 'home_assistant:office',
+          providerId: 'home_assistant',
+          externalId: 'office',
+          name: 'Office',
+          normalizedName: 'office',
+          memberIds: [],
+        },
+      },
       providerDeviceCollectionsByProviderId: {
         home_assistant: {
           ...createEmptyDeviceCollection(),
@@ -537,25 +550,30 @@ describe('useDevices', () => {
 
     integrationStore.setState({
       selectedProviderIds: ['home_assistant'],
-      roomDescriptors: [
-        {
-          id: 'office',
-          name: 'Office',
-          providerIds: ['home_assistant'],
-          memberIds: [],
-          canonicalId: 'office',
-          normalizedName: 'office',
-          sources: [
-            {
-              providerId: 'home_assistant',
-              nativeId: 'office',
-              sourceType: 'provider_managed',
-              supportsOrdering: true,
-              supportsDeletion: true,
-            },
-          ],
+      providerNormalizedRoomsByProviderId: {
+        home_assistant: {
+          'home_assistant:office': {
+            id: 'home_assistant:office',
+            canonicalId: 'home_assistant:office',
+            providerId: 'home_assistant',
+            externalId: 'office',
+            name: 'Office',
+            normalizedName: 'office',
+            memberIds: [],
+          },
         },
-      ],
+      },
+      normalizedRoomsByCanonicalId: {
+        'home_assistant:office': {
+          id: 'home_assistant:office',
+          canonicalId: 'home_assistant:office',
+          providerId: 'home_assistant',
+          externalId: 'office',
+          name: 'Office',
+          normalizedName: 'office',
+          memberIds: [],
+        },
+      },
       providerDeviceCollectionsByProviderId: {
         home_assistant: {
           ...createEmptyDeviceCollection(),

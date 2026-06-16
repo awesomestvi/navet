@@ -1,1 +1,1 @@
-import '../../../packages/app/src/main.tsx';
+import '@navet/app/main';

@@ -8,7 +8,10 @@ import {
 import { useI18n } from '@navet/app/hooks';
 import type { EffectsQuality } from '@navet/app/stores/settings-store';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
-import { getLegacyReducedEffectsFlags } from '@navet/app/utils/effects-quality';
+import {
+  getLegacyReducedEffectsFlags,
+  resolveEffectsQuality,
+} from '@navet/app/utils/effects-quality';
 import { AlertTriangle, Image as ImageIcon, Upload, X } from 'lucide-react';
 import { useMemo, useRef } from 'react';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
@@ -191,8 +194,16 @@ export function AppearanceEffectsQualityItem({
 
 export function AppearanceAmbienceItem({ controller }: { controller: SettingsSectionController }) {
   const { t } = useI18n();
-  const { ambientLightBleed, effectsQuality, styles, updateSettings } = controller;
-  const ambienceDisabled = effectsQuality !== 'high';
+  const {
+    ambientLightBleed,
+    disableAnimations,
+    effectsQuality,
+    lowPowerMode,
+    styles,
+    updateSettings,
+  } = controller;
+  const ambienceDisabled =
+    resolveEffectsQuality(effectsQuality, disableAnimations || lowPowerMode) !== 'high';
   const effectiveAmbientLightBleed = ambientLightBleed && !ambienceDisabled;
 
   return (

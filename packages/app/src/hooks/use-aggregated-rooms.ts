@@ -4,17 +4,38 @@ import { useMemo } from 'react';
 import { useIntegrationStore } from './use-integration-store';
 
 export function useAggregatedRooms(): PlatformRoom[] {
-  const roomDescriptors = useIntegrationStore(integrationSelectors.roomDescriptors);
+  const normalizedRoomsByCanonicalId = useIntegrationStore(
+    integrationSelectors.normalizedRoomsByCanonicalId
+  );
 
-  return useMemo<PlatformRoom[]>(
-    () =>
-      roomDescriptors.map((room) => ({
-        id: room.id,
+  return useMemo<PlatformRoom[]>(() => {
+    const roomsByKey = new Map<string, PlatformRoom>();
+
+    for (const room of Object.values(normalizedRoomsByCanonicalId)) {
+      const existing = roomsByKey.get(room.normalizedName);
+      if (existing) {
+        if (!existing.providerIds.includes(room.providerId)) {
+          existing.providerIds.push(room.providerId);
+        }
+        for (const memberId of room.memberIds) {
+          if (!existing.canonicalMemberIds.includes(memberId)) {
+            existing.canonicalMemberIds.push(memberId);
+          }
+        }
+        continue;
+      }
+
+      roomsByKey.set(room.normalizedName, {
+        id: room.normalizedName,
         key: room.normalizedName,
         name: room.name,
-        providerIds: [...room.providerIds],
+        providerIds: [room.providerId],
         canonicalMemberIds: [...room.memberIds],
-      })),
-    [roomDescriptors]
-  );
+      });
+    }
+
+    return Array.from(roomsByKey.values()).sort((left, right) =>
+      left.name.localeCompare(right.name)
+    );
+  }, [normalizedRoomsByCanonicalId]);
 }

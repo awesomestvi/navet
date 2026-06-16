@@ -138,6 +138,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   isEditMode,
 }: CameraCardProps) {
   const providerEntity = useProviderEntityModel(id);
+  const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const cameraDashboardViewMode = useSettingsStore(
@@ -191,10 +192,11 @@ export const CameraCardContainer = memo(function CameraCardContainer({
         effectsQuality,
         isEditMode,
         lowPowerMode,
+        reducedEffectsEnabled: disableAnimations || lowPowerMode,
         visibleCardCount: 1,
         visibleDevices: [],
       }),
-    [effectsQuality, isEditMode, lowPowerMode]
+    [disableAnimations, effectsQuality, isEditMode, lowPowerMode]
   );
   const effectiveDashboardCameraViewMode = resolveDashboardCameraViewMode({
     cameraDashboardViewMode:

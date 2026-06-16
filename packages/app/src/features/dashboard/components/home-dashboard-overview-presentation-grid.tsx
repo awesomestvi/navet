@@ -41,6 +41,7 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
   showHero,
   densePerformanceMode = false,
 }: PresentationCardGridProps) {
+  const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const breakpointCols = useBreakpointCols();
@@ -105,12 +106,13 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
         effectsQuality,
         isEditMode: false,
         lowPowerMode,
+        reducedEffectsEnabled: disableAnimations || lowPowerMode,
         visibleCardCount: cardIds.length,
         visibleDevices: Array.from(allCards.values()).filter(
           (entry): entry is DeviceWithType => !isCustomCard(entry)
         ),
       }),
-    [allCards, cardIds.length, effectsQuality, lowPowerMode]
+    [allCards, cardIds.length, disableAnimations, effectsQuality, lowPowerMode]
   );
   const visibleCount = useProgressiveBatching(cardIds.length, false, {
     enabled: performanceProfile.batchHeavyCards || densePerformanceMode,

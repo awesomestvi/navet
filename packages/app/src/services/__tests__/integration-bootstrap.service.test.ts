@@ -1,7 +1,7 @@
 import type { HomeyAuthSession, OpenHABAuthSession } from '@navet/app/auth/types';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { resetAppStores } from '@navet/app/test/store-reset';
-import { openhabService } from '@navet/provider-openhab/openhab-service';
+import { getOpenHABSnapshot } from '@navet/provider-openhab';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { homeyService } from '../homey.service';
 import {
@@ -150,7 +150,7 @@ describe('integration-bootstrap.service', () => {
 
     await bootstrapIntegrationSession(session);
 
-    expect(openhabService.getSnapshot()).toMatchObject({
+    expect(getOpenHABSnapshot()).toMatchObject({
       connected: true,
       error: null,
       items: {
@@ -189,7 +189,7 @@ describe('integration-bootstrap.service', () => {
       })
     ).rejects.toThrow('openHAB snapshot request failed with status 404');
 
-    expect(openhabService.getSnapshot()).toMatchObject({
+    expect(getOpenHABSnapshot()).toMatchObject({
       connected: false,
       error: 'openHAB snapshot request failed with status 404',
     });

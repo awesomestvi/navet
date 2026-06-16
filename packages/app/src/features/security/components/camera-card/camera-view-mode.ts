@@ -1,4 +1,5 @@
 import type { CameraViewMode, EffectsQuality } from '@navet/app/stores/settings-store';
+import { resolveEffectsQuality } from '@navet/app/utils/effects-quality';
 
 export const CAMERA_AUTO_REFRESH_INTERVAL_MS = 10_000;
 export const CAMERA_LIVE_FALLBACK_REFRESH_INTERVAL_MS = 30_000;
@@ -25,7 +26,7 @@ export function resolveDashboardCameraViewMode({
   effectsQuality?: EffectsQuality;
   hasSnapshot: boolean;
 }): CameraViewMode {
-  if ((lowPowerMode || effectsQuality === 'low') && hasSnapshot) {
+  if (resolveEffectsQuality(effectsQuality, lowPowerMode) === 'low' && hasSnapshot) {
     return 'snapshot';
   }
 

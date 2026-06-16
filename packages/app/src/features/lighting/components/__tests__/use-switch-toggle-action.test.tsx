@@ -2,20 +2,20 @@ import { renderHookWithProviders } from '@navet/app/test/render';
 import { act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { dispatchEntityCommandMock, callIntegrationServiceMock } = vi.hoisted(() => ({
+const { dispatchEntityCommandMock, invokeIntegrationNativeActionMock } = vi.hoisted(() => ({
   dispatchEntityCommandMock: vi.fn().mockResolvedValue({
     accepted: true,
     requiresEventConfirmation: true,
   }),
-  callIntegrationServiceMock: vi.fn().mockResolvedValue(undefined),
+  invokeIntegrationNativeActionMock: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@navet/app/commands', () => ({
   dispatchEntityCommand: dispatchEntityCommandMock,
 }));
 
-vi.mock('@navet/app/services/integration-service-call.service', () => ({
-  callIntegrationService: callIntegrationServiceMock,
+vi.mock('@navet/app/services/integration-native-action.service', () => ({
+  invokeIntegrationNativeAction: invokeIntegrationNativeActionMock,
 }));
 
 import { useSwitchToggleAction } from '../use-switch-toggle-action';
@@ -49,6 +49,6 @@ describe('useSwitchToggleAction', () => {
 
     expect(setIsOn).toHaveBeenCalledWith(false);
     expect(dispatchEntityCommandMock).not.toHaveBeenCalled();
-    expect(callIntegrationServiceMock).not.toHaveBeenCalled();
+    expect(invokeIntegrationNativeActionMock).not.toHaveBeenCalled();
   });
 });

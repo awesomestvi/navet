@@ -282,7 +282,7 @@ export const HVACGauge = memo(function HVACGauge({
           strokeWidth="14"
           strokeLinecap="round"
           strokeDasharray={`${progress * 251} 251`}
-          className="transition-all duration-500"
+          className="transition-[stroke-dasharray,stroke,filter,opacity] duration-500"
           filter={isOn ? `url(#glow-${id})` : 'none'}
           style={{ filter: isOn ? `drop-shadow(0 0 12px ${glowColor})` : 'none' }}
         />

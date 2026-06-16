@@ -962,8 +962,9 @@ function DetailsGrid({
   onRemoveEntity?: (entityId: string) => void;
 }) {
   const breakpointCols = useBreakpointCols();
-  const { effectsQuality, lowPowerMode } = useSettingsStore(
+  const { disableAnimations, effectsQuality, lowPowerMode } = useSettingsStore(
     useShallow((state) => ({
+      disableAnimations: settingsSelectors.disableAnimations(state),
       effectsQuality: settingsSelectors.effectsQuality(state),
       lowPowerMode: settingsSelectors.lowPowerMode(state),
     }))
@@ -978,10 +979,11 @@ function DetailsGrid({
         effectsQuality,
         isEditMode,
         lowPowerMode,
+        reducedEffectsEnabled: disableAnimations || lowPowerMode,
         visibleCardCount: devices.length,
         visibleDevices: devices,
       }),
-    [devices, effectsQuality, isEditMode, lowPowerMode]
+    [devices, disableAnimations, effectsQuality, isEditMode, lowPowerMode]
   );
   const shouldBatch = performanceProfile.batchHeavyCards;
   const batchedVisibleCount = useProgressiveBatching(devices.length, isEditMode, {

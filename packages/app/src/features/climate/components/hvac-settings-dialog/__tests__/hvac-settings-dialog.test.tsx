@@ -31,8 +31,8 @@ vi.mock('@navet/app/commands', () => ({
   },
 }));
 
-vi.mock('@navet/app/services/integration-service-call.service', () => ({
-  callIntegrationService: async ({
+vi.mock('@navet/app/services/integration-native-action.service', () => ({
+  invokeIntegrationNativeAction: async ({
     entityId,
     domain,
     service,

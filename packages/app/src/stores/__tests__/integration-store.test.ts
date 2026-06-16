@@ -1,7 +1,7 @@
 import { homeyService } from '@navet/app/services/homey.service';
 import { lightEntityFactory } from '@navet/app/test/fixtures/home-assistant/entities/light';
 import { resetAppStores } from '@navet/app/test/store-reset';
-import { openhabService } from '@navet/provider-openhab/openhab-service';
+import { replaceOpenHABSnapshot } from '@navet/provider-openhab';
 import { describe, expect, it, vi } from 'vitest';
 import { homeAssistantStore } from '../home-assistant-store';
 import { integrationStore } from '../integration-store';
@@ -22,7 +22,7 @@ describe('integrationStore', () => {
       devices: {},
       zones: {},
     });
-    openhabService.replaceSnapshot({
+    replaceOpenHABSnapshot({
       connected: true,
       items: {
         LivingRoom: {
@@ -92,7 +92,7 @@ describe('integrationStore', () => {
   it('publishes openHAB entities, lookups, and rooms into the shared store', async () => {
     await resetAppStores();
 
-    openhabService.replaceSnapshot({
+    replaceOpenHABSnapshot({
       connected: true,
       items: {
         LivingRoom: {
@@ -128,6 +128,16 @@ describe('integrationStore', () => {
       integrationStore.getState().providerEntityLookupByProviderId.openhab?.LivingRoomLamp
     ).toBe('openhab:LivingRoomLamp');
     expect(
+      integrationStore.getState().providerNormalizedRoomsByProviderId.openhab?.[
+        'openhab:living room'
+      ]
+    ).toMatchObject({
+      canonicalId: 'openhab:living room',
+      externalId: 'living room',
+      providerId: 'openhab',
+      memberIds: ['openhab:LivingRoomLamp'],
+    });
+    expect(
       Object.values(integrationStore.getState().providerRoomsByProviderId.openhab ?? {})
     ).toEqual(
       expect.arrayContaining([
@@ -143,7 +153,7 @@ describe('integrationStore', () => {
   it('maps openHAB switch lights that report ON into active light devices', async () => {
     await resetAppStores();
 
-    openhabService.replaceSnapshot({
+    replaceOpenHABSnapshot({
       connected: true,
       items: {
         LivingRoom: {
@@ -181,7 +191,7 @@ describe('integrationStore', () => {
   it('maps openHAB dimmer lights at 0 brightness as off', async () => {
     await resetAppStores();
 
-    openhabService.replaceSnapshot({
+    replaceOpenHABSnapshot({
       connected: true,
       items: {
         Office: {
@@ -218,7 +228,7 @@ describe('integrationStore', () => {
   it('maps openHAB equipment control points into visible light devices', async () => {
     await resetAppStores();
 
-    openhabService.replaceSnapshot({
+    replaceOpenHABSnapshot({
       connected: true,
       items: {
         lOffice: {
@@ -335,7 +345,7 @@ describe('integrationStore', () => {
   it('marks openHAB as reconnecting while cached snapshot data remains available', async () => {
     await resetAppStores();
 
-    openhabService.replaceSnapshot({
+    replaceOpenHABSnapshot({
       connected: true,
       items: {
         LivingRoomLamp: {

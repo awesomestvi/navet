@@ -1,7 +1,6 @@
 import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
-import { resolvePlatformArtwork } from '@navet/app/services/integration-resource.service';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
-import { useEffect, useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useState } from 'react';
 
 interface UseMediaArtworkOptions {
   entityId: string;
@@ -51,16 +50,19 @@ export function useMediaArtwork({
     ]
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     let cancelled = false;
     void artworkKey;
 
-    void resolvePlatformArtwork({
-      entityId,
-      attrs: artworkAttrs,
-      fallbackPicture,
-      providerId,
-    })
+    void import('@navet/app/services/integration-resource.service')
+      .then(({ resolvePlatformArtwork }) =>
+        resolvePlatformArtwork({
+          entityId,
+          attrs: artworkAttrs,
+          fallbackPicture,
+          providerId,
+        })
+      )
       .then((nextResource) => {
         if (!cancelled) {
           setResource(nextResource);

@@ -167,20 +167,6 @@ async function executeHomeyCommand(entity: NavetEntity, command: NavetCommand) {
     case 'clean_spot':
       await callHomeyService('vacuum', 'clean_spot', {}, target);
       return;
-    case 'service':
-      await callHomeyService(
-        command.domain,
-        command.service,
-        command.serviceData ?? {},
-        (command.target as
-          | {
-              entityId?: string | string[];
-              areaId?: string | string[];
-              deviceId?: string | string[];
-            }
-          | undefined) ?? target
-      );
-      return;
     default:
       throw new UnsupportedProviderCommandError((command as { type: string }).type);
   }

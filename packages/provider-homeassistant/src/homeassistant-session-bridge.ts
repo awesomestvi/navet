@@ -1,6 +1,6 @@
 import type { IntegrationSessionRuntimeRegistration } from '@navet/core/session-runtime-types';
 
-type HomeAssistantSessionRuntimeBridge = Pick<
+export type HomeAssistantSessionRuntimeBridge = Pick<
   IntegrationSessionRuntimeRegistration,
   | 'getAuthRuntime'
   | 'getSnapshot'

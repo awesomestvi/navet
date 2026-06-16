@@ -147,8 +147,9 @@ export const CardGrid = memo(function CardGrid({
   sortable = true,
 }: CardGridProps) {
   const { t } = useI18n();
-  const { effectsQuality, lowPowerMode } = useSettingsStore(
+  const { disableAnimations, effectsQuality, lowPowerMode } = useSettingsStore(
     useShallow((state) => ({
+      disableAnimations: settingsSelectors.disableAnimations(state),
       effectsQuality: settingsSelectors.effectsQuality(state),
       lowPowerMode: settingsSelectors.lowPowerMode(state),
     }))
@@ -161,12 +162,13 @@ export const CardGrid = memo(function CardGrid({
         effectsQuality,
         isEditMode,
         lowPowerMode,
+        reducedEffectsEnabled: disableAnimations || lowPowerMode,
         visibleCardCount: cardIds.length,
         visibleDevices: Array.from(allCards.values()).filter(
           (entry): entry is DeviceWithType => !isCustomCard(entry)
         ),
       }),
-    [allCards, cardIds.length, effectsQuality, isEditMode, lowPowerMode]
+    [allCards, cardIds.length, disableAnimations, effectsQuality, isEditMode, lowPowerMode]
   );
   const optimizeOffscreenPaint = performanceProfile.optimizeOffscreenPaint;
   const breakpointCols = useBreakpointCols();

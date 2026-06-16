@@ -1,6 +1,6 @@
 import { dispatchEntityCommand } from '@navet/app/commands';
 import { useServiceActionHandler } from '@navet/app/hooks';
-import { callIntegrationService } from '@navet/app/services/integration-service-call.service';
+import { invokeIntegrationNativeAction } from '@navet/app/services/integration-native-action.service';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { useCallback } from 'react';
 
@@ -78,7 +78,7 @@ export function useSwitchToggleAction({
       setIsOn(true);
       void runAction(
         async () => {
-          await callIntegrationService({
+          await invokeIntegrationNativeAction({
             providerId,
             entityId: id,
             domain: resolvedServiceDomain,

@@ -43,7 +43,7 @@ import {
   sanitizeButtonEntityId,
 } from '@navet/app/features/dashboard/utils/button-widget-security';
 import { useI18n, useTheme } from '@navet/app/hooks';
-import { callIntegrationService } from '@navet/app/services/integration-service-call.service';
+import { invokeIntegrationNativeAction } from '@navet/app/services/integration-native-action.service';
 import { Loader2, Palette, Settings2, Sliders } from 'lucide-react';
 import { type MouseEvent, type PointerEvent, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -314,7 +314,7 @@ export function ButtonWidget({
     setIsPressed(true);
     setTimeout(() => setIsPressed(false), 400);
     try {
-      await callIntegrationService({
+      await invokeIntegrationNativeAction({
         entityId,
         domain: serviceCall.domain,
         service: serviceCall.service,

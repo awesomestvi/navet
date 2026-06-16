@@ -14,7 +14,7 @@ import { getHVACGaugeColor } from '@navet/app/features/climate/utils/hvac-styles
 import { convertCelsiusPresetToSourceUnit } from '@navet/app/features/climate/utils/hvac-temperature-presets';
 import { getHvacTemperatureStatusLabel } from '@navet/app/features/climate/utils/hvac-temperature-status-label';
 import { useI18n, useTheme } from '@navet/app/hooks';
-import { callIntegrationService } from '@navet/app/services/integration-service-call.service';
+import { invokeIntegrationNativeAction } from '@navet/app/services/integration-native-action.service';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import {
@@ -41,12 +41,25 @@ function normalizeDisplayControlValue(value: number, temperatureUnit: 'celsius' 
   return temperatureUnit === 'fahrenheit' ? Math.round(value) : value;
 }
 
-function normalizeDisplayControlStep(step: number, temperatureUnit: 'celsius' | 'fahrenheit') {
-  if (temperatureUnit !== 'fahrenheit') {
+function normalizeDisplayControlStep(
+  step: number,
+  temperatureUnit: 'celsius' | 'fahrenheit',
+  sourceTemperatureUnit: 'celsius' | 'fahrenheit'
+) {
+  if (temperatureUnit !== 'fahrenheit' || sourceTemperatureUnit !== 'fahrenheit') {
     return step;
   }
 
   return Math.max(1, Math.round(step));
+}
+
+function snapTemperatureToSourceStep(value: number, step: number, min: number) {
+  if (!Number.isFinite(step) || step <= 0) {
+    return value;
+  }
+
+  const snapped = min + Math.round((value - min) / step) * step;
+  return Number(snapped.toFixed(3));
 }
 
 export const HVACSettingsDialog = memo(function HVACSettingsDialog({
@@ -99,43 +112,54 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
   const dialogGlowColors = getHVACGaugeColor(visualMode);
   const contentInsetClassName = 'px-6 max-sm:px-3.5';
   const [activeTab, setActiveTab] = useState('hvac');
+  const effectiveSourceTemperatureUnit = sourceTemperatureUnit ?? 'celsius';
   const displayTargetTemp = convertTemperatureUnitValue(
     targetTemp,
-    sourceTemperatureUnit,
+    effectiveSourceTemperatureUnit,
     temperatureUnit
   );
   const displayCurrentTemp = convertTemperatureUnitValue(
     currentTemp,
-    sourceTemperatureUnit,
+    effectiveSourceTemperatureUnit,
     temperatureUnit
   );
   const displayMinTemp = convertTemperatureUnitValue(
     minTemp,
-    sourceTemperatureUnit,
+    effectiveSourceTemperatureUnit,
     temperatureUnit
   );
   const displayMaxTemp = convertTemperatureUnitValue(
     maxTemp,
-    sourceTemperatureUnit,
+    effectiveSourceTemperatureUnit,
     temperatureUnit
   );
   const displayStep = Math.abs(
-    convertTemperatureUnitValue(step, sourceTemperatureUnit, temperatureUnit) -
-      convertTemperatureUnitValue(0, sourceTemperatureUnit, temperatureUnit)
+    convertTemperatureUnitValue(step, effectiveSourceTemperatureUnit, temperatureUnit) -
+      convertTemperatureUnitValue(0, effectiveSourceTemperatureUnit, temperatureUnit)
   );
   const controlDisplayTargetTemp = normalizeDisplayControlValue(displayTargetTemp, temperatureUnit);
   const controlDisplayMinTemp = normalizeDisplayControlValue(displayMinTemp, temperatureUnit);
   const controlDisplayMaxTemp = normalizeDisplayControlValue(displayMaxTemp, temperatureUnit);
-  const controlDisplayStep = normalizeDisplayControlStep(displayStep, temperatureUnit);
-  const handleDisplayTargetTempChange = (nextTemp: number) => {
-    onTargetTempChange(
-      convertDisplayTemperatureToSourceUnit(nextTemp, temperatureUnit, sourceTemperatureUnit)
+  const controlDisplayStep = normalizeDisplayControlStep(
+    displayStep,
+    temperatureUnit,
+    effectiveSourceTemperatureUnit
+  );
+  const toSnappedSourceTemperature = (nextTemp: number) =>
+    snapTemperatureToSourceStep(
+      convertDisplayTemperatureToSourceUnit(
+        nextTemp,
+        temperatureUnit,
+        effectiveSourceTemperatureUnit
+      ),
+      step,
+      minTemp
     );
+  const handleDisplayTargetTempChange = (nextTemp: number) => {
+    onTargetTempChange(toSnappedSourceTemperature(nextTemp));
   };
   const handleDisplayTargetTempCommit = (nextTemp: number) => {
-    (onTargetTempCommit ?? onTargetTempChange)(
-      convertDisplayTemperatureToSourceUnit(nextTemp, temperatureUnit, sourceTemperatureUnit)
-    );
+    (onTargetTempCommit ?? onTargetTempChange)(toSnappedSourceTemperature(nextTemp));
   };
   const siblingLabels = siblingEntities
     .map((entry) => entry.entity.attributes?.friendly_name)
@@ -391,7 +415,7 @@ function ClimateSiblingControlRow({
     }
 
     if (domain === 'button' || domain === 'input_button') {
-      await callIntegrationService({
+      await invokeIntegrationNativeAction({
         entityId,
         domain,
         service: 'press',
@@ -415,7 +439,7 @@ function ClimateSiblingControlRow({
 
   const setFanPercentage = useCallback(
     async (percentage: number) => {
-      await callIntegrationService({
+      await invokeIntegrationNativeAction({
         entityId,
         domain: 'fan',
         service: 'set_percentage',
@@ -427,7 +451,7 @@ function ClimateSiblingControlRow({
 
   const setFanPresetMode = useCallback(
     async (presetMode: string) => {
-      await callIntegrationService({
+      await invokeIntegrationNativeAction({
         entityId,
         domain: 'fan',
         service: 'set_preset_mode',

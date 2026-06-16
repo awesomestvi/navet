@@ -28,7 +28,7 @@ import {
   useTheme,
 } from '@navet/app/hooks';
 import { useProviderEntityModel } from '@navet/app/hooks/use-provider-device';
-import { callIntegrationService } from '@navet/app/services/integration-service-call.service';
+import { invokeIntegrationNativeAction } from '@navet/app/services/integration-native-action.service';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
 import { Fan, MoreHorizontal, RotateCcw, RotateCw, Wind } from 'lucide-react';
@@ -66,6 +66,9 @@ const FAN_SPEED_ACTIONS: Array<{
   { speed: 'medium', label: 'Medium' },
   { speed: 'high', label: 'High' },
 ];
+
+const CARD_VISUAL_TRANSITION_CLASS =
+  'transition-[background-color,border-color,box-shadow,color,opacity,transform,filter] duration-500';
 
 function clampPercentage(value: number | null | undefined): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
@@ -423,7 +426,7 @@ export const FanCard = memo(function FanCard({
 
   const setFanDirection = useCallback(
     async (direction: 'forward' | 'reverse') => {
-      await callIntegrationService({
+      await invokeIntegrationNativeAction({
         entityId: id,
         domain: 'fan',
         service: 'set_direction',
@@ -435,7 +438,7 @@ export const FanCard = memo(function FanCard({
 
   const setFanOscillation = useCallback(
     async (oscillating: boolean) => {
-      await callIntegrationService({
+      await invokeIntegrationNativeAction({
         entityId: id,
         domain: 'fan',
         service: 'oscillate',
@@ -453,7 +456,7 @@ export const FanCard = memo(function FanCard({
         interactive={!isEditMode}
         isActive={isOn && theme !== 'black'}
         activeColor={surfaceTokens.glowColor}
-        className={`relative z-10 transition-all duration-500 ${!isEditMode ? 'cursor-pointer' : ''}`}
+        className={`relative z-10 ${CARD_VISUAL_TRANSITION_CLASS} ${!isEditMode ? 'cursor-pointer' : ''}`}
         frameClassName={`${cardShell.rootFrameClassName} ${surfaceTokens.cardClassName}`}
         style={surfaceTokens.cardStyle}
         disableDefaultSheen

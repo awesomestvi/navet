@@ -35,13 +35,14 @@ export const DeviceGrid = memo(function DeviceGrid({
 }: DeviceGridProps) {
   const { isSearchActive, filteredDeviceIds } = useSearch();
   const breakpointCols = useBreakpointCols();
+  const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const { ref: visibilityRef, isVisible } = useDeferredVisibility<HTMLDivElement>({
     initiallyVisible: isEditMode,
   });
   const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
-    useFitDashboardGrid(breakpointCols);
+    useFitDashboardGrid(breakpointCols, isVisible || isEditMode);
   const deferredFilteredDeviceIds = useDeferredValue(filteredDeviceIds);
 
   const handleSizeChange = useCallback(
@@ -73,10 +74,18 @@ export const DeviceGrid = memo(function DeviceGrid({
         effectsQuality,
         isEditMode,
         lowPowerMode,
+        reducedEffectsEnabled: disableAnimations || lowPowerMode,
         visibleCardCount: displayedCardIds.length,
         visibleDevices: deviceMap.values(),
       }),
-    [deviceMap, displayedCardIds.length, effectsQuality, isEditMode, lowPowerMode]
+    [
+      deviceMap,
+      disableAnimations,
+      displayedCardIds.length,
+      effectsQuality,
+      isEditMode,
+      lowPowerMode,
+    ]
   );
   const visibleCount = useProgressiveBatching(displayedCardIds.length, isEditMode, {
     enabled: isVisible,

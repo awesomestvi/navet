@@ -84,7 +84,6 @@ describe('integration-registry.service', () => {
       },
       implementationStatus: 'implemented',
       capabilities: {
-        serviceActions: true,
         pathSigning: true,
         cameraStreams: true,
       },
@@ -127,7 +126,6 @@ describe('integration-registry.service', () => {
       },
       implementationStatus: 'implemented',
       capabilities: {
-        serviceActions: true,
         pathSigning: false,
         cameraStreams: false,
       },
@@ -147,11 +145,16 @@ describe('integration-registry.service', () => {
         notifications: false,
       },
     });
-    expect(adapter.invokeService).toBeDefined();
+    expect(adapter.nativeActionFeatureService).toBeDefined();
     expect(adapter.signPath).toBeUndefined();
     expect(adapter.getCameraStream).toBeUndefined();
 
-    await adapter.invokeService?.('switch', 'turn_on', {}, { entityId: 'device-1' });
+    await adapter.nativeActionFeatureService?.invokeAction({
+      entityId: 'device-1',
+      domain: 'switch',
+      service: 'turn_on',
+      serviceData: {},
+    });
     expect(homeyCallServiceMock).toHaveBeenCalledWith(
       'switch',
       'turn_on',

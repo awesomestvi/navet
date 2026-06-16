@@ -44,6 +44,47 @@ describe('useDashboardPerformanceMode helpers', () => {
     ).toBe(true);
   });
 
+  it('resolves effective low quality when low-power mode overrides a high requested quality', () => {
+    expect(
+      resolveDashboardPerformanceProfile({
+        activeSection: 'home',
+        deviceTier: 'high',
+        effectsQuality: 'high',
+        isEditMode: false,
+        lowPowerMode: true,
+        visibleCardCount: 2,
+        visibleDevices: [createDevice('light.kitchen', 'lights')],
+      })
+    ).toMatchObject({
+      requestedEffectsQuality: 'high',
+      resolvedEffectsQuality: 'low',
+      effectiveEffectsQuality: 'low',
+      reducePolling: true,
+      allowBackdropBlur: false,
+    });
+  });
+
+  it('resolves effective low quality when reduced effects are forced without low-power mode', () => {
+    expect(
+      resolveDashboardPerformanceProfile({
+        activeSection: 'home',
+        deviceTier: 'high',
+        effectsQuality: 'high',
+        isEditMode: false,
+        lowPowerMode: false,
+        reducedEffectsEnabled: true,
+        visibleCardCount: 2,
+        visibleDevices: [createDevice('light.kitchen', 'lights')],
+      })
+    ).toMatchObject({
+      requestedEffectsQuality: 'high',
+      resolvedEffectsQuality: 'low',
+      effectiveEffectsQuality: 'low',
+      reducePolling: true,
+      allowBackdropBlur: false,
+    });
+  });
+
   it('enables dense performance mode for heavy card-dense pages', () => {
     expect(
       resolveDenseDashboardPerformanceMode({

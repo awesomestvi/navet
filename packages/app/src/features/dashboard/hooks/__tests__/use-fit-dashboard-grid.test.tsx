@@ -1,5 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { useAutoScaledGridMeasurements } from '../use-auto-scaled-grid-measurements';
 import { useFitDashboardGrid } from '../use-fit-dashboard-grid';
 
 vi.mock('../use-auto-scaled-grid-measurements', () => ({
@@ -19,5 +20,11 @@ describe('useFitDashboardGrid', () => {
       gridAutoRows: '80px',
       gridTemplateColumns: 'repeat(12, minmax(80px, 1fr))',
     });
+  });
+
+  it('forwards the enabled flag to auto-scaled measurements', () => {
+    renderHook(() => useFitDashboardGrid(6, false));
+
+    expect(vi.mocked(useAutoScaledGridMeasurements)).toHaveBeenLastCalledWith(1136, false);
   });
 });

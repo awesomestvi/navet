@@ -1,35 +1,15 @@
 import { LockCard } from '@navet/app/features/security';
-import { homeAssistantService } from '@navet/app/services/home-assistant.service';
+import { createPreviewStoryScenario, replacePreviewEntity } from '@navet/app/preview/runtime';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { EntityCardStoryFrame } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
-import { useEffect, useState } from 'react';
 import { expect } from 'storybook/test';
 
 function LockCardStory(args: ComponentProps<typeof LockCard>) {
-  const [mockState, setMockState] = useState(args.initialState ?? true);
-
-  useEffect(() => {
-    setMockState(args.initialState ?? true);
-  }, [args.initialState]);
-
-  useEffect(() => {
-    const originalUpdateLock = homeAssistantService.updateLock.bind(homeAssistantService);
-
-    homeAssistantService.updateLock = async (_entityId: string, state: 'locked' | 'unlocked') => {
-      const nextLocked = state === 'locked';
-      setMockState(nextLocked);
-    };
-
-    return () => {
-      homeAssistantService.updateLock = originalUpdateLock;
-    };
-  }, []);
-
   return (
     <EntityCardStoryFrame size={args.size ?? 'small'}>
-      <LockCard {...args} initialState={mockState} />
+      <LockCard {...args} />
     </EntityCardStoryFrame>
   );
 }
@@ -123,6 +103,29 @@ export const SmallUnlocked: Story = {
     initialState: false,
     id: 'lock.front_door',
     name: 'Front Door',
+  },
+  parameters: {
+    previewRuntime: {
+      scenario: replacePreviewEntity(createPreviewStoryScenario(), {
+        id: 'home_assistant:lock.front_door',
+        canonicalId: 'home_assistant:lock.front_door',
+        providerId: 'home_assistant',
+        externalId: 'lock.front_door',
+        type: 'lock',
+        name: 'Front Door',
+        room: 'Entrance',
+        primaryState: 'unlocked',
+        availability: 'available',
+        attributes: {
+          value: 'unlocked',
+          locked: false,
+          room: 'Entrance',
+          deviceId: 'device-entrance-lock',
+        },
+        capabilities: [],
+        lastUpdated: '2026-05-16T08:00:00.000Z',
+      }),
+    },
   },
 };
 

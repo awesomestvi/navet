@@ -4,11 +4,23 @@ const { resolveArtworkMock } = vi.hoisted(() => ({
   resolveArtworkMock: vi.fn(),
 }));
 
-vi.mock('@navet/app/infrastructure/home-assistant/home-assistant-infrastructure', () => ({
-  mediaArtworkService: {
-    resolveArtwork: resolveArtworkMock,
-  },
-}));
+vi.mock(
+  '@navet/app/infrastructure/home-assistant/home-assistant-shared-infrastructure',
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import('@navet/app/infrastructure/home-assistant/home-assistant-shared-infrastructure')
+      >();
+
+    return {
+      ...actual,
+      mediaArtworkService: {
+        ...actual.mediaArtworkService,
+        resolveArtwork: resolveArtworkMock,
+      },
+    };
+  }
+);
 
 describe('integration-resource.service', () => {
   beforeEach(() => {

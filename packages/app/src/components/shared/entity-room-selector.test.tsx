@@ -41,18 +41,18 @@ vi.mock('@navet/app/hooks', () => ({
   useIntegrationStore: (selector: (state: unknown) => unknown) =>
     selector({
       currentProviderId: 'home_assistant',
-      roomDescriptors: [
-        {
-          id: 'home_assistant:bathroom',
-          name: 'Bathroom',
-          providerIds: ['home_assistant'],
-          memberIds: [],
-          canonicalId: 'room-bathroom',
-          normalizedName: 'bathroom',
-          sources: [],
-          canAssign: true,
-        },
-      ],
+      manageableRoomsByProviderId: {
+        home_assistant: [
+          {
+            id: 'home_assistant:bathroom',
+            name: 'Bathroom',
+            providerId: 'home_assistant',
+            canAssign: true,
+            canDelete: true,
+            canOrder: true,
+          },
+        ],
+      },
     }),
   useProviderEntityRoomContext: () => mockRoomContext,
 }));
@@ -64,16 +64,6 @@ vi.mock('@navet/app/stores/entity-room-overrides-store', () => ({
       setRoomOverride: setRoomOverrideMock,
       clearRoomOverride: clearRoomOverrideMock,
     }),
-}));
-
-vi.mock('@navet/app/platform/provider-room-management', () => ({
-  buildManageableRoomReferences: () => [
-    {
-      id: 'home_assistant:bathroom',
-      name: 'Bathroom',
-      canAssign: true,
-    },
-  ],
 }));
 
 vi.mock('@navet/app/services/integration-admin.service', () => ({

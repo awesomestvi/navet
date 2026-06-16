@@ -57,6 +57,10 @@ export function useHvacVisualMode({
     }
 
     if (isHeatingMode) {
+      if (temperatureDelta < -0.05) {
+        return 'cool';
+      }
+
       if (normalizedAction.includes('heat')) {
         return 'heat';
       }

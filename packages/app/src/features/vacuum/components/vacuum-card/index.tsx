@@ -382,7 +382,6 @@ function VacuumRobotVisual({
       return undefined;
     }
 
-    let frameId = 0;
     const capturePose = () => {
       const node = compactRobotRef.current;
       if (node) {
@@ -393,11 +392,11 @@ function VacuumRobotVisual({
           rotation: `${readRotationDegrees(style.transform)}deg`,
         };
       }
-      frameId = window.requestAnimationFrame(capturePose);
     };
 
-    frameId = window.requestAnimationFrame(capturePose);
-    return () => window.cancelAnimationFrame(frameId);
+    capturePose();
+    const intervalId = window.setInterval(capturePose, 240);
+    return () => window.clearInterval(intervalId);
   }, [isCompact, isCleaning, isReturning]);
 
   useLayoutEffect(() => {

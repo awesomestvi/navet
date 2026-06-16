@@ -25,7 +25,7 @@ import {
   useServiceActionHandler,
   useTheme,
 } from '@navet/app/hooks';
-import { callIntegrationService } from '@navet/app/services/integration-service-call.service';
+import { invokeIntegrationNativeAction } from '@navet/app/services/integration-native-action.service';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { Droplets, Home, Leaf, Minus, MoonStar, Plus, ThermometerSun, Wind } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
@@ -763,7 +763,7 @@ export const HumidifierCard = memo(function HumidifierCard({
       setIsOn(true);
       void runAction(
         async () => {
-          await callIntegrationService({
+          await invokeIntegrationNativeAction({
             providerId,
             entityId: id,
             domain: 'humidifier',
@@ -790,7 +790,7 @@ export const HumidifierCard = memo(function HumidifierCard({
       setIsOn(true);
       void runAction(
         async () => {
-          await callIntegrationService({
+          await invokeIntegrationNativeAction({
             providerId,
             entityId: id,
             domain: 'humidifier',

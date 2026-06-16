@@ -14,8 +14,10 @@ export function useFitDashboardGrid(logicalColumns: number, enabled = true) {
   const targetGridWidth =
     renderedGridCols * microCardMinWidthPx + Math.max(0, renderedGridCols - 1) * gridGapPx;
 
-  const { outerRef, innerRef, outerWidth, contentHeight } =
-    useAutoScaledGridMeasurements(targetGridWidth);
+  const { outerRef, innerRef, outerWidth, contentHeight } = useAutoScaledGridMeasurements(
+    targetGridWidth,
+    enabled
+  );
 
   const autoScale =
     !enabled || renderedGridCols <= 1 || outerWidth <= 0

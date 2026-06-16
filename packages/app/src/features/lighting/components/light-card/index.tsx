@@ -14,6 +14,9 @@ import { kelvinToColor } from './light-card-utils';
 import { LightSettingsDialog } from './light-settings-dialog';
 import { useLightCardController } from './use-light-card-controller';
 
+const CARD_VISUAL_TRANSITION_CLASS =
+  'transition-[background-color,border-color,box-shadow,color,opacity,transform,filter] duration-500';
+
 interface LightCardProps {
   id: string;
   name: string;
@@ -166,7 +169,7 @@ export const LightCard = memo(function LightCard({
           <div
             data-ambient-light-bleed="true"
             aria-hidden="true"
-            className={`pointer-events-none absolute -inset-full z-0 blur-3xl transition-all duration-500 ${
+            className={`pointer-events-none absolute -inset-full z-0 blur-3xl transition-[background,opacity,filter] duration-500 ${
               theme !== 'light' ? 'opacity-20' : 'opacity-40'
             }`}
             style={{
@@ -179,7 +182,7 @@ export const LightCard = memo(function LightCard({
           size={resolvedSize}
           {...controller.cardInteraction.cardProps}
           interactive={!isEditMode}
-          className={`relative z-10 transition-all duration-500 ${!isEditMode ? 'cursor-pointer' : ''}`}
+          className={`relative z-10 ${CARD_VISUAL_TRANSITION_CLASS} ${!isEditMode ? 'cursor-pointer' : ''}`}
           frameClassName={`${cardShell.rootFrameClassName} ${surfaceTokens.cardClassName}`}
           style={surfaceTokens.cardStyle}
           disableDefaultSheen

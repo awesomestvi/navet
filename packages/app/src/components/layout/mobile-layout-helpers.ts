@@ -1,5 +1,5 @@
 import { isAllRooms } from '@navet/app/constants/rooms';
-import type { NavetRoomDescriptor } from '@navet/app/provider-models';
+import type { PlatformManageableRoomReference } from '@navet/core/provider-feature-models';
 import type { MobileHeaderEditActions } from './mobile-header-actions';
 
 export interface MobileHeaderActionAvailability extends MobileHeaderEditActions {
@@ -28,10 +28,13 @@ export function getMobileHeaderActionAvailability(
   };
 }
 
-export function getManageableRoomOrder(rooms: string[], roomDescriptors: NavetRoomDescriptor[]) {
-  const manageableRoomNames = roomDescriptors
-    .filter((descriptor) => descriptor.sources.some((source) => source.supportsOrdering))
-    .map((descriptor) => descriptor.name)
+export function getManageableRoomOrder(
+  rooms: string[],
+  manageableRooms: PlatformManageableRoomReference[]
+) {
+  const manageableRoomNames = manageableRooms
+    .filter((room) => room.canOrder)
+    .map((room) => room.name)
     .filter((name) => name.length > 0 && !isAllRooms(name));
   const orderedKnownRooms = rooms.filter((room) => manageableRoomNames.includes(room));
   const unorderedAreaRooms = manageableRoomNames.filter(

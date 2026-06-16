@@ -2,7 +2,7 @@ import type { IntegrationServiceTarget } from '@navet/core/integration-service-t
 import type { ProviderEntityRuntimeService } from '@navet/core/provider-feature-services';
 import type { HomeySnapshot } from './homey-types';
 
-interface HomeyBridge {
+export interface HomeyBridge {
   ensureConfigured(): void;
   getSnapshot(): HomeySnapshot;
   loadSnapshot(): Promise<HomeySnapshot>;

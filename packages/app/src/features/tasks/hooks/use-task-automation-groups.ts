@@ -9,13 +9,30 @@ import type { TaskRoutineData } from '../types';
 import { mapTaskRoutines } from '../utils/map-task-routines';
 import { filterTaskEntities } from '../utils/task-runtime';
 
-export function useTaskRoutines(): TaskRoutineData {
+const EMPTY_TASK_RUNTIME_SNAPSHOT: PlatformTaskRuntimeSnapshot = {
+  entities: null,
+  rooms: [],
+  devices: [],
+  entityReferences: [],
+};
+
+const EMPTY_TASK_ROUTINE_DATA: TaskRoutineData = {
+  automations: [],
+  quickActions: [],
+};
+
+export function useTaskRoutines(options?: { enabled?: boolean }): TaskRoutineData {
   const { locale } = useI18n();
+  const enabled = options?.enabled ?? true;
   const taskRuntime = useSyncExternalStore(
-    integrationTaskService.subscribeTaskRuntimeSnapshot,
-    integrationTaskService.getTaskRuntimeSnapshot,
-    integrationTaskService.getTaskRuntimeSnapshot
+    enabled ? integrationTaskService.subscribeTaskRuntimeSnapshot : () => () => {},
+    enabled ? integrationTaskService.getTaskRuntimeSnapshot : () => EMPTY_TASK_RUNTIME_SNAPSHOT,
+    enabled ? integrationTaskService.getTaskRuntimeSnapshot : () => EMPTY_TASK_RUNTIME_SNAPSHOT
   );
+
+  if (!enabled) {
+    return EMPTY_TASK_ROUTINE_DATA;
+  }
 
   const entities = useMemo(
     (): PlatformTaskEntityMap | null =>

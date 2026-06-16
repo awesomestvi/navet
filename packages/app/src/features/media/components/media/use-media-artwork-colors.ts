@@ -126,6 +126,7 @@ export function useMediaArtworkColors(
   artworkKey?: string
 ) {
   const [colors, setColors] = useState<MediaArtworkPalette>(FALLBACK_COLORS[theme]);
+  const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const performanceProfile = resolveDashboardPerformanceProfile({
@@ -134,6 +135,7 @@ export function useMediaArtworkColors(
     effectsQuality,
     isEditMode: false,
     lowPowerMode,
+    reducedEffectsEnabled: disableAnimations || lowPowerMode,
     visibleCardCount: 1,
     visibleDevices: [],
   });

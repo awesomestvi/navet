@@ -10,7 +10,7 @@ import { useNavigationStore } from '@navet/app/stores/navigation-store';
 import { useSearchStore } from '@navet/app/stores/search-store';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { useThemeStore } from '@navet/app/stores/theme-store';
-import { openhabService } from '@navet/provider-openhab/openhab-service';
+import { resetOpenHABRuntime } from '@navet/provider-openhab';
 
 function resetStore<T>(store: {
   getInitialState: () => T;
@@ -32,8 +32,7 @@ export async function resetAppStores() {
   resetStore(integrationStore);
   homeyService.setClient(null);
   homeyService.resetSnapshot();
-  openhabService.setClient(null);
-  openhabService.resetSnapshot();
+  resetOpenHABRuntime();
   resetStore(useNavigationStore);
   resetStore(useSearchStore);
   resetStore(useSettingsStore);

@@ -1,5 +1,5 @@
 import { setVisualViewportSize } from '@navet/app/test/browser-mocks';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   clearViewportCssVars,
   getLogicalViewportWidth,
@@ -62,6 +62,20 @@ describe('viewport utils', () => {
     expect(readCssViewportVar('--navet-viewport-height')).toBe(720);
     expect(readCssViewportVar('--navet-visible-viewport-width')).toBe(1100);
     expect(readCssViewportVar('--navet-visible-viewport-height')).toBe(680);
+  });
+
+  it('serves synced viewport values without forcing computed-style reads', () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 720 });
+    setVisualViewportSize(1100, 680);
+    syncViewportCssVars();
+
+    const getComputedStyleSpy = vi.spyOn(window, 'getComputedStyle');
+
+    expect(getVisibleViewportSize()).toEqual({ width: 1100, height: 680 });
+    expect(getLogicalViewportWidth()).toBe(1280);
+    expect(readCssViewportVar('--navet-visible-viewport-width')).toBe(1100);
+    expect(getComputedStyleSpy).not.toHaveBeenCalled();
   });
 
   it('clears synced viewport vars', () => {

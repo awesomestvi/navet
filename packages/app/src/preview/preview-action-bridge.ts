@@ -261,8 +261,6 @@ function applyPreviewCommand(command: NavetCommand): boolean {
       return updatePreviewEntity(command.entityId, (entity) =>
         withEntityPatch(entity, { state: 'cleaning' })
       );
-    case 'service':
-      return false;
     default:
       return false;
   }

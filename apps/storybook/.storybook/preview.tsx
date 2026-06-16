@@ -3,6 +3,12 @@ import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { Toaster } from '@navet/app/components/ui/sonner';
 import { I18nProvider } from '@navet/app/i18n';
+import {
+  getPreviewRuntimeScenario,
+  installPreviewRuntime,
+  resetPreviewRuntime,
+  type PreviewRuntimeScenario,
+} from '@navet/app/preview/runtime';
 import { defaultSettings, useSettingsStore } from '@navet/app/stores/settings-store';
 import type { PrimaryColor, ThemeMode } from '@navet/app/stores/theme-store';
 import { useThemeStore } from '@navet/app/stores/theme-store';
@@ -53,6 +59,7 @@ interface StorybookEnvironmentProps {
   theme: ThemeMode;
   primaryColor: Exclude<PrimaryColor, 'custom'>;
   cardSize?: string;
+  previewRuntimeScenario?: PreviewRuntimeScenario | null;
 }
 
 function StorybookEnvironment({
@@ -62,6 +69,7 @@ function StorybookEnvironment({
   theme,
   primaryColor,
   cardSize,
+  previewRuntimeScenario,
 }: StorybookEnvironmentProps) {
   useEffect(() => {
     const accentColor = PRIMARY_COLOR_VALUES[primaryColor];
@@ -138,6 +146,14 @@ function StorybookEnvironment({
       }
     };
   }, [primaryColor, theme, cardSize]);
+
+  useEffect(() => {
+    installPreviewRuntime(previewRuntimeScenario ?? getPreviewRuntimeScenario('default'));
+
+    return () => {
+      resetPreviewRuntime();
+    };
+  }, [previewRuntimeScenario]);
 
   return (
     <I18nProvider>
@@ -336,6 +352,10 @@ const preview: Preview = {
           theme={context.globals.theme as ThemeMode}
           primaryColor={context.globals.primaryColor as Exclude<PrimaryColor, 'custom'>}
           cardSize={context.globals.cardSize}
+          previewRuntimeScenario={
+            (context.parameters.previewRuntime?.scenario as PreviewRuntimeScenario | undefined) ??
+            null
+          }
         >
           <Story />
         </StorybookEnvironment>

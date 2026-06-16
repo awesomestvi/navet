@@ -2,7 +2,7 @@ import { resetRuntimeContextForTests } from '@navet/app/infrastructure/home-assi
 import { homeyService } from '@navet/app/services/homey.service';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { resetAppStores } from '@navet/app/test/store-reset';
-import { openhabService } from '@navet/provider-openhab/openhab-service';
+import { getOpenHABSnapshot } from '@navet/provider-openhab';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../App';
@@ -301,7 +301,7 @@ describe('App Home Assistant connection recovery', () => {
 
     await waitFor(() => expect(screen.getByText('dashboard')).toBeInTheDocument());
     expect(homeAssistantServiceStub.authenticate).not.toHaveBeenCalled();
-    expect(openhabService.getSnapshot()).toMatchObject({
+    expect(getOpenHABSnapshot()).toMatchObject({
       connected: true,
       items: {
         LivingRoomLamp: expect.objectContaining({

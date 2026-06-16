@@ -1,27 +1,29 @@
 import { integrationSessionRuntime } from '@navet/app/auth/integration-session-runtime';
 import { mapNavetEntitiesToDeviceCollection } from '@navet/app/core/navet-device-collections';
-import {
-  mapProviderEntityToNavetDevice,
-  mapProviderRoomToNavetRoom,
-} from '@navet/app/internal/compat-entity';
+import { buildManageableRoomReferences } from '@navet/app/platform/provider-room-management';
 import type { ProviderHealth } from '@navet/app/platform/types';
 import { getRegisteredProviderContract } from '@navet/app/provider-contract-registry';
-import type {
-  NavetDevice,
-  NavetProviderRuntimeState,
-  NavetProviderSession,
-  NavetRoom,
-  NavetRoomDescriptor,
-} from '@navet/app/provider-models';
 import { homeyService } from '@navet/app/services/homey.service';
+import type {
+  IntegrationProviderRoomModel,
+  IntegrationProviderRuntimeState,
+  IntegrationRoomDescriptor,
+} from '@navet/app/stores/integration-models';
 import type { DeviceCollection } from '@navet/app/types/device.types';
 import type { IntegrationUser } from '@navet/app/types/integration-user';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { INTEGRATION_PROVIDER_IDS, INTEGRATION_PROVIDERS } from '@navet/app/types/provider';
 import { createProviderScopedId } from '@navet/app/utils/provider-ids';
 import { areDataEqual } from '@navet/app/utils/structural-equality';
-import type { NavetEntity, NavetEntityEvent, NavetProviderState } from '@navet/core/types';
-import { openhabService } from '@navet/provider-openhab/openhab-service';
+import type { NavetProviderSession } from '@navet/core/provider-contract';
+import type { PlatformManageableRoomReference } from '@navet/core/provider-feature-models';
+import type {
+  NavetEntity,
+  NavetEntityEvent,
+  NavetProviderRoom,
+  NavetProviderState,
+} from '@navet/core/types';
+import { getOpenHABSnapshot, subscribeOpenHABSnapshot } from '@navet/provider-openhab';
 import {
   createDashboardEntityView,
   type DashboardEntityView,
@@ -38,7 +40,7 @@ interface IntegrationRuntimeState {
   availableProviderIds: IntegrationProviderId[];
   selectedProviderIds: IntegrationProviderId[];
   providerHealth: Record<IntegrationProviderId, ProviderHealth>;
-  providerRuntime: Record<IntegrationProviderId, NavetProviderRuntimeState>;
+  providerRuntime: Record<IntegrationProviderId, IntegrationProviderRuntimeState>;
   providers: IntegrationProviderId[];
   currentProviderId: IntegrationProviderId;
   providerSessions: Partial<Record<IntegrationProviderId, NavetProviderSession>>;
@@ -51,15 +53,47 @@ interface IntegrationRuntimeState {
   providerEntityViewsByCanonicalId: Record<string, DashboardEntityView>;
   providerEvents: NavetEntityEvent[];
   providerDeviceCollectionsByProviderId: Partial<Record<IntegrationProviderId, DeviceCollection>>;
-  providerRoomsByProviderId: Partial<Record<IntegrationProviderId, Record<string, NavetRoom>>>;
-  roomsByCanonicalId: Record<string, NavetRoom>;
-  roomDescriptors: NavetRoomDescriptor[];
+  providerNormalizedRoomsByProviderId: Partial<
+    Record<IntegrationProviderId, Record<string, NavetProviderRoom>>
+  >;
+  manageableRoomsByProviderId: Partial<
+    Record<IntegrationProviderId, PlatformManageableRoomReference[]>
+  >;
+  providerRoomsByProviderId: Partial<
+    Record<IntegrationProviderId, Record<string, IntegrationProviderRoomModel>>
+  >;
+  normalizedRoomsByCanonicalId: Record<string, NavetProviderRoom>;
+  roomsByCanonicalId: Record<string, IntegrationProviderRoomModel>;
+  roomDescriptors: IntegrationRoomDescriptor[];
   currentUser: IntegrationUser | null;
   setSelectedProviders: (providerIds: IntegrationProviderId[]) => void;
   setIntegrationUser: (user: IntegrationUser | null) => void;
   setCurrentProviderId: (providerId: IntegrationProviderId) => void;
   setProviderSessions: (
     sessions: Partial<Record<IntegrationProviderId, NavetProviderSession>>
+  ) => void;
+  applyPreviewProviderState: (
+    providerId: IntegrationProviderId,
+    options: {
+      homeAssistantState: Pick<
+        HomeAssistantStore,
+        | 'areas'
+        | 'config'
+        | 'connected'
+        | 'connecting'
+        | 'connection'
+        | 'deviceRegistry'
+        | 'entities'
+        | 'entityRegistry'
+        | 'error'
+        | 'reconnecting'
+        | 'registriesHydrated'
+        | 'user'
+      >;
+      currentProviderId?: IntegrationProviderId;
+      selectedProviderIds?: IntegrationProviderId[];
+      currentUser?: IntegrationUser | null;
+    }
   ) => void;
 }
 
@@ -78,15 +112,7 @@ function getSafeHomeySnapshot() {
 }
 
 function getSafeOpenHABSnapshot() {
-  if (typeof openhabService.getSnapshot === 'function') {
-    return openhabService.getSnapshot();
-  }
-
-  return {
-    connected: false,
-    items: {},
-    error: null,
-  };
+  return getOpenHABSnapshot();
 }
 
 function getProviderSessionsSnapshot(): Partial<
@@ -122,12 +148,25 @@ function resolveInitialSelectedProviderIds(
 
 type ProviderScopedState = {
   deviceCollection: DeviceCollection;
-  devicesByCanonicalId: Record<string, NavetDevice>;
   entityLookupByCanonicalId: Record<string, string>;
   entityViewsByCanonicalId: Record<string, DashboardEntityView>;
   entitiesByCanonicalId: Record<string, NavetEntity>;
-  roomsByCanonicalId: Record<string, NavetRoom>;
+  normalizedRoomsByCanonicalId: Record<string, NavetProviderRoom>;
+  roomsByCanonicalId: Record<string, IntegrationProviderRoomModel>;
 };
+
+function mapProviderRoomToIntegrationRoom(room: NavetProviderRoom): IntegrationProviderRoomModel {
+  return {
+    id: room.canonicalId,
+    canonicalId: room.canonicalId,
+    providerId: room.providerId,
+    nativeId: room.externalId,
+    name: room.name,
+    normalizedName: room.normalizedName,
+    alias: room.alias,
+    memberIds: [...room.memberIds],
+  };
+}
 
 const DEVICE_COLLECTION_KEYS = [
   'lights',
@@ -276,17 +315,20 @@ function buildProviderScopedState(
   const providerState = getProviderState(providerId);
   const entitiesByCanonicalId: Record<string, NavetEntity> = {};
   const entityViewsByCanonicalId: Record<string, DashboardEntityView> = {};
-  const devicesByCanonicalId: Record<string, NavetDevice> = {};
-  const roomsByCanonicalId: Record<string, NavetRoom> = {};
+  const normalizedRoomsByCanonicalId: Record<string, NavetProviderRoom> = {};
+  const roomsByCanonicalId: Record<string, IntegrationProviderRoomModel> = {};
   const previousEntityCount = previousState
     ? Object.keys(previousState.entitiesByCanonicalId).length
+    : 0;
+  const previousNormalizedRoomCount = previousState
+    ? Object.keys(previousState.normalizedRoomsByCanonicalId).length
     : 0;
   const previousRoomCount = previousState
     ? Object.keys(previousState.roomsByCanonicalId).length
     : 0;
   let entitiesChanged = !previousState;
   let entityViewsChanged = !previousState;
-  let devicesChanged = !previousState;
+  let normalizedRoomsChanged = !previousState;
   let roomsChanged = !previousState;
 
   for (const entity of providerState?.entities ?? []) {
@@ -306,26 +348,26 @@ function buildProviderScopedState(
       entityViewsChanged = true;
     }
     entityViewsByCanonicalId[nextEntity.canonicalId] = nextView;
-
-    const previousDevice = previousState?.devicesByCanonicalId[nextEntity.canonicalId];
-    const nextDevice =
-      previousDevice && previousEntity === nextEntity
-        ? previousDevice
-        : mapProviderEntityToNavetDevice(nextEntity);
-    if (previousDevice !== nextDevice) {
-      devicesChanged = true;
-    }
-    devicesByCanonicalId[nextEntity.canonicalId] = nextDevice;
   }
 
   for (const room of providerState?.rooms ?? []) {
-    const mappedRoom = mapProviderRoomToNavetRoom(room);
-    const previousRoom = previousState?.roomsByCanonicalId[mappedRoom.canonicalId];
-    const nextRoom = reuseValue(previousRoom, mappedRoom);
+    const previousNormalizedRoom = previousState?.normalizedRoomsByCanonicalId[room.canonicalId];
+    const nextNormalizedRoom = reuseValue(previousNormalizedRoom, room);
+    if (previousNormalizedRoom !== nextNormalizedRoom) {
+      normalizedRoomsChanged = true;
+    }
+    normalizedRoomsByCanonicalId[nextNormalizedRoom.canonicalId] = nextNormalizedRoom;
+
+    const mappedRoom = mapProviderRoomToIntegrationRoom(nextNormalizedRoom);
+    const previousRoom = previousState?.roomsByCanonicalId[nextNormalizedRoom.canonicalId];
+    const nextRoom =
+      previousRoom && previousNormalizedRoom === nextNormalizedRoom
+        ? previousRoom
+        : reuseValue(previousRoom, mappedRoom);
     if (previousRoom !== nextRoom) {
       roomsChanged = true;
     }
-    roomsByCanonicalId[mappedRoom.canonicalId] = nextRoom;
+    roomsByCanonicalId[nextNormalizedRoom.canonicalId] = nextRoom;
   }
 
   if (
@@ -335,10 +377,14 @@ function buildProviderScopedState(
   ) {
     return {
       deviceCollection: previousState.deviceCollection,
-      devicesByCanonicalId: previousState.devicesByCanonicalId,
       entityLookupByCanonicalId: previousState.entityLookupByCanonicalId,
       entityViewsByCanonicalId: previousState.entityViewsByCanonicalId,
       entitiesByCanonicalId: previousState.entitiesByCanonicalId,
+      normalizedRoomsByCanonicalId:
+        !normalizedRoomsChanged &&
+        previousNormalizedRoomCount === Object.keys(normalizedRoomsByCanonicalId).length
+          ? previousState.normalizedRoomsByCanonicalId
+          : normalizedRoomsByCanonicalId,
       roomsByCanonicalId:
         !roomsChanged && previousRoomCount === Object.keys(roomsByCanonicalId).length
           ? previousState.roomsByCanonicalId
@@ -358,12 +404,12 @@ function buildProviderScopedState(
     previousEntityCount === Object.keys(entityViewsByCanonicalId).length
       ? previousState.entityViewsByCanonicalId
       : entityViewsByCanonicalId;
-  const stableDevicesByCanonicalId =
-    !devicesChanged &&
+  const stableNormalizedRoomsByCanonicalId =
+    !normalizedRoomsChanged &&
     previousState &&
-    previousEntityCount === Object.keys(devicesByCanonicalId).length
-      ? previousState.devicesByCanonicalId
-      : devicesByCanonicalId;
+    previousNormalizedRoomCount === Object.keys(normalizedRoomsByCanonicalId).length
+      ? previousState.normalizedRoomsByCanonicalId
+      : normalizedRoomsByCanonicalId;
   const stableRoomsByCanonicalId =
     !roomsChanged && previousState && previousRoomCount === Object.keys(roomsByCanonicalId).length
       ? previousState.roomsByCanonicalId
@@ -386,10 +432,10 @@ function buildProviderScopedState(
         );
   return {
     deviceCollection,
-    devicesByCanonicalId: stableDevicesByCanonicalId,
     entityLookupByCanonicalId,
     entityViewsByCanonicalId: stableEntityViewsByCanonicalId,
     entitiesByCanonicalId: stableEntitiesByCanonicalId,
+    normalizedRoomsByCanonicalId: stableNormalizedRoomsByCanonicalId,
     roomsByCanonicalId: stableRoomsByCanonicalId,
   };
 }
@@ -479,8 +525,8 @@ function normalizeRoomName(name: string) {
 
 function createProviderRuntimeState(
   providerId: IntegrationProviderId,
-  options: Omit<NavetProviderRuntimeState, 'providerId'>
-): NavetProviderRuntimeState {
+  options: Omit<IntegrationProviderRuntimeState, 'providerId'>
+): IntegrationProviderRuntimeState {
   return {
     providerId,
     ...options,
@@ -489,7 +535,7 @@ function createProviderRuntimeState(
 
 function buildProviderRuntime(
   homeAssistantState: HomeAssistantStore
-): Record<IntegrationProviderId, NavetProviderRuntimeState> {
+): Record<IntegrationProviderId, IntegrationProviderRuntimeState> {
   const homeySnapshot = getSafeHomeySnapshot();
   const openhabSnapshot = getSafeOpenHABSnapshot();
 
@@ -535,7 +581,7 @@ function buildProviderRuntime(
 function buildProviderRuntimeState(
   providerId: IntegrationProviderId,
   homeAssistantState: HomeAssistantStore
-): NavetProviderRuntimeState {
+): IntegrationProviderRuntimeState {
   switch (providerId) {
     case 'home_assistant':
       return createProviderRuntimeState('home_assistant', {
@@ -586,14 +632,14 @@ function buildProviderRuntimeState(
 
 function buildRoomDescriptors(
   homeAssistantState: HomeAssistantStore,
-  roomsByCanonicalId: Record<string, NavetRoom>
-): NavetRoomDescriptor[] {
-  const descriptorMap = new Map<string, NavetRoomDescriptor>();
+  normalizedRoomsByCanonicalId: Record<string, NavetProviderRoom>
+): IntegrationRoomDescriptor[] {
+  const descriptorMap = new Map<string, IntegrationRoomDescriptor>();
   const homeySnapshot = getSafeHomeySnapshot();
 
   const upsertRoomDescriptor = (
     name: string,
-    source: NavetRoomDescriptor['sources'][number],
+    source: IntegrationRoomDescriptor['sources'][number],
     memberIds: string[] = []
   ) => {
     const trimmedName = name.trim();
@@ -657,12 +703,12 @@ function buildRoomDescriptors(
     });
   }
 
-  for (const room of Object.values(roomsByCanonicalId)) {
+  for (const room of Object.values(normalizedRoomsByCanonicalId)) {
     upsertRoomDescriptor(
       room.name,
       {
         providerId: room.providerId,
-        nativeId: room.nativeId,
+        nativeId: room.externalId,
         canonicalId: room.canonicalId,
         sourceType: 'derived',
         supportsOrdering: false,
@@ -673,6 +719,17 @@ function buildRoomDescriptors(
   }
 
   return Array.from(descriptorMap.values());
+}
+
+function buildManageableRoomsByProviderId(
+  roomDescriptors: IntegrationRoomDescriptor[]
+): Record<IntegrationProviderId, PlatformManageableRoomReference[]> {
+  return Object.fromEntries(
+    INTEGRATION_PROVIDER_IDS.map((providerId) => [
+      providerId,
+      buildManageableRoomReferences(roomDescriptors, providerId),
+    ])
+  ) as Record<IntegrationProviderId, PlatformManageableRoomReference[]>;
 }
 
 function getInitialProviderHealth(): Record<IntegrationProviderId, ProviderHealth> {
@@ -784,12 +841,18 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
           providerStateByProviderId[providerId].entityViewsByCanonicalId,
         ])
       ) as Record<IntegrationProviderId, Record<string, DashboardEntityView>>,
+      providerNormalizedRoomsByProviderId: Object.fromEntries(
+        INTEGRATION_PROVIDER_IDS.map((providerId) => [
+          providerId,
+          providerStateByProviderId[providerId].normalizedRoomsByCanonicalId,
+        ])
+      ) as Record<IntegrationProviderId, Record<string, NavetProviderRoom>>,
       providerRoomsByProviderId: Object.fromEntries(
         INTEGRATION_PROVIDER_IDS.map((providerId) => [
           providerId,
           providerStateByProviderId[providerId].roomsByCanonicalId,
         ])
-      ) as Record<IntegrationProviderId, Record<string, NavetRoom>>,
+      ) as Record<IntegrationProviderId, Record<string, IntegrationProviderRoomModel>>,
     };
   };
 
@@ -798,7 +861,7 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
     providerId: IntegrationProviderId,
     nextProviderScopedState: ProviderScopedState,
     homeAssistantState: HomeAssistantStore,
-    nextProviderRuntime: NavetProviderRuntimeState,
+    nextProviderRuntime: IntegrationProviderRuntimeState,
     nextProviderHealth: ProviderHealth,
     extraState: Partial<IntegrationStore> = {},
     options: {
@@ -809,6 +872,7 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
     const previousViews = current.providerEntityViewsByProviderId[providerId] ?? {};
     const previousLookup = current.providerEntityLookupByProviderId[providerId] ?? {};
     const previousCollections = current.providerDeviceCollectionsByProviderId[providerId];
+    const previousNormalizedRooms = current.providerNormalizedRoomsByProviderId[providerId] ?? {};
     const previousRooms = current.providerRoomsByProviderId[providerId] ?? {};
 
     providerScopedStateByProviderId[providerId] = nextProviderScopedState;
@@ -841,6 +905,13 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
             ...current.providerDeviceCollectionsByProviderId,
             [providerId]: nextProviderScopedState.deviceCollection,
           };
+    const providerNormalizedRoomsByProviderId =
+      previousNormalizedRooms === nextProviderScopedState.normalizedRoomsByCanonicalId
+        ? current.providerNormalizedRoomsByProviderId
+        : {
+            ...current.providerNormalizedRoomsByProviderId,
+            [providerId]: nextProviderScopedState.normalizedRoomsByCanonicalId,
+          };
     const providerRoomsByProviderId =
       previousRooms === nextProviderScopedState.roomsByCanonicalId
         ? current.providerRoomsByProviderId
@@ -859,6 +930,11 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
       previousViews,
       nextProviderScopedState.entityViewsByCanonicalId
     );
+    const normalizedRoomsByCanonicalId = replaceFlattenedProviderRecord(
+      current.normalizedRoomsByCanonicalId,
+      previousNormalizedRooms,
+      nextProviderScopedState.normalizedRoomsByCanonicalId
+    );
     const roomsByCanonicalId = replaceFlattenedProviderRecord(
       current.roomsByCanonicalId,
       previousRooms,
@@ -871,13 +947,20 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
     );
     const shouldRebuildRoomDescriptors =
       options.shouldRebuildRoomDescriptors === true ||
-      previousRooms !== nextProviderScopedState.roomsByCanonicalId;
+      previousNormalizedRooms !== nextProviderScopedState.normalizedRoomsByCanonicalId;
     const roomDescriptors = shouldRebuildRoomDescriptors
       ? reuseValue(
           current.roomDescriptors,
-          buildRoomDescriptors(homeAssistantState, roomsByCanonicalId)
+          buildRoomDescriptors(homeAssistantState, normalizedRoomsByCanonicalId)
         )
       : current.roomDescriptors;
+    const manageableRoomsByProviderId =
+      roomDescriptors === current.roomDescriptors
+        ? current.manageableRoomsByProviderId
+        : reuseValue(
+            current.manageableRoomsByProviderId,
+            buildManageableRoomsByProviderId(roomDescriptors)
+          );
     const mergedProviderRuntime = reuseValue(
       current.providerRuntime[providerId],
       nextProviderRuntime
@@ -903,12 +986,15 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
     );
     const hasProviderChanges =
       providerDeviceCollectionsByProviderId !== current.providerDeviceCollectionsByProviderId ||
+      providerNormalizedRoomsByProviderId !== current.providerNormalizedRoomsByProviderId ||
       providerEntityLookupByProviderId !== current.providerEntityLookupByProviderId ||
       providerEntitiesByProviderId !== current.providerEntitiesByProviderId ||
       providerEntityViewsByProviderId !== current.providerEntityViewsByProviderId ||
       providerRoomsByProviderId !== current.providerRoomsByProviderId ||
       providerEntitiesByCanonicalId !== current.providerEntitiesByCanonicalId ||
       providerEntityViewsByCanonicalId !== current.providerEntityViewsByCanonicalId ||
+      normalizedRoomsByCanonicalId !== current.normalizedRoomsByCanonicalId ||
+      manageableRoomsByProviderId !== current.manageableRoomsByProviderId ||
       providerRuntime !== current.providerRuntime ||
       roomsByCanonicalId !== current.roomsByCanonicalId ||
       roomDescriptors !== current.roomDescriptors ||
@@ -923,12 +1009,15 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
       ...current,
       ...extraState,
       providerDeviceCollectionsByProviderId,
+      providerNormalizedRoomsByProviderId,
       providerEntityLookupByProviderId,
       providerEntitiesByProviderId,
       providerEntityViewsByProviderId,
       providerRoomsByProviderId,
       providerEntitiesByCanonicalId,
       providerEntityViewsByCanonicalId,
+      normalizedRoomsByCanonicalId,
+      manageableRoomsByProviderId,
       providerEvents:
         providerEvents.length > 0
           ? [...current.providerEvents, ...providerEvents].slice(-100)
@@ -1023,13 +1112,18 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
   const initialProviderEntityViewsByCanonicalId = flattenProviderRecords(
     initialCanonicalState.providerEntityViewsByProviderId
   );
+  const initialNormalizedRoomsByCanonicalId = flattenProviderRecords(
+    initialCanonicalState.providerNormalizedRoomsByProviderId
+  );
   const initialRoomsByCanonicalId = flattenProviderRecords(
     initialCanonicalState.providerRoomsByProviderId
   );
   const initialRoomDescriptors = buildRoomDescriptors(
     currentHomeAssistantState,
-    initialRoomsByCanonicalId
+    initialNormalizedRoomsByCanonicalId
   );
+  const initialManageableRoomsByProviderId =
+    buildManageableRoomsByProviderId(initialRoomDescriptors);
   const initialProviderSessions = getProviderSessionsSnapshot();
   const initialProviderHealth = {
     ...getInitialProviderHealth(),
@@ -1045,9 +1139,7 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
   if (typeof homeyService.subscribe === 'function') {
     homeyService.subscribe(syncHomeyState);
   }
-  if (typeof openhabService.subscribe === 'function') {
-    openhabService.subscribe(syncOpenHABState);
-  }
+  subscribeOpenHABSnapshot(syncOpenHABState);
 
   return {
     currentUser: currentHomeAssistantState.user,
@@ -1068,7 +1160,10 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
     providerRuntime: initialProviderRuntime,
     providerDeviceCollectionsByProviderId:
       initialCanonicalState.providerDeviceCollectionsByProviderId,
+    providerNormalizedRoomsByProviderId: initialCanonicalState.providerNormalizedRoomsByProviderId,
+    manageableRoomsByProviderId: initialManageableRoomsByProviderId,
     providerRoomsByProviderId: initialCanonicalState.providerRoomsByProviderId,
+    normalizedRoomsByCanonicalId: initialNormalizedRoomsByCanonicalId,
     roomsByCanonicalId: initialRoomsByCanonicalId,
     roomDescriptors: initialRoomDescriptors,
     providerHealth: initialProviderHealth,
@@ -1085,5 +1180,46 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
           ...sessions,
         },
       })),
+    applyPreviewProviderState: (providerId, options) => {
+      const previewHomeAssistantState = options.homeAssistantState as HomeAssistantStore;
+      const nextProviderScopedState = buildProviderScopedState(
+        providerId,
+        previewHomeAssistantState,
+        providerScopedStateByProviderId[providerId]
+      );
+      const providerRuntime = createProviderRuntimeState(providerId, {
+        connected: options.homeAssistantState.connected,
+        connecting: options.homeAssistantState.connecting,
+        reconnecting: options.homeAssistantState.reconnecting,
+        entitiesHydrated: options.homeAssistantState.entities != null,
+        registriesHydrated: options.homeAssistantState.registriesHydrated,
+      });
+      const providerHealth: ProviderHealth = {
+        providerId,
+        connected: options.homeAssistantState.connected,
+        connecting: options.homeAssistantState.connecting,
+        reconnecting: options.homeAssistantState.reconnecting,
+        implementationStatus: 'implemented',
+        lastError: options.homeAssistantState.error,
+      };
+
+      set((current) =>
+        syncProviderState(
+          current,
+          providerId,
+          nextProviderScopedState,
+          previewHomeAssistantState,
+          providerRuntime,
+          providerHealth,
+          {
+            currentProviderId: options.currentProviderId ?? current.currentProviderId,
+            selectedProviderIds: options.selectedProviderIds ?? current.selectedProviderIds,
+            currentUser:
+              options.currentUser ?? options.homeAssistantState.user ?? current.currentUser,
+          },
+          { shouldRebuildRoomDescriptors: true }
+        )
+      );
+    },
   };
 });

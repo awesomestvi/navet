@@ -5,18 +5,18 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ButtonWidget } from '../button-widget';
 
-const { callIntegrationServiceMock } = vi.hoisted(() => ({
-  callIntegrationServiceMock: vi.fn(),
+const { invokeIntegrationNativeActionMock } = vi.hoisted(() => ({
+  invokeIntegrationNativeActionMock: vi.fn(),
 }));
 
-vi.mock('@navet/app/services/integration-service-call.service', () => ({
-  callIntegrationService: callIntegrationServiceMock,
+vi.mock('@navet/app/services/integration-native-action.service', () => ({
+  invokeIntegrationNativeAction: invokeIntegrationNativeActionMock,
 }));
 
 describe('ButtonWidget', () => {
   beforeEach(() => {
-    callIntegrationServiceMock.mockReset();
-    callIntegrationServiceMock.mockResolvedValue(undefined);
+    invokeIntegrationNativeActionMock.mockReset();
+    invokeIntegrationNativeActionMock.mockResolvedValue(undefined);
   });
 
   it('runs the configured Home Assistant action', async () => {
@@ -35,7 +35,7 @@ describe('ButtonWidget', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Movie Mode' }));
 
     await waitFor(() => {
-      expect(callIntegrationServiceMock).toHaveBeenCalledWith({
+      expect(invokeIntegrationNativeActionMock).toHaveBeenCalledWith({
         entityId: sceneEntityFixtures.normal.entity_id,
         domain: 'scene',
         service: 'turn_on',
@@ -61,7 +61,7 @@ describe('ButtonWidget', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Doorbell Chime' }));
 
     await waitFor(() => {
-      expect(callIntegrationServiceMock).toHaveBeenCalledWith({
+      expect(invokeIntegrationNativeActionMock).toHaveBeenCalledWith({
         entityId: buttonEntityFixtures.normal.entity_id,
         domain: 'button',
         service: 'press',
@@ -85,7 +85,7 @@ describe('ButtonWidget', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Unsafe' }));
 
     await waitFor(() => {
-      expect(callIntegrationServiceMock).not.toHaveBeenCalled();
+      expect(invokeIntegrationNativeActionMock).not.toHaveBeenCalled();
     });
   });
 
@@ -167,7 +167,7 @@ describe('ButtonWidget', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Movie Mode' }));
 
     await waitFor(() => {
-      expect(callIntegrationServiceMock).toHaveBeenCalledWith({
+      expect(invokeIntegrationNativeActionMock).toHaveBeenCalledWith({
         entityId: sceneEntityFixtures.normal.entity_id,
         domain: 'scene',
         service: 'turn_on',
@@ -207,6 +207,6 @@ describe('ButtonWidget', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Movie Mode' }));
 
-    expect(callIntegrationServiceMock).not.toHaveBeenCalled();
+    expect(invokeIntegrationNativeActionMock).not.toHaveBeenCalled();
   });
 });

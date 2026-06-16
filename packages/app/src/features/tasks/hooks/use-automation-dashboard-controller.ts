@@ -1,6 +1,7 @@
 import { useIntegrationStore } from '@navet/app/hooks';
 import { providerRuntimeSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
+import { resolveEffectsQuality } from '@navet/app/utils/effects-quality';
 import { useMemo } from 'react';
 import { useTaskRoutines } from './use-task-automation-groups';
 
@@ -37,7 +38,8 @@ export function useAutomationDashboardController() {
         })[0],
     [automations]
   );
-  const shouldReduceMotion = disableAnimations || lowPowerMode || effectsQuality === 'low';
+  const shouldReduceMotion =
+    resolveEffectsQuality(effectsQuality, disableAnimations || lowPowerMode) === 'low';
 
   return {
     automations,

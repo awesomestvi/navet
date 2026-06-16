@@ -1,9 +1,4 @@
-import { mediaArtworkService } from '@navet/app/infrastructure/home-assistant/home-assistant-infrastructure';
-import { resetRuntimeContextForTests } from '@navet/app/infrastructure/home-assistant/runtime/runtime-detector';
-import { mediaPlayerEntityFixtures } from '@navet/app/test/fixtures/home-assistant/entities/media-player';
-import { jellyfinFixtures } from '@navet/app/test/fixtures/home-assistant/integrations/jellyfin';
-import { renderHookWithProviders } from '@navet/app/test/render';
-import { act, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { fetchMediaThumbnailDataUrlMock } = vi.hoisted(() => ({
@@ -20,7 +15,9 @@ vi.mock('@navet/app/services/home-assistant.service', () => ({
   },
 }));
 
-import { useMediaArtworkResolution } from '../use-media-artwork-resolution';
+import { useMediaArtworkResolution } from '@navet/app/features/media/components/media-card/use-media-artwork-resolution';
+import { mediaArtworkService } from '@navet/app/infrastructure/home-assistant/home-assistant-infrastructure';
+import { resetRuntimeContextForTests } from '@navet/app/infrastructure/home-assistant/runtime/runtime-detector';
 
 const ARTWORK_CLEAR_TEST_DELAY_MS = 700;
 
@@ -70,7 +67,7 @@ describe('useMediaArtworkResolution', () => {
   it('uses authenticated websocket thumbnail data for Home Assistant media proxy artwork', async () => {
     fetchMediaThumbnailDataUrlMock.mockResolvedValue('data:image/jpeg;base64,album-art');
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
         entityId: 'media_player.kitchen',
         liveEntityPicture: '/api/media_player_proxy/media_player.kitchen',
@@ -94,7 +91,7 @@ describe('useMediaArtworkResolution', () => {
     resetRuntimeContextForTests();
     fetchMediaThumbnailDataUrlMock.mockResolvedValue('data:image/jpeg;base64,panel-album-art');
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
         entityId: 'media_player.kitchen',
         liveEntityPicture: '/api/media_player_proxy/media_player.kitchen',
@@ -112,7 +109,7 @@ describe('useMediaArtworkResolution', () => {
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('server error'));
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
         entityId: 'media_player.kitchen',
         liveEntityPicture: '/api/media_player_proxy/media_player.kitchen',
@@ -124,7 +121,9 @@ describe('useMediaArtworkResolution', () => {
       expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
     });
     await waitFor(() => {
-      expect(result.current.albumArt).toBeNull();
+      expect(result.current.albumArt).toBe(
+        '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen'
+      );
     });
     expectFetchUrl(fetchMock, '/__navet_ha_proxy__/api/media_player_proxy/media_player.kitchen');
   });
@@ -135,7 +134,7 @@ describe('useMediaArtworkResolution', () => {
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('fetch failed'));
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
         entityId: 'media_player.kitchen',
         liveEntityPicture: '/api/media_player_proxy/media_player.kitchen',
@@ -165,7 +164,7 @@ describe('useMediaArtworkResolution', () => {
       })
     );
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
         entityId: 'media_player.kitchen',
         liveEntityPicture: '/api/media_player_proxy/media_player.kitchen',
@@ -182,9 +181,9 @@ describe('useMediaArtworkResolution', () => {
   it('keeps external artwork URLs direct when Home Assistant does not require proxying', async () => {
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
-        entityId: mediaPlayerEntityFixtures.normal.entity_id,
+        entityId: 'media_player.living_room',
         liveEntityPicture: 'https://cdn.example.test/album-art.jpg',
         homeAssistantUrl: 'http://homeassistant.local:8123',
       })
@@ -208,10 +207,11 @@ describe('useMediaArtworkResolution', () => {
       })
     );
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
-        entityId: jellyfinFixtures.player.entity_id,
-        liveEntityPicture: jellyfinFixtures.player.attributes.entity_picture as string,
+        entityId: 'media_player.jellyfin_tv',
+        liveEntityPicture:
+          'https://ha.example.test/api/media_player_proxy/media_player.jellyfin_tv?authSig=signed-artwork-token',
         homeAssistantUrl: 'https://ha.example.test',
       })
     );
@@ -237,7 +237,7 @@ describe('useMediaArtworkResolution', () => {
       })
     );
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
         entityId: 'media_player.kitchen',
         liveEntityPicture: '/api/media_player_proxy/media_player.kitchen',
@@ -269,7 +269,7 @@ describe('useMediaArtworkResolution', () => {
       })
     );
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
         entityId: 'media_player.kitchen',
         liveEntityPicture: '/api/media_player_proxy/media_player.kitchen',
@@ -301,7 +301,7 @@ describe('useMediaArtworkResolution', () => {
       })
     );
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
         entityId: 'media_player.kitchen',
         liveEntityPicture:
@@ -333,7 +333,7 @@ describe('useMediaArtworkResolution', () => {
       })
     );
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
         entityId: 'media_player.kitchen',
         liveEntityPicture: '/api/media_player_proxy/media_player.kitchen',
@@ -355,7 +355,7 @@ describe('useMediaArtworkResolution', () => {
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('fetch failed'));
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
         entityId: 'media_player.kitchen',
         liveEntityPicture: '/api/media_player_proxy/media_player.kitchen',
@@ -391,7 +391,7 @@ describe('useMediaArtworkResolution', () => {
       })
     );
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
         entityId: 'media_player.kitchen',
         liveEntityPicture:
@@ -411,7 +411,7 @@ describe('useMediaArtworkResolution', () => {
     fetchMediaThumbnailDataUrlMock.mockResolvedValue(null);
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('fetch failed'));
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
         entityId: 'media_player.kitchen',
         liveEntityPicture:
@@ -440,7 +440,7 @@ describe('useMediaArtworkResolution', () => {
       })
     );
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
         entityId: 'media_player.kitchen',
         liveEntityPicture:
@@ -501,7 +501,7 @@ describe('useMediaArtworkResolution', () => {
       return Promise.reject(new Error(`Unexpected fetch: ${url}`));
     });
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
         entityId: 'media_player.kitchen',
         liveEntityPicture:
@@ -563,7 +563,7 @@ describe('useMediaArtworkResolution', () => {
       return Promise.reject(new Error(`Unexpected fetch: ${url}`));
     });
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
         entityId: 'media_player.kitchen',
         liveEntityPicture:
@@ -619,7 +619,7 @@ describe('useMediaArtworkResolution', () => {
       return Promise.reject(new Error(`Unexpected fetch: ${url}`));
     });
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
         entityId: 'media_player.kitchen',
         liveEntityPicture:
@@ -692,7 +692,7 @@ describe('useMediaArtworkResolution', () => {
       return Promise.reject(new Error(`Unexpected fetch: ${url}`));
     });
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
         entityId: 'media_player.kitchen',
         liveEntityPicture:
@@ -733,7 +733,7 @@ describe('useMediaArtworkResolution', () => {
       })
     );
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
         entityId: 'media_player.kitchen',
         liveEntityPicture:
@@ -793,7 +793,7 @@ describe('useMediaArtworkResolution', () => {
       return Promise.reject(new Error(`Unexpected fetch: ${url}`));
     });
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
         entityId: 'media_player.kitchen',
         liveEntityPicture:
@@ -837,7 +837,7 @@ describe('useMediaArtworkResolution', () => {
       })
     );
 
-    const { result } = renderHookWithProviders(() =>
+    const { result } = renderHook(() =>
       useMediaArtworkResolution({
         entityId: 'media_player.kitchen',
         liveEntityPicture: '/api/media_player_proxy/media_player.kitchen',
@@ -861,7 +861,7 @@ describe('useMediaArtworkResolution', () => {
       .mockResolvedValueOnce('data:image/jpeg;base64,first-track')
       .mockResolvedValueOnce('data:image/jpeg;base64,second-track');
 
-    const { result, rerender } = renderHookWithProviders(
+    const { result, rerender } = renderHook(
       ({ liveArtworkKey }: { liveArtworkKey: string }) =>
         useMediaArtworkResolution({
           entityId: 'media_player.kitchen',
@@ -892,7 +892,7 @@ describe('useMediaArtworkResolution', () => {
         : new Promise<string>(() => undefined)
     );
 
-    const { result, rerender } = renderHookWithProviders(
+    const { result, rerender } = renderHook(
       ({ liveArtworkKey }: { liveArtworkKey: string }) =>
         useMediaArtworkResolution({
           entityId: 'media_player.kitchen',
@@ -918,7 +918,7 @@ describe('useMediaArtworkResolution', () => {
   it('keeps previous artwork through transient missing entity picture updates', async () => {
     fetchMediaThumbnailDataUrlMock.mockResolvedValue('data:image/jpeg;base64,first-track');
 
-    const { result, rerender } = renderHookWithProviders(
+    const { result, rerender } = renderHook(
       ({ liveEntityPicture }: { liveEntityPicture?: string }) =>
         useMediaArtworkResolution({
           entityId: 'media_player.kitchen',
@@ -964,7 +964,7 @@ describe('useMediaArtworkResolution', () => {
       .mockResolvedValueOnce('data:image/jpeg;base64,first-update')
       .mockResolvedValueOnce('data:image/jpeg;base64,second-update');
 
-    const { result, rerender } = renderHookWithProviders(
+    const { result, rerender } = renderHook(
       ({ artworkVersionKey }: { artworkVersionKey: string }) =>
         useMediaArtworkResolution({
           entityId: 'media_player.kitchen',

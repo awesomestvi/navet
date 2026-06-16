@@ -1,7 +1,7 @@
 import { createRoot } from 'react-dom/client';
-import DemoApp from '../../../packages/app/src/demo/demo-app';
-import { initializeInputModality } from '../../../packages/app/src/utils/input-modality';
-import '../../../packages/app/src/styles/index.css';
+import DemoApp from '@navet/app/demo/demo-app';
+import { initializeInputModality } from '@navet/app/utils/input-modality';
+import '@navet/app/styles/index.css';
 
 initializeInputModality();
 

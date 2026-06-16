@@ -17,6 +17,7 @@ import { integrationSelectors, settingsSelectors } from '@navet/app/stores/selec
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceMetric } from '@navet/app/types/device.types';
 import { type IntegrationProviderId, isIntegrationProviderId } from '@navet/app/types/provider';
+import { resolveEffectsQuality } from '@navet/app/utils/effects-quality';
 import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
 import { areRecordValuesEqual } from '@navet/app/utils/structural-equality';
 import type { NavetAlarmEntity } from '@navet/core/alarm-types';
@@ -261,8 +262,9 @@ function EntityAvailabilityFrame({
 }) {
   const { t } = useI18n();
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
+  const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const shouldReducePaintEffects = effectsQuality !== 'high';
+  const shouldReducePaintEffects = resolveEffectsQuality(effectsQuality, lowPowerMode) !== 'high';
   const isTinyAvailabilityCard = size === 'tiny';
   const isCompactAvailabilityCard = isTinyAvailabilityCard || size === 'extra-small';
   const entityIds = useMemo(() => {

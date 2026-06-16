@@ -1,8 +1,8 @@
 import { createEmptyDeviceCollection } from '@navet/app/core/navet-device-collections';
-import type { NavetDevice } from '@navet/app/provider-models';
 import type { DeviceCollection } from '@navet/app/types/device.types';
+import type { NavetEntity } from '@navet/core/types';
 import { describe, expect, it } from 'vitest';
-import { buildAggregatedRooms, buildAggregatedRoomsFromNavetDevices } from '../provider-rooms';
+import { buildAggregatedRooms, buildAggregatedRoomsFromProviderEntities } from '../provider-rooms';
 
 describe('provider-rooms', () => {
   it('merges rooms across providers while preserving provider-scoped members', () => {
@@ -47,33 +47,37 @@ describe('provider-rooms', () => {
     ]);
   });
 
-  it('aggregates canonical rooms from Navet devices by normalized room name', () => {
-    const devices: NavetDevice[] = [
+  it('aggregates canonical rooms from provider entities by normalized room name', () => {
+    const devices: NavetEntity[] = [
       {
         id: 'home_assistant:light.kitchen',
         canonicalId: 'home_assistant:light.kitchen',
         providerId: 'home_assistant',
-        nativeId: 'light.kitchen',
-        kind: 'light',
+        externalId: 'light.kitchen',
+        type: 'light',
         name: 'Kitchen Light',
         room: 'Kitchen',
+        primaryState: 'on',
+        availability: 'available',
+        attributes: {},
         capabilities: ['toggle'],
-        state: { value: 'on' },
       },
       {
         id: 'homey:switch_1',
         canonicalId: 'homey:switch_1',
         providerId: 'homey',
-        nativeId: 'switch_1',
-        kind: 'switch',
+        externalId: 'switch_1',
+        type: 'switch',
         name: 'Coffee Machine',
         room: ' kitchen ',
+        primaryState: 'off',
+        availability: 'available',
+        attributes: {},
         capabilities: ['toggle'],
-        state: { on: false },
       },
     ];
 
-    expect(buildAggregatedRoomsFromNavetDevices(devices)).toEqual([
+    expect(buildAggregatedRoomsFromProviderEntities(devices)).toEqual([
       {
         id: 'kitchen',
         key: 'kitchen',

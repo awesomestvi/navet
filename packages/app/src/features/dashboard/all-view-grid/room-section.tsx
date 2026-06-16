@@ -59,6 +59,7 @@ export const RoomSection = memo(function RoomSection({
 }: RoomSectionProps) {
   const { t } = useI18n();
   const breakpointCols = useBreakpointCols();
+  const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const { ref: containerRef, isVisible } = useDeferredVisibility<HTMLDivElement>({
@@ -73,10 +74,11 @@ export const RoomSection = memo(function RoomSection({
         effectsQuality,
         isEditMode,
         lowPowerMode,
+        reducedEffectsEnabled: disableAnimations || lowPowerMode,
         visibleCardCount: totalItems,
         visibleDevices: deviceMap.values(),
       }),
-    [deviceMap, effectsQuality, isEditMode, lowPowerMode, totalItems]
+    [deviceMap, disableAnimations, effectsQuality, isEditMode, lowPowerMode, totalItems]
   );
   const visibleCount = useProgressiveBatching(orderedIds.length, isEditMode, {
     enabled: isVisible,

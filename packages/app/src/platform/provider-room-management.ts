@@ -1,4 +1,4 @@
-import type { NavetRoomDescriptor } from '@navet/app/provider-models';
+import type { IntegrationRoomDescriptor } from '@navet/app/stores/integration-models';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import {
   createPlatformRoomReference,
@@ -7,7 +7,7 @@ import {
 } from '@navet/core';
 
 function toPlatformRoomReference(
-  descriptor: NavetRoomDescriptor,
+  descriptor: IntegrationRoomDescriptor,
   providerId: IntegrationProviderId
 ): PlatformManageableRoomReference | null {
   const source = descriptor.sources.find(
@@ -26,7 +26,7 @@ function toPlatformRoomReference(
 }
 
 export function buildManageableRoomReferences(
-  roomDescriptors: NavetRoomDescriptor[],
+  roomDescriptors: IntegrationRoomDescriptor[],
   providerId: IntegrationProviderId
 ): PlatformManageableRoomReference[] {
   return roomDescriptors

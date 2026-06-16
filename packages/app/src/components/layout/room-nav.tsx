@@ -94,7 +94,9 @@ export const RoomNav = memo(function RoomNav({
 }: RoomNavProps) {
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
-  const roomDescriptors = useIntegrationStore(integrationSelectors.roomDescriptors);
+  const manageableRoomsByProviderId = useIntegrationStore(
+    integrationSelectors.manageableRoomsByProviderId
+  );
   const surface = getThemeSurfaceTokens(theme);
   const [isReorderDialogOpen, setIsReorderDialogOpen] = useState(false);
   const [isScrollbarDragging, setIsScrollbarDragging] = useState(false);
@@ -110,9 +112,14 @@ export const RoomNav = memo(function RoomNav({
     startScrollLeft: number;
     startX: number;
   } | null>(null);
-  const manageableRooms = useMemo(() => {
-    return getManageableRoomOrder(rooms, roomDescriptors);
-  }, [roomDescriptors, rooms]);
+  const manageableRooms = useMemo(
+    () => Object.values(manageableRoomsByProviderId).flat(),
+    [manageableRoomsByProviderId]
+  );
+  const orderedManageableRoomNames = useMemo(
+    () => getManageableRoomOrder(rooms, manageableRooms),
+    [manageableRooms, rooms]
+  );
   const visibleRooms = useMemo(
     () => getVisibleRoomNavRooms(rooms.filter((room) => !hiddenRoomNames.includes(room))),
     [hiddenRoomNames, rooms]
@@ -123,7 +130,8 @@ export const RoomNav = memo(function RoomNav({
   const dividerClass =
     theme === 'light' ? 'bg-slate-300/90' : theme === 'black' ? 'bg-white/30' : 'bg-white/14';
   const showAllViewGrouping = isAllRooms(activeRoom) && onAllViewGroupingChange;
-  const canReorderRooms = isEditMode && Boolean(onRoomOrderChange) && manageableRooms.length > 0;
+  const canReorderRooms =
+    isEditMode && Boolean(onRoomOrderChange) && orderedManageableRoomNames.length > 0;
   const hasEditMenus = Boolean(
     canReorderRooms || (isEditMode && showAllViewGrouping) || (isEditMode && onAddEntity)
   );
@@ -408,9 +416,9 @@ export const RoomNav = memo(function RoomNav({
         <RoomOrderDialog
           isOpen={isReorderDialogOpen}
           onOpenChange={setIsReorderDialogOpen}
-          rooms={manageableRooms}
+          rooms={orderedManageableRoomNames}
           hiddenRoomNames={hiddenRoomNames}
-          roomDescriptors={roomDescriptors}
+          manageableRooms={manageableRooms}
           roomHiddenItemCounts={roomHiddenItemCounts}
           roomEntityCounts={roomItemCounts}
           onRoomOrderChange={onRoomOrderChange}

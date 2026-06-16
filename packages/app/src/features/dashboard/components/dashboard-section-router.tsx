@@ -66,16 +66,24 @@ function isActiveRoutine(routine: { enabled?: boolean; state: string }) {
   );
 }
 
+export function shouldSubscribeTaskRoutines(activeSection: DashboardController['activeSection']) {
+  return activeSection === 'home' || activeSection === 'tasks';
+}
+
 function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterProps) {
   const { t } = useI18n();
   const isMobileViewport = useMediaQuery('(max-width: 767px)');
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const roomDescriptors = useIntegrationStore(integrationSelectors.roomDescriptors);
+  const manageableRoomsByProviderId = useIntegrationStore(
+    integrationSelectors.manageableRoomsByProviderId
+  );
   const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
   const showSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
   const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
-  const routines = useTaskRoutines();
+  const routines = useTaskRoutines({
+    enabled: shouldSubscribeTaskRoutines(controller.activeSection),
+  });
   const [isAddLightEntityDialogOpen, setIsAddLightEntityDialogOpen] = useState(false);
   const [isAddClimateEntityDialogOpen, setIsAddClimateEntityDialogOpen] = useState(false);
   const {
@@ -103,7 +111,11 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     sectionData,
     updateCardSize,
   } = controller;
-  const manageableRooms = getManageableRoomOrder(rooms, roomDescriptors);
+  const manageableRoomReferences = useMemo(
+    () => Object.values(manageableRoomsByProviderId).flat(),
+    [manageableRoomsByProviderId]
+  );
+  const manageableRooms = getManageableRoomOrder(rooms, manageableRoomReferences);
   const sectionStackProps = {
     className: 'flex flex-col gap-2 md:gap-6',
   };
@@ -564,7 +576,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
             ? {
                 rooms: manageableRooms,
                 hiddenRoomNames: controller.hiddenRoomNames,
-                roomDescriptors,
+                manageableRooms: manageableRoomReferences,
                 roomHiddenItemCounts: controller.roomHiddenItemCounts,
                 roomItemCounts: controller.roomItemCounts,
                 onRoomOrderChange: controller.onSetRoomOrder,

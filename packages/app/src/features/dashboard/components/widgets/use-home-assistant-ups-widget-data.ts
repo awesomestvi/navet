@@ -3,9 +3,13 @@ import {
   toPlatformEntityRegistryEntry,
   toPlatformEntitySnapshot,
 } from '@navet/app/hooks/use-provider-entity';
+import {
+  getPreviewHomeAssistantCompatibilityState,
+  subscribePreviewHomeAssistantCompatibilityState,
+} from '@navet/app/preview/runtime';
 import type { HomeAssistantStore } from '@navet/app/stores/home-assistant-store';
 import { homeAssistantSelectors } from '@navet/app/stores/selectors';
-import { useMemo } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 import { buildUpsDeviceOptions } from './ups-widget-data';
 
 function selectEmptyEntities() {
@@ -37,14 +41,35 @@ function selectEmptyEntityRegistry() {
 
 export function useHomeAssistantUpsWidgetData(options: { use24HourTime: boolean }, enabled = true) {
   const { locale } = useI18n();
-  const entities = useHomeAssistant(enabled ? selectUpsEntities : selectEmptyEntities);
-  const areas = useHomeAssistant(enabled ? homeAssistantSelectors.areas : selectEmptyAreas);
-  const deviceRegistry = useHomeAssistant(
+  const previewCompatibilityState = useSyncExternalStore(
+    enabled ? subscribePreviewHomeAssistantCompatibilityState : () => () => {},
+    getPreviewHomeAssistantCompatibilityState,
+    () => null
+  );
+  const storeEntities = useHomeAssistant(enabled ? selectUpsEntities : selectEmptyEntities);
+  const storeAreas = useHomeAssistant(enabled ? homeAssistantSelectors.areas : selectEmptyAreas);
+  const storeDeviceRegistry = useHomeAssistant(
     enabled ? homeAssistantSelectors.deviceRegistry : selectEmptyDeviceRegistry
   );
-  const entityRegistry = useHomeAssistant(
+  const storeEntityRegistry = useHomeAssistant(
     enabled ? homeAssistantSelectors.entityRegistry : selectEmptyEntityRegistry
   );
+  const entities =
+    enabled && previewCompatibilityState
+      ? selectUpsEntities(previewCompatibilityState as HomeAssistantStore)
+      : storeEntities;
+  const areas =
+    enabled && previewCompatibilityState
+      ? homeAssistantSelectors.areas(previewCompatibilityState as HomeAssistantStore)
+      : storeAreas;
+  const deviceRegistry =
+    enabled && previewCompatibilityState
+      ? homeAssistantSelectors.deviceRegistry(previewCompatibilityState as HomeAssistantStore)
+      : storeDeviceRegistry;
+  const entityRegistry =
+    enabled && previewCompatibilityState
+      ? homeAssistantSelectors.entityRegistry(previewCompatibilityState as HomeAssistantStore)
+      : storeEntityRegistry;
   const formatOptions = useMemo(
     () => ({ locale, use24HourTime: options.use24HourTime }),
     [locale, options.use24HourTime]

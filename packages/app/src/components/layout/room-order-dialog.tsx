@@ -23,9 +23,8 @@ import {
 import { getDndTransformStyle } from '@navet/app/components/shared/dnd-transform-style';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
-import { buildManageableRoomReferences } from '@navet/app/platform/provider-room-management';
-import type { NavetRoomDescriptor } from '@navet/app/provider-models';
 import { integrationAdminService } from '@navet/app/services/integration-admin.service';
+import type { PlatformManageableRoomReference } from '@navet/core/provider-feature-models';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Eye, EyeOff, GripVertical, Trash2 } from 'lucide-react';
 import { memo, useEffect, useMemo, useState } from 'react';
@@ -36,7 +35,7 @@ interface RoomOrderDialogProps {
   onOpenChange: (open: boolean) => void;
   rooms: string[];
   hiddenRoomNames?: string[];
-  roomDescriptors: NavetRoomDescriptor[];
+  manageableRooms: PlatformManageableRoomReference[];
   roomHiddenItemCounts: Map<string, number>;
   roomEntityCounts: Map<string, number>;
   onRoomOrderChange?: (rooms: string[]) => void;
@@ -48,7 +47,7 @@ export const RoomOrderDialog = memo(function RoomOrderDialog({
   onOpenChange,
   rooms,
   hiddenRoomNames = [],
-  roomDescriptors,
+  manageableRooms,
   roomHiddenItemCounts,
   roomEntityCounts,
   onRoomOrderChange,
@@ -74,18 +73,14 @@ export const RoomOrderDialog = memo(function RoomOrderDialog({
   const deletableRoomIdByName = useMemo(() => {
     const roomsByName = new Map<string, string>();
 
-    for (const providerId of new Set(
-      roomDescriptors.flatMap((descriptor) => descriptor.providerIds)
-    )) {
-      for (const room of buildManageableRoomReferences(roomDescriptors, providerId)) {
-        if (room.canDelete) {
-          roomsByName.set(room.name, room.id);
-        }
+    for (const room of manageableRooms) {
+      if (room.canDelete) {
+        roomsByName.set(room.name, room.id);
       }
     }
 
     return roomsByName;
-  }, [roomDescriptors]);
+  }, [manageableRooms]);
   const deletableRoomNames = useMemo(
     () => new Set(deletableRoomIdByName.keys()),
     [deletableRoomIdByName]

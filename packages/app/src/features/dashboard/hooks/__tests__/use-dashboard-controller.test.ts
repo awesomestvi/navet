@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { resolveShouldIncludeFeatureCollections } from '../use-dashboard-controller';
+import {
+  resolveShouldIncludeFeatureCollections,
+  resolveShouldTrackMediaDevices,
+} from '../use-dashboard-controller';
 
 describe('resolveShouldIncludeFeatureCollections', () => {
   it('keeps feature collections enabled outside low-power mode', () => {
@@ -76,6 +79,54 @@ describe('resolveShouldIncludeFeatureCollections', () => {
         lowPowerMode: true,
         showAddCardDialog: true,
         showAddEntityDialog: true,
+      })
+    ).toBe(false);
+  });
+});
+
+describe('resolveShouldTrackMediaDevices', () => {
+  it('tracks media devices in edit mode and on the media section', () => {
+    expect(
+      resolveShouldTrackMediaDevices({
+        activeSection: 'lights',
+        cards: [],
+        isEditMode: true,
+      })
+    ).toBe(true);
+
+    expect(
+      resolveShouldTrackMediaDevices({
+        activeSection: 'media',
+        cards: [],
+        isEditMode: false,
+      })
+    ).toBe(true);
+  });
+
+  it('tracks media devices on home only when a media-stack card exists', () => {
+    expect(
+      resolveShouldTrackMediaDevices({
+        activeSection: 'home',
+        cards: [{ type: 'media-stack' }],
+        isEditMode: false,
+      })
+    ).toBe(true);
+
+    expect(
+      resolveShouldTrackMediaDevices({
+        activeSection: 'home',
+        cards: [{ type: 'rss' }],
+        isEditMode: false,
+      })
+    ).toBe(false);
+  });
+
+  it('does not track media devices on unrelated sections outside edit mode', () => {
+    expect(
+      resolveShouldTrackMediaDevices({
+        activeSection: 'lights',
+        cards: [{ type: 'media-stack' }],
+        isEditMode: false,
       })
     ).toBe(false);
   });

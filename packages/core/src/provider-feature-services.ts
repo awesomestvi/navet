@@ -1,4 +1,5 @@
 import type { EnergySourceConfig } from './energy-types';
+import type { IntegrationServiceTarget } from './integration-service-target';
 import type {
   PlatformAutomationDetails,
   PlatformCalendarEvent,
@@ -70,6 +71,16 @@ export interface ProviderLightUpdateOptions {
 
 export interface ProviderLightFeatureService {
   updateLight: (entityId: string, options: ProviderLightUpdateOptions) => Promise<void>;
+}
+
+export interface ProviderNativeActionFeatureService {
+  invokeAction: (request: {
+    entityId?: string;
+    domain: string;
+    service: string;
+    serviceData?: Record<string, unknown>;
+    target?: IntegrationServiceTarget;
+  }) => Promise<void>;
 }
 
 export interface ProviderCameraFeatureService {

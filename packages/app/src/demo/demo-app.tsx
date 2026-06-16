@@ -1,17 +1,9 @@
-import cameraSampleImageAvif from '@assets/reference/media/camera-sample.avif';
-import cameraSampleImageWebp from '@assets/reference/media/camera-sample.webp';
 import {
   RUNTIME_SAMPLE_MEDIA,
   RUNTIME_SAMPLE_SCREENSHOTS,
 } from '@navet/app/assets/runtime-sample-images';
 import { AuthProvider } from '@navet/app/auth/AuthProvider';
 import { RoomNav } from '@navet/app/components/layout/room-nav';
-import {
-  DashboardEmptyState,
-  DashboardHeroSection,
-  SectionCard,
-} from '@navet/app/components/patterns';
-import { Badge, Button, Panel, Switch, Tag } from '@navet/app/components/primitives';
 import {
   type CardSize,
   getCardGridAutoRowsStyle,
@@ -48,30 +40,24 @@ import { GroupedSensorCard } from '@navet/app/features/sensors/components/groupe
 import type { HomeStatusSummaryItem } from '@navet/app/features/sensors/components/home-status-summary-model';
 import { SensorCard } from '@navet/app/features/sensors/components/sensor-card';
 import { SettingsSection } from '@navet/app/features/settings/components/settings-section';
+import { TasksSection } from '@navet/app/features/tasks';
 import { VacuumCard } from '@navet/app/features/vacuum/components/vacuum-card';
 import { WeatherCard } from '@navet/app/features/weather/components/weather-card';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { I18nProvider } from '@navet/app/i18n';
 import type { Section } from '@navet/app/navigation/sections';
-import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
+import {
+  getPreviewRuntimeScenario,
+  installPreviewRuntime,
+  resetPreviewRuntime,
+} from '@navet/app/preview/runtime';
 import { useNavigationStore } from '@navet/app/stores/navigation-store';
 import { defaultSettings, useSettingsStore } from '@navet/app/stores/settings-store';
 import { useThemeStore } from '@navet/app/stores/theme-store';
 import type { NavetAlarmEntity } from '@navet/core/alarm-types';
-import type { HassConfig, HassEntities } from 'home-assistant-js-websocket';
-import {
-  Bot,
-  ClipboardList,
-  Clock3,
-  Fan,
-  Lightbulb,
-  Play,
-  ShieldCheck,
-  Speaker,
-  Zap,
-} from 'lucide-react';
-import type { ComponentType, CSSProperties, ReactNode } from 'react';
+import { Fan, Lightbulb, ShieldCheck, Speaker, Zap } from 'lucide-react';
+import type { CSSProperties, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import type { CameraDevice, LockDevice, SensorDevice } from '../types/device.types';
 import { PHOTO_FRAME_DEMO_IMAGES } from './photo-frame-demo-images';
@@ -112,10 +98,10 @@ const energyTrend = [
 const demoEnergyScenario = getEnergyDashboardScenario('default');
 const demoEnergySourceDiagnostics = getMockEnergySourceDiagnostics(demoEnergyScenario.dashboard);
 const { artwork: sampleArtworkImage } = RUNTIME_SAMPLE_MEDIA;
-const sampleCameraFallbackImage = cameraSampleImageWebp;
+const sampleCameraFallbackImage = '/assets/reference/media/camera-sample.webp';
 const sampleCameraSources = [
-  { srcSet: cameraSampleImageAvif, type: 'image/avif' },
-  { srcSet: cameraSampleImageWebp, type: 'image/webp' },
+  { srcSet: '/assets/reference/media/camera-sample.avif', type: 'image/avif' },
+  { srcSet: '/assets/reference/media/camera-sample.webp', type: 'image/webp' },
 ] as const;
 const {
   energyTablet: demoEnergyImage,
@@ -123,247 +109,7 @@ const {
   homeTablet: demoHomeImage,
   securityTablet: demoSecurityImage,
 } = RUNTIME_SAMPLE_SCREENSHOTS;
-
-const demoHomeAssistantConfig = {
-  latitude: 55.8708,
-  longitude: 12.8302,
-  elevation: 10,
-  radius: 100,
-  unit_system: {
-    length: 'km',
-    accumulated_precipitation: 'mm',
-    mass: 'kg',
-    pressure: 'hPa',
-    temperature: 'C',
-    volume: 'L',
-    wind_speed: 'm/s',
-  },
-  location_name: 'Navet Demo',
-  time_zone: 'Europe/Stockholm',
-  components: [],
-  config_dir: '',
-  allowlist_external_dirs: [],
-  allowlist_external_urls: [],
-  version: 'demo',
-  config_source: 'storage',
-  recovery_mode: false,
-  safe_mode: false,
-  state: 'RUNNING',
-  external_url: null,
-  internal_url: null,
-  currency: 'SEK',
-  country: 'SE',
-  language: 'en',
-} satisfies HassConfig;
-
 const demoEntityTimestamp = '2026-05-16T08:00:00+00:00';
-
-function createDemoLightEntity({
-  entityId,
-  friendlyName,
-  state = 'on',
-  brightness,
-  colorTempKelvin,
-}: {
-  entityId: string;
-  friendlyName: string;
-  state?: 'on' | 'off';
-  brightness: number;
-  colorTempKelvin?: number;
-}) {
-  return {
-    entity_id: entityId,
-    state,
-    attributes: {
-      friendly_name: friendlyName,
-      brightness: Math.round((Math.max(0, Math.min(100, brightness)) / 100) * 255),
-      supported_color_modes:
-        typeof colorTempKelvin === 'number' ? ['brightness', 'color_temp'] : ['brightness'],
-      ...(typeof colorTempKelvin === 'number'
-        ? {
-            color_mode: 'color_temp',
-            color_temp_kelvin: colorTempKelvin,
-            min_color_temp_kelvin: 2700,
-            max_color_temp_kelvin: 6500,
-          }
-        : {}),
-    },
-    last_changed: demoEntityTimestamp,
-    last_updated: demoEntityTimestamp,
-    context: { id: `demo-${entityId}`, parent_id: null, user_id: null },
-  };
-}
-
-const demoLightEntities: HassEntities = {
-  'light.kitchen_island': createDemoLightEntity({
-    entityId: 'light.kitchen_island',
-    friendlyName: 'Kitchen island',
-    brightness: 72,
-    colorTempKelvin: 3600,
-  }),
-  'light.living_room': createDemoLightEntity({
-    entityId: 'light.living_room',
-    friendlyName: 'Living Room',
-    brightness: 68,
-    colorTempKelvin: 3200,
-  }),
-  'light.kitchen': createDemoLightEntity({
-    entityId: 'light.kitchen',
-    friendlyName: 'Kitchen',
-    brightness: 84,
-    colorTempKelvin: 4100,
-  }),
-  'light.bedroom': createDemoLightEntity({
-    entityId: 'light.bedroom',
-    friendlyName: 'Bedroom',
-    state: 'off',
-    brightness: 35,
-    colorTempKelvin: 2700,
-  }),
-  'light.hallway': createDemoLightEntity({
-    entityId: 'light.hallway',
-    friendlyName: 'Hallway',
-    brightness: 42,
-    colorTempKelvin: 3000,
-  }),
-  'light.kitchen_island_room': createDemoLightEntity({
-    entityId: 'light.kitchen_island_room',
-    friendlyName: 'Kitchen island',
-    brightness: 72,
-    colorTempKelvin: 3600,
-  }),
-  'light.sofa_lamp': createDemoLightEntity({
-    entityId: 'light.sofa_lamp',
-    friendlyName: 'Sofa lamp',
-    brightness: 58,
-    colorTempKelvin: 2900,
-  }),
-  'light.basement_main': createDemoLightEntity({
-    entityId: 'light.basement_main',
-    friendlyName: 'Main light',
-    brightness: 52,
-    colorTempKelvin: 3200,
-  }),
-  'light.bathroom_main': createDemoLightEntity({
-    entityId: 'light.bathroom_main',
-    friendlyName: 'Main light',
-    brightness: 52,
-    colorTempKelvin: 3200,
-  }),
-  'light.guest_room': createDemoLightEntity({
-    entityId: 'light.guest_room',
-    friendlyName: 'Bedside lamp',
-    state: 'off',
-    brightness: 35,
-    colorTempKelvin: 2700,
-  }),
-  'light.gym_main': createDemoLightEntity({
-    entityId: 'light.gym_main',
-    friendlyName: 'Main light',
-    brightness: 52,
-    colorTempKelvin: 3200,
-  }),
-  'light.office_main': createDemoLightEntity({
-    entityId: 'light.office_main',
-    friendlyName: 'Main light',
-    brightness: 52,
-    colorTempKelvin: 3200,
-  }),
-  'light.outside_main': createDemoLightEntity({
-    entityId: 'light.outside_main',
-    friendlyName: 'Main light',
-    brightness: 52,
-    colorTempKelvin: 3200,
-  }),
-  'light.toilet_main': createDemoLightEntity({
-    entityId: 'light.toilet_main',
-    friendlyName: 'Main light',
-    brightness: 52,
-    colorTempKelvin: 3200,
-  }),
-  'light.unassigned_main': createDemoLightEntity({
-    entityId: 'light.unassigned_main',
-    friendlyName: 'Main light',
-    brightness: 52,
-    colorTempKelvin: 3200,
-  }),
-};
-
-const demoHomeAssistantEntities: HassEntities = {
-  ...demoLightEntities,
-  'sensor.front_door_sensor_battery': {
-    entity_id: 'sensor.front_door_sensor_battery',
-    state: '18',
-    attributes: {
-      friendly_name: 'Front Door Sensor',
-      device_class: 'battery',
-      unit_of_measurement: '%',
-    },
-    last_changed: demoEntityTimestamp,
-    last_updated: demoEntityTimestamp,
-    context: { id: 'demo-battery-1', parent_id: null, user_id: null },
-  },
-  'sensor.kitchen_remote_battery': {
-    entity_id: 'sensor.kitchen_remote_battery',
-    state: '42',
-    attributes: {
-      friendly_name: 'Kitchen Remote',
-      device_class: 'battery',
-      unit_of_measurement: '%',
-    },
-    last_changed: demoEntityTimestamp,
-    last_updated: demoEntityTimestamp,
-    context: { id: 'demo-battery-2', parent_id: null, user_id: null },
-  },
-  'sensor.living_room_motion_battery': {
-    entity_id: 'sensor.living_room_motion_battery',
-    state: '67',
-    attributes: {
-      friendly_name: 'Living Room Motion',
-      device_class: 'battery',
-      unit_of_measurement: '%',
-    },
-    last_changed: demoEntityTimestamp,
-    last_updated: demoEntityTimestamp,
-    context: { id: 'demo-battery-3', parent_id: null, user_id: null },
-  },
-  'sensor.living_room_temp': {
-    entity_id: 'sensor.living_room_temp',
-    state: '22.4',
-    attributes: {
-      friendly_name: 'Living Room Temperature',
-      device_class: 'temperature',
-      unit_of_measurement: 'C',
-    },
-    last_changed: demoEntityTimestamp,
-    last_updated: demoEntityTimestamp,
-    context: { id: 'demo-sensor-1', parent_id: null, user_id: null },
-  },
-  'sensor.living_room_humidity': {
-    entity_id: 'sensor.living_room_humidity',
-    state: '47',
-    attributes: {
-      friendly_name: 'Living Room Humidity',
-      device_class: 'humidity',
-      unit_of_measurement: '%',
-    },
-    last_changed: demoEntityTimestamp,
-    last_updated: demoEntityTimestamp,
-    context: { id: 'demo-sensor-2', parent_id: null, user_id: null },
-  },
-  'sensor.living_room_co2': {
-    entity_id: 'sensor.living_room_co2',
-    state: '510',
-    attributes: {
-      friendly_name: 'Living Room CO2',
-      device_class: 'carbon_dioxide',
-      unit_of_measurement: 'ppm',
-    },
-    last_changed: demoEntityTimestamp,
-    last_updated: demoEntityTimestamp,
-    context: { id: 'demo-sensor-3', parent_id: null, user_id: null },
-  },
-};
 
 const demoSummaryItems: HomeStatusSummaryItem[] = [
   {
@@ -545,44 +291,6 @@ const demoSecuritySensors: SensorDevice[] = [
     status: 'active',
   },
 ];
-
-const demoAutomations = [
-  {
-    id: 'automation.good_morning',
-    name: 'Good morning',
-    room: 'Home',
-    enabled: true,
-    description: 'Raises bedroom lights, starts the kitchen speaker, and sets downstairs heat.',
-    lastTriggered: 'Today, 06:45',
-    mode: 'single',
-  },
-  {
-    id: 'automation.night_check',
-    name: 'Night check',
-    room: 'Security',
-    enabled: true,
-    description: 'Locks doors, arms home mode, and turns off common-area lights after 22:30.',
-    lastTriggered: 'Yesterday, 22:32',
-    mode: 'queued',
-  },
-  {
-    id: 'automation.away_presence',
-    name: 'Away presence',
-    room: 'Outside',
-    enabled: false,
-    description: 'Runs presence lighting and camera notifications when nobody is home.',
-    lastTriggered: 'Fri, 18:10',
-    mode: 'restart',
-  },
-] satisfies Array<{
-  id: string;
-  name: string;
-  room: string;
-  enabled: boolean;
-  description: string;
-  lastTriggered: string;
-  mode: string;
-}>;
 
 const forecast = [
   { day: 'Mon', condition: 'sunny', high: 22, low: 13 },
@@ -838,12 +546,11 @@ function useDemoDisplayDefaults() {
     document.documentElement.dataset.effectsQuality = 'high';
     document.documentElement.dataset.lowPower = 'false';
     document.documentElement.dataset.noAnimation = 'false';
-    homeAssistantStore.getState().syncPanelHass({
-      states: demoHomeAssistantEntities,
-      config: demoHomeAssistantConfig,
-      callService: async () => undefined,
-      callWS: async <T,>() => [] as T,
-    });
+    installPreviewRuntime(getPreviewRuntimeScenario('demo'));
+
+    return () => {
+      resetPreviewRuntime();
+    };
   }, []);
 }
 
@@ -1030,8 +737,8 @@ function ProductGrid() {
         </CardSlot>
         <CardSlot size="small">
           <CoverCard
-            id="cover.living_room_blinds"
-            name="Living Room Blinds"
+            id="cover.living_room_blind"
+            name="Living Room Blind"
             room="Living Room"
             initialPosition={48}
             initialDeviceClass="blind"
@@ -1048,10 +755,10 @@ function ProductGrid() {
         </CardSlot>
         <CardSlot size="small">
           <PersonCard
-            id="person.demo_alex"
-            name="Alex"
+            id="person.alice"
+            name="Alice"
             room="Home"
-            location="Landskrona"
+            location="Home"
             state="home"
             size="small"
             onSizeChange={noopCardSizeChange}
@@ -1114,6 +821,18 @@ function ProductGrid() {
         </CardSlot>
         <CardSlot size="small">
           <SwitchCard
+            id="input_boolean.guest_mode"
+            name="Guest mode"
+            initialState
+            entityType="helper"
+            serviceDomain="input_boolean"
+            serviceAction="toggle"
+            size="small"
+            isEditMode={false}
+          />
+        </CardSlot>
+        <CardSlot size="small">
+          <SwitchCard
             id="script.goodnight"
             name="Goodnight"
             initialState={false}
@@ -1136,10 +855,10 @@ function ProductGrid() {
         </CardSlot>
         <CardSlot size="small">
           <SensorCard
-            id="sensor.entry_temperature"
-            name="Entry temperature"
-            room="Hallway"
-            value="21.6"
+            id="sensor.living_room_temp"
+            name="Living Room Temperature"
+            room="Living Room"
+            value="22.4"
             unit="C"
             icon="thermometer"
             subtitle="Sensor"
@@ -1196,7 +915,7 @@ function ClimateShot() {
         <DashboardGrid>
           <CardSlot size="medium">
             <HVACCard
-              id="climate.main_floor_section"
+              id="climate.main_floor"
               name="Main Floor"
               room="Hallway"
               initialTemp={22}
@@ -1216,7 +935,7 @@ function ClimateShot() {
         <DashboardGrid>
           <CardSlot size="small">
             <FanCard
-              id="fan.bedroom_ceiling_section"
+              id="fan.bedroom_ceiling"
               name="Bedroom Fan"
               room="Bedroom"
               initialState
@@ -1233,7 +952,7 @@ function ClimateShot() {
         <DashboardGrid>
           <CardSlot size="medium">
             <HumidifierCard
-              id="humidifier.bedroom_section"
+              id="humidifier.bedroom"
               name="Bedroom Humidifier"
               room="Bedroom"
               entityType="Humidifier"
@@ -1257,9 +976,9 @@ function ClimateShot() {
         <DashboardGrid>
           <CardSlot size="medium">
             <GroupedSensorCard
-              id="grouped_sensors.climate_air"
-              name="Indoor Air"
-              room="Home"
+              id="grouped_sensors.living_room_air"
+              name="Living Room Air"
+              room="Living Room"
               sensors={groupedSensors}
               accentColor="teal"
               size="medium"
@@ -1486,140 +1205,7 @@ function MediaShot() {
 }
 
 function TasksShot() {
-  const { theme, accentColor } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
-  const activeAutomationCount = demoAutomations.filter((automation) => automation.enabled).length;
-  const disabledAutomationCount = demoAutomations.length - activeAutomationCount;
-
-  if (demoAutomations.length === 0) {
-    return (
-      <div className="flex min-h-[32rem] items-center justify-center p-6">
-        <DashboardEmptyState
-          icon={ClipboardList}
-          title="No automations yet"
-          description="Connect Home Assistant automations to show routines, recent runs, and quick controls here."
-          className="w-full max-w-md"
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="mx-auto min-w-0 max-w-6xl space-y-4 md:space-y-5">
-      <DashboardHeroSection
-        accentColor={accentColor}
-        surface={surface}
-        title="Automations"
-        description="Demo routines mirror the automation dashboard layout with active state, recent runs, and run controls."
-        actionsClassName="hidden md:flex"
-        actions={
-          <>
-            <AutomationHeroBadge icon={Bot}>
-              {demoAutomations.length} automations
-            </AutomationHeroBadge>
-            <AutomationHeroBadge icon={Zap} active>
-              {activeAutomationCount} active
-            </AutomationHeroBadge>
-            <AutomationHeroBadge icon={ClipboardList}>
-              {disabledAutomationCount} disabled
-            </AutomationHeroBadge>
-          </>
-        }
-        aside={
-          <Panel muted padded={false} className="p-4">
-            <div className="flex items-start gap-3">
-              <Clock3 className={`mt-0.5 h-4 w-4 ${surface.textSecondary}`} aria-hidden="true" />
-              <div className="min-w-0">
-                <p className={`text-xs font-semibold uppercase ${surface.textMuted}`}>Latest run</p>
-                <p className={`mt-1 truncate text-sm font-semibold ${surface.textPrimary}`}>
-                  {demoAutomations[0].name}
-                </p>
-                <p className={`mt-1 text-sm ${surface.textSecondary}`}>
-                  {demoAutomations[0].lastTriggered}
-                </p>
-              </div>
-            </div>
-          </Panel>
-        }
-      />
-
-      <SectionCard
-        title="Automations"
-        description="Fake demo routines for the dashboard preview."
-        action={<Badge tone="accent">{demoAutomations.length} automations</Badge>}
-        contentClassName="px-4 py-5 md:px-8 md:py-8"
-        padding="none"
-      >
-        <div className="space-y-3">
-          {demoAutomations.map((automation) => (
-            <Panel key={automation.id} as="article" muted padded={false} className="p-4 md:p-5">
-              <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className={`truncate text-base font-semibold ${surface.textPrimary}`}>
-                      {automation.name}
-                    </h3>
-                    <Badge tone={automation.enabled ? 'accent' : 'neutral'}>
-                      {automation.enabled ? 'Enabled' : 'Disabled'}
-                    </Badge>
-                  </div>
-                  <p className={`mt-2 line-clamp-2 text-sm leading-6 ${surface.textSecondary}`}>
-                    {automation.description}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Tag>{automation.room}</Tag>
-                    <Tag>Last run {automation.lastTriggered}</Tag>
-                    <Tag>{automation.mode}</Tag>
-                  </div>
-                </div>
-
-                <div className="flex w-full flex-wrap items-center gap-2 md:w-auto md:justify-end">
-                  <Switch checked={automation.enabled} aria-label={`${automation.name} enabled`} />
-                  <Button
-                    variant="secondary"
-                    size="small"
-                    leading={<Play className="h-4 w-4" aria-hidden="true" />}
-                    className="min-w-24 flex-1 sm:flex-none"
-                  >
-                    Run
-                  </Button>
-                </div>
-              </div>
-            </Panel>
-          ))}
-        </div>
-      </SectionCard>
-    </div>
-  );
-}
-
-function AutomationHeroBadge({
-  active = false,
-  children,
-  icon: Icon,
-}: {
-  active?: boolean;
-  children: ReactNode;
-  icon: ComponentType<{ className?: string; color?: string }>;
-}) {
-  const { accentColor } = useTheme();
-
-  return (
-    <span
-      className="inline-flex h-[26px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-xs font-semibold leading-none"
-      style={{
-        backgroundColor: active ? `${accentColor}12` : 'rgba(255,255,255,0.04)',
-        borderColor: active ? `${accentColor}48` : 'rgba(255,255,255,0.1)',
-        color: active ? '#ffffff' : undefined,
-      }}
-    >
-      <Icon
-        className={`h-3.5 w-3.5 shrink-0 ${active ? '' : 'text-current'}`}
-        {...(active ? { color: accentColor } : {})}
-      />
-      {children}
-    </span>
-  );
+  return <TasksSection />;
 }
 
 function HomeRoomShot({ activeRoom }: { activeRoom: string }) {

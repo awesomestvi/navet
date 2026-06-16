@@ -28,8 +28,9 @@ export const DashboardLayout = memo(function DashboardLayout({
   const theme = useThemeMode();
   const wallpaper = useWallpaper();
   const primaryColor = usePrimaryColor();
-  const { lowPowerMode, effectsQuality } = useSettingsStore(
+  const { disableAnimations, lowPowerMode, effectsQuality } = useSettingsStore(
     useShallow((state) => ({
+      disableAnimations: state.disableAnimations,
       lowPowerMode: state.lowPowerMode,
       effectsQuality: state.effectsQuality,
     }))
@@ -47,10 +48,11 @@ export const DashboardLayout = memo(function DashboardLayout({
         effectsQuality,
         isEditMode: false,
         lowPowerMode,
+        reducedEffectsEnabled: disableAnimations || lowPowerMode,
         visibleCardCount: 0,
         visibleDevices: [],
       }),
-    [effectsQuality, lowPowerMode]
+    [disableAnimations, effectsQuality, lowPowerMode]
   );
   const resolvedEffectsQuality = performanceProfile.effectiveEffectsQuality;
   const isMediumEffects = resolvedEffectsQuality === 'medium';

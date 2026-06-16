@@ -4,20 +4,20 @@ import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HumidifierCard } from '.';
 
-const { dispatchEntityCommandMock, callIntegrationServiceMock } = vi.hoisted(() => ({
+const { dispatchEntityCommandMock, invokeIntegrationNativeActionMock } = vi.hoisted(() => ({
   dispatchEntityCommandMock: vi.fn(async () => ({
     accepted: true,
     requiresEventConfirmation: true,
   })),
-  callIntegrationServiceMock: vi.fn(async () => undefined),
+  invokeIntegrationNativeActionMock: vi.fn(async () => undefined),
 }));
 
 vi.mock('@navet/app/commands', () => ({
   dispatchEntityCommand: dispatchEntityCommandMock,
 }));
 
-vi.mock('@navet/app/services/integration-service-call.service', () => ({
-  callIntegrationService: callIntegrationServiceMock,
+vi.mock('@navet/app/services/integration-native-action.service', () => ({
+  invokeIntegrationNativeAction: invokeIntegrationNativeActionMock,
 }));
 
 describe('HumidifierCard', () => {
@@ -55,7 +55,7 @@ describe('HumidifierCard', () => {
     expect(screen.getByRole('button', { name: 'Auto' })).toHaveAttribute('aria-pressed', 'true');
 
     fireEvent.click(screen.getByRole('button', { name: 'Sleep' }));
-    expect(callIntegrationServiceMock).toHaveBeenCalledWith({
+    expect(invokeIntegrationNativeActionMock).toHaveBeenCalledWith({
       providerId: undefined,
       entityId: 'humidifier.basement',
       domain: 'humidifier',
@@ -64,7 +64,7 @@ describe('HumidifierCard', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Increase target humidity' }));
-    expect(callIntegrationServiceMock).toHaveBeenCalledWith({
+    expect(invokeIntegrationNativeActionMock).toHaveBeenCalledWith({
       providerId: undefined,
       entityId: 'humidifier.basement',
       domain: 'humidifier',

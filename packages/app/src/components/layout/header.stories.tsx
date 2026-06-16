@@ -2,9 +2,9 @@ import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-col
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@navet/app/hooks';
 import type { TranslateFn, TranslationKey } from '@navet/app/i18n';
-import type { NavetRoomDescriptor } from '@navet/app/provider-models';
 import type { PrimaryColor } from '@navet/app/stores/theme-store';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
+import type { PlatformManageableRoomReference } from '@navet/core/provider-feature-models';
 import type { Meta, StoryObj } from '@storybook/react';
 import { type Dispatch, type ReactNode, type SetStateAction, useRef, useState } from 'react';
 import { Header } from './header';
@@ -17,22 +17,13 @@ const STORY_AREAS = STORY_ROOMS.map((name, index) => ({
   area_id: String(index + 1),
   name,
 }));
-const STORY_ROOM_DESCRIPTORS: NavetRoomDescriptor[] = STORY_AREAS.map((area) => ({
+const STORY_MANAGEABLE_ROOMS: PlatformManageableRoomReference[] = STORY_AREAS.map((area) => ({
   id: area.name.toLowerCase(),
-  canonicalId: area.name.toLowerCase(),
   name: area.name,
-  normalizedName: area.name.toLowerCase(),
-  providerIds: ['home_assistant'],
-  memberIds: [],
-  sources: [
-    {
-      providerId: 'home_assistant',
-      nativeId: area.area_id,
-      sourceType: 'provider_managed',
-      supportsOrdering: true,
-      supportsDeletion: true,
-    },
-  ],
+  providerId: 'home_assistant',
+  canAssign: true,
+  canDelete: true,
+  canOrder: true,
 }));
 const STORY_TEXT: Partial<Record<TranslationKey, string>> = {
   'header.searchPlaceholder': 'Search devices',
@@ -173,7 +164,7 @@ function createStoryMobileEditActions(
     onAllViewGroupingChange: () => undefined,
     reorderRooms: {
       rooms: STORY_ROOMS,
-      roomDescriptors: STORY_ROOM_DESCRIPTORS,
+      manageableRooms: STORY_MANAGEABLE_ROOMS,
       roomHiddenItemCounts: new Map([
         ['Living Room', 1],
         ['Kitchen', 0],

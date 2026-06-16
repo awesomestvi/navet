@@ -1,9 +1,4 @@
-import { createHomeAssistantRuntimeRegistration } from '@navet/provider-homeassistant/homeassistant-runtime-registration';
-import { createHomeyRuntimeRegistration } from '@navet/provider-homey/homey-runtime-registration';
-import { createHubitatRuntimeRegistration } from '@navet/provider-hubitat/hubitat-runtime-registration';
-import { createOpenHABRuntimeRegistration } from '@navet/provider-openhab/openhab-runtime-registration';
-import { createSmartThingsRuntimeRegistration } from '@navet/provider-smartthings/smartthings-runtime-registration';
-import { getProviderContractRegistration } from './provider-contract-registry';
+import { getProviderRuntimeRegistrationEntry } from './provider-package-registry';
 import type {
   IntegrationProviderCapabilities,
   IntegrationProviderCapability,
@@ -17,23 +12,17 @@ var providerRuntimeRegistrations:
   | Partial<Record<IntegrationProviderId, IntegrationProviderRuntimeRegistration>>
   | undefined;
 
-function createProviderRuntimeRegistration(
-  providerId: IntegrationProviderId
-): IntegrationProviderRuntimeRegistration {
-  switch (providerId) {
-    case 'home_assistant':
-      return createHomeAssistantRuntimeRegistration(
-        getProviderContractRegistration('home_assistant')
-      );
-    case 'homey':
-      return createHomeyRuntimeRegistration(getProviderContractRegistration('homey'));
-    case 'openhab':
-      return createOpenHABRuntimeRegistration(getProviderContractRegistration('openhab'));
-    case 'hubitat':
-      return createHubitatRuntimeRegistration(getProviderContractRegistration('hubitat'));
-    case 'smartthings':
-      return createSmartThingsRuntimeRegistration(getProviderContractRegistration('smartthings'));
+export function resetProviderRuntimeRegistrationCache(providerId?: IntegrationProviderId) {
+  if (!providerRuntimeRegistrations) {
+    return;
   }
+
+  if (providerId) {
+    delete providerRuntimeRegistrations[providerId];
+    return;
+  }
+
+  providerRuntimeRegistrations = undefined;
 }
 
 export function getProviderRuntimeRegistration(
@@ -48,7 +37,7 @@ export function getProviderRuntimeRegistration(
     return existing;
   }
 
-  const registration = createProviderRuntimeRegistration(providerId);
+  const registration = getProviderRuntimeRegistrationEntry(providerId);
   providerRuntimeRegistrations[providerId] = registration;
   return registration;
 }

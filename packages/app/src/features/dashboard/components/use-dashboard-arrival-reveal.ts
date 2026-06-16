@@ -6,7 +6,9 @@ import {
 import { useI18n, useTheme } from '@navet/app/hooks';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
+import { resolveEffectsQuality } from '@navet/app/utils/effects-quality';
 import { useEffect, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import type { ArrivalField, ArrivalPhase, ArrivalVariant } from './dashboard-arrival-reveal.view';
 import { getDashboardArrivalRevealTokens } from './dashboard-arrival-reveal-tokens';
 
@@ -24,7 +26,17 @@ export function useDashboardArrivalReveal(
 ) {
   const { t } = useI18n();
   const { theme, primaryColor } = useTheme();
-  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
+  const { disableAnimations, effectsQuality, lowPowerMode } = useSettingsStore(
+    useShallow((state) => ({
+      disableAnimations: settingsSelectors.disableAnimations(state),
+      effectsQuality: settingsSelectors.effectsQuality(state),
+      lowPowerMode: settingsSelectors.lowPowerMode(state),
+    }))
+  );
+  const effectiveEffectsQuality = resolveEffectsQuality(
+    effectsQuality,
+    disableAnimations || lowPowerMode
+  );
   const [phase, setPhase] = useState<ArrivalPhase>('baking');
 
   useEffect(() => {
@@ -61,7 +73,7 @@ export function useDashboardArrivalReveal(
   return {
     accentColor,
     copy,
-    effectsQuality,
+    effectsQuality: effectiveEffectsQuality,
     phase,
     setPhase,
     theme,

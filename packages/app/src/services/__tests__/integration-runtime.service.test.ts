@@ -85,7 +85,6 @@ describe('integration-runtime.service', () => {
         label: 'Homey',
       },
       capabilities: {
-        serviceActions: true,
         pathSigning: false,
         cameraStreams: false,
       },

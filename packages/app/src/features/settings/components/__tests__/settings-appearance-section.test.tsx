@@ -35,4 +35,22 @@ describe('SettingsAppearanceSection', () => {
       screen.queryByText('Denser layout. Some touch controls may be harder to use.')
     ).not.toBeInTheDocument();
   });
+
+  it('disables ambience controls when low-power mode forces effective low quality', () => {
+    useSettingsStore.getState().updateSettings({
+      effectsQuality: 'high',
+      lowPowerMode: true,
+      ambientLightBleed: true,
+    });
+
+    renderWithProviders(<TestSection />);
+
+    expect(screen.getByRole('button', { name: 'Ambient bleed' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Contained' })).toBeDisabled();
+    expect(
+      screen.getByText(
+        'Available only on High visual quality. Light cards use Contained mode on Medium and Low.'
+      )
+    ).toBeInTheDocument();
+  });
 });

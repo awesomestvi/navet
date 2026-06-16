@@ -1,6 +1,42 @@
+interface ViewportSnapshot {
+  layoutWidth: number;
+  layoutHeight: number;
+  visibleWidth: number;
+  visibleHeight: number;
+}
+
+const EMPTY_VIEWPORT_SNAPSHOT: ViewportSnapshot = {
+  layoutWidth: 0,
+  layoutHeight: 0,
+  visibleWidth: 0,
+  visibleHeight: 0,
+};
+
+let viewportSnapshot: ViewportSnapshot = { ...EMPTY_VIEWPORT_SNAPSHOT };
+
+function readViewportSnapshotValue(name: string) {
+  switch (name) {
+    case '--navet-viewport-width':
+      return viewportSnapshot.layoutWidth;
+    case '--navet-viewport-height':
+      return viewportSnapshot.layoutHeight;
+    case '--navet-visible-viewport-width':
+      return viewportSnapshot.visibleWidth;
+    case '--navet-visible-viewport-height':
+      return viewportSnapshot.visibleHeight;
+    default:
+      return 0;
+  }
+}
+
 export function readCssViewportVar(name: string) {
   if (typeof window === 'undefined') {
     return 0;
+  }
+
+  const snapshotValue = readViewportSnapshotValue(name);
+  if (snapshotValue > 0) {
+    return snapshotValue;
   }
 
   const value = Number.parseFloat(
@@ -50,20 +86,39 @@ export function syncViewportCssVars() {
   const visibleViewportHeight = window.visualViewport?.height ?? window.innerHeight;
   const layoutViewportWidth = Math.max(window.innerWidth, visibleViewportWidth);
   const layoutViewportHeight = Math.max(window.innerHeight, visibleViewportHeight);
+  const previousSnapshot = viewportSnapshot;
 
-  document.documentElement.style.setProperty('--navet-viewport-width', `${layoutViewportWidth}px`);
-  document.documentElement.style.setProperty(
-    '--navet-viewport-height',
-    `${layoutViewportHeight}px`
-  );
-  document.documentElement.style.setProperty(
-    '--navet-visible-viewport-width',
-    `${visibleViewportWidth}px`
-  );
-  document.documentElement.style.setProperty(
-    '--navet-visible-viewport-height',
-    `${visibleViewportHeight}px`
-  );
+  if (previousSnapshot.layoutWidth !== layoutViewportWidth) {
+    document.documentElement.style.setProperty(
+      '--navet-viewport-width',
+      `${layoutViewportWidth}px`
+    );
+  }
+  if (previousSnapshot.layoutHeight !== layoutViewportHeight) {
+    document.documentElement.style.setProperty(
+      '--navet-viewport-height',
+      `${layoutViewportHeight}px`
+    );
+  }
+  if (previousSnapshot.visibleWidth !== visibleViewportWidth) {
+    document.documentElement.style.setProperty(
+      '--navet-visible-viewport-width',
+      `${visibleViewportWidth}px`
+    );
+  }
+  if (previousSnapshot.visibleHeight !== visibleViewportHeight) {
+    document.documentElement.style.setProperty(
+      '--navet-visible-viewport-height',
+      `${visibleViewportHeight}px`
+    );
+  }
+
+  viewportSnapshot = {
+    layoutWidth: layoutViewportWidth,
+    layoutHeight: layoutViewportHeight,
+    visibleWidth: visibleViewportWidth,
+    visibleHeight: visibleViewportHeight,
+  };
 }
 
 export function clearViewportCssVars() {
@@ -71,6 +126,7 @@ export function clearViewportCssVars() {
     return;
   }
 
+  viewportSnapshot = { ...EMPTY_VIEWPORT_SNAPSHOT };
   document.documentElement.style.removeProperty('--navet-viewport-width');
   document.documentElement.style.removeProperty('--navet-viewport-height');
   document.documentElement.style.removeProperty('--navet-visible-viewport-width');

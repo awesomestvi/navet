@@ -53,7 +53,7 @@ type HomeAssistantMediaBrowseRequest = {
   mediaContentType?: string;
 };
 
-interface HomeAssistantServiceBridge {
+export interface HomeAssistantServiceBridge {
   callService(
     domain: string,
     service: string,

@@ -1,4 +1,5 @@
 import { integrationStore } from '@navet/app/stores/integration-store';
+import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { renderHookWithProviders, renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import { screen } from '@testing-library/react';
@@ -198,5 +199,66 @@ describe('card availability lookup', () => {
       'text-[10px]'
     );
     expect(unavailablePill).not.toHaveClass('uppercase');
+  });
+
+  it('skips extra unavailable blur and saturation when low-power mode forces effective low quality', async () => {
+    integrationStore.setState({
+      ...integrationStore.getState(),
+      currentProviderId: 'home_assistant',
+      providerEntitiesByProviderId: {
+        ...integrationStore.getState().providerEntitiesByProviderId,
+        home_assistant: {
+          'home_assistant:light.kitchen': {
+            id: 'home_assistant:light.kitchen',
+            canonicalId: 'home_assistant:light.kitchen',
+            providerId: 'home_assistant',
+            externalId: 'light.kitchen',
+            type: 'light',
+            name: 'Kitchen Light',
+            room: 'Kitchen',
+            primaryState: 'unavailable',
+            availability: 'unavailable',
+            capabilities: [],
+            attributes: {},
+          },
+        },
+      },
+      providerEntityLookupByProviderId: {
+        ...integrationStore.getState().providerEntityLookupByProviderId,
+        home_assistant: {
+          'light.kitchen': 'home_assistant:light.kitchen',
+          'home_assistant:light.kitchen': 'home_assistant:light.kitchen',
+        },
+      },
+    });
+    useSettingsStore.getState().updateSettings({
+      effectsQuality: 'high',
+      lowPowerMode: true,
+    });
+
+    const card = renderCard({
+      device: {
+        id: 'light.kitchen',
+        name: 'Kitchen Light',
+        room: 'Kitchen',
+        type: 'lights',
+        state: false,
+      },
+      size: 'small',
+      handleSizeChange: () => undefined,
+      isEditMode: false,
+    });
+
+    expect(card).not.toBeNull();
+    if (!card) {
+      throw new Error('Expected renderCard to return a light card');
+    }
+
+    const { container } = renderWithProviders(card);
+
+    await screen.findByText('Unavailable');
+
+    expect(container.innerHTML).not.toContain('saturate-50');
+    expect(container.innerHTML).not.toContain('backdrop-blur-[1px]');
   });
 });

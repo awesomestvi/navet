@@ -1,4 +1,4 @@
-import { useSettingsStore } from '@navet/app/stores';
+import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { createContext, type ReactNode, useContext, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import {

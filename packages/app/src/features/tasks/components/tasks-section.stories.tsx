@@ -1,99 +1,14 @@
-import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
+import { createPreviewStoryScenario } from '@navet/app/preview/runtime';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { Meta, StoryObj } from '@storybook/react';
 import { useEffect } from 'react';
-import { makeHassEntity } from '../test-utils';
 import { TasksSection } from './tasks-section';
 
 type TasksStoryMode = 'default' | 'empty' | 'many' | 'reconnecting' | 'low-power';
 
-const baseEntities = {
-  'automation.coffee': makeHassEntity({
-    entity_id: 'automation.coffee',
-    state: 'on',
-    attributes: {
-      friendly_name: 'Good Morning',
-      description: 'Starts coffee, opens blinds, and warms the kitchen.',
-      last_triggered: '2026-05-04T07:15:00.000Z',
-      mode: 'single',
-      current: 0,
-    },
-  }),
-  'automation.night': makeHassEntity({
-    entity_id: 'automation.night',
-    state: 'off',
-    attributes: {
-      friendly_name: 'Sleep Mode',
-      description: 'Locks the doors and settles the lights for the evening.',
-    },
-  }),
-  'scene.movie': makeHassEntity({
-    entity_id: 'scene.movie',
-    state: 'scening',
-    attributes: { friendly_name: 'Movie Time' },
-  }),
-  'script.goodnight': makeHassEntity({
-    entity_id: 'script.goodnight',
-    state: 'off',
-    attributes: { friendly_name: 'Good Night' },
-  }),
-};
-
-function getEntities(mode: TasksStoryMode) {
-  if (mode === 'empty') {
-    return {};
-  }
-
-  if (mode === 'many') {
-    return {
-      ...baseEntities,
-      'scene.cleaning': makeHassEntity({
-        entity_id: 'scene.cleaning',
-        state: 'scening',
-        attributes: { friendly_name: 'Cleaning' },
-      }),
-      'automation.vacation': makeHassEntity({
-        entity_id: 'automation.vacation',
-        state: 'on',
-        attributes: { friendly_name: 'Vacation', description: 'Keeps the home steady.' },
-      }),
-      'automation.leaving': makeHassEntity({
-        entity_id: 'automation.leaving',
-        state: 'on',
-        attributes: { friendly_name: 'Leaving Home' },
-      }),
-    };
-  }
-
-  return baseEntities;
-}
-
 function TasksSectionStory({ mode = 'default' }: { mode?: TasksStoryMode }) {
   useEffect(() => {
-    const previousHaState = homeAssistantStore.getState();
     const previousSettingsState = useSettingsStore.getState();
-
-    homeAssistantStore.setState({
-      ...previousHaState,
-      connected: mode !== 'reconnecting',
-      areas: [
-        { area_id: 'kitchen', name: 'Kitchen' },
-        { area_id: 'living', name: 'Living Room' },
-        { area_id: 'hall', name: 'Hallway' },
-      ],
-      deviceRegistry: [
-        { id: 'device-kitchen', area_id: 'kitchen' },
-        { id: 'device-living', area_id: 'living' },
-        { id: 'device-hall', area_id: 'hall' },
-      ],
-      entityRegistry: [
-        { entity_id: 'automation.coffee', device_id: 'device-kitchen' },
-        { entity_id: 'automation.night', device_id: 'device-hall' },
-        { entity_id: 'scene.movie', device_id: 'device-living' },
-        { entity_id: 'script.goodnight', device_id: 'device-hall' },
-      ],
-      entities: getEntities(mode),
-    });
 
     if (mode === 'low-power') {
       useSettingsStore.setState({
@@ -104,7 +19,6 @@ function TasksSectionStory({ mode = 'default' }: { mode?: TasksStoryMode }) {
     }
 
     return () => {
-      homeAssistantStore.setState(previousHaState);
       useSettingsStore.setState(previousSettingsState);
     };
   }, [mode]);
@@ -150,14 +64,73 @@ export const Mobile: Story = {
 
 export const Empty: Story = {
   args: { mode: 'empty' },
+  parameters: {
+    previewRuntime: {
+      scenario: {
+        ...createPreviewStoryScenario(),
+        taskRuntime: {
+          ...createPreviewStoryScenario().taskRuntime,
+          entities: {},
+        },
+      },
+    },
+  },
 };
 
 export const Reconnecting: Story = {
   args: { mode: 'reconnecting' },
+  parameters: {
+    previewRuntime: {
+      scenario: {
+        ...createPreviewStoryScenario(),
+        homeAssistant: {
+          ...createPreviewStoryScenario().homeAssistant,
+          connected: false,
+          reconnecting: true,
+        },
+      },
+    },
+  },
 };
 
 export const ManyRoutines: Story = {
   args: { mode: 'many' },
+  parameters: {
+    previewRuntime: {
+      scenario: {
+        ...createPreviewStoryScenario(),
+        taskRuntime: {
+          ...createPreviewStoryScenario().taskRuntime,
+          entities: {
+            ...createPreviewStoryScenario().taskRuntime.entities,
+            'scene.cleaning': {
+              entityId: 'scene.cleaning',
+              state: 'scening',
+              name: 'Cleaning',
+              attributes: {},
+            },
+            'automation.vacation': {
+              entityId: 'automation.vacation',
+              state: 'on',
+              name: 'Vacation',
+              attributes: {
+                description: 'Keeps the home steady.',
+                mode: 'single',
+              },
+            },
+            'automation.leaving': {
+              entityId: 'automation.leaving',
+              state: 'on',
+              name: 'Leaving Home',
+              attributes: {
+                mode: 'single',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
 };
 
 export const LowPower: Story = {

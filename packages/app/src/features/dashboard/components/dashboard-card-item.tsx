@@ -70,9 +70,10 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   const { t } = useI18n();
   const { theme } = useTheme();
   const accentColor = useAccentColor();
-  const { ambientLightBleed, effectsQuality, lowPowerMode } = useSettingsStore(
+  const { ambientLightBleed, disableAnimations, effectsQuality, lowPowerMode } = useSettingsStore(
     useShallow((state) => ({
       ambientLightBleed: settingsSelectors.ambientLightBleed(state),
+      disableAnimations: settingsSelectors.disableAnimations(state),
       effectsQuality: settingsSelectors.effectsQuality(state),
       lowPowerMode: settingsSelectors.lowPowerMode(state),
     }))
@@ -92,13 +93,16 @@ export const DashboardCardItem = memo(function DashboardCardItem({
         effectsQuality,
         isEditMode,
         lowPowerMode,
+        reducedEffectsEnabled: disableAnimations || lowPowerMode,
         visibleCardCount: 1,
         visibleDevices: device ? [device] : [],
       }),
-    [device, effectsQuality, isEditMode, lowPowerMode]
+    [device, disableAnimations, effectsQuality, isEditMode, lowPowerMode]
   );
   const resolvedEffectsQuality =
-    densePerformanceMode || lowPowerMode ? 'low' : performanceProfile.effectiveEffectsQuality;
+    densePerformanceMode || disableAnimations || lowPowerMode
+      ? 'low'
+      : performanceProfile.effectiveEffectsQuality;
   const resolvedAmbientLightBleed =
     !densePerformanceMode && ambientLightBleed && performanceProfile.allowAmbientBleed;
   const allowedSizes = getAllowedSizes(device, card, allowExtraLargeSizes);

@@ -1,52 +1,39 @@
-import type { NavetRoomDescriptor } from '@navet/app/provider-models';
+import type { PlatformManageableRoomReference } from '@navet/core/provider-feature-models';
 import { describe, expect, it } from 'vitest';
 import { getManageableRoomOrder } from '../mobile-layout-helpers';
 
-function createRoomDescriptor(
+function createManageableRoom(
   name: string,
-  options?: Partial<NavetRoomDescriptor['sources'][number]>
-): NavetRoomDescriptor {
+  options?: Partial<PlatformManageableRoomReference>
+): PlatformManageableRoomReference {
   return {
     id: name.toLowerCase(),
-    canonicalId: name.toLowerCase(),
     name,
-    normalizedName: name.toLowerCase(),
-    providerIds: ['home_assistant'],
-    memberIds: [],
-    sources: [
-      {
-        providerId: 'home_assistant',
-        nativeId: name.toLowerCase(),
-        sourceType: 'provider_managed',
-        supportsOrdering: true,
-        supportsDeletion: true,
-        ...options,
-      },
-    ],
+    providerId: 'home_assistant',
+    canAssign: true,
+    canDelete: true,
+    canOrder: true,
+    ...options,
   };
 }
 
 describe('getManageableRoomOrder', () => {
-  it('orders visible rooms using normalized room descriptors before navet-only rooms', () => {
+  it('orders visible rooms using manageable provider rooms before navet-only rooms', () => {
     expect(
       getManageableRoomOrder(
         ['Kitchen', 'Office', 'Living Room'],
-        [createRoomDescriptor('Living Room'), createRoomDescriptor('Kitchen')]
+        [createManageableRoom('Living Room'), createManageableRoom('Kitchen')]
       )
     ).toEqual(['Kitchen', 'Living Room', 'Office']);
   });
 
-  it('ignores derived non-orderable room descriptors when building the manageable order', () => {
+  it('ignores non-orderable manageable rooms when building the manageable order', () => {
     expect(
       getManageableRoomOrder(
         ['Unassigned', 'Kitchen'],
         [
-          createRoomDescriptor('Kitchen'),
-          createRoomDescriptor('Unassigned', {
-            sourceType: 'derived',
-            supportsOrdering: false,
-            supportsDeletion: false,
-          }),
+          createManageableRoom('Kitchen'),
+          createManageableRoom('Unassigned', { canDelete: false, canOrder: false }),
         ]
       )
     ).toEqual(['Kitchen', 'Unassigned']);

@@ -1,10 +1,10 @@
 import type { AllViewGrouping } from '@navet/app/features/dashboard';
-import type { NavetRoomDescriptor } from '@navet/app/provider-models';
+import type { PlatformManageableRoomReference } from '@navet/core/provider-feature-models';
 
 export interface MobileHeaderRoomReorderConfig {
   rooms: string[];
   hiddenRoomNames?: string[];
-  roomDescriptors: NavetRoomDescriptor[];
+  manageableRooms: PlatformManageableRoomReference[];
   roomHiddenItemCounts: Map<string, number>;
   roomItemCounts: Map<string, number>;
   onRoomOrderChange?: (rooms: string[]) => void;

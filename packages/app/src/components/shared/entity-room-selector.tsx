@@ -7,7 +7,6 @@ import {
   useProviderEntityRoomContext,
   useTheme,
 } from '@navet/app/hooks';
-import { buildManageableRoomReferences } from '@navet/app/platform/provider-room-management';
 import { integrationAdminService } from '@navet/app/services/integration-admin.service';
 import { useEntityRoomOverridesStore } from '@navet/app/stores/entity-room-overrides-store';
 import { integrationSelectors } from '@navet/app/stores/selectors';
@@ -52,7 +51,6 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
   const { theme } = useTheme();
   const { t } = useI18n();
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const roomDescriptors = useIntegrationStore(integrationSelectors.roomDescriptors);
   const roomRegistry = useProviderEntityRoomContext(entityId);
   const roomIdsByEntityId = useEntityRoomOverridesStore((state) => state.roomIdsByEntityId);
   const setRoomOverride = useEntityRoomOverridesStore((state) => state.setRoomOverride);
@@ -65,19 +63,19 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
     () => parseProviderScopedId(entityId)?.providerId ?? currentProviderId,
     [currentProviderId, entityId]
   );
+  const manageableRooms = useIntegrationStore(
+    integrationSelectors.manageableRoomsForProvider(entityProviderId)
+  );
   const resolvedEntityId = useMemo(
     () => createProviderScopedId(entityProviderId, getProviderNativeId(entityId)),
     [entityId, entityProviderId]
   );
-  const manageableRooms = useMemo(
-    () =>
-      buildManageableRoomReferences(roomDescriptors, entityProviderId).filter(
-        (room) => room.canAssign
-      ),
-    [entityProviderId, roomDescriptors]
+  const assignableRooms = useMemo(
+    () => manageableRooms.filter((room) => room.canAssign),
+    [manageableRooms]
   );
   const localRoomOverrideId = roomIdsByEntityId[resolvedEntityId] ?? null;
-  const canManageRoom = manageableRooms.length > 0;
+  const canManageRoom = assignableRooms.length > 0;
   const usesProviderRoomAssignment = roomRegistry.entry != null;
   const fallbackManagedRoom = useMemo(() => {
     const normalizedFallbackRoomName = fallbackRoomName?.trim().toLowerCase();
@@ -86,11 +84,11 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
     }
 
     return (
-      manageableRooms.find(
+      assignableRooms.find(
         (room) => room.name.trim().toLowerCase() === normalizedFallbackRoomName
       ) ?? null
     );
-  }, [fallbackRoomName, manageableRooms]);
+  }, [assignableRooms, fallbackRoomName]);
   const selectedRoomId = useMemo(() => {
     if (localRoomOverrideId) {
       return localRoomOverrideId;
@@ -120,7 +118,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
     roomRegistry.entry,
   ]);
   const selectedRoomLabel =
-    manageableRooms.find((room) => room.id === selectedRoomId)?.name ??
+    assignableRooms.find((room) => room.id === selectedRoomId)?.name ??
     fallbackManagedRoom?.name ??
     fallbackRoomName?.trim() ??
     t('common.noRoom');
@@ -170,7 +168,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
 
     const nextRoomId = nextValue || null;
     const nextRoomName =
-      manageableRooms.find((room) => room.id === nextRoomId)?.name ?? t('common.noRoom');
+      assignableRooms.find((room) => room.id === nextRoomId)?.name ?? t('common.noRoom');
     setIsSaving(true);
     try {
       if (usesProviderRoomAssignment) {
@@ -223,7 +221,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
               className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none opacity-0 disabled:cursor-not-allowed"
             >
               <option value="">{t('common.noRoom')}</option>
-              {manageableRooms.map((room) => (
+              {assignableRooms.map((room) => (
                 <option key={room.id} value={room.id}>
                   {room.name}
                 </option>
@@ -245,7 +243,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
               style={selectStyle}
             >
               <option value="">{t('common.noRoom')}</option>
-              {manageableRooms.map((room) => (
+              {assignableRooms.map((room) => (
                 <option key={room.id} value={room.id}>
                   {room.name}
                 </option>

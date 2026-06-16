@@ -111,6 +111,7 @@ const CLIMATE_DASHBOARD_GROUPS: DashboardClimateSectionGroup[] = [
 export function useDashboardController(): DashboardController {
   const { activeSection, setActiveSection } = useNavigation();
   const { t } = useI18n();
+  const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const currentProviderRuntime = useIntegrationStore(
@@ -209,7 +210,12 @@ export function useDashboardController(): DashboardController {
   const { isEditMode, toggleEditMode } = useEditMode();
   useEditModeBeforeUnload(isEditMode);
   const allCards = useCustomCardsStore((state) => state.cards);
-  const mediaDevices = useDeviceCollectionsByKeys(['media'], { enabled: true });
+  const shouldTrackMediaDevices = resolveShouldTrackMediaDevices({
+    activeSection,
+    cards: allCards,
+    isEditMode,
+  });
+  const mediaDevices = useDeviceCollectionsByKeys(['media'], { enabled: shouldTrackMediaDevices });
   const mediaDevicesById = useMemo(
     () => new Map(mediaDevices.media.map((device) => [device.id, device])),
     [mediaDevices.media]
@@ -217,7 +223,7 @@ export function useDashboardController(): DashboardController {
   const visibleCards = useMemo(
     () =>
       allCards.filter((card) => {
-        if (isEditMode || card.type !== 'media-stack') {
+        if (!shouldTrackMediaDevices || isEditMode || card.type !== 'media-stack') {
           return true;
         }
 
@@ -228,7 +234,7 @@ export function useDashboardController(): DashboardController {
 
         return shouldShowMediaStackWidget(configuredDevices, data);
       }),
-    [allCards, isEditMode, mediaDevicesById]
+    [allCards, isEditMode, mediaDevicesById, shouldTrackMediaDevices]
   );
   const allCustomCards = useMemo(
     () => visibleCards.filter((card) => isAllRooms(card.room) || card.room === HOME_WIDGET_ROOM),
@@ -306,6 +312,7 @@ export function useDashboardController(): DashboardController {
         effectsQuality,
         isEditMode,
         lowPowerMode,
+        reducedEffectsEnabled: disableAnimations || lowPowerMode,
         visibleCardCount: denseVisibleCardCount,
         visibleDevices:
           activeSection === 'lights'
@@ -319,6 +326,7 @@ export function useDashboardController(): DashboardController {
       denseVisibleCardCount,
       deviceMap,
       deviceTier,
+      disableAnimations,
       effectsQuality,
       isEditMode,
       lightDeviceMap,
@@ -339,6 +347,10 @@ export function useDashboardController(): DashboardController {
     });
   }, [activeSection, denseVisibleCardCount, deviceTier, performanceProfile]);
   const securityAlertCount = useMemo(() => {
+    if (!sectionData.isOverviewSection) {
+      return 0;
+    }
+
     const expandedHiddenSecurityIds = new Set(
       getExpandedHiddenDashboardEntityIds(allDevices, hiddenEntityIds)
     );
@@ -362,7 +374,7 @@ export function useDashboardController(): DashboardController {
         (device) => !expandedHiddenSecurityIds.has(device.id) && !absorbedSecurityIds.has(device.id)
       ),
     }).summary.attentionEntityCount;
-  }, [allDevices, hiddenEntityIds]);
+  }, [allDevices, hiddenEntityIds, sectionData.isOverviewSection]);
 
   const resetDashboard = useResetDashboard(homeLayoutController);
   const onboarding = useOnboardingController({ allEntityIds, changeRoom, resetDashboard });
@@ -678,6 +690,22 @@ function useResetDashboard(homeLayoutController: ReturnType<typeof useHomeDashbo
 }
 
 export { getClimateDashboardGroup } from '../../climate/utils/climate-dashboard-group';
+
+export function resolveShouldTrackMediaDevices({
+  activeSection,
+  cards,
+  isEditMode,
+}: {
+  activeSection: Section;
+  cards: Array<{ type: string }>;
+  isEditMode: boolean;
+}) {
+  if (isEditMode || activeSection === 'media') {
+    return true;
+  }
+
+  return activeSection === 'home' && cards.some((card) => card.type === 'media-stack');
+}
 
 export function resolveShouldIncludeFeatureCollections({
   activeSection,

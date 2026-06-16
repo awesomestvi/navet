@@ -2,6 +2,7 @@ import {
   createEmptyDeviceCollection,
   mapNavetEntitiesToDeviceCollection,
 } from '@navet/app/core/navet-device-collections';
+import type { NavetProviderRoom } from '@navet/core/types';
 import { useMemo } from 'react';
 import { useEntityRoomOverridesStore } from '../stores/entity-room-overrides-store';
 import { integrationSelectors } from '../stores/selectors';
@@ -46,32 +47,15 @@ interface UseDevicesOptions {
   includeFeatureCollections?: boolean;
 }
 
-function buildRoomNamesById(
-  roomDescriptors: ReadonlyArray<{
-    id: string;
-    canonicalId: string;
-    normalizedName: string;
-    name: string;
-    sources: ReadonlyArray<{
-      providerId: IntegrationProviderId;
-      nativeId: string;
-      canonicalId?: string;
-    }>;
-  }>
-) {
+function buildRoomNamesById(normalizedRoomsByCanonicalId: Record<string, NavetProviderRoom>) {
   const roomNamesById: Record<string, string> = {};
 
-  roomDescriptors.forEach((room) => {
-    roomNamesById[room.id] = room.name;
+  Object.values(normalizedRoomsByCanonicalId).forEach((room) => {
     roomNamesById[room.canonicalId] = room.name;
+    roomNamesById[room.id] = room.name;
     roomNamesById[room.normalizedName] = room.name;
-
-    room.sources.forEach((source) => {
-      roomNamesById[createProviderScopedId(source.providerId, source.nativeId)] = room.name;
-      if (typeof source.canonicalId === 'string' && source.canonicalId.length > 0) {
-        roomNamesById[source.canonicalId] = room.name;
-      }
-    });
+    roomNamesById[room.externalId] = room.name;
+    roomNamesById[createProviderScopedId(room.providerId, room.externalId)] = room.name;
   });
 
   return roomNamesById;
@@ -391,9 +375,14 @@ export const useDeviceCollectionsByKeys = (
     },
     (left, right) => areArraysEqual(left, right, Object.is)
   );
-  const roomDescriptors = useIntegrationStore(integrationSelectors.roomDescriptors);
+  const normalizedRoomsByCanonicalId = useIntegrationStore(
+    integrationSelectors.normalizedRoomsByCanonicalId
+  );
   const roomIdsByEntityId = useEntityRoomOverridesStore((state) => state.roomIdsByEntityId);
-  const roomNamesById = useMemo(() => buildRoomNamesById(roomDescriptors), [roomDescriptors]);
+  const roomNamesById = useMemo(
+    () => buildRoomNamesById(normalizedRoomsByCanonicalId),
+    [normalizedRoomsByCanonicalId]
+  );
   const { calendars, weather } = useSelectedProviderFeatureCollections({
     selectedProviderIds,
     enabled,
@@ -460,9 +449,14 @@ export const useAggregatedDevices = (options?: UseDevicesOptions): DeviceCollect
         : EMPTY_DEVICE_COLLECTIONS,
     (left, right) => areArraysEqual(left, right, Object.is)
   );
-  const roomDescriptors = useIntegrationStore(integrationSelectors.roomDescriptors);
+  const normalizedRoomsByCanonicalId = useIntegrationStore(
+    integrationSelectors.normalizedRoomsByCanonicalId
+  );
   const roomIdsByEntityId = useEntityRoomOverridesStore((state) => state.roomIdsByEntityId);
-  const roomNamesById = useMemo(() => buildRoomNamesById(roomDescriptors), [roomDescriptors]);
+  const roomNamesById = useMemo(
+    () => buildRoomNamesById(normalizedRoomsByCanonicalId),
+    [normalizedRoomsByCanonicalId]
+  );
   const { calendars, weather } = useSelectedProviderFeatureCollections({
     selectedProviderIds,
     enabled,

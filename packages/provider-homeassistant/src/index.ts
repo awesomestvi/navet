@@ -12,6 +12,8 @@ export * from './homeassistant-light-feature.service';
 export * from './homeassistant-mappers';
 export * from './homeassistant-media-feature.service';
 export * from './homeassistant-notification-feature.service';
+export * from './homeassistant-provider-registration';
+export * from './homeassistant-provider-state';
 export * from './homeassistant-runtime-registration';
 export * from './homeassistant-security-entities';
 export * from './homeassistant-security-feature.service';
@@ -60,6 +62,7 @@ export {
   updateHomeAssistantLight,
   updateHomeAssistantMediaPlayerPower,
 } from './homeassistant-service-bridge';
+export * from './homeassistant-session-registration';
 export * from './homeassistant-session-runtime';
 export * from './homeassistant-task-feature.service';
 export * from './homeassistant-weather-feature.service';

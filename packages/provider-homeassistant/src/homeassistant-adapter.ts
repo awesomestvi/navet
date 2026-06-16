@@ -361,14 +361,6 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
     case 'clean_spot':
       await callHomeAssistantService('vacuum', 'clean_spot', {}, { entityId: entity.externalId });
       return;
-    case 'service':
-      await callHomeAssistantService(
-        command.domain,
-        command.service,
-        command.serviceData ?? {},
-        command.target ?? { entityId: entity.externalId }
-      );
-      return;
     default:
       throw new UnsupportedProviderCommandError((command as { type: string }).type);
   }

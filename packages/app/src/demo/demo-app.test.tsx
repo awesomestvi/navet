@@ -1,51 +1,35 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import DemoApp from './demo-app';
+import { integrationStore } from '@navet/app/stores/integration-store';
+import { afterEach, describe, expect, it } from 'vitest';
+import {
+  getPreviewRuntimeScenario,
+  installPreviewRuntime,
+  resetPreviewRuntime,
+} from '../preview/runtime';
 
-const { authSnapshot } = vi.hoisted(() => ({
-  authSnapshot: {
-    providerId: 'home_assistant',
-    runtime: 'standalone',
-    authMode: 'standalone',
-    haBaseUrl: null,
-    isAuthenticated: false,
-    sessions: {},
-    authenticatedProviderIds: [],
-  } as const,
-}));
-
-vi.mock('@navet/app/auth/integration-session-runtime', () => ({
-  integrationSessionRuntime: {
-    getAuthRuntime: () => 'standalone-oauth',
-    getSnapshot: () => authSnapshot,
-    getSession: () => null,
-    subscribe: () => () => undefined,
-    init: async () => authSnapshot,
-    login: async () => authSnapshot,
-    logout: async () => undefined,
-    refresh: async () => authSnapshot,
-    replaceSession: () => authSnapshot,
-    setActiveProvider: () => authSnapshot,
-  },
-}));
-
-describe('DemoApp', () => {
-  beforeEach(() => {
-    window.history.replaceState(null, '', '/demo/security');
-  });
-
+describe('demo preview runtime', () => {
   afterEach(() => {
-    cleanup();
-    window.history.replaceState(null, '', '/');
+    resetPreviewRuntime();
   });
 
-  it('renders the security demo route with camera cards', async () => {
-    render(<DemoApp />);
+  it('hydrates the demo preview through the provider-backed runtime', () => {
+    installPreviewRuntime(getPreviewRuntimeScenario('demo'));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Security' }));
+    const state = integrationStore.getState();
+    const homeAssistantEntities = state.providerEntitiesByProviderId.home_assistant;
 
-    expect(await screen.findAllByRole('button', { name: 'Open camera viewer' })).toHaveLength(2);
-    expect(screen.getAllByText('Front Door').length).toBeGreaterThan(0);
-    expect(screen.getByText('Driveway')).toBeInTheDocument();
+    expect(state.currentProviderId).toBe('home_assistant');
+    expect(state.selectedProviderIds).toEqual(['home_assistant']);
+    expect(homeAssistantEntities?.['home_assistant:camera.front_door']).toEqual(
+      expect.objectContaining({
+        type: 'camera',
+        name: 'Front Door',
+      })
+    );
+    expect(homeAssistantEntities?.['home_assistant:input_boolean.guest_mode']).toEqual(
+      expect.objectContaining({
+        type: 'helper',
+        name: 'Guest mode',
+      })
+    );
   });
 });

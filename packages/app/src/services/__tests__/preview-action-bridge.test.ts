@@ -1,7 +1,7 @@
 import { dispatchNavetCommand } from '@navet/app/commands';
 import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { callIntegrationService } from '../integration-service-call.service';
+import { invokeIntegrationNativeAction } from '../integration-native-action.service';
 
 vi.mock('@navet/app/provider-contract-registry', () => ({
   getRegisteredSmartHomeProviderAdapter: vi.fn(() => {
@@ -11,9 +11,11 @@ vi.mock('@navet/app/provider-contract-registry', () => ({
 
 vi.mock('@navet/app/provider-runtime-registry', () => ({
   getProviderRuntimeRegistration: vi.fn(() => ({
-    invokeService: vi.fn(() => {
-      throw new Error('preview runtime should not invoke the live provider runtime');
-    }),
+    nativeActionFeatureService: {
+      invokeAction: vi.fn(() => {
+        throw new Error('preview runtime should not invoke the live provider runtime');
+      }),
+    },
   })),
 }));
 
@@ -75,7 +77,7 @@ describe('preview action bridge', () => {
   });
 
   it('handles service calls through preview state instead of the live integration runtime', async () => {
-    await callIntegrationService({
+    await invokeIntegrationNativeAction({
       entityId: 'scene.movie_mode',
       domain: 'scene',
       service: 'turn_on',

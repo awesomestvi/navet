@@ -220,6 +220,14 @@ export const integrationSelectors = {
       state.providerDeviceCollectionsByProviderId[providerId],
   providerDeviceCollectionsByProviderId: (state: IntegrationStore) =>
     state.providerDeviceCollectionsByProviderId,
+  providerNormalizedRoomsByProviderId: (state: IntegrationStore) =>
+    state.providerNormalizedRoomsByProviderId,
+  manageableRoomsByProviderId: (state: IntegrationStore) => state.manageableRoomsByProviderId,
+  manageableRoomsForProvider:
+    (providerId: keyof IntegrationStore['manageableRoomsByProviderId']) =>
+    (state: IntegrationStore) =>
+      state.manageableRoomsByProviderId[providerId] ?? [],
+  normalizedRoomsByCanonicalId: (state: IntegrationStore) => state.normalizedRoomsByCanonicalId,
   providerEvents: (state: IntegrationStore) => state.providerEvents,
   roomsByCanonicalId: (state: IntegrationStore) => state.roomsByCanonicalId,
   roomDescriptors: (state: IntegrationStore) => state.roomDescriptors,

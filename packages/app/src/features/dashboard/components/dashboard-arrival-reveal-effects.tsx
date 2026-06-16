@@ -5,9 +5,9 @@ interface RevealEffectsProps {
 }
 
 export function RevealEffects({ controller }: RevealEffectsProps) {
-  const { accentColor, phase } = controller;
+  const { accentColor, effectsQuality, phase } = controller;
 
-  if (phase === 'baking') {
+  if (phase === 'baking' || effectsQuality === 'low') {
     return null;
   }
 

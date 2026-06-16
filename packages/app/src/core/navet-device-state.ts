@@ -1,4 +1,3 @@
-import type { NavetDevice } from '@navet/app/provider-models';
 import type {
   NavetAlarmAction,
   NavetAlarmCodeFormat,
@@ -130,7 +129,14 @@ export interface NavetAlarmStateModel extends NavetBaseDeviceState {
   availability?: 'available' | 'unavailable' | 'unknown';
 }
 
-type NavetStatefulModel = NavetDevice | NavetEntity;
+interface NavetCompatibilityStateCarrier {
+  canonicalId: string;
+  name: string;
+  providerId: NavetEntity['providerId'];
+  state: Record<string, unknown>;
+}
+
+type NavetStatefulModel = NavetCompatibilityStateCarrier | NavetEntity;
 
 function readDeviceState<TState extends object>(
   device: NavetStatefulModel | null | undefined

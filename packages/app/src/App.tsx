@@ -6,8 +6,8 @@ import {
   toAuthCompatibleSessionMap,
 } from '@navet/app/auth/types';
 import { getRegisteredProviderContract } from '@navet/app/provider-contract-registry';
-import type { NavetProviderSession } from '@navet/app/provider-models';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
+import type { NavetProviderSession } from '@navet/core/provider-contract';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { LoadingSpinner } from './components/primitives/loading-spinner';

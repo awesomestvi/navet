@@ -11,10 +11,10 @@ import { homeAssistantEntityRuntimeService } from './homeassistant-entity-runtim
 import { homeAssistantHistoryFeatureService } from './homeassistant-history-feature.service';
 import { homeAssistantLightFeatureService } from './homeassistant-light-feature.service';
 import { homeAssistantMediaFeatureService } from './homeassistant-media-feature.service';
+import { homeAssistantNativeActionFeatureService } from './homeassistant-native-action-feature.service';
 import { homeAssistantNotificationFeatureService } from './homeassistant-notification-feature.service';
 import { homeAssistantSecurityFeatureService } from './homeassistant-security-feature.service';
 import {
-  callHomeAssistantService,
   getHomeAssistantCameraStreamUrl,
   signHomeAssistantPath,
 } from './homeassistant-service-bridge';
@@ -29,7 +29,6 @@ export function createHomeAssistantRuntimeRegistration(
     contract: registration.contract,
     implementationStatus: 'implemented',
     capabilities: {
-      serviceActions: true,
       pathSigning: true,
       cameraStreams: true,
     },
@@ -49,8 +48,6 @@ export function createHomeAssistantRuntimeRegistration(
       notifications: true,
       tasks: true,
     },
-    invokeService: async (domain, service, serviceData = {}, target) =>
-      callHomeAssistantService(domain, service, serviceData, target),
     signPath: async (path, expiresSeconds) => {
       const signed = await signHomeAssistantPath(path, expiresSeconds);
       return signed.path;
@@ -71,6 +68,7 @@ export function createHomeAssistantRuntimeRegistration(
     historyFeatureService: homeAssistantHistoryFeatureService,
     lightFeatureService: homeAssistantLightFeatureService,
     mediaFeatureService: homeAssistantMediaFeatureService,
+    nativeActionFeatureService: homeAssistantNativeActionFeatureService,
     notificationFeatureService: homeAssistantNotificationFeatureService,
     securityFeatureService: homeAssistantSecurityFeatureService,
     taskFeatureService: homeAssistantTaskFeatureService,

@@ -55,7 +55,6 @@ export function createPlannedProviderRuntimeRegistration(
     contract: registration.contract,
     implementationStatus: 'planned' as const,
     capabilities: {
-      serviceActions: false,
       pathSigning: false,
       cameraStreams: false,
     },

@@ -17,6 +17,10 @@ import type { SwitchCardProps } from './switch-card.types';
 import { SwitchSettingsDialog } from './switch-settings-dialog';
 import { useSwitchCardController } from './use-switch-card-controller';
 
+const CARD_VISUAL_TRANSITION_CLASS =
+  'transition-[background-color,border-color,box-shadow,color,opacity,transform,filter] duration-500';
+const OVERLAY_VISUAL_TRANSITION_CLASS = 'transition-[background,opacity,filter] duration-500';
+
 export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 'room'>) {
   const controller = useSwitchCardController(props);
   const cardShell = getCardShellSurfaceTokens(controller.theme);
@@ -93,7 +97,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
           size="tiny"
           {...controller.cardInteraction.cardProps}
           interactive={!props.isEditMode}
-          className={`transition-all duration-500 ${!props.isEditMode ? 'cursor-pointer' : ''}`}
+          className={`${CARD_VISUAL_TRANSITION_CLASS} ${!props.isEditMode ? 'cursor-pointer' : ''}`}
           frameClassName={frameClassName}
           style={blackActiveSurface?.cardStyle ?? tintSurface.panelStyle}
           disableDefaultSheen
@@ -102,7 +106,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
             <>
               {controller.isOn ? (
                 <div
-                  className={`absolute inset-0 bg-linear-to-br ${controller.cardColors.glow} to-transparent opacity-90 transition-all duration-500`}
+                  className={`absolute inset-0 bg-linear-to-br ${controller.cardColors.glow} to-transparent opacity-90 ${OVERLAY_VISUAL_TRANSITION_CLASS}`}
                 />
               ) : null}
               {tintGlow}
@@ -158,7 +162,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
           size="extra-small"
           {...controller.cardInteraction.cardProps}
           interactive={!props.isEditMode}
-          className={`transition-all duration-500 ${!props.isEditMode ? 'cursor-pointer' : ''}`}
+          className={`${CARD_VISUAL_TRANSITION_CLASS} ${!props.isEditMode ? 'cursor-pointer' : ''}`}
           frameClassName={frameClassName}
           style={blackActiveSurface?.cardStyle ?? tintSurface.panelStyle}
           disableDefaultSheen
@@ -167,7 +171,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
             <>
               {controller.isOn ? (
                 <div
-                  className={`absolute inset-0 bg-linear-to-r ${controller.cardColors.glow} via-transparent to-transparent opacity-90 transition-all duration-500`}
+                  className={`absolute inset-0 bg-linear-to-r ${controller.cardColors.glow} via-transparent to-transparent opacity-90 ${OVERLAY_VISUAL_TRANSITION_CLASS}`}
                 />
               ) : null}
               {tintGlow}
@@ -227,7 +231,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
         size={controller.isExtraSmall ? 'extra-small' : 'small'}
         {...controller.cardInteraction.cardProps}
         interactive={!props.isEditMode}
-        className={`transition-all duration-500 ${!props.isEditMode ? 'cursor-pointer' : ''}`}
+        className={`${CARD_VISUAL_TRANSITION_CLASS} ${!props.isEditMode ? 'cursor-pointer' : ''}`}
         frameClassName={frameClassName}
         style={blackActiveSurface?.cardStyle ?? tintSurface.panelStyle}
         disableDefaultSheen
@@ -236,7 +240,7 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
           <>
             {controller.isOn && (
               <div
-                className={`absolute inset-0 bg-linear-to-br ${controller.cardColors.glow} to-transparent transition-all duration-500`}
+                className={`absolute inset-0 bg-linear-to-br ${controller.cardColors.glow} to-transparent ${OVERLAY_VISUAL_TRANSITION_CLASS}`}
               />
             )}
             {tintGlow}

@@ -12,7 +12,6 @@ export function createOpenHABRuntimeRegistration(
     contract: registration.contract,
     implementationStatus: 'implemented',
     capabilities: {
-      serviceActions: false,
       pathSigning: false,
       cameraStreams: false,
     },

@@ -1,4 +1,3 @@
-import type { IntegrationServiceTarget } from './integration-service-target';
 import type { NavetProviderContract, SmartHomeProviderAdapter } from './provider-contract';
 import type { PlatformCameraStream, PlatformCameraStreamType } from './provider-feature-models';
 import type {
@@ -11,6 +10,7 @@ import type {
   ProviderHistoryFeatureService,
   ProviderLightFeatureService,
   ProviderMediaFeatureService,
+  ProviderNativeActionFeatureService,
   ProviderNotificationFeatureService,
   ProviderSecurityFeatureService,
   ProviderTaskFeatureService,
@@ -22,8 +22,11 @@ export interface ProviderContractRegistration {
   providerContractAdapter: SmartHomeProviderAdapter;
 }
 
+export interface ProviderPackageRegistration extends ProviderContractRegistration {
+  runtimeRegistration: IntegrationProviderRuntimeRegistration;
+}
+
 export interface IntegrationProviderCapabilities {
-  serviceActions: boolean;
   pathSigning: boolean;
   cameraStreams: boolean;
 }
@@ -57,12 +60,6 @@ export interface IntegrationProviderRuntimeRegistration {
   implementationStatus: IntegrationProviderImplementationStatus;
   capabilities: IntegrationProviderCapabilities;
   featureMatrix: IntegrationProviderFeatureMatrix;
-  invokeService?: (
-    domain: string,
-    service: string,
-    serviceData?: Record<string, unknown>,
-    target?: IntegrationServiceTarget
-  ) => Promise<void>;
   signPath?: (path: string, expiresSeconds?: number) => Promise<string>;
   getCameraStream?: (
     entityId: string,
@@ -77,6 +74,7 @@ export interface IntegrationProviderRuntimeRegistration {
   historyFeatureService?: ProviderHistoryFeatureService;
   lightFeatureService?: ProviderLightFeatureService;
   mediaFeatureService?: ProviderMediaFeatureService;
+  nativeActionFeatureService?: ProviderNativeActionFeatureService;
   notificationFeatureService?: ProviderNotificationFeatureService;
   securityFeatureService?: ProviderSecurityFeatureService;
   taskFeatureService?: ProviderTaskFeatureService;

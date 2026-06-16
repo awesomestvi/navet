@@ -282,6 +282,41 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().keepDeviceAwake).toBe(true);
   });
 
+  it('rehydrates low effects quality from persisted navet settings', async () => {
+    localStorage.setItem(
+      STORE_STORAGE_KEYS.settings,
+      JSON.stringify({
+        state: {
+          effectsQuality: 'low',
+        },
+        version: 0,
+      })
+    );
+
+    await useSettingsStore.persist.rehydrate();
+
+    expect(useSettingsStore.getState().effectsQuality).toBe('low');
+    expect(useSettingsStore.getState().lowPowerMode).toBe(false);
+  });
+
+  it('preserves high requested quality while rehydrating low-power mode from persisted navet settings', async () => {
+    localStorage.setItem(
+      STORE_STORAGE_KEYS.settings,
+      JSON.stringify({
+        state: {
+          effectsQuality: 'high',
+          lowPowerMode: true,
+        },
+        version: 0,
+      })
+    );
+
+    await useSettingsStore.persist.rehydrate();
+
+    expect(useSettingsStore.getState().effectsQuality).toBe('high');
+    expect(useSettingsStore.getState().lowPowerMode).toBe(true);
+  });
+
   it('rehydrates valid per-camera view modes only', async () => {
     localStorage.removeItem(STORE_STORAGE_KEYS.settings);
     localStorage.setItem(

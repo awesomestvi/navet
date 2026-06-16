@@ -3,6 +3,7 @@ import { BaseCard, RoundControlButton } from '@navet/app/components/primitives';
 import { type CardSize, isCompactCardSize } from '@navet/app/components/shared/card-size-selector';
 import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
 import { useAreaRooms, useI18n, useTheme } from '@navet/app/hooks';
+import { useDeferredVisibility } from '@navet/app/hooks/use-deferred-visibility';
 import { ChevronLeft, ChevronRight, ImageIcon, Settings2, Shuffle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { PhotoFrameImage } from './photo-frame-image';
@@ -59,6 +60,10 @@ export function PhotoFrameWidget({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { roomValue, roomLabel, roomOptions } = useDashboardWidgetRoomOptions(room, rooms);
   const isCompact = isCompactCardSize(size);
+  const { ref: viewportRef, isVisible } = useDeferredVisibility<HTMLDivElement>({
+    initiallyVisible: false,
+    rootMargin: '180px 0px',
+  });
   const resolvedSourceMode = resolvePhotoFrameSourceMode(sourceMode, mediaSourceId);
   const { activePhotoImages, hasCustomPhotos } = usePhotoFrameSources({
     sourceMode: resolvedSourceMode,
@@ -110,7 +115,7 @@ export function PhotoFrameWidget({
   }, [photoCount]);
 
   useEffect(() => {
-    if (!shuffleEnabled || photoCount <= 1) {
+    if (!shuffleEnabled || photoCount <= 1 || !isVisible) {
       return;
     }
 
@@ -119,7 +124,7 @@ export function PhotoFrameWidget({
     }, PHOTO_SHUFFLE_INTERVAL_MS);
 
     return () => window.clearInterval(intervalId);
-  }, [jumpToRandomPhoto, photoCount, shuffleEnabled]);
+  }, [isVisible, jumpToRandomPhoto, photoCount, shuffleEnabled]);
 
   useEffect(() => {
     if (currentIndex > photoCount - 1) {
@@ -187,7 +192,7 @@ export function PhotoFrameWidget({
             ) : null}
           </div>
         ) : null}
-        <div className="group relative flex-1 overflow-hidden rounded-[inherit]">
+        <div ref={viewportRef} className="group relative flex-1 overflow-hidden rounded-[inherit]">
           {currentPhotoImage ? (
             <picture>
               {currentPhotoImage?.sources?.map((source) => (

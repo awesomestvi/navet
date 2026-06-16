@@ -22,7 +22,6 @@ export type IntegrationProviderAdapter = IntegrationProviderAdapterBase &
   IntegrationProviderRuntimeRegistration;
 
 const CAPABILITY_MESSAGES: Record<IntegrationProviderCapability, string> = {
-  serviceActions: 'Service actions are not implemented yet',
   pathSigning: 'Path signing is not implemented yet',
   cameraStreams: 'Camera streams are not implemented yet',
 };

@@ -4,16 +4,22 @@ import path from 'node:path';
 
 const ROOT = process.cwd();
 const PACKAGE_SRC_REEXPORT_PATTERN = /^export\s+\*\s+from ['"](?:\.\.\/)+(?:src)\//m;
+const APP_PACKAGE_SRC_IMPORT_PATTERN =
+  /from ['"][^'"]*(?:\.\.\/)+(?:packages\/[^'"]+\/src(?:\/[^'"]*)?)['"]/;
 
-const GUARDED_DIRS = [
-  'packages/core/src',
+const SHARED_UI_DIRS = [
   'packages/ui/src',
   'packages/app/src/components/primitives',
   'packages/app/src/components/patterns',
   'packages/app/src/components/shared',
   'packages/app/src/components/system',
-  'packages/app/src/features/lighting/components/light-card',
   'packages/app/src/ui-kit',
+  'packages/app/src/features/lighting/components/light-card',
+];
+
+const GUARDED_DIRS = [
+  'packages/core/src',
+  ...SHARED_UI_DIRS,
   'packages/core/src',
 ];
 
@@ -58,6 +64,66 @@ const FORBIDDEN_PATTERNS = [
   },
 ];
 
+const SHARED_UI_DRIFT_PATTERNS = [
+  {
+    pattern: /from ['"]@navet\/app\/provider-models['"]/,
+    message: 'shared and provider-neutral layers must not import compatibility-first app models',
+  },
+  {
+    pattern: /from ['"][^'"]*integration-native-action\.service['"]/,
+    message: 'shared and provider-neutral layers must not dispatch provider-native actions',
+  },
+  {
+    pattern: /from ['"][^'"]*button-widget-security['"]/,
+    message:
+      'shared and provider-neutral layers must not depend on button-widget raw service parsing helpers',
+  },
+  {
+    pattern: /\btype:\s*['"]service['"]/,
+    message: 'shared and provider-neutral layers must not introduce raw service commands',
+  },
+];
+
+const SERVICE_ESCAPE_HATCH_ALLOWLIST = new Set([
+  'packages/app/src/features/climate/components/humidifier-card/index.tsx',
+  'packages/app/src/features/climate/components/hvac-settings-dialog/index.tsx',
+  'packages/app/src/features/dashboard/components/widgets/button-widget.tsx',
+  'packages/app/src/features/dashboard/utils/button-widget-security.ts',
+  'packages/app/src/features/lighting/components/fan-card/index.tsx',
+  'packages/app/src/features/lighting/components/use-switch-toggle-action.ts',
+  'packages/app/src/services/integration-native-action.service.ts',
+  'packages/app/src/utils/dashboard-config.ts',
+]);
+
+const RAW_SERVICE_CALL_IMPORT_ALLOWLIST = new Set([
+  'packages/app/src/features/climate/components/humidifier-card/index.tsx',
+  'packages/app/src/features/climate/components/hvac-settings-dialog/index.tsx',
+  'packages/app/src/features/dashboard/components/widgets/button-widget.tsx',
+  'packages/app/src/features/lighting/components/fan-card/index.tsx',
+  'packages/app/src/features/lighting/components/use-switch-toggle-action.ts',
+  'packages/app/src/services/integration-native-action.service.ts',
+]);
+
+const APP_PROVIDER_DEEP_IMPORT_ALLOWLIST = new Set([
+  'packages/app/src/integration-camera-runtime.service.ts',
+  'packages/app/src/services/integration-camera-runtime.service.ts',
+  'packages/app/src/types/homey.ts',
+  'packages/app/src/types/openhab.ts',
+]);
+
+const COMPATIBILITY_MODEL_ALLOWLIST = new Set([
+  'packages/app/src/App.tsx',
+  'packages/app/src/components/layout/mobile-header-actions.ts',
+  'packages/app/src/components/layout/mobile-layout-helpers.ts',
+  'packages/app/src/components/layout/room-order-dialog.tsx',
+  'packages/app/src/core/navet-device-state.ts',
+  'packages/app/src/platform/provider-room-management.ts',
+  'packages/app/src/provider-contract.ts',
+  'packages/app/src/stores/integration-models.ts',
+  'packages/app/src/stores/integration-store.ts',
+  'packages/app/src/utils/provider-rooms.ts',
+]);
+
 const TARGETED_GUARDS = [
   {
     paths: [
@@ -67,7 +133,6 @@ const TARGETED_GUARDS = [
       'packages/provider-smartthings/src/smartthings-adapter.ts',
       'packages/provider-smartthings/src/smartthings-runtime-registration.ts',
       'packages/provider-smartthings/src/planned-provider-support.ts',
-      'packages/app/src/core/provider-snapshot-builders.ts',
       'packages/app/src/features/climate/components/hvac-card/use-hvac-card-controller.ts',
       'packages/app/src/features/climate/components/hvac-settings-dialog/index.tsx',
       'packages/app/src/features/auth/login-page.tsx',
@@ -385,6 +450,74 @@ for (const dir of GUARDED_DIRS) {
       if (pattern.test(source)) {
         violations.push(`${relativePath}: ${message}`);
       }
+    }
+  }
+}
+
+for (const dir of SHARED_UI_DIRS) {
+  for (const relativePath of walk(dir)) {
+    const source = fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
+
+    for (const { pattern, message } of SHARED_UI_DRIFT_PATTERNS) {
+      if (pattern.test(source)) {
+        violations.push(`${relativePath}: ${message}`);
+      }
+    }
+  }
+}
+
+for (const relativePath of walk('packages/app/src')) {
+  const source = fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
+
+  const usesServiceEscapeHatch =
+    /invokeIntegrationNativeAction\(|parseButtonServiceCall\(/.test(source) ||
+    /\btype:\s*['"]service['"]/.test(source);
+  if (usesServiceEscapeHatch && !SERVICE_ESCAPE_HATCH_ALLOWLIST.has(relativePath)) {
+    violations.push(
+      `${relativePath}: new app files must not introduce additional raw provider service escape hatches outside the temporary allowlist`
+    );
+  }
+
+  const usesCompatibilityModels =
+    /from ['"]@navet\/app\/provider-models['"]/.test(source) ||
+    /\bNavetDevice\b/.test(source) ||
+    /\bNavetRoomDescriptor\b/.test(source) ||
+    /\bNavetProviderSnapshot\b/.test(source);
+  if (usesCompatibilityModels && !COMPATIBILITY_MODEL_ALLOWLIST.has(relativePath)) {
+    violations.push(
+      `${relativePath}: new app files must not introduce additional compatibility-model dependencies outside the temporary allowlist`
+    );
+  }
+
+  if (
+    /from ['"][^'"]*integration-native-action\.service['"]/.test(source) &&
+    !RAW_SERVICE_CALL_IMPORT_ALLOWLIST.has(relativePath)
+  ) {
+    violations.push(
+      `${relativePath}: provider-native action imports are restricted to explicit app-owned compatibility seams`
+    );
+  }
+
+  const providerDeepImports = source.match(
+    /from ['"]@navet\/provider-(homeassistant|homey|openhab|hubitat|smartthings)\/[^'"]+['"]/g
+  );
+  if (providerDeepImports && !APP_PROVIDER_DEEP_IMPORT_ALLOWLIST.has(relativePath)) {
+    for (const providerDeepImport of providerDeepImports) {
+      violations.push(
+        `${relativePath}: app code must not import deep provider internals (${providerDeepImport}); use the provider package entry surface instead`
+      );
+    }
+  }
+}
+
+for (const dir of ['apps/demo/src', 'apps/standalone/src']) {
+  for (const relativePath of walk(dir)) {
+    const source = fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
+
+    if (APP_PACKAGE_SRC_IMPORT_PATTERN.test(source)) {
+      violations.push(
+        `${relativePath}: app host entry files must import package entry surfaces instead of packages/*/src paths`
+      );
     }
   }
 }

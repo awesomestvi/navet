@@ -23,6 +23,7 @@ export function useMediaPlaybackProgress({
   initialPositionUpdatedAt,
   setElapsedSeconds,
 }: UseMediaPlaybackProgressParams) {
+  const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const performanceProfile = resolveDashboardPerformanceProfile({
@@ -31,6 +32,7 @@ export function useMediaPlaybackProgress({
     effectsQuality,
     isEditMode: false,
     lowPowerMode,
+    reducedEffectsEnabled: disableAnimations || lowPowerMode,
     visibleCardCount: 1,
     visibleDevices: [],
   });
