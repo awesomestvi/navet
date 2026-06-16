@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.6
+
+- Updated Navet to `0.7.6`
+- Added custom dashboard extensions, including sidebar links for more tailored navigation
+- Improved the add-card dialog with denser browsing and pill-based navigation for faster dashboard editing
+- Improved media card speaker grouping for cleaner multi-speaker control flows
+- Improved framerates on low-energy devices when using `Low` visual settings
+
 ## 0.7.5
 
 - Updated Navet to `0.7.5`

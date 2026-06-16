@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.6 - 2026-06-16
+
+## New
+
+- Dashboards now support custom extensions, including configurable sidebar links for more tailored navigation.
+
+## Improved
+
+- The add-card dialog now uses a denser, pill-driven browsing flow that makes dashboard editing faster on larger card libraries.
+- Media cards now handle speaker grouping more cleanly for better multi-speaker control flows.
+- Low-energy devices now get smoother framerates when using `Low` visual settings.
+
 ## 0.7.5 - 2026-06-14
 
 ## Fixed
