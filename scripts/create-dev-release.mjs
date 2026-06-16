@@ -4,16 +4,19 @@ import {
   buildDevAddonVersion,
   fail,
   getPackageVersion,
+  updateAddonVersion,
 } from './release-surfaces.mjs';
-import { repoRoot } from './repo-paths.mjs';
+import { homeAssistantPaths, repoRoot } from './repo-paths.mjs';
 
 function runGit(args, options = {}) {
-  return execFileSync('git', args, {
+  const result = execFileSync('git', args, {
     cwd: repoRoot,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
     ...options,
-  }).trim();
+  });
+
+  return typeof result === 'string' ? result.trim() : '';
 }
 
 function gitSucceeds(args) {
@@ -84,6 +87,30 @@ function ensureMainBranchForPush() {
   }
 }
 
+function ensureMainBranch() {
+  const currentBranch = runGit(['branch', '--show-current']);
+  if (currentBranch !== 'main') {
+    throw new Error(
+      `Navet Dev publish must run from the main branch. Current branch: ${currentBranch || '(detached HEAD)'}`
+    );
+  }
+}
+
+function stageMetadataCommit(devVersion) {
+  updateAddonVersion(devVersion, `${homeAssistantPaths.addonNavetDev}/config.yaml`);
+  runGit(['add', 'platform/home-assistant/addons/navet-dev/config.yaml']);
+
+  if (gitSucceeds(['diff', '--cached', '--quiet', '--', 'platform/home-assistant/addons/navet-dev/config.yaml'])) {
+    throw new Error(
+      `Expected Navet Dev metadata to change for ${devVersion}, but no staged diff was created.`
+    );
+  }
+
+  runGit(['commit', '-m', `chore(release): publish navet dev ${devVersion}`], {
+    stdio: 'inherit',
+  });
+}
+
 function createTag(tagName) {
   if (gitSucceeds(['rev-parse', '-q', '--verify', `refs/tags/${tagName}`])) {
     throw new Error(`Tag already exists: ${tagName}`);
@@ -93,6 +120,11 @@ function createTag(tagName) {
 }
 
 function pushRelease(remote, tagName) {
+  execFileSync('git', ['push', remote, 'HEAD:main'], {
+    cwd: repoRoot,
+    stdio: 'inherit',
+  });
+
   execFileSync('git', ['push', remote, tagName], {
     cwd: repoRoot,
     stdio: 'inherit',
@@ -103,6 +135,7 @@ try {
   const options = parseArgs(process.argv.slice(2));
 
   ensureNoUnrelatedStagedChanges();
+  ensureMainBranch();
   if (options.push) {
     ensureMainBranchForPush();
   }
@@ -111,6 +144,7 @@ try {
   const devVersion = buildDevAddonVersion(packageVersion);
   const tagName = `navet-dev-${devVersion}`;
 
+  stageMetadataCommit(devVersion);
   createTag(tagName);
 
   if (options.push) {
@@ -120,11 +154,11 @@ try {
   process.stdout.write(
     [
       `Prepared Navet Dev release ${devVersion}.`,
-      `Reused the current HEAD without creating a release commit.`,
+      `Created metadata commit on main for Home Assistant add-on discovery.`,
       `Created tag: ${tagName}`,
       options.push
-        ? `Pushed ${tagName} to ${options.remote}.`
-        : `Next: git push ${options.remote} ${tagName}`,
+        ? `Pushed metadata commit and ${tagName} to ${options.remote}.`
+        : `Next: git push ${options.remote} HEAD:main && git push ${options.remote} ${tagName}`,
     ].join('\n') + '\n'
   );
 } catch (error) {

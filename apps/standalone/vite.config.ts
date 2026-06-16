@@ -1860,6 +1860,9 @@ export default defineConfig(({ mode }) => {
             ],
           },
           workbox: {
+            // The app shell is still a single large startup chunk under current Rolldown splitting.
+            // Keep it precacheable while the chunk layout is refined incrementally.
+            maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
             navigateFallback: './index.html',
             navigateFallbackDenylist: [
               /^\/__navet_auth__\//,

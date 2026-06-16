@@ -14,7 +14,7 @@ const demoLibraryCards = [
 ];
 
 describe('AddCardDialogContainer', () => {
-  it('uses the card-dialog header pattern with the current room chip', () => {
+  it('renders the add card header with interactive pill tabs', () => {
     renderWithProviders(
       <AddCardDialogContainer
         open
@@ -27,8 +27,8 @@ describe('AddCardDialogContainer', () => {
     );
 
     expect(screen.getByText('Add Card')).toBeInTheDocument();
-    expect(screen.getByText('ENTITY LIBRARY')).toBeInTheDocument();
-    expect(screen.getAllByText('Living Room').length).toBeGreaterThan(0);
+    expect(screen.getByText('Cards')).toBeInTheDocument();
+    expect(screen.getByText('Custom card')).toBeInTheDocument();
   });
 
   it('shows the scene template and forwards its preset data when added', () => {
@@ -63,14 +63,12 @@ describe('AddCardDialogContainer', () => {
     );
   });
 
-  it('shows the media stack template and adds it with the selected size', () => {
-    const onAddCard = vi.fn();
-
+  it('hides the media stack template from the custom card chooser', () => {
     renderWithProviders(
       <AddCardDialogContainer
         open
         onClose={() => {}}
-        onAddCard={onAddCard}
+        onAddCard={vi.fn()}
         onAddLibraryCard={() => {}}
         currentRoom="Living Room"
         libraryCards={demoLibraryCards}
@@ -78,15 +76,6 @@ describe('AddCardDialogContainer', () => {
       />
     );
 
-    fireEvent.click(screen.getByText('Media Stack').closest('button') as HTMLButtonElement);
-    fireEvent.click(screen.getByRole('button', { name: /add widget/i }));
-
-    expect(onAddCard).toHaveBeenCalledWith(
-      expect.objectContaining({
-        id: 'media-stack',
-        cardType: 'media-stack',
-      }),
-      'medium'
-    );
+    expect(screen.queryByText('Media Stack')).not.toBeInTheDocument();
   });
 });

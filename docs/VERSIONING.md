@@ -38,7 +38,9 @@ Navet currently uses pre-`1.0` semantic versioning.
 - `package.json` is the canonical app version
 - `packages/app/src/constants/app-version.ts` is the app-facing version surface
 - `CHANGELOG.md` tracks released history
-- immutable Navet Dev versions come from the publish workflow and `navet-dev-*` tag, not from committed add-on metadata
+- immutable Navet Dev versions are promoted by creating and pushing a matching `navet-dev-*` tag
+- Home Assistant supervised detects Navet Dev updates from the committed `platform/home-assistant/addons/navet-dev/config.yaml` metadata on `main`
+- HACS updates remain stable-only and are not part of Navet Dev publishes
 
 ## Release Notes Rule
 

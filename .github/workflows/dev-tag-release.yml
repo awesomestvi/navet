@@ -1,0 +1,233 @@
+name: Publish Navet Dev
+
+on:
+  push:
+    tags:
+      - 'navet-dev-*'
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: dev-release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/navet
+
+jobs:
+  release-context:
+    name: Validate Navet Dev Tag
+    runs-on: ubuntu-latest
+
+    outputs:
+      dev_version: ${{ steps.version.outputs.dev_version }}
+      tag_name: ${{ steps.version.outputs.tag_name }}
+      release_sha: ${{ steps.version.outputs.release_sha }}
+      release_sha_short: ${{ steps.version.outputs.release_sha_short }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Resolve Navet Dev version
+        id: version
+        run: |
+          TAG_NAME="${GITHUB_REF_NAME}"
+          DEV_VERSION="${TAG_NAME#navet-dev-}"
+
+          if [[ "${DEV_VERSION}" == "${TAG_NAME}" ]]; then
+            echo "Navet Dev tag ${TAG_NAME} must start with navet-dev-."
+            exit 1
+          fi
+
+          node scripts/check-dev-release-surfaces.mjs --tag "${TAG_NAME}" --version "${DEV_VERSION}"
+
+          {
+            echo "dev_version=${DEV_VERSION}"
+            echo "tag_name=${TAG_NAME}"
+            echo "release_sha=${GITHUB_SHA}"
+            echo "release_sha_short=${GITHUB_SHA::7}"
+          } >> "$GITHUB_OUTPUT"
+
+  tier-1-release-critical:
+    name: Release Safety Checks
+    needs: release-context
+    uses: ./.github/workflows/provider-platform-validation.yml
+
+  publish-standalone:
+    name: Publish Navet App
+    runs-on: ubuntu-latest
+    needs:
+      - release-context
+      - tier-1-release-critical
+    environment: edge
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Capture build metadata
+        id: metadata
+        run: echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve standalone dev tags
+        id: tags
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          {
+            echo "value<<EOF"
+            echo "$IMAGE:${{ needs.release-context.outputs.dev_version }}"
+            echo "$IMAGE:edge"
+            echo "$IMAGE:dev"
+            echo "$IMAGE:sha-${{ needs.release-context.outputs.release_sha_short }}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push standalone dev-tag image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          cache-from: type=gha,scope=navet-standalone
+          cache-to: type=gha,mode=max,scope=navet-standalone
+          tags: ${{ steps.tags.outputs.value }}
+          build-args: |
+            NAVET_VERSION=${{ needs.release-context.outputs.dev_version }}
+            NAVET_GIT_SHA=${{ needs.release-context.outputs.release_sha }}
+            NAVET_BUILD_DATE=${{ steps.metadata.outputs.build_date }}
+            NAVET_RELEASE_CHANNEL=dev
+            NAVET_BUILD_VERSION=${{ needs.release-context.outputs.dev_version }}
+
+  publish-addon:
+    name: Publish Home Assistant Add-on (${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    needs:
+      - release-context
+      - tier-1-release-critical
+    environment: edge
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, aarch64]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Capture build metadata
+        id: metadata
+        run: echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve add-on build target
+        id: target
+        run: |
+          case "${{ matrix.arch }}" in
+            amd64)
+              echo "platform=linux/amd64" >> "$GITHUB_OUTPUT"
+              echo "build_from=ghcr.io/home-assistant/amd64-base:3.20" >> "$GITHUB_OUTPUT"
+              ;;
+            aarch64)
+              echo "platform=linux/arm64" >> "$GITHUB_OUTPUT"
+              echo "build_from=ghcr.io/home-assistant/aarch64-base:3.20" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unsupported architecture: ${{ matrix.arch }}"
+              exit 1
+              ;;
+          esac
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve add-on dev-tag tags
+        id: tags
+        run: |
+          IMAGE="ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-navet-addon"
+          VERSION="${{ needs.release-context.outputs.dev_version }}"
+          {
+            echo "value<<EOF"
+            echo "$IMAGE:$VERSION"
+            echo "$IMAGE:edge"
+            echo "$IMAGE:dev"
+            echo "$IMAGE:sha-${{ needs.release-context.outputs.release_sha_short }}"
+            echo "EOF"
+            echo "version=$VERSION"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push add-on dev-tag image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./platform/home-assistant/addons/navet/Dockerfile
+          platforms: ${{ steps.target.outputs.platform }}
+          push: true
+          cache-from: type=gha,scope=navet-addon-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=navet-addon-${{ matrix.arch }},ignore-error=true
+          build-args: |
+            BUILD_FROM=${{ steps.target.outputs.build_from }}
+            BUILD_VERSION=${{ steps.tags.outputs.version }}
+            BUILD_ARCH=${{ matrix.arch }}
+            NAVET_GIT_SHA=${{ needs.release-context.outputs.release_sha }}
+            NAVET_BUILD_DATE=${{ steps.metadata.outputs.build_date }}
+            NAVET_RELEASE_CHANNEL=dev
+            NAVET_BUILD_VERSION=${{ steps.tags.outputs.version }}
+          tags: ${{ steps.tags.outputs.value }}
+
+  github-release:
+    name: Create GitHub prerelease
+    runs-on: ubuntu-latest
+    needs:
+      - release-context
+      - publish-standalone
+      - publish-addon
+    environment: edge
+
+    steps:
+      - name: Create GitHub prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.release-context.outputs.tag_name }}
+          name: ${{ needs.release-context.outputs.tag_name }}
+          body: |
+            Navet Dev publish for `${{ needs.release-context.outputs.dev_version }}` from `main`.
+
+            Published artifacts:
+            - standalone app image `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.release-context.outputs.dev_version }}`
+            - Home Assistant add-on images `ghcr.io/${{ github.repository_owner }}/{arch}-navet-addon:${{ needs.release-context.outputs.dev_version }}`
+          prerelease: true
+          generate_release_notes: false

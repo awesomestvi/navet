@@ -101,6 +101,34 @@ Visible but non-blocking:
 
 ### Dev tag publish
 
+Primary local flow:
+
+- push tested changes to `main`
+- run `pnpm release:dev-publish -- --push` locally from `main`
+- let that script create and push the metadata commit plus matching `navet-dev-*` tag
+- let the pushed tag trigger the publish workflow
+
+Tag-triggered publish workflow:
+
+`/.github/workflows/dev-tag-release.yml`
+
+Trigger:
+
+- push a `navet-dev-*` tag
+
+Behavior:
+
+- requires Tier 1 validation
+- validates that the computed Navet Dev version and created tag match
+- publishes immutable standalone dev-tag images for that exact dev version and refreshes the moving standalone `edge` and `dev` aliases
+- publishes immutable add-on dev-tag images for that exact dev version and refreshes the moving add-on `edge` and `dev` aliases
+- creates a GitHub prerelease for the dev tag
+- expected dev version shape: `0.x.y-dev.YYYYMMDDHHMMSS`
+- does not move `latest` or `beta`
+- does not sync HACS or create a custom-panel release artifact
+
+Manual fallback helper:
+
 `/.github/workflows/dev-tag-publish.yml`
 
 Trigger:
@@ -110,15 +138,9 @@ Trigger:
 Behavior:
 
 - requires Tier 1 validation
-- creates the matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` tag from the current `main` SHA
-- validates that the computed Navet Dev version and created tag match
-- publishes immutable standalone dev-tag images for that exact dev version and refreshes the moving standalone `edge` and `dev` aliases
-- publishes immutable add-on dev-tag images for that exact dev version and refreshes the moving add-on `edge` and `dev` aliases
-- creates a GitHub prerelease for the dev tag
-- expected dev version shape: `0.x.y-dev.YYYYMMDDHHMMSS`
-- does not move `latest` or `beta`
-- does not sync HACS or create a custom-panel release artifact
-- does not update `platform/home-assistant/addons/navet-dev/config.yaml` on `main`
+- creates the matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` metadata commit on `main`
+- creates and pushes the matching `navet-dev-*` tag
+- relies on the tag-triggered publish workflow to perform the actual artifact publication
 
 ### Release publish
 
@@ -179,14 +201,16 @@ promotion in phase 1.
 
 Optional immutable Navet Dev publish:
 
-1. Dispatch `/.github/workflows/dev-tag-publish.yml` from `main`.
-2. Let the workflow create the matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` tag from the current
-   `main` SHA and publish the exact dev-tag images and GitHub prerelease without adding a commit.
-3. Use `pnpm release:dev-publish` only as a local fallback if the GitHub workflow cannot be used.
-4. Because this flow does not change `platform/home-assistant/addons/navet-dev/config.yaml` on
-   `main`, Home Assistant repository metadata for `Navet Dev` will not advance on every immutable
-   dev publish. The moving `dev` and `edge` images still refresh for manual installs and direct tag
-   usage.
+1. Push tested changes to `main`.
+2. Run `pnpm release:dev-publish -- --push` from `main`.
+3. Let the script create the matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` tag and matching
+   metadata commit on `main`.
+4. Let the pushed tag trigger `/.github/workflows/dev-tag-release.yml` to publish the exact
+   dev-tag images and GitHub prerelease.
+5. Use `/.github/workflows/dev-tag-publish.yml` only as a fallback helper if you cannot run the
+   local script.
+6. This flow advances `platform/home-assistant/addons/navet-dev/config.yaml` on `main`, so Home
+  Assistant repository metadata for `Navet Dev` moves forward with each immutable dev publish.
 
 ## What Stays Manual
 
@@ -197,4 +221,5 @@ Optional immutable Navet Dev publish:
 - monitoring the automatic `navet-hacs` sync from `main` and tagged releases, and stepping in if that repo rejects a push
 - updating `platform/home-assistant/addons/navet/CHANGELOG.md` for every add-on release
 - final runtime sanity checks for Home Assistant panel and add-on installs
+- choosing when to promote `main` to a new Navet Dev publish by running the local dev-publish flow
 - rollback execution if a bad release escapes

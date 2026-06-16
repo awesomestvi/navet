@@ -42,17 +42,28 @@ Important note:
 
 ## Immutable Navet Dev Flow
 
-1. Dispatch [../../.github/workflows/dev-tag-publish.yml](../../.github/workflows/dev-tag-publish.yml)
-   from `main`.
-2. Let the workflow create the matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` tag from the current
-   `main` SHA and publish the prerelease artifacts.
-3. Use `pnpm release:dev-publish` only as a local fallback when the workflow cannot be used.
+1. Push your tested changes to `main`.
+2. Run `pnpm release:dev-publish -- --push` locally from `main`.
+3. Let the script create the matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` metadata commit and tag,
+   then push both to GitHub.
+4. Let [../../.github/workflows/dev-tag-release.yml](../../.github/workflows/dev-tag-release.yml)
+   publish the prerelease artifacts from the pushed `navet-dev-*` tag.
+
+Fallback:
+
+- dispatch [../../.github/workflows/dev-tag-publish.yml](../../.github/workflows/dev-tag-publish.yml)
+  from `main` if you cannot run the local script
+- the dispatch workflow only creates and pushes the metadata commit plus `navet-dev-*` tag
+- the tag-triggered publish workflow performs the actual artifact publication
 
 Important note:
 
-- `platform/home-assistant/addons/navet-dev/config.yaml` is not the immutable Navet Dev source of
-  truth
 - immutable dev-tag versioning comes from the publish workflow and tag name
+- the local dev-publish script or manual fallback helper updates
+  `platform/home-assistant/addons/navet-dev/config.yaml` on `main` so Home Assistant supervised
+  installs can detect the new version
+- dev publishes refresh Docker `edge` and `dev` plus the supervised `Navet Dev` add-on surface
+- dev publishes do not sync `awesomestvi/navet-hacs` and do not create HACS updates
 
 ## Release Notes
 
@@ -99,6 +110,8 @@ Fallback source:
 - dev tags publish immutable app and add-on images and refresh the moving `edge` and `dev` aliases
 - prerelease tags do not move `latest`
 - stable tags publish the exact tag, moving stable aliases, and `sha-*`
+- stable tags continue to move Docker `latest`; Navet does not publish a separate Docker `stable`
+  alias
 
 ## Related Guidance
 

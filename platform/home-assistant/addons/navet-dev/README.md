@@ -21,7 +21,8 @@ ghcr.io/awesomestvi/{arch}-navet-addon:0.x.y-dev.YYYYMMDDHHMMSS
 Navet Dev release source of truth. Immutable dev publishes use workflow-generated versions in the
 form `0.x.y-dev.YYYYMMDDHHMMSS` and matching `navet-dev-*` tags. Use `pnpm release:dev-version`
 only when you intentionally need to refresh the repository metadata outside that publish flow.
-Each Navet Dev publish refreshes the `dev` and `edge` tags as moving aliases for that same image.
+Each Navet Dev publish refreshes the `dev` and `edge` tags as moving aliases for that same image
+and advances `config.yaml` on `main` so Home Assistant supervised installs see the new version.
 
 If you want an immutable Navet Dev publish, the local helper command is:
 
@@ -35,13 +36,10 @@ It creates the matching tag from the current `HEAD` in this format:
 navet-dev-0.x.y-dev.YYYYMMDDHHMMSS
 ```
 
-That tag triggers a dedicated workflow which publishes exact-version dev images and creates a
-GitHub prerelease while also refreshing the moving `edge` and `dev` aliases. The helper now reuses
-the current `HEAD` without creating a release commit. Add `-- --push` to push the new tag.
-
-Because Home Assistant reads add-on repository metadata from the tracked repo contents, immutable
-Navet Dev publishes do not automatically advance the `Navet Dev` add-on version shown by Home
-Assistant unless `config.yaml` is refreshed separately.
+That tag triggers a dedicated workflow which publishes exact-version dev images, creates the
+matching metadata commit on `main`, and creates a GitHub prerelease while also refreshing the
+moving `edge` and `dev` aliases. The local helper mirrors that behavior. Add `-- --push` to push
+the commit and tag.
 
 If opened outside Ingress through an optional direct port, Navet behaves like the standalone
 runtime and uses OAuth login instead.

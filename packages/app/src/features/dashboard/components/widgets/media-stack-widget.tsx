@@ -3,13 +3,12 @@ import { BaseCard } from '@navet/app/components/primitives';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { getMediaPlayerCapabilities } from '@navet/app/constants/media-player-features';
 import { MediaCard } from '@navet/app/features/media';
-import { MediaDialog } from '@navet/app/features/media/components/media/media-dialog';
 import type { MediaStackIdleBehavior } from '@navet/app/features/media/components/media/media-dialog.types';
 import { useAreaRooms, useDeviceCollectionsByKeys, useI18n } from '@navet/app/hooks';
 import { useDashboardWidgetRoomOptions } from '@navet/app/hooks/use-dashboard-widget-room-options';
 import type { MediaDevice } from '@navet/app/types/device.types';
 import { Radio } from 'lucide-react';
-import { memo, useEffect, useMemo, useState } from 'react';
+import { lazy, memo, Suspense, useEffect, useMemo, useState } from 'react';
 import {
   type MediaStackWidgetData,
   normalizeMediaStackWidgetData,
@@ -44,6 +43,10 @@ function sortPlayers(left: MediaDevice, right: MediaDevice) {
 const noopCardSizeChange = () => {};
 const noop = () => {};
 const EMPTY_CAPABILITIES = getMediaPlayerCapabilities(0);
+const MediaDialog = lazy(async () => {
+  const module = await import('@navet/app/features/media/components/media/media-dialog');
+  return { default: module.MediaDialog };
+});
 
 function createWidgetUpdatePayload(next: {
   entityIds: string[];
@@ -121,47 +124,49 @@ export const MediaStackWidget = memo(function MediaStackWidget({
   }, [onUpdate, openSettingsRequestKey]);
 
   const emptyDialog = (
-    <MediaDialog
-      entityId="media-stack"
-      entityName={t('dashboard.addCard.templates.mediaStack.name')}
-      entityType={t('widgets.common.widget')}
-      title={t('widgets.mediaStack.settings.title')}
-      artist=""
-      isPlaying={false}
-      volume={0}
-      isMuted={false}
-      elapsedSeconds={0}
-      durationSeconds={0}
-      supportsGrouping={false}
-      groupMembers={[]}
-      availableGroupingPlayers={[]}
-      onPrevious={noop}
-      canPreviousTrack={false}
-      onTogglePlay={noop}
-      onNext={noop}
-      canNextTrack={false}
-      shuffleEnabled={false}
-      repeatMode="off"
-      onToggleShuffle={noop}
-      onCycleRepeat={noop}
-      capabilities={EMPTY_CAPABILITIES}
-      sourceList={[]}
-      onSelectSource={noop}
-      soundModeList={[]}
-      onSelectSoundMode={noop}
-      onSeek={noop}
-      onClearPlaylist={noop}
-      onToggleMute={noop}
-      onVolumeChange={noop}
-      onVolumeInteractionStart={noop}
-      onVolumeInteractionEnd={noop}
-      onAttachGroupMember={noop}
-      onDetachGroupMember={noop}
-      isOpen={isDialogOpen}
-      onOpenChange={setIsDialogOpen}
-      mediaStackSettings={mediaStackSettings}
-      initialTab="stack"
-    />
+    <Suspense fallback={null}>
+      <MediaDialog
+        entityId="media-stack"
+        entityName={t('dashboard.addCard.templates.mediaStack.name')}
+        entityType={t('widgets.common.widget')}
+        title={t('widgets.mediaStack.settings.title')}
+        artist=""
+        isPlaying={false}
+        volume={0}
+        isMuted={false}
+        elapsedSeconds={0}
+        durationSeconds={0}
+        supportsGrouping={false}
+        groupMembers={[]}
+        availableGroupingPlayers={[]}
+        onPrevious={noop}
+        canPreviousTrack={false}
+        onTogglePlay={noop}
+        onNext={noop}
+        canNextTrack={false}
+        shuffleEnabled={false}
+        repeatMode="off"
+        onToggleShuffle={noop}
+        onCycleRepeat={noop}
+        capabilities={EMPTY_CAPABILITIES}
+        sourceList={[]}
+        onSelectSource={noop}
+        soundModeList={[]}
+        onSelectSoundMode={noop}
+        onSeek={noop}
+        onClearPlaylist={noop}
+        onToggleMute={noop}
+        onVolumeChange={noop}
+        onVolumeInteractionStart={noop}
+        onVolumeInteractionEnd={noop}
+        onAttachGroupMember={noop}
+        onDetachGroupMember={noop}
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        mediaStackSettings={mediaStackSettings}
+        initialTab="stack"
+      />
+    </Suspense>
   );
 
   if (mediaDevices.length === 0) {

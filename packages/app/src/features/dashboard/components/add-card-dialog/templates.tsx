@@ -1,5 +1,5 @@
 import type { TranslateFn } from '@navet/app/hooks';
-import { Zap as EnergyIcon, Gauge, Radio, Sparkles } from 'lucide-react';
+import { Zap as EnergyIcon, Gauge, Sparkles } from 'lucide-react';
 import type { SVGProps } from 'react';
 import type { ButtonWidgetData } from '../widgets/button-widget';
 import type { CardTemplate } from './types';
@@ -154,15 +154,6 @@ export function createCardTemplates(t: TranslateFn): CardTemplate[] {
       nameKey: 'dashboard.addCard.templates.energyNow.name',
       descriptionKey: 'dashboard.addCard.templates.energyNow.description',
       icon: <EnergyIcon className="w-5 h-5" />,
-      defaultSize: 'medium',
-      supportedSizes: ['small', 'medium', 'large'],
-    },
-    {
-      id: 'media-stack',
-      cardType: 'media-stack',
-      nameKey: 'dashboard.addCard.templates.mediaStack.name',
-      descriptionKey: 'dashboard.addCard.templates.mediaStack.description',
-      icon: <Radio className="w-5 h-5" />,
       defaultSize: 'medium',
       supportedSizes: ['small', 'medium', 'large'],
     },

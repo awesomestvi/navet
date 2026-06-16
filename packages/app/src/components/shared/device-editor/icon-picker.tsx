@@ -1,4 +1,4 @@
-import { Input } from '@navet/app/components/primitives/input';
+import { Input, type InputProps } from '@navet/app/components/primitives/input';
 import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
 import {
   DEFAULT_LIGHT_ICON,
@@ -47,6 +47,7 @@ interface IconPickerProps {
   isLightOn: boolean;
   label?: string;
   accentColor?: string;
+  inputVariant?: InputProps['variant'];
 }
 
 const lightIcons = [
@@ -95,6 +96,7 @@ export const IconPicker = memo(function IconPicker({
   isLightOn,
   label,
   accentColor,
+  inputVariant = 'soft',
 }: IconPickerProps) {
   const { primaryColor } = useTheme();
   const { t } = useI18n();
@@ -111,7 +113,7 @@ export const IconPicker = memo(function IconPicker({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <span
           className={`text-sm font-medium transition-colors duration-500 ${editorSurface.sectionLabelClassName}`}
         >
@@ -129,7 +131,6 @@ export const IconPicker = memo(function IconPicker({
               isLightOn
                 ? {
                     borderColor: `${activeColor}4d`,
-                    boxShadow: `0 0 0 2px ${activeColor}26`,
                   }
                 : undefined
             }
@@ -148,7 +149,7 @@ export const IconPicker = memo(function IconPicker({
           </div>
           <Input
             type="text"
-            variant="soft"
+            variant={inputVariant}
             value={selectedIcon}
             onChange={(e) => onIconChange(e.target.value)}
             placeholder={t('lighting.iconInputPlaceholder')}

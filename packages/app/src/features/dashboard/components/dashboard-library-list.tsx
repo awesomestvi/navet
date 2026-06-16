@@ -3,7 +3,7 @@ import { type LucideIcon, Plus } from 'lucide-react';
 import { memo, useEffect, useRef, useState } from 'react';
 
 const LIST_HEIGHT = 360;
-const ROW_HEIGHT = 84;
+const ROW_HEIGHT = 72;
 const OVERSCAN = 1;
 
 export type DashboardLibraryCard = {
@@ -18,10 +18,18 @@ export type DashboardLibraryCard = {
 const DashboardLibraryRow = memo(function DashboardLibraryRow({
   card,
   surface,
+  accentColor,
+  iconBackground,
+  tileBackground,
+  tileBorder,
   onAdd,
 }: {
   card: DashboardLibraryCard;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
+  accentColor: string;
+  iconBackground: string;
+  tileBackground: string;
+  tileBorder: string;
   onAdd: () => void;
 }) {
   const IconComponent = card.icon;
@@ -30,32 +38,35 @@ const DashboardLibraryRow = memo(function DashboardLibraryRow({
       type="button"
       data-library-interactive="true"
       onClick={onAdd}
-      className={`group flex w-full cursor-pointer items-center gap-3.5 rounded-[18px] border px-3.5 py-3 text-left transition-colors ${surface.border} ${surface.panelMuted} ${surface.hoverBg}`}
+      className={`group flex w-full cursor-pointer items-center gap-3 rounded-[18px] border px-3 py-2.5 text-left transition-colors ${surface.hoverBg}`}
+      style={{
+        backgroundColor: tileBackground,
+        borderColor: tileBorder,
+      }}
     >
       <div
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-        style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+        style={{ backgroundColor: iconBackground }}
       >
         {IconComponent ? (
-          <IconComponent className={`h-4 w-4 ${surface.textMuted}`} aria-hidden="true" />
+          <IconComponent className={`h-3.5 w-3.5 ${surface.textMuted}`} aria-hidden="true" />
         ) : (
           <div className={`h-2 w-2 rounded-full ${surface.textMuted}`} />
         )}
       </div>
       <div className="min-w-0 flex-1">
         <div className={`truncate text-sm font-semibold ${surface.textPrimary}`}>{card.title}</div>
-        <div className={`mt-1.5 truncate text-xs ${surface.textSecondary}`}>
+        <div className={`truncate text-xs ${surface.textSecondary}`}>
           {card.meta} <span aria-hidden="true">•</span> {card.subtitle}
         </div>
       </div>
       <div
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white transition-opacity group-hover:opacity-85"
         style={{
-          borderColor: 'rgba(255,255,255,0.08)',
-          backgroundColor: 'rgba(255,255,255,0.04)',
+          backgroundColor: accentColor,
         }}
       >
-        <Plus className={`h-3.5 w-3.5 ${surface.textMuted}`} />
+        <Plus className="h-3 w-3" />
       </div>
     </button>
   );
@@ -64,12 +75,20 @@ const DashboardLibraryRow = memo(function DashboardLibraryRow({
 export const DashboardLibraryList = memo(function DashboardLibraryList({
   cards,
   surface,
+  accentColor,
+  iconBackground,
+  tileBackground,
+  tileBorder,
   emptyText,
   onAdd,
   height = LIST_HEIGHT,
 }: {
   cards: DashboardLibraryCard[];
   surface: ReturnType<typeof getThemeSurfaceTokens>;
+  accentColor: string;
+  iconBackground: string;
+  tileBackground: string;
+  tileBorder: string;
   emptyText: string;
   onAdd: (cardId: string) => void;
   height?: number;
@@ -122,6 +141,10 @@ export const DashboardLibraryList = memo(function DashboardLibraryList({
                 key={card.id}
                 card={card}
                 surface={surface}
+                accentColor={accentColor}
+                iconBackground={iconBackground}
+                tileBackground={tileBackground}
+                tileBorder={tileBorder}
                 onAdd={() => onAdd(card.id)}
               />
             ))}

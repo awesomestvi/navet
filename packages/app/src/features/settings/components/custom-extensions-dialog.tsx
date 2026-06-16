@@ -266,12 +266,7 @@ export function CustomExtensionsDialog({
               </div>
             </CardDialogSection>
 
-            <CardDialogSection
-              label="Icon"
-              helperText="Choose an icon for this shortcut."
-              helperTextClassName={surface.textMuted}
-              labelClassName={surface.textPrimary}
-            >
+            <CardDialogSection>
               <IconPicker
                 selectedIcon={draft.icon}
                 onIconChange={(iconName) =>
@@ -282,6 +277,7 @@ export function CustomExtensionsDialog({
                 }
                 isLightOn={theme !== 'light'}
                 label="Sidebar icon"
+                inputVariant="default"
               />
             </CardDialogSection>
 
