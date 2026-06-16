@@ -32,6 +32,14 @@ export const LAZY_HTML_PRELOAD_CHUNKS = [
   'settings',
 ] as const
 
+const APP_SHELL_COMPONENT_PATHS = [
+  '/packages/app/src/components/layout/',
+  '/packages/app/src/components/patterns/',
+  '/packages/app/src/components/primitives/',
+  '/packages/app/src/components/system/',
+  '/packages/app/src/components/shared/theme/',
+] as const
+
 export function normalizeModuleId(id: string) {
   return id.split(path.sep).join('/')
 }
@@ -73,23 +81,44 @@ export function getAppChunkName(id: string) {
     return 'entity-card-security'
   }
 
-  if (
-    moduleId.includes('/packages/app/src/components/layout/') ||
-    moduleId.includes('/packages/app/src/components/patterns/') ||
-    moduleId.includes('/packages/app/src/components/primitives/') ||
-    moduleId.includes('/packages/app/src/components/system/') ||
-    moduleId.includes('/packages/app/src/components/shared/theme/') ||
-    moduleId.includes('/packages/app/src/features/auth/') ||
-    moduleId.includes('/packages/app/src/features/habits/') ||
-    moduleId.includes('/packages/app/src/hooks/') ||
-    moduleId.includes('/packages/app/src/i18n/') ||
-    moduleId.includes('/packages/app/src/stores/') ||
-    moduleId.includes('/packages/app/src/platform/') ||
-    moduleId.includes('/packages/app/src/services/') ||
-    moduleId.includes('/packages/app/src/auth/') ||
-    moduleId.includes('/packages/app/src/utils/')
-  ) {
+  if (APP_SHELL_COMPONENT_PATHS.some((segment) => moduleId.includes(segment))) {
+    return 'ui-shell'
+  }
+
+  if (moduleId.includes('/packages/app/src/features/auth/')) {
+    return 'auth-flow'
+  }
+
+  if (moduleId.includes('/packages/app/src/features/habits/')) {
     return 'app-shell'
+  }
+
+  if (moduleId.includes('/packages/app/src/hooks/')) {
+    return 'hooks-shell'
+  }
+
+  if (moduleId.includes('/packages/app/src/i18n/')) {
+    return 'i18n-shell'
+  }
+
+  if (moduleId.includes('/packages/app/src/stores/')) {
+    return 'stores-shell'
+  }
+
+  if (moduleId.includes('/packages/app/src/platform/')) {
+    return 'platform-shell'
+  }
+
+  if (moduleId.includes('/packages/app/src/services/')) {
+    return 'services-shell'
+  }
+
+  if (moduleId.includes('/packages/app/src/auth/')) {
+    return 'auth-shell'
+  }
+
+  if (moduleId.includes('/packages/app/src/utils/')) {
+    return 'utils-shell'
   }
 
   if (
@@ -213,6 +242,10 @@ export function getAppChunkName(id: string) {
 
   if (moduleId.includes('/packages/app/src/features/dashboard/components/home-dashboard-overview-edit')) {
     return 'home-dashboard-overview-edit'
+  }
+
+  if (moduleId.includes('/packages/app/src/features/dashboard/')) {
+    return 'dashboard-core'
   }
 
   if (

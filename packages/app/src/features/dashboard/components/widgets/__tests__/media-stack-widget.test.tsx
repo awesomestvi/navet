@@ -99,21 +99,21 @@ describe('MediaStackWidget', () => {
     mediaCardMock.mockReset();
   });
 
-  it('shows an empty state until media players are selected', () => {
+  it('shows an empty state until media players are selected', async () => {
     renderWithProviders(<MediaStackWidget onUpdate={vi.fn()} />);
 
     expect(screen.getByText('No media players selected')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Media players' }));
-    expect(screen.getByText('Media stack')).toBeInTheDocument();
+    expect(await screen.findByText('Media stack')).toBeInTheDocument();
   });
 
-  it('saves player selection from settings', () => {
+  it('saves player selection from settings', async () => {
     const onUpdate = vi.fn();
 
     renderWithProviders(<MediaStackWidget onUpdate={onUpdate} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Media players' }));
-    fireEvent.click(screen.getByText('Living Room TV'));
+    fireEvent.click(await screen.findByText('Living Room TV'));
 
     expect(onUpdate).toHaveBeenCalledWith({
       entityIds: ['media_player.living_room_tv'],
