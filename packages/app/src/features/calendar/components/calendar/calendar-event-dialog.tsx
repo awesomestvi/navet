@@ -1,9 +1,4 @@
-import {
-  DialogFooter,
-  DialogShell,
-  SettingsDialogDoneButton,
-  settingsDialogContentClass,
-} from '@navet/app/components/primitives/dialog-shell';
+import { BaseCardDialog, Button } from '@navet/app/components/primitives';
 import { DialogHeader } from '@navet/app/components/shared/device-editor';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n } from '@navet/app/hooks';
@@ -34,11 +29,13 @@ export function CalendarEventDialog({
   }
 
   return (
-    <DialogShell
+    <BaseCardDialog
+      variant="modal"
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      overlayClassName={surface.dialogBackdrop}
-      contentClassName={settingsDialogContentClass(surface, { padding: true })}
+      title={event.title}
+      description={formatCalendarEventTimeLabel(event, t('calendar.allDay'))}
+      theme={theme}
     >
       <DialogHeader
         title={event.title}
@@ -101,10 +98,12 @@ export function CalendarEventDialog({
           )}
         </div>
 
-        <DialogFooter>
-          <SettingsDialogDoneButton label={t('common.done')} surface={surface} />
-        </DialogFooter>
+        <div className="mt-6 flex justify-end">
+          <Button variant="soft" size="small" onClick={() => onOpenChange(false)}>
+            {t('common.done')}
+          </Button>
+        </div>
       </div>
-    </DialogShell>
+    </BaseCardDialog>
   );
 }

@@ -13,7 +13,7 @@ function MapStoryFrame({ size }: MapStoryArgs) {
 }
 
 function MapEmptyStoryFrame({ size }: MapStoryArgs) {
-  return <CustomWidgetStoryFrame card={buildCustomCard('map', size)} />;
+  return <CustomWidgetStoryFrame card={buildCustomCard('map', size, { markers: [] })} />;
 }
 
 const meta = {

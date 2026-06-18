@@ -1039,6 +1039,7 @@ export const itMessages = {
   'sensors.category.other': 'Altro',
   'vacuum.subtitle': 'Aspirapolvere',
   'vacuum.status.cleaning': 'Pulizia',
+  'lawnMower.status.mowing': 'Taglio',
   'vacuum.status.mopping': 'Lavaggio',
   'vacuum.status.drying': 'Asciugatura',
   'vacuum.status.returning': 'Ritorno',

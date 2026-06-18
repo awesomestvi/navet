@@ -1,4 +1,5 @@
 import { Button } from '@navet/app/components/primitives/button';
+import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react';
@@ -6,6 +7,7 @@ import { useState } from 'react';
 import { CalendarSettingsDialog } from './calendar-settings-dialog';
 
 function CalendarSettingsDialogStory() {
+  const { theme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [tintColor, setTintColor] = useState<string | undefined>('#6366f1');
@@ -25,7 +27,7 @@ function CalendarSettingsDialogStory() {
         entityId="calendar.family"
         isOpen={isOpen}
         onOpenChange={setIsOpen}
-        theme="glass"
+        theme={theme}
         title="Family Calendar"
         calendars={[
           { id: 'calendar.family', name: 'Family', room: 'Home', color: 'bg-indigo-400' },

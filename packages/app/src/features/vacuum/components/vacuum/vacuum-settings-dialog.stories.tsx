@@ -1,19 +1,26 @@
 import { Button } from '@navet/app/components/primitives/button';
+import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { VacuumSettingsDialog } from './vacuum-settings-dialog';
 
 function VacuumSettingsDialogStory(
   args: Omit<ComponentProps<typeof VacuumSettingsDialog>, 'isOpen' | 'onClose'>
 ) {
+  const { accentColor } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [tintColor, setTintColor] = useState(args.tintColor);
+  const resolvedAccentColor = args.accentColorValue ?? accentColor;
+
+  useEffect(() => {
+    setTintColor(args.tintColor);
+  }, [args.tintColor]);
 
   return (
-    <SettingsDialogStoryFrame parentCardClassName="bg-[radial-gradient(circle_at_14%_12%,rgba(56,189,248,0.18),transparent_30%),radial-gradient(circle_at_82%_18%,rgba(59,130,246,0.12),transparent_26%),linear-gradient(155deg,rgba(14,165,233,0.05),transparent_60%)]">
+    <SettingsDialogStoryFrame parentCardClassName="bg-[linear-gradient(180deg,rgba(24,24,27,0.98),rgba(10,10,12,0.98))]">
       <div className="relative flex items-start justify-center p-6">
         <Button variant="secondary" onClick={() => setIsOpen(true)}>
           Open vacuum dialog
@@ -23,6 +30,7 @@ function VacuumSettingsDialogStory(
         {...args}
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
+        accentColorValue={resolvedAccentColor}
         tintColor={tintColor}
         onTintColorChange={setTintColor}
       />
@@ -44,8 +52,8 @@ const meta = {
     onSetFanSpeed: () => {},
     name: 'Robo Cleaner',
     room: 'Whole Home',
-    theme: 'glass',
-    accentColorValue: '#22d3ee',
+    theme: 'dark',
+    accentColorValue: undefined,
     currentStatus: 'cleaning',
     fanSpeed: 'Standard',
     fanSpeeds: ['Quiet', 'Standard', 'Max'],
@@ -76,7 +84,7 @@ const meta = {
         { id: 'bedroom', label: 'Bedroom' },
       ],
     },
-    tintColor: '#22d3ee',
+    tintColor: undefined,
     onTintColorChange: () => {},
   },
 } satisfies Meta<typeof VacuumSettingsDialogStory>;

@@ -1,19 +1,68 @@
+import { CardEmptyState } from '@navet/app/components/patterns';
+import { BaseCard } from '@navet/app/components/primitives';
 import {
   type CardSize,
   getCardSizeOverlayStyle,
 } from '@navet/app/components/shared/card-size-selector';
+import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import type { Meta, StoryObj } from '@storybook/react';
-import { EnergyNowDashboardWidget } from './widgets/energy-now-dashboard-widget';
+import { Zap } from 'lucide-react';
+import { EnergyNowCardView } from '../../energy/components/widgets/energy-now-card-view';
 
 type EnergyNowStoryArgs = {
   size: Extract<CardSize, 'small' | 'medium' | 'large'>;
 };
 
+const STORY_TREND = [
+  { label: '06:00', value: 310, timestampMs: 1 },
+  { label: '09:00', value: 420, timestampMs: 2 },
+  { label: '12:00', value: 560, timestampMs: 3 },
+  { label: '15:00', value: 690, timestampMs: 4 },
+  { label: '18:00', value: 510, timestampMs: 5 },
+  { label: '21:00', value: 380, timestampMs: 6 },
+] as const;
+
 function EnergyNowStoryFrame({ size }: EnergyNowStoryArgs) {
+  const { accentColor } = useTheme();
+
   return (
     <div style={getCardSizeOverlayStyle(size)}>
-      <EnergyNowDashboardWidget data={{ selectedSourceId: 'sensor.home_energy_now' }} size={size} />
+      <EnergyNowCardView
+        title="Energy today"
+        subtitle="Widget"
+        currentLoadW={690}
+        todayUsageKWh={8.4}
+        trend={[...STORY_TREND]}
+        accentColor={accentColor}
+        size={size}
+      />
+    </div>
+  );
+}
+
+function EnergyNowEmptyStateStory({ size }: EnergyNowStoryArgs) {
+  const { accentColor } = useTheme();
+
+  return (
+    <div style={getCardSizeOverlayStyle(size)}>
+      <BaseCard
+        size={size}
+        fullBleed
+        className="transition-all duration-500"
+        contentClassName="h-full"
+      >
+        <div className="relative z-[2] h-full p-4">
+          <CardEmptyState
+            title="Energy Now"
+            description="Select an energy source to populate this widget."
+            icon={Zap}
+            actionLabel="Energy entities"
+            size={size}
+            accentColor={accentColor}
+          />
+        </div>
+      </BaseCard>
     </div>
   );
 }
@@ -80,6 +129,7 @@ export const Large: Story = {
 };
 
 export const EmptyState: Story = {
+  render: (args) => <EnergyNowEmptyStateStory {...args} />,
   args: {
     size: 'medium',
   },

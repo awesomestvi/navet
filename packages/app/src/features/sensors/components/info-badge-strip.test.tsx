@@ -4,9 +4,9 @@ import { resetAppStores } from '@navet/app/test/store-reset';
 import { screen } from '@testing-library/react';
 import { Speaker } from 'lucide-react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { InfoBadgeStrip } from './info-badge-strip';
+import { SummaryBar } from './info-badge-strip';
 
-describe('InfoBadgeStrip', () => {
+describe('SummaryBar', () => {
   beforeEach(async () => {
     await resetAppStores();
   });
@@ -15,7 +15,7 @@ describe('InfoBadgeStrip', () => {
     useThemeStore.getState().setTheme('light');
 
     renderWithProviders(
-      <InfoBadgeStrip
+      <SummaryBar
         items={[
           {
             id: 'media',

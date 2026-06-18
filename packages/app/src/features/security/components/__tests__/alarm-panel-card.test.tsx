@@ -235,4 +235,22 @@ describe('SecurityPanelCard', () => {
     expect(screen.getByRole('button', { name: 'Arm Away' }).className).toContain('justify-start');
     expect(screen.getByRole('button', { name: 'Arm Away' }).className).toContain('rounded-full');
   });
+
+  it('uses the shared unavailable overlay instead of an inline warning message', () => {
+    renderWithProviders(
+      <SecurityPanelCard
+        alarms={[
+          {
+            ...singleAlarm,
+            state: 'unavailable',
+            availability: 'unavailable',
+          },
+        ]}
+      />
+    );
+
+    expect(screen.queryByText('Alarm unavailable')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Unavailable').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Arm Away' })).toBeDisabled();
+  });
 });

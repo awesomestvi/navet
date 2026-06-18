@@ -223,18 +223,19 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
     resolvedTintColor ?? normalizeCustomCardTint(accentColorValue) ?? DEFAULT_VACUUM_ACCENT_COLOR;
   const activePillStyle = activeControlColor
     ? {
-        backgroundColor: withTintAlpha(activeControlColor, theme === 'light' ? 0.14 : 0.18),
-        borderColor: withTintAlpha(activeControlColor, theme === 'light' ? 0.24 : 0.34),
-        boxShadow: `inset 0 0 0 1px ${withTintAlpha(activeControlColor, theme === 'light' ? 0.14 : 0.2)}`,
+        backgroundColor: withTintAlpha(activeControlColor, theme === 'light' ? 0.14 : 0.22),
+        borderColor: withTintAlpha(activeControlColor, theme === 'light' ? 0.24 : 0.42),
+        color: theme === 'light' ? undefined : withTintAlpha(activeControlColor, 0.96),
+        boxShadow: `inset 0 0 0 1px ${withTintAlpha(activeControlColor, theme === 'light' ? 0.14 : 0.26)}`,
       }
     : sectionStyle;
   const softControlStyle = activeControlColor
     ? {
-        backgroundColor: withTintAlpha(activeControlColor, theme === 'light' ? 0.08 : 0.12),
-        borderColor: withTintAlpha(activeControlColor, theme === 'light' ? 0.16 : 0.22),
+        backgroundColor: withTintAlpha(activeControlColor, theme === 'light' ? 0.08 : 0.14),
+        borderColor: withTintAlpha(activeControlColor, theme === 'light' ? 0.16 : 0.26),
+        color: theme === 'light' ? undefined : withTintAlpha(activeControlColor, 0.92),
       }
     : sectionStyle;
-
   const handleTintChange = (color: string) => {
     setLocalTintColor(color);
     onTintColorChange?.(color);
@@ -289,6 +290,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
             {shouldShowControlsTab ? (
               <CardDialogTabTrigger
                 active={activeTab === 'controls'}
+                accentColor={activeControlColor}
                 icon={Sliders}
                 onClick={() => setActiveTab('controls')}
               >
@@ -298,6 +300,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
             {shouldShowMapTab ? (
               <CardDialogTabTrigger
                 active={activeTab === 'map'}
+                accentColor={activeControlColor}
                 icon={MapIcon}
                 onClick={() => setActiveTab('map')}
               >
@@ -306,6 +309,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
             ) : null}
             <CardDialogTabTrigger
               active={activeTab === 'card'}
+              accentColor={activeControlColor}
               icon={Palette}
               onClick={() => setActiveTab('card')}
             >
@@ -314,7 +318,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
           </CardDialogTabList>
 
           {shouldShowControlsTab ? (
-            <TabPanel value="controls" className="mt-5 space-y-5">
+            <TabPanel value="controls" className="space-y-5">
               <VacuumCleaningControls
                 fanSpeed={selectedFanSpeed}
                 onFanSpeedChange={(speed) => {
@@ -328,13 +332,13 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
                 onLocate={onLocate}
                 onCleanSpot={onCleanSpot}
                 capabilities={capabilities}
-                activePillStyle={activePillStyle}
+                accentColor={activeControlColor}
               />
             </TabPanel>
           ) : null}
 
           {shouldShowMapTab ? (
-            <TabPanel value="map" className="mt-5">
+            <TabPanel value="map">
               <CardDialogSection className="mb-0">
                 <div className="mb-0">
                   <div className="text-sm font-medium text-white">{t('vacuum.settings.plan')}</div>
@@ -351,7 +355,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
             </TabPanel>
           ) : null}
 
-          <TabPanel value="card" className="mt-5">
+          <TabPanel value="card">
             <CustomCardTintPicker
               value={resolvedTintColor}
               onChange={handleTintChange}

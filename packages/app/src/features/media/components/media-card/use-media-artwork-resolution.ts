@@ -40,7 +40,9 @@ export function useMediaArtworkResolution({
     fallbackPicture: liveEntityPicture,
     artworkKey: artworkRequestKey,
   });
-  const fallbackArtwork = artworkResource?.kind === 'image' ? (artworkResource.url ?? null) : null;
+  const directArtwork = liveEntityPicture ?? null;
+  const fallbackArtwork =
+    artworkResource?.kind === 'image' ? (artworkResource.url ?? directArtwork) : directArtwork;
 
   useEffect(() => {
     if (!fallbackArtwork) {

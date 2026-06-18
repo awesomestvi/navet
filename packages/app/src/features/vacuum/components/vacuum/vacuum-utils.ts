@@ -21,7 +21,8 @@ export type VacuumStatusLabelKey =
   | 'vacuum.status.chargingComplete'
   | 'vacuum.status.paused'
   | 'vacuum.status.error'
-  | 'vacuum.status.idle';
+  | 'vacuum.status.idle'
+  | 'lawnMower.status.mowing';
 
 export function normalizeVacuumStatus(
   state: unknown,
@@ -30,7 +31,7 @@ export function normalizeVacuumStatus(
   const normalized =
     typeof state === 'string' ? state.trim().toLowerCase().replace(/\s+/g, '_') : '';
 
-  if (normalized === 'cleaning') return 'cleaning';
+  if (normalized === 'cleaning' || normalized === 'mowing') return 'cleaning';
   if (normalized === 'mopping' || normalized === 'washing' || normalized === 'washing_mop') {
     return 'mopping';
   }
@@ -61,10 +62,17 @@ export function getVacuumThemeStatus(status: VacuumStatus): VacuumThemeStatus {
   return 'docked';
 }
 
-export function getVacuumStatusLabelKey(status: VacuumStatus): VacuumStatusLabelKey {
+export function isLawnMowerEntityId(entityId: string | undefined): boolean {
+  return typeof entityId === 'string' && entityId.startsWith('lawn_mower.');
+}
+
+export function getVacuumStatusLabelKey(
+  status: VacuumStatus,
+  options: { isLawnMower?: boolean } = {}
+): VacuumStatusLabelKey {
   switch (status) {
     case 'cleaning':
-      return 'vacuum.status.cleaning';
+      return options.isLawnMower ? 'lawnMower.status.mowing' : 'vacuum.status.cleaning';
     case 'mopping':
       return 'vacuum.status.mopping';
     case 'drying':

@@ -1,28 +1,18 @@
 import {
-  CardDialogBody,
-  CardDialogHeader,
   CardDialogSection,
-  CardDialogTabList,
-  CardDialogTabTrigger,
   CardEmptyState,
   SelectableCheckboxRow,
 } from '@navet/app/components/patterns';
 import {
   BaseCard,
+  BaseCardDialogWithState,
   Button,
   CardMetric,
-  customCardDialogShellProps,
-  DialogDoneFooter,
-  DialogShell,
   EntityCardHeader,
   EntityCardHeaderIcon,
   Select,
-  TabPanel,
-  Tabs,
 } from '@navet/app/components/primitives';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
-import { CompactRoomSelector } from '@navet/app/components/shared/device-editor/compact-room-selector';
-import { CustomCardTintPicker } from '@navet/app/components/shared/device-editor/custom-card-tint-picker';
 import {
   getCustomCardTintSurface,
   normalizeCustomCardTint,
@@ -32,7 +22,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { useAreaRooms, useI18n, useTheme } from '@navet/app/hooks';
 import { formatSensorValue } from '@navet/app/hooks/entity-utils';
 import { useSettingsStore } from '@navet/app/stores';
-import { BatteryCharging, Gauge, Palette, Settings2, Sliders, Zap } from 'lucide-react';
+import { BatteryCharging, Gauge, Settings2, Zap } from 'lucide-react';
 import { type KeyboardEvent, memo, useEffect, useMemo, useState } from 'react';
 import {
   getUpsStatusTone,
@@ -151,18 +141,8 @@ function UpsSettingsDialog({
   const { t } = useI18n();
   const tintColor = typeof data?.tintColor === 'string' ? data.tintColor : undefined;
   const surface = getThemeSurfaceTokens(theme);
-  const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const accentHex = normalizeCustomCardTint(tintColor) ?? getThemeColorValue(primaryColor);
-  const dialogShell = customCardDialogShellProps(
-    { panel: surface.panel, border: surface.border },
-    tintSurface,
-    {
-      maxWidth: 'md',
-      padding: false,
-      height: 'capped',
-    }
-  );
-  const [activeTab, setActiveTab] = useState<'controls' | 'card'>('controls');
+  const baseSurface = getThemeSurfaceTokens(theme);
   const selectedDevice = getSelectedDevice(devices, data?.deviceId);
   const selectedMetricIds =
     getMetricEntityIds(data?.metricEntityIds) ?? selectedDevice?.defaultMetricEntityIds ?? [];
@@ -206,195 +186,152 @@ function UpsSettingsDialog({
   const metricOptions = selectedDevice?.metrics.filter((metric) => metric.kind !== 'status') ?? [];
   const statusOptions = selectedDevice?.statusOptions ?? [];
 
+  const controlsTabContent = (
+    <>
+      <CardDialogSection
+        label={t('widgets.ups.settings.device')}
+        helperText={t('widgets.ups.settings.deviceHelp')}
+      >
+        <Select
+          aria-label={t('widgets.ups.settings.device')}
+          value={selectedDevice?.deviceId ?? ''}
+          onChange={(event) => handleDeviceChange(event.target.value)}
+          disabled={devices.length === 0}
+          selectClassName={`${surface.textPrimary} ${surface.border}`}
+        >
+          {devices.length === 0 ? (
+            <option value="">{t('widgets.ups.settings.noneAvailable')}</option>
+          ) : null}
+          {devices.map((device) => (
+            <option key={device.deviceId} value={device.deviceId}>
+              {device.room ? `${device.name} · ${device.room}` : device.name}
+            </option>
+          ))}
+        </Select>
+      </CardDialogSection>
+
+      <CardDialogSection
+        label={t('widgets.ups.settings.status')}
+        helperText={t('widgets.ups.settings.statusHelp')}
+      >
+        <Select
+          aria-label={t('widgets.ups.settings.status')}
+          value={statusEntityId ?? ''}
+          onChange={(event) =>
+            onUpdate?.({
+              ...data,
+              deviceId: selectedDevice?.deviceId,
+              statusEntityId: event.target.value || undefined,
+              metricEntityIds: selectedMetricIds,
+            })
+          }
+          disabled={statusOptions.length === 0}
+          selectClassName={`${surface.textPrimary} ${surface.border}`}
+        >
+          {statusOptions.length === 0 ? (
+            <option value="">{t('widgets.ups.settings.noStatusSource')}</option>
+          ) : null}
+          {statusOptions.map((metric) => (
+            <option key={metric.entityId} value={metric.entityId}>
+              {metric.label}
+            </option>
+          ))}
+        </Select>
+      </CardDialogSection>
+
+      <CardDialogSection
+        label={t('widgets.ups.settings.metrics')}
+        helperText={t('widgets.ups.settings.metricsHelp')}
+      >
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <Button
+              onClick={() =>
+                onUpdate?.({
+                  ...data,
+                  deviceId: selectedDevice?.deviceId,
+                  statusEntityId,
+                  metricEntityIds: selectedDevice?.defaultMetricEntityIds ?? [],
+                })
+              }
+              variant="soft"
+              size="compact"
+              className={surface.textSecondary}
+            >
+              {t('widgets.ups.settings.resetDefaults')}
+            </Button>
+          </div>
+
+          {metricOptions.length === 0 ? (
+            <p
+              className={`rounded-2xl border px-4 py-4 text-sm ${surface.border} ${surface.textMuted}`}
+            >
+              {t('widgets.ups.settings.noneAvailable')}
+            </p>
+          ) : (
+            <ul className="max-h-72 min-w-0 max-w-full space-y-1.5 overflow-x-hidden overflow-y-auto pr-1">
+              {metricOptions.map((metric) => (
+                <li key={metric.entityId} className="w-full min-w-0 max-w-full">
+                  <SelectableCheckboxRow
+                    checked={selectedMetricIdSet.has(metric.entityId)}
+                    onCheckedChange={() => handleMetricToggle(metric.entityId)}
+                    label={
+                      <span className="block truncate" title={metric.label}>
+                        {metric.label}
+                      </span>
+                    }
+                    description={getMetricLabel(metric.kind, metric.label, t)}
+                    trailing={
+                      <div className="text-sm font-semibold tabular-nums">
+                        {metric.value}
+                        {metric.unit ? ` ${metric.unit}` : ''}
+                      </div>
+                    }
+                    rowClassName={`w-full min-w-0 max-w-full overflow-hidden ${surface.border} ${surface.textPrimary}`}
+                    labelClassName="truncate"
+                    descriptionClassName={`whitespace-normal break-all ${surface.textMuted}`}
+                    checkboxPaletteColor={accentHex}
+                    style={{ background: baseSurface.subtleBg }}
+                    selectedStyle={{
+                      background: baseSurface.subtleBg,
+                      borderColor: `${accentHex}4d`,
+                    }}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </CardDialogSection>
+    </>
+  );
+
   return (
-    <DialogShell
+    <BaseCardDialogWithState
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      disableOpenAutoFocus
-      contentAriaDescribedBy={undefined}
-      overlayClassName={surface.dialogBackdrop}
-      contentClassName={dialogShell.contentClassName}
-      contentStyle={dialogShell.contentStyle}
-      contentGlowClassName={dialogShell.contentGlowClassName}
-      contentGlowStyle={dialogShell.contentGlowStyle}
-      contentOverlayClassName={dialogShell.contentOverlayClassName}
-    >
-      <div className="max-h-[85vh] w-full min-w-0 overflow-y-auto">
-        <CardDialogBody>
-          <CardDialogHeader
-            title={t('widgets.ups.settings.title')}
-            description={t('widgets.common.widget')}
-            showRoomSelector={false}
-            eyebrow={
-              <CompactRoomSelector
-                value={roomValue}
-                label={roomLabel}
-                options={roomOptions}
-                onChange={onRoomChange}
-              />
-            }
-          />
-
-          <Tabs
-            value={activeTab}
-            defaultValue="controls"
-            onValueChange={(value) => setActiveTab(value as 'controls' | 'card')}
-          >
-            <CardDialogTabList>
-              <CardDialogTabTrigger
-                active={activeTab === 'controls'}
-                icon={Sliders}
-                onClick={() => setActiveTab('controls')}
-              >
-                {t('common.controls')}
-              </CardDialogTabTrigger>
-              {onUpdate ? (
-                <CardDialogTabTrigger
-                  active={activeTab === 'card'}
-                  icon={Palette}
-                  onClick={() => setActiveTab('card')}
-                >
-                  {t('common.customize')}
-                </CardDialogTabTrigger>
-              ) : null}
-            </CardDialogTabList>
-
-            <TabPanel value="controls" className="mt-5">
-              <CardDialogSection
-                label={t('widgets.ups.settings.device')}
-                helperText={t('widgets.ups.settings.deviceHelp')}
-              >
-                <Select
-                  aria-label={t('widgets.ups.settings.device')}
-                  value={selectedDevice?.deviceId ?? ''}
-                  onChange={(event) => handleDeviceChange(event.target.value)}
-                  disabled={devices.length === 0}
-                  selectClassName={`${surface.textPrimary} ${surface.border}`}
-                >
-                  {devices.length === 0 ? (
-                    <option value="">{t('widgets.ups.settings.noneAvailable')}</option>
-                  ) : null}
-                  {devices.map((device) => (
-                    <option key={device.deviceId} value={device.deviceId}>
-                      {device.room ? `${device.name} · ${device.room}` : device.name}
-                    </option>
-                  ))}
-                </Select>
-              </CardDialogSection>
-
-              <CardDialogSection
-                label={t('widgets.ups.settings.status')}
-                helperText={t('widgets.ups.settings.statusHelp')}
-              >
-                <Select
-                  aria-label={t('widgets.ups.settings.status')}
-                  value={statusEntityId ?? ''}
-                  onChange={(event) =>
-                    onUpdate?.({
-                      ...data,
-                      deviceId: selectedDevice?.deviceId,
-                      statusEntityId: event.target.value || undefined,
-                      metricEntityIds: selectedMetricIds,
-                    })
-                  }
-                  disabled={statusOptions.length === 0}
-                  selectClassName={`${surface.textPrimary} ${surface.border}`}
-                >
-                  {statusOptions.length === 0 ? (
-                    <option value="">{t('widgets.ups.settings.noStatusSource')}</option>
-                  ) : null}
-                  {statusOptions.map((metric) => (
-                    <option key={metric.entityId} value={metric.entityId}>
-                      {metric.label}
-                    </option>
-                  ))}
-                </Select>
-              </CardDialogSection>
-
-              <CardDialogSection
-                label={t('widgets.ups.settings.metrics')}
-                helperText={t('widgets.ups.settings.metricsHelp')}
-              >
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() =>
-                        onUpdate?.({
-                          ...data,
-                          deviceId: selectedDevice?.deviceId,
-                          statusEntityId,
-                          metricEntityIds: selectedDevice?.defaultMetricEntityIds ?? [],
-                        })
-                      }
-                      variant="soft"
-                      size="compact"
-                      className={surface.textSecondary}
-                    >
-                      {t('widgets.ups.settings.resetDefaults')}
-                    </Button>
-                  </div>
-
-                  {metricOptions.length === 0 ? (
-                    <p
-                      className={`rounded-2xl border px-4 py-4 text-sm ${surface.border} ${surface.textMuted}`}
-                    >
-                      {t('widgets.ups.settings.noneAvailable')}
-                    </p>
-                  ) : (
-                    <ul className="max-h-72 min-w-0 max-w-full space-y-1.5 overflow-x-hidden overflow-y-auto pr-1">
-                      {metricOptions.map((metric) => (
-                        <li key={metric.entityId} className="w-full min-w-0 max-w-full">
-                          <SelectableCheckboxRow
-                            checked={selectedMetricIdSet.has(metric.entityId)}
-                            onCheckedChange={() => handleMetricToggle(metric.entityId)}
-                            label={
-                              <span className="block truncate" title={metric.label}>
-                                {metric.label}
-                              </span>
-                            }
-                            description={getMetricLabel(metric.kind, metric.label, t)}
-                            trailing={
-                              <div className="text-sm font-semibold tabular-nums">
-                                {metric.value}
-                                {metric.unit ? ` ${metric.unit}` : ''}
-                              </div>
-                            }
-                            rowClassName={`w-full min-w-0 max-w-full overflow-hidden ${surface.border} ${surface.textPrimary}`}
-                            labelClassName="truncate"
-                            descriptionClassName={`whitespace-normal break-all ${surface.textMuted}`}
-                            checkboxPaletteColor={accentHex}
-                            style={{ background: tintSurface.subtleFill }}
-                            selectedStyle={{
-                              background: tintSurface.subtleFill,
-                              borderColor: `${accentHex}4d`,
-                            }}
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </CardDialogSection>
-            </TabPanel>
-
-            {onUpdate ? (
-              <TabPanel value="card" className="mt-5">
-                <CustomCardTintPicker
-                  value={tintColor}
-                  onChange={(nextTintColor) =>
-                    onUpdate({ ...(data ?? {}), tintColor: nextTintColor })
-                  }
-                  defaultColor="#16a34a"
-                  className={surface.textMuted}
-                />
-              </TabPanel>
-            ) : null}
-          </Tabs>
-
-          <DialogDoneFooter label={t('common.done')} />
-        </CardDialogBody>
-      </div>
-    </DialogShell>
+      title={t('widgets.ups.settings.title')}
+      description={t('widgets.common.widget')}
+      roomSelector={{
+        value: roomValue,
+        label: roomLabel,
+        options: roomOptions,
+        onChange: onRoomChange,
+      }}
+      controlsTabContent={controlsTabContent}
+      tintColor={tintColor}
+      onTintColorChange={
+        onUpdate
+          ? (nextTintColor) => onUpdate({ ...(data ?? {}), tintColor: nextTintColor })
+          : undefined
+      }
+      defaultTintAccent="#16a34a"
+      theme={theme}
+      maxWidth="md"
+      height="capped"
+      scrollClassName="max-h-[85vh] w-full min-w-0"
+      bodyClassName="max-h-[85vh] w-full min-w-0"
+    />
   );
 }
 

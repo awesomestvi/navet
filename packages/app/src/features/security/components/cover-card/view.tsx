@@ -1,20 +1,10 @@
-import {
-  CardDialogBody,
-  CardDialogHeader,
-  CardDialogSection,
-} from '@navet/app/components/patterns';
-import { BaseCard } from '@navet/app/components/primitives';
+import { CardDialogSection } from '@navet/app/components/patterns';
+import { BaseCard, BaseCardDialogWithState } from '@navet/app/components/primitives';
 import { CardMetric } from '@navet/app/components/primitives/card-metric';
 import { CardMetricActionLayout } from '@navet/app/components/primitives/card-metric-action-layout';
-import {
-  customCardDialogShellProps,
-  DialogDoneFooter,
-  DialogShell,
-} from '@navet/app/components/primitives/dialog-shell';
 import { EntityCardHeader } from '@navet/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { type CardSize, isCompactCardSize } from '@navet/app/components/shared/card-size-selector';
-import { CustomScrollbar } from '@navet/app/components/shared/device-editor';
 import { getCardShellSurfaceTokens } from '@navet/app/components/shared/theme/card-shell-surface-tokens';
 import {
   getAccentDialogSurface,
@@ -248,8 +238,7 @@ export function CoverCardView({
   const activeDialogColor = resolvePrimaryColorToken(primaryColor);
   const activeDialogColors = getAccentDialogSurface(activeDialogColor);
   const deviceTypeAccent = COVER_DEVICE_TYPE_ACCENT_CLASSES[activeDialogColor];
-  const dialogShell = customCardDialogShellProps(surface, {}, { maxWidth: 'md', padding: false });
-  const dialogContentClassName = `${dialogShell.contentClassName} h-auto max-h-[85vh] animate-in fade-in zoom-in duration-200 bg-linear-to-br ${activeDialogColors.from} ${activeDialogColors.to} ${activeDialogColors.border}`;
+  const dialogContentClassName = `h-auto max-h-[85vh] animate-in fade-in zoom-in duration-200 bg-linear-to-br ${activeDialogColors.from} ${activeDialogColors.to} ${activeDialogColors.border}`;
 
   const DeviceIcon = deviceClassConfig[deviceClass].icon;
   const coverCardProps: HTMLAttributes<HTMLDivElement> = {
@@ -380,90 +369,78 @@ export function CoverCardView({
       </div>
 
       {isSettingsOpen ? (
-        <DialogShell
+        <BaseCardDialogWithState
           isOpen={isSettingsOpen}
           onOpenChange={setIsSettingsOpen}
+          title={name}
+          entityId={entityId}
+          entityType={t('cover.settings.deviceType')}
+          theme={theme}
           disableOpenAutoFocus
-          overlayClassName={surface.dialogBackdrop}
           contentClassName={dialogContentClassName}
-          contentStyle={dialogShell.contentStyle}
-          contentGlowClassName={dialogShell.contentGlowClassName}
-          contentGlowStyle={dialogShell.contentGlowStyle}
-          contentOverlayClassName={dialogShell.contentOverlayClassName}
-        >
-          <CustomScrollbar isOn={theme !== 'light'} className="max-sm:min-h-0 max-sm:flex-1">
-            <CardDialogBody>
-              <CardDialogHeader
-                title={name}
-                description={t('cover.settings.deviceType')}
-                entityId={entityId}
-              />
+          controlsTabContent={
+            <CardDialogSection
+              label={t('cover.settings.deviceType')}
+              helperText={t('cover.settings.description', { name })}
+              helperTextClassName={surface.textSecondary}
+              className="mb-0"
+            >
+              <div className="grid grid-cols-2 gap-2">
+                {(Object.keys(deviceClassConfig) as DeviceClass[]).map((type) => {
+                  const config = deviceClassConfig[type];
+                  const Icon = config.icon;
+                  const isSelected = deviceClass === type;
 
-              <CardDialogSection
-                label={t('cover.settings.deviceType')}
-                helperText={t('cover.settings.description', { name })}
-                helperTextClassName={surface.textSecondary}
-                className="mb-0"
-              >
-                <div className="grid grid-cols-2 gap-2">
-                  {(Object.keys(deviceClassConfig) as DeviceClass[]).map((type) => {
-                    const config = deviceClassConfig[type];
-                    const Icon = config.icon;
-                    const isSelected = deviceClass === type;
-
-                    return (
-                      <button
-                        type="button"
-                        key={type}
-                        onClick={() => setDeviceClass(type)}
-                        className={`group flex min-h-14 items-center gap-2.5 rounded-[18px] border px-3 py-2.5 text-left transition-all duration-200 ${
+                  return (
+                    <button
+                      type="button"
+                      key={type}
+                      onClick={() => setDeviceClass(type)}
+                      className={`group flex min-h-14 items-center gap-2.5 rounded-[18px] border px-3 py-2.5 text-left transition-all duration-200 ${
+                        isSelected
+                          ? deviceTypeAccent.selectedButton
+                          : theme === 'light'
+                            ? deviceTypeAccent.unselectedLightButton
+                            : deviceTypeAccent.unselectedDarkButton
+                      }`}
+                    >
+                      <span
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[14px] transition-colors ${
                           isSelected
-                            ? deviceTypeAccent.selectedButton
+                            ? 'bg-white/16 text-white'
                             : theme === 'light'
-                              ? deviceTypeAccent.unselectedLightButton
-                              : deviceTypeAccent.unselectedDarkButton
+                              ? deviceTypeAccent.unselectedLightIcon
+                              : deviceTypeAccent.unselectedDarkIcon
                         }`}
                       >
-                        <span
-                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[14px] transition-colors ${
-                            isSelected
-                              ? 'bg-white/16 text-white'
-                              : theme === 'light'
-                                ? deviceTypeAccent.unselectedLightIcon
-                                : deviceTypeAccent.unselectedDarkIcon
-                          }`}
-                        >
-                          <Icon
-                            className={`h-[18px] w-[18px] ${
-                              isSelected
-                                ? 'text-white'
-                                : theme === 'light'
-                                  ? deviceTypeAccent.unselectedLightIconColor
-                                  : deviceTypeAccent.unselectedDarkIconColor
-                            }`}
-                          />
-                        </span>
-                        <span
-                          className={`min-w-0 flex-1 truncate text-sm font-semibold ${
+                        <Icon
+                          className={`h-[18px] w-[18px] ${
                             isSelected
                               ? 'text-white'
                               : theme === 'light'
-                                ? deviceTypeAccent.unselectedLightText
-                                : deviceTypeAccent.unselectedDarkText
+                                ? deviceTypeAccent.unselectedLightIconColor
+                                : deviceTypeAccent.unselectedDarkIconColor
                           }`}
-                        >
-                          {t(config.labelKey)}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </CardDialogSection>
-
-              <DialogDoneFooter label={t('common.done')} />
-            </CardDialogBody>
-          </CustomScrollbar>
-        </DialogShell>
+                        />
+                      </span>
+                      <span
+                        className={`min-w-0 flex-1 truncate text-sm font-semibold ${
+                          isSelected
+                            ? 'text-white'
+                            : theme === 'light'
+                              ? deviceTypeAccent.unselectedLightText
+                              : deviceTypeAccent.unselectedDarkText
+                        }`}
+                      >
+                        {t(config.labelKey)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </CardDialogSection>
+          }
+        />
       ) : null}
     </BaseCard>
   );

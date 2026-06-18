@@ -1,7 +1,4 @@
-import {
-  customCardDialogShellProps,
-  DialogShell,
-} from '@navet/app/components/primitives/dialog-shell';
+import { BaseCardDialog } from '@navet/app/components/primitives';
 import {
   getAccentDialogSurface,
   type PresetPrimaryColor,
@@ -46,17 +43,7 @@ export const SensorGroupSettingsContainer = memo(function SensorGroupSettingsCon
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const activeDialogColors = getAccentDialogSurface(SENSOR_DIALOG_COLOR[accentColor]);
-  const dialogShell = customCardDialogShellProps(
-    surface,
-    {},
-    {
-      maxWidth: 'md',
-      padding: false,
-      height: 'capped',
-      overflow: true,
-    }
-  );
-  const dialogContentClassName = `${dialogShell.contentClassName} max-h-[calc(100dvh-1rem)] min-w-0 max-w-[calc(100vw-1rem)] animate-in fade-in zoom-in duration-200 bg-linear-to-br ${activeDialogColors.from} ${activeDialogColors.to} ${activeDialogColors.border}`;
+  const dialogContentClassName = `max-h-[calc(100dvh-1rem)] min-w-0 max-w-[calc(100vw-1rem)] animate-in fade-in zoom-in duration-200 bg-linear-to-br ${activeDialogColors.from} ${activeDialogColors.to} ${activeDialogColors.border}`;
   const controller = useSensorGroupSettings({
     currentSensors,
     maxSensors,
@@ -66,19 +53,22 @@ export const SensorGroupSettingsContainer = memo(function SensorGroupSettingsCon
   });
 
   return (
-    <DialogShell
+    <BaseCardDialog
+      variant="modal"
       isOpen={isOpen}
       onOpenChange={(open) => {
         if (!open) {
           controller.handleCancel();
         }
       }}
+      title={groupName}
+      description="Widget"
+      theme={theme}
       overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
+      maxWidth="md"
+      height="capped"
+      bodyPadding={false}
       contentClassName={dialogContentClassName}
-      contentStyle={dialogShell.contentStyle}
-      contentGlowClassName={dialogShell.contentGlowClassName}
-      contentGlowStyle={dialogShell.contentGlowStyle}
-      contentOverlayClassName={dialogShell.contentOverlayClassName}
       bodyClassName="min-h-0 min-w-0 overflow-hidden"
     >
       <SensorGroupSettingsView
@@ -105,6 +95,6 @@ export const SensorGroupSettingsContainer = memo(function SensorGroupSettingsCon
         handleSave={controller.handleSave}
         isSensorSelected={controller.isSensorSelected}
       />
-    </DialogShell>
+    </BaseCardDialog>
   );
 });

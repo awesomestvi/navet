@@ -31,6 +31,7 @@ const PRIMARY_CARD_DOMAINS = new Set([
   'lock',
   'media_player',
   'vacuum',
+  'lawn_mower',
   'camera',
 ]);
 
@@ -261,7 +262,7 @@ export function buildDeviceIndexes(
       indexes.deviceIdsWithPrimaryCards.add(deviceId);
     }
 
-    if (domain === 'vacuum' && deviceId) {
+    if ((domain === 'vacuum' || domain === 'lawn_mower') && deviceId) {
       indexes.deviceIdsWithVacuumEntity.add(deviceId);
     }
 

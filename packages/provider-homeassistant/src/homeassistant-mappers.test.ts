@@ -672,4 +672,44 @@ describe('homeassistant-mappers', () => {
       }),
     ]);
   });
+
+  it('maps lawn mower entities into the vacuum card model without vacuum-only extras', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'lawn_mower.backyard': makeEntity('lawn_mower.backyard', 'mowing', {
+          friendly_name: 'Backyard Mower',
+          battery_level: 84,
+          supported_features: 1 | 2 | 4,
+        }),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [],
+    });
+
+    expect(entities).toEqual([
+      expect.objectContaining({
+        externalId: 'lawn_mower.backyard',
+        type: 'vacuum',
+        attributes: expect.objectContaining({
+          value: 'mowing',
+          status: 'cleaning',
+          battery: 84,
+          supportedFeatures: 1 | 2 | 4,
+        }),
+      }),
+    ]);
+    expect(entities[0]?.attributes).not.toEqual(
+      expect.objectContaining({
+        fanSpeed: expect.anything(),
+        fanSpeedList: expect.anything(),
+        availableCleaningAreas: expect.anything(),
+        canCleanByArea: expect.anything(),
+        cleanedArea: expect.anything(),
+        cleaningTime: expect.anything(),
+        waterLevel: expect.anything(),
+        binLevel: expect.anything(),
+      })
+    );
+  });
 });

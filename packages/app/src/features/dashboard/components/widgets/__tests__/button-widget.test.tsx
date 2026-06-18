@@ -1,3 +1,4 @@
+import { useThemeStore } from '@navet/app/stores/theme-store';
 import { buttonEntityFixtures } from '@navet/app/test/fixtures/home-assistant/entities/button';
 import { sceneEntityFixtures } from '@navet/app/test/fixtures/home-assistant/entities/scene';
 import { renderWithProviders } from '@navet/app/test/render';
@@ -17,6 +18,7 @@ describe('ButtonWidget', () => {
   beforeEach(() => {
     invokeIntegrationNativeActionMock.mockReset();
     invokeIntegrationNativeActionMock.mockResolvedValue(undefined);
+    useThemeStore.setState((state) => ({ ...state, theme: 'dark' }));
   });
 
   it('runs the configured Home Assistant action', async () => {
@@ -208,5 +210,24 @@ describe('ButtonWidget', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Movie Mode' }));
 
     expect(invokeIntegrationNativeActionMock).not.toHaveBeenCalled();
+  });
+
+  it('keeps the shared BaseCard dark surface when tinted in dark theme', () => {
+    const { container } = renderWithProviders(
+      <ButtonWidget
+        size="small"
+        data={{
+          label: 'Movie Mode',
+          service: 'scene.turn_on',
+          entityId: sceneEntityFixtures.normal.entity_id,
+          icon: 'Film',
+          tintColor: '#60a5fa',
+        }}
+      />
+    );
+
+    const cardFrame = container.firstElementChild as HTMLElement | null;
+
+    expect(cardFrame?.style.background).toBe('');
   });
 });

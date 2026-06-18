@@ -1,4 +1,4 @@
-import { DialogShell } from '@navet/app/components/primitives';
+import { BaseCardDialog } from '@navet/app/components/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useEntityProviderFeatureMatrix, useI18n, useTheme } from '@navet/app/hooks';
 import type { TranslationKey } from '@navet/app/i18n';
@@ -156,16 +156,18 @@ export function CameraLiveViewer({
   }, [playbackModel, selectedTransport, supportsCameraStreams, t]);
 
   return (
-    <DialogShell
+    <BaseCardDialog
+      variant="fullscreen"
       isOpen={isOpen}
       onOpenChange={onOpenChange}
+      title={name}
+      description={t('camera.viewer.description')}
+      theme={theme}
       disableOpenAutoFocus
-      mobileCoverSheet={false}
-      overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
       contentTitle={name}
       contentDescription={t('camera.viewer.description')}
-      contentClassName="fixed inset-3 z-50 overflow-hidden rounded-[28px] border border-white/10 bg-black shadow-2xl outline-none animate-in fade-in zoom-in-95 duration-200 md:inset-8"
-      bodyClassName="h-full"
+      overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
+      shellBodyClassName="h-full"
     >
       <div className="relative flex h-full min-h-0 flex-col bg-black text-white">
         <div className="absolute inset-0">
@@ -281,6 +283,6 @@ export function CameraLiveViewer({
           </div>
         </div>
       </div>
-    </DialogShell>
+    </BaseCardDialog>
   );
 }

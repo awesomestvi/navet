@@ -1,7 +1,7 @@
 import { dispatchEntityCommand } from '@navet/app/commands';
 import { CardDialogHeader } from '@navet/app/components/patterns';
 import { CardActionRow, CardActionRowGroup } from '@navet/app/components/patterns/card-action-row';
-import { DialogDoneFooter, DialogShell, RotaryKnob } from '@navet/app/components/primitives';
+import { BaseCardDialog, RotaryKnob } from '@navet/app/components/primitives';
 import { EntityCardHeader } from '@navet/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { RoundControlButton } from '@navet/app/components/primitives/round-control-button';
@@ -511,12 +511,17 @@ const HumidifierSettingsDialog = memo(function HumidifierSettingsDialog({
   const contentInsetClassName = 'px-6 max-sm:px-3.5';
 
   return (
-    <DialogShell
+    <BaseCardDialog
+      variant="modal"
       isOpen={isOpen}
       onOpenChange={onOpenChange}
+      title={name}
+      description={entityType}
+      theme={theme}
       disableOpenAutoFocus
       overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
       contentClassName={`fixed top-1/2 left-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-[30rem] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl animate-in fade-in zoom-in duration-200 bg-gradient-to-br ${surfaceClassName}`}
+      bodyPadding={false}
     >
       {isOn ? (
         <>
@@ -586,11 +591,19 @@ const HumidifierSettingsDialog = memo(function HumidifierSettingsDialog({
           </div>
 
           <div className={contentInsetClassName}>
-            <DialogDoneFooter label="Done" />
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => onOpenChange(false)}
+                className="rounded-full border border-white/12 bg-white/8 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/12"
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       </CustomScrollbar>
-    </DialogShell>
+    </BaseCardDialog>
   );
 });
 

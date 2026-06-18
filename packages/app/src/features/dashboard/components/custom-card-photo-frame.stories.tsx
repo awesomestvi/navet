@@ -1,23 +1,72 @@
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
-import { PHOTO_FRAME_DEMO_IMAGES } from '@navet/app/demo/photo-frame-demo-images';
+import { getCardSizeOverlayStyle } from '@navet/app/components/shared/card-size-selector';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import { buildCustomCard, CustomWidgetStoryFrame } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react';
+import type { PhotoFrameImage } from './widgets/photo-frame-image';
+import { PhotoFrameWidget } from './widgets/photo-frame-widget';
 
 type PhotoStoryArgs = {
   size: CardSize;
   shuffleEnabled: boolean;
 };
 
+function createStoryPhotoFrameImage(name: string): PhotoFrameImage {
+  return {
+    src: new URL(`../../../../../../assets/reference/photo-frame/${name}.webp`, import.meta.url)
+      .href,
+    sources: [
+      {
+        srcSet: new URL(
+          `../../../../../../assets/reference/photo-frame/${name}.avif`,
+          import.meta.url
+        ).href,
+        type: 'image/avif',
+      },
+      {
+        srcSet: new URL(
+          `../../../../../../assets/reference/photo-frame/${name}.webp`,
+          import.meta.url
+        ).href,
+        type: 'image/webp',
+      },
+    ],
+  };
+}
+
+const STORY_PHOTO_FRAME_IMAGES: readonly PhotoFrameImage[] = [
+  createStoryPhotoFrameImage('country-walk'),
+  createStoryPhotoFrameImage('night-out'),
+  createStoryPhotoFrameImage('desert-friends'),
+  createStoryPhotoFrameImage('city-cafe'),
+  createStoryPhotoFrameImage('beach-friends'),
+];
+
 function PhotoStoryPreview({ size, shuffleEnabled }: PhotoStoryArgs) {
   return (
-    <CustomWidgetStoryFrame
-      card={buildCustomCard('photo', size, {
-        photoImages: PHOTO_FRAME_DEMO_IMAGES,
-        shuffleEnabled,
-        tintColor: '#22d3ee',
-      })}
-    />
+    <div style={getCardSizeOverlayStyle(size)}>
+      <PhotoFrameWidget
+        size={size}
+        photoImages={STORY_PHOTO_FRAME_IMAGES}
+        shuffleEnabled={shuffleEnabled}
+      />
+    </div>
+  );
+}
+
+function PhotoEmptyStatePreview({ size }: Pick<PhotoStoryArgs, 'size'>) {
+  return (
+    <div style={getCardSizeOverlayStyle(size)}>
+      <PhotoFrameWidget
+        size={size}
+        sourceMode="urls"
+        photoUrls={[]}
+        photoImages={[]}
+        shuffleEnabled={false}
+        onUpdateUrls={() => undefined}
+        onSourceModeChange={() => undefined}
+        onMediaSourceIdChange={() => undefined}
+      />
+    </div>
   );
 }
 
@@ -85,5 +134,13 @@ export const ExtraLarge: Story = {
   args: {
     size: 'extra-large',
     shuffleEnabled: true,
+  },
+};
+
+export const EmptyState: Story = {
+  render: (args) => <PhotoEmptyStatePreview size={args.size} />,
+  args: {
+    size: 'large',
+    shuffleEnabled: false,
   },
 };

@@ -3,7 +3,7 @@ export {
   buildHomeStatusSummaryItems,
   buildRoomStatusSummaryItems,
 } from './components/home-status-summary-model';
-export { InfoBadgeStrip } from './components/info-badge-strip';
+export { InfoBadgeStrip, SummaryBar } from './components/info-badge-strip';
 export { InfoCard, type InfoCardProps, SensorCard } from './components/sensor-card';
 export { SensorGroupSettingsContainer as SensorGroupSettingsDialog } from './components/sensor-group-settings/container';
 export {

@@ -820,6 +820,7 @@ export const frMessages = {
   'sensors.category.other': 'Autre',
   'vacuum.subtitle': 'Aspirateur',
   'vacuum.status.cleaning': 'Nettoyage',
+  'lawnMower.status.mowing': 'Tonte',
   'vacuum.status.mopping': 'Lavage',
   'vacuum.status.drying': 'Séchage',
   'vacuum.status.returning': 'Retour a la station',

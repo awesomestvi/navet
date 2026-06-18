@@ -6,13 +6,11 @@ import {
 } from '@navet/app/components/patterns';
 import {
   BaseCard,
+  BaseCardDialog,
   Button,
-  customCardDialogShellProps,
-  DialogShell,
   EntityCardHeaderIcon,
   Input,
   InteractivePill,
-  MessageBar,
 } from '@navet/app/components/primitives';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { withTintAlpha } from '@navet/app/components/shared/theme/custom-card-tint-surface';
@@ -579,15 +577,6 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
   const cardSurface = getAlarmSurfaceProps(selectedAlarm.state, theme, colors, accentColor);
   const codeDialogOpen = supportsCodeEntry && draftAction !== null;
   const themeSurface = getThemeSurfaceTokens(theme);
-  const codeDialogShell = customCardDialogShellProps(
-    themeSurface,
-    {},
-    {
-      maxWidth: 'sm',
-      padding: false,
-      animate: true,
-    }
-  );
 
   const clearCode = () => {
     setCode('');
@@ -661,6 +650,9 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
   const mediumActionButtonClassName =
     'h-11 min-w-0 flex-1 flex-row items-center justify-start gap-2 rounded-full px-3 py-0 text-left';
   const mediumActionLabelClassName = 'whitespace-normal break-words text-[12px] leading-tight';
+  const unavailableOverlayLabelClassName = isMedium
+    ? 'px-2 py-0.5 text-[11px] leading-none tracking-[0.04em]'
+    : 'px-2.5 py-1 text-xs tracking-[0.06em] uppercase';
   const numpadKeyClassName = 'h-12 w-12 rounded-full justify-self-center p-0 text-sm';
   const numpadDisplayClassName = 'w-40 rounded-3xl px-4 py-3 text-sm';
   const numpadButtonClassName =
@@ -815,81 +807,93 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
         overlay={cardSurface.overlay}
         disableDefaultSheen={cardSurface.disableDefaultSheen}
       >
-        <div className="flex h-full flex-col gap-3">
-          {sortedAlarms.length > 1 ? (
-            <fieldset className="flex flex-wrap gap-2" aria-label="Alarm selector">
-              {sortedAlarms.map((alarm) => (
-                <InteractivePill
-                  key={alarm.id}
-                  active={alarm.id === selectedAlarm.id}
-                  intent="navigation"
-                  size={selectorPillSize}
-                  onClick={() => {
-                    setSelectedAlarmId(alarm.id);
-                    clearCode();
-                  }}
-                >
-                  {alarm.name}
-                </InteractivePill>
-              ))}
-            </fieldset>
-          ) : null}
-
-          {selectedAlarm.changedBy ? (
-            <div
-              className={`flex flex-wrap gap-x-4 gap-y-1 text-sm ${securitySurface.secondaryTextClassName}`}
-            >
-              {selectedAlarm.changedBy ? <span>Changed by {selectedAlarm.changedBy}</span> : null}
-            </div>
-          ) : null}
-
-          {unavailable ? (
-            <MessageBar tone="warning" title="Alarm unavailable">
-              This alarm is currently read-only. Navet cannot send arm or disarm actions until the
-              provider reports it as available again.
-            </MessageBar>
-          ) : null}
-
-          <div className="mt-auto flex flex-1 flex-col justify-end pt-2">
-            {isMedium ? (
-              <div className="flex w-full flex-col gap-2">
-                {mediumActionRows.map((row, rowIndex) => (
-                  <CardActionRow
-                    key={`alarm-action-row-${rowIndex}`}
-                    theme={theme}
-                    size="medium"
-                    leftContent={
-                      <div className="flex min-w-0 flex-1 items-center gap-2">
-                        {row.map((action) => renderActionButton(action, true))}
-                      </div>
-                    }
-                  />
+        <div className="relative h-full w-full overflow-hidden rounded-[inherit]">
+          <div
+            className={`flex h-full flex-col gap-3 ${
+              unavailable ? 'pointer-events-none opacity-45 saturate-50' : ''
+            }`}
+          >
+            {sortedAlarms.length > 1 ? (
+              <fieldset className="flex flex-wrap gap-2" aria-label="Alarm selector">
+                {sortedAlarms.map((alarm) => (
+                  <InteractivePill
+                    key={alarm.id}
+                    active={alarm.id === selectedAlarm.id}
+                    intent="navigation"
+                    size={selectorPillSize}
+                    onClick={() => {
+                      setSelectedAlarmId(alarm.id);
+                      clearCode();
+                    }}
+                  >
+                    {alarm.name}
+                  </InteractivePill>
                 ))}
+              </fieldset>
+            ) : null}
+
+            {selectedAlarm.changedBy ? (
+              <div
+                className={`flex flex-wrap gap-x-4 gap-y-1 text-sm ${securitySurface.secondaryTextClassName}`}
+              >
+                {selectedAlarm.changedBy ? <span>Changed by {selectedAlarm.changedBy}</span> : null}
               </div>
-            ) : (
-              <div className={`grid w-full gap-2 ${actionGridClassName}`}>
-                {nonTriggerActions.map((action) => renderActionButton(action))}
-              </div>
-            )}
+            ) : null}
+
+            <div className="mt-auto flex flex-1 flex-col justify-end pt-2">
+              {isMedium ? (
+                <div className="flex w-full flex-col gap-2">
+                  {mediumActionRows.map((row, rowIndex) => (
+                    <CardActionRow
+                      key={`alarm-action-row-${rowIndex}`}
+                      theme={theme}
+                      size="medium"
+                      leftContent={
+                        <div className="flex min-w-0 flex-1 items-center gap-2">
+                          {row.map((action) => renderActionButton(action, true))}
+                        </div>
+                      }
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className={`grid w-full gap-2 ${actionGridClassName}`}>
+                  {nonTriggerActions.map((action) => renderActionButton(action))}
+                </div>
+              )}
+            </div>
           </div>
+          {unavailable ? (
+            <>
+              <div className="pointer-events-none absolute inset-0 z-10 rounded-[inherit] bg-black/18 backdrop-blur-[1px]" />
+              <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+                <div
+                  className={`inline-flex max-w-[calc(100%-1rem)] items-center justify-center truncate rounded-full border border-white/12 bg-black/45 font-semibold text-white/92 backdrop-blur-md ${unavailableOverlayLabelClassName}`}
+                >
+                  Unavailable
+                </div>
+              </div>
+            </>
+          ) : null}
         </div>
       </BaseCard>
 
-      <DialogShell
+      <BaseCardDialog
+        variant="modal"
         isOpen={codeDialogOpen}
         onOpenChange={(open) => {
           if (!open) {
             clearCode();
           }
         }}
+        title={actionAwaitingCode ? `${actionAwaitingCode} code` : 'Alarm code'}
+        description={`Enter the code for ${selectedAlarm.name} to continue.`}
+        theme={theme}
         overlayClassName={themeSurface.dialogBackdrop}
-        contentClassName={codeDialogShell.contentClassName}
-        contentStyle={codeDialogShell.contentStyle}
-        contentGlowClassName={codeDialogShell.contentGlowClassName}
-        contentGlowStyle={codeDialogShell.contentGlowStyle}
-        contentOverlayClassName={codeDialogShell.contentOverlayClassName}
         contentTitle={actionAwaitingCode ? `${actionAwaitingCode} code` : 'Alarm code'}
         contentDescription={`Enter the code for ${selectedAlarm.name} to continue.`}
+        maxWidth="sm"
+        bodyPadding={false}
       >
         <CardDialogBody>
           <CardDialogHeader
@@ -982,7 +986,7 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
             </Button>
           </CardDialogFooter>
         </CardDialogBody>
-      </DialogShell>
+      </BaseCardDialog>
 
       <AlertDialog
         open={triggerAction?.alarmId === selectedAlarm.id}

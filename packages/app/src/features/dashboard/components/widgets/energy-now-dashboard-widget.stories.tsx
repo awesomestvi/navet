@@ -1,5 +1,5 @@
 import { Button } from '@navet/app/components/primitives/button';
-import type { ThemeType } from '@navet/app/hooks/use-theme';
+import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react';
@@ -7,11 +7,11 @@ import { useState } from 'react';
 import { EnergyNowSettingsDialog } from './energy-now-dashboard-widget';
 
 function EnergyNowSettingsDialogStory() {
+  const { theme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedSourceId, setSelectedSourceId] = useState('sensor.home_energy_now');
   const [roomValue, setRoomValue] = useState('__home__');
   const [tintColor, setTintColor] = useState<string | undefined>('#f97316');
-  const theme: ThemeType = 'glass';
 
   return (
     <SettingsDialogStoryFrame parentCardClassName="bg-[linear-gradient(180deg,rgba(249,115,22,0.18),rgba(15,23,42,0.28))]">

@@ -59,7 +59,7 @@ export const BrightnessSlider = memo(function BrightnessSlider({
 
   const heightClass = isExtraSmall ? 'h-4' : isCompact ? 'h-5' : 'h-6';
   const useDialogControlSize = isDialogPresentation && !isExtraSmall && !isCompact;
-  const trackHeightClass = useDialogControlSize ? 'h-2' : 'h-[3px]';
+  const trackHeightClass = 'h-[3px]';
   const thumbSizeClass = useDialogControlSize ? 'h-5 w-5' : 'h-4 w-4';
   const trackBg = useInverseActiveLightSurface
     ? 'bg-white/18'

@@ -1,12 +1,11 @@
-import { DialogShell } from '@navet/app/components/primitives/dialog-shell';
+import { BaseCardDialog } from '@navet/app/components/primitives/Cards/BaseCardDialog';
 import {
   getUiKitModalContentClassName,
   navetUiKitRadiusTokens,
 } from '@navet/app/components/system/tokens/ui-kit-surfaces';
 import { cn } from '@navet/app/components/ui/utils';
 import { useTheme } from '@navet/app/hooks';
-import * as Dialog from '@radix-ui/react-dialog';
-import { type CSSProperties, type ReactNode, useId } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 export interface ModalSurfaceProps {
   isOpen: boolean;
@@ -40,28 +39,25 @@ export function ModalSurface({
   disableOpenAutoFocus,
 }: ModalSurfaceProps) {
   const { theme } = useTheme();
-  const descriptionId = useId();
 
   return (
-    <DialogShell
+    <BaseCardDialog
+      variant="modal"
       isOpen={isOpen}
       onOpenChange={onOpenChange}
+      title={title}
+      description={description}
+      theme={theme}
       overlayClassName={overlayClassName ?? 'animate-in fade-in bg-black/55 backdrop-blur-sm'}
-      contentAriaDescribedBy={description ? descriptionId : undefined}
       disableOpenAutoFocus={disableOpenAutoFocus}
       contentClassName={cn(getUiKitModalContentClassName(theme), contentClassName)}
       contentStyle={contentStyle}
       contentGlowClassName={contentGlowClassName}
       contentGlowStyle={contentGlowStyle}
       contentOverlayClassName={contentOverlayClassName}
+      bodyPadding={false}
     >
-      <Dialog.Title className="sr-only">{title}</Dialog.Title>
-      {description ? (
-        <Dialog.Description id={descriptionId} className="sr-only">
-          {description}
-        </Dialog.Description>
-      ) : null}
       <div className={cn('relative', navetUiKitRadiusTokens.dialog, bodyClassName)}>{children}</div>
-    </DialogShell>
+    </BaseCardDialog>
   );
 }

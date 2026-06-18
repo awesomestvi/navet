@@ -43,6 +43,10 @@ const HOME_ASSISTANT_VACUUM_FEATURES = {
   CLEAN_AREA: 16384,
 } as const;
 
+function isVacuumLikeDomain(domain: string): boolean {
+  return domain === 'vacuum' || domain === 'lawn_mower';
+}
+
 function normalizeRoomName(name: string) {
   return name.trim().toLocaleLowerCase();
 }
@@ -1042,12 +1046,31 @@ function createHomeAssistantState(
     };
   }
 
-  if (domain === 'vacuum') {
+  if (isVacuumLikeDomain(domain)) {
     const supportedFeatures = readNumberish(entity.attributes?.supported_features);
     const batteryLevel =
       readNumberish(entity.attributes?.battery_level) ??
       readNumberish(entity.attributes?.battery) ??
       readNumberish(entity.attributes?.battery_percent);
+    const state = {
+      ...commonState,
+      value: entity.state,
+      status: normalizeVacuumStatus(
+        entity.state ??
+          entity.attributes?.status ??
+          entity.attributes?.state ??
+          entity.attributes?.activity
+      ),
+      battery:
+        typeof batteryLevel === 'number' ? Math.max(0, Math.min(100, batteryLevel)) : undefined,
+      supportedFeatures,
+      size: 'medium',
+    } satisfies Record<string, unknown>;
+
+    if (domain === 'lawn_mower') {
+      return state;
+    }
+
     const cleanedAreaValue =
       readNumberish(entity.attributes?.cleaned_area) ??
       readNumberish(entity.attributes?.cleaned_area_today) ??
@@ -1059,11 +1082,7 @@ function createHomeAssistantState(
     const availableCleaningAreas = readVacuumCleaningAreas(entityEntry, areaMap, supportedFeatures);
 
     return {
-      ...commonState,
-      value: entity.state,
-      status: normalizeVacuumStatus(entity.state ?? entity.attributes?.status),
-      battery:
-        typeof batteryLevel === 'number' ? Math.max(0, Math.min(100, batteryLevel)) : undefined,
+      ...state,
       cleanedArea:
         typeof cleanedAreaValue === 'number'
           ? `${cleanedAreaValue.toFixed(cleanedAreaValue >= 10 ? 0 : 1)} m²`
@@ -1094,11 +1113,9 @@ function createHomeAssistantState(
         typeof entity.attributes?.bin_level === 'number'
           ? entity.attributes.bin_level
           : undefined,
-      supportedFeatures,
       availableCleaningAreas,
       canCleanByArea: Boolean(availableCleaningAreas?.length),
       canOrderAreaCleaning: false,
-      size: 'medium',
     };
   }
 
@@ -1241,6 +1258,7 @@ export function mapHomeAssistantEntitiesToNavetEntities(
         'device_tracker',
         'camera',
         'vacuum',
+        'lawn_mower',
         'alarm_control_panel',
         'siren',
         'event',
@@ -1277,7 +1295,9 @@ export function mapHomeAssistantEntitiesToNavetEntities(
               ? 'sensor'
               : domain === 'binary_sensor'
                 ? 'sensor'
-                : (domain as NavetEntity['type']);
+                : isVacuumLikeDomain(domain)
+                  ? 'vacuum'
+                  : (domain as NavetEntity['type']);
 
     const resources =
       domain === 'camera'

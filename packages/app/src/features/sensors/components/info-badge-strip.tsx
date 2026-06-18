@@ -6,19 +6,19 @@ import { openCustomExtensionUrl } from '@navet/app/utils/custom-extensions';
 import { memo } from 'react';
 import type { HomeStatusSummaryItem } from './home-status-summary-model';
 
-interface InfoBadgeStripProps {
+interface SummaryBarProps {
   items: HomeStatusSummaryItem[];
   onNavigate: (section: Section) => void;
   className?: string;
   ariaLabel?: string;
 }
 
-export const InfoBadgeStrip = memo(function InfoBadgeStrip({
+export const SummaryBar = memo(function SummaryBar({
   items,
   onNavigate,
   className = '',
   ariaLabel = 'Status summary',
-}: InfoBadgeStripProps) {
+}: SummaryBarProps) {
   const { theme } = useTheme();
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
@@ -99,3 +99,5 @@ export const InfoBadgeStrip = memo(function InfoBadgeStrip({
     </nav>
   );
 });
+
+export const InfoBadgeStrip = SummaryBar;

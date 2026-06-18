@@ -1,4 +1,4 @@
-import { InfoBadgeStrip } from '@navet/app/features/sensors';
+import { SummaryBar } from '@navet/app/features/sensors';
 import type { Meta, StoryObj } from '@storybook/react';
 import { Clipboard, Fan, Lightbulb, Lock, Speaker, Zap } from 'lucide-react';
 import type { HomeStatusSummaryItem } from './home-status-summary-model';
@@ -54,17 +54,17 @@ const items: HomeStatusSummaryItem[] = [
   },
 ];
 
-function InfoBadgeStripStory({ items: storyItems }: { items: HomeStatusSummaryItem[] }) {
+function SummaryBarStory({ items: storyItems }: { items: HomeStatusSummaryItem[] }) {
   return (
     <div className="w-[min(56rem,100%)] rounded-[28px] border border-white/10 bg-zinc-950 p-5">
-      <InfoBadgeStrip items={storyItems} onNavigate={() => {}} />
+      <SummaryBar items={storyItems} onNavigate={() => {}} />
     </div>
   );
 }
 
 const meta = {
-  title: 'Cards/Entity/Info Badge Strip',
-  component: InfoBadgeStripStory,
+  title: 'Cards/Entity/Summary Bar',
+  component: SummaryBarStory,
   tags: ['autodocs'],
   parameters: {
     docs: {
@@ -74,17 +74,11 @@ const meta = {
       },
     },
   },
-} satisfies Meta<typeof InfoBadgeStripStory>;
+} satisfies Meta<typeof SummaryBarStory>;
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
-
-export const Empty: Story = {
-  args: {
-    items: [],
-  },
-};
 
 export const Summary: Story = {
   args: {

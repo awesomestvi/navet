@@ -873,6 +873,7 @@ export const enMessages = {
   'sensors.category.other': 'Other',
   'vacuum.subtitle': 'Vacuum',
   'vacuum.status.cleaning': 'Cleaning',
+  'lawnMower.status.mowing': 'Mowing',
   'vacuum.status.mopping': 'Mopping',
   'vacuum.status.drying': 'Drying',
   'vacuum.status.returning': 'Returning to dock',

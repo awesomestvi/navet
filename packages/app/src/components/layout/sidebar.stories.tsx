@@ -17,7 +17,6 @@ function SidebarStory() {
             className={`mx-auto max-w-5xl rounded-[32px] border p-8 ${surface.panel} ${surface.border}`}
           >
             <div className="space-y-3">
-              <p className={`text-xs uppercase tracking-[0.22em] ${surface.textMuted}`}>Preview</p>
               <h1 className={`text-2xl font-semibold ${surface.textPrimary}`}>Dashboard shell</h1>
               <p className={`max-w-2xl text-sm ${surface.textSecondary}`}>
                 Sidebar navigation should feel like a stable app shell control, not a generic

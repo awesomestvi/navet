@@ -126,8 +126,21 @@ vi.mock('../../vacuum/vacuum-metrics', () => ({
 
 vi.mock('../../vacuum/vacuum-controls-small', () => ({
   VacuumControlsSmall: (props: {
+    currentStatus: string;
+    onStartCleaning: () => void;
+    onPause: () => void;
+    onStop: () => void;
+    onReturnHome: () => void;
+    onLocate: () => void;
+    onCleanSpot: () => void;
     disabled?: boolean;
     capabilities: {
+      canStart?: boolean;
+      canPause?: boolean;
+      canStop?: boolean;
+      canReturnHome?: boolean;
+      canLocate?: boolean;
+      canCleanSpot?: boolean;
       canCycleFanSpeed?: boolean;
       currentFanSpeed?: string;
       fanSpeedOptions?: string[];
@@ -135,7 +148,21 @@ vi.mock('../../vacuum/vacuum-controls-small', () => ({
     onCycleFanSpeed: (speed: string) => void;
   }) => (
     <div>
-      {props.disabled ? 'small-controls-disabled' : 'small-controls'}
+      <span>{props.disabled ? 'small-controls-disabled' : 'small-controls'}</span>
+      {props.currentStatus === 'cleaning'
+        ? props.capabilities.canStop || props.capabilities.canPause
+          ? [
+              <span key="running-action">
+                {`running-action:${props.capabilities.canStop ? 'stop' : 'pause'}`}
+              </span>,
+            ]
+          : null
+        : props.capabilities.canStart
+          ? [<span key="action-start">action:start</span>]
+          : null}
+      {props.capabilities.canReturnHome ? <span>action:return-home</span> : null}
+      {props.capabilities.canLocate ? <span>action:locate</span> : null}
+      {props.capabilities.canCleanSpot ? <span>action:clean-spot</span> : null}
       {props.capabilities.canCycleFanSpeed ? (
         <button
           type="button"
@@ -150,8 +177,21 @@ vi.mock('../../vacuum/vacuum-controls-small', () => ({
 
 vi.mock('../../vacuum/vacuum-controls-medium', () => ({
   VacuumControlsMedium: (props: {
+    currentStatus: string;
+    onStartCleaning: () => void;
+    onPause: () => void;
+    onStop: () => void;
+    onReturnHome: () => void;
+    onLocate: () => void;
+    onCleanSpot: () => void;
     disabled?: boolean;
     capabilities: {
+      canStart?: boolean;
+      canPause?: boolean;
+      canStop?: boolean;
+      canReturnHome?: boolean;
+      canLocate?: boolean;
+      canCleanSpot?: boolean;
       canCycleFanSpeed?: boolean;
       currentFanSpeed?: string;
       fanSpeedOptions?: string[];
@@ -159,7 +199,21 @@ vi.mock('../../vacuum/vacuum-controls-medium', () => ({
     onCycleFanSpeed: (speed: string) => void;
   }) => (
     <div>
-      {props.disabled ? 'medium-controls-disabled' : 'medium-controls'}
+      <span>{props.disabled ? 'medium-controls-disabled' : 'medium-controls'}</span>
+      {props.currentStatus === 'cleaning'
+        ? props.capabilities.canStop || props.capabilities.canPause
+          ? [
+              <span key="running-action">
+                {`running-action:${props.capabilities.canStop ? 'stop' : 'pause'}`}
+              </span>,
+            ]
+          : null
+        : props.capabilities.canStart
+          ? [<span key="action-start">action:start</span>]
+          : null}
+      {props.capabilities.canReturnHome ? <span>action:return-home</span> : null}
+      {props.capabilities.canLocate ? <span>action:locate</span> : null}
+      {props.capabilities.canCleanSpot ? <span>action:clean-spot</span> : null}
       {props.capabilities.canCycleFanSpeed ? (
         <button
           type="button"
@@ -249,6 +303,167 @@ describe('VacuumCard', () => {
     );
 
     expect(screen.queryByText(/fan-speed-control:/)).not.toBeInTheDocument();
+  });
+
+  it('keeps mower cards on the shared vacuum card while hiding vacuum-only controls', () => {
+    useProviderEntityModelMock.mockReturnValueOnce({
+      id: 'home_assistant:lawn_mower.backyard',
+      canonicalId: 'home_assistant:lawn_mower.backyard',
+      providerId: 'home_assistant',
+      externalId: 'lawn_mower.backyard',
+      type: 'vacuum',
+      name: 'Backyard Mower',
+      primaryState: 'docked',
+      availability: 'available',
+      capabilities: [],
+      attributes: {
+        supportedFeatures: 1 | 2 | 4,
+      },
+    });
+
+    render(
+      <VacuumCard
+        id="lawn_mower.backyard"
+        name="Backyard Mower"
+        status="docked"
+        size="small"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.getByText('action:start')).toBeInTheDocument();
+    expect(screen.getByText('action:return-home')).toBeInTheDocument();
+    expect(screen.queryByText('action:locate')).not.toBeInTheDocument();
+    expect(screen.queryByText('action:clean-spot')).not.toBeInTheDocument();
+    expect(screen.queryByText(/running-action:stop/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/fan-speed-control:/)).not.toBeInTheDocument();
+  });
+
+  it('shows mowing wording for lawn mower entities while active', () => {
+    useProviderEntityModelMock.mockReturnValueOnce({
+      id: 'home_assistant:lawn_mower.backyard',
+      canonicalId: 'home_assistant:lawn_mower.backyard',
+      providerId: 'home_assistant',
+      externalId: 'lawn_mower.backyard',
+      type: 'vacuum',
+      name: 'Backyard Mower',
+      primaryState: 'mowing',
+      availability: 'available',
+      capabilities: [],
+      attributes: {
+        supportedFeatures: 1 | 2 | 4,
+      },
+    });
+
+    render(
+      <VacuumCard
+        id="lawn_mower.backyard"
+        name="Backyard Mower"
+        status="cleaning"
+        size="small"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.getAllByText('lawnMower.status.mowing').length).toBeGreaterThan(0);
+    expect(screen.queryByText('vacuum.status.cleaning')).not.toBeInTheDocument();
+  });
+
+  it('renders a dedicated lawn mower illustration on medium mower cards', () => {
+    useProviderEntityModelMock.mockReturnValueOnce({
+      id: 'home_assistant:lawn_mower.backyard',
+      canonicalId: 'home_assistant:lawn_mower.backyard',
+      providerId: 'home_assistant',
+      externalId: 'lawn_mower.backyard',
+      type: 'vacuum',
+      name: 'Backyard Mower',
+      primaryState: 'docked',
+      availability: 'available',
+      capabilities: [],
+      attributes: {
+        supportedFeatures: 1 | 2 | 4,
+      },
+    });
+
+    render(
+      <VacuumCard
+        id="lawn_mower.backyard"
+        name="Backyard Mower"
+        status="docked"
+        size="medium"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.getByTestId('lawn-mower-surface')).toBeInTheDocument();
+    expect(screen.queryByTestId('vacuum-robot-surface')).not.toBeInTheDocument();
+  });
+
+  it('animates the lawn mower illustration while mowing', () => {
+    useProviderEntityModelMock.mockReturnValueOnce({
+      id: 'home_assistant:lawn_mower.backyard',
+      canonicalId: 'home_assistant:lawn_mower.backyard',
+      providerId: 'home_assistant',
+      externalId: 'lawn_mower.backyard',
+      type: 'vacuum',
+      name: 'Backyard Mower',
+      primaryState: 'mowing',
+      availability: 'available',
+      capabilities: [],
+      attributes: {
+        supportedFeatures: 1 | 2 | 4,
+      },
+    });
+
+    render(
+      <VacuumCard
+        id="lawn_mower.backyard"
+        name="Backyard Mower"
+        status="cleaning"
+        size="medium"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.getByTestId('lawn-mower-motion-wrapper')).toHaveStyle({
+      animation: 'navet-lawn-mower-mowing-loop 48s linear infinite',
+    });
+  });
+
+  it('renders charging vacuums with a monochrome illustration treatment', () => {
+    useProviderEntityModelMock.mockReturnValueOnce({
+      id: 'home_assistant:vacuum.roborock',
+      canonicalId: 'home_assistant:vacuum.roborock',
+      providerId: 'home_assistant',
+      externalId: 'vacuum.roborock',
+      type: 'vacuum',
+      name: 'Robot',
+      primaryState: 'charging',
+      availability: 'available',
+      capabilities: [],
+      attributes: {
+        supportedFeatures: 1,
+      },
+    });
+
+    render(
+      <VacuumCard
+        id="vacuum.roborock"
+        name="Robot"
+        status="charging"
+        size="medium"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.getByTestId('vacuum-robot-surface')).toHaveStyle({
+      borderColor: '#a1a1aa',
+    });
   });
 
   it('cycles to the next available fan speed from the compact control', () => {
@@ -573,6 +788,37 @@ describe('VacuumCard', () => {
     );
 
     expect(screen.queryByTestId('vacuum-side-brush')).not.toBeInTheDocument();
+  });
+
+  it('does not render exposed mower blades in the lawn mower illustration', () => {
+    useProviderEntityModelMock.mockReturnValue({
+      id: 'home_assistant:lawn_mower.backyard',
+      canonicalId: 'home_assistant:lawn_mower.backyard',
+      providerId: 'home_assistant',
+      externalId: 'lawn_mower.backyard',
+      type: 'vacuum',
+      name: 'Backyard Mower',
+      primaryState: 'mowing',
+      availability: 'available',
+      capabilities: [],
+      attributes: {
+        supportedFeatures: 1 | 2 | 4,
+      },
+    });
+
+    mockedCurrentStatus = 'cleaning';
+    render(
+      <VacuumCard
+        id="lawn_mower.backyard"
+        name="Backyard Mower"
+        status="cleaning"
+        size="medium"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.queryByTestId('lawn-mower-blades')).not.toBeInTheDocument();
   });
 
   it('does not infer Home Assistant from arbitrary dotted ids', () => {

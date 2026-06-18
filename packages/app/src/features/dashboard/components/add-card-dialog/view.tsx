@@ -1,10 +1,9 @@
 import { HeaderSearchInput } from '@navet/app/components/layout/header-search-input';
 import { CardDialogHeader } from '@navet/app/components/patterns';
 import {
+  BaseCardDialog,
   Button,
-  customCardDialogShellProps,
   DialogFooter,
-  DialogShell,
   InteractivePill,
 } from '@navet/app/components/primitives';
 import { type CardSize, getCardSizeRatio } from '@navet/app/components/shared/card-size-selector';
@@ -90,33 +89,24 @@ export function AddCardDialogView({
   const heroTitle = cardsTabActive
     ? t('dashboard.addCard.libraryDescription')
     : t('dashboard.addCard.description', { room: roomLabel });
-  const dialogShell = customCardDialogShellProps(
-    surface,
-    {},
-    {
-      maxWidth: 'md',
-      padding: false,
-      height: 'capped',
-    }
-  );
 
   return (
-    <DialogShell
+    <BaseCardDialog
+      variant="modal"
       isOpen={open}
       onOpenChange={(nextOpen) => {
         if (!nextOpen) {
           onClose();
         }
       }}
-      overlayClassName={surface.dialogBackdrop}
+      title={t('dashboard.addCard.title')}
+      description={heroTitle}
+      theme={theme}
       disableOpenAutoFocus
-      contentAriaDescribedBy={undefined}
-      contentClassName={dialogShell.contentClassName}
-      contentStyle={dialogShell.contentStyle}
-      contentGlowClassName={dialogShell.contentGlowClassName}
-      contentGlowStyle={dialogShell.contentGlowStyle}
-      contentOverlayClassName={dialogShell.contentOverlayClassName}
-      bodyClassName="flex min-h-0 flex-1 flex-col"
+      maxWidth="md"
+      height="capped"
+      bodyPadding={false}
+      shellBodyClassName="flex min-h-0 flex-1 flex-col"
     >
       <div className="max-h-[85vh] w-full min-w-0 overflow-y-auto">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -337,12 +327,12 @@ export function AddCardDialogView({
                 onClick={handleAdd}
                 className="w-full sm:w-auto sm:min-w-[10rem]"
               >
-                {t('dashboard.addCard.title')}
+                {t('dashboard.addCard.action')}
               </Button>
             </DialogFooter>
           ) : null}
         </div>
       </div>
-    </DialogShell>
+    </BaseCardDialog>
   );
 }

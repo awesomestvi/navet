@@ -1,5 +1,5 @@
 import { CardDialogBody, CardDialogHeader } from '@navet/app/components/patterns';
-import { DialogDoneFooter, ModalSurface } from '@navet/app/components/primitives';
+import { Button, ModalSurface } from '@navet/app/components/primitives';
 import { CustomScrollbar, IconPicker } from '@navet/app/components/shared/device-editor';
 import { useI18n } from '@navet/app/hooks';
 import { Palette } from 'lucide-react';
@@ -53,7 +53,11 @@ export const SensorSettingsDialog = memo(function SensorSettingsDialog({
             />
           </div>
 
-          <DialogDoneFooter label={t('common.done')} />
+          <div className="mt-6 flex justify-end">
+            <Button variant="soft" size="small" onClick={() => onOpenChange(false)}>
+              {t('common.done')}
+            </Button>
+          </div>
         </CardDialogBody>
       </CustomScrollbar>
     </ModalSurface>

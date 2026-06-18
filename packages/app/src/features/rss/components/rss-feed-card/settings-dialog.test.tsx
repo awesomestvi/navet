@@ -43,7 +43,6 @@ describe('RSSFeedSettingsDialog', () => {
     );
 
     expect(screen.getByText('RSS Providers')).toBeInTheDocument();
-    expect(screen.getByText('Choose which providers Daily Feed should show')).toBeInTheDocument();
     expect(screen.getAllByText('Living Room').length).toBeGreaterThan(0);
   });
 });

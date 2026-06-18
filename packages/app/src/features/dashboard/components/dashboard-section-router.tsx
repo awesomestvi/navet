@@ -9,7 +9,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
 import { getClimateDashboardGroup } from '@navet/app/features/climate/utils/climate-dashboard-group';
 import { buildRoomStatusSummaryItems } from '@navet/app/features/sensors/components/home-status-summary-model';
-import { InfoBadgeStrip } from '@navet/app/features/sensors/components/info-badge-strip';
+import { SummaryBar } from '@navet/app/features/sensors/components/info-badge-strip';
 import { useTaskRoutines } from '@navet/app/features/tasks/hooks/use-task-automation-groups';
 import { useI18n, useIntegrationStore, useMediaQuery, useTheme } from '@navet/app/hooks';
 import { useSettingsStore } from '@navet/app/stores';
@@ -531,7 +531,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
         ) : (
           <RenderProfiler id={`DeviceGrid:${activeRoom}`}>
             <div className="space-y-2 md:space-y-6">
-              <InfoBadgeStrip
+              <SummaryBar
                 items={roomStatusSummaryItems}
                 onNavigate={controller.setActiveSection}
                 ariaLabel={t('settings.dashboard.homeSummaryBar.title')}

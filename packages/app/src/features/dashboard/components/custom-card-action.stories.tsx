@@ -15,7 +15,6 @@ function ActionStoryPreview({ size }: ActionStoryArgs) {
         service: 'scene.turn_on',
         entityId: 'scene.movie_mode',
         icon: 'Film',
-        tintColor: '#60a5fa',
       })}
     />
   );

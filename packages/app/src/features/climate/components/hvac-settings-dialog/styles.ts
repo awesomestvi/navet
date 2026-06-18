@@ -5,7 +5,8 @@ export function getHVACSettingsDialogStyles(mode: string, isOn: boolean) {
   const activePresetClassName = getActivePresetClassName(mode, isOn);
 
   return {
-    contentClassName: `bg-gradient-to-br from-${modeSurface.from}/95 to-${modeSurface.to}/95 border-${modeSurface.border}`,
+    contentSurface: modeSurface.contentSurface,
+    contentClassName: modeSurface.contentClassName,
     currentValueClassName: 'text-gray-300',
     modeButtonClassName: (buttonMode: string) => {
       const shadowClass = getModeButtonShadow(buttonMode, mode, isOn);
@@ -38,18 +39,49 @@ function getActivePresetClassName(mode: string, isOn: boolean) {
 
 function getModeSurface(mode: string, isOn: boolean) {
   if (!isOn) {
-    return { from: 'gray-900', to: 'gray-950', border: 'gray-500/10' };
+    return {
+      contentSurface: {
+        panel: 'bg-gradient-to-br from-gray-900/95 to-gray-950/95',
+        border: 'border-gray-500/10',
+      },
+      contentClassName: 'bg-gradient-to-br from-gray-900/95 to-gray-950/95 border-gray-500/10',
+    };
   }
 
   switch (mode) {
     case 'cool':
-      return { from: 'blue-900', to: 'blue-950', border: 'blue-500/20' };
+      return {
+        contentSurface: {
+          panel: 'bg-gradient-to-br from-blue-900/95 to-blue-950/95',
+          border: 'border-blue-500/20',
+        },
+        contentClassName: 'bg-gradient-to-br from-blue-900/95 to-blue-950/95 border-blue-500/20',
+      };
     case 'heat':
-      return { from: 'orange-900', to: 'orange-950', border: 'orange-500/20' };
+      return {
+        contentSurface: {
+          panel: 'bg-gradient-to-br from-orange-900/95 to-orange-950/95',
+          border: 'border-orange-500/20',
+        },
+        contentClassName:
+          'bg-gradient-to-br from-orange-900/95 to-orange-950/95 border-orange-500/20',
+      };
     case 'fan':
-      return { from: 'green-900', to: 'green-950', border: 'green-500/20' };
+      return {
+        contentSurface: {
+          panel: 'bg-gradient-to-br from-green-900/95 to-green-950/95',
+          border: 'border-green-500/20',
+        },
+        contentClassName: 'bg-gradient-to-br from-green-900/95 to-green-950/95 border-green-500/20',
+      };
     default:
-      return { from: 'gray-900', to: 'gray-950', border: 'gray-500/10' };
+      return {
+        contentSurface: {
+          panel: 'bg-gradient-to-br from-gray-900/95 to-gray-950/95',
+          border: 'border-gray-500/10',
+        },
+        contentClassName: 'bg-gradient-to-br from-gray-900/95 to-gray-950/95 border-gray-500/10',
+      };
   }
 }
 

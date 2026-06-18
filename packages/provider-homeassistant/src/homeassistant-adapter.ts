@@ -133,6 +133,54 @@ function getEntityCommandDomain(entity: NavetEntity): string {
   }
 }
 
+function isLawnMowerEntity(entity: NavetEntity): boolean {
+  return entity.externalId.startsWith('lawn_mower.');
+}
+
+function getVacuumLikeCommandRoute(entity: NavetEntity, command: NavetCommand) {
+  if (!isLawnMowerEntity(entity)) {
+    switch (command.type) {
+      case 'set_vacuum_fan_speed':
+        return {
+          domain: 'vacuum',
+          service: 'set_fan_speed',
+          data: { fan_speed: command.fanSpeed },
+        };
+      case 'clean_vacuum_areas':
+        return {
+          domain: 'vacuum',
+          service: 'clean_area',
+          data: { cleaning_area_id: command.areaIds },
+        };
+      case 'start':
+        return { domain: 'vacuum', service: 'start', data: {} };
+      case 'pause':
+        return { domain: 'vacuum', service: 'pause', data: {} };
+      case 'stop':
+        return { domain: 'vacuum', service: 'stop', data: {} };
+      case 'return_home':
+        return { domain: 'vacuum', service: 'return_to_base', data: {} };
+      case 'locate':
+        return { domain: 'vacuum', service: 'locate', data: {} };
+      case 'clean_spot':
+        return { domain: 'vacuum', service: 'clean_spot', data: {} };
+      default:
+        return null;
+    }
+  }
+
+  switch (command.type) {
+    case 'start':
+      return { domain: 'lawn_mower', service: 'start_mowing', data: {} };
+    case 'pause':
+      return { domain: 'lawn_mower', service: 'pause', data: {} };
+    case 'return_home':
+      return { domain: 'lawn_mower', service: 'dock', data: {} };
+    default:
+      return null;
+  }
+}
+
 async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCommand) {
   switch (command.type) {
     case 'turn_on':
@@ -164,21 +212,22 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
       );
       return;
     case 'set_vacuum_fan_speed':
-      await callHomeAssistantService(
-        'vacuum',
-        'set_fan_speed',
-        { fan_speed: command.fanSpeed },
-        { entityId: entity.externalId }
-      );
-      return;
     case 'clean_vacuum_areas':
-      await callHomeAssistantService(
-        'vacuum',
-        'clean_area',
-        { cleaning_area_id: command.areaIds },
-        { entityId: entity.externalId }
-      );
+    case 'start':
+    case 'pause':
+    case 'stop':
+    case 'return_home':
+    case 'locate':
+    case 'clean_spot': {
+      const route = getVacuumLikeCommandRoute(entity, command);
+      if (!route) {
+        throw new UnsupportedProviderCommandError(command.type);
+      }
+      await callHomeAssistantService(route.domain, route.service, route.data, {
+        entityId: entity.externalId,
+      });
       return;
+    }
     case 'play_pause':
       await callHomeAssistantService(
         'media_player',
@@ -335,31 +384,6 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
           entityId: entity.externalId,
         }
       );
-      return;
-    case 'start':
-      await callHomeAssistantService('vacuum', 'start', {}, { entityId: entity.externalId });
-      return;
-    case 'pause':
-      await callHomeAssistantService('vacuum', 'pause', {}, { entityId: entity.externalId });
-      return;
-    case 'stop':
-      await callHomeAssistantService('vacuum', 'stop', {}, { entityId: entity.externalId });
-      return;
-    case 'return_home':
-      await callHomeAssistantService(
-        'vacuum',
-        'return_to_base',
-        {},
-        {
-          entityId: entity.externalId,
-        }
-      );
-      return;
-    case 'locate':
-      await callHomeAssistantService('vacuum', 'locate', {}, { entityId: entity.externalId });
-      return;
-    case 'clean_spot':
-      await callHomeAssistantService('vacuum', 'clean_spot', {}, { entityId: entity.externalId });
       return;
     default:
       throw new UnsupportedProviderCommandError((command as { type: string }).type);

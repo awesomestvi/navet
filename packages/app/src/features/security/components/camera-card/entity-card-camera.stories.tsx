@@ -1,4 +1,5 @@
-import { RUNTIME_SAMPLE_MEDIA } from '@navet/app/assets/runtime-sample-images';
+import cameraSampleImageAvif from '@assets/reference/media/camera-sample.avif';
+import cameraSampleImageWebp from '@assets/reference/media/camera-sample.webp';
 import { CameraCard } from '@navet/app/features/security';
 import { type CameraViewMode, useSettingsStore } from '@navet/app/stores/settings-store';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
@@ -10,6 +11,11 @@ import { useEffect } from 'react';
 type CameraCardStoryArgs = Omit<ComponentProps<typeof CameraCard>, 'onSizeChange'> & {
   cameraViewMode?: CameraViewMode;
 };
+
+const sampleCameraSources = [
+  { srcSet: cameraSampleImageAvif, type: 'image/avif' },
+  { srcSet: cameraSampleImageWebp, type: 'image/webp' },
+] as const;
 
 function CameraCardStory({ cameraViewMode = 'snapshot', ...args }: CameraCardStoryArgs) {
   useEffect(() => {
@@ -37,7 +43,8 @@ const meta = {
     id: 'camera.front_door',
     name: 'Front Door Cam',
     room: 'Entrance',
-    entityPicture: RUNTIME_SAMPLE_MEDIA.camera,
+    entityPicture: cameraSampleImageWebp,
+    entityPictureSources: sampleCameraSources,
     supportedFeatures: 2,
     isStreamCapable: true,
     cameraViewMode: 'snapshot',
@@ -85,7 +92,8 @@ export const ExtraLarge: Story = {
 
 export const LiveStream: Story = {
   args: {
-    entityPicture: '/api/camera_proxy/camera.front_door',
+    entityPicture: cameraSampleImageWebp,
+    entityPictureSources: sampleCameraSources,
     cameraViewMode: 'live',
     isStreamCapable: true,
   },
@@ -93,7 +101,8 @@ export const LiveStream: Story = {
 
 export const AutoSnapshot: Story = {
   args: {
-    entityPicture: '/api/camera_proxy/camera.front_door',
+    entityPicture: cameraSampleImageWebp,
+    entityPictureSources: sampleCameraSources,
     cameraViewMode: 'auto',
     isStreamCapable: true,
   },
@@ -115,7 +124,8 @@ export const StreamFallback: Story = {
     id: 'camera.garage',
     name: 'Garage Cam',
     room: 'Garage',
-    entityPicture: '/api/camera_proxy/camera.garage',
+    entityPicture: cameraSampleImageWebp,
+    entityPictureSources: sampleCameraSources,
     cameraViewMode: 'live',
     isStreamCapable: false,
   },

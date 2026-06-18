@@ -12,6 +12,12 @@ const VACUUM_FEATURES = {
   start: 8192,
 } as const;
 
+const LAWN_MOWER_FEATURES = {
+  start: 1,
+  pause: 2,
+  returnHome: 4,
+} as const;
+
 export interface VacuumCleaningArea {
   id: string;
   label: string;
@@ -53,6 +59,17 @@ function readSupportedFeatures(
 
 function hasFeature(supportedFeatures: number | undefined, feature: number): boolean {
   return typeof supportedFeatures === 'number' && (supportedFeatures & feature) === feature;
+}
+
+function isLawnMowerEntity(
+  providerEntity?: NavetEntity | null,
+  vacuumEntity?: PlatformEntitySnapshot
+): boolean {
+  return (
+    (typeof providerEntity?.externalId === 'string' &&
+      providerEntity.externalId.startsWith('lawn_mower.')) ||
+    (typeof vacuumEntity?.entityId === 'string' && vacuumEntity.entityId.startsWith('lawn_mower.'))
+  );
 }
 
 function readFanSpeedValue(
@@ -151,6 +168,7 @@ export function resolveVacuumCapabilities({
   providerEntity?: NavetEntity | null;
   vacuumEntity?: PlatformEntitySnapshot;
 }): VacuumCapabilities {
+  const isLawnMower = isLawnMowerEntity(providerEntity, vacuumEntity);
   const supportedFeatures = readSupportedFeatures(providerEntity, vacuumEntity);
   const fanSpeedOptions = readFanSpeedOptions(providerEntity, vacuumEntity);
   const currentFanSpeed = readFanSpeedValue(providerEntity, vacuumEntity);
@@ -158,24 +176,31 @@ export function resolveVacuumCapabilities({
   const canOrderAreaCleaning = readAreaOrderingSupport(providerEntity, vacuumEntity);
   const hasFanSpeedList = fanSpeedOptions.length > 0;
   const canSetFanSpeed =
-    hasFeature(supportedFeatures, VACUUM_FEATURES.fanSpeed) || hasFanSpeedList === true;
+    !isLawnMower &&
+    (hasFeature(supportedFeatures, VACUUM_FEATURES.fanSpeed) || hasFanSpeedList === true);
 
   return {
-    canStart:
-      hasFeature(supportedFeatures, VACUUM_FEATURES.start) || supportedFeatures === undefined,
-    canPause: hasFeature(supportedFeatures, VACUUM_FEATURES.pause),
-    canStop: hasFeature(supportedFeatures, VACUUM_FEATURES.stop),
-    canReturnHome:
-      hasFeature(supportedFeatures, VACUUM_FEATURES.returnHome) || supportedFeatures === undefined,
-    canLocate: hasFeature(supportedFeatures, VACUUM_FEATURES.locate),
-    canCleanSpot: hasFeature(supportedFeatures, VACUUM_FEATURES.cleanSpot),
+    canStart: isLawnMower
+      ? hasFeature(supportedFeatures, LAWN_MOWER_FEATURES.start) || supportedFeatures === undefined
+      : hasFeature(supportedFeatures, VACUUM_FEATURES.start) || supportedFeatures === undefined,
+    canPause: isLawnMower
+      ? hasFeature(supportedFeatures, LAWN_MOWER_FEATURES.pause)
+      : hasFeature(supportedFeatures, VACUUM_FEATURES.pause),
+    canStop: !isLawnMower && hasFeature(supportedFeatures, VACUUM_FEATURES.stop),
+    canReturnHome: isLawnMower
+      ? hasFeature(supportedFeatures, LAWN_MOWER_FEATURES.returnHome) ||
+        supportedFeatures === undefined
+      : hasFeature(supportedFeatures, VACUUM_FEATURES.returnHome) ||
+        supportedFeatures === undefined,
+    canLocate: !isLawnMower && hasFeature(supportedFeatures, VACUUM_FEATURES.locate),
+    canCleanSpot: !isLawnMower && hasFeature(supportedFeatures, VACUUM_FEATURES.cleanSpot),
     canSetFanSpeed,
-    currentFanSpeed,
-    fanSpeedOptions,
+    currentFanSpeed: isLawnMower ? undefined : currentFanSpeed,
+    fanSpeedOptions: isLawnMower ? [] : fanSpeedOptions,
     canCycleFanSpeed: canSetFanSpeed && fanSpeedOptions.length >= 2,
-    canShowMap: hasFeature(supportedFeatures, VACUUM_FEATURES.map),
-    canCleanByArea: availableCleaningAreas.length > 0,
-    canOrderAreaCleaning: canOrderAreaCleaning && availableCleaningAreas.length > 1,
-    availableCleaningAreas,
+    canShowMap: !isLawnMower && hasFeature(supportedFeatures, VACUUM_FEATURES.map),
+    canCleanByArea: !isLawnMower && availableCleaningAreas.length > 0,
+    canOrderAreaCleaning: !isLawnMower && canOrderAreaCleaning && availableCleaningAreas.length > 1,
+    availableCleaningAreas: isLawnMower ? [] : availableCleaningAreas,
   };
 }

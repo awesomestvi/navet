@@ -10,8 +10,8 @@ interface SensorHistorySparklineProps {
 }
 
 const VIEWBOX_WIDTH = 200;
-const PAD_TOP = 8;
-const PAD_BOTTOM = 10;
+const PAD_TOP = 2;
+const PAD_BOTTOM = 0;
 
 function smoothPath(points: { x: number; y: number }[]): string {
   if (points.length < 2) {

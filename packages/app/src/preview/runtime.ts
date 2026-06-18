@@ -965,9 +965,59 @@ function buildEntitySnapshotMap(entities: NavetEntity[]): PlatformEntitySnapshot
   );
 }
 
+let cachedPreviewEntitySnapshotSource: NavetEntity[] | null = null;
+let cachedPreviewEntitySnapshots: PlatformEntitySnapshotMap | null = null;
+let cachedPreviewEntityRegistrySource:
+  | PreviewRuntimeScenario['homeAssistant']['entityRegistry']
+  | null = null;
+let cachedPreviewEntityRegistryEntries: PlatformEntityRegistryEntry[] = [];
+let cachedPreviewEntityRegistryById: Record<string, PlatformEntityRegistryEntry | undefined> = {};
+
+function resetPreviewEntityRuntimeCaches() {
+  cachedPreviewEntitySnapshotSource = null;
+  cachedPreviewEntitySnapshots = null;
+  cachedPreviewEntityRegistrySource = null;
+  cachedPreviewEntityRegistryEntries = [];
+  cachedPreviewEntityRegistryById = {};
+}
+
+function getPreviewEntitySnapshotMap(entities: NavetEntity[]): PlatformEntitySnapshotMap {
+  if (cachedPreviewEntitySnapshotSource === entities && cachedPreviewEntitySnapshots) {
+    return cachedPreviewEntitySnapshots;
+  }
+
+  cachedPreviewEntitySnapshotSource = entities;
+  cachedPreviewEntitySnapshots = buildEntitySnapshotMap(entities);
+  return cachedPreviewEntitySnapshots;
+}
+
+function getPreviewEntityRegistryEntries(
+  entityRegistry: PreviewRuntimeScenario['homeAssistant']['entityRegistry'] | undefined
+): PlatformEntityRegistryEntry[] {
+  const nextSource = entityRegistry ?? [];
+  if (cachedPreviewEntityRegistrySource === nextSource) {
+    return cachedPreviewEntityRegistryEntries;
+  }
+
+  cachedPreviewEntityRegistrySource = nextSource;
+  cachedPreviewEntityRegistryEntries = nextSource.map(
+    (entry): PlatformEntityRegistryEntry => ({
+      entityId: entry.entity_id,
+      deviceId: entry.device_id,
+      areaId: entry.area_id ?? null,
+      name: null,
+      platform: 'preview',
+    })
+  );
+  cachedPreviewEntityRegistryById = Object.fromEntries(
+    cachedPreviewEntityRegistryEntries.map((entry) => [entry.entityId, entry])
+  );
+  return cachedPreviewEntityRegistryEntries;
+}
+
 function createPreviewEntityRuntimeService() {
   return {
-    getEntitySnapshots: () => buildEntitySnapshotMap(getPreviewProviderState().entities),
+    getEntitySnapshots: () => getPreviewEntitySnapshotMap(getPreviewProviderState().entities),
     subscribeEntitySnapshots: (listener: () => void) =>
       previewRuntimeStore.subscribe((state, previousState) => {
         if (state.scenario?.entities !== previousState.scenario?.entities) {
@@ -975,7 +1025,7 @@ function createPreviewEntityRuntimeService() {
         }
       }),
     getEntitySnapshot: (entityId: string) =>
-      buildEntitySnapshotMap(getPreviewProviderState().entities)[entityId],
+      getPreviewEntitySnapshotMap(getPreviewProviderState().entities)[entityId],
     subscribeEntitySnapshot: (_entityId: string, listener: () => void) =>
       previewRuntimeStore.subscribe((state, previousState) => {
         if (state.scenario?.entities !== previousState.scenario?.entities) {
@@ -983,15 +1033,7 @@ function createPreviewEntityRuntimeService() {
         }
       }),
     getEntityRegistryEntries: () =>
-      (getActiveScenario()?.homeAssistant.entityRegistry ?? []).map(
-        (entry): PlatformEntityRegistryEntry => ({
-          entityId: entry.entity_id,
-          deviceId: entry.device_id,
-          areaId: entry.area_id ?? null,
-          name: null,
-          platform: 'preview',
-        })
-      ),
+      getPreviewEntityRegistryEntries(getActiveScenario()?.homeAssistant.entityRegistry),
     subscribeEntityRegistryEntries: (listener: () => void) =>
       previewRuntimeStore.subscribe((state, previousState) => {
         if (
@@ -1001,25 +1043,29 @@ function createPreviewEntityRuntimeService() {
           listener();
         }
       }),
-    getEntityRegistryEntry: (entityId: string) =>
-      (getActiveScenario()?.homeAssistant.entityRegistry ?? [])
-        .filter((entry) => entry.entity_id === entityId)
-        .map(
-          (entry): PlatformEntityRegistryEntry => ({
-            entityId: entry.entity_id,
-            deviceId: entry.device_id,
-            areaId: entry.area_id ?? null,
-            name: null,
-            platform: 'preview',
-          })
-        )[0],
-    subscribeEntityRegistryEntry: (_entityId: string, listener: () => void) =>
+    getEntityRegistryEntry: (entityId: string) => {
+      getPreviewEntityRegistryEntries(getActiveScenario()?.homeAssistant.entityRegistry);
+      return cachedPreviewEntityRegistryById[entityId];
+    },
+    subscribeEntityRegistryEntry: (entityId: string, listener: () => void) =>
       previewRuntimeStore.subscribe((state, previousState) => {
         if (
           state.scenario?.homeAssistant.entityRegistry !==
           previousState.scenario?.homeAssistant.entityRegistry
         ) {
-          listener();
+          const previousRegistryEntries = getPreviewEntityRegistryEntries(
+            previousState.scenario?.homeAssistant.entityRegistry
+          );
+          const previousEntry = previousRegistryEntries.find(
+            (entry) => entry.entityId === entityId
+          );
+          const nextRegistryEntries = getPreviewEntityRegistryEntries(
+            state.scenario?.homeAssistant.entityRegistry
+          );
+          const nextEntry = nextRegistryEntries.find((entry) => entry.entityId === entityId);
+          if (nextEntry !== previousEntry) {
+            listener();
+          }
         }
       }),
     getConfig: () => getActiveScenario()?.homeAssistant.config ?? PREVIEW_HOME_ASSISTANT_CONFIG,
@@ -1314,6 +1360,7 @@ const previewProviderPackageRegistration: ProviderPackageRegistration = {
 };
 
 function applyPreviewRuntimeScenario(scenario: PreviewRuntimeScenario) {
+  resetPreviewEntityRuntimeCaches();
   previewRuntimeStore.setState({ scenario });
   setProviderPackageRegistrationOverride(PREVIEW_PROVIDER_ID, previewProviderPackageRegistration);
   resetProviderRuntimeRegistrationCache();
@@ -1329,6 +1376,7 @@ export function installPreviewRuntime(scenario: PreviewRuntimeScenario) {
 }
 
 export function resetPreviewRuntime() {
+  resetPreviewEntityRuntimeCaches();
   previewRuntimeStore.setState({ scenario: null });
   setProviderPackageRegistrationOverride(PREVIEW_PROVIDER_ID, null);
   resetProviderRuntimeRegistrationCache();

@@ -811,6 +811,7 @@ export const svMessages = {
   'sensors.category.other': 'Övrigt',
   'vacuum.subtitle': 'Dammsugare',
   'vacuum.status.cleaning': 'Städar',
+  'lawnMower.status.mowing': 'Klipper',
   'vacuum.status.mopping': 'Moppar',
   'vacuum.status.drying': 'Torkar',
   'vacuum.status.returning': 'Återvänder till dockan',

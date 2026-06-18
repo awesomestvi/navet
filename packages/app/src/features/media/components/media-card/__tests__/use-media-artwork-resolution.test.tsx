@@ -16,6 +16,7 @@ vi.mock('@navet/app/services/home-assistant.service', () => ({
 }));
 
 import { useMediaArtworkResolution } from '@navet/app/features/media/components/media-card/use-media-artwork-resolution';
+import * as mediaArtworkHookModule from '@navet/app/features/media/hooks/use-media-artwork';
 import { mediaArtworkService } from '@navet/app/infrastructure/home-assistant/home-assistant-infrastructure';
 import { resetRuntimeContextForTests } from '@navet/app/infrastructure/home-assistant/runtime/runtime-detector';
 
@@ -192,6 +193,27 @@ describe('useMediaArtworkResolution', () => {
     await waitFor(() => {
       expect(result.current.albumArt).toBe('https://cdn.example.test/album-art.jpg');
     });
+  });
+
+  it('preserves direct fallback artwork when resource resolution is unavailable', async () => {
+    vi.spyOn(mediaArtworkHookModule, 'useMediaArtwork').mockReturnValue({
+      id: 'media_player.storybook',
+      kind: 'unavailable',
+      cacheKey: 'storybook-artwork',
+      authStrategy: 'none',
+    });
+
+    const { result } = renderHook(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.storybook',
+        liveEntityPicture: '/assets/reference/media/artworks-original.jpg',
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.albumArt).toBe('/assets/reference/media/artworks-original.jpg');
+    });
+    expect(result.current.artworkResource).toBeNull();
   });
 
   it('resolves signed Home Assistant artwork URLs in panel mode without dropping the signature', async () => {

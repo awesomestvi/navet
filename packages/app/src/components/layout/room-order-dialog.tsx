@@ -14,12 +14,7 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import {
-  Button,
-  DialogFooter,
-  DialogShell,
-  settingsDialogContentClass,
-} from '@navet/app/components/primitives';
+import { BaseCardDialog, Button } from '@navet/app/components/primitives';
 import { getDndTransformStyle } from '@navet/app/components/shared/dnd-transform-style';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
@@ -165,18 +160,16 @@ export const RoomOrderDialog = memo(function RoomOrderDialog({
   };
 
   return (
-    <DialogShell
+    <BaseCardDialog
+      variant="modal"
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      contentAriaDescribedBy={undefined}
-      overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
-      contentClassName={settingsDialogContentClass(surface, {
-        maxWidth: 'sm',
-        height: 'capped',
-        overflow: true,
-        padding: false,
-        animate: true,
-      })}
+      title={t('dashboard.roomNav.reorderDialog.title')}
+      description={t('dashboard.roomNav.reorderDialog.description')}
+      theme={theme}
+      maxWidth="sm"
+      height="capped"
+      bodyPadding={false}
     >
       <div className="max-h-[85vh] overflow-y-auto p-6">
         <div className="mb-5 flex items-start justify-between gap-4">
@@ -211,11 +204,11 @@ export const RoomOrderDialog = memo(function RoomOrderDialog({
           </SortableContext>
         </DndContext>
 
-        <DialogFooter>
+        <div className="mt-6 flex justify-end gap-2">
           <Button variant="soft" size="small" onClick={handleDone} disabled={isSaving}>
             {t('common.done')}
           </Button>
-        </DialogFooter>
+        </div>
       </div>
 
       <DeleteRoomDialog
@@ -226,7 +219,7 @@ export const RoomOrderDialog = memo(function RoomOrderDialog({
         onClose={() => setPendingDeleteRoom(null)}
         onConfirm={() => void handleDeleteRoom()}
       />
-    </DialogShell>
+    </BaseCardDialog>
   );
 });
 
@@ -248,23 +241,25 @@ const DeleteRoomDialog = memo(function DeleteRoomDialog({
   onConfirm,
 }: DeleteRoomDialogProps) {
   const { t } = useI18n();
+  const { theme } = useTheme();
 
   return (
-    <DialogShell
+    <BaseCardDialog
+      variant="modal"
       isOpen={isOpen}
       onOpenChange={(open) => {
         if (!open) {
           onClose();
         }
       }}
-      contentAriaDescribedBy={undefined}
-      overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
-      contentClassName={settingsDialogContentClass(surface, {
-        maxWidth: 'sm',
-        overflow: false,
-        padding: false,
-        animate: true,
+      title={t('dashboard.roomNav.reorderDialog.deleteTitle')}
+      description={t('dashboard.roomNav.reorderDialog.deleteDescription', {
+        room: room ?? '',
       })}
+      theme={theme}
+      overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
+      maxWidth="sm"
+      bodyPadding={false}
     >
       <div className="p-6">
         <div className="space-y-2">
@@ -278,7 +273,7 @@ const DeleteRoomDialog = memo(function DeleteRoomDialog({
           </Dialog.Description>
         </div>
 
-        <DialogFooter>
+        <div className="mt-6 flex justify-end gap-2">
           <Button variant="ghost" size="small" onClick={onClose} disabled={isSaving}>
             {t('common.cancel')}
           </Button>
@@ -291,9 +286,9 @@ const DeleteRoomDialog = memo(function DeleteRoomDialog({
           >
             {t('dashboard.roomNav.reorderDialog.deleteAction')}
           </Button>
-        </DialogFooter>
+        </div>
       </div>
-    </DialogShell>
+    </BaseCardDialog>
   );
 });
 

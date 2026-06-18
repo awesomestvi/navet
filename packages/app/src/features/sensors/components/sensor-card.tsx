@@ -13,7 +13,10 @@ import { inferSensorDisplayIcon } from '@navet/app/hooks/device-mappers';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { type KeyboardEvent, memo, useState } from 'react';
-import type { SensorStatisticsPoint } from '../hooks/use-sensor-statistics-history';
+import {
+  type SensorStatisticsPoint,
+  useSensorStatisticsHistory,
+} from '../hooks/use-sensor-statistics-history';
 import { buildInfoDisplayModel, INFO_TONE_CLASSES } from './info-display-model';
 import { SensorHistorySparkline } from './sensor-history-sparkline';
 import { SensorSettingsDialog } from './sensor-settings-dialog';
@@ -91,6 +94,7 @@ export const InfoCard = memo(function InfoCard({
   );
   const cardShell = getCardShellSurfaceTokens(theme);
   const toneClasses = INFO_TONE_CLASSES[displayModel.tone];
+  const defaultSparklineHistory = useSensorStatisticsHistory(sparklineData ? undefined : id);
   const isVeryCompact = isTinyCardSize(size) || isExtraSmallCardSize(size);
   const isSmall = size === 'small';
   const subtitleText = displayModel.eyebrow || t('sensors.single');
@@ -99,11 +103,14 @@ export const InfoCard = memo(function InfoCard({
   const unitText = displayModel.unit ? ` ${displayModel.unit}` : '';
   const isExtraSmall = isExtraSmallCardSize(size);
   const chromeSize = isVeryCompact ? (isExtraSmall ? 'tiny' : size) : isSmall ? 'small' : 'medium';
+  const resolvedSparklineData =
+    sparklineData ??
+    (defaultSparklineHistory.hasHistory ? defaultSparklineHistory.points : undefined);
   const shouldShowSparkline =
     !isVeryCompact &&
     !isSmall &&
     displayModel.status !== 'unavailable' &&
-    (sparklineData?.length ?? 0) >= 2;
+    (resolvedSparklineData?.length ?? 0) >= 2;
   const openSettings = () => {
     if (onOpenSettings) {
       onOpenSettings();
@@ -159,7 +166,7 @@ export const InfoCard = memo(function InfoCard({
         underlay={
           shouldShowSparkline ? (
             <SensorHistorySparkline
-              data={sparklineData ?? []}
+              data={resolvedSparklineData ?? []}
               accentColor={displayModel.baseColor}
               height={size === 'large' ? 152 : 126}
             />

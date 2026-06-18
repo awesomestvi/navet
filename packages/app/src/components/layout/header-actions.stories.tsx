@@ -1,6 +1,7 @@
+import { NotificationPanel } from '@navet/app/features/notifications';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import type { Meta, StoryObj } from '@storybook/react';
-import { type ReactNode, useRef, useState } from 'react';
+import { type ReactNode, useMemo, useRef } from 'react';
 import { HeaderDesktopActions } from './header-actions';
 
 function HeaderActionsDesktopPreview({ children }: { children: ReactNode }) {
@@ -8,24 +9,31 @@ function HeaderActionsDesktopPreview({ children }: { children: ReactNode }) {
 }
 
 function HeaderDesktopActionsStory({ defaultOpen = false }: { defaultOpen?: boolean }) {
-  const [isNotificationOpen, setIsNotificationOpen] = useState(defaultOpen);
   const desktopNotificationButtonRef = useRef<HTMLButtonElement | null>(null);
   const mobileNotificationButtonRef = useRef<HTMLButtonElement | null>(null);
+  const triggerRefs = useMemo(
+    () => [mobileNotificationButtonRef, desktopNotificationButtonRef],
+    []
+  );
 
   return (
     <HeaderActionsDesktopPreview>
-      <div className="flex items-center gap-2">
+      <div className="relative flex items-center gap-2">
         <HeaderDesktopActions
           activeColorValue="#22d3ee"
           avatarUrl={null}
           desktopNotificationButtonRef={desktopNotificationButtonRef}
           hoverBg="hover:bg-white/10"
-          isNotificationOpen={isNotificationOpen}
+          isNotificationOpen={defaultOpen}
           mobileNotificationButtonRef={mobileNotificationButtonRef}
-          setIsNotificationOpen={setIsNotificationOpen}
+          renderPanel={!defaultOpen}
+          setIsNotificationOpen={() => undefined}
           textSecondary="text-white/70"
           unreadCount={3}
         />
+        {defaultOpen ? (
+          <NotificationPanel isOpen onClose={() => undefined} triggerRefs={triggerRefs} />
+        ) : null}
       </div>
     </HeaderActionsDesktopPreview>
   );

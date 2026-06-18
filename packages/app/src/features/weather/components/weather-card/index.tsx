@@ -1,6 +1,6 @@
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { CardWrapper } from '@navet/app/components/ui/card-wrapper';
-import { useI18n } from '@navet/app/hooks';
+import { useAccentColor, useI18n } from '@navet/app/hooks';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore, type WeatherForecastMode } from '@navet/app/stores/settings-store';
 import {
@@ -95,6 +95,7 @@ export const WeatherCard = memo(function WeatherCard({
   isEditMode,
 }: WeatherCardProps) {
   const { t } = useI18n();
+  const accentColor = useAccentColor();
   const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
   const {
     theme,
@@ -373,6 +374,7 @@ export const WeatherCard = memo(function WeatherCard({
           isOpen={isSettingsOpen}
           onOpenChange={setIsSettingsOpen}
           theme={theme}
+          accentColorValue={accentColor}
           title={cityName}
           forecastMode={selectedForecastMode}
           onForecastModeChange={(mode) => updateSettings({ weatherForecastMode: mode })}

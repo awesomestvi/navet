@@ -7,7 +7,6 @@ const meta = {
   tags: ['autodocs'],
   args: {
     title: 'Section card',
-    eyebrow: 'UI KIT',
     children: (
       <div className="text-sm text-white/76">Use for shared section-level content blocks.</div>
     ),

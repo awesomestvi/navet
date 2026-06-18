@@ -9,29 +9,28 @@ export {
 } from './base-card';
 export { BodyText, type BodyTextProps } from './body-text';
 export { Button, type ButtonProps } from './button';
+export {
+  BaseCardDialog,
+  type BaseCardDialogProps,
+  type BaseCardDialogTab,
+  BaseCardDialogWithState,
+  type BaseCardDialogWithStateProps,
+} from './Cards/BaseCardDialog';
 export { CardMetric } from './card-metric';
 export { CardMetricActionLayout } from './card-metric-action-layout';
-export {
-  CardSettingsDialog,
-  type CardSettingsDialogProps,
-  type CardSettingsDialogTab,
-  CardSettingsDialogWithState,
-  type CardSettingsDialogWithStateProps,
-} from './card-settings-dialog';
 export { CardShell, type CardShellProps } from './card-shell';
 export { Checkbox, type CheckboxProps } from './checkbox';
 export { ColorInputSwatch, type ColorInputSwatchProps } from './color-input-swatch';
 export { Combobox, type ComboboxProps } from './combobox';
 export {
   CustomDialogDoneButton,
-  customCardDialogShellProps,
+  customCardDialogSurfaceProps,
   DialogDoneButton,
   DialogDoneFooter,
   DialogFooter,
-  DialogShell,
   SettingsDialogDoneButton,
   settingsDialogContentClass,
-} from './dialog-shell';
+} from './dialog-primitives';
 export { EntityCardHeader } from './entity-card-header';
 export { EntityCardHeaderIcon } from './entity-card-header-icon';
 export { EntityCardTitleBlock, type EntityCardTitleLayout } from './entity-card-title-block';

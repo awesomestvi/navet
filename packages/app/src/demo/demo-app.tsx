@@ -35,7 +35,7 @@ import { CoverCard } from '@navet/app/features/security/components/cover-card';
 import { LockCard } from '@navet/app/features/security/components/lock-card';
 import { SecurityCameraDashboard } from '@navet/app/features/security/components/security-camera-dashboard';
 import { buildSecurityCameraDashboardModel } from '@navet/app/features/security/utils/security-camera-dashboard-model';
-import { InfoBadgeStrip } from '@navet/app/features/sensors';
+import { SummaryBar } from '@navet/app/features/sensors';
 import { GroupedSensorCard } from '@navet/app/features/sensors/components/grouped-sensor-card';
 import type { HomeStatusSummaryItem } from '@navet/app/features/sensors/components/home-status-summary-model';
 import { SensorCard } from '@navet/app/features/sensors/components/sensor-card';
@@ -381,7 +381,7 @@ const demoHomeWidgets: CustomCard[] = [
           id: 'bbc-world',
           name: 'BBC World',
           type: 'url',
-          feedUrl: 'https://feeds.bbci.co.uk/news/world/rss.xml',
+          feedUrl: 'https://feeds.bbci.co.uk/news/rss.xml',
           demoItems: [
             {
               id: 'demo-rss-1',
@@ -624,7 +624,7 @@ function DashboardGrid({ children }: { children: ReactNode }) {
 function DemoSummaryRow() {
   const setActiveSection = useNavigationStore((state) => state.setActiveSection);
 
-  return <InfoBadgeStrip items={demoSummaryItems} onNavigate={setActiveSection} />;
+  return <SummaryBar items={demoSummaryItems} onNavigate={setActiveSection} />;
 }
 
 function ProductGrid() {

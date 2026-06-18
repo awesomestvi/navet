@@ -1,24 +1,15 @@
-import {
-  CardDialogBody,
-  CardDialogHeader,
-  CardDialogSection,
-  CardDialogTabList,
-  CardDialogTabTrigger,
-  CardEmptyState,
-} from '@navet/app/components/patterns';
+import { CardDialogSection, CardEmptyState } from '@navet/app/components/patterns';
 import {
   BaseCard,
+  BaseCardDialog,
   Button,
-  customCardDialogShellProps,
   DialogFooter,
-  DialogShell,
   EntityCardHeader,
   EntityCardHeaderIcon,
   EntityCardTitleBlock,
   Input,
   Textarea,
 } from '@navet/app/components/primitives';
-import { TabPanel, Tabs } from '@navet/app/components/primitives/tabs';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import {
   isExtraSmallCardSize,
@@ -26,16 +17,12 @@ import {
 } from '@navet/app/components/shared/card-size-selector';
 import {
   CustomCardTintPicker,
-  CustomScrollbar,
   getNamedIconComponent,
   IconPicker,
 } from '@navet/app/components/shared/device-editor';
 import { getCardReadableTextTokens } from '@navet/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@navet/app/components/shared/theme/card-shell-surface-tokens';
-import {
-  getCustomCardTintSurface,
-  getInheritedDialogSectionStyle,
-} from '@navet/app/components/shared/theme/custom-card-tint-surface';
+import { getInheritedDialogSectionStyle } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
 import { TinyCardWatermark } from '@navet/app/components/shared/tiny-card-watermark';
 import {
@@ -90,12 +77,6 @@ function ButtonSettingsDialog({
     data.serviceData ? JSON.stringify(data.serviceData, null, 2) : ''
   );
   const surface = getDashboardWidgetSurfaceTokens(theme, tintColor || undefined);
-  const tintSurface = getCustomCardTintSurface(theme, tintColor || undefined);
-  const dialogShell = customCardDialogShellProps(
-    { panel: surface.panelClassName, border: surface.borderClassName },
-    tintSurface,
-    { maxWidth: 'sm', padding: false }
-  );
   const sectionStyle = getInheritedDialogSectionStyle(theme, tintColor || undefined);
   const wasOpenRef = useRef(isOpen);
 
@@ -166,110 +147,95 @@ function ButtonSettingsDialog({
     background: surface.subtleFill,
   };
 
+  const tabs = [
+    {
+      key: 'controls',
+      label: t('common.controls'),
+      icon: Sliders,
+      content: (
+        <div className="mt-5 space-y-6">
+          <CardDialogSection label={t('widgets.button.title')}>
+            <div className="space-y-3">
+              <Input
+                type="text"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                placeholder={t('widgets.button.labelPlaceholder')}
+                inputClassName={textFieldClass}
+                style={fieldStyle}
+              />
+              <Input
+                type="text"
+                value={service}
+                onChange={(e) => setService(e.target.value)}
+                placeholder={t('widgets.button.servicePlaceholder')}
+                inputClassName={textFieldClass}
+                style={fieldStyle}
+              />
+              <Input
+                type="text"
+                value={entityId}
+                onChange={(e) => setEntityId(e.target.value)}
+                placeholder={t('widgets.button.entityPlaceholder')}
+                inputClassName={textFieldClass}
+                style={fieldStyle}
+              />
+              <Textarea
+                value={serviceData}
+                onChange={(e) => setServiceData(e.target.value)}
+                placeholder={t('widgets.button.serviceDataPlaceholder')}
+                containerClassName="w-full"
+                textareaClassName={`${inputClass} min-h-24 resize-none py-2.5 font-mono text-xs`}
+                style={fieldStyle}
+              />
+            </div>
+          </CardDialogSection>
+        </div>
+      ),
+    },
+    {
+      key: 'card',
+      label: t('common.customize'),
+      icon: Palette,
+      content: (
+        <div className="mt-5 space-y-6">
+          <CustomCardTintPicker
+            value={tintColor || undefined}
+            onChange={setTintColor}
+            defaultColor="#f97316"
+            className={surface.textMuted}
+          />
+          <IconPicker
+            selectedIcon={selectedIcon}
+            onIconChange={setSelectedIcon}
+            isLightOn={theme !== 'light'}
+            label={t('widgets.button.iconLabel')}
+            accentColor={accentHex}
+          />
+        </div>
+      ),
+    },
+  ];
+
   return (
-    <DialogShell
+    <BaseCardDialog
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      overlayClassName={surface.dialogBackdrop}
-      contentClassName={dialogShell.contentClassName}
-      contentStyle={dialogShell.contentStyle}
-      contentGlowStyle={dialogShell.contentGlowStyle}
-      contentOverlayClassName={dialogShell.contentOverlayClassName}
-    >
-      <CustomScrollbar isOn={theme !== 'light'} className="max-sm:min-h-0 max-sm:flex-1">
-        <CardDialogBody>
-          <CardDialogHeader
-            title={label.trim() || t('widgets.button.title')}
-            description={t('widgets.button.configure')}
-            showRoomSelector={false}
-          />
-
-          <Tabs
-            value={activeTab}
-            defaultValue="controls"
-            onValueChange={(value) => setActiveTab(value as 'controls' | 'card')}
-          >
-            <CardDialogTabList>
-              <CardDialogTabTrigger
-                active={activeTab === 'controls'}
-                icon={Sliders}
-                onClick={() => setActiveTab('controls')}
-              >
-                {t('common.controls')}
-              </CardDialogTabTrigger>
-              <CardDialogTabTrigger
-                active={activeTab === 'card'}
-                icon={Palette}
-                onClick={() => setActiveTab('card')}
-              >
-                {t('common.customize')}
-              </CardDialogTabTrigger>
-            </CardDialogTabList>
-
-            <TabPanel value="controls" className="mt-5 space-y-6">
-              <CardDialogSection label={t('widgets.button.title')}>
-                <div className="space-y-3">
-                  <Input
-                    type="text"
-                    value={label}
-                    onChange={(e) => setLabel(e.target.value)}
-                    placeholder={t('widgets.button.labelPlaceholder')}
-                    inputClassName={textFieldClass}
-                    style={fieldStyle}
-                  />
-                  <Input
-                    type="text"
-                    value={service}
-                    onChange={(e) => setService(e.target.value)}
-                    placeholder={t('widgets.button.servicePlaceholder')}
-                    inputClassName={textFieldClass}
-                    style={fieldStyle}
-                  />
-                  <Input
-                    type="text"
-                    value={entityId}
-                    onChange={(e) => setEntityId(e.target.value)}
-                    placeholder={t('widgets.button.entityPlaceholder')}
-                    inputClassName={textFieldClass}
-                    style={fieldStyle}
-                  />
-                  <Textarea
-                    value={serviceData}
-                    onChange={(e) => setServiceData(e.target.value)}
-                    placeholder={t('widgets.button.serviceDataPlaceholder')}
-                    containerClassName="w-full"
-                    textareaClassName={`${inputClass} min-h-24 resize-none py-2.5 font-mono text-xs`}
-                    style={fieldStyle}
-                  />
-                </div>
-              </CardDialogSection>
-            </TabPanel>
-
-            <TabPanel value="card" className="mt-5 space-y-6">
-              <CustomCardTintPicker
-                value={tintColor || undefined}
-                onChange={setTintColor}
-                defaultColor="#f97316"
-                className={surface.textMuted}
-              />
-              <IconPicker
-                selectedIcon={selectedIcon}
-                onIconChange={setSelectedIcon}
-                isLightOn={theme !== 'light'}
-                label={t('widgets.button.iconLabel')}
-                accentColor={accentHex}
-              />
-            </TabPanel>
-          </Tabs>
-
-          <DialogFooter>
-            <Button onClick={handleSave} variant="soft" size="small" className="rounded-xl px-4">
-              {t('widgets.button.configure')}
-            </Button>
-          </DialogFooter>
-        </CardDialogBody>
-      </CustomScrollbar>
-    </DialogShell>
+      title={label.trim() || t('widgets.button.title')}
+      description={t('widgets.button.configure')}
+      tabs={tabs}
+      theme={theme}
+      activeTab={activeTab}
+      onActiveTabChange={(value) => setActiveTab(value as 'controls' | 'card')}
+      maxWidth="sm"
+      footerContent={
+        <DialogFooter>
+          <Button onClick={handleSave} variant="soft" size="small" className="rounded-xl px-4">
+            {t('widgets.button.configure')}
+          </Button>
+        </DialogFooter>
+      }
+    />
   );
 }
 
@@ -294,6 +260,7 @@ export function ButtonWidget({
   const isTiny = isTinyCardSize(size);
   const isExtraSmall = isExtraSmallCardSize(size);
   const isSmall = size === 'small';
+  const shouldUseCustomCardSurface = theme === 'light' || theme === 'glass';
   const tinyTextTokens = getCardReadableTextTokens({
     theme,
     tone: 'primary',
@@ -340,10 +307,10 @@ export function ButtonWidget({
   const isConfigured = Boolean(data.service);
   const overlay = (
     <>
-      {surface.glowStyle ? (
+      {shouldUseCustomCardSurface && surface.glowStyle ? (
         <div className="pointer-events-none absolute inset-0" style={surface.glowStyle} />
       ) : null}
-      {surface.overlayClassName ? (
+      {shouldUseCustomCardSurface && surface.overlayClassName ? (
         <div className={`pointer-events-none absolute inset-0 ${surface.overlayClassName}`} />
       ) : null}
       {cardShell.sheenOverlayClassName ? <div className={cardShell.sheenOverlayClassName} /> : null}
@@ -504,7 +471,7 @@ export function ButtonWidget({
     <BaseCard
       size={size}
       fullBleed
-      style={surface.panelStyle}
+      style={shouldUseCustomCardSurface ? surface.panelStyle : undefined}
       frameClassName="overflow-hidden"
       disableDefaultSheen
       overlay={overlay}

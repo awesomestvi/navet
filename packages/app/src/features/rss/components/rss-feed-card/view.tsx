@@ -66,6 +66,7 @@ export function RSSFeedCardView({
   const hasCustomTint = Boolean(rssSurface.resolvedTintColor);
   const controlAccentColor = rssSurface.resolvedTintColor ?? rssSurface.accentColor.base;
   const isEmpty = !latestArticle && !isLoading;
+  const shouldUseCustomCardSurface = theme === 'light' || theme === 'glass';
 
   return (
     <BaseCard
@@ -75,17 +76,23 @@ export function RSSFeedCardView({
         ${rssSurface.containerShadowClassName}
         ${!inEditMode ? 'cursor-default' : ''}
       `}
-      frameClassName={`${rssSurface.surface.panel} ${!hasCustomTint ? colors.rss.border : ''}`}
-      style={rssSurface.cardStyle}
+      frameClassName={
+        shouldUseCustomCardSurface
+          ? `${rssSurface.surface.panel} ${!hasCustomTint ? colors.rss.border : ''}`
+          : undefined
+      }
+      style={shouldUseCustomCardSurface ? rssSurface.cardStyle : undefined}
       disableDefaultSheen
       disableDefaultLightOverlay
       overlay={
         <>
-          {rssSurface.glowStyle ? (
+          {shouldUseCustomCardSurface && rssSurface.glowStyle ? (
             <div className="absolute inset-0" style={rssSurface.glowStyle} />
           ) : null}
-          <div className={`absolute inset-0 ${rssSurface.overlayClassName}`} />
-          {!hasCustomTint ? (
+          {shouldUseCustomCardSurface ? (
+            <div className={`absolute inset-0 ${rssSurface.overlayClassName}`} />
+          ) : null}
+          {shouldUseCustomCardSurface && !hasCustomTint ? (
             <>
               <div
                 className={`absolute inset-0 bg-linear-to-br ${colors.rss.gradient} opacity-45`}

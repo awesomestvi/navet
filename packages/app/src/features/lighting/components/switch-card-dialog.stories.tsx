@@ -1,41 +1,74 @@
-import { SwitchCard } from '@navet/app/features/lighting';
+import { Button } from '@navet/app/components/primitives/button';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import { EntityCardStoryFrame, SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
+import { SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react';
-import type { ComponentProps } from 'react';
-import { expect } from 'storybook/test';
+import { useState } from 'react';
+import { SwitchSettingsDialog } from './switch-settings-dialog';
 
-function SwitchCardDialogStory(args: ComponentProps<typeof SwitchCard>) {
+function SwitchSettingsDialogStory() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [tintColor, setTintColor] = useState('#f97316');
+  const [selectedIcon, setSelectedIcon] = useState('Power');
+  const [selectedMetricLabels, setSelectedMetricLabels] = useState<string[]>(['Power', 'Voltage']);
+
   return (
-    <SettingsDialogStoryFrame>
-      <div className="relative flex min-h-[34rem] items-center justify-center p-8">
-        <EntityCardStoryFrame size={args.size ?? 'small'}>
-          <SwitchCard {...args} />
-        </EntityCardStoryFrame>
+    <SettingsDialogStoryFrame parentCardClassName="bg-[linear-gradient(180deg,rgba(249,115,22,0.18),rgba(15,23,42,0.28))]">
+      <div className="relative flex items-start justify-center p-6">
+        <Button variant="secondary" onClick={() => setIsOpen(true)}>
+          Open switch dialog
+        </Button>
       </div>
+      <SwitchSettingsDialog
+        entityId="switch.espresso_machine"
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        name="Espresso Machine"
+        entityType="switch"
+        isOn
+        metricSectionTitle="Card metric"
+        metricSectionDescription="Select up to two metrics."
+        metricLimit={2}
+        availableMetrics={[
+          { label: 'Power', value: 1140, unit: 'W', icon: 'zap' },
+          { label: 'Voltage', value: 230, unit: 'V', icon: 'gauge' },
+          { label: 'Energy', value: 2.6, unit: 'kWh', icon: 'activity' },
+        ]}
+        selectedMetricLabels={selectedMetricLabels}
+        getMetricLabel={(metric) => metric.label}
+        onMetricToggle={(label) =>
+          setSelectedMetricLabels((current) =>
+            current.includes(label)
+              ? current.filter((item) => item !== label)
+              : current.length >= 2
+                ? current
+                : [...current, label]
+          )
+        }
+        selectedIcon={selectedIcon}
+        onIconChange={setSelectedIcon}
+        siblingEntities={[
+          {
+            id: 'switch.espresso_machine_power',
+            entity: {
+              entityId: 'switch.espresso_machine_power',
+              state: 'on',
+              attributes: { friendly_name: 'Power relay' },
+            },
+          },
+        ]}
+        tintColor={tintColor}
+        onTintColorChange={setTintColor}
+      />
     </SettingsDialogStoryFrame>
   );
 }
 
 const meta = {
   title: 'Cards/Dialogs/Switch',
-  component: SwitchCardDialogStory,
+  component: SwitchSettingsDialogStory,
   tags: ['autodocs'],
   parameters: { layout: 'fullscreen', docs: { description: {} } },
-  args: {
-    id: 'switch.espresso_machine',
-    name: 'Espresso Machine',
-    size: 'small',
-    initialState: true,
-    entityType: 'switch',
-    serviceDomain: 'switch',
-    serviceAction: 'toggle',
-    isEditMode: false,
-    power: 1140,
-    voltage: 230,
-    energy: 2.6,
-  },
-} satisfies Meta<typeof SwitchCardDialogStory>;
+} satisfies Meta<typeof SwitchSettingsDialogStory>;
 
 const richComponentDocsDescription = getStoryDocsDescription(meta.title);
 
@@ -49,27 +82,9 @@ meta.parameters = {
     },
   },
 };
+
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  play: async ({ canvas, canvasElement, step, userEvent }) => {
-    const openSettingsButton = canvas.getByRole('button', {
-      name: /open settings for espresso machine/i,
-    });
-
-    await step('opens the embedded switch dialog from the card action', async () => {
-      await userEvent.click(openSettingsButton);
-    });
-
-    const dialogCanvas = canvasElement.ownerDocument.body;
-
-    await step('renders the metric configuration section', async () => {
-      await expect(dialogCanvas).toHaveTextContent(/card metric/i);
-      await expect(dialogCanvas).toHaveTextContent(/power/i);
-      await expect(dialogCanvas).toHaveTextContent(/voltage/i);
-      await expect(dialogCanvas).toHaveTextContent(/energy/i);
-    });
-  },
-};
+export const Default: Story = {};

@@ -8,6 +8,9 @@ interface CompactRoomSelectorProps {
   label: string;
   options: Array<{ label: string; value: string }>;
   onChange?: (room: string) => void;
+  contentClassName?: string;
+  labelClassName?: string;
+  iconClassName?: string;
 }
 
 export const CompactRoomSelector = memo(function CompactRoomSelector({
@@ -15,6 +18,9 @@ export const CompactRoomSelector = memo(function CompactRoomSelector({
   label,
   options,
   onChange,
+  contentClassName,
+  labelClassName,
+  iconClassName,
 }: CompactRoomSelectorProps) {
   const { theme } = useTheme();
   const { t } = useI18n();
@@ -36,9 +42,13 @@ export const CompactRoomSelector = memo(function CompactRoomSelector({
           ))}
         </select>
       ) : null}
-      <div className={`inline-flex min-w-0 items-center gap-2 text-sm ${surface.textPrimary}`}>
-        <span className="max-w-[12rem] truncate font-medium">{label}</span>
-        <ChevronDown className={`h-4 w-4 ${surface.textSecondary}`} />
+      <div
+        className={`inline-flex min-w-0 items-center gap-2 text-sm ${surface.textPrimary} ${contentClassName ?? ''}`}
+      >
+        <span className={`max-w-[12rem] truncate font-medium ${labelClassName ?? ''}`}>
+          {label}
+        </span>
+        <ChevronDown className={`h-4 w-4 ${surface.textSecondary} ${iconClassName ?? ''}`} />
       </div>
     </div>
   );

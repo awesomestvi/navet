@@ -49,6 +49,20 @@ function vacuumEntityFactory() {
   };
 }
 
+function lawnMowerEntityFactory() {
+  return {
+    entity_id: 'lawn_mower.backyard',
+    state: 'docked',
+    attributes: {
+      friendly_name: 'Backyard Mower',
+      supported_features: 1 | 2 | 4,
+    },
+    last_changed: '2026-05-30T10:00:00.000Z',
+    last_updated: '2026-05-30T10:00:00.000Z',
+    context: { id: 'ctx-4', parent_id: null, user_id: null },
+  };
+}
+
 const { callHomeAssistantServiceMock, resolveArtworkMock } = vi.hoisted(() => ({
   callHomeAssistantServiceMock: vi.fn(async () => undefined),
   resolveArtworkMock: vi.fn(async (entityId: string) => ({
@@ -83,6 +97,7 @@ describe('homeassistant-adapter', () => {
         'light.kitchen': lightEntityFactory(),
         'alarm_control_panel.home': alarmEntityFactory(),
         'vacuum.roborock': vacuumEntityFactory(),
+        'lawn_mower.backyard': lawnMowerEntityFactory(),
       })),
       getEntityRegistry: vi.fn(() => []),
       getConfig: vi.fn(() => null),
@@ -124,6 +139,7 @@ describe('homeassistant-adapter', () => {
           'light.kitchen': lightEntityFactory(),
           'alarm_control_panel.home': alarmEntityFactory(),
           'vacuum.roborock': vacuumEntityFactory(),
+          'lawn_mower.backyard': lawnMowerEntityFactory(),
         },
         config: null,
         areas: [],
@@ -242,6 +258,84 @@ describe('homeassistant-adapter', () => {
       { cleaning_area_id: ['kitchen', 'hallway'] },
       { entityId: 'vacuum.roborock' }
     );
+  });
+
+  it('maps mower start, pause, and return-home commands to lawn_mower services', async () => {
+    const adapter = createHomeAssistantContractAdapter();
+
+    await adapter.execute({
+      type: 'start',
+      entityId: createProviderScopedId('home_assistant', 'lawn_mower.backyard'),
+    });
+    await adapter.execute({
+      type: 'pause',
+      entityId: createProviderScopedId('home_assistant', 'lawn_mower.backyard'),
+    });
+    await adapter.execute({
+      type: 'return_home',
+      entityId: createProviderScopedId('home_assistant', 'lawn_mower.backyard'),
+    });
+
+    expect(callHomeAssistantServiceMock).toHaveBeenNthCalledWith(
+      1,
+      'lawn_mower',
+      'start_mowing',
+      {},
+      { entityId: 'lawn_mower.backyard' }
+    );
+    expect(callHomeAssistantServiceMock).toHaveBeenNthCalledWith(
+      2,
+      'lawn_mower',
+      'pause',
+      {},
+      { entityId: 'lawn_mower.backyard' }
+    );
+    expect(callHomeAssistantServiceMock).toHaveBeenNthCalledWith(
+      3,
+      'lawn_mower',
+      'dock',
+      {},
+      { entityId: 'lawn_mower.backyard' }
+    );
+  });
+
+  it('rejects vacuum-only commands for lawn mower entities', async () => {
+    const adapter = createHomeAssistantContractAdapter();
+
+    await expect(
+      adapter.execute({
+        type: 'stop',
+        entityId: createProviderScopedId('home_assistant', 'lawn_mower.backyard'),
+      })
+    ).rejects.toThrow('Provider command is not supported yet: stop');
+    await expect(
+      adapter.execute({
+        type: 'locate',
+        entityId: createProviderScopedId('home_assistant', 'lawn_mower.backyard'),
+      })
+    ).rejects.toThrow('Provider command is not supported yet: locate');
+    await expect(
+      adapter.execute({
+        type: 'clean_spot',
+        entityId: createProviderScopedId('home_assistant', 'lawn_mower.backyard'),
+      })
+    ).rejects.toThrow('Provider command is not supported yet: clean_spot');
+    await expect(
+      adapter.execute({
+        type: 'set_vacuum_fan_speed',
+        entityId: createProviderScopedId('home_assistant', 'lawn_mower.backyard'),
+        fanSpeed: 'turbo',
+      })
+    ).rejects.toThrow('Provider command is not supported yet: set_vacuum_fan_speed');
+    await expect(
+      adapter.execute({
+        type: 'clean_vacuum_areas',
+        entityId: createProviderScopedId('home_assistant', 'lawn_mower.backyard'),
+        areaIds: ['front_lawn'],
+      })
+    ).rejects.toThrow('Provider command is not supported yet: clean_vacuum_areas');
+
+    expect(callHomeAssistantServiceMock).not.toHaveBeenCalled();
   });
 
   it('resolves primary_image resources through the Home Assistant artwork resolver', async () => {

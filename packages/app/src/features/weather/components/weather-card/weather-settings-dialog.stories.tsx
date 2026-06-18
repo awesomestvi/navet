@@ -1,4 +1,5 @@
 import { Button } from '@navet/app/components/primitives/button';
+import { useTheme } from '@navet/app/hooks';
 import type { WeatherForecastMode, WeatherMetricId } from '@navet/app/stores/settings-store';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
@@ -7,13 +8,14 @@ import { useState } from 'react';
 import { WeatherSettingsDialog } from './weather-settings-dialog';
 
 function WeatherSettingsDialogStory() {
+  const { accentColor, theme } = useTheme();
   const [mode, setMode] = useState<WeatherForecastMode>('hourly');
   const [metricIds, setMetricIds] = useState<WeatherMetricId[]>([
     'precipitation',
     'humidity',
     'wind',
   ]);
-  const [tintColor, setTintColor] = useState<string | undefined>('#3b82f6');
+  const [tintColor, setTintColor] = useState<string | undefined>(undefined);
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -27,7 +29,8 @@ function WeatherSettingsDialogStory() {
         entityId="weather.home"
         isOpen={isOpen}
         onOpenChange={setIsOpen}
-        theme="glass"
+        theme={theme}
+        accentColorValue={accentColor}
         title="Home Weather"
         forecastMode={mode}
         onForecastModeChange={setMode}

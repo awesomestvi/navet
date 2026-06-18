@@ -156,7 +156,7 @@ export function normalizeVacuumStatus(state: unknown, fallback = 'idle') {
   const normalized =
     typeof state === 'string' ? state.trim().toLowerCase().replace(/\s+/g, '_') : '';
 
-  if (normalized === 'cleaning') return 'cleaning';
+  if (normalized === 'cleaning' || normalized === 'mowing') return 'cleaning';
   if (normalized === 'mopping' || normalized === 'washing' || normalized === 'washing_mop') {
     return 'mopping';
   }

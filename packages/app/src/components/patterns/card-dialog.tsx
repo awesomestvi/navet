@@ -65,6 +65,7 @@ interface CardDialogTabTriggerProps {
 interface CardDialogChoicePillProps
   extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> {
   active?: boolean;
+  accentColor?: string;
   children: ReactNode;
   className?: string;
   onClick?: () => void;
@@ -353,7 +354,9 @@ export function CardDialogTabList({
   children: ReactNode;
   className?: string;
 }) {
-  return <div className={cn('mt-1 inline-flex items-center gap-1', className)}>{children}</div>;
+  return (
+    <div className={cn('mt-1 mb-4 inline-flex items-center gap-1', className)}>{children}</div>
+  );
 }
 
 export const CardDialogTabTrigger = memo(function CardDialogTabTrigger({
@@ -382,6 +385,7 @@ export const CardDialogTabTrigger = memo(function CardDialogTabTrigger({
 
 export const CardDialogChoicePill = memo(function CardDialogChoicePill({
   active = false,
+  accentColor,
   children,
   className,
   onClick,
@@ -392,6 +396,7 @@ export const CardDialogChoicePill = memo(function CardDialogChoicePill({
   return (
     <InteractivePill
       active={active}
+      accentColor={accentColor}
       onClick={onClick}
       className={cn('min-w-22', className)}
       size={size}

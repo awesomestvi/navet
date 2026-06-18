@@ -257,21 +257,6 @@ const STORY_DOCS: Record<string, string> = {
       'Check that the control still feels predictable when empty, focused, or filtering results.',
     ]
   ),
-  'Components/Primitives/Dialog Shell': doc(
-    'Shared dialog container for settings-style overlays, including content framing and decorative layers.',
-    [
-      'The common modal shell used by several feature dialogs in Navet.',
-      'How header content, body content, footer actions, and optional visual decoration fit together.',
-    ],
-    [
-      'Use this story when changing the common modal structure rather than a card-specific settings form.',
-      'Update the shell here before cloning dialog chrome in feature folders.',
-    ],
-    [
-      'Check layering, readability, and close behavior.',
-      'Check that decoration remains subtle enough for lower-power dashboard devices.',
-    ]
-  ),
   'Components/Primitives/Cards/Entity Card Header Icon': doc(
     'Shared icon treatment used in entity-card headers before card-specific content begins.',
     [
@@ -1296,6 +1281,21 @@ const STORY_DOCS: Record<string, string> = {
     [
       'Check that cleaning, docked, and paused states are easy to distinguish.',
       'Check that supporting maintenance details do not crowd the primary status.',
+    ]
+  ),
+  'Cards/Entity/Lawn Mower': doc(
+    'Entity card for robotic lawn mowers, implemented through the shared vacuum-card presentation for the first Home Assistant pass.',
+    [
+      'How mowing, paused, returning, docked, and error states read when mapped into the shared maintenance-device card.',
+      'The mower-specific subset of controls where vacuum-only actions stay hidden.',
+    ],
+    [
+      'Use this story when changing mower presentation, status mapping, or the shared card behavior that mower entities inherit.',
+      'Review it alongside the vacuum story when modifying shared maintenance-card controls.',
+    ],
+    [
+      'Check that mower states remain readable without vacuum-only metrics crowding the card.',
+      'Check that only start, pause, and return-home style behavior is implied by the story variants.',
     ]
   ),
   'Cards/Entity/Weather': doc(

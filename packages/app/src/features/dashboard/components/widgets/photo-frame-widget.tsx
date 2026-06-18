@@ -90,6 +90,7 @@ export function PhotoFrameWidget({
   const canConfigure = photoFrameConfig !== null;
   const hasQuickActions = currentPhotoImage ? showShuffleControl || canConfigure : false;
   const chromeSize = size === 'large' ? 'medium' : size;
+  const shouldUseCustomCardSurface = theme === 'light' || theme === 'glass';
   const imageMotionClassName = useMemo(
     () => (hasCustomPhotos ? 'scale-[1.02] transition-transform duration-[1800ms] ease-out' : ''),
     [hasCustomPhotos]
@@ -142,15 +143,17 @@ export function PhotoFrameWidget({
     <BaseCard
       size={size}
       fullBleed
-      style={{
-        ...surface.panelStyle,
-        ...(hasCustomPhotos
+      style={
+        hasCustomPhotos
           ? {
+              ...(shouldUseCustomCardSurface ? surface.panelStyle : undefined),
               background: 'transparent',
               boxShadow: 'none',
             }
-          : {}),
-      }}
+          : shouldUseCustomCardSurface
+            ? surface.panelStyle
+            : undefined
+      }
       frameClassName="overflow-hidden"
       disableDefaultSheen
       contentClassName="h-full"

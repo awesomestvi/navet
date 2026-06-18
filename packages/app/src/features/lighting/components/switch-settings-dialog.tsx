@@ -1,17 +1,8 @@
 import { dispatchEntityCommand } from '@navet/app/commands';
-import {
-  CardDialogBody,
-  CardDialogHeader,
-  CardDialogSection,
-  CardDialogTabList,
-  CardDialogTabTrigger,
-  SelectableCheckboxRow,
-} from '@navet/app/components/patterns';
-import { DialogDoneFooter, DialogShell } from '@navet/app/components/primitives';
-import { TabPanel, Tabs } from '@navet/app/components/primitives/tabs';
+import { CardDialogSection, SelectableCheckboxRow } from '@navet/app/components/patterns';
+import { BaseCardDialog, type BaseCardDialogTab } from '@navet/app/components/primitives';
 import {
   CustomCardTintPicker,
-  CustomScrollbar,
   DialogSectionRow,
   IconPicker,
 } from '@navet/app/components/shared/device-editor';
@@ -24,7 +15,6 @@ import {
   getThemeColorValue,
   resolvePrimaryColorToken,
 } from '@navet/app/components/shared/theme/theme-colors';
-import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import type { DeviceMetric } from '@navet/app/types/device.types';
 import {
@@ -34,7 +24,7 @@ import {
 import { getEntityTypeLabel } from '@navet/app/utils/entity-type-label';
 import { Palette, Sliders, ToggleLeft } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback } from 'react';
 import type { SwitchSiblingEntity } from './use-switch-card-controller';
 
 interface SwitchSettingsDialogProps {
@@ -90,12 +80,8 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
 }: SwitchSettingsDialogProps) {
   const { primaryColor, theme } = useTheme();
   const { t } = useI18n();
-  const surface = getThemeSurfaceTokens(theme);
   const hasControls = siblingEntities.length > 0 || customControls != null;
   const hasMetrics = availableMetrics.length > 0;
-  const [activeTab, setActiveTab] = useState(
-    hasControls ? 'controls' : hasMetrics ? 'metrics' : 'card'
-  );
 
   const activeDialogColors = getAccentDialogSurface(resolvePrimaryColorToken(primaryColor));
   const activeAccentColor =
@@ -103,62 +89,30 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
     normalizeCustomCardTint(dialogTintColor) ??
     getThemeColorValue(primaryColor);
   const sectionStyle = getInheritedDialogSectionStyle(theme, tintColor, activeAccentColor);
-  const gradientClassName = isOn
-    ? `bg-linear-to-br ${activeDialogColors.from} ${activeDialogColors.to} ${activeDialogColors.border}`
-    : 'bg-linear-to-br from-gray-900/95 to-gray-950/95 border-gray-500/10';
-  const dialogSurfaceOverrideClassName = isOn ? (dialogSurfaceClassName ?? '') : '';
+  const dialogSurface = isOn
+    ? {
+        panel: `bg-linear-to-br ${activeDialogColors.from} ${activeDialogColors.to}`,
+        border: activeDialogColors.border,
+      }
+    : {
+        panel: 'bg-linear-to-br from-gray-900/95 to-gray-950/95',
+        border: 'border-gray-500/10',
+      };
+  const dialogSurfaceOverrideClassName = isOn ? (dialogSurfaceClassName ?? '') : undefined;
   const resolvedDialogSurfaceStyle = isOn ? dialogSurfaceStyle : undefined;
   const siblingLabels = siblingEntities
     .map((entry) => entry.entity.attributes?.friendly_name)
     .filter((label): label is string => typeof label === 'string' && label.trim().length > 0);
 
-  return (
-    <DialogShell
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      disableOpenAutoFocus
-      overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
-      contentClassName={`fixed top-1/2 left-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 ${gradientClassName} ${dialogSurfaceOverrideClassName}`}
-      contentStyle={resolvedDialogSurfaceStyle}
-    >
-      <CustomScrollbar isOn={isOn}>
-        <CardDialogBody>
-          <CardDialogHeader title={name} description={entityType} entityId={entityId} />
-
-          <Tabs value={activeTab} defaultValue={activeTab} onValueChange={setActiveTab}>
-            <CardDialogTabList>
-              {hasControls ? (
-                <CardDialogTabTrigger
-                  active={activeTab === 'controls'}
-                  accentColor={activeAccentColor}
-                  icon={ToggleLeft}
-                  onClick={() => setActiveTab('controls')}
-                >
-                  {t('common.controls')}
-                </CardDialogTabTrigger>
-              ) : null}
-              {hasMetrics ? (
-                <CardDialogTabTrigger
-                  active={activeTab === 'metrics'}
-                  accentColor={activeAccentColor}
-                  icon={Sliders}
-                  onClick={() => setActiveTab('metrics')}
-                >
-                  {t('common.metrics')}
-                </CardDialogTabTrigger>
-              ) : null}
-              <CardDialogTabTrigger
-                active={activeTab === 'card'}
-                accentColor={activeAccentColor}
-                icon={Palette}
-                onClick={() => setActiveTab('card')}
-              >
-                {t('common.customize')}
-              </CardDialogTabTrigger>
-            </CardDialogTabList>
-
-            <TabPanel value="controls" className="mt-5 space-y-6">
-              {hasControls ? (
+  const tabs: BaseCardDialogTab[] = [
+    ...(hasControls
+      ? [
+          {
+            key: 'controls',
+            label: t('common.controls'),
+            icon: ToggleLeft,
+            content: (
+              <div className="space-y-6">
                 <DialogSectionRow
                   label={t('camera.settings.switches')}
                   labelClassName="mb-1 text-white"
@@ -181,11 +135,19 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
                     ))}
                   </div>
                 </DialogSectionRow>
-              ) : null}
-            </TabPanel>
-
-            <TabPanel value="metrics" className="mt-5 space-y-6">
-              {hasMetrics ? (
+              </div>
+            ),
+          } satisfies BaseCardDialogTab,
+        ]
+      : []),
+    ...(hasMetrics
+      ? [
+          {
+            key: 'metrics',
+            label: t('common.metrics'),
+            icon: Sliders,
+            content: (
+              <div className="space-y-6">
                 <CardDialogSection label={metricSectionTitle}>
                   <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
                     {availableMetrics.map((metric) => {
@@ -198,18 +160,15 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
                           checked={isSelected}
                           disabled={isDisabled}
                           onCheckedChange={(nextChecked) => {
-                            if (nextChecked === isSelected) {
-                              return;
-                            }
-
+                            if (nextChecked === isSelected) return;
                             onMetricToggle(metric.label);
                           }}
                           label={getMetricLabel(metric)}
                           description={isDisabled ? metricSectionDescription : undefined}
                           checkboxAppearance="secondary"
                           checkboxPaletteColor={activeAccentColor}
-                          rowClassName={`${surface.border} ${surface.textPrimary} ${surface.hoverBg}`}
-                          descriptionClassName={surface.textMuted}
+                          rowClassName="border-white/10 text-white hover:bg-white/5"
+                          descriptionClassName="text-white/58"
                           selectedStyle={{
                             ...sectionStyle,
                             borderColor: `${activeAccentColor}80`,
@@ -220,31 +179,54 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
                     })}
                   </div>
                 </CardDialogSection>
-              ) : null}
-            </TabPanel>
+              </div>
+            ),
+          } satisfies BaseCardDialogTab,
+        ]
+      : []),
+    {
+      key: 'card',
+      label: t('common.customize'),
+      icon: Palette,
+      content: (
+        <div className="space-y-6">
+          <CustomCardTintPicker
+            value={tintColor}
+            onChange={onTintColorChange}
+            isOn={isOn}
+            defaultColor={activeAccentColor}
+            pickerRingColor={activeAccentColor}
+          />
+          <IconPicker
+            selectedIcon={selectedIcon}
+            onIconChange={onIconChange}
+            isLightOn={isOn}
+            label={t('lighting.switch.icon')}
+            accentColor={activeAccentColor}
+          />
+        </div>
+      ),
+    },
+  ];
 
-            <TabPanel value="card" className="mt-5 space-y-6">
-              <CustomCardTintPicker
-                value={tintColor}
-                onChange={onTintColorChange}
-                isOn={isOn}
-                defaultColor={activeAccentColor}
-                pickerRingColor={activeAccentColor}
-              />
-              <IconPicker
-                selectedIcon={selectedIcon}
-                onIconChange={onIconChange}
-                isLightOn={isOn}
-                label={t('lighting.switch.icon')}
-                accentColor={activeAccentColor}
-              />
-            </TabPanel>
-          </Tabs>
-
-          <DialogDoneFooter label={t('common.done')} />
-        </CardDialogBody>
-      </CustomScrollbar>
-    </DialogShell>
+  return (
+    <BaseCardDialog
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      title={name}
+      entityId={entityId}
+      description={entityType}
+      tabs={tabs}
+      theme={theme}
+      contentSurface={dialogSurface}
+      contentClassName={dialogSurfaceOverrideClassName}
+      contentStyle={resolvedDialogSurfaceStyle}
+      disableOpenAutoFocus
+      maxWidth="md"
+      height="capped"
+      scrollClassName="max-sm:min-h-0 max-sm:flex-1"
+      bodyClassName="w-full"
+    />
   );
 });
 

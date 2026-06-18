@@ -1,13 +1,9 @@
 import {
-  CardDialogBody,
   CardDialogChoicePill,
-  CardDialogDoneFooter,
-  CardDialogHeader,
   CardDialogSection,
   SelectableCheckboxRow,
 } from '@navet/app/components/patterns';
-import { customCardDialogShellProps, DialogShell } from '@navet/app/components/primitives';
-import { CompactRoomSelector } from '@navet/app/components/shared/device-editor/compact-room-selector';
+import { BaseCardDialogWithState } from '@navet/app/components/primitives';
 import { getDashboardWidgetSurfaceTokens } from '@navet/app/features/dashboard/components/widgets/widget-surface-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import { ChevronDown, ChevronUp, GripVertical } from 'lucide-react';
@@ -66,15 +62,6 @@ export function MediaStackSettingsDialog({
   const { theme } = useTheme();
   const { t } = useI18n();
   const surface = getDashboardWidgetSurfaceTokens(theme);
-  const dialogShell = customCardDialogShellProps(
-    { panel: surface.panelClassName, border: surface.borderClassName },
-    {},
-    {
-      maxWidth: 'md',
-      padding: false,
-      height: 'capped',
-    }
-  );
   const entityIds = Array.isArray(data?.entityIds) ? data.entityIds : [];
   const priorityOrder = Array.isArray(data?.priorityOrder) ? data.priorityOrder : entityIds;
   const selectedIds = useMemo(() => new Set(entityIds), [entityIds]);
@@ -126,170 +113,156 @@ export function MediaStackSettingsDialog({
     updateSelection(entityIds, nextPriorityOrder);
   };
 
+  const controlsTabContent = (
+    <>
+      <CardDialogSection
+        label={t('widgets.mediaStack.settings.players')}
+        helperText={t('widgets.mediaStack.settings.help')}
+      >
+        {playerOptions.length === 0 ? (
+          <p
+            className={`rounded-2xl border px-4 py-4 text-sm ${surface.borderClassName} ${surface.textMuted}`}
+          >
+            {t('widgets.mediaStack.settings.noneAvailable')}
+          </p>
+        ) : (
+          <ul className="max-h-72 min-w-0 max-w-full space-y-1.5 overflow-x-hidden overflow-y-auto pr-1">
+            {playerOptions.map((player) => {
+              const isChecked = selectedIds.has(player.id);
+              const currentIndex = priorityOrder.indexOf(player.id);
+              return (
+                <li key={player.id} className="w-full min-w-0 max-w-full">
+                  <SelectableCheckboxRow
+                    checked={isChecked}
+                    onCheckedChange={() => handleToggle(player.id)}
+                    label={
+                      <span className="block truncate" title={player.name}>
+                        {player.name}
+                      </span>
+                    }
+                    description={`${player.room} · ${player.subtitle}`}
+                    trailing={
+                      isChecked ? (
+                        <div className="flex items-center gap-1">
+                          <span className={`text-xs ${surface.textMuted}`}>{currentIndex + 1}</span>
+                          <GripVertical className={`h-4 w-4 ${surface.textMuted}`} />
+                          <button
+                            type="button"
+                            aria-label={t('widgets.mediaStack.settings.moveUp')}
+                            className={`rounded-full p-1 ${surface.textSecondary}`}
+                            onClick={(event) => moveSelected(event, player.id, -1)}
+                          >
+                            <ChevronUp className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={t('widgets.mediaStack.settings.moveDown')}
+                            className={`rounded-full p-1 ${surface.textSecondary}`}
+                            onClick={(event) => moveSelected(event, player.id, 1)}
+                          >
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ) : null
+                    }
+                    rowClassName={`w-full min-w-0 max-w-full overflow-hidden ${surface.borderClassName} ${surface.textPrimary}`}
+                    labelClassName="truncate"
+                    descriptionClassName={`whitespace-normal break-all ${surface.textMuted}`}
+                    style={{ background: surface.subtleFill }}
+                    selectedStyle={{
+                      background: surface.subtleFill,
+                      borderColor: 'rgba(255,255,255,0.22)',
+                    }}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </CardDialogSection>
+
+      <CardDialogSection
+        label={t('widgets.mediaStack.settings.priority')}
+        helperText={t('widgets.mediaStack.settings.priorityHelp')}
+      >
+        {selectedPlayerOptions.length === 0 ? (
+          <p
+            className={`rounded-2xl border px-4 py-4 text-sm ${surface.borderClassName} ${surface.textMuted}`}
+          >
+            {t('widgets.mediaStack.settings.priorityEmpty')}
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {selectedPlayerOptions.map((player, index) => (
+              <div
+                key={player.id}
+                className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-sm ${surface.borderClassName} ${surface.textPrimary}`}
+                style={{ background: surface.subtleFill }}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium">{player.name}</div>
+                  <div className={`mt-0.5 text-xs ${surface.textMuted}`}>
+                    {t('widgets.mediaStack.settings.priorityPosition', {
+                      position: index + 1,
+                    })}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardDialogSection>
+
+      <CardDialogSection
+        label={t('widgets.mediaStack.settings.idleBehavior')}
+        helperText={t('widgets.mediaStack.settings.idleBehaviorHelp')}
+      >
+        <div className="space-y-2">
+          {IDLE_BEHAVIORS.map((idleBehavior) => {
+            const active = (data?.idleBehavior ?? 'compact') === idleBehavior;
+            return (
+              <CardDialogChoicePill
+                key={idleBehavior}
+                active={active}
+                onClick={() =>
+                  onUpdate?.({
+                    entityIds,
+                    priorityOrder,
+                    idleBehavior,
+                  })
+                }
+                className={`flex w-full items-start justify-start rounded-2xl border px-4 py-3 text-left ${surface.borderClassName} ${surface.textPrimary}`}
+                style={{ background: surface.subtleFill }}
+              >
+                <div>
+                  <div className="text-sm font-medium">{getIdleBehaviorLabel(idleBehavior, t)}</div>
+                </div>
+              </CardDialogChoicePill>
+            );
+          })}
+        </div>
+      </CardDialogSection>
+    </>
+  );
+
   return (
-    <DialogShell
+    <BaseCardDialogWithState
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      disableOpenAutoFocus
-      contentAriaDescribedBy={undefined}
-      overlayClassName={surface.dialogBackdrop}
-      contentClassName={dialogShell.contentClassName}
-      contentStyle={dialogShell.contentStyle}
-      contentGlowClassName={dialogShell.contentGlowClassName}
-      contentGlowStyle={dialogShell.contentGlowStyle}
-      contentOverlayClassName={dialogShell.contentOverlayClassName}
-    >
-      <div className="max-h-[85vh] w-full min-w-0 overflow-y-auto">
-        <CardDialogBody>
-          <CardDialogHeader
-            title={t('widgets.mediaStack.settings.title')}
-            description={t('widgets.common.widget')}
-            showRoomSelector={false}
-            eyebrow={
-              <CompactRoomSelector
-                value={roomValue}
-                label={roomLabel}
-                options={roomOptions}
-                onChange={onRoomChange}
-              />
-            }
-          />
-
-          <CardDialogSection
-            label={t('widgets.mediaStack.settings.players')}
-            helperText={t('widgets.mediaStack.settings.help')}
-          >
-            {playerOptions.length === 0 ? (
-              <p
-                className={`rounded-2xl border px-4 py-4 text-sm ${surface.borderClassName} ${surface.textMuted}`}
-              >
-                {t('widgets.mediaStack.settings.noneAvailable')}
-              </p>
-            ) : (
-              <ul className="max-h-72 min-w-0 max-w-full space-y-1.5 overflow-x-hidden overflow-y-auto pr-1">
-                {playerOptions.map((player) => {
-                  const isChecked = selectedIds.has(player.id);
-                  const currentIndex = priorityOrder.indexOf(player.id);
-                  return (
-                    <li key={player.id} className="w-full min-w-0 max-w-full">
-                      <SelectableCheckboxRow
-                        checked={isChecked}
-                        onCheckedChange={() => handleToggle(player.id)}
-                        label={
-                          <span className="block truncate" title={player.name}>
-                            {player.name}
-                          </span>
-                        }
-                        description={`${player.room} · ${player.subtitle}`}
-                        trailing={
-                          isChecked ? (
-                            <div className="flex items-center gap-1">
-                              <span className={`text-xs ${surface.textMuted}`}>
-                                {currentIndex + 1}
-                              </span>
-                              <GripVertical className={`h-4 w-4 ${surface.textMuted}`} />
-                              <button
-                                type="button"
-                                aria-label={t('widgets.mediaStack.settings.moveUp')}
-                                className={`rounded-full p-1 ${surface.textSecondary}`}
-                                onClick={(event) => moveSelected(event, player.id, -1)}
-                              >
-                                <ChevronUp className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                aria-label={t('widgets.mediaStack.settings.moveDown')}
-                                className={`rounded-full p-1 ${surface.textSecondary}`}
-                                onClick={(event) => moveSelected(event, player.id, 1)}
-                              >
-                                <ChevronDown className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          ) : null
-                        }
-                        rowClassName={`w-full min-w-0 max-w-full overflow-hidden ${surface.borderClassName} ${surface.textPrimary}`}
-                        labelClassName="truncate"
-                        descriptionClassName={`whitespace-normal break-all ${surface.textMuted}`}
-                        style={{ background: surface.subtleFill }}
-                        selectedStyle={{
-                          background: surface.subtleFill,
-                          borderColor: 'rgba(255,255,255,0.22)',
-                        }}
-                      />
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </CardDialogSection>
-
-          <CardDialogSection
-            label={t('widgets.mediaStack.settings.priority')}
-            helperText={t('widgets.mediaStack.settings.priorityHelp')}
-          >
-            {selectedPlayerOptions.length === 0 ? (
-              <p
-                className={`rounded-2xl border px-4 py-4 text-sm ${surface.borderClassName} ${surface.textMuted}`}
-              >
-                {t('widgets.mediaStack.settings.priorityEmpty')}
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {selectedPlayerOptions.map((player, index) => (
-                  <div
-                    key={player.id}
-                    className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-sm ${surface.borderClassName} ${surface.textPrimary}`}
-                    style={{ background: surface.subtleFill }}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate font-medium">{player.name}</div>
-                      <div className={`mt-0.5 text-xs ${surface.textMuted}`}>
-                        {t('widgets.mediaStack.settings.priorityPosition', {
-                          position: index + 1,
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardDialogSection>
-
-          <CardDialogSection
-            label={t('widgets.mediaStack.settings.idleBehavior')}
-            helperText={t('widgets.mediaStack.settings.idleBehaviorHelp')}
-          >
-            <div className="space-y-2">
-              {IDLE_BEHAVIORS.map((idleBehavior) => {
-                const active = (data?.idleBehavior ?? 'compact') === idleBehavior;
-                return (
-                  <CardDialogChoicePill
-                    key={idleBehavior}
-                    active={active}
-                    onClick={() =>
-                      onUpdate?.({
-                        entityIds,
-                        priorityOrder,
-                        idleBehavior,
-                      })
-                    }
-                    className={`flex w-full items-start justify-start rounded-2xl border px-4 py-3 text-left ${surface.borderClassName} ${surface.textPrimary}`}
-                    style={{ background: surface.subtleFill }}
-                  >
-                    <div>
-                      <div className="text-sm font-medium">
-                        {getIdleBehaviorLabel(idleBehavior, t)}
-                      </div>
-                    </div>
-                  </CardDialogChoicePill>
-                );
-              })}
-            </div>
-          </CardDialogSection>
-
-          <CardDialogDoneFooter label={t('common.done')} />
-        </CardDialogBody>
-      </div>
-    </DialogShell>
+      title={t('widgets.mediaStack.settings.title')}
+      description={t('widgets.common.widget')}
+      roomSelector={{
+        value: roomValue,
+        label: roomLabel,
+        options: roomOptions,
+        onChange: onRoomChange,
+      }}
+      controlsTabContent={controlsTabContent}
+      theme={theme}
+      maxWidth="md"
+      height="capped"
+      scrollClassName="max-h-[85vh] w-full min-w-0"
+      bodyClassName="max-h-[85vh] w-full min-w-0"
+    />
   );
 }

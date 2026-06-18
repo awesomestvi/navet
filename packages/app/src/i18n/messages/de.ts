@@ -820,6 +820,7 @@ export const deMessages = {
   'sensors.category.other': 'Sonstiges',
   'vacuum.subtitle': 'Staubsauger',
   'vacuum.status.cleaning': 'Reinigt',
+  'lawnMower.status.mowing': 'Mäht',
   'vacuum.status.mopping': 'Wischt',
   'vacuum.status.drying': 'Trocknet',
   'vacuum.status.returning': 'Kehrt zur Station zurück',

@@ -4,13 +4,7 @@ import {
   CardDialogHeader,
   CardDialogSection,
 } from '@navet/app/components/patterns';
-import {
-  Button,
-  customCardDialogShellProps,
-  DialogShell,
-  Input,
-  InteractivePill,
-} from '@navet/app/components/primitives';
+import { BaseCardDialog, Button, Input, InteractivePill } from '@navet/app/components/primitives';
 import { IconPicker } from '@navet/app/components/shared/device-editor';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@navet/app/hooks';
@@ -123,15 +117,6 @@ export function CustomExtensionsDialog({
   const surface = getThemeSurfaceTokens(theme);
   const customSidebarActions = useSettingsStore(settingsSelectors.customSidebarActions);
   const updateSettings = useSettingsStore(settingsSelectors.updateSettings);
-  const dialogShell = customCardDialogShellProps(
-    surface,
-    {},
-    {
-      maxWidth: 'md',
-      padding: false,
-      height: 'capped',
-    }
-  );
   const [draft, setDraft] = useState<CustomSidebarAction>(createEmptySidebarActionDraft);
 
   const existingAction = useMemo(
@@ -197,17 +182,19 @@ export function CustomExtensionsDialog({
   };
 
   return (
-    <DialogShell
+    <BaseCardDialog
+      variant="modal"
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      overlayClassName={surface.dialogBackdrop}
+      title={draftExistingAction ? 'Edit sidebar action' : 'Add sidebar action'}
+      description={
+        draftExistingAction ? 'Change this sidebar shortcut.' : 'Create a new sidebar shortcut.'
+      }
+      theme={theme}
       disableOpenAutoFocus
-      contentAriaDescribedBy={undefined}
-      contentClassName={dialogShell.contentClassName}
-      contentStyle={dialogShell.contentStyle}
-      contentGlowClassName={dialogShell.contentGlowClassName}
-      contentGlowStyle={dialogShell.contentGlowStyle}
-      contentOverlayClassName={dialogShell.contentOverlayClassName}
+      maxWidth="md"
+      height="capped"
+      bodyPadding={false}
     >
       <div className="max-h-[85vh] w-full min-w-0 overflow-y-auto">
         <CardDialogBody>
@@ -311,6 +298,6 @@ export function CustomExtensionsDialog({
           </CardDialogFooter>
         </CardDialogBody>
       </div>
-    </DialogShell>
+    </BaseCardDialog>
   );
 }

@@ -83,4 +83,44 @@ describe('resolveVacuumCapabilities', () => {
       availableCleaningAreas: [],
     });
   });
+
+  it('treats lawn mower entities as a narrowed vacuum capability set', () => {
+    const capabilities = resolveVacuumCapabilities({
+      providerEntity: {
+        id: 'home_assistant:lawn_mower.backyard',
+        canonicalId: 'home_assistant:lawn_mower.backyard',
+        providerId: 'home_assistant',
+        externalId: 'lawn_mower.backyard',
+        type: 'vacuum',
+        name: 'Backyard Mower',
+        primaryState: 'docked',
+        availability: 'available',
+        capabilities: [],
+        attributes: {
+          supportedFeatures: 1 | 2 | 4,
+          fanSpeed: 'turbo',
+          fanSpeedList: ['quiet', 'turbo'],
+          availableCleaningAreas: [{ id: 'front_lawn', label: 'Front lawn' }],
+          canOrderAreaCleaning: true,
+        },
+      },
+    });
+
+    expect(capabilities).toEqual({
+      canStart: true,
+      canPause: true,
+      canStop: false,
+      canReturnHome: true,
+      canLocate: false,
+      canCleanSpot: false,
+      canSetFanSpeed: false,
+      currentFanSpeed: undefined,
+      fanSpeedOptions: [],
+      canCycleFanSpeed: false,
+      canShowMap: false,
+      canCleanByArea: false,
+      canOrderAreaCleaning: false,
+      availableCleaningAreas: [],
+    });
+  });
 });

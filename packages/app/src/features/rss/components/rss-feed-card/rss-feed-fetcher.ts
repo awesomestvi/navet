@@ -5,6 +5,12 @@ import type { RSSItem, RSSProvider } from './types';
 
 const RSS_PROXY_PATH = '/__navet_rss_proxy__';
 
+function shouldFetchRSSDirectly() {
+  return (
+    typeof document !== 'undefined' && document.documentElement.dataset.navetStorybook === 'true'
+  );
+}
+
 export function getRSSProxyRequestUrl(feedUrl: string) {
   const baseUrl =
     typeof window !== 'undefined' && window.location.origin
@@ -28,9 +34,12 @@ export async function fetchUrlProviderItems(
     return [];
   }
 
-  const response = await fetch(getRSSProxyRequestUrl(provider.feedUrl), {
-    cache: 'no-store',
-  });
+  const response = await fetch(
+    shouldFetchRSSDirectly() ? provider.feedUrl : getRSSProxyRequestUrl(provider.feedUrl),
+    {
+      cache: 'no-store',
+    }
+  );
 
   if (!response.ok) {
     throw new Error(`unable-to-load:${provider.name}`);

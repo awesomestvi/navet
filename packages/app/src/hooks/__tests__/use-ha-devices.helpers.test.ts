@@ -185,7 +185,7 @@ describe('use-ha-devices helpers', () => {
     ]);
   });
 
-  it('suppresses switches attached to climate, water heater, or vacuum devices', () => {
+  it('suppresses switches attached to climate, water heater, vacuum, or lawn mower devices', () => {
     const entities: HassEntities = {
       'climate.hallway': climateEntityFactory(),
       'water_heater.boiler': waterHeaterEntityFactory(),
@@ -198,6 +198,14 @@ describe('use-ha-devices helpers', () => {
           fan_speed: 'balanced',
           fan_speed_list: ['quiet', 'balanced', 'turbo'],
           supported_features: 127,
+        },
+      }),
+      'lawn_mower.backyard': makeHassEntityFixture({
+        entityId: 'lawn_mower.backyard',
+        state: 'docked',
+        attributes: {
+          friendly_name: 'Backyard Mower',
+          supported_features: 1 | 2 | 4,
         },
       }),
       'switch.hallway_boost': makeHassEntityFixture({
@@ -221,14 +229,26 @@ describe('use-ha-devices helpers', () => {
           friendly_name: 'Roborock Child Lock',
         },
       }),
+      'switch.backyard_mower_child_lock': makeHassEntityFixture({
+        entityId: 'switch.backyard_mower_child_lock',
+        state: 'off',
+        attributes: {
+          friendly_name: 'Backyard Mower Child Lock',
+        },
+      }),
     };
     const entityRegistryMap = createRegistryMap([
       { entity_id: 'climate.hallway', device_id: 'device-climate' },
       { entity_id: 'water_heater.boiler', device_id: 'device-boiler' },
       { entity_id: 'vacuum.roborock', device_id: 'device-vacuum' },
+      { entity_id: 'lawn_mower.backyard', device_id: 'device-lawn-mower' },
       { entity_id: 'switch.hallway_boost', device_id: 'device-climate' },
       { entity_id: 'switch.boiler_boost', device_id: 'device-boiler' },
       { entity_id: 'switch.roborock_child_lock', device_id: 'device-vacuum' },
+      {
+        entity_id: 'switch.backyard_mower_child_lock',
+        device_id: 'device-lawn-mower',
+      },
     ]);
 
     const indexes = buildDeviceIndexes(entities, entityRegistryMap);
@@ -251,6 +271,13 @@ describe('use-ha-devices helpers', () => {
       shouldSkipSwitchDevice(
         'switch.roborock_child_lock',
         entityRegistryMap.get('switch.roborock_child_lock'),
+        indexes
+      )
+    ).toBe(true);
+    expect(
+      shouldSkipSwitchDevice(
+        'switch.backyard_mower_child_lock',
+        entityRegistryMap.get('switch.backyard_mower_child_lock'),
         indexes
       )
     ).toBe(true);

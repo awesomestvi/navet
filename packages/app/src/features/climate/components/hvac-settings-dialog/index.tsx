@@ -1,15 +1,8 @@
 import { dispatchEntityCommand } from '@navet/app/commands';
-import {
-  CardActionRow,
-  CardDialogHeader,
-  CardDialogTabList,
-  CardDialogTabTrigger,
-} from '@navet/app/components/patterns';
-import { DialogDoneFooter, DialogShell } from '@navet/app/components/primitives';
-import { TabPanel, Tabs } from '@navet/app/components/primitives/tabs';
-import { CustomScrollbar, DialogSectionRow } from '@navet/app/components/shared/device-editor';
+import { CardActionRow } from '@navet/app/components/patterns';
+import { BaseCardDialog, type BaseCardDialogTab } from '@navet/app/components/primitives';
+import { DialogSectionRow } from '@navet/app/components/shared/device-editor';
 import { getCardReadableTextTokens } from '@navet/app/components/shared/theme/card-readable-text-tokens';
-import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { getHVACGaugeColor } from '@navet/app/features/climate/utils/hvac-styles';
 import { convertCelsiusPresetToSourceUnit } from '@navet/app/features/climate/utils/hvac-temperature-presets';
 import { getHvacTemperatureStatusLabel } from '@navet/app/features/climate/utils/hvac-temperature-status-label';
@@ -29,7 +22,7 @@ import {
   formatTemperatureValueFromSourceUnit,
 } from '@navet/app/utils/temperature';
 import { Fan, Sliders, Thermometer } from 'lucide-react';
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback } from 'react';
 import { HVACGauge } from '../hvac-card/hvac-gauge';
 import { HVACModeControls } from '../hvac-card/hvac-mode-controls';
 import { HVACTempControls } from '../hvac-card/hvac-temp-controls';
@@ -86,7 +79,6 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
   const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
-  const surface = getThemeSurfaceTokens(theme);
   const entityType = getEntityTypeLabel(entityId);
   const visualMode = useHvacVisualMode({
     action,
@@ -111,7 +103,6 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
   const styles = getHVACSettingsDialogStyles(visualMode, isOn);
   const dialogGlowColors = getHVACGaugeColor(visualMode);
   const contentInsetClassName = 'px-6 max-sm:px-3.5';
-  const [activeTab, setActiveTab] = useState('hvac');
   const effectiveSourceTemperatureUnit = sourceTemperatureUnit ?? 'celsius';
   const displayTargetTemp = convertTemperatureUnitValue(
     targetTemp,
@@ -164,195 +155,182 @@ export const HVACSettingsDialog = memo(function HVACSettingsDialog({
   const siblingLabels = siblingEntities
     .map((entry) => entry.entity.attributes?.friendly_name)
     .filter((label): label is string => typeof label === 'string' && label.trim().length > 0);
+  const contentGlowStyle = isOn
+    ? {
+        background: `radial-gradient(ellipse at 100% 43%, ${dialogGlowColors.secondary}70 0%, ${dialogGlowColors.primary}45 28%, ${dialogGlowColors.primary}22 48%, transparent 72%)`,
+      }
+    : undefined;
+  const contentOverlayClassName = isOn ? 'pointer-events-none absolute inset-0 z-0' : null;
+  const contentOverlayStyle = isOn
+    ? {
+        background: `linear-gradient(90deg, transparent 0%, transparent 44%, ${dialogGlowColors.primary}12 68%, ${dialogGlowColors.secondary}22 100%)`,
+      }
+    : undefined;
+
+  const hvacTabContent = (
+    <div className="relative -mx-6 max-sm:-mx-3.5">
+      <div className="relative z-10 pt-2 pb-6 max-sm:pb-3">
+        <div className="-mt-8">
+          <HVACGauge
+            id={entityId}
+            mode={visualMode}
+            targetTemp={displayTargetTemp}
+            currentTemp={displayCurrentTemp}
+            isOn={isOn}
+            minTemp={displayMinTemp}
+            maxTemp={displayMaxTemp}
+            step={displayStep}
+            temperatureUnit={temperatureUnit}
+            helperText={getHvacTemperatureStatusLabel(
+              t,
+              formatTemperatureFromSourceUnit(targetTemp, sourceTemperatureUnit, temperatureUnit),
+              formatTemperatureFromSourceUnit(currentTemp, sourceTemperatureUnit, temperatureUnit),
+              visualMode,
+              targetTemp,
+              currentTemp
+            )}
+            onTargetTempChange={handleDisplayTargetTempChange}
+            onTargetTempCommit={handleDisplayTargetTempCommit}
+            variant="immersive"
+          />
+        </div>
+        <div className={`relative z-10 -mt-6 space-y-4 ${contentInsetClassName}`}>
+          <CardActionRow
+            theme={theme}
+            size="medium"
+            leftContent={
+              <div className="flex items-center gap-2">
+                <HVACTempControls
+                  targetTemp={controlDisplayTargetTemp}
+                  onTempChange={handleDisplayTargetTempChange}
+                  onTempCommit={handleDisplayTargetTempCommit}
+                  isOn={isOn}
+                  size="medium"
+                  minTemp={controlDisplayMinTemp}
+                  maxTemp={controlDisplayMaxTemp}
+                  step={controlDisplayStep}
+                />
+                <HVACModeControls
+                  mode={mode}
+                  isOn={isOn}
+                  onModeChange={onModeChange}
+                  supportedHvacModes={supportedHvacModes}
+                  size="medium"
+                />
+              </div>
+            }
+          />
+
+          <DialogSectionRow label={t('climate.presets')}>
+            <div className="flex flex-wrap items-center gap-2.5">
+              {temperaturePresets.map((preset) => {
+                const sourcePresetValue = convertCelsiusPresetToSourceUnit(
+                  preset.value,
+                  sourceTemperatureUnit
+                );
+                const isSelected = Math.abs(targetTemp - sourcePresetValue) < 0.05;
+
+                return (
+                  <button
+                    type="button"
+                    key={`${preset.label ?? preset.value}`}
+                    onClick={() => (onTargetTempCommit ?? onTargetTempChange)(sourcePresetValue)}
+                    disabled={!isOn}
+                    className={`flex h-10 min-w-10 items-center justify-center rounded-full border px-3 text-sm font-semibold transition-all duration-300 disabled:opacity-50 ${isOn ? 'hover:scale-105' : ''} ${isSelected ? `scale-105 shadow-lg ${styles.presetButtonActiveClassName}` : styles.presetButtonClassName}`}
+                  >
+                    <span
+                      className="leading-none"
+                      style={
+                        isSelected
+                          ? { color: dialogTextTokens.titleColor }
+                          : { color: dialogTextTokens.subtitleColor }
+                      }
+                    >
+                      {formatTemperatureValueFromSourceUnit(
+                        sourcePresetValue,
+                        sourceTemperatureUnit,
+                        temperatureUnit
+                      )}
+                      °
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </DialogSectionRow>
+        </div>
+      </div>
+    </div>
+  );
+
+  const controlsTabContent = (
+    <div className={`py-6 max-sm:py-3 ${contentInsetClassName}`}>
+      {siblingEntities.length > 0 ? (
+        <DialogSectionRow label="Controls">
+          <div className="space-y-2">
+            {siblingEntities.map(({ id, entity }) => (
+              <ClimateSiblingControlRow
+                key={id}
+                entityId={id}
+                label={getSiblingDisplayName(
+                  name,
+                  siblingLabels,
+                  id,
+                  entity.attributes?.friendly_name
+                )}
+                typeLabel={getEntityTypeLabel(id)}
+                state={entity.state}
+                attributes={entity.attributes}
+              />
+            ))}
+          </div>
+        </DialogSectionRow>
+      ) : (
+        <DialogSectionRow label="Controls">
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">
+            No extra controls available
+          </div>
+        </DialogSectionRow>
+      )}
+    </div>
+  );
+
+  const tabs: BaseCardDialogTab[] = [
+    {
+      key: 'hvac',
+      label: t('climate.subtitle'),
+      icon: Thermometer,
+      content: hvacTabContent,
+    },
+    {
+      key: 'controls',
+      label: t('common.controls'),
+      icon: Sliders,
+      content: controlsTabContent,
+    },
+  ];
 
   return (
-    <DialogShell
+    <BaseCardDialog
       isOpen={isOpen}
       onOpenChange={onOpenChange}
+      title={name}
+      entityId={entityId}
+      description={entityType}
+      tabs={tabs}
+      theme={theme}
       disableOpenAutoFocus
-      overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
-      contentClassName={`fixed top-1/2 left-1/2 z-50 h-auto max-h-[85vh] w-[90vw] max-w-[30rem] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 ${styles.contentClassName}`}
-    >
-      {isOn ? (
-        <>
-          <div
-            className="pointer-events-none absolute inset-y-0 right-0 z-0 w-[78%]"
-            style={{
-              background: `radial-gradient(ellipse at 100% 43%, ${dialogGlowColors.secondary}70 0%, ${dialogGlowColors.primary}45 28%, ${dialogGlowColors.primary}22 48%, transparent 72%)`,
-            }}
-          />
-          <div
-            className="pointer-events-none absolute top-0 right-0 bottom-0 z-0 w-[58%]"
-            style={{
-              background: `linear-gradient(90deg, transparent 0%, ${dialogGlowColors.primary}18 34%, ${dialogGlowColors.secondary}38 100%)`,
-            }}
-          />
-        </>
-      ) : null}
-      <CustomScrollbar isOn={isOn} className="relative z-10">
-        <div className="pt-6 pb-6 max-sm:pt-2 max-sm:pb-3">
-          <div className={contentInsetClassName}>
-            <CardDialogHeader title={name} description={entityType} entityId={entityId} />
-          </div>
-          <Tabs value={activeTab} defaultValue="hvac" onValueChange={setActiveTab}>
-            <div className={`relative z-20 ${contentInsetClassName}`}>
-              <CardDialogTabList>
-                <CardDialogTabTrigger
-                  active={activeTab === 'hvac'}
-                  icon={Thermometer}
-                  onClick={() => setActiveTab('hvac')}
-                >
-                  {t('climate.subtitle')}
-                </CardDialogTabTrigger>
-                <CardDialogTabTrigger
-                  active={activeTab === 'controls'}
-                  icon={Sliders}
-                  onClick={() => setActiveTab('controls')}
-                >
-                  {t('common.controls')}
-                </CardDialogTabTrigger>
-              </CardDialogTabList>
-            </div>
-
-            <TabPanel value="hvac" className="relative z-0 mt-1">
-              <div className="-mt-8">
-                <HVACGauge
-                  id={entityId}
-                  mode={visualMode}
-                  targetTemp={displayTargetTemp}
-                  currentTemp={displayCurrentTemp}
-                  isOn={isOn}
-                  minTemp={displayMinTemp}
-                  maxTemp={displayMaxTemp}
-                  step={displayStep}
-                  temperatureUnit={temperatureUnit}
-                  helperText={getHvacTemperatureStatusLabel(
-                    t,
-                    formatTemperatureFromSourceUnit(
-                      targetTemp,
-                      sourceTemperatureUnit,
-                      temperatureUnit
-                    ),
-                    formatTemperatureFromSourceUnit(
-                      currentTemp,
-                      sourceTemperatureUnit,
-                      temperatureUnit
-                    ),
-                    visualMode,
-                    targetTemp,
-                    currentTemp
-                  )}
-                  onTargetTempChange={handleDisplayTargetTempChange}
-                  onTargetTempCommit={handleDisplayTargetTempCommit}
-                  variant="immersive"
-                />
-              </div>
-              <div className={`relative z-10 -mt-6 space-y-4 ${contentInsetClassName}`}>
-                <CardActionRow
-                  theme={theme}
-                  size="medium"
-                  leftContent={
-                    <div className="flex items-center gap-2">
-                      <HVACTempControls
-                        targetTemp={controlDisplayTargetTemp}
-                        onTempChange={handleDisplayTargetTempChange}
-                        onTempCommit={handleDisplayTargetTempCommit}
-                        isOn={isOn}
-                        size="medium"
-                        minTemp={controlDisplayMinTemp}
-                        maxTemp={controlDisplayMaxTemp}
-                        step={controlDisplayStep}
-                      />
-                      <HVACModeControls
-                        mode={mode}
-                        isOn={isOn}
-                        onModeChange={onModeChange}
-                        supportedHvacModes={supportedHvacModes}
-                        size="medium"
-                      />
-                    </div>
-                  }
-                />
-
-                <DialogSectionRow label={t('climate.presets')}>
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    {temperaturePresets.map((preset) => {
-                      const sourcePresetValue = convertCelsiusPresetToSourceUnit(
-                        preset.value,
-                        sourceTemperatureUnit
-                      );
-                      const isSelected = Math.abs(targetTemp - sourcePresetValue) < 0.05;
-
-                      return (
-                        <button
-                          type="button"
-                          key={`${preset.label ?? preset.value}`}
-                          onClick={() =>
-                            (onTargetTempCommit ?? onTargetTempChange)(sourcePresetValue)
-                          }
-                          disabled={!isOn}
-                          className={`flex h-10 min-w-10 items-center justify-center rounded-full border px-3 text-sm font-semibold transition-all duration-300 disabled:opacity-50 ${isOn ? 'hover:scale-105' : ''} ${isSelected ? `scale-105 shadow-lg ${styles.presetButtonActiveClassName}` : styles.presetButtonClassName}`}
-                        >
-                          <span
-                            className="leading-none"
-                            style={
-                              isSelected
-                                ? { color: dialogTextTokens.titleColor }
-                                : { color: dialogTextTokens.subtitleColor }
-                            }
-                          >
-                            {formatTemperatureValueFromSourceUnit(
-                              sourcePresetValue,
-                              sourceTemperatureUnit,
-                              temperatureUnit
-                            )}
-                            °
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </DialogSectionRow>
-              </div>
-            </TabPanel>
-
-            <TabPanel value="controls" className={`relative z-0 mt-5 ${contentInsetClassName}`}>
-              {siblingEntities.length > 0 ? (
-                <DialogSectionRow label="Controls">
-                  <div className="space-y-2">
-                    {siblingEntities.map(({ id, entity }) => (
-                      <ClimateSiblingControlRow
-                        key={id}
-                        entityId={id}
-                        label={getSiblingDisplayName(
-                          name,
-                          siblingLabels,
-                          id,
-                          entity.attributes?.friendly_name
-                        )}
-                        typeLabel={getEntityTypeLabel(id)}
-                        state={entity.state}
-                        attributes={entity.attributes}
-                      />
-                    ))}
-                  </div>
-                </DialogSectionRow>
-              ) : (
-                <DialogSectionRow label="Controls">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">
-                    No extra controls available
-                  </div>
-                </DialogSectionRow>
-              )}
-            </TabPanel>
-          </Tabs>
-
-          <div className={contentInsetClassName}>
-            <DialogDoneFooter label={t('common.done')} />
-          </div>
-        </div>
-      </CustomScrollbar>
-    </DialogShell>
+      maxWidth="md"
+      height="capped"
+      contentSurface={styles.contentSurface}
+      contentClassName={styles.contentClassName}
+      contentGlowClassName={isOn ? 'pointer-events-none absolute inset-0 z-0' : undefined}
+      contentGlowStyle={contentGlowStyle}
+      contentOverlayClassName={contentOverlayClassName}
+      contentOverlayStyle={contentOverlayStyle}
+      scrollClassName="max-sm:min-h-0 max-sm:flex-1"
+      bodyClassName={`relative pt-6 pb-6 max-sm:pt-2 max-sm:pb-3 ${contentInsetClassName}`}
+    />
   );
 });
 

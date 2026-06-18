@@ -32,6 +32,7 @@ import { resolveVacuumGlanceMetrics } from '../vacuum/vacuum-metrics';
 import { VacuumSettingsDialog } from '../vacuum/vacuum-settings-dialog';
 import {
   getVacuumThemeStatus,
+  isLawnMowerEntityId,
   normalizeVacuumStatus,
   type VacuumStatus,
 } from '../vacuum/vacuum-utils';
@@ -48,6 +49,15 @@ type IllustrationSurface = {
   baseColor: string;
   shadow: string;
 };
+
+function isMonochromeVacuumIllustrationState(displayState: VacuumDisplayState): boolean {
+  return (
+    displayState === 'idle' ||
+    displayState === 'docked' ||
+    displayState === 'charging' ||
+    displayState === 'charging-complete'
+  );
+}
 
 interface CompactRobotPose {
   left: string;
@@ -200,8 +210,7 @@ function resolveVacuumIllustrationPalette({
   titleColor: string;
   subtitleColor: string;
 }): IllustrationPalette {
-  const isResting = displayState === 'idle' || displayState === 'docked';
-  if (!isResting) {
+  if (!isMonochromeVacuumIllustrationState(displayState)) {
     return { titleColor, subtitleColor };
   }
 
@@ -241,7 +250,7 @@ function resolveVacuumIllustrationSurface({
     };
   }
 
-  if (displayState === 'idle' || displayState === 'docked') {
+  if (isMonochromeVacuumIllustrationState(displayState)) {
     const restingBase =
       theme === 'light'
         ? 'rgba(39,39,42,0.92)'
@@ -674,6 +683,339 @@ function VacuumRobotVisual({
   );
 }
 
+function LawnMowerVisual({
+  displayState,
+  motionLevel,
+  theme,
+  titleColor,
+  subtitleColor,
+  variant = 'detail',
+  className,
+}: {
+  displayState: VacuumDisplayState;
+  motionLevel: MotionLevel;
+  theme: ReturnType<typeof useTheme>['theme'];
+  titleColor: string;
+  subtitleColor: string;
+  variant?: 'compact' | 'detail';
+  className?: string;
+}) {
+  const isMowing = displayState === 'cleaning';
+  const isReturning = displayState === 'returning';
+  const isPaused = displayState === 'paused';
+  const isUnavailable = displayState === 'unavailable';
+  const isCompact = variant === 'compact';
+  const showMotion = motionLevel !== 'low' && !isUnavailable;
+  const containerClassName = isCompact
+    ? 'relative flex h-full min-h-[8rem] items-start justify-end overflow-visible'
+    : 'relative flex h-full min-h-[8rem] items-center justify-center overflow-hidden';
+  const baseSurface = resolveVacuumIllustrationSurface({
+    theme,
+    displayState,
+    titleColor,
+  });
+  const mowerTireBorderColor = isMowing ? 'rgba(249,115,22,0.5)' : 'rgba(161,161,170,0.28)';
+  const mowerTireBackground = isMowing
+    ? 'linear-gradient(180deg, rgba(249,115,22,0.88), rgba(234,88,12,0.52))'
+    : 'linear-gradient(180deg, rgba(82,82,91,0.95), rgba(24,24,27,0.68))';
+  const mowerTireShadow = isMowing
+    ? '0 10px 20px -18px rgba(249,115,22,0.85)'
+    : '0 10px 20px -18px rgba(0,0,0,0.55)';
+  const mowerTrimBorderColor = isMowing ? 'rgba(249,115,22,0.82)' : 'rgba(161,161,170,0.32)';
+  const mowerTrimShadow = isMowing
+    ? 'inset 0 0 0 1px rgba(249,115,22,0.18)'
+    : 'inset 0 0 0 1px rgba(255,255,255,0.06)';
+  const mowerDisplayBorderColor = isMowing ? 'rgba(59,130,246,0.9)' : 'rgba(212,212,216,0.7)';
+  const mowerDisplayShadow = isMowing
+    ? '0 0 0 1px rgba(59,130,246,0.16)'
+    : '0 0 0 1px rgba(255,255,255,0.08)';
+  const mowerButtonBorderColor = isMowing ? 'rgba(253,186,116,0.45)' : 'rgba(212,212,216,0.32)';
+  const mowerButtonBackground = isMowing
+    ? 'linear-gradient(180deg, rgba(248,113,113,0.95), rgba(239,68,68,0.72))'
+    : 'linear-gradient(180deg, rgba(212,212,216,0.72), rgba(82,82,91,0.48))';
+  const mowerWheelDetailBorderColor = isMowing ? 'rgba(249,115,22,0.9)' : 'rgba(161,161,170,0.45)';
+  const mowerWheelDetailShadow = isMowing
+    ? '0 18px 24px -22px rgba(249,115,22,0.78)'
+    : '0 18px 24px -22px rgba(0,0,0,0.62)';
+  const compactMowerAnimation =
+    isCompact && showMotion && isMowing
+      ? 'navet-lawn-mower-mowing-loop 48s linear infinite'
+      : undefined;
+  const compactMowerWrapperStyle = isCompact
+    ? ({
+        position: 'absolute',
+        width: '3.43rem',
+        height: '4.2rem',
+        zIndex: 1,
+        left: isReturning
+          ? 'calc(100% - 3.7rem)'
+          : isPaused
+            ? 'calc(100% - 4rem)'
+            : 'calc(100% - 5.45rem)',
+        top: isReturning ? '0.1rem' : isPaused ? '0.55rem' : '0.1rem',
+        animation: compactMowerAnimation,
+      } satisfies CSSProperties)
+    : undefined;
+
+  return (
+    <div className={cn(containerClassName, className)}>
+      <style>
+        {`
+          @keyframes navet-lawn-mower-mowing-loop {
+            0% {
+              left: calc(100% - 5.45rem);
+              top: 0.1rem;
+              transform: rotate(0deg);
+            }
+            4% {
+              left: calc(100% - 5.45rem);
+              top: 0.1rem;
+              transform: rotate(-90deg);
+            }
+            38% {
+              left: 0.9rem;
+              top: 0.1rem;
+              transform: rotate(-90deg);
+            }
+            42% {
+              left: 0.9rem;
+              top: 0.1rem;
+              transform: rotate(-180deg);
+            }
+            54% {
+              left: 0.9rem;
+              top: calc(100% - 5.95rem);
+              transform: rotate(-180deg);
+            }
+            58% {
+              left: 0.9rem;
+              top: calc(100% - 5.95rem);
+              transform: rotate(-270deg);
+            }
+            86% {
+              left: calc(100% - 5.45rem);
+              top: calc(100% - 5.95rem);
+              transform: rotate(-270deg);
+            }
+            90% {
+              left: calc(100% - 5.45rem);
+              top: calc(100% - 5.95rem);
+              transform: rotate(-360deg);
+            }
+            100% {
+              left: calc(100% - 5.45rem);
+              top: 0.1rem;
+              transform: rotate(-360deg);
+            }
+          }
+        `}
+      </style>
+      {isCompact ? (
+        <div
+          className="relative z-[1] h-[4.2rem] w-[3.43rem]"
+          style={compactMowerWrapperStyle}
+          data-testid="lawn-mower-motion-wrapper"
+        >
+          <div
+            className={cn(
+              'relative h-[5.9rem] w-[4.9rem] origin-top-right transition-all duration-700',
+              isUnavailable && 'opacity-45 grayscale-[0.25]'
+            )}
+            style={{
+              transform: isReturning
+                ? 'translate(0.55rem, -0.18rem) rotate(-7deg) scale(0.7)'
+                : isMowing
+                  ? 'scale(0.7)'
+                  : isPaused
+                    ? 'translate(0rem, 0.15rem) rotate(0deg) scale(0.7)'
+                    : 'scale(0.7)',
+            }}
+          >
+            <div
+              className="absolute left-[0.04rem] top-[0.58rem] h-[2.05rem] w-[0.58rem] rounded-[0.68rem] border"
+              style={{
+                borderColor: mowerTireBorderColor,
+                background: mowerTireBackground,
+                boxShadow: mowerTireShadow,
+              }}
+            />
+            <div
+              className="absolute right-[0.04rem] top-[0.58rem] h-[2.05rem] w-[0.58rem] rounded-[0.68rem] border"
+              style={{
+                borderColor: mowerTireBorderColor,
+                background: mowerTireBackground,
+                boxShadow: mowerTireShadow,
+              }}
+            />
+            <div
+              className={cn(
+                'absolute inset-x-[0.28rem] inset-y-[0.18rem] rounded-[1.75rem_1.75rem_2.45rem_2.45rem] border',
+                displayState === 'error' && 'ring-1 ring-amber-400/30'
+              )}
+              style={{
+                borderColor: titleColor,
+                background: `linear-gradient(180deg, rgba(255,255,255,0.08), transparent 26%), ${baseSurface.background}`,
+                backgroundColor: baseSurface.baseColor,
+                boxShadow: baseSurface.shadow,
+              }}
+              data-testid="lawn-mower-surface"
+            >
+              <div
+                className="absolute inset-x-[0.2rem] inset-y-[0.18rem] rounded-[1.6rem_1.6rem_2.2rem_2.2rem] border"
+                style={{
+                  borderColor: mowerTrimBorderColor,
+                  boxShadow: mowerTrimShadow,
+                }}
+              />
+              <div
+                className="absolute left-1/2 top-[0.55rem] h-[0.82rem] w-[2.65rem] -translate-x-1/2 rounded-[999px_999px_0.7rem_0.7rem] border"
+                style={{
+                  borderColor: subtitleColor,
+                  background: 'rgba(15, 23, 42, 0.3)',
+                  opacity: 0.86,
+                }}
+              />
+              <div
+                className="absolute left-1/2 top-[0.88rem] h-[0.34rem] w-[1.85rem] -translate-x-1/2 rounded-full"
+                style={{ backgroundColor: 'rgba(2, 6, 23, 0.45)' }}
+              />
+              <div
+                className="absolute left-[0.72rem] top-[1.72rem] h-[1.45rem] w-[1.42rem] rounded-[0.35rem] border"
+                style={{
+                  borderColor: mowerDisplayBorderColor,
+                  background:
+                    'radial-gradient(circle at center, rgba(255,255,255,0.2), rgba(15,23,42,0.88) 70%)',
+                  boxShadow: mowerDisplayShadow,
+                }}
+              >
+                <div
+                  className="absolute left-1/2 top-1/2 h-[0.82rem] w-[0.82rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/25"
+                  style={{
+                    background:
+                      'radial-gradient(circle, rgba(255,255,255,0.9) 0 1px, transparent 1px 100%)',
+                    backgroundSize: '4px 4px',
+                    backgroundPosition: 'center',
+                    opacity: 0.78,
+                  }}
+                />
+              </div>
+              <div
+                className="absolute left-1/2 top-[1.62rem] h-[0.5rem] w-[0.72rem] -translate-x-1/2 rounded-[0.3rem] border"
+                style={{
+                  borderColor: mowerButtonBorderColor,
+                  background: mowerButtonBackground,
+                }}
+              />
+              <div
+                className="absolute left-1/2 top-[2.28rem] flex -translate-x-1/2 items-center gap-[0.22rem]"
+                style={{ color: subtitleColor, opacity: 0.72 }}
+              >
+                <span className="h-[0.18rem] w-[0.18rem] rounded-full bg-current" />
+                <span className="h-[0.18rem] w-[0.18rem] rounded-full bg-current" />
+                <span className="h-[0.18rem] w-[0.18rem] rounded-full bg-current" />
+              </div>
+              <div
+                className="absolute right-[0.7rem] top-[1.86rem] h-[1.2rem] w-[0.56rem] rounded-[0.28rem] border border-white/8"
+                style={{ backgroundColor: 'rgba(39,39,42,0.42)' }}
+              />
+              <div
+                className="absolute left-1/2 bottom-[0.72rem] h-[0.2rem] w-[2.6rem] -translate-x-1/2 rounded-full"
+                style={{ backgroundColor: subtitleColor, opacity: 0.55 }}
+              />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div
+          className={cn(
+            'relative z-[1] h-[4.9rem] w-[8.7rem] transition-all duration-700',
+            isUnavailable && 'opacity-45 grayscale-[0.25]'
+          )}
+          style={{
+            transform: isReturning
+              ? 'translate(0.7rem, -0.25rem) rotate(-8deg)'
+              : isMowing
+                ? 'translate(-0.15rem, 0.1rem) rotate(-2deg)'
+                : isPaused
+                  ? 'translate(0rem, 0.15rem) rotate(0deg)'
+                  : undefined,
+          }}
+        >
+          <div
+            className="absolute left-[0.78rem] top-[1.6rem] h-[2.7rem] w-[2.7rem] rounded-full border-[4px]"
+            style={{
+              borderColor: mowerWheelDetailBorderColor,
+              backgroundColor: 'rgba(10,10,10,0.9)',
+              boxShadow: mowerWheelDetailShadow,
+            }}
+          >
+            <div
+              className="absolute inset-[0.38rem] rounded-full border border-white/6"
+              style={{
+                background:
+                  'radial-gradient(circle at center, rgba(39,39,42,0.72), rgba(17,24,39,0.96) 76%)',
+              }}
+            />
+            <div
+              className="absolute inset-[0.62rem]"
+              style={{
+                clipPath:
+                  'polygon(50% 0%, 63% 30%, 100% 35%, 72% 55%, 80% 100%, 50% 72%, 20% 100%, 28% 55%, 0% 35%, 37% 30%)',
+                background: 'rgba(24,24,27,0.9)',
+              }}
+            />
+            <div
+              className="absolute left-1/2 top-1/2 h-[0.78rem] w-[0.78rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10"
+              style={{ backgroundColor: 'rgba(17,24,39,0.92)' }}
+            />
+          </div>
+          <div
+            className={cn(
+              'absolute inset-y-[1rem] right-[0.2rem] left-[2.2rem] rounded-[1.95rem_1.55rem_1rem_0.95rem] border',
+              displayState === 'error' && 'ring-1 ring-amber-400/30'
+            )}
+            style={{
+              borderColor: titleColor,
+              background: `linear-gradient(180deg, rgba(255,255,255,0.08), transparent 26%), ${baseSurface.background}`,
+              backgroundColor: baseSurface.baseColor,
+              boxShadow: baseSurface.shadow,
+            }}
+            data-testid="lawn-mower-surface"
+          >
+            <div
+              className="absolute left-[0.1rem] right-[0.7rem] top-[0.18rem] h-[0.92rem] rounded-[1.35rem_1.1rem_0.42rem_0.42rem]"
+              style={{
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.1), rgba(39,39,42,0.36))',
+                opacity: 0.82,
+              }}
+            />
+            <div
+              className="absolute left-[1.05rem] top-[-0.4rem] h-[0.7rem] w-[2.55rem] rounded-[999px_999px_0.58rem_0.58rem] border"
+              style={{
+                borderColor: subtitleColor,
+                background: 'rgba(15, 23, 42, 0.24)',
+                opacity: 0.78,
+              }}
+            />
+            <div
+              className="absolute right-[0.34rem] top-[0.86rem] h-[1.82rem] w-[0.68rem] rounded-[0.45rem] border bg-zinc-950/75"
+              style={{ borderColor: subtitleColor, opacity: 0.88 }}
+            />
+            <div
+              className="absolute left-[1.15rem] bottom-[0.72rem] h-[0.2rem] w-[3.15rem] rounded-full"
+              style={{ backgroundColor: subtitleColor, opacity: 0.55 }}
+            />
+          </div>
+          <div
+            className="absolute right-[0.35rem] bottom-[0.38rem] h-[0.92rem] w-[0.92rem] rounded-full border bg-zinc-950/75"
+            style={{ borderColor: subtitleColor, opacity: isUnavailable ? 0.45 : 0.95 }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function VacuumStatusMetric({
   primaryText,
   secondaryFacts,
@@ -908,6 +1250,7 @@ export const VacuumCard = memo(function VacuumCard({
   const liveCleanedArea = glanceMetrics.cleanedArea;
   const liveCleaningTime = glanceMetrics.cleaningTime;
   const liveLastCleaned = glanceMetrics.lastCleaned ?? lastCleaned;
+  const isLawnMower = isLawnMowerEntityId(providerEntity?.externalId ?? liveEntity?.entityId ?? id);
   const isUnavailable =
     availability === 'unavailable' ||
     providerEntity?.availability === 'unavailable' ||
@@ -954,6 +1297,7 @@ export const VacuumCard = memo(function VacuumCard({
   });
   const cardSummary = resolveVacuumCardSummary({
     status: displayState,
+    isLawnMower,
     currentRoom: liveCurrentRoom,
     battery: liveBattery,
     cleanedArea: liveCleanedArea,
@@ -1038,15 +1382,27 @@ export const VacuumCard = memo(function VacuumCard({
       >
         <div className="relative flex h-full flex-col">
           {resolvedSize === 'medium' ? (
-            <VacuumRobotVisual
-              displayState={displayState}
-              motionLevel={motionLevel}
-              theme={theme}
-              titleColor={illustrationPalette.titleColor}
-              subtitleColor={illustrationPalette.subtitleColor}
-              variant="compact"
-              className={compactVisualClassName}
-            />
+            isLawnMower ? (
+              <LawnMowerVisual
+                displayState={displayState}
+                motionLevel={motionLevel}
+                theme={theme}
+                titleColor={illustrationPalette.titleColor}
+                subtitleColor={illustrationPalette.subtitleColor}
+                variant="compact"
+                className={compactVisualClassName}
+              />
+            ) : (
+              <VacuumRobotVisual
+                displayState={displayState}
+                motionLevel={motionLevel}
+                theme={theme}
+                titleColor={illustrationPalette.titleColor}
+                subtitleColor={illustrationPalette.subtitleColor}
+                variant="compact"
+                className={compactVisualClassName}
+              />
+            )
           ) : null}
           <div className="relative z-10 flex h-full flex-col">
             <EntityCardHeader

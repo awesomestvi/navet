@@ -1,19 +1,6 @@
-import {
-  CardDialogBody,
-  CardDialogChoicePill,
-  CardDialogHeader,
-} from '@navet/app/components/patterns';
-import {
-  customCardDialogShellProps,
-  DialogDoneFooter,
-  DialogShell,
-  Select,
-  Slider,
-  Switch,
-} from '@navet/app/components/primitives';
+import { CardDialogChoicePill } from '@navet/app/components/patterns';
+import { BaseCardDialogWithState, Select, Slider, Switch } from '@navet/app/components/primitives';
 import { DialogSectionRow } from '@navet/app/components/shared/device-editor';
-import { getAccentCardShellTokens } from '@navet/app/components/shared/theme/accent-card-shell-tokens';
-import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
 import type { TranslationKey } from '@navet/app/i18n';
 import type {
@@ -27,6 +14,7 @@ import type {
   CameraViewMode,
 } from '@navet/app/stores/settings-store';
 import { getEntityTypeLabel } from '@navet/app/utils/entity-type-label';
+import { Settings2 } from 'lucide-react';
 import { memo, useCallback, useEffect, useState } from 'react';
 
 export interface SiblingEntity {
@@ -385,134 +373,124 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   const { t } = useI18n();
   const { theme } = useTheme();
   const isMobileViewport = useMediaQuery('(max-width: 767px)');
-  const surface = getThemeSurfaceTokens(theme);
   const entityType = getEntityTypeLabel(entityId);
-  const shell = getAccentCardShellTokens(theme, 'blue');
-  const dialogShell = customCardDialogShellProps(
-    surface,
-    {},
-    {
-      padding: false,
-      animate: true,
-      fallbackDecoration: {
-        glowClassName: shell.glowClassName,
-        overlayClassName: shell.overlayClassName,
-      },
-      fallbackContentClassName: `fixed left-1/2 top-1/2 z-50 flex h-auto max-h-[85vh] w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 max-sm:!h-[calc(100dvh-1rem)] ${shell.containerClassName}`,
-    }
-  );
 
   const switches = siblingEntities.filter((s) => s.id.startsWith('switch.'));
   const selects = siblingEntities.filter((s) => s.id.startsWith('select.'));
   const numbers = siblingEntities.filter((s) => s.id.startsWith('number.'));
   const hasControls = switches.length > 0 || selects.length > 0 || numbers.length > 0;
 
+  const controlsTabContent = (
+    <div className="space-y-6">
+      <CameraViewModeRow
+        value={cameraViewMode}
+        supportsStreaming={supportsStreaming}
+        hasSnapshot={hasSnapshot}
+        lowPowerMode={lowPowerMode}
+        onChange={onCameraViewModeChange}
+      />
+
+      <CameraStreamPreferenceRow
+        value={cameraStreamPreference}
+        supportedPreferences={supportedStreamPreferences}
+        supportsStreaming={supportsStreaming}
+        onChange={onCameraStreamPreferenceChange}
+      />
+
+      <CameraFitModeRow value={cameraFitMode} onChange={onCameraFitModeChange} />
+    </div>
+  );
+
+  const moreControlsTabContent = hasControls ? (
+    <div className="space-y-6">
+      {switches.length > 0 && (
+        <DialogSectionRow label={t('camera.settings.switches')}>
+          {!isMobileViewport && switches.length > SWITCH_VIRTUALIZATION_THRESHOLD ? (
+            <VirtualizedSwitchList switches={switches} />
+          ) : (
+            <div className="space-y-2">
+              {switches.map(({ id, entity }) => (
+                <SwitchRow
+                  key={id}
+                  entityId={id}
+                  label={getDisplayName(id, entity)}
+                  isOn={entity.state === 'on'}
+                />
+              ))}
+            </div>
+          )}
+        </DialogSectionRow>
+      )}
+
+      {selects.length > 0 && (
+        <DialogSectionRow label={t('camera.settings.modes')}>
+          <div className="space-y-4">
+            {selects.map(({ id, entity }) => {
+              const attrs = entity.attributes as Record<string, unknown>;
+              const options = Array.isArray(attrs?.options) ? (attrs.options as string[]) : [];
+              return (
+                <SelectRow
+                  key={id}
+                  entityId={id}
+                  label={getDisplayName(id, entity)}
+                  current={entity.state}
+                  options={options}
+                />
+              );
+            })}
+          </div>
+        </DialogSectionRow>
+      )}
+
+      {numbers.length > 0 && (
+        <DialogSectionRow label={t('camera.settings.adjustments')}>
+          <div className="space-y-4">
+            {numbers.map(({ id, entity }) => {
+              const attrs = entity.attributes as Record<string, unknown>;
+              return (
+                <NumberRow
+                  key={id}
+                  entityId={id}
+                  label={getDisplayName(id, entity)}
+                  value={Number(entity.state)}
+                  min={Number(attrs?.min ?? 0)}
+                  max={Number(attrs?.max ?? 100)}
+                  step={Number(attrs?.step ?? 1)}
+                />
+              );
+            })}
+          </div>
+        </DialogSectionRow>
+      )}
+    </div>
+  ) : undefined;
+
+  const extraTabs = moreControlsTabContent
+    ? [
+        {
+          key: 'more-controls',
+          label: t('common.moreActions'),
+          icon: Settings2,
+          content: moreControlsTabContent,
+        },
+      ]
+    : [];
+
   return (
-    <DialogShell
+    <BaseCardDialogWithState
       isOpen={isOpen}
       onOpenChange={onOpenChange}
+      title={name}
+      entityId={entityId}
+      description={entityType}
+      controlsTabContent={controlsTabContent}
+      extraTabs={extraTabs}
+      theme={theme}
       disableOpenAutoFocus
-      overlayClassName={surface.dialogBackdrop}
-      contentClassName={dialogShell.contentClassName}
-      contentStyle={dialogShell.contentStyle}
-      contentGlowClassName={dialogShell.contentGlowClassName}
-      contentGlowStyle={dialogShell.contentGlowStyle}
-      contentOverlayClassName={dialogShell.contentOverlayClassName}
-      bodyClassName="relative z-[2] flex min-h-0 flex-1 flex-col"
-    >
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <CardDialogBody className="flex min-h-full flex-col">
-          <CardDialogHeader title={name} description={entityType} entityId={entityId} />
-          <div className="mt-5 space-y-6">
-            <CameraViewModeRow
-              value={cameraViewMode}
-              supportsStreaming={supportsStreaming}
-              hasSnapshot={hasSnapshot}
-              lowPowerMode={lowPowerMode}
-              onChange={onCameraViewModeChange}
-            />
-
-            <CameraStreamPreferenceRow
-              value={cameraStreamPreference}
-              supportedPreferences={supportedStreamPreferences}
-              supportsStreaming={supportsStreaming}
-              onChange={onCameraStreamPreferenceChange}
-            />
-
-            <CameraFitModeRow value={cameraFitMode} onChange={onCameraFitModeChange} />
-
-            {hasControls ? (
-              <>
-                {switches.length > 0 && (
-                  <DialogSectionRow label={t('camera.settings.switches')}>
-                    {!isMobileViewport && switches.length > SWITCH_VIRTUALIZATION_THRESHOLD ? (
-                      <VirtualizedSwitchList switches={switches} />
-                    ) : (
-                      <div className="space-y-2">
-                        {switches.map(({ id, entity }) => (
-                          <SwitchRow
-                            key={id}
-                            entityId={id}
-                            label={getDisplayName(id, entity)}
-                            isOn={entity.state === 'on'}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </DialogSectionRow>
-                )}
-
-                {selects.length > 0 && (
-                  <DialogSectionRow label={t('camera.settings.modes')}>
-                    <div className="space-y-4">
-                      {selects.map(({ id, entity }) => {
-                        const attrs = entity.attributes as Record<string, unknown>;
-                        const options = Array.isArray(attrs?.options)
-                          ? (attrs.options as string[])
-                          : [];
-                        return (
-                          <SelectRow
-                            key={id}
-                            entityId={id}
-                            label={getDisplayName(id, entity)}
-                            current={entity.state}
-                            options={options}
-                          />
-                        );
-                      })}
-                    </div>
-                  </DialogSectionRow>
-                )}
-
-                {numbers.length > 0 && (
-                  <DialogSectionRow label={t('camera.settings.adjustments')}>
-                    <div className="space-y-4">
-                      {numbers.map(({ id, entity }) => {
-                        const attrs = entity.attributes as Record<string, unknown>;
-                        return (
-                          <NumberRow
-                            key={id}
-                            entityId={id}
-                            label={getDisplayName(id, entity)}
-                            value={Number(entity.state)}
-                            min={Number(attrs?.min ?? 0)}
-                            max={Number(attrs?.max ?? 100)}
-                            step={Number(attrs?.step ?? 1)}
-                          />
-                        );
-                      })}
-                    </div>
-                  </DialogSectionRow>
-                )}
-              </>
-            ) : null}
-          </div>
-
-          <div className="mt-6">
-            <DialogDoneFooter label={t('common.done')} />
-          </div>
-        </CardDialogBody>
-      </div>
-    </DialogShell>
+      maxWidth="md"
+      height="capped"
+      scrollClassName="max-h-[85vh] overscroll-contain max-sm:min-h-0 max-sm:flex-1"
+      bodyClassName="flex min-h-full flex-col"
+    />
   );
 });

@@ -1,4 +1,5 @@
 import { Button } from '@navet/app/components/primitives/button';
+import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react';
@@ -7,17 +8,19 @@ import { RSSFeedSettingsDialog } from './settings-dialog';
 import type { RSSProvider } from './types';
 
 function RSSFeedSettingsDialogStory() {
+  const { theme } = useTheme();
   const [selectedProviderIds, setSelectedProviderIds] = useState<string[]>(['bbc-world']);
   const [articleCount, setArticleCount] = useState(6);
   const [tintColor, setTintColor] = useState<string | undefined>('#06b6d4');
   const [isOpen, setIsOpen] = useState(false);
+  const [roomValue, setRoomValue] = useState('living-room');
 
   const providers: RSSProvider[] = [
     {
       id: 'bbc-world',
       name: 'BBC World',
       type: 'url',
-      feedUrl: 'https://feeds.bbci.co.uk/news/world/rss.xml',
+      feedUrl: 'https://feeds.bbci.co.uk/news/rss.xml',
     },
   ];
 
@@ -32,13 +35,13 @@ function RSSFeedSettingsDialogStory() {
         isOpen={isOpen}
         onOpenChange={setIsOpen}
         title="Daily Feed"
-        roomValue="living-room"
-        roomLabel="Living Room"
+        roomValue={roomValue}
+        roomLabel={roomValue === 'living-room' ? 'Living Room' : 'Kitchen'}
         roomOptions={[
           { value: 'living-room', label: 'Living Room' },
           { value: 'kitchen', label: 'Kitchen' },
         ]}
-        theme="glass"
+        theme={theme}
         primaryColorValue="#06b6d4"
         providers={providers}
         homeAssistantProviders={providers.filter(
@@ -50,7 +53,7 @@ function RSSFeedSettingsDialogStory() {
         onRemoveProvider={() => {}}
         articleCount={articleCount}
         onArticleCountChange={setArticleCount}
-        onRoomChange={() => {}}
+        onRoomChange={setRoomValue}
         tintColor={tintColor}
         onTintColorChange={setTintColor}
       />

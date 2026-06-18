@@ -1,14 +1,93 @@
-import type { CardSize } from '@navet/app/components/shared/card-size-selector';
+import { CardEmptyState } from '@navet/app/components/patterns';
+import { BaseCard } from '@navet/app/components/primitives';
+import { EntityCardHeader } from '@navet/app/components/primitives/entity-card-header';
+import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
+import { type CardSize, isCompactCardSize } from '@navet/app/components/shared/card-size-selector';
+import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
+import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import { buildCustomCard, CustomWidgetStoryFrame } from '@navet/app/storybook/story-frames';
+import { EntityCardStoryFrame } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react';
+import { Battery, Settings2 } from 'lucide-react';
+import { BatteryList, getLevelColor } from './widgets/battery-list';
 
 type BatteryOverviewStoryArgs = {
   size: CardSize;
 };
 
+const STORY_BATTERIES = [
+  { id: 'front-door-sensor', name: 'Front Door Sensor', level: 18 },
+  { id: 'kitchen-remote', name: 'Kitchen Remote', level: 42 },
+  { id: 'hallway-motion', name: 'Hallway Motion', level: 67 },
+  { id: 'ups-backup', name: 'UPS Backup', level: 92 },
+] as const;
+
 function BatteryOverviewStoryFrame({ size }: BatteryOverviewStoryArgs) {
-  return <CustomWidgetStoryFrame card={buildCustomCard('battery', size)} />;
+  const { theme, primaryColor } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
+  const accentHex = getThemeColorValue(primaryColor);
+  const chromeSize = size === 'large' ? 'medium' : size;
+  const isCompact = isCompactCardSize(size);
+
+  return (
+    <EntityCardStoryFrame size={size}>
+      <BaseCard
+        size={size}
+        fullBleed
+        className="transition-all duration-500"
+        contentClassName="h-full"
+      >
+        <div className="relative flex h-full min-w-0 flex-col p-3">
+          <EntityCardHeader
+            title="Battery Overview"
+            subtitle="Widget"
+            layout="eyebrow-first"
+            size={chromeSize}
+            titleClassName={surface.textPrimary}
+            subtitleClassName={surface.textMuted}
+            leading={<EntityCardHeaderIcon IconComponent={Battery} isActive size={chromeSize} />}
+          />
+          <BatteryList
+            devices={[...STORY_BATTERIES]}
+            isCompact={isCompact}
+            subtleFill="rgba(255,255,255,0.08)"
+            textSecondary={surface.textSecondary}
+            emptyStateLabel="No batteries"
+            getLevelColor={(level) => getLevelColor(level, accentHex)}
+          />
+        </div>
+      </BaseCard>
+    </EntityCardStoryFrame>
+  );
+}
+
+function BatteryOverviewEmptyStateStory({ size }: BatteryOverviewStoryArgs) {
+  const { primaryColor } = useTheme();
+  const accentHex = getThemeColorValue(primaryColor);
+
+  return (
+    <EntityCardStoryFrame size={size}>
+      <BaseCard
+        size={size}
+        fullBleed
+        className="transition-all duration-500"
+        contentClassName="h-full"
+      >
+        <div className="relative z-[2] h-full p-4">
+          <CardEmptyState
+            title="Battery Overview"
+            description="Select battery entities to populate this widget."
+            icon={Battery}
+            actionLabel="Battery settings"
+            actionIcon={Settings2}
+            size={size}
+            accentColor={accentHex}
+          />
+        </div>
+      </BaseCard>
+    </EntityCardStoryFrame>
+  );
 }
 
 const meta = {
@@ -61,5 +140,12 @@ export const Medium: Story = {
 export const Large: Story = {
   args: {
     size: 'large',
+  },
+};
+
+export const EmptyState: Story = {
+  render: (args) => <BatteryOverviewEmptyStateStory {...args} />,
+  args: {
+    size: 'medium',
   },
 };

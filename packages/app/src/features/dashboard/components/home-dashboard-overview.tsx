@@ -1,7 +1,7 @@
 import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { buildHomeStatusSummaryItems } from '@navet/app/features/sensors/components/home-status-summary-model';
-import { InfoBadgeStrip } from '@navet/app/features/sensors/components/info-badge-strip';
+import { SummaryBar } from '@navet/app/features/sensors/components/info-badge-strip';
 import { useAccentColor, useI18n, useThemeMode } from '@navet/app/hooks';
 import { useSettingsStore } from '@navet/app/stores';
 import { settingsSelectors } from '@navet/app/stores/selectors';
@@ -86,7 +86,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   );
   const infoBadgeStrip =
     showHomeSummaryBar && onNavigateSection ? (
-      <InfoBadgeStrip items={statusSummaryItems} onNavigate={onNavigateSection} />
+      <SummaryBar items={statusSummaryItems} onNavigate={onNavigateSection} />
     ) : null;
   const [hasActivatedEditMode, setHasActivatedEditMode] = useState(isEditMode);
 

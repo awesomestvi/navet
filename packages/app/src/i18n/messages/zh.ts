@@ -835,6 +835,7 @@ export const zhMessages = {
   'sensors.category.other': '传感器分类其他',
   'vacuum.subtitle': '扫地机器人',
   'vacuum.status.cleaning': '清扫中',
+  'lawnMower.status.mowing': '割草中',
   'vacuum.status.mopping': '拖地中',
   'vacuum.status.drying': '烘干中',
   'vacuum.status.returning': '正在返回基座',

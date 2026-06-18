@@ -1,7 +1,6 @@
 import { CardDialogChoicePill, CardDialogSection } from '@navet/app/components/patterns';
 import { useI18n } from '@navet/app/hooks';
 import { Crosshair, Home, Sparkles } from 'lucide-react';
-import type { CSSProperties } from 'react';
 import type { VacuumCapabilities } from './vacuum-features';
 
 interface VacuumCleaningControlsProps {
@@ -14,7 +13,7 @@ interface VacuumCleaningControlsProps {
   onLocate?: () => void;
   onCleanSpot?: () => void;
   capabilities?: VacuumCapabilities;
-  activePillStyle?: CSSProperties;
+  accentColor?: string;
 }
 
 export function hasVacuumDialogControls(options: {
@@ -41,7 +40,7 @@ export function VacuumCleaningControls({
   onLocate,
   onCleanSpot,
   capabilities,
-  activePillStyle,
+  accentColor,
 }: VacuumCleaningControlsProps) {
   const { t } = useI18n();
   const canReturnHome = capabilities?.canReturnHome ?? false;
@@ -64,6 +63,7 @@ export function VacuumCleaningControls({
         <CardDialogSection label={t('vacuum.settings.actions')} className="mb-0">
           <CardDialogChoicePill
             active={false}
+            accentColor={accentColor}
             onClick={onReturnHome}
             size="compact"
             className="min-w-24"
@@ -80,6 +80,7 @@ export function VacuumCleaningControls({
             {capabilities?.canLocate ? (
               <CardDialogChoicePill
                 active={false}
+                accentColor={accentColor}
                 onClick={() => onLocate?.()}
                 size="compact"
                 className="min-w-24"
@@ -91,6 +92,7 @@ export function VacuumCleaningControls({
             {capabilities?.canCleanSpot ? (
               <CardDialogChoicePill
                 active={false}
+                accentColor={accentColor}
                 onClick={() => onCleanSpot?.()}
                 size="compact"
                 className="min-w-24"
@@ -110,6 +112,7 @@ export function VacuumCleaningControls({
               <CardDialogChoicePill
                 key={speed}
                 active={fanSpeed === speed}
+                accentColor={accentColor}
                 onClick={() => {
                   if (!isUpdatingFanSpeed) {
                     onFanSpeedChange(speed);
@@ -117,7 +120,6 @@ export function VacuumCleaningControls({
                 }}
                 size="compact"
                 className="min-w-18"
-                style={fanSpeed === speed ? activePillStyle : undefined}
               >
                 {speed}
               </CardDialogChoicePill>

@@ -811,6 +811,7 @@ export const ptMessages = {
   'sensors.category.other': 'Outros',
   'vacuum.subtitle': 'Aspirador',
   'vacuum.status.cleaning': 'Limpando',
+  'lawnMower.status.mowing': 'Cortando',
   'vacuum.status.mopping': 'Passando pano',
   'vacuum.status.drying': 'Secando',
   'vacuum.status.returning': 'Retornando à base',

@@ -817,6 +817,7 @@ export const esMessages = {
   'sensors.category.other': 'Otro',
   'vacuum.subtitle': 'Aspiradora',
   'vacuum.status.cleaning': 'Limpiando',
+  'lawnMower.status.mowing': 'Cortando',
   'vacuum.status.mopping': 'Fregando',
   'vacuum.status.drying': 'Secando',
   'vacuum.status.returning': 'Volviendo a la base',
