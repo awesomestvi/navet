@@ -101,8 +101,8 @@ describe('DashboardSectionRouter kiosk mode', () => {
       allClimateDeviceMap: controller.deviceMap,
       climateSections: [
         {
-          key: 'hvac',
-          titleKey: 'sections.climate.hvac.title',
+          key: 'climate',
+          titleKey: 'sections.climate.title',
           orderedIds: [livingRoomClimate.id],
         },
         {
@@ -126,7 +126,7 @@ describe('DashboardSectionRouter kiosk mode', () => {
 
     renderWithProviders(<DashboardSectionRouter controller={controller} />);
 
-    expect(screen.getByRole('heading', { name: 'Thermostats & HVAC' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Climate' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Fans' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Humidity' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Living Room' })).not.toBeInTheDocument();

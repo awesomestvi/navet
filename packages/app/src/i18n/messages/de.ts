@@ -766,7 +766,7 @@ export const deMessages = {
   'media.type.setTopBox': 'Set-Top-Box',
   'media.type.streamingBox': 'Streaming-Box',
   'media.type.soundbar': 'Soundbar',
-  'climate.subtitle': 'HVAC',
+  'climate.subtitle': 'Climate',
   'climate.mode': 'Modus',
   'climate.mode.cool': 'Kühlen',
   'climate.mode.heat': 'Heizen',
@@ -779,10 +779,11 @@ export const deMessages = {
   'climate.power': 'Strom',
   'climate.turnOn': 'Einschalten',
   'climate.turnOff': 'Ausschalten',
-  'climate.settings.title': 'HVAC-Einstellungen',
+  'climate.settings.title': 'Klima-Einstellungen',
   'climate.settings.room': 'Raum',
   'climate.coolingDownTo': 'Kühlt auf {temp} herunter',
   'climate.heatingTo': 'Heizt auf {temp}',
+  'climate.idle': 'Leerlauf',
   'climate.holdingAt': 'Hält {temp}',
   'climate.feedback.updateTemperatureFailed': 'Temperatur konnte nicht aktualisiert werden',
   'climate.feedback.updateModeFailed': 'Modus konnte nicht aktualisiert werden',
@@ -1110,13 +1111,12 @@ export const deMessages = {
     'Es sind noch keine Mediaplayer konfiguriert. Fügen Sie Geräte hinzu, um Ihre Unterhaltung zu steuern.',
   'sections.climate.emptyTitle': 'Keine Klimageräte',
   'sections.climate.emptyDescription':
-    'Verbinde Thermostate, HVAC-Geräte oder Klimasensoren, um den Komfort in Navet zu überwachen.',
+    'Verbinde Thermostate, Klimageräte oder Klimasensoren, um den Komfort in Navet zu überwachen.',
   'sections.climate.emptyHiddenDescription':
     'Klima-Entitäten sind ausgeblendet. Füge sie wieder hinzu, um sie auf diesem Dashboard zu zeigen.',
   'sections.climate.title': 'Klima',
   'sections.climate.singular': 'Klimaelement',
   'sections.climate.plural': 'Klimaelemente',
-  'sections.climate.hvac.title': 'Thermostate und HVAC',
   'sections.climate.fans.title': 'Lufter',
   'sections.climate.temperature.title': 'Temperatur',
   'sections.climate.humidity.title': 'Luftfeuchtigkeit',
@@ -1142,7 +1142,7 @@ export const deMessages = {
   'userDropdown.role.administrator': 'Administrator',
   'userDropdown.role.user': 'Benutzer',
   'deviceType.light': 'Licht',
-  'deviceType.hvac': 'HVAC',
+  'deviceType.hvac': 'Climate',
   'deviceType.climate': 'Klima',
   'deviceType.power': 'Strom',
   'deviceType.media': 'Medien',
@@ -1364,6 +1364,9 @@ export const deMessages = {
   'dashboard.addCard.templates.energyNow.name': 'Energie jetzt',
   'dashboard.addCard.templates.energyNow.description':
     'Vollflachige Live-Verbrauchskurve mit aktueller Leistung im Fokus.',
+  'dashboard.addCard.templates.energyMetric.name': 'Energiemetrik',
+  'dashboard.addCard.templates.energyMetric.description':
+    'Heften Sie einen benutzerdefinierten Energiesensor an, etwa Prepaid-Guthaben, Restkredit, Tarif oder Zählerstatus.',
   'dashboard.addCard.templates.mediaStack.name': 'Media Stack',
   'dashboard.addCard.templates.mediaStack.description':
     'One media card that surfaces the most relevant player for the room.',
@@ -1636,10 +1639,10 @@ export const deMessages = {
   'energy.band.devices.description': 'Die Verbraucher mit dem höchsten Energiebedarf.',
   'energy.customCards.title': 'Energiekarten',
   'energy.customCards.description':
-    'Platzieren Sie hier wiederverwendbare Energiewidgets neben dem Hauptdashboard.',
+    'Platzieren Sie hier wiederverwendbare Energiewidgets und benutzerdefinierte Energiesensoren neben dem Hauptdashboard.',
   'energy.customCards.emptyTitle': 'Noch keine Energiekarten',
   'energy.customCards.emptyDescription':
-    'Fügen Sie eine 5-Minuten-Sparkline-Karte hinzu, um den Live-Trend im Energiebereich anzuheften.',
+    'Fügen Sie eine Energiemetrik-Karte für Prepaid-Guthaben oder Restkredit hinzu oder heften Sie einen Live-Trend aus Home Assistant Energy an.',
   'dashboard.section.addBelow': 'Abschnitt hinzufügen',
   'dashboard.section.moveHere': 'Abschnitt hierher verschieben',
   'dashboard.section.moveDragLabel': 'Abschnitt verschieben',

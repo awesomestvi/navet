@@ -12,9 +12,10 @@ export interface AddCardDialogContainerProps {
   currentRoom: string;
   libraryCards: DashboardLibraryCard[];
   showCardsTab?: boolean;
+  allowedTemplateIds?: CardTemplateId[];
 }
 
-export type CardTemplateId = CardType | 'scene';
+export type CardTemplateId = CardType | 'scene' | 'energy-metric';
 
 export interface CardTemplate {
   id: CardTemplateId;

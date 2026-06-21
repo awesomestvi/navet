@@ -23,8 +23,8 @@ const EMPTY_DEVICE_GROUP_SLICES: ReadonlyArray<readonly unknown[]> = [];
 export const DEVICE_COLLECTION_KEYS = [
   'lights',
   'fans',
-  'hvac',
   'climate',
+  'hvac',
   'media',
   'weather',
   'switches',
@@ -136,8 +136,12 @@ function applyRoomOverrides(
 
   const lights = applyRoomOverridesToDevices(collection.lights, roomIdsByEntityId, roomNamesById);
   const fans = applyRoomOverridesToDevices(collection.fans, roomIdsByEntityId, roomNamesById);
-  const hvac = applyRoomOverridesToDevices(collection.hvac, roomIdsByEntityId, roomNamesById);
   const climate = applyRoomOverridesToDevices(collection.climate, roomIdsByEntityId, roomNamesById);
+  const legacyClimateDevices = applyRoomOverridesToDevices(
+    collection.hvac,
+    roomIdsByEntityId,
+    roomNamesById
+  );
   const media = applyRoomOverridesToDevices(collection.media, roomIdsByEntityId, roomNamesById);
   const weather = applyRoomOverridesToDevices(collection.weather, roomIdsByEntityId, roomNamesById);
   const switches = applyRoomOverridesToDevices(
@@ -167,8 +171,8 @@ function applyRoomOverrides(
   const unchanged =
     lights === collection.lights &&
     fans === collection.fans &&
-    hvac === collection.hvac &&
     climate === collection.climate &&
+    legacyClimateDevices === collection.hvac &&
     media === collection.media &&
     weather === collection.weather &&
     switches === collection.switches &&
@@ -191,8 +195,8 @@ function applyRoomOverrides(
     ...collection,
     lights,
     fans,
-    hvac,
     climate,
+    hvac: legacyClimateDevices,
     media,
     weather,
     switches,
@@ -545,8 +549,8 @@ export function mergeDeviceCollections(...collections: DeviceCollection[]): Devi
     (merged, collection) => ({
       lights: [...merged.lights, ...collection.lights],
       fans: [...merged.fans, ...collection.fans],
-      hvac: [...merged.hvac, ...collection.hvac],
       climate: [...merged.climate, ...collection.climate],
+      hvac: [...merged.hvac, ...collection.hvac],
       media: [...merged.media, ...collection.media],
       weather: [...merged.weather, ...collection.weather],
       switches: [...merged.switches, ...collection.switches],
@@ -564,8 +568,8 @@ export function mergeDeviceCollections(...collections: DeviceCollection[]): Devi
     {
       lights: [],
       fans: [],
-      hvac: [],
       climate: [],
+      hvac: [],
       media: [],
       weather: [],
       switches: [],
@@ -590,8 +594,8 @@ export function filterDeviceCollectionByProvider(
   return {
     lights: devices.lights.filter((device) => device.providerId === providerId),
     fans: devices.fans.filter((device) => device.providerId === providerId),
-    hvac: devices.hvac.filter((device) => device.providerId === providerId),
     climate: devices.climate.filter((device) => device.providerId === providerId),
+    hvac: devices.hvac.filter((device) => device.providerId === providerId),
     media: devices.media.filter((device) => device.providerId === providerId),
     weather: devices.weather.filter((device) => device.providerId === providerId),
     switches: devices.switches.filter((device) => device.providerId === providerId),

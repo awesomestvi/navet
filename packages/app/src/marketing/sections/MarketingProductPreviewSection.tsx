@@ -1,7 +1,7 @@
 import { isCompactCardSize } from '@navet/app/components/shared/card-size-selector';
 import { cn } from '@navet/app/components/ui/utils';
 import { CalendarCard } from '@navet/app/features/calendar';
-import { HumidifierCard, HVACCard } from '@navet/app/features/climate';
+import { ClimateCard, HumidifierCard } from '@navet/app/features/climate';
 import { NoteWidget, PhotoFrameWidget } from '@navet/app/features/dashboard/components/widgets';
 import { BatteryOverviewWidget } from '@navet/app/features/dashboard/components/widgets/battery-overview-widget';
 import { MapWidget } from '@navet/app/features/dashboard/components/widgets/map-widget';
@@ -68,7 +68,7 @@ const BENTO_BOARDS: readonly BentoBoard[] = [
       { cardKey: 'weather', colStart: 1, colSpan: 4, rowStart: 1, rowSpan: 4 },
       { cardKey: 'media', colStart: 5, colSpan: 4, rowStart: 1, rowSpan: 2 },
       { cardKey: 'rss', colStart: 5, colSpan: 4, rowStart: 3, rowSpan: 4 },
-      { cardKey: 'hvac', colStart: 1, colSpan: 4, rowStart: 5, rowSpan: 2 },
+      { cardKey: 'climate', colStart: 1, colSpan: 4, rowStart: 5, rowSpan: 2 },
     ],
   },
   {
@@ -183,7 +183,7 @@ export function MarketingProductPreview({ compact = false }: { compact?: boolean
         <WeatherCard {...MARKETING_PREVIEW_CARDS.weather} onSizeChange={noopCardSizeChange} />
         <div className="grid gap-4">
           <MediaCard {...MARKETING_PREVIEW_CARDS.media} onSizeChange={noopCardSizeChange} />
-          <HVACCard {...MARKETING_PREVIEW_CARDS.hvac} onSizeChange={noopCardSizeChange} />
+          <ClimateCard {...MARKETING_PREVIEW_CARDS.climate} onSizeChange={noopCardSizeChange} />
         </div>
         {!compact ? (
           <div className="grid gap-4 lg:col-span-2 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)_minmax(0,0.85fr)]">
@@ -246,8 +246,8 @@ function MarketingBentoCard({ cardKey }: { cardKey: BentoCardKey }) {
   if (cardKey === 'media') {
     return <MediaCard {...MARKETING_PREVIEW_CARDS.media} onSizeChange={noopCardSizeChange} />;
   }
-  if (cardKey === 'hvac') {
-    return <HVACCard {...MARKETING_PREVIEW_CARDS.hvac} onSizeChange={noopCardSizeChange} />;
+  if (cardKey === 'climate') {
+    return <ClimateCard {...MARKETING_PREVIEW_CARDS.climate} onSizeChange={noopCardSizeChange} />;
   }
   if (cardKey === 'humidifier') {
     return (

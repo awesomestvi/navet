@@ -484,7 +484,10 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
         });
         break;
       case 'climate':
-      case 'hvac':
+      case 'hvac': {
+        const supportedClimateModes = readStringArray(
+          state.supportedClimateModes ?? state.supportedHvacModes
+        );
         collection.climate.push({
           ...base,
           temperature: readNumber(state.temperature, 0),
@@ -495,13 +498,15 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
               : undefined,
           mode: readString(state.mode, 'off'),
           action: typeof state.action === 'string' ? state.action : undefined,
-          supportedHvacModes: readStringArray(state.supportedHvacModes),
+          supportedClimateModes,
+          supportedHvacModes: supportedClimateModes,
           serviceDomain:
             state.serviceDomain === 'climate' || state.serviceDomain === 'water_heater'
               ? state.serviceDomain
               : undefined,
         });
         break;
+      }
       case 'weather':
         collection.weather.push({
           ...base,

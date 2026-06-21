@@ -5,8 +5,8 @@ const EMPTY_DEVICES: [] = [];
 const ABSORBING_PARENT_KEYS = [
   'lights',
   'fans',
-  'hvac',
   'climate',
+  'hvac',
   'media',
   'switches',
   'covers',
@@ -182,8 +182,8 @@ export function buildDashboardVisibilityResult(
   const visibleDevices: DeviceCollection = {
     lights: filterVisibleDevices(devices.lights, hiddenIds),
     fans: filterVisibleDevices(devices.fans, hiddenIds),
-    hvac: filterVisibleDevices(devices.hvac, hiddenIds),
     climate: filterVisibleDevices(devices.climate, hiddenIds),
+    hvac: filterVisibleDevices(devices.hvac, hiddenIds),
     media: filterVisibleDevices(devices.media, hiddenIds),
     weather: filterVisibleDevices(devices.weather, hiddenIds),
     switches: filterVisibleDevices(devices.switches, hiddenIds),
@@ -233,8 +233,8 @@ export const useDashboardDevices = (
     const unchanged =
       visibleDevices.lights === devices.lights &&
       visibleDevices.fans === devices.fans &&
-      visibleDevices.hvac === devices.hvac &&
       visibleDevices.climate === devices.climate &&
+      visibleDevices.hvac === devices.hvac &&
       visibleDevices.media === devices.media &&
       visibleDevices.weather === devices.weather &&
       visibleDevices.switches === devices.switches &&

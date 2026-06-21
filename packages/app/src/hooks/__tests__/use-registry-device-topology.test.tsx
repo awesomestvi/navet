@@ -2,26 +2,26 @@ import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
 import { renderHookWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import { describe, expect, it } from 'vitest';
-import { useHvacRegistryDeviceTopology } from '../use-registry-device-topology';
+import { useClimateRegistryDeviceTopology } from '../use-registry-device-topology';
 
-describe('useHvacRegistryDeviceTopology', () => {
+describe('useClimateRegistryDeviceTopology', () => {
   it('includes fan entities attached to the same Home Assistant device', async () => {
     await resetAppStores();
     homeAssistantStore.setState({
       entityRegistry: [
-        { entity_id: 'climate.hallway', device_id: 'device-hvac' },
-        { entity_id: 'fan.hallway', device_id: 'device-hvac' },
-        { entity_id: 'switch.hallway_boost', device_id: 'device-hvac' },
-        { entity_id: 'light.hallway', device_id: 'device-hvac' },
+        { entity_id: 'climate.hallway', device_id: 'device-climate' },
+        { entity_id: 'fan.hallway', device_id: 'device-climate' },
+        { entity_id: 'switch.hallway_boost', device_id: 'device-climate' },
+        { entity_id: 'light.hallway', device_id: 'device-climate' },
       ],
     });
 
     const { result } = renderHookWithProviders(() =>
-      useHvacRegistryDeviceTopology('climate.hallway')
+      useClimateRegistryDeviceTopology('climate.hallway')
     );
 
     expect(result.current).toEqual({
-      deviceId: 'device-hvac',
+      deviceId: 'device-climate',
       siblingIds: ['fan.hallway', 'switch.hallway_boost'],
     });
   });
@@ -30,20 +30,20 @@ describe('useHvacRegistryDeviceTopology', () => {
     await resetAppStores();
     homeAssistantStore.setState({
       entityRegistry: [
-        { entity_id: 'climate.hallway', device_id: 'device-hvac' },
-        { entity_id: 'fan.hallway', device_id: 'device-hvac' },
+        { entity_id: 'climate.hallway', device_id: 'device-climate' },
+        { entity_id: 'fan.hallway', device_id: 'device-climate' },
       ],
     });
 
     const { result: scopedResult } = renderHookWithProviders(() =>
-      useHvacRegistryDeviceTopology('home_assistant:climate.hallway')
+      useClimateRegistryDeviceTopology('home_assistant:climate.hallway')
     );
     const { result: homeyResult } = renderHookWithProviders(() =>
-      useHvacRegistryDeviceTopology('homey:climate.hallway')
+      useClimateRegistryDeviceTopology('homey:climate.hallway')
     );
 
     expect(scopedResult.current).toEqual({
-      deviceId: 'device-hvac',
+      deviceId: 'device-climate',
       siblingIds: ['fan.hallway'],
     });
     expect(homeyResult.current).toEqual({

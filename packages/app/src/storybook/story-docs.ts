@@ -737,8 +737,8 @@ const STORY_DOCS: Record<string, string> = {
       'Check that the controls and customize tabs remain balanced and lightweight.',
     ]
   ),
-  'Cards/Entity/HVAC': doc(
-    'Entity card for HVAC control and status, focused on current mode, action, and target temperature.',
+  'Cards/Entity/Climate': doc(
+    'Entity card for Climate control and status, focused on current mode, action, and target temperature.',
     [
       'The core thermostat states users need to read quickly from the dashboard.',
       'How setpoint, ambient temperature, and operating mode fit into one card.',
@@ -767,11 +767,11 @@ const STORY_DOCS: Record<string, string> = {
       'Check that humidifier and dehumidifier variants stay visually distinct without looking like separate products.',
     ]
   ),
-  'Cards/Dialogs/HVAC': doc(
-    'Settings dialog for configuring the HVAC card rather than controlling the live climate entity.',
+  'Cards/Dialogs/Climate': doc(
+    'Settings dialog for configuring the Climate card rather than controlling the live climate entity.',
     [
       'The configuration surface used to tune how the climate card appears or behaves.',
-      'How shared dialog sections and field patterns are applied to HVAC-specific settings.',
+      'How shared dialog sections and field patterns are applied to Climate-specific settings.',
     ],
     [
       'Use this story when changing climate-card settings structure or wording.',
@@ -1284,13 +1284,13 @@ const STORY_DOCS: Record<string, string> = {
     ]
   ),
   'Cards/Entity/Lawn Mower': doc(
-    'Entity card for robotic lawn mowers, implemented through the shared vacuum-card presentation for the first Home Assistant pass.',
+    'Entity card for robotic lawn mowers, using a dedicated mower presentation and control surface.',
     [
       'How mowing, paused, returning, docked, and error states read when mapped into the shared maintenance-device card.',
       'The mower-specific subset of controls where vacuum-only actions stay hidden.',
     ],
     [
-      'Use this story when changing mower presentation, status mapping, or the shared card behavior that mower entities inherit.',
+      'Use this story when changing mower presentation, status mapping, or mower-specific control behavior.',
       'Review it alongside the vacuum story when modifying shared maintenance-card controls.',
     ],
     [

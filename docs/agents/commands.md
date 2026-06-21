@@ -20,6 +20,8 @@ Use this file as the command policy for active repo work.
 Notes:
 
 - ask the user to run `pnpm typecheck` or `pnpm check` and report back
+- for small UI-only tweaks, do not run tests by default; tell the user which targeted validation
+  command to run and report back
 - for release work, list the required commands for the user instead of running them yourself
 - do not ask the user to run `pnpm build:ha-panel` as part of standard release prep
 
@@ -66,6 +68,13 @@ pnpm wallpapers:check
 - website or marketing work: `pnpm website:build`
 - bundle investigation: `pnpm check:bundle-budget` and `pnpm report:bundle`
 - release file validation: `pnpm release:check`
+
+UI tweak policy:
+
+- for small visual polish, spacing, layout, copy, or styling-only tweaks, do not run the validation
+  commands above by default
+- instead, prompt the user to run the most relevant targeted command, usually `pnpm test:storybook`,
+  `pnpm check:stories`, or a focused `pnpm test <path>`
 
 ## Commit Rules
 

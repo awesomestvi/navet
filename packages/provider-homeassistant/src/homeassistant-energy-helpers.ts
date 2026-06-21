@@ -9,13 +9,15 @@ import type {
 export interface HaEnergySolarSource {
   type: 'solar';
   stat_energy_from: string;
+  stat_rate?: string;
 }
 
 export interface HaEnergyGridSource {
   type: 'grid';
   stat_energy_from?: string;
   stat_energy_to?: string | null;
-  flow_from?: { stat_energy_from: string }[];
+  stat_rate?: string;
+  flow_from?: { stat_energy_from: string; stat_rate?: string }[];
   flow_to?: { stat_energy_to: string }[];
 }
 
@@ -23,6 +25,7 @@ export interface HaEnergyBatterySource {
   type: 'battery';
   stat_energy_from: string;
   stat_energy_to: string;
+  stat_rate?: string;
 }
 
 export interface HaEnergyGasOrWaterSource {
@@ -38,6 +41,7 @@ export type HaEnergySource =
 
 export interface HaDeviceConsumption {
   stat_consumption: string;
+  stat_rate?: string;
   name?: string;
 }
 
@@ -287,6 +291,10 @@ function inferHomeLoadPowerEntityId(
   entityRegistry: HaEnergyEntityRegistryEntry[] = [],
   analysis: PowerEntityAnalysis = buildPowerEntityAnalysis(entities, entityRegistry)
 ): string | undefined {
+  if (config.gridImportPowerEntityId) {
+    return config.gridImportPowerEntityId;
+  }
+
   const relatedGridPowerEntityId = inferRelatedPowerEntityId(
     config.gridImportEnergyEntityId,
     entities,
@@ -309,12 +317,16 @@ export function mapPrefsToConfig(prefs: HaEnergyPrefs): EnergySourceConfig {
     switch (source.type) {
       case 'solar':
         config.solarEnergyEntityId = source.stat_energy_from;
+        config.solarPowerEntityId = source.stat_rate;
         break;
       case 'grid':
-        config.gridImportEnergyEntityId = source.stat_energy_from;
+        config.gridImportEnergyEntityId =
+          source.stat_energy_from ?? source.flow_from?.[0]?.stat_energy_from;
         config.gridExportEnergyEntityId = source.stat_energy_to ?? undefined;
+        config.gridImportPowerEntityId = source.stat_rate ?? source.flow_from?.[0]?.stat_rate;
         break;
       case 'battery':
+        config.batteryPowerEntityId = source.stat_rate;
         break;
       case 'gas':
         config.gasEnergyEntityId = source.stat_energy_from;
@@ -329,7 +341,19 @@ export function mapPrefsToConfig(prefs: HaEnergyPrefs): EnergySourceConfig {
     entityId: device.stat_consumption,
     name: device.name ?? device.stat_consumption,
     category: guessDeviceCategory(device.name ?? device.stat_consumption),
+    powerEntityId: device.stat_rate,
   }));
+
+  if (prefs.device_consumption_water?.length) {
+    config.devices.push(
+      ...prefs.device_consumption_water.map((device) => ({
+        entityId: device.stat_consumption,
+        name: device.name ?? device.stat_consumption,
+        category: 'water_heater' as const,
+        powerEntityId: device.stat_rate,
+      }))
+    );
+  }
 
   return config;
 }

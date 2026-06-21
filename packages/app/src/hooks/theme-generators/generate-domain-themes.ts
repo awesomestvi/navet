@@ -28,7 +28,7 @@ export function generateLightTheme(themeType: ThemeType, color: PresetPrimaryCol
   return getAccentThemeTone(themeType, color, 'soft');
 }
 
-export function generateHvacTheme(
+export function generateClimateTheme(
   themeType: ThemeType,
   inactiveTone: InactiveThemeTone
 ): {
@@ -108,6 +108,9 @@ export function generateHvacTheme(
     off: inactiveTone,
   };
 }
+
+/** @deprecated Use generateClimateTheme. */
+export const generateHvacTheme = generateClimateTheme;
 
 export function generateMediaTheme(
   themeType: ThemeType,

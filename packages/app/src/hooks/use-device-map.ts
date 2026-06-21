@@ -5,8 +5,8 @@ export const useDeviceMap = (devices: DeviceCollection) => {
   const {
     lights,
     fans,
-    hvac,
     climate,
+    hvac: legacyClimateDevices,
     media,
     weather,
     switches,
@@ -32,8 +32,8 @@ export const useDeviceMap = (devices: DeviceCollection) => {
     const groups = [
       ['lights', lights],
       ['fans', fans],
-      ['hvac', hvac],
       ['climate', climate],
+      ['hvac', legacyClimateDevices],
       ['media', media],
       ['weather', weather],
       ['switches', switches],
@@ -81,7 +81,7 @@ export const useDeviceMap = (devices: DeviceCollection) => {
     fans,
     groupedSensors,
     helpers,
-    hvac,
+    legacyClimateDevices,
     lights,
     locks,
     scenes,

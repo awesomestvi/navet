@@ -2,6 +2,7 @@ import { CardEmptyState } from '@navet/app/components/patterns';
 import { BaseCard } from '@navet/app/components/primitives';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { getCustomCardTintSurface } from '@navet/app/components/shared/theme/custom-card-tint-surface';
+import { ENERGY_WIDGET_ROOM } from '@navet/app/constants/rooms';
 import { EnergyNowCardView } from '@navet/app/features/energy/components/widgets/energy-now-card-view';
 import { useEnergyLoadHistory } from '@navet/app/features/energy/hooks/use-energy-load-history';
 import { useProviderEnergyNow } from '@navet/app/features/energy/hooks/use-provider-energy-now';
@@ -58,6 +59,7 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
   const tintColor = typeof data?.tintColor === 'string' ? data.tintColor : undefined;
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const { roomValue, roomLabel, roomOptions } = useDashboardWidgetRoomOptions(room, rooms);
+  const showRoomSelector = room !== ENERGY_WIDGET_ROOM;
 
   const sourceOptions = useMemo(() => {
     return energyNow.sourceOptions.map<EnergySourceOption>((option) => ({
@@ -96,10 +98,10 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
       onSelectionChange={(nextSelectedSourceId) =>
         onUpdate?.({ selectedSourceId: nextSelectedSourceId })
       }
-      roomValue={roomValue}
-      roomLabel={roomLabel}
-      roomOptions={roomOptions}
-      onRoomChange={onRoomChange}
+      roomValue={showRoomSelector ? roomValue : undefined}
+      roomLabel={showRoomSelector ? roomLabel : undefined}
+      roomOptions={showRoomSelector ? roomOptions : undefined}
+      onRoomChange={showRoomSelector ? onRoomChange : undefined}
       tintColor={tintColor}
       onTintColorChange={(nextTintColor) =>
         onUpdate?.({ ...(data ?? {}), tintColor: nextTintColor })

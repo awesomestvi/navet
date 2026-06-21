@@ -230,7 +230,7 @@ vi.mock('../../vacuum/vacuum-settings-dialog', () => ({
   VacuumSettingsDialog: () => null,
 }));
 
-import { VacuumCard } from '..';
+import { LawnMowerCard, VacuumCard } from '..';
 
 describe('VacuumCard', () => {
   beforeEach(() => {
@@ -305,7 +305,7 @@ describe('VacuumCard', () => {
     expect(screen.queryByText(/fan-speed-control:/)).not.toBeInTheDocument();
   });
 
-  it('keeps mower cards on the shared vacuum card while hiding vacuum-only controls', () => {
+  it('keeps mower cards on the dedicated mower card while hiding vacuum-only controls', () => {
     useProviderEntityModelMock.mockReturnValueOnce({
       id: 'home_assistant:lawn_mower.backyard',
       canonicalId: 'home_assistant:lawn_mower.backyard',
@@ -322,7 +322,7 @@ describe('VacuumCard', () => {
     });
 
     render(
-      <VacuumCard
+      <LawnMowerCard
         id="lawn_mower.backyard"
         name="Backyard Mower"
         status="docked"
@@ -357,7 +357,7 @@ describe('VacuumCard', () => {
     });
 
     render(
-      <VacuumCard
+      <LawnMowerCard
         id="lawn_mower.backyard"
         name="Backyard Mower"
         status="cleaning"
@@ -371,7 +371,7 @@ describe('VacuumCard', () => {
     expect(screen.queryByText('vacuum.status.cleaning')).not.toBeInTheDocument();
   });
 
-  it('renders a dedicated lawn mower illustration on medium mower cards', () => {
+  it('does not render the lawn mower illustration on medium mower cards yet', () => {
     useProviderEntityModelMock.mockReturnValueOnce({
       id: 'home_assistant:lawn_mower.backyard',
       canonicalId: 'home_assistant:lawn_mower.backyard',
@@ -388,7 +388,7 @@ describe('VacuumCard', () => {
     });
 
     render(
-      <VacuumCard
+      <LawnMowerCard
         id="lawn_mower.backyard"
         name="Backyard Mower"
         status="docked"
@@ -398,11 +398,12 @@ describe('VacuumCard', () => {
       />
     );
 
-    expect(screen.getByTestId('lawn-mower-surface')).toBeInTheDocument();
+    expect(screen.queryByTestId('lawn-mower-surface')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('lawn-mower-dock')).not.toBeInTheDocument();
     expect(screen.queryByTestId('vacuum-robot-surface')).not.toBeInTheDocument();
   });
 
-  it('animates the lawn mower illustration while mowing', () => {
+  it('keeps the lawn mower visual hidden while mowing', () => {
     useProviderEntityModelMock.mockReturnValueOnce({
       id: 'home_assistant:lawn_mower.backyard',
       canonicalId: 'home_assistant:lawn_mower.backyard',
@@ -419,7 +420,7 @@ describe('VacuumCard', () => {
     });
 
     render(
-      <VacuumCard
+      <LawnMowerCard
         id="lawn_mower.backyard"
         name="Backyard Mower"
         status="cleaning"
@@ -429,9 +430,7 @@ describe('VacuumCard', () => {
       />
     );
 
-    expect(screen.getByTestId('lawn-mower-motion-wrapper')).toHaveStyle({
-      animation: 'navet-lawn-mower-mowing-loop 48s linear infinite',
-    });
+    expect(screen.queryByTestId('lawn-mower-motion-wrapper')).not.toBeInTheDocument();
   });
 
   it('renders charging vacuums with a monochrome illustration treatment', () => {
@@ -790,7 +789,7 @@ describe('VacuumCard', () => {
     expect(screen.queryByTestId('vacuum-side-brush')).not.toBeInTheDocument();
   });
 
-  it('does not render exposed mower blades in the lawn mower illustration', () => {
+  it('does not render mower illustration parts while the visual is hidden', () => {
     useProviderEntityModelMock.mockReturnValue({
       id: 'home_assistant:lawn_mower.backyard',
       canonicalId: 'home_assistant:lawn_mower.backyard',
@@ -808,7 +807,7 @@ describe('VacuumCard', () => {
 
     mockedCurrentStatus = 'cleaning';
     render(
-      <VacuumCard
+      <LawnMowerCard
         id="lawn_mower.backyard"
         name="Backyard Mower"
         status="cleaning"

@@ -71,7 +71,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Docked rotary thermostat control used by HVAC. Supports continuous drag and wheel interaction with a temperature-reactive accent band.',
+          'Docked rotary thermostat control used by Climate. Supports continuous drag and wheel interaction with a temperature-reactive accent band.',
       },
     },
   },

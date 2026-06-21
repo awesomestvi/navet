@@ -7,8 +7,8 @@ import { resolvePrimaryColorToken } from '@navet/app/components/shared/theme/the
 import type { PrimaryColor, ThemeMode as ThemeType } from '@navet/app/stores/theme-store';
 import {
   generateCalendarTheme,
+  generateClimateTheme,
   generateCoverTheme,
-  generateHvacTheme,
   generateLightTheme,
   generateLockTheme,
   generateMediaTheme,
@@ -31,7 +31,8 @@ export function generateThemeColors(
 
   return {
     light: generateLightTheme(themeType, color),
-    hvac: generateHvacTheme(themeType, inactiveTone),
+    climate: generateClimateTheme(themeType, inactiveTone),
+    hvac: generateClimateTheme(themeType, inactiveTone),
     media: generateMediaTheme(themeType, color, inactiveTone),
     switch: generateSwitchTheme(themeType, color, inactiveTone),
     cover: generateCoverTheme(themeType, color, inactiveTone),

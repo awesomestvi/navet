@@ -57,10 +57,12 @@ export const CalendarCard = memo(function CalendarCard({
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const hasCustomTint = Boolean(tintSurface.panelStyle);
   const surface = getThemeSurfaceTokens(theme);
+  const isGlassTheme = theme === 'glass';
 
   const effectiveCalendarAccentColor = tintColor ?? accentColor;
+  const readableCalendarBaseColor = tintColor ?? (isGlassTheme ? undefined : accentColor);
   const { textPrimary, textSecondary, overlayBg, dividerColor, hoverBg, hoverText } =
-    useCalendarTheme(theme, effectiveCalendarAccentColor);
+    useCalendarTheme(theme, readableCalendarBaseColor);
 
   const isSmall = isCompactCardSize(effectiveSize);
   const isMedium = effectiveSize === 'medium';
@@ -81,16 +83,23 @@ export const CalendarCard = memo(function CalendarCard({
         frameClassName={
           hasCustomTint
             ? ''
-            : `bg-linear-to-br ${colors.calendar.gradient} ${colors.calendar.border}`
+            : isGlassTheme
+              ? ''
+              : `bg-linear-to-br ${colors.calendar.gradient} ${colors.calendar.border}`
         }
         style={tintSurface.panelStyle}
-        disableDefaultSheen
+        disableDefaultSheen={!isGlassTheme}
         disableDefaultLightOverlay
         overlay={
           <>
-            <div className={`absolute inset-0 rounded-[inherit] ${overlayBg}`} />
+            <div
+              className={`pointer-events-none absolute inset-0 rounded-[inherit] ${overlayBg}`}
+            />
             {tintSurface.glowStyle ? (
-              <div className="absolute inset-0 rounded-[inherit]" style={tintSurface.glowStyle} />
+              <div
+                className="pointer-events-none absolute inset-0 rounded-[inherit]"
+                style={tintSurface.glowStyle}
+              />
             ) : null}
             {tintSurface.overlayClassName ? (
               <div
@@ -99,7 +108,9 @@ export const CalendarCard = memo(function CalendarCard({
             ) : null}
             {!hasCustomTint ? (
               <div
-                className={`absolute inset-0 rounded-[inherit] bg-linear-to-br ${colors.calendar.glow} to-transparent`}
+                className={`pointer-events-none absolute inset-0 rounded-[inherit] bg-linear-to-br ${colors.calendar.glow} to-transparent ${
+                  isGlassTheme ? 'opacity-34' : ''
+                }`}
               />
             ) : null}
             {!hasCustomTint && surface.lightOverlay ? (

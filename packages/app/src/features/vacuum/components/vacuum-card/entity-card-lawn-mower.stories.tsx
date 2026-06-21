@@ -1,18 +1,18 @@
-import { VacuumCard } from '@navet/app/features/vacuum';
+import { LawnMowerCard } from '@navet/app/features/vacuum';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { EntityCardStoryFrame, noopCardSizeChange } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 
-function LawnMowerCardStory(args: Omit<ComponentProps<typeof VacuumCard>, 'onSizeChange'>) {
+function LawnMowerCardStory(args: Omit<ComponentProps<typeof LawnMowerCard>, 'onSizeChange'>) {
   return (
     <EntityCardStoryFrame size={args.size ?? 'small'}>
-      <VacuumCard {...args} onSizeChange={noopCardSizeChange} />
+      <LawnMowerCard {...args} onSizeChange={noopCardSizeChange} />
     </EntityCardStoryFrame>
   );
 }
 
-const baseLawnMowerArgs: Omit<ComponentProps<typeof VacuumCard>, 'onSizeChange'> = {
+const baseLawnMowerArgs: Omit<ComponentProps<typeof LawnMowerCard>, 'onSizeChange'> = {
   id: 'lawn_mower.backyard',
   name: 'Backyard Mower',
   room: 'Garden',

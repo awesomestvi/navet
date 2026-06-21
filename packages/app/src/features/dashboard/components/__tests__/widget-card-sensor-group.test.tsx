@@ -37,6 +37,11 @@ const entities: HassEntities = {
     device_class: 'humidity',
     unit_of_measurement: '%',
   }),
+  'sensor.remaining_electricity': entity('sensor.remaining_electricity', '199.28', {
+    friendly_name: 'Remaining Electricity',
+    device_class: 'energy',
+    unit_of_measurement: 'kWh',
+  }),
 };
 
 describe('WidgetCard info widget', () => {
@@ -57,6 +62,10 @@ describe('WidgetCard info widget', () => {
         },
         {
           entity_id: 'sensor.kitchen_humidity',
+          area_id: 'kitchen',
+        },
+        {
+          entity_id: 'sensor.remaining_electricity',
           area_id: 'kitchen',
         },
       ],
@@ -272,5 +281,30 @@ describe('WidgetCard info widget', () => {
         ],
       },
     });
+  });
+
+  it('limits energy metric cards to energy-category sensors in the picker', async () => {
+    renderWithProviders(
+      <WidgetCard
+        isEditMode={false}
+        card={{
+          id: 'custom-energy-info',
+          type: 'info',
+          size: 'medium',
+          room: '__energy__',
+          data: {
+            sensorCategoryFilter: 'energy',
+          },
+          createdAt: 1,
+        }}
+      />
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Customize' }));
+
+    expect(screen.getByRole('button', { name: /Remaining Electricity/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Kitchen Temperature/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Kitchen Humidity/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Room')).not.toBeInTheDocument();
   });
 });

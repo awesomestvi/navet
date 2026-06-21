@@ -14,6 +14,7 @@ export function AddCardDialogContainer({
   currentRoom,
   libraryCards,
   showCardsTab = true,
+  allowedTemplateIds,
 }: AddCardDialogContainerProps) {
   const { t } = useI18n();
   const { theme, primaryColor } = useTheme();
@@ -25,7 +26,15 @@ export function AddCardDialogContainer({
   const [selectedType, setSelectedType] = useState<CardTemplateId | null>(null);
   const [selectedSize, setSelectedSize] = useState<CardSize>('medium');
   const resolveColorValue = (color: string) => getThemeColorValue(color as typeof primaryColor);
-  const cardTemplates = useMemo(() => createCardTemplates(t), [t]);
+  const cardTemplates = useMemo(() => {
+    const templates = createCardTemplates(t);
+    if (!allowedTemplateIds || allowedTemplateIds.length === 0) {
+      return templates;
+    }
+
+    const allowedIds = new Set(allowedTemplateIds);
+    return templates.filter((template) => allowedIds.has(template.id));
+  }, [allowedTemplateIds, t]);
 
   useEffect(() => {
     if (!open) {

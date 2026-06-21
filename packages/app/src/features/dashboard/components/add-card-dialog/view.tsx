@@ -110,7 +110,11 @@ export function AddCardDialogView({
     >
       <div className="max-h-[85vh] w-full min-w-0 overflow-y-auto">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="sticky top-0 z-10 bg-inherit/95 px-4 pt-2 backdrop-blur-xl sm:px-5 sm:pt-5">
+          <div
+            className={`sticky top-0 z-10 px-4 pt-2 sm:px-5 sm:pt-5 ${
+              theme === 'glass' ? 'bg-transparent' : 'bg-inherit/95 backdrop-blur-xl'
+            }`}
+          >
             <CardDialogHeader
               title={t('dashboard.addCard.title')}
               description={heroTitle}
@@ -128,7 +132,7 @@ export function AddCardDialogView({
                   active={activeTab === 'cards'}
                   icon={Layers2}
                   intent="navigation"
-                  size="small"
+                  size="compact"
                   onClick={() => setActiveTab('cards')}
                   className="justify-start rounded-full px-3.5 text-left"
                 >
@@ -139,7 +143,7 @@ export function AddCardDialogView({
                   active={activeTab === 'widgets'}
                   icon={Sparkles}
                   intent="navigation"
-                  size="small"
+                  size="compact"
                   onClick={() => setActiveTab('widgets')}
                   className="justify-start rounded-full px-3.5 text-left"
                 >

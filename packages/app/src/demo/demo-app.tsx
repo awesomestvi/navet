@@ -14,8 +14,8 @@ import {
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
 import { CalendarCard } from '@navet/app/features/calendar/components/calendar-card';
+import { ClimateCard } from '@navet/app/features/climate/components/climate-card';
 import { HumidifierCard } from '@navet/app/features/climate/components/humidifier-card';
-import { HVACCard } from '@navet/app/features/climate/components/hvac-card';
 import { type CustomCard, DashboardLayout, WidgetCard } from '@navet/app/features/dashboard';
 import { EnergyDashboardPage } from '@navet/app/features/energy/components/dashboard/energy-dashboard-page';
 import { EnergyNowCardView } from '@navet/app/features/energy/components/widgets/energy-now-card-view';
@@ -658,7 +658,7 @@ function ProductGrid() {
           />
         </CardSlot>
         <CardSlot size="medium">
-          <HVACCard
+          <ClimateCard
             id="climate.main_floor"
             name="Main floor"
             room="Hallway"
@@ -911,10 +911,10 @@ function ClimateShot() {
 
   return (
     <div className="space-y-6">
-      <SectionBlock title={t('sections.climate.hvac.title')}>
+      <SectionBlock title={t('sections.climate.title')}>
         <DashboardGrid>
           <CardSlot size="medium">
-            <HVACCard
+            <ClimateCard
               id="climate.main_floor"
               name="Main Floor"
               room="Hallway"
@@ -1364,7 +1364,7 @@ function RoomShot({ room }: { room: string }) {
           />
         </CardSlot>
         <CardSlot size="small">
-          <HVACCard
+          <ClimateCard
             id={`climate.${roomSlug}`}
             name="Climate"
             room={room}

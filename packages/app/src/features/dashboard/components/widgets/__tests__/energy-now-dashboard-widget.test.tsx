@@ -1,3 +1,4 @@
+import { ENERGY_WIDGET_ROOM } from '@navet/app/constants/rooms';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { renderWithProviders } from '@navet/app/test/render';
 import { fireEvent, screen } from '@testing-library/react';
@@ -69,6 +70,20 @@ describe('EnergyNowDashboardWidget', () => {
     fireEvent.click(screen.getByRole('button', { name: /Energy today/i }));
 
     expect(onUpdate).toHaveBeenCalledWith({ selectedSourceId: 'home-load' });
+  });
+
+  it('hides room assignment in the energy dashboard settings dialog', () => {
+    renderWithProviders(
+      <EnergyNowDashboardWidget
+        onUpdate={vi.fn()}
+        room={ENERGY_WIDGET_ROOM}
+        data={{ selectedSourceId: 'home-load' }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Energy today' }));
+
+    expect(screen.queryByLabelText('Room')).not.toBeInTheDocument();
   });
 
   it('uses the custom-card empty state when Home Assistant energy is not configured', () => {

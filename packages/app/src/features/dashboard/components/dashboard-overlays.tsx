@@ -9,6 +9,8 @@ import { AddCardDialogContainer } from './add-card-dialog';
 import type { DashboardLibraryCard } from './dashboard-library-list';
 import { DashboardOnboardingDialog } from './dashboard-onboarding-dialog';
 
+const ENERGY_DASHBOARD_TEMPLATE_IDS = ['energy-now', 'energy-metric'] as const;
+
 const AddEntityDialog = lazy(async () => {
   const module = await import('./add-entity-dialog');
   return { default: module.AddEntityDialog };
@@ -102,6 +104,9 @@ export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
           currentRoom={activeSection === 'energy' ? t('sidebar.energy') : activeRoom}
           libraryCards={normalCards}
           showCardsTab={activeSection !== 'energy'}
+          allowedTemplateIds={
+            activeSection === 'energy' ? [...ENERGY_DASHBOARD_TEMPLATE_IDS] : undefined
+          }
         />
       )}
 

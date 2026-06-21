@@ -24,6 +24,8 @@ on Home Assistant raw payloads.
 - do not move provider-specific details into provider-neutral core contracts
 - do not expose Home Assistant service payloads as the public UI command surface
 - do not update tests only to make them pass
+- for small UI-only tweaks, do not run tests by default; prompt the user with the relevant test or
+  Storybook validation command instead
 - never use or suggest `git commit --no-verify`, `git push --no-verify`, or similar hook bypasses
 
 ## Shared UI Reality

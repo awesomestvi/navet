@@ -1,4 +1,4 @@
-import { HVACCard } from '@navet/app/features/climate';
+import { ClimateCard } from '@navet/app/features/climate';
 import { FanCard, LightCard } from '@navet/app/features/lighting';
 import { MediaCard } from '@navet/app/features/media';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
@@ -83,11 +83,11 @@ function StateMatrixPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-base font-semibold">HVAC states</h2>
+        <h2 className="text-base font-semibold">Climate states</h2>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          <HVACCard
+          <ClimateCard
             id="climate.state.cool"
-            name="Main Floor HVAC"
+            name="Main Floor Climate"
             room="Hallway"
             initialTemp={22}
             initialCurrentTemp={21}
@@ -98,9 +98,9 @@ function StateMatrixPage() {
             onSizeChange={() => {}}
             isEditMode={false}
           />
-          <HVACCard
+          <ClimateCard
             id="climate.state.heat"
-            name="Main Floor HVAC"
+            name="Main Floor Climate"
             room="Hallway"
             initialTemp={22}
             initialCurrentTemp={19}
@@ -111,9 +111,9 @@ function StateMatrixPage() {
             onSizeChange={() => {}}
             isEditMode={false}
           />
-          <HVACCard
+          <ClimateCard
             id="climate.state.off"
-            name="Main Floor HVAC"
+            name="Main Floor Climate"
             room="Hallway"
             initialTemp={22}
             initialCurrentTemp={22}

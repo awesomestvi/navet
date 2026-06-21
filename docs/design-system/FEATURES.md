@@ -131,5 +131,5 @@ Ownership rule of thumb:
 
 - colocated stories live beside shared UI or feature UI
 - aggregate card and product scenario stories live under dashboard stories and UI-kit stories
-- primary entity-card families should keep standalone review stories for their main interaction surfaces, including climate (`HVAC`, `Humidifier`) and security (`Camera`, `Cover`, `Lock`, `Alarm Panel`)
+- primary entity-card families should keep standalone review stories for their main interaction surfaces, including climate (`Climate`, `Humidifier`) and security (`Camera`, `Cover`, `Lock`, `Alarm Panel`)
 - tests are primarily colocated in `__tests__/` folders beside the code they cover

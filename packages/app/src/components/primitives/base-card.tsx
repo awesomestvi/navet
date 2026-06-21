@@ -93,10 +93,12 @@ interface BaseCardSurfaceTokens {
 
 function getBaseCardSurfaceTokens({
   theme,
+  size,
   surfaceVariant,
   surface,
 }: {
   theme: ReturnType<typeof useTheme>['theme'];
+  size: CardSize;
   surfaceVariant: BaseCardSurfaceVariant;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }): BaseCardSurfaceTokens {
@@ -112,9 +114,12 @@ function getBaseCardSurfaceTokens({
   }
 
   if (theme === 'glass') {
+    const useMutedGlassPanel =
+      size === 'medium-vertical' || size === 'large' || size === 'extra-large';
+
     return {
       borderClassName: `border ${surface.border}`,
-      backgroundClassName: `${surface.panel} ${surface.cardShadow}`,
+      backgroundClassName: `${useMutedGlassPanel ? surface.panelMuted : surface.panel} ${surface.cardShadow}`,
       readableBackgroundColor: surfaceVariant === 'muted' ? '#334155' : '#1e293b',
     };
   }
@@ -193,8 +198,8 @@ export function BaseCard({
 }: BaseCardProps) {
   const { theme, accentColor: themeAccentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const shell = getCardShellSurfaceTokens(theme);
-  const resolvedSurface = getBaseCardSurfaceTokens({ theme, surfaceVariant, surface });
+  const shell = getCardShellSurfaceTokens(theme, size);
+  const resolvedSurface = getBaseCardSurfaceTokens({ theme, size, surfaceVariant, surface });
   const baseCardRadiusClassName = getBaseCardRadiusClassName(size);
   const isTiny = isTinyCardSize(size);
   const isExtraSmall = isExtraSmallCardSize(size);

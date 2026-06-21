@@ -21,6 +21,7 @@ describe('useProviderEnergyData', () => {
       energySourceDiagnostics: [{ id: 'grid', label: 'Grid import', status: 'configured_numeric' }],
       haSourceConfig: { devices: [], gridImportEnergyEntityId: 'sensor.grid_energy' },
       hasEnergyStatisticsLoaded: true,
+      isLoading: false,
       isConfigured: true,
       isConnected: true,
       overview: {

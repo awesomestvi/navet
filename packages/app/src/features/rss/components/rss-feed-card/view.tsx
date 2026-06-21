@@ -66,7 +66,8 @@ export function RSSFeedCardView({
   const hasCustomTint = Boolean(rssSurface.resolvedTintColor);
   const controlAccentColor = rssSurface.resolvedTintColor ?? rssSurface.accentColor.base;
   const isEmpty = !latestArticle && !isLoading;
-  const shouldUseCustomCardSurface = theme === 'light' || theme === 'glass';
+  const shouldUseCustomCardSurface = theme === 'light' || hasCustomTint;
+  const isGlassTheme = theme === 'glass';
 
   return (
     <BaseCard
@@ -82,23 +83,28 @@ export function RSSFeedCardView({
           : undefined
       }
       style={shouldUseCustomCardSurface ? rssSurface.cardStyle : undefined}
-      disableDefaultSheen
+      disableDefaultSheen={!isGlassTheme}
       disableDefaultLightOverlay
       overlay={
         <>
           {shouldUseCustomCardSurface && rssSurface.glowStyle ? (
-            <div className="absolute inset-0" style={rssSurface.glowStyle} />
+            <div
+              className="pointer-events-none absolute inset-0 rounded-[inherit]"
+              style={rssSurface.glowStyle}
+            />
           ) : null}
-          {shouldUseCustomCardSurface ? (
-            <div className={`absolute inset-0 ${rssSurface.overlayClassName}`} />
+          {shouldUseCustomCardSurface || isGlassTheme ? (
+            <div
+              className={`pointer-events-none absolute inset-0 rounded-[inherit] ${rssSurface.overlayClassName}`}
+            />
           ) : null}
-          {shouldUseCustomCardSurface && !hasCustomTint ? (
+          {theme === 'light' && !hasCustomTint ? (
             <>
               <div
-                className={`absolute inset-0 bg-linear-to-br ${colors.rss.gradient} opacity-45`}
+                className={`pointer-events-none absolute inset-0 rounded-[inherit] bg-linear-to-br ${colors.rss.gradient} opacity-45`}
               />
               <div
-                className={`absolute inset-0 bg-linear-to-br ${colors.rss.glow} to-transparent opacity-65`}
+                className={`pointer-events-none absolute inset-0 rounded-[inherit] bg-linear-to-br ${colors.rss.glow} to-transparent opacity-65`}
               />
               {rssSurface.surface.lightOverlay ? (
                 <div className={`absolute inset-0 ${rssSurface.surface.lightOverlay}`} />

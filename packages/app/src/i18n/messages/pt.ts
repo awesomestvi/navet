@@ -775,6 +775,7 @@ export const ptMessages = {
   'climate.settings.room': 'Cômodo',
   'climate.coolingDownTo': 'Resfriando até {temp}',
   'climate.heatingTo': 'Aquecer para {temp}',
+  'climate.idle': 'Inativo',
   'climate.holdingAt': 'Mantendo em {temp}',
   'climate.feedback.updateTemperatureFailed': 'Falha ao atualizar a temperatura',
   'climate.feedback.updateModeFailed': 'Falha ao atualizar o modo',
@@ -1096,13 +1097,12 @@ export const ptMessages = {
     'Você ainda não tem reprodutores de mídia configurados. Adicione dispositivos para controlar o seu entretenimento.',
   'sections.climate.emptyTitle': 'Sem dispositivos de clima',
   'sections.climate.emptyDescription':
-    'Conecte termostatos, dispositivos HVAC ou sensores de clima para monitorar o conforto no Navet.',
+    'Conecte termostatos, dispositivos de clima ou sensores de clima para monitorar o conforto no Navet.',
   'sections.climate.emptyHiddenDescription':
     'As entidades de clima estão ocultas. Adicione-as novamente para mostrá-las neste painel.',
   'sections.climate.title': 'Clima',
   'sections.climate.singular': 'item de clima',
   'sections.climate.plural': 'itens de clima',
-  'sections.climate.hvac.title': 'Termostatos e HVAC',
   'sections.climate.fans.title': 'Ventiladores',
   'sections.climate.temperature.title': 'Temperatura',
   'sections.climate.humidity.title': 'Umidade',
@@ -1347,6 +1347,9 @@ export const ptMessages = {
   'dashboard.addCard.templates.energyNow.name': 'Energia agora',
   'dashboard.addCard.templates.energyNow.description':
     'Gráfico de uso ao vivo em tela cheia com a potência atual em destaque.',
+  'dashboard.addCard.templates.energyMetric.name': 'Métrica de energia',
+  'dashboard.addCard.templates.energyMetric.description':
+    'Fixe um sensor de energia personalizado, como saldo pré-pago, crédito restante, tarifa ou status do medidor.',
   'dashboard.addCard.templates.mediaStack.name': 'Media Stack',
   'dashboard.addCard.templates.mediaStack.description':
     'One media card that surfaces the most relevant player for the room.',
@@ -1622,10 +1625,10 @@ export const ptMessages = {
   'energy.band.devices.description': 'As cargas individuais que mais consomem energia agora.',
   'energy.customCards.title': 'Cards de energia',
   'energy.customCards.description':
-    'Coloque widgets de energia reutilizáveis aqui ao lado do painel principal.',
+    'Coloque widgets de energia reutilizáveis e sensores de energia personalizados aqui ao lado do painel principal.',
   'energy.customCards.emptyTitle': 'Nenhum card de energia ainda',
   'energy.customCards.emptyDescription':
-    'Adicione um card de sparkline de 5 minutos para fixar a tendência ao vivo no painel de energia.',
+    'Adicione um card de Métrica de energia para saldo pré-pago ou crédito restante, ou fixe uma tendência ao vivo do Home Assistant Energy.',
   'dashboard.section.addBelow': 'Adicionar seção',
   'dashboard.section.moveHere': 'Mover seção para cá',
   'dashboard.section.moveDragLabel': 'Mover seção',

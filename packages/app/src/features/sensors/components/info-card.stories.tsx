@@ -240,6 +240,43 @@ export const WithNoHistory: Story = {
   },
 };
 
+export const PrepaidCreditRemaining: Story = {
+  args: {
+    id: 'sensor.remaining_electricity',
+    name: 'Remaining Electricity',
+    room: 'Utility',
+    value: '199.28',
+    unit: 'kWh',
+    icon: 'zap',
+    subtitle: 'energy',
+    deviceClass: 'energy',
+    size: 'medium',
+    sparklineData: [
+      { value: 211.8, timestampMs: 1, endTimestampMs: 2, minValue: 211.2, maxValue: 212.1 },
+      { value: 210.9, timestampMs: 2, endTimestampMs: 3, minValue: 210.6, maxValue: 211.1 },
+      { value: 206.8, timestampMs: 3, endTimestampMs: 4, minValue: 206.4, maxValue: 207.1 },
+      { value: 205.9, timestampMs: 4, endTimestampMs: 5, minValue: 205.5, maxValue: 206.2 },
+      { value: 202.4, timestampMs: 5, endTimestampMs: 6, minValue: 202.1, maxValue: 202.8 },
+      { value: 199.3, timestampMs: 6, endTimestampMs: 7, minValue: 199.1, maxValue: 199.6 },
+    ],
+  },
+};
+
+export const PrepaidCreditNoHistory: Story = {
+  args: {
+    id: 'sensor.remaining_electricity',
+    name: 'Remaining Electricity',
+    room: 'Utility',
+    value: '199.28',
+    unit: 'kWh',
+    icon: 'zap',
+    subtitle: 'energy',
+    deviceClass: 'energy',
+    size: 'medium',
+    sparklineData: [],
+  },
+};
+
 export const LongName: Story = {
   args: {
     id: 'sensor.utility_room_heat_pump_total_energy_today',

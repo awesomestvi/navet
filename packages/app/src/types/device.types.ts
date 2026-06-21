@@ -82,13 +82,6 @@ export interface FanDevice extends BaseDevice {
   presetModes?: string[];
 }
 
-// HVAC device
-export interface HVACDevice extends BaseDevice {
-  room: string;
-  temp: number;
-  mode: string;
-}
-
 // Climate device
 export interface ClimateDevice extends BaseDevice {
   room: string;
@@ -97,9 +90,14 @@ export interface ClimateDevice extends BaseDevice {
   temperatureUnit?: TemperatureUnit;
   mode: string;
   action?: string;
+  supportedClimateModes?: string[];
+  /** @deprecated Use supportedClimateModes. */
   supportedHvacModes?: string[];
   serviceDomain?: 'climate' | 'water_heater';
 }
+
+/** @deprecated Use ClimateDevice. */
+export type HVACDevice = ClimateDevice;
 
 // Weather device
 export interface WeatherDevice extends BaseDevice {

@@ -6,7 +6,7 @@ import {
   resolveClimateTemperatureUnit,
 } from '../entity-utils';
 
-function parseSupportedHvacModes(value: unknown): string[] | undefined {
+function parseSupportedClimateModes(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
   }
@@ -15,7 +15,7 @@ function parseSupportedHvacModes(value: unknown): string[] | undefined {
 }
 
 function resolveClimateSupportedModes(entityId: string, entity: HassEntity): string[] | undefined {
-  const supportedModes = parseSupportedHvacModes(
+  const supportedModes = parseSupportedClimateModes(
     entity.attributes?.hvac_modes ?? entity.attributes?.operation_list
   );
 
@@ -53,6 +53,7 @@ export function mapClimateDevice(
     action:
       (typeof entity.attributes?.hvac_action === 'string' && entity.attributes.hvac_action) ||
       undefined,
+    supportedClimateModes: resolveClimateSupportedModes(entityId, entity),
     supportedHvacModes: resolveClimateSupportedModes(entityId, entity),
     serviceDomain: entityId.startsWith('water_heater.') ? 'water_heater' : 'climate',
   };

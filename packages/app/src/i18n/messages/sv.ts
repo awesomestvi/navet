@@ -758,7 +758,7 @@ export const svMessages = {
   'media.type.setTopBox': 'Digitalbox',
   'media.type.streamingBox': 'Streamingbox',
   'media.type.soundbar': 'Soundbar',
-  'climate.subtitle': 'HVAC',
+  'climate.subtitle': 'Climate',
   'climate.mode': 'Läge',
   'climate.mode.cool': 'Kyla',
   'climate.mode.heat': 'Värme',
@@ -771,10 +771,11 @@ export const svMessages = {
   'climate.power': 'Ström',
   'climate.turnOn': 'Sätt på',
   'climate.turnOff': 'Stäng av',
-  'climate.settings.title': 'HVAC-inställningar',
+  'climate.settings.title': 'Klimatinställningar',
   'climate.settings.room': 'Rum',
   'climate.coolingDownTo': 'Kyler ner till {temp}',
   'climate.heatingTo': 'Värmer till {temp}',
+  'climate.idle': 'Idle',
   'climate.holdingAt': 'Håller {temp}',
   'climate.feedback.updateTemperatureFailed': 'Det gick inte att uppdatera temperaturen',
   'climate.feedback.updateModeFailed': 'Det gick inte att uppdatera läget',
@@ -1092,13 +1093,12 @@ export const svMessages = {
     'Du har inga mediaspelare konfigurerade än. Lägg till enheter för att styra din underhållning.',
   'sections.climate.emptyTitle': 'Inga klimatenheter',
   'sections.climate.emptyDescription':
-    'Anslut termostater, HVAC-enheter eller klimatsensorer för att övervaka komforten i Navet.',
+    'Anslut termostater, klimatenheter eller klimatsensorer för att övervaka komforten i Navet.',
   'sections.climate.emptyHiddenDescription':
     'Klimatentiteter är dolda. Lägg till dem igen för att visa dem på denna dashboard.',
   'sections.climate.title': 'Klimat',
   'sections.climate.singular': 'klimatobjekt',
   'sections.climate.plural': 'klimatobjekt',
-  'sections.climate.hvac.title': 'Termostater och HVAC',
   'sections.climate.fans.title': 'Flaktar',
   'sections.climate.temperature.title': 'Temperatur',
   'sections.climate.humidity.title': 'Luftfuktighet',
@@ -1124,7 +1124,7 @@ export const svMessages = {
   'userDropdown.role.administrator': 'Administratör',
   'userDropdown.role.user': 'Användare',
   'deviceType.light': 'Ljus',
-  'deviceType.hvac': 'HVAC',
+  'deviceType.hvac': 'Climate',
   'deviceType.climate': 'Klimat',
   'deviceType.power': 'Ström',
   'deviceType.media': 'Media',
@@ -1343,6 +1343,9 @@ export const svMessages = {
   'dashboard.addCard.templates.energyNow.name': 'Energi nu',
   'dashboard.addCard.templates.energyNow.description':
     'Fullskarmsgraf i realtid med aktuell effekt i tydligt fokus.',
+  'dashboard.addCard.templates.energyMetric.name': 'Energimetrik',
+  'dashboard.addCard.templates.energyMetric.description':
+    'Fäst en anpassad energisensor som förbetald balans, kvarvarande kredit, tariff eller mätarstatus.',
   'dashboard.addCard.templates.mediaStack.name': 'Media Stack',
   'dashboard.addCard.templates.mediaStack.description':
     'One media card that surfaces the most relevant player for the room.',
@@ -1611,10 +1614,10 @@ export const svMessages = {
   'energy.band.devices.description': 'De enheter som just nu förbrukar mest energi.',
   'energy.customCards.title': 'Energikort',
   'energy.customCards.description':
-    'Placera återanvändbara energiwidgets här bredvid huvudpanelen.',
+    'Placera återanvändbara energiwidgets och egna energisensorer här bredvid huvudpanelen.',
   'energy.customCards.emptyTitle': 'Inga energikort ännu',
   'energy.customCards.emptyDescription':
-    'Lägg till ett 5-minuterssparkline-kort för att fästa live-trenden i energivyn.',
+    'Lägg till ett Energimetrik-kort för förbetald balans eller kvarvarande kredit, eller fäst en live-trend från Home Assistant Energy.',
   'dashboard.section.addBelow': 'Lägg till sektion',
   'dashboard.section.moveHere': 'Flytta sektion hit',
   'dashboard.section.moveDragLabel': 'Flytta sektion',

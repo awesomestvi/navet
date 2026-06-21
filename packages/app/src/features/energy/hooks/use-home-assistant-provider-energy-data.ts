@@ -57,6 +57,7 @@ export function useHomeAssistantProviderEnergyData(
     energySourceDiagnostics,
     energyStatisticUnits,
     hasEnergyStatisticsLoaded,
+    hasResolvedSourceConfig,
     overview,
     isConfigured,
     currentLoadStatisticId,
@@ -85,6 +86,12 @@ export function useHomeAssistantProviderEnergyData(
     energySourceDiagnostics,
     haSourceConfig,
     hasEnergyStatisticsLoaded,
+    isLoading:
+      enabled &&
+      (!hasResolvedSourceConfig ||
+        (isConfigured &&
+          Object.keys(energyStatisticUnits).length > 0 &&
+          !hasEnergyStatisticsLoaded)),
     isConfigured,
     isConnected: enabled ? providerHealth.connected : false,
     overview,

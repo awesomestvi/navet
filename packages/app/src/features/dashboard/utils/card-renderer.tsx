@@ -12,6 +12,7 @@ import {
 } from '@navet/app/core/navet-device-state';
 import type { SensorReading } from '@navet/app/features/sensors/components/sensors';
 import type { VacuumStatus } from '@navet/app/features/vacuum/components/vacuum/vacuum-utils';
+import { isLawnMowerEntityId } from '@navet/app/features/vacuum/components/vacuum/vacuum-utils';
 import { useI18n, useIntegrationStore } from '@navet/app/hooks';
 import { integrationSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
@@ -46,9 +47,9 @@ const CalendarCard = lazy(async () => {
   return { default: module.CalendarCard };
 });
 
-const HVACCard = lazy(async () => {
+const ClimateCard = lazy(async () => {
   const module = await import('@navet/app/features/climate');
-  return { default: module.HVACCard };
+  return { default: module.ClimateCard };
 });
 
 const HumidifierCard = lazy(async () => {
@@ -119,6 +120,11 @@ const InfoCard = lazy(async () => {
 const VacuumCard = lazy(async () => {
   const module = await import('@navet/app/features/vacuum');
   return { default: module.VacuumCard };
+});
+
+const LawnMowerCard = lazy(async () => {
+  const module = await import('@navet/app/features/vacuum');
+  return { default: module.LawnMowerCard };
 });
 
 const WeatherCard = lazy(async () => {
@@ -359,28 +365,8 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
     />
   ),
 
-  hvac: ({ device, size, handleSizeChange, isEditMode, headerSubtitleOverride }) => (
-    <HVACCard
-      id={device.id as string}
-      name={device.name as string}
-      room={device.room as string}
-      providerId={device.providerId as CardProviderId}
-      headerSubtitle={headerSubtitleOverride}
-      initialTemp={(device.temperature ?? device.temp) as number | undefined}
-      initialCurrentTemp={device.currentTemperature as number | undefined}
-      temperatureUnit={device.temperatureUnit as 'celsius' | 'fahrenheit' | undefined}
-      initialMode={device.mode as string | undefined}
-      initialAction={device.action as string | undefined}
-      supportedHvacModes={device.supportedHvacModes as string[] | undefined}
-      initialState={(device.mode as string | undefined) !== 'off'}
-      size={size}
-      onSizeChange={handleSizeChange}
-      isEditMode={isEditMode}
-    />
-  ),
-
   climate: ({ device, size, handleSizeChange, isEditMode, headerSubtitleOverride }) => (
-    <HVACCard
+    <ClimateCard
       id={device.id as string}
       name={device.name as string}
       room={device.room as string}
@@ -391,7 +377,31 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
       temperatureUnit={device.temperatureUnit as 'celsius' | 'fahrenheit' | undefined}
       initialMode={device.mode as string | undefined}
       initialAction={device.action as string | undefined}
-      supportedHvacModes={device.supportedHvacModes as string[] | undefined}
+      supportedClimateModes={
+        (device.supportedClimateModes ?? device.supportedHvacModes) as string[] | undefined
+      }
+      initialState={(device.mode as string | undefined) !== 'off'}
+      size={size}
+      onSizeChange={handleSizeChange}
+      isEditMode={isEditMode}
+    />
+  ),
+
+  hvac: ({ device, size, handleSizeChange, isEditMode, headerSubtitleOverride }) => (
+    <ClimateCard
+      id={device.id as string}
+      name={device.name as string}
+      room={device.room as string}
+      providerId={device.providerId as CardProviderId}
+      headerSubtitle={headerSubtitleOverride}
+      initialTemp={(device.temperature ?? device.temp) as number | undefined}
+      initialCurrentTemp={device.currentTemperature as number | undefined}
+      temperatureUnit={device.temperatureUnit as 'celsius' | 'fahrenheit' | undefined}
+      initialMode={device.mode as string | undefined}
+      initialAction={device.action as string | undefined}
+      supportedClimateModes={
+        (device.supportedClimateModes ?? device.supportedHvacModes) as string[] | undefined
+      }
       initialState={(device.mode as string | undefined) !== 'off'}
       size={size}
       onSizeChange={handleSizeChange}
@@ -649,21 +659,36 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
     />
   ),
 
-  vacuums: ({ device, size, handleSizeChange, isEditMode }) => (
-    <VacuumCard
-      id={device.id as string}
-      name={device.name as string}
-      providerId={device.providerId as CardProviderId}
-      room={device.room as string}
-      status={device.status as VacuumStatus}
-      battery={device.battery as number}
-      cleanedArea={device.cleanedArea as string | undefined}
-      cleaningTime={device.cleaningTime as string | undefined}
-      size={size}
-      onSizeChange={handleSizeChange}
-      isEditMode={isEditMode}
-    />
-  ),
+  vacuums: ({ device, size, handleSizeChange, isEditMode }) =>
+    isLawnMowerEntityId(device.id as string) ? (
+      <LawnMowerCard
+        id={device.id as string}
+        name={device.name as string}
+        providerId={device.providerId as CardProviderId}
+        room={device.room as string}
+        status={device.status as VacuumStatus}
+        battery={device.battery as number}
+        cleanedArea={device.cleanedArea as string | undefined}
+        cleaningTime={device.cleaningTime as string | undefined}
+        size={size}
+        onSizeChange={handleSizeChange}
+        isEditMode={isEditMode}
+      />
+    ) : (
+      <VacuumCard
+        id={device.id as string}
+        name={device.name as string}
+        providerId={device.providerId as CardProviderId}
+        room={device.room as string}
+        status={device.status as VacuumStatus}
+        battery={device.battery as number}
+        cleanedArea={device.cleanedArea as string | undefined}
+        cleaningTime={device.cleaningTime as string | undefined}
+        size={size}
+        onSizeChange={handleSizeChange}
+        isEditMode={isEditMode}
+      />
+    ),
 
   calendars: ({ device, size, handleSizeChange, isEditMode }) => (
     <CalendarCard

@@ -4,13 +4,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useHeaderSearch } from './use-header-search';
 
 const {
-  useDevicesMock,
+  useDeviceCollectionsByKeysMock,
   searchState,
   setFilteredDeviceIdsMock,
   setSearchQueryMock,
   clearSearchMock,
 } = vi.hoisted(() => ({
-  useDevicesMock: vi.fn(() => ({
+  useDeviceCollectionsByKeysMock: vi.fn(() => ({
     lights: [],
     fans: [],
     hvac: [],
@@ -44,7 +44,7 @@ const {
 }));
 
 vi.mock('@navet/app/hooks', () => ({
-  useDevices: useDevicesMock,
+  useDeviceCollectionsByKeys: useDeviceCollectionsByKeysMock,
   useSearch: () => ({
     searchQuery: searchState.searchQuery,
     filteredDeviceIds: searchState.filteredDeviceIds,
@@ -57,7 +57,7 @@ vi.mock('@navet/app/hooks', () => ({
 
 describe('useHeaderSearch', () => {
   beforeEach(() => {
-    useDevicesMock.mockClear();
+    useDeviceCollectionsByKeysMock.mockClear();
     setFilteredDeviceIdsMock.mockClear();
     setSearchQueryMock.mockClear();
     clearSearchMock.mockClear();
@@ -69,7 +69,7 @@ describe('useHeaderSearch', () => {
   it('keeps device loading disabled while low-power search is idle', () => {
     renderHook(() => useHeaderSearch());
 
-    expect(useDevicesMock).toHaveBeenCalledWith({
+    expect(useDeviceCollectionsByKeysMock).toHaveBeenCalledWith(expect.any(Array), {
       enabled: false,
       includeFeatureCollections: false,
     });
@@ -83,7 +83,7 @@ describe('useHeaderSearch', () => {
     });
     rerender();
 
-    expect(useDevicesMock).toHaveBeenLastCalledWith({
+    expect(useDeviceCollectionsByKeysMock).toHaveBeenLastCalledWith(expect.any(Array), {
       enabled: true,
       includeFeatureCollections: false,
     });

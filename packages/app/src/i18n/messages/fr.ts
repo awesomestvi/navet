@@ -767,7 +767,7 @@ export const frMessages = {
   'media.type.setTopBox': 'Décodeur',
   'media.type.streamingBox': 'Boîtier de streaming',
   'media.type.soundbar': 'Barre de son',
-  'climate.subtitle': 'HVAC',
+  'climate.subtitle': 'Climate',
   'climate.mode': 'Mode',
   'climate.mode.cool': 'Froid',
   'climate.mode.heat': 'Chaud',
@@ -780,10 +780,11 @@ export const frMessages = {
   'climate.power': 'Alimentation',
   'climate.turnOn': 'Allumer',
   'climate.turnOff': 'Eteindre',
-  'climate.settings.title': 'Paramètres HVAC',
+  'climate.settings.title': 'Paramètres Climat',
   'climate.settings.room': 'Piece',
   'climate.coolingDownTo': 'Refroidit jusqu’à {temp}',
   'climate.heatingTo': 'Chauffe jusqu’à {temp}',
+  'climate.idle': 'Inactif',
   'climate.holdingAt': 'Maintien à {temp}',
   'climate.feedback.updateTemperatureFailed': 'Impossible de mettre à jour la temperature',
   'climate.feedback.updateModeFailed': 'Impossible de mettre à jour le mode',
@@ -1106,13 +1107,12 @@ export const frMessages = {
     'Vous n’avez pas encore de lecteurs multimédia configurés. Ajoutez des appareils pour contrôler vos divertissements.',
   'sections.climate.emptyTitle': 'Aucun appareil de climat',
   'sections.climate.emptyDescription':
-    'Connectez thermostats, appareils HVAC ou capteurs de climat pour suivre le confort dans Navet.',
+    'Connectez thermostats, appareils de climatisation ou capteurs de climat pour suivre le confort dans Navet.',
   'sections.climate.emptyHiddenDescription':
     'Les entités de climat sont masquées. Ajoutez-les à nouveau pour les afficher sur ce tableau de bord.',
   'sections.climate.title': 'Climat',
   'sections.climate.singular': 'élément de climat',
   'sections.climate.plural': 'éléments de climat',
-  'sections.climate.hvac.title': 'Thermostats et HVAC',
   'sections.climate.fans.title': 'Ventilateurs',
   'sections.climate.temperature.title': 'Température',
   'sections.climate.humidity.title': 'Humidité',
@@ -1138,7 +1138,7 @@ export const frMessages = {
   'userDropdown.role.administrator': 'Administrateur',
   'userDropdown.role.user': 'Utilisateur',
   'deviceType.light': 'Lumiere',
-  'deviceType.hvac': 'HVAC',
+  'deviceType.hvac': 'Climate',
   'deviceType.climate': 'Climat',
   'deviceType.power': 'Alimentation',
   'deviceType.media': 'Media',
@@ -1361,6 +1361,9 @@ export const frMessages = {
   'dashboard.addCard.templates.energyNow.name': 'Energie maintenant',
   'dashboard.addCard.templates.energyNow.description':
     'Courbe plein cadre en direct avec la puissance actuelle en point focal.',
+  'dashboard.addCard.templates.energyMetric.name': 'Mesure energie',
+  'dashboard.addCard.templates.energyMetric.description':
+    "Epinglez un capteur d'energie personnalise, comme le solde prepaye, le credit restant, le tarif ou l'etat du compteur.",
   'dashboard.addCard.templates.mediaStack.name': 'Media Stack',
   'dashboard.addCard.templates.mediaStack.description':
     'One media card that surfaces the most relevant player for the room.',
@@ -1635,10 +1638,10 @@ export const frMessages = {
   'energy.band.devices.description': "Les consommateurs utilisant le plus d'énergie en ce moment.",
   'energy.customCards.title': 'Cartes énergie',
   'energy.customCards.description':
-    'Placez ici des widgets énergie réutilisables à côté du tableau principal.',
+    "Placez ici des widgets energie reutilisables et des capteurs d'energie personnalises a cote du tableau principal.",
   'energy.customCards.emptyTitle': 'Pas encore de cartes énergie',
   'energy.customCards.emptyDescription':
-    'Ajoutez une carte sparkline 5 minutes pour épingler la tendance en direct dans le tableau énergie.',
+    'Ajoutez une carte Mesure energie pour le solde prepaye ou le credit restant, ou epinglez une tendance en direct de Home Assistant Energy.',
   'dashboard.section.addBelow': 'Ajouter une section',
   'dashboard.section.moveHere': 'Déplacer la section ici',
   'dashboard.section.moveDragLabel': 'Déplacer la section',

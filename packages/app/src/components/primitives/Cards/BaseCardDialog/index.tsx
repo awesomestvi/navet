@@ -73,6 +73,7 @@ interface BaseCardDialogCardProps extends BaseCardDialogSharedProps {
   roomSelector?: BaseCardDialogRoomSelector;
   roomSelectorFallbackRoomName?: string;
   editableTitle?: boolean;
+  onTitleChange?: (title: string) => void | Promise<void>;
   headerSupportingContent?: ReactNode;
   headerTrailing?: ReactNode;
   headerClassName?: string;
@@ -474,6 +475,7 @@ function BaseCardDialogCardVariant({
   roomSelector,
   roomSelectorFallbackRoomName,
   editableTitle = true,
+  onTitleChange,
   headerSupportingContent,
   headerTrailing,
   headerClassName,
@@ -497,6 +499,7 @@ function BaseCardDialogCardVariant({
   const surface = getThemeSurfaceTokens(theme);
   const dialogSurface = contentSurface ?? getBaseCardDialogSurface(theme);
   const firstTabKey = tabs[0]?.key;
+  const shouldRenderTabs = tabs.length > 1;
   const [internalActiveTab, setInternalActiveTab] = useState(defaultTab ?? firstTabKey ?? '');
   const resolvedActiveTab = activeTab ?? internalActiveTab;
   const resolvedDescription = description ?? entityType;
@@ -565,12 +568,13 @@ function BaseCardDialogCardVariant({
             roomSelectorFallbackRoomName={roomSelectorFallbackRoomName}
             roomSelectorCompactContentStyle={headerRoomSelectorStyle}
             editableTitle={editableTitle}
+            onTitleChange={onTitleChange}
             supportingContent={headerSupportingContent}
             trailing={widgetRoomSelector ?? headerTrailing}
             className={headerClassName}
           />
 
-          {tabs.length > 0 ? (
+          {shouldRenderTabs ? (
             <Tabs
               value={resolvedActiveTab}
               defaultValue={defaultTab ?? firstTabKey}
@@ -595,6 +599,8 @@ function BaseCardDialogCardVariant({
                 </TabPanel>
               ))}
             </Tabs>
+          ) : tabs.length === 1 ? (
+            tabs[0]?.content
           ) : null}
 
           {footerContent ? (

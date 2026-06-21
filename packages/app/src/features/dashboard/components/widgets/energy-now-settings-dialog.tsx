@@ -21,9 +21,9 @@ interface EnergyNowSettingsDialogProps {
   options: EnergySourceOption[];
   selectedSourceId?: string;
   onSelectionChange?: (selectedSourceId: string) => void;
-  roomValue: string;
-  roomLabel: string;
-  roomOptions: Array<{ label: string; value: string }>;
+  roomValue?: string;
+  roomLabel?: string;
+  roomOptions?: Array<{ label: string; value: string }>;
   onRoomChange?: (room: string) => void;
   tintColor?: string;
   onTintColorChange?: (color: string) => void;
@@ -67,6 +67,15 @@ export function EnergyNowSettingsDialog({
   const energySurface = getEnergyNowWidgetSurfaceTokens(theme);
   const selectedId = selectedSourceId;
   const optionFill = baseSurface.subtleFill;
+  const roomSelector =
+    roomValue && roomLabel && roomOptions
+      ? {
+          value: roomValue,
+          label: roomLabel,
+          options: roomOptions,
+          onChange: onRoomChange,
+        }
+      : undefined;
 
   const controlsTabContent = (
     <CardDialogSection
@@ -132,12 +141,7 @@ export function EnergyNowSettingsDialog({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       title={t('widgets.energyNow.settings.title')}
-      roomSelector={{
-        value: roomValue,
-        label: roomLabel,
-        options: roomOptions,
-        onChange: onRoomChange,
-      }}
+      roomSelector={roomSelector}
       controlsTabContent={controlsTabContent}
       tintColor={tintColor}
       onTintColorChange={onTintColorChange}

@@ -82,7 +82,7 @@ const meta = {
           '- Themed control tokens for selected and unselected round-control states.',
           '',
           'Usage notes:',
-          '- Reuse this row as the shared composition layer for HVAC, vacuum, cover, and lighting cards.',
+          '- Reuse this row as the shared composition layer for Climate, vacuum, cover, and lighting cards.',
           '- Prefer token calculators for control styling instead of feature-local class combinations.',
           '',
           'Review expectations:',

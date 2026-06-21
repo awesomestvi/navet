@@ -21,9 +21,9 @@ import { getRoundControlStyles } from '@navet/app/components/shared/theme/round-
 import {
   useI18n,
   useIntegrationStore,
+  useProviderClimateTopology,
   useProviderEntitySnapshot,
   useProviderEntitySnapshotRecord,
-  useProviderHvacTopology,
   useServiceActionHandler,
   useTheme,
 } from '@navet/app/hooks';
@@ -239,7 +239,7 @@ export const FanCard = memo(function FanCard({
     currentProviderId;
   const rawEntity = useProviderEntitySnapshot(id);
   const rawAttributes = rawEntity?.attributes as Record<string, unknown> | undefined;
-  const { siblingIds: siblingEntityIds } = useProviderHvacTopology(id);
+  const { siblingIds: siblingEntityIds } = useProviderClimateTopology(id);
   const siblingEntityRecord = useProviderEntitySnapshotRecord(siblingEntityIds, {
     providerId: resolvedProviderId,
     enabled: resolvedProviderId === 'home_assistant' && siblingEntityIds.length > 0,

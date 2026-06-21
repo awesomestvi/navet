@@ -22,11 +22,12 @@ export function getRSSFeedCardSurfaceTokens(
   };
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const resolvedTintColor = normalizeCustomCardTint(tintColor);
+  const useNeutralGlassText = theme === 'glass' && !resolvedTintColor;
   const readableBaseColor = resolvedTintColor ?? accentColor.base;
   const textTokens = getCardReadableTextTokens({
     theme,
-    tone: 'orange',
-    baseColor: readableBaseColor,
+    tone: useNeutralGlassText ? 'neutral' : 'orange',
+    baseColor: useNeutralGlassText ? undefined : readableBaseColor,
   });
 
   return {
@@ -74,7 +75,9 @@ export function getRSSFeedCardSurfaceTokens(
         ? withTintAlpha(resolvedTintColor, 0.88)
         : theme === 'light'
           ? accentColor.strong
-          : accentColor.soft,
+          : useNeutralGlassText
+            ? withTintAlpha(textTokens.subtitleColor, 0.78)
+            : accentColor.soft,
     thumbnailClassName:
       theme === 'light' ? 'bg-gray-100' : theme === 'glass' ? 'bg-white/8' : 'bg-zinc-800',
   };

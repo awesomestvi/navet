@@ -13,6 +13,7 @@ import { useMemo } from 'react';
 export interface ProviderInfoWidgetDataOptions {
   includeBinarySensors?: boolean;
   use24HourTime: boolean;
+  availableSensorCategoryFilter?: AvailableSensor['category'];
 }
 
 export interface ProviderInfoWidgetDataResult {
@@ -151,6 +152,11 @@ export function useProviderInfoWidgetData(
 
     const availableSensors = sensors
       .map(toAvailableSensor)
+      .filter((sensor) =>
+        options.availableSensorCategoryFilter
+          ? sensor.category === options.availableSensorCategoryFilter
+          : true
+      )
       .sort(
         (left, right) =>
           (left.room ?? '').localeCompare(right.room ?? '') ||

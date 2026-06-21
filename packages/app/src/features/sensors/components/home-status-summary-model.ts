@@ -234,9 +234,8 @@ function formatCustomSummaryDeviceValue(device: DeviceWithType | undefined): str
     case 'media':
       return device.state === 'playing' ? 'Playing' : device.state === 'paused' ? 'Paused' : 'Idle';
     case 'climate':
-      return `${formatDisplayTemperature(Math.round(device.currentTemperature ?? device.temperature))}°`;
     case 'hvac':
-      return `${formatDisplayTemperature(Math.round(device.temp))}°`;
+      return `${formatDisplayTemperature(Math.round(device.currentTemperature ?? device.temperature))}°`;
     case 'weather':
       return `${formatDisplayTemperature(Math.round(device.temperature))}°`;
     default:
@@ -329,7 +328,9 @@ function isClimateLikeDevice(
   return device.type === 'climate' || device.type === 'hvac';
 }
 
-function isHvacDevice(device: DeviceWithType): device is DeviceWithType & { type: 'hvac' } {
+function isLegacyClimateDevice(
+  device: DeviceWithType
+): device is DeviceWithType & { type: 'hvac' } {
   return device.type === 'hvac';
 }
 
@@ -369,10 +370,8 @@ function getClimateSummary(
   const values = [
     ...climateDevices.map((device) => {
       let value: number | null;
-      if (device.type === 'climate') {
+      if (device.type === 'climate' || isLegacyClimateDevice(device)) {
         value = getNumber(device.currentTemperature) ?? getNumber(device.temperature);
-      } else if (isHvacDevice(device)) {
-        value = getNumber(device.temp);
       } else {
         value = null;
       }

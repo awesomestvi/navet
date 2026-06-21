@@ -1,7 +1,7 @@
 import type { DeviceWithType } from '@navet/app/types/device.types';
 
 export type ClimateDashboardGroupKey =
-  | 'hvac'
+  | 'climate'
   | 'fans'
   | 'temperature'
   | 'humidity'
@@ -14,7 +14,7 @@ export function getClimateDashboardGroup(device: DeviceWithType): ClimateDashboa
   }
 
   if (device.type === 'climate' || device.type === 'hvac') {
-    return 'hvac';
+    return 'climate';
   }
 
   if (

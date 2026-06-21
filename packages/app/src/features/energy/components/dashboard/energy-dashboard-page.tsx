@@ -1,12 +1,31 @@
 import { useAuthBaseUrl } from '@navet/app/auth/AuthProvider';
-import { DashboardHeroSection } from '@navet/app/components/patterns/dashboard-hero-section';
-import { BaseCard } from '@navet/app/components/primitives';
+import { SectionCustomizeButton } from '@navet/app/components/layout/section-customize-button';
+import { DashboardHeroSection } from '@navet/app/components/patterns';
+import { BaseCard, InteractivePill } from '@navet/app/components/primitives';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
-import { getCardSpanClass } from '@navet/app/components/shared/card-size-selector';
-import { getLightCardSurfaceTokens } from '@navet/app/components/shared/theme/light-card-surface-tokens';
+import { CardEditActionButton } from '@navet/app/components/shared/card-edit-action-button';
+import { type CardSize, getCardSpanClass } from '@navet/app/components/shared/card-size-selector';
+import {
+  getInheritedDialogSectionStyle,
+  withTintAlpha,
+} from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { themeColorValues } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import {
+  getBaseCardRadiusClassName,
+  navetTypographyTokens,
+} from '@navet/app/components/system/tokens';
+import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
+import {
+  AddCardDialogContainer,
+  type CardTemplate,
+} from '@navet/app/features/dashboard/components/add-card-dialog';
+import { DashboardCardItem } from '@navet/app/features/dashboard/components/dashboard-card-item';
+import { DashboardResizeTrigger } from '@navet/app/features/dashboard/components/dashboard-edit-actions';
+import type { DashboardLibraryCard } from '@navet/app/features/dashboard/components/dashboard-library-list';
 import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit-dashboard-grid';
+import type { CustomCard } from '@navet/app/features/dashboard/stores/custom-cards-store';
+import { HEATING_CATEGORIES } from '@navet/app/features/energy/data/energy-constants';
 import { useEnergyLoadHistory } from '@navet/app/features/energy/hooks/use-energy-load-history';
 import type {
   EnergyConsumer,
@@ -21,15 +40,34 @@ import {
 import { useI18n, useTheme } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { useDeferredVisibility } from '@navet/app/hooks/use-deferred-visibility';
+import { usePersistedState } from '@navet/app/hooks/use-persisted-state';
+import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
-import { AlertTriangle, ExternalLink, Flame, Leaf, PlugZap, Sun, Zap } from 'lucide-react';
-import { type CSSProperties, memo } from 'react';
+import {
+  AlertTriangle,
+  ExternalLink,
+  EyeOff,
+  Flame,
+  Leaf,
+  PlugZap,
+  Plus,
+  Sun,
+  Zap,
+} from 'lucide-react';
+import { type CSSProperties, memo, type ReactNode, useMemo, useState } from 'react';
 import { EnergyNowCardView } from '../widgets/energy-now-card-view';
 
 interface EnergyDashboardPageProps {
   dashboard: EnergyDashboardModel;
   sourceDiagnostics: EnergySourceDiagnostic[];
+  energyCustomCards?: CustomCard[];
+  energyOrderedCardIds?: string[];
+  isEditMode?: boolean;
+  onAddCard?: (template: CardTemplate, size: CardSize) => void;
+  onToggleEditMode?: () => void;
+  onDeleteCard?: (cardId: string) => void;
+  onUpdateCard?: (cardId: string, updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>) => void;
 }
 const heroLegendColors = {
   generated: themeColorValues.green,
@@ -37,6 +75,8 @@ const heroLegendColors = {
   gridImport: themeColorValues.orange,
   trackedDevices: themeColorValues.blue,
 };
+const ENERGY_WHOLE_HOME_SPARKLINE_CARD_ID = 'energy:whole-home-sparkline';
+const ENERGY_SPARKLINE_ALLOWED_SIZES: CardSize[] = ['small', 'medium', 'large'];
 const LOAD_ORB_DRIFT_BASE_DURATION_S = 8.5;
 const LOAD_ORB_RIPPLE_KEYFRAMES = `
   @keyframes navet-load-orb-water-drift {
@@ -75,77 +115,213 @@ const LOAD_ORB_RIPPLE_KEYFRAMES = `
 export const EnergyDashboardPage = memo(function EnergyDashboardPage({
   dashboard,
   sourceDiagnostics,
+  energyCustomCards = [],
+  energyOrderedCardIds = [],
+  isEditMode: controlledEditMode,
+  onAddCard,
+  onToggleEditMode,
+  onDeleteCard,
+  onUpdateCard,
 }: EnergyDashboardPageProps) {
   const { t } = useI18n();
   const haBaseUrl = useAuthBaseUrl();
   const { theme, accentColor } = useTheme();
+  const [uncontrolledEditMode, setUncontrolledEditMode] = useState(false);
+  const [isAddCardDialogOpen, setIsAddCardDialogOpen] = useState(false);
+  const [hiddenConsumerIds, setHiddenConsumerIds] = usePersistedState<string[]>(
+    STORAGE_KEYS.energyHiddenConsumerIds,
+    []
+  );
+  const [sparklineCardSizes, setSparklineCardSizes] = usePersistedState<Record<string, CardSize>>(
+    STORAGE_KEYS.energySparklineCardSizes,
+    {}
+  );
   const surface = getThemeSurfaceTokens(theme);
   const homeAssistantEnergyUrl = resolveHomeAssistantEnergyUrl(haBaseUrl);
-  const liveWatts = Math.round(dashboard.totals.currentLoadW);
+  const isEditMode =
+    typeof controlledEditMode === 'boolean' ? controlledEditMode : uncontrolledEditMode;
+  const hiddenConsumerIdSet = useMemo(() => new Set(hiddenConsumerIds), [hiddenConsumerIds]);
+  const energyCardsById = useMemo(
+    () => new Map(energyCustomCards.map((card) => [card.id, card])),
+    [energyCustomCards]
+  );
+  const orderedEnergyCustomCards = useMemo(() => {
+    const orderedCards = energyOrderedCardIds
+      .map((cardId) => energyCardsById.get(cardId))
+      .filter((card): card is CustomCard => card !== undefined);
+
+    const seenCardIds = new Set(orderedCards.map((card) => card.id));
+    const remainingCards = energyCustomCards.filter((card) => !seenCardIds.has(card.id));
+
+    return [...orderedCards, ...remainingCards];
+  }, [energyCardsById, energyCustomCards, energyOrderedCardIds]);
+  const visibleConsumers = useMemo(
+    () => dashboard.topConsumers.filter((consumer) => !hiddenConsumerIdSet.has(consumer.id)),
+    [dashboard.topConsumers, hiddenConsumerIdSet]
+  );
+  const filteredDashboard = useMemo(
+    () => ({
+      ...dashboard,
+      topConsumers: visibleConsumers,
+    }),
+    [dashboard, visibleConsumers]
+  );
+  const hiddenConsumers = useMemo(
+    () => dashboard.topConsumers.filter((consumer) => hiddenConsumerIdSet.has(consumer.id)),
+    [dashboard.topConsumers, hiddenConsumerIdSet]
+  );
+  const energyLibraryCards = useMemo<DashboardLibraryCard[]>(
+    () =>
+      hiddenConsumers
+        .map((consumer) => ({
+          id: consumer.id,
+          title: consumer.name,
+          subtitle: consumer.room ?? t('sidebar.energy'),
+          meta:
+            consumer.powerW > 0
+              ? `${Math.round(consumer.powerW)} W`
+              : `${formatEnergyValue(consumer.energyKWh)} kWh`,
+          kind: 'device' as const,
+          icon:
+            consumer.category === 'water_heater'
+              ? Sun
+              : HEATING_CATEGORIES.has(consumer.category)
+                ? Flame
+                : PlugZap,
+        }))
+        .sort(
+          (left, right) =>
+            left.subtitle.localeCompare(right.subtitle) || left.title.localeCompare(right.title)
+        ),
+    [hiddenConsumers, t]
+  );
+  const liveWatts = Math.round(filteredDashboard.totals.currentLoadW);
   const importedTodayLabel = `${formatEnergyValue(dashboard.totals.importTodayKWh)} kWh`;
   const generatedTodayLabel = `${formatEnergyValue(dashboard.totals.solarTodayKWh)} kWh`;
+  const toggleEditMode = () => {
+    if (onToggleEditMode) {
+      onToggleEditMode();
+      return;
+    }
+
+    setUncontrolledEditMode((previous) => !previous);
+  };
+  const handleConsumerVisibilityChange = (consumerId: string, visible: boolean) => {
+    setHiddenConsumerIds((previous) => {
+      const nextSet = new Set(previous);
+      if (visible) {
+        nextSet.delete(consumerId);
+      } else {
+        nextSet.add(consumerId);
+      }
+      return [...nextSet];
+    });
+  };
+  const updateSparklineCardSize = (cardId: string, size: CardSize) => {
+    setSparklineCardSizes((previous) => ({ ...previous, [cardId]: size }));
+  };
+  const heroActions = (
+    <div className="flex min-h-10 items-center justify-end gap-2">
+      {isEditMode ? (
+        <button
+          type="button"
+          onClick={() => setIsAddCardDialogOpen(true)}
+          className={`inline-flex items-center gap-1.5 rounded-[22px] border px-2.5 py-1.5 text-xs font-medium transition-colors md:gap-2 md:px-3 md:py-2 md:text-sm ${surface.border} ${surface.textSecondary} ${surface.hoverBg}`}
+        >
+          <Plus className={`h-4 w-4 ${surface.textSecondary}`} />
+          <span className={`hidden text-xs font-medium md:inline ${surface.textSecondary}`}>
+            {t('dashboard.roomNav.addCard')}
+          </span>
+        </button>
+      ) : null}
+      <SectionCustomizeButton isEditMode={isEditMode} onToggle={toggleEditMode} />
+    </div>
+  );
   return (
     <div className="space-y-5">
       <DashboardHeroSection
         accentColor={accentColor}
-        description={`Track live demand, compare ${formatEnergyValue(dashboard.totals.importTodayKWh)} kWh imported with ${formatEnergyValue(dashboard.totals.exportTodayKWh)} kWh exported, and see how HA Energy devices divide today's usage.`}
+        actions={heroActions}
+        actionsClassName="md:absolute md:top-0 md:right-0 md:mt-0 md:max-w-[22rem] md:justify-end"
+        description="See where power is flowing right now."
         surface={surface}
         title={t('energy.hero.title')}
       />
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(22rem,26rem)_minmax(0,1fr)]">
-        <div className="order-2 min-w-0 self-start xl:order-1">
-          <SourceDiagnostics
-            accentColor={accentColor}
-            homeAssistantEnergyUrl={homeAssistantEnergyUrl}
-            openLabel={t('common.open')}
-            sources={sourceDiagnostics}
-            surface={surface}
-          />
-        </div>
-
-        <div className="order-1 min-w-0 self-start xl:order-2">
-          <DeviceTable
-            accentColor={accentColor}
-            consumers={dashboard.topConsumers}
-            generatedColor={heroLegendColors.generated}
-            generatedTodayKWh={dashboard.totals.exportTodayKWh}
-            gridImportTodayKWh={dashboard.totals.importTodayKWh}
-            importColor={heroLegendColors.gridImport}
-            loadW={liveWatts}
-            importedTodayLabel={importedTodayLabel}
-            generatedTodayLabel={generatedTodayLabel}
-            sourceDiagnostics={sourceDiagnostics}
-            surface={surface}
-          />
-        </div>
+      <section>
+        <DeviceTable
+          accentColor={accentColor}
+          consumers={filteredDashboard.topConsumers}
+          generatedColor={heroLegendColors.generated}
+          generatedTodayKWh={dashboard.totals.exportTodayKWh}
+          gridImportTodayKWh={dashboard.totals.importTodayKWh}
+          homeAssistantEnergyUrl={homeAssistantEnergyUrl}
+          importColor={heroLegendColors.gridImport}
+          loadW={liveWatts}
+          openLabel={t('common.open')}
+          importedTodayLabel={importedTodayLabel}
+          generatedTodayLabel={generatedTodayLabel}
+          sourceDiagnostics={sourceDiagnostics}
+          surface={surface}
+        />
       </section>
 
       <section>
         <CompactLoadSparklines
           accentColor={accentColor}
-          consumers={dashboard.topConsumers}
-          surface={surface}
+          cardSizes={sparklineCardSizes}
+          consumers={filteredDashboard.topConsumers}
+          customCards={orderedEnergyCustomCards}
+          isEditMode={isEditMode}
+          onHideConsumer={(consumerId) => handleConsumerVisibilityChange(consumerId, false)}
+          onDeleteCard={onDeleteCard}
+          onSizeChange={updateSparklineCardSize}
+          onUpdateCard={onUpdateCard}
+          theme={theme}
           wholeHomeCurrentW={dashboard.totals.currentLoadW}
           wholeHomePoints={dashboard.ranges[dashboard.selectedRange].liveConsumption}
           wholeHomeTodayKWh={dashboard.ranges[dashboard.selectedRange].totalUsageKWh}
         />
       </section>
+      <AddCardDialogContainer
+        open={isAddCardDialogOpen}
+        onClose={() => setIsAddCardDialogOpen(false)}
+        onAddCard={(template, size) => onAddCard?.(template, size)}
+        onAddLibraryCard={(cardId) => handleConsumerVisibilityChange(cardId, true)}
+        currentRoom={t('sidebar.energy')}
+        libraryCards={energyLibraryCards}
+        showCardsTab
+        allowedTemplateIds={['energy-now', 'energy-metric']}
+      />
     </div>
   );
 });
 
 function CompactLoadSparklines({
   accentColor,
+  cardSizes,
   consumers,
-  surface,
+  customCards,
+  isEditMode,
+  onDeleteCard,
+  onHideConsumer,
+  onSizeChange,
+  onUpdateCard,
+  theme,
   wholeHomeCurrentW,
   wholeHomePoints,
   wholeHomeTodayKWh,
 }: {
   accentColor: string;
+  cardSizes: Record<string, CardSize>;
   consumers: EnergyConsumer[];
-  surface: ReturnType<typeof getThemeSurfaceTokens>;
+  customCards: CustomCard[];
+  isEditMode: boolean;
+  onDeleteCard?: (cardId: string) => void;
+  onHideConsumer: (consumerId: string) => void;
+  onSizeChange: (cardId: string, size: CardSize) => void;
+  onUpdateCard?: (cardId: string, updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>) => void;
+  theme: ThemeType;
   wholeHomeCurrentW: number;
   wholeHomePoints: EnergySeriesPoint[];
   wholeHomeTodayKWh: number;
@@ -155,15 +331,13 @@ function CompactLoadSparklines({
     rootMargin: '180px 0px',
   });
   const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
-    useFitDashboardGrid(breakpointCols);
+    useFitDashboardGrid(breakpointCols, false);
+  const wholeHomeCardSize = resolveSparklineCardSize(
+    cardSizes[ENERGY_WHOLE_HOME_SPARKLINE_CARD_ID]
+  );
 
   return (
     <div ref={viewportRef}>
-      <div className="mb-3 flex items-center gap-3">
-        <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>Sparklines</h2>
-        <div className={`h-px flex-1 ${surface.borderStrong}`} />
-      </div>
-
       <div ref={outerRef} className="relative w-full" style={outerContainerStyle}>
         <div
           ref={innerRef}
@@ -174,22 +348,47 @@ function CompactLoadSparklines({
             className="grid w-full grid-flow-row-dense gap-3 lg:gap-4"
             style={gridStyle as CSSProperties}
           >
-            <div className={`${getCardSpanClass('medium')} min-w-0`}>
+            <SparklineCardFrame
+              accentColor={accentColor}
+              cardSize={wholeHomeCardSize}
+              isEditMode={isEditMode}
+              onSizeChange={(size) => onSizeChange(ENERGY_WHOLE_HOME_SPARKLINE_CARD_ID, size)}
+              theme={theme}
+            >
               <EnergyNowCardView
                 accentColor={accentColor}
                 currentLoadW={wholeHomeCurrentW}
-                size="medium"
+                size={wholeHomeCardSize}
                 title="Whole home"
                 todayUsageKWh={wholeHomeTodayKWh}
                 trend={wholeHomePoints}
               />
-            </div>
+            </SparklineCardFrame>
             {consumers.map((consumer) => (
               <DeviceSparklineRow
                 key={consumer.id}
                 accentColor={accentColor}
+                cardSize={resolveSparklineCardSize(
+                  cardSizes[getEnergyConsumerSparklineCardId(consumer.id)]
+                )}
                 consumer={consumer}
                 enabled={isVisible}
+                isEditMode={isEditMode}
+                onHideConsumer={onHideConsumer}
+                onSizeChange={onSizeChange}
+                theme={theme}
+              />
+            ))}
+            {customCards.map((card) => (
+              <DashboardCardItem
+                key={card.id}
+                id={card.id}
+                size={card.size}
+                isEditMode={isEditMode}
+                card={card}
+                handleSizeChange={(cardId, size) => onUpdateCard?.(cardId, { size })}
+                onDeleteCard={onDeleteCard}
+                onUpdateCard={(cardId, data) => onUpdateCard?.(cardId, { data })}
               />
             ))}
           </div>
@@ -201,27 +400,150 @@ function CompactLoadSparklines({
 
 function DeviceSparklineRow({
   accentColor,
+  cardSize,
   consumer,
   enabled,
+  isEditMode,
+  onHideConsumer,
+  onSizeChange,
+  theme,
 }: {
   accentColor: string;
+  cardSize: Extract<CardSize, 'small' | 'medium' | 'large'>;
   consumer: EnergyConsumer;
   enabled: boolean;
+  isEditMode: boolean;
+  onHideConsumer: (consumerId: string) => void;
+  onSizeChange: (cardId: string, size: CardSize) => void;
+  theme: ThemeType;
 }) {
   const points = useEnergyLoadHistory(consumer.powerEntityId, consumer.powerW, enabled);
+  const cardId = getEnergyConsumerSparklineCardId(consumer.id);
 
   return (
-    <div className={`${getCardSpanClass('medium')} min-w-0`}>
+    <SparklineCardFrame
+      accentColor={accentColor}
+      cardSize={cardSize}
+      isEditMode={isEditMode}
+      onHide={() => onHideConsumer(consumer.id)}
+      onSizeChange={(size) => onSizeChange(cardId, size)}
+      theme={theme}
+    >
       <EnergyNowCardView
         accentColor={accentColor}
         currentLoadW={consumer.powerW}
-        size="medium"
+        size={cardSize}
         title={consumer.name}
         todayUsageKWh={consumer.energyKWh}
         trend={points}
       />
+    </SparklineCardFrame>
+  );
+}
+
+function SparklineCardFrame({
+  accentColor,
+  cardSize,
+  children,
+  isEditMode,
+  onHide,
+  onSizeChange,
+  theme,
+}: {
+  accentColor: string;
+  cardSize: Extract<CardSize, 'small' | 'medium' | 'large'>;
+  children: ReactNode;
+  isEditMode: boolean;
+  onHide?: () => void;
+  onSizeChange: (size: CardSize) => void;
+  theme: ThemeType;
+}) {
+  return (
+    <div className={`${getCardSpanClass(cardSize)} relative h-full min-w-0`}>
+      <div className="relative h-full">
+        {children}
+        {isEditMode ? (
+          <div
+            className={`pointer-events-none absolute inset-x-0 bottom-0 z-30 h-24 overflow-hidden ${getBaseCardRadiusClassName(cardSize)}`}
+            data-card-edit-dock="true"
+          >
+            <div
+              className="pointer-events-none absolute inset-0"
+              style={{
+                background:
+                  theme === 'glass'
+                    ? 'linear-gradient(to top, rgba(4,8,18,0.56), rgba(8,12,20,0.3) 24%, rgba(10,14,24,0.1) 52%, transparent 78%)'
+                    : 'linear-gradient(to top, rgba(0,0,0,0.88), rgba(0,0,0,0.78) 24%, rgba(0,0,0,0.42) 52%, transparent 78%)',
+              }}
+              aria-hidden="true"
+            />
+            <div className="relative flex h-full items-end justify-center px-2 pb-3">
+              <div
+                className="pointer-events-auto inline-flex max-w-full items-center justify-center gap-2 rounded-full px-3 py-2"
+                style={
+                  theme === 'glass'
+                    ? {
+                        border: '1px solid rgba(255,255,255,0.16)',
+                        background:
+                          'linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.08) 22%, rgba(255,255,255,0.03) 100%)',
+                        boxShadow:
+                          '0 18px 38px -24px rgba(4,10,22,0.82), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -10px 18px rgba(255,255,255,0.03)',
+                        backdropFilter: 'blur(24px) saturate(1.05)',
+                        WebkitBackdropFilter: 'blur(24px) saturate(1.05)',
+                      }
+                    : {
+                        border: `1px solid ${withTintAlpha(accentColor, 0.12)}`,
+                        background: '#161619',
+                        boxShadow: '0 12px 24px -18px rgba(0,0,0,0.72)',
+                      }
+                }
+              >
+                {onHide ? (
+                  <CardEditActionButton
+                    cardSize={cardSize}
+                    Icon={EyeOff}
+                    inline
+                    theme={theme}
+                    variant="warning"
+                    aria-label="Hide energy sensor"
+                    title="Hide energy sensor"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      onHide();
+                    }}
+                    onPointerDown={(event) => {
+                      event.stopPropagation();
+                    }}
+                  />
+                ) : null}
+                <DashboardResizeTrigger
+                  cardSize={cardSize}
+                  allowedSizes={ENERGY_SPARKLINE_ALLOWED_SIZES}
+                  onSizeChange={onSizeChange}
+                  inline
+                />
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
+}
+
+function getEnergyConsumerSparklineCardId(consumerId: string) {
+  return `energy:consumer:${consumerId}`;
+}
+
+function resolveSparklineCardSize(
+  size: CardSize | undefined
+): Extract<CardSize, 'small' | 'medium' | 'large'> {
+  if (size === 'small' || size === 'medium' || size === 'large') {
+    return size;
+  }
+
+  return 'medium';
 }
 
 function MinimalStat({
@@ -326,9 +648,11 @@ function DeviceTable({
   generatedColor,
   generatedTodayKWh,
   gridImportTodayKWh,
+  homeAssistantEnergyUrl,
   importColor,
   importedTodayLabel,
   loadW,
+  openLabel,
   generatedTodayLabel,
   sourceDiagnostics,
   surface,
@@ -338,15 +662,19 @@ function DeviceTable({
   generatedColor: string;
   generatedTodayKWh: number;
   gridImportTodayKWh: number;
+  homeAssistantEnergyUrl: string | null;
   importColor: string;
   importedTodayLabel: string;
   loadW: number;
+  openLabel: string;
   generatedTodayLabel: string;
   sourceDiagnostics: EnergySourceDiagnostic[];
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
+  const { theme } = useTheme();
   const dashboardSpaceMode = useSettingsStore(settingsSelectors.dashboardSpaceMode);
   const unavailableDevices = getUnavailableDeviceDiagnostics(consumers, sourceDiagnostics);
+  const [contentView, setContentView] = useState<'devices' | 'sources'>('devices');
   const useSplitOrbLayout = dashboardSpaceMode === 'more_space';
   const contentLayoutClassName = useSplitOrbLayout
     ? 'grid gap-8 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)]'
@@ -355,8 +683,16 @@ function DeviceTable({
     ? 'order-2 flex min-w-0 flex-col lg:order-1'
     : 'order-2 flex min-w-0 flex-col 2xl:order-1';
   const orbPaneClassName = useSplitOrbLayout
-    ? `order-1 min-w-0 border-b pb-5 lg:order-2 lg:border-b-0 lg:border-t-0 lg:border-l lg:pb-0 lg:pt-0 lg:pl-6 ${surface.border}`
-    : `order-1 min-w-0 border-b pb-5 2xl:order-2 2xl:border-b-0 2xl:border-t-0 2xl:border-l 2xl:pb-0 2xl:pt-0 2xl:pl-6 ${surface.border}`;
+    ? `order-1 min-w-0 border-b pb-5 lg:order-2 lg:border-b-0 lg:border-l lg:pb-0 lg:pl-6 ${surface.border}`
+    : `order-1 min-w-0 border-b pb-5 2xl:order-2 2xl:border-b-0 2xl:border-l 2xl:pb-0 2xl:pl-6 ${surface.border}`;
+  const rowDividerClassName =
+    theme === 'light'
+      ? 'bg-slate-300/90'
+      : theme === 'glass'
+        ? 'bg-white/20'
+        : theme === 'black'
+          ? 'bg-white/10'
+          : 'bg-white/14';
 
   return (
     <BaseCard size="medium" fullBleed className="min-w-0 w-full" surfaceVariant="muted">
@@ -368,15 +704,36 @@ function DeviceTable({
         <div className={tableOrderClassName}>
           <div className="mb-4 flex items-start justify-between gap-4">
             <div>
-              <div className={`text-xs ${surface.textMuted}`}>Tracked by HA Energy</div>
-              <h2 className={`text-lg font-semibold ${surface.textPrimary}`}>Live Energy</h2>
-              <p className={`mt-1 max-w-xl text-sm ${surface.textMuted}`}>
-                Imported energy is split by tracked devices while export remains visible as a
-                separate source.
+              <h2 className={`${navetTypographyTokens.sectionHeading} ${surface.textPrimary}`}>
+                Live Energy
+              </h2>
+              <p
+                className={`mt-1 max-w-xl ${navetTypographyTokens.bodyCompact} ${surface.textSecondary}`}
+              >
+                See which devices are driving demand.
               </p>
             </div>
           </div>
-          <div className="mb-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <InteractivePill
+                active={contentView === 'devices'}
+                aria-pressed={contentView === 'devices'}
+                size="compact"
+                onClick={() => setContentView('devices')}
+              >
+                Devices
+              </InteractivePill>
+              <InteractivePill
+                active={contentView === 'sources'}
+                aria-pressed={contentView === 'sources'}
+                size="compact"
+                onClick={() => setContentView('sources')}
+              >
+                Sources
+              </InteractivePill>
+            </div>
+            <div className={`hidden h-6 w-px shrink-0 md:block ${rowDividerClassName}`} />
             <MinimalStat
               label="Imported today"
               value={importedTodayLabel}
@@ -397,73 +754,85 @@ function DeviceTable({
           <div
             className={`min-h-0 flex-1 overflow-hidden rounded-[22px] border ${surface.border} ${surface.panelMuted}`}
           >
-            {consumers.length === 0 ? (
-              <div className={`px-4 py-5 text-sm ${surface.textMuted}`}>
-                No available device usage has been reported yet.
-              </div>
-            ) : (
-              <>
-                <div
-                  className={`hidden grid-cols-[minmax(0,1fr)_5rem_5rem_4rem] items-center gap-3 px-4 pt-3 pb-2 text-xs font-medium sm:grid ${surface.textMuted}`}
-                >
-                  <div>Device</div>
-                  <div className="text-right">Now</div>
-                  <div className="text-right">Today</div>
-                  <div className="text-right">Status</div>
+            {contentView === 'devices' ? (
+              consumers.length === 0 ? (
+                <div className={`px-4 py-5 text-sm ${surface.textMuted}`}>
+                  No available device usage has been reported yet.
                 </div>
-                {consumers.map((consumer, index) => (
+              ) : (
+                <>
                   <div
-                    key={consumer.id}
-                    className={`grid gap-3 px-4 py-3 text-sm sm:grid-cols-[minmax(0,1fr)_5rem_5rem_4rem] sm:items-center ${
-                      index % 2 === 0 ? surface.subtleBg : ''
-                    }`}
+                    className={`hidden grid-cols-[minmax(0,1fr)_5rem_5rem_4rem] items-center gap-3 px-4 pt-3 pb-2 text-xs font-medium sm:grid ${surface.textMuted}`}
                   >
-                    <div className="flex min-w-0 items-center justify-between gap-3 sm:block">
-                      <div className="min-w-0">
-                        <div className="flex min-w-0 items-center gap-2">
-                          <span
-                            aria-hidden="true"
-                            className="h-2.5 w-2.5 shrink-0 rounded-full"
-                            style={{ backgroundColor: getEnergyConsumerColor(consumer) }}
-                          />
-                          <div className={`truncate font-medium ${surface.textPrimary}`}>
-                            {consumer.name}
+                    <div>Device</div>
+                    <div className="text-right">Now</div>
+                    <div className="text-right">Today</div>
+                    <div className="text-right">Status</div>
+                  </div>
+                  {consumers.map((consumer, index) => (
+                    <div
+                      key={consumer.id}
+                      className={`grid gap-3 px-4 py-3 text-sm sm:grid-cols-[minmax(0,1fr)_5rem_5rem_4rem] sm:items-center ${
+                        index % 2 === 0 ? surface.subtleBg : ''
+                      }`}
+                    >
+                      <div className="flex min-w-0 items-center justify-between gap-3 sm:block">
+                        <div className="min-w-0">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span
+                              aria-hidden="true"
+                              className="h-2.5 w-2.5 shrink-0 rounded-full"
+                              style={{ backgroundColor: getEnergyConsumerColor(consumer) }}
+                            />
+                            <div className={`truncate font-medium ${surface.textPrimary}`}>
+                              {consumer.name}
+                            </div>
+                          </div>
+                          <div className={`truncate text-xs sm:block ${surface.textMuted}`}>
+                            {getDeviceUsageSubtitle(consumer, gridImportTodayKWh)}
                           </div>
                         </div>
-                        <div className={`truncate text-xs sm:block ${surface.textMuted}`}>
-                          {getDeviceUsageSubtitle(consumer, gridImportTodayKWh)}
+                        <div className="flex shrink-0 justify-end sm:hidden">
+                          <DeviceStatusSwitch accentColor={accentColor} status={consumer.status} />
                         </div>
                       </div>
-                      <div className="flex shrink-0 justify-end sm:hidden">
+                      <div className="grid grid-cols-2 gap-3 sm:contents">
+                        <div className="min-w-0">
+                          <div className={`text-xs font-medium sm:hidden ${surface.textMuted}`}>
+                            Now
+                          </div>
+                          <div className={`font-medium sm:text-right ${surface.textPrimary}`}>
+                            {formatPowerValue(consumer.powerW)}
+                          </div>
+                        </div>
+                        <div className="min-w-0">
+                          <div className={`text-xs font-medium sm:hidden ${surface.textMuted}`}>
+                            Today
+                          </div>
+                          <div className={`sm:text-right ${surface.textSecondary}`}>
+                            {formatTrackedEnergyValue(consumer.energyKWh)}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="hidden justify-end sm:flex">
                         <DeviceStatusSwitch accentColor={accentColor} status={consumer.status} />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 sm:contents">
-                      <div className="min-w-0">
-                        <div className={`text-xs font-medium sm:hidden ${surface.textMuted}`}>
-                          Now
-                        </div>
-                        <div className={`font-medium sm:text-right ${surface.textPrimary}`}>
-                          {formatPowerValue(consumer.powerW)}
-                        </div>
-                      </div>
-                      <div className="min-w-0">
-                        <div className={`text-xs font-medium sm:hidden ${surface.textMuted}`}>
-                          Today
-                        </div>
-                        <div className={`sm:text-right ${surface.textSecondary}`}>
-                          {formatTrackedEnergyValue(consumer.energyKWh)}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="hidden justify-end sm:flex">
-                      <DeviceStatusSwitch accentColor={accentColor} status={consumer.status} />
-                    </div>
-                  </div>
-                ))}
-              </>
+                  ))}
+                </>
+              )
+            ) : (
+              <SourceDiagnostics
+                accentColor={accentColor}
+                compact
+                hideHeader
+                homeAssistantEnergyUrl={homeAssistantEnergyUrl}
+                openLabel={openLabel}
+                sources={sourceDiagnostics}
+                surface={surface}
+              />
             )}
-            {unavailableDevices.length > 0 ? (
+            {contentView === 'devices' && unavailableDevices.length > 0 ? (
               <div className={`border-t ${surface.border}`}>
                 {unavailableDevices.map((device, index) => (
                   <div
@@ -490,18 +859,23 @@ function DeviceTable({
             ) : null}
           </div>
           <div
-            className={`mt-4 flex items-start gap-2 border-t pt-3 text-xs leading-relaxed ${surface.border} ${surface.textMuted}`}
+            className={`mt-4 flex items-start gap-2 text-xs leading-relaxed ${surface.textMuted}`}
           >
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <p>Wrong sensors or missing sources should be corrected in Home Assistant Energy.</p>
+            <p>
+              {contentView === 'devices'
+                ? 'Wrong sensors or missing sources should be corrected in Home Assistant Energy.'
+                : 'Source selection is managed in Home Assistant Energy.'}
+            </p>
           </div>
         </div>
 
         <div className={orbPaneClassName}>
           <div className="mb-4">
-            <div className={`text-xs ${surface.textMuted}`}>Orb mix</div>
-            <h3 className={`text-base font-semibold ${surface.textPrimary}`}>Import Attribution</h3>
-            <p className={`mt-1 text-sm ${surface.textMuted}`}>
+            <h3 className={`${navetTypographyTokens.sectionHeading} ${surface.textPrimary}`}>
+              Import Attribution
+            </h3>
+            <p className={`mt-1 ${navetTypographyTokens.bodyCompact} ${surface.textSecondary}`}>
               Orange shows import that is still unattributed, green shows export, and each device
               color marks tracked import usage.
             </p>
@@ -590,91 +964,80 @@ function DeviceStatusSwitch({
 
 function SourceDiagnostics({
   accentColor,
+  compact = false,
+  hideHeader = false,
   homeAssistantEnergyUrl,
   openLabel,
   sources,
   surface,
 }: {
   accentColor: string;
+  compact?: boolean;
+  hideHeader?: boolean;
   homeAssistantEnergyUrl: string | null;
   openLabel: string;
   sources: EnergySourceDiagnostic[];
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
-  const { theme, colors } = useTheme();
+  const { theme } = useTheme();
   const sourceRows = getSourceDiagnostics(sources);
-  const accentSurface = getLightCardSurfaceTokens({
-    isOn: true,
-    selectedColor: null,
-    currentColor: null,
-    theme,
-    lightColors: colors.light,
-    accentColor,
-  });
-  const rowDividerClassName = theme === 'light' ? 'border-slate-200/80' : 'border-white/8';
+  const sectionStyle = getInheritedDialogSectionStyle(theme, accentColor, accentColor);
+  const rowDividerClassName = theme === 'light' ? 'border-slate-200/80' : surface.border;
+  const sectionClassName =
+    theme === 'light'
+      ? 'bg-white/60'
+      : theme === 'glass'
+        ? 'bg-white/[0.03]'
+        : theme === 'black'
+          ? 'bg-white/[0.02]'
+          : 'bg-white/[0.025]';
 
   return (
-    <BaseCard
-      data-testid="energy-sources-card"
-      size="medium"
-      title="Sources"
-      subtitle="Manage source selection in Home Assistant Energy"
-      accentColor={accentColor}
-      headerLeading={
-        <EntityCardHeaderIcon
-          IconComponent={Zap}
-          isActive
-          size="medium"
-          tone="primary"
-          baseColor={accentColor}
-        />
-      }
-      headerTrailing={
-        homeAssistantEnergyUrl ? (
-          <a
-            href={homeAssistantEnergyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-              theme === 'light' ? 'bg-white/88 hover:bg-white' : 'bg-black/18 hover:bg-black/24'
-            }`}
-            style={{
-              borderColor: `${accentColor}${theme === 'light' ? '33' : '29'}`,
-              color: accentColor,
-            }}
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-            <span>{openLabel}</span>
-          </a>
-        ) : null
-      }
-      frameClassName={accentSurface.cardClassName}
-      style={accentSurface.cardStyle}
-      disableDefaultSheen
-      overlay={
-        <>
-          {accentSurface.activeGlowClassName ? (
-            <div
-              className={accentSurface.activeGlowClassName}
-              style={accentSurface.activeGlowStyle}
-            />
+    <div data-testid="energy-sources-card" className="w-full">
+      {!hideHeader ? (
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <EntityCardHeaderIcon
+                IconComponent={Zap}
+                isActive
+                size="medium"
+                tone="primary"
+                baseColor={accentColor}
+              />
+              <div className={`text-base font-semibold ${surface.textPrimary}`}>Sources</div>
+            </div>
+            <p className={`mt-1 text-sm ${surface.textMuted}`}>
+              Manage source selection in Home Assistant Energy
+            </p>
+          </div>
+          {homeAssistantEnergyUrl ? (
+            <a
+              href={homeAssistantEnergyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                theme === 'light' ? 'bg-white/88 hover:bg-white' : 'bg-black/18 hover:bg-black/24'
+              }`}
+              style={{
+                borderColor: `${accentColor}${theme === 'light' ? '33' : '29'}`,
+                color: accentColor,
+              }}
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              <span>{openLabel}</span>
+            </a>
           ) : null}
-          {accentSurface.innerOverlayClassName ? (
-            <div
-              className={accentSurface.innerOverlayClassName}
-              style={accentSurface.innerOverlayStyle}
-            />
-          ) : null}
-          {accentSurface.shineOverlayClassName ? (
-            <div className={accentSurface.shineOverlayClassName} />
-          ) : null}
-        </>
-      }
-      className="w-full"
-      contentClassName="flex flex-col"
-      headerClassName="pb-1"
-    >
-      <div className="grid gap-2 overflow-hidden">
+        </div>
+      ) : null}
+      <div
+        className={`grid gap-2 overflow-hidden ${
+          hideHeader
+            ? `px-4 ${compact ? 'py-3' : 'py-4'}`
+            : `rounded-[1.25rem] border px-3 ${compact ? 'py-3' : 'py-4'}`
+        } ${hideHeader ? '' : `${surface.border} ${sectionClassName}`}`}
+        style={sectionStyle}
+      >
         {sourceRows.map((source) => (
           <div
             key={source.id}
@@ -703,7 +1066,7 @@ function SourceDiagnostics({
           </div>
         ))}
       </div>
-    </BaseCard>
+    </div>
   );
 }
 

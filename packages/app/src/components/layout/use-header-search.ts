@@ -5,6 +5,7 @@ import { useDeferredValue, useEffect, useRef, useState } from 'react';
 
 const DEVICE_GROUPS = [
   { domain: 'light', type: 'lights', deviceKey: 'lights' },
+  { domain: 'climate', type: 'climate', deviceKey: 'climate' },
   { domain: 'climate', type: 'hvac', deviceKey: 'hvac' },
   { domain: 'switch', type: 'switches', deviceKey: 'switches' },
   { domain: 'cover', type: 'covers', deviceKey: 'covers' },
@@ -13,7 +14,6 @@ const DEVICE_GROUPS = [
   { domain: 'person', type: 'persons', deviceKey: 'persons' },
   { domain: 'sensor', type: 'sensors', deviceKey: 'sensors' },
   { domain: 'vacuum', type: 'vacuums', deviceKey: 'vacuums' },
-  { domain: 'climate', type: 'climate', deviceKey: 'climate' },
   { domain: 'weather', type: 'weather', deviceKey: 'weather' },
 ] as const;
 
@@ -29,8 +29,8 @@ export function useHeaderSearch() {
   const devices = useDeviceCollectionsByKeys(
     [
       'lights',
-      'hvac',
       'climate',
+      'hvac',
       'switches',
       'covers',
       'locks',

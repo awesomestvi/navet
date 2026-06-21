@@ -517,13 +517,12 @@ export const itMessages = {
     'Non hai ancora configurato lettori multimediali. Aggiungi dispositivi per controllare l’intrattenimento.',
   'sections.climate.emptyTitle': 'Nessun dispositivo clima',
   'sections.climate.emptyDescription':
-    'Collega termostati, dispositivi HVAC o sensori clima per monitorare il comfort da Navet.',
+    'Collega termostati, dispositivi clima o sensori clima per monitorare il comfort da Navet.',
   'sections.climate.emptyHiddenDescription':
     'Le entità clima sono nascoste. Aggiungile di nuovo per mostrarle in questa dashboard.',
   'sections.climate.title': 'Clima',
   'sections.climate.singular': 'elemento clima',
   'sections.climate.plural': 'elementi clima',
-  'sections.climate.hvac.title': 'Termostati e HVAC',
   'sections.climate.fans.title': 'Ventilatori',
   'sections.climate.temperature.title': 'Temperatura',
   'sections.climate.humidity.title': 'Umidità',
@@ -549,7 +548,7 @@ export const itMessages = {
   'userDropdown.role.administrator': 'Amministratore',
   'userDropdown.role.user': 'Utente',
   'deviceType.light': 'Luce',
-  'deviceType.hvac': 'HVAC',
+  'deviceType.hvac': 'Climate',
   'deviceType.climate': 'Clima',
   'deviceType.power': 'Energia',
   'deviceType.media': 'Media',
@@ -658,10 +657,10 @@ export const itMessages = {
   'energy.band.devices.description': 'I carichi individuali che consumano più energia ora.',
   'energy.customCards.title': 'Schede energia',
   'energy.customCards.description':
-    'Posiziona qui widget energia riutilizzabili accanto alla dashboard principale.',
+    'Posiziona qui widget energia riutilizzabili e sensori energia personalizzati accanto alla dashboard principale.',
   'energy.customCards.emptyTitle': 'Ancora nessuna scheda energia',
   'energy.customCards.emptyDescription':
-    'Aggiungi una scheda sparkline da 5 minuti per fissare la tendenza live nella dashboard energia.',
+    'Aggiungi una scheda Metrica energia per saldo prepagato o credito residuo, oppure fissa una tendenza live da Home Assistant Energy.',
   'dashboard.homeOverview.eyebrow': 'Primo sguardo',
   'dashboard.homeOverview.title': 'Vedi lo stato della casa prima di toccare qualcosa.',
   'dashboard.homeOverview.description':
@@ -1002,6 +1001,7 @@ export const itMessages = {
   'climate.settings.room': 'Stanza',
   'climate.coolingDownTo': 'Raffreddamento fino a {temp}',
   'climate.heatingTo': 'Riscaldamento fino a {temp}',
+  'climate.idle': 'Inattivo',
   'climate.holdingAt': 'Mantiene {temp}',
   'climate.feedback.updateTemperatureFailed': 'Impossibile aggiornare la temperatura',
   'climate.feedback.updateModeFailed': 'Impossibile aggiornare la modalità',
@@ -1356,6 +1356,9 @@ export const itMessages = {
   'dashboard.addCard.templates.energyNow.name': 'Energia ora',
   'dashboard.addCard.templates.energyNow.description':
     'Mostra potenza live, tendenza e consumo odierno.',
+  'dashboard.addCard.templates.energyMetric.name': 'Metrica energia',
+  'dashboard.addCard.templates.energyMetric.description':
+    'Aggiungi un sensore energia personalizzato, come saldo prepagato, credito residuo, tariffa o stato del contatore.',
   'dashboard.addCard.templates.mediaStack.name': 'Media Stack',
   'dashboard.addCard.templates.mediaStack.description':
     'One media card that surfaces the most relevant player for the room.',

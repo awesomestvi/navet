@@ -26,3 +26,10 @@ surfaces, or core visual hierarchy.
 - when a card sits beside adjacent cards in an established lane or section, inherit that same surface family first; do not make one card look like a different theme or material system
 - in dashboard pairs or lanes, prefer the same shared card recipe across neighboring cards; for example, the energy dashboard `Sources` card should stay in the same surface family as `Live Energy`, but may become accent-aware by layering a shared accent surface helper on top of that family rather than switching to a feature-local material treatment
 - avoid over-contained cards and nested shells that reduce density without improving clarity
+
+## Validation Rules
+
+- for small UI-only tweaks, do not run tests by default
+- instead, prompt the user to run the most relevant targeted validation command and report back
+- prefer `pnpm test:storybook`, `pnpm check:stories`, or a focused `pnpm test <path>` over broad
+  suites when suggesting UI validation

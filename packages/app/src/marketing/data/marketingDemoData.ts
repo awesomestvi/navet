@@ -14,7 +14,7 @@ import cameraSampleImageAvif from '@assets/reference/media/camera-sample.avif';
 import cameraSampleImage from '@assets/reference/media/camera-sample.webp';
 import { PHOTO_FRAME_DEMO_IMAGES } from '@navet/app/demo/photo-frame-demo-images';
 import type { CalendarCard } from '@navet/app/features/calendar';
-import type { HumidifierCard, HVACCard } from '@navet/app/features/climate';
+import type { ClimateCard, HumidifierCard } from '@navet/app/features/climate';
 import type {
   NoteWidget,
   PhotoFrameWidget,
@@ -169,9 +169,9 @@ export const MARKETING_PREVIEW_CARDS = {
     inEditMode: false,
     size: 'medium',
   } satisfies Omit<ComponentProps<typeof CalendarCard>, 'onSizeChange'>,
-  hvac: {
+  climate: {
     id: 'climate.main_floor',
-    name: 'Main Floor HVAC',
+    name: 'Main Floor Climate',
     room: 'Hallway',
     initialTemp: 22,
     initialCurrentTemp: 21,
@@ -180,7 +180,7 @@ export const MARKETING_PREVIEW_CARDS = {
     initialState: true,
     size: 'medium',
     isEditMode: false,
-  } satisfies Omit<ComponentProps<typeof HVACCard>, 'onSizeChange'>,
+  } satisfies Omit<ComponentProps<typeof ClimateCard>, 'onSizeChange'>,
   humidifier: {
     id: 'humidifier.bedroom',
     name: 'Bedroom Humidifier',

@@ -523,6 +523,14 @@ function renderEditModeDockActions({
           data-dashboard-edit-action="delete-card"
           data-card-id={cardId}
           aria-label={t('widgets.delete')}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onDeleteCard(cardId);
+          }}
+          onPointerDown={(event) => {
+            event.stopPropagation();
+          }}
         />
       ) : null}
       <CardEditActionButton
@@ -663,8 +671,8 @@ function getAllowedSizes(
       return ['small', 'medium'];
     case 'sensors':
       return ['extra-small', 'small'];
-    case 'hvac':
     case 'climate':
+    case 'hvac':
       return ['small', 'medium'];
     case 'calendars':
       return ['small', 'medium', 'large'];

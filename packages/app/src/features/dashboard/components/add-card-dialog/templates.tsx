@@ -158,6 +158,18 @@ export function createCardTemplates(t: TranslateFn): CardTemplate[] {
       supportedSizes: ['small', 'medium', 'large'],
     },
     {
+      id: 'energy-metric',
+      cardType: 'info',
+      nameKey: 'dashboard.addCard.templates.energyMetric.name',
+      descriptionKey: 'dashboard.addCard.templates.energyMetric.description',
+      icon: <EnergyIcon className="w-5 h-5" />,
+      defaultSize: 'medium',
+      supportedSizes: ['small', 'medium', 'large'],
+      initialData: {
+        sensorCategoryFilter: 'energy',
+      },
+    },
+    {
       id: 'button',
       cardType: 'button',
       nameKey: 'dashboard.addCard.templates.button.name',

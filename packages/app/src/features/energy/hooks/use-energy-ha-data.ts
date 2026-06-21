@@ -395,6 +395,7 @@ export function useEnergyHaData(
   energySourceDiagnostics: EnergySourceDiagnostic[];
   energyStatisticUnits: Record<string, string | undefined>;
   hasEnergyStatisticsLoaded: boolean;
+  hasResolvedSourceConfig: boolean;
   overview: EnergyOverview;
   isConfigured: boolean;
   currentLoadStatisticId?: string;
@@ -413,19 +414,23 @@ export function useEnergyHaData(
     [providerEntityRegistry]
   );
   const [haSourceConfig, setHaSourceConfig] = useState<EnergySourceConfig | null>(null);
+  const [hasResolvedSourceConfig, setHasResolvedSourceConfig] = useState(false);
 
   useEffect(() => {
     if (!enabled) {
       setHaSourceConfig(null);
+      setHasResolvedSourceConfig(false);
       return;
     }
 
     let cancelled = false;
+    setHasResolvedSourceConfig(false);
 
     async function fetchEnergyPrefs() {
       const activeMessageClient = getIntegrationHistoryMessageClient('home_assistant');
       if (!activeMessageClient) {
         setHaSourceConfig(null);
+        setHasResolvedSourceConfig(true);
         return;
       }
 
@@ -439,6 +444,7 @@ export function useEnergyHaData(
             );
           }
           setHaSourceConfig(await energyFeatureService.getSourceConfig(activeMessageClient));
+          setHasResolvedSourceConfig(true);
         }
       } catch (error) {
         if (!isMissingEnergyPrefsError(error)) {
@@ -446,6 +452,7 @@ export function useEnergyHaData(
         }
         if (!cancelled) {
           setHaSourceConfig(null);
+          setHasResolvedSourceConfig(true);
         }
       }
     }
@@ -707,6 +714,7 @@ export function useEnergyHaData(
     energySourceDiagnostics,
     energyStatisticUnits,
     hasEnergyStatisticsLoaded: todayStatistics.hasLoaded,
+    hasResolvedSourceConfig,
     overview,
     isConfigured,
     currentLoadStatisticId,

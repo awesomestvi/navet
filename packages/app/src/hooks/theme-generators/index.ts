@@ -4,6 +4,7 @@
 
 export {
   generateCalendarTheme,
+  generateClimateTheme,
   generateCoverTheme,
   generateHvacTheme,
   generateLightTheme,

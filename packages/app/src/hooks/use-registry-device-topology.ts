@@ -10,10 +10,10 @@ import {
 
 const EMPTY_IDS: string[] = [];
 const HOME_ASSISTANT_TOPOLOGY_PATTERNS = {
-  hvac: /^(fan|switch|input_boolean|script|button|input_button)\./,
+  climate: /^(fan|switch|input_boolean|script|button|input_button)\./,
   switch: /^switch\./,
 } as const;
-type ProviderTopologyRole = 'hvac' | 'switch' | 'camera';
+type ProviderTopologyRole = 'climate' | 'switch' | 'camera';
 
 function selectEmptyRegistryDeviceIds(): RegistryDeviceIdsSlice {
   return { deviceId: null, siblingIds: EMPTY_IDS };
@@ -68,8 +68,8 @@ function includeProviderTopologyEntry(
     return false;
   }
 
-  if (role === 'hvac') {
-    return HOME_ASSISTANT_TOPOLOGY_PATTERNS.hvac.test(entry.entityId);
+  if (role === 'climate') {
+    return HOME_ASSISTANT_TOPOLOGY_PATTERNS.climate.test(entry.entityId);
   }
 
   return HOME_ASSISTANT_TOPOLOGY_PATTERNS.switch.test(entry.entityId);
@@ -96,7 +96,7 @@ function resolveProviderRegistryTarget(
   };
 }
 
-export function useHvacRegistryDeviceTopology(entityId: string): RegistryDeviceIdsSlice {
+export function useClimateRegistryDeviceTopology(entityId: string): RegistryDeviceIdsSlice {
   const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
   const { providerId, runtimeEntityId } = resolveProviderRegistryTarget(
     entityId,
@@ -115,15 +115,25 @@ export function useHvacRegistryDeviceTopology(entityId: string): RegistryDeviceI
     () =>
       runtimeEntityId && providerId
         ? collectDeviceSiblingIds(deviceEntries, runtimeEntityId, (entry) =>
-            includeProviderTopologyEntry(providerId, 'hvac', entry)
+            includeProviderTopologyEntry(providerId, 'climate', entry)
           )
         : selectEmptyRegistryDeviceIds(),
     [deviceEntries, providerId, runtimeEntityId]
   );
 }
 
+export function useProviderClimateTopology(entityId: string): ProviderDeviceTopology {
+  return useClimateRegistryDeviceTopology(entityId);
+}
+
+/** @deprecated Use useClimateRegistryDeviceTopology. */
+export function useHvacRegistryDeviceTopology(entityId: string): RegistryDeviceIdsSlice {
+  return useClimateRegistryDeviceTopology(entityId);
+}
+
+/** @deprecated Use useProviderClimateTopology. */
 export function useProviderHvacTopology(entityId: string): ProviderDeviceTopology {
-  return useHvacRegistryDeviceTopology(entityId);
+  return useClimateRegistryDeviceTopology(entityId);
 }
 
 export function useSwitchRegistryDeviceTopology(entityId: string): RegistryDeviceIdsSlice {

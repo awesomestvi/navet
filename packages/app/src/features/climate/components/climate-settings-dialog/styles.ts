@@ -1,0 +1,103 @@
+import { getClimateModeButtonColor } from '@navet/app/features/climate/utils/climate-styles';
+
+export function getClimateSettingsDialogStyles(mode: string, isOn: boolean) {
+  const modeSurface = getModeSurface(mode, isOn);
+  const activePresetClassName = getActivePresetClassName(mode, isOn);
+
+  return {
+    contentSurface: modeSurface.contentSurface,
+    contentClassName: modeSurface.contentClassName,
+    currentValueClassName: 'text-gray-300',
+    modeButtonClassName: (buttonMode: string) => {
+      const shadowClass = getModeButtonShadow(buttonMode, mode, isOn);
+      return `${getClimateModeButtonColor(buttonMode, mode, isOn)} ${shadowClass}`.trim();
+    },
+    modeIconWrapClassName: (buttonMode: string) =>
+      mode === buttonMode && isOn ? 'bg-white/20' : 'bg-white/10',
+    presetButtonClassName:
+      'border-white/10 bg-white/6 text-white hover:bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]',
+    presetButtonActiveClassName: activePresetClassName,
+  };
+}
+
+function getActivePresetClassName(mode: string, isOn: boolean) {
+  if (!isOn) {
+    return 'border-white/10 bg-white/10 text-white';
+  }
+
+  switch (mode) {
+    case 'cool':
+      return 'border-blue-400/40 bg-blue-500/18 text-white';
+    case 'heat':
+      return 'border-orange-400/40 bg-orange-500/18 text-white';
+    case 'fan':
+      return 'border-green-400/40 bg-green-500/18 text-white';
+    default:
+      return 'border-white/10 bg-white/10 text-white';
+  }
+}
+
+function getModeSurface(mode: string, isOn: boolean) {
+  if (!isOn) {
+    return {
+      contentSurface: {
+        panel: 'bg-gradient-to-br from-gray-900/95 to-gray-950/95',
+        border: 'border-gray-500/10',
+      },
+      contentClassName: 'bg-gradient-to-br from-gray-900/95 to-gray-950/95 border-gray-500/10',
+    };
+  }
+
+  switch (mode) {
+    case 'cool':
+      return {
+        contentSurface: {
+          panel: 'bg-gradient-to-br from-blue-900/95 to-blue-950/95',
+          border: 'border-blue-500/20',
+        },
+        contentClassName: 'bg-gradient-to-br from-blue-900/95 to-blue-950/95 border-blue-500/20',
+      };
+    case 'heat':
+      return {
+        contentSurface: {
+          panel: 'bg-gradient-to-br from-orange-900/95 to-orange-950/95',
+          border: 'border-orange-500/20',
+        },
+        contentClassName:
+          'bg-gradient-to-br from-orange-900/95 to-orange-950/95 border-orange-500/20',
+      };
+    case 'fan':
+      return {
+        contentSurface: {
+          panel: 'bg-gradient-to-br from-green-900/95 to-green-950/95',
+          border: 'border-green-500/20',
+        },
+        contentClassName: 'bg-gradient-to-br from-green-900/95 to-green-950/95 border-green-500/20',
+      };
+    default:
+      return {
+        contentSurface: {
+          panel: 'bg-gradient-to-br from-gray-900/95 to-gray-950/95',
+          border: 'border-gray-500/10',
+        },
+        contentClassName: 'bg-gradient-to-br from-gray-900/95 to-gray-950/95 border-gray-500/10',
+      };
+  }
+}
+
+function getModeButtonShadow(buttonMode: string, currentMode: string, isOn: boolean) {
+  if (currentMode !== buttonMode || !isOn) {
+    return '';
+  }
+
+  switch (buttonMode) {
+    case 'cool':
+      return 'shadow-lg shadow-blue-500/30';
+    case 'heat':
+      return 'shadow-lg shadow-orange-500/30';
+    case 'fan':
+      return 'shadow-lg shadow-green-500/30';
+    default:
+      return '';
+  }
+}

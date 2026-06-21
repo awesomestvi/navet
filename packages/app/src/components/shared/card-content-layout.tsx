@@ -15,7 +15,7 @@ interface CardContentLayoutProps {
 
 /**
  * Reusable card content layout component for primary value, caption, and action buttons.
- * Used across HVAC, vacuum, and other cards with similar layouts.
+ * Used across Climate, vacuum, and other cards with similar layouts.
  *
  * @example
  * ```tsx

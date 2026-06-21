@@ -820,7 +820,7 @@ export const enMessages = {
   'media.type.setTopBox': 'Set-top box',
   'media.type.streamingBox': 'Streaming box',
   'media.type.soundbar': 'Soundbar',
-  'climate.subtitle': 'HVAC',
+  'climate.subtitle': 'Climate',
   'climate.mode': 'Mode',
   'climate.mode.cool': 'Cool',
   'climate.mode.heat': 'Heat',
@@ -833,10 +833,11 @@ export const enMessages = {
   'climate.power': 'Power',
   'climate.turnOn': 'Turn On',
   'climate.turnOff': 'Turn Off',
-  'climate.settings.title': 'HVAC Settings',
+  'climate.settings.title': 'Climate Settings',
   'climate.settings.room': 'Room',
   'climate.coolingDownTo': 'Cooling down to {temp}',
   'climate.heatingTo': 'Heat to {temp}',
+  'climate.idle': 'Idle',
   'climate.holdingAt': 'Holding at {temp}',
   'climate.feedback.updateTemperatureFailed': 'Failed to update temperature',
   'climate.feedback.updateModeFailed': 'Failed to update mode',
@@ -1156,13 +1157,12 @@ export const enMessages = {
     "You don't have any media players configured yet. Add devices to control your entertainment.",
   'sections.climate.emptyTitle': 'No Climate Devices',
   'sections.climate.emptyDescription':
-    'Connect thermostats, HVAC devices, or climate sensors to monitor comfort from Navet.',
+    'Connect thermostats, climate devices, or climate sensors to monitor comfort from Navet.',
   'sections.climate.emptyHiddenDescription':
     'Climate entities are hidden. Add them back to show them on this dashboard.',
   'sections.climate.title': 'Climate',
   'sections.climate.singular': 'climate item',
   'sections.climate.plural': 'climate items',
-  'sections.climate.hvac.title': 'Thermostats & HVAC',
   'sections.climate.fans.title': 'Fans',
   'sections.climate.temperature.title': 'Temperature',
   'sections.climate.humidity.title': 'Humidity',
@@ -1188,7 +1188,7 @@ export const enMessages = {
   'userDropdown.role.administrator': 'Administrator',
   'userDropdown.role.user': 'User',
   'deviceType.light': 'Light',
-  'deviceType.hvac': 'HVAC',
+  'deviceType.hvac': 'Climate',
   'deviceType.climate': 'Climate',
   'deviceType.power': 'Power',
   'deviceType.media': 'Media',
@@ -1404,6 +1404,9 @@ export const enMessages = {
   'dashboard.addCard.templates.energyNow.name': 'Energy Now',
   'dashboard.addCard.templates.energyNow.description':
     'Full-bleed live usage chart with current power front and center.',
+  'dashboard.addCard.templates.energyMetric.name': 'Energy Metric',
+  'dashboard.addCard.templates.energyMetric.description':
+    'Pin a custom energy-related sensor such as prepaid balance, credit remaining, tariff, or meter status.',
   'dashboard.addCard.templates.mediaStack.name': 'Media Stack',
   'dashboard.addCard.templates.mediaStack.description':
     'One media card that surfaces the most relevant player for the room.',
@@ -1673,10 +1676,10 @@ export const enMessages = {
   'energy.band.devices.description': 'The individual loads currently taking the most energy.',
   'energy.customCards.title': 'Energy cards',
   'energy.customCards.description':
-    'Place reusable energy widgets here alongside the main dashboard.',
+    'Place reusable energy widgets and custom energy sensors here alongside the main dashboard.',
   'energy.customCards.emptyTitle': 'No energy cards yet',
   'energy.customCards.emptyDescription':
-    'Add a 5-minute sparkline card to pin the live trend in the energy dashboard.',
+    'Add an Energy Metric card for prepaid balance or remaining credit, or pin a live trend card from Home Assistant Energy.',
   'dashboard.section.addBelow': 'Add section',
   'dashboard.section.moveHere': 'Move section here',
   'dashboard.section.moveDragLabel': 'Move section',

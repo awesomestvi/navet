@@ -50,6 +50,8 @@ export interface NavetClimateState extends NavetBaseDeviceState {
   temperatureUnit?: 'celsius' | 'fahrenheit';
   mode?: string;
   action?: string;
+  supportedClimateModes?: string[];
+  /** @deprecated Use supportedClimateModes. */
   supportedHvacModes?: string[];
   serviceDomain?: string;
 }

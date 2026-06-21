@@ -46,6 +46,7 @@ export interface UseProviderEnergyDataResult {
   energySourceDiagnostics: EnergySourceDiagnostic[];
   haSourceConfig: EnergySourceConfig | null;
   hasEnergyStatisticsLoaded: boolean;
+  isLoading: boolean;
   isConfigured: boolean;
   isConnected: boolean;
   overview: EnergyOverview;
@@ -60,6 +61,7 @@ const EMPTY_PROVIDER_ENERGY_DATA: UseProviderEnergyDataResult = {
   energySourceDiagnostics: [],
   haSourceConfig: null,
   hasEnergyStatisticsLoaded: false,
+  isLoading: false,
   isConfigured: false,
   isConnected: false,
   overview: createEmptyOverview(),

@@ -72,13 +72,13 @@ const SECURITY_SECTION_DEVICE_KEYS = [
   'helpers',
 ] as const;
 const MEDIA_SECTION_DEVICE_KEYS = ['media'] as const;
-const CLIMATE_SECTION_DEVICE_KEYS = ['hvac', 'climate', 'fans', 'switches', 'sensors'] as const;
+const CLIMATE_SECTION_DEVICE_KEYS = ['climate', 'hvac', 'fans', 'switches', 'sensors'] as const;
 const LIGHTS_SECTION_DEVICE_KEYS = ['lights'] as const;
 const EMPTY_SECTION_DEVICE_KEYS: readonly DeviceCollectionKey[] = [];
 const CLIMATE_DASHBOARD_GROUPS: DashboardClimateSectionGroup[] = [
   {
-    key: 'hvac',
-    titleKey: 'sections.climate.hvac.title',
+    key: 'climate',
+    titleKey: 'sections.climate.title',
     orderedIds: [],
   },
   {
@@ -575,7 +575,7 @@ function useDashboardSectionData({
     }
 
     const groupedIds: Record<DashboardClimateSectionGroup['key'], string[]> = {
-      hvac: [],
+      climate: [],
       fans: [],
       temperature: [],
       humidity: [],

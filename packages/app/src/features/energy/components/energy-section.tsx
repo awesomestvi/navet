@@ -1,5 +1,9 @@
 import { DashboardEmptyState } from '@navet/app/components/patterns';
+import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner';
+import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import type { CardTemplate } from '@navet/app/features/dashboard/components/add-card-dialog';
+import type { CustomCard } from '@navet/app/features/dashboard/stores/custom-cards-store';
 import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
 import { integrationSelectors } from '@navet/app/stores/selectors';
 import { INTEGRATION_PROVIDERS } from '@navet/app/types/provider';
@@ -8,7 +12,25 @@ import { memo } from 'react';
 import { useEnergyDashboard } from '../hooks/use-energy-dashboard';
 import { EnergyDashboardPage } from './dashboard/energy-dashboard-page';
 
-export const EnergySection = memo(function EnergySection() {
+interface EnergySectionProps {
+  energyCustomCards?: CustomCard[];
+  energyOrderedCardIds?: string[];
+  isEditMode?: boolean;
+  onAddCard?: (template: CardTemplate, size: CardSize) => void;
+  onToggleEditMode?: () => void;
+  onDeleteCard?: (cardId: string) => void;
+  onUpdateCard?: (cardId: string, updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>) => void;
+}
+
+export const EnergySection = memo(function EnergySection({
+  energyCustomCards = [],
+  energyOrderedCardIds = [],
+  isEditMode = false,
+  onAddCard,
+  onToggleEditMode,
+  onDeleteCard,
+  onUpdateCard,
+}: EnergySectionProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
@@ -18,9 +40,14 @@ export const EnergySection = memo(function EnergySection() {
     dashboard,
     energySourceDiagnostics,
     hasEnergyStatisticsLoaded,
+    isLoading,
     isConnected,
     isConfigured,
   } = useEnergyDashboard();
+
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
 
   if (!isConnected) {
     return (
@@ -88,5 +115,17 @@ export const EnergySection = memo(function EnergySection() {
     );
   }
 
-  return <EnergyDashboardPage dashboard={dashboard} sourceDiagnostics={energySourceDiagnostics} />;
+  return (
+    <EnergyDashboardPage
+      dashboard={dashboard}
+      sourceDiagnostics={energySourceDiagnostics}
+      energyCustomCards={energyCustomCards}
+      energyOrderedCardIds={energyOrderedCardIds}
+      isEditMode={isEditMode}
+      onAddCard={onAddCard}
+      onToggleEditMode={onToggleEditMode}
+      onDeleteCard={onDeleteCard}
+      onUpdateCard={onUpdateCard}
+    />
+  );
 });

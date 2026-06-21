@@ -76,7 +76,7 @@ deliberately rather than silently decaying.
 | `packages/app/src/features/security/components/__tests__/lock-card.test.tsx` | Missing contract-backed lock states | Rewrite |
 | `packages/app/src/features/security/components/cover-card/__tests__/cover-card.test.tsx` | Needs documented cover/tilt/partial-position behavior | Rewrite |
 | `packages/app/src/features/lighting/components/light-card/__tests__/light-card.test.tsx` | Needs stronger grouped-light and malformed-attribute fixtures | Rewrite |
-| `packages/app/src/features/climate/components/hvac-card/__tests__/use-hvac-card-controller.test.tsx` | Needs documented HVAC mode/range coverage | Rewrite |
+| `packages/app/src/features/climate/components/climate-card/__tests__/use-climate-card-controller.test.tsx` | Needs documented Climate mode/range coverage | Rewrite |
 | `packages/app/src/features/tasks/components/__tests__/tasks-section.test.tsx` | Needs realistic automation/script/todo fixtures | Rewrite |
 | `packages/app/src/features/calendar/components/calendar/__tests__/calendar-event-visibility.test.ts` | Needs real all-day and timed event payloads | Rewrite |
 | `packages/app/src/hooks/__tests__/use-ha-devices.test.tsx` | Uses synthetic mixed-domain collections instead of realistic fixtures | Rewrite |

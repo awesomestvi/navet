@@ -185,6 +185,8 @@ const meta = {
   args: {
     dashboard: defaultScenario.dashboard,
     sourceDiagnostics: [],
+    energyCustomCards: [],
+    energyOrderedCardIds: [],
   },
 } satisfies Meta<typeof EnergyDashboardPage>;
 
@@ -214,6 +216,17 @@ export const GridOnlyCurrentHaData: Story = {
   args: {
     dashboard: gridOnlyDashboard,
     sourceDiagnostics: gridOnlyDiagnostics,
+  },
+};
+
+export const EnergyCardsEmptyState: Story = {
+  ...buildScenarioStory('default'),
+  args: {
+    dashboard: defaultScenario.dashboard,
+    sourceDiagnostics: getMockEnergySourceDiagnostics(defaultScenario.dashboard),
+    energyCustomCards: [],
+    energyOrderedCardIds: [],
+    isEditMode: true,
   },
 };
 

@@ -1,5 +1,5 @@
 import type { CardSize } from '@navet/app/components/shared/card-size';
-import { HVACCard } from '@navet/app/features/climate';
+import { ClimateCard } from '@navet/app/features/climate';
 import { FanCard, LightCard } from '@navet/app/features/lighting';
 import { MediaCard } from '@navet/app/features/media';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
@@ -16,7 +16,7 @@ const SIZES: CardSize[] = [
 ];
 const LIGHT_SIZES: CardSize[] = ['extra-small', 'small', 'medium'];
 const FAN_SIZES: CardSize[] = ['small', 'medium'];
-const HVAC_SIZES: CardSize[] = ['small', 'medium'];
+const Climate_SIZES: CardSize[] = ['small', 'medium'];
 
 function AllSizesPage() {
   return (
@@ -65,14 +65,14 @@ function AllSizesPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-base font-semibold">HVAC</h2>
+        <h2 className="text-base font-semibold">Climate</h2>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {HVAC_SIZES.map((size) => (
-            <div key={`hvac-${size}`} className="space-y-1">
+          {Climate_SIZES.map((size) => (
+            <div key={`climate-${size}`} className="space-y-1">
               <p className="text-xs uppercase tracking-wide opacity-70">{size}</p>
-              <HVACCard
+              <ClimateCard
                 id={`climate.story.${size}`}
-                name="Main Floor HVAC"
+                name="Main Floor Climate"
                 room="Hallway"
                 initialTemp={22}
                 initialCurrentTemp={21}

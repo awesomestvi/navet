@@ -14,9 +14,8 @@ import { useTaskRoutines } from '@navet/app/features/tasks/hooks/use-task-automa
 import { useI18n, useIntegrationStore, useMediaQuery, useTheme } from '@navet/app/hooks';
 import { useSettingsStore } from '@navet/app/stores';
 import { integrationSelectors, settingsSelectors } from '@navet/app/stores/selectors';
-import type { DeviceWithType } from '@navet/app/types/device.types';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
-import { Lightbulb, Plus, Sparkles, Thermometer } from 'lucide-react';
+import { Lightbulb, Plus, Thermometer } from 'lucide-react';
 import { lazy, memo, type ReactNode, Suspense, useCallback, useMemo, useState } from 'react';
 import { DeviceGrid } from '../device-grid';
 import type { DashboardController } from '../hooks/use-dashboard-controller';
@@ -204,65 +203,15 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
       <Suspense fallback={<LoadingSpinner />}>
         <RenderProfiler id="EnergySection">
           <div className="space-y-6">
-            <EnergySection />
-
-            {isEditMode || sectionData.energyCustomCards.length > 0 ? (
-              <section className="space-y-4">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <div
-                      className={`text-xs font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
-                    >
-                      {t('energy.band.eyebrow')}
-                    </div>
-                    <h2
-                      className={`mt-2 text-lg font-semibold tracking-tight md:text-xl ${surface.textPrimary}`}
-                    >
-                      {t('energy.customCards.title')}
-                    </h2>
-                    <p className={`mt-1.5 max-w-2xl text-sm ${surface.textSecondary}`}>
-                      {t('energy.customCards.description')}
-                    </p>
-                  </div>
-
-                  {isEditMode ? (
-                    <button
-                      type="button"
-                      onClick={() => controller.onOpenAddCardDialog()}
-                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${surface.border} ${surface.panelMuted} ${surface.hoverBg} ${surface.textPrimary}`}
-                    >
-                      <Sparkles className="h-4 w-4" />
-                      {t('dashboard.addCard.action')}
-                    </button>
-                  ) : null}
-                </div>
-
-                {sectionData.energyCustomCards.length > 0 ? (
-                  <DeviceGrid
-                    orderedCardIds={sectionData.energyOrderedCardIds}
-                    deviceMap={new Map<string, DeviceWithType>()}
-                    isEditMode={isEditMode}
-                    cardSizes={cardSizes}
-                    updateCardSize={updateCardSize}
-                    customCards={sectionData.energyCustomCards}
-                    onDeleteCard={handleDeleteCard}
-                    onUpdateCard={handleUpdateCard}
-                    densePerformanceMode={controller.densePerformanceMode}
-                  />
-                ) : isEditMode ? (
-                  <div className="flex h-full items-center justify-center p-6">
-                    <DashboardEmptyState
-                      icon={Sparkles}
-                      title={t('energy.customCards.emptyTitle')}
-                      description={t('energy.customCards.emptyDescription')}
-                      actionLabel={t('dashboard.addCard.action')}
-                      onAction={() => controller.onOpenAddCardDialog()}
-                      className="w-full max-w-md"
-                    />
-                  </div>
-                ) : null}
-              </section>
-            ) : null}
+            <EnergySection
+              energyCustomCards={sectionData.energyCustomCards}
+              energyOrderedCardIds={sectionData.energyOrderedCardIds}
+              isEditMode={isEditMode}
+              onAddCard={controller.handleAddCard}
+              onToggleEditMode={onToggleEditMode}
+              onDeleteCard={handleDeleteCard}
+              onUpdateCard={handleUpdateCard}
+            />
           </div>
         </RenderProfiler>
       </Suspense>

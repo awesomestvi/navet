@@ -10,7 +10,7 @@ export interface ThemeColors {
     iconBg: string;
     glow: string;
   };
-  hvac: {
+  climate: {
     heating: {
       gradient: string;
       border: string;
@@ -33,6 +33,8 @@ export interface ThemeColors {
       glow: string;
     };
   };
+  /** @deprecated Use climate. */
+  hvac: ThemeColors['climate'];
   media: {
     gradient: string;
     border: string;

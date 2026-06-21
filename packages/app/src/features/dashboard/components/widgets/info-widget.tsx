@@ -1,12 +1,15 @@
 import { CardEmptyState } from '@navet/app/components/patterns';
 import { BaseCard } from '@navet/app/components/primitives';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
+import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
+import { ENERGY_WIDGET_ROOM } from '@navet/app/constants/rooms';
 import { GroupedSensorCard } from '@navet/app/features/sensors/components/grouped-sensor-card';
 import { InfoCard } from '@navet/app/features/sensors/components/sensor-card';
 import { SensorGroupSettingsContainer as SensorGroupSettingsDialog } from '@navet/app/features/sensors/components/sensor-group-settings/container';
+import type { AvailableSensor } from '@navet/app/features/sensors/components/sensor-group-settings/types';
 import type { AccentColor, SensorReading } from '@navet/app/features/sensors/components/sensors';
 import { useSensorStatisticsHistory } from '@navet/app/features/sensors/hooks/use-sensor-statistics-history';
-import { useAreaRooms, useI18n } from '@navet/app/hooks';
+import { useAreaRooms, useI18n, useTheme } from '@navet/app/hooks';
 import { useDashboardWidgetRoomOptions } from '@navet/app/hooks/use-dashboard-widget-room-options';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { Gauge, Plus } from 'lucide-react';
@@ -24,6 +27,7 @@ export interface InfoWidgetData {
   sensorEntityIds?: string[];
   name?: string;
   accentColor?: AccentColor;
+  sensorCategoryFilter?: AvailableSensor['category'];
 }
 
 interface InfoWidgetProps {
@@ -60,14 +64,17 @@ export function InfoWidget({
   openSettingsRequestKey = 0,
 }: InfoWidgetProps) {
   const { t } = useI18n();
+  const { primaryColor } = useTheme();
   const rooms = useAreaRooms();
   const use24HourTime = useSettingsStore((state) => state.use24HourTime);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { roomValue, roomLabel, roomOptions } = useDashboardWidgetRoomOptions(room, rooms);
+  const showRoomSelector = room !== ENERGY_WIDGET_ROOM;
   const sensorEntityIds = getSensorEntityIds(data);
   const { availableSensors, currentSensors } = useProviderInfoWidgetData(sensorEntityIds, {
     includeBinarySensors: true,
     use24HourTime,
+    availableSensorCategoryFilter: data?.sensorCategoryFilter,
   }) as {
     availableSensors: ProviderInfoWidgetDataResult['availableSensors'];
     currentSensors: SensorReading[];
@@ -120,7 +127,7 @@ export function InfoWidget({
             actionIcon={Plus}
             onAction={() => setIsSettingsOpen(true)}
             size={size}
-            accentColor="#38bdf8"
+            accentColor={getThemeColorValue(primaryColor)}
           />
         </BaseCard>
 
@@ -137,7 +144,7 @@ export function InfoWidget({
             maxSensors={MAX_INFO_WIDGET_SENSORS}
             accentColor={accentColor}
             availableSensors={availableSensors}
-            showRoomSelector
+            showRoomSelector={showRoomSelector}
             onNameChange={handleNameChange}
             onRoomChange={onRoomChange}
             onSensorsUpdate={handleSensorsUpdate}
@@ -176,7 +183,7 @@ export function InfoWidget({
           isEditMode={false}
           accentColor={accentColor}
           availableSensors={availableSensors}
-          showRoomSelector
+          showRoomSelector={showRoomSelector}
           onNameChange={handleNameChange}
           onRoomChange={onRoomChange}
           onSensorsUpdate={handleSensorsUpdate}
@@ -196,7 +203,7 @@ export function InfoWidget({
           maxSensors={MAX_INFO_WIDGET_SENSORS}
           accentColor={accentColor}
           availableSensors={availableSensors}
-          showRoomSelector
+          showRoomSelector={showRoomSelector}
           onNameChange={handleNameChange}
           onRoomChange={onRoomChange}
           onSensorsUpdate={handleSensorsUpdate}
