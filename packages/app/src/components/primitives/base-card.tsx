@@ -64,6 +64,7 @@ export interface BaseCardProps extends HTMLAttributes<HTMLDivElement> {
   tone?: CardTextTone;
   accentColor?: string | null;
   backgroundColor?: string | null;
+  readableBackgroundColor?: string | null;
   backgroundClassName?: string;
   header?: ReactNode;
   title?: string;
@@ -174,6 +175,7 @@ export function BaseCard({
   tone = 'neutral',
   accentColor,
   backgroundColor,
+  readableBackgroundColor,
   backgroundClassName = '',
   header,
   title,
@@ -210,7 +212,8 @@ export function BaseCard({
     tone: resolvedHeaderTone,
     accentColor: resolvedAccentColor,
     baseColor: resolvedHeaderTone === 'primary' ? resolvedAccentColor : undefined,
-    backgroundColor: backgroundColor ?? resolvedSurface.readableBackgroundColor,
+    backgroundColor:
+      readableBackgroundColor ?? backgroundColor ?? resolvedSurface.readableBackgroundColor,
   });
   const activeGradient = getGradientColors(isActive, activeColor, theme);
   const activeSurfaceStyle =

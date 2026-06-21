@@ -351,6 +351,14 @@ export const UpsWidget = memo(function UpsWidget({
   const tintColor = typeof data?.tintColor === 'string' ? data.tintColor : undefined;
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const surface = getThemeSurfaceTokens(theme);
+  const textPrimaryStyle = tintSurface.textPrimaryColor
+    ? { color: tintSurface.textPrimaryColor }
+    : undefined;
+  const textSecondaryStyle = tintSurface.textSecondaryColor
+    ? { color: tintSurface.textSecondaryColor }
+    : undefined;
+  const textPrimaryClassName = tintSurface.textPrimaryColor ? '' : surface.textPrimary;
+  const textMutedClassName = tintSurface.textSecondaryColor ? '' : surface.textMuted;
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const resolvedSize = normalizeUpsCardSize(size);
   const { devices, entities, formatOptions } = useProviderUpsWidgetData({ use24HourTime });
@@ -433,6 +441,7 @@ export const UpsWidget = memo(function UpsWidget({
         interactive={cardCanOpenSettings && !isEmpty}
         fullBleed
         style={tintSurface.panelStyle}
+        readableBackgroundColor={tintSurface.backgroundColor}
         frameClassName="overflow-hidden"
         overlay={
           <>
@@ -475,8 +484,11 @@ export const UpsWidget = memo(function UpsWidget({
                 subtitle={selectedDevice?.room || t('widgets.common.widget')}
                 layout="eyebrow-first"
                 size={resolvedSize === 'large' ? 'medium' : resolvedSize}
-                titleClassName={surface.textPrimary}
-                subtitleClassName={surface.textMuted}
+                titleClassName={textPrimaryClassName}
+                subtitleClassName={textMutedClassName}
+                backgroundColor={tintSurface.backgroundColor}
+                titleStyle={textPrimaryStyle}
+                subtitleStyle={textSecondaryStyle}
                 leading={
                   <EntityCardHeaderIcon
                     IconComponent={BatteryCharging}
@@ -497,9 +509,17 @@ export const UpsWidget = memo(function UpsWidget({
                     label={t('widgets.ups.metrics.battery')}
                     size={resolvedSize === 'large' ? 'xl' : 'lg'}
                     isActive={Boolean(batteryMetric)}
-                    accentClassName={theme === 'light' ? 'text-slate-900' : 'text-white'}
+                    accentClassName={
+                      tintSurface.textPrimaryColor
+                        ? ''
+                        : theme === 'light'
+                          ? 'text-slate-900'
+                          : 'text-white'
+                    }
                     theme={theme}
-                    labelClassName={surface.textMuted}
+                    labelClassName={textMutedClassName}
+                    valueStyle={textPrimaryStyle}
+                    labelStyle={textSecondaryStyle}
                   />
                   <div
                     className={`rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-[0.12em] ${statusClasses}`}
@@ -515,10 +535,16 @@ export const UpsWidget = memo(function UpsWidget({
                         key={metric.entityId}
                         className={`rounded-2xl border px-3 py-2 ${surface.border} ${surface.panelMuted}`}
                       >
-                        <div className={`text-xs uppercase tracking-[0.12em] ${surface.textMuted}`}>
+                        <div
+                          className={`text-xs uppercase tracking-[0.12em] ${textMutedClassName}`}
+                          style={textSecondaryStyle}
+                        >
                           {getMetricLabel(metric.kind, metric.label, t)}
                         </div>
-                        <div className={`mt-1 text-lg font-semibold ${surface.textPrimary}`}>
+                        <div
+                          className={`mt-1 text-lg font-semibold ${textPrimaryClassName}`}
+                          style={textPrimaryStyle}
+                        >
                           {metric.value}
                           {metric.unit ? ` ${metric.unit}` : ''}
                         </div>
@@ -537,7 +563,8 @@ export const UpsWidget = memo(function UpsWidget({
                         className={`rounded-2xl border px-3 py-3 ${surface.border} ${surface.panelMuted}`}
                       >
                         <div
-                          className={`flex items-center gap-2 text-xs uppercase tracking-[0.12em] ${surface.textMuted}`}
+                          className={`flex items-center gap-2 text-xs uppercase tracking-[0.12em] ${textMutedClassName}`}
+                          style={textSecondaryStyle}
                         >
                           {metric.kind === 'load' ? (
                             <Gauge className="h-3.5 w-3.5" />
@@ -546,7 +573,10 @@ export const UpsWidget = memo(function UpsWidget({
                           )}
                           <span>{getMetricLabel(metric.kind, metric.label, t)}</span>
                         </div>
-                        <div className={`mt-2 text-xl font-semibold ${surface.textPrimary}`}>
+                        <div
+                          className={`mt-2 text-xl font-semibold ${textPrimaryClassName}`}
+                          style={textPrimaryStyle}
+                        >
                           {metric.value}
                           {metric.unit ? ` ${metric.unit}` : ''}
                         </div>

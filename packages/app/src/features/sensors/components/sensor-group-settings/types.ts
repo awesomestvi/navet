@@ -23,6 +23,7 @@ export interface SensorGroupSettingsDialogProps {
   accentColor: 'teal' | 'blue' | 'purple' | 'amber' | 'emerald';
   availableSensors?: AvailableSensor[];
   showRoomSelector?: boolean;
+  closeOnSelect?: boolean;
   onNameChange?: (name: string) => void;
   onRoomChange?: (room: string) => void;
   onSensorsUpdate: (sensors: SensorReading[]) => void;

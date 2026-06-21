@@ -39,6 +39,18 @@ vi.mock('@navet/app/services/integration-media-feature.service', () => ({
 
 const controller = {
   isGlass: true,
+  activeTransportStyle: {},
+  subtleControlStyle: {},
+  palette: {
+    darkMuted: 'rgb(24, 24, 27)',
+    highlight: 'rgb(249, 115, 22)',
+  },
+  readableForeground: {
+    titleColor: 'rgb(255, 255, 255)',
+    subtitleColor: 'rgb(161, 161, 170)',
+    titleStyle: {},
+    subtitleStyle: {},
+  },
   surface: {
     border: 'border-white/10',
     textMuted: 'text-white/45',

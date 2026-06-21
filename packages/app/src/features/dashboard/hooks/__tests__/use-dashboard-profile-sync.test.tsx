@@ -11,6 +11,7 @@ import { useThemeStore } from '@navet/app/stores/theme-store';
 import { renderHookWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import { act } from '@testing-library/react';
+import { isValidElement, type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useDashboardProfileSync } from '../use-dashboard-profile-sync';
 
@@ -118,6 +119,29 @@ async function flushEffects() {
   await act(async () => {
     await Promise.resolve();
   });
+}
+
+function findButtonClickHandler(node: ReactNode, label: string): null | (() => void) {
+  if (!isValidElement<{ children?: ReactNode; onClick?: () => void }>(node)) {
+    return null;
+  }
+
+  const { children, onClick } = node.props;
+
+  if (typeof children === 'string' && children === label) {
+    return typeof onClick === 'function' ? onClick : null;
+  }
+
+  const nestedChildren = Array.isArray(children) ? children : [children];
+
+  for (const child of nestedChildren) {
+    const handler = findButtonClickHandler(child, label);
+    if (handler) {
+      return handler;
+    }
+  }
+
+  return null;
 }
 
 async function advanceTime(ms: number) {
@@ -449,11 +473,11 @@ describe('useDashboardProfileSync', () => {
     await advanceTime(2_000);
     await advanceTime(60_000);
 
-    const conflictOptions = toast.mock.calls[0]?.[1] as {
-      action: { onClick: () => void };
-    };
+    const conflictOptions = toast.mock.calls[0]?.[1] as { description: ReactNode };
+    const keepMine = findButtonClickHandler(conflictOptions.description, 'Keep mine');
+
     await act(async () => {
-      conflictOptions.action.onClick();
+      keepMine?.();
       await Promise.resolve();
     });
 
@@ -506,11 +530,11 @@ describe('useDashboardProfileSync', () => {
     await advanceTime(2_000);
     await advanceTime(60_000);
 
-    const conflictOptions = toast.mock.calls[0]?.[1] as {
-      cancel: { onClick: () => void };
-    };
+    const conflictOptions = toast.mock.calls[0]?.[1] as { description: ReactNode };
+    const loadRemote = findButtonClickHandler(conflictOptions.description, 'Load remote');
+
     act(() => {
-      conflictOptions.cancel.onClick();
+      loadRemote?.();
     });
 
     expect(importDashboardConfig).toHaveBeenCalledWith(remoteProfile, {

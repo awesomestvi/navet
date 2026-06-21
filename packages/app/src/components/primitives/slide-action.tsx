@@ -20,8 +20,10 @@ export interface SlideActionProps {
   disabled?: boolean;
   labelStyle?: CSSProperties;
   onComplete: () => void;
+  progressFillClassName?: string;
   size: 'extra-small' | 'small';
   theme: ThemeType;
+  trackClassName?: string;
   thumbClassName?: string;
   thumbIconClassName?: string;
   thumbIconStyle?: CSSProperties;
@@ -40,8 +42,10 @@ export function SlideAction({
   disabled = false,
   labelStyle,
   onComplete,
+  progressFillClassName,
   size,
   theme,
+  trackClassName,
   thumbClassName,
   thumbIconClassName,
   thumbIconStyle,
@@ -103,7 +107,7 @@ export function SlideAction({
     theme === 'light'
       ? 'text-zinc-950 shadow-[0_12px_24px_-16px_rgba(15,23,42,0.45)]'
       : 'text-zinc-950 shadow-[0_12px_24px_-16px_rgba(0,0,0,0.72)]';
-  const progressFillClassName = theme === 'light' ? 'bg-white/44' : 'bg-white/10';
+  const defaultProgressFillClassName = theme === 'light' ? 'bg-white/44' : 'bg-white/10';
 
   const applyProgress = useCallback(
     (nextProgress: number) => {
@@ -261,9 +265,7 @@ export function SlideAction({
       ref={trackRef}
       aria-disabled={disabled || isCompleting || isReturning}
       aria-label={ariaLabel}
-      className={`relative block w-full overflow-hidden border ${trackSurfaceClassName} ${metrics.railClassName} ${
-        disabled || isCompleting || isReturning ? 'cursor-default opacity-85' : 'cursor-ew-resize'
-      } select-none touch-none`}
+      className={`relative block w-full overflow-hidden border ${trackClassName ?? trackSurfaceClassName} ${metrics.railClassName} ${disabled || isCompleting || isReturning ? 'cursor-default opacity-85' : 'cursor-ew-resize'} select-none touch-none`}
       style={slideActionStyle}
       data-card-interactive="true"
       disabled={disabled || isCompleting || isReturning}
@@ -279,7 +281,7 @@ export function SlideAction({
       onPointerUp={handlePointerEnd}
     >
       <div
-        className={`absolute z-0 rounded-full ${progressFillClassName}`}
+        className={`absolute z-0 rounded-full ${progressFillClassName ?? defaultProgressFillClassName}`}
         style={{
           bottom: metrics.padding,
           left: metrics.padding,

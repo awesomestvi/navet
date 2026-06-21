@@ -118,12 +118,10 @@ export function AddCardDialogView({
             <CardDialogHeader
               title={t('dashboard.addCard.title')}
               description={heroTitle}
+              theme={theme}
               editableTitle={false}
               showRoomSelector={false}
               className="mb-0"
-              titleStyle={{ color: textColor }}
-              descriptionStyle={{ color: mutedColor }}
-              actionButtonStyle={{ color: mutedColor }}
             />
 
             {showCardsTab ? (

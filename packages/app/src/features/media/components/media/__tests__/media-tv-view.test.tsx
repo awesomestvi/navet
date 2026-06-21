@@ -82,4 +82,31 @@ describe('MediaTvView', () => {
     expect(screen.queryByText('HDMI 1')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Resume playback' })).toBeInTheDocument();
   });
+
+  it('renders source badges inside the TV input source selector menu', async () => {
+    renderWithProviders(
+      <MediaTvView {...defaultProps} source="Apple TV" sourceList={['Apple TV', 'Netflix']} />
+    );
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: /apple tv/i }));
+
+    expect((await screen.findAllByText('Apple TV')).length).toBeGreaterThan(1);
+    expect(screen.getByText('Netflix')).toBeInTheDocument();
+  });
+
+  it('uses a visible fallback source badge for unknown sources in light theme', () => {
+    const { container } = renderWithProviders(
+      <MediaTvView
+        {...defaultProps}
+        theme="light"
+        source="Samsung TV Plus"
+        sourceList={['Samsung TV Plus']}
+      />
+    );
+
+    const badge = container.querySelector('button[aria-haspopup="menu"] span[aria-hidden="true"]');
+    expect(badge?.className).toContain('bg-white');
+    expect(badge?.className).toContain('border-slate-300/90');
+    expect(badge?.className).toContain('text-slate-700');
+  });
 });

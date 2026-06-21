@@ -1,5 +1,4 @@
 import { BaseCard } from '@navet/app/components/primitives';
-import { CardSettingsActionButton } from '@navet/app/components/shared/card-settings-action-button';
 import {
   type CardSize,
   getCompactCardSize,
@@ -7,7 +6,6 @@ import {
 } from '@navet/app/components/shared/card-size-selector';
 import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import { getCustomCardTintSurface } from '@navet/app/components/shared/theme/custom-card-tint-surface';
-import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import { memo, useState } from 'react';
 import { CalendarEventDialog } from './calendar/calendar-event-dialog';
@@ -39,7 +37,7 @@ export const CalendarCard = memo(function CalendarCard({
   onSizeChange: _onSizeChange,
 }: CalendarCardProps) {
   const { t } = useI18n();
-  const { theme, colors, accentColor } = useTheme();
+  const { theme } = useTheme();
   const effectiveSize = getCompactCardSize(size);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -56,18 +54,18 @@ export const CalendarCard = memo(function CalendarCard({
   const { nextEvent, smallGroups, mediumGroups, largeGroups } = useCalendarData(selectedEvents);
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const hasCustomTint = Boolean(tintSurface.panelStyle);
-  const surface = getThemeSurfaceTokens(theme);
   const isGlassTheme = theme === 'glass';
 
-  const effectiveCalendarAccentColor = tintColor ?? accentColor;
-  const readableCalendarBaseColor = tintColor ?? (isGlassTheme ? undefined : accentColor);
   const { textPrimary, textSecondary, overlayBg, dividerColor, hoverBg, hoverText } =
-    useCalendarTheme(theme, readableCalendarBaseColor);
+    useCalendarTheme(
+      theme,
+      tintSurface.backgroundColor,
+      tintSurface.textPrimaryColor,
+      tintSurface.textSecondaryColor
+    );
 
   const isSmall = isCompactCardSize(effectiveSize);
   const isMedium = effectiveSize === 'medium';
-  const canOpenSettings = !inEditMode;
-  const chromeSize = effectiveSize === 'small' ? 'small' : 'medium';
   const displayName = name ?? t('calendar.defaultTitle');
   useEditModeSettingsRequest(id ?? displayName, () => setIsSettingsOpen(true), inEditMode);
 
@@ -80,42 +78,34 @@ export const CalendarCard = memo(function CalendarCard({
           group transition-all duration-300
           ${!inEditMode ? 'cursor-pointer' : ''}
         `}
-        frameClassName={
-          hasCustomTint
-            ? ''
-            : isGlassTheme
-              ? ''
-              : `bg-linear-to-br ${colors.calendar.gradient} ${colors.calendar.border}`
-        }
-        style={tintSurface.panelStyle}
+        style={hasCustomTint ? tintSurface.panelStyle : undefined}
+        readableBackgroundColor={tintSurface.backgroundColor}
         disableDefaultSheen={!isGlassTheme}
-        disableDefaultLightOverlay
         overlay={
           <>
-            <div
-              className={`pointer-events-none absolute inset-0 rounded-[inherit] ${overlayBg}`}
-            />
-            {tintSurface.glowStyle ? (
+            {hasCustomTint || isGlassTheme ? (
+              <div
+                className={`pointer-events-none absolute inset-0 rounded-[inherit] ${overlayBg}`}
+              />
+            ) : null}
+            {hasCustomTint && tintSurface.glowStyle ? (
               <div
                 className="pointer-events-none absolute inset-0 rounded-[inherit]"
                 style={tintSurface.glowStyle}
               />
             ) : null}
-            {tintSurface.overlayClassName ? (
+            {hasCustomTint && tintSurface.overlayClassName ? (
               <div
                 className={`pointer-events-none absolute inset-0 rounded-[inherit] ${tintSurface.overlayClassName}`}
               />
             ) : null}
-            {!hasCustomTint ? (
+            {!hasCustomTint && isGlassTheme ? (
               <div
-                className={`pointer-events-none absolute inset-0 rounded-[inherit] bg-linear-to-br ${colors.calendar.glow} to-transparent ${
-                  isGlassTheme ? 'opacity-34' : ''
-                }`}
-              />
-            ) : null}
-            {!hasCustomTint && surface.lightOverlay ? (
-              <div
-                className={`pointer-events-none absolute inset-0 rounded-[inherit] ${surface.lightOverlay}`}
+                className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-34"
+                style={{
+                  background:
+                    'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 100%)',
+                }}
               />
             ) : null}
           </>
@@ -123,22 +113,6 @@ export const CalendarCard = memo(function CalendarCard({
         contentClassName="h-full"
       >
         <div className="relative flex h-full flex-col">
-          {canOpenSettings ? (
-            <CardSettingsActionButton
-              theme={theme}
-              size={chromeSize}
-              variant="soft"
-              accentColor={effectiveCalendarAccentColor}
-              className="absolute right-0 top-0 z-10"
-              aria-label={t('calendar.settings.title')}
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={(event) => {
-                event.stopPropagation();
-                setIsSettingsOpen(true);
-              }}
-            />
-          ) : null}
-
           {!nextEvent ? (
             <div
               className="flex flex-1 items-center justify-center text-sm"

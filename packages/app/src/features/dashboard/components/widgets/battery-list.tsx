@@ -1,4 +1,5 @@
 import { OverlayScrollArea } from '@navet/app/components/primitives';
+import type { CSSProperties } from 'react';
 import { memo, useId, useState } from 'react';
 import { BATTERY_LEVEL_COLORS, BATTERY_LEVEL_THRESHOLDS } from './battery-constants';
 
@@ -66,6 +67,7 @@ interface BatteryListItemProps {
   isCompact: boolean;
   subtleFill: string;
   textSecondary: string;
+  textSecondaryStyle?: CSSProperties;
   getLevelColor: (level: number) => string;
 }
 
@@ -74,6 +76,7 @@ export const BatteryListItem = memo(function BatteryListItem({
   isCompact,
   subtleFill,
   textSecondary,
+  textSecondaryStyle,
   getLevelColor,
 }: BatteryListItemProps) {
   return (
@@ -83,7 +86,12 @@ export const BatteryListItem = memo(function BatteryListItem({
         color={getLevelColor(device.level)}
         className="h-3.5 w-3.5 shrink-0"
       />
-      <span className={`min-w-0 flex-1 truncate text-xs ${textSecondary}`}>{device.name}</span>
+      <span
+        className={`min-w-0 flex-1 truncate text-xs ${textSecondary}`}
+        style={textSecondaryStyle}
+      >
+        {device.name}
+      </span>
       {!isCompact && (
         <div
           className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full"
@@ -113,6 +121,7 @@ function VirtualizedBatteryList({
   isCompact,
   subtleFill,
   textSecondary,
+  textSecondaryStyle,
   getLevelColor,
 }: Omit<BatteryListProps, 'emptyStateLabel'>) {
   const [scrollTop, setScrollTop] = useState(0);
@@ -157,6 +166,7 @@ function VirtualizedBatteryList({
                 isCompact={isCompact}
                 subtleFill={subtleFill}
                 textSecondary={textSecondary}
+                textSecondaryStyle={textSecondaryStyle}
                 getLevelColor={getLevelColor}
               />
             </div>
@@ -176,6 +186,7 @@ interface BatteryListProps {
   isCompact: boolean;
   subtleFill: string;
   textSecondary: string;
+  textSecondaryStyle?: CSSProperties;
   emptyStateLabel: string;
   getLevelColor: (level: number) => string;
 }
@@ -185,12 +196,16 @@ export function BatteryList({
   isCompact,
   subtleFill,
   textSecondary,
+  textSecondaryStyle,
   emptyStateLabel,
   getLevelColor,
 }: BatteryListProps) {
   if (devices.length === 0) {
     return (
-      <div className={`flex flex-1 items-center justify-center text-sm ${textSecondary}`}>
+      <div
+        className={`flex flex-1 items-center justify-center text-sm ${textSecondary}`}
+        style={textSecondaryStyle}
+      >
         {emptyStateLabel}
       </div>
     );
@@ -203,6 +218,7 @@ export function BatteryList({
         isCompact={isCompact}
         subtleFill={subtleFill}
         textSecondary={textSecondary}
+        textSecondaryStyle={textSecondaryStyle}
         getLevelColor={getLevelColor}
       />
     );
@@ -221,6 +237,7 @@ export function BatteryList({
             isCompact={isCompact}
             subtleFill={subtleFill}
             textSecondary={textSecondary}
+            textSecondaryStyle={textSecondaryStyle}
             getLevelColor={getLevelColor}
           />
         ))}

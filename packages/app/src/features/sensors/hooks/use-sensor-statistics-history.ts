@@ -9,12 +9,14 @@ import {
   getIntegrationHistoryMessageClient,
   supportsIntegrationStatisticsHistory,
 } from '@navet/app/services/integration-history.service';
+import { getNativeIntegrationEntityId } from '@navet/app/services/integration-provider-context.service';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 const REFRESH_MS = ENERGY_STATISTICS_REFRESH_INTERVAL;
 const CACHE_TTL_MS = Math.max(30_000, REFRESH_MS - 1_000);
 const historyCache = new Map<string, { expiresAt: number; data: RecorderStatisticPoint[] }>();
 const NON_TREND_DEVICE_CLASSES = new Set(['date', 'enum', 'timestamp']);
+const NON_TREND_STATE_CLASSES = new Set(['total', 'total_increasing']);
 const NON_TREND_UNITS = new Set(['', '%']);
 
 function getStartOfToday(now: Date) {
@@ -30,12 +32,20 @@ function isNumericSensor(
       }
     | undefined
 ) {
-  if (!entityId.startsWith('sensor.') || !entity) {
+  const nativeEntityId = getNativeIntegrationEntityId(entityId);
+
+  if (!nativeEntityId.startsWith('sensor.') || !entity) {
     return false;
   }
 
   const deviceClass = getSensorDeviceClass(entity);
   if (deviceClass && NON_TREND_DEVICE_CLASSES.has(deviceClass)) {
+    return false;
+  }
+
+  const stateClass =
+    typeof entity.attributes?.state_class === 'string' ? entity.attributes.state_class : undefined;
+  if (stateClass && NON_TREND_STATE_CLASSES.has(stateClass)) {
     return false;
   }
 
@@ -66,6 +76,10 @@ export function useSensorStatisticsHistory(entityId: string | undefined) {
   const entity = useProviderEntitySnapshot(entityId ?? '');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [points, setPoints] = useState<SensorStatisticsPoint[]>([]);
+  const nativeEntityId = useMemo(
+    () => (entityId ? getNativeIntegrationEntityId(entityId) : undefined),
+    [entityId]
+  );
 
   const canFetch = useMemo(
     () => supportsIntegrationStatisticsHistory(entityId) && isNumericSensor(entityId ?? '', entity),
@@ -78,16 +92,17 @@ export function useSensorStatisticsHistory(entityId: string | undefined) {
       return;
     }
     const stableEntityId = entityId;
+    const stableNativeEntityId = nativeEntityId;
 
     async function fetchHistory() {
       const activeMessageClient = getIntegrationHistoryMessageClient(stableEntityId);
-      if (!activeMessageClient) {
+      if (!activeMessageClient || !stableNativeEntityId) {
         setPoints([]);
         return;
       }
 
       const now = Date.now();
-      const cached = historyCache.get(stableEntityId);
+      const cached = historyCache.get(stableNativeEntityId);
       if (cached && cached.expiresAt > now) {
         setPoints(
           cached.data.map((entry) => ({
@@ -104,10 +119,10 @@ export function useSensorStatisticsHistory(entityId: string | undefined) {
       try {
         const data = await getRecorderMeanHistory(
           activeMessageClient,
-          stableEntityId,
+          stableNativeEntityId,
           getStartOfToday(new Date())
         );
-        historyCache.set(stableEntityId, {
+        historyCache.set(stableNativeEntityId, {
           expiresAt: now + CACHE_TTL_MS,
           data,
         });
@@ -134,7 +149,7 @@ export function useSensorStatisticsHistory(entityId: string | undefined) {
         clearInterval(timerRef.current);
       }
     };
-  }, [canFetch, entityId]);
+  }, [canFetch, entityId, nativeEntityId]);
 
   return {
     points,

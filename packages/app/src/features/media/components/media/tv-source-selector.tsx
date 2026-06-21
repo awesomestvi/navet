@@ -48,7 +48,7 @@ export function TvSourceSelector({
       ? source
       : 'Source';
   const useCompactCardSelector = isSmallTvCard || compactCardSelector;
-  const sourceBadge = getTvSourceBadge(sourceLabel, useCompactCardSelector);
+  const sourceBadge = getTvSourceBadge(sourceLabel, useCompactCardSelector, theme);
 
   return (
     <DropdownMenu>
@@ -73,7 +73,7 @@ export function TvSourceSelector({
               aria-hidden="true"
             >
               {sourceBadge.kind === 'icon' ? (
-                <sourceBadge.Icon className={sourceBadge.iconClassName} />
+                <sourceBadge.Icon className={`${sourceBadge.iconClassName} text-inherit`} />
               ) : (
                 <span className={sourceBadge.textClassName}>{sourceBadge.shortLabel}</span>
               )}
@@ -105,7 +105,7 @@ export function TvSourceSelector({
         {sourceList.length > 0 ? (
           sourceList.map((entry) => (
             <DropdownMenuItem key={entry} onClick={() => onSelectSource(entry)}>
-              {entry}
+              <TvSourceMenuItemContent entry={entry} theme={theme} />
             </DropdownMenuItem>
           ))
         ) : (
@@ -130,7 +130,7 @@ type TvSourceBadge =
       textClassName: string;
     };
 
-function getTvSourceBadge(sourceLabel: string, compact: boolean): TvSourceBadge {
+function getTvSourceBadge(sourceLabel: string, compact: boolean, theme: ThemeType): TvSourceBadge {
   const normalized = sourceLabel.trim().toLowerCase();
   const squareBadge = compact ? 'h-4.5 w-4.5' : 'h-5 w-5';
   const wideBadge = compact ? 'h-4.5 w-6' : 'h-5 w-6.5';
@@ -167,7 +167,10 @@ function getTvSourceBadge(sourceLabel: string, compact: boolean): TvSourceBadge 
     return {
       kind: 'text',
       shortLabel: 'tv',
-      badgeClassName: `${squareBadge} bg-white text-black`,
+      badgeClassName:
+        theme === 'light'
+          ? `${squareBadge} border border-slate-300/90 bg-white text-black`
+          : `${squareBadge} bg-white text-black`,
       textClassName: `${compact ? 'text-[0.5rem]' : 'text-[0.56rem]'} font-bold lowercase tracking-[-0.04em]`,
     };
   }
@@ -229,7 +232,30 @@ function getTvSourceBadge(sourceLabel: string, compact: boolean): TvSourceBadge 
   return {
     kind: 'icon',
     Icon: Tv2,
-    badgeClassName: `${squareBadge} bg-white/12 text-white`,
+    badgeClassName:
+      theme === 'light'
+        ? `${squareBadge} border border-slate-300/90 bg-white text-slate-700`
+        : `${squareBadge} bg-white/12 text-white`,
     iconClassName: compactIconClassName,
   };
+}
+
+function TvSourceMenuItemContent({ entry, theme }: { entry: string; theme: ThemeType }) {
+  const sourceBadge = getTvSourceBadge(entry, true, theme);
+
+  return (
+    <>
+      <span
+        className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full ${sourceBadge.badgeClassName}`}
+        aria-hidden="true"
+      >
+        {sourceBadge.kind === 'icon' ? (
+          <sourceBadge.Icon className={`${sourceBadge.iconClassName} text-inherit`} />
+        ) : (
+          <span className={sourceBadge.textClassName}>{sourceBadge.shortLabel}</span>
+        )}
+      </span>
+      <span className="min-w-0 flex-1 truncate">{entry}</span>
+    </>
+  );
 }

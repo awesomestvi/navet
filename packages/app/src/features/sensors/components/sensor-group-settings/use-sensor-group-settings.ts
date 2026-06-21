@@ -9,9 +9,15 @@ export function useSensorGroupSettings({
   maxSensors,
   onClose,
   onSensorsUpdate,
+  closeOnSelect = false,
 }: Pick<
   SensorGroupSettingsDialogProps,
-  'availableSensors' | 'currentSensors' | 'maxSensors' | 'onClose' | 'onSensorsUpdate'
+  | 'availableSensors'
+  | 'currentSensors'
+  | 'maxSensors'
+  | 'onClose'
+  | 'onSensorsUpdate'
+  | 'closeOnSelect'
 >) {
   const [selectedSensors, setSelectedSensors] = useState<SensorReading[]>(currentSensors);
   const [searchQuery, setSearchQuery] = useState('');
@@ -61,9 +67,13 @@ export function useSensorGroupSettings({
       onSensorsUpdate(nextSensors);
       setSearchQuery('');
       setHighlightedIndex(-1);
+      if (closeOnSelect) {
+        onClose();
+        return;
+      }
       setTimeout(() => inputRef.current?.focus(), 0);
     },
-    [maxSensors, onSensorsUpdate, selectedSensors]
+    [closeOnSelect, maxSensors, onClose, onSensorsUpdate, selectedSensors]
   );
 
   const handleRemoveSensor = useCallback(

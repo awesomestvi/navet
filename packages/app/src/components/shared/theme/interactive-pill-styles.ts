@@ -42,11 +42,10 @@ export function getInteractivePillStyles({
 
   if (theme === 'light') {
     return {
-      className: 'border text-slate-950 transition-all shadow-sm hover:bg-white/96',
+      className: 'border text-slate-950 transition-all hover:bg-white',
       style: {
-        backgroundColor: 'rgba(255,255,255,0.88)',
+        backgroundColor: '#ffffff',
         borderColor: `${accent}80`,
-        boxShadow: `inset 0 0 0 999px ${accent}14`,
       },
     };
   }

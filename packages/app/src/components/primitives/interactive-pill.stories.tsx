@@ -63,7 +63,7 @@ const meta = {
           '',
           'What makes this the standard:',
           '- Theme-aware idle and active states come from the same token system used by the shared appearance picker.',
-          '- The active treatment is intentionally subtle: accented border plus tinted fill instead of a flat solid button treatment.',
+          '- The active light-theme treatment uses a white surface with an accented border instead of a tinted fill.',
           '- The primitive is designed to live inside grouped rows or compact pill clusters, not as a heavy segmented control.',
           '',
           'Usage guidance:',

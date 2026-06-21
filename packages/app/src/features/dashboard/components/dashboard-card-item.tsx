@@ -83,6 +83,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   const [isTinyEditDockOpen, setIsTinyEditDockOpen] = useState(false);
   const [tinyEditDockAnchorRect, setTinyEditDockAnchorRect] =
     useState<PortalActionDockAnchorRect | null>(null);
+  const [customCardSettingsRequestKey, setCustomCardSettingsRequestKey] = useState(0);
   const RemoveActionIcon = usesHideAction ? EyeOff : X;
   const removeAriaLabel = t('dashboard.edit.removeEntityFromDashboard');
   const performanceProfile = useMemo(
@@ -131,7 +132,11 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   const handleEditModeSettingsOpen = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
-    dispatchEditModeSettingsRequest(id);
+    if (card) {
+      setCustomCardSettingsRequestKey((value) => value + 1);
+    } else {
+      dispatchEditModeSettingsRequest(id);
+    }
     setIsTinyEditDockOpen(false);
   };
   useEffect(() => {
@@ -153,6 +158,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
       card={{ ...card, size: resolvedSize }}
       isEditMode={isEditMode}
       onUpdate={onUpdateCard}
+      openSettingsRequestKey={customCardSettingsRequestKey}
     />
   ) : null;
   const lockedCardContent = (

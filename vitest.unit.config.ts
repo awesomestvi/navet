@@ -14,6 +14,7 @@ export default defineConfig({
     __APP_GIT_SHA__: JSON.stringify('test-sha'),
     __APP_BUILD_DATE__: JSON.stringify('2026-01-01T00:00:00.000Z'),
     __APP_RELEASE_CHANNEL__: JSON.stringify('development'),
+    __APP_BUILD_VERSION__: JSON.stringify(packageJson.version ?? '0.0.0'),
   },
   test: {
     name: 'unit',
@@ -33,6 +34,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      '@assets': path.resolve(__dirname, './assets'),
       '@docs': path.resolve(__dirname, './docs'),
       '@navet/core': path.resolve(__dirname, './packages/core/src'),
       '@navet/ui': path.resolve(__dirname, './packages/ui/src'),

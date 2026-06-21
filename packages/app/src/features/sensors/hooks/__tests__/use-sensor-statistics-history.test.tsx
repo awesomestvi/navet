@@ -69,6 +69,57 @@ describe('useSensorStatisticsHistory', () => {
     expect(messageClient.sendMessagePromise).toHaveBeenCalledTimes(1);
   });
 
+  it('fetches recorder history for provider-scoped Home Assistant sensors using the native entity id', async () => {
+    const messageClient = {
+      sendMessagePromise: vi.fn().mockResolvedValue({
+        'sensor.remaining_electricity': [
+          {
+            start: '2026-05-25T10:00:00.000Z',
+            end: '2026-05-25T10:05:00.000Z',
+            mean: 198.6,
+            min: 198.1,
+            max: 199.0,
+          },
+          {
+            start: '2026-05-25T10:05:00.000Z',
+            end: '2026-05-25T10:10:00.000Z',
+            mean: 199.2,
+            min: 198.9,
+            max: 199.4,
+          },
+        ],
+      }),
+    };
+
+    useProviderEntitySnapshotMock.mockReturnValue({
+      entityId: 'sensor.remaining_electricity',
+      state: '199.2',
+      attributes: {
+        friendly_name: 'Remaining Electricity',
+        device_class: 'energy',
+        unit_of_measurement: 'kWh',
+      },
+    });
+    vi.spyOn(integrationHistoryServiceModule, 'getIntegrationHistoryMessageClient').mockReturnValue(
+      messageClient
+    );
+
+    const { result } = renderHookWithProviders(() =>
+      useSensorStatisticsHistory('home_assistant:sensor.remaining_electricity')
+    );
+
+    await waitFor(() => {
+      expect(result.current.hasHistory).toBe(true);
+    });
+
+    expect(result.current.points).toHaveLength(2);
+    expect(messageClient.sendMessagePromise).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statistic_ids: ['sensor.remaining_electricity'],
+      })
+    );
+  });
+
   it('does not fetch history for binary, timestamp, or unavailable sensors', async () => {
     const messageClient = {
       sendMessagePromise: vi.fn(),
@@ -112,6 +163,38 @@ describe('useSensorStatisticsHistory', () => {
       expect(motion.result.current.canFetch).toBe(false);
       expect(timestamp.result.current.canFetch).toBe(false);
       expect(unavailable.result.current.canFetch).toBe(false);
+    });
+
+    expect(messageClient.sendMessagePromise).not.toHaveBeenCalled();
+  });
+
+  it('does not fetch history for cumulative total_increasing sensors', async () => {
+    const messageClient = {
+      sendMessagePromise: vi.fn(),
+    };
+
+    vi.spyOn(integrationHistoryServiceModule, 'getIntegrationHistoryMessageClient').mockReturnValue(
+      messageClient
+    );
+
+    useProviderEntitySnapshotMock.mockReturnValue({
+      entityId: 'sensor.remaining_electricity',
+      state: '199.2',
+      attributes: {
+        friendly_name: 'Remaining Electricity',
+        device_class: 'energy',
+        unit_of_measurement: 'kWh',
+        state_class: 'total_increasing',
+      },
+    });
+
+    const { result } = renderHookWithProviders(() =>
+      useSensorStatisticsHistory('home_assistant:sensor.remaining_electricity')
+    );
+
+    await waitFor(() => {
+      expect(result.current.canFetch).toBe(false);
+      expect(result.current.points).toEqual([]);
     });
 
     expect(messageClient.sendMessagePromise).not.toHaveBeenCalled();

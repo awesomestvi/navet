@@ -1,4 +1,6 @@
 import { BaseCard } from '@navet/app/components/primitives';
+import { CardMetric } from '@navet/app/components/primitives/card-metric';
+import { EntityCardHeader } from '@navet/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import {
   type CardSize,
@@ -55,7 +57,7 @@ export const InfoCard = memo(function InfoCard({
   lastUpdated: _lastUpdated,
   size,
   onSizeChange: _onSizeChange,
-  isEditMode: _isEditMode,
+  isEditMode,
   onOpenSettings,
   disableBuiltInSettingsDialog = false,
   sparklineData,
@@ -111,6 +113,8 @@ export const InfoCard = memo(function InfoCard({
     !isSmall &&
     displayModel.status !== 'unavailable' &&
     (resolvedSparklineData?.length ?? 0) >= 2;
+  const sparklineLayerClassName =
+    size === 'large' ? 'absolute inset-x-0 top-24 bottom-0' : 'absolute inset-x-0 top-20 bottom-0';
   const openSettings = () => {
     if (onOpenSettings) {
       onOpenSettings();
@@ -121,7 +125,11 @@ export const InfoCard = memo(function InfoCard({
       setIsSettingsOpen(true);
     }
   };
-  useEditModeSettingsRequest(id, openSettings);
+  useEditModeSettingsRequest(
+    id,
+    openSettings,
+    isEditMode && !disableBuiltInSettingsDialog && onOpenSettings === undefined
+  );
   const handleCardKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -146,58 +154,110 @@ export const InfoCard = memo(function InfoCard({
 
   return (
     <>
-      <BaseCard
-        size={size}
-        role="button"
-        tabIndex={0}
-        aria-label={t('entityCardInteraction.openSettings', { name })}
-        onClick={openSettings}
-        onKeyDown={handleCardKeyDown}
-        interactive
-        title={displayModel.title}
-        subtitle={subtitleText}
-        headerCompact={isExtraSmall}
-        headerLayout="eyebrow-first"
-        headerTone="neutral"
-        headerLeading={headerIconNode}
-        frameClassName={cardShell.rootFrameClassName}
-        disableDefaultSheen={theme !== 'light'}
-        contentClassName="flex items-end"
-        underlay={
-          shouldShowSparkline ? (
+      {shouldShowSparkline ? (
+        <BaseCard
+          size={size}
+          role="button"
+          tabIndex={0}
+          aria-label={t('entityCardInteraction.openSettings', { name })}
+          onClick={openSettings}
+          onKeyDown={handleCardKeyDown}
+          interactive
+          fullBleed
+          frameClassName={cardShell.rootFrameClassName}
+          disableDefaultSheen={theme !== 'light'}
+          contentClassName="h-full"
+        >
+          <div className={sparklineLayerClassName}>
             <SensorHistorySparkline
               data={resolvedSparklineData ?? []}
               accentColor={displayModel.baseColor}
-              height={size === 'large' ? 152 : 126}
+              height={size === 'large' ? 176 : 152}
+              className="opacity-95"
             />
-          ) : null
-        }
-        overlay={
-          shouldShowSparkline ? (
-            <div
-              className={`pointer-events-none absolute inset-0 ${
-                theme === 'light'
-                  ? 'bg-linear-to-b from-white/12 via-white/2 to-white/0'
-                  : 'bg-linear-to-b from-slate-950/22 via-slate-950/8 to-transparent'
-              }`}
-            />
-          ) : null
-        }
-      >
-        <div
-          className={`relative z-10 min-w-0 truncate font-light leading-none tracking-normal ${valueColor} ${
-            isVeryCompact ? 'text-2xl' : isSmall ? 'text-3xl' : 'text-4xl'
-          }`}
-          title={`${displayModel.value}${unitText}`}
+          </div>
+          <div
+            className={`pointer-events-none absolute inset-0 ${
+              theme === 'light'
+                ? 'bg-linear-to-b from-white/14 via-white/2 to-white/0'
+                : 'bg-linear-to-b from-slate-950/22 via-slate-950/8 to-transparent'
+            }`}
+          />
+          <div
+            className={`pointer-events-none absolute inset-x-0 border-t border-dashed ${
+              theme === 'light' ? 'border-slate-400/70' : 'border-white/65'
+            } ${size === 'large' ? 'top-[45%]' : 'top-[43%]'}`}
+          />
+
+          <div className="pointer-events-none relative z-10 flex h-full flex-col p-3">
+            <div className="flex items-start justify-between gap-4">
+              <EntityCardHeader
+                title={displayModel.title}
+                subtitle={subtitleText}
+                size={size}
+                layout="eyebrow-first"
+                className="mb-0"
+                marginBottomClassName="mb-0"
+                leading={headerIconNode}
+              />
+              <CardMetric
+                value={
+                  <>
+                    {displayModel.value}
+                    {displayModel.unit ? (
+                      <span className="align-baseline text-xl">{unitText}</span>
+                    ) : null}
+                  </>
+                }
+                label={subtitleText}
+                size={size === 'large' ? 'xl' : 'lg'}
+                isActive
+                accentClassName={valueColor}
+                theme={theme}
+                className="shrink-0 text-right"
+                valueStyle={{
+                  fontSize: size === 'large' ? '1.7rem' : '1.45rem',
+                  lineHeight: 1,
+                  letterSpacing: '-0.03em',
+                }}
+              />
+            </div>
+          </div>
+        </BaseCard>
+      ) : (
+        <BaseCard
+          size={size}
+          role="button"
+          tabIndex={0}
+          aria-label={t('entityCardInteraction.openSettings', { name })}
+          onClick={openSettings}
+          onKeyDown={handleCardKeyDown}
+          interactive
+          title={displayModel.title}
+          subtitle={subtitleText}
+          headerCompact={isExtraSmall}
+          headerLayout="eyebrow-first"
+          headerTone="neutral"
+          headerLeading={headerIconNode}
+          frameClassName={cardShell.rootFrameClassName}
+          disableDefaultSheen={theme !== 'light'}
+          contentClassName="flex items-end"
         >
-          {displayModel.value}
-          {displayModel.unit ? (
-            <span className={`${isVeryCompact ? 'text-base' : 'text-xl'} align-baseline`}>
-              {unitText}
-            </span>
-          ) : null}
-        </div>
-      </BaseCard>
+          <div
+            className={`relative z-10 min-w-0 truncate font-light leading-none tracking-normal ${valueColor} ${
+              isVeryCompact ? 'text-2xl' : isSmall ? 'text-3xl' : 'text-4xl'
+            }`}
+            title={`${displayModel.value}${unitText}`}
+          >
+            {displayModel.value}
+            {displayModel.unit ? (
+              <span className={`${isVeryCompact ? 'text-base' : 'text-xl'} align-baseline`}>
+                {unitText}
+              </span>
+            ) : null}
+          </div>
+        </BaseCard>
+      )}
 
       {!disableBuiltInSettingsDialog && isSettingsOpen ? (
         <SensorSettingsDialog

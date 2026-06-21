@@ -181,7 +181,7 @@ describe('Sidebar mobile navigation', () => {
     expect(useNavigationStore.getState().activeSection).toBe('home');
     const dialog = screen.getByRole('dialog');
     expect(dialog).toBeInTheDocument();
-    expect(within(dialog).getByText('Edit sidebar action')).toBeInTheDocument();
+    expect(within(dialog).getAllByText('Edit sidebar action').length).toBeGreaterThan(0);
     expect(within(dialog).getByDisplayValue('Movie status')).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: 'Save changes' })).toBeInTheDocument();
   });

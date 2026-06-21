@@ -2,7 +2,8 @@ import { Button, Input, InteractivePill } from '@navet/app/components/primitives
 import { EntityRoomSelector } from '@navet/app/components/shared/entity-room-selector';
 import { navetTypographyTokens } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
-import { useI18n, useIntegrationStore } from '@navet/app/hooks';
+import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
+import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { integrationAdminService } from '@navet/app/services/integration-admin.service';
 import { integrationSelectors } from '@navet/app/stores/selectors';
 import { getProviderEntityTypeLabel } from '@navet/app/utils/provider-entity-label';
@@ -33,6 +34,7 @@ interface CardDialogHeaderProps {
   trailing?: ReactNode;
   supportingContent?: ReactNode;
   className?: string;
+  theme?: ThemeType;
   titleStyle?: CSSProperties;
   descriptionStyle?: CSSProperties;
   actionButtonStyle?: CSSProperties;
@@ -84,7 +86,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
   entityId,
   eyebrow,
   showRoomSelector = true,
-  forceDarkRoomSelector = true,
+  forceDarkRoomSelector = false,
   roomSelectorFallbackRoomName,
   roomSelectorCompactContentStyle,
   editableTitle = true,
@@ -92,6 +94,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
   trailing,
   supportingContent,
   className,
+  theme = 'dark',
   titleStyle,
   descriptionStyle,
   actionButtonStyle,
@@ -119,6 +122,18 @@ export const CardDialogHeader = memo(function CardDialogHeader({
       />
     ) : null;
   const editLabel = t('entityNameEditor.edit', { name: '' }).trim();
+  const titleClassName = theme === 'light' ? 'text-slate-950' : 'text-white';
+  const descriptionClassName = theme === 'light' ? 'text-slate-700' : 'text-white/82';
+  const descriptionSeparatorClassName = theme === 'light' ? 'text-slate-400' : 'text-white/40';
+  const editLinkClassName = theme === 'light' ? 'hover:text-slate-950' : 'hover:text-white';
+  const actionButtonClassName =
+    theme === 'light'
+      ? 'border-slate-300/80 bg-slate-100/90 text-slate-700 hover:bg-slate-200/90 hover:text-slate-950'
+      : 'border-white/12 bg-white/8 text-white/82 hover:bg-white/12 hover:text-white';
+  const titleInputClassName =
+    theme === 'light'
+      ? 'h-9 bg-slate-100/95 text-base font-semibold text-slate-950 placeholder:text-slate-400'
+      : 'h-9 bg-white/10 text-base font-semibold text-white placeholder:text-white/45';
 
   useEffect(() => {
     setDisplayTitle(title);
@@ -197,7 +212,8 @@ export const CardDialogHeader = memo(function CardDialogHeader({
             <div
               className={cn(
                 'text-lg font-semibold',
-                'min-w-0 text-white',
+                'min-w-0',
+                titleClassName,
                 isEditingTitle ? 'flex-1' : 'truncate'
               )}
               style={titleStyle}
@@ -211,7 +227,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
                   size="small"
                   variant="soft"
                   containerClassName="min-w-0"
-                  inputClassName="h-9 bg-white/10 text-base font-semibold text-white placeholder:text-white/45"
+                  inputClassName={titleInputClassName}
                   onChange={(event) => setDraftTitle(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter') {
@@ -235,7 +251,10 @@ export const CardDialogHeader = memo(function CardDialogHeader({
               <div className="flex shrink-0 items-center gap-2.5">
                 <button
                   type="button"
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-white/12 bg-white/8 text-white/82 transition-colors hover:bg-white/12 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  className={cn(
+                    'flex h-8 w-8 items-center justify-center rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-50',
+                    actionButtonClassName
+                  )}
                   aria-label={t('entityNameEditor.save')}
                   disabled={isSavingTitle}
                   onClick={() => void saveTitleEdit()}
@@ -245,7 +264,10 @@ export const CardDialogHeader = memo(function CardDialogHeader({
                 </button>
                 <button
                   type="button"
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-white/12 bg-white/8 text-white/82 transition-colors hover:bg-white/12 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  className={cn(
+                    'flex h-8 w-8 items-center justify-center rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-50',
+                    actionButtonClassName
+                  )}
                   aria-label={t('common.cancel')}
                   disabled={isSavingTitle}
                   onClick={cancelTitleEdit}
@@ -261,23 +283,28 @@ export const CardDialogHeader = memo(function CardDialogHeader({
           <Dialog.Description asChild>
             <div
               className={cn(
-                '-mt-0.5 flex min-w-0 items-center gap-1.5',
+                '-mt-0.5 flex min-w-0 flex-wrap items-start gap-1.5',
                 'text-sm font-medium',
-                'text-white/82'
+                descriptionClassName
               )}
               style={descriptionStyle}
             >
-              {resolvedDescription ? <span className="truncate">{resolvedDescription}</span> : null}
+              {resolvedDescription ? (
+                <span className="min-w-0 whitespace-normal break-words">{resolvedDescription}</span>
+              ) : null}
               {canEditTitle && !isEditingTitle ? (
                 <>
                   {resolvedDescription ? (
-                    <span aria-hidden="true" className="text-white/40">
+                    <span aria-hidden="true" className={descriptionSeparatorClassName}>
                       •
                     </span>
                   ) : null}
                   <button
                     type="button"
-                    className="shrink-0 text-inherit [font:inherit] transition-colors hover:text-white"
+                    className={cn(
+                      'shrink-0 text-inherit [font:inherit] transition-colors',
+                      editLinkClassName
+                    )}
                     aria-label={t('entityNameEditor.edit', { name: displayTitle })}
                     onClick={() => setIsEditingTitle(true)}
                   >
@@ -302,7 +329,10 @@ export const CardDialogHeader = memo(function CardDialogHeader({
         <Dialog.Close asChild>
           <button
             type="button"
-            className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full border border-white/12 bg-white/8 text-white/82 transition-colors hover:bg-white/12 hover:text-white"
+            className={cn(
+              'flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full border transition-colors',
+              actionButtonClassName
+            )}
             aria-label={t('common.close')}
             style={actionButtonStyle}
           >
@@ -330,14 +360,25 @@ export const CardDialogSection = memo(function CardDialogSection({
   label,
   labelClassName,
 }: CardDialogSectionProps) {
+  const { theme } = useTheme();
+  const resolvedLabelClassName = theme === 'light' ? 'text-slate-950' : 'text-white';
+  const resolvedHelperTextClassName = theme === 'light' ? 'text-slate-700' : 'text-white/82';
+
   return (
     <div className={cn('mb-6 min-w-0 last:mb-0', className)}>
       {label ? (
-        <div className={cn('mb-1 text-sm font-medium text-white', labelClassName)}>{label}</div>
+        <div className={cn('mb-1 text-sm font-medium', resolvedLabelClassName, labelClassName)}>
+          {label}
+        </div>
       ) : null}
       {helperText ? (
         <p
-          className={cn('mb-3', navetTypographyTokens.helper, 'text-white/82', helperTextClassName)}
+          className={cn(
+            'mb-3',
+            navetTypographyTokens.helper,
+            resolvedHelperTextClassName,
+            helperTextClassName
+          )}
         >
           {helperText}
         </p>

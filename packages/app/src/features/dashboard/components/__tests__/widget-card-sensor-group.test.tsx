@@ -307,4 +307,37 @@ describe('WidgetCard info widget', () => {
     expect(screen.queryByRole('button', { name: /Kitchen Humidity/i })).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Room')).not.toBeInTheDocument();
   });
+
+  it('adds a selected energy metric sensor and keeps the picker open like home dashboard info cards', async () => {
+    const onUpdate = vi.fn();
+
+    renderWithProviders(
+      <WidgetCard
+        isEditMode={false}
+        onUpdate={onUpdate}
+        card={{
+          id: 'custom-energy-info',
+          type: 'info',
+          size: 'medium',
+          room: '__energy__',
+          data: {
+            sensorCategoryFilter: 'energy',
+          },
+          createdAt: 1,
+        }}
+      />
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Customize' }));
+    fireEvent.mouseDown(screen.getByRole('button', { name: /Remaining Electricity/i }));
+
+    expect(onUpdate).toHaveBeenCalledWith('custom-energy-info', {
+      data: {
+        sensorCategoryFilter: 'energy',
+        sensorEntityIds: ['home_assistant:sensor.remaining_electricity'],
+      },
+    });
+
+    expect(screen.getByRole('dialog', { name: 'Info' })).toBeInTheDocument();
+  });
 });

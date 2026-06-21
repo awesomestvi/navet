@@ -118,7 +118,7 @@ export const CardSizeSelector = memo(function CardSizeSelector({
 
   const inactiveButtonBorderColor =
     theme === 'light' ? 'rgba(15,23,42,0.05)' : 'rgba(255,255,255,0.06)';
-  const activeAccentBgAlpha = theme === 'light' ? '18' : '22';
+  const activeAccentBgAlpha = theme === 'light' ? '00' : '22';
   const arrowFillClass = theme === 'light' ? 'fill-white' : 'fill-[#1c1c1e]';
 
   const sourceSizes = options ?? sizes;
@@ -183,11 +183,18 @@ export const CardSizeSelector = memo(function CardSizeSelector({
                     }}
                     className="flex h-16 w-16 items-center justify-center rounded-[20px] border transition-all duration-200"
                     style={{
-                      borderColor: isActive ? `${accentColor}30` : inactiveButtonBorderColor,
+                      borderColor: isActive ? `${accentColor}80` : inactiveButtonBorderColor,
                       backgroundColor: isActive
-                        ? `${accentColor}${activeAccentBgAlpha}`
+                        ? theme === 'light'
+                          ? '#ffffff'
+                          : `${accentColor}${activeAccentBgAlpha}`
                         : 'transparent',
-                      boxShadow: isActive ? `inset 0 0 0 1px ${accentColor}28` : 'none',
+                      boxShadow:
+                        isActive && theme === 'light'
+                          ? '0 1px 2px rgba(15,23,42,0.04)'
+                          : isActive
+                            ? `inset 0 0 0 1px ${accentColor}28`
+                            : 'none',
                     }}
                   >
                     <SizePreviewGlyph
@@ -226,13 +233,15 @@ function getSizeGlyphTokens(
 ) {
   const strokeColor = active
     ? theme === 'light'
-      ? '#ffffff'
+      ? '#0f172a'
       : 'rgba(255,255,255,0.96)'
     : theme === 'light'
       ? 'rgba(17,24,39,0.78)'
       : 'rgba(255,255,255,0.88)';
   const fillColor = active
-    ? `${accentColor}20`
+    ? theme === 'light'
+      ? 'rgba(255,255,255,0.96)'
+      : `${accentColor}20`
     : theme === 'light'
       ? 'rgba(17,24,39,0.08)'
       : 'rgba(255,255,255,0.08)';

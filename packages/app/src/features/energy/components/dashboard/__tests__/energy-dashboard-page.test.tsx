@@ -11,7 +11,30 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EnergyDashboardPage } from '../energy-dashboard-page';
 
 vi.mock('@navet/app/features/dashboard/components/dashboard-card-item', () => ({
-  DashboardCardItem: ({ card }: { card: { id: string } }) => <div>Energy card {card.id}</div>,
+  DashboardCardItem: ({
+    card,
+    onUpdateCard,
+  }: {
+    card: { id: string };
+    onUpdateCard?: (cardId: string, updates: Record<string, unknown>) => void;
+  }) => (
+    <div>
+      <div>Energy card {card.id}</div>
+      <button
+        type="button"
+        onClick={() =>
+          onUpdateCard?.(card.id, {
+            data: {
+              sensorCategoryFilter: 'energy',
+              sensorEntityIds: ['home_assistant:sensor.remaining_electricity'],
+            },
+          })
+        }
+      >
+        Update energy card
+      </button>
+    </div>
+  ),
 }));
 
 function renderDashboardPage(
@@ -126,6 +149,36 @@ describe('EnergyDashboardPage', () => {
     });
 
     expect(screen.getByText('Energy card custom-energy-card')).toBeInTheDocument();
+  });
+
+  it('passes custom energy card updates through without nesting the data payload again', () => {
+    const onUpdateCard = vi.fn();
+
+    renderDashboardPage('default', {
+      energyCustomCards: [
+        {
+          id: 'custom-energy-card',
+          type: 'info',
+          size: 'medium',
+          room: '__energy__',
+          createdAt: 1,
+          data: {
+            sensorCategoryFilter: 'energy',
+          },
+        },
+      ],
+      energyOrderedCardIds: ['custom-energy-card'],
+      onUpdateCard,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Update energy card' }));
+
+    expect(onUpdateCard).toHaveBeenCalledWith('custom-energy-card', {
+      data: {
+        sensorCategoryFilter: 'energy',
+        sensorEntityIds: ['home_assistant:sensor.remaining_electricity'],
+      },
+    });
   });
 
   it('opens the energy add card dialog from the hero in edit mode', () => {

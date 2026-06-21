@@ -1,6 +1,7 @@
+import { useThemeStore } from '@navet/app/stores/theme-store';
 import { renderWithProviders } from '@navet/app/test/render';
 import { screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppReleaseBadge } from './app-release-badge';
 
 vi.mock('@navet/app/constants/app-build-metadata', () => ({
@@ -10,6 +11,15 @@ vi.mock('@navet/app/constants/app-build-metadata', () => ({
 import { getAppReleaseBadgeLabel } from '@navet/app/constants/app-build-metadata';
 
 describe('AppReleaseBadge', () => {
+  beforeEach(() => {
+    useThemeStore.setState({
+      ...useThemeStore.getState(),
+      theme: 'dark',
+      primaryColor: 'green',
+      customPrimaryColor: null,
+    });
+  });
+
   it('renders the release label with shared badge styling', () => {
     vi.mocked(getAppReleaseBadgeLabel).mockReturnValue('Beta');
 
@@ -25,6 +35,23 @@ describe('AppReleaseBadge', () => {
     expect(badge.className).toContain('text-xs');
     expect(badge.className).toContain('px-2');
     expect(badge.className).toContain('py-0.5');
+  });
+
+  it('uses a white surface with an accent border in light theme', () => {
+    vi.mocked(getAppReleaseBadgeLabel).mockReturnValue('Beta');
+    useThemeStore.setState({
+      ...useThemeStore.getState(),
+      theme: 'light',
+      primaryColor: 'green',
+      customPrimaryColor: null,
+    });
+
+    renderWithProviders(<AppReleaseBadge />);
+
+    expect(screen.getByText('Beta')).toHaveStyle({
+      backgroundColor: 'rgb(255, 255, 255)',
+      borderColor: '#22c55e80',
+    });
   });
 
   it('renders nothing when there is no release label', () => {

@@ -166,7 +166,7 @@ describe('TasksSection', () => {
 
     renderWithProviders(<TasksSection />);
 
-    expect(screen.getByText('Routines')).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { name: 'Automations' }).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Automations').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Brew coffee').length).toBeGreaterThan(0);
     expect(screen.getByText('Night mode')).toBeInTheDocument();

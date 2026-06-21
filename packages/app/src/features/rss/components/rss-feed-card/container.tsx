@@ -25,7 +25,7 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
   onTintColorChange,
   openSettingsRequestKey = 0,
 }: RSSFeedCardProps) {
-  const { theme, colors, accentColor } = useTheme();
+  const { theme, accentColor } = useTheme();
   const { t } = useI18n();
   const rooms = useAreaRooms();
   const isSmall = isCompactCardSize(size);
@@ -120,7 +120,6 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
         onSizeChange={onSizeChange}
         theme={theme}
         accentColor={accentColor}
-        colors={colors}
         tintColor={tintColor}
         isSmall={isSmall}
         isMedium={isMedium}

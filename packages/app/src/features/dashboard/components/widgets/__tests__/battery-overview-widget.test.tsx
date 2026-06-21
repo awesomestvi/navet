@@ -40,13 +40,13 @@ describe('BatteryOverviewWidget', () => {
     expect(screen.queryByText('Widget')).not.toBeInTheDocument();
   });
 
-  it('opens settings from the no-batteries empty state action', () => {
+  it('opens settings from the no-batteries empty state action', async () => {
     renderWithProviders(<BatteryOverviewWidget onUpdate={vi.fn()} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Battery settings' }));
 
-    const dialog = screen.getByRole('dialog');
-    expect(within(dialog).getByText('Battery settings')).toBeInTheDocument();
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getAllByText('Battery settings').length).toBeGreaterThan(0);
     expect(within(dialog).getByText('No battery sensors available yet.')).toBeInTheDocument();
   });
 

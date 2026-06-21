@@ -23,14 +23,23 @@ export function getSecurityCardSurfaceTokens(theme: ThemeType) {
           ? 'bg-white/8 text-white hover:bg-white/12'
           : 'bg-zinc-900 text-white hover:bg-zinc-800',
     sliderTrackClassName:
-      theme === 'light' ? 'bg-gray-200' : theme === 'glass' ? 'bg-white/12' : 'bg-zinc-800',
+      theme === 'light'
+        ? 'border-slate-300/90 bg-slate-100/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.92)]'
+        : theme === 'glass'
+          ? 'bg-white/12'
+          : 'bg-zinc-800',
     dialogContentClassName:
       theme === 'glass' ? 'bg-white/10 border-white/18' : 'bg-zinc-950 border-zinc-700',
     lockCardOverlay:
-      theme === 'light' ? 'bg-white/22' : theme === 'glass' ? 'bg-white/[0.03]' : 'bg-black/10',
+      theme === 'light'
+        ? 'bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(248,250,252,0.08)_42%,rgba(226,232,240,0.12)_100%)]'
+        : theme === 'glass'
+          ? 'bg-white/[0.03]'
+          : 'bg-black/10',
     lockStatusText: theme === 'light' ? 'text-red-950' : 'text-white',
     lockStatusSubtext: theme === 'light' ? 'text-red-700' : 'text-red-200',
-    lockButtonBg: theme === 'light' ? 'bg-white/65' : 'bg-white/6',
+    lockButtonBg: theme === 'light' ? 'bg-white' : 'bg-white/6',
+    lockSliderFillBg: theme === 'light' ? 'bg-white/88' : 'bg-white/10',
     dialogOptionClassName(themeSelected: boolean) {
       if (themeSelected) {
         return 'bg-indigo-500/20 border-indigo-500 shadow-lg shadow-indigo-500/20';
@@ -69,6 +78,24 @@ export function getSecurityStateSurfaceProps(
   const surface = getThemeSurfaceTokens(theme);
 
   if (tone === 'success') {
+    if (theme === 'light') {
+      const lightSurface = getLightCardSurfaceTokens({
+        isOn: true,
+        selectedColor: null,
+        currentColor: '#22c55e',
+        theme,
+        lightColors: colors.lock.locked,
+        accentColor,
+      });
+
+      return {
+        frameClassName: `${cardShell.rootFrameClassName} ${lightSurface.cardClassName}`,
+        frameStyle: lightSurface.cardStyle,
+        overlay: null,
+        disableDefaultSheen: true,
+      };
+    }
+
     const lockColors = colors.lock.locked;
 
     return {
@@ -86,6 +113,24 @@ export function getSecurityStateSurfaceProps(
   }
 
   if (tone === 'accent') {
+    if (theme === 'light') {
+      const lightSurface = getLightCardSurfaceTokens({
+        isOn: true,
+        selectedColor: null,
+        currentColor: '#38bdf8',
+        theme,
+        lightColors: colors.light,
+        accentColor,
+      });
+
+      return {
+        frameClassName: `${cardShell.rootFrameClassName} ${lightSurface.cardClassName}`,
+        frameStyle: lightSurface.cardStyle,
+        overlay: null,
+        disableDefaultSheen: true,
+      };
+    }
+
     const accentSurface = getLightCardSurfaceTokens({
       isOn: true,
       selectedColor: null,

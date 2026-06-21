@@ -184,6 +184,12 @@ function VacuumRobotVisual({
     displayState,
     titleColor,
   });
+  const dockStrokeColor = theme === 'light' ? titleColor : subtitleColor;
+  const dockStrokeOpacity = theme === 'light' ? 0.9 : 0.72;
+  const dockRailOpacity = theme === 'light' ? 0.35 : 0.15;
+  const dockBaseOpacity = theme === 'light' ? 0.72 : 0.55;
+  const pulseRingBorderColor =
+    theme === 'light' ? 'rgba(82, 82, 91, 0.28)' : 'rgba(255,255,255,0.1)';
   const visualContainerClassName = isCompact
     ? 'relative flex h-full min-h-[8rem] items-start justify-end overflow-visible'
     : 'relative flex h-full min-h-[8rem] items-center justify-center overflow-hidden';
@@ -355,28 +361,31 @@ function VacuumRobotVisual({
         {!isCompact ? (
           <div
             className="absolute inset-x-1 top-0 h-2 rounded-full border"
-            style={{ borderColor: subtitleColor, opacity: 0.72 }}
+            style={{ borderColor: dockStrokeColor, opacity: dockStrokeOpacity }}
           />
         ) : null}
         <div
           className="absolute left-1 top-1 h-3 w-[1px]"
-          style={{ backgroundColor: subtitleColor, opacity: 0.15 }}
+          style={{ backgroundColor: dockStrokeColor, opacity: dockRailOpacity }}
         />
         <div
           className="absolute right-1 top-1 h-3 w-[1px]"
-          style={{ backgroundColor: subtitleColor, opacity: 0.15 }}
+          style={{ backgroundColor: dockStrokeColor, opacity: dockRailOpacity }}
         />
         {!isCompact ? (
           <div
             className="absolute inset-x-0 bottom-0 h-[2px] rounded-full"
-            style={{ backgroundColor: subtitleColor, opacity: 0.55 }}
+            style={{ backgroundColor: dockStrokeColor, opacity: dockBaseOpacity }}
           />
         ) : null}
       </div>
       {showPulse ? (
         <div
-          className="absolute h-24 w-24 -top-3 -right-2.5 rounded-full border border-white/10 animate-pulse"
-          style={isCompact ? { transform: compactPulseTransform } : undefined}
+          className="absolute h-24 w-24 -top-3 -right-2.5 rounded-full border animate-pulse"
+          style={{
+            borderColor: pulseRingBorderColor,
+            ...(isCompact ? { transform: compactPulseTransform } : {}),
+          }}
         />
       ) : null}
       {isCompact ? (
@@ -398,8 +407,11 @@ function VacuumRobotVisual({
             data-testid="vacuum-robot-surface"
           >
             <div
-              className="absolute top-[0.88rem] h-[0.5rem] w-[0.5rem] rounded-full border bg-black/15"
-              style={{ borderColor: subtitleColor }}
+              className="absolute top-[0.88rem] h-[0.5rem] w-[0.5rem] rounded-full border"
+              style={{
+                borderColor: subtitleColor,
+                backgroundColor: theme === 'light' ? 'rgba(15,23,42,0.08)' : 'rgba(0,0,0,0.15)',
+              }}
             />
             <div
               className="absolute bottom-[0.72rem] left-1/2 h-[0.28rem] w-[2.6rem] -translate-x-1/2 rounded-full"
@@ -441,8 +453,11 @@ function VacuumRobotVisual({
               />
             ) : null}
             <div
-              className="absolute top-[0.88rem] h-[0.5rem] w-[0.5rem] rounded-full border bg-black/15"
-              style={{ borderColor: subtitleColor }}
+              className="absolute top-[0.88rem] h-[0.5rem] w-[0.5rem] rounded-full border"
+              style={{
+                borderColor: subtitleColor,
+                backgroundColor: theme === 'light' ? 'rgba(15,23,42,0.08)' : 'rgba(0,0,0,0.15)',
+              }}
             />
             <div
               className="absolute bottom-[0.72rem] left-1/2 h-[0.28rem] w-[2.6rem] -translate-x-1/2 rounded-full"

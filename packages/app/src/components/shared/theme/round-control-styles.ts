@@ -15,14 +15,15 @@ interface RoundControlStyles {
 export function getRoundControlStyles(theme: ThemeType): RoundControlStyles {
   if (theme === 'light') {
     return {
-      defaultButton: 'bg-gray-100 text-gray-900 hover:bg-gray-200',
+      defaultButton:
+        'border border-slate-200/85 bg-white/96 text-slate-900 shadow-[0_12px_24px_-18px_rgba(15,23,42,0.2)] hover:border-slate-300/85 hover:bg-slate-50',
       defaultIcon: 'text-gray-900',
-      disabledButton: 'bg-gray-100 text-slate-600 opacity-70',
+      disabledButton: 'border border-slate-200/70 bg-white/72 text-slate-600 opacity-70',
       softButton:
-        'border border-white/55 bg-white/55 text-slate-800 shadow-[0_14px_32px_-22px_rgba(15,23,42,0.4)] backdrop-blur-xl hover:bg-white/72',
-      softIcon: 'text-slate-800',
+        'border border-slate-200/90 bg-white/92 text-slate-900 shadow-[0_16px_32px_-22px_rgba(15,23,42,0.26),inset_0_1px_0_rgba(255,255,255,0.68)] backdrop-blur-xl hover:border-slate-300/90 hover:bg-white',
+      softIcon: 'text-slate-900',
       softDisabledButton:
-        'border border-white/45 bg-white/40 text-slate-700 opacity-70 backdrop-blur-xl',
+        'border border-slate-200/75 bg-white/70 text-slate-700 opacity-70 backdrop-blur-xl',
       selectedText: 'text-white',
       emphasisButton:
         'border border-gray-200 bg-white text-slate-900 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.5)]',

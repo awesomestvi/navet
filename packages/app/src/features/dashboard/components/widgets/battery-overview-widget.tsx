@@ -53,6 +53,14 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
   const tintColor = typeof data?.tintColor === 'string' ? data.tintColor : undefined;
   const surface = getThemeSurfaceTokens(theme);
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
+  const textPrimaryStyle = tintSurface.textPrimaryColor
+    ? { color: tintSurface.textPrimaryColor }
+    : undefined;
+  const textSecondaryStyle = tintSurface.textSecondaryColor
+    ? { color: tintSurface.textSecondaryColor }
+    : undefined;
+  const textSecondaryClassName = tintSurface.textSecondaryColor ? '' : surface.textSecondary;
+  const textMutedClassName = tintSurface.textSecondaryColor ? '' : surface.textMuted;
   const rooms = useAreaRooms();
   const batteries = useProviderBatterySensorRows();
   const selectedEntityIds = getSelectedEntityIds(data?.selectedEntityIds);
@@ -131,6 +139,7 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
         fullBleed
         className="transition-all duration-500"
         style={tintSurface.panelStyle}
+        readableBackgroundColor={tintSurface.backgroundColor}
         frameClassName="overflow-hidden"
         overlay={
           <>
@@ -165,8 +174,11 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
                 subtitle={t('widgets.common.widget')}
                 layout="eyebrow-first"
                 size={chromeSize}
-                titleClassName={surface.textPrimary}
-                subtitleClassName={surface.textMuted}
+                titleClassName={tintSurface.textPrimaryColor ? '' : surface.textPrimary}
+                subtitleClassName={textMutedClassName}
+                backgroundColor={tintSurface.backgroundColor}
+                titleStyle={textPrimaryStyle}
+                subtitleStyle={textSecondaryStyle}
                 leading={
                   <EntityCardHeaderIcon IconComponent={Battery} isActive size={chromeSize} />
                 }
@@ -175,7 +187,7 @@ export const BatteryOverviewWidget = memo(function BatteryOverviewWidget({
                 devices={filteredBatteries}
                 isCompact={isCompact}
                 subtleFill={subtleFill}
-                textSecondary={surface.textSecondary}
+                textSecondary={textSecondaryClassName}
                 emptyStateLabel={emptyStateLabel}
                 getLevelColor={(level) => getLevelColor(level, accentHex)}
               />

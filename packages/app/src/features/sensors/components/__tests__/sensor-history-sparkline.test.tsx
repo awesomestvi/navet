@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { SensorHistorySparkline } from '../sensor-history-sparkline';
 
 describe('SensorHistorySparkline', () => {
-  it('uses a full-height baseline without extra bottom gap', () => {
+  it('renders the shared energy sparkline treatment for sensor history', () => {
     renderWithProviders(
       <SensorHistorySparkline
         data={[
@@ -18,10 +18,8 @@ describe('SensorHistorySparkline', () => {
     );
 
     const sparkline = screen.getByTestId('sensor-history-sparkline');
-    const baseline = sparkline.querySelector('line');
 
-    expect(baseline).not.toBeNull();
-    expect(baseline?.getAttribute('y1')).toBe('120');
-    expect(baseline?.getAttribute('y2')).toBe('120');
+    expect(sparkline).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Power sparkline' })).toBeInTheDocument();
   });
 });

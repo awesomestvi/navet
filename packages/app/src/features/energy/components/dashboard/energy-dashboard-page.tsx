@@ -388,7 +388,7 @@ function CompactLoadSparklines({
                 card={card}
                 handleSizeChange={(cardId, size) => onUpdateCard?.(cardId, { size })}
                 onDeleteCard={onDeleteCard}
-                onUpdateCard={(cardId, data) => onUpdateCard?.(cardId, { data })}
+                onUpdateCard={onUpdateCard}
               />
             ))}
           </div>

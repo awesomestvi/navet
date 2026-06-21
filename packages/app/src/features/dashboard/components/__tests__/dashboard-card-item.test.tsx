@@ -265,8 +265,6 @@ describe('DashboardCardItem card locking', () => {
   });
 
   it('adds a settings action to the edit dock for custom cards with settings dialogs', () => {
-    const dispatchEventSpy = vi.spyOn(window, 'dispatchEvent');
-
     renderWithProviders(
       <DashboardCardItem
         id="custom-rss"
@@ -288,13 +286,11 @@ describe('DashboardCardItem card locking', () => {
     });
     fireEvent.click(settingsButton);
 
-    expect(dispatchEventSpy).toHaveBeenCalledWith(
+    expect(widgetCardMock).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        type: 'navet:edit-mode-open-settings',
+        openSettingsRequestKey: 1,
       })
     );
-
-    dispatchEventSpy.mockRestore();
   });
 
   it('does not add a settings action to the edit dock for security panel cards', () => {

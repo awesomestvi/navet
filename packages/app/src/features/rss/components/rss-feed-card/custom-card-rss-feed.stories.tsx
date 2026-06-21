@@ -89,13 +89,6 @@ function RSSEmptyStory({
         size={size}
         theme={theme}
         accentColor={accentColor}
-        colors={{
-          rss: {
-            gradient: 'from-sky-500/20 via-blue-500/10 to-transparent',
-            border: 'border-white/10',
-            glow: 'from-sky-300/20',
-          },
-        }}
         tintColor="#3b82f6"
         isSmall={size === 'small'}
         isMedium={size === 'medium'}

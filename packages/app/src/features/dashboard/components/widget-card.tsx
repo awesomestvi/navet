@@ -105,6 +105,7 @@ interface WidgetCardProps {
   card: CustomCard;
   isEditMode: boolean;
   onUpdate?: (cardId: string, updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>) => void;
+  openSettingsRequestKey?: number;
 }
 
 function WidgetFallback({ size }: { size: CardSize }) {
@@ -115,15 +116,21 @@ function WidgetFallback({ size }: { size: CardSize }) {
   );
 }
 
-export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
+export function WidgetCard({
+  card,
+  isEditMode,
+  onUpdate,
+  openSettingsRequestKey: controlledOpenSettingsRequestKey,
+}: WidgetCardProps) {
   const updateCustomCard = useCustomCardsStore((state) => state.updateCard);
   const handleCardUpdate = onUpdate ?? updateCustomCard;
   const [openSettingsRequestKey, setOpenSettingsRequestKey] = useState(0);
+  const resolvedOpenSettingsRequestKey = controlledOpenSettingsRequestKey ?? openSettingsRequestKey;
 
   useEditModeSettingsRequest(
     card.id,
     () => setOpenSettingsRequestKey((value) => value + 1),
-    isEditMode
+    isEditMode && controlledOpenSettingsRequestKey === undefined
   );
 
   const handleNoteChange = (note: string) => {
@@ -142,7 +149,7 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           onRoomChange={(room) => handleCardUpdate(card.id, { room })}
           onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
           isEditMode={isEditMode}
-          openSettingsRequestKey={openSettingsRequestKey}
+          openSettingsRequestKey={resolvedOpenSettingsRequestKey}
         />
       );
       break;
@@ -160,7 +167,7 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           onTintColorChange={(tintColor) =>
             handleCardUpdate(card.id, { data: { ...card.data, tintColor } })
           }
-          openSettingsRequestKey={openSettingsRequestKey}
+          openSettingsRequestKey={resolvedOpenSettingsRequestKey}
         />
       );
       break;
@@ -192,7 +199,7 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
             handleCardUpdate(card.id, { data: { ...card.data, tintColor } })
           }
           isEditMode={isEditMode}
-          openSettingsRequestKey={openSettingsRequestKey}
+          openSettingsRequestKey={resolvedOpenSettingsRequestKey}
         />
       );
       break;
@@ -217,7 +224,7 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           data={card.data as BatteryOverviewWidgetData | undefined}
           onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
           isEditMode={isEditMode}
-          openSettingsRequestKey={openSettingsRequestKey}
+          openSettingsRequestKey={resolvedOpenSettingsRequestKey}
         />
       );
       break;
@@ -230,7 +237,7 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           data={card.data as UpsWidgetData | undefined}
           onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
           isEditMode={isEditMode}
-          openSettingsRequestKey={openSettingsRequestKey}
+          openSettingsRequestKey={resolvedOpenSettingsRequestKey}
         />
       );
       break;
@@ -243,7 +250,7 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           data={card.data as EnergyNowWidgetData | undefined}
           onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
           isEditMode={isEditMode}
-          openSettingsRequestKey={openSettingsRequestKey}
+          openSettingsRequestKey={resolvedOpenSettingsRequestKey}
         />
       );
       break;
@@ -255,7 +262,7 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           onRoomChange={(room) => handleCardUpdate(card.id, { room })}
           data={card.data as MediaStackWidgetData | undefined}
           onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
-          openSettingsRequestKey={openSettingsRequestKey}
+          openSettingsRequestKey={resolvedOpenSettingsRequestKey}
         />
       );
       break;
@@ -276,7 +283,7 @@ export function WidgetCard({ card, isEditMode, onUpdate }: WidgetCardProps) {
           }
           onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
           isEditMode={isEditMode}
-          openSettingsRequestKey={openSettingsRequestKey}
+          openSettingsRequestKey={resolvedOpenSettingsRequestKey}
         />
       );
       break;

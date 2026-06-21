@@ -16,9 +16,14 @@ interface CardSettingsActionButtonProps extends ButtonHTMLAttributes<HTMLButtonE
   tone?: 'default' | 'muted';
   variant?: 'neutral' | 'soft' | 'emphasis';
   accentColor?: string;
+  disableHoverEffects?: boolean;
 }
 
-function getSettingsActionAccentStyle(theme: ThemeType, accentColor?: string) {
+function getSettingsActionAccentStyle(
+  theme: ThemeType,
+  accentColor?: string,
+  disableHoverEffects = false
+) {
   const normalizedAccent = normalizeCustomCardTint(accentColor);
   if (!normalizedAccent) {
     return null;
@@ -26,7 +31,7 @@ function getSettingsActionAccentStyle(theme: ThemeType, accentColor?: string) {
 
   if (theme === 'light') {
     return {
-      className: 'hover:brightness-105',
+      className: disableHoverEffects ? '' : 'hover:brightness-105',
       iconStyle: { color: normalizedAccent },
       style: {
         background: withTintAlpha(normalizedAccent, 0.08),
@@ -38,7 +43,7 @@ function getSettingsActionAccentStyle(theme: ThemeType, accentColor?: string) {
   }
 
   return {
-    className: 'hover:brightness-105',
+    className: disableHoverEffects ? '' : 'hover:brightness-105',
     iconStyle: { color: withTintAlpha(normalizedAccent, theme === 'black' ? 0.92 : 0.86) },
     style: {
       background:
@@ -62,11 +67,12 @@ export function CardSettingsActionButton({
   tone = 'default',
   variant = 'neutral',
   accentColor,
+  disableHoverEffects = false,
   style,
   ...props
 }: CardSettingsActionButtonProps) {
   const { t } = useI18n();
-  const accentStyle = getSettingsActionAccentStyle(theme, accentColor);
+  const accentStyle = getSettingsActionAccentStyle(theme, accentColor, disableHoverEffects);
 
   return (
     <RoundControlButton
@@ -75,7 +81,11 @@ export function CardSettingsActionButton({
       variant={variant}
       aria-label={props['aria-label'] ?? t('common.moreActions')}
       className={`${
-        tone === 'muted' ? 'opacity-50' : 'hover:scale-105 active:scale-95'
+        tone === 'muted'
+          ? 'opacity-50'
+          : disableHoverEffects
+            ? ''
+            : 'hover:scale-105 active:scale-95'
       } ${accentStyle?.className ?? ''} ${className}`}
       iconClassName={tone === 'muted' ? 'text-current/60' : ''}
       iconStyle={accentStyle?.iconStyle}

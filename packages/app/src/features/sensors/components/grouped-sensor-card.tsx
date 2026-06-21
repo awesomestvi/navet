@@ -32,6 +32,8 @@ interface GroupedSensorCardProps {
   onNameChange?: (name: string) => void;
   onRoomChange?: (room: string) => void;
   onSensorsUpdate?: (sensors: SensorReading[]) => void;
+  onOpenSettings?: () => void;
+  disableBuiltInSettingsDialog?: boolean;
 }
 
 export const GroupedSensorCard = memo(function GroupedSensorCard({
@@ -41,6 +43,7 @@ export const GroupedSensorCard = memo(function GroupedSensorCard({
   sensors,
   size,
   onSizeChange: _onSizeChange,
+  isEditMode,
   accentColor = 'teal',
   availableSensors,
   emptyText,
@@ -48,6 +51,8 @@ export const GroupedSensorCard = memo(function GroupedSensorCard({
   onNameChange,
   onRoomChange,
   onSensorsUpdate,
+  onOpenSettings,
+  disableBuiltInSettingsDialog = false,
 }: GroupedSensorCardProps) {
   const {
     selectedSensors,
@@ -87,8 +92,21 @@ export const GroupedSensorCard = memo(function GroupedSensorCard({
     onSensorsUpdate?.(newSensors);
   };
   const isEmpty = visibleSensors.length === 0;
-  const openSettings = () => setIsSettingsOpen(true);
-  useEditModeSettingsRequest(id, openSettings);
+  const openSettings = () => {
+    if (onOpenSettings) {
+      onOpenSettings();
+      return;
+    }
+
+    if (!disableBuiltInSettingsDialog) {
+      setIsSettingsOpen(true);
+    }
+  };
+  useEditModeSettingsRequest(
+    id,
+    openSettings,
+    isEditMode && !disableBuiltInSettingsDialog && onOpenSettings === undefined
+  );
   const handleCardKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -177,7 +195,7 @@ export const GroupedSensorCard = memo(function GroupedSensorCard({
         </div>
       </BaseCard>
 
-      {isSettingsOpen ? (
+      {!disableBuiltInSettingsDialog && isSettingsOpen ? (
         <SensorGroupSettingsDialog
           entityId={id}
           isOpen={isSettingsOpen}

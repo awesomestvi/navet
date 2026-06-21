@@ -295,10 +295,11 @@ export function createPaletteFromImageData(imageData: ImageData): MediaArtworkPa
   const baseSourceSaturation = getSaturation(baseCandidate.color);
   const shouldMuteVibrantAccent =
     shouldAnchorToDarkBackground &&
-    selectedVibrantCandidate.luminance >= baseCandidate.luminance + 0.16 &&
-    selectedVibrantCandidate.saturation >= baseSourceSaturation + 0.18;
+    ((selectedVibrantCandidate.luminance >= baseCandidate.luminance + 0.12 &&
+      selectedVibrantCandidate.saturation >= baseSourceSaturation + 0.16) ||
+      selectedVibrantCandidate.saturation >= 0.78);
   const vibrantSource = shouldMuteVibrantAccent
-    ? blend(selectedVibrantCandidate.color, dominantSource, 0.58)
+    ? blend(selectedVibrantCandidate.color, dominantSource, 0.72)
     : shouldPreserveLightSurfaceAccent
       ? blend(
           accentCandidate.color,
@@ -314,7 +315,7 @@ export function createPaletteFromImageData(imageData: ImageData): MediaArtworkPa
     desaturate(
       vibrantSource,
       shouldMuteVibrantAccent
-        ? 0.3
+        ? 0.52
         : shouldPreserveLightSurfaceAccent
           ? 0.02
           : shouldAnchorToDarkBackground
@@ -324,7 +325,7 @@ export function createPaletteFromImageData(imageData: ImageData): MediaArtworkPa
               : 0.04
     ),
     shouldMuteVibrantAccent
-      ? 2
+      ? 1
       : shouldPreserveLightSurfaceAccent
         ? 2
         : shouldAnchorToDarkBackground
@@ -403,7 +404,7 @@ export function createPaletteFromImageData(imageData: ImageData): MediaArtworkPa
           shouldPreferAccentCandidate ? 0.08 : 0.1
         )
       : gradientEnd;
-  const resolvedVibrant =
+  const resolvedVibrantBase =
     accentCoverage >= 0.004 &&
     accentCandidate.luminance >= 0.12 &&
     accentCandidate.luminance <= 0.62 &&
@@ -421,6 +422,10 @@ export function createPaletteFromImageData(imageData: ImageData): MediaArtworkPa
           2
         )
       : vibrant;
+  const resolvedVibrant =
+    shouldAnchorToDarkBackground && getSaturation(resolvedVibrantBase) > 0.6
+      ? darken(desaturate(resolvedVibrantBase, 0.52), 0.32)
+      : resolvedVibrantBase;
 
   return {
     dominant: toRgbString(resolvedDominant),

@@ -28,6 +28,7 @@ interface EntityCardHeaderProps {
   contentClassName?: string;
   marginBottomClassName?: string;
   accentColor?: string | null;
+  backgroundColor?: string | null;
   titleStyle?: CSSProperties;
   subtitleStyle?: CSSProperties;
 }
@@ -48,6 +49,7 @@ export function EntityCardHeader({
   contentClassName = '',
   marginBottomClassName,
   accentColor,
+  backgroundColor,
   titleStyle,
   subtitleStyle,
 }: EntityCardHeaderProps) {
@@ -58,6 +60,7 @@ export function EntityCardHeader({
     tone,
     accentColor: accentColor ?? themeAccentColor,
     baseColor: tone === 'primary' ? (accentColor ?? themeAccentColor) : undefined,
+    backgroundColor,
   });
   const isTiny = isTinyCardSize(size);
   const isExtraSmall = isExtraSmallCardSize(size);

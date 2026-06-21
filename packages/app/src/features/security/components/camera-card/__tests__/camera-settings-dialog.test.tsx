@@ -167,6 +167,7 @@ describe('CameraSettingsDialog', () => {
       />
     );
 
+    fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
     fireEvent.click(screen.getByRole('switch', { name: 'Motion Detection' }));
     await waitFor(() =>
       expect(toggleCameraAccessoryMock).toHaveBeenCalledWith(
@@ -197,6 +198,7 @@ describe('CameraSettingsDialog', () => {
       />
     );
 
+    fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
     const slider = screen.getByRole('slider', { name: 'Image Brightness' });
     fireEvent.keyDown(slider, { key: 'ArrowRight' });
     fireEvent.keyUp(slider, { key: 'ArrowRight' });
@@ -220,6 +222,7 @@ describe('CameraSettingsDialog', () => {
       />
     );
 
+    fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
     const switchList = screen.getByTestId('camera-switch-list');
     expect(screen.getByRole('switch', { name: 'Camera Mode 0' })).toBeInTheDocument();
     expect(switchList).toBeInTheDocument();

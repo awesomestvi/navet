@@ -429,7 +429,9 @@ function BaseCardDialogRoot({
   );
 }
 
-function getWidgetRoomSelector(roomSelector: BaseCardDialogRoomSelector) {
+function getWidgetRoomSelector(roomSelector: BaseCardDialogRoomSelector, theme: ThemeType) {
+  const isLightTheme = theme === 'light';
+
   return (
     <div className="relative inline-flex items-center">
       {roomSelector.onChange ? (
@@ -446,7 +448,13 @@ function getWidgetRoomSelector(roomSelector: BaseCardDialogRoomSelector) {
           ))}
         </select>
       ) : null}
-      <div className="inline-flex h-[34px] min-w-0 items-center rounded-full border border-white/12 bg-white/8 px-2.5 text-white/82">
+      <div
+        className={`inline-flex h-[34px] min-w-0 items-center rounded-full border px-2.5 ${
+          isLightTheme
+            ? 'border-slate-300/80 bg-slate-100/90 text-slate-700'
+            : 'border-white/12 bg-white/8 text-white/82'
+        }`}
+      >
         <CompactRoomSelector
           value={roomSelector.value}
           label={roomSelector.label}
@@ -520,8 +528,8 @@ function BaseCardDialogCardVariant({
   };
 
   const widgetRoomSelector = useMemo(
-    () => (roomSelector ? getWidgetRoomSelector(roomSelector) : null),
-    [roomSelector]
+    () => (roomSelector ? getWidgetRoomSelector(roomSelector, theme) : null),
+    [roomSelector, theme]
   );
   const headerRoomSelectorStyle = useMemo<CSSProperties>(
     () => ({
@@ -565,6 +573,7 @@ function BaseCardDialogCardVariant({
             description={resolvedDescription}
             entityId={roomSelector ? undefined : entityId}
             showRoomSelector={!roomSelector}
+            theme={theme}
             roomSelectorFallbackRoomName={roomSelectorFallbackRoomName}
             roomSelectorCompactContentStyle={headerRoomSelectorStyle}
             editableTitle={editableTitle}

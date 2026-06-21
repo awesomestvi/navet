@@ -8,6 +8,7 @@ import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { LucideIcon } from 'lucide-react';
 import { Plus, Trash2 } from 'lucide-react';
 import {
+  type CSSProperties,
   type Dispatch,
   memo,
   type ReactNode,
@@ -74,10 +75,8 @@ const SensorLibraryRow = memo(function SensorLibraryRow({
   accentColorValue,
   isSelected,
   isDisabled,
-  isHighlighted,
   onAdd,
   onRemove,
-  onHighlight,
   renderLabel,
   description,
 }: {
@@ -91,10 +90,8 @@ const SensorLibraryRow = memo(function SensorLibraryRow({
   accentColorValue: string;
   isSelected: boolean;
   isDisabled: boolean;
-  isHighlighted: boolean;
   onAdd: () => void;
   onRemove: () => void;
-  onHighlight: () => void;
   renderLabel: (text: string) => ReactNode;
   description: string;
 }) {
@@ -125,7 +122,6 @@ const SensorLibraryRow = memo(function SensorLibraryRow({
         role="option"
         aria-selected="true"
         tabIndex={-1}
-        onMouseEnter={onHighlight}
         className={`flex w-full items-center gap-3 rounded-[18px] border px-3 py-2.5 text-left transition-colors ${colors.selected}`}
         style={{
           backgroundColor: withAlpha(accentColorValue, 0.16),
@@ -152,19 +148,27 @@ const SensorLibraryRow = memo(function SensorLibraryRow({
   return (
     <button
       type="button"
-      onMouseEnter={onHighlight}
       onMouseDown={(event) => {
+        if (event.button !== 0) {
+          return;
+        }
         event.preventDefault();
         onAdd();
       }}
       disabled={isDisabled}
       className={`group flex w-full items-center gap-3 rounded-[18px] border px-3 py-2.5 text-left transition-colors ${
-        isDisabled ? 'cursor-not-allowed opacity-50' : surface.hoverBg
+        isDisabled
+          ? 'cursor-not-allowed opacity-50'
+          : 'hover:bg-[var(--sensor-hover-bg)] hover:border-[var(--sensor-hover-border)]'
       }`}
-      style={{
-        backgroundColor: isHighlighted ? withAlpha(accentColorValue, 0.12) : tileBackground,
-        borderColor: isHighlighted ? withAlpha(accentColorValue, 0.34) : tileBorder,
-      }}
+      style={
+        {
+          backgroundColor: tileBackground,
+          borderColor: tileBorder,
+          '--sensor-hover-bg': withAlpha(accentColorValue, 0.12),
+          '--sensor-hover-border': withAlpha(accentColorValue, 0.34),
+        } as CSSProperties
+      }
     >
       {rowContent}
       {!isDisabled ? (
@@ -311,12 +315,10 @@ export function SensorGroupSettingsView({
                 className="absolute inset-x-0 top-0 flex flex-col gap-2.5"
                 style={{ transform: `translateY(${topOffset}px)` }}
               >
-                {virtualSensors.map((sensor, offset) => {
-                  const index = startIndex + offset;
+                {virtualSensors.map((sensor) => {
                   const Icon = iconMap[sensor.icon];
                   const isSelected = isSensorSelected(sensor.id);
                   const isDisabled = selectedSensors.length >= maxSensors && !isSelected;
-                  const isHighlighted = index === highlightedIndex;
                   const highlightMatch = (text: string) => {
                     const query = searchQuery.trim();
                     if (!query) return text;
@@ -352,10 +354,8 @@ export function SensorGroupSettingsView({
                       accentColorValue={accentColorValue}
                       isSelected={isSelected}
                       isDisabled={isDisabled}
-                      isHighlighted={isHighlighted}
                       onAdd={() => handleAddSensor(sensor)}
                       onRemove={() => handleRemoveSensor(sensor.id)}
-                      onHighlight={() => setHighlightedIndex(index)}
                       renderLabel={highlightMatch}
                       description={description}
                     />

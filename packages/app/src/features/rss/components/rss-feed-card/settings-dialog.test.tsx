@@ -42,7 +42,7 @@ describe('RSSFeedSettingsDialog', () => {
       />
     );
 
-    expect(screen.getByText('RSS Providers')).toBeInTheDocument();
+    expect(screen.getAllByText('Daily Feed').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Living Room').length).toBeGreaterThan(0);
   });
 });

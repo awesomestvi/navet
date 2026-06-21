@@ -83,9 +83,9 @@ describe('useMediaPlaybackProgress', () => {
     );
 
     act(() => {
-      vi.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(2000);
     });
 
-    expect(setElapsedSeconds).toHaveBeenLastCalledWith(12);
+    expect(setElapsedSeconds).toHaveBeenLastCalledWith(13);
   });
 });

@@ -127,6 +127,7 @@ interface FanPresetOverflowButtonProps {
   isOn: boolean;
   isSmall: boolean;
   onSelect: (speed: FanSpeed) => void;
+  theme: ReturnType<typeof useTheme>['theme'];
 }
 
 const FanPresetOverflowButton = memo(function FanPresetOverflowButton({
@@ -138,8 +139,8 @@ const FanPresetOverflowButton = memo(function FanPresetOverflowButton({
   isOn,
   isSmall,
   onSelect,
+  theme,
 }: FanPresetOverflowButtonProps) {
-  const { theme } = useTheme();
   const { t } = useI18n();
   const roundControl = getRoundControlStyles(theme);
   const [isOpen, setIsOpen] = useState(false);
@@ -408,10 +409,12 @@ export const FanCard = memo(function FanCard({
     ? Math.max(1, percentage || rememberedPercentage || FAN_SPEED_PERCENTAGES.low)
     : 0;
   const activeSpeed = resolveFanSpeed(isOn, displayedPercentage);
-  const roundControl = getRoundControlStyles(theme);
   const actionSize = getCardActionControlSizes(isSmall ? 'small' : 'medium');
   const activeSpeedColor = fanAccentColor;
   const FanIcon = HeaderIconComponent ?? Fan;
+  const effectiveTheme = theme === 'light' && isOn ? 'dark' : theme;
+  const useInverseForeground = theme === 'light' && isOn;
+  const roundControl = getRoundControlStyles(effectiveTheme);
   const sliderSize = resolvedSize === 'extra-small' ? 'extra-small' : isSmall ? 'small' : 'medium';
   const disabledSelectedClasses = 'cursor-not-allowed text-white opacity-70';
   const showFanPresets = supportsFanSpeed && !hasAdvancedFanControls;
@@ -491,6 +494,8 @@ export const FanCard = memo(function FanCard({
             accentColor={surfaceTokens.contentAccentColor}
             titleClassName={stateSurface.primaryTextClassName}
             subtitleClassName={stateSurface.mutedTextClassName}
+            titleStyle={useInverseForeground ? { color: '#ffffff' } : undefined}
+            subtitleStyle={useInverseForeground ? { color: 'rgba(255,255,255,0.76)' } : undefined}
             leading={
               <EntityCardHeaderIcon
                 IconComponent={FanIcon}
@@ -498,6 +503,8 @@ export const FanCard = memo(function FanCard({
                 size={isSmall ? resolvedSize : 'medium'}
                 tone={isOn ? 'primary' : 'neutral'}
                 baseColor={surfaceTokens.contentAccentColor}
+                themeOverride={effectiveTheme}
+                inverseSurface={useInverseForeground}
                 ariaLabel={cardInteraction.iconButtonProps['aria-label']}
                 onClick={cardInteraction.iconButtonProps.onClick}
               />
@@ -519,7 +526,7 @@ export const FanCard = memo(function FanCard({
                   labelKey="lighting.fanSpeed"
                 />
                 <CardActionRow
-                  theme={theme}
+                  theme={effectiveTheme}
                   size={isSmall ? 'small' : 'medium'}
                   leftContent={
                     hasActionRowButtons ? (
@@ -536,7 +543,11 @@ export const FanCard = memo(function FanCard({
                             }}
                             style={
                               isOn && directionIsReverse
-                                ? getBrightnessPresetSelectedStyle(theme, activeSpeedColor, isOn)
+                                ? getBrightnessPresetSelectedStyle(
+                                    effectiveTheme,
+                                    activeSpeedColor,
+                                    isOn
+                                  )
                                 : undefined
                             }
                             className={`${actionSize.button} relative flex shrink-0 items-center justify-center rounded-full transition-all duration-300 ${
@@ -568,7 +579,11 @@ export const FanCard = memo(function FanCard({
                             }}
                             style={
                               isOn && fanOscillating
-                                ? getBrightnessPresetSelectedStyle(theme, activeSpeedColor, isOn)
+                                ? getBrightnessPresetSelectedStyle(
+                                    effectiveTheme,
+                                    activeSpeedColor,
+                                    isOn
+                                  )
                                 : undefined
                             }
                             className={`${actionSize.button} relative flex shrink-0 items-center justify-center rounded-full transition-all duration-300 ${
@@ -602,7 +617,7 @@ export const FanCard = memo(function FanCard({
                                   style={
                                     active
                                       ? getBrightnessPresetSelectedStyle(
-                                          theme,
+                                          effectiveTheme,
                                           activeSpeedColor,
                                           isOn
                                         )
@@ -633,6 +648,7 @@ export const FanCard = memo(function FanCard({
                             isOn={isOn}
                             isSmall={isSmall}
                             onSelect={updateSpeedPreset}
+                            theme={effectiveTheme}
                           />
                         ) : null}
                       </CardActionRowGroup>
@@ -643,7 +659,7 @@ export const FanCard = memo(function FanCard({
                       <div className="relative z-[3]">
                         <CardSettingsActionButton
                           {...cardInteraction.settingsButtonProps}
-                          theme={theme}
+                          theme={effectiveTheme}
                           size={isSmall ? 'small' : 'medium'}
                           tone={isOn ? 'default' : 'muted'}
                           variant="soft"
@@ -655,14 +671,14 @@ export const FanCard = memo(function FanCard({
               </>
             ) : showsSettingsButton ? (
               <CardActionRow
-                theme={theme}
+                theme={effectiveTheme}
                 size={isSmall ? 'small' : 'medium'}
                 rightContent={
                   showsSettingsButton ? (
                     <div className="relative z-[3]">
                       <CardSettingsActionButton
                         {...cardInteraction.settingsButtonProps}
-                        theme={theme}
+                        theme={effectiveTheme}
                         size={isSmall ? 'small' : 'medium'}
                         tone={isOn ? 'default' : 'muted'}
                         variant="soft"

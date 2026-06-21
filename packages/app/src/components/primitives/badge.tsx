@@ -48,7 +48,14 @@ export function Badge({ tone = 'neutral', size = 'default', className, children 
       )}
       style={
         tone === 'accent'
-          ? { backgroundColor: `${accentColor}1f`, borderColor: `${accentColor}40` }
+          ? theme === 'light'
+            ? {
+                backgroundColor: '#ffffff',
+                borderColor: `${accentColor}80`,
+                color: '#0f172a',
+                boxShadow: `0 10px 24px -18px ${accentColor}40, inset 0 1px 0 rgba(255,255,255,0.72)`,
+              }
+            : { backgroundColor: `${accentColor}1f`, borderColor: `${accentColor}40` }
           : undefined
       }
     >

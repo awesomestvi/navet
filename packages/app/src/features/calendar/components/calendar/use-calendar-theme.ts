@@ -1,5 +1,5 @@
 import { getCardReadableTextTokens } from '@navet/app/components/shared/theme/card-readable-text-tokens';
-import { type ThemeType, useTheme } from '@navet/app/hooks';
+import type { ThemeType } from '@navet/app/hooks';
 
 interface CalendarThemeColors {
   textPrimary: string;
@@ -14,16 +14,19 @@ interface CalendarThemeColors {
   moreEventsColor: string;
 }
 
-export function useCalendarTheme(theme: ThemeType, baseColor?: string | null): CalendarThemeColors {
-  const { accentColor } = useTheme();
+export function useCalendarTheme(
+  theme: ThemeType,
+  backgroundColor?: string,
+  tintTextPrimary?: string,
+  tintTextSecondary?: string
+): CalendarThemeColors {
   const textTokens = getCardReadableTextTokens({
     theme,
-    tone: baseColor ? 'primary' : 'indigo',
-    accentColor,
-    baseColor,
+    tone: 'neutral',
+    backgroundColor,
   });
-  const textPrimary = textTokens.titleColor;
-  const textSecondary = textTokens.subtitleColor;
+  const textPrimary = tintTextPrimary ?? textTokens.titleColor;
+  const textSecondary = tintTextSecondary ?? textTokens.subtitleColor;
   const overlayBg =
     theme === 'light'
       ? 'bg-white/60 backdrop-blur-sm'
@@ -41,8 +44,9 @@ export function useCalendarTheme(theme: ThemeType, baseColor?: string | null): C
   const dividerColor = theme === 'light' ? 'bg-gray-200' : 'bg-white/12';
   const hoverBg = theme === 'light' ? 'hover:bg-gray-100/80' : 'hover:bg-white/5';
   const hoverText = '';
-  const dotColor = theme === 'light' ? 'text-slate-400' : 'text-white/72';
-  const moreEventsColor = theme === 'light' ? 'text-slate-600' : 'text-white/78';
+  const dotColor = theme === 'light' ? 'text-slate-400' : backgroundColor ? '' : 'text-white/72';
+  const moreEventsColor =
+    theme === 'light' ? 'text-slate-600' : backgroundColor ? '' : 'text-white/78';
 
   return {
     textPrimary,

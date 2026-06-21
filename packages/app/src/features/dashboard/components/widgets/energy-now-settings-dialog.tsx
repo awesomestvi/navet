@@ -1,7 +1,9 @@
-import { CardDialogChoicePill, CardDialogSection } from '@navet/app/components/patterns';
+import { CardDialogSection } from '@navet/app/components/patterns';
 import { BaseCardDialogWithState } from '@navet/app/components/primitives';
+import { normalizeCustomCardTint } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { getEnergyNowWidgetSurfaceTokens } from '@navet/app/components/shared/theme/energy-widget-surface-tokens';
-import { useI18n } from '@navet/app/hooks';
+import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
+import { useI18n, useTheme } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { Bolt } from 'lucide-react';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
@@ -45,6 +47,7 @@ export function EnergyNowSettingsDialog({
   theme,
 }: EnergyNowSettingsDialogProps) {
   const { t } = useI18n();
+  const { primaryColor } = useTheme();
   const groupedOptions = [
     {
       key: 'home',
@@ -67,6 +70,8 @@ export function EnergyNowSettingsDialog({
   const energySurface = getEnergyNowWidgetSurfaceTokens(theme);
   const selectedId = selectedSourceId;
   const optionFill = baseSurface.subtleFill;
+  const accentHex = normalizeCustomCardTint(tintColor) ?? getThemeColorValue(primaryColor);
+  const accentBorderColor = `${accentHex}4d`;
   const roomSelector =
     roomValue && roomLabel && roomOptions
       ? {
@@ -96,18 +101,18 @@ export function EnergyNowSettingsDialog({
                 {group.items.map((option) => {
                   const isSelected = option.id === selectedId;
                   return (
-                    <CardDialogChoicePill
+                    <button
+                      type="button"
                       key={option.id}
                       onClick={() => {
                         onSelectionChange?.(option.id);
                       }}
-                      active={isSelected}
-                      size="compact"
                       className={`flex h-auto min-h-[4.25rem] w-full items-start justify-start gap-3 rounded-2xl border px-3 py-3.5 text-left md:h-auto md:min-h-[4.25rem] ${surface.borderClassName} ${surface.textPrimary}`}
                       style={{
                         background: optionFill,
-                        borderColor: isSelected ? 'rgba(255,255,255,0.22)' : undefined,
+                        borderColor: isSelected ? accentBorderColor : undefined,
                       }}
+                      aria-pressed={isSelected}
                     >
                       <div
                         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border ${surface.borderClassName}`}
@@ -125,7 +130,7 @@ export function EnergyNowSettingsDialog({
                             : `${option.todayUsageKWh.toFixed(1)} kWh`}
                         </div>
                       </div>
-                    </CardDialogChoicePill>
+                    </button>
                   );
                 })}
               </div>

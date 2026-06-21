@@ -7,7 +7,6 @@ describe('MarketingPrivacySection', () => {
   it('renders the privacy headline, supporting copy, and proof pills', () => {
     renderWithProviders(<MarketingPrivacySection />);
 
-    expect(screen.getByText('PRIVACY')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Local by default.' })).toBeInTheDocument();
     expect(
       screen.getByText(

@@ -153,34 +153,38 @@ function getSeverityAccentClassName(device: DeviceWithType, severity: SecuritySe
   }
 }
 
-function getSeverityStatusClassName(device: DeviceWithType, severity: SecuritySeverity) {
+function getSeverityStatusClassName(
+  device: DeviceWithType,
+  severity: SecuritySeverity,
+  theme: ThemeType
+) {
   if (device.type === 'locks' && device.state === false) {
-    return 'text-red-300';
+    return theme === 'light' ? 'text-red-700' : 'text-red-300';
   }
 
   if (severity === 'critical' && device.securityKind === 'siren') {
-    return 'text-red-400';
+    return theme === 'light' ? 'text-red-700' : 'text-red-400';
   }
 
   switch (severity) {
     case 'critical':
-      return 'text-rose-300';
+      return theme === 'light' ? 'text-rose-700' : 'text-rose-300';
     case 'warning':
-      return 'text-red-300';
+      return theme === 'light' ? 'text-red-700' : 'text-red-300';
     case 'unknown':
-      return 'text-zinc-300';
+      return theme === 'light' ? 'text-slate-600' : 'text-zinc-300';
     default:
       return '';
   }
 }
 
-function getSecureStatusClassName() {
-  return 'text-green-300';
+function getSecureStatusClassName(theme: ThemeType) {
+  return theme === 'light' ? 'text-emerald-800' : 'text-green-300';
 }
 
-function getLiveStatusClassName(device: DeviceWithType) {
+function getLiveStatusClassName(device: DeviceWithType, theme: ThemeType) {
   if (device.type === 'cameras' || device.securityKind === 'camera') {
-    return 'text-emerald-300';
+    return theme === 'light' ? 'text-emerald-800' : 'text-emerald-300';
   }
 
   if (
@@ -190,7 +194,7 @@ function getLiveStatusClassName(device: DeviceWithType) {
     device.securityKind === 'vibration' ||
     device.securityKind === 'sound'
   ) {
-    return 'text-amber-200';
+    return theme === 'light' ? 'text-amber-900' : 'text-amber-200';
   }
 
   return '';
@@ -492,16 +496,30 @@ function StatusBanner({
 }
 
 function NowStatusBadges({ model }: { model: CameraDashboardModel['summary'] }) {
+  const { theme } = useTheme();
   const needsAttention = model.attentionEntityCount;
   const primaryBadge =
     needsAttention > 0 ? (
       <Badge tone="danger">{needsAttention} to check</Badge>
     ) : needsAttention === 0 && model.secureItems.length > 0 ? (
-      <Badge tone="success">{model.secureItems.length} secure</Badge>
+      <Badge
+        tone="success"
+        className={
+          theme === 'light' ? 'border-emerald-300/90 bg-emerald-100/95 text-emerald-800' : ''
+        }
+      >
+        {model.secureItems.length} secure
+      </Badge>
     ) : null;
   const liveBadge =
     model.liveItems.length > 0 ? (
-      <Badge className="border-sky-400/30 bg-sky-500/10 text-sky-100">
+      <Badge
+        className={
+          theme === 'light'
+            ? 'border-sky-300/90 bg-sky-100/95 text-sky-800'
+            : 'border-sky-400/30 bg-sky-500/10 text-sky-100'
+        }
+      >
         {model.liveItems.length} live
       </Badge>
     ) : null;
@@ -622,7 +640,11 @@ function CompactEntityRow({
     <>
       <AttentionPulseDot device={device} severity={severity} animated={animateAttention} />
       {thumbnailUrl ? (
-        <div className="h-8 w-12 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black/20">
+        <div
+          className={`h-8 w-12 shrink-0 overflow-hidden rounded-xl border ${
+            theme === 'light' ? 'border-slate-300/70 bg-white/45' : 'border-white/10 bg-black/20'
+          }`}
+        >
           <img
             src={thumbnailUrl}
             alt=""
@@ -668,11 +690,11 @@ function CompactEntityRow({
       <span
         className={`shrink-0 text-[10px] font-medium uppercase tracking-[0.14em] ${
           emphasizeStatusBySeverity
-            ? getSeverityStatusClassName(device, severity)
+            ? getSeverityStatusClassName(device, severity, theme)
             : emphasizeStatusByActivity
-              ? getLiveStatusClassName(device)
+              ? getLiveStatusClassName(device, theme)
               : emphasizeStatusBySecure
-                ? getSecureStatusClassName()
+                ? getSecureStatusClassName(theme)
                 : surface.textMuted
         }`}
       >

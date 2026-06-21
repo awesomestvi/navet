@@ -88,6 +88,8 @@ export function InfoWidget({
   const emptyTitle = t('dashboard.addCard.templates.info.name');
   const emptyDescription = t('dashboard.addCard.templates.info.description');
   const defaultCardName = t('dashboard.addCard.templates.info.name');
+  const usesSingleSensorPicker = data?.sensorCategoryFilter === 'energy';
+  const maxSelectableSensors = usesSingleSensorPicker ? 1 : MAX_INFO_WIDGET_SENSORS;
   const resolvedCardName =
     data?.name?.trim() ||
     (currentSensors.length === 1
@@ -141,7 +143,7 @@ export function InfoWidget({
             roomLabel={roomLabel}
             roomOptions={roomOptions}
             currentSensors={[]}
-            maxSensors={MAX_INFO_WIDGET_SENSORS}
+            maxSensors={maxSelectableSensors}
             accentColor={accentColor}
             availableSensors={availableSensors}
             showRoomSelector={showRoomSelector}
@@ -187,6 +189,8 @@ export function InfoWidget({
           onNameChange={handleNameChange}
           onRoomChange={onRoomChange}
           onSensorsUpdate={handleSensorsUpdate}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          disableBuiltInSettingsDialog
         />
       )}
 
@@ -200,7 +204,7 @@ export function InfoWidget({
           roomLabel={roomLabel}
           roomOptions={roomOptions}
           currentSensors={currentSensors}
-          maxSensors={MAX_INFO_WIDGET_SENSORS}
+          maxSensors={maxSelectableSensors}
           accentColor={accentColor}
           availableSensors={availableSensors}
           showRoomSelector={showRoomSelector}

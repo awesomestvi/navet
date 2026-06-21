@@ -12,6 +12,7 @@ import {
 import { getCardShellSurfaceTokens } from '@navet/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceStyleTokens } from '@navet/app/components/shared/theme/card-state-surface-tokens';
 import { getEntityIconPillStyles } from '@navet/app/components/shared/theme/entity-icon-pill-styles';
+import { getLightCardSurfaceTokens } from '@navet/app/components/shared/theme/light-card-surface-tokens';
 import { readNavetLockState } from '@navet/app/core/navet-device-state';
 import {
   useI18n,
@@ -128,6 +129,17 @@ export const LockCard = memo(function LockCard({
           : 'text-red-300';
   const headerTone = displayIsLocked ? 'green' : 'red';
   const activeBaseColor = resolveCardToneBaseColor({ tone: headerTone });
+  const effectiveTheme = theme === 'light' ? 'dark' : theme;
+  const useInverseForeground = theme === 'light';
+  const lockAccentColor = displayIsLocked ? '#22c55e' : '#ef4444';
+  const lightThemeSurfaceTokens = getLightCardSurfaceTokens({
+    isOn: true,
+    selectedColor: null,
+    currentColor: lockAccentColor,
+    theme,
+    lightColors: colors.light,
+    accentColor: activeBaseColor,
+  });
   const blackActiveSurface =
     theme === 'black'
       ? getCardStateSurfaceStyleTokens({
@@ -179,8 +191,9 @@ export const LockCard = memo(function LockCard({
   const overlayTintClassName = securitySurface.lockCardOverlay;
   const heroPlateClassName =
     theme === 'light'
-      ? 'border-black/8 bg-white/56 shadow-[0_18px_36px_-24px_rgba(15,23,42,0.36)]'
+      ? 'border-slate-200 bg-white shadow-[0_18px_36px_-24px_rgba(15,23,42,0.22)]'
       : 'border-white/10 bg-black/18 shadow-[0_18px_36px_-24px_rgba(0,0,0,0.66)]';
+  const heroInnerRingClassName = theme === 'light' ? 'border-slate-200/80' : 'border-white/10';
   const headerLeading = (
     <EntityCardHeaderIcon
       IconComponent={IconComponent}
@@ -188,6 +201,8 @@ export const LockCard = memo(function LockCard({
       size={resolvedSize}
       tone={headerTone}
       baseColor={activeBaseColor}
+      themeOverride={effectiveTheme}
+      inverseSurface={useInverseForeground}
     />
   );
   const headerTitleClassName = displayIsLocked
@@ -196,14 +211,19 @@ export const LockCard = memo(function LockCard({
   const headerSubtitleClassName = displayIsLocked
     ? stateIconClassName
     : `${securitySurface.lockStatusSubtext} font-semibold uppercase tracking-[0.16em]`;
+  const headerTitleStyle = useInverseForeground ? { color: '#ffffff' } : undefined;
+  const headerSubtitleStyle = useInverseForeground
+    ? { color: 'rgba(255,255,255,0.76)' }
+    : undefined;
   const slideThumbTokens = getEntityIconPillStyles({
     isActive: true,
     isInteractive: false,
     primaryColor: 'custom',
     baseColor: activeBaseColor,
     size: resolvedSize,
-    theme,
+    theme: effectiveTheme,
     tone: headerTone,
+    inverseSurface: useInverseForeground,
   });
   const slideLabelTokens = getCardReadableTextTokens({
     theme,
@@ -215,22 +235,38 @@ export const LockCard = memo(function LockCard({
     <BaseCard
       size="small"
       className={`${isPendingAction ? 'opacity-80' : ''}`}
-      frameClassName={`${cardShell.rootFrameClassName} bg-linear-to-br ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName}`}
-      style={displayIsLocked && blackActiveSurface ? blackActiveSurface.cardStyle : undefined}
+      frameClassName={
+        theme === 'light'
+          ? `${cardShell.rootFrameClassName} ${lightThemeSurfaceTokens.cardClassName}`
+          : `${cardShell.rootFrameClassName} bg-linear-to-br ${cardColors.gradient} ${cardColors.border} ${securitySurface.containerShadowClassName}`
+      }
+      style={
+        theme === 'light'
+          ? lightThemeSurfaceTokens.cardStyle
+          : displayIsLocked && blackActiveSurface
+            ? blackActiveSurface.cardStyle
+            : undefined
+      }
       disableDefaultSheen
       overlay={
         <>
-          <div
-            className={`absolute inset-0 bg-linear-to-b ${cardColors.glow} via-transparent to-transparent transition-all duration-500`}
-          />
-          {displayIsLocked && blackActiveSurface?.innerOverlayClassName ? (
+          {theme === 'light' ? null : (
+            <div
+              className={`absolute inset-0 bg-linear-to-b ${cardColors.glow} via-transparent to-transparent transition-all duration-500`}
+            />
+          )}
+          {theme === 'light' ? null : displayIsLocked &&
+            blackActiveSurface?.innerOverlayClassName ? (
             <div
               className={blackActiveSurface.innerOverlayClassName}
               style={blackActiveSurface.innerOverlayStyle}
             />
           ) : null}
-          <div className={`absolute inset-0 ${overlayTintClassName}`} />
-          {displayIsLocked && blackActiveSurface?.shineOverlayClassName ? (
+          {theme === 'light' ? null : (
+            <div className={`absolute inset-0 ${overlayTintClassName}`} />
+          )}
+          {theme === 'light' ? null : displayIsLocked &&
+            blackActiveSurface?.shineOverlayClassName ? (
             <div className={blackActiveSurface.shineOverlayClassName} />
           ) : null}
         </>
@@ -247,6 +283,8 @@ export const LockCard = memo(function LockCard({
           leading={headerLeading}
           titleClassName={`${topNameClassName} ${headerTitleClassName}`}
           subtitleClassName={headerSubtitleClassName}
+          titleStyle={headerTitleStyle}
+          subtitleStyle={headerSubtitleStyle}
           className="mb-1.5"
         />
 
@@ -257,7 +295,7 @@ export const LockCard = memo(function LockCard({
             <div
               className={`absolute inset-0 rounded-full bg-linear-to-br ${cardColors.glow} to-transparent`}
             />
-            <div className="absolute inset-[8px] rounded-full border border-white/10" />
+            <div className={`absolute inset-[8px] rounded-full border ${heroInnerRingClassName}`} />
             <div className={`absolute inset-[14px] rounded-full ${securitySurface.lockButtonBg}`} />
             {isPendingAction ? (
               <Loader2 className={`relative h-6.5 w-6.5 animate-spin ${stateIconClassName}`} />
@@ -275,8 +313,10 @@ export const LockCard = memo(function LockCard({
             disabled={isEditMode || isPendingAction}
             labelStyle={{ color: slideLabelTokens.titleColor }}
             onComplete={handleToggleLock}
+            progressFillClassName={securitySurface.lockSliderFillBg}
             size="small"
             theme={theme}
+            trackClassName={securitySurface.sliderTrackClassName}
             thumbClassName={slideThumbTokens.badgeClassName}
             thumbIconClassName={slideThumbTokens.iconClassName}
             thumbIconStyle={slideThumbTokens.iconStyle}

@@ -19,6 +19,7 @@ export const SensorGroupSettingsContainer = memo(function SensorGroupSettingsCon
   accentColor,
   availableSensors,
   showRoomSelector = true,
+  closeOnSelect = false,
   onNameChange,
   onRoomChange,
   onSensorsUpdate,
@@ -31,6 +32,7 @@ export const SensorGroupSettingsContainer = memo(function SensorGroupSettingsCon
     onClose,
     onSensorsUpdate,
     availableSensors,
+    closeOnSelect,
   });
 
   return (

@@ -102,4 +102,22 @@ describe('SlideAction', () => {
     expect(button.style.getPropertyValue('--slide-knob-offset')).toBe('0px');
     expect(button.style.getPropertyValue('--slide-motion-duration')).toBe('620ms');
   });
+
+  it('renders custom track and fill classes when provided', () => {
+    render(
+      <SlideAction
+        actionLabel="Slide to unlock"
+        ariaLabel="Slide to unlock"
+        onComplete={vi.fn()}
+        progressFillClassName="bg-emerald-100"
+        size="small"
+        theme="light"
+        trackClassName="border-slate-300 bg-slate-100"
+      />
+    );
+
+    const button = screen.getByRole('button', { name: 'Slide to unlock' });
+    expect(button.className).toContain('bg-slate-100');
+    expect(button.firstElementChild?.className).toContain('bg-emerald-100');
+  });
 });

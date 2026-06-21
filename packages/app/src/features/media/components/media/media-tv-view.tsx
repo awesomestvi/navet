@@ -314,7 +314,6 @@ export function MediaTvView({
       isSmallTvCard={isSmallTvCard}
       constrainCardWidth={constrainCardSourceSelector}
       compactCardSelector={isCompactCardSourceSelector}
-      hideBadge={isSmallTvCard}
       theme={theme}
       panelStyle={panelStyle}
       tvTextTokens={tvTextTokens}

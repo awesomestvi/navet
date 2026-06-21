@@ -4,6 +4,7 @@ import {
   getAppReleaseBadgeLabel,
   isAppPreV1,
 } from '@navet/app/constants/app-build-metadata';
+import { APP_VERSION } from '@navet/app/constants/app-version';
 import { describe, expect, it } from 'vitest';
 
 describe('APP_BUILD_METADATA', () => {
@@ -13,7 +14,7 @@ describe('APP_BUILD_METADATA', () => {
       gitShaShort: 'test-sh',
       buildDate: '2026-01-01T00:00:00.000Z',
       releaseChannel: 'development',
-      buildVersion: '0.7.0',
+      buildVersion: APP_VERSION,
       dashboardConfigVersion: 3,
     });
   });
@@ -33,7 +34,7 @@ describe('APP_BUILD_METADATA', () => {
     expect(getAppBuildChannelLabel()).toBe('Dev');
   });
 
-  it('uses stable as the fallback build label for stable versions', () => {
-    expect(getAppBuildChannelLabel('1.0.0')).toBe('Stable');
+  it('keeps the development build label when the injected release channel is development', () => {
+    expect(getAppBuildChannelLabel('1.0.0')).toBe('Dev');
   });
 });

@@ -15,13 +15,6 @@ interface RSSFeedCardViewProps {
   onSizeChange?: (size: CardSize) => void;
   theme: ThemeType;
   accentColor: string;
-  colors: {
-    rss: {
-      gradient: string;
-      border: string;
-      glow: string;
-    };
-  };
   tintColor?: string;
   isSmall: boolean;
   isMedium: boolean;
@@ -44,7 +37,6 @@ export function RSSFeedCardView({
   onSizeChange: _onSizeChange,
   theme,
   accentColor,
-  colors,
   tintColor,
   isSmall,
   isMedium,
@@ -66,7 +58,7 @@ export function RSSFeedCardView({
   const hasCustomTint = Boolean(rssSurface.resolvedTintColor);
   const controlAccentColor = rssSurface.resolvedTintColor ?? rssSurface.accentColor.base;
   const isEmpty = !latestArticle && !isLoading;
-  const shouldUseCustomCardSurface = theme === 'light' || hasCustomTint;
+  const shouldUseCustomCardSurface = hasCustomTint;
   const isGlassTheme = theme === 'glass';
 
   return (
@@ -77,14 +69,9 @@ export function RSSFeedCardView({
         ${rssSurface.containerShadowClassName}
         ${!inEditMode ? 'cursor-default' : ''}
       `}
-      frameClassName={
-        shouldUseCustomCardSurface
-          ? `${rssSurface.surface.panel} ${!hasCustomTint ? colors.rss.border : ''}`
-          : undefined
-      }
+      frameClassName={shouldUseCustomCardSurface ? rssSurface.surface.panel : undefined}
       style={shouldUseCustomCardSurface ? rssSurface.cardStyle : undefined}
       disableDefaultSheen={!isGlassTheme}
-      disableDefaultLightOverlay
       overlay={
         <>
           {shouldUseCustomCardSurface && rssSurface.glowStyle ? (
@@ -97,19 +84,6 @@ export function RSSFeedCardView({
             <div
               className={`pointer-events-none absolute inset-0 rounded-[inherit] ${rssSurface.overlayClassName}`}
             />
-          ) : null}
-          {theme === 'light' && !hasCustomTint ? (
-            <>
-              <div
-                className={`pointer-events-none absolute inset-0 rounded-[inherit] bg-linear-to-br ${colors.rss.gradient} opacity-45`}
-              />
-              <div
-                className={`pointer-events-none absolute inset-0 rounded-[inherit] bg-linear-to-br ${colors.rss.glow} to-transparent opacity-65`}
-              />
-              {rssSurface.surface.lightOverlay ? (
-                <div className={`absolute inset-0 ${rssSurface.surface.lightOverlay}`} />
-              ) : null}
-            </>
           ) : null}
         </>
       }
@@ -149,6 +123,7 @@ export function RSSFeedCardView({
                 size={chromeSize === 'small' ? 'small' : 'medium'}
                 variant="soft"
                 accentColor={controlAccentColor}
+                disableHoverEffects
                 aria-label={t('rss.configureProviders')}
                 className="shrink-0"
                 onClick={(event) => {

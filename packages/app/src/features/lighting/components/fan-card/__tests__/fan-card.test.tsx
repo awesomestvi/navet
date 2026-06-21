@@ -242,7 +242,8 @@ describe('FanCard', () => {
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getAllByText('Ceiling Fan').length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: 'Customize' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Done' })).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Fan')).toBeInTheDocument();
   });
 
   it('hides speed presets, slider, and settings when fan speed is unsupported', () => {

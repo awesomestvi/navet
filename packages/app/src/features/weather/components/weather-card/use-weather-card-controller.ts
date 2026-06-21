@@ -49,12 +49,18 @@ export function useWeatherCardController({
       }
     : undefined;
 
-  const textTokens = getCardReadableTextTokens({
-    theme,
-    tone: 'blue',
-    accentColor,
-    baseColor: tintColor,
-  });
+  const textTokens =
+    hasCustomTint && tintSurface.textPrimaryColor && tintSurface.textSecondaryColor
+      ? {
+          titleColor: tintSurface.textPrimaryColor,
+          subtitleColor: tintSurface.textSecondaryColor,
+        }
+      : getCardReadableTextTokens({
+          theme,
+          tone: 'blue',
+          accentColor,
+          baseColor: tintColor,
+        });
   const isGlass = theme === 'glass';
   const shell = getAccentCardShellTokens(theme, 'blue');
   const weatherShellClassName = hasCustomTint ? '' : shell.containerClassName;

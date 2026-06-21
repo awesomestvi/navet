@@ -38,6 +38,12 @@ export const EnergyNowCardView = memo(function EnergyNowCardView({
   const surface = getThemeSurfaceTokens(theme);
   const stateSurface = getCardStateSurfaceTokens(theme, false);
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
+  const textPrimaryClassName = tintSurface.textPrimaryColor
+    ? ''
+    : stateSurface.primaryTextClassName;
+  const textSecondaryClassName = tintSurface.textSecondaryColor
+    ? ''
+    : stateSurface.mutedTextClassName;
   const isSmall = size === 'small';
   const isMedium = size === 'medium';
   const hasSparklineData = trend.length >= 2;
@@ -134,8 +140,16 @@ export const EnergyNowCardView = memo(function EnergyNowCardView({
               layout="eyebrow-first"
               className="mb-0"
               marginBottomClassName="mb-0"
-              titleClassName={stateSurface.primaryTextClassName}
-              subtitleClassName={stateSurface.mutedTextClassName}
+              titleClassName={textPrimaryClassName}
+              subtitleClassName={textSecondaryClassName}
+              titleStyle={
+                tintSurface.textPrimaryColor ? { color: tintSurface.textPrimaryColor } : undefined
+              }
+              subtitleStyle={
+                tintSurface.textSecondaryColor
+                  ? { color: tintSurface.textSecondaryColor }
+                  : undefined
+              }
               leading={
                 <EntityCardHeaderIcon
                   IconComponent={Zap}
@@ -151,22 +165,39 @@ export const EnergyNowCardView = memo(function EnergyNowCardView({
             label={`${todayUsageKWh.toFixed(1)} kWh`}
             size={isSmall ? 'sm' : isMedium ? 'lg' : 'xl'}
             isActive
-            accentClassName={surface.textPrimary}
+            accentClassName={tintSurface.textPrimaryColor ? '' : surface.textPrimary}
             theme={theme}
             className="shrink-0 text-right"
-            labelClassName={theme === 'light' ? 'text-emerald-600' : 'text-emerald-400'}
+            labelClassName={
+              tintSurface.textSecondaryColor
+                ? ''
+                : theme === 'light'
+                  ? 'text-emerald-600'
+                  : 'text-emerald-400'
+            }
             valueStyle={{
+              color: tintSurface.textPrimaryColor,
               fontSize: isSmall ? '1.25rem' : isMedium ? '1.45rem' : '1.7rem',
               lineHeight: 1,
               letterSpacing: '-0.03em',
             }}
+            labelStyle={
+              tintSurface.textSecondaryColor ? { color: tintSurface.textSecondaryColor } : undefined
+            }
           />
         </div>
 
         {hasSparklineData ? (
           <div className="mt-auto">
             <div
-              className={`mt-3 flex items-center justify-between gap-2 text-xs ${surface.textMuted}`}
+              className={`mt-3 flex items-center justify-between gap-2 text-xs ${
+                tintSurface.textSecondaryColor ? '' : surface.textMuted
+              }`}
+              style={
+                tintSurface.textSecondaryColor
+                  ? { color: tintSurface.textSecondaryColor }
+                  : undefined
+              }
             >
               {trendTicks.map((point, index) => (
                 <div

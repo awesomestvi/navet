@@ -22,13 +22,13 @@ export function getRSSFeedCardSurfaceTokens(
   };
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const resolvedTintColor = normalizeCustomCardTint(tintColor);
-  const useNeutralGlassText = theme === 'glass' && !resolvedTintColor;
-  const readableBaseColor = resolvedTintColor ?? accentColor.base;
   const textTokens = getCardReadableTextTokens({
     theme,
-    tone: useNeutralGlassText ? 'neutral' : 'orange',
-    baseColor: useNeutralGlassText ? undefined : readableBaseColor,
+    tone: 'neutral',
+    backgroundColor: tintSurface.backgroundColor,
   });
+  const textPrimaryColor = tintSurface.textPrimaryColor ?? textTokens.titleColor;
+  const textSecondaryColor = tintSurface.textSecondaryColor ?? textTokens.subtitleColor;
 
   return {
     surface,
@@ -36,8 +36,8 @@ export function getRSSFeedCardSurfaceTokens(
     resolvedTintColor,
     cardStyle: tintSurface.panelStyle,
     glowStyle: tintSurface.glowStyle,
-    textPrimaryColor: textTokens.titleColor,
-    textSecondaryColor: textTokens.subtitleColor,
+    textPrimaryColor,
+    textSecondaryColor,
     containerShadowClassName: '',
     overlayClassName:
       tintSurface.overlayClassName ??
@@ -49,19 +49,19 @@ export function getRSSFeedCardSurfaceTokens(
     dotClassName: theme === 'light' ? 'text-gray-400' : 'text-white/65',
     metadataSourceColor:
       theme === 'light'
-        ? withTintAlpha(accentColor.strong, 0.8)
-        : withTintAlpha(textTokens.subtitleColor, resolvedTintColor ? 0.78 : 0.82),
+        ? withTintAlpha(textSecondaryColor, 0.82)
+        : withTintAlpha(textSecondaryColor, resolvedTintColor ? 0.78 : 0.82),
     metadataTimeColor:
       theme === 'light'
-        ? withTintAlpha(textTokens.subtitleColor, 0.72)
-        : withTintAlpha(textTokens.subtitleColor, resolvedTintColor ? 0.62 : 0.7),
+        ? withTintAlpha(textSecondaryColor, 0.72)
+        : withTintAlpha(textSecondaryColor, resolvedTintColor ? 0.62 : 0.7),
     excerptClassName: '',
     excerptColor:
       theme === 'light'
-        ? withTintAlpha(textTokens.subtitleColor, 0.82)
-        : withTintAlpha(textTokens.subtitleColor, resolvedTintColor ? 0.72 : 0.78),
+        ? withTintAlpha(textSecondaryColor, 0.82)
+        : withTintAlpha(textSecondaryColor, resolvedTintColor ? 0.72 : 0.78),
     readMoreClassName: '',
-    readMoreColor: textTokens.subtitleColor,
+    readMoreColor: textSecondaryColor,
     iconWrapClassName: '',
     iconBackgroundColor:
       resolvedTintColor && theme !== 'light'
@@ -69,15 +69,13 @@ export function getRSSFeedCardSurfaceTokens(
         : theme === 'light'
           ? accentColor.soft
           : `${accentColor.base}33`,
-    iconColor: theme === 'light' ? readableBaseColor : '#ffffff',
+    iconColor: theme === 'light' ? textPrimaryColor : '#ffffff',
     sourceColor:
       resolvedTintColor && theme !== 'light'
-        ? withTintAlpha(resolvedTintColor, 0.88)
+        ? withTintAlpha(textSecondaryColor, 0.82)
         : theme === 'light'
-          ? accentColor.strong
-          : useNeutralGlassText
-            ? withTintAlpha(textTokens.subtitleColor, 0.78)
-            : accentColor.soft,
+          ? withTintAlpha(textSecondaryColor, 0.82)
+          : withTintAlpha(textSecondaryColor, 0.78),
     thumbnailClassName:
       theme === 'light' ? 'bg-gray-100' : theme === 'glass' ? 'bg-white/8' : 'bg-zinc-800',
   };

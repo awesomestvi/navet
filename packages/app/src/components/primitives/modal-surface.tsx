@@ -48,7 +48,7 @@ export function ModalSurface({
       title={title}
       description={description}
       theme={theme}
-      overlayClassName={overlayClassName ?? 'animate-in fade-in bg-black/55 backdrop-blur-sm'}
+      overlayClassName={overlayClassName}
       disableOpenAutoFocus={disableOpenAutoFocus}
       contentClassName={cn(getUiKitModalContentClassName(theme), contentClassName)}
       contentStyle={contentStyle}

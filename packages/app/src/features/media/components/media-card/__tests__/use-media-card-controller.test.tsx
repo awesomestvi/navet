@@ -159,7 +159,7 @@ describe('useMediaCardController', () => {
     expect(dispatchEntityCommandMock).not.toHaveBeenCalled();
   });
 
-  it('uses media player play-pause for Samsung TV playback while keeping Samsung remote commands', () => {
+  it('uses the remote companion command mappings for TV playback and navigation', async () => {
     setMediaEntities(true);
     entitiesState.entityRegistry = [
       { entityId: 'media_player.kitchen', platform: 'samsungtv' },
@@ -168,15 +168,20 @@ describe('useMediaCardController', () => {
 
     const { result } = renderHookWithProviders(() => useMediaCardController(defaultParams));
 
-    act(() => result.current.togglePlay());
-    expect(dispatchEntityCommandMock).toHaveBeenCalledWith({
-      entityId: 'media_player.kitchen',
-      type: 'play_pause',
+    await act(async () => {
+      result.current.togglePlay();
+      await Promise.resolve();
     });
-    expect(serviceMock.sendRemoteCommand).not.toHaveBeenCalled();
+    expect(serviceMock.sendRemoteCommand).toHaveBeenCalledWith(
+      'remote.kitchen',
+      'MEDIA_PLAY_PAUSE'
+    );
 
-    act(() => result.current.sendRemoteCommand('select'));
-    expect(serviceMock.sendRemoteCommand).toHaveBeenCalledWith('remote.kitchen', 'KEY_ENTER');
+    await act(async () => {
+      result.current.sendRemoteCommand('select');
+      await Promise.resolve();
+    });
+    expect(serviceMock.sendRemoteCommand).toHaveBeenCalledWith('remote.kitchen', 'DPAD_CENTER');
   });
 
   it('exposes capability-driven media actions from supported feature flags', () => {

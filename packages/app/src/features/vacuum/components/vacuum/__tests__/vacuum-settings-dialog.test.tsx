@@ -292,7 +292,8 @@ describe('VacuumSettingsDialog', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Map' }));
     fireEvent.click(screen.getByRole('button', { name: /^Kitchen/ }));
-    expect(screen.getByLabelText('Reorder Kitchen')).toBeInTheDocument();
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
+    expect(screen.getByText('Stop 1')).toBeInTheDocument();
 
     rerender(
       <VacuumSettingsDialog
@@ -330,7 +331,7 @@ describe('VacuumSettingsDialog', () => {
       />
     );
 
-    expect(screen.queryByLabelText('Reorder Kitchen')).not.toBeInTheDocument();
+    expect(screen.queryByText('Stop 1')).not.toBeInTheDocument();
   });
 
   it('does not add a nested scroll region to the selected areas section', () => {
@@ -374,7 +375,7 @@ describe('VacuumSettingsDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Map' }));
     fireEvent.click(screen.getByRole('button', { name: /^Kitchen/ }));
 
-    expect(screen.getByLabelText('Reorder Kitchen')).toBeInTheDocument();
+    expect(screen.getByText('Stop 1')).toBeInTheDocument();
     expect(container.querySelector('.max-h-28.overflow-auto')).toBeNull();
   });
 

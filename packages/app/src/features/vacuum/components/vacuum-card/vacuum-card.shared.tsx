@@ -188,14 +188,17 @@ export function resolveVacuumIllustrationSurface({
   if (isMonochromeVacuumIllustrationState(displayState)) {
     const restingBase =
       theme === 'light'
-        ? 'rgba(39,39,42,0.92)'
+        ? 'rgba(244,244,245,0.96)'
         : theme === 'glass'
           ? 'rgba(24,24,27,0.86)'
           : 'rgba(24,24,27,0.96)';
-    const restingBaseColor = theme === 'light' ? '#27272a' : '#18181b';
+    const restingBaseColor = theme === 'light' ? '#f4f4f5' : '#18181b';
 
     return {
-      background: `radial-gradient(circle at top, rgba(255,255,255,0.06), ${restingBase} 68%)`,
+      background:
+        theme === 'light'
+          ? `radial-gradient(circle at top, rgba(255,255,255,0.92), ${restingBase} 68%)`
+          : `radial-gradient(circle at top, rgba(255,255,255,0.06), ${restingBase} 68%)`,
       baseColor: restingBaseColor,
       shadow: `0 18px 38px -28px ${titleColor}1f`,
     };

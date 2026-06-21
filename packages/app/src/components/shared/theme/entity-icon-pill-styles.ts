@@ -9,6 +9,7 @@ import {
   getCardReadableTextTokens,
   resolveCardToneBaseColor,
 } from '@navet/app/components/shared/theme/card-readable-text-tokens';
+import { withTintAlpha } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { resolvePrimaryColorToken } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import type { PrimaryColor, ThemeType } from '@navet/app/hooks/use-theme';
@@ -142,7 +143,7 @@ export function getEntityIconPillStyles({
     ? {
         backgroundColor:
           theme === 'light'
-            ? 'rgba(255,255,255,0.24)'
+            ? withTintAlpha(resolvedBaseColor, 0.12)
             : theme === 'glass'
               ? `${resolvedBaseColor}24`
               : theme === 'black'
@@ -150,7 +151,7 @@ export function getEntityIconPillStyles({
                 : `${resolvedBaseColor}2e`,
         borderColor:
           theme === 'light'
-            ? 'rgba(255,255,255,0.54)'
+            ? withTintAlpha(resolvedBaseColor, 0.22)
             : theme === 'glass'
               ? `${resolvedBaseColor}54`
               : theme === 'black'
@@ -158,7 +159,7 @@ export function getEntityIconPillStyles({
                 : `${resolvedBaseColor}66`,
         boxShadow:
           theme === 'light'
-            ? '0 10px 24px -18px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.18)'
+            ? `0 10px 24px -18px ${withTintAlpha(resolvedBaseColor, 0.18)}, inset 0 1px 0 rgba(255,255,255,0.48)`
             : theme === 'glass'
               ? `inset 0 1px 0 rgba(255,255,255,0.18), 0 12px 30px -20px ${resolvedBaseColor}52`
               : theme === 'black'
@@ -169,7 +170,7 @@ export function getEntityIconPillStyles({
 
   const iconStyle = isActive
     ? {
-        color: theme === 'light' ? '#ffffff' : textTokens.titleColor,
+        color: theme === 'light' ? resolvedBaseColor : textTokens.titleColor,
         filter: theme === 'light' ? undefined : 'drop-shadow(0 1px 4px rgba(0, 0, 0, 0.18))',
       }
     : undefined;
