@@ -87,6 +87,7 @@ const SHARED_UI_DRIFT_PATTERNS = [
 const SERVICE_ESCAPE_HATCH_ALLOWLIST = new Set([
   'packages/app/src/features/climate/components/humidifier-card/index.tsx',
   'packages/app/src/features/climate/components/hvac-settings-dialog/index.tsx',
+  'packages/app/src/features/climate/components/climate-settings-dialog/index.tsx',
   'packages/app/src/features/dashboard/components/widgets/button-widget.tsx',
   'packages/app/src/features/dashboard/utils/button-widget-security.ts',
   'packages/app/src/features/lighting/components/fan-card/index.tsx',
@@ -98,6 +99,7 @@ const SERVICE_ESCAPE_HATCH_ALLOWLIST = new Set([
 const RAW_SERVICE_CALL_IMPORT_ALLOWLIST = new Set([
   'packages/app/src/features/climate/components/humidifier-card/index.tsx',
   'packages/app/src/features/climate/components/hvac-settings-dialog/index.tsx',
+  'packages/app/src/features/climate/components/climate-settings-dialog/index.tsx',
   'packages/app/src/features/dashboard/components/widgets/button-widget.tsx',
   'packages/app/src/features/lighting/components/fan-card/index.tsx',
   'packages/app/src/features/lighting/components/use-switch-toggle-action.ts',
@@ -135,6 +137,8 @@ const TARGETED_GUARDS = [
       'packages/provider-smartthings/src/planned-provider-support.ts',
       'packages/app/src/features/climate/components/hvac-card/use-hvac-card-controller.ts',
       'packages/app/src/features/climate/components/hvac-settings-dialog/index.tsx',
+      'packages/app/src/features/climate/components/climate-card/use-climate-card-controller.ts',
+      'packages/app/src/features/climate/components/climate-settings-dialog/index.tsx',
       'packages/app/src/features/auth/login-page.tsx',
       'packages/app/src/features/tasks/components/automation-task-row.tsx',
       'packages/app/src/features/lighting/components/use-switch-card-controller.tsx',
@@ -151,7 +155,6 @@ const TARGETED_GUARDS = [
       'packages/app/src/features/scenes/components/scene-card.tsx',
       'packages/app/src/features/tasks/components/quick-action-grid.tsx',
       'packages/app/src/features/lighting/components/fan-card/index.tsx',
-      'packages/app/src/features/climate/components/hvac-card/use-hvac-card-controller.ts',
       'packages/app/src/features/lighting/components/switch-settings-dialog.tsx',
       'packages/app/src/features/media/components/media-card/use-media-playback.ts',
       'packages/app/src/features/media/components/media-card/use-media-grouping.ts',
