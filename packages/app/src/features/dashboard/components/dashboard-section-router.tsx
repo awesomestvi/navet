@@ -85,6 +85,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   });
   const [isAddLightEntityDialogOpen, setIsAddLightEntityDialogOpen] = useState(false);
   const [isAddClimateEntityDialogOpen, setIsAddClimateEntityDialogOpen] = useState(false);
+  const [securityAddEntityRequestKey, setSecurityAddEntityRequestKey] = useState(0);
   const {
     activeRoom,
     activeSection,
@@ -179,23 +180,32 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     },
     [handleAddEntity]
   );
+  const openSecurityAddEntityDialog = useCallback(
+    () => setSecurityAddEntityRequestKey((previous) => previous + 1),
+    []
+  );
   const canOpenAddEntityDialog = addableEntityIds.length > 0;
-  const canOpenAddCardDialog = isEditMode && activeSection === 'home';
-  const headerAddAction = canOpenAddCardDialog
-    ? controller.onOpenAddCardDialog
-    : canOpenAddEntityDialog
-      ? onOpenAddEntityDialog
-      : undefined;
-  const headerAddLabel = canOpenAddCardDialog
-    ? t('dashboard.roomNav.addCard')
-    : t('dashboard.addEntity.title');
+  const headerAddAction =
+    isEditMode && activeSection === 'energy'
+      ? controller.onOpenAddCardDialog
+      : isEditMode && activeSection === 'home'
+        ? controller.onOpenAddCardDialog
+        : isEditMode && activeSection === 'security'
+          ? openSecurityAddEntityDialog
+          : canOpenAddEntityDialog
+            ? onOpenAddEntityDialog
+            : undefined;
+  const headerAddLabel =
+    isEditMode && (activeSection === 'home' || activeSection === 'energy')
+      ? t('dashboard.roomNav.addCard')
+      : t('dashboard.addEntity.title');
 
   let sectionContent: ReactNode;
 
   if (activeSection === 'security') {
     sectionContent = (
       <Suspense fallback={<LoadingSpinner />}>
-        <SecuritySection />
+        <SecuritySection openAddEntityRequestKey={securityAddEntityRequestKey} />
       </Suspense>
     );
   } else if (activeSection === 'energy') {
@@ -207,7 +217,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
               energyCustomCards={sectionData.energyCustomCards}
               energyOrderedCardIds={sectionData.energyOrderedCardIds}
               isEditMode={isEditMode}
-              onAddCard={controller.handleAddCard}
+              onOpenAddCardDialog={controller.onOpenAddCardDialog}
               onToggleEditMode={onToggleEditMode}
               onDeleteCard={handleDeleteCard}
               onUpdateCard={handleUpdateCard}
@@ -520,9 +530,9 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
         onToggleEditMode,
         onAddEntity: headerAddAction,
         addEntityLabel: headerAddLabel,
-        reorderRooms:
-          manageableRooms.length > 0
-            ? {
+        ...(activeSection === 'home' && manageableRooms.length > 0
+          ? {
+              reorderRooms: {
                 rooms: manageableRooms,
                 hiddenRoomNames: controller.hiddenRoomNames,
                 manageableRooms: manageableRoomReferences,
@@ -530,8 +540,9 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                 roomItemCounts: controller.roomItemCounts,
                 onRoomOrderChange: controller.onSetRoomOrder,
                 onHiddenRoomsChange: controller.onSetHiddenRoomNames,
-              }
-            : undefined,
+              },
+            }
+          : {}),
       }}
       mobileRoomNavigation={{
         activeRoom,

@@ -73,6 +73,53 @@ describe('DashboardSectionRouter home controls', () => {
     expect(layoutProps.mobileEditActions?.onAddEntity).toBe(controller.onOpenAddCardDialog);
     expect(layoutProps.mobileEditActions?.addEntityLabel).toBe('Add Card');
   });
+
+  it('uses add card in edit mode for the energy dashboard header controls', async () => {
+    const controller = createController();
+    controller.isEditMode = true;
+    controller.activeSection = 'energy';
+
+    renderWithProviders(<DashboardSectionRouter controller={controller} />);
+
+    const layoutProps = dashboardLayoutMock.mock.calls[0]?.[0] as {
+      mobileEditActions?: Record<string, unknown>;
+    };
+
+    expect(layoutProps.mobileEditActions?.onAddEntity).toBe(controller.onOpenAddCardDialog);
+    expect(layoutProps.mobileEditActions?.addEntityLabel).toBe('Add Card');
+    expect(layoutProps.mobileEditActions).not.toHaveProperty('reorderRooms');
+  });
+
+  it('uses security-specific add entity controls without manage rooms', async () => {
+    const controller = createController();
+    controller.isEditMode = true;
+    controller.activeSection = 'security';
+
+    renderWithProviders(<DashboardSectionRouter controller={controller} />);
+
+    const layoutProps = dashboardLayoutMock.mock.calls[0]?.[0] as {
+      mobileEditActions?: Record<string, unknown>;
+    };
+
+    expect(layoutProps.mobileEditActions?.onAddEntity).toEqual(expect.any(Function));
+    expect(layoutProps.mobileEditActions?.onAddEntity).not.toBe(controller.onOpenAddCardDialog);
+    expect(layoutProps.mobileEditActions?.addEntityLabel).toBe('Add Entity');
+    expect(layoutProps.mobileEditActions).not.toHaveProperty('reorderRooms');
+  });
+
+  it('does not expose manage rooms outside the home dashboard', async () => {
+    const controller = createController();
+    controller.isEditMode = true;
+    controller.activeSection = 'lights';
+
+    renderWithProviders(<DashboardSectionRouter controller={controller} />);
+
+    const layoutProps = dashboardLayoutMock.mock.calls[0]?.[0] as {
+      mobileEditActions?: Record<string, unknown>;
+    };
+
+    expect(layoutProps.mobileEditActions).not.toHaveProperty('reorderRooms');
+  });
 });
 
 describe('shouldSubscribeTaskRoutines', () => {

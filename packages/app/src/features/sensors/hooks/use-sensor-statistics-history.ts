@@ -2,6 +2,7 @@ import { ENERGY_STATISTICS_REFRESH_INTERVAL } from '@navet/app/constants';
 import { useProviderEntitySnapshot } from '@navet/app/hooks';
 import { getSensorDeviceClass } from '@navet/app/hooks/device-mappers';
 import {
+  getRecorderCumulativeHistory,
   getRecorderMeanHistory,
   type RecorderStatisticPoint,
 } from '@navet/app/services/ha-recorder-statistics';
@@ -16,14 +17,15 @@ const REFRESH_MS = ENERGY_STATISTICS_REFRESH_INTERVAL;
 const CACHE_TTL_MS = Math.max(30_000, REFRESH_MS - 1_000);
 const historyCache = new Map<string, { expiresAt: number; data: RecorderStatisticPoint[] }>();
 const NON_TREND_DEVICE_CLASSES = new Set(['date', 'enum', 'timestamp']);
-const NON_TREND_STATE_CLASSES = new Set(['total', 'total_increasing']);
 const NON_TREND_UNITS = new Set(['', '%']);
 
 function getStartOfToday(now: Date) {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
-function isNumericSensor(
+type SensorHistoryMode = 'mean' | 'cumulative';
+
+function getSensorHistoryMode(
   entityId: string,
   entity:
     | {
@@ -31,27 +33,24 @@ function isNumericSensor(
         attributes?: Record<string, unknown>;
       }
     | undefined
-) {
+): SensorHistoryMode | null {
   const nativeEntityId = getNativeIntegrationEntityId(entityId);
 
   if (!nativeEntityId.startsWith('sensor.') || !entity) {
-    return false;
+    return null;
   }
 
   const deviceClass = getSensorDeviceClass(entity);
   if (deviceClass && NON_TREND_DEVICE_CLASSES.has(deviceClass)) {
-    return false;
+    return null;
   }
 
   const stateClass =
     typeof entity.attributes?.state_class === 'string' ? entity.attributes.state_class : undefined;
-  if (stateClass && NON_TREND_STATE_CLASSES.has(stateClass)) {
-    return false;
-  }
 
   const value = Number(entity.state);
   if (!Number.isFinite(value)) {
-    return false;
+    return null;
   }
 
   const unit =
@@ -61,7 +60,15 @@ function isNumericSensor(
         ? entity.attributes.native_unit_of_measurement
         : '';
 
-  return !NON_TREND_UNITS.has(unit);
+  if (NON_TREND_UNITS.has(unit)) {
+    return null;
+  }
+
+  if (stateClass === 'total' || stateClass === 'total_increasing') {
+    return 'cumulative';
+  }
+
+  return 'mean';
 }
 
 export interface SensorStatisticsPoint {
@@ -80,10 +87,14 @@ export function useSensorStatisticsHistory(entityId: string | undefined) {
     () => (entityId ? getNativeIntegrationEntityId(entityId) : undefined),
     [entityId]
   );
+  const historyMode = useMemo(
+    () => getSensorHistoryMode(entityId ?? '', entity),
+    [entity, entityId]
+  );
 
   const canFetch = useMemo(
-    () => supportsIntegrationStatisticsHistory(entityId) && isNumericSensor(entityId ?? '', entity),
-    [entity, entityId]
+    () => supportsIntegrationStatisticsHistory(entityId) && historyMode !== null,
+    [entityId, historyMode]
   );
 
   useEffect(() => {
@@ -102,7 +113,8 @@ export function useSensorStatisticsHistory(entityId: string | undefined) {
       }
 
       const now = Date.now();
-      const cached = historyCache.get(stableNativeEntityId);
+      const cacheKey = `${stableNativeEntityId}:${historyMode ?? 'none'}`;
+      const cached = historyCache.get(cacheKey);
       if (cached && cached.expiresAt > now) {
         setPoints(
           cached.data.map((entry) => ({
@@ -117,12 +129,27 @@ export function useSensorStatisticsHistory(entityId: string | undefined) {
       }
 
       try {
-        const data = await getRecorderMeanHistory(
-          activeMessageClient,
-          stableNativeEntityId,
-          getStartOfToday(new Date())
-        );
-        historyCache.set(stableNativeEntityId, {
+        const data =
+          historyMode === 'cumulative'
+            ? (
+                await getRecorderCumulativeHistory(
+                  activeMessageClient,
+                  stableNativeEntityId,
+                  getStartOfToday(new Date())
+                )
+              ).map((entry) => ({
+                start: entry.start,
+                end: entry.end,
+                mean: entry.value,
+                min: entry.value,
+                max: entry.value,
+              }))
+            : await getRecorderMeanHistory(
+                activeMessageClient,
+                stableNativeEntityId,
+                getStartOfToday(new Date())
+              );
+        historyCache.set(cacheKey, {
           expiresAt: now + CACHE_TTL_MS,
           data,
         });
@@ -149,7 +176,7 @@ export function useSensorStatisticsHistory(entityId: string | undefined) {
         clearInterval(timerRef.current);
       }
     };
-  }, [canFetch, entityId, nativeEntityId]);
+  }, [canFetch, entityId, historyMode, nativeEntityId]);
 
   return {
     points,

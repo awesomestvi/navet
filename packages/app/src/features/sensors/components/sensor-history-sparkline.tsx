@@ -20,15 +20,12 @@ export const SensorHistorySparkline = memo(function SensorHistorySparkline({
   }
 
   return (
-    <div
-      data-testid="sensor-history-sparkline"
-      className={`pointer-events-none absolute inset-0 overflow-hidden ${className ?? ''}`}
-    >
+    <div data-testid="sensor-history-sparkline" className="absolute inset-0 z-20">
       <EnergySparkline
         data={data}
         accentColor={accentColor}
         height={height}
-        className="h-full w-full opacity-95"
+        className={`h-full w-full ${className ?? ''}`.trim()}
         padX={0}
       />
     </div>

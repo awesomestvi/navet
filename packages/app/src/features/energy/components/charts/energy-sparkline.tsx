@@ -204,7 +204,7 @@ export const EnergySparkline = memo(function EnergySparkline({
       tooltipTimestamp &&
       tooltipLeftPercent !== null &&
       tooltipTopPercent !== null ? (
-        <div className="pointer-events-none absolute inset-0 z-20">
+        <div className="pointer-events-none absolute inset-0 z-50">
           <div
             className="absolute"
             style={{

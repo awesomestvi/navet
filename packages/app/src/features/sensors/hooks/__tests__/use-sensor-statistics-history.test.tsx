@@ -168,9 +168,24 @@ describe('useSensorStatisticsHistory', () => {
     expect(messageClient.sendMessagePromise).not.toHaveBeenCalled();
   });
 
-  it('does not fetch history for cumulative total_increasing sensors', async () => {
+  it('fetches cumulative recorder history for total_increasing sensors', async () => {
     const messageClient = {
-      sendMessagePromise: vi.fn(),
+      sendMessagePromise: vi.fn().mockResolvedValue({
+        'sensor.remaining_electricity': [
+          {
+            start: '2026-05-25T10:00:00.000Z',
+            end: '2026-05-25T10:05:00.000Z',
+            state: 198.6,
+            sum: 198.6,
+          },
+          {
+            start: '2026-05-25T10:05:00.000Z',
+            end: '2026-05-25T10:10:00.000Z',
+            state: 199.2,
+            sum: 199.2,
+          },
+        ],
+      }),
     };
 
     vi.spyOn(integrationHistoryServiceModule, 'getIntegrationHistoryMessageClient').mockReturnValue(
@@ -193,11 +208,32 @@ describe('useSensorStatisticsHistory', () => {
     );
 
     await waitFor(() => {
-      expect(result.current.canFetch).toBe(false);
-      expect(result.current.points).toEqual([]);
+      expect(result.current.canFetch).toBe(true);
+      expect(result.current.hasHistory).toBe(true);
     });
 
-    expect(messageClient.sendMessagePromise).not.toHaveBeenCalled();
+    expect(result.current.points).toEqual([
+      {
+        value: 198.6,
+        timestampMs: Date.parse('2026-05-25T10:00:00.000Z'),
+        endTimestampMs: Date.parse('2026-05-25T10:05:00.000Z'),
+        minValue: 198.6,
+        maxValue: 198.6,
+      },
+      {
+        value: 199.2,
+        timestampMs: Date.parse('2026-05-25T10:05:00.000Z'),
+        endTimestampMs: Date.parse('2026-05-25T10:10:00.000Z'),
+        minValue: 199.2,
+        maxValue: 199.2,
+      },
+    ]);
+    expect(messageClient.sendMessagePromise).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statistic_ids: ['sensor.remaining_electricity'],
+        types: ['state', 'sum'],
+      })
+    );
   });
 
   it('does not query Home Assistant history for non-HA provider-scoped sensors', async () => {

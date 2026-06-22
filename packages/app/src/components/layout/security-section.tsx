@@ -15,7 +15,7 @@ import {
   useThemeMode,
 } from '@navet/app/hooks';
 import { Plus, Video } from 'lucide-react';
-import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 import { SectionCustomizeShell } from './section-customize-shell';
@@ -49,7 +49,11 @@ function filterSecuritySectionDevices(
   };
 }
 
-export function SecuritySection() {
+interface SecuritySectionProps {
+  openAddEntityRequestKey?: number;
+}
+
+export function SecuritySection({ openAddEntityRequestKey = 0 }: SecuritySectionProps) {
   const { t } = useI18n();
   const theme = useThemeMode();
   const surface = getThemeSurfaceTokens(theme);
@@ -101,6 +105,11 @@ export function SecuritySection() {
   );
   const openAddEntityDialog = useCallback(() => setIsAddEntityDialogOpen(true), []);
   const closeAddEntityDialog = useCallback(() => setIsAddEntityDialogOpen(false), []);
+  useEffect(() => {
+    if (openAddEntityRequestKey > 0) {
+      setIsAddEntityDialogOpen(true);
+    }
+  }, [openAddEntityRequestKey]);
   const handleAddEntity = useCallback(
     (entityId: string) => {
       showEntity(entityId);

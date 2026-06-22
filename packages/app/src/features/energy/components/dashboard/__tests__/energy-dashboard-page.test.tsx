@@ -181,18 +181,16 @@ describe('EnergyDashboardPage', () => {
     });
   });
 
-  it('opens the energy add card dialog from the hero in edit mode', () => {
+  it('opens the shared energy add card dialog from the hero in edit mode', () => {
+    const onOpenAddCardDialog = vi.fn();
+
     renderDashboardPage('default', {
       isEditMode: true,
-      onAddCard: vi.fn(),
+      onOpenAddCardDialog,
     });
-
-    expect(screen.queryByText('No energy cards yet')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Add Card' })[0] as HTMLButtonElement);
 
-    expect(screen.getByRole('dialog', { name: 'Add Card' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Cards' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Custom card' })).toBeInTheDocument();
+    expect(onOpenAddCardDialog).toHaveBeenCalledTimes(1);
   });
 });

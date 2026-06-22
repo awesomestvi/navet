@@ -16,16 +16,10 @@ import {
   navetTypographyTokens,
 } from '@navet/app/components/system/tokens';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
-import {
-  AddCardDialogContainer,
-  type CardTemplate,
-} from '@navet/app/features/dashboard/components/add-card-dialog';
 import { DashboardCardItem } from '@navet/app/features/dashboard/components/dashboard-card-item';
 import { DashboardResizeTrigger } from '@navet/app/features/dashboard/components/dashboard-edit-actions';
-import type { DashboardLibraryCard } from '@navet/app/features/dashboard/components/dashboard-library-list';
 import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit-dashboard-grid';
 import type { CustomCard } from '@navet/app/features/dashboard/stores/custom-cards-store';
-import { HEATING_CATEGORIES } from '@navet/app/features/energy/data/energy-constants';
 import { useEnergyLoadHistory } from '@navet/app/features/energy/hooks/use-energy-load-history';
 import type {
   EnergyConsumer,
@@ -40,6 +34,7 @@ import {
 import { useI18n, useTheme } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { useDeferredVisibility } from '@navet/app/hooks/use-deferred-visibility';
+import { useMediaQuery } from '@navet/app/hooks/use-media-query';
 import { usePersistedState } from '@navet/app/hooks/use-persisted-state';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { settingsSelectors } from '@navet/app/stores/selectors';
@@ -64,7 +59,7 @@ interface EnergyDashboardPageProps {
   energyCustomCards?: CustomCard[];
   energyOrderedCardIds?: string[];
   isEditMode?: boolean;
-  onAddCard?: (template: CardTemplate, size: CardSize) => void;
+  onOpenAddCardDialog?: () => void;
   onToggleEditMode?: () => void;
   onDeleteCard?: (cardId: string) => void;
   onUpdateCard?: (cardId: string, updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>) => void;
@@ -118,7 +113,7 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
   energyCustomCards = [],
   energyOrderedCardIds = [],
   isEditMode: controlledEditMode,
-  onAddCard,
+  onOpenAddCardDialog,
   onToggleEditMode,
   onDeleteCard,
   onUpdateCard,
@@ -127,7 +122,6 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
   const haBaseUrl = useAuthBaseUrl();
   const { theme, accentColor } = useTheme();
   const [uncontrolledEditMode, setUncontrolledEditMode] = useState(false);
-  const [isAddCardDialogOpen, setIsAddCardDialogOpen] = useState(false);
   const [hiddenConsumerIds, setHiddenConsumerIds] = usePersistedState<string[]>(
     STORAGE_KEYS.energyHiddenConsumerIds,
     []
@@ -137,6 +131,7 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
     {}
   );
   const surface = getThemeSurfaceTokens(theme);
+  const isMobileViewport = useMediaQuery('(max-width: 767px)');
   const homeAssistantEnergyUrl = resolveHomeAssistantEnergyUrl(haBaseUrl);
   const isEditMode =
     typeof controlledEditMode === 'boolean' ? controlledEditMode : uncontrolledEditMode;
@@ -165,35 +160,6 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
       topConsumers: visibleConsumers,
     }),
     [dashboard, visibleConsumers]
-  );
-  const hiddenConsumers = useMemo(
-    () => dashboard.topConsumers.filter((consumer) => hiddenConsumerIdSet.has(consumer.id)),
-    [dashboard.topConsumers, hiddenConsumerIdSet]
-  );
-  const energyLibraryCards = useMemo<DashboardLibraryCard[]>(
-    () =>
-      hiddenConsumers
-        .map((consumer) => ({
-          id: consumer.id,
-          title: consumer.name,
-          subtitle: consumer.room ?? t('sidebar.energy'),
-          meta:
-            consumer.powerW > 0
-              ? `${Math.round(consumer.powerW)} W`
-              : `${formatEnergyValue(consumer.energyKWh)} kWh`,
-          kind: 'device' as const,
-          icon:
-            consumer.category === 'water_heater'
-              ? Sun
-              : HEATING_CATEGORIES.has(consumer.category)
-                ? Flame
-                : PlugZap,
-        }))
-        .sort(
-          (left, right) =>
-            left.subtitle.localeCompare(right.subtitle) || left.title.localeCompare(right.title)
-        ),
-    [hiddenConsumers, t]
   );
   const liveWatts = Math.round(filteredDashboard.totals.currentLoadW);
   const importedTodayLabel = `${formatEnergyValue(dashboard.totals.importTodayKWh)} kWh`;
@@ -225,7 +191,7 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
       {isEditMode ? (
         <button
           type="button"
-          onClick={() => setIsAddCardDialogOpen(true)}
+          onClick={onOpenAddCardDialog}
           className={`inline-flex items-center gap-1.5 rounded-[22px] border px-2.5 py-1.5 text-xs font-medium transition-colors md:gap-2 md:px-3 md:py-2 md:text-sm ${surface.border} ${surface.textSecondary} ${surface.hoverBg}`}
         >
           <Plus className={`h-4 w-4 ${surface.textSecondary}`} />
@@ -241,7 +207,7 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
     <div className="space-y-5">
       <DashboardHeroSection
         accentColor={accentColor}
-        actions={heroActions}
+        actions={isMobileViewport ? null : heroActions}
         actionsClassName="md:absolute md:top-0 md:right-0 md:mt-0 md:max-w-[22rem] md:justify-end"
         description="See where power is flowing right now."
         surface={surface}
@@ -283,16 +249,6 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
           wholeHomeTodayKWh={dashboard.ranges[dashboard.selectedRange].totalUsageKWh}
         />
       </section>
-      <AddCardDialogContainer
-        open={isAddCardDialogOpen}
-        onClose={() => setIsAddCardDialogOpen(false)}
-        onAddCard={(template, size) => onAddCard?.(template, size)}
-        onAddLibraryCard={(cardId) => handleConsumerVisibilityChange(cardId, true)}
-        currentRoom={t('sidebar.energy')}
-        libraryCards={energyLibraryCards}
-        showCardsTab
-        allowedTemplateIds={['energy-now', 'energy-metric']}
-      />
     </div>
   );
 });

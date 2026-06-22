@@ -14,7 +14,7 @@ import { useI18n, useProviderEntityModel, useTheme } from '@navet/app/hooks';
 import { inferSensorDisplayIcon } from '@navet/app/hooks/device-mappers';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
-import { type KeyboardEvent, memo, useState } from 'react';
+import { type KeyboardEvent, memo, useMemo, useState } from 'react';
 import {
   type SensorStatisticsPoint,
   useSensorStatisticsHistory,
@@ -115,6 +115,31 @@ export const InfoCard = memo(function InfoCard({
     (resolvedSparklineData?.length ?? 0) >= 2;
   const sparklineLayerClassName =
     size === 'large' ? 'absolute inset-x-0 top-24 bottom-0' : 'absolute inset-x-0 top-20 bottom-0';
+  const sparklineTickFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: !use24HourTime,
+      }),
+    [locale, use24HourTime]
+  );
+  const sparklineTickIndexes = size === 'large' ? [0, 1 / 3, 2 / 3, 1] : [0, 1 / 2, 1];
+  const sparklineTicks = (resolvedSparklineData ?? [])
+    .filter((_point, index, data) => {
+      if (data.length === 0) {
+        return false;
+      }
+
+      const lastIndex = data.length - 1;
+      return sparklineTickIndexes.some((ratio) => index === Math.floor(lastIndex * ratio));
+    })
+    .map((point) => ({
+      key: `${point.timestampMs}-${point.endTimestampMs}`,
+      label: Number.isFinite(point.timestampMs)
+        ? sparklineTickFormatter.format(new Date(point.timestampMs))
+        : '',
+    }));
   const openSettings = () => {
     if (onOpenSettings) {
       onOpenSettings();
@@ -164,6 +189,7 @@ export const InfoCard = memo(function InfoCard({
           onKeyDown={handleCardKeyDown}
           interactive
           fullBleed
+          className="hover:z-30 focus-within:z-30"
           frameClassName={cardShell.rootFrameClassName}
           disableDefaultSheen={theme !== 'light'}
           contentClassName="h-full"
@@ -209,7 +235,6 @@ export const InfoCard = memo(function InfoCard({
                     ) : null}
                   </>
                 }
-                label={subtitleText}
                 size={size === 'large' ? 'xl' : 'lg'}
                 isActive
                 accentClassName={valueColor}
@@ -222,6 +247,25 @@ export const InfoCard = memo(function InfoCard({
                 }}
               />
             </div>
+
+            {sparklineTicks.length >= 2 ? (
+              <div className="mt-auto">
+                <div
+                  className={`mt-3 flex items-center justify-between gap-2 text-xs ${
+                    theme === 'light' ? 'text-slate-500' : 'text-white/72'
+                  }`}
+                >
+                  {sparklineTicks.map((point, index) => (
+                    <div
+                      key={`${point.key}-${index}`}
+                      className="min-w-0 flex-1 truncate whitespace-nowrap text-center first:text-left last:text-right"
+                    >
+                      {point.label}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         </BaseCard>
       ) : (

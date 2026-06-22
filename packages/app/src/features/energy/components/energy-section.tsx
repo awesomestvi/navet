@@ -1,8 +1,6 @@
 import { DashboardEmptyState } from '@navet/app/components/patterns';
 import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner';
-import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import type { CardTemplate } from '@navet/app/features/dashboard/components/add-card-dialog';
 import type { CustomCard } from '@navet/app/features/dashboard/stores/custom-cards-store';
 import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
 import { integrationSelectors } from '@navet/app/stores/selectors';
@@ -16,7 +14,7 @@ interface EnergySectionProps {
   energyCustomCards?: CustomCard[];
   energyOrderedCardIds?: string[];
   isEditMode?: boolean;
-  onAddCard?: (template: CardTemplate, size: CardSize) => void;
+  onOpenAddCardDialog?: () => void;
   onToggleEditMode?: () => void;
   onDeleteCard?: (cardId: string) => void;
   onUpdateCard?: (cardId: string, updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>) => void;
@@ -26,7 +24,7 @@ export const EnergySection = memo(function EnergySection({
   energyCustomCards = [],
   energyOrderedCardIds = [],
   isEditMode = false,
-  onAddCard,
+  onOpenAddCardDialog,
   onToggleEditMode,
   onDeleteCard,
   onUpdateCard,
@@ -122,7 +120,7 @@ export const EnergySection = memo(function EnergySection({
       energyCustomCards={energyCustomCards}
       energyOrderedCardIds={energyOrderedCardIds}
       isEditMode={isEditMode}
-      onAddCard={onAddCard}
+      onOpenAddCardDialog={onOpenAddCardDialog}
       onToggleEditMode={onToggleEditMode}
       onDeleteCard={onDeleteCard}
       onUpdateCard={onUpdateCard}

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.7
+
+- Updated Navet to `0.7.7`
+- Added more energy dashboard customization, including prepaid-style remaining-balance support
+- Added dashboard support for lawn mower devices
+- Fixed demo entities crashing Navet
+- Improved climate, energy, and cleaning-device card layouts plus related settings flows
+- Improved Liquid Glass and Light theme UI polish across shared dashboard surfaces and dialogs
+
 ## 0.7.6
 
 - Updated Navet to `0.7.6`

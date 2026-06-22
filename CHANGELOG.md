@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.7.7 - 2026-06-22
+
+## New
+
+- Energy dashboards now support more customization, including prepaid-style remaining-balance sensors and better control over which energy sensors appear.
+- Lawn mower devices can now appear with dedicated dashboard support alongside the broader vacuum and cleaning-device surfaces.
+
+## Fixed
+
+- Demo entities no longer crash Navet in preview and demo flows.
+
+## Improved
+
+- Climate, energy, and cleaning-device cards now use clearer layouts, settings flows, and provider-backed behavior across the updated dashboard sections.
+- Card dialogs, widgets, and shared surfaces are more consistent across media, sensors, security, weather, RSS, and related dashboard cards.
+- Liquid Glass and Light themes now get more targeted UI polish across shared dashboard surfaces and dialogs.
+
 ## 0.7.6 - 2026-06-16
 
 ## New
