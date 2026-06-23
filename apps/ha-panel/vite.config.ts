@@ -105,9 +105,13 @@ export default defineConfig({
     emptyOutDir: true,
     manifest: true,
     rollupOptions: {
-      input: path.resolve(repoRoot, 'packages/app/src/panel/main.tsx'),
+      input: {
+        panel: path.resolve(repoRoot, 'packages/app/src/panel/main.tsx'),
+        haShell: path.resolve(repoRoot, 'packages/app/src/panel/ha-shell.ts'),
+      },
       output: {
-        entryFileNames: 'navet-panel.js',
+        entryFileNames: (chunkInfo) =>
+          chunkInfo.name === 'haShell' ? 'navet-ha-shell.js' : 'navet-panel.js',
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash][extname]',
         manualChunks(id) {

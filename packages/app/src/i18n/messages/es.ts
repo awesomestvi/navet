@@ -1057,6 +1057,7 @@ export const esMessages = {
   'sidebar.recentSections': 'Secciones recientes',
   'sidebar.allSections': 'Todas las secciones',
   'sidebar.backToHome': 'Volver al inicio',
+  'sidebar.toggleHomeAssistantKiosk': 'Toggle Home Assistant kiosk',
   'sidebar.currentRoom': 'Habitación actual',
   'sidebar.settings': 'Ajustes',
   'sidebar.brandLogoAlt': 'Logotipo de la marca',

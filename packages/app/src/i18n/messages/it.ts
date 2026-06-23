@@ -490,6 +490,7 @@ export const itMessages = {
   'sidebar.recentSections': 'Sezioni recenti',
   'sidebar.allSections': 'Tutte le sezioni',
   'sidebar.backToHome': 'Torna a casa',
+  'sidebar.toggleHomeAssistantKiosk': 'Toggle Home Assistant kiosk',
   'sidebar.currentRoom': 'Stanza corrente',
   'sidebar.settings': 'Impostazioni',
   'sidebar.brandLogoAlt': 'Logo del brand',

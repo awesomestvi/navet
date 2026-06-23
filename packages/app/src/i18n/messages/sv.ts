@@ -1047,6 +1047,7 @@ export const svMessages = {
   'sidebar.recentSections': 'Senaste sektioner',
   'sidebar.allSections': 'Alla sektioner',
   'sidebar.backToHome': 'Tillbaka hem',
+  'sidebar.toggleHomeAssistantKiosk': 'Toggle Home Assistant kiosk',
   'sidebar.currentRoom': 'Aktuellt rum',
   'sidebar.settings': 'Inställningar',
   'sidebar.brandLogoAlt': 'Varumärkeslogotyp',

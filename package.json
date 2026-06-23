@@ -17,6 +17,8 @@
   "scripts": {
     "build": "pnpm --filter @navet/standalone build",
     "build:ha-panel": "node scripts/build-ha-panel.mjs",
+    "push:ha-panel": "zsh scripts/push-ha-panel.sh",
+    "reset:ha-panel-assets": "zsh scripts/reset-ha-panel-assets.sh",
     "build:demo": "pnpm --filter @navet/demo exec vite build --base=/demo/",
     "build:storybook": "pnpm storybook:build",
     "build:website": "pnpm website:bundle",

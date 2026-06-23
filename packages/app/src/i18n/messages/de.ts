@@ -1062,6 +1062,7 @@ export const deMessages = {
   'sidebar.recentSections': 'Zuletzt genutzt',
   'sidebar.allSections': 'Alle Bereiche',
   'sidebar.backToHome': 'Zur Startseite',
+  'sidebar.toggleHomeAssistantKiosk': 'Toggle Home Assistant kiosk',
   'sidebar.currentRoom': 'Aktueller Raum',
   'sidebar.settings': 'Einstellungen',
   'sidebar.brandLogoAlt': 'Markenlogo',

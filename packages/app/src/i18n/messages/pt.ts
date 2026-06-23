@@ -1049,6 +1049,7 @@ export const ptMessages = {
   'sidebar.recentSections': 'Seções recentes',
   'sidebar.allSections': 'Todas as seções',
   'sidebar.backToHome': 'Voltar para a Home',
+  'sidebar.toggleHomeAssistantKiosk': 'Toggle Home Assistant kiosk',
   'sidebar.currentRoom': 'Cômodo atual',
   'sidebar.settings': 'Configurações',
   'sidebar.brandLogoAlt': 'Logo da marca',

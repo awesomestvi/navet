@@ -1058,6 +1058,7 @@ export const frMessages = {
   'sidebar.recentSections': 'Sections récentes',
   'sidebar.allSections': 'Toutes les sections',
   'sidebar.backToHome': 'Retour à l accueil',
+  'sidebar.toggleHomeAssistantKiosk': 'Toggle Home Assistant kiosk',
   'sidebar.currentRoom': 'Pièce actuelle',
   'sidebar.settings': 'Paramètres',
   'sidebar.brandLogoAlt': 'Logo de la marque',

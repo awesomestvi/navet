@@ -63,11 +63,8 @@ export function HomeySelectionPage() {
 
           <div className="mx-auto mt-4 h-px w-28 bg-[linear-gradient(90deg,transparent,#f97316,transparent)]" />
 
-          <p className={`mt-5 text-xs font-semibold uppercase tracking-[0.24em] ${mutedColor}`}>
-            Navet
-          </p>
           <h1
-            className={`mx-auto mt-2 max-w-xl text-3xl font-semibold tracking-tight md:text-4xl ${textColor}`}
+            className={`mx-auto mt-5 max-w-xl text-3xl font-semibold tracking-tight md:text-4xl ${textColor}`}
           >
             Choose a Homey
           </h1>

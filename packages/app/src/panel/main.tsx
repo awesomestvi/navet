@@ -3,7 +3,7 @@ import { ErrorDisplay } from '@navet/app/components/shared/error-display';
 import { Toaster } from '@navet/app/components/ui/sonner';
 import { DashboardPage } from '@navet/app/features/dashboard';
 import { initializeHabitEngine, stopHabitEngine } from '@navet/app/features/habits';
-import { useAccentColor } from '@navet/app/hooks';
+import { useAccentColor, useSyncHomeAssistantPanelKioskMode } from '@navet/app/hooks';
 import { useViewportResize } from '@navet/app/hooks/use-viewport-resize';
 import { I18nProvider } from '@navet/app/i18n';
 import type { HomeAssistantPanelHass } from '@navet/app/services/home-assistant-panel-adapter';
@@ -109,6 +109,7 @@ function PanelRuntime({ hass }: HomeAssistantPanelProps) {
     disableAnimations || lowPowerMode
   );
   const reducedEffectsEnabled = resolvedEffectsQuality === 'low';
+  useSyncHomeAssistantPanelKioskMode();
 
   const syncViewportEnvironment = useCallback(() => {
     syncViewportCssVars();

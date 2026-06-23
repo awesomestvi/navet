@@ -1109,6 +1109,7 @@ export const enMessages = {
   'sidebar.recentSections': 'Recent sections',
   'sidebar.allSections': 'All sections',
   'sidebar.backToHome': 'Back to home',
+  'sidebar.toggleHomeAssistantKiosk': 'Toggle Home Assistant kiosk',
   'sidebar.currentRoom': 'Current room',
   'sidebar.settings': 'Settings',
   'sidebar.brandLogoAlt': 'Brand Logo',

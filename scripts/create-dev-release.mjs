@@ -4,7 +4,9 @@ import {
   buildDevAddonVersion,
   fail,
   getPackageVersion,
+  readText,
   updateAddonVersion,
+  writeText,
 } from './release-surfaces.mjs';
 import { homeAssistantPaths, repoRoot } from './repo-paths.mjs';
 
@@ -65,19 +67,6 @@ function parseArgs(argv) {
   return options;
 }
 
-function ensureNoUnrelatedStagedChanges() {
-  const stagedFiles = runGit(['diff', '--cached', '--name-only'])
-    .split('\n')
-    .map((value) => value.trim())
-    .filter(Boolean);
-
-  if (stagedFiles.length > 0) {
-    throw new Error(
-      `Refusing to create a dev release with staged changes: ${stagedFiles.join(', ')}`
-    );
-  }
-}
-
 function ensureMainBranchForPush() {
   const currentBranch = runGit(['branch', '--show-current']);
   if (currentBranch !== 'main') {
@@ -96,19 +85,249 @@ function ensureMainBranch() {
   }
 }
 
+function listTags() {
+  return runGit(['for-each-ref', '--sort=-creatordate', '--format=%(refname:short)', 'refs/tags'])
+    .split('\n')
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function isStableReleaseTag(tag) {
+  return /^v\d+\.\d+\.\d+$/.test(tag);
+}
+
+function resolveChangelogBaseTag() {
+  return listTags().find((tag) => tag.startsWith('navet-dev-') || isStableReleaseTag(tag)) ?? null;
+}
+
+function normalizeCommitSubject(subject) {
+  const stripped = subject
+    .trim()
+    .replace(/^(?:feat|fix|perf|refactor|docs|test|build|ci|chore)(?:\([^)]+\))?!?:\s*/i, '')
+    .replace(/\s+/g, ' ');
+
+  if (!stripped) {
+    return null;
+  }
+
+  return stripped.charAt(0).toUpperCase() + stripped.slice(1);
+}
+
+function listCommitSubjectsSince(tag) {
+  if (!tag) {
+    return [];
+  }
+
+  return runGit(['log', '--format=%s', '--no-merges', `${tag}..HEAD`])
+    .split('\n')
+    .map((value) => normalizeCommitSubject(value))
+    .filter(Boolean);
+}
+
+function listStagedFiles() {
+  return runGit(['diff', '--cached', '--name-only', '--diff-filter=ACMR'])
+    .split('\n')
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function listInProgressFiles() {
+  const unstagedFiles = runGit(['diff', '--name-only', '--diff-filter=ACMR'])
+    .split('\n')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const untrackedFiles = runGit(['ls-files', '--others', '--exclude-standard'])
+    .split('\n')
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  return [...new Set([...unstagedFiles, ...untrackedFiles])];
+}
+
+const CHANGE_AREAS = [
+  {
+    label: 'Home Assistant shell and kiosk integration',
+    match: (file) =>
+      file.includes('packages/app/src/infrastructure/home-assistant/runtime/') ||
+      file.includes('packages/app/src/panel/') ||
+      file.includes('apps/ha-panel/') ||
+      file.includes('packages/app/src/hooks/use-home-assistant-panel-shell.ts') ||
+      file.includes('packages/app/src/services/home-assistant-panel-adapter.ts') ||
+      file === 'docs/HOME_ASSISTANT.md',
+  },
+  {
+    label: 'Navigation and sidebar kiosk controls',
+    match: (file) =>
+      file.includes('packages/app/src/components/layout/sidebar.tsx') ||
+      file.includes('packages/app/src/components/layout/mobile-section-orbit-sheet.tsx') ||
+      file.includes('packages/app/src/components/layout/__tests__/sidebar.test.tsx'),
+  },
+  {
+    label: 'Home Assistant shell regression coverage',
+    match: (file) =>
+      file.includes('packages/app/src/infrastructure/home-assistant/runtime/__tests__/') ||
+      file.includes('packages/app/src/hooks/__tests__/use-home-assistant-panel-shell.test.tsx') ||
+      file.includes('packages/app/src/stores/__tests__/settings-store.test.ts'),
+  },
+  {
+    label: 'Auth screen polish',
+    match: (file) =>
+      file.includes('packages/app/src/features/auth/login-page.tsx') ||
+      file.includes('packages/app/src/features/auth/homey-selection-page.tsx'),
+  },
+  {
+    label: 'Localization updates',
+    match: (file) => file.includes('packages/app/src/i18n/messages/'),
+  },
+  {
+    label: 'Home Assistant panel workflow tooling',
+    match: (file) =>
+      file.includes('scripts/reset-ha-panel-assets.sh') ||
+      file === 'package.json',
+  },
+  {
+    label: 'Dev release tooling',
+    match: (file) => file.startsWith('scripts/'),
+  },
+];
+
+function describeFileAreas(files) {
+  const labels = new Set();
+
+  for (const file of files) {
+    for (const area of CHANGE_AREAS) {
+      if (area.match(file)) {
+        labels.add(area.label);
+      }
+    }
+  }
+
+  return [...labels];
+}
+
+function formatAreaList(labels) {
+  if (labels.length === 0) {
+    return null;
+  }
+
+  if (labels.length === 1) {
+    return labels[0];
+  }
+
+  if (labels.length === 2) {
+    return `${labels[0]} and ${labels[1]}`;
+  }
+
+  return `${labels.slice(0, -1).join(', ')}, and ${labels.at(-1)}`;
+}
+
+function replaceInProgressSection(content, lines) {
+  const normalizedContent = content.replace(/\r\n/g, '\n');
+  const nextSection = `## In Progress\n\n${lines.map((line) => `- ${line}`).join('\n')}`;
+
+  if (normalizedContent.includes('## In Progress')) {
+    return normalizedContent.replace(
+      /## In Progress[\s\S]*?(?=\n## |\s*$)/,
+      nextSection
+    ).replace(/\n{3,}/g, '\n\n');
+  }
+
+  const header = '# Changelog';
+  if (normalizedContent.startsWith(`${header}\n`)) {
+    const remainder = normalizedContent.slice(header.length).trimStart();
+    return `${header}\n\n${nextSection}${remainder ? `\n\n${remainder}` : ''}\n`;
+  }
+
+  return `${header}\n\n${nextSection}\n`;
+}
+
+function buildInProgressLines(baseTag) {
+  const commitSubjects = listCommitSubjectsSince(baseTag);
+  const stagedAreas = describeFileAreas(
+    listStagedFiles().filter((file) => file !== 'platform/home-assistant/addons/navet-dev/CHANGELOG.md')
+  );
+  const inProgressAreas = describeFileAreas(
+    listInProgressFiles().filter(
+      (file) =>
+        file !== 'platform/home-assistant/addons/navet-dev/CHANGELOG.md' &&
+        file !== 'platform/home-assistant/addons/navet-dev/config.yaml'
+    )
+  );
+
+  const lines = [];
+
+  if (baseTag) {
+    lines.push(`Current Navet Dev scope since \`${baseTag}\`.`);
+  } else {
+    lines.push('Current Navet Dev scope with no earlier stable or dev release tag available.');
+  }
+
+  if (commitSubjects.length > 0) {
+    lines.push(...commitSubjects);
+  } else if (baseTag) {
+    lines.push(`No committed changes have landed after \`${baseTag}\` yet.`);
+  } else {
+    lines.push('No committed release baseline was found yet.');
+  }
+
+  const stagedSummary = formatAreaList(stagedAreas);
+  if (stagedSummary) {
+    lines.push(`Current staged work includes ${stagedSummary}.`);
+  }
+
+  const inProgressSummary = formatAreaList(inProgressAreas);
+  if (inProgressSummary) {
+    lines.push(`Current in-progress work includes ${inProgressSummary}.`);
+  }
+
+  return lines;
+}
+
+function updateDevChangelog() {
+  const changelogPath = `${homeAssistantPaths.addonNavetDev}/CHANGELOG.md`;
+  const content = readText(changelogPath);
+  const baseTag = resolveChangelogBaseTag();
+  const nextContent = replaceInProgressSection(content, buildInProgressLines(baseTag));
+
+  if (nextContent !== content) {
+    writeText(changelogPath, nextContent);
+  }
+}
+
 function stageMetadataCommit(devVersion) {
   updateAddonVersion(devVersion, `${homeAssistantPaths.addonNavetDev}/config.yaml`);
+  updateDevChangelog();
   runGit(['add', 'platform/home-assistant/addons/navet-dev/config.yaml']);
+  runGit(['add', 'platform/home-assistant/addons/navet-dev/CHANGELOG.md']);
 
-  if (gitSucceeds(['diff', '--cached', '--quiet', '--', 'platform/home-assistant/addons/navet-dev/config.yaml'])) {
+  if (
+    gitSucceeds([
+      'diff',
+      '--cached',
+      '--quiet',
+      '--',
+      'platform/home-assistant/addons/navet-dev/config.yaml',
+      'platform/home-assistant/addons/navet-dev/CHANGELOG.md',
+    ])
+  ) {
     throw new Error(
       `Expected Navet Dev metadata to change for ${devVersion}, but no staged diff was created.`
     );
   }
 
-  runGit(['commit', '-m', `chore(release): publish navet dev ${devVersion}`], {
+  runGit(
+    [
+      'commit',
+      '-m',
+      `chore(release): publish navet dev ${devVersion}`,
+      '--',
+      'platform/home-assistant/addons/navet-dev/config.yaml',
+      'platform/home-assistant/addons/navet-dev/CHANGELOG.md',
+    ],
+    {
     stdio: 'inherit',
-  });
+    }
+  );
 }
 
 function createTag(tagName) {
@@ -134,7 +353,6 @@ function pushRelease(remote, tagName) {
 try {
   const options = parseArgs(process.argv.slice(2));
 
-  ensureNoUnrelatedStagedChanges();
   ensureMainBranch();
   if (options.push) {
     ensureMainBranchForPush();

@@ -23,6 +23,10 @@ form `0.x.y-dev.YYYYMMDDHHMMSS` and matching `navet-dev-*` tags. Use `pnpm relea
 only when you intentionally need to refresh the repository metadata outside that publish flow.
 Each Navet Dev publish refreshes the `dev` and `edge` tags as moving aliases for that same image
 and advances `config.yaml` on `main` so Home Assistant supervised installs see the new version.
+The same local `pnpm release:dev-publish` flow also rewrites the `## In Progress` section in
+`CHANGELOG.md` from the latest relevant release baseline: it uses the most recent `navet-dev-*`
+tag unless a newer stable `v*` tag exists, then folds in current committed, staged, and
+in-progress worktree scope.
 
 If you want an immutable Navet Dev publish, the local helper command is:
 

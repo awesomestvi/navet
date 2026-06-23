@@ -1,10 +1,12 @@
 import { Sidebar } from '@navet/app/components/layout/sidebar';
+import { NAVET_HOME_ASSISTANT_SHELL_GLOBAL } from '@navet/app/infrastructure/home-assistant/runtime/navet-ha-shell-api';
+import { resetRuntimeContextForTests } from '@navet/app/infrastructure/home-assistant/runtime/runtime-detector';
 import { useEditModeStore, useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { setMediaQueryMatch } from '@navet/app/test/browser-mocks';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
-import { fireEvent, screen, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { act, fireEvent, screen, within } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mobileRoomNavigation = {
   activeRoom: 'Living room',
@@ -16,6 +18,8 @@ describe('Sidebar mobile navigation', () => {
   beforeEach(async () => {
     await resetAppStores();
     setMediaQueryMatch('(max-width: 767px)', true);
+    window.__NAVET_PANEL__ = false;
+    resetRuntimeContextForTests();
   });
 
   function getMobileDock(container: HTMLElement) {
@@ -26,6 +30,68 @@ describe('Sidebar mobile navigation', () => {
     }
 
     return dock;
+  }
+
+  function setParentHomeAssistantShell({
+    href = 'http://ha.local:8123/navet',
+    locationAssign = vi.fn(),
+    openSidebar = vi.fn(async () => true),
+    setKioskEnabled = vi.fn(async () => true),
+    kioskEnabled = false,
+    panel = true,
+  }: {
+    href?: string;
+    locationAssign?: (href: string) => void;
+    openSidebar?: () => Promise<boolean>;
+    setKioskEnabled?: (enabled: boolean) => Promise<boolean>;
+    kioskEnabled?: boolean;
+    panel?: boolean;
+  } = {}) {
+    const parentDocument = document.implementation.createHTMLDocument('ha-parent');
+    const homeAssistantRoot = parentDocument.createElement('home-assistant') as HTMLElement & {
+      hass?: Record<string, unknown>;
+    };
+
+    homeAssistantRoot.hass = {
+      states: { 'light.kitchen': { entity_id: 'light.kitchen', state: 'on' } },
+      config: { location_name: 'Parent Home' },
+      user: { name: 'Parent User' },
+      connection: {
+        sendMessagePromise: vi.fn(async () => ({ ok: true })),
+        subscribeMessage: vi.fn(async () => vi.fn()),
+      },
+      callService: vi.fn(async () => undefined),
+      callWS: vi.fn(async () => ({ ok: true })),
+    };
+    parentDocument.body.append(homeAssistantRoot);
+
+    Object.defineProperty(window, 'parent', {
+      configurable: true,
+      value: {
+        document: parentDocument,
+        location: { href, origin: 'http://ha.local:8123', assign: locationAssign },
+        [NAVET_HOME_ASSISTANT_SHELL_GLOBAL]: {
+          available: true,
+          getSnapshot: () => ({ active: true, available: true, kioskEnabled }),
+          isKioskEnabled: () => kioskEnabled,
+          setKioskEnabled,
+          openSidebar,
+          navigateHome: vi.fn(async () => {
+            locationAssign('/');
+            return true;
+          }),
+          subscribe: (listener: () => void) => {
+            listener();
+            return () => {};
+          },
+        },
+      },
+    });
+
+    window.__NAVET_PANEL__ = panel;
+    resetRuntimeContextForTests();
+
+    return { locationAssign, parentDocument, openSidebar, setKioskEnabled };
   }
 
   it('renders a more launcher that exposes tasks, climate, lights, and media', () => {
@@ -197,5 +263,42 @@ describe('Sidebar mobile navigation', () => {
     expect(
       within(screen.getByRole('dialog')).queryByRole('button', { name: /^Customize sidebar/ })
     ).not.toBeInTheDocument();
+  });
+
+  it('renders the desktop Home Assistant kiosk toggle when the parent shell is available in panel mode', () => {
+    setMediaQueryMatch('(max-width: 767px)', false);
+
+    renderWithProviders(<Sidebar mobileRoomNavigation={mobileRoomNavigation} />);
+    expect(
+      screen.queryByRole('button', { name: 'Toggle Home Assistant kiosk' })
+    ).not.toBeInTheDocument();
+
+    setParentHomeAssistantShell();
+    renderWithProviders(<Sidebar mobileRoomNavigation={mobileRoomNavigation} />);
+    expect(screen.getByRole('button', { name: 'Toggle Home Assistant kiosk' })).toBeInTheDocument();
+  });
+
+  it('renders the desktop Home Assistant kiosk toggle when the parent shell is available in add-on mode', () => {
+    setMediaQueryMatch('(max-width: 767px)', false);
+    window.history.replaceState({}, '', '/api/hassio_ingress/navet_dev/dashboard');
+    setParentHomeAssistantShell({ panel: false });
+
+    renderWithProviders(<Sidebar mobileRoomNavigation={mobileRoomNavigation} />);
+
+    expect(screen.getByRole('button', { name: 'Toggle Home Assistant kiosk' })).toBeInTheDocument();
+  });
+
+  it('toggles Home Assistant kiosk from the desktop sidebar in add-on mode', () => {
+    setMediaQueryMatch('(max-width: 767px)', false);
+    window.history.replaceState({}, '', '/api/hassio_ingress/navet_dev/dashboard');
+    const setKioskEnabled = vi.fn(async () => true);
+    setParentHomeAssistantShell({ panel: false, setKioskEnabled, kioskEnabled: false });
+
+    renderWithProviders(<Sidebar mobileRoomNavigation={mobileRoomNavigation} />);
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Toggle Home Assistant kiosk' }));
+    });
+    expect(setKioskEnabled).toHaveBeenCalledWith(true);
   });
 });

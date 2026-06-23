@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@navet/app/components/ui/dropdown-menu';
 import { getDashboardRoomLabel, isAllRooms } from '@navet/app/constants/rooms';
-import { useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
+import { useHomeAssistantPanelShell, useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
 import { useEditModeStore, useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import {
@@ -29,6 +29,8 @@ import {
   Compass,
   DoorOpen,
   type LucideIcon,
+  PanelLeftClose,
+  PanelLeftOpen,
   Pencil,
   Plus,
   Search,
@@ -120,6 +122,7 @@ export const Sidebar = memo(function Sidebar({
   const [editingSidebarActionId, setEditingSidebarActionId] = useState<string | null>(null);
   const lastScrollYRef = useRef(0);
   const isMobile = useMediaQuery('(max-width: 767px)');
+  const homeAssistantShell = useHomeAssistantPanelShell();
 
   useEffect(() => {
     if (!isMobile) {
@@ -206,6 +209,8 @@ export const Sidebar = memo(function Sidebar({
       })),
     [setActiveSection, t]
   );
+  const HomeAssistantSidebarIcon =
+    homeAssistantShell.isKioskEnabled === true ? PanelLeftOpen : PanelLeftClose;
   const visibleMobileRooms = useMemo(
     () => (mobileRoomNavigation ? getVisibleRoomNavRooms(mobileRoomNavigation.rooms) : []),
     [mobileRoomNavigation]
@@ -236,7 +241,7 @@ export const Sidebar = memo(function Sidebar({
       <div
         className={`fixed left-0 top-0 hidden h-full w-16 ${surface.shellPanel} border-r md:flex z-50`}
       >
-        <div className="flex w-full justify-center safe-area-pt-5">
+        <div className="flex w-full flex-col items-center justify-between px-0 py-5">
           <div className="flex h-10 w-10 items-center justify-center">
             <ImageWithFallback
               src={getPublicAssetUrl('logo.svg')}
@@ -244,9 +249,6 @@ export const Sidebar = memo(function Sidebar({
               className="h-10 w-10"
             />
           </div>
-        </div>
-
-        <div className="absolute inset-0 flex items-center justify-center">
           <div className="flex flex-col gap-4">
             {menuItems.map((item) => (
               <InteractivePill
@@ -309,6 +311,22 @@ export const Sidebar = memo(function Sidebar({
                 ) : null}
               </div>
             ))}
+          </div>
+          <div className="flex flex-col gap-4">
+            {homeAssistantShell.canToggleKiosk ? (
+              <InteractivePill
+                onClick={() => {
+                  void homeAssistantShell.toggleHomeAssistantKiosk();
+                }}
+                aria-label={t('sidebar.toggleHomeAssistantKiosk')}
+                title={t('sidebar.toggleHomeAssistantKiosk')}
+                active={false}
+                variant="ghost"
+                className={`flex h-10 w-10 items-center justify-center rounded-[22px] gap-0 px-0 py-0 md:gap-0 md:px-0 transition-colors ${inactiveColor}`}
+              >
+                <HomeAssistantSidebarIcon className="h-5 w-5" />
+              </InteractivePill>
+            ) : null}
             {isEditMode ? (
               <InteractivePill
                 onClick={() => {
@@ -380,7 +398,7 @@ export const Sidebar = memo(function Sidebar({
           </div>
         ) : (
           <div
-            className={`relative overflow-hidden rounded-[22px] border ${surface.borderStrong} ${surface.panel} ${cardShell.backdropClassName} ${surface.cardShadow}`}
+            className={`relative overflow-hidden rounded-3xl border ${surface.borderStrong} ${surface.panel} ${cardShell.backdropClassName} ${surface.cardShadow}`}
             style={{ boxShadow: mobileDockShadow }}
           >
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/10" />

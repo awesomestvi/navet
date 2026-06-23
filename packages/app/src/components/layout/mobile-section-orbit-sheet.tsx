@@ -18,6 +18,11 @@ interface MobileSectionOrbitSheetProps {
     onEdit?: () => void;
     section?: Section;
   }>;
+  homeAssistantAction?: {
+    icon: LucideIcon;
+    label: string;
+    onClick: () => void;
+  };
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onCustomizeSidebar?: () => void;
@@ -27,6 +32,7 @@ interface MobileSectionOrbitSheetProps {
 export const MobileSectionOrbitSheet = memo(function MobileSectionOrbitSheet({
   activeSection,
   customItems = [],
+  homeAssistantAction,
   isOpen,
   onOpenChange,
   onCustomizeSidebar,
@@ -143,6 +149,22 @@ export const MobileSectionOrbitSheet = memo(function MobileSectionOrbitSheet({
                 </div>
               );
             })}
+            {homeAssistantAction ? (
+              <InteractivePill
+                type="button"
+                active={false}
+                icon={homeAssistantAction.icon}
+                intent="navigation"
+                size="small"
+                onClick={() => {
+                  homeAssistantAction.onClick();
+                  onOpenChange(false);
+                }}
+                className="col-span-2 h-[38px] w-full justify-start [&_svg]:h-4 [&_svg]:w-4"
+              >
+                <span className="truncate">{homeAssistantAction.label}</span>
+              </InteractivePill>
+            ) : null}
             {onCustomizeSidebar ? (
               <InteractivePill
                 type="button"

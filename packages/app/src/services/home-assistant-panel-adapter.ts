@@ -17,6 +17,7 @@ export interface HomeAssistantPanelHass {
   config: HassConfig;
   user?: HassUser;
   connection?: Connection;
+  shell?: HomeAssistantPanelShellBridge;
   callService: (
     domain: string,
     service: string,
@@ -28,6 +29,18 @@ export interface HomeAssistantPanelHass {
     }
   ) => Promise<unknown>;
   callWS: <T = unknown>(message: Record<string, unknown>) => Promise<T>;
+}
+
+export interface HomeAssistantPanelShellBridge {
+  canToggleKiosk: boolean;
+  canOpenSidebar: boolean;
+  canNavigateHome: boolean;
+  connect: (listener?: () => void) => void;
+  disconnect: () => void;
+  isKioskEnabled: () => boolean | null;
+  setHomeAssistantKioskEnabled: (enabled: boolean) => Promise<boolean>;
+  openHomeAssistantSidebar: () => Promise<boolean>;
+  navigateToHomeAssistantHome: () => Promise<boolean>;
 }
 
 export class HomeAssistantPanelAdapter {

@@ -105,6 +105,9 @@ Primary local flow:
 
 - push tested changes to `main`
 - run `pnpm release:dev-publish -- --push` locally from `main`
+- let that script rewrite `platform/home-assistant/addons/navet-dev/CHANGELOG.md` `In Progress`
+  from the latest relevant baseline: newest `navet-dev-*`, or a newer stable `v*` tag if that is
+  the latest release, plus current staged and in-progress work
 - let that script create and push the metadata commit plus matching `navet-dev-*` tag
 - let the pushed tag trigger the publish workflow
 

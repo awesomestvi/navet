@@ -1014,6 +1014,7 @@ export const zhMessages = {
   'sidebar.recentSections': '最近分区',
   'sidebar.allSections': '所有分区',
   'sidebar.backToHome': '返回主页',
+  'sidebar.toggleHomeAssistantKiosk': 'Toggle Home Assistant kiosk',
   'sidebar.currentRoom': '当前房间',
   'sidebar.brandLogoAlt': '品牌标志',
   'sections.security.singular': '分区安全',

@@ -48,9 +48,11 @@ describe('useSettingsStore', () => {
   });
 
   it('resets back to defaults', () => {
-    useSettingsStore
-      .getState()
-      .updateSettings({ kioskMode: true, keepDeviceAwake: true, lowPowerMode: true });
+    useSettingsStore.getState().updateSettings({
+      kioskMode: true,
+      keepDeviceAwake: true,
+      lowPowerMode: true,
+    });
     useSettingsStore.getState().updateCameraViewMode('camera.front_door', 'snapshot');
     useSettingsStore.getState().updateCameraStreamPreference('camera.front_door', 'hls');
     useSettingsStore.getState().updateCameraFitMode('camera.front_door', 'contain');

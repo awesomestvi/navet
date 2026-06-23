@@ -38,6 +38,10 @@ export { useEditMode } from './use-edit-mode';
 export { useHaCommandQueue } from './use-ha-command-queue';
 export { useHomeAssistant } from './use-home-assistant';
 export {
+  useHomeAssistantPanelShell,
+  useSyncHomeAssistantPanelKioskMode,
+} from './use-home-assistant-panel-shell';
+export {
   useCurrentIntegrationStore,
   useIntegrationStore,
 } from './use-integration-store';
