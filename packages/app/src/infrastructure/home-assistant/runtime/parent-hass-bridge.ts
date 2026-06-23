@@ -463,7 +463,7 @@ function createShellBridge(parentWindow: ParentWindowLike): HomeAssistantPanelSh
   };
 
   return {
-    canToggleKiosk: Boolean(shellApi) || Boolean(fallbackController?.getAvailable()),
+    canToggleKiosk: Boolean(shellApi || fallbackController),
     canOpenSidebar: Boolean(shellApi),
     canNavigateHome: true,
     connect,
