@@ -44,8 +44,8 @@ Important note:
 
 1. Push your tested changes to `main`.
 2. Run `pnpm release:dev-publish -- --push` locally from `main`.
-3. Let the script create the matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` metadata commit and tag,
-   then push both to GitHub.
+3. Let the script add the dev add-on metadata updates to your current staged set, create the
+   matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` release commit and tag, then push both to GitHub.
 4. Let [../../.github/workflows/dev-tag-release.yml](../../.github/workflows/dev-tag-release.yml)
    publish the prerelease artifacts from the pushed `navet-dev-*` tag.
 

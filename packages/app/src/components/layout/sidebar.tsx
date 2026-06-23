@@ -512,6 +512,17 @@ export const Sidebar = memo(function Sidebar({
       <MobileSectionOrbitSheet
         activeSection={activeSection}
         customItems={customMenuItems}
+        homeAssistantAction={
+          homeAssistantShell.canToggleKiosk
+            ? {
+                icon: HomeAssistantSidebarIcon,
+                label: t('sidebar.toggleHomeAssistantKiosk'),
+                onClick: () => {
+                  void homeAssistantShell.toggleHomeAssistantKiosk();
+                },
+              }
+            : undefined
+        }
         isOpen={isOrbitOpen}
         onOpenChange={setIsOrbitOpen}
         onSelectSection={setActiveSection}

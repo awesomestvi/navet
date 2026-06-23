@@ -108,7 +108,8 @@ Primary local flow:
 - let that script rewrite `platform/home-assistant/addons/navet-dev/CHANGELOG.md` `In Progress`
   from the latest relevant baseline: newest `navet-dev-*`, or a newer stable `v*` tag if that is
   the latest release, plus current staged and in-progress work
-- let that script create and push the metadata commit plus matching `navet-dev-*` tag
+- let that script add the dev add-on metadata updates to your current staged set, then create and
+  push the matching release commit plus `navet-dev-*` tag
 - let the pushed tag trigger the publish workflow
 
 Tag-triggered publish workflow:

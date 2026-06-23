@@ -53,6 +53,7 @@ frontend:
 - Navet appears in the Home Assistant sidebar
 - Home Assistant remains the host environment
 - If `navet-ha-shell.js` is loaded through `frontend.extra_module_url`, Navet can hide the Home Assistant header and sidebar while the custom panel or add-on is open
+- The shell module is served by the Navet integration at `/api/navet/static/navet-ha-shell.js`
 
 ### Troubleshooting
 
@@ -75,8 +76,9 @@ Use the add-on if you want Navet packaged and managed from Home Assistant itself
 2. Open the repository menu and choose `Repositories`.
 3. Add `https://github.com/awesomestvi/navet` as an Add-on Store repository.
 4. Install `Navet` for stable releases or `Navet Dev` for the nightly development surface.
-5. Start the add-on and open Navet from the Home Assistant sidebar.
-6. Optional but recommended for native Home Assistant chrome hiding in the add-on: add Navet's shell module under `frontend.extra_module_url`:
+5. If you want native Home Assistant chrome hiding in add-on mode, also install the Navet HACS integration so Home Assistant can serve `/api/navet/static/navet-ha-shell.js` to the parent frontend.
+6. Start the add-on and open Navet from the Home Assistant sidebar.
+7. Optional but recommended for native Home Assistant chrome hiding in the add-on: add Navet's shell module under `frontend.extra_module_url`:
 
 ```yaml
 frontend:
@@ -84,7 +86,7 @@ frontend:
     - /api/navet/static/navet-ha-shell.js
 ```
 
-7. Restart Home Assistant after updating `configuration.yaml`.
+8. Restart Home Assistant after updating `configuration.yaml`.
 
 ### What To Expect
 
@@ -92,6 +94,7 @@ frontend:
 - the Home Assistant frontend session is reused through the parent `hass` runtime bridge
 - Navet does not open its own Home Assistant websocket while running inside Ingress
 - If `navet-ha-shell.js` is loaded through `frontend.extra_module_url`, Navet can hide the Home Assistant header and sidebar while the add-on is open
+- That shell module is served by the Navet HACS integration, not by the add-on ingress app
 - the direct host port is off by default
 - if you expose the app outside Ingress, Navet falls back to the standalone-style OAuth flow
 
@@ -99,7 +102,7 @@ frontend:
 
 - If the add-on opens outside Ingress, expect standalone-style OAuth behavior instead of the
   parent-session bridge.
-- The add-on cannot inject host-shell code into Home Assistant by itself. Native Home Assistant chrome hiding in add-on mode requires the global `frontend.extra_module_url` entry above.
+- The add-on cannot inject host-shell code into Home Assistant by itself. Native Home Assistant chrome hiding in add-on mode requires both the global `frontend.extra_module_url` entry above and the Navet HACS integration that serves `/api/navet/static/navet-ha-shell.js`.
 
 ## Standalone Docker
 

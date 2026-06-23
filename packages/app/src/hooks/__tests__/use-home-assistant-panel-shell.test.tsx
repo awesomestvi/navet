@@ -46,6 +46,32 @@ function createParentWindow(options?: {
   };
   parentDocument.body.append(homeAssistantRoot);
 
+  const homeAssistantShadowRoot = homeAssistantRoot.attachShadow({ mode: 'open' });
+  const homeAssistantMain = parentDocument.createElement('home-assistant-main');
+  const homeAssistantMainShadowRoot = homeAssistantMain.attachShadow({ mode: 'open' });
+  const drawer = parentDocument.createElement('ha-drawer');
+  const drawerShadowRoot = drawer.attachShadow({ mode: 'open' });
+  const layout = parentDocument.createElement('div');
+  const sidebarShell = parentDocument.createElement('div');
+  const appContent = parentDocument.createElement('div');
+  const sidebarSlot = parentDocument.createElement('slot');
+  const appContentSlot = parentDocument.createElement('slot');
+  const sidebar = parentDocument.createElement('ha-sidebar');
+  const panelResolver = parentDocument.createElement('partial-panel-resolver');
+
+  layout.className = 'layout';
+  sidebarShell.className = 'sidebar-shell';
+  appContent.className = 'app-content';
+  panelResolver.slot = 'appContent';
+
+  sidebarShell.append(sidebarSlot);
+  appContent.append(appContentSlot);
+  layout.append(sidebarShell, appContent);
+  drawerShadowRoot.append(layout);
+  drawer.append(sidebar, panelResolver);
+  homeAssistantMainShadowRoot.append(drawer);
+  homeAssistantShadowRoot.append(homeAssistantMain);
+
   const parentWindow = {
     document: parentDocument,
     location: {
@@ -76,7 +102,7 @@ function createParentWindow(options?: {
 
   setParentWindow(parentWindow);
 
-  return { setKioskEnabled, parentWindow };
+  return { appContent, drawer, parentWindow, setKioskEnabled, sidebar, sidebarShell };
 }
 
 describe('useHomeAssistantPanelShell', () => {
@@ -107,18 +133,18 @@ describe('useHomeAssistantPanelShell', () => {
     expect(result.current.isKioskEnabled).toBe(false);
   });
 
-  it('stays unavailable in add-on ingress mode when the parent shell API is missing', () => {
+  it('uses the direct parent DOM fallback in add-on ingress mode when the shell API is missing', () => {
     setPath('/api/hassio_ingress/navet_dev/dashboard');
     createParentWindow({ includeShell: false });
     resetRuntimeContextForTests();
 
     const { result } = renderHookWithProviders(() => useHomeAssistantPanelShell());
 
-    expect(result.current.available).toBe(false);
-    expect(result.current.canToggleKiosk).toBe(false);
+    expect(result.current.available).toBe(true);
+    expect(result.current.canToggleKiosk).toBe(true);
     expect(result.current.canOpenSidebar).toBe(false);
-    expect(result.current.canNavigateHome).toBe(false);
-    expect(result.current.isKioskEnabled).toBeNull();
+    expect(result.current.canNavigateHome).toBe(true);
+    expect(result.current.isKioskEnabled).toBe(false);
   });
 });
 
@@ -153,14 +179,27 @@ describe('useSyncHomeAssistantPanelKioskMode', () => {
     await waitFor(() => expect(setKioskEnabled).toHaveBeenCalledWith(false));
   });
 
-  it('does not call into the parent shell when ingress mode has no shell API', async () => {
+  it('enables and disables the direct parent DOM fallback when ingress mode has no shell API', async () => {
     setPath('/api/hassio_ingress/navet_dev/dashboard');
-    const setKioskEnabled = vi.fn(async () => true);
-    createParentWindow({ includeShell: false, setKioskEnabled });
+    const { appContent, drawer, sidebar, sidebarShell } = createParentWindow({
+      includeShell: false,
+    });
     resetRuntimeContextForTests();
 
-    renderHookWithProviders(() => useSyncHomeAssistantPanelKioskMode());
+    const { unmount } = renderHookWithProviders(() => useSyncHomeAssistantPanelKioskMode());
 
-    await waitFor(() => expect(setKioskEnabled).not.toHaveBeenCalled());
+    await waitFor(() => expect(sidebar?.style.display).toBe('none'));
+    expect(sidebarShell.style.display).toBe('none');
+    expect(appContent.style.paddingLeft).toBe('0px');
+    expect(drawer.style.getPropertyValue('--ha-sidebar-width')).toBe('0px');
+
+    act(() => {
+      unmount();
+    });
+
+    await waitFor(() => expect(sidebar?.getAttribute('style')).toBeNull());
+    expect(sidebarShell.getAttribute('style')).toBeNull();
+    expect(appContent.getAttribute('style')).toBeNull();
+    expect(drawer.getAttribute('style')).toBeNull();
   });
 });

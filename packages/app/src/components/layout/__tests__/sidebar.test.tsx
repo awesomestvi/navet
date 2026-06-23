@@ -1,4 +1,5 @@
 import { Sidebar } from '@navet/app/components/layout/sidebar';
+import type { NavetHomeAssistantShellListener } from '@navet/app/infrastructure/home-assistant/runtime/navet-ha-shell-api';
 import { NAVET_HOME_ASSISTANT_SHELL_GLOBAL } from '@navet/app/infrastructure/home-assistant/runtime/navet-ha-shell-api';
 import { resetRuntimeContextForTests } from '@navet/app/infrastructure/home-assistant/runtime/runtime-detector';
 import { useEditModeStore, useNavigationStore, useSettingsStore } from '@navet/app/stores';
@@ -38,6 +39,7 @@ describe('Sidebar mobile navigation', () => {
     openSidebar = vi.fn(async () => true),
     setKioskEnabled = vi.fn(async () => true),
     kioskEnabled = false,
+    includeShell = true,
     panel = true,
   }: {
     href?: string;
@@ -45,12 +47,25 @@ describe('Sidebar mobile navigation', () => {
     openSidebar?: () => Promise<boolean>;
     setKioskEnabled?: (enabled: boolean) => Promise<boolean>;
     kioskEnabled?: boolean;
+    includeShell?: boolean;
     panel?: boolean;
   } = {}) {
     const parentDocument = document.implementation.createHTMLDocument('ha-parent');
     const homeAssistantRoot = parentDocument.createElement('home-assistant') as HTMLElement & {
       hass?: Record<string, unknown>;
     };
+    const homeAssistantShadowRoot = homeAssistantRoot.attachShadow({ mode: 'open' });
+    const homeAssistantMain = parentDocument.createElement('home-assistant-main');
+    const homeAssistantMainShadowRoot = homeAssistantMain.attachShadow({ mode: 'open' });
+    const drawer = parentDocument.createElement('ha-drawer');
+    const drawerShadowRoot = drawer.attachShadow({ mode: 'open' });
+    const layout = parentDocument.createElement('div');
+    const sidebarShell = parentDocument.createElement('div');
+    const appContent = parentDocument.createElement('div');
+    const sidebarSlot = parentDocument.createElement('slot');
+    const appContentSlot = parentDocument.createElement('slot');
+    const sidebar = parentDocument.createElement('ha-sidebar');
+    const panelResolver = parentDocument.createElement('partial-panel-resolver');
 
     homeAssistantRoot.hass = {
       states: { 'light.kitchen': { entity_id: 'light.kitchen', state: 'on' } },
@@ -63,35 +78,62 @@ describe('Sidebar mobile navigation', () => {
       callService: vi.fn(async () => undefined),
       callWS: vi.fn(async () => ({ ok: true })),
     };
+
+    layout.className = 'layout';
+    sidebarShell.className = 'sidebar-shell';
+    appContent.className = 'app-content';
+    panelResolver.slot = 'appContent';
+
+    sidebarShell.append(sidebarSlot);
+    appContent.append(appContentSlot);
+    layout.append(sidebarShell, appContent);
+    drawerShadowRoot.append(layout);
+    drawer.append(sidebar, panelResolver);
+    homeAssistantMainShadowRoot.append(drawer);
+    homeAssistantShadowRoot.append(homeAssistantMain);
     parentDocument.body.append(homeAssistantRoot);
+
+    const parentWindowValue: Window & typeof globalThis = {
+      document: parentDocument,
+      location: { href, origin: 'http://ha.local:8123', assign: locationAssign },
+    } as Window & typeof globalThis;
+
+    if (includeShell) {
+      parentWindowValue[NAVET_HOME_ASSISTANT_SHELL_GLOBAL] = {
+        available: true,
+        getSnapshot: () => ({ active: true, available: true, kioskEnabled }),
+        isKioskEnabled: () => kioskEnabled,
+        setKioskEnabled,
+        openSidebar,
+        navigateHome: vi.fn(async () => {
+          locationAssign('/');
+          return true;
+        }),
+        subscribe: (listener: NavetHomeAssistantShellListener) => {
+          listener({ active: true, available: true, kioskEnabled });
+          return () => {};
+        },
+      };
+    }
 
     Object.defineProperty(window, 'parent', {
       configurable: true,
-      value: {
-        document: parentDocument,
-        location: { href, origin: 'http://ha.local:8123', assign: locationAssign },
-        [NAVET_HOME_ASSISTANT_SHELL_GLOBAL]: {
-          available: true,
-          getSnapshot: () => ({ active: true, available: true, kioskEnabled }),
-          isKioskEnabled: () => kioskEnabled,
-          setKioskEnabled,
-          openSidebar,
-          navigateHome: vi.fn(async () => {
-            locationAssign('/');
-            return true;
-          }),
-          subscribe: (listener: () => void) => {
-            listener();
-            return () => {};
-          },
-        },
-      },
+      value: parentWindowValue,
     });
 
     window.__NAVET_PANEL__ = panel;
     resetRuntimeContextForTests();
 
-    return { locationAssign, parentDocument, openSidebar, setKioskEnabled };
+    return {
+      appContent,
+      drawer,
+      locationAssign,
+      openSidebar,
+      parentDocument,
+      setKioskEnabled,
+      sidebar,
+      sidebarShell,
+    };
   }
 
   it('renders a more launcher that exposes tasks, climate, lights, and media', () => {
@@ -288,6 +330,16 @@ describe('Sidebar mobile navigation', () => {
     expect(screen.getByRole('button', { name: 'Toggle Home Assistant kiosk' })).toBeInTheDocument();
   });
 
+  it('renders the desktop Home Assistant kiosk toggle in add-on mode without the parent shell module', () => {
+    setMediaQueryMatch('(max-width: 767px)', false);
+    window.history.replaceState({}, '', '/api/hassio_ingress/navet_dev/dashboard');
+    setParentHomeAssistantShell({ includeShell: false, panel: false });
+
+    renderWithProviders(<Sidebar mobileRoomNavigation={mobileRoomNavigation} />);
+
+    expect(screen.getByRole('button', { name: 'Toggle Home Assistant kiosk' })).toBeInTheDocument();
+  });
+
   it('toggles Home Assistant kiosk from the desktop sidebar in add-on mode', () => {
     setMediaQueryMatch('(max-width: 767px)', false);
     window.history.replaceState({}, '', '/api/hassio_ingress/navet_dev/dashboard');
@@ -299,6 +351,46 @@ describe('Sidebar mobile navigation', () => {
     act(() => {
       fireEvent.click(screen.getByRole('button', { name: 'Toggle Home Assistant kiosk' }));
     });
+    expect(setKioskEnabled).toHaveBeenCalledWith(true);
+  });
+
+  it('toggles the direct parent DOM fallback from the desktop sidebar in add-on mode', () => {
+    setMediaQueryMatch('(max-width: 767px)', false);
+    window.history.replaceState({}, '', '/api/hassio_ingress/navet_dev/dashboard');
+    const { appContent, drawer, sidebar, sidebarShell } = setParentHomeAssistantShell({
+      includeShell: false,
+      panel: false,
+    });
+
+    renderWithProviders(<Sidebar mobileRoomNavigation={mobileRoomNavigation} />);
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Toggle Home Assistant kiosk' }));
+    });
+
+    expect(sidebar.style.display).toBe('none');
+    expect(sidebarShell.style.display).toBe('none');
+    expect(drawer.style.getPropertyValue('--ha-sidebar-width')).toBe('0px');
+    expect(appContent.style.paddingLeft).toBe('0px');
+  });
+
+  it('toggles Home Assistant kiosk from the mobile more sheet in add-on mode', () => {
+    window.history.replaceState({}, '', '/api/hassio_ingress/navet_dev/dashboard');
+    const setKioskEnabled = vi.fn(async () => true);
+    setParentHomeAssistantShell({ panel: false, setKioskEnabled, kioskEnabled: false });
+
+    const { container } = renderWithProviders(
+      <Sidebar mobileRoomNavigation={mobileRoomNavigation} />
+    );
+    const dock = getMobileDock(container);
+
+    fireEvent.click(within(dock).getByRole('button', { name: 'More' }));
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Toggle Home Assistant kiosk',
+      })
+    );
+
     expect(setKioskEnabled).toHaveBeenCalledWith(true);
   });
 });

@@ -17,6 +17,7 @@ This directory is the canonical monorepo source exported to `awesomestvi/navet-h
 - registers the `/navet` panel
 - serves bundled assets from `/api/navet/static/`
 - loads `navet-panel.js`
+- also exposes `navet-ha-shell.js` for `frontend.extra_module_url` host-shell integration
 - uses the current Home Assistant frontend session
 - does not prompt for a separate Navet login
 

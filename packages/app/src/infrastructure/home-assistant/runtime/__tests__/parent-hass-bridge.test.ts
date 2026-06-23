@@ -22,6 +22,19 @@ function createParentDocument() {
   const homeAssistantRoot = parentDocument.createElement('home-assistant') as HTMLElement & {
     hass?: Record<string, unknown>;
   };
+  const homeAssistantShadowRoot = homeAssistantRoot.attachShadow({ mode: 'open' });
+  const homeAssistantMain = parentDocument.createElement('home-assistant-main');
+  const homeAssistantMainShadowRoot = homeAssistantMain.attachShadow({ mode: 'open' });
+  const drawer = parentDocument.createElement('ha-drawer');
+  const drawerShadowRoot = drawer.attachShadow({ mode: 'open' });
+  const layout = parentDocument.createElement('div');
+  const sidebarShell = parentDocument.createElement('div');
+  const appContent = parentDocument.createElement('div');
+  const sidebarSlot = parentDocument.createElement('slot');
+  const appContentSlot = parentDocument.createElement('slot');
+  const header = parentDocument.createElement('app-header');
+  const sidebar = parentDocument.createElement('ha-sidebar');
+  const panelResolver = parentDocument.createElement('partial-panel-resolver');
 
   homeAssistantRoot.hass = {
     states: { 'light.kitchen': { entity_id: 'light.kitchen', state: 'on' } },
@@ -34,9 +47,22 @@ function createParentDocument() {
     callService: vi.fn(async () => undefined),
     callWS: vi.fn(async () => ({ ok: true })),
   };
+
+  layout.className = 'layout';
+  sidebarShell.className = 'sidebar-shell';
+  appContent.className = 'app-content';
+  panelResolver.slot = 'appContent';
+
+  sidebarShell.append(sidebarSlot);
+  appContent.append(appContentSlot);
+  layout.append(sidebarShell, appContent);
+  drawerShadowRoot.append(layout);
+  drawer.append(sidebar, panelResolver);
+  homeAssistantMainShadowRoot.append(header, drawer);
+  homeAssistantShadowRoot.append(homeAssistantMain);
   parentDocument.body.append(homeAssistantRoot);
 
-  return { parentDocument };
+  return { appContent, drawer, header, parentDocument, sidebar, sidebarShell };
 }
 
 function createShellApi() {
@@ -116,8 +142,9 @@ describe('resolveParentHomeAssistantBridge', () => {
     expect(api.openSidebar).toHaveBeenCalled();
   });
 
-  it('reports kiosk controls unavailable when the parent shell API is missing', () => {
-    const { parentDocument } = createParentDocument();
+  it('falls back to direct parent DOM kiosk controls when the parent shell API is missing', async () => {
+    const { appContent, drawer, header, parentDocument, sidebar, sidebarShell } =
+      createParentDocument();
 
     attachParentWindow({
       document: parentDocument,
@@ -130,9 +157,25 @@ describe('resolveParentHomeAssistantBridge', () => {
 
     const bridge = resolveParentHomeAssistantBridge();
 
-    expect(bridge?.shell?.canToggleKiosk).toBe(false);
+    expect(bridge?.shell?.canToggleKiosk).toBe(true);
     expect(bridge?.shell?.canOpenSidebar).toBe(false);
-    expect(bridge?.shell?.isKioskEnabled()).toBeNull();
+    expect(bridge?.shell?.isKioskEnabled()).toBe(false);
+
+    await expect(bridge?.shell?.setHomeAssistantKioskEnabled(true)).resolves.toBe(true);
+    expect(drawer.style.getPropertyValue('--ha-sidebar-width')).toBe('0px');
+    expect(sidebarShell.style.display).toBe('none');
+    expect(appContent.style.paddingLeft).toBe('0px');
+    expect(sidebar.style.display).toBe('none');
+    expect(header.style.display).toBe('none');
+    expect(bridge?.shell?.isKioskEnabled()).toBe(true);
+
+    await expect(bridge?.shell?.setHomeAssistantKioskEnabled(false)).resolves.toBe(true);
+    expect(drawer.getAttribute('style')).toBeNull();
+    expect(sidebarShell.getAttribute('style')).toBeNull();
+    expect(appContent.getAttribute('style')).toBeNull();
+    expect(sidebar.getAttribute('style')).toBeNull();
+    expect(header.getAttribute('style')).toBeNull();
+    expect(bridge?.shell?.isKioskEnabled()).toBe(false);
   });
 
   it('navigates to the Home Assistant root as a fallback when the parent shell API is missing', async () => {

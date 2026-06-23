@@ -300,19 +300,8 @@ function stageMetadataCommit(devVersion) {
   runGit(['add', 'platform/home-assistant/addons/navet-dev/config.yaml']);
   runGit(['add', 'platform/home-assistant/addons/navet-dev/CHANGELOG.md']);
 
-  if (
-    gitSucceeds([
-      'diff',
-      '--cached',
-      '--quiet',
-      '--',
-      'platform/home-assistant/addons/navet-dev/config.yaml',
-      'platform/home-assistant/addons/navet-dev/CHANGELOG.md',
-    ])
-  ) {
-    throw new Error(
-      `Expected Navet Dev metadata to change for ${devVersion}, but no staged diff was created.`
-    );
+  if (gitSucceeds(['diff', '--cached', '--quiet'])) {
+    throw new Error(`Expected staged changes for Navet Dev publish ${devVersion}, but none exist.`);
   }
 
   runGit(
@@ -320,12 +309,9 @@ function stageMetadataCommit(devVersion) {
       'commit',
       '-m',
       `chore(release): publish navet dev ${devVersion}`,
-      '--',
-      'platform/home-assistant/addons/navet-dev/config.yaml',
-      'platform/home-assistant/addons/navet-dev/CHANGELOG.md',
     ],
     {
-    stdio: 'inherit',
+      stdio: 'inherit',
     }
   );
 }
