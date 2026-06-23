@@ -4,7 +4,13 @@ import {
   CardDialogHeader,
   CardDialogSection,
 } from '@navet/app/components/patterns';
-import { BaseCardDialog, Button, Input, InteractivePill } from '@navet/app/components/primitives';
+import {
+  BaseCardDialog,
+  Button,
+  Input,
+  InteractivePill,
+  Select,
+} from '@navet/app/components/primitives';
 import { IconPicker } from '@navet/app/components/shared/device-editor';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@navet/app/hooks';
@@ -26,6 +32,17 @@ interface CustomExtensionsDialogProps {
   mode: 'sidebar';
 }
 
+const SECTION_OPTIONS = [
+  ['home', 'Home'],
+  ['energy', 'Energy'],
+  ['climate', 'Climate'],
+  ['security', 'Security'],
+  ['lights', 'Lights'],
+  ['media', 'Media'],
+  ['tasks', 'Tasks'],
+  ['settings', 'Settings'],
+] as const;
+
 function createEmptySidebarActionDraft(): CustomSidebarAction {
   return {
     id: createCustomExtensionId('sidebar'),
@@ -38,16 +55,7 @@ function createEmptySidebarActionDraft(): CustomSidebarAction {
 }
 
 function coerceSidebarDraftForDialog(action: CustomSidebarAction): CustomSidebarAction {
-  if (action.targetType === 'url') {
-    return { ...action };
-  }
-
-  return {
-    ...action,
-    targetType: 'url',
-    targetSection: undefined,
-    targetUrl: '',
-  };
+  return { ...action };
 }
 
 function normalizeSidebarDraft(action: CustomSidebarAction): CustomSidebarAction | null {
@@ -93,7 +101,7 @@ function getSidebarValidationMessage(action: CustomSidebarAction): string | null
     return null;
   }
 
-  if (action.targetType === 'url') {
+  if (action.targetType === 'url' || action.targetType === 'iframe') {
     const safeUrl = sanitizeExternalUrl(
       action.targetUrl ?? '',
       typeof window !== 'undefined' ? window.location.href : undefined
@@ -227,25 +235,88 @@ export function CustomExtensionsDialog({
             </CardDialogSection>
 
             <CardDialogSection
+              label="Destination type"
+              helperText="Choose whether this shortcut opens a Navet section, a new browser tab, or an embedded page."
+              helperTextClassName={surface.textMuted}
+              labelClassName={surface.textPrimary}
+            >
+              <Select
+                value={draft.targetType}
+                onChange={(event) =>
+                  setDraft((current) => {
+                    const nextType = event.currentTarget.value as CustomSidebarAction['targetType'];
+
+                    return nextType === 'section'
+                      ? {
+                          ...current,
+                          targetType: 'section',
+                          targetSection: current.targetSection ?? 'home',
+                          targetUrl: undefined,
+                        }
+                      : {
+                          ...current,
+                          targetType: nextType,
+                          targetSection: undefined,
+                          targetUrl: current.targetUrl ?? '',
+                        };
+                  })
+                }
+                aria-label="Sidebar action target type"
+              >
+                <option value="section">Open section</option>
+                <option value="url">Open URL</option>
+                <option value="iframe">Open inside Navet</option>
+              </Select>
+            </CardDialogSection>
+
+            <CardDialogSection
               label="Destination"
-              helperText="Paste the link this shortcut should open."
+              helperText={
+                draft.targetType === 'section'
+                  ? 'Choose the Navet section this shortcut should open.'
+                  : draft.targetType === 'iframe'
+                    ? 'Paste the link Navet should try to embed. Some sites block framing and may need the external fallback.'
+                    : 'Paste the link this shortcut should open in a new tab.'
+              }
               helperTextClassName={surface.textMuted}
               labelClassName={surface.textPrimary}
             >
               <div className="space-y-3">
-                <Input
-                  value={draft.targetUrl ?? ''}
-                  onChange={(event) =>
-                    setDraft((current) => ({
-                      ...current,
-                      targetType: 'url',
-                      targetSection: undefined,
-                      targetUrl: event.currentTarget.value,
-                    }))
-                  }
-                  placeholder="https://navet.app/"
-                  aria-label="Sidebar action URL"
-                />
+                {draft.targetType === 'section' ? (
+                  <Select
+                    value={draft.targetSection ?? 'home'}
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        targetType: 'section',
+                        targetSection: event.currentTarget
+                          .value as CustomSidebarAction['targetSection'],
+                        targetUrl: undefined,
+                      }))
+                    }
+                    aria-label="Sidebar action section"
+                  >
+                    {SECTION_OPTIONS.map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </Select>
+                ) : (
+                  <Input
+                    value={draft.targetUrl ?? ''}
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        targetType: current.targetType === 'iframe' ? 'iframe' : 'url',
+                        targetSection: undefined,
+                        targetUrl: event.currentTarget.value,
+                      }))
+                    }
+                    placeholder="https://navet.app/"
+                    aria-label="Sidebar action URL"
+                  />
+                )}
 
                 {validationMessage ? (
                   <p className="text-sm text-red-300">{validationMessage}</p>

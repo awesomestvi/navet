@@ -12,14 +12,24 @@ import { buildRoomStatusSummaryItems } from '@navet/app/features/sensors/compone
 import { SummaryBar } from '@navet/app/features/sensors/components/info-badge-strip';
 import { useTaskRoutines } from '@navet/app/features/tasks/hooks/use-task-automation-groups';
 import { useI18n, useIntegrationStore, useMediaQuery, useTheme } from '@navet/app/hooks';
-import { useSettingsStore } from '@navet/app/stores';
+import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { integrationSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
 import { Lightbulb, Plus, Thermometer } from 'lucide-react';
-import { lazy, memo, type ReactNode, Suspense, useCallback, useMemo, useState } from 'react';
+import {
+  lazy,
+  memo,
+  type ReactNode,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { DeviceGrid } from '../device-grid';
 import type { DashboardController } from '../hooks/use-dashboard-controller';
 import { DashboardLayout } from '../shell';
+import { EmbeddedSidebarPage } from './embedded-sidebar-page';
 
 const SecuritySection = lazy(async () => {
   const module = await import('@navet/app/components/layout/security-section');
@@ -79,6 +89,11 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   );
   const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
   const showSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
+  const activeCustomSidebarActionId = useNavigationStore(
+    (state) => state.activeCustomSidebarActionId
+  );
+  const setActiveSection = useNavigationStore((state) => state.setActiveSection);
+  const customSidebarActions = useSettingsStore(settingsSelectors.customSidebarActions);
   const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
   const routines = useTaskRoutines({
     enabled: shouldSubscribeTaskRoutines(controller.activeSection),
@@ -199,10 +214,36 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     isEditMode && (activeSection === 'home' || activeSection === 'energy')
       ? t('dashboard.roomNav.addCard')
       : t('dashboard.addEntity.title');
+  const embeddedSidebarAction =
+    activeCustomSidebarActionId === null
+      ? null
+      : (customSidebarActions.find(
+          (action) =>
+            action.id === activeCustomSidebarActionId &&
+            action.targetType === 'iframe' &&
+            Boolean(action.targetUrl)
+        ) ?? null);
+
+  useEffect(() => {
+    if (activeCustomSidebarActionId !== null && embeddedSidebarAction === null) {
+      setActiveSection('home');
+    }
+  }, [activeCustomSidebarActionId, embeddedSidebarAction, setActiveSection]);
 
   let sectionContent: ReactNode;
 
-  if (activeSection === 'security') {
+  if (activeCustomSidebarActionId !== null && embeddedSidebarAction === null) {
+    sectionContent = null;
+  } else if (embeddedSidebarAction) {
+    sectionContent = (
+      <RenderProfiler id="EmbeddedSidebarPage">
+        <EmbeddedSidebarPage
+          title={embeddedSidebarAction.label}
+          url={embeddedSidebarAction.targetUrl ?? ''}
+        />
+      </RenderProfiler>
+    );
+  } else if (activeSection === 'security') {
     sectionContent = (
       <Suspense fallback={<LoadingSpinner />}>
         <SecuritySection openAddEntityRequestKey={securityAddEntityRequestKey} />

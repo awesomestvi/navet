@@ -2,7 +2,7 @@ import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner
 import { RenderProfiler } from '@navet/app/components/shared/render-profiler';
 import { isAllRooms } from '@navet/app/constants/rooms';
 import { useI18n } from '@navet/app/hooks';
-import { useErrorStore } from '@navet/app/stores';
+import { useErrorStore, useNavigationStore } from '@navet/app/stores';
 import { appErrorSelectors } from '@navet/app/stores/selectors';
 import { useEffect } from 'react';
 import { DashboardArrivalReveal } from '../components/dashboard-arrival-reveal';
@@ -16,11 +16,15 @@ export function DashboardPage() {
   const appError = useErrorStore(appErrorSelectors.error);
   const setAppError = useErrorStore(appErrorSelectors.setError);
   const clearAppError = useErrorStore(appErrorSelectors.clearError);
+  const activeCustomSidebarActionId = useNavigationStore(
+    (state) => state.activeCustomSidebarActionId
+  );
   useDashboardProfileSync();
   const controller = useDashboardController();
   const isDashboardReady =
     controller.devicesLoaded &&
-    (controller.activeSection !== 'home' ||
+    (activeCustomSidebarActionId !== null ||
+      controller.activeSection !== 'home' ||
       !isAllRooms(controller.activeRoom) ||
       controller.homeLayoutHydrated);
   const isWaitingForDashboard = !isDashboardReady && !controller.connecting;

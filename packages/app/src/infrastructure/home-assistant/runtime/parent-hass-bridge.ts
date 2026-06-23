@@ -100,11 +100,24 @@ function getNodeChildren(node: Element): Element[] {
   return [...children, ...shadowChildren];
 }
 
+function isElementNode(value: unknown): value is Element {
+  return Boolean(value && typeof value === 'object' && 'nodeType' in value && value.nodeType === 1);
+}
+
+function isRootNode(value: unknown): value is ParentNode & { children: HTMLCollection } {
+  return Boolean(
+    value &&
+      typeof value === 'object' &&
+      'nodeType' in value &&
+      (value.nodeType === 9 || value.nodeType === 11)
+  );
+}
+
 function walkElements(root: ParentNode, callback: (element: Element) => void) {
   const queue: Element[] = [];
-  if (root instanceof Document || root instanceof ShadowRoot) {
+  if (isRootNode(root)) {
     queue.push(...Array.from(root.children));
-  } else if (root instanceof Element) {
+  } else if (isElementNode(root)) {
     queue.push(root);
   }
 
@@ -164,6 +177,17 @@ function rememberStyle(record: ManagedStyleRecord, element: Element) {
   });
 }
 
+function hasStyleDeclaration(element: Element): element is Element & {
+  style: CSSStyleDeclaration & { setProperty: typeof CSSStyleDeclaration.prototype.setProperty };
+} {
+  if (!('style' in element)) {
+    return false;
+  }
+
+  const style = (element as Element & { style?: Partial<CSSStyleDeclaration> }).style;
+  return typeof style?.setProperty === 'function';
+}
+
 function applyStyleRules(
   record: ManagedStyleRecord,
   elements: Element[],
@@ -173,7 +197,7 @@ function applyStyleRules(
     rememberStyle(record, element);
 
     for (const [property, value] of Object.entries(styles)) {
-      element instanceof HTMLElement || element instanceof SVGElement
+      hasStyleDeclaration(element)
         ? element.style.setProperty(property, value, 'important')
         : element.setAttribute(
             'style',
@@ -260,16 +284,18 @@ function createParentDomKioskController(parentWindow: ParentWindowLike): ParentD
   let retryTimer: number | null = null;
 
   const resolveLayout = () => {
-    const homeAssistantRoot = queryFirstAcrossShadows(parentWindow.document, ['home-assistant']) as
+    const drawer = queryFirstAcrossShadows(parentWindow.document, ['ha-drawer']) as
       | (Element & { shadowRoot?: ShadowRoot | null })
       | null;
-    const homeAssistantMain = homeAssistantRoot?.shadowRoot?.querySelector('home-assistant-main') as
-      | (Element & { shadowRoot?: ShadowRoot | null })
-      | null;
-    const drawer = homeAssistantMain?.shadowRoot?.querySelector('ha-drawer');
-    const layout = drawer?.shadowRoot?.querySelector('.layout');
-    const sidebarShell = layout?.querySelector('.sidebar-shell');
-    const appContent = layout?.querySelector('.app-content');
+    const layout =
+      (drawer?.shadowRoot?.querySelector('.layout') as Element | null) ??
+      queryFirstAcrossShadows(parentWindow.document, ['.layout']);
+    const sidebarShell =
+      (layout?.querySelector('.sidebar-shell') as Element | null) ??
+      queryFirstAcrossShadows(parentWindow.document, ['.sidebar-shell']);
+    const appContent =
+      (layout?.querySelector('.app-content') as Element | null) ??
+      queryFirstAcrossShadows(parentWindow.document, ['.app-content']);
     const sidebar =
       drawer?.querySelector('ha-sidebar') ??
       queryFirstAcrossShadows(drawer?.shadowRoot ?? parentWindow.document, ['ha-sidebar']);
@@ -372,10 +398,14 @@ function createParentDomKioskController(parentWindow: ParentWindowLike): ParentD
     isKioskEnabled: () => kioskEnabled,
     openSidebar: async () => false,
     setKioskEnabled: async (enabled: boolean) => {
+      const previousKioskEnabled = kioskEnabled;
       kioskEnabled = enabled;
       retryCount = 0;
 
       const changed = syncStyles();
+      if (!changed) {
+        kioskEnabled = previousKioskEnabled;
+      }
       if (!enabled) {
         clearRetry();
       }

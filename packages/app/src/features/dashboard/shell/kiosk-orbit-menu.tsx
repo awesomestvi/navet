@@ -59,10 +59,17 @@ export const KioskOrbitMenu = memo(function KioskOrbitMenu({
   const surface = getThemeSurfaceTokens(theme);
   const [isOpen, setIsOpen] = useState(false);
   const [isReorderDialogOpen, setIsReorderDialogOpen] = useState(false);
-  const { activeSection, setActiveSection } = useNavigationStore(
+  const {
+    activeCustomSidebarActionId,
+    activeSection,
+    setActiveSection,
+    setActiveCustomSidebarAction,
+  } = useNavigationStore(
     useShallow((state) => ({
+      activeCustomSidebarActionId: state.activeCustomSidebarActionId,
       activeSection: state.activeSection,
       setActiveSection: state.setActiveSection,
+      setActiveCustomSidebarAction: state.setActiveCustomSidebarAction,
     }))
   );
   const advancedCustomizationEnabled = useSettingsStore(
@@ -99,13 +106,23 @@ export const KioskOrbitMenu = memo(function KioskOrbitMenu({
     .filter((item) => isSidebarActionVisible(item, true))
     .map((item) => ({
       id: item.id,
-      active: item.targetType === 'section' && item.targetSection === activeSection,
+      active:
+        item.targetType === 'section'
+          ? activeCustomSidebarActionId === null && item.targetSection === activeSection
+          : item.targetType === 'iframe'
+            ? activeCustomSidebarActionId === item.id
+            : false,
       icon: getCustomExtensionIcon(item.icon),
       label: item.label,
       onClick: () => {
         if (item.targetType === 'section' && item.targetSection) {
           const targetSection = item.targetSection;
           closeAfter(() => setActiveSection(targetSection));
+          return;
+        }
+
+        if (item.targetType === 'iframe') {
+          closeAfter(() => setActiveCustomSidebarAction(item.id));
           return;
         }
 
@@ -139,7 +156,12 @@ export const KioskOrbitMenu = memo(function KioskOrbitMenu({
                   {SECTION_ITEMS.map(({ icon: Icon, labelKey, section }) => (
                     <OrbitActionButton
                       key={section}
-                      active={activeSection === section}
+                      active={activeCustomSidebarActionId === null && activeSection === section}
+                      ariaCurrent={
+                        activeCustomSidebarActionId === null && activeSection === section
+                          ? 'page'
+                          : undefined
+                      }
                       icon={Icon}
                       label={t(labelKey)}
                       onClick={() => closeAfter(() => setActiveSection(section))}
@@ -185,6 +207,7 @@ export const KioskOrbitMenu = memo(function KioskOrbitMenu({
                       <OrbitActionButton
                         key={item.id}
                         active={item.active}
+                        ariaCurrent={item.active ? 'page' : undefined}
                         icon={item.icon}
                         label={item.label}
                         onClick={item.onClick}
@@ -309,11 +332,13 @@ function OrbitSectionLabel({ children }: { children: string }) {
 
 function OrbitActionButton({
   active = false,
+  ariaCurrent,
   icon,
   label,
   onClick,
 }: {
   active?: boolean;
+  ariaCurrent?: 'page';
   icon: LucideIcon;
   label: string;
   onClick: () => void;
@@ -325,6 +350,7 @@ function OrbitActionButton({
       icon={icon}
       intent="navigation"
       size="small"
+      aria-current={ariaCurrent}
       onClick={onClick}
       className="w-full justify-start"
     >

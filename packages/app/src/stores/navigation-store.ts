@@ -7,7 +7,13 @@ import {
 } from '@navet/app/utils/local-storage-migration';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { isSection, pathToSection, type Section, sectionToPath } from '../navigation/sections';
+import {
+  customSidebarActionToPath,
+  isSection,
+  pathToDestination,
+  type Section,
+  sectionToPath,
+} from '../navigation/sections';
 
 let navigationStoreCleanup: (() => void) | null = null;
 const MAX_RECENT_SECTIONS = 3;
@@ -48,23 +54,42 @@ interface NavigationState {
   currentRoom: string;
   lastExplicitRoom: string;
   activeSection: Section;
+  activeCustomSidebarActionId: string | null;
   recentSections: Section[];
   lastNonHomeSection: Section | null;
   applyNavigationState: (state: { currentRoom: string; activeSection: Section }) => void;
   setCurrentRoom: (room: string, options?: { explicit?: boolean }) => void;
   setActiveSection: (section: Section) => void;
+  setActiveCustomSidebarAction: (actionId: string) => void;
   syncActiveSectionFromLocation: (section: Section) => void;
 }
 
-const initialSection = (): Section =>
-  typeof window === 'undefined' ? 'home' : pathToSection(window.location.pathname);
+function getInitialDestination() {
+  if (typeof window === 'undefined') {
+    return { activeSection: 'home' as Section, activeCustomSidebarActionId: null };
+  }
+
+  const destination = pathToDestination(window.location.pathname);
+  return destination.kind === 'custom_sidebar'
+    ? {
+        activeSection: 'home' as Section,
+        activeCustomSidebarActionId: destination.actionId,
+      }
+    : {
+        activeSection: destination.section,
+        activeCustomSidebarActionId: null,
+      };
+}
+
+const initialDestination = getInitialDestination();
 
 export const useNavigationStore = create<NavigationState>()(
   persist(
     (set) => ({
       currentRoom: ALL_ROOMS_ID,
       lastExplicitRoom: ALL_ROOMS_ID,
-      activeSection: initialSection(),
+      activeSection: initialDestination.activeSection,
+      activeCustomSidebarActionId: initialDestination.activeCustomSidebarActionId,
       recentSections: [],
       lastNonHomeSection: null,
       applyNavigationState: ({ currentRoom, activeSection }) =>
@@ -72,7 +97,8 @@ export const useNavigationStore = create<NavigationState>()(
           if (
             state.currentRoom === currentRoom &&
             state.lastExplicitRoom === currentRoom &&
-            state.activeSection === activeSection
+            state.activeSection === activeSection &&
+            state.activeCustomSidebarActionId === null
           ) {
             return state;
           }
@@ -81,6 +107,7 @@ export const useNavigationStore = create<NavigationState>()(
             currentRoom,
             lastExplicitRoom: currentRoom,
             activeSection,
+            activeCustomSidebarActionId: null,
           };
         }),
       setCurrentRoom: (currentRoom, options) =>
@@ -105,17 +132,34 @@ export const useNavigationStore = create<NavigationState>()(
         window.scrollTo(0, 0);
         set((state) => {
           if (activeSection === 'home') {
-            return { activeSection };
+            return { activeSection, activeCustomSidebarActionId: null };
           }
 
           return {
             activeSection,
+            activeCustomSidebarActionId: null,
             lastNonHomeSection: activeSection,
             recentSections: getRecentSectionHistory(activeSection, state.recentSections),
           };
         });
       },
-      syncActiveSectionFromLocation: (activeSection) => set({ activeSection }),
+      setActiveCustomSidebarAction: (actionId) => {
+        history.pushState({}, '', customSidebarActionToPath(actionId));
+        window.scrollTo(0, 0);
+        set((state) =>
+          state.activeCustomSidebarActionId === actionId
+            ? state
+            : { activeCustomSidebarActionId: actionId }
+        );
+      },
+      syncActiveSectionFromLocation: (activeSection) => {
+        const destination = pathToDestination(window.location.pathname);
+        set({
+          activeSection: destination.kind === 'section' ? destination.section : activeSection,
+          activeCustomSidebarActionId:
+            destination.kind === 'custom_sidebar' ? destination.actionId : null,
+        });
+      },
     }),
     {
       name: STORE_STORAGE_KEYS.navigation,
@@ -164,7 +208,8 @@ export function startNavigationStoreSync() {
   }
 
   const handlePopState = () => {
-    const section = pathToSection(window.location.pathname);
+    const destination = pathToDestination(window.location.pathname);
+    const section = destination.kind === 'section' ? destination.section : 'home';
     useNavigationStore.getState().syncActiveSectionFromLocation(section);
   };
 

@@ -47,9 +47,11 @@ export interface NavigationState {
   currentRoom: string;
   lastExplicitRoom: string;
   activeSection: Section;
+  activeCustomSidebarActionId: string | null;
   applyNavigationState: (state: { currentRoom: string; activeSection: Section }) => void;
   setCurrentRoom: (room: string, options?: { explicit?: boolean }) => void;
   setActiveSection: (section: Section) => void;
+  setActiveCustomSidebarAction: (actionId: string) => void;
 }
 
 export interface SearchState {

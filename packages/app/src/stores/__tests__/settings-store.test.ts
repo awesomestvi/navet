@@ -127,6 +127,22 @@ describe('useSettingsStore', () => {
           targetUrl: 'javascript:alert(1)',
           visibility: 'always',
         },
+        {
+          id: 'movie-status',
+          label: ' Movie status ',
+          icon: 'link',
+          targetType: 'iframe',
+          targetUrl: '/embedded/status',
+          visibility: 'always',
+        },
+        {
+          id: 'bad-iframe',
+          label: 'Bad iframe',
+          icon: 'link',
+          targetType: 'iframe',
+          targetUrl: 'data:text/html,hi',
+          visibility: 'always',
+        },
       ],
       customSummaryPills: [
         {
@@ -156,6 +172,11 @@ describe('useSettingsStore', () => {
         label: 'Home',
         targetType: 'section',
         targetSection: 'home',
+      }),
+      expect.objectContaining({
+        id: 'movie-status',
+        label: 'Movie status',
+        targetType: 'iframe',
       }),
     ]);
     expect(useSettingsStore.getState().customSummaryPills).toEqual([

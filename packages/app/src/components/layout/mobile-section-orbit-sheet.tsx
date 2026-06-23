@@ -10,7 +10,9 @@ import { getOrderedSectionNavigationItems, MOBILE_SECTION_ORBIT_ORDER } from './
 
 interface MobileSectionOrbitSheetProps {
   activeSection: Section;
+  hasCustomActiveDestination?: boolean;
   customItems?: Array<{
+    active?: boolean;
     id: string;
     icon: LucideIcon;
     label: string;
@@ -31,6 +33,7 @@ interface MobileSectionOrbitSheetProps {
 
 export const MobileSectionOrbitSheet = memo(function MobileSectionOrbitSheet({
   activeSection,
+  hasCustomActiveDestination = false,
   customItems = [],
   homeAssistantAction,
   isOpen,
@@ -85,7 +88,7 @@ export const MobileSectionOrbitSheet = memo(function MobileSectionOrbitSheet({
         <section>
           <div className="grid grid-cols-2 gap-2">
             {orbitItems.map((item) => {
-              const isActive = activeSection === item.section;
+              const isActive = !hasCustomActiveDestination && activeSection === item.section;
 
               return (
                 <InteractivePill
@@ -111,13 +114,11 @@ export const MobileSectionOrbitSheet = memo(function MobileSectionOrbitSheet({
               />
             ) : null}
             {customItems.map((item) => {
-              const isActive = item.section ? activeSection === item.section : false;
-
               return (
                 <div key={item.id} className="relative">
                   <InteractivePill
                     type="button"
-                    active={isActive}
+                    active={item.active}
                     icon={item.icon}
                     intent="navigation"
                     size="small"

@@ -18,6 +18,16 @@ describe('useNavigationStore', () => {
     expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
   });
 
+  it('updates the active custom sidebar action and pushes browser history', () => {
+    const pushStateSpy = vi.spyOn(history, 'pushState');
+
+    useNavigationStore.getState().setActiveCustomSidebarAction('movie-status');
+
+    expect(pushStateSpy).toHaveBeenCalled();
+    expect(useNavigationStore.getState().activeCustomSidebarActionId).toBe('movie-status');
+    expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
+  });
+
   it('tracks non-home sections in recent MRU order', () => {
     const store = useNavigationStore.getState();
 
@@ -179,6 +189,17 @@ describe('useNavigationStore', () => {
     expect(pushStateSpy).not.toHaveBeenCalled();
     expect(useNavigationStore.getState().recentSections).toBe(previousRecentSections);
     expect(useNavigationStore.getState().lastNonHomeSection).toBe(previousLastNonHomeSection);
+    stopSync();
+  });
+
+  it('syncs embedded custom sidebar destinations from browser navigation events', () => {
+    const stopSync = startNavigationStoreSync();
+
+    history.replaceState({}, '', '/embedded/movie-status');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+
+    expect(useNavigationStore.getState().activeSection).toBe('home');
+    expect(useNavigationStore.getState().activeCustomSidebarActionId).toBe('movie-status');
     stopSync();
   });
 

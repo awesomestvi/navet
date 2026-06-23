@@ -21,6 +21,7 @@ describe('Sidebar mobile navigation', () => {
     setMediaQueryMatch('(max-width: 767px)', true);
     window.__NAVET_PANEL__ = false;
     resetRuntimeContextForTests();
+    vi.spyOn(window, 'open').mockImplementation(() => null);
   });
 
   function getMobileDock(container: HTMLElement) {
@@ -221,6 +222,35 @@ describe('Sidebar mobile navigation', () => {
     ).toBeInTheDocument();
   });
 
+  it('navigates to embedded custom sidebar actions from the more sheet without opening a new tab', () => {
+    useSettingsStore.getState().updateSettings({
+      advancedCustomizationEnabled: true,
+      customSidebarActions: [
+        {
+          id: 'movie-status',
+          label: 'Movie status',
+          icon: 'link',
+          targetType: 'iframe',
+          targetUrl: 'https://example.com/status',
+          visibility: 'always',
+        },
+      ],
+    });
+
+    const { container } = renderWithProviders(
+      <Sidebar mobileRoomNavigation={mobileRoomNavigation} />
+    );
+    const dock = getMobileDock(container);
+
+    fireEvent.click(within(dock).getByRole('button', { name: 'More' }));
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: /^Movie status/ })
+    );
+
+    expect(useNavigationStore.getState().activeCustomSidebarActionId).toBe('movie-status');
+    expect(window.open).not.toHaveBeenCalled();
+  });
+
   it('renders a customize sidebar action in the more sheet', () => {
     useEditModeStore.getState().setEditMode(true);
     const { container } = renderWithProviders(
@@ -263,6 +293,33 @@ describe('Sidebar mobile navigation', () => {
     renderWithProviders(<Sidebar mobileRoomNavigation={mobileRoomNavigation} />);
 
     expect(screen.getByRole('button', { name: 'Edit Movie status' })).toBeInTheDocument();
+  });
+
+  it('opens external-link custom sidebar actions in a new tab on desktop', () => {
+    setMediaQueryMatch('(max-width: 767px)', false);
+    useSettingsStore.getState().updateSettings({
+      advancedCustomizationEnabled: true,
+      customSidebarActions: [
+        {
+          id: 'movie-status',
+          label: 'Movie status',
+          icon: 'link',
+          targetType: 'url',
+          targetUrl: 'https://example.com/status',
+          visibility: 'always',
+        },
+      ],
+    });
+
+    renderWithProviders(<Sidebar mobileRoomNavigation={mobileRoomNavigation} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Movie status' }));
+
+    expect(window.open).toHaveBeenCalledWith(
+      'https://example.com/status',
+      '_blank',
+      'noopener,noreferrer'
+    );
   });
 
   it('opens the customization dialog instead of triggering a custom desktop sidebar action in edit mode', () => {

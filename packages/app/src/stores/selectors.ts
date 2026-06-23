@@ -82,7 +82,9 @@ export const navigationSelectors = {
   currentRoom: (state: NavigationState) => state.currentRoom,
   setCurrentRoom: (state: NavigationState) => state.setCurrentRoom,
   activeSection: (state: NavigationState) => state.activeSection,
+  activeCustomSidebarActionId: (state: NavigationState) => state.activeCustomSidebarActionId,
   setActiveSection: (state: NavigationState) => state.setActiveSection,
+  setActiveCustomSidebarAction: (state: NavigationState) => state.setActiveCustomSidebarAction,
 };
 
 /**

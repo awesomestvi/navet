@@ -85,10 +85,17 @@ export const Sidebar = memo(function Sidebar({
 }: SidebarProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
-  const { activeSection, setActiveSection } = useNavigationStore(
+  const {
+    activeCustomSidebarActionId,
+    activeSection,
+    setActiveSection,
+    setActiveCustomSidebarAction,
+  } = useNavigationStore(
     useShallow((state) => ({
+      activeCustomSidebarActionId: state.activeCustomSidebarActionId,
       activeSection: state.activeSection,
       setActiveSection: state.setActiveSection,
+      setActiveCustomSidebarAction: state.setActiveCustomSidebarAction,
     }))
   );
   const { effectsQuality, lowPowerMode } = useSettingsStore(
@@ -167,6 +174,12 @@ export const Sidebar = memo(function Sidebar({
       (advancedCustomizationEnabled ? customSidebarActions : [])
         .filter((item) => isSidebarActionVisible(item, isMobile))
         .map((item) => ({
+          active:
+            item.targetType === 'section'
+              ? activeCustomSidebarActionId === null && item.targetSection === activeSection
+              : item.targetType === 'iframe'
+                ? activeCustomSidebarActionId === item.id
+                : false,
           id: item.id,
           icon: getCustomExtensionIcon(item.icon),
           label: item.label,
@@ -187,6 +200,11 @@ export const Sidebar = memo(function Sidebar({
               return;
             }
 
+            if (item.targetType === 'iframe') {
+              setActiveCustomSidebarAction(item.id);
+              return;
+            }
+
             if (item.targetType === 'url' && item.targetUrl) {
               openCustomExtensionUrl(item.targetUrl);
             }
@@ -197,7 +215,9 @@ export const Sidebar = memo(function Sidebar({
       customSidebarActions,
       isEditMode,
       isMobile,
+      activeCustomSidebarActionId,
       setActiveSection,
+      setActiveCustomSidebarAction,
       setIsSidebarCustomizationOpen,
     ]
   );
@@ -255,12 +275,26 @@ export const Sidebar = memo(function Sidebar({
                 key={item.id}
                 onClick={item.onClick}
                 aria-label={item.label}
-                aria-current={item.section && activeSection === item.section ? 'page' : undefined}
+                aria-current={
+                  activeCustomSidebarActionId === null &&
+                  item.section &&
+                  activeSection === item.section
+                    ? 'page'
+                    : undefined
+                }
                 title={item.label}
-                active={Boolean(item.section && activeSection === item.section)}
+                active={Boolean(
+                  activeCustomSidebarActionId === null &&
+                    item.section &&
+                    activeSection === item.section
+                )}
                 variant="ghost"
                 className={`flex h-10 w-10 items-center justify-center rounded-[22px] gap-0 px-0 py-0 md:gap-0 md:px-0 transition-colors ${
-                  item.section && activeSection === item.section ? '' : inactiveColor
+                  activeCustomSidebarActionId === null &&
+                  item.section &&
+                  activeSection === item.section
+                    ? ''
+                    : inactiveColor
                 }`}
               >
                 <item.icon className="h-5 w-5" />
@@ -279,12 +313,12 @@ export const Sidebar = memo(function Sidebar({
                 <InteractivePill
                   onClick={item.onClick}
                   aria-label={item.label}
-                  aria-current={item.section && activeSection === item.section ? 'page' : undefined}
+                  aria-current={item.active ? 'page' : undefined}
                   title={item.label}
-                  active={Boolean(item.section && activeSection === item.section)}
+                  active={item.active}
                   variant="ghost"
                   className={`flex h-10 w-10 items-center justify-center rounded-[22px] gap-0 px-0 py-0 md:gap-0 md:px-0 transition-colors ${
-                    item.section && activeSection === item.section ? '' : inactiveColor
+                    item.active ? '' : inactiveColor
                   }`}
                 >
                   <item.icon className="h-5 w-5" />
@@ -408,7 +442,8 @@ export const Sidebar = memo(function Sidebar({
 
             <div className="relative flex min-h-12.5 items-stretch gap-1 px-0.75 py-0.75">
               {dockItems.map((item) => {
-                const isActive = activeSection === item.section;
+                const isActive =
+                  activeCustomSidebarActionId === null && activeSection === item.section;
                 const activeHomeRoomNavigation =
                   item.section === 'home' && isActive ? mobileRoomNavigation : undefined;
                 const showHomeRoomDropdown = Boolean(activeHomeRoomNavigation);
@@ -511,6 +546,7 @@ export const Sidebar = memo(function Sidebar({
 
       <MobileSectionOrbitSheet
         activeSection={activeSection}
+        hasCustomActiveDestination={activeCustomSidebarActionId !== null}
         customItems={customMenuItems}
         homeAssistantAction={
           homeAssistantShell.canToggleKiosk

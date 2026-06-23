@@ -228,6 +228,7 @@ export function SettingsCustomExtensionsSection({
                         >
                           <option value="section">Open section</option>
                           <option value="url">Open URL</option>
+                          <option value="iframe">Open inside Navet</option>
                         </Select>
                         <Select
                           aria-label="Sidebar action visibility"
@@ -299,7 +300,9 @@ export function SettingsCustomExtensionsSection({
                           className={`text-sm leading-relaxed ${isValid ? styles.subtleColor : 'text-amber-300'}`}
                         >
                           {isValid
-                            ? 'Matches Navet’s curated sidebar slot rules.'
+                            ? item.targetType === 'iframe'
+                              ? 'Matches Navet’s embedded sidebar rules. Some sites may still block framing.'
+                              : 'Matches Navet’s curated sidebar slot rules.'
                             : 'Add a label and a valid section or URL before saving.'}
                         </p>
                         <Button

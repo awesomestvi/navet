@@ -40,7 +40,7 @@ export type CustomExtensionIconId = (typeof CUSTOM_EXTENSION_ICON_IDS)[number];
 export type CustomSidebarActionIcon = string;
 export type CustomSidebarActionVisibility = 'always' | 'desktop_only' | 'mobile_only';
 export type CustomSummaryPillVisibility = 'always' | 'when_value_available';
-export type CustomTargetType = 'none' | 'section' | 'url';
+export type CustomTargetType = 'none' | 'section' | 'url' | 'iframe';
 export type CustomSummaryValueSourceType = 'static' | 'entity';
 
 export interface CustomSidebarAction {
@@ -169,7 +169,7 @@ function normalizeSidebarTarget(
     };
   }
 
-  if (item.targetType === 'url') {
+  if (item.targetType === 'url' || item.targetType === 'iframe') {
     const safeUrl = sanitizeExternalUrl(
       typeof item.targetUrl === 'string' ? item.targetUrl : null,
       resolveBaseUrl()
@@ -180,7 +180,7 @@ function normalizeSidebarTarget(
     }
 
     return {
-      targetType: 'url',
+      targetType: item.targetType,
       targetUrl: safeUrl,
     };
   }
