@@ -31,7 +31,7 @@ const {
 
 vi.mock('@navet/app/services/integration-camera-feature.service', () => ({
   integrationCameraFeatureService: {
-    closeCameraWebRtcSession: vi.fn(),
+    closeCameraWebRtcSession: vi.fn(async () => undefined),
     getCameraStreamUrl: getCameraStreamUrlMock,
     getWebRtcClientConfiguration: getWebRtcClientConfigurationMock,
     subscribeCameraWebRtcOffer: subscribeCameraWebRtcOfferMock,
@@ -107,6 +107,28 @@ class MockMediaStream {
   addTrack() {}
 }
 
+class MockRTCSessionDescription {
+  type: RTCSdpType;
+  sdp?: string;
+
+  constructor(value: RTCSessionDescriptionInit) {
+    this.type = value.type;
+    this.sdp = value.sdp;
+  }
+}
+
+class MockRTCIceCandidate {
+  candidate?: string;
+  sdpMid?: string | null;
+  sdpMLineIndex?: number | null;
+
+  constructor(value: RTCIceCandidateInit) {
+    this.candidate = value.candidate;
+    this.sdpMid = value.sdpMid;
+    this.sdpMLineIndex = value.sdpMLineIndex;
+  }
+}
+
 class MockRTCPeerConnection {
   static instances: MockRTCPeerConnection[] = [];
 
@@ -154,14 +176,8 @@ describe('CameraStreamPlayer', () => {
     });
     vi.stubGlobal('MediaStream', MockMediaStream);
     vi.stubGlobal('RTCPeerConnection', MockRTCPeerConnection);
-    vi.stubGlobal(
-      'RTCSessionDescription',
-      vi.fn((value) => value)
-    );
-    vi.stubGlobal(
-      'RTCIceCandidate',
-      vi.fn((value) => value)
-    );
+    vi.stubGlobal('RTCSessionDescription', MockRTCSessionDescription);
+    vi.stubGlobal('RTCIceCandidate', MockRTCIceCandidate);
   });
 
   afterEach(() => {
@@ -584,6 +600,205 @@ describe('CameraStreamPlayer', () => {
 
     await waitFor(() => expect(unsubscribe).toHaveBeenCalled());
     expect(MockRTCPeerConnection.instances[0]?.close).toHaveBeenCalled();
+  });
+
+  it('flushes pending WebRTC ICE candidates once the provider delivers a session id', async () => {
+    render(
+      <CameraStreamPlayer
+        entityId={cameraEntityFixtures.normal.entity_id}
+        kind="web_rtc"
+        posterUrl={cameraEntityFixtures.relativeUrl.attributes.entity_picture as string}
+        fitMode="contain"
+        onError={vi.fn()}
+      />
+    );
+
+    await waitFor(() =>
+      expect(subscribeCameraWebRtcOfferMock).toHaveBeenCalledWith(
+        cameraEntityFixtures.normal.entity_id,
+        'offer-sdp',
+        expect.any(Function)
+      )
+    );
+
+    const peerConnection = MockRTCPeerConnection.instances[0];
+    expect(peerConnection).toBeTruthy();
+
+    act(() => {
+      peerConnection?.onicecandidate?.({
+        candidate: {
+          candidate: 'candidate:1',
+          sdpMid: '0',
+          toJSON: () => ({ candidate: 'candidate:1', sdpMid: '0' }),
+        },
+      } as never);
+    });
+
+    expect(addCameraWebRtcCandidateMock).not.toHaveBeenCalled();
+
+    const subscribeCallback = subscribeCameraWebRtcOfferMock.mock.calls[0]?.[2] as
+      | ((event: { type: 'session'; session_id: string }) => void)
+      | undefined;
+
+    act(() => {
+      subscribeCallback?.({ type: 'session', session_id: 'session-1' });
+    });
+
+    await waitFor(() =>
+      expect(addCameraWebRtcCandidateMock).toHaveBeenCalledWith(
+        cameraEntityFixtures.normal.entity_id,
+        'session-1',
+        { candidate: 'candidate:1', sdpMid: '0' }
+      )
+    );
+  });
+
+  it('fails WebRTC immediately when the provider surfaces an explicit signaling error', async () => {
+    const onError = vi.fn();
+
+    render(
+      <CameraStreamPlayer
+        entityId={cameraEntityFixtures.normal.entity_id}
+        kind="web_rtc"
+        posterUrl={cameraEntityFixtures.relativeUrl.attributes.entity_picture as string}
+        fitMode="contain"
+        onError={onError}
+      />
+    );
+
+    await waitFor(() =>
+      expect(subscribeCameraWebRtcOfferMock).toHaveBeenCalledWith(
+        cameraEntityFixtures.normal.entity_id,
+        'offer-sdp',
+        expect.any(Function)
+      )
+    );
+
+    const subscribeCallback = subscribeCameraWebRtcOfferMock.mock.calls[0]?.[2] as
+      | ((event: { type: 'error'; code: string; message: string }) => void)
+      | undefined;
+
+    act(() => {
+      subscribeCallback?.({
+        type: 'error',
+        code: 'webrtc_failed',
+        message: 'ICE negotiation failed',
+      });
+    });
+
+    await waitFor(() => expect(onError).toHaveBeenCalledWith('web_rtc'));
+  });
+
+  it('queues remote WebRTC ICE candidates until the remote description is applied', async () => {
+    render(
+      <CameraStreamPlayer
+        entityId={cameraEntityFixtures.normal.entity_id}
+        kind="web_rtc"
+        posterUrl={cameraEntityFixtures.relativeUrl.attributes.entity_picture as string}
+        fitMode="contain"
+        onError={vi.fn()}
+      />
+    );
+
+    await waitFor(() =>
+      expect(subscribeCameraWebRtcOfferMock).toHaveBeenCalledWith(
+        cameraEntityFixtures.normal.entity_id,
+        'offer-sdp',
+        expect.any(Function)
+      )
+    );
+
+    const peerConnection = MockRTCPeerConnection.instances[0];
+    expect(peerConnection).toBeTruthy();
+
+    const subscribeCallback = subscribeCameraWebRtcOfferMock.mock.calls[0]?.[2] as
+      | ((
+          event:
+            | { type: 'candidate'; candidate: RTCIceCandidateInit }
+            | { type: 'answer'; answer: string }
+        ) => void)
+      | undefined;
+
+    act(() => {
+      subscribeCallback?.({
+        type: 'candidate',
+        candidate: { candidate: 'candidate:remote-1', sdpMid: '0' },
+      });
+    });
+
+    expect(peerConnection?.addIceCandidate).not.toHaveBeenCalled();
+
+    act(() => {
+      subscribeCallback?.({ type: 'answer', answer: 'answer-sdp' });
+    });
+
+    await waitFor(() =>
+      expect(peerConnection?.setRemoteDescription).toHaveBeenCalledWith({
+        type: 'answer',
+        sdp: 'answer-sdp',
+      })
+    );
+    await waitFor(() =>
+      expect(peerConnection?.addIceCandidate).toHaveBeenCalledWith({
+        candidate: 'candidate:remote-1',
+        sdpMid: '0',
+      })
+    );
+  });
+
+  it('extends the WebRTC startup timeout when signaling is still making progress', async () => {
+    vi.useFakeTimers();
+    try {
+      const onError = vi.fn();
+
+      render(
+        <CameraStreamPlayer
+          entityId={cameraEntityFixtures.normal.entity_id}
+          kind="web_rtc"
+          posterUrl={cameraEntityFixtures.relativeUrl.attributes.entity_picture as string}
+          fitMode="contain"
+          onError={onError}
+        />
+      );
+
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(14_000);
+      });
+
+      expect(onError).not.toHaveBeenCalled();
+
+      const subscribeCallback = subscribeCameraWebRtcOfferMock.mock.calls[0]?.[2] as
+        | ((event: { type: 'answer'; answer: string }) => void)
+        | undefined;
+
+      act(() => {
+        subscribeCallback?.({ type: 'answer', answer: 'answer-sdp' });
+      });
+
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(14_000);
+      });
+
+      expect(onError).not.toHaveBeenCalled();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2_000);
+      });
+
+      expect(onError).toHaveBeenCalledWith('web_rtc');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('does not mark an active WebRTC media stream as stalled just because currentTime does not advance', async () => {

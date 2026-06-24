@@ -88,13 +88,38 @@ const providerPackageRegistrationFactories: Record<
             )) as unknown as Record<string, unknown>,
           subscribeCameraWebRtcOffer: async (entityId, offer, listener) =>
             homeAssistantService.subscribeCameraWebRtcOffer(entityId, offer, (event) => {
+              const sessionId =
+                'session_id' in event && typeof event.session_id === 'string'
+                  ? event.session_id
+                  : undefined;
+              const hasSessionId = sessionId !== undefined;
+              const hasAnswer = 'answer' in event && typeof event.answer === 'string';
+
+              if (hasSessionId && !hasAnswer) {
+                listener({ session_id: sessionId });
+              }
+              if (hasAnswer) {
+                if (hasSessionId) {
+                  listener({ session_id: sessionId });
+                }
+                listener(
+                  hasSessionId
+                    ? { answer: event.answer, session_id: sessionId }
+                    : { answer: event.answer }
+                );
+                return;
+              }
+              if ('candidate' in event && typeof event.candidate === 'object' && event.candidate) {
+                listener({ candidate: event.candidate });
+                return;
+              }
               if (
-                'answer' in event &&
-                typeof event.answer === 'string' &&
-                'session_id' in event &&
-                typeof event.session_id === 'string'
+                'code' in event &&
+                typeof event.code === 'string' &&
+                'message' in event &&
+                typeof event.message === 'string'
               ) {
-                listener({ answer: event.answer, session_id: event.session_id });
+                listener({ code: event.code, message: event.message });
               }
             }),
           addCameraWebRtcCandidate: (entityId, sessionId, candidate) =>

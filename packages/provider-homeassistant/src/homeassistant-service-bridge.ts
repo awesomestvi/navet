@@ -48,6 +48,13 @@ export interface HomeAssistantStoreState {
 
 export type HomeAssistantPanelHass = object;
 
+type HomeAssistantWebRtcBridgeEvent =
+  | { answer: string; session_id: string }
+  | { answer: string }
+  | { session_id: string }
+  | { candidate: RTCIceCandidateInit }
+  | { code: string; message: string };
+
 type HomeAssistantMediaBrowseRequest = {
   mediaContentId?: string;
   mediaContentType?: string;
@@ -102,7 +109,7 @@ export interface HomeAssistantServiceBridge {
   subscribeCameraWebRtcOffer(
     entityId: string,
     offerSdp: string,
-    listener: (event: { answer: string; session_id: string }) => void
+    listener: (event: HomeAssistantWebRtcBridgeEvent) => void
   ): Promise<() => void>;
   addCameraWebRtcCandidate(
     entityId: string,
@@ -285,7 +292,7 @@ export function getHomeAssistantWebRtcClientConfiguration(entityId: string) {
 export function subscribeHomeAssistantCameraWebRtcOffer(
   entityId: string,
   offerSdp: string,
-  listener: (event: { answer: string; session_id: string }) => void
+  listener: (event: HomeAssistantWebRtcBridgeEvent) => void
 ) {
   return getBridge().subscribeCameraWebRtcOffer(entityId, offerSdp, listener);
 }

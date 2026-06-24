@@ -15,6 +15,7 @@ interface CameraStreamPlayerProps {
 }
 
 const CAMERA_STREAM_LOAD_TIMEOUT_MS = 10_000;
+const CAMERA_WEBRTC_STREAM_LOAD_TIMEOUT_MS = 15_000;
 const CAMERA_HLS_STREAM_LOAD_TIMEOUT_MS = 20_000;
 const CAMERA_STREAM_STALL_CHECK_INTERVAL_MS = 2_000;
 const CAMERA_STREAM_STALL_THRESHOLD_MS = 6_000;
@@ -557,6 +558,8 @@ function WebRtcCameraPlayer({
     let unsubscribePromise: Promise<() => void> | undefined;
     let sessionId: string | undefined;
     const pendingCandidates: RTCIceCandidate[] = [];
+    const pendingRemoteCandidates: RTCIceCandidateInit[] = [];
+    let remoteDescriptionReady = false;
 
     const cleanUp = () => {
       remoteStream?.getTracks().forEach((track) => {
@@ -573,6 +576,8 @@ function WebRtcCameraPlayer({
       }
       sessionId = undefined;
       pendingCandidates.length = 0;
+      pendingRemoteCandidates.length = 0;
+      remoteDescriptionReady = false;
 
       const video = videoRef.current;
       if (video) {
@@ -599,6 +604,29 @@ function WebRtcCameraPlayer({
       }
     };
 
+    const flushPendingRemoteCandidates = async () => {
+      if (!peerConnection || !remoteDescriptionReady) {
+        return;
+      }
+
+      for (const candidate of pendingRemoteCandidates.splice(0)) {
+        await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+    };
+
+    const refreshStartupTimeout = () => {
+      if (hasLoadedFrameRef.current) {
+        return;
+      }
+
+      scheduleStreamLoadTimeout(
+        loadTimeoutRef,
+        'web_rtc',
+        onError,
+        CAMERA_WEBRTC_STREAM_LOAD_TIMEOUT_MS
+      );
+    };
+
     const start = async () => {
       cleanUp();
       if (document.hidden) {
@@ -616,7 +644,7 @@ function WebRtcCameraPlayer({
       video.muted = true;
       video.autoplay = true;
       video.playsInline = true;
-      scheduleStreamLoadTimeout(loadTimeoutRef, 'web_rtc', onError);
+      refreshStartupTimeout();
 
       try {
         const clientConfig =
@@ -624,6 +652,7 @@ function WebRtcCameraPlayer({
         if (cancelled) {
           return;
         }
+        refreshStartupTimeout();
 
         peerConnection = new RTCPeerConnection(clientConfig.configuration);
         if (clientConfig.dataChannel) {
@@ -635,6 +664,7 @@ function WebRtcCameraPlayer({
           if (!remoteStream || !videoRef.current) {
             return;
           }
+          refreshStartupTimeout();
           remoteStream.addTrack(event.track);
           videoRef.current.srcObject = remoteStream;
           void videoRef.current.play().catch(() => undefined);
@@ -654,6 +684,13 @@ function WebRtcCameraPlayer({
           );
         };
         peerConnection.oniceconnectionstatechange = () => {
+          if (
+            peerConnection?.iceConnectionState === 'checking' ||
+            peerConnection?.iceConnectionState === 'connected' ||
+            peerConnection?.iceConnectionState === 'completed'
+          ) {
+            refreshStartupTimeout();
+          }
           if (peerConnection?.iceConnectionState === 'failed') {
             peerConnection.restartIce();
           }
@@ -667,6 +704,7 @@ function WebRtcCameraPlayer({
           offerToReceiveVideo: true,
         });
         await peerConnection.setLocalDescription(offer);
+        refreshStartupTimeout();
         if (!offer.sdp || cancelled) {
           return;
         }
@@ -680,16 +718,31 @@ function WebRtcCameraPlayer({
             }
             if (event.type === 'session') {
               sessionId = event.session_id;
+              refreshStartupTimeout();
               sendPendingCandidates();
               return;
             }
             if (event.type === 'answer') {
-              void peerConnection.setRemoteDescription(
-                new RTCSessionDescription({ type: 'answer', sdp: event.answer })
-              );
+              void peerConnection
+                .setRemoteDescription(
+                  new RTCSessionDescription({ type: 'answer', sdp: event.answer })
+                )
+                .then(async () => {
+                  remoteDescriptionReady = true;
+                  refreshStartupTimeout();
+                  await flushPendingRemoteCandidates();
+                })
+                .catch(() => {
+                  onError('web_rtc');
+                });
               return;
             }
             if (event.type === 'candidate') {
+              if (!remoteDescriptionReady) {
+                pendingRemoteCandidates.push(event.candidate);
+                return;
+              }
+              refreshStartupTimeout();
               void peerConnection.addIceCandidate(new RTCIceCandidate(event.candidate));
               return;
             }
