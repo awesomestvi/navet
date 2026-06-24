@@ -308,7 +308,9 @@ function createParentDomKioskController(parentWindow: ParentWindowLike): ParentD
         'partial-panel-resolver',
       ]);
     const panelApp =
-      (panelResolver?.querySelector('ha-panel-app') as (Element & { shadowRoot?: ShadowRoot | null }) | null) ??
+      (panelResolver?.querySelector('ha-panel-app') as
+        | (Element & { shadowRoot?: ShadowRoot | null })
+        | null) ??
       (queryFirstAcrossShadows(parentWindow.document, ['ha-panel-app']) as
         | (Element & { shadowRoot?: ShadowRoot | null })
         | null);
@@ -356,7 +358,9 @@ function createParentDomKioskController(parentWindow: ParentWindowLike): ParentD
 
   const getAvailable = () => {
     const layout = resolveLayout();
-    return Boolean(layout.drawer && ((layout.sidebarShell && layout.appContent) || layout.panelAppHeader));
+    return Boolean(
+      layout.drawer && ((layout.sidebarShell && layout.appContent) || layout.panelAppHeader)
+    );
   };
 
   const syncStyles = () => {
@@ -369,10 +373,7 @@ function createParentDomKioskController(parentWindow: ParentWindowLike): ParentD
     }
 
     const layout = resolveLayout();
-    if (
-      !layout.drawer ||
-      (!(layout.sidebarShell && layout.appContent) && !layout.panelAppHeader)
-    ) {
+    if (!layout.drawer || (!(layout.sidebarShell && layout.appContent) && !layout.panelAppHeader)) {
       scheduleRetry();
       return false;
     }

@@ -424,10 +424,11 @@ describe('Sidebar mobile navigation', () => {
   it('toggles the direct parent DOM fallback from the desktop sidebar in add-on mode', () => {
     setMediaQueryMatch('(max-width: 767px)', false);
     window.history.replaceState({}, '', '/api/hassio_ingress/navet_dev/dashboard');
-    const { appContent, drawer, panelAppHeader, sidebar, sidebarShell } = setParentHomeAssistantShell({
-      includeShell: false,
-      panel: false,
-    });
+    const { appContent, drawer, panelAppHeader, sidebar, sidebarShell } =
+      setParentHomeAssistantShell({
+        includeShell: false,
+        panel: false,
+      });
 
     renderWithProviders(<Sidebar mobileRoomNavigation={mobileRoomNavigation} />);
 

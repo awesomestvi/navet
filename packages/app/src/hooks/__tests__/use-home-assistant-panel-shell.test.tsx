@@ -111,7 +111,15 @@ function createParentWindow(options?: {
 
   setParentWindow(parentWindow);
 
-  return { appContent, drawer, panelAppHeader, parentWindow, setKioskEnabled, sidebar, sidebarShell };
+  return {
+    appContent,
+    drawer,
+    panelAppHeader,
+    parentWindow,
+    setKioskEnabled,
+    sidebar,
+    sidebarShell,
+  };
 }
 
 describe('useHomeAssistantPanelShell', () => {
