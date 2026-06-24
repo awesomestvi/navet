@@ -21,9 +21,11 @@ export interface SlideActionProps {
   labelStyle?: CSSProperties;
   onComplete: () => void;
   progressFillClassName?: string;
+  progressFillStyle?: CSSProperties;
   size: 'extra-small' | 'small';
   theme: ThemeType;
   trackClassName?: string;
+  trackStyle?: CSSProperties;
   thumbClassName?: string;
   thumbIconClassName?: string;
   thumbIconStyle?: CSSProperties;
@@ -43,9 +45,11 @@ export function SlideAction({
   labelStyle,
   onComplete,
   progressFillClassName,
+  progressFillStyle,
   size,
   theme,
   trackClassName,
+  trackStyle,
   thumbClassName,
   thumbIconClassName,
   thumbIconStyle,
@@ -266,7 +270,10 @@ export function SlideAction({
       aria-disabled={disabled || isCompleting || isReturning}
       aria-label={ariaLabel}
       className={`relative block w-full overflow-hidden border ${trackClassName ?? trackSurfaceClassName} ${metrics.railClassName} ${disabled || isCompleting || isReturning ? 'cursor-default opacity-85' : 'cursor-ew-resize'} select-none touch-none`}
-      style={slideActionStyle}
+      style={{
+        ...slideActionStyle,
+        ...trackStyle,
+      }}
       data-card-interactive="true"
       disabled={disabled || isCompleting || isReturning}
       tabIndex={disabled || isCompleting || isReturning ? -1 : 0}
@@ -285,6 +292,7 @@ export function SlideAction({
         style={{
           bottom: metrics.padding,
           left: metrics.padding,
+          ...progressFillStyle,
           top: metrics.padding,
           transitionDuration: 'var(--slide-motion-duration)',
           transitionProperty: 'width',

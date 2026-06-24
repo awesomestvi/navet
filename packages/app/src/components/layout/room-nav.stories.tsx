@@ -2,6 +2,7 @@ import { RoomNav } from '@navet/app/components/layout/room-nav';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
+import { expect, userEvent, within } from 'storybook/test';
 
 const DEFAULT_ROOMS = ['Living Room', 'Kitchen', 'Bedroom', 'Office'];
 const MANY_ROOMS = [
@@ -24,11 +25,13 @@ const MANY_ROOMS = [
 function RoomNavStory({
   isEditMode = false,
   rooms = DEFAULT_ROOMS,
+  initialActiveRoom = 'All',
 }: {
   isEditMode?: boolean;
   rooms?: string[];
+  initialActiveRoom?: string;
 }) {
-  const [activeRoom, setActiveRoom] = useState('All');
+  const [activeRoom, setActiveRoom] = useState(initialActiveRoom);
   const [editMode, setEditMode] = useState(isEditMode);
 
   return (
@@ -86,5 +89,24 @@ export const EditMode: Story = {
 export const ManyRooms: Story = {
   args: {
     rooms: MANY_ROOMS,
+  },
+};
+
+export const ManyRoomsOverflowMenu: Story = {
+  args: {
+    rooms: MANY_ROOMS,
+  },
+  render: (args) => (
+    <div className="max-w-[22rem]">
+      <RoomNavStory {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    const overflowButton = await canvas.findByText(/\+\d+ rooms/i);
+    await userEvent.click(overflowButton);
+
+    await expect(canvas.getByRole('menu')).toBeInTheDocument();
   },
 };

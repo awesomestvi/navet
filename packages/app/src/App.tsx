@@ -374,6 +374,14 @@ function AppContent() {
   }, [sessions.home_assistant, connected, connecting, appError, runtime]);
 
   useEffect(() => {
+    document.documentElement.dataset.navetRuntime = runtime;
+
+    return () => {
+      delete document.documentElement.dataset.navetRuntime;
+    };
+  }, [runtime]);
+
+  useEffect(() => {
     document.documentElement.style.setProperty('--navet-accent', accentColor);
     return () => {
       document.documentElement.style.removeProperty('--navet-accent');

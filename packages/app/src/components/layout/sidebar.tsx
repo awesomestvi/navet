@@ -29,6 +29,7 @@ import {
   Compass,
   DoorOpen,
   type LucideIcon,
+  LogOut,
   PanelLeftClose,
   PanelLeftOpen,
   Pencil,
@@ -549,7 +550,15 @@ export const Sidebar = memo(function Sidebar({
         hasCustomActiveDestination={activeCustomSidebarActionId !== null}
         customItems={customMenuItems}
         homeAssistantAction={
-          homeAssistantShell.canToggleKiosk
+          homeAssistantShell.canNavigateHome
+            ? {
+                icon: LogOut,
+                label: t('sidebar.exitHomeAssistant'),
+                onClick: () => {
+                  void homeAssistantShell.navigateToHomeAssistantHome();
+                },
+              }
+            : homeAssistantShell.canToggleKiosk
             ? {
                 icon: HomeAssistantSidebarIcon,
                 label: t('sidebar.toggleHomeAssistantKiosk'),

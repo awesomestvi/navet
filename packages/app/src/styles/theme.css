@@ -614,7 +614,7 @@
   }
 
   .safe-area-pt-3 {
-    padding-top: 0.75rem;
+    padding-top: calc(0.75rem + var(--navet-safe-area-top-offset, 0px));
   }
 
   .room-nav-shell {
@@ -663,11 +663,11 @@
   }
 
   .safe-area-pt-4 {
-    padding-top: 1rem;
+    padding-top: calc(1rem + var(--navet-safe-area-top-offset, 0px));
   }
 
   .safe-area-pt-5 {
-    padding-top: 1.25rem;
+    padding-top: calc(1.25rem + var(--navet-safe-area-top-offset, 0px));
   }
 
   .safe-area-pb {
@@ -687,17 +687,14 @@
     bottom: var(--mobile-bottom-dock-offset);
   }
 
+  :root[data-navet-runtime='ha-panel'],
+  :root[data-navet-runtime='ha-ingress'] {
+    --navet-safe-area-top-offset: max(env(safe-area-inset-top), 0px);
+  }
+
   @media (display-mode: standalone), (display-mode: fullscreen) {
-    .safe-area-pt-3 {
-      padding-top: calc(0.75rem + max(env(safe-area-inset-top), 0px));
-    }
-
-    .safe-area-pt-4 {
-      padding-top: calc(1rem + max(env(safe-area-inset-top), 0px));
-    }
-
-    .safe-area-pt-5 {
-      padding-top: calc(1.25rem + max(env(safe-area-inset-top), 0px));
+    :root {
+      --navet-safe-area-top-offset: max(env(safe-area-inset-top), 0px);
     }
 
     .mobile-bottom-dock-offset {

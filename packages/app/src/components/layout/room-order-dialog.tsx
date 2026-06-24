@@ -14,14 +14,14 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { BaseCardDialog, Button } from '@navet/app/components/primitives';
+import { BaseCardDialog, Button, InteractivePill } from '@navet/app/components/primitives';
 import { getDndTransformStyle } from '@navet/app/components/shared/dnd-transform-style';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import { integrationAdminService } from '@navet/app/services/integration-admin.service';
 import type { PlatformManageableRoomReference } from '@navet/core/provider-feature-models';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Eye, EyeOff, GripVertical, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Eye, EyeOff, GripVertical, Trash2, X } from 'lucide-react';
 import { memo, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -36,6 +36,8 @@ interface RoomOrderDialogProps {
   onRoomOrderChange?: (rooms: string[]) => void;
   onHiddenRoomsChange?: (rooms: string[]) => void;
 }
+
+type ReorderMode = 'drag' | 'buttons';
 
 export const RoomOrderDialog = memo(function RoomOrderDialog({
   isOpen,
@@ -54,6 +56,7 @@ export const RoomOrderDialog = memo(function RoomOrderDialog({
   const [draftRooms, setDraftRooms] = useState(rooms);
   const [pendingDeleteRoom, setPendingDeleteRoom] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [reorderMode, setReorderMode] = useState<ReorderMode>('drag');
   const isDeleteDialogOpen = pendingDeleteRoom !== null;
   const hiddenRoomSet = useMemo(() => new Set(hiddenRoomNames), [hiddenRoomNames]);
 
@@ -62,6 +65,7 @@ export const RoomOrderDialog = memo(function RoomOrderDialog({
       setDraftRooms(rooms);
       setPendingDeleteRoom(null);
       setIsSaving(false);
+      setReorderMode('drag');
     }
   }, [isOpen, rooms]);
 
@@ -150,6 +154,13 @@ export const RoomOrderDialog = memo(function RoomOrderDialog({
     onOpenChange(false);
   };
 
+  const handleDismiss = () => {
+    setDraftRooms(rooms);
+    setPendingDeleteRoom(null);
+    setIsSaving(false);
+    onOpenChange(false);
+  };
+
   const toggleRoomHidden = (room: string) => {
     if (hiddenRoomSet.has(room)) {
       onHiddenRoomsChange?.(hiddenRoomNames.filter((hiddenRoom) => hiddenRoom !== room));
@@ -157,6 +168,22 @@ export const RoomOrderDialog = memo(function RoomOrderDialog({
     }
 
     onHiddenRoomsChange?.([...hiddenRoomNames, room]);
+  };
+
+  const moveRoomByStep = (room: string, direction: -1 | 1) => {
+    setDraftRooms((current) => {
+      const index = current.indexOf(room);
+      if (index === -1) {
+        return current;
+      }
+
+      const nextIndex = index + direction;
+      if (nextIndex < 0 || nextIndex >= current.length) {
+        return current;
+      }
+
+      return arrayMove(current, index, nextIndex);
+    });
   };
 
   return (
@@ -171,7 +198,7 @@ export const RoomOrderDialog = memo(function RoomOrderDialog({
       height="capped"
       bodyPadding={false}
     >
-      <div className="max-h-[85vh] overflow-y-auto p-6">
+      <div className="flex max-h-[min(85vh,46rem)] min-h-0 flex-col p-6">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
             <Dialog.Title className={`text-xl font-semibold ${surface.textPrimary}`}>
@@ -181,28 +208,90 @@ export const RoomOrderDialog = memo(function RoomOrderDialog({
               {t('dashboard.roomNav.reorderDialog.description')}
             </Dialog.Description>
           </div>
+          <Dialog.Close asChild>
+            <button
+              type="button"
+              aria-label={t('common.close')}
+              onClick={handleDismiss}
+              className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full border transition-colors ${surface.subtleBg} ${surface.hoverBg} ${surface.textSecondary} ${surface.borderStrong}`}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </Dialog.Close>
         </div>
 
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <SortableContext items={draftRooms} strategy={verticalListSortingStrategy}>
-            <div className={`overflow-hidden rounded-2xl border ${surface.border}`}>
-              {draftRooms.map((room, index) => (
-                <RoomOrderDialogRow
-                  key={room}
-                  room={room}
-                  isLast={index === draftRooms.length - 1}
-                  surface={surface}
-                  entityCount={roomEntityCounts.get(room) ?? 0}
-                  hiddenCount={roomHiddenItemCounts.get(room) ?? 0}
-                  isHidden={hiddenRoomSet.has(room)}
-                  onToggleHidden={() => toggleRoomHidden(room)}
-                  onDelete={() => setPendingDeleteRoom(room)}
-                  deleteDisabled={isSaving || !deletableRoomNames.has(room)}
-                />
-              ))}
+        <div className="mb-4 flex items-center gap-2">
+          <InteractivePill
+            size="compact"
+            intent="action"
+            active={reorderMode === 'drag'}
+            onClick={() => setReorderMode('drag')}
+          >
+            {t('dashboard.roomNav.reorderDialog.mode.drag')}
+          </InteractivePill>
+          <InteractivePill
+            size="compact"
+            intent="action"
+            active={reorderMode === 'buttons'}
+            onClick={() => setReorderMode('buttons')}
+          >
+            {t('dashboard.roomNav.reorderDialog.mode.buttons')}
+          </InteractivePill>
+        </div>
+
+        <div className="min-h-0 flex-1">
+          {reorderMode === 'drag' ? (
+            <div className="min-h-0 max-h-[26rem] overflow-y-auto pr-1">
+              <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+                <SortableContext items={draftRooms} strategy={verticalListSortingStrategy}>
+                  <div className={`overflow-hidden rounded-2xl border ${surface.border}`}>
+                    {draftRooms.map((room, index) => (
+                      <RoomOrderDialogRow
+                        key={room}
+                        room={room}
+                        mode="drag"
+                        isFirst={index === 0}
+                        isLast={index === draftRooms.length - 1}
+                        surface={surface}
+                        entityCount={roomEntityCounts.get(room) ?? 0}
+                        hiddenCount={roomHiddenItemCounts.get(room) ?? 0}
+                        isHidden={hiddenRoomSet.has(room)}
+                        onMoveUp={() => moveRoomByStep(room, -1)}
+                        onMoveDown={() => moveRoomByStep(room, 1)}
+                        onToggleHidden={() => toggleRoomHidden(room)}
+                        onDelete={() => setPendingDeleteRoom(room)}
+                        deleteDisabled={isSaving || !deletableRoomNames.has(room)}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             </div>
-          </SortableContext>
-        </DndContext>
+          ) : (
+            <div className="min-h-0 max-h-[26rem] overflow-y-auto pr-1">
+              <div className={`overflow-hidden rounded-2xl border ${surface.border}`}>
+                {draftRooms.map((room, index) => (
+                  <RoomOrderDialogRow
+                    key={room}
+                    room={room}
+                    mode="buttons"
+                    isFirst={index === 0}
+                    isLast={index === draftRooms.length - 1}
+                    surface={surface}
+                    entityCount={roomEntityCounts.get(room) ?? 0}
+                    hiddenCount={roomHiddenItemCounts.get(room) ?? 0}
+                    isHidden={hiddenRoomSet.has(room)}
+                    onMoveUp={() => moveRoomByStep(room, -1)}
+                    onMoveDown={() => moveRoomByStep(room, 1)}
+                    onToggleHidden={() => toggleRoomHidden(room)}
+                    onDelete={() => setPendingDeleteRoom(room)}
+                    deleteDisabled={isSaving || !deletableRoomNames.has(room)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="soft" size="small" onClick={handleDone} disabled={isSaving}>
@@ -294,11 +383,15 @@ const DeleteRoomDialog = memo(function DeleteRoomDialog({
 
 interface RoomOrderDialogRowProps {
   room: string;
+  mode: ReorderMode;
+  isFirst: boolean;
   isLast: boolean;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
   entityCount: number;
   hiddenCount: number;
   isHidden: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
   onToggleHidden: () => void;
   onDelete: () => void;
   deleteDisabled: boolean;
@@ -306,11 +399,15 @@ interface RoomOrderDialogRowProps {
 
 const RoomOrderDialogRow = memo(function RoomOrderDialogRow({
   room,
+  mode,
+  isFirst,
   isLast,
   surface,
   entityCount,
   hiddenCount,
   isHidden,
+  onMoveUp,
+  onMoveDown,
   onToggleHidden,
   onDelete,
   deleteDisabled,
@@ -319,6 +416,7 @@ const RoomOrderDialogRow = memo(function RoomOrderDialogRow({
   const visibleCount = Math.max(0, entityCount - hiddenCount);
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: room,
+    disabled: mode !== 'drag',
   });
 
   return (
@@ -329,15 +427,40 @@ const RoomOrderDialogRow = memo(function RoomOrderDialogRow({
         isLast ? '' : `border-b ${surface.border}`
       }`}
     >
-      <button
-        type="button"
-        aria-label={t('dashboard.roomNav.reorderDialog.dragRoom', { room })}
-        className={`flex h-8 w-8 touch-none items-center justify-center rounded-full transition-colors ${surface.textSecondary} ${surface.hoverBg}`}
-        {...attributes}
-        {...listeners}
-      >
-        <GripVertical className="h-4 w-4" aria-hidden="true" />
-      </button>
+      {mode === 'drag' ? (
+        <button
+          type="button"
+          aria-label={t('dashboard.roomNav.reorderDialog.dragRoom', { room })}
+          className={`flex h-8 w-8 cursor-grab touch-none items-center justify-center rounded-full transition-colors active:cursor-grabbing ${surface.textSecondary} ${surface.hoverBg}`}
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-4 w-4" aria-hidden="true" />
+        </button>
+      ) : (
+        <div className="flex items-center gap-1">
+          <Button
+            iconOnly
+            size="compact"
+            variant="secondary"
+            onClick={onMoveUp}
+            disabled={isFirst}
+            label={t('dashboard.roomNav.reorderDialog.moveUpRoom', { room })}
+          >
+            <ArrowUp className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            iconOnly
+            size="compact"
+            variant="secondary"
+            onClick={onMoveDown}
+            disabled={isLast}
+            label={t('dashboard.roomNav.reorderDialog.moveDownRoom', { room })}
+          >
+            <ArrowDown className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
       <div className="min-w-0 flex-1">
         <div className={`truncate text-sm font-medium ${surface.textPrimary}`}>{room}</div>
         <div className={`truncate text-xs ${surface.textMuted}`}>

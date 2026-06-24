@@ -6,14 +6,60 @@ import { CheckCircle2, Info, LoaderCircle, OctagonAlert, X } from 'lucide-react'
 import { type CSSProperties, useEffect, useState } from 'react';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
+function getToastSurfaceClass(theme: ReturnType<typeof useTheme>['theme']) {
+  if (theme === 'light') {
+    return 'bg-white';
+  }
+
+  if (theme === 'glass') {
+    return 'bg-slate-950';
+  }
+
+  if (theme === 'black') {
+    return 'bg-black';
+  }
+
+  return 'bg-zinc-950';
+}
+
+function getToastToneSurfaceClasses(
+  theme: ReturnType<typeof useTheme>['theme'],
+  tone: 'success' | 'error' | 'warning' | 'info'
+) {
+  if (theme === 'light') {
+    switch (tone) {
+      case 'success':
+        return 'data-[type=success]:border-emerald-200 data-[type=success]:bg-emerald-50';
+      case 'error':
+        return 'data-[type=error]:border-red-200 data-[type=error]:bg-red-50';
+      case 'warning':
+        return 'data-[type=warning]:border-amber-200 data-[type=warning]:bg-amber-50';
+      case 'info':
+        return 'data-[type=info]:border-sky-200 data-[type=info]:bg-sky-50';
+    }
+  }
+
+  switch (tone) {
+    case 'success':
+      return 'data-[type=success]:border-emerald-800 data-[type=success]:bg-emerald-950';
+    case 'error':
+      return 'data-[type=error]:border-red-800 data-[type=error]:bg-red-950';
+    case 'warning':
+      return 'data-[type=warning]:border-amber-800 data-[type=warning]:bg-amber-950';
+    case 'info':
+      return 'data-[type=info]:border-sky-800 data-[type=info]:bg-sky-950';
+  }
+}
+
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme, accentColor } = useTheme();
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const surface = getThemeSurfaceTokens(theme);
   const focusRing = getThemeFocusRingClassName(theme);
+  const toastSurfaceClassName = getToastSurfaceClass(theme);
   const defaultToastClassName = cn(
-    'relative rounded-[24px] border px-4 py-3 pr-12 backdrop-blur-xl shadow-none',
-    surface.panel,
+    'relative rounded-[24px] border px-4 py-3 pr-12 shadow-none',
+    toastSurfaceClassName,
     surface.border,
     surface.cardShadow
   );
@@ -56,10 +102,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
           toast: cn(
             defaultToastClassName,
             'group/toast flex w-full flex-wrap items-center gap-x-3 gap-y-2 overflow-hidden sm:items-start',
-            'data-[type=success]:border-emerald-500/35 data-[type=success]:bg-emerald-500/10',
-            'data-[type=error]:border-rose-500/35 data-[type=error]:bg-rose-500/10',
-            'data-[type=warning]:border-amber-500/35 data-[type=warning]:bg-amber-500/10',
-            'data-[type=info]:border-sky-500/35 data-[type=info]:bg-sky-500/10',
+            getToastToneSurfaceClasses(theme, 'success'),
+            getToastToneSurfaceClasses(theme, 'error'),
+            getToastToneSurfaceClasses(theme, 'warning'),
+            getToastToneSurfaceClasses(theme, 'info'),
             'data-[type=loading]:border-white/20'
           ),
           content:
@@ -69,36 +115,34 @@ const Toaster = ({ ...props }: ToasterProps) => {
           icon: cn(
             'relative order-1 flex h-9 w-9 shrink-0 items-center justify-center self-center rounded-[16px] border sm:self-start',
             surface.border,
-            surface.iconBg,
+            theme === 'light' ? 'bg-slate-100' : 'bg-zinc-900',
             surface.textPrimary,
-            'group-data-[type=success]/toast:border-emerald-400/25 group-data-[type=success]/toast:bg-emerald-400/14 group-data-[type=success]/toast:text-emerald-50',
-            'group-data-[type=error]/toast:border-rose-400/25 group-data-[type=error]/toast:bg-rose-400/14 group-data-[type=error]/toast:text-rose-50',
-            'group-data-[type=warning]/toast:border-amber-400/25 group-data-[type=warning]/toast:bg-amber-400/14 group-data-[type=warning]/toast:text-amber-50',
-            'group-data-[type=info]/toast:border-sky-400/25 group-data-[type=info]/toast:bg-sky-400/14 group-data-[type=info]/toast:text-sky-50'
+            theme === 'light'
+              ? 'group-data-[type=success]/toast:border-emerald-200 group-data-[type=success]/toast:bg-emerald-100 group-data-[type=success]/toast:text-emerald-900 group-data-[type=error]/toast:border-red-200 group-data-[type=error]/toast:bg-red-100 group-data-[type=error]/toast:text-red-900 group-data-[type=warning]/toast:border-amber-200 group-data-[type=warning]/toast:bg-amber-100 group-data-[type=warning]/toast:text-amber-900 group-data-[type=info]/toast:border-sky-200 group-data-[type=info]/toast:bg-sky-100 group-data-[type=info]/toast:text-sky-900'
+              : 'group-data-[type=success]/toast:border-emerald-800 group-data-[type=success]/toast:bg-emerald-900 group-data-[type=success]/toast:text-emerald-100 group-data-[type=error]/toast:border-red-800 group-data-[type=error]/toast:bg-red-900 group-data-[type=error]/toast:text-red-100 group-data-[type=warning]/toast:border-amber-800 group-data-[type=warning]/toast:bg-amber-900 group-data-[type=warning]/toast:text-amber-100 group-data-[type=info]/toast:border-sky-800 group-data-[type=info]/toast:bg-sky-900 group-data-[type=info]/toast:text-sky-100'
           ),
           closeButton: cn(
             'absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-[14px] border transition-colors',
             surface.border,
-            surface.panelMuted,
+            theme === 'light' ? 'bg-slate-100' : 'bg-zinc-900',
             surface.textMuted,
             surface.hoverBg,
             focusRing,
-            'group-data-[type=success]/toast:border-emerald-400/20 group-data-[type=success]/toast:bg-emerald-400/12 group-data-[type=success]/toast:text-emerald-50',
-            'group-data-[type=error]/toast:border-rose-400/20 group-data-[type=error]/toast:bg-rose-400/12 group-data-[type=error]/toast:text-rose-50',
-            'group-data-[type=warning]/toast:border-amber-400/20 group-data-[type=warning]/toast:bg-amber-400/12 group-data-[type=warning]/toast:text-amber-50',
-            'group-data-[type=info]/toast:border-sky-400/20 group-data-[type=info]/toast:bg-sky-400/12 group-data-[type=info]/toast:text-sky-50'
+            theme === 'light'
+              ? 'group-data-[type=success]/toast:border-emerald-200 group-data-[type=success]/toast:bg-emerald-100 group-data-[type=success]/toast:text-emerald-900 group-data-[type=error]/toast:border-red-200 group-data-[type=error]/toast:bg-red-100 group-data-[type=error]/toast:text-red-900 group-data-[type=warning]/toast:border-amber-200 group-data-[type=warning]/toast:bg-amber-100 group-data-[type=warning]/toast:text-amber-900 group-data-[type=info]/toast:border-sky-200 group-data-[type=info]/toast:bg-sky-100 group-data-[type=info]/toast:text-sky-900'
+              : 'group-data-[type=success]/toast:border-emerald-800 group-data-[type=success]/toast:bg-emerald-900 group-data-[type=success]/toast:text-emerald-100 group-data-[type=error]/toast:border-red-800 group-data-[type=error]/toast:bg-red-900 group-data-[type=error]/toast:text-red-100 group-data-[type=warning]/toast:border-amber-800 group-data-[type=warning]/toast:bg-amber-900 group-data-[type=warning]/toast:text-amber-100 group-data-[type=info]/toast:border-sky-800 group-data-[type=info]/toast:bg-sky-900 group-data-[type=info]/toast:text-sky-100'
           ),
           actionButton: cn(
             buttonBaseClassName,
             'order-4 self-center',
             'border-transparent text-white',
-            theme === 'light' ? 'bg-gray-900 hover:bg-gray-800' : 'bg-white/16 hover:bg-white/22'
+            theme === 'light' ? 'bg-gray-900 hover:bg-gray-800' : 'bg-zinc-800 hover:bg-zinc-700'
           ),
           cancelButton: cn(
             buttonBaseClassName,
             'order-3 self-center',
             surface.border,
-            surface.panelMuted,
+            theme === 'light' ? 'bg-slate-100' : 'bg-zinc-900',
             surface.textPrimary,
             surface.hoverBg
           ),

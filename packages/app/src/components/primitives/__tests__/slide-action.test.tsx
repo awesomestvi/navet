@@ -120,4 +120,25 @@ describe('SlideAction', () => {
     expect(button.className).toContain('bg-slate-100');
     expect(button.firstElementChild?.className).toContain('bg-emerald-100');
   });
+
+  it('applies custom track and fill styles when provided', () => {
+    render(
+      <SlideAction
+        actionLabel="Slide to unlock"
+        ariaLabel="Slide to unlock"
+        onComplete={vi.fn()}
+        progressFillStyle={{ background: 'linear-gradient(90deg, red 0%, pink 100%)' }}
+        size="small"
+        theme="dark"
+        trackStyle={{ borderColor: 'rgb(239, 68, 68)', backgroundColor: 'rgba(239, 68, 68, 0.12)' }}
+      />
+    );
+
+    const button = screen.getByRole('button', { name: 'Slide to unlock' });
+    const fill = button.firstElementChild as HTMLElement | null;
+
+    expect(button.style.borderColor).toBe('rgb(239, 68, 68)');
+    expect(button.style.backgroundColor).toBe('rgba(239, 68, 68, 0.12)');
+    expect(fill?.style.background).toBe('linear-gradient(90deg, red 0%, pink 100%)');
+  });
 });

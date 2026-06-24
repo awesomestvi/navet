@@ -11,6 +11,7 @@ import {
 } from '@navet/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@navet/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceStyleTokens } from '@navet/app/components/shared/theme/card-state-surface-tokens';
+import { withTintAlpha } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { getEntityIconPillStyles } from '@navet/app/components/shared/theme/entity-icon-pill-styles';
 import { getLightCardSurfaceTokens } from '@navet/app/components/shared/theme/light-card-surface-tokens';
 import { readNavetLockState } from '@navet/app/core/navet-device-state';
@@ -22,7 +23,7 @@ import {
 } from '@navet/app/hooks';
 import { integrationSecurityFeatureService } from '@navet/app/services/integration-security-feature.service';
 import { CarFront, Check, Loader2, Lock, Unlock } from 'lucide-react';
-import { memo, useEffect, useState } from 'react';
+import { type CSSProperties, memo, useEffect, useState } from 'react';
 import { getSecurityCardSurfaceTokens } from './security-card-surface-tokens';
 
 interface LockCardProps {
@@ -61,6 +62,63 @@ function isVehicleLockEntity(
     'boot',
     'frunk',
   ].some((token) => haystack.includes(token));
+}
+
+function getLockSliderStyles(
+  theme: 'light' | 'dark' | 'glass' | 'black',
+  accentColor: string
+): {
+  progressFillStyle: CSSProperties;
+  trackStyle: CSSProperties;
+} {
+  if (theme === 'light') {
+    return {
+      trackStyle: {
+        backgroundColor: withTintAlpha(accentColor, 0.1),
+        borderColor: withTintAlpha(accentColor, 0.22),
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.52)',
+      },
+      progressFillStyle: {
+        backgroundColor: withTintAlpha(accentColor, 0.22),
+      },
+    };
+  }
+
+  if (theme === 'glass') {
+    return {
+      trackStyle: {
+        backgroundColor: withTintAlpha(accentColor, 0.1),
+        borderColor: withTintAlpha(accentColor, 0.18),
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)',
+      },
+      progressFillStyle: {
+        backgroundColor: withTintAlpha(accentColor, 0.2),
+      },
+    };
+  }
+
+  if (theme === 'black') {
+    return {
+      trackStyle: {
+        backgroundColor: withTintAlpha(accentColor, 0.1),
+        borderColor: withTintAlpha(accentColor, 0.18),
+      },
+      progressFillStyle: {
+        backgroundColor: withTintAlpha(accentColor, 0.18),
+      },
+    };
+  }
+
+  return {
+    trackStyle: {
+      backgroundColor: withTintAlpha(accentColor, 0.11),
+      borderColor: withTintAlpha(accentColor, 0.2),
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
+    },
+    progressFillStyle: {
+      backgroundColor: withTintAlpha(accentColor, 0.2),
+    },
+  };
 }
 
 export const LockCard = memo(function LockCard({
@@ -230,6 +288,7 @@ export const LockCard = memo(function LockCard({
     tone: headerTone,
     baseColor: activeBaseColor,
   });
+  const lockSliderStyles = getLockSliderStyles(theme, activeBaseColor);
 
   return (
     <BaseCard
@@ -314,9 +373,11 @@ export const LockCard = memo(function LockCard({
             labelStyle={{ color: slideLabelTokens.titleColor }}
             onComplete={handleToggleLock}
             progressFillClassName={securitySurface.lockSliderFillBg}
+            progressFillStyle={lockSliderStyles.progressFillStyle}
             size="small"
             theme={theme}
             trackClassName={securitySurface.sliderTrackClassName}
+            trackStyle={lockSliderStyles.trackStyle}
             thumbClassName={slideThumbTokens.badgeClassName}
             thumbIconClassName={slideThumbTokens.iconClassName}
             thumbIconStyle={slideThumbTokens.iconStyle}

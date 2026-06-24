@@ -136,6 +136,14 @@ function PanelRuntime({ hass }: HomeAssistantPanelProps) {
   }, [syncViewportEnvironment]);
 
   useEffect(() => {
+    document.documentElement.dataset.navetRuntime = 'ha-panel';
+
+    return () => {
+      delete document.documentElement.dataset.navetRuntime;
+    };
+  }, []);
+
+  useEffect(() => {
     document.documentElement.style.setProperty('--navet-accent', accentColor);
     return () => {
       document.documentElement.style.removeProperty('--navet-accent');

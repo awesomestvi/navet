@@ -19,7 +19,9 @@ const unavailableState: HomeAssistantPanelShellState = {
 
 function readShellState(): HomeAssistantPanelShellState {
   const shell = resolveParentHomeAssistantShellBridge();
-  const hasHostShellControls = Boolean(shell?.canOpenSidebar || shell?.canToggleKiosk);
+  const hasHostShellControls = Boolean(
+    shell?.canOpenSidebar || shell?.canToggleKiosk || shell?.canNavigateHome
+  );
 
   if (!shell || !hasHostShellControls) {
     return unavailableState;

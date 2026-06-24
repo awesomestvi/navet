@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@navet/app/components/ui/dropdown-menu';
 import { cn } from '@navet/app/components/ui/utils';
-import { isAllRooms } from '@navet/app/constants/rooms';
+import { getDashboardRoomLabel, isAllRooms } from '@navet/app/constants/rooms';
 import type { AllViewGrouping } from '@navet/app/features/dashboard';
 import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
 import { integrationSelectors } from '@navet/app/stores/selectors';
@@ -24,10 +24,8 @@ import {
 } from 'lucide-react';
 import {
   type ButtonHTMLAttributes,
-  type CSSProperties,
   forwardRef,
   memo,
-  type PointerEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -37,6 +35,8 @@ import {
 import { getManageableRoomOrder } from './mobile-layout-helpers';
 import { getVisibleRoomNavRooms } from './room-nav.utils';
 import { RoomOrderDialog } from './room-order-dialog';
+
+const ROOM_NAV_GAP_PX = 8;
 
 interface RoomNavProps {
   rooms?: string[];
@@ -55,13 +55,13 @@ interface RoomNavProps {
   addEntityLabel?: string;
 }
 
-interface RoomNavItemProps {
+interface RoomNavItemProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> {
   room: string;
   activeRoom: string;
   allLabel: string;
   activeClassName: string;
   inactiveClassName: string;
-  onRoomChange: (room: string) => void;
+  onRoomChange?: (room: string) => void;
 }
 
 interface RoomNavMenuButtonProps {
@@ -71,9 +71,99 @@ interface RoomNavMenuButtonProps {
   className: string;
 }
 
-interface RoomNavScrollbarStyle extends CSSProperties {
-  '--room-nav-scrollbar-left': string;
-  '--room-nav-scrollbar-width': string;
+interface RoomLayoutState {
+  visibleRooms: string[];
+  overflowRooms: string[];
+}
+
+function areRoomListsEqual(left: string[], right: string[]) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function getInlineWidth(widths: number[]) {
+  if (widths.length === 0) {
+    return 0;
+  }
+
+  return widths.reduce((total, width) => total + width, 0) + ROOM_NAV_GAP_PX * (widths.length - 1);
+}
+
+function resolveRoomLayout({
+  activeRoom,
+  availableWidth,
+  overflowWidth,
+  rooms,
+  roomWidths,
+}: {
+  activeRoom: string;
+  availableWidth: number;
+  overflowWidth: number;
+  rooms: string[];
+  roomWidths: Map<string, number>;
+}): RoomLayoutState {
+  if (rooms.length === 0 || availableWidth <= 0) {
+    return { visibleRooms: rooms, overflowRooms: [] };
+  }
+
+  const widths = rooms.map((room) => roomWidths.get(room) ?? 0);
+
+  if (widths.some((width) => width <= 0)) {
+    return { visibleRooms: rooms, overflowRooms: [] };
+  }
+
+  if (getInlineWidth(widths) <= availableWidth) {
+    return { visibleRooms: rooms, overflowRooms: [] };
+  }
+
+  const nextVisibleRooms: string[] = [];
+
+  for (let index = 0; index < rooms.length; index += 1) {
+    const room = rooms[index];
+    const visibleWidths = [...nextVisibleRooms, room].map((value) => roomWidths.get(value) ?? 0);
+    const remainingCount = rooms.length - index - 1;
+    const projectedWidth =
+      getInlineWidth(visibleWidths) + (remainingCount > 0 ? ROOM_NAV_GAP_PX + overflowWidth : 0);
+
+    if (projectedWidth <= availableWidth || nextVisibleRooms.length === 0) {
+      nextVisibleRooms.push(room);
+      continue;
+    }
+
+    break;
+  }
+
+  if (nextVisibleRooms.includes(activeRoom)) {
+    return {
+      visibleRooms: nextVisibleRooms,
+      overflowRooms: rooms.filter((room) => !nextVisibleRooms.includes(room)),
+    };
+  }
+
+  const activeWidth = roomWidths.get(activeRoom);
+
+  if (!activeWidth) {
+    return {
+      visibleRooms: nextVisibleRooms,
+      overflowRooms: rooms.filter((room) => !nextVisibleRooms.includes(room)),
+    };
+  }
+
+  for (let cutIndex = nextVisibleRooms.length - 1; cutIndex >= 0; cutIndex -= 1) {
+    const candidateVisibleRooms = [...nextVisibleRooms.slice(0, cutIndex), activeRoom];
+    const candidateWidths = candidateVisibleRooms.map((room) => roomWidths.get(room) ?? 0);
+
+    if (getInlineWidth(candidateWidths) + ROOM_NAV_GAP_PX + overflowWidth <= availableWidth) {
+      return {
+        visibleRooms: candidateVisibleRooms,
+        overflowRooms: rooms.filter((room) => !candidateVisibleRooms.includes(room)),
+      };
+    }
+  }
+
+  return {
+    visibleRooms: [activeRoom],
+    overflowRooms: rooms.filter((room) => room !== activeRoom),
+  };
 }
 
 export const RoomNav = memo(function RoomNav({
@@ -99,19 +189,13 @@ export const RoomNav = memo(function RoomNav({
   );
   const surface = getThemeSurfaceTokens(theme);
   const [isReorderDialogOpen, setIsReorderDialogOpen] = useState(false);
-  const [isScrollbarDragging, setIsScrollbarDragging] = useState(false);
-  const [scrollbarStyle, setScrollbarStyle] = useState<RoomNavScrollbarStyle>({
-    '--room-nav-scrollbar-left': '0px',
-    '--room-nav-scrollbar-width': '0px',
+  const [roomLayout, setRoomLayout] = useState<RoomLayoutState>({
+    visibleRooms: [],
+    overflowRooms: [],
   });
-  const [hasRoomOverflow, setHasRoomOverflow] = useState(false);
-  const roomScrollerRef = useRef<HTMLDivElement>(null);
-  const dragStateRef = useRef<{
-    maxScrollLeft: number;
-    maxThumbLeft: number;
-    startScrollLeft: number;
-    startX: number;
-  } | null>(null);
+  const roomListRef = useRef<HTMLDivElement>(null);
+  const overflowMeasureRef = useRef<HTMLButtonElement>(null);
+  const roomMeasureRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const manageableRooms = useMemo(
     () => Object.values(manageableRoomsByProviderId).flat(),
     [manageableRoomsByProviderId]
@@ -120,7 +204,8 @@ export const RoomNav = memo(function RoomNav({
     () => getManageableRoomOrder(rooms, manageableRooms),
     [manageableRooms, rooms]
   );
-  const visibleRooms = useMemo(
+  const allLabel = t('dashboard.roomNav.all');
+  const availableRooms = useMemo(
     () => getVisibleRoomNavRooms(rooms.filter((room) => !hiddenRoomNames.includes(room))),
     [hiddenRoomNames, rooms]
   );
@@ -153,156 +238,108 @@ export const RoomNav = memo(function RoomNav({
     { label: t('dashboard.roomNav.grouping.type'), value: 'type' },
     { label: t('dashboard.roomNav.grouping.none'), value: 'none' },
   ];
-  const updateScrollbarMetrics = useCallback(() => {
-    const scroller = roomScrollerRef.current;
+  const overflowRooms = roomLayout.overflowRooms;
+  const overflowLabel = t(
+    overflowRooms.length === 1
+      ? 'dashboard.roomNav.overflow.one'
+      : 'dashboard.roomNav.overflow.other',
+    { count: overflowRooms.length }
+  );
 
-    if (!scroller) {
-      return;
+  const updateRoomLayout = useCallback(() => {
+    const containerWidth = roomListRef.current?.getBoundingClientRect().width ?? 0;
+    const overflowWidth = overflowMeasureRef.current?.getBoundingClientRect().width ?? 0;
+    const roomWidths = new Map<string, number>();
+
+    for (const room of availableRooms) {
+      const width = roomMeasureRefs.current[room]?.getBoundingClientRect().width ?? 0;
+      roomWidths.set(room, width);
     }
 
-    const { clientWidth, scrollLeft, scrollWidth } = scroller;
-    const maxScrollLeft = scrollWidth - clientWidth;
-
-    if (maxScrollLeft <= 1) {
-      setHasRoomOverflow(false);
-      setScrollbarStyle({
-        '--room-nav-scrollbar-left': '0px',
-        '--room-nav-scrollbar-width': '0px',
-      });
-      return;
-    }
-
-    const thumbWidth = Math.max(32, (clientWidth / scrollWidth) * clientWidth);
-    const maxThumbLeft = clientWidth - thumbWidth;
-    const thumbLeft = (scrollLeft / maxScrollLeft) * maxThumbLeft;
-
-    setHasRoomOverflow(true);
-    setScrollbarStyle({
-      '--room-nav-scrollbar-left': `${thumbLeft}px`,
-      '--room-nav-scrollbar-width': `${thumbWidth}px`,
+    const nextLayout = resolveRoomLayout({
+      activeRoom,
+      availableWidth: containerWidth,
+      overflowWidth,
+      rooms: availableRooms,
+      roomWidths,
     });
-  }, []);
-  const handleRoomScroll = useCallback(() => {
-    updateScrollbarMetrics();
-  }, [updateScrollbarMetrics]);
-  const handleScrollbarPointerDown = useCallback((event: PointerEvent<HTMLDivElement>) => {
-    const scroller = roomScrollerRef.current;
 
-    if (!scroller) {
-      return;
-    }
-
-    const { clientWidth, scrollLeft, scrollWidth } = scroller;
-    const maxScrollLeft = scrollWidth - clientWidth;
-
-    if (maxScrollLeft <= 1) {
-      return;
-    }
-
-    const thumbWidth = Math.max(32, (clientWidth / scrollWidth) * clientWidth);
-    dragStateRef.current = {
-      maxScrollLeft,
-      maxThumbLeft: clientWidth - thumbWidth,
-      startScrollLeft: scrollLeft,
-      startX: event.clientX,
-    };
-    setIsScrollbarDragging(true);
-    event.currentTarget.setPointerCapture(event.pointerId);
-    event.preventDefault();
-  }, []);
-  const handleScrollbarPointerMove = useCallback((event: PointerEvent<HTMLDivElement>) => {
-    const scroller = roomScrollerRef.current;
-    const dragState = dragStateRef.current;
-
-    if (!scroller || !dragState) {
-      return;
-    }
-
-    const scrollDelta =
-      ((event.clientX - dragState.startX) / dragState.maxThumbLeft) * dragState.maxScrollLeft;
-    scroller.scrollLeft = dragState.startScrollLeft + scrollDelta;
-  }, []);
-  const handleScrollbarPointerUp = useCallback((event: PointerEvent<HTMLDivElement>) => {
-    dragStateRef.current = null;
-    setIsScrollbarDragging(false);
-
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-  }, []);
+    setRoomLayout((currentLayout) =>
+      areRoomListsEqual(currentLayout.visibleRooms, nextLayout.visibleRooms) &&
+      areRoomListsEqual(currentLayout.overflowRooms, nextLayout.overflowRooms)
+        ? currentLayout
+        : nextLayout
+    );
+  }, [activeRoom, availableRooms]);
 
   useEffect(() => {
-    const scroller = roomScrollerRef.current;
-
-    if (!scroller) {
-      return;
-    }
-
-    updateScrollbarMetrics();
-
-    if (typeof ResizeObserver === 'undefined') {
-      window.addEventListener('resize', updateScrollbarMetrics);
-
-      return () => {
-        window.removeEventListener('resize', updateScrollbarMetrics);
-      };
-    }
-
-    const resizeObserver = new ResizeObserver(updateScrollbarMetrics);
-    resizeObserver.observe(scroller);
-
-    if (scroller.firstElementChild) {
-      resizeObserver.observe(scroller.firstElementChild);
-    }
-
+    const frameId = window.requestAnimationFrame(updateRoomLayout);
     return () => {
-      resizeObserver.disconnect();
+      window.cancelAnimationFrame(frameId);
     };
-  }, [updateScrollbarMetrics]);
+  }, [updateRoomLayout]);
+
+  useEffect(() => {
+    window.addEventListener('resize', updateRoomLayout);
+    return () => {
+      window.removeEventListener('resize', updateRoomLayout);
+    };
+  }, [updateRoomLayout]);
 
   return (
     <>
       <div className="hidden md:block">
         <div className="flex items-center gap-1.5 md:gap-2">
-          <div
-            className={`room-nav-scrollbar relative flex-1 min-w-0 ${
-              isScrollbarDragging ? 'is-dragging' : ''
-            }`}
-            style={scrollbarStyle}
-          >
-            <div
-              ref={roomScrollerRef}
-              className="w-full overflow-x-auto scrollbar-hide"
-              onScroll={handleRoomScroll}
-            >
-              <div className="flex min-w-max items-center gap-1.5 md:gap-2">
-                {visibleRooms.map((room) => (
-                  <RoomNavItem
-                    key={room}
-                    room={room}
-                    activeRoom={activeRoom}
-                    allLabel={t('dashboard.roomNav.all')}
-                    activeClassName={activeRoomItemClassName}
-                    inactiveClassName={inactiveRoomItemClassName}
-                    onRoomChange={onRoomChange}
-                  />
-                ))}
-              </div>
-            </div>
-            {hasRoomOverflow ? (
-              <div
-                aria-hidden="true"
-                className="room-nav-scrollbar-bar absolute inset-x-0 -bottom-1.5 z-10 h-2 touch-none select-none rounded-full"
-              >
-                <div
-                  className="room-nav-scrollbar-thumb absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full"
-                  onPointerDown={handleScrollbarPointerDown}
-                  onPointerMove={handleScrollbarPointerMove}
-                  onPointerUp={handleScrollbarPointerUp}
-                  onPointerCancel={handleScrollbarPointerUp}
+          <div ref={roomListRef} className="min-w-0 flex-1 overflow-hidden">
+            <div className="flex items-center gap-1 overflow-hidden">
+              {roomLayout.visibleRooms.map((room) => (
+                <RoomNavItem
+                  key={room}
+                  room={room}
+                  activeRoom={activeRoom}
+                  allLabel={allLabel}
+                  activeClassName={activeRoomItemClassName}
+                  inactiveClassName={inactiveRoomItemClassName}
+                  onRoomChange={onRoomChange}
                 />
-              </div>
-            ) : null}
+              ))}
+              {overflowRooms.length > 0 ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <InteractivePill
+                      aria-label={t('dashboard.roomNav.openRooms')}
+                      size="small"
+                      variant="ghost"
+                      className={`room-nav-item rounded-[22px] whitespace-nowrap shrink-0 transition-colors ${inactiveRoomItemClassName}`}
+                    >
+                      <span>{overflowLabel}</span>
+                      <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                    </InteractivePill>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    sideOffset={8}
+                    className={cn(getThemeDropdownSurfaceClasses(theme), 'overflow-visible p-2')}
+                  >
+                    <DropdownMenuLabel className={`px-3 py-2 text-sm font-medium ${textSecondary}`}>
+                      {t('dashboard.roomNav.openRooms')}
+                    </DropdownMenuLabel>
+                    {overflowRooms.map((room) => (
+                      <DropdownMenuItem
+                        key={room}
+                        className={dropdownItemClassName}
+                        onClick={() => onRoomChange(room)}
+                      >
+                        <span className="flex min-w-0 flex-1 items-center gap-2">
+                          <span className="truncate">{getDashboardRoomLabel(room, allLabel)}</span>
+                        </span>
+                        {activeRoom === room ? <Check className="h-4 w-4" /> : null}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : null}
+            </div>
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5 pl-1.5 md:gap-2 md:pl-2">
@@ -412,6 +449,37 @@ export const RoomNav = memo(function RoomNav({
           </div>
         </div>
       </div>
+
+      <div aria-hidden="true" className="pointer-events-none absolute -left-[10000px] top-0 -z-10">
+        <div className="flex items-center gap-1.5 md:gap-2 whitespace-nowrap">
+          {availableRooms.map((room) => (
+            <RoomNavItem
+              key={`measure-${room}`}
+              ref={(node) => {
+                roomMeasureRefs.current[room] = node;
+              }}
+              room={room}
+              activeRoom="__measure__"
+              allLabel={allLabel}
+              activeClassName={activeRoomItemClassName}
+              inactiveClassName={inactiveRoomItemClassName}
+              tabIndex={-1}
+              onRoomChange={() => undefined}
+            />
+          ))}
+          <InteractivePill
+            ref={overflowMeasureRef}
+            size="small"
+            variant="ghost"
+            className={`room-nav-item rounded-[22px] whitespace-nowrap shrink-0 transition-colors ${inactiveRoomItemClassName}`}
+            tabIndex={-1}
+          >
+            <span>{t('dashboard.roomNav.overflow.other', { count: 99 })}</span>
+            <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+          </InteractivePill>
+        </div>
+      </div>
+
       {canReorderRooms ? (
         <RoomOrderDialog
           isOpen={isReorderDialogOpen}
@@ -443,25 +511,27 @@ const RoomNavMenuButton = memo(
   )
 );
 
-const RoomNavItem = memo(function RoomNavItem({
-  room,
-  activeRoom,
-  allLabel,
-  activeClassName,
-  inactiveClassName,
-  onRoomChange,
-}: RoomNavItemProps) {
-  return (
-    <InteractivePill
-      active={activeRoom === room}
-      onClick={() => onRoomChange(room)}
-      size="small"
-      variant="ghost"
-      className={`room-nav-item rounded-[22px] whitespace-nowrap shrink-0 transition-colors ${
-        activeRoom === room ? activeClassName : inactiveClassName
-      }`}
-    >
-      {isAllRooms(room) ? allLabel : room}
-    </InteractivePill>
-  );
-});
+const RoomNavItem = memo(
+  forwardRef<HTMLButtonElement, RoomNavItemProps>(function RoomNavItem(
+    { room, activeRoom, allLabel, activeClassName, inactiveClassName, onRoomChange, ...props },
+    ref
+  ) {
+    const isActive = activeRoom === room;
+
+    return (
+      <InteractivePill
+        ref={ref}
+        active={isActive}
+        onClick={() => onRoomChange?.(room)}
+        size="small"
+        variant="ghost"
+        className={`room-nav-item rounded-[22px] whitespace-nowrap shrink-0 transition-colors ${
+          isActive ? activeClassName : inactiveClassName
+        }`}
+        {...props}
+      >
+        {getDashboardRoomLabel(room, allLabel)}
+      </InteractivePill>
+    );
+  })
+);

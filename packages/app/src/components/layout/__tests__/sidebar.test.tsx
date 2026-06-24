@@ -443,10 +443,16 @@ describe('Sidebar mobile navigation', () => {
     expect(panelAppHeader.style.display).toBe('none');
   });
 
-  it('toggles Home Assistant kiosk from the mobile more sheet in add-on mode', () => {
+  it('navigates back to Home Assistant from the mobile more sheet in add-on mode', () => {
     window.history.replaceState({}, '', '/api/hassio_ingress/navet_dev/dashboard');
     const setKioskEnabled = vi.fn(async () => true);
-    setParentHomeAssistantShell({ panel: false, setKioskEnabled, kioskEnabled: false });
+    const locationAssign = vi.fn();
+    setParentHomeAssistantShell({
+      panel: false,
+      setKioskEnabled,
+      kioskEnabled: false,
+      locationAssign,
+    });
 
     const { container } = renderWithProviders(
       <Sidebar mobileRoomNavigation={mobileRoomNavigation} />
@@ -456,14 +462,15 @@ describe('Sidebar mobile navigation', () => {
     fireEvent.click(within(dock).getByRole('button', { name: 'More' }));
     fireEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', {
-        name: 'Toggle Home Assistant kiosk',
+        name: 'Exit to Home Assistant',
       })
     );
 
-    expect(setKioskEnabled).toHaveBeenCalledWith(true);
+    expect(locationAssign).toHaveBeenCalledWith('/');
+    expect(setKioskEnabled).not.toHaveBeenCalled();
   });
 
-  it('hides the Home Assistant mobile panel header through the direct parent DOM fallback', () => {
+  it('falls back to the kiosk toggle in the mobile more sheet when home navigation is unavailable', () => {
     window.history.replaceState({}, '', '/api/hassio_ingress/navet_dev/dashboard');
     const { panelAppHeader } = setParentHomeAssistantShell({
       includeShell: false,
