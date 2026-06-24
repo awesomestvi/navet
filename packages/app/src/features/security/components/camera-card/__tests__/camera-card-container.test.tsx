@@ -312,4 +312,31 @@ describe('CameraCardContainer', () => {
       })
     );
   });
+
+  it('keeps live playback planning exempt from performance-profile effect downgrades', () => {
+    useSettingsStore.getState().updateSettings({
+      disableAnimations: true,
+      effectsQuality: 'high',
+      lowPowerMode: false,
+    });
+
+    renderWithProviders(
+      <CameraCardContainer
+        id="home_assistant:camera.front"
+        name="Front Door"
+        room="Entrance"
+        entityPicture="/api/camera_proxy/camera.front"
+        isStreamCapable
+        size="large"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(useCameraPlaybackPlanMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        preferredMode: 'live',
+      })
+    );
+  });
 });

@@ -58,6 +58,9 @@ const KIOSK_STYLE_RULES = {
   panelResolver: {
     '--mdc-top-app-bar-width': '100%',
   },
+  panelAppHeader: {
+    display: 'none',
+  },
   sidebar: {
     display: 'none',
     'max-width': '0px',
@@ -304,12 +307,22 @@ function createParentDomKioskController(parentWindow: ParentWindowLike): ParentD
       queryFirstAcrossShadows(drawer?.shadowRoot ?? parentWindow.document, [
         'partial-panel-resolver',
       ]);
+    const panelApp =
+      (panelResolver?.querySelector('ha-panel-app') as (Element & { shadowRoot?: ShadowRoot | null }) | null) ??
+      (queryFirstAcrossShadows(parentWindow.document, ['ha-panel-app']) as
+        | (Element & { shadowRoot?: ShadowRoot | null })
+        | null);
+    const panelAppHeader =
+      (panelApp?.shadowRoot?.querySelector('.header') as Element | null) ??
+      queryFirstAcrossShadows(panelApp?.shadowRoot ?? parentWindow.document, ['.header']);
     const headers = queryAllAcrossShadows(parentWindow.document, HEADER_SELECTORS);
 
     return {
       appContent,
       drawer,
       headers,
+      panelApp,
+      panelAppHeader,
       panelResolver,
       sidebar,
       sidebarShell,
@@ -343,7 +356,7 @@ function createParentDomKioskController(parentWindow: ParentWindowLike): ParentD
 
   const getAvailable = () => {
     const layout = resolveLayout();
-    return Boolean(layout.drawer && layout.sidebarShell && layout.appContent);
+    return Boolean(layout.drawer && ((layout.sidebarShell && layout.appContent) || layout.panelAppHeader));
   };
 
   const syncStyles = () => {
@@ -356,14 +369,21 @@ function createParentDomKioskController(parentWindow: ParentWindowLike): ParentD
     }
 
     const layout = resolveLayout();
-    if (!layout.drawer || !layout.sidebarShell || !layout.appContent) {
+    if (
+      !layout.drawer ||
+      (!(layout.sidebarShell && layout.appContent) && !layout.panelAppHeader)
+    ) {
       scheduleRetry();
       return false;
     }
 
     applyStyleRules(styleRecord, [layout.drawer], KIOSK_STYLE_RULES.drawer);
-    applyStyleRules(styleRecord, [layout.sidebarShell], KIOSK_STYLE_RULES.sidebarShell);
-    applyStyleRules(styleRecord, [layout.appContent], KIOSK_STYLE_RULES.appContent);
+    if (layout.sidebarShell) {
+      applyStyleRules(styleRecord, [layout.sidebarShell], KIOSK_STYLE_RULES.sidebarShell);
+    }
+    if (layout.appContent) {
+      applyStyleRules(styleRecord, [layout.appContent], KIOSK_STYLE_RULES.appContent);
+    }
 
     if (layout.sidebar) {
       applyStyleRules(styleRecord, [layout.sidebar], KIOSK_STYLE_RULES.sidebar);
@@ -371,6 +391,10 @@ function createParentDomKioskController(parentWindow: ParentWindowLike): ParentD
 
     if (layout.panelResolver) {
       applyStyleRules(styleRecord, [layout.panelResolver], KIOSK_STYLE_RULES.panelResolver);
+    }
+
+    if (layout.panelAppHeader) {
+      applyStyleRules(styleRecord, [layout.panelAppHeader], KIOSK_STYLE_RULES.panelAppHeader);
     }
 
     if (layout.headers.length > 0) {

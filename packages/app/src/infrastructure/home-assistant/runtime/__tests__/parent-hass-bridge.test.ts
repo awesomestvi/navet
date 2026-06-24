@@ -35,6 +35,10 @@ function createParentDocument() {
   const header = parentDocument.createElement('app-header');
   const sidebar = parentDocument.createElement('ha-sidebar');
   const panelResolver = parentDocument.createElement('partial-panel-resolver');
+  const panelApp = parentDocument.createElement('ha-panel-app');
+  const panelAppShadowRoot = panelApp.attachShadow({ mode: 'open' });
+  const panelAppHeader = parentDocument.createElement('div');
+  const panelAppFrame = parentDocument.createElement('iframe');
 
   homeAssistantRoot.hass = {
     states: { 'light.kitchen': { entity_id: 'light.kitchen', state: 'on' } },
@@ -55,6 +59,11 @@ function createParentDocument() {
 
   sidebarShell.append(sidebarSlot);
   appContent.append(appContentSlot);
+  panelAppHeader.className = 'header';
+  panelAppHeader.textContent = 'Navet';
+  panelAppFrame.className = 'loaded';
+  panelAppShadowRoot.append(panelAppHeader, panelAppFrame);
+  panelResolver.append(panelApp);
   layout.append(sidebarShell, appContent);
   drawerShadowRoot.append(layout);
   drawer.append(sidebar, panelResolver);
@@ -62,7 +71,7 @@ function createParentDocument() {
   homeAssistantShadowRoot.append(homeAssistantMain);
   parentDocument.body.append(homeAssistantRoot);
 
-  return { appContent, drawer, header, parentDocument, sidebar, sidebarShell };
+  return { appContent, drawer, header, panelAppHeader, parentDocument, sidebar, sidebarShell };
 }
 
 function createShellApi() {
@@ -143,7 +152,7 @@ describe('resolveParentHomeAssistantBridge', () => {
   });
 
   it('falls back to direct parent DOM kiosk controls when the parent shell API is missing', async () => {
-    const { appContent, drawer, header, parentDocument, sidebar, sidebarShell } =
+    const { appContent, drawer, header, panelAppHeader, parentDocument, sidebar, sidebarShell } =
       createParentDocument();
 
     attachParentWindow({
@@ -167,6 +176,7 @@ describe('resolveParentHomeAssistantBridge', () => {
     expect(appContent.style.paddingLeft).toBe('0px');
     expect(sidebar.style.display).toBe('none');
     expect(header.style.display).toBe('none');
+    expect(panelAppHeader.style.display).toBe('none');
     expect(bridge?.shell?.isKioskEnabled()).toBe(true);
 
     await expect(bridge?.shell?.setHomeAssistantKioskEnabled(false)).resolves.toBe(true);
@@ -175,6 +185,7 @@ describe('resolveParentHomeAssistantBridge', () => {
     expect(appContent.getAttribute('style')).toBeNull();
     expect(sidebar.getAttribute('style')).toBeNull();
     expect(header.getAttribute('style')).toBeNull();
+    expect(panelAppHeader.getAttribute('style')).toBeNull();
     expect(bridge?.shell?.isKioskEnabled()).toBe(false);
   });
 

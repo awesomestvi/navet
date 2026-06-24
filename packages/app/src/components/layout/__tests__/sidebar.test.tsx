@@ -67,6 +67,10 @@ describe('Sidebar mobile navigation', () => {
     const appContentSlot = parentDocument.createElement('slot');
     const sidebar = parentDocument.createElement('ha-sidebar');
     const panelResolver = parentDocument.createElement('partial-panel-resolver');
+    const panelApp = parentDocument.createElement('ha-panel-app');
+    const panelAppShadowRoot = panelApp.attachShadow({ mode: 'open' });
+    const panelAppHeader = parentDocument.createElement('div');
+    const panelAppFrame = parentDocument.createElement('iframe');
 
     homeAssistantRoot.hass = {
       states: { 'light.kitchen': { entity_id: 'light.kitchen', state: 'on' } },
@@ -84,9 +88,14 @@ describe('Sidebar mobile navigation', () => {
     sidebarShell.className = 'sidebar-shell';
     appContent.className = 'app-content';
     panelResolver.slot = 'appContent';
+    panelAppHeader.className = 'header';
+    panelAppHeader.textContent = 'Navet';
+    panelAppFrame.className = 'loaded';
 
     sidebarShell.append(sidebarSlot);
     appContent.append(appContentSlot);
+    panelAppShadowRoot.append(panelAppHeader, panelAppFrame);
+    panelResolver.append(panelApp);
     layout.append(sidebarShell, appContent);
     drawerShadowRoot.append(layout);
     drawer.append(sidebar, panelResolver);
@@ -130,6 +139,7 @@ describe('Sidebar mobile navigation', () => {
       drawer,
       locationAssign,
       openSidebar,
+      panelAppHeader,
       parentDocument,
       setKioskEnabled,
       sidebar,
@@ -414,7 +424,7 @@ describe('Sidebar mobile navigation', () => {
   it('toggles the direct parent DOM fallback from the desktop sidebar in add-on mode', () => {
     setMediaQueryMatch('(max-width: 767px)', false);
     window.history.replaceState({}, '', '/api/hassio_ingress/navet_dev/dashboard');
-    const { appContent, drawer, sidebar, sidebarShell } = setParentHomeAssistantShell({
+    const { appContent, drawer, panelAppHeader, sidebar, sidebarShell } = setParentHomeAssistantShell({
       includeShell: false,
       panel: false,
     });
@@ -429,6 +439,7 @@ describe('Sidebar mobile navigation', () => {
     expect(sidebarShell.style.display).toBe('none');
     expect(drawer.style.getPropertyValue('--ha-sidebar-width')).toBe('0px');
     expect(appContent.style.paddingLeft).toBe('0px');
+    expect(panelAppHeader.style.display).toBe('none');
   });
 
   it('toggles Home Assistant kiosk from the mobile more sheet in add-on mode', () => {
@@ -449,5 +460,27 @@ describe('Sidebar mobile navigation', () => {
     );
 
     expect(setKioskEnabled).toHaveBeenCalledWith(true);
+  });
+
+  it('hides the Home Assistant mobile panel header through the direct parent DOM fallback', () => {
+    window.history.replaceState({}, '', '/api/hassio_ingress/navet_dev/dashboard');
+    const { panelAppHeader } = setParentHomeAssistantShell({
+      includeShell: false,
+      panel: false,
+    });
+
+    const { container } = renderWithProviders(
+      <Sidebar mobileRoomNavigation={mobileRoomNavigation} />
+    );
+    const dock = getMobileDock(container);
+
+    fireEvent.click(within(dock).getByRole('button', { name: 'More' }));
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Toggle Home Assistant kiosk',
+      })
+    );
+
+    expect(panelAppHeader.style.display).toBe('none');
   });
 });

@@ -199,12 +199,9 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     [disableAnimations, effectsQuality, isEditMode, lowPowerMode]
   );
   const effectiveDashboardCameraViewMode = resolveDashboardCameraViewMode({
-    cameraDashboardViewMode:
-      performanceProfile.preferSnapshotOverLive && hasSnapshot
-        ? 'snapshot'
-        : cameraDashboardViewMode,
+    cameraDashboardViewMode,
     lowPowerMode,
-    effectsQuality: performanceProfile.effectiveEffectsQuality,
+    effectsQuality,
     hasSnapshot,
   });
   const playbackOptionsModel = useCameraPlaybackPlan({

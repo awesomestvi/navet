@@ -58,14 +58,23 @@ function createParentWindow(options?: {
   const appContentSlot = parentDocument.createElement('slot');
   const sidebar = parentDocument.createElement('ha-sidebar');
   const panelResolver = parentDocument.createElement('partial-panel-resolver');
+  const panelApp = parentDocument.createElement('ha-panel-app');
+  const panelAppShadowRoot = panelApp.attachShadow({ mode: 'open' });
+  const panelAppHeader = parentDocument.createElement('div');
+  const panelAppFrame = parentDocument.createElement('iframe');
 
   layout.className = 'layout';
   sidebarShell.className = 'sidebar-shell';
   appContent.className = 'app-content';
   panelResolver.slot = 'appContent';
+  panelAppHeader.className = 'header';
+  panelAppHeader.textContent = 'Navet';
+  panelAppFrame.className = 'loaded';
 
   sidebarShell.append(sidebarSlot);
   appContent.append(appContentSlot);
+  panelAppShadowRoot.append(panelAppHeader, panelAppFrame);
+  panelResolver.append(panelApp);
   layout.append(sidebarShell, appContent);
   drawerShadowRoot.append(layout);
   drawer.append(sidebar, panelResolver);
@@ -102,7 +111,7 @@ function createParentWindow(options?: {
 
   setParentWindow(parentWindow);
 
-  return { appContent, drawer, parentWindow, setKioskEnabled, sidebar, sidebarShell };
+  return { appContent, drawer, panelAppHeader, parentWindow, setKioskEnabled, sidebar, sidebarShell };
 }
 
 describe('useHomeAssistantPanelShell', () => {
@@ -181,7 +190,7 @@ describe('useSyncHomeAssistantPanelKioskMode', () => {
 
   it('enables and disables the direct parent DOM fallback when ingress mode has no shell API', async () => {
     setPath('/api/hassio_ingress/navet_dev/dashboard');
-    const { appContent, drawer, sidebar, sidebarShell } = createParentWindow({
+    const { appContent, drawer, panelAppHeader, sidebar, sidebarShell } = createParentWindow({
       includeShell: false,
     });
     resetRuntimeContextForTests();
@@ -192,6 +201,7 @@ describe('useSyncHomeAssistantPanelKioskMode', () => {
     expect(sidebarShell.style.display).toBe('none');
     expect(appContent.style.paddingLeft).toBe('0px');
     expect(drawer.style.getPropertyValue('--ha-sidebar-width')).toBe('0px');
+    expect(panelAppHeader.style.display).toBe('none');
 
     act(() => {
       unmount();
@@ -201,5 +211,6 @@ describe('useSyncHomeAssistantPanelKioskMode', () => {
     expect(sidebarShell.getAttribute('style')).toBeNull();
     expect(appContent.getAttribute('style')).toBeNull();
     expect(drawer.getAttribute('style')).toBeNull();
+    expect(panelAppHeader.getAttribute('style')).toBeNull();
   });
 });
