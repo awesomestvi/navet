@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.7.8 - 2026-06-25
+
+## New
+
+- Custom sidebar actions can now open links inside Navet in an iframe-backed panel.
+- Navet natively supports Home Assistant kiosk mode so the Home Assistant sidebar and header can be hidden for a full-screen experience. For HACS, read [HOME_ASSISTANT.md](https://github.com/awesomestvi/navet/blob/main/docs/HOME_ASSISTANT.md) to add `extra_module_url` to your config.
+
+## Fixed
+
+- Camera cards now recover WebRTC live-stream startup more reliably again, including signaling, timeout, and fallback cases that regressed in recent releases.
+- Home Assistant-hosted mobile dashboards now handle top safe-area spacing more cleanly, and mobile feedback surfaces no longer look overly transparent in affected UI flows.
+
+## Improved
+
+- Large room lists now use more flexible room navigation and room-management flows, including overflow handling, ordering controls, and denser kiosk navigation surfaces.
+- Toasts, banners, lock controls, and related dashboard surfaces now use clearer contrast and cleaner styling across mobile, light, and kiosk-oriented UI flows.
+- Home Assistant panel and add-on installs now support a cleaner host-shell flow, including optional native Home Assistant header and sidebar hiding when the Navet shell module is enabled.
+
 ## 0.7.7 - 2026-06-22
 
 ## New

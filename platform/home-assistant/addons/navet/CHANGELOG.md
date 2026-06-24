@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.8
+
+- Updated Navet to `0.7.8`
+- Added support for opening custom sidebar links inside Navet in an iframe-backed panel
+- Fixed recent WebRTC camera live-stream regressions and improved stream fallback handling
+- Fixed Home Assistant mobile safe-area spacing and overly transparent affected UI surfaces
+- Improved room navigation and room management for larger dashboards
+- Improved toast, banner, lock, and related dashboard UI contrast across mobile and kiosk flows
+- Improved the Home Assistant panel and add-on shell flow, including optional native header and sidebar hiding when the Navet shell module is enabled
+
 ## 0.7.7
 
 - Updated Navet to `0.7.7`

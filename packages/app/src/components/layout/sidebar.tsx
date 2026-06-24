@@ -28,8 +28,8 @@ import {
   ChevronDown,
   Compass,
   DoorOpen,
-  type LucideIcon,
   LogOut,
+  type LucideIcon,
   PanelLeftClose,
   PanelLeftOpen,
   Pencil,
@@ -559,14 +559,14 @@ export const Sidebar = memo(function Sidebar({
                 },
               }
             : homeAssistantShell.canToggleKiosk
-            ? {
-                icon: HomeAssistantSidebarIcon,
-                label: t('sidebar.toggleHomeAssistantKiosk'),
-                onClick: () => {
-                  void homeAssistantShell.toggleHomeAssistantKiosk();
-                },
-              }
-            : undefined
+              ? {
+                  icon: HomeAssistantSidebarIcon,
+                  label: t('sidebar.toggleHomeAssistantKiosk'),
+                  onClick: () => {
+                    void homeAssistantShell.toggleHomeAssistantKiosk();
+                  },
+                }
+              : undefined
         }
         isOpen={isOrbitOpen}
         onOpenChange={setIsOrbitOpen}
