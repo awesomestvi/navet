@@ -70,6 +70,58 @@ describe('HomeAssistantResourceResolver', () => {
     expect(resource.authStrategy).toBe('same_origin');
   });
 
+  it('keeps standalone OAuth signed camera snapshots on direct Home Assistant URLs', async () => {
+    window.__NAVET_CONFIG__ = { hassUrl: oauthSessionFixture.haBaseUrl };
+    resetRuntimeContextForTests();
+    const signedSnapshotPath = '/api/camera_proxy/camera.front_door?authSig=signed-camera-token';
+    const resolver = new HomeAssistantResourceResolver(
+      () => ({
+        providerId: 'home_assistant',
+        runtime: oauthSessionFixture.runtime,
+        authMode: oauthSessionFixture.authMode,
+        haBaseUrl: oauthSessionFixture.haBaseUrl,
+        hassUrl: oauthSessionFixture.hassUrl,
+      }),
+      async (path) =>
+        path === homeAssistantUrlFixtures.relativeCameraSnapshot ? signedSnapshotPath : null
+    );
+
+    const resource = await resolver.resolve({
+      kind: 'camera_snapshot',
+      entityId: 'camera.front_door',
+      rawPath: homeAssistantUrlFixtures.relativeCameraSnapshot,
+    });
+
+    expect(resource.url).toBe(`${oauthSessionFixture.haBaseUrl}${signedSnapshotPath}`);
+    expect(resource.authStrategy).toBe('none');
+  });
+
+  it('keeps standalone OAuth signed camera HLS streams on direct Home Assistant URLs', async () => {
+    window.__NAVET_CONFIG__ = { hassUrl: oauthSessionFixture.haBaseUrl };
+    resetRuntimeContextForTests();
+    const signedHlsPath = '/api/hls/camera.front_door/master.m3u8?authSig=signed-stream-token';
+    const resolver = new HomeAssistantResourceResolver(
+      () => ({
+        providerId: 'home_assistant',
+        runtime: oauthSessionFixture.runtime,
+        authMode: oauthSessionFixture.authMode,
+        haBaseUrl: oauthSessionFixture.haBaseUrl,
+        hassUrl: oauthSessionFixture.hassUrl,
+      }),
+      async (path) => (path === homeAssistantUrlFixtures.relativeHlsStream ? signedHlsPath : null)
+    );
+
+    const resource = await resolver.resolve({
+      kind: 'camera_stream',
+      entityId: 'camera.front_door',
+      stream: 'hls',
+      rawPath: homeAssistantUrlFixtures.relativeHlsStream,
+    });
+
+    expect(resource.url).toBe(`${oauthSessionFixture.haBaseUrl}${signedHlsPath}`);
+    expect(resource.authStrategy).toBe('none');
+  });
+
   it('does not sign standalone OAuth media artwork that already uses the same-origin proxy', async () => {
     window.__NAVET_CONFIG__ = { hassUrl: oauthSessionFixture.haBaseUrl };
     resetRuntimeContextForTests();

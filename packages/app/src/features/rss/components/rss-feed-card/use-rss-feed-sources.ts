@@ -1,5 +1,4 @@
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
-import { useProviderFeedreaderEntities } from '@navet/app/features/rss/components/rss-feed-card/use-provider-feedreader-entities';
 import { usePersistedState } from '@navet/app/hooks/use-persisted-state';
 import { sanitizeExternalUrl } from '@navet/app/utils/url-security';
 import { useEffect, useMemo } from 'react';
@@ -25,7 +24,6 @@ export function useRSSFeedSources(
   cardData?: RSSCardData,
   onCardDataChange?: (updates: Partial<RSSCardData>) => void
 ) {
-  const feedreaderEntities = useProviderFeedreaderEntities();
   const [legacyCustomProviders, setLegacyCustomProviders] = usePersistedState<RSSProvider[]>(
     STORAGE_KEYS.rssFeedProviders,
     DEFAULT_RSS_PROVIDERS
@@ -59,28 +57,7 @@ export function useRSSFeedSources(
     setLegacyArticleCountByCardId((current) => ({ ...current, [cardId]: count }));
   };
 
-  const homeAssistantProviders = useMemo<RSSProvider[]>(() => {
-    return Object.entries(feedreaderEntities)
-      .map(([entityId, entity]) => {
-        const attributes = entity.attributes as Record<string, unknown> | undefined;
-
-        return {
-          id: `ha:${entityId}`,
-          name:
-            (typeof attributes?.friendly_name === 'string' && attributes.friendly_name) ||
-            (typeof attributes?.title === 'string' && attributes.title) ||
-            entityId,
-          type: 'home-assistant-feedreader' as const,
-          entityId,
-        };
-      })
-      .sort((left, right) => left.name.localeCompare(right.name));
-  }, [feedreaderEntities]);
-
-  const providers = useMemo(
-    () => [...customProviders, ...homeAssistantProviders],
-    [customProviders, homeAssistantProviders]
-  );
+  const providers = useMemo(() => customProviders, [customProviders]);
 
   const fallbackProviderIds = useMemo(
     () =>
@@ -223,7 +200,6 @@ export function useRSSFeedSources(
     setSelectedProviderIds,
     addProvider,
     removeProvider,
-    homeAssistantProviders,
     articleCount,
     setArticleCount,
   };

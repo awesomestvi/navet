@@ -51,7 +51,7 @@ describe('useRSSFeedItems', () => {
     );
 
     try {
-      const { result } = renderHook(() => useRSSFeedItems(providers, null, 1), { wrapper });
+      const { result } = renderHook(() => useRSSFeedItems(providers, 1), { wrapper });
 
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -109,7 +109,7 @@ describe('useRSSFeedItems', () => {
       );
     });
 
-    const { result } = renderHook(() => useRSSFeedItems(providers, null, 3), { wrapper });
+    const { result } = renderHook(() => useRSSFeedItems(providers, 3), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -153,7 +153,7 @@ describe('useRSSFeedItems', () => {
       );
     });
 
-    const { result } = renderHook(() => useRSSFeedItems(providers, null, 10), { wrapper });
+    const { result } = renderHook(() => useRSSFeedItems(providers, 10), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -176,8 +176,8 @@ describe('useRSSFeedItems', () => {
       )
     );
 
-    const first = renderHook(() => useRSSFeedItems(providers, null, 1), { wrapper });
-    const second = renderHook(() => useRSSFeedItems(providers, null, 1), { wrapper });
+    const first = renderHook(() => useRSSFeedItems(providers, 1), { wrapper });
+    const second = renderHook(() => useRSSFeedItems(providers, 1), { wrapper });
 
     await waitFor(() => expect(first.result.current.isLoading).toBe(false));
     await waitFor(() => expect(second.result.current.isLoading).toBe(false));
@@ -217,7 +217,7 @@ describe('useRSSFeedItems', () => {
       );
     });
 
-    const { result } = renderHook(() => useRSSFeedItems(providers, null, 10), { wrapper });
+    const { result } = renderHook(() => useRSSFeedItems(providers, 10), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 

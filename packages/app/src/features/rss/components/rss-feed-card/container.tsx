@@ -5,7 +5,6 @@ import { memo, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { RSSFeedSettingsDialog } from './settings-dialog';
 import type { RSSFeedCardProps } from './types';
-import { useProviderFeedreaderEntities } from './use-provider-feedreader-entities';
 import { useRSSFeedItems } from './use-rss-feed-items';
 import { useRSSFeedSources } from './use-rss-feed-sources';
 import { RSSFeedCardView } from './view';
@@ -40,27 +39,12 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
     setSelectedProviderIds,
     addProvider,
     removeProvider,
-    homeAssistantProviders,
     articleCount,
     setArticleCount,
   } = useRSSFeedSources(cardId, data, onDataChange);
 
-  // Only subscribe to the specific entity IDs used by HA feedreader providers.
-  // useRSSFeedItems accesses entities[provider.entityId] — never the full dict.
-  // Without narrowing, any HA entity update would re-trigger the RSS fetch effect.
-  const feedreaderEntityIds = useMemo(
-    () =>
-      selectedProviders
-        .filter((p) => p.type === 'home-assistant-feedreader' && p.entityId)
-        .map((p) => p.entityId as string),
-    [selectedProviders]
-  );
-
-  const feedreaderEntities = useProviderFeedreaderEntities(feedreaderEntityIds);
-
   const { items, isLoading, error } = useRSSFeedItems(
     selectedProviders,
-    feedreaderEntities,
     articleCount,
     refreshNonce
   );
@@ -146,7 +130,6 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
           theme={theme}
           primaryColorValue={accentColor}
           providers={providers}
-          homeAssistantProviders={homeAssistantProviders}
           selectedProviderIds={selectedProviderIds}
           onSelectedProviderIdsChange={setSelectedProviderIds}
           onAddProvider={(name, feedUrl) => {

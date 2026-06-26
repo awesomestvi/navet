@@ -64,7 +64,8 @@ export function CameraSnapshotImage({
           <img
             src={displayedSrc}
             alt={alt}
-            className={className}
+            className={`${className} [backface-visibility:hidden] [transform:translateZ(0)]`}
+            style={{ imageRendering: 'auto' }}
             draggable={false}
             onError={onError}
           />
@@ -83,7 +84,8 @@ export function CameraSnapshotImage({
             src={pendingSrc}
             alt=""
             aria-hidden="true"
-            className="hidden"
+            className="hidden [backface-visibility:hidden] [transform:translateZ(0)]"
+            style={{ imageRendering: 'auto' }}
             draggable={false}
             onLoad={() => {
               setDisplayedSrc(pendingSrc);

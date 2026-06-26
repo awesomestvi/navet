@@ -84,6 +84,14 @@ function shouldSkipSignedPathForProxyResource(signablePath: string) {
   return signablePath.includes(MEDIA_PLAYER_PROXY_PATH_SEGMENT);
 }
 
+function hasSignedAuthQuery(resourceUrl: string) {
+  return resourceUrl.includes('authSig=');
+}
+
+function shouldPreferDirectSignedCameraResource(ref: HaResourceRef) {
+  return ref.kind === 'camera_snapshot' || ref.kind === 'camera_stream';
+}
+
 function toUrlWithCacheBust(url: string, cacheBustKey: ResolveOptions['cacheBustKey']) {
   if (cacheBustKey === undefined || cacheBustKey === null) {
     return url;
@@ -253,7 +261,7 @@ export class HomeAssistantResourceResolver {
             ? toUrlWithCacheBust(`${haBaseUrl}${resourceUrl}`, options.cacheBustKey)
             : undefined,
           cacheKey,
-          authStrategy: 'bearer',
+          authStrategy: hasSignedAuthQuery(resourceUrl) ? 'none' : 'bearer',
           metadata: { source: 'ha_absolute_relative' },
         };
       }
@@ -367,7 +375,7 @@ export class HomeAssistantResourceResolver {
                 kind: 'image',
                 url: sameHaOrigin ? toUrlWithCacheBust(sanitized, options.cacheBustKey) : undefined,
                 cacheKey,
-                authStrategy: 'bearer',
+                authStrategy: hasSignedAuthQuery(sanitized) ? 'none' : 'bearer',
                 metadata: { source: 'ha_direct_cross_origin_relative' },
               };
             }
@@ -415,7 +423,7 @@ export class HomeAssistantResourceResolver {
             kind: 'image',
             url: toUrlWithCacheBust(sanitized, options.cacheBustKey),
             cacheKey,
-            authStrategy: 'bearer',
+            authStrategy: hasSignedAuthQuery(sanitized) ? 'none' : 'bearer',
             metadata: { source: 'ha_direct_absolute' },
           };
         } catch {
@@ -453,19 +461,23 @@ export class HomeAssistantResourceResolver {
         };
         break;
       case 'camera_stream':
-        resource = {
-          id: `${ref.entityId}:${ref.stream}:${ref.rawPath ?? ''}`,
-          kind:
-            ref.stream === 'hls'
-              ? 'hls_stream'
-              : ref.stream === 'web_rtc'
-                ? 'webrtc_stream'
-                : 'mjpeg_stream',
-          url: ref.rawPath ? resolvePath(ref.rawPath).url : undefined,
-          cacheKey,
-          authStrategy: ref.stream === 'web_rtc' ? 'none' : 'same_origin',
-          metadata: { source: ref.stream },
-        };
+        {
+          const resolvedStream = ref.rawPath ? resolvePath(ref.rawPath) : null;
+          resource = {
+            id: `${ref.entityId}:${ref.stream}:${ref.rawPath ?? ''}`,
+            kind:
+              ref.stream === 'hls'
+                ? 'hls_stream'
+                : ref.stream === 'web_rtc'
+                  ? 'webrtc_stream'
+                  : 'mjpeg_stream',
+            url: resolvedStream?.url,
+            cacheKey,
+            authStrategy:
+              ref.stream === 'web_rtc' ? 'none' : (resolvedStream?.authStrategy ?? 'same_origin'),
+            metadata: { source: ref.stream },
+          };
+        }
         break;
       default:
         resource = resolvePath(ref.rawPath);
@@ -511,7 +523,10 @@ export class HomeAssistantResourceResolver {
         return resource;
       }
 
-      const signedResource = this.resolveSync({ kind: 'absolute_url', url: signedPath }, options);
+      const signedResource = this.resolveSync(
+        { kind: 'absolute_url', url: signedPath },
+        shouldPreferDirectSignedCameraResource(ref) ? { ...options, allowDirect: true } : options
+      );
 
       return {
         ...resource,

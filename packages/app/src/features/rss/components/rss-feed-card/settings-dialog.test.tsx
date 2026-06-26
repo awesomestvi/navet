@@ -29,7 +29,6 @@ describe('RSSFeedSettingsDialog', () => {
         theme="glass"
         primaryColorValue="#06b6d4"
         providers={providers}
-        homeAssistantProviders={[]}
         selectedProviderIds={['bbc-world']}
         onSelectedProviderIdsChange={vi.fn()}
         onAddProvider={() => true}

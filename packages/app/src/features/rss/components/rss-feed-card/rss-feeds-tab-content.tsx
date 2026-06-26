@@ -11,8 +11,7 @@ import type { RSSProvider } from './types';
 
 interface RSSFeedsTabContentProps {
   hasProviders: boolean;
-  homeAssistantProviders: RSSProvider[];
-  directProviders: RSSProvider[];
+  providers: RSSProvider[];
   selectedProviderIds: string[];
   onToggleProvider: (providerId: string) => void;
   onRemoveProvider?: (providerId: string) => void;
@@ -27,8 +26,7 @@ interface RSSFeedsTabContentProps {
 
 export function RSSFeedsTabContent({
   hasProviders,
-  homeAssistantProviders,
-  directProviders,
+  providers,
   selectedProviderIds,
   onToggleProvider,
   onRemoveProvider,
@@ -52,38 +50,20 @@ export function RSSFeedsTabContent({
 
   return (
     <div className="space-y-4 max-sm:space-y-3">
-      {homeAssistantProviders.length > 0 && (
-        <RSSProviderGroup
-          title={t('rss.settings.availableHomeAssistantFeeds')}
-          providers={homeAssistantProviders}
-          selectedProviderIds={selectedProviderIds}
-          onToggleProvider={onToggleProvider}
-          accentColorValue={accentColorValue}
-          theme={theme}
-          textPrimaryColor={textPrimaryColor}
-          textSecondaryColor={textSecondaryColor}
-          sectionStyle={sectionStyle}
-          surface={surface}
-          t={t}
-        />
-      )}
-
-      {directProviders.length > 0 && (
-        <RSSProviderGroup
-          title={t('rss.settings.savedDirectFeeds')}
-          providers={directProviders}
-          selectedProviderIds={selectedProviderIds}
-          onToggleProvider={onToggleProvider}
-          onRemoveProvider={onRemoveProvider}
-          accentColorValue={accentColorValue}
-          theme={theme}
-          textPrimaryColor={textPrimaryColor}
-          textSecondaryColor={textSecondaryColor}
-          sectionStyle={sectionStyle}
-          surface={surface}
-          t={t}
-        />
-      )}
+      <RSSProviderGroup
+        title={t('rss.settings.savedDirectFeeds')}
+        providers={providers}
+        selectedProviderIds={selectedProviderIds}
+        onToggleProvider={onToggleProvider}
+        onRemoveProvider={onRemoveProvider}
+        accentColorValue={accentColorValue}
+        theme={theme}
+        textPrimaryColor={textPrimaryColor}
+        textSecondaryColor={textSecondaryColor}
+        sectionStyle={sectionStyle}
+        surface={surface}
+        t={t}
+      />
     </div>
   );
 }
@@ -126,9 +106,8 @@ function RSSProviderGroup({
       <div className="min-w-0 max-w-full space-y-2 max-sm:space-y-1.5">
         {providers.map((provider) => {
           const isSelected = selectedProviderIds.includes(provider.id);
-          const secondaryLabel =
-            provider.type === 'home-assistant-feedreader' ? provider.entityId : provider.feedUrl;
-          const isRemovable = provider.type === 'url' && onRemoveProvider;
+          const secondaryLabel = provider.feedUrl;
+          const isRemovable = Boolean(onRemoveProvider);
           const rowStyle = {
             ...sectionStyle,
             backgroundColor: withTintAlpha(

@@ -134,6 +134,7 @@ export function CameraLiveViewer({
   const selectedTransport = playbackModel?.selectedTransport ?? null;
   const snapshotSourceUrl = playbackModel?.snapshotResource?.url;
   const showNoSignal = !selectedTransport && !snapshotSourceUrl && cameraState !== 'unavailable';
+  const isFeedRunning = Boolean(selectedTransport) && cameraState !== 'unavailable';
   const streamTypeLabel = useMemo(() => {
     if (!playbackModel) {
       return supportsCameraStreams
@@ -148,7 +149,7 @@ export function CameraLiveViewer({
       selectedTransport === 'web_rtc' ||
       selectedTransport === 'mjpeg'
     ) {
-      return selectedTransport.toUpperCase();
+      return selectedTransport === 'web_rtc' ? 'RTC' : selectedTransport.toUpperCase();
     }
     return playbackModel.supportsStreaming
       ? t('camera.viewer.streamCapable')
@@ -222,6 +223,28 @@ export function CameraLiveViewer({
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/45 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-xl">
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    isFeedRunning || cameraState === 'streaming' || cameraState === 'recording'
+                      ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.68)]'
+                      : 'bg-white/45'
+                  }`}
+                />
+                <Video className="h-3.5 w-3.5 text-white/72" />
+                <span>
+                  {isFeedRunning || cameraState === 'streaming' || cameraState === 'recording'
+                    ? t('camera.status.live')
+                    : cameraState === 'off'
+                      ? t('common.off')
+                      : cameraState === 'unavailable'
+                        ? t('camera.status.unavailable')
+                        : t('common.on')}
+                </span>
+                {playbackModel?.isSnapshotFallback ? (
+                  <span className="text-white/58">{t('camera.viewer.snapshotFallback')}</span>
+                ) : null}
+              </div>
               <button
                 type="button"
                 onClick={onRefresh}
@@ -251,30 +274,7 @@ export function CameraLiveViewer({
         </div>
 
         <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent p-4 md:p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/45 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-xl">
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  cameraState === 'streaming' || cameraState === 'recording'
-                    ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.68)]'
-                    : 'bg-white/45'
-                }`}
-              />
-              <Video className="h-3.5 w-3.5 text-white/72" />
-              <span>
-                {cameraState === 'streaming' || cameraState === 'recording'
-                  ? t('camera.status.live')
-                  : cameraState === 'off'
-                    ? t('common.off')
-                    : cameraState === 'unavailable'
-                      ? t('camera.status.unavailable')
-                      : t('common.on')}
-              </span>
-              {playbackModel?.isSnapshotFallback ? (
-                <span className="text-white/58">{t('camera.viewer.snapshotFallback')}</span>
-              ) : null}
-            </div>
-
+          <div className="flex justify-end">
             <CameraViewerModeControl
               supportedModes={supportedModes}
               value={supportedModes.includes(cameraViewMode) ? cameraViewMode : supportedModes[0]}

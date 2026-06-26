@@ -8,7 +8,7 @@ import type { TranslationKey } from '@navet/app/i18n';
 import type { PlatformCameraState } from '@navet/app/platform/provider-feature-models';
 import type { CameraFitMode, CameraViewMode } from '@navet/app/stores/settings-store';
 import { Camera, Eye, RefreshCw, Settings2 } from 'lucide-react';
-import type { KeyboardEvent, ReactNode, RefObject } from 'react';
+import { type KeyboardEvent, type ReactNode, type RefObject, useEffect, useState } from 'react';
 import { CameraSnapshotImage } from './camera-snapshot-image';
 import type { CameraImageSourceKind, CameraStreamType } from './camera-view-mode';
 import type { CameraCardImageSource } from './types';
@@ -67,21 +67,18 @@ function formatElapsedCompact(now: number, since: number | null) {
 
 function getCameraStatusLabel(
   t: (key: TranslationKey) => string,
-  cameraState: PlatformCameraState
+  cameraState: PlatformCameraState,
+  isFeedRunning: boolean
 ) {
-  if (cameraState === 'unavailable') {
-    return t('camera.status.unavailable');
-  }
-
-  if (cameraState === 'streaming' || cameraState === 'recording') {
-    return t('camera.status.live');
+  if (isFeedRunning || cameraState === 'streaming' || cameraState === 'recording') {
+    return null;
   }
 
   if (cameraState === 'off') {
     return t('common.off');
   }
 
-  return t('common.on');
+  return null;
 }
 
 export function CameraCardView({
@@ -114,21 +111,29 @@ export function CameraCardView({
 }: CameraCardViewProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
+  const [snapshotFailed, setSnapshotFailed] = useState(false);
+
+  useEffect(() => {
+    setSnapshotFailed(false);
+  }, [imageUrl]);
+
   const surface = getThemeSurfaceTokens(theme);
   const isCompact = isCompactCardSize(size);
   const isLightTheme = theme === 'light';
   const isUnavailable = cameraState === 'unavailable';
   const isRunning = cameraState !== 'off' && !isUnavailable;
-  const hasVisualBackground = Boolean(streamElement) || Boolean(imageUrl);
-  const statusLabel = getCameraStatusLabel(t, cameraState);
-  const motionLabel = motionDetected ? t('camera.motion.detected') : t('camera.motion.clear');
-  const statusElapsed = formatElapsedCompact(now, statusChangedAt);
-  const motionElapsed = formatElapsedCompact(now, motionChangedAt);
+  const effectiveImageUrl = snapshotFailed ? undefined : imageUrl;
+  const hasVisualBackground = Boolean(streamElement) || Boolean(effectiveImageUrl);
   const showRefreshButton =
     isRunning &&
     !isEditMode &&
     (cameraViewMode === 'snapshot' || isStreamFallback || !isStreamCapable);
   const hasLiveStream = Boolean(streamElement) && !isUnavailable;
+  const isFeedRunning = hasLiveStream && streamKind !== 'snapshot';
+  const statusLabel = getCameraStatusLabel(t, cameraState, isFeedRunning);
+  const motionLabel = motionDetected ? t('camera.motion.detected') : null;
+  const statusElapsed = formatElapsedCompact(now, statusChangedAt);
+  const motionElapsed = formatElapsedCompact(now, motionChangedAt);
   let streamLabel = isStreamCapable
     ? t('camera.viewer.streamCapable')
     : t('camera.viewer.snapshotOnly');
@@ -137,15 +142,15 @@ export function CameraCardView({
   } else if (frontendStreamTypes.length > 0) {
     streamLabel = frontendStreamTypes.join('/').toUpperCase();
   }
-  if (streamKind === 'hls' || streamKind === 'web_rtc') {
-    streamLabel = streamKind.toUpperCase();
+  if (streamKind === 'hls') {
+    streamLabel = 'HLS';
+  } else if (streamKind === 'web_rtc') {
+    streamLabel = 'RTC';
   }
-  const resolvedStreamLabel =
-    cameraViewMode === 'snapshot'
-      ? null
-      : isStreamFallback
-        ? t('camera.viewer.snapshotFallback')
-        : streamLabel;
+  const resolvedStreamLabel = isStreamFallback ? t('camera.viewer.snapshotFallback') : streamLabel;
+  const showStreamLabel = Boolean(
+    resolvedStreamLabel && (!isCompact || streamKind === 'snapshot' || isStreamFallback)
+  );
   const snapshotFitClassName = fitMode === 'contain' ? 'object-contain' : 'object-cover';
   const overlayButtonClassName = isLightTheme
     ? 'border border-slate-300/80 bg-white/92 text-slate-900 shadow-sm backdrop-blur-sm transition-colors hover:bg-white'
@@ -174,8 +179,8 @@ export function CameraCardView({
     ? 'text-white/92 drop-shadow-[0_3px_10px_rgba(0,0,0,0.88)]'
     : surface.textSecondary;
   const emptyStateClassName = isLightTheme
-    ? 'absolute inset-0 flex flex-col items-center justify-center gap-2'
-    : 'absolute inset-0 flex flex-col items-center justify-center gap-2';
+    ? 'absolute inset-0 flex flex-col items-center justify-center gap-1'
+    : 'absolute inset-0 flex flex-col items-center justify-center gap-1';
   const emptyStateIconClassName = isLightTheme ? 'h-8 w-8 text-slate-400' : 'h-8 w-8 text-zinc-500';
   const emptyStateTextClassName = isLightTheme ? 'text-xs text-slate-500' : 'text-xs text-zinc-500';
 
@@ -204,19 +209,22 @@ export function CameraCardView({
         aria-label={!isEditMode ? t('camera.actions.openViewer') : undefined}
         overlay={
           <div className="absolute inset-0 z-0 overflow-hidden">
-            {imageUrl && !hasLiveStream ? (
+            {effectiveImageUrl && !hasLiveStream ? (
               <CameraSnapshotImage
-                src={imageUrl}
+                src={effectiveImageUrl}
                 sources={imageSources}
                 alt={name}
                 className={`absolute inset-0 h-full w-full ${snapshotFitClassName}`}
-                onError={onImageError}
+                onError={() => {
+                  setSnapshotFailed(true);
+                  onImageError();
+                }}
               />
             ) : null}
 
             {hasLiveStream
               ? streamElement
-              : !imageUrl && (
+              : !effectiveImageUrl && (
                   <div className={emptyStateClassName}>
                     <Camera className={emptyStateIconClassName} />
                     <span className={emptyStateTextClassName}>
@@ -250,22 +258,26 @@ export function CameraCardView({
           <div className="inline-flex items-center gap-1.5">
             <span
               className={`h-1.5 w-1.5 rounded-full ${
-                cameraState === 'streaming' || cameraState === 'recording'
+                isFeedRunning || cameraState === 'streaming' || cameraState === 'recording'
                   ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.72)]'
                   : !isLightTheme && usesLightOverlayText
                     ? 'bg-white/45'
                     : 'bg-slate-400'
               }`}
             />
-            <span>{statusLabel}</span>
+            {statusLabel ? <span>{statusLabel}</span> : null}
           </div>
           {statusElapsed ? <span className={statusMutedTextClassName}>{statusElapsed}</span> : null}
-          <span className={statusSubtleTextClassName}>/</span>
-          <span className={motionTextClassName}>
-            {motionLabel}
-            {motionElapsed ? <span className="text-current/62"> {motionElapsed}</span> : null}
-          </span>
-          {!isCompact && resolvedStreamLabel ? (
+          {motionLabel ? (
+            <>
+              <span className={statusSubtleTextClassName}>/</span>
+              <span className={motionTextClassName}>
+                {motionLabel}
+                {motionElapsed ? <span className="text-current/62"> {motionElapsed}</span> : null}
+              </span>
+            </>
+          ) : null}
+          {showStreamLabel ? (
             <>
               <span className={statusSubtleTextClassName}>/</span>
               <span className={`min-w-0 truncate ${statusMutedTextClassName}`}>

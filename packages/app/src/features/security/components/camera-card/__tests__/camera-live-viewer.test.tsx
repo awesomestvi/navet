@@ -215,4 +215,35 @@ describe('CameraLiveViewer', () => {
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
+
+  it('treats an active selected stream as live even when the camera state is idle', async () => {
+    getCameraPlaybackPlanMock.mockResolvedValue({
+      cameraState: 'idle',
+      snapshotResource: {
+        id: 'camera.front_door:snapshot',
+        kind: 'image',
+        cacheKey: 'camera.front_door:snapshot',
+        authStrategy: 'bearer',
+        url: String(cameraEntityFixtures.relativeUrl.attributes.entity_picture),
+      },
+      supportsSnapshot: true,
+      liveTransports: ['web_rtc'],
+      fallbackTransports: [],
+      selectedTransport: 'web_rtc',
+      selectedStreamResource: null,
+      supportsStreaming: true,
+      isSnapshotFallback: false,
+      shouldStartWithSnapshot: false,
+      motionDetectionEnabled: true,
+      refreshPolicy: { retryDelaysMs: [1_000, 3_000, 7_000] },
+    });
+
+    renderWithProviders(<CameraLiveViewer {...defaultProps} cameraState="idle" />);
+
+    expect(await screen.findByTestId('camera-stream-player')).toHaveTextContent(
+      'home_assistant:camera.front_door:web_rtc'
+    );
+    expect(screen.getAllByText('Live').length).toBeGreaterThan(0);
+    expect(screen.queryByText('On')).not.toBeInTheDocument();
+  });
 });

@@ -11,14 +11,13 @@ export interface RSSItem {
   publishedAtMs?: number;
 }
 
-export type RSSProviderType = 'url' | 'home-assistant-feedreader';
+export type RSSProviderType = 'url';
 
 export interface RSSProvider {
   id: string;
   name: string;
   type: RSSProviderType;
   feedUrl?: string;
-  entityId?: string;
   demoItems?: RSSItem[];
 }
 

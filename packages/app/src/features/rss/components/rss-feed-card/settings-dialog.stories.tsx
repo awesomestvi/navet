@@ -44,9 +44,6 @@ function RSSFeedSettingsDialogStory() {
         theme={theme}
         primaryColorValue="#06b6d4"
         providers={providers}
-        homeAssistantProviders={providers.filter(
-          (provider) => provider.type === 'home-assistant-feedreader'
-        )}
         selectedProviderIds={selectedProviderIds}
         onSelectedProviderIdsChange={setSelectedProviderIds}
         onAddProvider={() => true}

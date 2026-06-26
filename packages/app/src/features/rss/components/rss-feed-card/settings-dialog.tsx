@@ -26,7 +26,6 @@ interface RSSFeedSettingsDialogProps {
   theme: ThemeType;
   primaryColorValue: string;
   providers: RSSProvider[];
-  homeAssistantProviders: RSSProvider[];
   selectedProviderIds: string[];
   onSelectedProviderIdsChange: (providerIds: string[]) => void;
   onAddProvider: (name: string, feedUrl: string) => boolean;
@@ -48,7 +47,6 @@ export function RSSFeedSettingsDialog({
   theme,
   primaryColorValue,
   providers,
-  homeAssistantProviders,
   selectedProviderIds,
   onSelectedProviderIdsChange,
   onAddProvider,
@@ -63,7 +61,6 @@ export function RSSFeedSettingsDialog({
   const rssSurface = getRSSFeedCardSurfaceTokens(theme, accentColor, tintColor);
   const resolvedTintColor = normalizeCustomCardTint(tintColor);
   const { t } = useI18n();
-  const directProviders = providers.filter((provider) => provider.type === 'url');
   const hasProviders = providers.length > 0;
   const [providerName, setProviderName] = useState('');
   const [providerUrl, setProviderUrl] = useState('');
@@ -132,8 +129,7 @@ export function RSSFeedSettingsDialog({
           <div className="space-y-4">
             <RSSFeedsTabContent
               hasProviders={hasProviders}
-              homeAssistantProviders={homeAssistantProviders}
-              directProviders={directProviders}
+              providers={providers}
               selectedProviderIds={selectedProviderIds}
               onToggleProvider={handleToggleProvider}
               onRemoveProvider={onRemoveProvider}
@@ -194,16 +190,14 @@ export function RSSFeedSettingsDialog({
       activeAccentColor,
       articleCount,
       canAddProvider,
-      directProviders,
       hasProviders,
-      homeAssistantProviders,
       inputStyle,
       onArticleCountChange,
       onRemoveProvider,
       onTintColorChange,
       providerName,
-      providerUrl,
       providers,
+      providerUrl,
       rssSurface,
       sectionStyle,
       selectedProviderIds,

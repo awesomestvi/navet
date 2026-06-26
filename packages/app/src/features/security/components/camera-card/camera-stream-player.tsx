@@ -29,6 +29,9 @@ const videoFitClassNames = {
   cover: 'object-cover',
 } as const;
 
+const CAMERA_MEDIA_SURFACE_CLASS_NAME =
+  'h-full w-full [backface-visibility:hidden] [transform:translateZ(0)]';
+
 interface CameraStreamErrorOptions {
   retryable?: boolean;
 }
@@ -212,7 +215,7 @@ function MjpegCameraPlayer({
       : streamResourceUrl;
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full isolate [contain:paint]">
       {reloadingStreamUrl && !hasLoadedFrame && reloadKey === 0 ? (
         <CameraStreamLoadingIndicator />
       ) : null}
@@ -222,7 +225,8 @@ function MjpegCameraPlayer({
           src={reloadingStreamUrl}
           alt=""
           aria-hidden="true"
-          className={`h-full w-full ${videoFitClassNames[fitMode]}`}
+          className={`${CAMERA_MEDIA_SURFACE_CLASS_NAME} ${videoFitClassNames[fitMode]}`}
+          style={{ imageRendering: 'auto' }}
           onLoad={() => {
             setHasLoadedFrame(true);
             onLoad?.();
@@ -494,20 +498,19 @@ function HlsCameraPlayer({
   }, [entityId, onError, streamResourceUrl]);
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full isolate [contain:paint]">
       {!hasLoadedFrame ? <CameraStreamLoadingIndicator /> : null}
       <video
         ref={videoRef}
         autoPlay
-        className={`h-full w-full transition-opacity ${videoFitClassNames[fitMode]} ${
-          hasLoadedFrame ? 'opacity-100' : 'opacity-0'
-        }`}
+        className={`${CAMERA_MEDIA_SURFACE_CLASS_NAME} ${videoFitClassNames[fitMode]}`}
         muted
         onCanPlay={markStreamReady}
         onLoadedData={markStreamReady}
         onError={() => onError('hls')}
         onPlaying={markStreamReady}
         playsInline
+        style={{ opacity: hasLoadedFrame ? 1 : 0, imageRendering: 'auto' }}
       />
     </div>
   );
@@ -766,20 +769,19 @@ function WebRtcCameraPlayer({
   }, [entityId, onError]);
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full isolate [contain:paint]">
       {!hasLoadedFrame ? <CameraStreamLoadingIndicator /> : null}
       <video
         ref={videoRef}
         autoPlay
-        className={`h-full w-full transition-opacity ${videoFitClassNames[fitMode]} ${
-          hasLoadedFrame ? 'opacity-100' : 'opacity-0'
-        }`}
+        className={`${CAMERA_MEDIA_SURFACE_CLASS_NAME} ${videoFitClassNames[fitMode]}`}
         muted
         onCanPlay={markStreamReady}
         onError={() => onError('web_rtc')}
         onLoadedData={markStreamReady}
         onPlaying={markStreamReady}
         playsInline
+        style={{ opacity: hasLoadedFrame ? 1 : 0, imageRendering: 'auto' }}
       />
     </div>
   );

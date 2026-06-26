@@ -29,13 +29,7 @@ export function evictCacheIfNeeded() {
 }
 
 export function getProviderCacheKey(provider: RSSProvider) {
-  return [
-    provider.id,
-    provider.name,
-    provider.type,
-    provider.feedUrl ?? '',
-    provider.entityId ?? '',
-  ].join('::');
+  return [provider.id, provider.name, provider.type, provider.feedUrl ?? ''].join('::');
 }
 
 export function getCachedEntry(cacheKey: string): RSSFeedItemsCacheEntry | null {

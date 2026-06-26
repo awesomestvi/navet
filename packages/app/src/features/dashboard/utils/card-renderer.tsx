@@ -296,8 +296,9 @@ function EntityAvailabilityFrame({
     entityIds.length > 0 &&
     entityStates.length === entityIds.length &&
     entityStates.every((state) => state === 'unavailable');
+  const usesDedicatedUnavailableState = device.type === 'cameras';
 
-  if (!isUnavailable) {
+  if (!isUnavailable || usesDedicatedUnavailableState) {
     return <>{children}</>;
   }
 

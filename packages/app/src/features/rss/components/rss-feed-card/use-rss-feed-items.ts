@@ -1,5 +1,4 @@
 import { useI18n } from '@navet/app/hooks';
-import type { PlatformEntitySnapshotMap } from '@navet/app/platform/provider-feature-models';
 import { useEffect, useMemo, useState } from 'react';
 import {
   deleteCachedEntry,
@@ -7,7 +6,7 @@ import {
   getProviderCacheKey,
   setCachedEntry,
 } from './rss-feed-cache';
-import { fetchUrlProviderItems, getHomeAssistantProviderItems } from './rss-feed-fetcher';
+import { fetchUrlProviderItems } from './rss-feed-fetcher';
 import { dedupeItems, sortItemsByPublishedAt } from './rss-feed-parser';
 import type { RSSItem, RSSProvider } from './types';
 
@@ -18,12 +17,7 @@ type RSSFeedLoadResult = {
 
 const inFlightRequests = new Map<string, Promise<RSSFeedLoadResult>>();
 
-export function useRSSFeedItems(
-  providers: RSSProvider[],
-  entities: PlatformEntitySnapshotMap | null,
-  limit = 10,
-  refreshNonce = 0
-) {
+export function useRSSFeedItems(providers: RSSProvider[], limit = 10, refreshNonce = 0) {
   const { formatRelativeTime, t } = useI18n();
   const cacheKey = useMemo(
     () => `${providers.map(getProviderCacheKey).join('|')}::${limit}`,
@@ -72,16 +66,7 @@ export function useRSSFeedItems(
         if (!request) {
           request = Promise.allSettled(
             providers.map((provider) =>
-              provider.type === 'home-assistant-feedreader'
-                ? Promise.resolve(
-                    getHomeAssistantProviderItems(
-                      provider,
-                      entities,
-                      t('rss.recently'),
-                      formatRelativeTime
-                    )
-                  )
-                : fetchUrlProviderItems(provider, t('rss.recently'), formatRelativeTime)
+              fetchUrlProviderItems(provider, t('rss.recently'), formatRelativeTime)
             )
           ).then((results) => {
             const nextItems = sortItemsByPublishedAt(
@@ -129,7 +114,7 @@ export function useRSSFeedItems(
     return () => {
       cancelled = true;
     };
-  }, [cacheKey, entities, formatRelativeTime, limit, providers, refreshNonce, t]);
+  }, [cacheKey, formatRelativeTime, limit, providers, refreshNonce, t]);
 
   const latestArticle = items[0] ?? null;
 

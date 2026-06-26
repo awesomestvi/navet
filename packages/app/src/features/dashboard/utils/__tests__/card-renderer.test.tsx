@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderCard, useAvailabilityEntitiesForCard } from '../card-renderer';
 
 vi.mock('@navet/app/features/security', () => ({
+  CameraCard: ({ id }: { id: string }) => <div data-testid="camera-card">{id}</div>,
   SecurityPanelCard: ({
     alarms,
     size,
@@ -199,6 +200,61 @@ describe('card availability lookup', () => {
       'text-[10px]'
     );
     expect(unavailablePill).not.toHaveClass('uppercase');
+  });
+
+  it('does not add the generic unavailable overlay pill on camera cards', async () => {
+    integrationStore.setState({
+      ...integrationStore.getState(),
+      currentProviderId: 'home_assistant',
+      providerEntitiesByProviderId: {
+        ...integrationStore.getState().providerEntitiesByProviderId,
+        home_assistant: {
+          'home_assistant:camera.front_door': {
+            id: 'home_assistant:camera.front_door',
+            canonicalId: 'home_assistant:camera.front_door',
+            providerId: 'home_assistant',
+            externalId: 'camera.front_door',
+            type: 'camera',
+            name: 'Front Door',
+            room: 'Entry',
+            primaryState: 'unavailable',
+            availability: 'unavailable',
+            capabilities: [],
+            attributes: {},
+          },
+        },
+      },
+      providerEntityLookupByProviderId: {
+        ...integrationStore.getState().providerEntityLookupByProviderId,
+        home_assistant: {
+          'camera.front_door': 'home_assistant:camera.front_door',
+          'home_assistant:camera.front_door': 'home_assistant:camera.front_door',
+        },
+      },
+    });
+
+    const card = renderCard({
+      device: {
+        id: 'camera.front_door',
+        name: 'Front Door',
+        room: 'Entry',
+        type: 'cameras',
+        state: 'unavailable',
+      },
+      size: 'small',
+      handleSizeChange: () => undefined,
+      isEditMode: false,
+    });
+
+    expect(card).not.toBeNull();
+    if (!card) {
+      throw new Error('Expected renderCard to return a camera card');
+    }
+
+    renderWithProviders(card);
+
+    expect(await screen.findByTestId('camera-card')).toHaveTextContent('camera.front_door');
+    expect(screen.queryByText('Unavailable')).not.toBeInTheDocument();
   });
 
   it('skips extra unavailable blur and saturation when low-power mode forces effective low quality', async () => {
