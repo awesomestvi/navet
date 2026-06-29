@@ -166,6 +166,7 @@ export function normalizeVacuumStatus(state: unknown, fallback = 'idle') {
   if (normalized === 'returning' || normalized === 'returning_home') return 'returning';
   if (normalized === 'paused') return 'paused';
   if (normalized === 'charging') return 'charging';
+  if (normalized === 'sleeping') return 'idle';
   if (
     normalized === 'charged' ||
     normalized === 'fully_charged' ||

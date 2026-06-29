@@ -27,6 +27,11 @@ vi.mock('@navet/app/features/lighting', () => ({
   SwitchCard: () => null,
 }));
 
+vi.mock('@navet/app/features/vacuum', () => ({
+  LawnMowerCard: ({ id }: { id: string }) => <div data-testid="lawn-mower-card">{id}</div>,
+  VacuumCard: ({ id }: { id: string }) => <div data-testid="vacuum-card">{id}</div>,
+}));
+
 describe('card availability lookup', () => {
   beforeEach(async () => {
     await resetAppStores();
@@ -316,5 +321,34 @@ describe('card availability lookup', () => {
 
     expect(container.innerHTML).not.toContain('saturate-50');
     expect(container.innerHTML).not.toContain('backdrop-blur-[1px]');
+  });
+
+  it('renders provider-scoped lawn mower devices with the mower card instead of the vacuum card', async () => {
+    const card = renderCard({
+      device: {
+        id: 'home_assistant:lawn_mower.backyard',
+        name: 'Backyard Mower',
+        room: 'Garden',
+        type: 'vacuums',
+        providerId: 'home_assistant',
+        status: 'cleaning',
+        battery: 88,
+      },
+      size: 'small',
+      handleSizeChange: () => undefined,
+      isEditMode: false,
+    });
+
+    expect(card).not.toBeNull();
+    if (!card) {
+      throw new Error('Expected renderCard to return a mower card');
+    }
+
+    renderWithProviders(card);
+
+    expect(await screen.findByTestId('lawn-mower-card')).toHaveTextContent(
+      'home_assistant:lawn_mower.backyard'
+    );
+    expect(screen.queryByTestId('vacuum-card')).not.toBeInTheDocument();
   });
 });

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.9 - 2026-06-29
+
+## New
+
+- Advanced custom sidebar extensions now support up to five quick actions per item for richer in-dashboard shortcuts.
+
+## Improved
+
+- Compact device cards now use denser, more usable layouts across fans, covers, humidifiers, lights, switches, cameras, people, and related dashboard surfaces.
+- Room navigation now uses a megamenu-style overflow picker when dashboards have more rooms than fit in the visible tab row.
+- Cover cards now use a cleaner compact layout and support tap-to-toggle behavior outside edit mode, making quick open and close actions faster on dense dashboards.
+
 ## 0.7.8 - 2026-06-25
 
 ## New

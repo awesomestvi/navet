@@ -10,6 +10,7 @@ import type { VacuumStatus } from './vacuum-utils';
 
 interface VacuumControlsSmallProps {
   currentStatus: VacuumStatus;
+  isLawnMower?: boolean;
   onStartCleaning: () => void;
   onPause: () => void;
   onStop: () => void;
@@ -34,6 +35,7 @@ interface VacuumActionDefinition {
 
 export function VacuumControlsSmall({
   currentStatus,
+  isLawnMower = false,
   onStartCleaning,
   onPause,
   onStop,
@@ -78,6 +80,12 @@ export function VacuumControlsSmall({
   const runningActionLabel = capabilities.canStop
     ? t('vacuum.action.stop')
     : t('vacuum.action.pause');
+  const startActionLabel = t(
+    isLawnMower ? 'lawnMower.action.startMowing' : 'vacuum.action.startCleaning'
+  );
+  const returnActionLabel = t(
+    isLawnMower ? 'lawnMower.action.returnToBase' : 'vacuum.action.returnToDock'
+  );
   const runningActionIcon = capabilities.canStop ? Square : Pause;
   const handleRunningAction = capabilities.canStop ? onStop : onPause;
 
@@ -86,7 +94,7 @@ export function VacuumControlsSmall({
   if (isRunning ? capabilities.canPause || capabilities.canStop : capabilities.canStart) {
     actions.push({
       key: isRunning ? (capabilities.canStop ? 'stop' : 'pause') : 'start',
-      label: isRunning ? runningActionLabel : t('vacuum.action.startCleaning'),
+      label: isRunning ? runningActionLabel : startActionLabel,
       icon: isRunning ? runningActionIcon : Play,
       onSelect: isRunning ? handleRunningAction : onStartCleaning,
       disabled,
@@ -96,7 +104,7 @@ export function VacuumControlsSmall({
   if (capabilities.canReturnHome) {
     actions.push({
       key: 'return-home',
-      label: t('vacuum.action.returnToDock'),
+      label: returnActionLabel,
       icon: HousePlug,
       onSelect: onReturnHome,
       disabled,

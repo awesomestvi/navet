@@ -4,6 +4,7 @@ import { Crosshair, Home, Sparkles } from 'lucide-react';
 import type { VacuumCapabilities } from './vacuum-features';
 
 interface VacuumCleaningControlsProps {
+  isLawnMower?: boolean;
   fanSpeed: string;
   onFanSpeedChange: (speed: string) => void;
   fanSpeedOptions: string[];
@@ -31,6 +32,7 @@ export function hasVacuumDialogControls(options: {
 }
 
 export function VacuumCleaningControls({
+  isLawnMower = false,
   fanSpeed,
   onFanSpeedChange,
   fanSpeedOptions,
@@ -43,6 +45,9 @@ export function VacuumCleaningControls({
   accentColor,
 }: VacuumCleaningControlsProps) {
   const { t } = useI18n();
+  const returnActionLabel = t(
+    isLawnMower ? 'lawnMower.action.returnToBase' : 'vacuum.action.returnToDock'
+  );
   const canReturnHome = capabilities?.canReturnHome ?? false;
   const hasFanSpeedChoices = supportsFanSpeed && fanSpeedOptions.length > 1;
   const hasSecondaryActions = Boolean(capabilities?.canLocate || capabilities?.canCleanSpot);
@@ -69,7 +74,7 @@ export function VacuumCleaningControls({
             className="min-w-24"
           >
             <Home className="mr-1.5 h-3.5 w-3.5" />
-            {t('vacuum.action.returnToDock')}
+            {returnActionLabel}
           </CardDialogChoicePill>
         </CardDialogSection>
       ) : null}

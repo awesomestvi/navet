@@ -334,6 +334,7 @@ describe('VacuumCard', () => {
 
     expect(screen.getByText('action:start')).toBeInTheDocument();
     expect(screen.getByText('action:return-home')).toBeInTheDocument();
+    expect(screen.getByText('lawnMower.subtitle')).toBeInTheDocument();
     expect(screen.queryByText('action:locate')).not.toBeInTheDocument();
     expect(screen.queryByText('action:clean-spot')).not.toBeInTheDocument();
     expect(screen.queryByText(/running-action:stop/)).not.toBeInTheDocument();
@@ -367,8 +368,43 @@ describe('VacuumCard', () => {
       />
     );
 
-    expect(screen.getAllByText('lawnMower.status.mowing').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Mowing').length).toBeGreaterThan(0);
+    expect(screen.getByLabelText('lawnMower.action.returnToBase')).toBeInTheDocument();
     expect(screen.queryByText('vacuum.status.cleaning')).not.toBeInTheDocument();
+    expect(screen.queryByText('vacuum.subtitle')).not.toBeInTheDocument();
+  });
+
+  it('keeps docked lawn mower entities docked even when battery is below 100%', () => {
+    useProviderEntityModelMock.mockReturnValueOnce({
+      id: 'home_assistant:lawn_mower.backyard',
+      canonicalId: 'home_assistant:lawn_mower.backyard',
+      providerId: 'home_assistant',
+      externalId: 'lawn_mower.backyard',
+      type: 'vacuum',
+      name: 'Backyard Mower',
+      primaryState: 'docked',
+      availability: 'available',
+      capabilities: [],
+      attributes: {
+        supportedFeatures: 1 | 2 | 4,
+        battery_level: 28,
+      },
+    });
+
+    render(
+      <LawnMowerCard
+        id="lawn_mower.backyard"
+        name="Backyard Mower"
+        status="docked"
+        battery={28}
+        size="small"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.getAllByText('Docked').length).toBeGreaterThan(0);
+    expect(screen.queryByText('vacuum.status.charging')).not.toBeInTheDocument();
   });
 
   it('does not render the lawn mower illustration on medium mower cards yet', () => {
@@ -528,6 +564,33 @@ describe('VacuumCard', () => {
     expect(screen.queryByText(/vacuum\.metric\.runTime /)).not.toBeInTheDocument();
   });
 
+  it('renders the raw provider status text when supplied on the card model', () => {
+    resolveVacuumGlanceMetricsMock.mockReturnValueOnce({
+      battery: undefined,
+      cleanedArea: undefined,
+      cleaningTime: undefined,
+      nextCleaning: null,
+      lastCleaned: undefined,
+      waterLevel: null,
+      binLevel: null,
+    });
+
+    render(
+      <VacuumCard
+        id="vacuum.partial"
+        name="Robot"
+        rawStatus="sleeping"
+        status="idle"
+        size="small"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.getAllByText('Sleeping').length).toBeGreaterThan(0);
+    expect(screen.queryByText('vacuum.status.idle')).not.toBeInTheDocument();
+  });
+
   it('shows the live cleaning state when the status attribute is stale', () => {
     useProviderEntitySnapshotMock.mockReturnValueOnce({
       state: 'cleaning',
@@ -547,7 +610,32 @@ describe('VacuumCard', () => {
       />
     );
 
-    expect(screen.getAllByText('vacuum.status.cleaning').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Cleaning').length).toBeGreaterThan(0);
+  });
+
+  it('uses a sleeping status attribute instead of inferring charging complete from a docked vacuum', () => {
+    useProviderEntitySnapshotMock.mockReturnValueOnce({
+      state: 'docked',
+      attributes: {
+        status: 'sleeping',
+        battery_level: 100,
+      },
+    });
+
+    render(
+      <VacuumCard
+        id="vacuum.partial"
+        name="Robot"
+        status="docked"
+        battery={100}
+        size="small"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.getAllByText('Sleeping').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Charging complete')).not.toBeInTheDocument();
   });
 
   it('shows the current room in the primary text while cleaning', () => {
@@ -570,7 +658,8 @@ describe('VacuumCard', () => {
       />
     );
 
-    expect(screen.getAllByText('vacuum.status.cleaning bathroom').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Cleaning').length).toBeGreaterThan(0);
+    expect(screen.queryByText('vacuum.status.cleaning bathroom')).not.toBeInTheDocument();
   });
 
   it('keeps the generic cleaning label when no current room is available', () => {
@@ -591,7 +680,7 @@ describe('VacuumCard', () => {
       />
     );
 
-    expect(screen.getAllByText('vacuum.status.cleaning').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Cleaning').length).toBeGreaterThan(0);
     expect(screen.queryByText('vacuum.status.cleaning hallway')).not.toBeInTheDocument();
   });
 

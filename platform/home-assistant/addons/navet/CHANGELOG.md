@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.9
+
+- Updated Navet to `0.7.9`
+- Expanded advanced custom sidebar extensions to support up to five quick actions per item
+- Improved compact device-card layouts across fans, covers, humidifiers, lights, switches, cameras, and related dashboard surfaces
+- Added a megamenu-style room overflow picker for dashboards with more rooms than fit in the visible navigation row
+- Updated cover cards with a cleaner compact layout and tap-to-toggle behavior outside edit mode
+
 ## 0.7.8
 
 - Updated Navet to `0.7.8`

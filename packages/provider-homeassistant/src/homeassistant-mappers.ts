@@ -47,6 +47,29 @@ function isVacuumLikeDomain(domain: string): boolean {
   return domain === 'vacuum' || domain === 'lawn_mower';
 }
 
+function resolveVacuumLikeStatusSource(entity: HassEntity): unknown {
+  const entityState = typeof entity.state === 'string' ? entity.state : undefined;
+  const attributeCandidates = [
+    entity.attributes?.status,
+    entity.attributes?.state,
+    entity.attributes?.activity,
+  ];
+  const sleepingAttribute = attributeCandidates.find(
+    (value) =>
+      typeof value === 'string' && value.trim().toLowerCase().replace(/\s+/g, '_') === 'sleeping'
+  );
+
+  if (
+    typeof entityState === 'string' &&
+    entityState.trim().toLowerCase().replace(/\s+/g, '_') === 'docked' &&
+    typeof sleepingAttribute === 'string'
+  ) {
+    return sleepingAttribute;
+  }
+
+  return entityState ?? attributeCandidates.find((value) => typeof value === 'string');
+}
+
 function normalizeRoomName(name: string) {
   return name.trim().toLocaleLowerCase();
 }
@@ -1052,15 +1075,12 @@ function createHomeAssistantState(
       readNumberish(entity.attributes?.battery_level) ??
       readNumberish(entity.attributes?.battery) ??
       readNumberish(entity.attributes?.battery_percent);
+    const rawVacuumStatus = resolveVacuumLikeStatusSource(entity);
     const state = {
       ...commonState,
       value: entity.state,
-      status: normalizeVacuumStatus(
-        entity.state ??
-          entity.attributes?.status ??
-          entity.attributes?.state ??
-          entity.attributes?.activity
-      ),
+      rawStatus: typeof rawVacuumStatus === 'string' ? rawVacuumStatus : undefined,
+      status: normalizeVacuumStatus(rawVacuumStatus),
       battery:
         typeof batteryLevel === 'number' ? Math.max(0, Math.min(100, batteryLevel)) : undefined,
       supportedFeatures,

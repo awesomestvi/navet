@@ -9,6 +9,7 @@ import type { VacuumStatus } from './vacuum-utils';
 
 interface VacuumControlsCompactProps {
   currentStatus: VacuumStatus;
+  isLawnMower?: boolean;
   onStartCleaning: () => void;
   onPause: () => void;
   onStop: () => void;
@@ -25,6 +26,7 @@ interface VacuumControlsCompactProps {
 
 export function VacuumControlsCompact({
   currentStatus,
+  isLawnMower = false,
   onStartCleaning,
   onPause,
   onStop,
@@ -57,6 +59,12 @@ export function VacuumControlsCompact({
   const fanSpeedLabel = currentFanSpeed
     ? `${t('vacuum.settings.fanSpeed')}: ${currentFanSpeed}`
     : t('vacuum.settings.fanSpeed');
+  const startActionLabel = t(
+    isLawnMower ? 'lawnMower.action.startMowing' : 'vacuum.action.startCleaning'
+  );
+  const returnActionLabel = t(
+    isLawnMower ? 'lawnMower.action.returnToBase' : 'vacuum.action.returnToDock'
+  );
   const currentFanSpeedIndex =
     currentFanSpeed == null ? -1 : capabilities.fanSpeedOptions.indexOf(currentFanSpeed);
   const fanSpeedBadge = currentFanSpeedIndex >= 0 ? String(currentFanSpeedIndex + 1) : undefined;
@@ -92,7 +100,7 @@ export function VacuumControlsCompact({
               size="medium"
               variant="soft"
               onClick={onStartCleaning}
-              aria-label={t('vacuum.action.startCleaning')}
+              aria-label={startActionLabel}
               disabled={disabled}
               className="transition-colors"
             >
@@ -105,7 +113,7 @@ export function VacuumControlsCompact({
               size="medium"
               variant="soft"
               onClick={onReturnHome}
-              aria-label={t('vacuum.action.returnToDock')}
+              aria-label={returnActionLabel}
               disabled={disabled}
               className="transition-colors"
             >

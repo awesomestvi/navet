@@ -254,6 +254,7 @@ export interface SensorDevice extends BaseDevice {
 // Vacuum device
 export interface VacuumDevice extends BaseDevice {
   room: string;
+  rawStatus?: string;
   status:
     | 'cleaning'
     | 'mopping'

@@ -1,3 +1,5 @@
+import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
+
 export type VacuumStatus =
   | 'cleaning'
   | 'mopping'
@@ -41,6 +43,7 @@ export function normalizeVacuumStatus(
   if (normalized === 'returning' || normalized === 'returning_home') return 'returning';
   if (normalized === 'paused') return 'paused';
   if (normalized === 'charging') return 'charging';
+  if (normalized === 'sleeping') return 'idle';
   if (
     normalized === 'charged' ||
     normalized === 'fully_charged' ||
@@ -63,7 +66,12 @@ export function getVacuumThemeStatus(status: VacuumStatus): VacuumThemeStatus {
 }
 
 export function isLawnMowerEntityId(entityId: string | undefined): boolean {
-  return typeof entityId === 'string' && entityId.startsWith('lawn_mower.');
+  if (typeof entityId !== 'string') {
+    return false;
+  }
+
+  const nativeEntityId = parseProviderScopedId(entityId)?.nativeId ?? entityId;
+  return nativeEntityId.startsWith('lawn_mower.');
 }
 
 export function getVacuumStatusLabelKey(

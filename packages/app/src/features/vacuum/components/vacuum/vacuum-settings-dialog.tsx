@@ -54,6 +54,7 @@ interface VacuumSettingsDialogProps {
   entityId: string;
   isOpen: boolean;
   onClose: () => void;
+  isLawnMower?: boolean;
   onStartCleaning: () => void;
   onStartAreaCleaning?: (areaIds: string[]) => void;
   onPauseCleaning?: () => void;
@@ -81,6 +82,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
   entityId,
   isOpen,
   onClose,
+  isLawnMower = false,
   onStartCleaning,
   onStartAreaCleaning,
   onReturnHome,
@@ -101,6 +103,9 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
   onTintColorChange,
 }: VacuumSettingsDialogProps) {
   const { t } = useI18n();
+  const startActionLabel = t(
+    isLawnMower ? 'lawnMower.action.startMowing' : 'vacuum.action.startCleaning'
+  );
   const surface = getThemeSurfaceTokens(theme);
   const entityType = getEntityTypeLabel(entityId);
   const cleaningAreas = useMemo(
@@ -320,6 +325,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
           {shouldShowControlsTab ? (
             <TabPanel value="controls" className="space-y-5">
               <VacuumCleaningControls
+                isLawnMower={isLawnMower}
                 fanSpeed={selectedFanSpeed}
                 onFanSpeedChange={(speed) => {
                   setSelectedFanSpeed(speed);
@@ -372,7 +378,7 @@ export const VacuumSettingsDialog = memo(function VacuumSettingsDialog({
             className={theme !== 'light' ? 'border-white/10 bg-white/8 hover:bg-white/12' : ''}
             style={softControlStyle}
           >
-            {t('vacuum.action.startCleaning')}
+            {startActionLabel}
           </Button>
           <Button variant="soft" size="small" onClick={onClose}>
             {t('common.done')}

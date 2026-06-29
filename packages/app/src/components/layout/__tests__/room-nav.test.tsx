@@ -231,6 +231,104 @@ describe('RoomNav', () => {
     expect(onRoomChange).toHaveBeenCalledWith('Kitchen');
   });
 
+  it('uses the normal overflow menu for 10 or fewer overflow rooms', async () => {
+    mockRoomLayout({
+      containerWidth: 220,
+      roomWidths: {
+        Home: 72,
+        'Living Room': 104,
+        Kitchen: 88,
+        Bedroom: 92,
+        Office: 86,
+        Garage: 88,
+        Patio: 84,
+        Hallway: 92,
+        Laundry: 94,
+        Nursery: 90,
+        Basement: 98,
+        Loft: 80,
+      },
+    });
+
+    renderWithProviders(
+      <RoomNav
+        rooms={[
+          'Living Room',
+          'Kitchen',
+          'Bedroom',
+          'Office',
+          'Garage',
+          'Patio',
+          'Hallway',
+          'Laundry',
+          'Nursery',
+          'Basement',
+          'Loft',
+        ]}
+        activeRoom="All"
+        onRoomChange={() => undefined}
+        isEditMode={false}
+        onToggleEditMode={() => undefined}
+      />
+    );
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Rooms' })).toBeInTheDocument());
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Rooms' }));
+    await waitFor(() => expect(screen.getByRole('menu')).toBeInTheDocument());
+
+    expect(within(screen.getByRole('menu')).queryByText('Rooms')).not.toBeInTheDocument();
+  });
+
+  it('uses the megamenu for more than 10 overflow rooms', async () => {
+    mockRoomLayout({
+      containerWidth: 220,
+      roomWidths: {
+        Home: 72,
+        'Living Room': 104,
+        Kitchen: 88,
+        Bedroom: 92,
+        Office: 86,
+        Garage: 88,
+        Patio: 84,
+        Hallway: 92,
+        Laundry: 94,
+        Nursery: 90,
+        Basement: 98,
+        Loft: 80,
+        Studio: 88,
+      },
+    });
+
+    renderWithProviders(
+      <RoomNav
+        rooms={[
+          'Living Room',
+          'Kitchen',
+          'Bedroom',
+          'Office',
+          'Garage',
+          'Patio',
+          'Hallway',
+          'Laundry',
+          'Nursery',
+          'Basement',
+          'Loft',
+          'Studio',
+        ]}
+        activeRoom="All"
+        onRoomChange={() => undefined}
+        isEditMode={false}
+        onToggleEditMode={() => undefined}
+      />
+    );
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Rooms' })).toBeInTheDocument());
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Rooms' }));
+    await waitFor(() => expect(screen.getByRole('menu')).toBeInTheDocument());
+
+    expect(within(screen.getByRole('menu')).getByText('Rooms')).toBeInTheDocument();
+  });
+
   it('keeps hidden rooms out of the strip and overflow menu', async () => {
     mockRoomLayout({
       containerWidth: 220,

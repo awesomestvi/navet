@@ -37,6 +37,7 @@ import { getVisibleRoomNavRooms } from './room-nav.utils';
 import { RoomOrderDialog } from './room-order-dialog';
 
 const ROOM_NAV_GAP_PX = 8;
+const ROOM_NAV_MEGAMENU_THRESHOLD = 10;
 
 interface RoomNavProps {
   rooms?: string[];
@@ -239,6 +240,7 @@ export const RoomNav = memo(function RoomNav({
     { label: t('dashboard.roomNav.grouping.none'), value: 'none' },
   ];
   const overflowRooms = roomLayout.overflowRooms;
+  const useOverflowMegamenu = overflowRooms.length > ROOM_NAV_MEGAMENU_THRESHOLD;
   const overflowLabel = t(
     overflowRooms.length === 1
       ? 'dashboard.roomNav.overflow.one'
@@ -321,16 +323,24 @@ export const RoomNav = memo(function RoomNav({
                     sideOffset={8}
                     className={cn(
                       getThemeDropdownSurfaceClasses(theme),
-                      'w-[min(44rem,calc(100vw-2rem))] max-h-none overflow-visible p-2'
+                      useOverflowMegamenu
+                        ? 'w-[min(44rem,calc(100vw-2rem))] max-h-none overflow-visible p-2'
+                        : 'w-56 overflow-visible p-1'
                     )}
                   >
-                    <DropdownMenuLabel
-                      className={`px-3 pb-2 pt-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] ${surface.textMuted}`}
+                    {useOverflowMegamenu ? (
+                      <>
+                        <DropdownMenuLabel
+                          className={`px-3 pb-2 pt-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] ${surface.textMuted}`}
+                        >
+                          {t('dashboard.roomNav.openRooms')}
+                        </DropdownMenuLabel>
+                        <div className={`mb-2 h-px ${dividerClass}`} />
+                      </>
+                    ) : null}
+                    <div
+                      className={cn(useOverflowMegamenu && 'grid grid-cols-2 gap-1 lg:grid-cols-3')}
                     >
-                      {t('dashboard.roomNav.openRooms')}
-                    </DropdownMenuLabel>
-                    <div className={`mb-2 h-px ${dividerClass}`} />
-                    <div className="grid grid-cols-2 gap-1 lg:grid-cols-3">
                       {overflowRooms.map((room) => (
                         <DropdownMenuItem
                           key={room}

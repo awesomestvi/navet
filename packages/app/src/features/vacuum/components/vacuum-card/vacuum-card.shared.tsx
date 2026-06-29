@@ -53,6 +53,7 @@ export interface VacuumCardProps {
   id: string;
   name: string;
   providerId?: IntegrationProviderId;
+  rawStatus?: string;
   status: VacuumStatus;
   availability?: 'available' | 'unavailable' | 'unknown';
   battery?: number;
@@ -335,6 +336,44 @@ export function getCompactVisualClassName(size: VacuumCardSize): string {
     : 'pointer-events-none absolute right-[-1.1rem] top-[-0.2rem] z-0 h-[6.3rem] min-h-0 w-[6.3rem]';
 }
 
+function resolveVacuumCardStatusSource(entity: {
+  state?: unknown;
+  attributes?: Record<string, unknown>;
+}): unknown {
+  const entityState = typeof entity.state === 'string' ? entity.state : undefined;
+  const attributeCandidates = [
+    entity.attributes?.status,
+    entity.attributes?.state,
+    entity.attributes?.activity,
+  ];
+  const sleepingAttribute = attributeCandidates.find(
+    (value) =>
+      typeof value === 'string' && value.trim().toLowerCase().replace(/\s+/g, '_') === 'sleeping'
+  );
+
+  if (
+    typeof entityState === 'string' &&
+    entityState.trim().toLowerCase().replace(/\s+/g, '_') === 'docked' &&
+    typeof sleepingAttribute === 'string'
+  ) {
+    return sleepingAttribute;
+  }
+
+  return entityState ?? attributeCandidates.find((value) => typeof value === 'string');
+}
+
+function formatRawVacuumStatus(value: string): string {
+  const normalized = value
+    .trim()
+    .replace(/[_\s]+/g, ' ')
+    .toLowerCase();
+  if (normalized.length === 0) {
+    return value;
+  }
+
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
 export interface SharedVacuumCardState {
   id: string;
   resolvedSize: VacuumCardSize;
@@ -344,6 +383,7 @@ export interface SharedVacuumCardState {
   computedStatus: VacuumStatus;
   currentStatus: VacuumStatus;
   displayState: VacuumDisplayState;
+  isLawnMower: boolean;
   isUnavailable: boolean;
   isActive: boolean;
   theme: ReturnType<typeof useTheme>['theme'];
@@ -379,6 +419,7 @@ export function useVacuumCardState(
     id,
     name,
     providerId,
+    rawStatus,
     status,
     availability,
     battery,
@@ -414,13 +455,11 @@ export function useVacuumCardState(
   });
   const use24HourTime = useSettingsStore(settingsSelectors.use24HourTime);
   const liveAttrs = liveEntity?.attributes;
-  const liveStatus = normalizeVacuumStatus(
-    liveEntity?.state ||
-      (typeof liveAttrs?.status === 'string' && liveAttrs.status) ||
-      (typeof liveAttrs?.state === 'string' && liveAttrs.state) ||
-      (typeof liveAttrs?.activity === 'string' && liveAttrs.activity),
-    status
-  );
+  const rawLiveStatus = resolveVacuumCardStatusSource({
+    state: liveEntity?.state,
+    attributes: liveAttrs,
+  });
+  const liveStatus = normalizeVacuumStatus(rawLiveStatus, status);
   const vacuumCapabilities = resolveVacuumCapabilities({
     providerEntity,
     vacuumEntity: liveEntity,
@@ -467,12 +506,18 @@ export function useVacuumCardState(
   const liveBattery = glanceMetrics.battery;
   const liveFanSpeed = vacuumCapabilities.currentFanSpeed;
   const liveFanSpeeds = vacuumCapabilities.fanSpeedOptions;
+  const rawDisplayStatusSource = typeof rawLiveStatus === 'string' ? rawLiveStatus : rawStatus;
+  const rawDisplayStatus =
+    typeof rawDisplayStatusSource === 'string' && rawDisplayStatusSource.trim().length > 0
+      ? formatRawVacuumStatus(rawDisplayStatusSource)
+      : undefined;
+  const shouldInferDockedAsCharging = options.entityVariant !== 'lawn-mower';
   const computedStatus: VacuumStatus =
     currentStatus === 'charging'
       ? typeof liveBattery === 'number' && liveBattery >= 100
         ? 'charging-complete'
         : 'charging'
-      : currentStatus === 'docked' && typeof liveBattery === 'number'
+      : shouldInferDockedAsCharging && currentStatus === 'docked' && typeof liveBattery === 'number'
         ? liveBattery >= 100
           ? 'charging-complete'
           : 'charging'
@@ -539,6 +584,7 @@ export function useVacuumCardState(
   });
   const cardSummary = resolveVacuumCardSummary({
     status: displayState,
+    rawStatus: rawDisplayStatus,
     isLawnMower: options.entityVariant === 'lawn-mower',
     currentRoom: liveCurrentRoom,
     battery: liveBattery,
@@ -558,10 +604,11 @@ export function useVacuumCardState(
     resolvedSize,
     liveName,
     liveRoom,
-    subtitle: t('vacuum.subtitle'),
+    subtitle: t(options.entityVariant === 'lawn-mower' ? 'lawnMower.subtitle' : 'vacuum.subtitle'),
     computedStatus,
     currentStatus,
     displayState,
+    isLawnMower: options.entityVariant === 'lawn-mower',
     isUnavailable,
     isActive,
     theme,
@@ -613,6 +660,7 @@ export function SharedVacuumCardShell({
   const controls = isCompactCardSize(state.resolvedSize) ? (
     <VacuumControlsSmall
       currentStatus={state.currentStatus}
+      isLawnMower={state.isLawnMower}
       onStartCleaning={state.handleStartCleaning}
       onPause={state.handlePause}
       onStop={state.handleStop}
@@ -629,6 +677,7 @@ export function SharedVacuumCardShell({
   ) : (
     <VacuumControlsMedium
       currentStatus={state.currentStatus}
+      isLawnMower={state.isLawnMower}
       onStartCleaning={state.handleStartCleaning}
       onPause={state.handlePause}
       onStop={state.handleStop}
@@ -701,6 +750,7 @@ export function SharedVacuumCardShell({
           entityId={state.id}
           isOpen={state.isDialogOpen}
           onClose={() => state.setIsDialogOpen(false)}
+          isLawnMower={state.isLawnMower}
           onStartCleaning={state.handleStartCleaning}
           onPauseCleaning={state.handlePause}
           onStopCleaning={state.handleStop}
