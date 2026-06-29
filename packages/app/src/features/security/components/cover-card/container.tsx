@@ -280,7 +280,6 @@ export const CoverCardContainer = memo(function CoverCardContainer({
       }
       handleOpen();
     },
-    onOpenControls: () => setIsSettingsOpen(true),
     onOpenSettings: () => setIsSettingsOpen(true),
   });
   useEditModeSettingsRequest(id, () => setIsSettingsOpen(true), isEditMode);

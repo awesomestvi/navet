@@ -203,7 +203,7 @@ export function CoverCardView({
   deviceClass,
   deviceClassConfig,
   size,
-  isEditMode: _isEditMode,
+  isEditMode,
   cardId: _cardId,
   cardProps,
   openColors,
@@ -241,6 +241,14 @@ export function CoverCardView({
   const dialogContentClassName = `h-auto max-h-[85vh] animate-in fade-in zoom-in duration-200 bg-linear-to-br ${activeDialogColors.from} ${activeDialogColors.to} ${activeDialogColors.border}`;
 
   const DeviceIcon = deviceClassConfig[deviceClass].icon;
+  const handleToggle = () => {
+    if (clampedPosition > 0) {
+      handleClose();
+      return;
+    }
+
+    handleOpen();
+  };
   const coverCardProps: HTMLAttributes<HTMLDivElement> = {
     ...cardProps,
     onClick: (event: ReactMouseEvent<HTMLDivElement>) => {
@@ -291,6 +299,7 @@ export function CoverCardView({
             }`}
             onPreviewPosition={onPreviewPosition}
             onCommitPosition={onCommitPosition}
+            onTap={isEditMode ? undefined : handleToggle}
           >
             <span className="sr-only">{t('cover.ariaLabel', { name })}</span>
           </CoverPositionGestureSurface>
@@ -318,6 +327,8 @@ export function CoverCardView({
             canStop={canStop}
             canClose={canClose}
             canSetPosition={canSetPosition}
+            isEditMode={isEditMode}
+            onToggle={handleToggle}
           />
         ) : isMedium ? (
           <MediumCoverLayout
@@ -341,6 +352,8 @@ export function CoverCardView({
             canStop={canStop}
             canClose={canClose}
             canSetPosition={canSetPosition}
+            isEditMode={isEditMode}
+            onToggle={handleToggle}
           />
         ) : (
           <LargeCoverLayout
@@ -364,6 +377,8 @@ export function CoverCardView({
             canStop={canStop}
             canClose={canClose}
             canSetPosition={canSetPosition}
+            isEditMode={isEditMode}
+            onToggle={handleToggle}
           />
         )}
       </div>
@@ -467,6 +482,8 @@ interface SharedCoverLayoutProps {
   canStop: boolean;
   canClose: boolean;
   canSetPosition: boolean;
+  isEditMode: boolean;
+  onToggle: () => void;
 }
 
 function CoverCardHeader({
@@ -481,6 +498,7 @@ function CoverCardHeader({
   'name' | 'size' | 'DeviceIcon' | 'iconButtonProps' | 'deviceLabel' | 'position'
 >) {
   const tone = isCoverOpenTone(position) ? 'primary' : 'neutral';
+  const isExtraSmall = size === 'extra-small';
 
   return (
     <EntityCardHeader
@@ -488,13 +506,14 @@ function CoverCardHeader({
       subtitle={deviceLabel}
       layout="eyebrow-first"
       size={size}
+      compact={isExtraSmall}
       tone={tone}
       className="pointer-events-none [&_button]:pointer-events-auto"
       leading={
         <EntityCardHeaderIcon
           IconComponent={DeviceIcon}
           isActive={isCoverOpenTone(position)}
-          size={size}
+          size={isExtraSmall ? 'tiny' : size}
           tone={tone}
           ariaLabel={iconButtonProps['aria-label']}
           onClick={iconButtonProps.onClick}
@@ -511,18 +530,32 @@ function CoverPositionMetric({
   openColors,
   theme,
   size,
+  inlineState = false,
 }: Pick<SharedCoverLayoutProps, 'position' | 'stateDisplay' | 'openColors' | 'theme'> & {
   size: 'sm' | 'xl';
+  inlineState?: boolean;
 }) {
   return (
     <CardMetric
-      value={`${position}%`}
-      label={stateDisplay.text}
+      value={
+        inlineState ? (
+          <span className="flex min-w-0 items-baseline gap-1.5">
+            <span>{position}%</span>
+            <span className={`truncate text-base font-light leading-none ${stateDisplay.color}`}>
+              {stateDisplay.text}
+            </span>
+          </span>
+        ) : (
+          `${position}%`
+        )
+      }
+      label={inlineState ? undefined : stateDisplay.text}
       size={size}
       isActive={position > 0}
       accentClassName={openColors.accent}
       theme={theme}
       labelClassName={stateDisplay.color}
+      valueClassName={inlineState ? 'text-2xl font-light leading-none tracking-normal' : undefined}
     />
   );
 }
@@ -546,6 +579,8 @@ function CompactCoverLayout({
   canStop,
   canClose,
 }: SharedCoverLayoutProps) {
+  const isExtraSmall = size === 'extra-small';
+
   return (
     <div className="pointer-events-none relative z-20 flex h-full flex-col [&_button]:pointer-events-auto">
       <CoverCardHeader
@@ -557,32 +592,45 @@ function CompactCoverLayout({
         position={position}
       />
 
-      <CardMetricActionLayout
-        size="small"
-        metric={
+      {isExtraSmall ? (
+        <div className="mt-auto">
           <CoverPositionMetric
             position={position}
             stateDisplay={stateDisplay}
             openColors={openColors}
             theme={theme}
             size="sm"
+            inlineState
           />
-        }
-        actions={
-          <CoverActionRow
-            theme={theme}
-            size="small"
-            position={position}
-            settingsButtonProps={settingsButtonProps}
-            onOpen={onOpen}
-            onStop={onStop}
-            onClose={onClose}
-            canOpen={canOpen}
-            canStop={canStop}
-            canClose={canClose}
-          />
-        }
-      />
+        </div>
+      ) : (
+        <CardMetricActionLayout
+          size="small"
+          metric={
+            <CoverPositionMetric
+              position={position}
+              stateDisplay={stateDisplay}
+              openColors={openColors}
+              theme={theme}
+              size="sm"
+            />
+          }
+          actions={
+            <CoverActionRow
+              theme={theme}
+              size="small"
+              position={position}
+              settingsButtonProps={settingsButtonProps}
+              onOpen={onOpen}
+              onStop={onStop}
+              onClose={onClose}
+              canOpen={canOpen}
+              canStop={canStop}
+              canClose={canClose}
+            />
+          }
+        />
+      )}
     </div>
   );
 }
@@ -669,6 +717,8 @@ function LargeCoverLayout({
   canStop,
   canClose,
   canSetPosition,
+  isEditMode,
+  onToggle,
 }: SharedCoverLayoutProps) {
   return (
     <div className="flex h-full flex-col">
@@ -688,6 +738,7 @@ function LargeCoverLayout({
           ariaLabel={positionAriaLabel}
           onPreviewPosition={onPreviewPosition}
           onCommitPosition={onCommitPosition}
+          onTap={isEditMode ? undefined : onToggle}
           disabled={!canSetPosition}
         />
 

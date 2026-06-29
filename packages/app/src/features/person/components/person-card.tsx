@@ -96,8 +96,6 @@ export const PersonCard = memo(function PersonCard({
     providerId: providerEntity?.providerId,
     requestKey: pictureRequestKey,
   });
-  const batteryLevel =
-    typeof providerState?.batteryLevel === 'number' ? providerState.batteryLevel : null;
   const presenceLabel = liveState === 'home' ? t('person.home') : t('person.away');
   const detailLabel =
     liveState === 'home'
@@ -179,13 +177,6 @@ export const PersonCard = memo(function PersonCard({
                 className={`max-w-[11rem] truncate rounded-full border border-white/12 bg-black/28 px-2.5 py-1 text-white/88 backdrop-blur-sm ${pillTextClassName}`}
               >
                 {detailLabel}
-              </div>
-            ) : null}
-            {batteryLevel !== null ? (
-              <div
-                className={`inline-flex items-center rounded-full border border-white/12 bg-black/28 px-2.5 py-1 text-white/88 backdrop-blur-sm ${pillTextClassName}`}
-              >
-                {t('vacuum.settings.battery')}: {batteryLevel}%
               </div>
             ) : null}
           </div>

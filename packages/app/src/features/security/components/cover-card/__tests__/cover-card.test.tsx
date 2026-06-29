@@ -170,6 +170,16 @@ describe('CoverCard', () => {
     );
   });
 
+  it('toggles open and close from a card tap', async () => {
+    renderCoverCard({ initialPosition: 70 });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Living Room Blind cover' }));
+
+    await waitFor(() =>
+      expect(closeCoverMock).toHaveBeenCalledWith('cover.living_room_blind', 'position')
+    );
+  });
+
   it('calls the provider stop cover action', async () => {
     renderCoverCard();
 
@@ -457,20 +467,22 @@ describe('CoverCard', () => {
     expect(closeCoverMock).not.toHaveBeenCalled();
   });
 
-  it('does not toggle the cover when tapping the position gesture surface', () => {
+  it('toggles the cover when tapping the position gesture surface without dragging', async () => {
     renderCoverCard();
 
     const gestureSurface = screen.getByRole('slider', { name: 'Living Room Blind cover' });
 
-    fireEvent.click(gestureSurface);
+    fireEvent.pointerDown(gestureSurface, { clientY: 100, pointerId: 1 });
+    fireEvent.pointerUp(gestureSurface, { clientY: 100, pointerId: 1 });
 
-    expect(openCoverMock).not.toHaveBeenCalled();
-    expect(closeCoverMock).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(closeCoverMock).toHaveBeenCalledWith('cover.living_room_blind', 'position')
+    );
     expect(setCoverPositionMock).not.toHaveBeenCalled();
     expect(stopCoverMock).not.toHaveBeenCalled();
   });
 
-  it('does not preview or commit when the position gesture is tapped without dragging', () => {
+  it('does not preview or commit a position change when the position gesture is tapped without dragging', async () => {
     renderCoverCard({ size: 'medium' });
 
     const gestureSurface = screen.getByRole('slider', { name: 'Living Room Blind cover' });
@@ -493,6 +505,9 @@ describe('CoverCard', () => {
     expect(screen.queryByText('90%')).not.toBeInTheDocument();
     expect(screen.getAllByText('50%').length).toBeGreaterThan(0);
     expect(setCoverPositionMock).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(closeCoverMock).toHaveBeenCalledWith('cover.living_room_blind', 'position')
+    );
   });
 
   it('does not call set position when a drag returns to the starting position', () => {

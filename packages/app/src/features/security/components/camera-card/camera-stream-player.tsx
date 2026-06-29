@@ -29,8 +29,7 @@ const videoFitClassNames = {
   cover: 'object-cover',
 } as const;
 
-const CAMERA_MEDIA_SURFACE_CLASS_NAME =
-  'h-full w-full [backface-visibility:hidden] [transform:translateZ(0)]';
+const CAMERA_MEDIA_SURFACE_CLASS_NAME = 'h-full w-full';
 
 interface CameraStreamErrorOptions {
   retryable?: boolean;
@@ -215,7 +214,7 @@ function MjpegCameraPlayer({
       : streamResourceUrl;
 
   return (
-    <div className="relative h-full w-full isolate [contain:paint]">
+    <div className="relative h-full w-full">
       {reloadingStreamUrl && !hasLoadedFrame && reloadKey === 0 ? (
         <CameraStreamLoadingIndicator />
       ) : null}
@@ -226,7 +225,6 @@ function MjpegCameraPlayer({
           alt=""
           aria-hidden="true"
           className={`${CAMERA_MEDIA_SURFACE_CLASS_NAME} ${videoFitClassNames[fitMode]}`}
-          style={{ imageRendering: 'auto' }}
           onLoad={() => {
             setHasLoadedFrame(true);
             onLoad?.();
@@ -498,7 +496,7 @@ function HlsCameraPlayer({
   }, [entityId, onError, streamResourceUrl]);
 
   return (
-    <div className="relative h-full w-full isolate [contain:paint]">
+    <div className="relative h-full w-full">
       {!hasLoadedFrame ? <CameraStreamLoadingIndicator /> : null}
       <video
         ref={videoRef}
@@ -510,7 +508,7 @@ function HlsCameraPlayer({
         onError={() => onError('hls')}
         onPlaying={markStreamReady}
         playsInline
-        style={{ opacity: hasLoadedFrame ? 1 : 0, imageRendering: 'auto' }}
+        style={{ opacity: hasLoadedFrame ? 1 : 0 }}
       />
     </div>
   );
@@ -769,7 +767,7 @@ function WebRtcCameraPlayer({
   }, [entityId, onError]);
 
   return (
-    <div className="relative h-full w-full isolate [contain:paint]">
+    <div className="relative h-full w-full">
       {!hasLoadedFrame ? <CameraStreamLoadingIndicator /> : null}
       <video
         ref={videoRef}
@@ -781,7 +779,7 @@ function WebRtcCameraPlayer({
         onLoadedData={markStreamReady}
         onPlaying={markStreamReady}
         playsInline
-        style={{ opacity: hasLoadedFrame ? 1 : 0, imageRendering: 'auto' }}
+        style={{ opacity: hasLoadedFrame ? 1 : 0 }}
       />
     </div>
   );

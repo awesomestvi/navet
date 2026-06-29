@@ -7,6 +7,7 @@ interface CoverWindowVisualizationProps {
   ariaLabel: string;
   onPreviewPosition: (newPosition: number) => void;
   onCommitPosition: (newPosition: number) => void;
+  onTap?: () => void;
   disabled?: boolean;
 }
 
@@ -19,6 +20,7 @@ export function CoverWindowVisualization({
   ariaLabel,
   onPreviewPosition,
   onCommitPosition,
+  onTap,
   disabled = false,
 }: CoverWindowVisualizationProps) {
   const blindCoverage = Math.max(0, Math.min(1, (100 - position) / 100));
@@ -34,6 +36,7 @@ export function CoverWindowVisualization({
       }`}
       onPreviewPosition={onPreviewPosition}
       onCommitPosition={onCommitPosition}
+      onTap={onTap}
     >
       <div
         className={`absolute inset-0 overflow-hidden rounded-2xl border ${

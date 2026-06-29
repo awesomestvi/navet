@@ -1,3 +1,4 @@
+import { useThemeStore } from '@navet/app/stores/theme-store';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import { fireEvent, screen } from '@testing-library/react';
@@ -94,5 +95,34 @@ describe('HumidifierCard', () => {
       },
       undefined
     );
+  });
+
+  it('uses the same solid dark inactive surface family as other climate cards', () => {
+    useThemeStore.getState().setTheme('dark');
+
+    renderWithProviders(
+      <HumidifierCard
+        id="humidifier.bedroom"
+        name="Bedroom Humidifier"
+        room="Bedroom"
+        entityType="Humidifier"
+        deviceClass="humidifier"
+        initialState={false}
+        initialTargetHumidity={46}
+        minHumidity={30}
+        maxHumidity={70}
+        targetHumidityStep={1}
+        initialMode="auto"
+        availableModes={['auto', 'eco', 'sleep']}
+        size="medium"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    const card = screen.getByRole('button', { name: 'Bedroom Humidifier' });
+
+    expect(card).toHaveClass('from-zinc-800', 'to-zinc-900');
+    expect(card).not.toHaveClass('from-white/[0.08]', 'via-white/[0.03]');
   });
 });

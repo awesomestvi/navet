@@ -696,7 +696,7 @@ function getAllowedSizes(
     case 'lights':
       return ['extra-small', 'small', 'medium'];
     case 'fans':
-      return ['small', 'medium'];
+      return ['extra-small', 'small', 'medium'];
     case 'persons':
       return ['tiny', 'extra-small', 'small'];
     case 'locks':

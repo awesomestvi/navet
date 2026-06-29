@@ -16,7 +16,7 @@ import {
   Zap,
 } from 'lucide-react';
 
-export const ADVANCED_CUSTOM_SIDEBAR_ACTION_LIMIT = 3;
+export const ADVANCED_CUSTOM_SIDEBAR_ACTION_LIMIT = 5;
 export const ADVANCED_CUSTOM_SUMMARY_PILL_LIMIT = 3;
 export const CUSTOM_EXTENSION_LABEL_MAX_LENGTH = 28;
 export const CUSTOM_EXTENSION_VALUE_MAX_LENGTH = 40;

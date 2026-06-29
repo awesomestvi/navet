@@ -14,6 +14,7 @@ interface CoverPositionGestureSurfaceProps {
   children: ReactNode;
   onPreviewPosition: (newPosition: number) => void;
   onCommitPosition: (newPosition: number) => void;
+  onTap?: () => void;
 }
 
 function clampPosition(value: number) {
@@ -53,6 +54,7 @@ export function CoverPositionGestureSurface({
   children,
   onPreviewPosition,
   onCommitPosition,
+  onTap,
 }: CoverPositionGestureSurfaceProps) {
   const pointerIdRef = useRef<number | null>(null);
   const startYRef = useRef(0);
@@ -121,6 +123,8 @@ export function CoverPositionGestureSurface({
         onCommitPosition(previewPositionRef.current);
       }
       suppressNextCardClick(event.currentTarget);
+    } else {
+      onTap?.();
     }
     pointerIdRef.current = null;
     event.currentTarget.releasePointerCapture?.(event.pointerId);

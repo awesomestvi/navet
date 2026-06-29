@@ -319,23 +319,33 @@ export const RoomNav = memo(function RoomNav({
                   <DropdownMenuContent
                     align="start"
                     sideOffset={8}
-                    className={cn(getThemeDropdownSurfaceClasses(theme), 'overflow-visible p-2')}
+                    className={cn(
+                      getThemeDropdownSurfaceClasses(theme),
+                      'w-[min(44rem,calc(100vw-2rem))] max-h-none overflow-visible p-2'
+                    )}
                   >
-                    <DropdownMenuLabel className={`px-3 py-2 text-sm font-medium ${textSecondary}`}>
+                    <DropdownMenuLabel
+                      className={`px-3 pb-2 pt-1 text-[0.68rem] font-semibold uppercase tracking-[0.12em] ${surface.textMuted}`}
+                    >
                       {t('dashboard.roomNav.openRooms')}
                     </DropdownMenuLabel>
-                    {overflowRooms.map((room) => (
-                      <DropdownMenuItem
-                        key={room}
-                        className={dropdownItemClassName}
-                        onClick={() => onRoomChange(room)}
-                      >
-                        <span className="flex min-w-0 flex-1 items-center gap-2">
-                          <span className="truncate">{getDashboardRoomLabel(room, allLabel)}</span>
-                        </span>
-                        {activeRoom === room ? <Check className="h-4 w-4" /> : null}
-                      </DropdownMenuItem>
-                    ))}
+                    <div className={`mb-2 h-px ${dividerClass}`} />
+                    <div className="grid grid-cols-2 gap-1 lg:grid-cols-3">
+                      {overflowRooms.map((room) => (
+                        <DropdownMenuItem
+                          key={room}
+                          className={dropdownItemClassName}
+                          onClick={() => onRoomChange(room)}
+                        >
+                          <span className="flex min-w-0 flex-1 items-center gap-2">
+                            <span className="truncate">
+                              {getDashboardRoomLabel(room, allLabel)}
+                            </span>
+                          </span>
+                          {activeRoom === room ? <Check className="h-4 w-4" /> : null}
+                        </DropdownMenuItem>
+                      ))}
+                    </div>
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : null}

@@ -33,14 +33,13 @@ export function CoverActionRow({
   canClose,
 }: CoverActionRowProps) {
   const { t } = useI18n();
-  const gap = size === 'small' ? 'gap-1.5' : 'gap-2.5';
 
   return (
     <CardActionRow
       theme={theme}
       size={size}
       leftContent={
-        <div className={`flex items-center ${gap}`}>
+        <div className="flex items-center gap-1.5">
           <CoverControlButton
             theme={theme}
             size={size}

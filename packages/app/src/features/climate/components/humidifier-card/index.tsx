@@ -80,33 +80,90 @@ function getHumidifierCardColors(
   theme: 'light' | 'dark' | 'glass' | 'black'
 ) {
   if (!isOn) {
+    if (theme === 'light') {
+      return {
+        border: 'border-gray-200',
+        glow: 'transparent',
+        gradient: 'from-gray-100 to-gray-200',
+      };
+    }
+
+    if (theme === 'glass') {
+      return {
+        border: 'border-white/22',
+        glow: 'transparent',
+        gradient:
+          'from-[rgba(255,255,255,0.18)] via-[rgba(255,255,255,0.08)] to-[rgba(8,14,24,0.08)]',
+      };
+    }
+
+    if (theme === 'black') {
+      return {
+        border: 'border-white/6',
+        glow: 'transparent',
+        gradient: 'from-black via-black to-zinc-950',
+      };
+    }
+
     return {
-      border: 'border-white/8',
-      glow: 'from-white/10 via-white/4',
-      gradient: 'from-white/[0.08] via-white/[0.03]',
+      border: 'border-zinc-700',
+      glow: 'transparent',
+      gradient: 'from-zinc-800 to-zinc-900',
     };
   }
 
-  const useLighterGlassTint = theme !== 'light';
+  if (theme === 'light') {
+    return deviceClass === 'dehumidifier'
+      ? {
+          border: 'border-teal-300/26',
+          glow: 'from-teal-400/28 via-cyan-300/14',
+          gradient: 'from-teal-100 to-cyan-200',
+        }
+      : {
+          border: 'border-sky-300/26',
+          glow: 'from-sky-400/28 via-blue-300/14',
+          gradient: 'from-sky-100 to-blue-200',
+        };
+  }
+
+  if (theme === 'glass') {
+    return deviceClass === 'dehumidifier'
+      ? {
+          border: 'border-teal-300/20',
+          glow: 'from-teal-400/18 via-cyan-300/10',
+          gradient: 'from-teal-800/80 to-cyan-900/90',
+        }
+      : {
+          border: 'border-sky-300/20',
+          glow: 'from-sky-400/18 via-blue-300/10',
+          gradient: 'from-sky-800/80 to-blue-900/90',
+        };
+  }
+
+  if (theme === 'black') {
+    return deviceClass === 'dehumidifier'
+      ? {
+          border: 'border-teal-800',
+          glow: 'transparent',
+          gradient: 'from-teal-950 to-cyan-900',
+        }
+      : {
+          border: 'border-sky-800',
+          glow: 'transparent',
+          gradient: 'from-sky-950 to-blue-900',
+        };
+  }
 
   return deviceClass === 'dehumidifier'
     ? {
-        border: useLighterGlassTint ? 'border-teal-300/20' : 'border-teal-300/26',
-        glow: useLighterGlassTint
-          ? 'from-teal-400/18 via-cyan-300/10'
-          : 'from-teal-400/28 via-cyan-300/14',
-        gradient: useLighterGlassTint
-          ? 'from-teal-500/[0.13] via-cyan-500/[0.05]'
-          : 'from-teal-500/[0.20] via-cyan-500/[0.08]',
+        border: 'border-teal-700',
+        glow: 'transparent',
+        gradient: 'from-teal-900 to-cyan-950',
       }
     : {
-        border: useLighterGlassTint ? 'border-sky-300/20' : 'border-sky-300/26',
-        glow: useLighterGlassTint
-          ? 'from-sky-400/18 via-blue-300/10'
-          : 'from-sky-400/28 via-blue-300/14',
-        gradient: useLighterGlassTint
-          ? 'from-sky-500/[0.13] via-blue-500/[0.05]'
-          : 'from-sky-500/[0.20] via-blue-500/[0.08]',
+        border: 'border-sky-700',
+        glow: 'transparent',
+        gradient: 'from-sky-900 to-blue-950',
       };
 }
 

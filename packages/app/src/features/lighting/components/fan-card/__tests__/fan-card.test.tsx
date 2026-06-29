@@ -246,6 +246,37 @@ describe('FanCard', () => {
     expect(screen.getByDisplayValue('Fan')).toBeInTheDocument();
   });
 
+  it('uses compact speed controls and settings on extra-small cards', () => {
+    setFanProviderEntity(['toggle', 'fan_speed']);
+    homeAssistantStore.setState({
+      entities: {
+        'fan.ceiling_fan': createFanEntity(66),
+      },
+    });
+
+    renderWithProviders(
+      <FanCard
+        id="fan.ceiling_fan"
+        name="Ceiling Fan"
+        room="Bedroom"
+        initialState
+        initialPercentage={66}
+        size="extra-small"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.getByRole('slider', { name: 'Fan Speed' })).toHaveAttribute(
+      'aria-valuenow',
+      '66'
+    );
+    expect(
+      screen.getByRole('button', { name: 'Open settings for Ceiling Fan' })
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Fan Medium' })).not.toBeInTheDocument();
+  });
+
   it('hides speed presets, slider, and settings when fan speed is unsupported', () => {
     setFanProviderEntity(['toggle']);
     homeAssistantStore.setState({

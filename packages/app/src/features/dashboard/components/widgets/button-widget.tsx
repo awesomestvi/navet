@@ -374,19 +374,18 @@ export function ButtonWidget({
           title={label}
           subtitle={cardTypeLabel}
           size="extra-small"
-          align="center"
+          compact
           layout="eyebrow-first"
           tone="primary"
           titleClassName={surface.textPrimary}
           subtitleClassName={surface.textMuted}
           className="w-full"
-          contentClassName="justify-center"
           marginBottomClassName="mb-0"
           leading={
             <EntityCardHeaderIcon
               IconComponent={IconComponent}
               isActive
-              size="extra-small"
+              size="tiny"
               tone="primary"
               baseColor={actionAccent}
             />
@@ -482,7 +481,7 @@ export function ButtonWidget({
           isConfigured && isTiny
             ? 'p-3'
             : isConfigured && isExtraSmall
-              ? 'items-center p-3'
+              ? 'items-start p-3'
               : isConfigured && isSmall
                 ? 'p-4'
                 : 'flex-col items-center justify-center p-4'

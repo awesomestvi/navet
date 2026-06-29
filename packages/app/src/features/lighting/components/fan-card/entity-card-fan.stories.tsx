@@ -53,7 +53,7 @@ const meta = {
   argTypes: {
     size: {
       control: 'inline-radio',
-      options: ['small', 'medium'],
+      options: ['extra-small', 'small', 'medium'],
     },
     initialPercentage: {
       control: { type: 'range', min: 0, max: 100, step: 1 },
@@ -103,6 +103,12 @@ export const Playground: Story = {};
 export const Small: Story = {
   args: {
     size: 'small',
+  },
+};
+
+export const ExtraSmall: Story = {
+  args: {
+    size: 'extra-small',
   },
 };
 

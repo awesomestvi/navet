@@ -190,27 +190,26 @@ export const SwitchCard = memo(function SwitchCard(props: Omit<SwitchCardProps, 
               {tintOverlay}
             </>
           }
-          contentClassName="flex items-center"
+          contentClassName="flex items-start"
         >
           <div className="relative w-full">
             <EntityCardHeader
               title={controller.displayName}
               subtitle={controller.entityType}
               size="extra-small"
-              align="center"
+              compact
               layout="eyebrow-first"
               tone={controller.isOn ? 'primary' : 'neutral'}
               titleClassName={stateSurface.primaryTextClassName}
               subtitleClassName={stateSurface.mutedTextClassName}
               className="w-full"
-              contentClassName="justify-center"
               marginBottomClassName="mb-0"
               leading={
                 <EntityCardHeaderIcon
                   IconComponent={controller.HeaderIconComponent}
                   iconText={controller.headerIconText}
                   isActive={controller.isOn}
-                  size="extra-small"
+                  size="tiny"
                   tone={controller.isOn ? 'primary' : 'neutral'}
                   ariaLabel={controller.cardInteraction.iconButtonProps['aria-label']}
                   onClick={controller.cardInteraction.iconButtonProps.onClick}
