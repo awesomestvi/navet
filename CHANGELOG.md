@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.10 - 2026-07-02
+
+## Fixed
+
+- Alarm panel cards now show the numeric keypad more reliably when it is needed.
+
+## Improved
+
+- Dashboard profile sync and persistence now behave more reliably across the app, including the Vite and nginx-backed profile-store flows used by hosted installs.
+- Kiosk orbit navigation, section cards, and related energy and security dashboard surfaces now use cleaner behavior and more consistent UI handling.
+- Storybook inventory and docs coverage now better reflect the current shared UI surface, while obsolete stories have been removed.
+
 ## 0.7.9 - 2026-06-29
 
 ## New

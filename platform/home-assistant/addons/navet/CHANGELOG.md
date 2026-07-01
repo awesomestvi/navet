@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.10
+
+- Updated Navet to `0.7.10`
+- Fixed alarm panel cards so the numeric keypad appears more reliably when needed
+- Improved dashboard profile sync, persistence, and hosted profile-store handling
+- Refined kiosk orbit navigation, section cards, and related energy/security dashboard surfaces
+- Expanded Storybook inventory/docs coverage and removed obsolete UI stories
+
 ## 0.7.9
 
 - Updated Navet to `0.7.9`
