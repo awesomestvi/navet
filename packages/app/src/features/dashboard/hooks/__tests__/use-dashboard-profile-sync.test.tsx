@@ -1,4 +1,5 @@
 import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
+import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import {
   useCardZonesStore,
   useCustomCardsStore,
@@ -190,18 +191,25 @@ describe('useDashboardProfileSync', () => {
     toast.mockReset();
     toast.dismiss.mockReset();
 
+    localStorage.setItem(
+      STORAGE_KEYS.dashboardProfileSync,
+      JSON.stringify({ serverGeneration: 'server-1' })
+    );
+
     loadDashboardProfile.mockResolvedValue({
       available: true,
       profile: null,
       notModified: false,
       etag: '"initial"',
       lastModified: 'Mon, 01 Jan 2024 00:00:00 GMT',
+      generation: 'server-1',
     });
     saveDashboardProfile.mockResolvedValue({
       saved: true,
       permanentFailure: false,
       etag: '"saved"',
       lastModified: 'Mon, 01 Jan 2024 00:00:02 GMT',
+      generation: 'server-1',
     });
   });
 
@@ -282,6 +290,130 @@ describe('useDashboardProfileSync', () => {
     expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps local-first sync when the server generation matches and the remote profile is empty', async () => {
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    currentProfile = buildProfile({
+      exportedAt: '2024-01-01T00:00:01.000Z',
+      theme: { theme: 'glass', primaryColor: 'yellow' },
+    });
+    act(() => {
+      useThemeStore.setState({ ...useThemeStore.getState(), primaryColor: 'yellow' });
+    });
+
+    await advanceTime(2_000);
+
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
+    expect(importDashboardConfig).not.toHaveBeenCalled();
+    expect(useDashboardEntitiesStore.getState().onboardingCompleted).toBe(true);
+  });
+
+  it('clears stale local dashboard state when the server generation changes and the remote profile is empty', async () => {
+    loadDashboardProfile.mockResolvedValueOnce({
+      available: true,
+      profile: null,
+      notModified: false,
+      etag: '"initial"',
+      lastModified: 'Mon, 01 Jan 2024 00:00:00 GMT',
+      generation: 'server-2',
+    });
+
+    currentProfile = buildProfile({
+      exportedAt: '2024-01-01T00:00:01.000Z',
+      theme: { theme: 'glass', primaryColor: 'yellow' },
+    });
+    act(() => {
+      useThemeStore.setState({ ...useThemeStore.getState(), primaryColor: 'yellow' });
+      useCustomCardsStore.getState().replaceCards([
+        {
+          id: 'custom-1',
+          type: 'note',
+          size: 'medium',
+          room: ALL_ROOMS_ID,
+          createdAt: 1,
+        },
+      ]);
+    });
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    expect(useDashboardEntitiesStore.getState().onboardingCompleted).toBe(false);
+    expect(useCustomCardsStore.getState().cards).toEqual([]);
+    expect(useThemeStore.getState().primaryColor).toBe('orange');
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEYS.dashboardProfileSync) ?? '{}')).toEqual(
+      expect.objectContaining({
+        serverGeneration: 'server-2',
+      })
+    );
+
+    await advanceTime(120_000);
+    expect(saveDashboardProfile).not.toHaveBeenCalled();
+  });
+
+  it('imports the server profile immediately when the server generation changes', async () => {
+    const remoteProfile = buildProfile({
+      exportedAt: '2024-01-01T00:01:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'green' },
+    });
+    loadDashboardProfile.mockResolvedValueOnce({
+      available: true,
+      profile: remoteProfile,
+      notModified: false,
+      etag: '"remote-1"',
+      lastModified: 'Mon, 01 Jan 2024 00:01:00 GMT',
+      generation: 'server-2',
+    });
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    expect(importDashboardConfig).toHaveBeenCalledWith(remoteProfile, {
+      applyNavigation: false,
+    });
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('resumes normal saves after acknowledging an authoritative empty server generation', async () => {
+    loadDashboardProfile.mockResolvedValueOnce({
+      available: true,
+      profile: null,
+      notModified: false,
+      etag: '"initial"',
+      lastModified: 'Mon, 01 Jan 2024 00:00:00 GMT',
+      generation: 'server-2',
+    });
+    saveDashboardProfile.mockResolvedValue({
+      saved: true,
+      permanentFailure: false,
+      etag: '"saved-2"',
+      lastModified: 'Mon, 01 Jan 2024 00:00:02 GMT',
+      generation: 'server-2',
+    });
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    currentProfile = buildProfile({
+      exportedAt: '2024-01-01T00:00:03.000Z',
+      theme: { theme: 'glass', primaryColor: 'teal' },
+    });
+    act(() => {
+      useDashboardEntitiesStore.getState().markOnboardingCompleted();
+      useThemeStore.setState({ ...useThemeStore.getState(), primaryColor: 'teal' });
+    });
+
+    await advanceTime(2_000);
+
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEYS.dashboardProfileSync) ?? '{}')).toEqual(
+      expect.objectContaining({
+        serverGeneration: 'server-2',
+      })
+    );
+  });
+
   it('does not reload when the fetched remote profile already matches the active local dashboard', async () => {
     const remoteProfile = buildProfile({
       exportedAt: '2024-01-01T00:01:00.000Z',
@@ -295,6 +427,7 @@ describe('useDashboardProfileSync', () => {
       notModified: false,
       etag: '"remote-1"',
       lastModified: 'Mon, 01 Jan 2024 00:01:00 GMT',
+      generation: 'server-1',
     });
 
     renderHookWithProviders(() => useDashboardProfileSync());
@@ -316,6 +449,7 @@ describe('useDashboardProfileSync', () => {
         notModified: false,
         etag: '"initial"',
         lastModified: 'Mon, 01 Jan 2024 00:00:00 GMT',
+        generation: 'server-1',
       })
       .mockResolvedValue({
         available: true,
@@ -323,12 +457,14 @@ describe('useDashboardProfileSync', () => {
         notModified: false,
         etag: '"remote-1"',
         lastModified: 'Mon, 01 Jan 2024 00:01:00 GMT',
+        generation: 'server-1',
       });
     saveDashboardProfile.mockResolvedValue({
       saved: false,
       permanentFailure: false,
       etag: null,
       lastModified: null,
+      generation: 'server-1',
     });
 
     renderHookWithProviders(() => useDashboardProfileSync());
@@ -360,6 +496,7 @@ describe('useDashboardProfileSync', () => {
       notModified: false,
       etag: '"remote-1"',
       lastModified: 'Mon, 01 Jan 2024 00:01:00 GMT',
+      generation: 'server-1',
     });
 
     renderHookWithProviders(() => useDashboardProfileSync());
@@ -377,6 +514,7 @@ describe('useDashboardProfileSync', () => {
         notModified: false,
         etag: '"initial"',
         lastModified: 'Mon, 01 Jan 2024 00:00:00 GMT',
+        generation: 'server-1',
       })
       .mockResolvedValue({
         available: true,
@@ -387,12 +525,14 @@ describe('useDashboardProfileSync', () => {
         notModified: false,
         etag: '"remote-1"',
         lastModified: 'Mon, 01 Jan 2024 00:01:00 GMT',
+        generation: 'server-1',
       });
     saveDashboardProfile.mockResolvedValue({
       saved: false,
       permanentFailure: false,
       etag: null,
       lastModified: null,
+      generation: 'server-1',
     });
 
     renderHookWithProviders(() => useDashboardProfileSync());
@@ -437,6 +577,7 @@ describe('useDashboardProfileSync', () => {
         notModified: false,
         etag: '"initial"',
         lastModified: 'Mon, 01 Jan 2024 00:00:00 GMT',
+        generation: 'server-1',
       })
       .mockResolvedValue({
         available: true,
@@ -444,6 +585,7 @@ describe('useDashboardProfileSync', () => {
         notModified: false,
         etag: '"remote-1"',
         lastModified: 'Mon, 01 Jan 2024 00:01:00 GMT',
+        generation: 'server-1',
       });
     saveDashboardProfile
       .mockResolvedValueOnce({
@@ -451,12 +593,14 @@ describe('useDashboardProfileSync', () => {
         permanentFailure: false,
         etag: null,
         lastModified: null,
+        generation: 'server-1',
       })
       .mockResolvedValueOnce({
         saved: true,
         permanentFailure: false,
         etag: '"saved-local"',
         lastModified: 'Mon, 01 Jan 2024 00:01:02 GMT',
+        generation: 'server-1',
       });
 
     renderHookWithProviders(() => useDashboardProfileSync());
@@ -501,6 +645,7 @@ describe('useDashboardProfileSync', () => {
         notModified: false,
         etag: '"initial"',
         lastModified: 'Mon, 01 Jan 2024 00:00:00 GMT',
+        generation: 'server-1',
       })
       .mockResolvedValue({
         available: true,
@@ -508,12 +653,14 @@ describe('useDashboardProfileSync', () => {
         notModified: false,
         etag: '"remote-1"',
         lastModified: 'Mon, 01 Jan 2024 00:01:00 GMT',
+        generation: 'server-1',
       });
     saveDashboardProfile.mockResolvedValue({
       saved: false,
       permanentFailure: false,
       etag: null,
       lastModified: null,
+      generation: 'server-1',
     });
 
     renderHookWithProviders(() => useDashboardProfileSync());

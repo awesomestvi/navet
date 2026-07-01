@@ -1,5 +1,7 @@
 import { SurfacePanel } from '@navet/app/components/primitives/surface-panel';
 import { useTheme } from '@navet/app/hooks';
+import { settingsSelectors } from '@navet/app/stores/selectors';
+import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { ReactNode } from 'react';
 
 export interface SectionCardProps {
@@ -24,6 +26,8 @@ export function SectionCard({
   padding = 'lg',
 }: SectionCardProps) {
   const { theme } = useTheme();
+  const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
+  const showEyebrow = Boolean(eyebrow) && !kioskMode;
   const eyebrowTextClassName = theme === 'light' ? 'text-slate-500' : 'text-white/60';
   const bodyTextClassName = theme === 'light' ? 'text-slate-900' : 'text-white';
   const descriptionTextClassName = theme === 'light' ? 'text-slate-600' : 'text-white/64';
@@ -38,7 +42,7 @@ export function SectionCard({
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0">
-          {eyebrow ? (
+          {showEyebrow ? (
             <div
               className={`text-xs font-semibold uppercase tracking-[0.18em] ${eyebrowTextClassName}`}
             >
@@ -46,7 +50,7 @@ export function SectionCard({
             </div>
           ) : null}
           <h2
-            className={`${eyebrow ? 'mt-2' : ''} text-lg font-semibold tracking-tight ${bodyTextClassName}`}
+            className={`${showEyebrow ? 'mt-2' : ''} text-lg font-semibold tracking-tight ${bodyTextClassName}`}
           >
             {title}
           </h2>

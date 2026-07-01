@@ -530,7 +530,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
           </RenderProfiler>
         ) : (
           <RenderProfiler id={`DeviceGrid:${activeRoom}`}>
-            <div className="space-y-2 md:space-y-6">
+            <div className="space-y-3 md:space-y-3">
               <SummaryBar
                 items={roomStatusSummaryItems}
                 onNavigate={controller.setActiveSection}

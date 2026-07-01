@@ -26,6 +26,10 @@ declare module '@docker/njs/profile-store.js' {
       headersOut: Record<string, string>;
       return: (status: number, body?: string) => void;
     }): void;
+    deleteProfile(request: {
+      headersOut: Record<string, string>;
+      return: (status: number, body?: string) => void;
+    }): void;
     handle(request: {
       method: string;
       headersIn?: Record<string, string | undefined>;
@@ -37,6 +41,7 @@ declare module '@docker/njs/profile-store.js' {
       statSync: (path: string) => { size?: number; mtimeMs: number; mtime: Date };
       readFileSync: (path: string, encoding: string) => string;
       writeFileSync: (path: string, content: string, encoding: string) => void;
+      unlinkSync: (path: string) => void;
     }): void;
     resetProfileStoreFsForTests(): void;
   }

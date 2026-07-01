@@ -4,11 +4,12 @@ import { useHeaderController } from '@navet/app/components/layout/use-header-con
 import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { resolveWallpaperBackgroundImage } from '@navet/app/constants/built-in-wallpapers';
+import { CustomExtensionsDialog } from '@navet/app/features/settings/components/custom-extensions-dialog';
 import { usePrimaryColor, useThemeMode, useWallpaper } from '@navet/app/hooks';
 import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { resolveDashboardPerformanceProfile } from '../hooks/use-dashboard-performance-mode';
 import { KioskOrbitMenu } from './kiosk-orbit-menu';
@@ -65,6 +66,8 @@ export const DashboardLayout = memo(function DashboardLayout({
   const showSharedGlassBlur =
     isGlass && performanceProfile.allowBackdropBlur && !densePerformanceMode;
   const headerController = useHeaderController();
+  const [editingSidebarActionId, setEditingSidebarActionId] = useState<string | null>(null);
+  const [isSidebarCustomizationOpen, setIsSidebarCustomizationOpen] = useState(false);
   const wallpaperBackgroundImage = resolveWallpaperBackgroundImage(wallpaper);
   const accentColorValue = getThemeColorValue(primaryColor);
 
@@ -209,8 +212,30 @@ export const DashboardLayout = memo(function DashboardLayout({
           {children}
         </div>
         {kioskMode && !showNavetSidebar ? (
-          <KioskOrbitMenu editActions={mobileEditActions} roomNavigation={mobileRoomNavigation} />
+          <KioskOrbitMenu
+            editActions={mobileEditActions}
+            onCustomizeSidebar={() => {
+              setEditingSidebarActionId(null);
+              setIsSidebarCustomizationOpen(true);
+            }}
+            onEditSidebarItem={(id) => {
+              setEditingSidebarActionId(id);
+              setIsSidebarCustomizationOpen(true);
+            }}
+            roomNavigation={mobileRoomNavigation}
+          />
         ) : null}
+        <CustomExtensionsDialog
+          editingActionId={editingSidebarActionId}
+          isOpen={isSidebarCustomizationOpen}
+          onOpenChange={(open) => {
+            setIsSidebarCustomizationOpen(open);
+            if (!open) {
+              setEditingSidebarActionId(null);
+            }
+          }}
+          mode="sidebar"
+        />
       </div>
     </div>
   );

@@ -18,12 +18,76 @@ function createRequest(
   };
 }
 
+function createMockFs(
+  files: Record<string, string>,
+  profileMtime = new Date('2024-01-01T00:00:00.000Z')
+) {
+  const fileMap = new Map(Object.entries(files));
+
+  return {
+    statSync: vi.fn((path: string) => {
+      const content = fileMap.get(path);
+      if (content === undefined) {
+        const error = new Error(`ENOENT: ${path}`);
+        // @ts-expect-error test-only shape
+        error.code = 'ENOENT';
+        throw error;
+      }
+
+      return {
+        size: content.length,
+        mtimeMs: profileMtime.getTime(),
+        mtime: profileMtime,
+      };
+    }),
+    readFileSync: vi.fn((path: string) => {
+      const content = fileMap.get(path);
+      if (content === undefined) {
+        const error = new Error(`ENOENT: ${path}`);
+        // @ts-expect-error test-only shape
+        error.code = 'ENOENT';
+        throw error;
+      }
+      return content;
+    }),
+    writeFileSync: vi.fn((path: string, content: string) => {
+      fileMap.set(path, content);
+    }),
+    unlinkSync: vi.fn((path: string) => {
+      if (!fileMap.delete(path)) {
+        const error = new Error(`ENOENT: ${path}`);
+        // @ts-expect-error test-only shape
+        error.code = 'ENOENT';
+        throw error;
+      }
+    }),
+    getFile: (path: string) => fileMap.get(path),
+  };
+}
+
 afterEach(() => {
   profileStore.resetProfileStoreFsForTests();
   vi.restoreAllMocks();
 });
 
 describe('profile-store', () => {
+  it('returns 204 with a persisted generation header when no profile exists', () => {
+    const mockFs = createMockFs({});
+    profileStore.setProfileStoreFsForTests(mockFs);
+
+    const request = createRequest();
+
+    profileStore.readProfile(request);
+
+    expect(request.headersOut['X-Navet-Profile-Generation']).toMatch(/^\d+-[a-z0-9]+$/);
+    expect(mockFs.writeFileSync).toHaveBeenCalledWith(
+      '/data/navet-dashboard-profile-generation.txt',
+      expect.any(String),
+      'utf8'
+    );
+    expect(request.return).toHaveBeenCalledWith(204);
+  });
+
   it('builds stable ETag and Last-Modified metadata for a saved profile', () => {
     const body = JSON.stringify({
       version: 3,
@@ -48,16 +112,11 @@ describe('profile-store', () => {
       app: 'navet',
       exportedAt: '2024-01-01T00:00:00.000Z',
     });
-    const stat = {
-      size: body.length,
-      mtimeMs: 1704067200000,
-      mtime: new Date('2024-01-01T00:00:00.000Z'),
-    };
-    profileStore.setProfileStoreFsForTests({
-      statSync: vi.fn(() => stat),
-      readFileSync: vi.fn(() => body),
-      writeFileSync: vi.fn(),
+    const mockFs = createMockFs({
+      '/data/navet-dashboard-profile.json': body,
+      '/data/navet-dashboard-profile-generation.txt': 'generation-1',
     });
+    profileStore.setProfileStoreFsForTests(mockFs);
 
     const request = createRequest({
       headersIn: {
@@ -69,6 +128,7 @@ describe('profile-store', () => {
 
     expect(request.headersOut.ETag).toBe(`"1704067200000-${body.length}-2024-01-01T00:00:00.000Z"`);
     expect(request.headersOut['Last-Modified']).toBe('Mon, 01 Jan 2024 00:00:00 GMT');
+    expect(request.headersOut['X-Navet-Profile-Generation']).toBe('generation-1');
     expect(request.return).toHaveBeenCalledWith(304);
   });
 
@@ -78,16 +138,11 @@ describe('profile-store', () => {
       app: 'navet',
       exportedAt: '2024-01-01T00:00:00.000Z',
     });
-    const stat = {
-      size: body.length,
-      mtimeMs: 1704067200000,
-      mtime: new Date('2024-01-01T00:00:00.000Z'),
-    };
-    profileStore.setProfileStoreFsForTests({
-      statSync: vi.fn(() => stat),
-      readFileSync: vi.fn(() => body),
-      writeFileSync: vi.fn(),
+    const mockFs = createMockFs({
+      '/data/navet-dashboard-profile.json': body,
+      '/data/navet-dashboard-profile-generation.txt': 'generation-1',
     });
+    profileStore.setProfileStoreFsForTests(mockFs);
 
     const request = createRequest({
       headersIn: {
@@ -100,6 +155,7 @@ describe('profile-store', () => {
     expect(request.return).toHaveBeenCalledWith(200, body);
     expect(request.headersOut.ETag).toBe(`"1704067200000-${body.length}-2024-01-01T00:00:00.000Z"`);
     expect(request.headersOut['Last-Modified']).toBe('Mon, 01 Jan 2024 00:00:00 GMT');
+    expect(request.headersOut['X-Navet-Profile-Generation']).toBe('generation-1');
   });
 
   it('returns validators after successful writes', () => {
@@ -108,16 +164,9 @@ describe('profile-store', () => {
       app: 'navet',
       exportedAt: '2024-01-01T00:00:00.000Z',
     });
-    const stat = {
-      size: body.length,
-      mtimeMs: 1704067200000,
-      mtime: new Date('2024-01-01T00:00:00.000Z'),
-    };
-    const mockFs = {
-      statSync: vi.fn(() => stat),
-      readFileSync: vi.fn(() => body),
-      writeFileSync: vi.fn(),
-    };
+    const mockFs = createMockFs({
+      '/data/navet-dashboard-profile-generation.txt': 'generation-1',
+    });
     profileStore.setProfileStoreFsForTests(mockFs);
 
     const request = createRequest({
@@ -130,10 +179,35 @@ describe('profile-store', () => {
     expect(mockFs.writeFileSync).toHaveBeenCalled();
     expect(request.headersOut.ETag).toBe(`"1704067200000-${body.length}-2024-01-01T00:00:00.000Z"`);
     expect(request.headersOut['Last-Modified']).toBe('Mon, 01 Jan 2024 00:00:00 GMT');
+    expect(request.headersOut['X-Navet-Profile-Generation']).toBe('generation-1');
     expect(request.return).toHaveBeenCalledWith(
       200,
       JSON.stringify({ ok: true, updatedAt: '2024-01-01T00:00:00.000Z' })
     );
+  });
+
+  it('rotates the generation and clears the profile on delete', () => {
+    const body = JSON.stringify({
+      version: 3,
+      app: 'navet',
+      exportedAt: '2024-01-01T00:00:00.000Z',
+    });
+    const mockFs = createMockFs({
+      '/data/navet-dashboard-profile.json': body,
+      '/data/navet-dashboard-profile-generation.txt': 'generation-1',
+    });
+    profileStore.setProfileStoreFsForTests(mockFs);
+
+    const request = createRequest({ method: 'DELETE' });
+
+    profileStore.deleteProfile(request);
+
+    expect(mockFs.unlinkSync).toHaveBeenCalledWith('/data/navet-dashboard-profile.json');
+    expect(request.headersOut['X-Navet-Profile-Generation']).not.toBe('generation-1');
+    expect(mockFs.getFile('/data/navet-dashboard-profile-generation.txt')).toBe(
+      request.headersOut['X-Navet-Profile-Generation']
+    );
+    expect(request.return).toHaveBeenCalledWith(204);
   });
 
   it('routes unsupported methods through the handler', () => {
@@ -141,7 +215,7 @@ describe('profile-store', () => {
 
     profileStore.handle(request);
 
-    expect(request.headersOut.Allow).toBe('GET, PUT');
+    expect(request.headersOut.Allow).toBe('GET, PUT, DELETE');
     expect(request.return).toHaveBeenCalledWith(
       405,
       JSON.stringify({ error: 'Method not allowed' })

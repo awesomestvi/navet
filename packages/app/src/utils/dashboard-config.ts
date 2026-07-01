@@ -1,7 +1,7 @@
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { DASHBOARD_CONFIG_VERSION } from '@navet/app/constants/dashboard-config-version';
 import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
-import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
+import { STORAGE_KEYS, STORE_STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import {
   type CardType,
   type HomeDashboardLayoutState,
@@ -43,6 +43,7 @@ import {
   getLegacyReducedEffectsFlags,
   resolveEffectsQuality,
 } from '@navet/app/utils/effects-quality';
+import { removeLocalStorageWithMigration } from '@navet/app/utils/local-storage-migration';
 import { notifyPersistedStateChanged } from '@navet/app/utils/persisted-state-events';
 import { storage } from '@navet/app/utils/storage';
 import { sanitizeExternalUrl, sanitizeImageUrl } from '@navet/app/utils/url-security';
@@ -87,9 +88,60 @@ interface ImportDashboardConfigOptions {
   applyNavigation?: boolean;
 }
 
+const DASHBOARD_ENTITIES_STORAGE_KEY = 'navet-dashboard-entities';
+
 const parseStoredJson = <T>(key: string, fallback: T): T => {
   return storage.get(key, fallback);
 };
+
+function resetStore<T>(store: {
+  getInitialState: () => T;
+  setState: (state: T, replace: true) => unknown;
+}) {
+  store.setState(store.getInitialState(), true);
+}
+
+export function resetDashboardProfileState() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  [
+    STORAGE_KEYS.cardSizes,
+    STORAGE_KEYS.cardOrders,
+    STORAGE_KEYS.cardZones,
+    STORAGE_KEYS.homeDashboardLayout,
+    STORAGE_KEYS.roomOrder,
+    STORAGE_KEYS.dashboardProfileSync,
+    STORE_STORAGE_KEYS.theme,
+    STORE_STORAGE_KEYS.settings,
+    STORE_STORAGE_KEYS.navigation,
+    STORE_STORAGE_KEYS.customCards,
+    STORE_STORAGE_KEYS.entityRoomOverrides,
+    STORE_STORAGE_KEYS.lightPresetSettings,
+  ].forEach((key) => {
+    storage.remove(key);
+  });
+  removeLocalStorageWithMigration(DASHBOARD_ENTITIES_STORAGE_KEY, window.localStorage);
+
+  resetStore(useThemeStore);
+  resetStore(useSettingsStore);
+  resetStore(useNavigationStore);
+  useNavigationStore.getState().applyNavigationState({
+    currentRoom: ALL_ROOMS_ID,
+    activeSection: 'home',
+  });
+  resetStore(useCustomCardsStore);
+  resetStore(useDashboardEntitiesStore);
+  resetStore(useEntityRoomOverridesStore);
+  resetStore(useLightPresetStore);
+  resetStore(useCardZonesStore);
+  resetStore(useHomeDashboardLayoutStore);
+
+  notifyPersistedStateChanged(STORAGE_KEYS.cardSizes, {});
+  notifyPersistedStateChanged(STORAGE_KEYS.cardOrders, {});
+  notifyPersistedStateChanged(STORAGE_KEYS.roomOrder, []);
+}
 
 const omitUndefinedEntries = <T extends Record<string, unknown>>(value: T): Partial<T> =>
   Object.fromEntries(

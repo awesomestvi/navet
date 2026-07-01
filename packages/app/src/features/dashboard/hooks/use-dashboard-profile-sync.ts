@@ -20,6 +20,7 @@ import {
   type DashboardConfigPayload,
   exportDashboardConfig,
   importDashboardConfig,
+  resetDashboardProfileState,
 } from '@navet/app/utils/dashboard-config';
 import { PERSISTED_STATE_EVENT } from '@navet/app/utils/persisted-state-events';
 import { storage } from '@navet/app/utils/storage';
@@ -44,12 +45,14 @@ interface DashboardProfileSyncMetadata {
   lastRemoteVersion?: string;
   lastRemoteEtag?: string;
   lastRemoteLastModified?: string;
+  serverGeneration?: string;
 }
 
 interface RemoteProfileSnapshot {
   profile: DashboardConfigPayload;
   etag: string | null;
   lastModified: string | null;
+  generation: string | null;
   conflictKey: string;
 }
 
@@ -145,6 +148,17 @@ function getNextPollDelay(failureCount: number) {
   return PROFILE_REMOTE_POLL_BACKOFF_MS[2];
 }
 
+function isServerGenerationAuthoritative(
+  generation: string | null,
+  metadata: DashboardProfileSyncMetadata
+) {
+  return (
+    typeof generation === 'string' &&
+    generation.length > 0 &&
+    metadata.serverGeneration !== generation
+  );
+}
+
 export function useDashboardProfileSync() {
   const { t } = useI18n();
   const { onboardingCompleted } = useDashboardEntitiesStore(
@@ -207,11 +221,13 @@ export function useDashboardProfileSync() {
   const updateRemoteMetadata = useCallback(
     ({
       etag,
+      generation,
       lastModified,
       profile,
       signature,
     }: {
       etag: string | null;
+      generation?: string | null;
       lastModified: string | null;
       profile?: DashboardConfigPayload | null;
       signature?: string | null;
@@ -231,6 +247,10 @@ export function useDashboardProfileSync() {
       const metadata = readSyncMetadata();
       writeSyncMetadata({
         ...metadata,
+        serverGeneration:
+          generation !== undefined
+            ? (generation ?? metadata.serverGeneration)
+            : metadata.serverGeneration,
         lastRemoteVersion: profile?.exportedAt ?? metadata.lastRemoteVersion,
         lastRemoteEtag: etag ?? metadata.lastRemoteEtag,
         lastRemoteLastModified: lastModified ?? metadata.lastRemoteLastModified,
@@ -265,11 +285,46 @@ export function useDashboardProfileSync() {
   >(async () => false);
   const schedulePollRef = useRef<(delay?: number) => void>(() => undefined);
   const syncCurrentLocalStateRef = useRef<() => void>(() => undefined);
+  const resetToAuthoritativeEmptyRemoteRef = useRef<
+    (metadata: {
+      etag: string | null;
+      generation: string | null;
+      lastModified: string | null;
+    }) => void
+  >(() => undefined);
+
+  const resetToAuthoritativeEmptyRemote = useCallback(
+    (metadata: { etag: string | null; generation: string | null; lastModified: string | null }) => {
+      const currentMetadata = readSyncMetadata();
+
+      applyingRemoteProfileRef.current = true;
+      hasPendingLocalChangesRef.current = false;
+      currentSignatureRef.current = null;
+      clearConflictToast();
+      clearReloadGuard();
+      resetDashboardProfileState();
+      applyingRemoteProfileRef.current = false;
+
+      lastRemoteVersionRef.current = null;
+      updateRemoteMetadata({
+        etag: metadata.etag,
+        generation: metadata.generation,
+        lastModified: metadata.lastModified,
+      });
+      writeSyncMetadata({
+        serverGeneration: metadata.generation ?? currentMetadata.serverGeneration,
+        lastRemoteEtag: metadata.etag ?? currentMetadata.lastRemoteEtag,
+        lastRemoteLastModified: metadata.lastModified ?? currentMetadata.lastRemoteLastModified,
+      });
+    },
+    [clearConflictToast, updateRemoteMetadata]
+  );
+  resetToAuthoritativeEmptyRemoteRef.current = resetToAuthoritativeEmptyRemote;
 
   const applyRemoteProfile = useCallback(
     (
       profile: DashboardConfigPayload,
-      metadata: { etag: string | null; lastModified: string | null }
+      metadata: { etag: string | null; generation: string | null; lastModified: string | null }
     ) => {
       const profileSignature = getProfileSignature(profile);
       const currentMetadata = readSyncMetadata();
@@ -277,6 +332,10 @@ export function useDashboardProfileSync() {
       const conflictKey = getConflictKey(profile, metadata.etag, metadata.lastModified);
       const remoteTimestamp = getProfileTimestamp(profile);
       const localTimestamp = Date.parse(currentMetadata.lastAppliedAt ?? '');
+      const generationAuthoritative = isServerGenerationAuthoritative(
+        metadata.generation,
+        currentMetadata
+      );
 
       if (isRemoteProfileAlreadyActive(profileSignature, currentSignature, currentMetadata)) {
         hasPendingLocalChangesRef.current = false;
@@ -287,6 +346,7 @@ export function useDashboardProfileSync() {
           ...currentMetadata,
           lastAppliedAt: profile.exportedAt,
           lastSavedSignature: profileSignature,
+          serverGeneration: metadata.generation ?? currentMetadata.serverGeneration,
           lastRemoteVersion: profile.exportedAt,
           lastRemoteEtag: metadata.etag ?? currentMetadata.lastRemoteEtag,
           lastRemoteLastModified: metadata.lastModified ?? currentMetadata.lastRemoteLastModified,
@@ -302,6 +362,7 @@ export function useDashboardProfileSync() {
           ...currentMetadata,
           lastAppliedAt: profile.exportedAt,
           lastSavedSignature: profileSignature,
+          serverGeneration: metadata.generation ?? currentMetadata.serverGeneration,
           lastRemoteVersion: profile.exportedAt,
           lastRemoteEtag: metadata.etag ?? currentMetadata.lastRemoteEtag,
           lastRemoteLastModified: metadata.lastModified ?? currentMetadata.lastRemoteLastModified,
@@ -310,12 +371,14 @@ export function useDashboardProfileSync() {
       }
 
       const shouldApply =
+        generationAuthoritative ||
         !onboardingCompletedRef.current ||
         !Number.isFinite(localTimestamp) ||
         remoteTimestamp > localTimestamp;
 
       updateRemoteMetadata({
         etag: metadata.etag,
+        generation: metadata.generation,
         lastModified: metadata.lastModified,
         profile,
         signature: profileSignature,
@@ -337,6 +400,7 @@ export function useDashboardProfileSync() {
         ...currentMetadata,
         lastAppliedAt: profile.exportedAt,
         lastSavedSignature: profileSignature,
+        serverGeneration: metadata.generation ?? currentMetadata.serverGeneration,
         lastRemoteVersion: profile.exportedAt,
         lastRemoteEtag: metadata.etag ?? currentMetadata.lastRemoteEtag,
         lastRemoteLastModified: metadata.lastModified ?? currentMetadata.lastRemoteLastModified,
@@ -397,6 +461,7 @@ export function useDashboardProfileSync() {
 
                   applyRemoteProfile(pendingConflict.profile, {
                     etag: pendingConflict.etag,
+                    generation: pendingConflict.generation,
                     lastModified: pendingConflict.lastModified,
                   });
                 },
@@ -441,14 +506,34 @@ export function useDashboardProfileSync() {
         return;
       }
 
+      const currentMetadata = readSyncMetadata();
+      const generationAuthoritative = isServerGenerationAuthoritative(
+        result.generation,
+        currentMetadata
+      );
+
       profileSyncAvailableRef.current = true;
       failureCountRef.current = 0;
       updateRemoteMetadata({
         etag: result.etag,
+        generation: result.generation,
         lastModified: result.lastModified,
       });
 
-      if (result.notModified || !result.profile) {
+      if (result.notModified) {
+        clearReloadGuard();
+        schedulePollRef.current(PROFILE_REMOTE_POLL_INTERVAL_MS);
+        return;
+      }
+
+      if (!result.profile) {
+        if (generationAuthoritative) {
+          resetToAuthoritativeEmptyRemoteRef.current({
+            etag: result.etag,
+            generation: result.generation,
+            lastModified: result.lastModified,
+          });
+        }
         clearReloadGuard();
         schedulePollRef.current(PROFILE_REMOTE_POLL_INTERVAL_MS);
         return;
@@ -457,12 +542,12 @@ export function useDashboardProfileSync() {
       const remoteProfile = {
         profile: result.profile,
         etag: result.etag,
+        generation: result.generation,
         lastModified: result.lastModified,
         conflictKey: getConflictKey(result.profile, result.etag, result.lastModified),
       };
       const remoteSignature = getProfileSignature(result.profile);
       const currentSignature = currentSignatureRef.current ?? getCurrentProfileSnapshot().signature;
-      const currentMetadata = readSyncMetadata();
 
       if (isRemoteProfileAlreadyActive(remoteSignature, currentSignature, currentMetadata)) {
         hasPendingLocalChangesRef.current = false;
@@ -473,6 +558,7 @@ export function useDashboardProfileSync() {
           ...currentMetadata,
           lastAppliedAt: result.profile.exportedAt,
           lastSavedSignature: remoteSignature,
+          serverGeneration: result.generation ?? currentMetadata.serverGeneration,
           lastRemoteVersion: result.profile.exportedAt,
           lastRemoteEtag: result.etag ?? currentMetadata.lastRemoteEtag,
           lastRemoteLastModified: result.lastModified ?? currentMetadata.lastRemoteLastModified,
@@ -489,6 +575,7 @@ export function useDashboardProfileSync() {
 
       applyRemoteProfile(result.profile, {
         etag: result.etag,
+        generation: result.generation,
         lastModified: result.lastModified,
       });
     },
@@ -558,6 +645,7 @@ export function useDashboardProfileSync() {
       clearReloadGuard();
       updateRemoteMetadata({
         etag: result.etag,
+        generation: result.generation,
         lastModified: result.lastModified,
         profile,
         signature,
@@ -566,6 +654,7 @@ export function useDashboardProfileSync() {
         ...metadata,
         lastAppliedAt: profile.exportedAt,
         lastSavedSignature: signature,
+        serverGeneration: result.generation ?? metadata.serverGeneration,
         lastRemoteVersion: profile.exportedAt,
         lastRemoteEtag: result.etag ?? metadata.lastRemoteEtag,
         lastRemoteLastModified: result.lastModified ?? metadata.lastRemoteLastModified,
@@ -691,11 +780,21 @@ export function useDashboardProfileSync() {
       profileSyncAvailableRef.current = result.available || profileSyncAvailableRef.current;
       updateRemoteMetadata({
         etag: result.etag,
+        generation: result.generation,
         lastModified: result.lastModified,
         profile: result.profile,
       });
 
+      const generationAuthoritative = isServerGenerationAuthoritative(result.generation, metadata);
+
       if (!result.profile || result.notModified) {
+        if (!result.notModified && generationAuthoritative) {
+          resetToAuthoritativeEmptyRemoteRef.current({
+            etag: result.etag,
+            generation: result.generation,
+            lastModified: result.lastModified,
+          });
+        }
         syncCurrentLocalStateRef.current();
         schedulePollRef.current();
         return;
@@ -703,6 +802,7 @@ export function useDashboardProfileSync() {
 
       applyRemoteProfile(result.profile, {
         etag: result.etag,
+        generation: result.generation,
         lastModified: result.lastModified,
       });
     }

@@ -463,7 +463,11 @@ function isAlarmUnavailable(alarm: NavetAlarmEntity) {
 }
 
 function shouldRequireCode(alarm: NavetAlarmEntity) {
-  return alarm.codeFormat !== 'none' && alarm.requiresCode === true;
+  return alarm.requiresCode === true;
+}
+
+function supportsAlarmCodeEntry(alarm: NavetAlarmEntity) {
+  return alarm.codeFormat !== 'none' || alarm.requiresCode === true;
 }
 
 function getActionHandler(action: NavetAlarmAction) {
@@ -566,7 +570,7 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
   const supportedActions = orderSupportedActions(selectedAlarm.supportedActions);
   const unavailable = isAlarmUnavailable(selectedAlarm);
   const requiresCode = shouldRequireCode(selectedAlarm);
-  const supportsCodeEntry = selectedAlarm.codeFormat !== 'none';
+  const supportsCodeEntry = supportsAlarmCodeEntry(selectedAlarm);
   const pendingForSelectedAlarm =
     pendingAction !== null && pendingAction.alarmId === selectedAlarm.id
       ? pendingAction

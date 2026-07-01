@@ -12,6 +12,10 @@ export interface DashboardProfileMetadata {
   lastModified: string
 }
 
+export function createDashboardProfileGeneration(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
+
 export function isValidDashboardProfileData(value: unknown): value is DashboardProfileData {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return false
@@ -37,11 +41,16 @@ export function buildDashboardProfileMetadata(
 export function createViteDashboardProfileStore(
   profileFilePath = path.resolve(process.cwd(), '.cache', 'navet-dashboard-profile.json')
 ) {
+  const generationFilePath = `${profileFilePath}.generation`
   let serializedProfile = loadPersistedDashboardProfile(profileFilePath)
+  let generation = loadOrCreatePersistedDashboardProfileGeneration(generationFilePath)
 
   return {
     getSerializedProfile(): string | null {
       return serializedProfile
+    },
+    getGeneration(): string {
+      return generation
     },
     getProfile(): DashboardProfileData | null {
       if (!serializedProfile) {
@@ -73,9 +82,19 @@ export function createViteDashboardProfileStore(
       writeFileSync(profileFilePath, serialized, 'utf8')
       serializedProfile = serialized
     },
+    rotateGeneration() {
+      generation = createDashboardProfileGeneration()
+      mkdirSync(path.dirname(generationFilePath), { recursive: true })
+      writeFileSync(generationFilePath, generation, 'utf8')
+      return generation
+    },
     clearProfile() {
       serializedProfile = null
       rmSync(profileFilePath, { force: true })
+    },
+    resetProfile() {
+      this.clearProfile()
+      return this.rotateGeneration()
     },
   }
 }
@@ -88,4 +107,20 @@ function loadPersistedDashboardProfile(profileFilePath: string): string | null {
   } catch {
     return null
   }
+}
+
+function loadOrCreatePersistedDashboardProfileGeneration(generationFilePath: string): string {
+  try {
+    const generation = readFileSync(generationFilePath, 'utf8').trim()
+    if (generation) {
+      return generation
+    }
+  } catch {
+    // Fall through and create a replacement generation.
+  }
+
+  const generation = createDashboardProfileGeneration()
+  mkdirSync(path.dirname(generationFilePath), { recursive: true })
+  writeFileSync(generationFilePath, generation, 'utf8')
+  return generation
 }

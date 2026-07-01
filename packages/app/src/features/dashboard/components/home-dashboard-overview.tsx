@@ -98,7 +98,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
 
   const presentation = (
     <div
-      className={`space-y-3 lg:space-y-4${isEditMode ? ' hidden' : ''}`}
+      className={`space-y-3 md:space-y-3${isEditMode ? ' hidden' : ''}`}
       aria-hidden={isEditMode}
     >
       {infoBadgeStrip}

@@ -909,6 +909,7 @@ function authSessionStorePlugin() {
 
 function dashboardProfileStorePlugin() {
   const dashboardProfileStore = createViteDashboardProfileStore()
+  const profileGenerationHeader = 'X-Navet-Profile-Generation'
 
   const setNoStoreHeaders = (res: ServerResponse) => {
     res.setHeader('Cache-Control', 'no-store')
@@ -933,6 +934,10 @@ function dashboardProfileStorePlugin() {
   ) => {
     res.setHeader('ETag', metadata.etag)
     res.setHeader('Last-Modified', metadata.lastModified)
+  }
+
+  const applyGenerationHeader = (res: ServerResponse) => {
+    res.setHeader(profileGenerationHeader, dashboardProfileStore.getGeneration())
   }
 
   const readRequestBody = async (req: IncomingMessage) => {
@@ -966,6 +971,7 @@ function dashboardProfileStorePlugin() {
 
   const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     if (req.method === 'GET') {
+      applyGenerationHeader(res)
       const serializedProfile = dashboardProfileStore.getSerializedProfile()
       if (!serializedProfile) {
         sendNoContent(res)
@@ -997,6 +1003,7 @@ function dashboardProfileStorePlugin() {
 
     if (req.method === 'PUT') {
       try {
+        applyGenerationHeader(res)
         const body = await readRequestBody(req)
         if (!body) {
           sendJson(res, 400, { error: 'Missing dashboard profile body' })
@@ -1031,7 +1038,14 @@ function dashboardProfileStorePlugin() {
       return
     }
 
-    res.setHeader('Allow', 'GET, PUT')
+    if (req.method === 'DELETE') {
+      dashboardProfileStore.resetProfile()
+      applyGenerationHeader(res)
+      sendNoContent(res)
+      return
+    }
+
+    res.setHeader('Allow', 'GET, PUT, DELETE')
     sendJson(res, 405, { error: 'Method not allowed' })
   }
 

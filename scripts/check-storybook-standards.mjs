@@ -59,7 +59,14 @@ function walkComponentFiles(dir) {
       continue;
     }
 
-    if (entry.name === 'index.ts' || entry.name.endsWith('.stories.tsx')) {
+    if (
+      entry.name === 'index.ts' ||
+      entry.name.endsWith('.stories.tsx') ||
+      entry.name.endsWith('.test.ts') ||
+      entry.name.endsWith('.test.tsx') ||
+      entry.name.endsWith('.spec.ts') ||
+      entry.name.endsWith('.spec.tsx')
+    ) {
       continue;
     }
 

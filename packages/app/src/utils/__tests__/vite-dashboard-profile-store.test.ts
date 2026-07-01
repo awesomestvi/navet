@@ -31,6 +31,7 @@ describe('createViteDashboardProfileStore', () => {
 
     const restored = createViteDashboardProfileStore(profileFilePath);
 
+    expect(restored.getGeneration()).toMatch(/^\d+-[a-z0-9]+$/);
     expect(restored.getProfile()).toEqual(PROFILE);
     expect(restored.getSerializedProfile()).toBe(JSON.stringify(PROFILE));
     expect(restored.getProfileMetadata()).toEqual(
@@ -53,6 +54,7 @@ describe('createViteDashboardProfileStore', () => {
     expect(restored.getProfile()).toBeNull();
     expect(restored.getSerializedProfile()).toBeNull();
     expect(restored.getProfileMetadata()).toBeNull();
+    expect(restored.getGeneration()).toMatch(/^\d+-[a-z0-9]+$/);
   });
 
   it('builds stable metadata from file timestamps and exportedAt', () => {
@@ -67,5 +69,20 @@ describe('createViteDashboardProfileStore', () => {
       etag: `"1704067200000-${serialized.length}-${PROFILE.exportedAt}"`,
       lastModified: 'Mon, 01 Jan 2024 00:00:00 GMT',
     });
+  });
+
+  it('rotates the generation when the profile is reset', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'navet-dashboard-profile-'));
+    tempDirs.push(dir);
+    const profileFilePath = join(dir, 'profile.json');
+    const store = createViteDashboardProfileStore(profileFilePath);
+    const initialGeneration = store.getGeneration();
+
+    store.saveProfile(PROFILE);
+    const rotatedGeneration = store.resetProfile();
+
+    expect(rotatedGeneration).not.toBe(initialGeneration);
+    expect(store.getGeneration()).toBe(rotatedGeneration);
+    expect(store.getProfile()).toBeNull();
   });
 });

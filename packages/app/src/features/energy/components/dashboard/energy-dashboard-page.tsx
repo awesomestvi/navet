@@ -162,6 +162,7 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
     [dashboard, visibleConsumers]
   );
   const liveWatts = Math.round(filteredDashboard.totals.currentLoadW);
+  const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
   const importedTodayLabel = `${formatEnergyValue(dashboard.totals.importTodayKWh)} kWh`;
   const generatedTodayLabel = `${formatEnergyValue(dashboard.totals.solarTodayKWh)} kWh`;
   const toggleEditMode = () => {
@@ -205,14 +206,16 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
   );
   return (
     <div className="space-y-5">
-      <DashboardHeroSection
-        accentColor={accentColor}
-        actions={isMobileViewport ? null : heroActions}
-        actionsClassName="md:absolute md:top-0 md:right-0 md:mt-0 md:max-w-[22rem] md:justify-end"
-        description="See where power is flowing right now."
-        surface={surface}
-        title={t('energy.hero.title')}
-      />
+      {!kioskMode ? (
+        <DashboardHeroSection
+          accentColor={accentColor}
+          actions={isMobileViewport ? null : heroActions}
+          actionsClassName="md:absolute md:top-0 md:right-0 md:mt-0 md:max-w-[22rem] md:justify-end"
+          description="See where power is flowing right now."
+          surface={surface}
+          title={t('energy.hero.title')}
+        />
+      ) : null}
 
       <section>
         <DeviceTable

@@ -36,6 +36,7 @@ const storybookSurfaces = [
   ['App Shell', 'Header, sidebar, room navigation, search, notifications, and section controls'],
   ['Cards', 'Entity cards, custom dashboard widgets, catalogs, sizes, and state matrices'],
   ['Pages', 'Dashboard flows, settings sections, energy pages, and feature-level compositions'],
+  ['Marketing', 'Website sections and product storytelling slices used outside the dashboard'],
 ];
 
 function StartHereStory() {

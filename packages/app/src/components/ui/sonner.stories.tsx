@@ -79,7 +79,7 @@ function SonnerStory() {
           >
             Action toast
           </InteractivePill>
-          <InteractivePill intent="action" onClick={() => toast.loading('Syncing light state…')}>
+          <InteractivePill intent="action" onClick={() => toast.loading('Syncing light state...')}>
             Loading toast
           </InteractivePill>
         </div>

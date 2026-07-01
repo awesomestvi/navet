@@ -632,81 +632,6 @@ const STORY_DOCS: Record<string, string> = {
       'Check that the banner is noticeable without permanently dominating the layout.',
     ]
   ),
-  'Components/Primitives/Alert Dialog': doc(
-    'Confirmation dialog primitive for high-consequence actions that should interrupt the current flow.',
-    [
-      'The blocking dialog treatment used for destructive or confirmation-heavy actions.',
-      'How emphasis, copy, and action hierarchy communicate caution.',
-    ],
-    [
-      'Use this story when a flow needs confirmation strong enough to block until the user decides.',
-      'Keep destructive confirmation behavior here rather than styling custom modal warnings per feature.',
-    ],
-    [
-      'Check danger emphasis, action ordering, and readability.',
-      'Check that the dialog is reserved for truly consequential actions.',
-    ]
-  ),
-  'Components/Primitives/Avatar': doc(
-    'Shared avatar primitive for user identity and profile-adjacent surfaces.',
-    [
-      'The image, fallback, and sizing treatment used for user presence in the app shell.',
-      'How compact identity surfaces fit into the broader shared component language.',
-    ],
-    [
-      'Use this story when changing account-presence visuals or fallback behavior.',
-      'Keep avatar styling consistent here so identity surfaces do not drift across menus and headers.',
-    ],
-    [
-      'Check image cropping, fallback clarity, and size balance.',
-      'Check that avatars remain distinct from generic circular action buttons.',
-    ]
-  ),
-  'Components/Primitives/Dropdown Menu': doc(
-    'Shared dropdown-menu wrapper for contextual action lists anchored to a trigger.',
-    [
-      'The menu shell used for compact contextual actions rather than full dialogs.',
-      'How trigger, menu items, and separators are presented in shared UI.',
-    ],
-    [
-      'Use this story when a small set of anchored actions belongs in a menu instead of inline buttons.',
-      'Keep contextual action menus consistent here rather than styling them in each feature.',
-    ],
-    [
-      'Check trigger clarity, menu hierarchy, and item spacing.',
-      'Check that destructive or high-impact actions are still appropriately differentiated.',
-    ]
-  ),
-  'Components/Primitives/Label': doc(
-    'Shared label primitive for field titles and accessible control labeling.',
-    [
-      'The baseline text treatment for form labels and control captions.',
-      'How labels fit into shared fields without each form inventing its own styling.',
-    ],
-    [
-      'Use this story when adjusting field-label typography or spacing.',
-      'Keep shared label behavior here so forms stay consistent across dialogs and settings.',
-    ],
-    [
-      'Check readability, spacing from controls, and visual hierarchy.',
-      'Check that labels remain clear even in dense settings layouts.',
-    ]
-  ),
-  'Components/Primitives/Toast': doc(
-    'Transient feedback surface for short non-blocking messages triggered by user actions.',
-    [
-      'How brief success or status messages are presented outside the main layout flow.',
-      'The shared toast behavior used for ephemeral confirmation and feedback.',
-    ],
-    [
-      'Use this story when changing the presentation of temporary feedback that should not block interaction.',
-      'Keep one toast language here instead of spawning feature-specific transient banners.',
-    ],
-    [
-      'Check message readability, timing, and visual intrusion.',
-      'Check that important feedback stays noticeable without feeling noisy.',
-    ]
-  ),
   'Cards/Entity/Calendar': doc(
     'Entity card for upcoming calendar events rendered as a dashboard card rather than a full agenda view.',
     [
@@ -1335,7 +1260,276 @@ const STORY_DOCS: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 const ADDITIONAL_STORY_DOCS: Record<string, string> = {
-  // UI Components (Radix wrappers)
+  'Components/Patterns/Card Action Row': doc(
+    'Composed action-row pattern for card footers and control strips that combine primary controls, utility actions, and overflow commands.',
+    [
+      'How shared card actions are grouped into a predictable footer layout.',
+      'Density behavior across compact and touch-forward card sizes.',
+    ],
+    [
+      'Use this story when adjusting shared action-row spacing, control balance, or overflow affordances.',
+      'Prefer evolving this shared pattern instead of rebuilding card footers inside each feature.',
+    ],
+    [
+      'Check that the primary control group stays dominant while utility actions remain easy to reach.',
+      'Check that density changes preserve tap comfort and visual rhythm.',
+    ]
+  ),
+  'Components/Patterns/CardDialog': doc(
+    'Shared composition layer for card settings dialogs, including header, sections, tab navigation, and done-footer structure.',
+    [
+      'How card configuration surfaces are assembled from reusable dialog primitives.',
+      'The relationship between dialog header context, tabbed sections, and closing actions.',
+    ],
+    [
+      'Use this story when changing the shared structure of card settings dialogs.',
+      'Keep card-dialog layout decisions here so feature dialogs stay in the same family.',
+    ],
+    [
+      'Check that the dialog reads clearly before feature-specific controls are added.',
+      'Check that tabs, sections, and footer actions feel balanced rather than over-contained.',
+    ]
+  ),
+  'Components/Patterns/Card Empty State': doc(
+    'Compact empty-state pattern for cards that have no configured data, sources, or selected entities yet.',
+    [
+      'The shared card-scale layout for an icon, short explanation, and optional action.',
+      'How empty states adapt across supported card sizes without turning into a full-page fallback.',
+    ],
+    [
+      'Use this story when changing card-level fallback copy, spacing, or action treatment.',
+      'Prefer this pattern over feature-local empty-card layouts when the structure is the same.',
+    ],
+    [
+      'Check that the empty state remains readable and centered at smaller sizes.',
+      'Check that optional actions feel helpful without overpowering the message.',
+    ]
+  ),
+  'Components/Patterns/Empty State': doc(
+    'Shared dashboard-scale empty-state pattern for broader surfaces that need guidance when no content is available yet.',
+    [
+      'How title, supporting copy, and optional actions scale up beyond card-level fallback states.',
+      'The shared visual language for empty dashboards and larger layout regions.',
+    ],
+    [
+      'Use this story when changing empty-state hierarchy for section- or page-level surfaces.',
+      'Keep larger fallback layouts aligned here rather than styling them independently in each feature.',
+    ],
+    [
+      'Check that the message is understandable at a glance.',
+      'Check that the action path is clear without making the empty state feel like a marketing panel.',
+    ]
+  ),
+  'Components/Patterns/Dashboard Hero Section': doc(
+    'Shared hero-section pattern for dashboard summaries that combine a headline, supporting metrics, and primary actions.',
+    [
+      'How high-priority dashboard context is framed before the main card grid begins.',
+      'The balance between overview content and action entrypoints in a premium first-screen section.',
+    ],
+    [
+      'Use this story when changing hero hierarchy, spacing, or summary/action composition.',
+      'Keep dashboard hero treatment shared here rather than creating feature-specific hero variants.',
+    ],
+    [
+      'Check that the headline and supporting information are easy to scan from a distance.',
+      'Check that the hero remains useful without crowding the cards beneath it.',
+    ]
+  ),
+  'Components/Patterns/Form Field': doc(
+    'Shared field-block pattern for form labels, helper text, and the control body they describe.',
+    [
+      'How field titles, optional descriptions, and inputs are grouped into one reusable layout.',
+      'The baseline rhythm for settings and dialog forms across the app.',
+    ],
+    [
+      'Use this story when changing shared form spacing or helper-copy hierarchy.',
+      'Prefer this pattern instead of hand-assembling labels and inputs in each settings surface.',
+    ],
+    [
+      'Check that the relationship between label, helper text, and control is obvious.',
+      'Check that dense settings lists still feel calm and readable.',
+    ]
+  ),
+  'Components/Patterns/Preview Cards': doc(
+    'Shared preview-card pattern for showing live appearance or interaction examples inside settings and onboarding flows.',
+    [
+      'How a preview surface can stay informative without becoming a second full runtime.',
+      'The framing used for glanceable previews of visual or behavioral choices.',
+    ],
+    [
+      'Use this story when changing preview-shell styling, spacing, or supporting chrome.',
+      'Keep settings previews shared here so they feel consistent across features.',
+    ],
+    [
+      'Check that the preview reads as a sample, not a full interactive card.',
+      'Check that preview framing stays secondary to the settings content around it.',
+    ]
+  ),
+  'Components/Patterns/Portal Action Dock': doc(
+    'Floating action-dock pattern for contextual controls anchored to a selected item or region.',
+    [
+      'How contextual actions are grouped when they need to hover near a focused target.',
+      'The balance between prominence, reachability, and keeping the rest of the UI visible.',
+    ],
+    [
+      'Use this story when changing floating contextual-action presentation.',
+      'Keep portal-dock behavior shared here instead of rebuilding anchored toolbars per feature.',
+    ],
+    [
+      'Check anchor alignment, spacing, and readability of clustered actions.',
+      'Check that the dock feels connected to its target without obscuring too much content.',
+    ]
+  ),
+  'Components/Patterns/Section Card': doc(
+    'Shared section-card pattern for grouping related content blocks inside settings, dashboards, and overview pages.',
+    [
+      'How larger content groupings are framed without looking like ordinary entity cards.',
+      'The surface rhythm used for multi-item sections with their own title and body.',
+    ],
+    [
+      'Use this story when adjusting the shell for grouped section content.',
+      'Prefer this shared section framing over feature-local bordered containers.',
+    ],
+    [
+      'Check that the section feels organized and lightweight.',
+      'Check that nested content still has enough room without the shell becoming visually heavy.',
+    ]
+  ),
+  'Components/Patterns/Table Cell Content': doc(
+    'Dense table-cell content pattern for pairing a primary label with compact supporting metadata.',
+    [
+      'How structured row data is presented without resorting to ad-hoc text stacks.',
+      'The hierarchy between a cell headline and its secondary supporting values.',
+    ],
+    [
+      'Use this story when changing compact table/list row formatting.',
+      'Keep shared cell-content hierarchy here so admin and settings tables stay consistent.',
+    ],
+    [
+      'Check label scanability and secondary-text readability.',
+      'Check that the pattern stays legible in denser table layouts.',
+    ]
+  ),
+  'Components/Primitives/Cards/BaseCardDialog': doc(
+    'Shared base dialog shell for entity cards and custom-card settings surfaces.',
+    [
+      'How the baseline dialog frame behaves before feature-specific sections are layered in.',
+      'The reusable structure for tabs, body content, and closing actions.',
+    ],
+    [
+      'Use this story when changing the foundational card-dialog shell.',
+      'Keep cross-card settings framing aligned here rather than duplicating dialog structure in each feature.',
+    ],
+    [
+      'Check shell spacing, title hierarchy, and footer behavior.',
+      'Check that the dialog still feels appropriate for both compact and richer card settings.',
+    ]
+  ),
+  'Components/Primitives/Badge': doc(
+    'Compact badge primitive for short status labels, counts, and contextual metadata.',
+    [
+      'The small emphasis surface used for lightweight status communication.',
+      'How badges sit alongside headings, metrics, and dense list content.',
+    ],
+    [
+      'Use this story when changing short-form status chips or label treatments.',
+      'Keep compact metadata styling shared here instead of creating feature-local badge variants.',
+    ],
+    [
+      'Check readability, padding, and contrast at small sizes.',
+      'Check that the badge stays supportive rather than becoming the dominant element.',
+    ]
+  ),
+  'Components/Primitives/Button': doc(
+    'Shared button primitive for primary, secondary, and utility actions across the app.',
+    [
+      'The baseline action treatment for buttons before feature-specific context is layered on.',
+      'How variants, sizing, and emphasis levels fit into the broader Navet control language.',
+    ],
+    [
+      'Use this story when changing common button styling or hierarchy rules.',
+      'Prefer evolving the shared button over adding one-off action styling in features.',
+    ],
+    [
+      'Check emphasis, hover states, and touch target comfort.',
+      'Check that button variants remain distinct without drifting into separate design systems.',
+    ]
+  ),
+  'Components/Primitives/CardShell': doc(
+    'Reusable card-shell primitive for framing card content with shared radius, spacing, and surface treatment.',
+    [
+      'The structural shell used before a card gains domain-specific content and actions.',
+      'How shared card chrome behaves across themes and densities.',
+    ],
+    [
+      'Use this story when adjusting shared card radius, borders, or internal framing.',
+      'Keep base card-shell behavior shared here instead of duplicating shell classes across cards.',
+    ],
+    [
+      'Check that the shell feels consistent across themes.',
+      'Check that content has enough space without making the shell feel oversized.',
+    ]
+  ),
+  'Components/Primitives/DialogActions': doc(
+    'Shared dialog-action primitives for done, cancel, and footer arrangements used across settings surfaces.',
+    [
+      'The common closing and confirmation affordances used in Navet dialogs.',
+      'How dialog footers maintain consistent rhythm even when features vary in complexity.',
+    ],
+    [
+      'Use this story when changing shared dialog action buttons or footer structure.',
+      'Keep dialog action behavior shared here instead of letting each feature invent its own footer layout.',
+    ],
+    [
+      'Check button hierarchy, spacing, and dismissal clarity.',
+      'Check that footer actions stay easy to understand in both simple and richer dialogs.',
+    ]
+  ),
+  'Components/Primitives/Cards/Entity/Header Icon': doc(
+    'Shared entity-card header icon primitive for compact domain identity and active-state emphasis.',
+    [
+      'How leading card icons are framed inside the shared header area.',
+      'The relationship between icon treatment, active state, and card identity.',
+    ],
+    [
+      'Use this story when changing icon-pill sizing, framing, or active-state treatment.',
+      'Keep entity-card icon behavior shared here so cards stay visually related across domains.',
+    ],
+    [
+      'Check active and inactive readability across themes.',
+      'Check that icon emphasis supports the title instead of competing with it.',
+    ]
+  ),
+  'Components/Primitives/Cards/Entity/Header': doc(
+    'Shared entity-card header primitive for titles, subtitles, identity icons, and secondary header actions.',
+    [
+      'How card identity and quick metadata are arranged in the top band of a card.',
+      'The balance between title prominence and compact supporting context.',
+    ],
+    [
+      'Use this story when changing card header spacing, title hierarchy, or supporting affordances.',
+      'Keep header structure shared here instead of rebuilding it for each entity card family.',
+    ],
+    [
+      'Check title scanability and subtitle clarity.',
+      'Check that header controls do not crowd the entity identity area.',
+    ]
+  ),
+  'Components/Primitives/Link': doc(
+    'Shared link primitive for inline navigation and lightweight call-to-action text.',
+    [
+      'The baseline text-link treatment used across settings, docs, and supporting UI.',
+      'How links stay readable and interactive on Navet surfaces.',
+    ],
+    [
+      'Use this story when changing text-link styling or emphasis.',
+      'Keep links shared here instead of mixing browser-default styling with feature-local overrides.',
+    ],
+    [
+      'Check contrast, hover treatment, and focus visibility.',
+      'Check that links remain distinct from ordinary body text.',
+    ]
+  ),
   'Components/Primitives/Alert Dialog': doc(
     'Confirmation dialog primitive for high-consequence actions that should interrupt the current flow.',
     [
@@ -1351,49 +1545,19 @@ const ADDITIONAL_STORY_DOCS: Record<string, string> = {
       'Check that the dialog is reserved for truly consequential actions.',
     ]
   ),
-  'Components/Primitives/Avatar': doc(
-    'Shared avatar primitive for user identity and profile-adjacent surfaces.',
-    [
-      'The image, fallback, and sizing treatment used for user presence in the app shell.',
-      'How compact identity surfaces fit into the broader shared component language.',
-    ],
-    [
-      'Use this story when changing account-presence visuals or fallback behavior.',
-      'Keep avatar styling consistent here so identity surfaces do not drift across menus and headers.',
-    ],
-    [
-      'Check image cropping, fallback clarity, and size balance.',
-      'Check that avatars remain distinct from generic circular action buttons.',
-    ]
-  ),
   'Components/Primitives/Dropdown Menu': doc(
-    'Shared dropdown-menu wrapper for contextual action lists anchored to a trigger.',
+    'Shared dropdown-menu wrapper for contextual action lists, nested submenus, and wider grouped mega-menu surfaces.',
     [
-      'The menu shell used for compact contextual actions rather than full dialogs.',
-      'How trigger, menu items, and separators are presented in shared UI.',
+      'The menu shell used for compact actions as well as richer grouped destinations.',
+      'How triggers, nested items, shortcuts, and larger layout variants behave inside one shared primitive.',
     ],
     [
-      'Use this story when a small set of anchored actions belongs in a menu instead of inline buttons.',
-      'Keep contextual action menus consistent here rather than styling them in each feature.',
+      'Use this story when changing the shared dropdown shell, submenu behavior, or richer grouped-menu presentation.',
+      'Keep contextual menu behavior here instead of rebuilding one-off floating action surfaces in each feature.',
     ],
     [
-      'Check trigger clarity, menu hierarchy, and item spacing.',
-      'Check that destructive or high-impact actions are still appropriately differentiated.',
-    ]
-  ),
-  'Components/Primitives/Label': doc(
-    'Shared label primitive for field titles and accessible control labeling.',
-    [
-      'The baseline text treatment for form labels and control captions.',
-      'How labels fit into shared fields without each form inventing its own styling.',
-    ],
-    [
-      'Use this story when adjusting field-label typography or spacing.',
-      'Keep shared label behavior here so forms stay consistent across dialogs and settings.',
-    ],
-    [
-      'Check readability, spacing from controls, and visual hierarchy.',
-      'Check that labels remain clear even in dense settings layouts.',
+      'Check trigger clarity, focus movement, and submenu affordance.',
+      'Check that the wider mega-menu example still feels lightweight and menu-like.',
     ]
   ),
   'Components/Primitives/Toast': doc(
@@ -1411,34 +1575,214 @@ const ADDITIONAL_STORY_DOCS: Record<string, string> = {
       'Check that important feedback stays noticeable without feeling noisy.',
     ]
   ),
-  'Components/UI/Sonner': doc(
-    'Toast notification system integration using Sonner for ephemeral feedback messages.',
+  'Components/Primitives/Modal Surface': doc(
+    'Shared modal-surface primitive for centered overlays that need stronger separation from the underlying UI.',
     [
-      'The toast container and presentation layer for action feedback.',
-      'How transient messages are styled and positioned in the app.',
+      'The base framed surface used for modal dialogs and focused overlays.',
+      'How modal chrome behaves across the active theme set.',
     ],
     [
-      'Use this story when adjusting toast styling, duration, or positioning.',
-      'Keep toast behavior consistent across all user actions that need feedback.',
+      'Use this story when changing modal framing, padding, or surface tokens.',
+      'Keep modal-surface treatment shared here rather than styling each overlay independently.',
     ],
     [
-      'Check toast visibility against different backgrounds.',
-      'Check that toasts are noticeable without blocking the underlying interaction.',
+      'Check contrast against the backdrop and surrounding content.',
+      'Check that the modal still feels part of Navet rather than a generic browser overlay.',
     ]
   ),
-  'Components/UI/Card Wrapper': doc(
-    'Radix-based card wrapper primitive for consistent card surface treatment.',
+  'Components/Primitives/Overlay Scroll Area': doc(
+    'Shared scroll-area primitive for overlay and dialog content that needs custom scroll chrome.',
     [
-      'The base card container with theme-aware surface styling.',
-      'How card wrappers integrate with the broader design system tokens.',
+      'How longer overlay content scrolls without dropping back to browser-default framing.',
+      'The shared treatment for scrollable modal and sheet bodies.',
     ],
     [
-      'Use this story when changing the base card surface or border treatment.',
-      'Keep card wrapper styling aligned with theme surface tokens.',
+      'Use this story when changing scroll-area styling or overflow behavior inside overlays.',
+      'Keep overlay scrolling shared here instead of restyling it separately in each dialog.',
     ],
     [
-      'Check card surface clarity across all theme modes.',
-      'Check that the wrapper provides consistent padding and border radius.',
+      'Check scrollbar subtlety, visibility, and pointer comfort.',
+      'Check that scroll regions do not visually fight with the surrounding shell.',
+    ]
+  ),
+  'Components/Primitives/Room Eyebrow': doc(
+    'Compact room-eyebrow primitive for showing location context above or beside primary card content.',
+    [
+      'The lightweight location label treatment used in cards and summaries.',
+      'How room context is surfaced without competing with the main title.',
+    ],
+    [
+      'Use this story when changing room-label typography or spacing.',
+      'Keep room-context styling shared here so cards stay consistent across domains.',
+    ],
+    [
+      'Check that the eyebrow reads as supporting context rather than a second title.',
+      'Check that long room names remain compact and legible.',
+    ]
+  ),
+  'Components/Primitives/Sheet Surface': doc(
+    'Shared sheet-surface primitive for edge-anchored overlays and drawer-style interaction.',
+    [
+      'The baseline shell used when content should slide in rather than appear as a centered modal.',
+      'How sheet framing, header area, and internal spacing fit the Navet surface system.',
+    ],
+    [
+      'Use this story when changing drawer-like overlay surfaces or header framing.',
+      'Keep sheet treatment shared here instead of inventing feature-local side panels.',
+    ],
+    [
+      'Check edge anchoring, surface contrast, and content spacing.',
+      'Check that the sheet remains comfortable on touch-first hardware.',
+    ]
+  ),
+  'Components/Primitives/Slider': doc(
+    'Shared slider primitive for continuous adjustments such as brightness, volume, and numeric ranges.',
+    [
+      'The baseline drag interaction and track/thumb treatment for continuous controls.',
+      'How sliders stay legible and touch-friendly across themes.',
+    ],
+    [
+      'Use this story when changing shared range-control styling or interaction states.',
+      'Keep slider behavior shared here rather than rebuilding it in feature code.',
+    ],
+    [
+      'Check thumb visibility, track contrast, and drag comfort.',
+      'Check that the control remains easy to use on touch devices.',
+    ]
+  ),
+  'Components/Primitives/Stepper': doc(
+    'Shared stepper primitive for progress-style sequences and short multi-step flows.',
+    [
+      'How ordered steps, active progress, and completion state are presented.',
+      'The baseline layout for simple guided flows within Navet surfaces.',
+    ],
+    [
+      'Use this story when changing step progression styling or hierarchy.',
+      'Keep sequence indicators shared here instead of creating custom progress rows in each feature.',
+    ],
+    [
+      'Check that current, complete, and upcoming steps are easy to distinguish.',
+      'Check that the stepper remains readable in compact widths.',
+    ]
+  ),
+  'Components/Primitives/Surface Panel': doc(
+    'Shared surface-panel primitive for lightweight framed containers that are not full cards.',
+    [
+      'The panel treatment used for grouped supporting content and inline framed sections.',
+      'How panel surfaces relate to heavier card shells and dialog surfaces.',
+    ],
+    [
+      'Use this story when changing supporting container surfaces or internal framing.',
+      'Prefer this shared panel over ad-hoc bordered boxes in feature code.',
+    ],
+    [
+      'Check border, padding, and contrast across themes.',
+      'Check that the panel stays visually lighter than a full card shell.',
+    ]
+  ),
+  'Cards/Theme/Accent Card Shell': doc(
+    'Accent-aware shell-token reference for cards that need stronger theme-color emphasis without leaving the shared surface family.',
+    [
+      'How accent tinting, borders, and glow layers are applied to card shells.',
+      'The shared accent treatment used instead of feature-local gradient experiments.',
+    ],
+    [
+      'Use this story when changing accent shell emphasis or card tint behavior.',
+      'Keep accent-aware shell logic shared here so neighboring cards stay in the same material family.',
+    ],
+    [
+      'Check that accent emphasis remains readable across all themes.',
+      'Check that tinted shells still feel like Navet cards rather than separate visual systems.',
+    ]
+  ),
+  'Cards/Theme/Card Shell Surface': doc(
+    'Shared card-shell surface tokens for the baseline material treatment of dashboard cards.',
+    [
+      'How card backgrounds, borders, and overlays are resolved for each theme.',
+      'The base shell surface before domain-specific state or accent layers are added.',
+    ],
+    [
+      'Use this story when changing core card-surface recipes.',
+      'Keep shell-surface decisions shared here so card families stay visually aligned.',
+    ],
+    [
+      'Check contrast, border clarity, and material balance across themes.',
+      'Check that adjacent cards still feel like part of one coherent surface system.',
+    ]
+  ),
+  'Cards/Theme/Card State Surface': doc(
+    'State-aware card-surface token reference for semantic emphasis such as active, warning, or unavailable card states.',
+    [
+      'How semantic state layers modify the shared card surface without changing the overall material family.',
+      'The shared treatment for state communication across different card domains.',
+    ],
+    [
+      'Use this story when changing card-state emphasis or semantic surface layering.',
+      'Keep state surfaces shared here instead of introducing feature-local warning or active treatments.',
+    ],
+    [
+      'Check that state emphasis remains obvious without overwhelming content.',
+      'Check that semantic states stay readable in both dark and light themes.',
+    ]
+  ),
+  'Cards/Theme/Entity Icon Pill Styles': doc(
+    'Reference story for the shared icon-pill styling used in entity-card headers and compact status chips.',
+    [
+      'How icon pills balance shape, tint, and active-state contrast.',
+      'The shared visual treatment for domain identity markers across cards.',
+    ],
+    [
+      'Use this story when changing icon-pill radius, tint, or active-state styling.',
+      'Keep icon-pill behavior shared here rather than letting each card domain invent its own badge treatment.',
+    ],
+    [
+      'Check icon readability and active-state distinction.',
+      'Check that pills stay balanced beside card titles and metrics.',
+    ]
+  ),
+  'Cards/Custom/UPS Monitor': doc(
+    'Custom dashboard UPS card for power-backup health, load, runtime, and outage status at a glance.',
+    [
+      'How UPS state is summarized as a maintenance-focused dashboard widget.',
+      'The balance between battery health, current status, and supporting electrical context.',
+    ],
+    [
+      'Use this story when changing UPS hierarchy, outage states, or maintenance-oriented metrics.',
+      'Keep UPS-specific presentation here instead of folding it into generic info-card behavior.',
+    ],
+    [
+      'Check that normal, on-battery, low-battery, and unavailable states are unmistakable.',
+      'Check that runtime and load metrics stay readable without crowding the card.',
+    ]
+  ),
+  'Cards/Entity/Helper': doc(
+    'Entity card for Home Assistant helper entities using the shared lightweight switch-style interaction model.',
+    [
+      'How helpers such as input booleans map into the dashboard card system.',
+      'The balance between generic helper behavior and clear card identity.',
+    ],
+    [
+      'Use this story when changing helper-card wording, hierarchy, or switch-style behavior.',
+      'Keep helper treatment aligned with simple switch interactions while preserving helper identity.',
+    ],
+    [
+      'Check that helper state is obvious at a glance.',
+      'Check that the card stays lightweight and does not overcomplicate simple toggles.',
+    ]
+  ),
+  'Cards/Entity/Summary Bar': doc(
+    'Dashboard summary strip for high-priority sections such as energy, climate, security, lighting, media, and routines.',
+    [
+      'How important dashboard areas are condensed into a horizontal summary surface.',
+      'The compact chip-like treatment used above the main dashboard content.',
+    ],
+    [
+      'Use this story when changing section-summary labels, density, or navigation affordances.',
+      'Keep summary-strip behavior shared here instead of recreating section overviews in each page.',
+    ],
+    [
+      'Check that each section remains easy to scan and tap.',
+      'Check that long labels and alert states stay readable without breaking the strip rhythm.',
     ]
   ),
   // Energy charts
@@ -1927,6 +2271,13 @@ const ADDITIONAL_STORY_DOCS: Record<string, string> = {
   ),
 };
 
+const STORY_DOC_ALIASES: Record<string, string> = {
+  'App Shell/Header/Section Customize Button': 'App Shell/Section Customize Button',
+  'App Shell/Header/Section Customize Shell': 'App Shell/Section Customize Shell',
+  'App Shell/Header/Notification Panel': 'App Shell/Notifications/Panel',
+};
+
 export function getStoryDocsDescription(title: string) {
-  return STORY_DOCS[title] ?? ADDITIONAL_STORY_DOCS[title] ?? '';
+  const resolvedTitle = STORY_DOC_ALIASES[title] ?? title;
+  return STORY_DOCS[resolvedTitle] ?? ADDITIONAL_STORY_DOCS[resolvedTitle] ?? '';
 }

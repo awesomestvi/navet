@@ -465,6 +465,7 @@ function StatusBanner({
   const { accentColor } = useTheme();
   const { t } = useI18n();
   const isMobileViewport = useMediaQuery('(max-width: 767px)');
+  const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
   const badges = !isMobileViewport ? (
     <div className="flex min-h-10 items-center justify-end gap-2">
       {isEditMode && onAddEntity ? (
@@ -483,7 +484,7 @@ function StatusBanner({
     </div>
   ) : null;
 
-  return (
+  return kioskMode ? null : (
     <DashboardHeroSection
       accentColor={accentColor}
       surface={surface}

@@ -117,6 +117,32 @@ describe('SecurityPanelCard', () => {
     expect(screen.queryByLabelText('Entered code')).not.toBeInTheDocument();
   });
 
+  it('opens the numeric code dialog when Home Assistant requires a code but omits code_format', async () => {
+    renderWithProviders(
+      <SecurityPanelCard
+        alarms={[
+          {
+            ...singleAlarm,
+            codeFormat: 'none',
+            requiresCode: true,
+          },
+        ]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Arm Away' }));
+
+    expect(screen.getByRole('heading', { name: 'Arm Away code' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '1' }));
+    fireEvent.click(screen.getByRole('button', { name: '2' }));
+    fireEvent.click(screen.getByRole('button', { name: '3' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm Arm Away' }));
+
+    await waitFor(() =>
+      expect(armAwayMock).toHaveBeenCalledWith('home_assistant:alarm_control_panel.home', '123')
+    );
+  });
+
   it('clears text code input after a failed action', async () => {
     armHomeMock.mockRejectedValue(new Error('Invalid code'));
 

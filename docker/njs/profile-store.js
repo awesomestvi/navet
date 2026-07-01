@@ -2,6 +2,8 @@ import fs from 'fs';
 
 const MAX_PROFILE_BYTES = 1024 * 1024;
 const PROFILE_PATH = '/data/navet-dashboard-profile.json';
+const PROFILE_GENERATION_PATH = '/data/navet-dashboard-profile-generation.txt';
+const PROFILE_GENERATION_HEADER = 'X-Navet-Profile-Generation';
 let fsModule = fs;
 
 function setProfileStoreFsForTests(mockFs) {
@@ -21,6 +23,37 @@ function sendJson(r, statusCode, payload) {
 function sendNoContent(r) {
   r.headersOut['Cache-Control'] = 'no-store';
   r.return(204);
+}
+
+function createProfileGeneration() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function applyProfileGenerationHeader(r, generation) {
+  r.headersOut[PROFILE_GENERATION_HEADER] = generation;
+}
+
+function readOrCreateProfileGeneration() {
+  try {
+    const generation = fsModule.readFileSync(PROFILE_GENERATION_PATH, 'utf8').trim();
+    if (generation) {
+      return generation;
+    }
+  } catch (error) {
+    if (!error || error.code !== 'ENOENT') {
+      throw error;
+    }
+  }
+
+  const generation = createProfileGeneration();
+  fsModule.writeFileSync(PROFILE_GENERATION_PATH, generation, 'utf8');
+  return generation;
+}
+
+function rotateProfileGeneration() {
+  const generation = createProfileGeneration();
+  fsModule.writeFileSync(PROFILE_GENERATION_PATH, generation, 'utf8');
+  return generation;
 }
 
 function buildProfileMetadata(content, stat) {
@@ -59,6 +92,8 @@ function isProfileFresh(r, metadata) {
 
 function readProfile(r) {
   try {
+    const generation = readOrCreateProfileGeneration();
+    applyProfileGenerationHeader(r, generation);
     const stat = fsModule.statSync(PROFILE_PATH);
     if (stat.size > MAX_PROFILE_BYTES) {
       sendJson(r, 413, { error: 'Dashboard profile is too large' });
@@ -82,6 +117,7 @@ function readProfile(r) {
     r.return(200, content);
   } catch (error) {
     if (error && error.code === 'ENOENT') {
+      applyProfileGenerationHeader(r, readOrCreateProfileGeneration());
       sendNoContent(r);
       return;
     }
@@ -92,6 +128,8 @@ function readProfile(r) {
 
 function writeProfile(r) {
   try {
+    const generation = readOrCreateProfileGeneration();
+    applyProfileGenerationHeader(r, generation);
     const body = r.requestText || '';
     if (!body) {
       sendJson(r, 400, { error: 'Missing dashboard profile body' });
@@ -120,6 +158,25 @@ function writeProfile(r) {
   }
 }
 
+function deleteProfile(r) {
+  try {
+    const generation = rotateProfileGeneration();
+    applyProfileGenerationHeader(r, generation);
+
+    try {
+      fsModule.unlinkSync(PROFILE_PATH);
+    } catch (error) {
+      if (!error || error.code !== 'ENOENT') {
+        throw error;
+      }
+    }
+
+    sendNoContent(r);
+  } catch (error) {
+    sendJson(r, 500, { error: 'Unable to reset dashboard profile' });
+  }
+}
+
 function handle(r) {
   if (r.method === 'GET') {
     readProfile(r);
@@ -131,14 +188,23 @@ function handle(r) {
     return;
   }
 
-  r.headersOut.Allow = 'GET, PUT';
+  if (r.method === 'DELETE') {
+    deleteProfile(r);
+    return;
+  }
+
+  r.headersOut.Allow = 'GET, PUT, DELETE';
   sendJson(r, 405, { error: 'Method not allowed' });
 }
 
 export default {
   buildProfileMetadata,
+  createProfileGeneration,
+  deleteProfile,
   isProfileFresh,
   readProfile,
+  readOrCreateProfileGeneration,
+  rotateProfileGeneration,
   writeProfile,
   handle,
   setProfileStoreFsForTests,

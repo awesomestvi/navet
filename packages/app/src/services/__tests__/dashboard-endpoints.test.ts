@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { loadDashboardProfile, saveDashboardProfile } from '../dashboard-profile.service';
+import {
+  deleteDashboardProfile,
+  loadDashboardProfile,
+  saveDashboardProfile,
+} from '../dashboard-profile.service';
 
 function installIngressBase() {
   const base = document.createElement('base');
@@ -53,6 +57,7 @@ describe('dashboard add-on endpoints', () => {
       notModified: true,
       etag: '"etag-2"',
       lastModified: 'Tue, 02 Jan 2024 12:00:00 GMT',
+      generation: null,
     });
 
     expect(fetchMock).toHaveBeenCalledWith(`${window.location.origin}/__navet_profile__/default`, {
@@ -98,6 +103,7 @@ describe('dashboard add-on endpoints', () => {
       permanentFailure: true,
       etag: '"etag-3"',
       lastModified: null,
+      generation: null,
     });
 
     expect(fetchMock).toHaveBeenCalledWith(`${window.location.origin}/__navet_profile__/default`, {
@@ -139,6 +145,22 @@ describe('dashboard add-on endpoints', () => {
       permanentFailure: true,
       etag: null,
       lastModified: null,
+      generation: null,
+    });
+  });
+
+  it('returns the server generation when resetting the shared profile', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(null, {
+        status: 204,
+        headers: { 'X-Navet-Profile-Generation': 'generation-2' },
+      })
+    );
+
+    await expect(deleteDashboardProfile()).resolves.toEqual({
+      reset: true,
+      permanentFailure: false,
+      generation: 'generation-2',
     });
   });
 });

@@ -33,6 +33,7 @@ export interface SheetSurfaceHeaderProps {
   description?: string;
   eyebrow?: string;
   titleAccessory?: ReactNode;
+  endAccessory?: ReactNode;
 }
 
 export function SheetSurfaceHeader({
@@ -43,6 +44,7 @@ export function SheetSurfaceHeader({
   description,
   eyebrow,
   titleAccessory,
+  endAccessory,
 }: SheetSurfaceHeaderProps) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
@@ -65,18 +67,21 @@ export function SheetSurfaceHeader({
           </p>
         ) : null}
       </div>
-      <button
-        type="button"
-        aria-label={closeLabel}
-        onClick={onClose}
-        className={cn(
-          'flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] transition-colors',
-          surface.subtleBg,
-          surface.hoverBg
-        )}
-      >
-        <X className={`h-5 w-5 ${surface.textSecondary}`} />
-      </button>
+      <div className="flex shrink-0 items-center gap-2">
+        {endAccessory ? <div className="shrink-0">{endAccessory}</div> : null}
+        <button
+          type="button"
+          aria-label={closeLabel}
+          onClick={onClose}
+          className={cn(
+            'flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] transition-colors',
+            surface.subtleBg,
+            surface.hoverBg
+          )}
+        >
+          <X className={`h-5 w-5 ${surface.textSecondary}`} />
+        </button>
+      </div>
     </div>
   );
 }

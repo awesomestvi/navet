@@ -3,6 +3,7 @@ import type { DashboardConfigPayload } from '@navet/app/utils/dashboard-config';
 import { resolveAddonLocalEndpointUrl } from '@navet/app/utils/home-assistant-connection-target';
 
 const DASHBOARD_PROFILE_ENDPOINT = '/__navet_profile__/default';
+const PROFILE_GENERATION_HEADER = 'X-Navet-Profile-Generation';
 
 export interface DashboardProfileLoadOptions {
   etag?: string;
@@ -15,6 +16,7 @@ export interface DashboardProfileLoadResult {
   notModified: boolean;
   etag: string | null;
   lastModified: string | null;
+  generation: string | null;
 }
 
 export interface DashboardProfileSaveResult {
@@ -22,6 +24,13 @@ export interface DashboardProfileSaveResult {
   permanentFailure: boolean;
   etag: string | null;
   lastModified: string | null;
+  generation: string | null;
+}
+
+export interface DashboardProfileResetResult {
+  reset: boolean;
+  permanentFailure: boolean;
+  generation: string | null;
 }
 
 function isPermanentProfileSaveFailure(status: number): boolean {
@@ -32,6 +41,7 @@ function readResponseMetadata(response: Response) {
   return {
     etag: response.headers.get('ETag'),
     lastModified: response.headers.get('Last-Modified'),
+    generation: response.headers.get(PROFILE_GENERATION_HEADER),
   };
 }
 
@@ -45,6 +55,7 @@ export async function loadDashboardProfile(
       notModified: false,
       etag: null,
       lastModified: null,
+      generation: null,
     };
   }
 
@@ -99,6 +110,7 @@ export async function loadDashboardProfile(
       notModified: false,
       etag: null,
       lastModified: null,
+      generation: null,
     };
   }
 }
@@ -113,6 +125,7 @@ export async function saveDashboardProfile(
       permanentFailure: true,
       etag: null,
       lastModified: null,
+      generation: null,
     };
   }
 
@@ -141,6 +154,39 @@ export async function saveDashboardProfile(
       permanentFailure: false,
       etag: null,
       lastModified: null,
+      generation: null,
+    };
+  }
+}
+
+export async function deleteDashboardProfile(): Promise<DashboardProfileResetResult> {
+  if (isHomeAssistantPanelMode()) {
+    return {
+      reset: false,
+      permanentFailure: true,
+      generation: null,
+    };
+  }
+
+  try {
+    const response = await fetch(resolveAddonLocalEndpointUrl(DASHBOARD_PROFILE_ENDPOINT), {
+      method: 'DELETE',
+      cache: 'no-store',
+      credentials: 'same-origin',
+    });
+    const metadata = readResponseMetadata(response);
+
+    return {
+      reset: response.ok,
+      permanentFailure: isPermanentProfileSaveFailure(response.status),
+      generation: metadata.generation,
+    };
+  } catch (error) {
+    console.warn('[DashboardProfile] Unable to reset shared dashboard profile:', error);
+    return {
+      reset: false,
+      permanentFailure: false,
+      generation: null,
     };
   }
 }

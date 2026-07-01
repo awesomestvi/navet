@@ -1,6 +1,8 @@
 import { AppReleaseBadge } from '@navet/app/components/shared/app-release-badge';
 import { NotificationPanel } from '@navet/app/features/notifications';
 import { useMediaQuery, useTheme } from '@navet/app/hooks';
+import { useSettingsStore } from '@navet/app/stores';
+import { settingsSelectors } from '@navet/app/stores/selectors';
 import { Bell, CalendarDays, Check, Clock3, Edit3, Menu } from 'lucide-react';
 import { memo, useMemo } from 'react';
 import { HeaderDesktopActions } from './header-actions';
@@ -25,6 +27,7 @@ function HeaderView({
   mobileEditActions,
 }: Omit<HeaderProps, 'controller'> & { controller: HeaderController }) {
   const { theme } = useTheme();
+  const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
   const isMobileViewport = useMediaQuery('(max-width: 767px)');
   const mobileAvailability = useMemo(
     () => getMobileHeaderActionAvailability(mobileEditActions),
@@ -126,7 +129,7 @@ function HeaderView({
             </div>
           ) : null}
         </div>
-        {mobileAvailability ? (
+        {mobileAvailability && !kioskMode ? (
           <button
             type="button"
             onClick={mobileAvailability.onToggleEditMode}
