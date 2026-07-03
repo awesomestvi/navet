@@ -55,6 +55,13 @@ Prefer these surfaces for:
 - motion and focus treatment
 - semantic surface decisions
 
+Typography rules:
+
+- prefer sentence case and natural capitalization for visible UI text
+- avoid all-uppercase labels, buttons, headings, and metadata as a default style
+- use weight, color, spacing, and layout hierarchy for emphasis before `uppercase` or wide letter spacing
+- reserve all-uppercase only for established external identifiers, short technical codes, or rare cases where the copy is already conventionally uppercase
+
 Target ownership:
 
 - long-term provider-neutral token and shared UI ownership belongs under `@navet/ui`

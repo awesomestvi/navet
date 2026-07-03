@@ -89,6 +89,21 @@ function setRoutineEntities() {
   automationNight.entity_id = 'automation.night';
   automationNight.state = 'off';
 
+  const automationLaundry = automationEntityFactory({
+    friendly_name: 'Laundry done',
+    description: 'Notifies the kitchen display when the washer finishes.',
+    last_triggered: new Date().toISOString(),
+    next_run: '2026-05-04T09:15:00.000Z',
+  });
+  automationLaundry.entity_id = 'automation.laundry';
+
+  const automationUnavailable = automationEntityFactory({
+    friendly_name: 'Garden lights',
+    description: 'Turns on garden lights after dusk.',
+  });
+  automationUnavailable.entity_id = 'automation.garden_lights';
+  automationUnavailable.state = 'unavailable';
+
   const movieScene = sceneEntityFactory({
     friendly_name: 'Movie time',
   });
@@ -126,6 +141,8 @@ function setRoutineEntities() {
     entities: {
       [automationCoffee.entity_id]: automationCoffee,
       [automationNight.entity_id]: automationNight,
+      [automationLaundry.entity_id]: automationLaundry,
+      [automationUnavailable.entity_id]: automationUnavailable,
       [movieScene.entity_id]: movieScene,
       [goodnightScript.entity_id]: goodnightScript,
       [sunEntity.entity_id]: sunEntity,
@@ -166,16 +183,34 @@ describe('TasksSection', () => {
 
     renderWithProviders(<TasksSection />);
 
-    expect(screen.getAllByRole('heading', { name: 'Automations' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('heading', { name: 'Tasks' }).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Automations').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Brew coffee').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Laundry done').length).toBeGreaterThan(0);
     expect(screen.getByText('Night mode')).toBeInTheDocument();
-    expect(screen.getByText('Kitchen')).toBeInTheDocument();
-    expect(screen.getByText('Enabled')).toBeInTheDocument();
-    expect(screen.getByText('Disabled')).toBeInTheDocument();
+    expect(screen.getByText('Garden lights')).toBeInTheDocument();
+    expect(screen.getByText((text) => text.startsWith('Kitchen'))).toBeInTheDocument();
+    expect(screen.getAllByText('Needs attention').length).toBeGreaterThan(0);
+    expect(
+      screen.getByText('This automation is unavailable from the provider.')
+    ).toBeInTheDocument();
     expect(screen.getAllByText('Scripts').length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: /Scripts/ }));
     expect(screen.getByText('Movie time')).toBeInTheDocument();
     expect(screen.getAllByText('Good night').length).toBeGreaterThan(0);
+  });
+
+  it('renders automation summary counts', () => {
+    setRoutineEntities();
+
+    renderWithProviders(<TasksSection />);
+
+    expect(screen.getByLabelText('Automation summary')).toBeInTheDocument();
+    expect(screen.getByText('Total')).toBeInTheDocument();
+    expect(screen.getAllByText('Active').length).toBeGreaterThan(0);
+    expect(screen.getByText('Disabled')).toBeInTheDocument();
+    expect(screen.getByText('Recent')).toBeInTheDocument();
+    expect(screen.getAllByText('Needs attention').length).toBeGreaterThan(0);
   });
 
   it('hides habit insights in production', () => {
@@ -195,20 +230,35 @@ describe('TasksSection', () => {
 
     expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Active automations' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Active' }));
 
     expect(screen.getByRole('button', { name: 'Run Brew coffee' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Run Laundry done' })).toBeInTheDocument();
     expect(screen.queryByText('Night mode')).not.toBeInTheDocument();
+    expect(screen.queryByText('Garden lights')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Disabled automations' }));
 
     expect(screen.queryByRole('button', { name: 'Run Brew coffee' })).not.toBeInTheDocument();
     expect(screen.getByText('Night mode')).toBeInTheDocument();
+    expect(screen.queryByText('Garden lights')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Recently triggered' }));
+
+    expect(screen.queryByRole('button', { name: 'Run Brew coffee' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Run Laundry done' })).toBeInTheDocument();
+    expect(screen.queryByText('Night mode')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Needs attention' }));
+
+    expect(screen.queryByRole('button', { name: 'Run Laundry done' })).not.toBeInTheDocument();
+    expect(screen.getByText('Garden lights')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'All' }));
 
     expect(screen.getByRole('button', { name: 'Run Brew coffee' })).toBeInTheDocument();
     expect(screen.getByText('Night mode')).toBeInTheDocument();
+    expect(screen.getByText('Garden lights')).toBeInTheDocument();
   });
 
   it('shows a reconnect warning while preserving runnable Home Assistant routines', () => {
@@ -221,6 +271,7 @@ describe('TasksSection', () => {
     renderWithProviders(<TasksSection />);
 
     expect(screen.getByText('Some routine details are unavailable')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Scripts/ }));
     expect(screen.getByRole('button', { name: 'Run Movie time' })).toBeInTheDocument();
   });
 
@@ -230,8 +281,10 @@ describe('TasksSection', () => {
     renderWithProviders(<TasksSection />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Run Brew coffee' }));
+    fireEvent.click(screen.getByRole('button', { name: /Scripts/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Run Movie time' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Good night' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Run Good night' }));
+    fireEvent.click(screen.getByRole('button', { name: /Automations/ }));
     fireEvent.click(screen.getByRole('switch', { name: 'Toggle Brew coffee' }));
     fireEvent.click(screen.getByRole('switch', { name: 'Toggle Night mode' }));
 
@@ -289,5 +342,28 @@ describe('TasksSection', () => {
       expect(screen.getByText('Turn on Kitchen light and Counter light')).toBeInTheDocument();
       expect(screen.getByText('automation.coffee')).toBeInTheDocument();
     });
+  });
+
+  it('does not keep generated detail summaries on the collapsed automation card', async () => {
+    setRoutineEntities();
+
+    renderWithProviders(<TasksSection />);
+
+    const nightModeDetailsButton = screen.getAllByRole('button', { name: 'View' })[1];
+    fireEvent.click(nightModeDetailsButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('The time reaches 07:00:00')).toBeInTheDocument();
+    });
+
+    expect(
+      screen.getByText('Turn on Kitchen light and Counter light when the time reaches 07:00:00')
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hide' }));
+
+    expect(
+      screen.queryByText('Turn on Kitchen light and Counter light when the time reaches 07:00:00')
+    ).not.toBeInTheDocument();
   });
 });

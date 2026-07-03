@@ -27,6 +27,7 @@ describe('mapAutomationTasks', () => {
         id: automationEntityFixtures.normal.entity_id,
         name: 'Welcome Home',
         enabled: true,
+        status: 'active',
       }),
     ]);
   });
@@ -51,6 +52,46 @@ describe('mapAutomationTasks', () => {
         id: automationEntityFixtures.normal.entity_id,
         room: 'Hallway',
         lastTriggered: '2026-05-04T07:15:00.000Z',
+        lastTriggeredDate: new Date('2026-05-04T07:15:00.000Z'),
+      }),
+    ]);
+  });
+
+  it('derives recent, next run, and attention metadata without provider-specific fields', () => {
+    const recent = automationEntityFactory({
+      friendly_name: 'Recent routine',
+      last_triggered: '2026-05-04T07:15:00.000Z',
+      next_run: '2026-05-04T09:15:00.000Z',
+    });
+    recent.entity_id = 'automation.recent';
+    const unavailable = automationEntityFactory({ friendly_name: 'Unavailable routine' });
+    unavailable.entity_id = 'automation.unavailable';
+    unavailable.state = 'unavailable';
+
+    const tasks = mapAutomationTasks({
+      entities: {
+        [recent.entity_id]: makeTaskEntity(recent),
+        [unavailable.entity_id]: makeTaskEntity(unavailable),
+      },
+      rooms: [],
+      devices: [],
+      entityReferences: [],
+      locale: 'en-US',
+      now: new Date('2026-05-04T08:15:00.000Z'),
+    });
+
+    expect(tasks).toEqual([
+      expect.objectContaining({
+        id: 'automation.recent',
+        status: 'active',
+        isRecentlyTriggered: true,
+        nextRunLabel: '2026-05-04T09:15:00.000Z',
+      }),
+      expect.objectContaining({
+        id: 'automation.unavailable',
+        status: 'attention',
+        needsAttention: true,
+        attentionReason: 'unavailable',
       }),
     ]);
   });
@@ -109,9 +150,12 @@ describe('mapAutomationTasks', () => {
         id: entity.entity_id,
         name: entity.entity_id,
         lastTriggered: undefined,
+        lastTriggeredDate: undefined,
+        isRecentlyTriggered: false,
         description: undefined,
         mode: undefined,
         currentRuns: undefined,
+        nextRunLabel: undefined,
       }),
     ]);
   });
@@ -139,7 +183,10 @@ describe('mapAutomationTasks', () => {
     expect(tasks[0]).toMatchObject({
       id: 'automation.arrival',
       enabled: false,
+      status: 'attention',
       state: 'unavailable',
+      needsAttention: true,
+      attentionReason: 'unavailable',
       description: 'Turns on hallway lights after sunset.',
       mode: 'single',
       currentRuns: 1,

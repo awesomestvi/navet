@@ -4,10 +4,16 @@ export interface AutomationTask {
   room: string;
   enabled: boolean;
   state: string;
+  status: 'active' | 'disabled' | 'attention';
   lastTriggered?: string;
+  lastTriggeredDate?: Date;
+  isRecentlyTriggered: boolean;
+  needsAttention: boolean;
+  attentionReason?: 'unavailable' | 'unknown' | 'error';
   description?: string;
   mode?: string;
   currentRuns?: number;
+  nextRunLabel?: string;
 }
 
 export interface AutomationRoutine extends AutomationTask {

@@ -16,11 +16,19 @@ export function useAutomationDashboardController() {
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const enabledAutomations = useMemo(
-    () => automations.filter((automation) => automation.enabled),
+    () => automations.filter((automation) => automation.status === 'active'),
     [automations]
   );
   const disabledAutomations = useMemo(
-    () => automations.filter((automation) => !automation.enabled),
+    () => automations.filter((automation) => automation.status === 'disabled'),
+    [automations]
+  );
+  const recentlyTriggeredAutomations = useMemo(
+    () => automations.filter((automation) => automation.isRecentlyTriggered),
+    [automations]
+  );
+  const attentionAutomations = useMemo(
+    () => automations.filter((automation) => automation.needsAttention),
     [automations]
   );
   const latestAutomation = useMemo(
@@ -38,6 +46,17 @@ export function useAutomationDashboardController() {
         })[0],
     [automations]
   );
+  const automationRooms = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          automations
+            .map((automation) => automation.room)
+            .filter((room) => room && room !== 'Unassigned')
+        )
+      ).sort((left, right) => left.localeCompare(right)),
+    [automations]
+  );
   const shouldReduceMotion =
     resolveEffectsQuality(effectsQuality, disableAnimations || lowPowerMode) === 'low';
 
@@ -46,7 +65,17 @@ export function useAutomationDashboardController() {
     quickActions,
     enabledAutomations,
     disabledAutomations,
+    recentlyTriggeredAutomations,
+    attentionAutomations,
     latestAutomation,
+    automationRooms,
+    automationSummary: {
+      total: automations.length,
+      active: enabledAutomations.length,
+      disabled: disabledAutomations.length,
+      recent: recentlyTriggeredAutomations.length,
+      attention: attentionAutomations.length,
+    },
     connected,
     isLoading: !entitiesHydrated,
     hasError: entitiesHydrated && !connected,

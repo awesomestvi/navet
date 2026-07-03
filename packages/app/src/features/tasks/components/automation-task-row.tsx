@@ -1,10 +1,20 @@
 import { dispatchEntityCommand } from '@navet/app/commands';
-import { Badge, Button, IconButton, Panel, Switch, Tag } from '@navet/app/components/primitives';
+import { Button, IconButton, Panel, Switch, Tag } from '@navet/app/components/primitives';
+import { EntityCardHeader } from '@navet/app/components/primitives/entity-card-header';
+import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useAccentColor, useI18n, useServiceActionHandler, useThemeMode } from '@navet/app/hooks';
 import type { PlatformTaskEntityMap } from '@navet/app/platform/provider-feature-models';
 import { integrationTaskService } from '@navet/app/services/integration-task.service';
-import { ChevronDown, ChevronUp, Play } from 'lucide-react';
+import {
+  AlertTriangle,
+  CalendarClock,
+  ChevronDown,
+  ChevronUp,
+  Play,
+  Power,
+  PowerOff,
+} from 'lucide-react';
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import type { AutomationRoutine } from '../types';
 import { buildAutomationConfigSections } from '../utils/automation-config-details';
@@ -35,7 +45,7 @@ function DetailSection({
 }: DetailSectionProps) {
   return (
     <Panel muted padded={false} className="grid gap-3 p-4">
-      <div className="text-[11px] font-semibold uppercase" style={{ color: accentColor }}>
+      <div className="text-xs font-semibold leading-4" style={{ color: accentColor }}>
         {title}
       </div>
       {loading ? (
@@ -85,6 +95,18 @@ function collectEntityIds(value: unknown, entityIds = new Set<string>()): Set<st
   return entityIds;
 }
 
+function parseTimeLabel(
+  value: string,
+  formatDateTime: ReturnType<typeof useI18n>['formatDateTime']
+) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return formatDateTime(parsed, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
 export function AutomationTaskRow({ automation, shouldReduceMotion }: AutomationTaskRowProps) {
   const { formatDateTime, t } = useI18n();
   const theme = useThemeMode();
@@ -121,21 +143,6 @@ export function AutomationTaskRow({ automation, shouldReduceMotion }: Automation
 
     return entities;
   }, [detailEntityIds, taskRuntime.entities]);
-
-  const lastTriggeredLabel = useMemo(() => {
-    if (!automation.lastTriggered) {
-      return t('tasks.automation.noRecentRun');
-    }
-
-    const parsed = new Date(automation.lastTriggered);
-    if (Number.isNaN(parsed.getTime())) {
-      return t('tasks.automation.noRecentRun');
-    }
-
-    return t('tasks.automation.lastTriggered', {
-      time: formatDateTime(parsed, { dateStyle: 'medium', timeStyle: 'short' }),
-    });
-  }, [automation.lastTriggered, formatDateTime, t]);
 
   const configSections = useMemo(
     () =>
@@ -207,35 +214,125 @@ export function AutomationTaskRow({ automation, shouldReduceMotion }: Automation
       return nextOpen;
     });
   };
+  const attentionLabel =
+    automation.attentionReason === 'unavailable'
+      ? t('tasks.automation.attention.unavailable')
+      : automation.attentionReason === 'unknown'
+        ? t('tasks.automation.attention.unknown')
+        : t('tasks.automation.attention.error');
+  const statusIcon = automation.needsAttention
+    ? AlertTriangle
+    : automation.enabled
+      ? Power
+      : PowerOff;
+  const stateBorderColor = automation.needsAttention
+    ? 'rgba(245, 158, 11, 0.54)'
+    : automation.enabled
+      ? `${accentColor}26`
+      : undefined;
+  const nextRunLabel = automation.nextRunLabel
+    ? parseTimeLabel(automation.nextRunLabel, formatDateTime)
+    : undefined;
+  const lastRunLabel = automation.lastTriggeredDate
+    ? formatDateTime(automation.lastTriggeredDate, { dateStyle: 'medium', timeStyle: 'short' })
+    : undefined;
+  const lastRunHeaderLabel = lastRunLabel
+    ? t('tasks.automation.lastTriggered', { time: lastRunLabel })
+    : undefined;
+  const cardDescription = isDetailsOpen ? configSections.overview : automation.description;
+  const hasDescription = Boolean(cardDescription);
+  const showRoom = automation.room !== 'Unassigned';
+  const headerSubtitle = [showRoom ? automation.room : undefined, lastRunHeaderLabel]
+    .filter(Boolean)
+    .join(' - ');
+  const currentRuns = automation.currentRuns;
+  const showCurrentRuns = currentRuns !== undefined && currentRuns > 0;
+  const hasMetadata = Boolean(nextRunLabel) || showCurrentRuns;
+  const hasBodyContent = hasDescription || automation.needsAttention || hasMetadata;
 
   return (
     <Panel
       as="article"
       muted
       padded={false}
-      className={`grid gap-4 p-4 md:p-5 ${shouldReduceMotion ? '' : 'transition-shadow duration-200'}`}
+      className={`grid gap-4 p-4 md:p-5 ${shouldReduceMotion ? '' : 'transition-shadow duration-200'} ${
+        automation.status === 'disabled' ? 'md:brightness-[0.96]' : ''
+      }`}
+      style={{
+        borderColor: stateBorderColor,
+        boxShadow: automation.needsAttention
+          ? '0 18px 50px -40px rgba(245, 158, 11, 0.8)'
+          : undefined,
+      }}
     >
-      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className={`truncate text-base font-semibold ${surface.textPrimary}`}>
-              {automation.name}
-            </h3>
-            <Badge tone={automation.enabled ? 'accent' : 'neutral'}>
-              {automation.enabled ? t('tasks.automation.enabled') : t('tasks.automation.disabled')}
-            </Badge>
-          </div>
-          <p className={`mt-2 line-clamp-2 text-sm leading-6 ${surface.textSecondary}`}>
-            {configSections.overview ?? t('tasks.automation.details.noDescription')}
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Tag>{automation.room}</Tag>
-            <Tag>{lastTriggeredLabel}</Tag>
-            {automation.mode ? <Tag>{automation.mode}</Tag> : null}
-          </div>
+          <EntityCardHeader
+            title={automation.name}
+            subtitle={headerSubtitle}
+            size="medium"
+            layout="eyebrow-first"
+            leading={
+              <EntityCardHeaderIcon
+                IconComponent={statusIcon}
+                isActive={automation.enabled || automation.needsAttention}
+                size="medium"
+                tone={
+                  automation.needsAttention ? 'amber' : automation.enabled ? 'primary' : 'neutral'
+                }
+                baseColor={automation.needsAttention ? '#f59e0b' : accentColor}
+              />
+            }
+            trailing={
+              automation.needsAttention ? (
+                <Tag tone="warning" size="small" className="gap-1">
+                  <AlertTriangle className="h-3 w-3" aria-hidden="true" />
+                  {t('tasks.automation.needsAttention')}
+                </Tag>
+              ) : null
+            }
+            titleClassName="text-base leading-6"
+            subtitleClassName="text-xs"
+            marginBottomClassName={hasBodyContent ? 'mb-3' : 'mb-0'}
+          />
+
+          {hasDescription ? (
+            <p className={`line-clamp-2 text-sm leading-6 ${surface.textSecondary}`}>
+              {cardDescription}
+            </p>
+          ) : null}
+
+          {automation.needsAttention ? (
+            <div
+              className={`${hasDescription ? 'mt-3' : ''} rounded-2xl border px-3 py-2 text-sm leading-5`}
+              style={{
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                borderColor: 'rgba(245, 158, 11, 0.26)',
+                color: theme === 'light' ? '#92400e' : '#fbbf24',
+              }}
+            >
+              {attentionLabel}
+            </div>
+          ) : null}
+
+          {hasMetadata ? (
+            <div
+              className={`${hasDescription || automation.needsAttention ? 'mt-3' : ''} flex flex-wrap gap-x-4 gap-y-2 text-sm ${surface.textSecondary}`}
+            >
+              {nextRunLabel ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
+                  {t('tasks.automation.nextRun', { time: nextRunLabel })}
+                </span>
+              ) : null}
+              {showCurrentRuns ? (
+                <Tag tone="accent">{t('tasks.automation.currentRuns', { count: currentRuns })}</Tag>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
-        <div className="flex w-full flex-wrap items-center gap-2 md:w-auto md:justify-end">
+        <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
           <Switch
             checked={automation.enabled}
             disabled={isUpdatingEnabled}
@@ -305,7 +402,7 @@ export function AutomationTaskRow({ automation, shouldReduceMotion }: Automation
             accentColor={accentColor}
           />
           <Panel muted padded={false} className="grid gap-2 p-4">
-            <div className="text-[11px] font-semibold uppercase" style={{ color: accentColor }}>
+            <div className="text-xs font-semibold leading-4" style={{ color: accentColor }}>
               {t('tasks.automation.details.diagnostics')}
             </div>
             <dl className={`grid gap-2 text-sm ${surface.textSecondary}`}>

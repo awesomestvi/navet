@@ -1,10 +1,9 @@
 import { dispatchEntityCommand } from '@navet/app/commands';
-import { Button, Panel, Tag } from '@navet/app/components/primitives';
-import { getDashboardCardFootprint } from '@navet/app/components/shared/card-size-selector';
-import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { SwitchCard } from '@navet/app/features/lighting/components/switch-card';
+import { Button, Panel } from '@navet/app/components/primitives';
+import { EntityCardHeader } from '@navet/app/components/primitives/entity-card-header';
+import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { useI18n, useServiceActionHandler, useTheme } from '@navet/app/hooks';
-import { Clapperboard, Play } from 'lucide-react';
+import { Film, Play, ScrollText } from 'lucide-react';
 import { useState } from 'react';
 import type { QuickActionRoutine } from '../types';
 
@@ -18,43 +17,14 @@ interface QuickActionCardProps {
   shouldReduceMotion: boolean;
 }
 
-const smallScriptCardFootprint = getDashboardCardFootprint('small');
-
-function ScriptQuickActionCard({ action }: { action: QuickActionRoutine }) {
-  const { t } = useI18n();
-
-  return (
-    <div
-      style={{
-        height: `${smallScriptCardFootprint.heightPx}px`,
-        minHeight: `${smallScriptCardFootprint.heightPx}px`,
-      }}
-    >
-      <SwitchCard
-        id={action.id}
-        name={action.name}
-        size="small"
-        initialState={action.state === 'on'}
-        entityType={t('deviceType.script')}
-        serviceDomain="script"
-        serviceAction="turn_on"
-        isEditMode={false}
-      />
-    </div>
-  );
-}
-
 function QuickActionCard({ action, shouldReduceMotion }: QuickActionCardProps) {
   const { t } = useI18n();
-  const { theme, accentColor } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
+  const { accentColor } = useTheme();
   const runAction = useServiceActionHandler();
   const [isRunning, setIsRunning] = useState(false);
-  const Icon = Clapperboard;
-
-  if (action.type === 'script') {
-    return <ScriptQuickActionCard action={action} />;
-  }
+  const Icon = action.type === 'script' ? ScrollText : Film;
+  const typeLabel = action.type === 'script' ? t('deviceType.script') : t('deviceType.scene');
+  const showRoom = action.room !== 'Unassigned';
 
   const handleRun = () => {
     setIsRunning(true);
@@ -73,34 +43,43 @@ function QuickActionCard({ action, shouldReduceMotion }: QuickActionCardProps) {
       as="article"
       muted
       padded={false}
-      className={`grid min-h-[10rem] gap-4 p-4 ${
+      className={`grid gap-4 p-4 md:p-5 ${
         shouldReduceMotion ? '' : 'transition-shadow duration-200'
       }`}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div
-          className="rounded-2xl border p-2.5"
-          style={{ backgroundColor: `${accentColor}18`, borderColor: `${accentColor}38` }}
-        >
-          <Icon className="h-4 w-4" style={{ color: accentColor }} aria-hidden="true" />
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+        <EntityCardHeader
+          title={action.name}
+          subtitle={showRoom ? action.room : typeLabel}
+          size="medium"
+          layout="eyebrow-first"
+          leading={
+            <EntityCardHeaderIcon
+              IconComponent={Icon}
+              isActive={action.state === 'on'}
+              size="medium"
+              tone={action.state === 'on' ? 'primary' : 'neutral'}
+              baseColor={accentColor}
+            />
+          }
+          titleClassName="text-base leading-6"
+          subtitleClassName="text-xs"
+          marginBottomClassName="mb-0"
+        />
+        <div className="flex w-full items-center gap-2 lg:w-auto lg:justify-end">
+          <Button
+            variant={action.type === 'script' ? 'primary' : 'secondary'}
+            size="small"
+            leading={<Play className="h-4 w-4" aria-hidden="true" />}
+            loading={isRunning}
+            onClick={handleRun}
+            aria-label={t('tasks.quickActions.runRoutine', { name: action.name })}
+            className="min-w-24 flex-1 sm:flex-none"
+          >
+            {t('tasks.quickActions.run')}
+          </Button>
         </div>
-        <Tag tone="accent">{action.type}</Tag>
       </div>
-      <div className="min-w-0">
-        <h3 className={`truncate text-base font-semibold ${surface.textPrimary}`}>{action.name}</h3>
-        <p className={`mt-2 text-sm ${surface.textSecondary}`}>{action.room}</p>
-      </div>
-      <Button
-        variant="primary"
-        size="small"
-        leading={<Play className="h-4 w-4" aria-hidden="true" />}
-        loading={isRunning}
-        onClick={handleRun}
-        aria-label={t('tasks.quickActions.runRoutine', { name: action.name })}
-        className="mt-auto"
-      >
-        {t('tasks.quickActions.run')}
-      </Button>
     </Panel>
   );
 }
@@ -111,7 +90,7 @@ export function QuickActionGrid({ actions, shouldReduceMotion }: QuickActionGrid
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-3">
       {actions.map((action) => (
         <QuickActionCard key={action.id} action={action} shouldReduceMotion={shouldReduceMotion} />
       ))}
