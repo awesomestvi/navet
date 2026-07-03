@@ -174,6 +174,38 @@ describe('home status summary model', () => {
     );
   });
 
+  it('counts powered TVs as active in the media summary without counting idle speakers', () => {
+    const items = buildRoomStatusSummaryItems(
+      new Map(
+        [
+          device({
+            id: 'media_player.living_room_tv',
+            type: 'media',
+            room: 'Living Room',
+            deviceClass: 'tv',
+            state: 'idle',
+          }),
+          device({
+            id: 'media_player.living_room_speaker',
+            type: 'media',
+            room: 'Living Room',
+            deviceClass: 'speaker',
+            state: 'idle',
+          }),
+        ].map((entry) => [entry.id, entry])
+      ),
+      'Living Room'
+    );
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        id: 'media',
+        value: '1 Active',
+        targetSection: 'media',
+      }),
+    ]);
+  });
+
   it('does not count active-only security activity in the summary bar alert total', () => {
     const items = buildHomeStatusSummaryItems(
       new Map(
@@ -414,6 +446,40 @@ describe('home status summary model', () => {
     ]);
   });
 
+  it('does not use target-only thermostat setpoints in the climate summary range', () => {
+    const items = buildHomeStatusSummaryItems(
+      new Map(
+        [
+          device({
+            id: 'climate.living_room',
+            type: 'climate',
+            currentTemperature: 15,
+            hasCurrentTemperature: false,
+            temperature: 15,
+            temperatureUnit: 'celsius',
+            mode: 'heat',
+          }),
+          device({
+            id: 'sensor.living_room_temperature',
+            type: 'sensors',
+            deviceClass: 'temperature',
+            value: '20.1',
+            unit: '°C',
+          }),
+        ].map((entry) => [entry.id, entry])
+      ),
+      { temperatureUnit: 'fahrenheit' }
+    );
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        id: 'climate',
+        value: '68°',
+        targetSection: 'climate',
+      }),
+    ]);
+  });
+
   it('does not treat unitless Fahrenheit climate readings as Celsius in the climate summary', () => {
     const items = buildHomeStatusSummaryItems(
       new Map(
@@ -491,6 +557,47 @@ describe('home status summary model', () => {
             unit: '°C',
             name: 'Boiler Temperature',
             room: 'Utility',
+          }),
+        ].map((entry) => [entry.id, entry])
+      )
+    );
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        id: 'climate',
+        value: '20°',
+        targetSection: 'climate',
+      }),
+    ]);
+  });
+
+  it('ignores processor and device temperature sensors in the climate summary strip', () => {
+    const items = buildHomeStatusSummaryItems(
+      new Map(
+        [
+          device({
+            id: 'sensor.living_room_temperature',
+            type: 'sensors',
+            deviceClass: 'temperature',
+            value: '20.1',
+            unit: '°C',
+            name: 'Living Room Temperature',
+          }),
+          device({
+            id: 'sensor.system_monitor_processor_temperature',
+            type: 'sensors',
+            deviceClass: 'temperature',
+            value: '59.5',
+            unit: '°C',
+            name: 'System Monitor Processor temperature',
+          }),
+          device({
+            id: 'sensor.zigbee_device_temperature',
+            type: 'sensors',
+            deviceClass: 'temperature',
+            value: '47',
+            unit: '°C',
+            name: 'Device temperature',
           }),
         ].map((entry) => [entry.id, entry])
       )

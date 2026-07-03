@@ -492,6 +492,10 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
           ...base,
           temperature: readNumber(state.temperature, 0),
           currentTemperature: readNumber(state.currentTemperature, 0),
+          hasCurrentTemperature:
+            typeof state.hasCurrentTemperature === 'boolean'
+              ? state.hasCurrentTemperature
+              : undefined,
           temperatureUnit:
             state.temperatureUnit === 'celsius' || state.temperatureUnit === 'fahrenheit'
               ? state.temperatureUnit

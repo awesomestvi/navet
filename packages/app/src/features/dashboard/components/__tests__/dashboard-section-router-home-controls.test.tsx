@@ -3,11 +3,13 @@ import type { DashboardController } from '@navet/app/features/dashboard/hooks/us
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import type { ReactNode } from 'react';
+import { useEffect } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DashboardSectionRouter, shouldSubscribeTaskRoutines } from '../dashboard-section-router';
 
 const roomNavMock = vi.fn();
 const dashboardLayoutMock = vi.fn();
+let deviceGridMountCount = 0;
 
 vi.mock('@navet/app/components/layout/room-nav', () => ({
   RoomNav: (props: unknown) => {
@@ -27,11 +29,22 @@ vi.mock('../home-dashboard-overview', () => ({
   HomeDashboardOverview: () => <main>Home dashboard</main>,
 }));
 
+vi.mock('../../device-grid', () => ({
+  DeviceGrid: () => {
+    useEffect(() => {
+      deviceGridMountCount += 1;
+    }, []);
+
+    return <main>Room grid</main>;
+  },
+}));
+
 describe('DashboardSectionRouter home controls', () => {
   beforeEach(async () => {
     await resetAppStores();
     roomNavMock.mockClear();
     dashboardLayoutMock.mockClear();
+    deviceGridMountCount = 0;
   });
 
   it('hides view grouping and uses add card for all rooms', async () => {
@@ -72,6 +85,27 @@ describe('DashboardSectionRouter home controls', () => {
     expect(roomNavProps.addEntityLabel).toBe('Add Card');
     expect(layoutProps.mobileEditActions?.onAddEntity).toBe(controller.onOpenAddCardDialog);
     expect(layoutProps.mobileEditActions?.addEntityLabel).toBe('Add Card');
+  });
+
+  it('remounts the room grid when changing rooms', async () => {
+    const controller = createController();
+    controller.activeRoom = 'Kitchen';
+
+    const { rerender } = renderWithProviders(<DashboardSectionRouter controller={controller} />);
+
+    expect(deviceGridMountCount).toBe(1);
+
+    rerender(
+      <DashboardSectionRouter
+        controller={{
+          ...controller,
+          activeRoom: 'Living Room',
+          rooms: [ALL_ROOMS_ID, 'Kitchen', 'Living Room'],
+        }}
+      />
+    );
+
+    expect(deviceGridMountCount).toBe(2);
   });
 
   it('uses add card in edit mode for the energy dashboard header controls', async () => {

@@ -16,6 +16,10 @@ export function normalizeMediaPlaybackState(
     return 'paused';
   }
 
+  if (rawState === 'idle') {
+    return 'idle';
+  }
+
   if (
     rawState === 'off' ||
     rawState === 'standby' ||

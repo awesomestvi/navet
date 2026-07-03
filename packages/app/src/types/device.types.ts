@@ -87,6 +87,7 @@ export interface ClimateDevice extends BaseDevice {
   room: string;
   temperature: number;
   currentTemperature: number;
+  hasCurrentTemperature?: boolean;
   temperatureUnit?: TemperatureUnit;
   mode: string;
   action?: string;

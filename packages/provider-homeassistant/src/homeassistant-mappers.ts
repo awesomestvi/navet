@@ -810,6 +810,7 @@ function createHomeAssistantState(
       value: entity.state,
       temperature: targetTemperature ?? 0,
       currentTemperature: currentTemperature ?? targetTemperature ?? 0,
+      hasCurrentTemperature: currentTemperature !== undefined,
       temperatureUnit:
         normalizeTemperatureUnit(
           entity.attributes?.temperature_unit ?? entity.attributes?.unit_of_measurement
@@ -839,7 +840,9 @@ function createHomeAssistantState(
           ? 'paused'
           : entity.state === 'idle'
             ? 'idle'
-            : 'off';
+            : entity.state === 'on' && deviceClass === 'tv'
+              ? 'idle'
+              : 'off';
     const entityPicture =
       (typeof entity.attributes?.entity_picture_local === 'string' &&
         entity.attributes.entity_picture_local) ||

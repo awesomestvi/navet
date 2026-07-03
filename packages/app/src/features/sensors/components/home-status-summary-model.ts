@@ -1,4 +1,8 @@
 import { getClimateDashboardGroup } from '@navet/app/features/climate/utils/climate-dashboard-group';
+import {
+  isTvMediaDevice,
+  normalizeMediaPlaybackState,
+} from '@navet/app/features/media/media-state';
 import { getSecurityAlertCount } from '@navet/app/features/security/utils/security-alert-count';
 import type { Section } from '@navet/app/navigation/sections';
 import type { DeviceWithType } from '@navet/app/types/device.types';
@@ -34,7 +38,7 @@ export interface StatusSummaryOptions {
 }
 
 const NON_AMBIENT_CLIMATE_SENSOR_PATTERN =
-  /\b(boiler|water_heater|water heater|hot water|tank|cylinder|supply|return|flow temp|outside|outdoor|exterior|weather)\b/;
+  /\b(boiler|water_heater|water heater|hot water|tank|cylinder|supply|return|flow temp|outside|outdoor|exterior|weather|processor|cpu|system monitor|system_monitor|device temperature|internal)\b/;
 const AMBIENT_FAHRENHEIT_INFERENCE_THRESHOLD = 45;
 
 function getNumber(value: unknown): number | null {
@@ -196,19 +200,30 @@ function getMediaSummary(devices: DeviceWithType[]): HomeStatusSummaryItem | nul
     return null;
   }
 
-  const playingCount = media.filter((device) => device.state === 'playing').length;
+  const playingCount = media.filter(
+    (device) => normalizeMediaPlaybackState(device.state, device.deviceClass) === 'playing'
+  ).length;
+  const activeCount = media.filter((device) => {
+    const state = normalizeMediaPlaybackState(device.state, device.deviceClass);
+    return state === 'playing' || (isTvMediaDevice(device.deviceClass) && state !== 'off');
+  }).length;
+  const value =
+    activeCount === 0
+      ? 'None Playing'
+      : activeCount === playingCount
+        ? playingCount === 1
+          ? '1 Playing'
+          : `${playingCount} Playing`
+        : activeCount === 1
+          ? '1 Active'
+          : `${activeCount} Active`;
 
   return {
     id: 'media',
     title: 'Speakers & TVs',
-    value:
-      playingCount === 0
-        ? 'None Playing'
-        : playingCount === 1
-          ? '1 Playing'
-          : `${playingCount} Playing`,
+    value,
     icon: Speaker,
-    iconColor: playingCount > 0 ? '#60a5fa' : '#cbd5e1',
+    iconColor: activeCount > 0 ? '#60a5fa' : '#cbd5e1',
     targetSection: 'media',
   };
 }
@@ -371,7 +386,8 @@ function getClimateSummary(
     ...climateDevices.map((device) => {
       let value: number | null;
       if (device.type === 'climate' || isLegacyClimateDevice(device)) {
-        value = getNumber(device.currentTemperature) ?? getNumber(device.temperature);
+        value =
+          device.hasCurrentTemperature === false ? null : getNumber(device.currentTemperature);
       } else {
         value = null;
       }

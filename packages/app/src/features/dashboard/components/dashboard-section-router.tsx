@@ -543,6 +543,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                 deviceMap={deviceMap}
               /> */}
               <DeviceGrid
+                key={`room-grid-${activeRoom}`}
                 orderedCardIds={orderedCardIds}
                 deviceMap={deviceMap}
                 isEditMode={isEditMode}

@@ -47,6 +47,7 @@ export interface NavetLightState extends NavetBaseDeviceState {
 export interface NavetClimateState extends NavetBaseDeviceState {
   temperature?: number;
   currentTemperature?: number;
+  hasCurrentTemperature?: boolean;
   temperatureUnit?: 'celsius' | 'fahrenheit';
   mode?: string;
   action?: string;

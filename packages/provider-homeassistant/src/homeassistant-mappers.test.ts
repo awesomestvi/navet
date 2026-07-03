@@ -301,6 +301,57 @@ describe('homeassistant-mappers', () => {
     );
   });
 
+  it('normalizes powered Home Assistant TVs as idle instead of off', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'media_player.living_room_tv': makeEntity('media_player.living_room_tv', 'on', {
+          friendly_name: 'Living Room TV',
+          device_class: 'tv',
+          source: 'HDMI 1',
+        }),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [],
+    });
+
+    expect(entities.find((entity) => entity.externalId === 'media_player.living_room_tv')).toEqual(
+      expect.objectContaining({
+        primaryState: 'idle',
+        attributes: expect.objectContaining({
+          value: 'idle',
+          source: 'HDMI 1',
+        }),
+      })
+    );
+  });
+
+  it('marks climate entities that only expose a target setpoint without current temperature', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'climate.living_room': makeEntity('climate.living_room', 'heat', {
+          friendly_name: 'Living Room Thermostat',
+          temperature: 15,
+          temperature_unit: '°C',
+        }),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [],
+    });
+
+    expect(entities.find((entity) => entity.externalId === 'climate.living_room')).toEqual(
+      expect.objectContaining({
+        attributes: expect.objectContaining({
+          currentTemperature: 15,
+          hasCurrentTemperature: false,
+          temperature: 15,
+          temperatureUnit: 'celsius',
+        }),
+      })
+    );
+  });
+
   it('attaches normalized alarm metadata to alarm control panel entities', () => {
     const entities = mapHomeAssistantEntitiesToNavetEntities({
       entities: {
