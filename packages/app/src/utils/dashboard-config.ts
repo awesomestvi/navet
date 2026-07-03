@@ -47,6 +47,12 @@ import { removeLocalStorageWithMigration } from '@navet/app/utils/local-storage-
 import { notifyPersistedStateChanged } from '@navet/app/utils/persisted-state-events';
 import { storage } from '@navet/app/utils/storage';
 import { sanitizeExternalUrl, sanitizeImageUrl } from '@navet/app/utils/url-security';
+import {
+  getSettingsProfileSharedValue,
+  type ScopedUserSettingKey,
+  setSettingsProfileSharedValues,
+  shouldSyncSettingToProfile,
+} from './settings-profile-scope';
 
 export interface DashboardConfigPayload {
   version: typeof DASHBOARD_CONFIG_VERSION;
@@ -113,6 +119,7 @@ export function resetDashboardProfileState() {
     STORAGE_KEYS.homeDashboardLayout,
     STORAGE_KEYS.roomOrder,
     STORAGE_KEYS.dashboardProfileSync,
+    STORAGE_KEYS.settingsProfileScopes,
     STORE_STORAGE_KEYS.theme,
     STORE_STORAGE_KEYS.settings,
     STORE_STORAGE_KEYS.navigation,
@@ -247,6 +254,19 @@ function areArraysEqual<T>(left: T[], right: T[]) {
   return left.length === right.length && left.every((item, index) => item === right[index]);
 }
 
+function getProfileScopedSettingValue<K extends ScopedUserSettingKey>(
+  key: K,
+  currentValue: ReturnType<typeof useSettingsStore.getState>[K]
+) {
+  if (shouldSyncSettingToProfile(key)) {
+    return currentValue;
+  }
+
+  return getSettingsProfileSharedValue(key) as
+    | ReturnType<typeof useSettingsStore.getState>[K]
+    | undefined;
+}
+
 const buildExportedSettings = (
   settingsState: Omit<
     ReturnType<typeof useSettingsStore.getState>,
@@ -257,6 +277,27 @@ const buildExportedSettings = (
     settingsState.effectsQuality,
     settingsState.disableAnimations || settingsState.lowPowerMode
   );
+  const headerTitleMode = getProfileScopedSettingValue(
+    'headerTitleMode',
+    settingsState.headerTitleMode
+  );
+  const headerCustomText = getProfileScopedSettingValue(
+    'headerCustomText',
+    settingsState.headerCustomText
+  );
+  const showHomeSummaryBar = getProfileScopedSettingValue(
+    'showHomeSummaryBar',
+    settingsState.showHomeSummaryBar
+  );
+  const keepDeviceAwake = getProfileScopedSettingValue(
+    'keepDeviceAwake',
+    settingsState.keepDeviceAwake
+  );
+  const kioskMode = getProfileScopedSettingValue('kioskMode', settingsState.kioskMode);
+  const dashboardSpaceMode = getProfileScopedSettingValue(
+    'dashboardSpaceMode',
+    settingsState.dashboardSpaceMode
+  );
 
   return omitUndefinedEntries({
     username:
@@ -265,12 +306,12 @@ const buildExportedSettings = (
     language:
       settingsState.language !== defaultSettings.language ? settingsState.language : undefined,
     headerTitleMode:
-      settingsState.headerTitleMode !== defaultSettings.headerTitleMode
-        ? settingsState.headerTitleMode
+      headerTitleMode !== undefined && headerTitleMode !== defaultSettings.headerTitleMode
+        ? headerTitleMode
         : undefined,
     headerCustomText:
-      settingsState.headerCustomText !== defaultSettings.headerCustomText
-        ? normalizeHeaderCustomText(settingsState.headerCustomText) || undefined
+      headerCustomText !== undefined && headerCustomText !== defaultSettings.headerCustomText
+        ? normalizeHeaderCustomText(headerCustomText) || undefined
         : undefined,
     showNotifications:
       settingsState.showNotifications !== defaultSettings.showNotifications
@@ -281,8 +322,12 @@ const buildExportedSettings = (
         ? settingsState.showWeatherInHeader
         : undefined,
     showHomeSummaryBar:
-      settingsState.showHomeSummaryBar !== defaultSettings.showHomeSummaryBar
-        ? settingsState.showHomeSummaryBar
+      showHomeSummaryBar !== undefined && showHomeSummaryBar !== defaultSettings.showHomeSummaryBar
+        ? showHomeSummaryBar
+        : undefined,
+    keepDeviceAwake:
+      keepDeviceAwake !== undefined && keepDeviceAwake !== defaultSettings.keepDeviceAwake
+        ? keepDeviceAwake
         : undefined,
     use24HourTime:
       settingsState.use24HourTime !== defaultSettings.use24HourTime
@@ -299,6 +344,12 @@ const buildExportedSettings = (
     compactMode:
       settingsState.compactMode !== defaultSettings.compactMode
         ? settingsState.compactMode
+        : undefined,
+    kioskMode:
+      kioskMode !== undefined && kioskMode !== defaultSettings.kioskMode ? kioskMode : undefined,
+    dashboardSpaceMode:
+      dashboardSpaceMode !== undefined && dashboardSpaceMode !== defaultSettings.dashboardSpaceMode
+        ? dashboardSpaceMode
         : undefined,
     disableAnimations: undefined,
     lowPowerMode: undefined,
@@ -328,6 +379,10 @@ const buildExportedSettings = (
     )
       ? settingsState.weatherMetricIds
       : undefined,
+    weatherForecastMode:
+      settingsState.weatherForecastMode !== defaultSettings.weatherForecastMode
+        ? settingsState.weatherForecastMode
+        : undefined,
     advancedCustomizationEnabled:
       settingsState.advancedCustomizationEnabled !== defaultSettings.advancedCustomizationEnabled
         ? settingsState.advancedCustomizationEnabled
@@ -766,6 +821,7 @@ export const importDashboardConfig = (
   }
 
   const currentThemeState = useThemeStore.getState();
+  const currentSettingsState = useSettingsStore.getState();
   const currentLightPresetState = useLightPresetStore.getState();
   const reducedEffectsEnabled =
     typeof settings.lowPowerMode === 'boolean'
@@ -781,6 +837,27 @@ export const importDashboardConfig = (
       : undefined,
     reducedEffectsEnabled
   );
+  const importedHeaderTitleMode =
+    settings.headerTitleMode === 'auto_greeting' ||
+    settings.headerTitleMode === 'custom_text' ||
+    settings.headerTitleMode === 'clock'
+      ? settings.headerTitleMode
+      : defaultSettings.headerTitleMode;
+  const importedHeaderCustomText = normalizeHeaderCustomText(settings.headerCustomText);
+  const importedShowHomeSummaryBar =
+    typeof settings.showHomeSummaryBar === 'boolean'
+      ? settings.showHomeSummaryBar
+      : defaultSettings.showHomeSummaryBar;
+  const importedKeepDeviceAwake =
+    typeof settings.keepDeviceAwake === 'boolean'
+      ? settings.keepDeviceAwake
+      : defaultSettings.keepDeviceAwake;
+  const importedKioskMode =
+    typeof settings.kioskMode === 'boolean' ? settings.kioskMode : defaultSettings.kioskMode;
+  const importedDashboardSpaceMode =
+    settings.dashboardSpaceMode === 'default' || settings.dashboardSpaceMode === 'more_space'
+      ? settings.dashboardSpaceMode
+      : defaultSettings.dashboardSpaceMode;
 
   useThemeStore.getState().applyImportedTheme({
     theme:
@@ -800,19 +877,27 @@ export const importDashboardConfig = (
         : (theme.wallpaper as string | null),
   });
 
+  setSettingsProfileSharedValues({
+    dashboardSpaceMode: importedDashboardSpaceMode,
+    headerCustomText: importedHeaderCustomText,
+    headerTitleMode: importedHeaderTitleMode,
+    keepDeviceAwake: importedKeepDeviceAwake,
+    kioskMode: importedKioskMode,
+    showHomeSummaryBar: importedShowHomeSummaryBar,
+  });
+
   useSettingsStore.getState().applyImportedSettings({
     username: (settings.username as string | undefined) ?? defaultSettings.username,
     email: (settings.email as string | undefined) ?? defaultSettings.email,
     language: resolveAppLanguage(
       typeof settings.language === 'string' ? settings.language : defaultSettings.language
     ),
-    headerTitleMode:
-      settings.headerTitleMode === 'auto_greeting' ||
-      settings.headerTitleMode === 'custom_text' ||
-      settings.headerTitleMode === 'clock'
-        ? settings.headerTitleMode
-        : defaultSettings.headerTitleMode,
-    headerCustomText: normalizeHeaderCustomText(settings.headerCustomText),
+    headerTitleMode: shouldSyncSettingToProfile('headerTitleMode')
+      ? importedHeaderTitleMode
+      : currentSettingsState.headerTitleMode,
+    headerCustomText: shouldSyncSettingToProfile('headerCustomText')
+      ? importedHeaderCustomText
+      : currentSettingsState.headerCustomText,
     showNotifications:
       typeof settings.showNotifications === 'boolean'
         ? settings.showNotifications
@@ -821,14 +906,12 @@ export const importDashboardConfig = (
       typeof settings.showWeatherInHeader === 'boolean'
         ? settings.showWeatherInHeader
         : defaultSettings.showWeatherInHeader,
-    showHomeSummaryBar:
-      typeof settings.showHomeSummaryBar === 'boolean'
-        ? settings.showHomeSummaryBar
-        : defaultSettings.showHomeSummaryBar,
-    keepDeviceAwake:
-      typeof settings.keepDeviceAwake === 'boolean'
-        ? settings.keepDeviceAwake
-        : defaultSettings.keepDeviceAwake,
+    showHomeSummaryBar: shouldSyncSettingToProfile('showHomeSummaryBar')
+      ? importedShowHomeSummaryBar
+      : currentSettingsState.showHomeSummaryBar,
+    keepDeviceAwake: shouldSyncSettingToProfile('keepDeviceAwake')
+      ? importedKeepDeviceAwake
+      : currentSettingsState.keepDeviceAwake,
     use24HourTime:
       typeof settings.use24HourTime === 'boolean'
         ? settings.use24HourTime
@@ -842,12 +925,12 @@ export const importDashboardConfig = (
       typeof settings.compactMode === 'boolean'
         ? settings.compactMode
         : defaultSettings.compactMode,
-    kioskMode:
-      typeof settings.kioskMode === 'boolean' ? settings.kioskMode : defaultSettings.kioskMode,
-    dashboardSpaceMode:
-      settings.dashboardSpaceMode === 'default' || settings.dashboardSpaceMode === 'more_space'
-        ? settings.dashboardSpaceMode
-        : defaultSettings.dashboardSpaceMode,
+    kioskMode: shouldSyncSettingToProfile('kioskMode')
+      ? importedKioskMode
+      : currentSettingsState.kioskMode,
+    dashboardSpaceMode: shouldSyncSettingToProfile('dashboardSpaceMode')
+      ? importedDashboardSpaceMode
+      : currentSettingsState.dashboardSpaceMode,
     ...getLegacyReducedEffectsFlags(effectsQuality),
     effectsQuality,
     entityInteractionMode:

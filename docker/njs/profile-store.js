@@ -90,6 +90,43 @@ function isProfileFresh(r, metadata) {
   return false;
 }
 
+function isWritePreconditionSatisfied(r, metadata) {
+  const headersIn = r.headersIn || {};
+  const ifMatch =
+    headersIn['If-Match'] !== undefined ? headersIn['If-Match'] : headersIn['if-match'];
+  if (typeof ifMatch === 'string') {
+    return metadata !== null && ifMatch === metadata.etag;
+  }
+
+  const ifUnmodifiedSince =
+    headersIn['If-Unmodified-Since'] !== undefined
+      ? headersIn['If-Unmodified-Since']
+      : headersIn['if-unmodified-since'];
+  if (typeof ifUnmodifiedSince === 'string') {
+    return metadata !== null && ifUnmodifiedSince === metadata.lastModified;
+  }
+
+  return true;
+}
+
+function getCurrentProfileMetadata() {
+  try {
+    const stat = fsModule.statSync(PROFILE_PATH);
+    if (stat.size > MAX_PROFILE_BYTES) {
+      return null;
+    }
+
+    const content = fsModule.readFileSync(PROFILE_PATH, 'utf8');
+    return buildProfileMetadata(content, stat);
+  } catch (error) {
+    if (error && error.code === 'ENOENT') {
+      return null;
+    }
+
+    throw error;
+  }
+}
+
 function readProfile(r) {
   try {
     const generation = readOrCreateProfileGeneration();
@@ -130,6 +167,16 @@ function writeProfile(r) {
   try {
     const generation = readOrCreateProfileGeneration();
     applyProfileGenerationHeader(r, generation);
+    const currentMetadata = getCurrentProfileMetadata();
+    if (!isWritePreconditionSatisfied(r, currentMetadata)) {
+      if (currentMetadata) {
+        r.headersOut.ETag = currentMetadata.etag;
+        r.headersOut['Last-Modified'] = currentMetadata.lastModified;
+      }
+      sendJson(r, 412, { error: 'Dashboard profile changed before save' });
+      return;
+    }
+
     const body = r.requestText || '';
     if (!body) {
       sendJson(r, 400, { error: 'Missing dashboard profile body' });
@@ -201,7 +248,9 @@ export default {
   buildProfileMetadata,
   createProfileGeneration,
   deleteProfile,
+  getCurrentProfileMetadata,
   isProfileFresh,
+  isWritePreconditionSatisfied,
   readProfile,
   readOrCreateProfileGeneration,
   rotateProfileGeneration,

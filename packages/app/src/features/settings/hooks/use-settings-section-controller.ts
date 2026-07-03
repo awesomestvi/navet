@@ -3,12 +3,17 @@ import { PRIMARY_COLOR_OPTIONS, THEME_OPTIONS } from '@navet/app/constants/theme
 import { useDashboardEntitiesStore } from '@navet/app/features/dashboard';
 import { useI18n, useIntegrationStore, useProviderHealth, useTheme } from '@navet/app/hooks';
 import { getProviderFeatureMatrix } from '@navet/app/provider-runtime-registry';
-import { type EntityInteractionMode, useSettingsStore } from '@navet/app/stores';
+import { type EntityInteractionMode, type UserSettings, useSettingsStore } from '@navet/app/stores';
 import { useNavigationStore } from '@navet/app/stores/navigation-store';
 import { integrationSelectors } from '@navet/app/stores/selectors';
 import { useThemeStore } from '@navet/app/stores/theme-store';
 import { INTEGRATION_PROVIDERS, type IntegrationProviderId } from '@navet/app/types/provider';
-import { useMemo } from 'react';
+import {
+  type ScopedUserSettingKey,
+  type SettingsProfileScope,
+  setSettingsProfileScope,
+} from '@navet/app/utils/settings-profile-scope';
+import { useCallback, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { getSettingsSectionStyles } from './settings-section-styles';
 import { useSettingsSectionActions } from './use-settings-section-actions';
@@ -26,6 +31,11 @@ type ProviderCardStatus =
   | 'signed-in'
   | 'disconnected'
   | 'planned';
+
+interface PendingScopedSettingsChange {
+  settings: Partial<UserSettings>;
+  scopeKeys: ScopedUserSettingKey[];
+}
 
 export function useSettingsSectionController() {
   const {
@@ -99,6 +109,8 @@ export function useSettingsSectionController() {
       updateSettings: state.updateSettings,
     }))
   );
+  const [pendingScopedSettingsChange, setPendingScopedSettingsChange] =
+    useState<PendingScopedSettingsChange | null>(null);
   const { hiddenEntityIds, showAllEntities, reopenOnboarding } = useDashboardEntitiesStore(
     useShallow((state) => ({
       hiddenEntityIds: state.hiddenEntityIds,
@@ -188,6 +200,31 @@ export function useSettingsSectionController() {
       }),
     [activeProviderId, providerHealth, sessions]
   );
+  const updateScopedSettings = useCallback(
+    (settings: Partial<UserSettings>, scopeKeys: readonly ScopedUserSettingKey[]) => {
+      setPendingScopedSettingsChange({
+        settings,
+        scopeKeys: [...scopeKeys],
+      });
+    },
+    []
+  );
+  const cancelScopedSettingsChange = useCallback(() => {
+    setPendingScopedSettingsChange(null);
+  }, []);
+  const confirmScopedSettingsChange = useCallback(
+    (scope: SettingsProfileScope) => {
+      const pending = pendingScopedSettingsChange;
+      if (!pending) {
+        return;
+      }
+
+      setSettingsProfileScope(pending.scopeKeys, scope, useSettingsStore.getState());
+      updateSettings(pending.settings);
+      setPendingScopedSettingsChange(null);
+    },
+    [pendingScopedSettingsChange, updateSettings]
+  );
 
   return {
     activeProviderId,
@@ -245,11 +282,15 @@ export function useSettingsSectionController() {
     showRevealAllConfirm,
     showTerms,
     styles,
+    pendingScopedSettingsChange,
+    cancelScopedSettingsChange,
+    confirmScopedSettingsChange,
     theme,
     themeOptions: THEME_OPTIONS,
     temperatureUnit,
     colorOptions: PRIMARY_COLOR_OPTIONS,
     updateSettings,
+    updateScopedSettings,
     use24HourTime,
     wallpaper,
   };

@@ -75,7 +75,16 @@ export function SettingsDashboardSection({ controller }: SettingsDashboardSectio
                     key={option.value}
                     active={isActive}
                     size="small"
-                    onClick={() => controller.updateSettings({ headerTitleMode: option.value })}
+                    onClick={() => {
+                      if (isActive) {
+                        return;
+                      }
+
+                      controller.updateScopedSettings({ headerTitleMode: option.value }, [
+                        'headerTitleMode',
+                        'headerCustomText',
+                      ]);
+                    }}
                     aria-pressed={isActive}
                   >
                     {option.label}
@@ -113,7 +122,9 @@ export function SettingsDashboardSection({ controller }: SettingsDashboardSectio
       >
         <OnOffPillToggle
           value={showHomeSummaryBar}
-          onChange={(checked) => controller.updateSettings({ showHomeSummaryBar: checked })}
+          onChange={(checked) =>
+            controller.updateScopedSettings({ showHomeSummaryBar: checked }, ['showHomeSummaryBar'])
+          }
           ariaLabel={t('settings.dashboard.homeSummaryBar.title')}
         />
       </SettingsItem>
@@ -126,7 +137,9 @@ export function SettingsDashboardSection({ controller }: SettingsDashboardSectio
         <div className="flex flex-col gap-2">
           <OnOffPillToggle
             value={kioskMode}
-            onChange={(checked) => controller.updateSettings({ kioskMode: checked })}
+            onChange={(checked) =>
+              controller.updateScopedSettings({ kioskMode: checked }, ['kioskMode'])
+            }
             ariaLabel={t('settings.dashboard.kioskMode.title')}
           />
           <p className={`max-w-2xl text-sm leading-relaxed ${styles.subtleColor}`}>

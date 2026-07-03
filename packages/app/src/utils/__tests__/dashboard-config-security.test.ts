@@ -12,6 +12,7 @@ import {
   importDashboardConfig,
   importDashboardConfigFromUrl,
 } from '@navet/app/utils/dashboard-config';
+import { setSettingsProfileScope } from '@navet/app/utils/settings-profile-scope';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const baseConfig = {
@@ -273,6 +274,83 @@ describe('dashboard-config import hardening', () => {
     });
 
     expect(useSettingsStore.getState().showHomeSummaryBar).toBe(false);
+  });
+
+  it('round-trips dashboard behavior settings', () => {
+    useSettingsStore.getState().updateSettings({
+      dashboardSpaceMode: 'more_space',
+      keepDeviceAwake: true,
+      kioskMode: true,
+      weatherForecastMode: 'hourly',
+    });
+
+    const exported = exportDashboardConfig();
+
+    expect(exported.settings.dashboardSpaceMode).toBe('more_space');
+    expect(exported.settings.keepDeviceAwake).toBe(true);
+    expect(exported.settings.kioskMode).toBe(true);
+    expect(exported.settings.weatherForecastMode).toBe('hourly');
+
+    useSettingsStore.getState().updateSettings({
+      dashboardSpaceMode: 'default',
+      keepDeviceAwake: false,
+      kioskMode: false,
+      weatherForecastMode: 'weekly',
+    });
+
+    importDashboardConfig({
+      ...baseConfig,
+      settings: {
+        dashboardSpaceMode: 'more_space',
+        keepDeviceAwake: true,
+        kioskMode: true,
+        weatherForecastMode: 'hourly',
+      },
+    });
+
+    expect(useSettingsStore.getState().kioskMode).toBe(true);
+    expect(useSettingsStore.getState().keepDeviceAwake).toBe(true);
+    expect(useSettingsStore.getState().dashboardSpaceMode).toBe('more_space');
+    expect(useSettingsStore.getState().weatherForecastMode).toBe('hourly');
+  });
+
+  it('keeps this-device scoped dashboard behavior settings out of shared profiles', () => {
+    useSettingsStore.getState().updateSettings({
+      dashboardSpaceMode: 'more_space',
+      keepDeviceAwake: true,
+      kioskMode: true,
+    });
+    setSettingsProfileScope(['dashboardSpaceMode', 'keepDeviceAwake', 'kioskMode'], 'device');
+
+    const exported = exportDashboardConfig();
+
+    expect(exported.settings).not.toHaveProperty('dashboardSpaceMode');
+    expect(exported.settings).not.toHaveProperty('keepDeviceAwake');
+    expect(exported.settings).not.toHaveProperty('kioskMode');
+
+    importDashboardConfig({
+      ...baseConfig,
+      settings: {
+        dashboardSpaceMode: 'default',
+        keepDeviceAwake: false,
+        kioskMode: false,
+      },
+    });
+
+    expect(useSettingsStore.getState().dashboardSpaceMode).toBe('more_space');
+    expect(useSettingsStore.getState().keepDeviceAwake).toBe(true);
+    expect(useSettingsStore.getState().kioskMode).toBe(true);
+  });
+
+  it('preserves remembered all-device values while exporting this-device overrides', () => {
+    useSettingsStore.getState().updateSettings({ kioskMode: true });
+    setSettingsProfileScope(['kioskMode'], 'device', useSettingsStore.getState());
+    useSettingsStore.getState().updateSettings({ kioskMode: false });
+
+    const exported = exportDashboardConfig();
+
+    expect(useSettingsStore.getState().kioskMode).toBe(false);
+    expect(exported.settings.kioskMode).toBe(true);
   });
 
   it('round-trips header title settings', () => {

@@ -111,11 +111,51 @@ describe('dashboard add-on endpoints', () => {
       cache: 'no-store',
       credentials: 'same-origin',
       keepalive: undefined,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: expect.any(Headers),
       body: expect.any(String),
     });
+    expect(
+      ((fetchMock.mock.calls[0]?.[1] as RequestInit).headers as Headers).get('Content-Type')
+    ).toBe('application/json');
+  });
+
+  it('sends conditional headers when saving against loaded profile metadata', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { ETag: '"etag-4"', 'Last-Modified': 'Wed, 03 Jan 2024 12:00:00 GMT' },
+      })
+    );
+
+    await expect(
+      saveDashboardProfile(
+        {
+          version: 3,
+          app: 'navet',
+          exportedAt: new Date().toISOString(),
+          theme: {
+            theme: 'glass',
+            primaryColor: 'blue',
+          },
+          settings: {},
+          navigation: {
+            currentRoom: 'all',
+            activeSection: 'home',
+          },
+        },
+        { etag: '"etag-3"', lastModified: 'Tue, 02 Jan 2024 12:00:00 GMT' }
+      )
+    ).resolves.toEqual({
+      saved: true,
+      permanentFailure: false,
+      etag: '"etag-4"',
+      lastModified: 'Wed, 03 Jan 2024 12:00:00 GMT',
+      generation: null,
+    });
+
+    const headers = (fetchMock.mock.calls[0]?.[1] as RequestInit).headers as Headers;
+    expect(headers.get('If-Match')).toBe('"etag-3"');
+    expect(headers.get('If-Unmodified-Since')).toBeNull();
   });
 
   it('treats missing shared-profile endpoints as permanent write failures', async () => {

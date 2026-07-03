@@ -16,7 +16,7 @@ interface SettingsExperimentalSectionProps {
 export function SettingsExperimentalSection({ controller }: SettingsExperimentalSectionProps) {
   const { t } = useI18n();
   const keepAwakeSnapshot = useKeepDeviceAwakeSnapshot();
-  const { keepDeviceAwake, styles, updateSettings } = controller;
+  const { keepDeviceAwake, styles, updateScopedSettings } = controller;
 
   return (
     <SettingsSectionShell
@@ -35,7 +35,9 @@ export function SettingsExperimentalSection({ controller }: SettingsExperimental
           <div className="flex flex-col gap-2">
             <OnOffPillToggle
               value={keepDeviceAwake}
-              onChange={(checked) => updateSettings({ keepDeviceAwake: checked })}
+              onChange={(checked) =>
+                updateScopedSettings({ keepDeviceAwake: checked }, ['keepDeviceAwake'])
+              }
               ariaLabel={t('settings.dashboard.keepAwake.title')}
             />
             <p className={`max-w-2xl text-sm leading-relaxed ${styles.subtleColor}`}>

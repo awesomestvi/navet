@@ -25,6 +25,11 @@ export const zhMessages = {
   'settings.hero.eyebrow': '设置',
   'settings.hero.title': '一个更安静的地方，用来调整 Navet。',
   'settings.hero.description': '在一个地方调整 Navet 的外观、行为和连接方式。',
+  'settings.scopeDialog.title': 'Apply this setting where?',
+  'settings.scopeDialog.description':
+    'Use this device for panel-specific behavior, or all devices to sync the change with the shared dashboard profile.',
+  'settings.scopeDialog.thisDevice': 'This device',
+  'settings.scopeDialog.allDevices': 'All devices',
   'settings.nav.appearance': '外观',
   'settings.nav.localization': '本地化',
   'settings.nav.interaction': '交互',

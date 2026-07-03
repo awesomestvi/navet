@@ -186,6 +186,44 @@ describe('profile-store', () => {
     );
   });
 
+  it('rejects stale conditional writes without replacing the profile', () => {
+    const existingBody = JSON.stringify({
+      version: 3,
+      app: 'navet',
+      exportedAt: '2024-01-01T00:00:00.000Z',
+    });
+    const nextBody = JSON.stringify({
+      version: 3,
+      app: 'navet',
+      exportedAt: '2024-01-01T00:05:00.000Z',
+    });
+    const mockFs = createMockFs({
+      '/data/navet-dashboard-profile.json': existingBody,
+      '/data/navet-dashboard-profile-generation.txt': 'generation-1',
+    });
+    profileStore.setProfileStoreFsForTests(mockFs);
+
+    const request = createRequest({
+      method: 'PUT',
+      headersIn: {
+        'If-Match': '"older"',
+      },
+      requestText: nextBody,
+    });
+
+    profileStore.writeProfile(request);
+
+    expect(mockFs.getFile('/data/navet-dashboard-profile.json')).toBe(existingBody);
+    expect(request.headersOut.ETag).toBe(
+      `"1704067200000-${existingBody.length}-2024-01-01T00:00:00.000Z"`
+    );
+    expect(request.headersOut['Last-Modified']).toBe('Mon, 01 Jan 2024 00:00:00 GMT');
+    expect(request.return).toHaveBeenCalledWith(
+      412,
+      JSON.stringify({ error: 'Dashboard profile changed before save' })
+    );
+  });
+
   it('rotates the generation and clears the profile on delete', () => {
     const body = JSON.stringify({
       version: 3,

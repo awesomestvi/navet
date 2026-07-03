@@ -27,6 +27,12 @@ export interface DashboardProfileSaveResult {
   generation: string | null;
 }
 
+export interface DashboardProfileSaveOptions {
+  etag?: string;
+  keepalive?: boolean;
+  lastModified?: string;
+}
+
 export interface DashboardProfileResetResult {
   reset: boolean;
   permanentFailure: boolean;
@@ -117,7 +123,7 @@ export async function loadDashboardProfile(
 
 export async function saveDashboardProfile(
   profile: DashboardConfigPayload,
-  options: { keepalive?: boolean } = {}
+  options: DashboardProfileSaveOptions = {}
 ): Promise<DashboardProfileSaveResult> {
   if (isHomeAssistantPanelMode()) {
     return {
@@ -130,14 +136,20 @@ export async function saveDashboardProfile(
   }
 
   try {
+    const headers = new Headers();
+    headers.set('Content-Type', 'application/json');
+    if (options.etag) {
+      headers.set('If-Match', options.etag);
+    } else if (options.lastModified) {
+      headers.set('If-Unmodified-Since', options.lastModified);
+    }
+
     const response = await fetch(resolveAddonLocalEndpointUrl(DASHBOARD_PROFILE_ENDPOINT), {
       method: 'PUT',
       cache: 'no-store',
       credentials: 'same-origin',
       keepalive: options.keepalive,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(profile),
     });
     const metadata = readResponseMetadata(response);

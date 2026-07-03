@@ -8,7 +8,16 @@ import { SettingsAppearanceSection } from '../settings-appearance-section';
 
 function TestSection() {
   const controller = useSettingsSectionController();
-  return <SettingsAppearanceSection controller={controller} />;
+  return (
+    <>
+      <SettingsAppearanceSection controller={controller} />
+      {controller.pendingScopedSettingsChange ? (
+        <button type="button" onClick={() => controller.confirmScopedSettingsChange('all')}>
+          All devices
+        </button>
+      ) : null}
+    </>
+  );
 }
 
 describe('SettingsAppearanceSection', () => {
@@ -24,12 +33,14 @@ describe('SettingsAppearanceSection', () => {
     ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'More space' }));
+    fireEvent.click(screen.getByRole('button', { name: 'All devices' }));
     expect(useSettingsStore.getState().dashboardSpaceMode).toBe('more_space');
     expect(
       screen.getByText('Denser layout. Some touch controls may be harder to use.')
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Default' }));
+    fireEvent.click(screen.getByRole('button', { name: 'All devices' }));
     expect(useSettingsStore.getState().dashboardSpaceMode).toBe('default');
     expect(
       screen.queryByText('Denser layout. Some touch controls may be harder to use.')

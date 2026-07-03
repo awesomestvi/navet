@@ -18,7 +18,16 @@ vi.mock('@navet/app/hooks/use-keep-device-awake', () => ({
 
 function TestSection() {
   const controller = useSettingsSectionController();
-  return <SettingsExperimentalSection controller={controller} />;
+  return (
+    <>
+      <SettingsExperimentalSection controller={controller} />
+      {controller.pendingScopedSettingsChange ? (
+        <button type="button" onClick={() => controller.confirmScopedSettingsChange('all')}>
+          All devices
+        </button>
+      ) : null}
+    </>
+  );
 }
 
 describe('SettingsExperimentalSection', () => {
@@ -37,6 +46,7 @@ describe('SettingsExperimentalSection', () => {
 
     const keepAwakeGroup = screen.getByRole('group', { name: 'Keep device awake' });
     fireEvent.click(within(keepAwakeGroup).getByRole('button', { name: 'On' }));
+    fireEvent.click(screen.getByRole('button', { name: 'All devices' }));
 
     expect(useSettingsStore.getState().keepDeviceAwake).toBe(true);
   });

@@ -283,7 +283,9 @@ describe('useDashboardProfileSync', () => {
     await advanceTime(1);
     expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
     expect(saveDashboardProfile).toHaveBeenCalledWith(currentProfile, {
+      etag: '"initial"',
       keepalive: undefined,
+      lastModified: 'Mon, 01 Jan 2024 00:00:00 GMT',
     });
 
     await advanceTime(10_000);
@@ -506,7 +508,7 @@ describe('useDashboardProfileSync', () => {
     expect(reloadWindow).not.toHaveBeenCalled();
   });
 
-  it('shows one conflict toast for the same remote profile when local edits are still pending', async () => {
+  it('checks remote before saving and shows one conflict toast for newer remote profile', async () => {
     loadDashboardProfile
       .mockResolvedValueOnce({
         available: true,
@@ -547,9 +549,7 @@ describe('useDashboardProfileSync', () => {
     });
 
     await advanceTime(2_000);
-    expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
-
-    await advanceTime(60_000);
+    expect(saveDashboardProfile).not.toHaveBeenCalled();
     expect(toast).toHaveBeenCalledTimes(1);
     expect(toast.mock.calls[0]?.[1]).toEqual(
       expect.objectContaining({
@@ -587,21 +587,13 @@ describe('useDashboardProfileSync', () => {
         lastModified: 'Mon, 01 Jan 2024 00:01:00 GMT',
         generation: 'server-1',
       });
-    saveDashboardProfile
-      .mockResolvedValueOnce({
-        saved: false,
-        permanentFailure: false,
-        etag: null,
-        lastModified: null,
-        generation: 'server-1',
-      })
-      .mockResolvedValueOnce({
-        saved: true,
-        permanentFailure: false,
-        etag: '"saved-local"',
-        lastModified: 'Mon, 01 Jan 2024 00:01:02 GMT',
-        generation: 'server-1',
-      });
+    saveDashboardProfile.mockResolvedValueOnce({
+      saved: true,
+      permanentFailure: false,
+      etag: '"saved-local"',
+      lastModified: 'Mon, 01 Jan 2024 00:01:02 GMT',
+      generation: 'server-1',
+    });
 
     renderHookWithProviders(() => useDashboardProfileSync());
     await flushEffects();
@@ -625,9 +617,11 @@ describe('useDashboardProfileSync', () => {
       await Promise.resolve();
     });
 
-    expect(saveDashboardProfile).toHaveBeenCalledTimes(2);
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
     expect(saveDashboardProfile).toHaveBeenLastCalledWith(currentProfile, {
+      etag: '"remote-1"',
       keepalive: undefined,
+      lastModified: 'Mon, 01 Jan 2024 00:01:00 GMT',
     });
     expect(importDashboardConfig).not.toHaveBeenCalled();
     expect(reloadWindow).not.toHaveBeenCalled();

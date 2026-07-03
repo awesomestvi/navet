@@ -25,6 +25,11 @@ export const enMessages = {
   'settings.hero.eyebrow': 'Settings',
   'settings.hero.title': 'A calmer place to tune Navet.',
   'settings.hero.description': 'Adjust how Navet looks, behaves, and connects in one place.',
+  'settings.scopeDialog.title': 'Apply this setting where?',
+  'settings.scopeDialog.description':
+    'Use this device for panel-specific behavior, or all devices to sync the change with the shared dashboard profile.',
+  'settings.scopeDialog.thisDevice': 'This device',
+  'settings.scopeDialog.allDevices': 'All devices',
   'settings.nav.appearance': 'Appearance',
   'settings.nav.localization': 'Localization',
   'settings.nav.interaction': 'Interaction',

@@ -624,10 +624,52 @@ export function useDashboardProfileSync() {
       }
 
       clearSaveTimeout();
+
+      if (!options.keepalive && !options.dismissConflict && isOnlineRef.current) {
+        const result = await loadDashboardProfile({
+          etag: lastRemoteEtagRef.current ?? undefined,
+          lastModified: lastRemoteLastModifiedRef.current ?? undefined,
+        });
+
+        if (!result.available) {
+          failureCountRef.current += 1;
+          schedulePoll();
+          return false;
+        }
+
+        failureCountRef.current = 0;
+        updateRemoteMetadata({
+          etag: result.etag,
+          generation: result.generation,
+          lastModified: result.lastModified,
+          profile: result.profile,
+        });
+
+        if (result.profile) {
+          const remoteSignature = getProfileSignature(result.profile);
+          const currentSignature = currentSignatureRef.current ?? signature;
+
+          if (!isRemoteProfileAlreadyActive(remoteSignature, currentSignature, metadata)) {
+            hasPendingLocalChangesRef.current = true;
+            showConflictToast({
+              profile: result.profile,
+              etag: result.etag,
+              generation: result.generation,
+              lastModified: result.lastModified,
+              conflictKey: getConflictKey(result.profile, result.etag, result.lastModified),
+            });
+            schedulePoll();
+            return false;
+          }
+        }
+      }
+
       savingRef.current = true;
 
       const result = await saveDashboardProfile(profile, {
+        etag: lastRemoteEtagRef.current ?? undefined,
         keepalive: options.keepalive,
+        lastModified: lastRemoteLastModifiedRef.current ?? undefined,
       });
 
       savingRef.current = false;
@@ -673,6 +715,7 @@ export function useDashboardProfileSync() {
       getCurrentProfileSnapshot,
       panelMode,
       schedulePoll,
+      showConflictToast,
       updateRemoteMetadata,
     ]
   );

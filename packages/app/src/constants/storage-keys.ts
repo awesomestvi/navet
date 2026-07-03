@@ -22,6 +22,7 @@ export const STORAGE_KEYS = {
   cardZones: 'navet-card-zones',
   homeDashboardLayout: 'navet-home-layout',
   dashboardProfileSync: 'navet-dashboard-profile-sync',
+  settingsProfileScopes: 'navet-settings-profile-scopes',
 } as const;
 
 export const LEGACY_STORAGE_KEYS = {
@@ -47,6 +48,7 @@ export const LEGACY_STORAGE_KEYS = {
   lightMemoryState: 'ha-dashboard-light-memory-state',
   cardZones: 'ha-dashboard-card-zones',
   homeDashboardLayout: 'ha-dashboard-home-layout',
+  settingsProfileScopes: 'ha-dashboard-settings-profile-scopes',
 } as const;
 
 export const STORE_STORAGE_KEYS = {

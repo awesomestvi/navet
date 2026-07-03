@@ -25,6 +25,11 @@ export const svMessages = {
   'settings.hero.eyebrow': 'Inställningar',
   'settings.hero.title': 'En lugnare plats att finjustera Navet.',
   'settings.hero.description': 'Justera hur Navet ser ut, beter sig och ansluter på ett ställe.',
+  'settings.scopeDialog.title': 'Apply this setting where?',
+  'settings.scopeDialog.description':
+    'Use this device for panel-specific behavior, or all devices to sync the change with the shared dashboard profile.',
+  'settings.scopeDialog.thisDevice': 'This device',
+  'settings.scopeDialog.allDevices': 'All devices',
   'settings.nav.appearance': 'Utseende',
   'settings.nav.localization': 'Lokalisering',
   'settings.nav.interaction': 'Interaktion',

@@ -969,6 +969,23 @@ function dashboardProfileStorePlugin() {
     return typeof ifModifiedSince === 'string' && ifModifiedSince === metadata.lastModified
   }
 
+  const isWritePreconditionSatisfied = (
+    req: IncomingMessage,
+    metadata: { etag: string; lastModified: string } | null
+  ) => {
+    const ifMatch = req.headers['if-match']
+    if (typeof ifMatch === 'string') {
+      return metadata !== null && ifMatch === metadata.etag
+    }
+
+    const ifUnmodifiedSince = req.headers['if-unmodified-since']
+    if (typeof ifUnmodifiedSince === 'string') {
+      return metadata !== null && ifUnmodifiedSince === metadata.lastModified
+    }
+
+    return true
+  }
+
   const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     if (req.method === 'GET') {
       applyGenerationHeader(res)
@@ -1004,6 +1021,15 @@ function dashboardProfileStorePlugin() {
     if (req.method === 'PUT') {
       try {
         applyGenerationHeader(res)
+        const currentMetadata = dashboardProfileStore.getProfileMetadata()
+        if (!isWritePreconditionSatisfied(req, currentMetadata)) {
+          if (currentMetadata) {
+            applyMetadataHeaders(res, currentMetadata)
+          }
+          sendJson(res, 412, { error: 'Dashboard profile changed before save' })
+          return
+        }
+
         const body = await readRequestBody(req)
         if (!body) {
           sendJson(res, 400, { error: 'Missing dashboard profile body' })

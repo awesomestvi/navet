@@ -26,6 +26,11 @@ export const ptMessages = {
   'settings.hero.title': 'Um lugar mais tranquilo para ajustar o Navet.',
   'settings.hero.description':
     'Ajuste como o Navet aparece, se comporta e se conecta em um só lugar.',
+  'settings.scopeDialog.title': 'Apply this setting where?',
+  'settings.scopeDialog.description':
+    'Use this device for panel-specific behavior, or all devices to sync the change with the shared dashboard profile.',
+  'settings.scopeDialog.thisDevice': 'This device',
+  'settings.scopeDialog.allDevices': 'All devices',
   'settings.nav.appearance': 'Aparência',
   'settings.nav.localization': 'Localização',
   'settings.nav.interaction': 'Interação',

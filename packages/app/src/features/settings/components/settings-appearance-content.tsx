@@ -90,7 +90,7 @@ export function AppearanceThemeAccentItem({
 
 export function AppearanceSpaceModeItem({ controller }: { controller: SettingsSectionController }) {
   const { t } = useI18n();
-  const { dashboardSpaceMode, styles, updateSettings } = controller;
+  const { dashboardSpaceMode, styles, updateScopedSettings } = controller;
   const showMoreSpaceWarning = dashboardSpaceMode === 'more_space';
 
   return (
@@ -120,7 +120,15 @@ export function AppearanceSpaceModeItem({ controller }: { controller: SettingsSe
                   key={option.value}
                   active={isActive}
                   size="small"
-                  onClick={() => updateSettings({ dashboardSpaceMode: option.value })}
+                  onClick={() => {
+                    if (isActive) {
+                      return;
+                    }
+
+                    updateScopedSettings({ dashboardSpaceMode: option.value }, [
+                      'dashboardSpaceMode',
+                    ]);
+                  }}
                   aria-pressed={isActive}
                 >
                   {option.label}

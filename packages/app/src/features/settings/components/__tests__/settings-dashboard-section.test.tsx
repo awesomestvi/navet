@@ -8,7 +8,16 @@ import { SettingsDashboardSection } from '../settings-dashboard-section';
 
 function TestSection() {
   const controller = useSettingsSectionController();
-  return <SettingsDashboardSection controller={controller} />;
+  return (
+    <>
+      <SettingsDashboardSection controller={controller} />
+      {controller.pendingScopedSettingsChange ? (
+        <button type="button" onClick={() => controller.confirmScopedSettingsChange('all')}>
+          All devices
+        </button>
+      ) : null}
+    </>
+  );
 }
 
 describe('SettingsDashboardSection', () => {
@@ -21,6 +30,7 @@ describe('SettingsDashboardSection', () => {
 
     const kioskModeGroup = screen.getByRole('group', { name: 'Kiosk mode' });
     fireEvent.click(within(kioskModeGroup).getByRole('button', { name: 'On' }));
+    fireEvent.click(screen.getByRole('button', { name: 'All devices' }));
 
     expect(screen.queryByRole('group', { name: 'Keep device awake' })).not.toBeInTheDocument();
   });
@@ -31,6 +41,7 @@ describe('SettingsDashboardSection', () => {
     expect(screen.queryByPlaceholderText('Welcome home')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Custom text' }));
+    fireEvent.click(screen.getByRole('button', { name: 'All devices' }));
 
     const input = screen.getByPlaceholderText('Welcome home');
     expect(input).toBeInTheDocument();
@@ -41,6 +52,7 @@ describe('SettingsDashboardSection', () => {
     expect(useSettingsStore.getState().headerCustomText).toBe('Dinner soon');
 
     fireEvent.click(screen.getByRole('button', { name: 'Date & Time' }));
+    fireEvent.click(screen.getByRole('button', { name: 'All devices' }));
 
     expect(useSettingsStore.getState().headerTitleMode).toBe('clock');
     expect(screen.queryByPlaceholderText('Welcome home')).not.toBeInTheDocument();
