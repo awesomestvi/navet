@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.7.11 - 2026-07-04
+
+## New
+
+- Dashboard settings now support scoped profile behavior so selected settings can persist per device while shared profile values stay intact during import and export.
+- The automation dashboard now has richer summary cards, state filters, room filters, attention states, recent-run metadata, and a cleaner split between automations and scripts.
+
+## Fixed
+
+- Climate summaries now ignore target-only thermostat setpoints when no real current temperature is available.
+- Powered Home Assistant TVs now count as active media without making idle speakers appear active.
+- Room grids now remount when switching rooms so room-specific dashboard state refreshes correctly.
+
+## Improved
+
+- Automation, quick-action, and habit insight cards now use more consistent dashboard card hierarchy and typography.
+
 ## 0.7.10 - 2026-07-02
 
 ## Fixed
