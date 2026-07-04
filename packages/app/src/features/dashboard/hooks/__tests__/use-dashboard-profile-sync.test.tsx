@@ -91,6 +91,14 @@ function buildProfile(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
+function getTestProfileSignature(profile: ReturnType<typeof buildProfile>) {
+  return JSON.stringify({
+    ...profile,
+    exportedAt: undefined,
+    navigation: undefined,
+  });
+}
+
 function resetStore<T>(store: {
   getInitialState: () => T;
   setState: (state: T, replace: true) => unknown;
@@ -309,6 +317,45 @@ describe('useDashboardProfileSync', () => {
     expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
     expect(importDashboardConfig).not.toHaveBeenCalled();
     expect(useDashboardEntitiesStore.getState().onboardingCompleted).toBe(true);
+  });
+
+  it('clears stale validators before saving local changes over an empty remote profile', async () => {
+    localStorage.setItem(
+      STORAGE_KEYS.dashboardProfileSync,
+      JSON.stringify({
+        serverGeneration: 'server-1',
+        lastRemoteEtag: '"stale-profile"',
+        lastRemoteLastModified: 'Mon, 01 Jan 2024 00:00:00 GMT',
+      })
+    );
+    loadDashboardProfile.mockResolvedValue({
+      available: true,
+      profile: null,
+      notModified: false,
+      etag: null,
+      lastModified: null,
+      generation: 'server-1',
+    });
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    currentProfile = buildProfile({
+      exportedAt: '2024-01-01T00:00:01.000Z',
+      theme: { theme: 'glass', primaryColor: 'yellow' },
+    });
+    act(() => {
+      useThemeStore.setState({ ...useThemeStore.getState(), primaryColor: 'yellow' });
+    });
+
+    await advanceTime(2_000);
+
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
+    expect(saveDashboardProfile).toHaveBeenCalledWith(currentProfile, {
+      etag: undefined,
+      keepalive: undefined,
+      lastModified: undefined,
+    });
   });
 
   it('clears stale local dashboard state when the server generation changes and the remote profile is empty', async () => {
@@ -608,6 +655,15 @@ describe('useDashboardProfileSync', () => {
 
     await advanceTime(2_000);
     await advanceTime(60_000);
+    localStorage.setItem(
+      STORAGE_KEYS.dashboardProfileSync,
+      JSON.stringify({
+        serverGeneration: 'server-1',
+        lastSavedSignature: getTestProfileSignature(currentProfile),
+        lastRemoteEtag: '"remote-1"',
+        lastRemoteLastModified: 'Mon, 01 Jan 2024 00:01:00 GMT',
+      })
+    );
 
     const conflictOptions = toast.mock.calls[0]?.[1] as { description: ReactNode };
     const keepMine = findButtonClickHandler(conflictOptions.description, 'Keep mine');
@@ -670,6 +726,15 @@ describe('useDashboardProfileSync', () => {
 
     await advanceTime(2_000);
     await advanceTime(60_000);
+    localStorage.setItem(
+      STORAGE_KEYS.dashboardProfileSync,
+      JSON.stringify({
+        serverGeneration: 'server-1',
+        lastAppliedAt: '2024-01-01T00:02:00.000Z',
+        lastRemoteEtag: '"remote-1"',
+        lastRemoteLastModified: 'Mon, 01 Jan 2024 00:01:00 GMT',
+      })
+    );
 
     const conflictOptions = toast.mock.calls[0]?.[1] as { description: ReactNode };
     const loadRemote = findButtonClickHandler(conflictOptions.description, 'Load remote');

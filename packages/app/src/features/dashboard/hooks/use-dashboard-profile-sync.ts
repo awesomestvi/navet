@@ -56,6 +56,11 @@ interface RemoteProfileSnapshot {
   conflictKey: string;
 }
 
+interface LocalProfileSnapshot {
+  profile: DashboardConfigPayload;
+  signature: string;
+}
+
 function getProfileTimestamp(profile: DashboardConfigPayload) {
   const time = Date.parse(profile.exportedAt);
   return Number.isFinite(time) ? time : 0;
@@ -191,6 +196,7 @@ export function useDashboardProfileSync() {
   const conflictToastIdRef = useRef<string | number | null>(null);
   const activeConflictKeyRef = useRef<string | null>(null);
   const pendingConflictRef = useRef<RemoteProfileSnapshot | null>(null);
+  const pendingLocalConflictRef = useRef<LocalProfileSnapshot | null>(null);
 
   const panelMode = isHomeAssistantPanelMode();
 
@@ -202,6 +208,7 @@ export function useDashboardProfileSync() {
 
     activeConflictKeyRef.current = null;
     pendingConflictRef.current = null;
+    pendingLocalConflictRef.current = null;
   }, []);
 
   const clearSaveTimeout = useCallback(() => {
@@ -220,23 +227,25 @@ export function useDashboardProfileSync() {
 
   const updateRemoteMetadata = useCallback(
     ({
+      clearMissingValidators = false,
       etag,
       generation,
       lastModified,
       profile,
       signature,
     }: {
+      clearMissingValidators?: boolean;
       etag: string | null;
       generation?: string | null;
       lastModified: string | null;
       profile?: DashboardConfigPayload | null;
       signature?: string | null;
     }) => {
-      if (etag !== null) {
+      if (etag !== null || clearMissingValidators) {
         lastRemoteEtagRef.current = etag;
       }
 
-      if (lastModified !== null) {
+      if (lastModified !== null || clearMissingValidators) {
         lastRemoteLastModifiedRef.current = lastModified;
       }
 
@@ -252,8 +261,14 @@ export function useDashboardProfileSync() {
             ? (generation ?? metadata.serverGeneration)
             : metadata.serverGeneration,
         lastRemoteVersion: profile?.exportedAt ?? metadata.lastRemoteVersion,
-        lastRemoteEtag: etag ?? metadata.lastRemoteEtag,
-        lastRemoteLastModified: lastModified ?? metadata.lastRemoteLastModified,
+        lastRemoteEtag:
+          etag !== null ? etag : clearMissingValidators ? undefined : metadata.lastRemoteEtag,
+        lastRemoteLastModified:
+          lastModified !== null
+            ? lastModified
+            : clearMissingValidators
+              ? undefined
+              : metadata.lastRemoteLastModified,
         lastSavedSignature: signature ?? metadata.lastSavedSignature,
       });
     },
@@ -307,14 +322,15 @@ export function useDashboardProfileSync() {
 
       lastRemoteVersionRef.current = null;
       updateRemoteMetadata({
+        clearMissingValidators: true,
         etag: metadata.etag,
         generation: metadata.generation,
         lastModified: metadata.lastModified,
       });
       writeSyncMetadata({
         serverGeneration: metadata.generation ?? currentMetadata.serverGeneration,
-        lastRemoteEtag: metadata.etag ?? currentMetadata.lastRemoteEtag,
-        lastRemoteLastModified: metadata.lastModified ?? currentMetadata.lastRemoteLastModified,
+        lastRemoteEtag: metadata.etag ?? undefined,
+        lastRemoteLastModified: metadata.lastModified ?? undefined,
       });
     },
     [clearConflictToast, updateRemoteMetadata]
@@ -324,7 +340,8 @@ export function useDashboardProfileSync() {
   const applyRemoteProfile = useCallback(
     (
       profile: DashboardConfigPayload,
-      metadata: { etag: string | null; generation: string | null; lastModified: string | null }
+      metadata: { etag: string | null; generation: string | null; lastModified: string | null },
+      options: { force?: boolean } = {}
     ) => {
       const profileSignature = getProfileSignature(profile);
       const currentMetadata = readSyncMetadata();
@@ -348,8 +365,8 @@ export function useDashboardProfileSync() {
           lastSavedSignature: profileSignature,
           serverGeneration: metadata.generation ?? currentMetadata.serverGeneration,
           lastRemoteVersion: profile.exportedAt,
-          lastRemoteEtag: metadata.etag ?? currentMetadata.lastRemoteEtag,
-          lastRemoteLastModified: metadata.lastModified ?? currentMetadata.lastRemoteLastModified,
+          lastRemoteEtag: metadata.etag ?? undefined,
+          lastRemoteLastModified: metadata.lastModified ?? undefined,
         });
         return false;
       }
@@ -364,19 +381,21 @@ export function useDashboardProfileSync() {
           lastSavedSignature: profileSignature,
           serverGeneration: metadata.generation ?? currentMetadata.serverGeneration,
           lastRemoteVersion: profile.exportedAt,
-          lastRemoteEtag: metadata.etag ?? currentMetadata.lastRemoteEtag,
-          lastRemoteLastModified: metadata.lastModified ?? currentMetadata.lastRemoteLastModified,
+          lastRemoteEtag: metadata.etag ?? undefined,
+          lastRemoteLastModified: metadata.lastModified ?? undefined,
         });
         return false;
       }
 
       const shouldApply =
+        options.force ||
         generationAuthoritative ||
         !onboardingCompletedRef.current ||
         !Number.isFinite(localTimestamp) ||
         remoteTimestamp > localTimestamp;
 
       updateRemoteMetadata({
+        clearMissingValidators: true,
         etag: metadata.etag,
         generation: metadata.generation,
         lastModified: metadata.lastModified,
@@ -402,8 +421,8 @@ export function useDashboardProfileSync() {
         lastSavedSignature: profileSignature,
         serverGeneration: metadata.generation ?? currentMetadata.serverGeneration,
         lastRemoteVersion: profile.exportedAt,
-        lastRemoteEtag: metadata.etag ?? currentMetadata.lastRemoteEtag,
-        lastRemoteLastModified: metadata.lastModified ?? currentMetadata.lastRemoteLastModified,
+        lastRemoteEtag: metadata.etag ?? undefined,
+        lastRemoteLastModified: metadata.lastModified ?? undefined,
       });
       importDashboardConfig(profile, { applyNavigation: false });
       applyingRemoteProfileRef.current = false;
@@ -420,6 +439,7 @@ export function useDashboardProfileSync() {
 
       clearConflictToast();
       pendingConflictRef.current = remoteProfile;
+      pendingLocalConflictRef.current = getCurrentProfileSnapshot();
       activeConflictKeyRef.current = remoteProfile.conflictKey;
       conflictToastIdRef.current = toast(t('dashboard.profileSync.conflictTitle'), {
         description: createElement(
@@ -459,11 +479,15 @@ export function useDashboardProfileSync() {
                     return;
                   }
 
-                  applyRemoteProfile(pendingConflict.profile, {
-                    etag: pendingConflict.etag,
-                    generation: pendingConflict.generation,
-                    lastModified: pendingConflict.lastModified,
-                  });
+                  applyRemoteProfile(
+                    pendingConflict.profile,
+                    {
+                      etag: pendingConflict.etag,
+                      generation: pendingConflict.generation,
+                      lastModified: pendingConflict.lastModified,
+                    },
+                    { force: true }
+                  );
                 },
               },
               t('dashboard.profileSync.loadRemote')
@@ -480,7 +504,7 @@ export function useDashboardProfileSync() {
         },
       });
     },
-    [applyRemoteProfile, clearConflictToast, t]
+    [applyRemoteProfile, clearConflictToast, getCurrentProfileSnapshot, t]
   );
 
   const pollRemoteProfile = useCallback(
@@ -515,6 +539,7 @@ export function useDashboardProfileSync() {
       profileSyncAvailableRef.current = true;
       failureCountRef.current = 0;
       updateRemoteMetadata({
+        clearMissingValidators: !result.notModified,
         etag: result.etag,
         generation: result.generation,
         lastModified: result.lastModified,
@@ -560,8 +585,8 @@ export function useDashboardProfileSync() {
           lastSavedSignature: remoteSignature,
           serverGeneration: result.generation ?? currentMetadata.serverGeneration,
           lastRemoteVersion: result.profile.exportedAt,
-          lastRemoteEtag: result.etag ?? currentMetadata.lastRemoteEtag,
-          lastRemoteLastModified: result.lastModified ?? currentMetadata.lastRemoteLastModified,
+          lastRemoteEtag: result.etag ?? undefined,
+          lastRemoteLastModified: result.lastModified ?? undefined,
         });
         schedulePollRef.current(PROFILE_REMOTE_POLL_INTERVAL_MS);
         return;
@@ -611,15 +636,13 @@ export function useDashboardProfileSync() {
         return false;
       }
 
-      const { profile, signature } = getCurrentProfileSnapshot();
+      const conflictSnapshot = options.dismissConflict ? pendingLocalConflictRef.current : null;
+      const { profile, signature } = conflictSnapshot ?? getCurrentProfileSnapshot();
       const metadata = readSyncMetadata();
 
-      if (metadata.lastSavedSignature === signature) {
+      if (!options.dismissConflict && metadata.lastSavedSignature === signature) {
         hasPendingLocalChangesRef.current = false;
         clearSaveTimeout();
-        if (options.dismissConflict) {
-          clearConflictToast();
-        }
         return false;
       }
 
@@ -639,6 +662,7 @@ export function useDashboardProfileSync() {
 
         failureCountRef.current = 0;
         updateRemoteMetadata({
+          clearMissingValidators: !result.notModified,
           etag: result.etag,
           generation: result.generation,
           lastModified: result.lastModified,
@@ -686,6 +710,7 @@ export function useDashboardProfileSync() {
       profileSyncAvailableRef.current = true;
       clearReloadGuard();
       updateRemoteMetadata({
+        clearMissingValidators: true,
         etag: result.etag,
         generation: result.generation,
         lastModified: result.lastModified,
@@ -698,8 +723,8 @@ export function useDashboardProfileSync() {
         lastSavedSignature: signature,
         serverGeneration: result.generation ?? metadata.serverGeneration,
         lastRemoteVersion: profile.exportedAt,
-        lastRemoteEtag: result.etag ?? metadata.lastRemoteEtag,
-        lastRemoteLastModified: result.lastModified ?? metadata.lastRemoteLastModified,
+        lastRemoteEtag: result.etag ?? undefined,
+        lastRemoteLastModified: result.lastModified ?? undefined,
       });
 
       if (options.dismissConflict) {
@@ -821,12 +846,15 @@ export function useDashboardProfileSync() {
       loadCompletedRef.current = true;
       setProfileLoadCompleted(true);
       profileSyncAvailableRef.current = result.available || profileSyncAvailableRef.current;
-      updateRemoteMetadata({
-        etag: result.etag,
-        generation: result.generation,
-        lastModified: result.lastModified,
-        profile: result.profile,
-      });
+      if (result.available) {
+        updateRemoteMetadata({
+          clearMissingValidators: !result.notModified,
+          etag: result.etag,
+          generation: result.generation,
+          lastModified: result.lastModified,
+          profile: result.profile,
+        });
+      }
 
       const generationAuthoritative = isServerGenerationAuthoritative(result.generation, metadata);
 

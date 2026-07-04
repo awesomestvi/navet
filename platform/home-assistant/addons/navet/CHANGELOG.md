@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.12
+
+- Updated Navet to `0.7.12`
+- Added scoped dashboard profile settings so selected preferences can persist per device while shared profile values stay intact
+- Refined the automation dashboard with summary cards, state and room filters, attention states, recent-run metadata, and a clearer automations/scripts split
+- Fixed dashboard profile sync so multi-device conflicts resolve correctly, including "Keep mine", "Load remote", and stale validator handling after empty remote profiles
+- Fixed climate summaries so target-only thermostat setpoints are not treated as current room temperature
+- Fixed powered Home Assistant TVs so they count as active media without counting idle speakers as active
+- Improved automation, quick-action, and habit insight card hierarchy and typography
+
 ## 0.7.11
 
 - Updated Navet to `0.7.11`
