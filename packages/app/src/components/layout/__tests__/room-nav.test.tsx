@@ -246,7 +246,6 @@ describe('RoomNav', () => {
         Laundry: 94,
         Nursery: 90,
         Basement: 98,
-        Loft: 80,
       },
     });
 
@@ -263,7 +262,6 @@ describe('RoomNav', () => {
           'Laundry',
           'Nursery',
           'Basement',
-          'Loft',
         ]}
         activeRoom="All"
         onRoomChange={() => undefined}

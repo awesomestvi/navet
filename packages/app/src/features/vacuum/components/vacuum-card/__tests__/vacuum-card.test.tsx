@@ -368,8 +368,8 @@ describe('VacuumCard', () => {
       />
     );
 
-    expect(screen.getAllByText('Mowing').length).toBeGreaterThan(0);
-    expect(screen.getByLabelText('lawnMower.action.returnToBase')).toBeInTheDocument();
+    expect(screen.getAllByText('lawnMower.status.mowing').length).toBeGreaterThan(0);
+    expect(screen.getByText('action:return-home')).toBeInTheDocument();
     expect(screen.queryByText('vacuum.status.cleaning')).not.toBeInTheDocument();
     expect(screen.queryByText('vacuum.subtitle')).not.toBeInTheDocument();
   });
@@ -403,7 +403,7 @@ describe('VacuumCard', () => {
       />
     );
 
-    expect(screen.getAllByText('Docked').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('vacuum.status.docked').length).toBeGreaterThan(0);
     expect(screen.queryByText('vacuum.status.charging')).not.toBeInTheDocument();
   });
 

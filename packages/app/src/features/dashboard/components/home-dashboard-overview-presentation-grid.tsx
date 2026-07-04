@@ -1,24 +1,10 @@
-import {
-  type CardSize,
-  getCardGridAutoRowsStyle,
-} from '@navet/app/components/shared/card-size-selector';
-import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
-import { settingsSelectors } from '@navet/app/stores/selectors';
-import { useSettingsStore } from '@navet/app/stores/settings-store';
+import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import type { DeviceWithType } from '@navet/app/types/device.types';
-import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
-import { type CSSProperties, memo, useMemo } from 'react';
-import { useAutoScaledGridMeasurements } from '../hooks/use-auto-scaled-grid-measurements';
-import { resolveDashboardPerformanceProfile } from '../hooks/use-dashboard-performance-mode';
-import { useProgressiveBatching } from '../hooks/use-progressive-batching';
+import { memo } from 'react';
+import { useHomeGridRuntime } from '../hooks/use-home-grid-runtime';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { DashboardCardItem } from './dashboard-card-item';
-import {
-  areCardIdsStable,
-  getCardGridGapPx,
-  getCardGridTargetWidth,
-  isCustomCard,
-} from './home-dashboard-overview.shared';
+import { areCardIdsStable, isCustomCard } from './home-dashboard-overview.shared';
 
 interface PresentationCardGridProps {
   cardIds: string[];
@@ -41,106 +27,25 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
   showHero,
   densePerformanceMode = false,
 }: PresentationCardGridProps) {
-  const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
-  const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
-  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
-  const breakpointCols = useBreakpointCols();
-  const logicalGridCols = Math.max(1, Math.min(gridCols ?? breakpointCols, breakpointCols));
-  const gridGapPx = getCardGridGapPx(breakpointCols);
-  const resolvedCardSizes = useMemo(
-    () =>
-      cardIds.map((cardId) => {
-        const entry = allCards.get(cardId);
-        return cardSizes[cardId] ?? entry?.size ?? 'small';
-      }),
-    [allCards, cardIds, cardSizes]
-  );
-  const hasOnlyTinyCards = useMemo(
-    () => resolvedCardSizes.length > 0 && resolvedCardSizes.every((size) => size === 'tiny'),
-    [resolvedCardSizes]
-  );
-  const preferredRenderedGridCols = logicalGridCols * 2;
-  const renderedGridCols = hasOnlyTinyCards ? 1 : preferredRenderedGridCols;
-
-  const { microCardMinWidth, targetGridWidth } = useMemo(
-    () => getCardGridTargetWidth(renderedGridCols, gridGapPx),
-    [gridGapPx, renderedGridCols]
-  );
-  const { outerRef, innerRef, outerWidth, contentHeight } =
-    useAutoScaledGridMeasurements(targetGridWidth);
-
-  const autoScale =
-    renderedGridCols <= 1 || outerWidth <= 0 ? 1 : Math.min(1, outerWidth / targetGridWidth);
-  const isAutoScaled = autoScale < 0.999;
-  const outerContainerStyle = useMemo(
-    () => (isAutoScaled && contentHeight > 0 ? { height: contentHeight * autoScale } : undefined),
-    [autoScale, contentHeight, isAutoScaled]
-  );
-  const innerContainerStyle = useMemo(
-    () =>
-      ({
-        ...(isAutoScaled
-          ? {
-              transform: `scale(${autoScale})`,
-              width: `${targetGridWidth}px`,
-            }
-          : {}),
-      }) as CSSProperties,
-    [autoScale, isAutoScaled, targetGridWidth]
-  );
-  const gridStyle = useMemo(
-    () =>
-      ({
-        '--home-card-cols': renderedGridCols,
-        '--home-card-min': `${microCardMinWidth}px`,
-        ...getCardGridAutoRowsStyle(breakpointCols),
-        gridTemplateColumns: 'repeat(var(--home-card-cols), minmax(var(--home-card-min), 1fr))',
-      }) as CSSProperties,
-    [breakpointCols, microCardMinWidth, renderedGridCols]
-  );
-  const performanceProfile = useMemo(
-    () =>
-      resolveDashboardPerformanceProfile({
-        activeSection: 'home',
-        deviceTier: detectDeviceTier(),
-        effectsQuality,
-        isEditMode: false,
-        lowPowerMode,
-        reducedEffectsEnabled: disableAnimations || lowPowerMode,
-        visibleCardCount: cardIds.length,
-        visibleDevices: Array.from(allCards.values()).filter(
-          (entry): entry is DeviceWithType => !isCustomCard(entry)
-        ),
-      }),
-    [allCards, cardIds.length, disableAnimations, effectsQuality, lowPowerMode]
-  );
-  const visibleCount = useProgressiveBatching(cardIds.length, false, {
-    enabled: performanceProfile.batchHeavyCards || densePerformanceMode,
-    initialBatch: performanceProfile.progressiveBatchInitialCount,
-    batchSize: performanceProfile.progressiveBatchSize,
+  const {
+    gridStyle,
+    innerContainerStyle,
+    innerRef,
+    isAutoScaled,
+    outerContainerStyle,
+    outerRef,
+    visibleCardIds,
+  } = useHomeGridRuntime({
+    allCards,
+    cardIds,
+    cardSizes,
+    densePerformanceMode,
+    gridCols,
+    isEditMode: false,
   });
-  const visibleCardIds = useMemo(() => {
-    if (!Number.isFinite(visibleCount)) {
-      return cardIds;
-    }
-
-    return cardIds.slice(0, visibleCount);
-  }, [cardIds, visibleCount]);
 
   return (
-    <div
-      ref={outerRef}
-      className="relative w-full"
-      style={
-        densePerformanceMode
-          ? ({
-              ...outerContainerStyle,
-              contentVisibility: 'auto',
-              containIntrinsicBlockSize: `${Math.max(1, Math.ceil(cardIds.length / Math.max(1, renderedGridCols))) * 120}px`,
-            } as CSSProperties)
-          : outerContainerStyle
-      }
-    >
+    <div ref={outerRef} className="relative w-full" style={outerContainerStyle}>
       <div
         ref={innerRef}
         className={`w-full${isAutoScaled ? ' absolute left-0 top-0 origin-top-left' : ''}`}

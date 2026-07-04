@@ -933,6 +933,7 @@ export const importDashboardConfig = (
       : currentSettingsState.dashboardSpaceMode,
     ...getLegacyReducedEffectsFlags(effectsQuality),
     effectsQuality,
+    effectsQualityUserOverride: true,
     entityInteractionMode:
       settings.entityInteractionMode === 'control-first' ||
       settings.entityInteractionMode === 'toggle-first'

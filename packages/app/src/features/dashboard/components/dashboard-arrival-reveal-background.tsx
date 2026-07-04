@@ -11,6 +11,7 @@ interface RevealBackgroundProps {
 export function RevealBackground({ accentColor, effectsQuality, theme }: RevealBackgroundProps) {
   const showFullAmbient = effectsQuality === 'high';
   const showHaloMotion = effectsQuality !== 'low';
+  const showLowCostAmbient = effectsQuality !== 'low';
   const isLight = theme === 'light';
   const gridLine = isLight ? 'rgba(15,23,42,0.06)' : 'rgba(255,255,255,0.06)';
   const gridGlow = isLight ? 'rgba(15,23,42,0.04)' : 'rgba(255,255,255,0.04)';
@@ -55,14 +56,16 @@ export function RevealBackground({ accentColor, effectsQuality, theme }: RevealB
         }}
       />
 
-      <div
-        className="pointer-events-none absolute left-1/2 top-[38%] h-[42rem] w-[42rem] rounded-full blur-3xl"
-        style={{
-          background: `radial-gradient(circle, ${accentColor}26 0%, ${accentColor}10 36%, transparent 70%)`,
-          transform: 'translate(-50%, -50%)',
-          animation: showHaloMotion ? 'navet-arrival-halo 12s ease-in-out infinite' : undefined,
-        }}
-      />
+      {showLowCostAmbient && (
+        <div
+          className="pointer-events-none absolute left-1/2 top-[38%] h-[42rem] w-[42rem] rounded-full blur-3xl"
+          style={{
+            background: `radial-gradient(circle, ${accentColor}26 0%, ${accentColor}10 36%, transparent 70%)`,
+            transform: 'translate(-50%, -50%)',
+            animation: showHaloMotion ? 'navet-arrival-halo 12s ease-in-out infinite' : undefined,
+          }}
+        />
+      )}
 
       {showFullAmbient &&
         AMBIENT_LAYERS.map((layer) => (
@@ -80,18 +83,20 @@ export function RevealBackground({ accentColor, effectsQuality, theme }: RevealB
           />
         ))}
 
-      <div
-        className="pointer-events-none absolute -right-[12%] bottom-[-12%] h-[34rem] w-[28rem]"
-        style={{
-          background: `radial-gradient(circle at 40% 40%, ${secondaryBloom} 0%, ${accentColor}10 24%, transparent 72%)`,
-          filter: 'blur(26px)',
-          opacity: effectsQuality === 'high' ? (isLight ? 0.62 : 0.75) : isLight ? 0.34 : 0.42,
-          animation:
-            effectsQuality === 'high'
-              ? 'navet-arrival-ambient-drift-reverse 18s ease-in-out infinite alternate'
-              : undefined,
-        }}
-      />
+      {showLowCostAmbient && (
+        <div
+          className="pointer-events-none absolute -right-[12%] bottom-[-12%] h-[34rem] w-[28rem]"
+          style={{
+            background: `radial-gradient(circle at 40% 40%, ${secondaryBloom} 0%, ${accentColor}10 24%, transparent 72%)`,
+            filter: 'blur(26px)',
+            opacity: effectsQuality === 'high' ? (isLight ? 0.62 : 0.75) : isLight ? 0.34 : 0.42,
+            animation:
+              effectsQuality === 'high'
+                ? 'navet-arrival-ambient-drift-reverse 18s ease-in-out infinite alternate'
+                : undefined,
+          }}
+        />
+      )}
     </>
   );
 }

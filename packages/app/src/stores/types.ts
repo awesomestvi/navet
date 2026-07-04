@@ -81,6 +81,7 @@ interface UserSettings {
   disableAnimations: boolean;
   lowPowerMode: boolean;
   effectsQuality: EffectsQuality;
+  effectsQualityUserOverride: boolean;
   entityInteractionMode: EntityInteractionMode;
   cameraDashboardViewMode: CameraDashboardViewMode;
   cameraViewMode: CameraViewMode;

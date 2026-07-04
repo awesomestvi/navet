@@ -33,10 +33,10 @@ export interface HomeAssistantNavetMappingInput {
 
 type SwitchMetricState = {
   label: string;
-  value: number;
+  value: string | number;
   unit: string;
   icon: 'zap' | 'gauge' | 'activity' | 'thermometer' | 'droplets' | 'motion';
-  category: 'measurement';
+  category: 'measurement' | 'configuration';
 };
 
 const HOME_ASSISTANT_VACUUM_FEATURES = {
@@ -410,6 +410,48 @@ function upsertSwitchMetric(metricState: SwitchMetricState[], nextMetric: Switch
   metricState[existingIndex] = nextMetric;
 }
 
+function isNonDisplayConfigMetricValue(value: string | number) {
+  if (typeof value === 'number') {
+    return false;
+  }
+
+  return ['none', 'previousvalue', 'unknown', 'unavailable'].includes(
+    value
+      .trim()
+      .replace(/[\s_-]/g, '')
+      .toLowerCase()
+  );
+}
+
+function createConfigMetric(entityId: string, entity: HassEntity): SwitchMetricState | null {
+  const parsedValue =
+    getDomain(entityId) === 'select'
+      ? entity.state
+      : (readNumberish(entity.state) ??
+        readNumberish(entity.attributes?.native_value) ??
+        readNumberish(entity.attributes?.value));
+
+  if (parsedValue == null || parsedValue === '' || isNonDisplayConfigMetricValue(parsedValue)) {
+    return null;
+  }
+
+  const label = formatMetricLabel(entityId, entity.attributes?.friendly_name);
+  const unit =
+    typeof entity.attributes?.unit_of_measurement === 'string'
+      ? entity.attributes.unit_of_measurement
+      : typeof entity.attributes?.native_unit_of_measurement === 'string'
+        ? entity.attributes.native_unit_of_measurement
+        : '';
+
+  return {
+    label,
+    value: parsedValue,
+    unit,
+    icon: inferMetricIcon(undefined, `${entityId} ${label}`, unit),
+    category: 'configuration',
+  };
+}
+
 function buildSwitchMetricsByDeviceId(
   entities: HassEntities,
   entityRegistryMap: Map<string, HomeAssistantEntityRegistryEntry>
@@ -417,7 +459,27 @@ function buildSwitchMetricsByDeviceId(
   const metricsByDeviceId = new Map<string, SwitchMetricState[]>();
 
   for (const [entityId, entity] of Object.entries(entities)) {
-    if (getDomain(entityId) !== 'sensor') {
+    const domain = getDomain(entityId);
+    const entityEntry = entityRegistryMap.get(entityId);
+    const registryDeviceId = entityEntry?.device_id ?? undefined;
+
+    if (
+      (domain === 'number' || domain === 'input_number' || domain === 'select') &&
+      registryDeviceId &&
+      getEntityCategory(entityEntry) === 'config'
+    ) {
+      const configMetric = createConfigMetric(entityId, entity);
+      if (!configMetric) {
+        continue;
+      }
+
+      const metricState = metricsByDeviceId.get(registryDeviceId) ?? [];
+      upsertSwitchMetric(metricState, configMetric);
+      metricsByDeviceId.set(registryDeviceId, metricState);
+      continue;
+    }
+
+    if (domain !== 'sensor') {
       continue;
     }
 
@@ -445,7 +507,6 @@ function buildSwitchMetricsByDeviceId(
       continue;
     }
 
-    const registryDeviceId = entityRegistryMap.get(entityId)?.device_id ?? undefined;
     const sourceDeviceId =
       typeof entity.attributes?.source_device_id === 'string'
         ? entity.attributes.source_device_id

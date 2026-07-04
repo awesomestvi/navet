@@ -1,5 +1,5 @@
 import type { HTMLAttributes } from 'react';
-import { cn } from '@navet/app/components/ui/utils';
+import { cn } from '@navet/ui/utils';
 import { MarketingResponsiveImage, type MarketingResponsiveImageSource } from '@navet/app/marketing/components/MarketingResponsiveImage';
 
 export interface IphoneProps extends HTMLAttributes<HTMLDivElement> {

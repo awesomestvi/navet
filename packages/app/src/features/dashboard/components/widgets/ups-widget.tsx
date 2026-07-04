@@ -446,7 +446,11 @@ export const UpsWidget = memo(function UpsWidget({
         overlay={
           <>
             {tintSurface.glowStyle ? (
-              <div className="pointer-events-none absolute inset-0" style={tintSurface.glowStyle} />
+              <div
+                className="pointer-events-none absolute inset-0"
+                data-dashboard-glow="true"
+                style={tintSurface.glowStyle}
+              />
             ) : null}
             {tintSurface.overlayClassName ? (
               <div

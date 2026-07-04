@@ -1,31 +1,18 @@
 import { useDroppable } from '@dnd-kit/core';
 import { rectSortingStrategy, SortableContext } from '@dnd-kit/sortable';
-import {
-  type CardSize,
-  getCardGridAutoRowsStyle,
-  getCardSpanClass,
-} from '@navet/app/components/shared/card-size-selector';
+import { type CardSize, getCardSpanClass } from '@navet/app/components/shared/card-size-selector';
 import type { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n } from '@navet/app/hooks';
-import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
-import { settingsSelectors } from '@navet/app/stores/selectors';
-import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceWithType } from '@navet/app/types/device.types';
-import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { Plus } from 'lucide-react';
 import { type CSSProperties, memo, type ReactNode, useCallback, useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import { useAutoScaledGridMeasurements } from '../hooks/use-auto-scaled-grid-measurements';
-import { resolveDashboardPerformanceProfile } from '../hooks/use-dashboard-performance-mode';
 import type { DropMeta } from '../hooks/use-home-dashboard-editor';
-import { useProgressiveBatching } from '../hooks/use-progressive-batching';
+import { useHomeGridRuntime } from '../hooks/use-home-grid-runtime';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { DashboardCardItem } from './dashboard-card-item';
 import {
   areCardIdsStable,
   type CardGridProps,
-  getCardGridGapPx,
-  getCardGridTargetWidth,
   isCustomCard,
 } from './home-dashboard-overview.shared';
 import { HomeCardSlot } from './home-dashboard-overview-card-slot';
@@ -147,90 +134,30 @@ export const CardGrid = memo(function CardGrid({
   sortable = true,
 }: CardGridProps) {
   const { t } = useI18n();
-  const { disableAnimations, effectsQuality, lowPowerMode } = useSettingsStore(
-    useShallow((state) => ({
-      disableAnimations: settingsSelectors.disableAnimations(state),
-      effectsQuality: settingsSelectors.effectsQuality(state),
-      lowPowerMode: settingsSelectors.lowPowerMode(state),
-    }))
-  );
-  const performanceProfile = useMemo(
-    () =>
-      resolveDashboardPerformanceProfile({
-        activeSection: 'home',
-        deviceTier: detectDeviceTier(),
-        effectsQuality,
-        isEditMode,
-        lowPowerMode,
-        reducedEffectsEnabled: disableAnimations || lowPowerMode,
-        visibleCardCount: cardIds.length,
-        visibleDevices: Array.from(allCards.values()).filter(
-          (entry): entry is DeviceWithType => !isCustomCard(entry)
-        ),
-      }),
-    [allCards, cardIds.length, disableAnimations, effectsQuality, isEditMode, lowPowerMode]
-  );
-  const optimizeOffscreenPaint = performanceProfile.optimizeOffscreenPaint;
-  const breakpointCols = useBreakpointCols();
-  const logicalGridCols = Math.max(1, Math.min(gridCols ?? breakpointCols, breakpointCols));
-  const gridGapPx = getCardGridGapPx(breakpointCols);
   const hasTrailingAddCardSlot = isEditMode && Boolean(onOpenAddCardDialog);
-  const resolvedCardSizes = useMemo(
-    () =>
-      cardIds.map((cardId) => {
-        const entry = allCards.get(cardId);
-        return cardSizes[cardId] ?? entry?.size ?? 'small';
-      }),
-    [allCards, cardIds, cardSizes]
-  );
-  const hasOnlyTinyCards = useMemo(
-    () => resolvedCardSizes.length > 0 && resolvedCardSizes.every((size) => size === 'tiny'),
-    [resolvedCardSizes]
-  );
-  const preferredRenderedGridCols = logicalGridCols * 2;
-  const renderedGridCols = isEditMode && hasOnlyTinyCards ? 1 : preferredRenderedGridCols;
-
-  const { microCardMinWidth, targetGridWidth } = useMemo(
-    () => getCardGridTargetWidth(renderedGridCols, gridGapPx),
-    [gridGapPx, renderedGridCols]
-  );
-  const { outerRef, innerRef, outerWidth, contentHeight } =
-    useAutoScaledGridMeasurements(targetGridWidth);
+  const {
+    gridStyle,
+    innerContainerStyle,
+    innerRef,
+    isAutoScaled,
+    optimizeOffscreenPaint,
+    outerContainerStyle,
+    outerRef,
+    renderedGridCols,
+    visibleCardIds,
+  } = useHomeGridRuntime({
+    allCards,
+    cardIds,
+    cardSizes,
+    gridCols,
+    isEditMode,
+    sortable,
+  });
   const addCardSlotCols = Math.min(renderedGridCols, 2);
   const hasInlineAddCardSlot = hasTrailingAddCardSlot;
   const handleAddCard = useCallback(() => {
     onOpenAddCardDialog?.();
   }, [onOpenAddCardDialog]);
-
-  const autoScale =
-    renderedGridCols <= 1 || outerWidth <= 0 ? 1 : Math.min(1, outerWidth / targetGridWidth);
-  const isAutoScaled = autoScale < 0.999;
-  const outerContainerStyle = useMemo(
-    () => (isAutoScaled && contentHeight > 0 ? { height: contentHeight * autoScale } : undefined),
-    [autoScale, contentHeight, isAutoScaled]
-  );
-  const innerContainerStyle = useMemo(
-    () =>
-      ({
-        ...(isAutoScaled
-          ? {
-              transform: `scale(${autoScale})`,
-              width: `${targetGridWidth}px`,
-            }
-          : {}),
-      }) as CSSProperties,
-    [autoScale, isAutoScaled, targetGridWidth]
-  );
-  const gridStyle = useMemo(
-    () =>
-      ({
-        '--home-card-cols': renderedGridCols,
-        '--home-card-min': `${microCardMinWidth}px`,
-        ...getCardGridAutoRowsStyle(breakpointCols),
-        gridTemplateColumns: 'repeat(var(--home-card-cols), minmax(var(--home-card-min), 1fr))',
-      }) as CSSProperties,
-    [breakpointCols, microCardMinWidth, renderedGridCols]
-  );
   const addCardSlotStyle = useMemo(
     () =>
       ({
@@ -241,25 +168,6 @@ export const CardGrid = memo(function CardGrid({
       }) as CSSProperties,
     [addCardSlotCols]
   );
-
-  const visibleCount = useProgressiveBatching(cardIds.length, isEditMode, {
-    enabled: !sortable && performanceProfile.batchHeavyCards,
-    initialBatch: performanceProfile.progressiveBatchInitialCount,
-    batchSize: performanceProfile.progressiveBatchSize,
-  });
-  const visibleCardIds = useMemo(() => {
-    // Sortable home sections must render every `HomeCardSlot` so `SortableContext`
-    // items match the mounted sortable nodes during drag measurement.
-    if (sortable) {
-      return cardIds;
-    }
-
-    if (!Number.isFinite(visibleCount)) {
-      return cardIds;
-    }
-
-    return cardIds.slice(0, visibleCount);
-  }, [cardIds, sortable, visibleCount]);
 
   return (
     <div ref={outerRef} className="relative w-full" style={outerContainerStyle}>

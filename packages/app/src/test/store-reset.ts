@@ -4,7 +4,10 @@ import { homeyService } from '@navet/app/services/homey.service';
 import { useEditModeStore } from '@navet/app/stores/edit-mode-store';
 import { useEntityRoomOverridesStore } from '@navet/app/stores/entity-room-overrides-store';
 import { useErrorStore } from '@navet/app/stores/error-store';
-import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
+import {
+  homeAssistantStore,
+  resetHomeAssistantStoreDiagnostics,
+} from '@navet/app/stores/home-assistant-store';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { useNavigationStore } from '@navet/app/stores/navigation-store';
 import { useSearchStore } from '@navet/app/stores/search-store';
@@ -28,7 +31,9 @@ export async function resetAppStores() {
   resetStore(useErrorStore);
   resetStore(useHabitStore);
   resetStore(useEntityRoomOverridesStore);
+  homeAssistantStore.getState().disconnect();
   resetStore(homeAssistantStore);
+  resetHomeAssistantStoreDiagnostics();
   resetStore(integrationStore);
   homeyService.setClient(null);
   homeyService.resetSnapshot();

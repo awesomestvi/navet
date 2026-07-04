@@ -56,6 +56,7 @@ export interface UserSettings {
   disableAnimations: boolean;
   lowPowerMode: boolean;
   effectsQuality: EffectsQuality;
+  effectsQualityUserOverride: boolean;
   entityInteractionMode: EntityInteractionMode;
   cameraDashboardViewMode: CameraDashboardViewMode;
   cameraViewMode: CameraViewMode;
@@ -100,6 +101,7 @@ export const defaultSettings: UserSettings = {
   disableAnimations: false,
   lowPowerMode: false,
   effectsQuality: 'high',
+  effectsQualityUserOverride: false,
   entityInteractionMode: 'toggle-first',
   cameraDashboardViewMode: 'live',
   cameraViewMode: 'live',

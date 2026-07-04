@@ -211,7 +211,11 @@ export const MapWidget = memo(function MapWidget({
           style={mapInnerStyle}
         >
           {surface.glowStyle ? (
-            <div className="pointer-events-none absolute inset-0" style={surface.glowStyle} />
+            <div
+              className="pointer-events-none absolute inset-0"
+              data-dashboard-glow="true"
+              style={surface.glowStyle}
+            />
           ) : null}
           {resolvedMarkers.length === 0 ? (
             <MapPlaceholder

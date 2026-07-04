@@ -33,6 +33,28 @@ export function DashboardArrivalRevealView({
     textColor,
     theme,
   } = controller;
+  const reducedEffectsEnabled = effectsQuality === 'low';
+  const revealCardAnimation = reducedEffectsEnabled
+    ? undefined
+    : phase === 'revealed'
+      ? 'navet-dashboard-reveal-card 1.05s cubic-bezier(0.22, 1, 0.36, 1) forwards'
+      : phase === 'exiting'
+        ? 'navet-dashboard-exit-card 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards'
+        : undefined;
+  const revealLogoAnimation = reducedEffectsEnabled
+    ? undefined
+    : phase === 'revealed'
+      ? 'navet-dashboard-reveal-logo 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards'
+      : phase === 'exiting'
+        ? 'navet-dashboard-exit-card 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards'
+        : undefined;
+  const revealLineAnimation = reducedEffectsEnabled
+    ? undefined
+    : phase === 'revealed'
+      ? 'navet-dashboard-reveal-line 1.4s ease-out 0.25s forwards'
+      : phase === 'exiting'
+        ? 'navet-dashboard-exit-shell 0.9s ease forwards'
+        : undefined;
 
   return (
     <div
@@ -49,7 +71,9 @@ export function DashboardArrivalRevealView({
         style={{
           background: `radial-gradient(circle at 50% 38%, ${accentColor}18 0%, transparent 42%), ${backdropColor}`,
           animation:
-            phase === 'exiting' ? 'navet-dashboard-exit-shell 0.9s ease forwards' : undefined,
+            !reducedEffectsEnabled && phase === 'exiting'
+              ? 'navet-dashboard-exit-shell 0.9s ease forwards'
+              : undefined,
         }}
       />
 
@@ -63,24 +87,14 @@ export function DashboardArrivalRevealView({
         <div
           className="pointer-events-auto relative w-full max-w-xl px-8 py-10 text-center"
           style={{
-            animation:
-              phase === 'revealed'
-                ? 'navet-dashboard-reveal-card 1.05s cubic-bezier(0.22, 1, 0.36, 1) forwards'
-                : phase === 'exiting'
-                  ? 'navet-dashboard-exit-card 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards'
-                  : undefined,
+            animation: revealCardAnimation,
             opacity: phase === 'revealed' || phase === 'exiting' ? 1 : 0,
           }}
         >
           <div
             className="mx-auto flex min-h-24 w-full max-w-[18rem] items-center justify-center"
             style={{
-              animation:
-                phase === 'revealed'
-                  ? 'navet-dashboard-reveal-logo 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards'
-                  : phase === 'exiting'
-                    ? 'navet-dashboard-exit-card 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards'
-                    : undefined,
+              animation: revealLogoAnimation,
               opacity: phase === 'revealed' || phase === 'exiting' ? 1 : 0,
             }}
           >
@@ -93,12 +107,7 @@ export function DashboardArrivalRevealView({
             className="mx-auto mt-5 h-px w-28 origin-center"
             style={{
               background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)`,
-              animation:
-                phase === 'revealed'
-                  ? 'navet-dashboard-reveal-line 1.4s ease-out 0.25s forwards'
-                  : phase === 'exiting'
-                    ? 'navet-dashboard-exit-shell 0.9s ease forwards'
-                    : undefined,
+              animation: revealLineAnimation,
               opacity: phase === 'revealed' || phase === 'exiting' ? 1 : 0,
             }}
           />

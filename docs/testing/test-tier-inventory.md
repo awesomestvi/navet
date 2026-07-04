@@ -3,6 +3,10 @@
 This file is the human-readable map of which Navet test suites matter, why they exist, and whether
 they are keep, rewrite, or delete candidates.
 
+The executable Tier 1 and Tier 2 file lists live in
+[`../../scripts/test-tier-manifest.mjs`](../../scripts/test-tier-manifest.mjs). Keep this document
+as the rationale map and update the manifest when changing a runnable gate.
+
 ## Tier 1: Release-Critical
 
 These suites block release-oriented workflows and should stay intentionally small.

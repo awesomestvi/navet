@@ -143,6 +143,97 @@ describe('homeassistant-mappers', () => {
     );
   });
 
+  it('attaches displayable config metrics to switch entities from the same device', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'switch.kitchen_outlet': makeEntity('switch.kitchen_outlet', 'on', {
+          friendly_name: 'Kitchen outlet',
+        }),
+        'select.kitchen_outlet_mode': makeEntity('select.kitchen_outlet_mode', 'eco', {
+          friendly_name: 'Outlet mode',
+          options: ['eco', 'comfort'],
+        }),
+        'number.kitchen_outlet_delay': makeEntity('number.kitchen_outlet_delay', '12', {
+          friendly_name: 'Outlet delay',
+          unit_of_measurement: 's',
+        }),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [
+        { entity_id: 'switch.kitchen_outlet', device_id: 'device-kitchen-outlet' },
+        {
+          entity_id: 'select.kitchen_outlet_mode',
+          device_id: 'device-kitchen-outlet',
+          entity_category: 'config',
+        },
+        {
+          entity_id: 'number.kitchen_outlet_delay',
+          device_id: 'device-kitchen-outlet',
+          entity_category: 'config',
+        },
+      ],
+    });
+
+    expect(entities.map((entity) => entity.externalId)).toEqual(['switch.kitchen_outlet']);
+    expect(
+      entities.find((entity) => entity.externalId === 'switch.kitchen_outlet')?.attributes
+    ).toEqual(
+      expect.objectContaining({
+        metrics: expect.arrayContaining([
+          expect.objectContaining({
+            label: 'Outlet mode',
+            value: 'eco',
+            unit: '',
+            category: 'configuration',
+          }),
+          expect.objectContaining({
+            label: 'Outlet delay',
+            value: 12,
+            unit: 's',
+            category: 'configuration',
+          }),
+        ]),
+      })
+    );
+  });
+
+  it('hides placeholder config metrics from switch entities', () => {
+    const entities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'switch.pax_calima_boostmode': makeEntity('switch.pax_calima_boostmode', 'on', {
+          friendly_name: 'Pax Calima BoostMode',
+        }),
+        'select.pax_calima_power_on_behaviour': makeEntity(
+          'select.pax_calima_power_on_behaviour',
+          'PreviousValue',
+          {
+            friendly_name: 'Pax Calima Power-on behaviour',
+            options: ['PreviousValue', 'On', 'Off'],
+          }
+        ),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [
+        { entity_id: 'switch.pax_calima_boostmode', device_id: 'device-pax-calima' },
+        {
+          entity_id: 'select.pax_calima_power_on_behaviour',
+          device_id: 'device-pax-calima',
+          entity_category: 'config',
+        },
+      ],
+    });
+
+    expect(
+      entities.find((entity) => entity.externalId === 'switch.pax_calima_boostmode')?.attributes
+    ).toEqual(
+      expect.not.objectContaining({
+        metrics: expect.anything(),
+      })
+    );
+  });
+
   it('attaches source-device metrics to the owning switch entity', () => {
     const entities = mapHomeAssistantEntitiesToNavetEntities({
       entities: {

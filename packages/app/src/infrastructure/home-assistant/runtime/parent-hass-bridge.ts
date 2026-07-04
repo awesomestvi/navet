@@ -516,11 +516,14 @@ function createShellBridge(parentWindow: ParentWindowLike): HomeAssistantPanelSh
 
     return false;
   };
+  const canNavigateHome = Boolean(
+    shellApi || typeof parentWindow.location?.assign === 'function' || parentWindow.location
+  );
 
   return {
     canToggleKiosk: Boolean(shellApi || fallbackController),
     canOpenSidebar: Boolean(shellApi),
-    canNavigateHome: true,
+    canNavigateHome,
     connect,
     disconnect,
     isKioskEnabled,

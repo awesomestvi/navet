@@ -369,3 +369,8 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, get) =
     },
   };
 });
+
+export function resetHomeAssistantStoreDiagnostics() {
+  // Diagnostics are currently kept inside the store instance; this exported
+  // reset hook keeps test reset code stable across store internals changes.
+}

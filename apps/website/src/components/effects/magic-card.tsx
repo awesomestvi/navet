@@ -1,6 +1,6 @@
 import type { CSSProperties, HTMLAttributes, ReactNode } from 'react';
 import { useState } from 'react';
-import { cn } from '@navet/app/components/ui/utils';
+import { cn } from '@navet/ui/utils';
 
 export interface MagicCardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;

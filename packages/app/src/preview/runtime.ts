@@ -7,8 +7,6 @@ import { createProviderScopedId } from '@navet/app/utils/provider-ids';
 import type { NavetProviderContract } from '@navet/core/provider-contract';
 import type {
   PlatformAutomationDetails,
-  PlatformEntityRegistryEntry,
-  PlatformEntitySnapshotMap,
   PlatformTaskRuntimeSnapshot,
 } from '@navet/core/provider-feature-models';
 import type {
@@ -26,6 +24,11 @@ import type {
   NavetProviderState,
 } from '@navet/core/types';
 import { createStore } from 'zustand/vanilla';
+import { applyPreviewCommandToEntity } from './preview-command-model';
+import {
+  createPreviewEntityRuntimeService,
+  resetPreviewEntityRuntimeCaches,
+} from './preview-entity-runtime-service';
 
 type PreviewHomeAssistantCompatibilityState = Pick<
   HomeAssistantStore,
@@ -945,205 +948,9 @@ function updateTaskRuntime(
   }));
 }
 
-function buildEntitySnapshotMap(entities: NavetEntity[]): PlatformEntitySnapshotMap {
-  return Object.fromEntries(
-    entities.map((entity) => [
-      entity.externalId,
-      {
-        entityId: entity.externalId,
-        state:
-          entity.primaryState === null || entity.primaryState === undefined
-            ? 'unknown'
-            : typeof entity.primaryState === 'string'
-              ? entity.primaryState
-              : String(entity.primaryState),
-        attributes: entity.attributes,
-        lastChanged: PREVIEW_TIMESTAMP,
-        lastUpdated: entity.lastUpdated ?? PREVIEW_TIMESTAMP,
-      },
-    ])
-  );
-}
-
-let cachedPreviewEntitySnapshotSource: NavetEntity[] | null = null;
-let cachedPreviewEntitySnapshots: PlatformEntitySnapshotMap | null = null;
-let cachedPreviewEntityRegistrySource:
-  | PreviewRuntimeScenario['homeAssistant']['entityRegistry']
-  | null = null;
-let cachedPreviewEntityRegistryEntries: PlatformEntityRegistryEntry[] = [];
-let cachedPreviewEntityRegistryById: Record<string, PlatformEntityRegistryEntry | undefined> = {};
-
-function resetPreviewEntityRuntimeCaches() {
-  cachedPreviewEntitySnapshotSource = null;
-  cachedPreviewEntitySnapshots = null;
-  cachedPreviewEntityRegistrySource = null;
-  cachedPreviewEntityRegistryEntries = [];
-  cachedPreviewEntityRegistryById = {};
-}
-
-function getPreviewEntitySnapshotMap(entities: NavetEntity[]): PlatformEntitySnapshotMap {
-  if (cachedPreviewEntitySnapshotSource === entities && cachedPreviewEntitySnapshots) {
-    return cachedPreviewEntitySnapshots;
-  }
-
-  cachedPreviewEntitySnapshotSource = entities;
-  cachedPreviewEntitySnapshots = buildEntitySnapshotMap(entities);
-  return cachedPreviewEntitySnapshots;
-}
-
-function getPreviewEntityRegistryEntries(
-  entityRegistry: PreviewRuntimeScenario['homeAssistant']['entityRegistry'] | undefined
-): PlatformEntityRegistryEntry[] {
-  const nextSource = entityRegistry ?? [];
-  if (cachedPreviewEntityRegistrySource === nextSource) {
-    return cachedPreviewEntityRegistryEntries;
-  }
-
-  cachedPreviewEntityRegistrySource = nextSource;
-  cachedPreviewEntityRegistryEntries = nextSource.map(
-    (entry): PlatformEntityRegistryEntry => ({
-      entityId: entry.entity_id,
-      deviceId: entry.device_id,
-      areaId: entry.area_id ?? null,
-      name: null,
-      platform: 'preview',
-    })
-  );
-  cachedPreviewEntityRegistryById = Object.fromEntries(
-    cachedPreviewEntityRegistryEntries.map((entry) => [entry.entityId, entry])
-  );
-  return cachedPreviewEntityRegistryEntries;
-}
-
-function createPreviewEntityRuntimeService() {
-  return {
-    getEntitySnapshots: () => getPreviewEntitySnapshotMap(getPreviewProviderState().entities),
-    subscribeEntitySnapshots: (listener: () => void) =>
-      previewRuntimeStore.subscribe((state, previousState) => {
-        if (state.scenario?.entities !== previousState.scenario?.entities) {
-          listener();
-        }
-      }),
-    getEntitySnapshot: (entityId: string) =>
-      getPreviewEntitySnapshotMap(getPreviewProviderState().entities)[entityId],
-    subscribeEntitySnapshot: (_entityId: string, listener: () => void) =>
-      previewRuntimeStore.subscribe((state, previousState) => {
-        if (state.scenario?.entities !== previousState.scenario?.entities) {
-          listener();
-        }
-      }),
-    getEntityRegistryEntries: () =>
-      getPreviewEntityRegistryEntries(getActiveScenario()?.homeAssistant.entityRegistry),
-    subscribeEntityRegistryEntries: (listener: () => void) =>
-      previewRuntimeStore.subscribe((state, previousState) => {
-        if (
-          state.scenario?.homeAssistant.entityRegistry !==
-          previousState.scenario?.homeAssistant.entityRegistry
-        ) {
-          listener();
-        }
-      }),
-    getEntityRegistryEntry: (entityId: string) => {
-      getPreviewEntityRegistryEntries(getActiveScenario()?.homeAssistant.entityRegistry);
-      return cachedPreviewEntityRegistryById[entityId];
-    },
-    subscribeEntityRegistryEntry: (entityId: string, listener: () => void) =>
-      previewRuntimeStore.subscribe((state, previousState) => {
-        if (
-          state.scenario?.homeAssistant.entityRegistry !==
-          previousState.scenario?.homeAssistant.entityRegistry
-        ) {
-          const previousRegistryEntries = getPreviewEntityRegistryEntries(
-            previousState.scenario?.homeAssistant.entityRegistry
-          );
-          const previousEntry = previousRegistryEntries.find(
-            (entry) => entry.entityId === entityId
-          );
-          const nextRegistryEntries = getPreviewEntityRegistryEntries(
-            state.scenario?.homeAssistant.entityRegistry
-          );
-          const nextEntry = nextRegistryEntries.find((entry) => entry.entityId === entityId);
-          if (nextEntry !== previousEntry) {
-            listener();
-          }
-        }
-      }),
-    getConfig: () => getActiveScenario()?.homeAssistant.config ?? PREVIEW_HOME_ASSISTANT_CONFIG,
-    subscribeConfig: (listener: () => void) =>
-      previewRuntimeStore.subscribe((state, previousState) => {
-        if (state.scenario?.homeAssistant.config !== previousState.scenario?.homeAssistant.config) {
-          listener();
-        }
-      }),
-  };
-}
-
-function applyCommandToEntity(entity: NavetEntity, command: NavetCommand): NavetEntity {
-  switch (command.type) {
-    case 'turn_on':
-      return {
-        ...entity,
-        primaryState: entity.type === 'switch' || entity.type === 'helper' ? true : 'on',
-        attributes: {
-          ...entity.attributes,
-          value: entity.type === 'switch' || entity.type === 'helper' ? true : 'on',
-        },
-      };
-    case 'turn_off':
-      return {
-        ...entity,
-        primaryState: entity.type === 'switch' || entity.type === 'helper' ? false : 'off',
-        attributes: {
-          ...entity.attributes,
-          value: entity.type === 'switch' || entity.type === 'helper' ? false : 'off',
-        },
-      };
-    case 'set_brightness':
-      return {
-        ...entity,
-        primaryState: 'on',
-        attributes: { ...entity.attributes, value: 'on', brightnessPct: command.brightness },
-      };
-    case 'set_color_temperature':
-      return {
-        ...entity,
-        primaryState: 'on',
-        attributes: { ...entity.attributes, value: 'on', colorTemperatureKelvin: command.kelvin },
-      };
-    case 'lock':
-      return {
-        ...entity,
-        primaryState: 'locked',
-        attributes: { ...entity.attributes, value: 'locked', locked: true },
-      };
-    case 'unlock':
-      return {
-        ...entity,
-        primaryState: 'unlocked',
-        attributes: { ...entity.attributes, value: 'unlocked', locked: false },
-      };
-    case 'open':
-      return {
-        ...entity,
-        primaryState: 'open',
-        attributes: { ...entity.attributes, value: 'open', position: 100 },
-      };
-    case 'close':
-      return {
-        ...entity,
-        primaryState: 'closed',
-        attributes: { ...entity.attributes, value: 'closed', position: 0 },
-      };
-    case 'stop':
-      return entity;
-    default:
-      return entity;
-  }
-}
-
 async function executePreviewCommand(entity: NavetEntity, command: NavetCommand) {
   updatePreviewEntity(entity.externalId, (currentEntity) =>
-    applyCommandToEntity(currentEntity, command)
+    applyPreviewCommandToEntity(currentEntity, command)
   );
 }
 
@@ -1172,11 +979,11 @@ const previewLightFeatureService: ProviderLightFeatureService = {
 const previewSecurityFeatureService: ProviderSecurityFeatureService = {
   lockEntity: async (entityId) =>
     updatePreviewEntity(entityId, (entity) =>
-      applyCommandToEntity(entity, { type: 'lock', entityId: entity.id })
+      applyPreviewCommandToEntity(entity, { type: 'lock', entityId: entity.id })
     ),
   unlockEntity: async (entityId) =>
     updatePreviewEntity(entityId, (entity) =>
-      applyCommandToEntity(entity, { type: 'unlock', entityId: entity.id })
+      applyPreviewCommandToEntity(entity, { type: 'unlock', entityId: entity.id })
     ),
   armHome: async (entityId, code) =>
     updatePreviewEntity(entityId, (entity) => ({
@@ -1355,7 +1162,13 @@ const previewProviderPackageRegistration: ProviderPackageRegistration = {
     lightFeatureService: previewLightFeatureService,
     securityFeatureService: previewSecurityFeatureService,
     taskFeatureService: previewTaskFeatureService,
-    entityRuntimeService: createPreviewEntityRuntimeService(),
+    entityRuntimeService: createPreviewEntityRuntimeService({
+      defaultConfig: PREVIEW_HOME_ASSISTANT_CONFIG,
+      getActiveScenario,
+      getProviderEntities: () => getPreviewProviderState().entities,
+      store: previewRuntimeStore,
+      timestamp: PREVIEW_TIMESTAMP,
+    }),
   },
 };
 

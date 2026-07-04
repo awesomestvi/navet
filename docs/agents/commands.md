@@ -39,6 +39,7 @@ pnpm check:provider-boundaries
 pnpm check:bundle-budget
 pnpm check:docker
 pnpm check:lockfile
+pnpm validate
 pnpm report:bundle
 pnpm report:ui-kit
 pnpm test
@@ -68,6 +69,14 @@ pnpm wallpapers:check
 - website or marketing work: `pnpm website:build`
 - bundle investigation: `pnpm check:bundle-budget` and `pnpm report:bundle`
 - release file validation: `pnpm release:check`
+
+Routeable validation:
+
+- use `pnpm validate -- --scope ui` for shared UI, token, and Storybook structure changes
+- use `pnpm validate -- --scope dashboard` for dashboard layout, card, and dashboard hook changes
+- use `pnpm validate -- --scope provider` for provider contract, runtime, state, and adapter changes
+- use `pnpm validate -- --scope workflow` for scripts, test-tier, and agent-command changes
+- use `pnpm validate -- --dry-run` to see which checks changed files would run
 
 UI tweak policy:
 

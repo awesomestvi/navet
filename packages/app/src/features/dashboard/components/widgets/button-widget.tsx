@@ -308,7 +308,11 @@ export function ButtonWidget({
   const overlay = (
     <>
       {shouldUseCustomCardSurface && surface.glowStyle ? (
-        <div className="pointer-events-none absolute inset-0" style={surface.glowStyle} />
+        <div
+          className="pointer-events-none absolute inset-0"
+          data-dashboard-glow="true"
+          style={surface.glowStyle}
+        />
       ) : null}
       {shouldUseCustomCardSurface && surface.overlayClassName ? (
         <div className={`pointer-events-none absolute inset-0 ${surface.overlayClassName}`} />

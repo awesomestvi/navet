@@ -1,16 +1,10 @@
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { useSearch } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
-import { useDeferredVisibility } from '@navet/app/hooks/use-deferred-visibility';
-import { settingsSelectors } from '@navet/app/stores/selectors';
-import { useSettingsStore } from '@navet/app/stores/settings-store';
-import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { type CSSProperties, memo, useCallback, useDeferredValue, useMemo } from 'react';
 import { DashboardCardItem } from '../components/dashboard-card-item';
 import { DashboardEditActions } from '../components/dashboard-edit-actions';
-import { resolveDashboardPerformanceProfile } from '../hooks/use-dashboard-performance-mode';
 import { useFitDashboardGrid } from '../hooks/use-fit-dashboard-grid';
-import { useProgressiveBatching } from '../hooks/use-progressive-batching';
 import type { DeviceGridProps } from './types';
 
 /**
@@ -35,14 +29,8 @@ export const DeviceGrid = memo(function DeviceGrid({
 }: DeviceGridProps) {
   const { isSearchActive, filteredDeviceIds } = useSearch();
   const breakpointCols = useBreakpointCols();
-  const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
-  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
-  const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
-  const { ref: visibilityRef, isVisible } = useDeferredVisibility<HTMLDivElement>({
-    initiallyVisible: isEditMode,
-  });
   const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
-    useFitDashboardGrid(breakpointCols, isVisible || isEditMode);
+    useFitDashboardGrid(breakpointCols);
   const deferredFilteredDeviceIds = useDeferredValue(filteredDeviceIds);
 
   const handleSizeChange = useCallback(
@@ -66,33 +54,6 @@ export const DeviceGrid = memo(function DeviceGrid({
     () => new Map(customCards.map((card) => [card.id, card])),
     [customCards]
   );
-  const performanceProfile = useMemo(
-    () =>
-      resolveDashboardPerformanceProfile({
-        activeSection: 'home',
-        deviceTier: detectDeviceTier(),
-        effectsQuality,
-        isEditMode,
-        lowPowerMode,
-        reducedEffectsEnabled: disableAnimations || lowPowerMode,
-        visibleCardCount: displayedCardIds.length,
-        visibleDevices: deviceMap.values(),
-      }),
-    [
-      deviceMap,
-      disableAnimations,
-      displayedCardIds.length,
-      effectsQuality,
-      isEditMode,
-      lowPowerMode,
-    ]
-  );
-  const visibleCount = useProgressiveBatching(displayedCardIds.length, isEditMode, {
-    enabled: isVisible,
-    initialBatch: performanceProfile.progressiveBatchInitialCount,
-    batchSize: performanceProfile.progressiveBatchSize,
-  });
-
   // Combine device cards and custom widget cards using the shared ordering model.
   const allCards = useMemo(
     () =>
@@ -114,29 +75,13 @@ export const DeviceGrid = memo(function DeviceGrid({
     [customCardMap, deviceMap, displayedCardIds]
   );
 
-  const visibleCards = allCards.slice(0, visibleCount);
-  const estimatedRows = Math.max(
-    1,
-    Math.ceil(displayedCardIds.length / Math.max(1, breakpointCols))
-  );
-  const placeholderHeight = estimatedRows * 120;
-
   const gridContent = (
     <div
       ref={(node) => {
-        visibilityRef.current = node;
         outerRef.current = node;
       }}
       className="relative w-full"
-      style={{
-        ...outerContainerStyle,
-        ...(performanceProfile.optimizeOffscreenPaint || densePerformanceMode
-          ? ({
-              contentVisibility: 'auto',
-              containIntrinsicBlockSize: `${placeholderHeight}px`,
-            } as CSSProperties)
-          : undefined),
-      }}
+      style={outerContainerStyle}
     >
       <div
         ref={innerRef}
@@ -147,7 +92,7 @@ export const DeviceGrid = memo(function DeviceGrid({
           className="grid w-full grid-flow-row-dense gap-3 md:gap-3 lg:gap-4"
           style={gridStyle as CSSProperties}
         >
-          {visibleCards.map((item) => {
+          {allCards.map((item) => {
             if (item.type === 'device') {
               const device = deviceMap.get(item.id);
               if (!device?.id) return null;

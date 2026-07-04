@@ -1,7 +1,4 @@
 import type { SensorIconType } from '@navet/app/features/sensors/components/sensors';
-import type { SensorDevice } from '@navet/app/types/device.types';
-import type { HassEntity } from 'home-assistant-js-websocket';
-import { formatSensorValue } from '../entity-utils';
 
 const SENSOR_UNAVAILABLE_STATES = new Set(['unknown', 'unavailable']);
 const SENSOR_STATUS_ON_STATES = new Set(['on', 'detected', 'open', 'wet', 'problem', 'unsafe']);
@@ -124,53 +121,4 @@ export function formatBinarySensorState(
       }
       return { value: state, isActive };
   }
-}
-
-export function mapSensorDevice(
-  entityId: string,
-  entity: HassEntity,
-  name: string,
-  room: string,
-  formatOptions?: Parameters<typeof formatSensorValue>[1]
-): SensorDevice | null {
-  const domain = entityId.slice(0, entityId.indexOf('.'));
-  const deviceClass = getSensorDeviceClass(entity);
-  const formatted = formatSensorValue(entity, formatOptions);
-  const unit = formatted?.unit ?? '';
-
-  if (domain === 'binary_sensor') {
-    const status = formatBinarySensorState(entity.state, deviceClass);
-    const isUnavailable = SENSOR_UNAVAILABLE_STATES.has(entity.state);
-    return {
-      id: entityId,
-      name,
-      room,
-      value: status.value,
-      unit: '',
-      icon: inferSensorDisplayIcon(entityId, deviceClass, ''),
-      entityType: deviceClass ? deviceClass.replace(/_/g, ' ') : 'Binary sensor',
-      deviceClass,
-      status: isUnavailable ? 'unavailable' : status.isActive ? 'active' : 'clear',
-      lastUpdated: entity.last_updated,
-      size: 'small',
-    };
-  }
-
-  if (domain !== 'sensor' || !formatted) {
-    return null;
-  }
-
-  return {
-    id: entityId,
-    name,
-    room,
-    value: formatted.value,
-    unit,
-    icon: inferSensorDisplayIcon(entityId, deviceClass, unit),
-    entityType: deviceClass ? deviceClass.replace(/_/g, ' ') : 'Sensor',
-    deviceClass,
-    status: SENSOR_UNAVAILABLE_STATES.has(entity.state) ? 'unavailable' : 'measurement',
-    lastUpdated: entity.last_updated,
-    size: 'small',
-  };
 }
