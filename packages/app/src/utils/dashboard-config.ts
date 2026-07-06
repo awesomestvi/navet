@@ -25,6 +25,7 @@ import {
   type CameraFitMode,
   type CameraStreamPreference,
   type CameraViewMode,
+  type CameraWebRtcStreamSource,
   defaultSettings,
   normalizeHeaderCustomText,
   useSettingsStore,
@@ -177,6 +178,7 @@ const cameraStreamPreferences = new Set<CameraStreamPreference>([
   'hls',
   'mjpeg',
 ]);
+const cameraWebRtcStreamSources = new Set<CameraWebRtcStreamSource>(['provider', 'direct']);
 const cameraFitModes = new Set<CameraFitMode>(['cover', 'contain']);
 
 function isWeatherMetricId(value: unknown): value is WeatherMetricId {
@@ -215,6 +217,10 @@ function resolveCameraViewModes(value: unknown): Record<string, CameraViewMode> 
 }
 
 function resolveCameraStreamPreference(value: unknown): CameraStreamPreference {
+  if (value === 'direct_stream') {
+    return 'web_rtc';
+  }
+
   return typeof value === 'string' && cameraStreamPreferences.has(value as CameraStreamPreference)
     ? (value as CameraStreamPreference)
     : defaultSettings.cameraStreamPreference;
@@ -226,9 +232,56 @@ function resolveCameraStreamPreferences(value: unknown): Record<string, CameraSt
   }
 
   return Object.fromEntries(
-    Object.entries(value).filter((entry): entry is [string, CameraStreamPreference] =>
-      cameraStreamPreferences.has(entry[1] as CameraStreamPreference)
-    )
+    Object.entries(value)
+      .map(([entityId, preference]) => [
+        entityId,
+        preference === 'direct_stream' ? 'web_rtc' : preference,
+      ])
+      .filter((entry): entry is [string, CameraStreamPreference] =>
+        cameraStreamPreferences.has(entry[1] as CameraStreamPreference)
+      )
+  );
+}
+
+function resolveCameraWebRtcStreamSources(
+  value: unknown,
+  legacyPreferences: unknown = undefined
+): Record<string, CameraWebRtcStreamSource> {
+  const sources =
+    value && typeof value === 'object' && !Array.isArray(value)
+      ? Object.fromEntries(
+          Object.entries(value).filter((entry): entry is [string, CameraWebRtcStreamSource] =>
+            cameraWebRtcStreamSources.has(entry[1] as CameraWebRtcStreamSource)
+          )
+        )
+      : {};
+
+  if (
+    !legacyPreferences ||
+    typeof legacyPreferences !== 'object' ||
+    Array.isArray(legacyPreferences)
+  ) {
+    return sources;
+  }
+
+  const legacyDirectSources = Object.fromEntries(
+    Object.entries(legacyPreferences)
+      .filter(([, preference]) => preference === 'direct_stream')
+      .map(([entityId]) => [entityId, 'direct' as const])
+  );
+
+  return { ...legacyDirectSources, ...sources };
+}
+
+function resolveCameraDirectStreamUrls(value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .map(([entityId, url]) => [entityId, typeof url === 'string' ? url.trim() : ''] as const)
+      .filter((entry): entry is [string, string] => entry[1].length > 0)
   );
 }
 
@@ -273,10 +326,11 @@ const buildExportedSettings = (
     'updateSettings' | 'updateCameraViewMode' | 'applyImportedSettings' | 'resetSettings'
   >
 ) => {
-  const effectsQuality = resolveEffectsQuality(
+  const effectiveEffectsQuality = resolveEffectsQuality(
     settingsState.effectsQuality,
     settingsState.disableAnimations || settingsState.lowPowerMode
   );
+  const effectsQuality = getProfileScopedSettingValue('effectsQuality', effectiveEffectsQuality);
   const headerTitleMode = getProfileScopedSettingValue(
     'headerTitleMode',
     settingsState.headerTitleMode
@@ -353,7 +407,10 @@ const buildExportedSettings = (
         : undefined,
     disableAnimations: undefined,
     lowPowerMode: undefined,
-    effectsQuality: effectsQuality !== defaultSettings.effectsQuality ? effectsQuality : undefined,
+    effectsQuality:
+      effectsQuality !== undefined && effectsQuality !== defaultSettings.effectsQuality
+        ? effectsQuality
+        : undefined,
     entityInteractionMode:
       settingsState.entityInteractionMode !== defaultSettings.entityInteractionMode
         ? settingsState.entityInteractionMode
@@ -368,6 +425,8 @@ const buildExportedSettings = (
         : undefined,
     cameraViewModes: pruneEmptyRecord(settingsState.cameraViewModes),
     cameraStreamPreferences: pruneEmptyRecord(settingsState.cameraStreamPreferences),
+    cameraWebRtcStreamSources: pruneEmptyRecord(settingsState.cameraWebRtcStreamSources),
+    cameraDirectStreamUrls: pruneEmptyRecord(settingsState.cameraDirectStreamUrls),
     cameraFitMode:
       settingsState.cameraFitMode !== defaultSettings.cameraFitMode
         ? settingsState.cameraFitMode
@@ -879,6 +938,7 @@ export const importDashboardConfig = (
 
   setSettingsProfileSharedValues({
     dashboardSpaceMode: importedDashboardSpaceMode,
+    effectsQuality,
     headerCustomText: importedHeaderCustomText,
     headerTitleMode: importedHeaderTitleMode,
     keepDeviceAwake: importedKeepDeviceAwake,
@@ -931,8 +991,14 @@ export const importDashboardConfig = (
     dashboardSpaceMode: shouldSyncSettingToProfile('dashboardSpaceMode')
       ? importedDashboardSpaceMode
       : currentSettingsState.dashboardSpaceMode,
-    ...getLegacyReducedEffectsFlags(effectsQuality),
-    effectsQuality,
+    ...getLegacyReducedEffectsFlags(
+      shouldSyncSettingToProfile('effectsQuality')
+        ? effectsQuality
+        : currentSettingsState.effectsQuality
+    ),
+    effectsQuality: shouldSyncSettingToProfile('effectsQuality')
+      ? effectsQuality
+      : currentSettingsState.effectsQuality,
     effectsQualityUserOverride: true,
     entityInteractionMode:
       settings.entityInteractionMode === 'control-first' ||
@@ -947,6 +1013,11 @@ export const importDashboardConfig = (
     cameraViewMode: resolveCameraViewMode(settings.cameraViewMode),
     cameraViewModes: resolveCameraViewModes(settings.cameraViewModes),
     cameraStreamPreferences: resolveCameraStreamPreferences(settings.cameraStreamPreferences),
+    cameraWebRtcStreamSources: resolveCameraWebRtcStreamSources(
+      settings.cameraWebRtcStreamSources,
+      settings.cameraStreamPreferences
+    ),
+    cameraDirectStreamUrls: resolveCameraDirectStreamUrls(settings.cameraDirectStreamUrls),
     cameraFitMode: resolveCameraFitMode(settings.cameraFitMode),
     cameraFitModes: resolveCameraFitModes(settings.cameraFitModes),
     weatherForecastMode:

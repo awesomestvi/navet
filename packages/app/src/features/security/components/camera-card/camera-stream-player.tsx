@@ -517,11 +517,13 @@ function HlsCameraPlayer({
 function WebRtcCameraPlayer({
   entityId,
   posterUrl,
-  streamResource: _streamResource,
+  streamResource,
   fitMode,
   onLoad,
   onError,
 }: Omit<CameraStreamPlayerProps, 'kind'>) {
+  const streamResourceUrl =
+    streamResource?.kind === 'webrtc_stream' ? streamResource.url : undefined;
   const videoRef = useRef<HTMLVideoElement>(null);
   const loadTimeoutRef = useRef<number | null>(null);
   const stallIntervalRef = useRef<number | null>(null);
@@ -544,6 +546,10 @@ function WebRtcCameraPlayer({
   };
 
   useEffect(() => {
+    if (streamResourceUrl) {
+      return;
+    }
+
     const video = videoRef.current;
     if (!video) {
       return;
@@ -553,6 +559,29 @@ function WebRtcCameraPlayer({
   }, [posterUrl]);
 
   useEffect(() => {
+    if (!streamResourceUrl) {
+      return;
+    }
+
+    setHasLoadedFrame(false);
+    hasLoadedFrameRef.current = false;
+    scheduleStreamLoadTimeout(
+      loadTimeoutRef,
+      'web_rtc',
+      onError,
+      CAMERA_WEBRTC_STREAM_LOAD_TIMEOUT_MS
+    );
+
+    return () => {
+      clearStreamLoadTimeout(loadTimeoutRef);
+    };
+  }, [onError, streamResourceUrl]);
+
+  useEffect(() => {
+    if (streamResourceUrl) {
+      return;
+    }
+
     let cancelled = false;
     let peerConnection: RTCPeerConnection | undefined;
     let remoteStream: MediaStream | undefined;
@@ -764,7 +793,23 @@ function WebRtcCameraPlayer({
       cancelled = true;
       cleanUp();
     };
-  }, [entityId, onError]);
+  }, [entityId, onError, streamResourceUrl]);
+
+  if (streamResourceUrl) {
+    return (
+      <div className="relative h-full w-full overflow-hidden">
+        {!hasLoadedFrame ? <CameraStreamLoadingIndicator /> : null}
+        <iframe
+          title="Camera WebRTC stream"
+          src={streamResourceUrl}
+          className={`${CAMERA_MEDIA_SURFACE_CLASS_NAME} border-0`}
+          allow="autoplay; fullscreen; camera; microphone"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock"
+          onLoad={markStreamReady}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="relative h-full w-full">

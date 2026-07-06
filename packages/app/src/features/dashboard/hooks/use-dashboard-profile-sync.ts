@@ -640,6 +640,10 @@ export function useDashboardProfileSync() {
       const { profile, signature } = conflictSnapshot ?? getCurrentProfileSnapshot();
       const metadata = readSyncMetadata();
 
+      if (options.dismissConflict) {
+        clearConflictToast();
+      }
+
       if (!options.dismissConflict && metadata.lastSavedSignature === signature) {
         hasPendingLocalChangesRef.current = false;
         clearSaveTimeout();
@@ -668,33 +672,28 @@ export function useDashboardProfileSync() {
           lastModified: result.lastModified,
           profile: result.profile,
         });
-
-        if (result.profile) {
-          const remoteSignature = getProfileSignature(result.profile);
-          const currentSignature = currentSignatureRef.current ?? signature;
-
-          if (!isRemoteProfileAlreadyActive(remoteSignature, currentSignature, metadata)) {
-            hasPendingLocalChangesRef.current = true;
-            showConflictToast({
-              profile: result.profile,
-              etag: result.etag,
-              generation: result.generation,
-              lastModified: result.lastModified,
-              conflictKey: getConflictKey(result.profile, result.etag, result.lastModified),
-            });
-            schedulePoll();
-            return false;
-          }
-        }
       }
 
       savingRef.current = true;
 
-      const result = await saveDashboardProfile(profile, {
+      let result = await saveDashboardProfile(profile, {
         etag: lastRemoteEtagRef.current ?? undefined,
         keepalive: options.keepalive,
         lastModified: lastRemoteLastModifiedRef.current ?? undefined,
       });
+
+      if (
+        !result.saved &&
+        !options.keepalive &&
+        !result.permanentFailure &&
+        (result.etag !== null || result.lastModified !== null)
+      ) {
+        result = await saveDashboardProfile(profile, {
+          etag: result.etag ?? undefined,
+          keepalive: options.keepalive,
+          lastModified: result.lastModified ?? undefined,
+        });
+      }
 
       savingRef.current = false;
 
@@ -726,10 +725,6 @@ export function useDashboardProfileSync() {
         lastRemoteEtag: result.etag ?? undefined,
         lastRemoteLastModified: result.lastModified ?? undefined,
       });
-
-      if (options.dismissConflict) {
-        clearConflictToast();
-      }
 
       schedulePoll();
       return true;
@@ -959,4 +954,8 @@ export function useDashboardProfileSync() {
       clearConflictToast();
     };
   }, [clearConflictToast, clearPollTimeout, clearSaveTimeout]);
+
+  return {
+    profileLoadCompleted: panelMode || profileLoadCompleted,
+  };
 }

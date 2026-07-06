@@ -1489,10 +1489,18 @@ export const deMessages = {
   'camera.settings.streamPreference': 'Live stream',
   'camera.settings.streamPreference.auto': 'Auto',
   'camera.settings.streamPreference.web_rtc': 'WebRTC',
+  'camera.settings.streamPreference.direct_stream': 'Direct WebRTC',
+  'camera.settings.webRtcStreamSource.provider': 'Provider stream',
+  'camera.settings.webRtcStreamSource.direct': 'Direct stream',
   'camera.settings.streamPreference.hls': 'HLS',
   'camera.settings.streamPreference.mjpeg': 'MJPEG',
   'camera.settings.streamPreference.description':
     'Auto tries the full stream fallback chain. Choosing a specific live stream type starts from that stream and continues through the remaining fallbacks before snapshot.',
+  'camera.settings.directStreamUrl': 'Direct stream URL',
+  'camera.settings.directStreamUrl.description':
+    'Optional. Use a browser-playable stream page such as go2rtc when Home Assistant only exposes HLS. Clear the field to use Home Assistant streams.',
+  'camera.settings.directStreamUrl.error':
+    'Direct stream failed to load. Check the URL and try again.',
   'camera.settings.fitMode': 'Feed sizing',
   'camera.settings.fitMode.contain': 'Fit',
   'camera.settings.fitMode.cover': 'Cover',

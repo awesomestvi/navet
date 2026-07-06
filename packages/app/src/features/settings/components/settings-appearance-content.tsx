@@ -155,7 +155,7 @@ export function AppearanceEffectsQualityItem({
   controller: SettingsSectionController;
 }) {
   const { t } = useI18n();
-  const { effectsQuality, styles, updateSettings } = controller;
+  const { effectsQuality, styles, updateScopedSettings } = controller;
   const detectedTier = useMemo(() => detectDeviceTier(), []);
   const qualityOptions: Array<{ value: EffectsQuality; label: string }> = [
     { value: 'high', label: t('settings.system.effectsQuality.high') },
@@ -179,10 +179,13 @@ export function AppearanceEffectsQualityItem({
                 active={isActive}
                 size="small"
                 onClick={() =>
-                  updateSettings({
-                    effectsQuality: option.value,
-                    ...getLegacyReducedEffectsFlags(option.value),
-                  })
+                  updateScopedSettings(
+                    {
+                      effectsQuality: option.value,
+                      ...getLegacyReducedEffectsFlags(option.value),
+                    },
+                    ['effectsQuality']
+                  )
                 }
                 aria-pressed={isActive}
               >

@@ -817,6 +817,12 @@ function SummaryCameraViewer({
   const preferredTransport = useSettingsStore(
     settingsSelectors.cameraStreamPreferenceForEntity(camera.id)
   );
+  const webRtcStreamSource = useSettingsStore(
+    settingsSelectors.cameraWebRtcStreamSourceForEntity(camera.id)
+  );
+  const directStreamUrl = useSettingsStore(
+    settingsSelectors.cameraDirectStreamUrlForEntity(camera.id)
+  );
   const [refreshKey, setRefreshKey] = useState(0);
   const [cameraViewMode, setCameraViewMode] = useState<CameraViewMode>('live');
 
@@ -840,6 +846,8 @@ function SummaryCameraViewer({
     (camera.isStreamCapable ?? false);
   const playbackModel = useCameraPlaybackPlan({
     entityId: camera.id,
+    webRtcStreamSource,
+    directStreamUrl,
     cameraState,
     preferredMode: 'live',
     preferredTransport,
@@ -873,6 +881,8 @@ function SummaryCameraViewer({
       snapshotUrl={snapshotUrl}
       cameraViewMode={cameraViewMode}
       preferredTransport={preferredTransport}
+      webRtcStreamSource={webRtcStreamSource}
+      directStreamUrl={directStreamUrl}
       isStreamCapable={isStreamCapable}
       motionDetectionEnabled={liveState.motionDetectionEnabled}
       initialStreamResource={playbackModel?.selectedStreamResource ?? null}

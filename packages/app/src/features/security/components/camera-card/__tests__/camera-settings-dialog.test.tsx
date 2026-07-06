@@ -34,6 +34,9 @@ const defaultProps = {
   siblingEntities: [],
   cameraViewMode: 'live' as const,
   cameraStreamPreference: 'auto' as const,
+  cameraWebRtcStreamSource: 'provider' as const,
+  cameraDirectStreamUrl: '',
+  cameraDirectStreamUrlError: false,
   cameraFitMode: 'cover' as const,
   supportedStreamPreferences: ['web_rtc', 'hls', 'mjpeg'] as const,
   supportsStreaming: true,
@@ -41,6 +44,8 @@ const defaultProps = {
   lowPowerMode: false,
   onCameraViewModeChange: vi.fn(),
   onCameraStreamPreferenceChange: vi.fn(),
+  onCameraWebRtcStreamSourceChange: vi.fn(),
+  onCameraDirectStreamUrlChange: vi.fn(),
   onCameraFitModeChange: vi.fn(),
 };
 
@@ -59,7 +64,7 @@ describe('CameraSettingsDialog', () => {
       <CameraSettingsDialog {...defaultProps} cameraViewMode="snapshot" supportsStreaming={false} />
     );
 
-    const cameraViewSection = screen.getByText('Camera view').parentElement;
+    const cameraViewSection = screen.getByText('Camera view').closest('.mb-6');
     expect(cameraViewSection).toBeTruthy();
     expect(
       within(cameraViewSection as HTMLElement).queryByRole('button', { name: 'Live' })
@@ -77,7 +82,7 @@ describe('CameraSettingsDialog', () => {
       <CameraSettingsDialog {...defaultProps} supportsStreaming hasSnapshot={false} />
     );
 
-    const cameraViewSection = screen.getByText('Camera view').parentElement;
+    const cameraViewSection = screen.getByText('Camera view').closest('.mb-6');
     expect(cameraViewSection).toBeTruthy();
     expect(
       within(cameraViewSection as HTMLElement).getByRole('button', { name: 'Live' })
@@ -103,6 +108,24 @@ describe('CameraSettingsDialog', () => {
     expect(onCameraStreamPreferenceChange).toHaveBeenCalledWith('hls');
   });
 
+  it('shows camera setting help in title info popovers instead of inline helper text', () => {
+    renderWithProviders(<CameraSettingsDialog {...defaultProps} />);
+
+    expect(
+      screen.queryByText(
+        'This controls the dashboard preview. Live uses Home Assistant WebRTC or HLS when available, while Snapshot keeps dashboard cards cheap to render.'
+      )
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Camera view information' }));
+
+    expect(
+      screen.getByText(
+        'This controls the dashboard preview. Live uses Home Assistant WebRTC or HLS when available, while Snapshot keeps dashboard cards cheap to render.'
+      )
+    ).toBeInTheDocument();
+  });
+
   it('shows only supported live transport options for the camera', () => {
     renderWithProviders(
       <CameraSettingsDialog
@@ -112,7 +135,7 @@ describe('CameraSettingsDialog', () => {
       />
     );
 
-    const streamSection = screen.getByText('Live stream').parentElement;
+    const streamSection = screen.getByText('Live stream').closest('.mb-6');
     expect(streamSection).toBeTruthy();
     expect(
       within(streamSection as HTMLElement).getByRole('button', { name: 'Auto' })
@@ -121,11 +144,82 @@ describe('CameraSettingsDialog', () => {
       within(streamSection as HTMLElement).getByRole('button', { name: 'MJPEG' })
     ).toBeInTheDocument();
     expect(
-      within(streamSection as HTMLElement).queryByRole('button', { name: 'WebRTC' })
-    ).not.toBeInTheDocument();
+      within(streamSection as HTMLElement).getByRole('button', { name: 'WebRTC' })
+    ).toBeInTheDocument();
     expect(
       within(streamSection as HTMLElement).queryByRole('button', { name: 'HLS' })
     ).not.toBeInTheDocument();
+  });
+
+  it('lets users select a direct WebRTC stream source and set a direct stream URL', () => {
+    const onCameraDirectStreamUrlChange = vi.fn();
+    const onCameraWebRtcStreamSourceChange = vi.fn();
+
+    const { rerender } = renderWithProviders(
+      <CameraSettingsDialog
+        {...defaultProps}
+        cameraStreamPreference="web_rtc"
+        cameraWebRtcStreamSource="provider"
+        onCameraWebRtcStreamSourceChange={onCameraWebRtcStreamSourceChange}
+        onCameraDirectStreamUrlChange={onCameraDirectStreamUrlChange}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'Provider stream' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Direct stream' }));
+
+    rerender(
+      <CameraSettingsDialog
+        {...defaultProps}
+        cameraStreamPreference="web_rtc"
+        cameraWebRtcStreamSource="direct"
+        onCameraWebRtcStreamSourceChange={onCameraWebRtcStreamSourceChange}
+        onCameraDirectStreamUrlChange={onCameraDirectStreamUrlChange}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText('Direct stream URL'), {
+      target: { value: 'http://192.168.68.71:1984/stream.html?src=camera_bedroom' },
+    });
+    fireEvent.blur(screen.getByLabelText('Direct stream URL'));
+
+    expect(onCameraDirectStreamUrlChange).toHaveBeenCalledWith(
+      'http://192.168.68.71:1984/stream.html?src=camera_bedroom'
+    );
+    expect(onCameraWebRtcStreamSourceChange).toHaveBeenCalledWith('direct');
+  });
+
+  it('hides the direct stream URL field until the direct WebRTC source is selected', () => {
+    renderWithProviders(
+      <CameraSettingsDialog
+        {...defaultProps}
+        cameraStreamPreference="web_rtc"
+        cameraWebRtcStreamSource="provider"
+      />
+    );
+
+    expect(screen.queryByLabelText('Direct stream URL')).not.toBeInTheDocument();
+  });
+
+  it('shows a direct stream URL error when the direct WebRTC URL fails', () => {
+    renderWithProviders(
+      <CameraSettingsDialog
+        {...defaultProps}
+        cameraStreamPreference="web_rtc"
+        cameraWebRtcStreamSource="direct"
+        cameraDirectStreamUrl="http://192.168.68.71:1984/stream.html?src=camera_bedroom"
+        cameraDirectStreamUrlError
+      />
+    );
+
+    const input = screen.getByLabelText('Direct stream URL');
+    const error = screen.getByText('Direct stream failed to load. Check the URL and try again.');
+
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(input).toHaveAccessibleDescription(error.textContent ?? '');
   });
 
   it('lets users pick how the card feed is framed', () => {
@@ -142,6 +236,20 @@ describe('CameraSettingsDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Fit' }));
 
     expect(onCameraFitModeChange).toHaveBeenCalledWith('contain');
+  });
+
+  it('hides feed sizing for direct WebRTC streams', () => {
+    renderWithProviders(
+      <CameraSettingsDialog
+        {...defaultProps}
+        cameraStreamPreference="web_rtc"
+        cameraWebRtcStreamSource="direct"
+      />
+    );
+
+    expect(screen.queryByText('Feed sizing')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Fit' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cover' })).not.toBeInTheDocument();
   });
 
   it('routes sibling switch and select controls through the camera provider service', async () => {

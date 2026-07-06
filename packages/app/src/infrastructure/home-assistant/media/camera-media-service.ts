@@ -11,6 +11,8 @@ import type { HomeAssistantResourceResolver } from '../resources/resource-resolv
 
 interface CameraPlaybackPlanInput {
   entityId: string;
+  webRtcStreamSource?: 'provider' | 'direct';
+  directStreamUrl?: string;
   cameraState: PlatformCameraState;
   preferredMode: 'auto' | 'live' | 'snapshot';
   preferredTransport: 'auto' | PlatformCameraTransport;
@@ -30,6 +32,45 @@ function canAttemptLivePlayback(
   preferredMode: 'auto' | 'live' | 'snapshot'
 ) {
   return preferredMode !== 'snapshot' && cameraState !== 'unavailable' && cameraState !== 'off';
+}
+
+function normalizeDirectStreamUrl(value: string | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  try {
+    const streamUrl = new URL(trimmed, window.location.href);
+    return streamUrl.protocol === 'http:' || streamUrl.protocol === 'https:'
+      ? streamUrl.toString()
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function resolveDirectStreamResource(input: {
+  entityId: string;
+  directStreamUrl?: string;
+}): ResolvedPlatformResource | null {
+  const streamUrl = normalizeDirectStreamUrl(input.directStreamUrl);
+  if (!streamUrl) {
+    return null;
+  }
+
+  return {
+    id: `${input.entityId}:direct:${streamUrl}`,
+    kind: 'webrtc_stream',
+    url: streamUrl,
+    cacheKey: `${input.entityId}:direct:${streamUrl}`,
+    authStrategy: 'none',
+    metadata: { source: 'direct_stream_url' },
+  };
 }
 
 export class CameraMediaService {
@@ -64,8 +105,26 @@ export class CameraMediaService {
     let selectedStreamResource: ResolvedPlatformResource | null = null;
 
     if (canPlayLive) {
+      const directWebRtcSelected =
+        input.preferredTransport === 'web_rtc' && input.webRtcStreamSource === 'direct';
+      const directStreamResource = directWebRtcSelected
+        ? resolveDirectStreamResource({
+            entityId: input.entityId,
+            directStreamUrl: input.directStreamUrl,
+          })
+        : null;
+      const orderedStreamTypes = await this.readOrderedStreamTypes(
+        nativeEntityId,
+        input.isStreamCapable
+      );
+      const candidateStreamTypes: PlatformCameraTransport[] =
+        directWebRtcSelected && !directStreamResource
+          ? []
+          : directStreamResource
+            ? ['web_rtc', ...orderedStreamTypes.filter((transport) => transport !== 'web_rtc')]
+            : orderedStreamTypes;
       const streamTypes = this.applyPreferredTransport(
-        await this.readOrderedStreamTypes(nativeEntityId, input.isStreamCapable),
+        candidateStreamTypes,
         input.preferredTransport
       );
       for (const transport of streamTypes) {
@@ -75,6 +134,9 @@ export class CameraMediaService {
 
         if (transport === 'web_rtc') {
           liveTransports.push('web_rtc');
+          if (!selectedStreamResource && directStreamResource) {
+            selectedStreamResource = directStreamResource;
+          }
           continue;
         }
 
@@ -140,7 +202,13 @@ export class CameraMediaService {
       }
     }
 
-    if (selectedTransport !== 'hls' && selectedTransport !== 'mjpeg') {
+    if (selectedTransport === 'web_rtc' && selectedStreamResource?.kind !== 'webrtc_stream') {
+      selectedStreamResource = null;
+    } else if (
+      selectedTransport !== 'web_rtc' &&
+      selectedTransport !== 'hls' &&
+      selectedTransport !== 'mjpeg'
+    ) {
       selectedStreamResource = null;
     }
 

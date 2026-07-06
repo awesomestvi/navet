@@ -7,7 +7,12 @@ import type {
   PlatformCameraTransport,
 } from '@navet/app/platform/provider-feature-models';
 import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
-import type { CameraStreamPreference, CameraViewMode } from '@navet/app/stores/settings-store';
+import type {
+  CameraFitMode,
+  CameraStreamPreference,
+  CameraViewMode,
+  CameraWebRtcStreamSource,
+} from '@navet/app/stores/settings-store';
 import { Camera, RefreshCw, Settings2, Video, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCameraPlaybackPlan } from '../../hooks/use-camera-playback-plan';
@@ -27,6 +32,9 @@ interface CameraLiveViewerProps {
   snapshotSources?: readonly CameraCardImageSource[];
   cameraViewMode: CameraViewMode;
   preferredTransport: CameraStreamPreference;
+  webRtcStreamSource?: CameraWebRtcStreamSource;
+  directStreamUrl?: string;
+  cameraFitMode?: CameraFitMode;
   isStreamCapable: boolean;
   motionDetectionEnabled: boolean | null;
   initialStreamResource: ResolvedPlatformResource | null;
@@ -80,6 +88,9 @@ export function CameraLiveViewer({
   snapshotSources,
   cameraViewMode,
   preferredTransport,
+  webRtcStreamSource,
+  directStreamUrl,
+  cameraFitMode = 'contain',
   isStreamCapable,
   motionDetectionEnabled,
   initialStreamResource,
@@ -96,6 +107,8 @@ export function CameraLiveViewer({
   const supportsCameraSnapshot = featureMatrix.cameraSnapshot;
   const playbackModel = useCameraPlaybackPlan({
     entityId,
+    webRtcStreamSource,
+    directStreamUrl,
     cameraState,
     preferredMode: supportsCameraStreams ? cameraViewMode : 'snapshot',
     preferredTransport,
@@ -107,7 +120,15 @@ export function CameraLiveViewer({
 
   useEffect(() => {
     setFailedStreamTypes([]);
-  }, [cameraState, cameraViewMode, isOpen, isStreamCapable, preferredTransport]);
+  }, [
+    cameraState,
+    cameraViewMode,
+    directStreamUrl,
+    isOpen,
+    isStreamCapable,
+    preferredTransport,
+    webRtcStreamSource,
+  ]);
 
   const handleStreamError = useCallback((kind: CameraImageSourceKind) => {
     if (kind === 'snapshot') {
@@ -133,6 +154,11 @@ export function CameraLiveViewer({
 
   const selectedTransport = playbackModel?.selectedTransport ?? null;
   const snapshotSourceUrl = playbackModel?.snapshotResource?.url;
+  const selectedStreamResource = playbackModel?.selectedStreamResource ?? null;
+  const initialResourceMatchesSelectedTransport =
+    (selectedTransport === 'hls' && initialStreamResource?.kind === 'hls_stream') ||
+    (selectedTransport === 'web_rtc' && initialStreamResource?.kind === 'webrtc_stream') ||
+    (selectedTransport === 'mjpeg' && initialStreamResource?.kind === 'mjpeg_stream');
   const showNoSignal = !selectedTransport && !snapshotSourceUrl && cameraState !== 'unavailable';
   const isFeedRunning = Boolean(selectedTransport) && cameraState !== 'unavailable';
   const streamTypeLabel = useMemo(() => {
@@ -178,13 +204,11 @@ export function CameraLiveViewer({
               kind={selectedTransport}
               posterUrl={snapshotSourceUrl}
               streamResource={
-                initialStreamResource?.kind === 'hls_stream' ||
-                initialStreamResource?.kind === 'webrtc_stream' ||
-                initialStreamResource?.kind === 'mjpeg_stream'
+                initialResourceMatchesSelectedTransport
                   ? initialStreamResource
-                  : (playbackModel?.selectedStreamResource ?? null)
+                  : selectedStreamResource
               }
-              fitMode="contain"
+              fitMode={cameraFitMode}
               onError={handleStreamError}
             />
           ) : snapshotSourceUrl && cameraState !== 'unavailable' ? (

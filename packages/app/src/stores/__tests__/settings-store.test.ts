@@ -55,6 +55,13 @@ describe('useSettingsStore', () => {
     });
     useSettingsStore.getState().updateCameraViewMode('camera.front_door', 'snapshot');
     useSettingsStore.getState().updateCameraStreamPreference('camera.front_door', 'hls');
+    useSettingsStore
+      .getState()
+      .updateCameraDirectStreamUrl(
+        'camera.front_door',
+        'http://192.168.68.71:1984/stream.html?src=camera_front'
+      );
+    useSettingsStore.getState().updateCameraWebRtcStreamSource('camera.front_door', 'direct');
     useSettingsStore.getState().updateCameraFitMode('camera.front_door', 'contain');
     useSettingsStore.getState().resetSettings();
 
@@ -71,6 +78,8 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().cameraViewModes).toEqual({});
     expect(useSettingsStore.getState().cameraStreamPreference).toBe('auto');
     expect(useSettingsStore.getState().cameraStreamPreferences).toEqual({});
+    expect(useSettingsStore.getState().cameraWebRtcStreamSources).toEqual({});
+    expect(useSettingsStore.getState().cameraDirectStreamUrls).toEqual({});
     expect(useSettingsStore.getState().cameraFitMode).toBe('cover');
     expect(useSettingsStore.getState().cameraFitModes).toEqual({});
     expect(localStorage.getItem(STORE_STORAGE_KEYS.settings)).toContain('"compactMode":false');
@@ -89,11 +98,50 @@ describe('useSettingsStore', () => {
 
   it('stores camera stream preference per entity', () => {
     useSettingsStore.getState().updateCameraStreamPreference('camera.front_door', 'hls');
-    useSettingsStore.getState().updateCameraStreamPreference('camera.garage', 'mjpeg');
+    useSettingsStore.getState().updateCameraStreamPreference('camera.garage', 'web_rtc');
 
     expect(useSettingsStore.getState().cameraStreamPreferences).toEqual({
       'camera.front_door': 'hls',
-      'camera.garage': 'mjpeg',
+      'camera.garage': 'web_rtc',
+    });
+  });
+
+  it('stores and clears WebRTC stream source per entity', () => {
+    useSettingsStore.getState().updateCameraWebRtcStreamSource('camera.front_door', 'direct');
+    useSettingsStore.getState().updateCameraWebRtcStreamSource('camera.garage', 'direct');
+
+    expect(useSettingsStore.getState().cameraWebRtcStreamSources).toEqual({
+      'camera.front_door': 'direct',
+      'camera.garage': 'direct',
+    });
+
+    useSettingsStore.getState().updateCameraWebRtcStreamSource('camera.garage', 'provider');
+
+    expect(useSettingsStore.getState().cameraWebRtcStreamSources).toEqual({
+      'camera.front_door': 'direct',
+    });
+  });
+
+  it('stores and clears direct camera stream URLs per entity', () => {
+    useSettingsStore
+      .getState()
+      .updateCameraDirectStreamUrl(
+        'camera.front_door',
+        '  http://192.168.68.71:1984/stream.html?src=camera_front  '
+      );
+    useSettingsStore
+      .getState()
+      .updateCameraDirectStreamUrl('camera.garage', 'http://192.168.68.72:1984/stream.html');
+
+    expect(useSettingsStore.getState().cameraDirectStreamUrls).toEqual({
+      'camera.front_door': 'http://192.168.68.71:1984/stream.html?src=camera_front',
+      'camera.garage': 'http://192.168.68.72:1984/stream.html',
+    });
+
+    useSettingsStore.getState().updateCameraDirectStreamUrl('camera.garage', '');
+
+    expect(useSettingsStore.getState().cameraDirectStreamUrls).toEqual({
+      'camera.front_door': 'http://192.168.68.71:1984/stream.html?src=camera_front',
     });
   });
 

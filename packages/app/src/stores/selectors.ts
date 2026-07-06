@@ -136,6 +136,10 @@ export const settingsSelectors = {
   cameraStreamPreference: (state: SettingsState) => state.cameraStreamPreference,
   cameraStreamPreferenceForEntity: (entityId: string) => (state: SettingsState) =>
     state.cameraStreamPreferences[entityId] ?? state.cameraStreamPreference,
+  cameraWebRtcStreamSourceForEntity: (entityId: string) => (state: SettingsState) =>
+    state.cameraWebRtcStreamSources[entityId] ?? 'provider',
+  cameraDirectStreamUrlForEntity: (entityId: string) => (state: SettingsState) =>
+    state.cameraDirectStreamUrls[entityId] ?? '',
   cameraFitMode: (state: SettingsState) => state.cameraFitMode,
   cameraFitModeForEntity: (entityId: string) => (state: SettingsState) =>
     state.cameraFitModes[entityId] ?? state.cameraFitMode,
@@ -150,6 +154,8 @@ export const settingsSelectors = {
   updateSettings: (state: SettingsState) => state.updateSettings,
   updateCameraViewMode: (state: SettingsState) => state.updateCameraViewMode,
   updateCameraStreamPreference: (state: SettingsState) => state.updateCameraStreamPreference,
+  updateCameraWebRtcStreamSource: (state: SettingsState) => state.updateCameraWebRtcStreamSource,
+  updateCameraDirectStreamUrl: (state: SettingsState) => state.updateCameraDirectStreamUrl,
   updateCameraFitMode: (state: SettingsState) => state.updateCameraFitMode,
   resetSettings: (state: SettingsState) => state.resetSettings,
 

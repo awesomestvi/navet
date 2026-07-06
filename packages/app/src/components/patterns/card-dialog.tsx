@@ -45,7 +45,7 @@ interface CardDialogSectionProps {
   className?: string;
   helperText?: string;
   helperTextClassName?: string;
-  label?: string;
+  label?: ReactNode;
   labelClassName?: string;
 }
 

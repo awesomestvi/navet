@@ -1,5 +1,11 @@
 import { CardDialogChoicePill } from '@navet/app/components/patterns';
-import { BaseCardDialogWithState, Select, Slider, Switch } from '@navet/app/components/primitives';
+import {
+  BaseCardDialogWithState,
+  Input,
+  Select,
+  Slider,
+  Switch,
+} from '@navet/app/components/primitives';
 import { DialogSectionRow } from '@navet/app/components/shared/device-editor';
 import { useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
 import type { TranslationKey } from '@navet/app/i18n';
@@ -12,10 +18,12 @@ import type {
   CameraFitMode,
   CameraStreamPreference,
   CameraViewMode,
+  CameraWebRtcStreamSource,
 } from '@navet/app/stores/settings-store';
 import { getEntityTypeLabel } from '@navet/app/utils/entity-type-label';
-import { Settings2 } from 'lucide-react';
-import { memo, useCallback, useEffect, useState } from 'react';
+import * as Popover from '@radix-ui/react-popover';
+import { Info, Settings2 } from 'lucide-react';
+import { memo, type ReactNode, useCallback, useEffect, useState } from 'react';
 
 export interface SiblingEntity {
   id: string;
@@ -30,6 +38,9 @@ interface CameraSettingsDialogProps {
   siblingEntities: SiblingEntity[];
   cameraViewMode: CameraViewMode;
   cameraStreamPreference: CameraStreamPreference;
+  cameraWebRtcStreamSource: CameraWebRtcStreamSource;
+  cameraDirectStreamUrl: string;
+  cameraDirectStreamUrlError: boolean;
   cameraFitMode: CameraFitMode;
   supportedStreamPreferences: readonly PlatformCameraTransport[];
   supportsStreaming: boolean;
@@ -37,6 +48,8 @@ interface CameraSettingsDialogProps {
   lowPowerMode: boolean;
   onCameraViewModeChange: (mode: CameraViewMode) => void;
   onCameraStreamPreferenceChange: (preference: CameraStreamPreference) => void;
+  onCameraWebRtcStreamSourceChange: (source: CameraWebRtcStreamSource) => void;
+  onCameraDirectStreamUrlChange: (url: string) => void;
   onCameraFitModeChange: (mode: CameraFitMode) => void;
 }
 
@@ -220,7 +233,44 @@ const CAMERA_STREAM_PREFERENCE_OPTIONS: CameraStreamPreference[] = [
   'hls',
   'mjpeg',
 ];
+const CAMERA_WEB_RTC_STREAM_SOURCE_OPTIONS: CameraWebRtcStreamSource[] = ['provider', 'direct'];
 const CAMERA_FIT_MODE_OPTIONS: CameraFitMode[] = ['contain', 'cover'];
+
+function CameraInfoPopoverIcon({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <Popover.Root>
+      <Popover.Trigger asChild>
+        <button
+          type="button"
+          className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white/58 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35"
+          aria-label={`${label} information`}
+        >
+          <Info className="h-3.5 w-3.5" aria-hidden="true" />
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          side="top"
+          align="start"
+          sideOffset={8}
+          className="z-50 max-w-72 rounded-2xl border border-white/12 bg-zinc-950/95 px-3 py-2 text-xs leading-relaxed text-white/82 shadow-2xl backdrop-blur-xl"
+        >
+          <div className="space-y-2">{children}</div>
+          <Popover.Arrow className="fill-zinc-950" />
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+}
+
+function CameraInfoLabel({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <span className="inline-flex min-w-0 items-center gap-1.5">
+      <span className="truncate">{label}</span>
+      <CameraInfoPopoverIcon label={label}>{children}</CameraInfoPopoverIcon>
+    </span>
+  );
+}
 
 function CameraViewModeRow({
   value,
@@ -249,7 +299,16 @@ function CameraViewModeRow({
   }
 
   return (
-    <DialogSectionRow label={t('camera.settings.viewMode')}>
+    <DialogSectionRow
+      label={
+        <CameraInfoLabel label={t('camera.settings.viewMode')}>
+          <p>{t('camera.settings.viewMode.description')}</p>
+          {lowPowerMode ? (
+            <p className="text-amber-200/88">{t('camera.settings.viewMode.lowPowerNote')}</p>
+          ) : null}
+        </CameraInfoLabel>
+      }
+    >
       <div className="inline-flex flex-wrap items-center gap-1">
         {supportedOptions.map((mode) => (
           <CardDialogChoicePill
@@ -263,45 +322,61 @@ function CameraViewModeRow({
           </CardDialogChoicePill>
         ))}
       </div>
-      <p className="mt-2 px-1 text-xs leading-relaxed text-white/58">
-        {t('camera.settings.viewMode.description')}
-      </p>
-      {lowPowerMode ? (
-        <p className="mt-2 px-1 text-xs leading-relaxed text-amber-200/78">
-          {t('camera.settings.viewMode.lowPowerNote')}
-        </p>
-      ) : null}
     </DialogSectionRow>
   );
 }
 
 function CameraStreamPreferenceRow({
+  entityId,
   value,
+  webRtcStreamSource,
+  directStreamUrl,
+  directStreamUrlError,
   supportedPreferences,
   supportsStreaming,
   onChange,
+  onWebRtcStreamSourceChange,
+  onDirectStreamUrlChange,
 }: {
+  entityId: string;
   value: CameraStreamPreference;
+  webRtcStreamSource: CameraWebRtcStreamSource;
+  directStreamUrl: string;
+  directStreamUrlError: boolean;
   supportedPreferences: readonly PlatformCameraTransport[];
   supportsStreaming: boolean;
   onChange: (preference: CameraStreamPreference) => void;
+  onWebRtcStreamSourceChange: (source: CameraWebRtcStreamSource) => void;
+  onDirectStreamUrlChange: (url: string) => void;
 }) {
   const { t } = useI18n();
+  const [draftUrl, setDraftUrl] = useState(directStreamUrl);
+  const inputId = `${entityId}-direct-stream-url`;
+  const errorId = `${inputId}-error`;
+
+  useEffect(() => {
+    setDraftUrl(directStreamUrl);
+  }, [directStreamUrl]);
 
   if (!supportsStreaming) {
     return null;
   }
 
-  const availablePreferences: CameraStreamPreference[] = [
-    'auto',
-    ...CAMERA_STREAM_PREFERENCE_OPTIONS.filter(
-      (preference): preference is PlatformCameraTransport =>
-        preference !== 'auto' && supportedPreferences.includes(preference)
-    ),
-  ];
+  const availablePreferences: CameraStreamPreference[] = CAMERA_STREAM_PREFERENCE_OPTIONS.filter(
+    (preference) =>
+      preference === 'auto' ||
+      preference === 'web_rtc' ||
+      supportedPreferences.includes(preference as PlatformCameraTransport)
+  );
 
   return (
-    <DialogSectionRow label={t('camera.settings.streamPreference')}>
+    <DialogSectionRow
+      label={
+        <CameraInfoLabel label={t('camera.settings.streamPreference')}>
+          <p>{t('camera.settings.streamPreference.description')}</p>
+        </CameraInfoLabel>
+      }
+    >
       <div className="inline-flex flex-wrap items-center gap-1">
         {availablePreferences.map((preference) => (
           <CardDialogChoicePill
@@ -315,9 +390,57 @@ function CameraStreamPreferenceRow({
           </CardDialogChoicePill>
         ))}
       </div>
-      <p className="mt-2 px-1 text-xs leading-relaxed text-white/58">
-        {t('camera.settings.streamPreference.description')}
-      </p>
+      {value === 'web_rtc' ? (
+        <div className="mt-4 space-y-2">
+          <div className="inline-flex flex-wrap items-center gap-1">
+            {CAMERA_WEB_RTC_STREAM_SOURCE_OPTIONS.map((source) => (
+              <CardDialogChoicePill
+                key={source}
+                active={source === webRtcStreamSource}
+                onClick={() => onWebRtcStreamSourceChange(source)}
+                size="compact"
+                aria-pressed={source === webRtcStreamSource}
+              >
+                {t(`camera.settings.webRtcStreamSource.${source}` as TranslationKey)}
+              </CardDialogChoicePill>
+            ))}
+          </div>
+          {webRtcStreamSource === 'direct' ? (
+            <div className="mt-3 space-y-1">
+              <div className="flex items-center gap-1.5 px-1">
+                <label htmlFor={inputId} className="text-xs font-medium text-white/76">
+                  {t('camera.settings.directStreamUrl')}
+                </label>
+                <CameraInfoPopoverIcon label={t('camera.settings.directStreamUrl')}>
+                  <p>{t('camera.settings.directStreamUrl.description')}</p>
+                </CameraInfoPopoverIcon>
+              </div>
+              <Input
+                id={inputId}
+                type="url"
+                aria-label={t('camera.settings.directStreamUrl')}
+                aria-describedby={directStreamUrlError ? errorId : undefined}
+                invalid={directStreamUrlError}
+                value={draftUrl}
+                placeholder="http://homeassistant.local:1984/stream.html?src=camera_name"
+                onChange={(event) => setDraftUrl(event.target.value)}
+                onBlur={() => onDirectStreamUrlChange(draftUrl)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    onDirectStreamUrlChange(draftUrl);
+                    event.currentTarget.blur();
+                  }
+                }}
+              />
+              {directStreamUrlError ? (
+                <p id={errorId} className="px-1 text-xs font-medium text-red-300">
+                  {t('camera.settings.directStreamUrl.error')}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </DialogSectionRow>
   );
 }
@@ -332,7 +455,13 @@ function CameraFitModeRow({
   const { t } = useI18n();
 
   return (
-    <DialogSectionRow label={t('camera.settings.fitMode')}>
+    <DialogSectionRow
+      label={
+        <CameraInfoLabel label={t('camera.settings.fitMode')}>
+          <p>{t('camera.settings.fitMode.description')}</p>
+        </CameraInfoLabel>
+      }
+    >
       <div className="inline-flex flex-wrap items-center gap-1">
         {CAMERA_FIT_MODE_OPTIONS.map((mode) => (
           <CardDialogChoicePill
@@ -346,9 +475,6 @@ function CameraFitModeRow({
           </CardDialogChoicePill>
         ))}
       </div>
-      <p className="mt-2 px-1 text-xs leading-relaxed text-white/58">
-        {t('camera.settings.fitMode.description')}
-      </p>
     </DialogSectionRow>
   );
 }
@@ -361,6 +487,9 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   siblingEntities,
   cameraViewMode,
   cameraStreamPreference,
+  cameraWebRtcStreamSource,
+  cameraDirectStreamUrl,
+  cameraDirectStreamUrlError,
   cameraFitMode,
   supportedStreamPreferences,
   supportsStreaming,
@@ -368,6 +497,8 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   lowPowerMode,
   onCameraViewModeChange,
   onCameraStreamPreferenceChange,
+  onCameraWebRtcStreamSourceChange,
+  onCameraDirectStreamUrlChange,
   onCameraFitModeChange,
 }: CameraSettingsDialogProps) {
   const { t } = useI18n();
@@ -379,6 +510,8 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   const selects = siblingEntities.filter((s) => s.id.startsWith('select.'));
   const numbers = siblingEntities.filter((s) => s.id.startsWith('number.'));
   const hasControls = switches.length > 0 || selects.length > 0 || numbers.length > 0;
+  const isDirectStreamSelected =
+    cameraStreamPreference === 'web_rtc' && cameraWebRtcStreamSource === 'direct';
 
   const controlsTabContent = (
     <div className="space-y-6">
@@ -391,13 +524,21 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
       />
 
       <CameraStreamPreferenceRow
+        entityId={entityId}
         value={cameraStreamPreference}
+        webRtcStreamSource={cameraWebRtcStreamSource}
+        directStreamUrl={cameraDirectStreamUrl}
+        directStreamUrlError={cameraDirectStreamUrlError}
         supportedPreferences={supportedStreamPreferences}
         supportsStreaming={supportsStreaming}
         onChange={onCameraStreamPreferenceChange}
+        onWebRtcStreamSourceChange={onCameraWebRtcStreamSourceChange}
+        onDirectStreamUrlChange={onCameraDirectStreamUrlChange}
       />
 
-      <CameraFitModeRow value={cameraFitMode} onChange={onCameraFitModeChange} />
+      {!isDirectStreamSelected ? (
+        <CameraFitModeRow value={cameraFitMode} onChange={onCameraFitModeChange} />
+      ) : null}
     </div>
   );
 

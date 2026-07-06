@@ -317,14 +317,19 @@ describe('dashboard-config import hardening', () => {
   it('keeps this-device scoped dashboard behavior settings out of shared profiles', () => {
     useSettingsStore.getState().updateSettings({
       dashboardSpaceMode: 'more_space',
+      effectsQuality: 'medium',
       keepDeviceAwake: true,
       kioskMode: true,
     });
-    setSettingsProfileScope(['dashboardSpaceMode', 'keepDeviceAwake', 'kioskMode'], 'device');
+    setSettingsProfileScope(
+      ['dashboardSpaceMode', 'effectsQuality', 'keepDeviceAwake', 'kioskMode'],
+      'device'
+    );
 
     const exported = exportDashboardConfig();
 
     expect(exported.settings).not.toHaveProperty('dashboardSpaceMode');
+    expect(exported.settings).not.toHaveProperty('effectsQuality');
     expect(exported.settings).not.toHaveProperty('keepDeviceAwake');
     expect(exported.settings).not.toHaveProperty('kioskMode');
 
@@ -332,14 +337,27 @@ describe('dashboard-config import hardening', () => {
       ...baseConfig,
       settings: {
         dashboardSpaceMode: 'default',
+        effectsQuality: 'low',
         keepDeviceAwake: false,
         kioskMode: false,
       },
     });
 
     expect(useSettingsStore.getState().dashboardSpaceMode).toBe('more_space');
+    expect(useSettingsStore.getState().effectsQuality).toBe('medium');
     expect(useSettingsStore.getState().keepDeviceAwake).toBe(true);
     expect(useSettingsStore.getState().kioskMode).toBe(true);
+  });
+
+  it('preserves remembered all-device visual quality while exporting this-device overrides', () => {
+    useSettingsStore.getState().updateSettings({ effectsQuality: 'medium' });
+    setSettingsProfileScope(['effectsQuality'], 'device', useSettingsStore.getState());
+    useSettingsStore.getState().updateSettings({ effectsQuality: 'low' });
+
+    const exported = exportDashboardConfig();
+
+    expect(useSettingsStore.getState().effectsQuality).toBe('low');
+    expect(exported.settings.effectsQuality).toBe('medium');
   });
 
   it('preserves remembered all-device values while exporting this-device overrides', () => {

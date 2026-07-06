@@ -53,6 +53,14 @@ export const RoomSection = memo(function RoomSection({
   const breakpointCols = useBreakpointCols();
   const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
     useFitDashboardGrid(breakpointCols);
+  const optimizeOffscreenPaint = densePerformanceMode && !isEditMode;
+  const estimatedRows = Math.max(1, Math.ceil(totalItems / Math.max(1, breakpointCols)));
+  const sectionPaintStyle = optimizeOffscreenPaint
+    ? ({
+        contentVisibility: 'auto',
+        containIntrinsicBlockSize: `${estimatedRows * 112}px`,
+      } as CSSProperties)
+    : undefined;
   const gridContent = (
     <div ref={outerRef} className="relative w-full" style={outerContainerStyle}>
       <div
@@ -115,7 +123,7 @@ export const RoomSection = memo(function RoomSection({
   );
 
   return (
-    <div>
+    <div style={sectionPaintStyle} data-dashboard-room-section={title}>
       <div className={showHeader ? 'mb-4 flex items-center gap-3' : ''}>
         {showHeader ? (
           <>

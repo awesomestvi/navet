@@ -47,6 +47,20 @@ describe('SettingsAppearanceSection', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('confirms visual quality through the scoped settings dialog', () => {
+    renderWithProviders(<TestSection />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Medium' }));
+
+    expect(useSettingsStore.getState().effectsQuality).toBe('high');
+
+    fireEvent.click(screen.getByRole('button', { name: 'All devices' }));
+
+    expect(useSettingsStore.getState().effectsQuality).toBe('medium');
+    expect(useSettingsStore.getState().disableAnimations).toBe(false);
+    expect(useSettingsStore.getState().lowPowerMode).toBe(false);
+  });
+
   it('disables ambience controls when low-power mode forces effective low quality', () => {
     useSettingsStore.getState().updateSettings({
       effectsQuality: 'high',

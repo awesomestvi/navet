@@ -11,6 +11,8 @@ import {
 
 interface CameraPlaybackPlanRequest {
   entityId: string;
+  webRtcStreamSource?: 'provider' | 'direct';
+  directStreamUrl?: string;
   cameraState: 'unavailable' | 'off' | 'idle' | 'streaming' | 'recording';
   preferredMode: 'auto' | 'live' | 'snapshot';
   preferredTransport: 'auto' | PlatformCameraTransport;

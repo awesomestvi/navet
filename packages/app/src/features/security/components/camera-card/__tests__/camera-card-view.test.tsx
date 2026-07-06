@@ -99,6 +99,22 @@ describe('CameraCardView', () => {
     expect(screen.queryByText('WEB_RTC')).not.toBeInTheDocument();
   });
 
+  it('can hide the stream label for direct WebRTC dashboard playback', () => {
+    renderWithProviders(
+      <CameraCardView
+        {...defaultProps}
+        streamKind="web_rtc"
+        frontendStreamTypes={['web_rtc']}
+        hideStreamLabel
+        hideStreamStatus
+        statusChangedAt={baseNow - 55 * 60_000}
+      />
+    );
+
+    expect(screen.queryByText('RTC')).not.toBeInTheDocument();
+    expect(screen.queryByText('55m')).not.toBeInTheDocument();
+  });
+
   it('does not show the generic on label when the camera is merely idle', () => {
     renderWithProviders(<CameraCardView {...defaultProps} cameraState="idle" />);
 

@@ -127,6 +127,141 @@ describe('CameraMediaService', () => {
     expect(getCameraStreamMock).toHaveBeenCalledTimes(1);
   });
 
+  it('prefers a configured direct WebRTC player before HLS when Home Assistant exposes only HLS', async () => {
+    const resolveMock = vi.fn(async (request: { rawPath?: string }) => ({
+      id: 'camera.front:hls',
+      kind: 'image',
+      cacheKey: 'camera.front:hls',
+      authStrategy: 'same_origin' as const,
+      url: request.rawPath,
+    }));
+    const getCameraCapabilitiesMock = vi.fn(async () => createCameraCapabilities(['hls']));
+    const getCameraStreamMock = vi.fn(async () => ({
+      url: '/api/hls/camera.front/master.m3u8',
+    }));
+    const service = new CameraMediaService(
+      { resolve: resolveMock } as never,
+      getCameraCapabilitiesMock,
+      getCameraStreamMock,
+      vi.fn(async () => ({}))
+    );
+
+    const model = await service.getPlaybackPlan({
+      entityId: 'camera.front',
+      webRtcStreamSource: 'direct',
+      directStreamUrl: 'http://192.168.68.71:1984/stream.html?src=camera_bedroom',
+      cameraState: 'streaming',
+      preferredMode: 'live',
+      preferredTransport: 'web_rtc',
+      snapshotUrl: 'http://192.168.68.71:8123/api/camera_proxy/camera.front',
+      isStreamCapable: true,
+      motionDetectionEnabled: true,
+      failedTransports: new Set(),
+    });
+
+    expect(model.liveTransports).toEqual(['web_rtc', 'hls']);
+    expect(model.fallbackTransports).toEqual(['hls']);
+    expect(model.selectedTransport).toBe('web_rtc');
+    expect(model.selectedStreamResource).toMatchObject({
+      kind: 'webrtc_stream',
+      url: 'http://192.168.68.71:1984/stream.html?src=camera_bedroom',
+      metadata: { source: 'direct_stream_url' },
+    });
+  });
+
+  it('does not use a configured direct WebRTC player while auto is selected', async () => {
+    const resolveMock = vi.fn(async (request: { rawPath?: string }) => ({
+      id: 'camera.front:hls',
+      kind: 'image',
+      cacheKey: 'camera.front:hls',
+      authStrategy: 'same_origin' as const,
+      url: request.rawPath,
+    }));
+    const service = new CameraMediaService(
+      { resolve: resolveMock } as never,
+      vi.fn(async () => createCameraCapabilities(['hls'])),
+      vi.fn(async () => ({ url: '/api/hls/camera.front/master.m3u8' })),
+      vi.fn(async () => ({}))
+    );
+
+    const model = await service.getPlaybackPlan({
+      entityId: 'camera.front',
+      directStreamUrl: 'http://192.168.68.71:1984/stream.html?src=camera_bedroom',
+      cameraState: 'streaming',
+      preferredMode: 'live',
+      preferredTransport: 'auto',
+      snapshotUrl: 'http://192.168.68.71:8123/api/camera_proxy/camera.front',
+      isStreamCapable: true,
+      motionDetectionEnabled: true,
+      failedTransports: new Set(),
+    });
+
+    expect(model.liveTransports).toEqual(['hls']);
+    expect(model.selectedTransport).toBe('hls');
+  });
+
+  it('does not fall through to provider WebRTC when direct WebRTC is selected without a URL', async () => {
+    const resolveMock = vi.fn(async (request: { rawPath?: string; kind: string }) => ({
+      id: 'camera.front:snapshot',
+      kind: request.kind === 'camera_snapshot' ? 'image' : 'unavailable',
+      cacheKey: 'camera.front:snapshot',
+      authStrategy: 'same_origin' as const,
+      url: request.rawPath,
+    }));
+    const service = new CameraMediaService(
+      { resolve: resolveMock } as never,
+      vi.fn(async () => createCameraCapabilities(['web_rtc', 'hls'])),
+      vi.fn(async () => ({ url: '/api/hls/camera.front/master.m3u8' })),
+      vi.fn(async () => ({}))
+    );
+
+    const model = await service.getPlaybackPlan({
+      entityId: 'camera.front',
+      webRtcStreamSource: 'direct',
+      cameraState: 'streaming',
+      preferredMode: 'live',
+      preferredTransport: 'web_rtc',
+      snapshotUrl: '/api/camera_proxy/camera.front',
+      isStreamCapable: true,
+      motionDetectionEnabled: true,
+      failedTransports: new Set(),
+    });
+
+    expect(model.liveTransports).toEqual([]);
+    expect(model.selectedTransport).toBeNull();
+    expect(model.isSnapshotFallback).toBe(true);
+  });
+
+  it('does not synthesize WebRTC player URLs when only a camera name is available', async () => {
+    const resolveMock = vi.fn(async (request: { rawPath?: string }) => ({
+      id: 'camera.front:hls',
+      kind: 'image',
+      cacheKey: 'camera.front:hls',
+      authStrategy: 'same_origin' as const,
+      url: request.rawPath,
+    }));
+    const service = new CameraMediaService(
+      { resolve: resolveMock } as never,
+      vi.fn(async () => createCameraCapabilities(['hls'])),
+      vi.fn(async () => ({ url: '/api/hls/camera.front/master.m3u8' })),
+      vi.fn(async () => ({}))
+    );
+
+    const model = await service.getPlaybackPlan({
+      entityId: 'camera.front',
+      cameraState: 'streaming',
+      preferredMode: 'live',
+      preferredTransport: 'auto',
+      snapshotUrl: '/__navet_ha_proxy__/api/camera_proxy/camera.front',
+      isStreamCapable: true,
+      motionDetectionEnabled: true,
+      failedTransports: new Set(),
+    });
+
+    expect(model.liveTransports).toEqual(['hls']);
+    expect(model.selectedTransport).toBe('hls');
+  });
+
   it('falls back to snapshot when the user-selected start transport is missing from capabilities', async () => {
     const resolveMock = vi.fn(async (request: { rawPath?: string; kind: string }) => ({
       id: 'camera.front:snapshot',

@@ -72,6 +72,9 @@ const meta = {
     siblingEntities,
     cameraViewMode: 'live',
     cameraStreamPreference: 'auto',
+    cameraWebRtcStreamSource: 'provider',
+    cameraDirectStreamUrl: '',
+    cameraDirectStreamUrlError: false,
     cameraFitMode: 'cover',
     supportedStreamPreferences: ['web_rtc', 'hls', 'mjpeg'],
     supportsStreaming: true,
@@ -79,6 +82,8 @@ const meta = {
     lowPowerMode: false,
     onCameraViewModeChange: () => undefined,
     onCameraStreamPreferenceChange: () => undefined,
+    onCameraWebRtcStreamSourceChange: () => undefined,
+    onCameraDirectStreamUrlChange: () => undefined,
     onCameraFitModeChange: () => undefined,
   },
 } satisfies Meta<typeof CameraSettingsDialogStory>;

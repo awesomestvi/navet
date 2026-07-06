@@ -5,8 +5,9 @@ import { resetAppStores } from '@navet/app/test/store-reset';
 import { screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getControllerMock } = vi.hoisted(() => ({
+const { getControllerMock, getProfileSyncMock } = vi.hoisted(() => ({
   getControllerMock: vi.fn(),
+  getProfileSyncMock: vi.fn(),
 }));
 
 vi.mock('../../hooks/use-dashboard-controller', () => ({
@@ -14,7 +15,7 @@ vi.mock('../../hooks/use-dashboard-controller', () => ({
 }));
 
 vi.mock('../../hooks/use-dashboard-profile-sync', () => ({
-  useDashboardProfileSync: vi.fn(),
+  useDashboardProfileSync: getProfileSyncMock,
 }));
 
 vi.mock('../../components/dashboard-section-router', () => ({
@@ -35,10 +36,12 @@ describe('DashboardPage loading recovery', () => {
   beforeEach(async () => {
     await resetAppStores();
     getControllerMock.mockReturnValue(createController());
+    getProfileSyncMock.mockReturnValue({ profileLoadCompleted: true });
   });
 
   afterEach(() => {
     getControllerMock.mockReset();
+    getProfileSyncMock.mockReset();
   });
 
   it('does not render the loading devices spinner when dashboard loading is blocked', () => {
@@ -69,6 +72,16 @@ describe('DashboardPage loading recovery', () => {
     rerender(<DashboardPage />);
 
     expect(screen.getByText('dashboard ready')).toBeInTheDocument();
+  });
+
+  it('waits for profile sync before rendering the dashboard shell', () => {
+    getControllerMock.mockReturnValue(createController({ homeLayoutHydrated: true }));
+    getProfileSyncMock.mockReturnValue({ profileLoadCompleted: false });
+
+    renderWithProviders(<DashboardPage />);
+
+    expect(screen.queryByText('dashboard ready')).not.toBeInTheDocument();
+    expect(useErrorStore.getState().error).toBeNull();
   });
 
   it('clears the loading recovery error once the dashboard becomes ready', () => {

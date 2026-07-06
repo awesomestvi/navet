@@ -9,8 +9,16 @@ const { getCameraPlaybackPlanMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('../camera-stream-player', () => ({
-  CameraStreamPlayer: ({ entityId, kind }: { entityId: string; kind: string }) => (
-    <div data-testid="camera-stream-player">{`${entityId}:${kind}`}</div>
+  CameraStreamPlayer: ({
+    entityId,
+    kind,
+    fitMode,
+  }: {
+    entityId: string;
+    kind: string;
+    fitMode: string;
+  }) => (
+    <div data-testid="camera-stream-player" data-fit-mode={fitMode}>{`${entityId}:${kind}`}</div>
   ),
 }));
 
@@ -205,6 +213,7 @@ describe('CameraLiveViewer', () => {
     expect(await screen.findByTestId('camera-stream-player')).toHaveTextContent(
       'home_assistant:camera.front_door:hls'
     );
+    expect(screen.getByTestId('camera-stream-player')).toHaveAttribute('data-fit-mode', 'contain');
     expect(screen.getByText('HLS')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Refresh camera snapshot' }));
@@ -245,5 +254,41 @@ describe('CameraLiveViewer', () => {
     );
     expect(screen.getAllByText('Live').length).toBeGreaterThan(0);
     expect(screen.queryByText('On')).not.toBeInTheDocument();
+  });
+
+  it('passes the selected feed sizing mode to the fullscreen stream player', async () => {
+    getCameraPlaybackPlanMock.mockResolvedValue({
+      cameraState: 'streaming',
+      snapshotResource: {
+        id: 'camera.front_door:snapshot',
+        kind: 'image',
+        cacheKey: 'camera.front_door:snapshot',
+        authStrategy: 'bearer',
+        url: String(cameraEntityFixtures.relativeUrl.attributes.entity_picture),
+      },
+      supportsSnapshot: true,
+      liveTransports: ['web_rtc'],
+      fallbackTransports: [],
+      selectedTransport: 'web_rtc',
+      selectedStreamResource: {
+        id: 'camera.front_door:direct',
+        kind: 'webrtc_stream',
+        cacheKey: 'camera.front_door:direct',
+        authStrategy: 'none',
+        url: 'http://192.168.68.71:1984/stream.html?src=camera_bedroom',
+      },
+      supportsStreaming: true,
+      isSnapshotFallback: false,
+      shouldStartWithSnapshot: false,
+      motionDetectionEnabled: true,
+      refreshPolicy: { retryDelaysMs: [1_000, 3_000, 7_000] },
+    });
+
+    renderWithProviders(<CameraLiveViewer {...defaultProps} cameraFitMode="cover" />);
+
+    expect(await screen.findByTestId('camera-stream-player')).toHaveAttribute(
+      'data-fit-mode',
+      'cover'
+    );
   });
 });

@@ -34,6 +34,8 @@ interface CameraCardViewProps {
   isStreamCapable: boolean;
   frontendStreamTypes: readonly CameraStreamType[];
   streamKind: CameraImageSourceKind;
+  hideStreamLabel?: boolean;
+  hideStreamStatus?: boolean;
   isStreamFallback: boolean;
   onRefresh: () => void;
   onImageError: () => void;
@@ -102,6 +104,8 @@ export function CameraCardView({
   isStreamCapable,
   frontendStreamTypes,
   streamKind,
+  hideStreamLabel = false,
+  hideStreamStatus = false,
   isStreamFallback,
   onRefresh,
   onImageError,
@@ -149,7 +153,9 @@ export function CameraCardView({
   }
   const resolvedStreamLabel = isStreamFallback ? t('camera.viewer.snapshotFallback') : streamLabel;
   const showStreamLabel = Boolean(
-    resolvedStreamLabel && (!isCompact || streamKind === 'snapshot' || isStreamFallback)
+    !hideStreamLabel &&
+      resolvedStreamLabel &&
+      (!isCompact || streamKind === 'snapshot' || isStreamFallback)
   );
   const snapshotFitClassName = fitMode === 'contain' ? 'object-contain' : 'object-cover';
   const overlayButtonClassName = isLightTheme
@@ -255,19 +261,25 @@ export function CameraCardView({
             !isLightTheme && usesLightOverlayText ? '[text-shadow:0_1px_2px_rgba(0,0,0,0.98)]' : ''
           } ${statusTextClassName}`}
         >
-          <div className="inline-flex items-center gap-1.5">
-            <span
-              className={`h-1.5 w-1.5 rounded-full ${
-                isFeedRunning || cameraState === 'streaming' || cameraState === 'recording'
-                  ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.72)]'
-                  : !isLightTheme && usesLightOverlayText
-                    ? 'bg-white/45'
-                    : 'bg-slate-400'
-              }`}
-            />
-            {statusLabel ? <span>{statusLabel}</span> : null}
-          </div>
-          {statusElapsed ? <span className={statusMutedTextClassName}>{statusElapsed}</span> : null}
+          {!hideStreamStatus ? (
+            <>
+              <div className="inline-flex items-center gap-1.5">
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    isFeedRunning || cameraState === 'streaming' || cameraState === 'recording'
+                      ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.72)]'
+                      : !isLightTheme && usesLightOverlayText
+                        ? 'bg-white/45'
+                        : 'bg-slate-400'
+                  }`}
+                />
+                {statusLabel ? <span>{statusLabel}</span> : null}
+              </div>
+              {statusElapsed ? (
+                <span className={statusMutedTextClassName}>{statusElapsed}</span>
+              ) : null}
+            </>
+          ) : null}
           {motionLabel ? (
             <>
               <span className={statusSubtleTextClassName}>/</span>

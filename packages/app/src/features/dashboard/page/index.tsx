@@ -19,15 +19,20 @@ export function DashboardPage() {
   const activeCustomSidebarActionId = useNavigationStore(
     (state) => state.activeCustomSidebarActionId
   );
-  useDashboardProfileSync();
+  const { profileLoadCompleted } = useDashboardProfileSync();
   const controller = useDashboardController();
   const isDashboardReady =
     controller.devicesLoaded &&
+    profileLoadCompleted &&
     (activeCustomSidebarActionId !== null ||
       controller.activeSection !== 'home' ||
       !isAllRooms(controller.activeRoom) ||
       controller.homeLayoutHydrated);
-  const isWaitingForDashboard = !isDashboardReady && !controller.connecting;
+  const isWaitingForDashboard =
+    controller.devicesLoaded &&
+    profileLoadCompleted &&
+    !isDashboardReady &&
+    !controller.connecting;
 
   useEffect(() => {
     if (!isWaitingForDashboard || appError) {

@@ -7,6 +7,7 @@ import type {
   CameraFitMode,
   CameraStreamPreference,
   CameraViewMode,
+  CameraWebRtcStreamSource,
   DashboardSpaceMode,
   EffectsQuality,
   EntityInteractionMode,
@@ -88,6 +89,8 @@ interface UserSettings {
   cameraViewModes: Record<string, CameraViewMode>;
   cameraStreamPreference: CameraStreamPreference;
   cameraStreamPreferences: Record<string, CameraStreamPreference>;
+  cameraWebRtcStreamSources: Record<string, CameraWebRtcStreamSource>;
+  cameraDirectStreamUrls: Record<string, string>;
   cameraFitMode: CameraFitMode;
   cameraFitModes: Record<string, CameraFitMode>;
   ambientLightBleed: boolean;
@@ -102,6 +105,8 @@ export interface SettingsState extends UserSettings {
   updateSettings: (settings: Partial<UserSettings>) => void;
   updateCameraViewMode: (entityId: string, mode: CameraViewMode) => void;
   updateCameraStreamPreference: (entityId: string, preference: CameraStreamPreference) => void;
+  updateCameraWebRtcStreamSource: (entityId: string, source: CameraWebRtcStreamSource) => void;
+  updateCameraDirectStreamUrl: (entityId: string, url: string) => void;
   updateCameraFitMode: (entityId: string, mode: CameraFitMode) => void;
   applyImportedSettings: (settings: UserSettings) => void;
   resetSettings: () => void;

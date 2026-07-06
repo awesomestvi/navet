@@ -197,6 +197,7 @@ describe('useDashboardProfileSync', () => {
     isHomeAssistantPanelMode.mockReset();
     isHomeAssistantPanelMode.mockReturnValue(false);
     toast.mockReset();
+    toast.mockReturnValue('conflict-toast');
     toast.dismiss.mockReset();
 
     localStorage.setItem(
@@ -555,7 +556,11 @@ describe('useDashboardProfileSync', () => {
     expect(reloadWindow).not.toHaveBeenCalled();
   });
 
-  it('checks remote before saving and shows one conflict toast for newer remote profile', async () => {
+  it('saves local edits with fresh remote validators instead of showing a same-device conflict', async () => {
+    const remoteProfile = buildProfile({
+      exportedAt: '2024-01-01T00:01:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'green' },
+    });
     loadDashboardProfile
       .mockResolvedValueOnce({
         available: true,
@@ -567,20 +572,17 @@ describe('useDashboardProfileSync', () => {
       })
       .mockResolvedValue({
         available: true,
-        profile: buildProfile({
-          exportedAt: '2024-01-01T00:01:00.000Z',
-          theme: { theme: 'glass', primaryColor: 'green' },
-        }),
+        profile: remoteProfile,
         notModified: false,
         etag: '"remote-1"',
         lastModified: 'Mon, 01 Jan 2024 00:01:00 GMT',
         generation: 'server-1',
       });
     saveDashboardProfile.mockResolvedValue({
-      saved: false,
+      saved: true,
       permanentFailure: false,
-      etag: null,
-      lastModified: null,
+      etag: '"saved-local"',
+      lastModified: 'Mon, 01 Jan 2024 00:01:02 GMT',
       generation: 'server-1',
     });
 
@@ -596,20 +598,16 @@ describe('useDashboardProfileSync', () => {
     });
 
     await advanceTime(2_000);
-    expect(saveDashboardProfile).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledTimes(1);
-    expect(toast.mock.calls[0]?.[1]).toEqual(
-      expect.objectContaining({
-        classNames: expect.objectContaining({
-          toast: expect.stringContaining('sm:min-w-[29rem]'),
-          title: expect.stringContaining('whitespace-normal'),
-          content: expect.stringContaining('basis-full'),
-        }),
-      })
-    );
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
+    expect(saveDashboardProfile).toHaveBeenCalledWith(currentProfile, {
+      etag: '"remote-1"',
+      keepalive: undefined,
+      lastModified: 'Mon, 01 Jan 2024 00:01:00 GMT',
+    });
+    expect(toast).not.toHaveBeenCalled();
 
     await advanceTime(60_000);
-    expect(toast).toHaveBeenCalledTimes(1);
+    expect(toast).not.toHaveBeenCalled();
   });
 
   it('keeps the local profile when the conflict toast action is chosen', async () => {
@@ -634,13 +632,21 @@ describe('useDashboardProfileSync', () => {
         lastModified: 'Mon, 01 Jan 2024 00:01:00 GMT',
         generation: 'server-1',
       });
-    saveDashboardProfile.mockResolvedValueOnce({
-      saved: true,
-      permanentFailure: false,
-      etag: '"saved-local"',
-      lastModified: 'Mon, 01 Jan 2024 00:01:02 GMT',
-      generation: 'server-1',
-    });
+    saveDashboardProfile
+      .mockResolvedValueOnce({
+        saved: false,
+        permanentFailure: false,
+        etag: null,
+        lastModified: null,
+        generation: 'server-1',
+      })
+      .mockResolvedValueOnce({
+        saved: true,
+        permanentFailure: false,
+        etag: '"saved-local"',
+        lastModified: 'Mon, 01 Jan 2024 00:01:02 GMT',
+        generation: 'server-1',
+      });
 
     renderHookWithProviders(() => useDashboardProfileSync());
     await flushEffects();
@@ -673,7 +679,8 @@ describe('useDashboardProfileSync', () => {
       await Promise.resolve();
     });
 
-    expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
+    expect(toast.dismiss).toHaveBeenCalledWith('conflict-toast');
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(2);
     expect(saveDashboardProfile).toHaveBeenLastCalledWith(currentProfile, {
       etag: '"remote-1"',
       keepalive: undefined,
@@ -747,5 +754,70 @@ describe('useDashboardProfileSync', () => {
       applyNavigation: false,
     });
     expect(reloadWindow).not.toHaveBeenCalled();
+  });
+
+  it('retries local profile saves with fresh validators without showing a same-device conflict', async () => {
+    const remoteProfile = buildProfile({
+      exportedAt: '2024-01-01T00:01:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'green' },
+    });
+    loadDashboardProfile
+      .mockResolvedValueOnce({
+        available: true,
+        profile: null,
+        notModified: false,
+        etag: '"initial"',
+        lastModified: 'Mon, 01 Jan 2024 00:00:00 GMT',
+        generation: 'server-1',
+      })
+      .mockResolvedValue({
+        available: true,
+        profile: remoteProfile,
+        notModified: false,
+        etag: '"remote-1"',
+        lastModified: 'Mon, 01 Jan 2024 00:01:00 GMT',
+        generation: 'server-1',
+      });
+    saveDashboardProfile
+      .mockResolvedValueOnce({
+        saved: false,
+        permanentFailure: false,
+        etag: '"remote-2"',
+        lastModified: 'Mon, 01 Jan 2024 00:01:05 GMT',
+        generation: 'server-1',
+      })
+      .mockResolvedValueOnce({
+        saved: true,
+        permanentFailure: false,
+        etag: '"saved-local"',
+        lastModified: 'Mon, 01 Jan 2024 00:01:06 GMT',
+        generation: 'server-1',
+      });
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    currentProfile = buildProfile({
+      exportedAt: '2024-01-01T00:00:05.000Z',
+      theme: { theme: 'glass', primaryColor: 'red' },
+    });
+    act(() => {
+      useThemeStore.setState({ ...useThemeStore.getState(), primaryColor: 'red' });
+    });
+
+    await advanceTime(2_000);
+
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(2);
+    expect(saveDashboardProfile).toHaveBeenNthCalledWith(1, currentProfile, {
+      etag: '"remote-1"',
+      keepalive: undefined,
+      lastModified: 'Mon, 01 Jan 2024 00:01:00 GMT',
+    });
+    expect(saveDashboardProfile).toHaveBeenNthCalledWith(2, currentProfile, {
+      etag: '"remote-2"',
+      keepalive: undefined,
+      lastModified: 'Mon, 01 Jan 2024 00:01:05 GMT',
+    });
+    expect(toast).not.toHaveBeenCalled();
   });
 });

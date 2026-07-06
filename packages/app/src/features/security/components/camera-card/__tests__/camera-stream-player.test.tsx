@@ -1,5 +1,5 @@
 import { cameraEntityFixtures } from '@navet/app/test/fixtures/home-assistant/entities/camera';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CameraStreamPlayer } from '../camera-stream-player';
 
@@ -207,6 +207,76 @@ describe('CameraStreamPlayer', () => {
       'hls',
       '/api/hls/camera.front/master.m3u8'
     );
+  });
+
+  it('renders a resolved go2rtc WebRTC stream in an iframe', () => {
+    const onLoad = vi.fn();
+    const { container } = render(
+      <CameraStreamPlayer
+        entityId={cameraEntityFixtures.normal.entity_id}
+        kind="web_rtc"
+        posterUrl={cameraEntityFixtures.relativeUrl.attributes.entity_picture as string}
+        streamResource={{
+          id: 'camera.front:go2rtc:camera_bedroom',
+          kind: 'webrtc_stream',
+          cacheKey: 'camera.front:go2rtc:camera_bedroom',
+          authStrategy: 'none',
+          url: 'http://192.168.68.71:1984/stream.html?src=camera_bedroom',
+        }}
+        fitMode="contain"
+        onLoad={onLoad}
+        onError={vi.fn()}
+      />
+    );
+
+    const iframe = screen.getByTitle('Camera WebRTC stream');
+    expect(iframe).toHaveAttribute(
+      'src',
+      'http://192.168.68.71:1984/stream.html?src=camera_bedroom'
+    );
+    expect(iframe).toHaveClass('h-full', 'w-full', 'border-0');
+    expect(container.querySelector('video')).toBeNull();
+    expect(getWebRtcClientConfigurationMock).not.toHaveBeenCalled();
+
+    fireEvent.load(iframe);
+
+    expect(onLoad).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports failed direct WebRTC iframe streams when they do not load', async () => {
+    vi.useFakeTimers();
+
+    try {
+      const onError = vi.fn();
+
+      render(
+        <CameraStreamPlayer
+          entityId={cameraEntityFixtures.normal.entity_id}
+          kind="web_rtc"
+          posterUrl={cameraEntityFixtures.relativeUrl.attributes.entity_picture as string}
+          streamResource={{
+            id: 'camera.front:direct:http://192.168.68.71:1984/stream.html?src=camera_bedroom',
+            kind: 'webrtc_stream',
+            cacheKey:
+              'camera.front:direct:http://192.168.68.71:1984/stream.html?src=camera_bedroom',
+            authStrategy: 'none',
+            url: 'http://192.168.68.71:1984/stream.html?src=camera_bedroom',
+          }}
+          fitMode="contain"
+          onError={onError}
+        />
+      );
+
+      expect(screen.getByTitle('Camera WebRTC stream')).toBeInTheDocument();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(15_000);
+      });
+
+      expect(onError).toHaveBeenCalledWith('web_rtc');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('shows a loading indicator until the first stream frame loads', async () => {
