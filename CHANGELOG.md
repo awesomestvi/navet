@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.8.0 - 2026-07-07
+
+## New
+
+- Dashboard settings retain the scoped profile behavior introduced in the 0.7 line, including per-device preferences alongside shared profile import and export.
+- Automation dashboards include the richer summary cards, state filters, room filters, attention states, recent-run metadata, and clearer automations/scripts split from the latest beta line.
+- Camera cards now support direct stream URLs for setups that expose a playable stream endpoint.
+
+## Fixed
+
+- Dashboard profile sync retains the latest multi-device conflict handling, including working "Keep mine" and "Load remote" actions, a "Keep mine" popup that closes correctly, and stale profile validators after an empty remote profile.
+- Climate summaries continue to ignore target-only thermostat setpoints when no real current temperature is available.
+- Powered Home Assistant TVs continue to count as active media without making idle speakers appear active.
+- Room grids continue to remount when switching rooms so room-specific dashboard state refreshes correctly.
+
+## Improved
+
+- Beta installs now ship the accumulated dashboard, automation, media, camera, performance, and Home Assistant shell refinements from the 0.7 line under the `0.8.0` version.
+- Automation, quick-action, and habit insight cards keep the updated card hierarchy and typography polish.
+
 ## 0.7.12 - 2026-07-04
 
 ## New

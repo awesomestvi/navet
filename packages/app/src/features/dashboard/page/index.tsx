@@ -29,10 +29,7 @@ export function DashboardPage() {
       !isAllRooms(controller.activeRoom) ||
       controller.homeLayoutHydrated);
   const isWaitingForDashboard =
-    controller.devicesLoaded &&
-    profileLoadCompleted &&
-    !isDashboardReady &&
-    !controller.connecting;
+    controller.devicesLoaded && profileLoadCompleted && !isDashboardReady && !controller.connecting;
 
   useEffect(() => {
     if (!isWaitingForDashboard || appError) {

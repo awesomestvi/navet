@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8.0
+
+- Updated Navet to `0.8.0`
+- Continued the public beta dashboard line for the standalone app, Home Assistant custom panel, and Home Assistant add-on
+- Included scoped dashboard profile settings so selected preferences can persist per device while shared profile values stay intact
+- Included the refined automation dashboard with summary cards, state and room filters, attention states, recent-run metadata, and a clearer automations/scripts split
+- Included direct stream URL support for camera cards when a setup exposes a playable stream endpoint
+- Included the latest dashboard profile sync fixes for multi-device conflicts, the "Keep mine" popup, empty remote profile handling, and stale validators
+- Included climate, media activity, room-grid refresh, and dashboard card hierarchy improvements from the latest beta line
+
 ## 0.7.12
 
 - Updated Navet to `0.7.12`
