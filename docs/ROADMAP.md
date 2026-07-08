@@ -14,10 +14,15 @@ Navet currently ships:
 - openHAB support through the standalone base-URL and username/password flow
 - dedicated `home`, `lights`, `media`, `energy`, `climate`, `security`, `tasks`, and `settings`
   sections
-- dashboard editing with card ordering, sizing, locking, visibility, and import/export
-- custom widgets including RSS, photo, note, battery, UPS, energy-now, button, and map
+- dashboard editing with card ordering, sizing, locking, visibility, import/export, undo/redo, and
+  Home overview layout packs
+- custom widgets including RSS, photo, note, battery, UPS, energy-now, button, map, and generic
+  entity cards
 - cards for lights, switches, fans, climate, covers, locks, cameras, media, weather, calendars,
   people, sensors, scenes, and vacuums
+- task automation details, dependency summaries, and habit-suggested routine creation for providers
+  that expose the automation creation capability
+- dashboard profile presets for standard and wall-display setups
 - PWA install support, themes, localization, and public demo and Storybook publishing
 
 ## Likely Next
@@ -46,6 +51,7 @@ Navet currently ships:
 - [ ] Timer cards
 - [ ] Todo and shopping list cards
 - [ ] Template sensor cards
+- [ ] More provider-backed automation creation targets
 
 ### Multi-user
 

@@ -149,6 +149,17 @@ Then open `http://localhost:8080`.
 - dashboard and profile state are stored through same-origin runtime endpoints under `/data`
 - if the stored OAuth session becomes invalid during token refresh, Navet clears it and returns to login
 
+## Automation And Habit Insights
+
+Home Assistant is currently the provider path that supports native automation details and
+habit-suggested automation creation.
+
+In the Tasks section, Navet can inspect Home Assistant automation config to show triggers,
+conditions, actions, diagnostics, and dependent entity states. In Habits, creating a suggested
+routine writes a Home Assistant automation with a `navet_` config key when the rule maps to a safe
+turn-on or turn-off action. Notify-only habit rules are not created as native Home Assistant
+automations yet.
+
 ### Troubleshooting
 
 - If Navet repeatedly returns to login, verify that the saved Home Assistant URL still matches your current instance URL.

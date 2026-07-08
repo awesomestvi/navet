@@ -21,10 +21,15 @@ home UI.
 ## What You Get
 
 - room-first dashboards for everyday household control
+- Home overview editing with layout packs, undo/redo, and manual entity cards
 - dedicated views for lights, media, energy, climate, security, tasks, and settings
 - cards for common smart-home device types such as lights, climate, cameras, locks, media players,
   weather, sensors, scenes, calendars, and vacuums
-- built-in widgets such as RSS, photo, note, battery, UPS, energy-now, button, and map
+- built-in widgets such as RSS, photo, note, battery, UPS, energy-now, button, map, and generic
+  entity cards
+- task automation details with dependency summaries and habit-suggested routine creation where the
+  active provider supports it
+- dashboard profile presets for standard use and wall-display/kiosk setups
 - support for wall panels, tablets, phones, and desktop browsers
 - PWA install support, themes, and localization
 

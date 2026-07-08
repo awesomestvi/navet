@@ -65,6 +65,7 @@ Test:
 - command translation
 - state update and subscription behavior
 - provider-local runtime behavior
+- provider feature services such as media, energy, notification, task, and admin bridges
 - shared contract conformance
 
 Implemented providers today:
@@ -82,6 +83,7 @@ Test:
 - provider registration and wiring
 - runtime selection and session bootstrap
 - integration store behavior
+- app service fallbacks when a provider feature service is missing or optional
 - deployment entrypoints such as standalone, ingress, and panel wiring
 - compatibility-only derived state that still matters internally
 

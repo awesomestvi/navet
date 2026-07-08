@@ -73,13 +73,18 @@ The dashboard feature owns:
 - card sizing and ordering
 - Home overview layout state
 - add-card and add-entity flows
+- Home edit command bar behavior, including undo/redo, section add controls, and room management
+- Home layout packs such as command center, security monitor, and energy wall
+- manual entity-card cataloging for normalized entities that do not have a richer dedicated card yet
 
 Key current paths:
 
 - `packages/app/src/features/dashboard/hooks/use-dashboard-controller.ts`
 - `packages/app/src/features/dashboard/utils/card-renderer.tsx`
 - `packages/app/src/features/dashboard/components/`
+- `packages/app/src/features/dashboard/packs/`
 - `packages/app/src/features/dashboard/stores/`
+- `packages/app/src/features/dashboard/utils/manual-entity-card-catalog.ts`
 
 ## Widget Ownership
 
@@ -94,9 +99,37 @@ Current widget templates:
 - energy-now
 - button
 - map
+- entity
 
 Dashboard owns widget registration and placement. Feature folders may own the actual widget behavior
 when the widget is domain-specific.
+
+The `entity` widget is a generic fallback for normalized provider entities. Prefer a dedicated
+provider-neutral card when the entity type has meaningful controls or domain-specific presentation.
+
+## Tasks And Habit Automation
+
+The tasks feature owns automation/script/todo presentation and provider-backed automation detail
+inspection. Automation detail rows can summarize triggers, conditions, actions, diagnostics, and
+dependent entities discovered from provider automation config.
+
+Habit insights can suggest safe local routines. When the active provider exposes
+`createAutomationFromHabitRule`, the app asks that provider to create a native automation. When the
+capability is absent, Navet falls back to saving the rule locally where supported by the habit
+store.
+
+## Energy Dashboard
+
+The energy feature owns its dashboard model, data-coverage state, live-flow presentation, and
+explanations for what is driving the current load. Explanations are derived from normalized energy
+overview data and should identify affected consumer IDs when the explanation points at tracked
+devices.
+
+## Settings Profiles
+
+The settings feature owns dashboard profile modes. Current presets include `standard` and
+`wall_display`; applying a preset updates dashboard spacing, header title mode, keep-awake,
+kiosk-mode, and Home summary-bar settings as a scoped profile change.
 
 ## Shared UI Ownership
 

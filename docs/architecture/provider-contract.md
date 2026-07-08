@@ -44,6 +44,8 @@ type NavetProviderContract = {
 - entity lookup
 - generic command execution
 - live updates through subscriptions
+- optional provider feature services such as media, camera, energy, notification, task, and admin
+  operations
 
 ## What It Does Not Carry
 
@@ -74,6 +76,8 @@ Own:
 - command translation
 - event and subscription translation
 - provider-local runtime helpers
+- provider feature-service implementations, including native automation inspection and creation
+  where the provider supports those operations
 
 ### `@navet/app`
 
@@ -102,6 +106,8 @@ Every implemented provider should cover:
 - entity lookup and entity diffing through state subscriptions
 - add, update, remove, and unsubscribe behavior in state updates
 - resource resolution and fallback behavior where supported
+- feature-service behavior exposed by that provider, such as task automation details, automation
+  triggering, and optional habit-rule automation creation
 - provider unavailable and malformed payload behavior
 
 Every adapter-layer command surface should cover:

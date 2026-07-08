@@ -2,6 +2,6 @@
 
 ## In Progress
 
-- Current Navet Dev scope since `navet-dev-0.7.12-dev.20260704215805`.
-- No committed changes have landed after `navet-dev-0.7.12-dev.20260704215805` yet.
-- Current staged work includes Localization updates and Home Assistant shell regression coverage.
+- Current Navet Dev scope since `v0.8.0`.
+- Add dashboard packs and automation insights
+- Current staged work includes Home Assistant shell and kiosk integration.

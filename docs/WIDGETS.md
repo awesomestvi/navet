@@ -23,6 +23,7 @@ Widgets are included in dashboard export and import.
 | `energy-now` | live energy snapshot |
 | `button` | custom action button |
 | `map` | people and tracker locations |
+| `entity` | generic fallback card for a normalized provider entity |
 
 ## What You Can Do With Widgets
 
@@ -43,7 +44,7 @@ Widget sizing is per widget type, not global.
 |---|---|
 | `button` | `tiny`, `extra-small`, `small` |
 | `photo`, `note` | `small`, `medium`, `large`, `extra-large` |
-| `battery`, `ups`, `energy-now`, `info`, `map` | `small`, `medium`, `large` |
+| `battery`, `ups`, `energy-now`, `entity`, `info`, `map` | `small`, `medium`, `large` |
 | `rss` | `medium`, `large` |
 
 ## Placement
@@ -61,4 +62,5 @@ directly.
 
 - Widgets are part of Navet itself, not provider-native card definitions.
 - RSS uses Navet's same-origin proxy instead of direct browser fetches.
+- The `entity` widget is a fallback for entities without a richer dedicated Navet card.
 - Supported sizes and placement depend on widget type.
