@@ -2,8 +2,10 @@ import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import type { useCardState, useDeviceMap } from '@navet/app/hooks';
 import type { Section } from '@navet/app/navigation/sections';
 import type { DeviceWithType } from '@navet/app/types/device.types';
+import type { DashboardEntityView } from '@navet/ui/dashboard-entity-view';
 import type { AllViewGrouping } from '../all-view-grid';
 import type { CardTemplate } from '../components/add-card-dialog';
+import type { DashboardPackId } from '../packs/dashboard-packs';
 import type { CustomCard } from '../stores/custom-cards-store';
 import type { ZoneName } from '../zones/zone-types';
 import type { useCardOrdering } from './use-card-ordering';
@@ -57,9 +59,11 @@ export type DashboardController = OnboardingController &
     devicesLoaded: boolean;
     handleAddCard: (template: CardTemplate, size: CardSize) => void;
     handleAddLibraryCard: (cardId: string) => void;
+    handleAddGenericEntityCard: (entityId: string) => void;
     handleAddEntity: (entityId: string) => void;
     handleDeleteCard: (cardId: string) => void;
     handleRemoveEntity: (entityId: string) => void;
+    handleApplyDashboardPack: (packId: DashboardPackId) => void;
     handleUpdateCard: (
       cardId: string,
       updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>
@@ -67,6 +71,8 @@ export type DashboardController = OnboardingController &
     hiddenEntityIds: string[];
     hiddenRoomNames: string[];
     homeLayout: ReturnType<typeof useHomeDashboardLayout>['layout'];
+    canRedoHomeLayout: ReturnType<typeof useHomeDashboardLayout>['canRedo'];
+    canUndoHomeLayout: ReturnType<typeof useHomeDashboardLayout>['canUndo'];
     homeLayoutHydrated: boolean;
     addHomeCard: ReturnType<typeof useHomeDashboardLayout>['addCard'];
     removeHomeCard: ReturnType<typeof useHomeDashboardLayout>['removeCard'];
@@ -79,10 +85,14 @@ export type DashboardController = OnboardingController &
     moveHomeColumn: ReturnType<typeof useHomeDashboardLayout>['moveColumn'];
     renameHomeSection: ReturnType<typeof useHomeDashboardLayout>['renameSection'];
     removeHomeSection: ReturnType<typeof useHomeDashboardLayout>['removeSection'];
+    redoHomeLayout: ReturnType<typeof useHomeDashboardLayout>['redoLayout'];
     resizeHomeSection: ReturnType<typeof useHomeDashboardLayout>['resizeSection'];
+    undoHomeLayout: ReturnType<typeof useHomeDashboardLayout>['undoLayout'];
     isEditMode: boolean;
     lightDeviceMap: ReturnType<typeof useDeviceMap>['deviceMap'];
     lightRooms: string[];
+    manualDeviceMap: ReturnType<typeof useDeviceMap>['deviceMap'];
+    manualEntityViewsByCanonicalId: Record<string, DashboardEntityView>;
     onToggleEditMode: () => void;
     orderedCardIds: string[];
     onSetRoomOrder: (rooms: string[]) => void;

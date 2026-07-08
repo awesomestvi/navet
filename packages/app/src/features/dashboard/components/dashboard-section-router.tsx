@@ -1,8 +1,8 @@
 import { getManageableRoomOrder } from '@navet/app/components/layout/mobile-layout-helpers';
 import { RoomNav } from '@navet/app/components/layout/room-nav';
+import { RoomOrderDialog } from '@navet/app/components/layout/room-order-dialog';
 import { SectionCustomizeShell } from '@navet/app/components/layout/section-customize-shell';
 import { DashboardEmptyState } from '@navet/app/components/patterns';
-import { InteractivePill } from '@navet/app/components/primitives';
 import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner';
 import { RenderProfiler } from '@navet/app/components/shared/render-profiler';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
@@ -15,7 +15,7 @@ import { useI18n, useIntegrationStore, useMediaQuery, useTheme } from '@navet/ap
 import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { integrationSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
-import { Lightbulb, Plus, Thermometer } from 'lucide-react';
+import { Lightbulb, Thermometer } from 'lucide-react';
 import {
   lazy,
   memo,
@@ -30,6 +30,7 @@ import { DeviceGrid } from '../device-grid';
 import type { DashboardController } from '../hooks/use-dashboard-controller';
 import { DashboardLayout } from '../shell';
 import { EmbeddedSidebarPage } from './embedded-sidebar-page';
+import { HomeEditCommandBar } from './home-edit-command-bar';
 
 const SecuritySection = lazy(async () => {
   const module = await import('@navet/app/components/layout/security-section');
@@ -100,6 +101,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   });
   const [isAddLightEntityDialogOpen, setIsAddLightEntityDialogOpen] = useState(false);
   const [isAddClimateEntityDialogOpen, setIsAddClimateEntityDialogOpen] = useState(false);
+  const [isRoomManagementOpen, setIsRoomManagementOpen] = useState(false);
   const [securityAddEntityRequestKey, setSecurityAddEntityRequestKey] = useState(0);
   const {
     activeRoom,
@@ -131,6 +133,19 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     [manageableRoomsByProviderId]
   );
   const manageableRooms = getManageableRoomOrder(rooms, manageableRoomReferences);
+  const roomManagement =
+    activeSection === 'home' && manageableRooms.length > 0
+      ? {
+          rooms: manageableRooms,
+          hiddenRoomNames: controller.hiddenRoomNames,
+          manageableRooms: manageableRoomReferences,
+          roomHiddenItemCounts: controller.roomHiddenItemCounts,
+          roomItemCounts: controller.roomItemCounts,
+          onRoomOrderChange: controller.onSetRoomOrder,
+          onHiddenRoomsChange: controller.onSetHiddenRoomNames,
+        }
+      : undefined;
+  const isHomeOverviewEditMode = activeSection === 'home' && isEditMode && isAllRooms(activeRoom);
   const sectionStackProps = {
     className: 'flex flex-col gap-2 md:gap-6',
   };
@@ -200,16 +215,29 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     []
   );
   const canOpenAddEntityDialog = addableEntityIds.length > 0;
-  const headerAddAction =
-    isEditMode && activeSection === 'energy'
-      ? controller.onOpenAddCardDialog
-      : isEditMode && activeSection === 'home'
-        ? controller.onOpenAddCardDialog
-        : isEditMode && activeSection === 'security'
-          ? openSecurityAddEntityDialog
-          : canOpenAddEntityDialog
-            ? onOpenAddEntityDialog
-            : undefined;
+  const headerAddAction = (() => {
+    if (!isEditMode) {
+      return canOpenAddEntityDialog ? onOpenAddEntityDialog : undefined;
+    }
+
+    if (activeSection === 'home' || activeSection === 'energy') {
+      return controller.onOpenAddCardDialog;
+    }
+
+    if (activeSection === 'security') {
+      return openSecurityAddEntityDialog;
+    }
+
+    if (activeSection === 'lights' && sectionData.hiddenLightEntityIds.length > 0) {
+      return openAddLightEntityDialog;
+    }
+
+    if (activeSection === 'climate' && sectionData.hiddenClimateEntityIds.length > 0) {
+      return openAddClimateEntityDialog;
+    }
+
+    return canOpenAddEntityDialog ? onOpenAddEntityDialog : undefined;
+  })();
   const headerAddLabel =
     isEditMode && (activeSection === 'home' || activeSection === 'energy')
       ? t('dashboard.roomNav.addCard')
@@ -246,7 +274,10 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   } else if (activeSection === 'security') {
     sectionContent = (
       <Suspense fallback={<LoadingSpinner />}>
-        <SecuritySection openAddEntityRequestKey={securityAddEntityRequestKey} />
+        <SecuritySection
+          openAddEntityRequestKey={securityAddEntityRequestKey}
+          suppressEditActions={isEditMode}
+        />
       </Suspense>
     );
   } else if (activeSection === 'energy') {
@@ -260,6 +291,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
               isEditMode={isEditMode}
               onOpenAddCardDialog={controller.onOpenAddCardDialog}
               onToggleEditMode={onToggleEditMode}
+              suppressEditActions={isEditMode}
               onDeleteCard={handleDeleteCard}
               onUpdateCard={handleUpdateCard}
             />
@@ -274,21 +306,6 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
       </Suspense>
     );
   } else if (activeSection === 'climate') {
-    const addHiddenClimateEntityAction =
-      isEditMode && sectionData.hiddenClimateEntityIds.length > 0 ? (
-        <InteractivePill
-          intent="action"
-          size="small"
-          onClick={openAddClimateEntityDialog}
-          className={`${surface.subtleBg} ${surface.hoverBg}`}
-        >
-          <Plus className={`h-4 w-4 ${surface.textSecondary}`} />
-          <span className={`hidden text-sm font-medium md:inline ${surface.textSecondary}`}>
-            {t('dashboard.addEntity.title')}
-          </span>
-        </InteractivePill>
-      ) : null;
-
     sectionContent = (
       <div {...sectionStackProps} className="relative flex flex-col gap-2 md:gap-6">
         {sectionData.climateDeviceMap.size > 0 ? (
@@ -296,8 +313,8 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
             isEditMode={isEditMode}
             onToggle={onToggleEditMode ?? (() => {})}
             className="relative"
-            actions={isMobileViewport ? null : addHiddenClimateEntityAction}
-            showCustomizeButton={!isMobileViewport}
+            actions={null}
+            showCustomizeButton={!isMobileViewport && !isEditMode}
           >
             <RenderProfiler id="ClimateSection">
               <div className="space-y-8">
@@ -376,21 +393,6 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
       </div>
     );
   } else if (activeSection === 'lights') {
-    const addHiddenLightEntityAction =
-      isEditMode && sectionData.hiddenLightEntityIds.length > 0 ? (
-        <InteractivePill
-          intent="action"
-          size="small"
-          onClick={openAddLightEntityDialog}
-          className={`${surface.subtleBg} ${surface.hoverBg}`}
-        >
-          <Plus className={`h-4 w-4 ${surface.textSecondary}`} />
-          <span className={`hidden text-sm font-medium md:inline ${surface.textSecondary}`}>
-            {t('dashboard.addEntity.title')}
-          </span>
-        </InteractivePill>
-      ) : null;
-
     sectionContent = (
       <div {...sectionStackProps} className="relative flex flex-col gap-2 md:gap-6">
         {lightDeviceMap.size > 0 ? (
@@ -398,8 +400,8 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
             isEditMode={isEditMode}
             onToggle={onToggleEditMode ?? (() => {})}
             className="relative"
-            actions={isMobileViewport ? null : addHiddenLightEntityAction}
-            showCustomizeButton={!isMobileViewport}
+            actions={null}
+            showCustomizeButton={!isMobileViewport && !isEditMode}
           >
             <RenderProfiler id="LightsSection">
               <Suspense fallback={<LoadingSpinner message={t('common.loading')} />}>
@@ -492,6 +494,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
             onToggleEditMode={onToggleEditMode}
             onAddEntity={headerAddAction}
             addEntityLabel={headerAddLabel}
+            suppressEditActions={isEditMode}
           />
         )}
 
@@ -507,6 +510,8 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                 hiddenEntityCount={hiddenEntityIds.length}
                 allCustomCards={controller.allCustomCards}
                 homeLayout={controller.homeLayout}
+                canRedoHomeLayout={controller.canRedoHomeLayout}
+                canUndoHomeLayout={controller.canUndoHomeLayout}
                 removeHomeCard={controller.removeHomeCard}
                 moveHomeCard={controller.moveHomeCard}
                 setHomeLayoutMode={controller.setHomeLayoutMode}
@@ -518,7 +523,10 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                 renameHomeSection={controller.renameHomeSection}
                 removeHomeSection={controller.removeHomeSection}
                 resizeHomeSection={controller.resizeHomeSection}
+                redoHomeLayout={controller.redoHomeLayout}
+                undoHomeLayout={controller.undoHomeLayout}
                 onOpenAddCardDialog={controller.onOpenAddCardDialog}
+                onApplyDashboardPack={controller.handleApplyDashboardPack}
                 onUpdateCard={handleUpdateCard}
                 onToggleEditMode={controller.onToggleEditMode}
                 onNavigateSection={controller.setActiveSection}
@@ -567,25 +575,17 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   return (
     <DashboardLayout
       densePerformanceMode={controller.densePerformanceMode}
-      mobileEditActions={{
-        isEditMode,
-        onToggleEditMode,
-        onAddEntity: headerAddAction,
-        addEntityLabel: headerAddLabel,
-        ...(activeSection === 'home' && manageableRooms.length > 0
-          ? {
-              reorderRooms: {
-                rooms: manageableRooms,
-                hiddenRoomNames: controller.hiddenRoomNames,
-                manageableRooms: manageableRoomReferences,
-                roomHiddenItemCounts: controller.roomHiddenItemCounts,
-                roomItemCounts: controller.roomItemCounts,
-                onRoomOrderChange: controller.onSetRoomOrder,
-                onHiddenRoomsChange: controller.onSetHiddenRoomNames,
-              },
+      mobileEditActions={
+        isEditMode
+          ? undefined
+          : {
+              isEditMode,
+              onToggleEditMode,
+              onAddEntity: headerAddAction,
+              addEntityLabel: headerAddLabel,
+              ...(roomManagement ? { reorderRooms: roomManagement } : {}),
             }
-          : {}),
-      }}
+      }
       mobileRoomNavigation={{
         activeRoom,
         onRoomChange: changeRoom,
@@ -593,6 +593,46 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
         hiddenRoomNames: controller.hiddenRoomNames,
       }}
     >
+      {isEditMode ? (
+        <>
+          <HomeEditCommandBar
+            addActionLabel={headerAddLabel}
+            canRedo={isHomeOverviewEditMode ? controller.canRedoHomeLayout : undefined}
+            canUndo={isHomeOverviewEditMode ? controller.canUndoHomeLayout : undefined}
+            homeLayoutMode={isHomeOverviewEditMode ? controller.homeLayout.mode : undefined}
+            onAddCard={headerAddAction}
+            onAddColumn={
+              isHomeOverviewEditMode && controller.homeLayout.mode === 'sectioned'
+                ? () => controller.addHomeColumnSection()
+                : undefined
+            }
+            onAddRow={
+              isHomeOverviewEditMode && controller.homeLayout.mode === 'sectioned'
+                ? () => controller.addHomeSection()
+                : undefined
+            }
+            onApplyPack={isHomeOverviewEditMode ? controller.handleApplyDashboardPack : undefined}
+            onManageRooms={roomManagement ? () => setIsRoomManagementOpen(true) : undefined}
+            onRedo={isHomeOverviewEditMode ? controller.redoHomeLayout : undefined}
+            onSetLayoutMode={isHomeOverviewEditMode ? controller.setHomeLayoutMode : undefined}
+            onToggleEditMode={onToggleEditMode}
+            onUndo={isHomeOverviewEditMode ? controller.undoHomeLayout : undefined}
+          />
+          {roomManagement ? (
+            <RoomOrderDialog
+              isOpen={isRoomManagementOpen}
+              onOpenChange={setIsRoomManagementOpen}
+              rooms={roomManagement.rooms}
+              hiddenRoomNames={roomManagement.hiddenRoomNames}
+              manageableRooms={roomManagement.manageableRooms}
+              roomHiddenItemCounts={roomManagement.roomHiddenItemCounts}
+              roomEntityCounts={roomManagement.roomItemCounts}
+              onRoomOrderChange={roomManagement.onRoomOrderChange}
+              onHiddenRoomsChange={roomManagement.onHiddenRoomsChange}
+            />
+          ) : null}
+        </>
+      ) : null}
       {sectionContent}
     </DashboardLayout>
   );
@@ -613,6 +653,7 @@ function areDashboardSectionRouterPropsEqual(
     previousController.cardOrders === nextController.cardOrders &&
     previousController.cardSizes === nextController.cardSizes &&
     previousController.changeRoom === nextController.changeRoom &&
+    previousController.handleApplyDashboardPack === nextController.handleApplyDashboardPack &&
     previousController.handleDeleteCard === nextController.handleDeleteCard &&
     previousController.handleRemoveEntity === nextController.handleRemoveEntity &&
     previousController.handleUpdateCard === nextController.handleUpdateCard &&
@@ -649,9 +690,12 @@ function areDashboardSectionRouterPropsEqual(
       return (
         previousController.allCustomCards === nextController.allCustomCards &&
         previousController.customCards === nextController.customCards &&
+        previousController.canRedoHomeLayout === nextController.canRedoHomeLayout &&
+        previousController.canUndoHomeLayout === nextController.canUndoHomeLayout &&
         previousController.homeLayout === nextController.homeLayout &&
         previousController.orderedCardIds === nextController.orderedCardIds &&
         previousController.removeHomeCard === nextController.removeHomeCard &&
+        previousController.redoHomeLayout === nextController.redoHomeLayout &&
         previousController.addHomeSection === nextController.addHomeSection &&
         previousController.addHomeColumnSection === nextController.addHomeColumnSection &&
         previousController.addHomeSectionBelow === nextController.addHomeSectionBelow &&
@@ -661,7 +705,8 @@ function areDashboardSectionRouterPropsEqual(
         previousController.removeHomeSection === nextController.removeHomeSection &&
         previousController.resizeHomeSection === nextController.resizeHomeSection &&
         previousController.moveHomeCard === nextController.moveHomeCard &&
-        previousController.setHomeLayoutMode === nextController.setHomeLayoutMode
+        previousController.setHomeLayoutMode === nextController.setHomeLayoutMode &&
+        previousController.undoHomeLayout === nextController.undoHomeLayout
       );
   }
 }

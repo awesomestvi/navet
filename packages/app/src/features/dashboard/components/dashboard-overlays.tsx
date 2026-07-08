@@ -1,10 +1,8 @@
-import { getDeviceTypeIcon } from '@navet/app/constants/device-type-icons';
-import { getDeviceTypeLabel } from '@navet/app/constants/device-type-labels';
 import { isAllRooms } from '@navet/app/constants/rooms';
 import { useI18n } from '@navet/app/hooks';
-import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
 import { lazy, Suspense, useMemo } from 'react';
 import type { DashboardController } from '../hooks/use-dashboard-controller';
+import { buildManualEntityCardCatalog } from '../utils/manual-entity-card-catalog';
 import { AddCardDialogContainer } from './add-card-dialog';
 import type { DashboardLibraryCard } from './dashboard-library-list';
 import { DashboardOnboardingDialog } from './dashboard-onboarding-dialog';
@@ -26,9 +24,12 @@ export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
     activeRoom,
     activeSection,
     addableEntityIds,
+    allCustomCards,
     allEntityIds,
     availableDeviceMap,
+    customCards,
     handleAddCard,
+    handleAddGenericEntityCard,
     handleAddLibraryCard,
     handleAddEntity,
     handleChooseAllEntities,
@@ -37,6 +38,8 @@ export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
     hiddenEntityIds,
     homeLayout,
     isEditMode,
+    manualDeviceMap,
+    manualEntityViewsByCanonicalId,
     isOnboardingClosing,
     onboardingCompleted,
     onCompleteOnboardingClose,
@@ -54,44 +57,44 @@ export function DashboardOverlays({ controller }: DashboardOverlaysProps) {
 
     const isHomeCanvasTarget = activeSection === 'home' && isAllRooms(activeRoom) && isEditMode;
     const placedCardIds = new Set(isHomeCanvasTarget ? homeLayout.cardIds : orderedCardIds);
+    const catalogCustomCards = isHomeCanvasTarget ? allCustomCards : customCards;
 
-    return [...availableDeviceMap.values()]
-      .filter((device) => !placedCardIds.has(device.id))
-      .map((device) => ({
-        id: device.id,
-        title: typeof device.name === 'string' ? device.name : device.id,
-        subtitle: getDeviceRoomLabel(device),
-        meta:
-          ('entityType' in device && typeof device.entityType === 'string' && device.entityType) ||
-          getDeviceTypeLabel(device.type, t),
-        kind: 'device' as const,
-        icon: getDeviceTypeIcon(
-          device.type,
-          'deviceClass' in device && typeof device.deviceClass === 'string'
-            ? device.deviceClass
-            : undefined
-        ),
-      }))
-      .sort(
-        (left, right) =>
-          (left.subtitle ?? '').localeCompare(right.subtitle ?? '') ||
-          (left.title ?? '').localeCompare(right.title ?? '')
-      );
+    return buildManualEntityCardCatalog({
+      customCards: catalogCustomCards,
+      deviceMap: manualDeviceMap,
+      entityViewsByCanonicalId: manualEntityViewsByCanonicalId,
+      placedCardIds,
+      t,
+    });
   }, [
     activeRoom,
     activeSection,
+    allCustomCards,
     availableDeviceMap,
+    customCards,
     homeLayout.cardIds,
     isEditMode,
+    manualDeviceMap,
+    manualEntityViewsByCanonicalId,
     orderedCardIds,
     showAddCardDialog,
     t,
   ]);
 
-  const handleAddNormalCard =
-    activeSection === 'home' && isAllRooms(activeRoom) && isEditMode
-      ? handleAddLibraryCard
-      : handleAddEntity;
+  const handleAddNormalCard = (cardId: string) => {
+    const isHomeCanvasTarget = activeSection === 'home' && isAllRooms(activeRoom) && isEditMode;
+    if (availableDeviceMap.has(cardId)) {
+      if (isHomeCanvasTarget) {
+        handleAddLibraryCard(cardId);
+        return;
+      }
+
+      handleAddEntity(cardId);
+      return;
+    }
+
+    handleAddGenericEntityCard(cardId);
+  };
 
   return (
     <>

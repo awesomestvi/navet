@@ -42,8 +42,10 @@ vi.mock('@navet/app/services/home-assistant.service', () => {
           ],
         },
       })),
+      saveAutomationConfig: vi.fn(async () => undefined),
       getConfig: vi.fn(() => getState().config),
       getConnection: vi.fn(() => null),
+      disconnect: vi.fn(),
       getEntities: vi.fn(() => getState().entities),
       getEntityRegistry: vi.fn(() => getState().entityRegistry),
       getPanelHass: vi.fn(() => null),
@@ -200,6 +202,30 @@ describe('TasksSection', () => {
     expect(screen.getAllByText('Good night').length).toBeGreaterThan(0);
   });
 
+  it('renders provider-created suggested routines in the existing automations section', () => {
+    const suggestedRoutine = automationEntityFactory({
+      friendly_name: 'Morning lights',
+      description: 'Kitchen lights are usually turned on around breakfast.',
+    });
+    suggestedRoutine.entity_id = 'automation.navet_morning_lights';
+    homeAssistantStore.setState({
+      ...homeAssistantStore.getState(),
+      connected: true,
+      entities: {
+        [suggestedRoutine.entity_id]: suggestedRoutine,
+      },
+    });
+
+    renderWithProviders(<TasksSection />);
+
+    expect(screen.getAllByText('Automations').length).toBeGreaterThan(0);
+    expect(screen.getByText('Morning lights')).toBeInTheDocument();
+    expect(
+      screen.getByText('Kitchen lights are usually turned on around breakfast.')
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Run Morning lights' })).toBeInTheDocument();
+  });
+
   it('renders automation summary counts', () => {
     setRoutineEntities();
 
@@ -341,6 +367,10 @@ describe('TasksSection', () => {
       expect(screen.getByText('Sun is below_horizon')).toBeInTheDocument();
       expect(screen.getByText('Turn on Kitchen light and Counter light')).toBeInTheDocument();
       expect(screen.getByText('automation.coffee')).toBeInTheDocument();
+      expect(screen.getByText('Dependencies')).toBeInTheDocument();
+      expect(screen.getByText('Sun')).toBeInTheDocument();
+      expect(screen.getByText('Counter light')).toBeInTheDocument();
+      expect(screen.getAllByText('off').length).toBeGreaterThan(0);
     });
   });
 

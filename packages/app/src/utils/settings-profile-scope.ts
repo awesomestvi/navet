@@ -7,6 +7,7 @@ export type SettingsProfileScope = 'all' | 'device';
 export type ScopedUserSettingKey = Extract<
   keyof UserSettings,
   | 'dashboardSpaceMode'
+  | 'dashboardProfileMode'
   | 'effectsQuality'
   | 'headerCustomText'
   | 'headerTitleMode'
@@ -17,6 +18,7 @@ export type ScopedUserSettingKey = Extract<
 
 const scopedSettingKeys = new Set<ScopedUserSettingKey>([
   'dashboardSpaceMode',
+  'dashboardProfileMode',
   'effectsQuality',
   'headerCustomText',
   'headerTitleMode',

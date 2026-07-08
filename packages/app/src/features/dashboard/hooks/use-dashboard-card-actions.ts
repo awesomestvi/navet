@@ -141,6 +141,42 @@ export function useDashboardCardActions({
     [showAutoEntity, t]
   );
 
+  const handleAddGenericEntityCard = useCallback(
+    (entityId: string) => {
+      const isHomeCanvasTarget = activeSection === 'home' && isAllRooms(activeRoom) && isEditMode;
+      const targetRoom = isHomeCanvasTarget ? HOME_WIDGET_ROOM : activeRoom;
+      const newCard = addCard('entity', 'small', targetRoom, { entityId });
+
+      if (isHomeCanvasTarget) {
+        if (homeLayoutController.layout.mode !== 'sectioned') {
+          homeLayoutController.addCard(newCard.id);
+        } else {
+          const targetSectionId =
+            (addCardTargetSectionId &&
+              homeLayoutController.layout.sections.some(
+                (section) => section.id === addCardTargetSectionId
+              ) &&
+              addCardTargetSectionId) ||
+            homeLayoutController.layout.sections[0]?.id ||
+            homeLayoutController.addSection();
+
+          homeLayoutController.addCard(newCard.id, targetSectionId);
+        }
+      }
+
+      toast.success(t('dashboard.feedback.entityAdded'));
+    },
+    [
+      activeRoom,
+      activeSection,
+      addCard,
+      addCardTargetSectionId,
+      homeLayoutController,
+      isEditMode,
+      t,
+    ]
+  );
+
   const handleRemoveEntity = useCallback(
     (entityId: string) => {
       hideAutoEntity(entityId);
@@ -161,6 +197,7 @@ export function useDashboardCardActions({
   return {
     handleAddCard,
     handleAddLibraryCard,
+    handleAddGenericEntityCard,
     handleDeleteCard,
     handleAddEntity,
     handleRemoveEntity,

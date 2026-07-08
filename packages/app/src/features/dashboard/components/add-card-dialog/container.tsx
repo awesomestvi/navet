@@ -92,9 +92,11 @@ export function AddCardDialogContainer({
     }
 
     return visibleLibraryCards.filter((card) => {
-      const rawSearchableText =
-        `${card.title} ${card.subtitle} ${card.meta} ${card.kind} ${card.id}`.toLowerCase();
-      const searchableText = normalizeSearchText(rawSearchableText);
+      const rawVisibleSearchableText = `${card.title} ${card.subtitle} ${card.meta} ${card.kind}`
+        .toLowerCase()
+        .trim();
+      const rawIdSearchableText = (card.idSearchText ?? card.id).toLowerCase();
+      const searchableText = normalizeSearchText(rawVisibleSearchableText);
 
       return rawTerms.every((rawTerm) => {
         const loweredRawTerm = rawTerm.toLowerCase();
@@ -102,11 +104,14 @@ export function AddCardDialogContainer({
         const hasDotSyntax = loweredRawTerm.includes('.');
 
         if (hasDotSyntax) {
-          return rawSearchableText.includes(loweredRawTerm);
+          return (
+            rawVisibleSearchableText.includes(loweredRawTerm) ||
+            rawIdSearchableText.includes(loweredRawTerm)
+          );
         }
 
         return (
-          rawSearchableText.includes(loweredRawTerm) ||
+          rawVisibleSearchableText.includes(loweredRawTerm) ||
           (!!normalizedTerm && searchableText.includes(normalizedTerm))
         );
       });

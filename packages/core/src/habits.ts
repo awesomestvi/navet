@@ -43,6 +43,8 @@ export interface HabitInsight {
 export interface HabitRule {
   id: string;
   sourceCandidateId?: string;
+  name?: string;
+  description?: string;
   enabled: boolean;
   scope: 'navet_local';
   trigger: {

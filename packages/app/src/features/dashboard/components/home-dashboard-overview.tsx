@@ -25,6 +25,8 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   hiddenEntityCount,
   allCustomCards,
   homeLayout,
+  canRedoHomeLayout,
+  canUndoHomeLayout,
   removeHomeCard,
   moveHomeCard,
   setHomeLayoutMode,
@@ -36,7 +38,10 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   renameHomeSection,
   removeHomeSection,
   resizeHomeSection,
+  redoHomeLayout,
+  undoHomeLayout,
   onOpenAddCardDialog,
+  onApplyDashboardPack,
   onUpdateCard,
   onToggleEditMode,
   onNavigateSection,
@@ -139,6 +144,8 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
                 hiddenEntityCount={hiddenEntityCount}
                 allCustomCards={allCustomCards}
                 homeLayout={homeLayout}
+                canRedoHomeLayout={canRedoHomeLayout}
+                canUndoHomeLayout={canUndoHomeLayout}
                 removeHomeCard={removeHomeCard}
                 moveHomeCard={moveHomeCard}
                 setHomeLayoutMode={setHomeLayoutMode}
@@ -150,7 +157,10 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
                 renameHomeSection={renameHomeSection}
                 removeHomeSection={removeHomeSection}
                 resizeHomeSection={resizeHomeSection}
+                redoHomeLayout={redoHomeLayout}
+                undoHomeLayout={undoHomeLayout}
                 onOpenAddCardDialog={onOpenAddCardDialog}
+                onApplyDashboardPack={onApplyDashboardPack}
                 onUpdateCard={onUpdateCard}
                 onToggleEditMode={onToggleEditMode}
                 infoBadgeStrip={infoBadgeStrip}
@@ -176,6 +186,8 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
             hiddenEntityCount={hiddenEntityCount}
             allCustomCards={allCustomCards}
             homeLayout={homeLayout}
+            canRedoHomeLayout={canRedoHomeLayout}
+            canUndoHomeLayout={canUndoHomeLayout}
             removeHomeCard={removeHomeCard}
             moveHomeCard={moveHomeCard}
             setHomeLayoutMode={setHomeLayoutMode}
@@ -187,7 +199,10 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
             renameHomeSection={renameHomeSection}
             removeHomeSection={removeHomeSection}
             resizeHomeSection={resizeHomeSection}
+            redoHomeLayout={redoHomeLayout}
+            undoHomeLayout={undoHomeLayout}
             onOpenAddCardDialog={onOpenAddCardDialog}
+            onApplyDashboardPack={onApplyDashboardPack}
             onUpdateCard={onUpdateCard}
             onToggleEditMode={onToggleEditMode}
             infoBadgeStrip={infoBadgeStrip}

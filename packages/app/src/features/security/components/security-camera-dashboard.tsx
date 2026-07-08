@@ -458,7 +458,7 @@ function StatusBanner({
 }: {
   model: CameraDashboardModel['summary'];
   isEditMode: boolean;
-  onToggleEditMode: () => void;
+  onToggleEditMode?: () => void;
   onAddEntity?: () => void;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
@@ -480,7 +480,9 @@ function StatusBanner({
           </span>
         </button>
       ) : null}
-      <SectionCustomizeButton isEditMode={isEditMode} onToggle={onToggleEditMode} />
+      {onToggleEditMode ? (
+        <SectionCustomizeButton isEditMode={isEditMode} onToggle={onToggleEditMode} />
+      ) : null}
     </div>
   ) : null;
 

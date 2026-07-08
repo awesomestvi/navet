@@ -24,7 +24,8 @@ export type CardType =
   | 'energy-now'
   | 'media-stack'
   | 'button'
-  | 'map';
+  | 'map'
+  | 'entity';
 
 export interface CustomCard {
   id: string;
@@ -130,6 +131,16 @@ export function normalizeCustomCard(card: NormalizableCustomCard): CustomCard {
     normalizedCard.size !== 'large'
   ) {
     return { ...normalizedCard, size: 'medium' };
+  }
+
+  if (
+    normalizedCard.type === 'entity' &&
+    normalizedCard.size !== 'extra-small' &&
+    normalizedCard.size !== 'small' &&
+    normalizedCard.size !== 'medium' &&
+    normalizedCard.size !== 'large'
+  ) {
+    return { ...normalizedCard, size: 'small' };
   }
 
   return normalizedCard;

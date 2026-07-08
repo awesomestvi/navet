@@ -33,7 +33,9 @@ function renderOverlays(controller: Partial<DashboardController>) {
             addableEntityIds: [],
             allEntityIds: [],
             availableDeviceMap: new Map(),
+            customCards: [],
             handleAddCard: vi.fn(),
+            handleAddGenericEntityCard: vi.fn(),
             handleAddLibraryCard: vi.fn(),
             handleAddEntity: vi.fn(),
             handleChooseAllEntities: vi.fn(),
@@ -42,6 +44,8 @@ function renderOverlays(controller: Partial<DashboardController>) {
             hiddenEntityIds: [],
             homeLayout: { cardIds: [] },
             isEditMode: false,
+            manualDeviceMap: new Map(),
+            manualEntityViewsByCanonicalId: {},
             isOnboardingClosing: false,
             onboardingCompleted: true,
             onCompleteOnboardingClose: vi.fn(),
@@ -75,7 +79,7 @@ describe('DashboardOverlays', () => {
 
     renderOverlays({
       showAddCardDialog: true,
-      availableDeviceMap: new Map([
+      manualDeviceMap: new Map([
         [
           'sensor.kitchen_temperature',
           {
@@ -99,6 +103,79 @@ describe('DashboardOverlays', () => {
     expect(props.libraryCards).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: 'sensor.kitchen_temperature' })])
     );
+  });
+
+  it('includes normalized unknown entities in the add-card library', () => {
+    addCardDialogSpy.mockClear();
+
+    renderOverlays({
+      showAddCardDialog: true,
+      manualEntityViewsByCanonicalId: {
+        'home_assistant:todo.groceries': {
+          id: 'home_assistant:todo.groceries',
+          canonicalId: 'home_assistant:todo.groceries',
+          providerId: 'home_assistant',
+          externalId: 'todo.groceries',
+          type: 'unknown',
+          name: 'Groceries',
+          room: 'Kitchen',
+          primaryState: '3 items',
+          availability: 'available',
+          capabilities: [],
+          attributes: {},
+          resources: undefined,
+          size: 'small',
+        },
+      },
+    });
+
+    const props = addCardDialogSpy.mock.calls[0]?.[0] as {
+      libraryCards?: Array<{ id: string; idSearchText?: string }>;
+    };
+
+    expect(props.libraryCards).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'home_assistant:todo.groceries',
+          idSearchText: expect.stringContaining('todo.groceries'),
+        }),
+      ])
+    );
+  });
+
+  it('routes generic-only entities to the generic entity card action', () => {
+    addCardDialogSpy.mockClear();
+    const handleAddGenericEntityCard = vi.fn();
+
+    renderOverlays({
+      showAddCardDialog: true,
+      handleAddGenericEntityCard,
+      manualEntityViewsByCanonicalId: {
+        'home_assistant:event.doorbell': {
+          id: 'home_assistant:event.doorbell',
+          canonicalId: 'home_assistant:event.doorbell',
+          providerId: 'home_assistant',
+          externalId: 'event.doorbell',
+          type: 'unknown',
+          name: 'Doorbell event',
+          room: 'Porch',
+          primaryState: '2026-07-09T08:30:00Z',
+          availability: 'available',
+          capabilities: [],
+          attributes: {},
+          resources: undefined,
+          size: 'small',
+        },
+      },
+    });
+
+    const props = addCardDialogSpy.mock.calls[0]?.[0] as {
+      onAddLibraryCard?: (cardId: string) => void;
+    };
+
+    props.onAddLibraryCard?.('home_assistant:event.doorbell');
+
+    expect(handleAddGenericEntityCard).toHaveBeenCalledWith('home_assistant:event.doorbell');
   });
 
   it('does not build add-card library items while the add-card dialog is closed', () => {

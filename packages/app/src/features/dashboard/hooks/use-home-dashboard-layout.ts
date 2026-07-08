@@ -73,7 +73,12 @@ export function useHomeDashboardLayout(
       cardSectionAssignments: state.cardSectionAssignments,
     }))
   );
+  const canUndo = useHomeDashboardLayoutStore((state) => state.canUndo);
+  const canRedo = useHomeDashboardLayoutStore((state) => state.canRedo);
   const updateLayout = useHomeDashboardLayoutStore((state) => state.updateLayout);
+  const replaceLayout = useHomeDashboardLayoutStore((state) => state.replaceLayout);
+  const undoLayout = useHomeDashboardLayoutStore((state) => state.undoLayout);
+  const redoLayout = useHomeDashboardLayoutStore((state) => state.redoLayout);
 
   const persistLayout = useCallback(
     (
@@ -331,6 +336,13 @@ export function useHomeDashboardLayout(
     persistLayout(DEFAULT_HOME_DASHBOARD_LAYOUT);
   }, [persistLayout]);
 
+  const applyLayout = useCallback(
+    (nextLayout: HomeDashboardLayoutState) => {
+      replaceLayout(nextLayout);
+    },
+    [replaceLayout]
+  );
+
   const addCard = useCallback(
     (cardId: string, sectionId?: string) => {
       if (!validIdSet.has(cardId) && !cardId.startsWith(CUSTOM_CARD_ID_PREFIX)) {
@@ -478,7 +490,12 @@ export function useHomeDashboardLayout(
 
   return {
     layout,
+    canRedo,
+    canUndo,
+    applyLayout,
+    redoLayout,
     resetLayout,
+    undoLayout,
     setMode,
     setShowHero,
     addSection,

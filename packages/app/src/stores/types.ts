@@ -8,6 +8,7 @@ import type {
   CameraStreamPreference,
   CameraViewMode,
   CameraWebRtcStreamSource,
+  DashboardProfileMode,
   DashboardSpaceMode,
   EffectsQuality,
   EntityInteractionMode,
@@ -78,6 +79,7 @@ interface UserSettings {
   defaultView: 'all' | string;
   compactMode: boolean;
   kioskMode: boolean;
+  dashboardProfileMode: DashboardProfileMode;
   dashboardSpaceMode: DashboardSpaceMode;
   disableAnimations: boolean;
   lowPowerMode: boolean;
@@ -122,7 +124,8 @@ export type CardType =
   | 'energy-now'
   | 'media-stack'
   | 'button'
-  | 'map';
+  | 'map'
+  | 'entity';
 
 export interface CustomCard {
   id: string;

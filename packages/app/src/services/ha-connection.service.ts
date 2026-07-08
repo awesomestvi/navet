@@ -314,6 +314,37 @@ class HAConnectionService {
 
     await callHassService(this.connection, domain, service, normalizedServiceData, target);
   }
+
+  async saveAutomationConfig(configKey: string, config: Record<string, unknown>): Promise<void> {
+    const session = this.activeConfiguration;
+    if (!session) {
+      throw new Error('Home Assistant is not connected');
+    }
+
+    if (session.auth?.expired) {
+      await session.auth.refreshAccessToken();
+    }
+
+    const url = `${session.hassUrl.replace(/\/$/, '')}/api/config/automation/config/${encodeURIComponent(configKey)}`;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (session.auth?.accessToken) {
+      headers.Authorization = `Bearer ${session.auth.accessToken}`;
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      credentials: session.auth?.accessToken ? undefined : 'same-origin',
+      headers,
+      body: JSON.stringify(config),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Home Assistant automation config save failed with ${response.status}`);
+    }
+  }
 }
 
 export default HAConnectionService;

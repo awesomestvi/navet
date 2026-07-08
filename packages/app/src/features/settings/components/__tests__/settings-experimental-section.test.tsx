@@ -1,101 +1,62 @@
 import { useSettingsSectionController } from '@navet/app/features/settings/hooks/use-settings-section-controller';
-import { useSettingsStore } from '@navet/app/stores';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import { fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SettingsExperimentalSection } from '../settings-experimental-section';
 
-const { activateFallbackMock, useKeepDeviceAwakeSnapshotMock } = vi.hoisted(() => ({
-  activateFallbackMock: vi.fn(),
-  useKeepDeviceAwakeSnapshotMock: vi.fn(),
+const { isDevOrLocalBuildMock } = vi.hoisted(() => ({
+  isDevOrLocalBuildMock: vi.fn(() => true),
 }));
 
-vi.mock('@navet/app/hooks/use-keep-device-awake', () => ({
-  activateKeepDeviceAwakeFallback: activateFallbackMock,
-  useKeepDeviceAwakeSnapshot: useKeepDeviceAwakeSnapshotMock,
+vi.mock('@navet/app/constants/app-build-metadata', () => ({
+  isDevOrLocalBuild: isDevOrLocalBuildMock,
 }));
 
-function TestSection() {
+function TestSection({
+  localHabitsTabEnabled = false,
+  onLocalHabitsTabEnabledChange = vi.fn(),
+}: {
+  localHabitsTabEnabled?: boolean;
+  onLocalHabitsTabEnabledChange?: (enabled: boolean) => void;
+}) {
   const controller = useSettingsSectionController();
   return (
-    <>
-      <SettingsExperimentalSection controller={controller} />
-      {controller.pendingScopedSettingsChange ? (
-        <button type="button" onClick={() => controller.confirmScopedSettingsChange('all')}>
-          All devices
-        </button>
-      ) : null}
-    </>
+    <SettingsExperimentalSection
+      controller={controller}
+      localHabitsTabEnabled={localHabitsTabEnabled}
+      onLocalHabitsTabEnabledChange={onLocalHabitsTabEnabledChange}
+    />
   );
 }
 
 describe('SettingsExperimentalSection', () => {
   beforeEach(async () => {
     await resetAppStores();
-    activateFallbackMock.mockReset();
-    useKeepDeviceAwakeSnapshotMock.mockReturnValue({
-      enabled: false,
-      mode: 'disabled',
-      canActivateFallback: false,
-    });
+    isDevOrLocalBuildMock.mockReturnValue(true);
   });
 
-  it('updates the keep-awake setting from the experimental settings toggle', () => {
-    renderWithProviders(<TestSection />);
+  it('shows a local habits tab toggle in dev and local builds', () => {
+    const onLocalHabitsTabEnabledChange = vi.fn();
+    renderWithProviders(
+      <TestSection onLocalHabitsTabEnabledChange={onLocalHabitsTabEnabledChange} />
+    );
 
-    const keepAwakeGroup = screen.getByRole('group', { name: 'Keep device awake' });
-    fireEvent.click(within(keepAwakeGroup).getByRole('button', { name: 'On' }));
-    fireEvent.click(screen.getByRole('button', { name: 'All devices' }));
+    expect(screen.getByRole('heading', { name: 'Experimental' })).toBeInTheDocument();
+    const localHabitsGroup = screen.getByRole('group', { name: 'Local habits' });
+    fireEvent.click(within(localHabitsGroup).getByRole('button', { name: 'On' }));
 
-    expect(useSettingsStore.getState().keepDeviceAwake).toBe(true);
+    expect(onLocalHabitsTabEnabledChange).toHaveBeenCalledWith(true);
+    expect(screen.queryByRole('group', { name: 'Enable local habits' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Keep device awake' })).not.toBeInTheDocument();
   });
 
-  it('keeps the caveat visible while the setting is off', () => {
-    renderWithProviders(<TestSection />);
-
-    expect(
-      screen.getByText(
-        'Navet first requests browser wake lock, then falls back to silent audio if needed.'
-      )
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByText(
-        'Best effort only. Navet keeps retrying, but some embedded browsers and low-power displays may still sleep or block autoplay.'
-      )
-    ).not.toBeInTheDocument();
-  });
-
-  it('renders the pending-activation status and activation action when needed', () => {
-    useKeepDeviceAwakeSnapshotMock.mockReturnValue({
-      enabled: true,
-      mode: 'pending-activation',
-      canActivateFallback: true,
-    });
-    useSettingsStore.getState().updateSettings({ keepDeviceAwake: true });
+  it('hides local habits in beta and stable builds', () => {
+    isDevOrLocalBuildMock.mockReturnValue(false);
 
     renderWithProviders(<TestSection />);
 
-    expect(
-      screen.getByText('Waiting for the next interaction to restart fallback audio automatically')
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'Tap to activate fallback audio' })
-    ).toBeInTheDocument();
-  });
-
-  it('calls manual fallback activation only when the action is shown', () => {
-    useKeepDeviceAwakeSnapshotMock.mockReturnValue({
-      enabled: true,
-      mode: 'pending-activation',
-      canActivateFallback: true,
-    });
-    useSettingsStore.getState().updateSettings({ keepDeviceAwake: true });
-
-    renderWithProviders(<TestSection />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Tap to activate fallback audio' }));
-
-    expect(activateFallbackMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('heading', { name: 'Experimental' })).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Enable local habits' })).not.toBeInTheDocument();
   });
 });

@@ -1,10 +1,9 @@
 import { closestCenter, DndContext, DragOverlay } from '@dnd-kit/core';
 import { Badge } from '@navet/app/components/primitives';
-import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import { getCardSizeOverlayStyle } from '@navet/app/components/shared/card-size-selector';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
-import { Columns2, GripVertical, LayoutPanelTop, LayoutTemplate, Plus, Rows3 } from 'lucide-react';
+import { Columns2, GripVertical } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { useCallback, useDeferredValue } from 'react';
 import { type DragMeta, useHomeDashboardEditor } from '../hooks/use-home-dashboard-editor';
@@ -14,12 +13,7 @@ import {
   type HomeDashboardOverviewProps,
   useHomeLayoutViewport,
 } from './home-dashboard-overview.shared';
-import {
-  EmptyCanvas,
-  FlowCanvas,
-  ModeChip,
-  SectionCanvasGrid,
-} from './home-dashboard-overview-content';
+import { EmptyCanvas, FlowCanvas, SectionCanvasGrid } from './home-dashboard-overview-content';
 
 export default function HomeDashboardOverviewEdit({
   deviceMap,
@@ -31,9 +25,6 @@ export default function HomeDashboardOverviewEdit({
   homeLayout,
   removeHomeCard,
   moveHomeCard,
-  setHomeLayoutMode,
-  addHomeSection,
-  addHomeColumnSection,
   addHomeSectionBelow,
   moveHomeSection,
   moveHomeColumn,
@@ -42,7 +33,6 @@ export default function HomeDashboardOverviewEdit({
   resizeHomeSection,
   onOpenAddCardDialog,
   onUpdateCard,
-  onToggleEditMode,
   infoBadgeStrip,
 }: HomeDashboardOverviewProps) {
   const { t } = useI18n();
@@ -103,24 +93,6 @@ export default function HomeDashboardOverviewEdit({
     [setActiveDragCard, setActiveDragColumn, setActiveDragSection]
   );
 
-  const handleAddCard = useCallback(() => {
-    if (!onOpenAddCardDialog) {
-      return;
-    }
-
-    onOpenAddCardDialog(
-      homeLayout.mode === 'sectioned' ? (activeSectionId ?? homeLayout.sections[0]?.id) : undefined
-    );
-  }, [activeSectionId, homeLayout.mode, homeLayout.sections, onOpenAddCardDialog]);
-
-  const setModeSectioned = useCallback(() => {
-    setHomeLayoutMode('sectioned');
-  }, [setHomeLayoutMode]);
-
-  const setModeFlow = useCallback(() => {
-    setHomeLayoutMode('flow');
-  }, [setHomeLayoutMode]);
-
   const selectSection = useCallback(
     (sectionId: string) => {
       setActiveSectionId(sectionId);
@@ -145,36 +117,7 @@ export default function HomeDashboardOverviewEdit({
             surface={surface}
             title={t('dashboard.homePersonal.title')}
             description={t('dashboard.homePersonal.description')}
-            actions={
-              onOpenAddCardDialog || onToggleEditMode ? (
-                <>
-                  {onOpenAddCardDialog ? (
-                    <button
-                      type="button"
-                      onClick={handleAddCard}
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[13px] font-medium transition-colors md:gap-2 md:px-3 md:py-2 md:text-sm ${surface.border} ${surface.hoverBg}`}
-                    >
-                      <Plus className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                      <span className={surface.textPrimary}>{t('dashboard.roomNav.addCard')}</span>
-                    </button>
-                  ) : null}
-                  {onToggleEditMode ? (
-                    <button
-                      type="button"
-                      onClick={onToggleEditMode}
-                      className="hidden items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[13px] font-medium text-white transition-colors md:inline-flex md:gap-2 md:px-3 md:py-2 md:text-sm"
-                      style={{
-                        borderColor: `${accentColor}66`,
-                        backgroundColor: accentColor,
-                        boxShadow: `0 14px 28px -18px ${accentColor}`,
-                      }}
-                    >
-                      <span>{t('dashboard.roomNav.doneEditing')}</span>
-                    </button>
-                  ) : null}
-                </>
-              ) : null
-            }
+            actions={null}
             aside={
               <div className="flex flex-wrap gap-2 xl:justify-end">
                 {summaryItems.slice(0, 1).map((item) => (
@@ -188,40 +131,8 @@ export default function HomeDashboardOverviewEdit({
         ) : null}
 
         <DashboardEditActions isEditMode={isEditMode} onRemoveFromLayout={removeHomeCard}>
-          <div className="space-y-3 lg:space-y-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-              <div className="min-w-0 flex-1">{infoBadgeStrip}</div>
-              <div className="flex flex-wrap items-center gap-2">
-                {homeLayout.mode === 'sectioned' ? (
-                  <>
-                    <InteractivePill size="small" icon={Rows3} onClick={() => addHomeSection()}>
-                      {t('dashboard.homePersonal.addRow')}
-                    </InteractivePill>
-                    <InteractivePill
-                      size="small"
-                      icon={Columns2}
-                      onClick={() => addHomeColumnSection()}
-                    >
-                      {t('dashboard.homePersonal.addColumn')}
-                    </InteractivePill>
-                  </>
-                ) : null}
-                <ModeChip
-                  active={homeLayout.mode === 'sectioned'}
-                  icon={LayoutPanelTop}
-                  label={t('dashboard.homePersonal.mode.sectioned')}
-                  onClick={setModeSectioned}
-                  accentColor={accentColor}
-                />
-                <ModeChip
-                  active={homeLayout.mode === 'flow'}
-                  icon={LayoutTemplate}
-                  label={t('dashboard.homePersonal.mode.flow')}
-                  onClick={setModeFlow}
-                  accentColor={accentColor}
-                />
-              </div>
-            </div>
+          <div className="space-y-3 md:space-y-3">
+            <div className="min-w-0">{infoBadgeStrip}</div>
             {homeLayout.mode === 'sectioned' ? (
               homeLayout.sections.length > 0 ? (
                 <SectionCanvasGrid

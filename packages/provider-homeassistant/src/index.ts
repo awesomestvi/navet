@@ -49,6 +49,7 @@ export {
   resolveHomeAssistantArtwork,
   resolveHomeAssistantMediaSource,
   resolveHomeAssistantProxyUrl,
+  saveHomeAssistantAutomationConfig,
   searchHomeAssistantMediaPlayer,
   seekHomeAssistantMediaPlayer,
   selectHomeAssistantMediaPlayerSoundMode,

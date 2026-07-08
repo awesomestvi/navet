@@ -3,6 +3,7 @@ import {
   getAppBuildChannelLabel,
   getAppReleaseBadgeLabel,
   isAppPreV1,
+  isDevOrLocalBuild,
 } from '@navet/app/constants/app-build-metadata';
 import { APP_VERSION } from '@navet/app/constants/app-version';
 import { describe, expect, it } from 'vitest';
@@ -36,5 +37,13 @@ describe('APP_BUILD_METADATA', () => {
 
   it('keeps the development build label when the injected release channel is development', () => {
     expect(getAppBuildChannelLabel('1.0.0')).toBe('Dev');
+  });
+
+  it('exposes local habits only for development and local builds', () => {
+    expect(isDevOrLocalBuild('development')).toBe(true);
+    expect(isDevOrLocalBuild('dev')).toBe(true);
+    expect(isDevOrLocalBuild('local')).toBe(true);
+    expect(isDevOrLocalBuild('beta')).toBe(false);
+    expect(isDevOrLocalBuild('stable')).toBe(false);
   });
 });

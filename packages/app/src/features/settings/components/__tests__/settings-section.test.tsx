@@ -1,26 +1,41 @@
 import { renderWithProviders } from '@navet/app/test/render';
-import { isProductionEnvironment } from '@navet/app/utils/environment';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SettingsSection } from '../settings-section';
 
-vi.mock('@navet/app/utils/environment', () => ({
-  isProductionEnvironment: vi.fn(() => false),
+const { isDevOrLocalBuildMock } = vi.hoisted(() => ({
+  isDevOrLocalBuildMock: vi.fn(() => true),
+}));
+
+vi.mock('@navet/app/constants/app-build-metadata', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@navet/app/constants/app-build-metadata')>()),
+  isDevOrLocalBuild: isDevOrLocalBuildMock,
 }));
 
 describe('SettingsSection', () => {
   beforeEach(() => {
     localStorage.clear();
-    vi.mocked(isProductionEnvironment).mockReturnValue(false);
+    isDevOrLocalBuildMock.mockReturnValue(true);
   });
 
-  it('shows an experimental tab and routes keep-awake controls there', () => {
+  it('shows the habits tab after enabling it from experimental in dev builds', () => {
     renderWithProviders(<SettingsSection />);
+
+    expect(screen.queryByRole('tab', { name: 'Habits' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('tab', { name: 'Experimental' }));
 
     expect(screen.getByRole('heading', { name: 'Experimental' })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: 'Keep device awake' })).toBeInTheDocument();
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Local habits' })).getByRole('button', {
+        name: 'On',
+      })
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Habits' }));
+
+    expect(screen.getByRole('heading', { name: 'Local habits' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Enable local habits' })).toBeInTheDocument();
   });
 
   it('restores the persisted tab after remounting', async () => {
@@ -38,11 +53,13 @@ describe('SettingsSection', () => {
     expect(screen.getByRole('heading', { name: 'System' })).toBeInTheDocument();
   });
 
-  it('hides the habits tab in production', () => {
-    vi.mocked(isProductionEnvironment).mockReturnValue(true);
+  it('hides local habits in non-dev builds', () => {
+    isDevOrLocalBuildMock.mockReturnValue(false);
 
     renderWithProviders(<SettingsSection />);
 
     expect(screen.queryByRole('tab', { name: 'Habits' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'Experimental' }));
+    expect(screen.queryByRole('group', { name: 'Local habits' })).not.toBeInTheDocument();
   });
 });

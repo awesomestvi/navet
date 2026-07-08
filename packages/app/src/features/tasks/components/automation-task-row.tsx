@@ -18,6 +18,10 @@ import {
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import type { AutomationRoutine } from '../types';
 import { buildAutomationConfigSections } from '../utils/automation-config-details';
+import {
+  buildAutomationDependencySummaries,
+  getAutomationConfigEntityIds,
+} from '../utils/automation-dependencies';
 
 interface AutomationTaskRowProps {
   automation: AutomationRoutine;
@@ -70,31 +74,6 @@ function DetailSection({
   );
 }
 
-function collectEntityIds(value: unknown, entityIds = new Set<string>()): Set<string> {
-  if (typeof value === 'string') {
-    const matches = value.match(/\b[a-z_]+\.[a-zA-Z0-9_]+\b/g);
-    for (const match of matches ?? []) {
-      entityIds.add(match);
-    }
-    return entityIds;
-  }
-
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      collectEntityIds(item, entityIds);
-    }
-    return entityIds;
-  }
-
-  if (value && typeof value === 'object') {
-    for (const item of Object.values(value)) {
-      collectEntityIds(item, entityIds);
-    }
-  }
-
-  return entityIds;
-}
-
 function parseTimeLabel(
   value: string,
   formatDateTime: ReturnType<typeof useI18n>['formatDateTime']
@@ -120,7 +99,7 @@ export function AutomationTaskRow({ automation, shouldReduceMotion }: Automation
   const [detailsError, setDetailsError] = useState<string | null>(null);
   const [automationConfig, setAutomationConfig] = useState<Record<string, unknown> | null>(null);
   const detailEntityIds = useMemo(
-    () => (automationConfig ? [...collectEntityIds(automationConfig)].sort() : []),
+    () => getAutomationConfigEntityIds(automationConfig),
     [automationConfig]
   );
   const taskRuntime = useSyncExternalStore(
@@ -143,6 +122,10 @@ export function AutomationTaskRow({ automation, shouldReduceMotion }: Automation
 
     return entities;
   }, [detailEntityIds, taskRuntime.entities]);
+  const dependencySummaries = useMemo(
+    () => buildAutomationDependencySummaries(detailEntityIds, taskRuntime.entities),
+    [detailEntityIds, taskRuntime.entities]
+  );
 
   const configSections = useMemo(
     () =>
@@ -423,6 +406,23 @@ export function AutomationTaskRow({ automation, shouldReduceMotion }: Automation
                 </div>
               ) : null}
             </dl>
+            {dependencySummaries.length > 0 ? (
+              <div className="mt-3 border-t pt-3" style={{ borderColor: `${accentColor}1f` }}>
+                <div className={`text-xs font-semibold leading-4 ${surface.textMuted}`}>
+                  {t('tasks.automation.details.dependencies')}
+                </div>
+                <ul className={`mt-2 grid gap-2 text-sm ${surface.textSecondary}`}>
+                  {dependencySummaries.map((dependency) => (
+                    <li key={dependency.entityId} className="flex justify-between gap-4">
+                      <span className="min-w-0 truncate">{dependency.label}</span>
+                      <span className={`shrink-0 font-mono text-xs ${surface.textMuted}`}>
+                        {dependency.state}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </Panel>
         </div>
       ) : null}

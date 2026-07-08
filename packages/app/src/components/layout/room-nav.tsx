@@ -54,6 +54,7 @@ interface RoomNavProps {
   onToggleEditMode: () => void;
   onAddEntity?: () => void;
   addEntityLabel?: string;
+  suppressEditActions?: boolean;
 }
 
 interface RoomNavItemProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> {
@@ -182,6 +183,7 @@ export const RoomNav = memo(function RoomNav({
   onToggleEditMode,
   onAddEntity,
   addEntityLabel = 'Add Entity',
+  suppressEditActions = false,
 }: RoomNavProps) {
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
@@ -216,10 +218,16 @@ export const RoomNav = memo(function RoomNav({
   const dividerClass =
     theme === 'light' ? 'bg-slate-300/90' : theme === 'black' ? 'bg-white/30' : 'bg-white/14';
   const showAllViewGrouping = isAllRooms(activeRoom) && onAllViewGroupingChange;
+  const showEditActions = !(isEditMode && suppressEditActions);
   const canReorderRooms =
-    isEditMode && Boolean(onRoomOrderChange) && orderedManageableRoomNames.length > 0;
+    showEditActions &&
+    isEditMode &&
+    Boolean(onRoomOrderChange) &&
+    orderedManageableRoomNames.length > 0;
   const hasEditMenus = Boolean(
-    canReorderRooms || (isEditMode && showAllViewGrouping) || (isEditMode && onAddEntity)
+    canReorderRooms ||
+      (isEditMode && showAllViewGrouping) ||
+      (showEditActions && isEditMode && onAddEntity)
   );
   const lightPillClassName =
     theme === 'light'
@@ -411,7 +419,7 @@ export const RoomNav = memo(function RoomNav({
               </InteractivePill>
             ) : null}
 
-            {isEditMode && onAddEntity ? (
+            {showEditActions && isEditMode && onAddEntity ? (
               <InteractivePill
                 onClick={onAddEntity}
                 intent="action"
@@ -432,40 +440,42 @@ export const RoomNav = memo(function RoomNav({
               />
             ) : null}
 
-            <InteractivePill
-              onClick={onToggleEditMode}
-              active={isEditMode}
-              intent="action"
-              size="small"
-              className={`room-nav-action-pill hidden md:flex items-center gap-2 rounded-[22px] px-3 py-2 text-sm md:gap-2.5 md:px-3.5 md:py-2 transition-colors ${
-                isEditMode ? 'shadow-sm' : `${inactiveBg} ${lightPillClassName} ${hoverBg}`
-              }`}
-              style={
-                isEditMode
-                  ? {
-                      backgroundColor: accentColor,
-                      borderColor: `${accentColor}66`,
-                      boxShadow: `0 14px 28px -18px ${accentColor}`,
-                    }
-                  : undefined
-              }
-            >
-              {isEditMode ? (
-                <>
-                  <Check className="h-4 w-4 text-white" />
-                  <span className="hidden text-sm font-medium text-white md:inline">
-                    {t('dashboard.roomNav.doneEditing')}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Edit3 className={`h-4 w-4 ${textSecondary}`} />
-                  <span className={`hidden text-sm font-medium md:inline ${textSecondary}`}>
-                    {t('dashboard.roomNav.customize')}
-                  </span>
-                </>
-              )}
-            </InteractivePill>
+            {showEditActions ? (
+              <InteractivePill
+                onClick={onToggleEditMode}
+                active={isEditMode}
+                intent="action"
+                size="small"
+                className={`room-nav-action-pill hidden md:flex items-center gap-2 rounded-[22px] px-3 py-2 text-sm md:gap-2.5 md:px-3.5 md:py-2 transition-colors ${
+                  isEditMode ? 'shadow-sm' : `${inactiveBg} ${lightPillClassName} ${hoverBg}`
+                }`}
+                style={
+                  isEditMode
+                    ? {
+                        backgroundColor: accentColor,
+                        borderColor: `${accentColor}66`,
+                        boxShadow: `0 14px 28px -18px ${accentColor}`,
+                      }
+                    : undefined
+                }
+              >
+                {isEditMode ? (
+                  <>
+                    <Check className="h-4 w-4 text-white" />
+                    <span className="hidden text-sm font-medium text-white md:inline">
+                      {t('dashboard.roomNav.doneEditing')}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Edit3 className={`h-4 w-4 ${textSecondary}`} />
+                    <span className={`hidden text-sm font-medium md:inline ${textSecondary}`}>
+                      {t('dashboard.roomNav.customize')}
+                    </span>
+                  </>
+                )}
+              </InteractivePill>
+            ) : null}
           </div>
         </div>
       </div>

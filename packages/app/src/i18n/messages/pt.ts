@@ -9,8 +9,10 @@ export const ptMessages = {
   'common.on': 'Ligado',
   'common.open': 'Abrir',
   'common.cardUnavailable': 'Card indisponível',
+  'common.redo': 'Refazer',
   'common.reset': 'Redefinir',
   'common.restart': 'Reiniciar',
+  'common.undo': 'Desfazer',
   'common.logout': 'Sair',
   'header.greeting.morning': 'Bom dia, {name}!',
   'header.greeting.afternoon': 'Boa tarde, {name}!',
@@ -35,7 +37,7 @@ export const ptMessages = {
   'settings.nav.localization': 'Localização',
   'settings.nav.interaction': 'Interação',
   'settings.nav.dashboard': 'Dashboard',
-  'settings.nav.habits': 'Habitos',
+  'settings.nav.habits': 'Hábitos',
   'settings.nav.experimental': 'Experimental',
   'settings.nav.system': 'Sistema',
   'settings.nav.project': 'Projeto',
@@ -88,6 +90,20 @@ export const ptMessages = {
   'settings.dashboard.sectionTitle': 'Dashboard',
   'settings.dashboard.sectionDescription':
     'Gerencie o que aparece no painel e como esta configuração local é salva como backup.',
+  'settings.dashboard.profileMode.title': 'Perfil do dashboard',
+  'settings.dashboard.profileMode.description':
+    'Aplique uma configuração coordenada para navegadores pessoais, painéis de parede ou telas noturnas calmas.',
+  'settings.dashboard.profileMode.standard.title': 'Padrão',
+  'settings.dashboard.profileMode.standard.description':
+    'Mantém a navegação completa, saudação e barra de resumo para uso diário.',
+  'settings.dashboard.profileMode.wallDisplay.title': 'Tela de parede',
+  'settings.dashboard.profileMode.wallDisplay.description':
+    'Ativa modo quiosque, manter acordado, cabeçalho com relógio, layout denso e barra de resumo.',
+  'settings.dashboard.profileMode.bedside.title': 'Cabeceira',
+  'settings.dashboard.profileMode.bedside.description':
+    'Usa modo quiosque, manter acordado, relógio e layout mais calmo sem barra de resumo.',
+  'settings.dashboard.profileMode.custom.description':
+    'As configurações atuais do dashboard não correspondem mais a um perfil salvo.',
   'settings.dashboard.headerTitle.title': 'Título do cabeçalho',
   'settings.dashboard.headerTitle.description':
     'Escolha o que o grande título do painel mostra na barra superior.',
@@ -118,7 +134,6 @@ export const ptMessages = {
   'settings.dashboard.keepAwake.caveat':
     'O Navet tenta primeiro o wake lock do navegador e depois usa áudio silencioso se necessário.',
   'settings.dashboard.keepAwake.statusLabel': 'Status de tela acordada',
-  'settings.dashboard.keepAwake.experimental': 'Experimental',
   'settings.dashboard.keepAwake.bestEffort':
     'Funciona apenas em best effort. O Navet continuará tentando, mas alguns navegadores embutidos e telas de baixo consumo ainda podem dormir ou bloquear autoplay.',
   'settings.dashboard.keepAwake.activateFallback': 'Toque para ativar o áudio de fallback',
@@ -185,6 +200,9 @@ export const ptMessages = {
   'settings.experimental.sectionTitle': 'Experimental',
   'settings.experimental.sectionDescription':
     'Recursos opcionais e comportamentos do dispositivo em melhor esforço que ainda estão se ajustando entre navegadores e painéis de parede.',
+  'settings.experimental.localHabits.title': 'Hábitos locais',
+  'settings.experimental.localHabits.description':
+    'Mostra a aba Hábitos locais para sugestões privadas de rotinas e regras locais neste dispositivo.',
   'settings.system.sectionTitle': 'Sistema',
   'settings.system.sectionDescription':
     'Detalhes da conexão, gerenciamento de provedores e ações de recuperação para este dispositivo Navet.',
@@ -412,6 +430,14 @@ export const ptMessages = {
   'dashboard.homeOverview.stats.visibleDevices': 'Dispositivos visíveis',
   'dashboard.homeOverview.stats.featuredCards': 'Cards em destaque',
   'dashboard.homeOverview.stats.hiddenDevices': 'Dispositivos ocultos',
+  'dashboard.packs.title': 'Predefinições',
+  'dashboard.packs.commandCenter': 'Central de comando',
+  'dashboard.packs.securityMonitor': 'Monitor de segurança',
+  'dashboard.packs.energyWall': 'Painel de energia',
+  'dashboard.packs.confirmTitle': 'Aplicar esta predefinição?',
+  'dashboard.packs.confirmDescription':
+    'Isto reorganizará o dashboard Home usando a predefinição {name}.',
+  'dashboard.packs.confirmAction': 'Aplicar predefinição',
   'dashboard.homePersonal.eyebrow': 'Home pessoal',
   'dashboard.homePersonal.title': 'Faça da Home o seu dashboard, não o nosso.',
   'dashboard.homePersonal.description':
@@ -483,6 +509,8 @@ export const ptMessages = {
   'calendar.event.openMap': 'Abrir mapa',
   'dashboard.feedback.widgetAdded': 'Widget {type} adicionado em {room}!',
   'dashboard.feedback.cardAddedToHome': 'Card adicionado à Home',
+  'dashboard.feedback.packApplied': '{name} aplicado à Home',
+  'dashboard.feedback.packEmpty': '{name} ainda não tem cards compatíveis',
   'dashboard.feedback.widgetDeleted': 'Widget excluído',
   'dashboard.feedback.entityAdded': 'Entidade adicionada ao dashboard',
   'dashboard.feedback.entityRemoved': 'Entidade removida do dashboard',
@@ -1218,6 +1246,7 @@ export const ptMessages = {
   'tasks.automation.details.if': 'Se',
   'tasks.automation.details.then': 'Então',
   'tasks.automation.details.diagnostics': 'Diagnóstico',
+  'tasks.automation.details.dependencies': 'Dependências',
   'tasks.automation.details.noDescription': 'Nenhuma descrição disponível para esta automação.',
   'tasks.automation.details.entityId': 'ID da entidade',
   'tasks.automation.details.room': 'Cômodo',
@@ -1651,6 +1680,9 @@ export const ptMessages = {
   'energy.widgets.flow.branchSupply': 'Fornecimento ativo para a casa',
   'energy.hero.eyebrow': 'Painel de energia',
   'energy.hero.title': 'Energia em um piscar de olhos.',
+  'energy.explainability.title': 'Por que está assim',
+  'energy.explainability.description':
+    'Navet explica a carga ao vivo usando dispositivos rastreados, fluxo da rede e geração local.',
   'energy.hero.description': 'Carga ao vivo, a história do dia e os dispositivos que a moldam.',
   'energy.hero.reconfigure': 'Reconfigurar',
   'energy.hero.reconfigureTitle': 'Reconfigurar sensores de energia',
@@ -1704,10 +1736,23 @@ export const ptMessages = {
   'habits.actions.dismiss': 'Descartar',
   'habits.actions.remindLater': 'Agora nao',
   'habits.actions.createRule': 'Criar regra',
+  'habits.confirmCreateRule.title': 'Criar esta automacao?',
+  'habits.confirmCreateRule.description':
+    'Navet adicionara esta rotina sugerida ao provedor atual para ela aparecer com suas automacoes.',
+  'habits.confirmCreateRule.routine': 'Rotina',
+  'habits.confirmCreateRule.when': 'Quando',
+  'habits.confirmCreateRule.action': 'Acao',
+  'habits.confirmCreateRule.devices': 'Dispositivos',
+  'habits.confirmCreateRule.deviceCount': '{count} dispositivo(s)',
+  'habits.confirmCreateRule.confidence': 'Confianca',
+  'habits.confirmCreateRule.safety':
+    'Navet cria apenas automacoes de luzes e interruptores de baixo risco a partir de evidencias locais explicaveis.',
+  'habits.confirmCreateRule.actionButton': 'Criar automacao',
+  'habits.confirmCreateRule.createFailed': 'Nao foi possivel criar a automacao do provedor.',
   'habits.timeline.title': 'Atividade recente de habitos',
   'habits.timeline.dismissed': 'Sugestao descartada',
   'habits.timeline.remind_later': 'Sugestao adiada',
-  'habits.timeline.created_rule': 'Regra local criada',
+  'habits.timeline.created_rule': 'Automacao criada',
   'habits.timeline.accepted': 'Sugestao aceita',
   'habits.timeline.undone': 'Sugestao corrigida',
   'habits.timeline.rule': 'Regra atualizada',
@@ -1743,6 +1788,7 @@ export const ptMessages = {
     'Ainda nao ha regras locais. Crie uma a partir de uma rotina sugerida quando encontrar uma boa correspondencia.',
   'habits.rules.turnOn': 'Ligar dispositivo',
   'habits.rules.turnOff': 'Desligar dispositivo',
+  'habits.rules.notify': 'Enviar notificacao',
   'habits.rules.window': '{count} dispositivo(s) na janela {range}',
   'habits.settings.debug.title': 'Visualizacao de debug para desenvolvedores',
   'habits.settings.debug.description':

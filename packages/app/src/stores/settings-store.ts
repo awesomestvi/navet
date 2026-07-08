@@ -21,6 +21,7 @@ export type EntityInteractionMode = 'control-first' | 'toggle-first';
 export type EffectsQuality = 'high' | 'medium' | 'low';
 export type HeaderTitleMode = 'auto_greeting' | 'custom_text' | 'clock';
 export type DashboardSpaceMode = 'default' | 'more_space';
+export type DashboardProfileMode = 'standard' | 'wall_display' | 'bedside' | 'custom';
 export const HEADER_CUSTOM_TEXT_MAX_LENGTH = 40;
 export type CameraViewMode = 'live' | 'auto' | 'snapshot';
 export type CameraDashboardViewMode = CameraViewMode;
@@ -53,6 +54,7 @@ export interface UserSettings {
   defaultView: 'all' | string;
   compactMode: boolean;
   kioskMode: boolean;
+  dashboardProfileMode: DashboardProfileMode;
   dashboardSpaceMode: DashboardSpaceMode;
   disableAnimations: boolean;
   lowPowerMode: boolean;
@@ -102,6 +104,7 @@ export const defaultSettings: UserSettings = {
   defaultView: 'all',
   compactMode: false,
   kioskMode: false,
+  dashboardProfileMode: 'standard',
   dashboardSpaceMode: 'default',
   disableAnimations: false,
   lowPowerMode: false,
@@ -151,6 +154,12 @@ function isHeaderTitleMode(value: unknown): value is HeaderTitleMode {
 
 function isDashboardSpaceMode(value: unknown): value is DashboardSpaceMode {
   return value === 'default' || value === 'more_space';
+}
+
+function isDashboardProfileMode(value: unknown): value is DashboardProfileMode {
+  return (
+    value === 'standard' || value === 'wall_display' || value === 'bedside' || value === 'custom'
+  );
 }
 
 export function normalizeHeaderCustomText(value: unknown): string {
@@ -309,6 +318,11 @@ export const useSettingsStore = create<SettingsState>()(
             isDashboardSpaceMode(newSettings.dashboardSpaceMode)
               ? newSettings.dashboardSpaceMode
               : state.dashboardSpaceMode,
+          dashboardProfileMode:
+            newSettings.dashboardProfileMode !== undefined &&
+            isDashboardProfileMode(newSettings.dashboardProfileMode)
+              ? newSettings.dashboardProfileMode
+              : state.dashboardProfileMode,
           cameraDashboardViewMode:
             newSettings.cameraDashboardViewMode !== undefined
               ? resolveCameraDashboardViewMode(newSettings.cameraDashboardViewMode)
@@ -395,6 +409,9 @@ export const useSettingsStore = create<SettingsState>()(
           dashboardSpaceMode: isDashboardSpaceMode(supportedSettings.dashboardSpaceMode)
             ? supportedSettings.dashboardSpaceMode
             : defaultSettings.dashboardSpaceMode,
+          dashboardProfileMode: isDashboardProfileMode(supportedSettings.dashboardProfileMode)
+            ? supportedSettings.dashboardProfileMode
+            : defaultSettings.dashboardProfileMode,
           cameraDashboardViewMode: resolveCameraDashboardViewMode(
             supportedSettings.cameraDashboardViewMode,
             supportedSettings.cameraViewMode
@@ -447,6 +464,9 @@ export const useSettingsStore = create<SettingsState>()(
           dashboardSpaceMode: isDashboardSpaceMode(next.dashboardSpaceMode)
             ? next.dashboardSpaceMode
             : current.dashboardSpaceMode,
+          dashboardProfileMode: isDashboardProfileMode(next.dashboardProfileMode)
+            ? next.dashboardProfileMode
+            : current.dashboardProfileMode,
           cameraDashboardViewMode: resolveCameraDashboardViewMode(
             next.cameraDashboardViewMode,
             next.cameraViewMode

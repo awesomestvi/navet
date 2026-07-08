@@ -47,7 +47,7 @@ describe('DashboardSectionRouter home controls', () => {
     deviceGridMountCount = 0;
   });
 
-  it('hides view grouping and uses add card for all rooms', async () => {
+  it('suppresses duplicated edit actions for the all-rooms command bar', async () => {
     const controller = createController();
     controller.isEditMode = true;
     controller.addableEntityIds = ['light.kitchen'];
@@ -61,15 +61,13 @@ describe('DashboardSectionRouter home controls', () => {
 
     expect(roomNavProps.onAddEntity).toBe(controller.onOpenAddCardDialog);
     expect(roomNavProps.addEntityLabel).toBe('Add Card');
+    expect(roomNavProps.suppressEditActions).toBe(true);
     expect(roomNavProps).not.toHaveProperty('allViewGrouping');
     expect(roomNavProps).not.toHaveProperty('onAllViewGroupingChange');
-    expect(layoutProps.mobileEditActions?.onAddEntity).toBe(controller.onOpenAddCardDialog);
-    expect(layoutProps.mobileEditActions?.addEntityLabel).toBe('Add Card');
-    expect(layoutProps.mobileEditActions).not.toHaveProperty('allViewGrouping');
-    expect(layoutProps.mobileEditActions).not.toHaveProperty('onAllViewGroupingChange');
+    expect(layoutProps.mobileEditActions).toBeUndefined();
   });
 
-  it('uses add card in edit mode for a room-scoped home view', async () => {
+  it('suppresses duplicated edit actions for a room-scoped home view', async () => {
     const controller = createController();
     controller.isEditMode = true;
     controller.activeRoom = 'Kitchen';
@@ -83,8 +81,8 @@ describe('DashboardSectionRouter home controls', () => {
 
     expect(roomNavProps.onAddEntity).toBe(controller.onOpenAddCardDialog);
     expect(roomNavProps.addEntityLabel).toBe('Add Card');
-    expect(layoutProps.mobileEditActions?.onAddEntity).toBe(controller.onOpenAddCardDialog);
-    expect(layoutProps.mobileEditActions?.addEntityLabel).toBe('Add Card');
+    expect(roomNavProps.suppressEditActions).toBe(true);
+    expect(layoutProps.mobileEditActions).toBeUndefined();
   });
 
   it('remounts the room grid when changing rooms', async () => {
@@ -108,7 +106,7 @@ describe('DashboardSectionRouter home controls', () => {
     expect(deviceGridMountCount).toBe(2);
   });
 
-  it('uses add card in edit mode for the energy dashboard header controls', async () => {
+  it('suppresses duplicated edit actions for the energy dashboard header controls', async () => {
     const controller = createController();
     controller.isEditMode = true;
     controller.activeSection = 'energy';
@@ -119,12 +117,10 @@ describe('DashboardSectionRouter home controls', () => {
       mobileEditActions?: Record<string, unknown>;
     };
 
-    expect(layoutProps.mobileEditActions?.onAddEntity).toBe(controller.onOpenAddCardDialog);
-    expect(layoutProps.mobileEditActions?.addEntityLabel).toBe('Add Card');
-    expect(layoutProps.mobileEditActions).not.toHaveProperty('reorderRooms');
+    expect(layoutProps.mobileEditActions).toBeUndefined();
   });
 
-  it('uses security-specific add entity controls without manage rooms', async () => {
+  it('suppresses duplicated edit actions for security without manage rooms', async () => {
     const controller = createController();
     controller.isEditMode = true;
     controller.activeSection = 'security';
@@ -135,10 +131,7 @@ describe('DashboardSectionRouter home controls', () => {
       mobileEditActions?: Record<string, unknown>;
     };
 
-    expect(layoutProps.mobileEditActions?.onAddEntity).toEqual(expect.any(Function));
-    expect(layoutProps.mobileEditActions?.onAddEntity).not.toBe(controller.onOpenAddCardDialog);
-    expect(layoutProps.mobileEditActions?.addEntityLabel).toBe('Add Entity');
-    expect(layoutProps.mobileEditActions).not.toHaveProperty('reorderRooms');
+    expect(layoutProps.mobileEditActions).toBeUndefined();
   });
 
   it('does not expose manage rooms outside the home dashboard', async () => {
@@ -152,7 +145,7 @@ describe('DashboardSectionRouter home controls', () => {
       mobileEditActions?: Record<string, unknown>;
     };
 
-    expect(layoutProps.mobileEditActions).not.toHaveProperty('reorderRooms');
+    expect(layoutProps.mobileEditActions).toBeUndefined();
   });
 });
 
@@ -177,6 +170,8 @@ function createController(): DashboardController {
     cardOrders: {},
     cardSizes: {},
     cardZones: {},
+    canRedoHomeLayout: false,
+    canUndoHomeLayout: false,
     changeRoom: vi.fn(),
     closeAddCardDialog: vi.fn(),
     closeAddEntityDialog: vi.fn(),
@@ -231,6 +226,7 @@ function createController(): DashboardController {
     openDeviceSettingsDialog: vi.fn(),
     orderedCardIds: [],
     removeHomeCard: vi.fn(),
+    redoHomeLayout: vi.fn(),
     roomHiddenItemCounts: new Map(),
     roomItemCounts: new Map(),
     rooms: [ALL_ROOMS_ID, 'Kitchen'],
@@ -262,6 +258,7 @@ function createController(): DashboardController {
     removeHomeSection: vi.fn(),
     resizeHomeSection: vi.fn(),
     setHomeLayoutMode: vi.fn(),
+    undoHomeLayout: vi.fn(),
     showAddCardDialog: false,
     showAddEntityDialog: false,
     showDeviceSettingsDialog: false,

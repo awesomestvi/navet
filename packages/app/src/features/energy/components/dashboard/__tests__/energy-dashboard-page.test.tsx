@@ -99,6 +99,14 @@ describe('EnergyDashboardPage', () => {
     expect(screen.getByText('Grid import')).toBeInTheDocument();
   });
 
+  it('renders live energy explanations from the dashboard model', () => {
+    renderDashboardPage('default');
+
+    expect(screen.getByText('Why it looks this way')).toBeInTheDocument();
+    expect(screen.getByText(/biggest live driver/)).toBeInTheDocument();
+    expect(screen.getByText(/Navet explains the live load/)).toBeInTheDocument();
+  });
+
   it('keeps the sources card on the theme-native shell instead of forcing an accent shell', () => {
     useThemeStore.setState({
       ...useThemeStore.getState(),

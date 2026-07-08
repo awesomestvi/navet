@@ -11,6 +11,7 @@ import {
   DEVICE_COLLECTION_KEYS,
   getAbsorbedDashboardEntityIds,
   getExpandedHiddenDashboardEntityIds,
+  useAggregatedDevices,
   useAggregatedRooms,
   useCardState,
   useDeviceCollectionsByKeys,
@@ -24,13 +25,18 @@ import {
 } from '@navet/app/hooks';
 import type { Section } from '@navet/app/navigation/sections';
 import { isStandaloneMode } from '@navet/app/runtime/app-mode';
-import { providerRuntimeSelectors, settingsSelectors } from '@navet/app/stores/selectors';
+import {
+  integrationSelectors,
+  providerRuntimeSelectors,
+  settingsSelectors,
+} from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceCollection, DeviceWithType } from '@navet/app/types/device.types';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { logPerformanceDecision } from '@navet/app/utils/performance-diagnostics';
 import { buildAggregatedRooms } from '@navet/app/utils/provider-rooms';
 import { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 import { getClimateDashboardGroup } from '../../climate/utils/climate-dashboard-group';
 import { buildSecurityCameraDashboardModel } from '../../security/utils/security-camera-dashboard-model';
@@ -39,6 +45,11 @@ import {
   normalizeMediaStackWidgetData,
   shouldShowMediaStackWidget,
 } from '../components/widgets/media-stack-widget-data';
+import {
+  buildDashboardPackLayout,
+  DASHBOARD_PACKS,
+  type DashboardPackId,
+} from '../packs/dashboard-packs';
 import { useCustomCardsStore } from '../stores/custom-cards-store';
 import { useHomeDashboardLayoutStore } from '../stores/home-dashboard-layout-store';
 import { useAvailableRooms } from './use-available-rooms';
@@ -116,6 +127,10 @@ export function useDashboardController(): DashboardController {
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const currentProviderRuntime = useIntegrationStore(
     providerRuntimeSelectors.currentProviderRuntime
+  );
+  const selectedProviderIds = useIntegrationStore(integrationSelectors.selectedProviderIds);
+  const providerEntityViewsByProviderId = useIntegrationStore(
+    integrationSelectors.providerEntityViewsByProviderId
   );
   const connected = currentProviderRuntime.connected;
   const connecting = currentProviderRuntime.connecting;
@@ -251,6 +266,21 @@ export function useDashboardController(): DashboardController {
   const { deviceMap: availableDeviceMap } = useDeviceMap(
     isDeviceHeavySection ? availableDevices : EMPTY_DEVICE_COLLECTION
   );
+  const manualDevices = useAggregatedDevices({
+    enabled: dialogs.showAddCardDialog && activeSection !== 'energy',
+    includeFeatureCollections: shouldIncludeFeatureCollections,
+  });
+  const { deviceMap: manualDeviceMap } = useDeviceMap(manualDevices);
+  const manualEntityViewsByCanonicalId = useMemo(
+    () =>
+      Object.assign(
+        {},
+        ...selectedProviderIds.map(
+          (providerId) => providerEntityViewsByProviderId[providerId] ?? {}
+        )
+      ),
+    [providerEntityViewsByProviderId, selectedProviderIds]
+  );
 
   const homeLayoutValidIds = useHomeLayoutValidIds(availableDeviceMap, allCustomCards);
   const homeLayoutController = useHomeDashboardLayout(homeLayoutValidIds, cardSizes);
@@ -378,6 +408,22 @@ export function useDashboardController(): DashboardController {
 
   const resetDashboard = useResetDashboard(homeLayoutController);
   const onboarding = useOnboardingController({ allEntityIds, changeRoom, resetDashboard });
+  const handleApplyDashboardPack = useCallback(
+    (packId: DashboardPackId) => {
+      const nextLayout = buildDashboardPackLayout(packId, availableDeviceMap.values());
+      const packLabelKey =
+        DASHBOARD_PACKS.find((pack) => pack.id === packId)?.labelKey ?? 'dashboard.packs.title';
+
+      if (nextLayout.cardIds.length === 0) {
+        toast.warning(t('dashboard.feedback.packEmpty', { name: t(packLabelKey) }));
+        return;
+      }
+
+      homeLayoutController.applyLayout(nextLayout);
+      toast.success(t('dashboard.feedback.packApplied', { name: t(packLabelKey) }));
+    },
+    [availableDeviceMap, homeLayoutController, t]
+  );
 
   const { addCard, removeCard, updateCard } = useCustomCardsStore(
     useShallow((state) => ({
@@ -389,6 +435,7 @@ export function useDashboardController(): DashboardController {
   const {
     handleAddCard,
     handleAddLibraryCard,
+    handleAddGenericEntityCard,
     handleDeleteCard,
     handleAddEntity,
     handleRemoveEntity,
@@ -427,13 +474,17 @@ export function useDashboardController(): DashboardController {
     devicesLoaded,
     handleAddCard,
     handleAddLibraryCard,
+    handleAddGenericEntityCard,
     handleAddEntity,
     handleDeleteCard,
+    handleApplyDashboardPack,
     handleRemoveEntity,
     handleUpdateCard,
     hiddenEntityIds,
     hiddenRoomNames,
     homeLayout: homeLayoutController.layout,
+    canRedoHomeLayout: homeLayoutController.canRedo,
+    canUndoHomeLayout: homeLayoutController.canUndo,
     homeLayoutHydrated,
     addHomeCard: homeLayoutController.addCard,
     removeHomeCard: homeLayoutController.removeCard,
@@ -446,10 +497,14 @@ export function useDashboardController(): DashboardController {
     moveHomeColumn: homeLayoutController.moveColumn,
     renameHomeSection: homeLayoutController.renameSection,
     removeHomeSection: homeLayoutController.removeSection,
+    redoHomeLayout: homeLayoutController.redoLayout,
     resizeHomeSection: homeLayoutController.resizeSection,
+    undoHomeLayout: homeLayoutController.undoLayout,
     isEditMode,
     lightDeviceMap,
     lightRooms,
+    manualDeviceMap,
+    manualEntityViewsByCanonicalId,
     onSetAllViewGrouping: setAllViewGrouping,
     onSetHiddenRoomNames: setHiddenRoomNames,
     onToggleEditMode: () => startTransition(toggleEditMode),

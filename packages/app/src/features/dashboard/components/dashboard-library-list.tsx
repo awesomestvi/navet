@@ -13,6 +13,7 @@ export type DashboardLibraryCard = {
   meta: string;
   kind: 'device' | 'widget';
   icon?: LucideIcon;
+  idSearchText?: string;
 };
 
 const DashboardLibraryRow = memo(function DashboardLibraryRow({

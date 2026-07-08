@@ -11,6 +11,7 @@ describe('useSettingsStore', () => {
   it('updates partial settings', () => {
     useSettingsStore.getState().updateSettings({
       dashboardSpaceMode: 'more_space',
+      dashboardProfileMode: 'wall_display',
       compactMode: true,
       headerCustomText: 'Movie night',
       headerTitleMode: 'custom_text',
@@ -22,6 +23,7 @@ describe('useSettingsStore', () => {
 
     expect(useSettingsStore.getState().compactMode).toBe(true);
     expect(useSettingsStore.getState().dashboardSpaceMode).toBe('more_space');
+    expect(useSettingsStore.getState().dashboardProfileMode).toBe('wall_display');
     expect(useSettingsStore.getState().headerCustomText).toBe('Movie night');
     expect(useSettingsStore.getState().headerTitleMode).toBe('custom_text');
     expect(useSettingsStore.getState().kioskMode).toBe(true);
@@ -34,6 +36,7 @@ describe('useSettingsStore', () => {
     useSettingsStore.getState().applyImportedSettings({
       ...defaultSettings,
       dashboardSpaceMode: 'more_space',
+      dashboardProfileMode: 'bedside',
       headerCustomText: 'Relax',
       headerTitleMode: 'custom_text',
       username: 'Vishal',
@@ -42,6 +45,7 @@ describe('useSettingsStore', () => {
 
     expect(useSettingsStore.getState().headerCustomText).toBe('Relax');
     expect(useSettingsStore.getState().dashboardSpaceMode).toBe('more_space');
+    expect(useSettingsStore.getState().dashboardProfileMode).toBe('bedside');
     expect(useSettingsStore.getState().headerTitleMode).toBe('custom_text');
     expect(useSettingsStore.getState().username).toBe('Vishal');
     expect(useSettingsStore.getState().weatherForecastMode).toBe('hourly');
@@ -68,6 +72,9 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().lowPowerMode).toBe(defaultSettings.lowPowerMode);
     expect(useSettingsStore.getState().kioskMode).toBe(defaultSettings.kioskMode);
     expect(useSettingsStore.getState().dashboardSpaceMode).toBe(defaultSettings.dashboardSpaceMode);
+    expect(useSettingsStore.getState().dashboardProfileMode).toBe(
+      defaultSettings.dashboardProfileMode
+    );
     expect(useSettingsStore.getState().keepDeviceAwake).toBe(defaultSettings.keepDeviceAwake);
     expect(useSettingsStore.getState().showHomeSummaryBar).toBe(defaultSettings.showHomeSummaryBar);
     expect(useSettingsStore.getState().headerCustomText).toBe(defaultSettings.headerCustomText);

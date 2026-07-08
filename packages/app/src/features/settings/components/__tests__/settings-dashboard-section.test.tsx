@@ -3,8 +3,18 @@ import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import { fireEvent, screen, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SettingsDashboardSection } from '../settings-dashboard-section';
+
+const { activateFallbackMock, useKeepDeviceAwakeSnapshotMock } = vi.hoisted(() => ({
+  activateFallbackMock: vi.fn(),
+  useKeepDeviceAwakeSnapshotMock: vi.fn(),
+}));
+
+vi.mock('@navet/app/hooks/use-keep-device-awake', () => ({
+  activateKeepDeviceAwakeFallback: activateFallbackMock,
+  useKeepDeviceAwakeSnapshot: useKeepDeviceAwakeSnapshotMock,
+}));
 
 function TestSection() {
   const controller = useSettingsSectionController();
@@ -23,16 +33,37 @@ function TestSection() {
 describe('SettingsDashboardSection', () => {
   beforeEach(async () => {
     await resetAppStores();
+    activateFallbackMock.mockReset();
+    useKeepDeviceAwakeSnapshotMock.mockReturnValue({
+      enabled: false,
+      mode: 'disabled',
+      canActivateFallback: false,
+    });
   });
 
-  it('renders dashboard controls without the keep-awake experimental toggle', () => {
+  it('updates the keep-awake setting from dashboard settings', () => {
     renderWithProviders(<TestSection />);
 
-    const kioskModeGroup = screen.getByRole('group', { name: 'Kiosk mode' });
-    fireEvent.click(within(kioskModeGroup).getByRole('button', { name: 'On' }));
+    const keepAwakeGroup = screen.getByRole('group', { name: 'Keep device awake' });
+    fireEvent.click(within(keepAwakeGroup).getByRole('button', { name: 'On' }));
     fireEvent.click(screen.getByRole('button', { name: 'All devices' }));
 
-    expect(screen.queryByRole('group', { name: 'Keep device awake' })).not.toBeInTheDocument();
+    expect(useSettingsStore.getState().keepDeviceAwake).toBe(true);
+  });
+
+  it('renders the pending keep-awake fallback action when needed', () => {
+    useKeepDeviceAwakeSnapshotMock.mockReturnValue({
+      enabled: true,
+      mode: 'pending-activation',
+      canActivateFallback: true,
+    });
+    useSettingsStore.getState().updateSettings({ keepDeviceAwake: true });
+
+    renderWithProviders(<TestSection />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tap to activate fallback audio' }));
+
+    expect(activateFallbackMock).toHaveBeenCalledTimes(1);
   });
 
   it('switches header title mode and shows the custom text input only for custom mode', () => {
@@ -56,6 +87,27 @@ describe('SettingsDashboardSection', () => {
 
     expect(useSettingsStore.getState().headerTitleMode).toBe('clock');
     expect(screen.queryByPlaceholderText('Welcome home')).not.toBeInTheDocument();
+  });
+
+  it('applies dashboard profile presets through scoped settings', () => {
+    renderWithProviders(<TestSection />);
+
+    const profileGroup = screen.getByRole('group', { name: 'Dashboard profile' });
+    expect(within(profileGroup).queryByRole('button', { name: 'Bedside' })).not.toBeInTheDocument();
+    fireEvent.click(within(profileGroup).getByRole('button', { name: 'Wall display' }));
+    fireEvent.click(screen.getByRole('button', { name: 'All devices' }));
+
+    expect(useSettingsStore.getState()).toEqual(
+      expect.objectContaining({
+        dashboardProfileMode: 'wall_display',
+        dashboardSpaceMode: 'more_space',
+        headerTitleMode: 'clock',
+        keepDeviceAwake: true,
+        kioskMode: true,
+        showHomeSummaryBar: true,
+      })
+    );
+    expect(screen.getByText(/Enables kiosk mode/)).toBeInTheDocument();
   });
 
   it('does not render space usage controls in dashboard settings', () => {

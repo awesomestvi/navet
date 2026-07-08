@@ -11,8 +11,17 @@ import {
   AlertDialogTitle,
 } from '@navet/app/components/ui/alert-dialog';
 import { useI18n } from '@navet/app/hooks';
+import {
+  activateKeepDeviceAwakeFallback,
+  useKeepDeviceAwakeSnapshot,
+} from '@navet/app/hooks/use-keep-device-awake';
 import { HEADER_CUSTOM_TEXT_MAX_LENGTH } from '@navet/app/stores/settings-store';
-import { Download, LayoutGrid, Scale, Upload } from 'lucide-react';
+import { Download, LayoutGrid, Monitor, Scale, Upload } from 'lucide-react';
+import {
+  DASHBOARD_PROFILE_MODE_OPTIONS,
+  DASHBOARD_PROFILE_MODE_SCOPE_KEYS,
+  getDashboardProfileModeOption,
+} from '../dashboard-profile-modes';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
 import { OnOffPillToggle } from './settings-pill-toggle';
 import { SettingsItem, SettingsSectionShell } from './settings-section-shell';
@@ -23,6 +32,7 @@ interface SettingsDashboardSectionProps {
 
 export function SettingsDashboardSection({ controller }: SettingsDashboardSectionProps) {
   const { t } = useI18n();
+  const keepAwakeSnapshot = useKeepDeviceAwakeSnapshot();
   const {
     headerCustomText,
     headerTitleMode,
@@ -31,7 +41,9 @@ export function SettingsDashboardSection({ controller }: SettingsDashboardSectio
     handleRestartOnboarding,
     hiddenEntityIds,
     importInputRef,
+    keepDeviceAwake,
     kioskMode,
+    dashboardProfileMode,
     setShowRestartOnboardingConfirm,
     setShowRevealAllConfirm,
     showHomeSummaryBar,
@@ -49,6 +61,52 @@ export function SettingsDashboardSection({ controller }: SettingsDashboardSectio
       description={t('settings.dashboard.sectionDescription')}
       styles={styles}
     >
+      <SettingsItem
+        title={t('settings.dashboard.profileMode.title')}
+        description={t('settings.dashboard.profileMode.description')}
+        styles={styles}
+      >
+        <div className="space-y-3">
+          <fieldset className="w-fit">
+            <legend className="sr-only">{t('settings.dashboard.profileMode.title')}</legend>
+            <div className="flex flex-wrap gap-2">
+              {DASHBOARD_PROFILE_MODE_OPTIONS.map((option) => {
+                const isActive = dashboardProfileMode === option.id;
+                const Icon = option.id === 'wall_display' ? Monitor : LayoutGrid;
+
+                return (
+                  <InteractivePill
+                    key={option.id}
+                    active={isActive}
+                    size="small"
+                    icon={Icon}
+                    onClick={() => {
+                      if (isActive) {
+                        return;
+                      }
+
+                      controller.updateScopedSettings(
+                        option.settings,
+                        DASHBOARD_PROFILE_MODE_SCOPE_KEYS
+                      );
+                    }}
+                    aria-pressed={isActive}
+                  >
+                    {t(option.labelKey)}
+                  </InteractivePill>
+                );
+              })}
+            </div>
+          </fieldset>
+          <p className={`max-w-2xl text-sm leading-relaxed ${styles.subtleColor}`}>
+            {t(
+              getDashboardProfileModeOption(dashboardProfileMode)?.descriptionKey ??
+                'settings.dashboard.profileMode.custom.description'
+            )}
+          </p>
+        </div>
+      </SettingsItem>
+
       <SettingsItem
         title={t('settings.dashboard.headerTitle.title')}
         description={t('settings.dashboard.headerTitle.description')}
@@ -145,6 +203,57 @@ export function SettingsDashboardSection({ controller }: SettingsDashboardSectio
           <p className={`max-w-2xl text-sm leading-relaxed ${styles.subtleColor}`}>
             {t('settings.dashboard.kioskMode.recoveryHint')}
           </p>
+        </div>
+      </SettingsItem>
+
+      <SettingsItem
+        title={t('settings.dashboard.keepAwake.title')}
+        description={t('settings.dashboard.keepAwake.description')}
+        styles={styles}
+      >
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
+            <OnOffPillToggle
+              value={keepDeviceAwake}
+              onChange={(checked) =>
+                controller.updateScopedSettings({ keepDeviceAwake: checked }, ['keepDeviceAwake'])
+              }
+              ariaLabel={t('settings.dashboard.keepAwake.title')}
+            />
+            <p className={`max-w-2xl text-sm leading-relaxed ${styles.subtleColor}`}>
+              {t('settings.dashboard.keepAwake.caveat')}
+            </p>
+            {keepDeviceAwake ? (
+              <p className={`max-w-2xl text-sm leading-relaxed ${styles.subtleColor}`}>
+                {t('settings.dashboard.keepAwake.bestEffort')}
+              </p>
+            ) : null}
+          </div>
+
+          {keepDeviceAwake && keepAwakeSnapshot.mode === 'pending-activation' ? (
+            <div className="flex flex-col gap-2">
+              <p className={`max-w-2xl text-sm font-medium leading-relaxed ${styles.textColor}`}>
+                {t('settings.dashboard.keepAwake.status.pending-activation')}
+              </p>
+              {keepAwakeSnapshot.canActivateFallback ? (
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <Button
+                    variant="secondary"
+                    size="small"
+                    className="rounded-full"
+                    onClick={() => {
+                      void activateKeepDeviceAwakeFallback();
+                    }}
+                  >
+                    {t('settings.dashboard.keepAwake.activateFallback')}
+                  </Button>
+                  <p className={`text-sm leading-relaxed ${styles.subtleColor}`}>
+                    {t('settings.dashboard.keepAwake.activationHint')}
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </SettingsItem>
 

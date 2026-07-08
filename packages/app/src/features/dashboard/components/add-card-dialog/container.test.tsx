@@ -131,4 +131,74 @@ describe('AddCardDialogContainer', () => {
 
     expect(screen.queryByText('Media Stack')).not.toBeInTheDocument();
   });
+
+  it('does not match hidden entity ids for plain entity search terms', () => {
+    renderWithProviders(
+      <AddCardDialogContainer
+        open
+        onClose={() => {}}
+        onAddCard={vi.fn()}
+        onAddLibraryCard={() => {}}
+        currentRoom="Basement"
+        libraryCards={[
+          {
+            id: 'sensor.basement_weather_station_battery',
+            title: 'Battery',
+            subtitle: 'Basement',
+            meta: 'Sensor',
+            kind: 'device',
+          },
+          {
+            id: 'weather.home',
+            title: 'Home',
+            subtitle: 'Home',
+            meta: 'Weather',
+            kind: 'device',
+          },
+        ]}
+      />
+    );
+
+    fireEvent.change(screen.getByPlaceholderText('Search entities'), {
+      target: { value: 'weather' },
+    });
+
+    expect(screen.queryByText('Battery')).not.toBeInTheDocument();
+    expect(screen.getByText('Home')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText('Search entities'), {
+      target: { value: 'sensor.basement_weather_station_battery' },
+    });
+
+    expect(screen.getByText('Battery')).toBeInTheDocument();
+    expect(screen.queryByText('Home')).not.toBeInTheDocument();
+  });
+
+  it('matches native entity ids supplied by the manual entity catalog', () => {
+    renderWithProviders(
+      <AddCardDialogContainer
+        open
+        onClose={() => {}}
+        onAddCard={vi.fn()}
+        onAddLibraryCard={() => {}}
+        currentRoom="Kitchen"
+        libraryCards={[
+          {
+            id: 'home_assistant:sensor.kitchen_temperature',
+            title: 'Kitchen Temperature',
+            subtitle: 'Kitchen',
+            meta: 'Sensor',
+            kind: 'device',
+            idSearchText: 'home_assistant:sensor.kitchen_temperature sensor.kitchen_temperature',
+          },
+        ]}
+      />
+    );
+
+    fireEvent.change(screen.getByPlaceholderText('Search entities'), {
+      target: { value: 'sensor.kitchen_temperature' },
+    });
+
+    expect(screen.getByText('Kitchen Temperature')).toBeInTheDocument();
+  });
 });

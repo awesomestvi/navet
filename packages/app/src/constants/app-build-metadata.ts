@@ -62,3 +62,7 @@ export function getAppBuildChannelLabel(version = APP_VERSION) {
       return 'Stable';
   }
 }
+
+export function isDevOrLocalBuild(channel = APP_BUILD_METADATA.releaseChannel) {
+  return ['development', 'dev', 'local'].includes(channel);
+}

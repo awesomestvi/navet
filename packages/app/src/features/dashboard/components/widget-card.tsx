@@ -7,6 +7,7 @@ import type { CustomCard } from '../stores/custom-cards-store';
 import { useCustomCardsStore } from '../stores/custom-cards-store';
 import type { BatteryOverviewWidgetData } from './widgets/battery-overview-widget';
 import type { EnergyNowWidgetData } from './widgets/energy-now-dashboard-widget';
+import type { GenericEntityWidgetData } from './widgets/generic-entity-widget';
 import type { InfoWidgetData } from './widgets/info-widget';
 import type { MapMarker } from './widgets/map-types';
 import type { MediaStackWidgetData } from './widgets/media-stack-widget-data';
@@ -79,6 +80,11 @@ const ButtonWidget = lazy(async () => {
 const MapWidget = lazy(async () => {
   const module = await import('./widgets/map-widget');
   return { default: module.MapWidget };
+});
+
+const GenericEntityWidget = lazy(async () => {
+  const module = await import('./widgets/generic-entity-widget');
+  return { default: module.GenericEntityWidget };
 });
 
 const RSSFeedCard = lazy(async () => {
@@ -295,6 +301,14 @@ export function WidgetCard({
           markers={
             Array.isArray(card.data?.markers) ? card.data.markers.filter(isMapMarker) : undefined
           }
+        />
+      );
+      break;
+    case 'entity':
+      widgetContent = (
+        <GenericEntityWidget
+          size={card.size}
+          data={card.data as GenericEntityWidgetData | undefined}
         />
       );
       break;

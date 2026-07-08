@@ -3,6 +3,7 @@ import type {
   EnergyDashboardMode,
   EnergyDashboardModel,
   EnergyDashboardNode,
+  EnergyExplanation,
   EnergyFlow,
   EnergyOverview,
   EnergyRange,
@@ -615,6 +616,60 @@ function deriveWhatChanged(
   };
 }
 
+function buildEnergyExplanations(
+  overview: EnergyOverview,
+  dataCoverage: EnergyDashboardModel['dataCoverage'],
+  renewableSharePct: number
+): EnergyExplanation[] {
+  const explanations: EnergyExplanation[] = [];
+  const [topConsumer] = [...overview.topConsumers].sort(
+    (left, right) => right.powerW - left.powerW || right.energyKWh - left.energyKWh
+  );
+
+  if (topConsumer && topConsumer.powerW > 0) {
+    explanations.push({
+      id: 'top-live-driver',
+      title: `${topConsumer.name} is the biggest live driver`,
+      description: `${formatEnergyValue(topConsumer.powerW / 1000)} kW now, with ${formatEnergyValue(topConsumer.shareOfLoad * 100, 0)}% of tracked load today.`,
+      tone: topConsumer.shareOfLoad >= 0.3 ? 'warn' : 'default',
+      affectedConsumerIds: [topConsumer.id],
+    });
+  }
+
+  if (overview.totals.importW > PEAK_IMPORT_THRESHOLD_W) {
+    explanations.push({
+      id: 'grid-import-peak',
+      title: 'Grid import is elevated',
+      description: `${formatEnergyValue(overview.totals.importW / 1000)} kW is coming from the grid while live home load is ${formatEnergyValue(overview.totals.currentLoadW / 1000)} kW.`,
+      tone: 'warn',
+      affectedConsumerIds: topConsumer ? [topConsumer.id] : [],
+    });
+  }
+
+  if (overview.totals.solarW > 0) {
+    explanations.push({
+      id: 'solar-offset',
+      title: 'Solar is offsetting live demand',
+      description: `${formatEnergyValue(overview.totals.solarW / 1000)} kW of solar is covering about ${formatEnergyValue(renewableSharePct, 0)}% of the current load.`,
+      tone: 'good',
+      affectedConsumerIds: [],
+    });
+  }
+
+  if (!dataCoverage.hasTrackedDevices) {
+    explanations.push({
+      id: 'tracked-devices-missing',
+      title: 'Device-level drivers are not configured yet',
+      description:
+        'Add tracked energy devices to explain which appliances contribute most to live load and today usage.',
+      tone: 'default',
+      affectedConsumerIds: [],
+    });
+  }
+
+  return explanations.slice(0, 3);
+}
+
 function buildSummary(
   overview: EnergyOverview,
   dataCoverage: EnergyDashboardModel['dataCoverage']
@@ -732,6 +787,7 @@ export function buildEnergyDashboardModel({
   const summary = buildSummary(overview, dataCoverage);
   const ranges = buildRangeSnapshots(overview, trend, periodTotals);
   const whatChanged = deriveWhatChanged(overview, overview.topConsumers);
+  const explanations = buildEnergyExplanations(overview, dataCoverage, renewableSharePct);
   const totals = buildTotals(overview, renewableSharePct);
 
   return {
@@ -744,6 +800,7 @@ export function buildEnergyDashboardModel({
     selectedRange,
     insights: overview.insights.length > 0 ? overview.insights : [],
     whatChanged,
+    explanations,
     topConsumers: overview.topConsumers,
     dataCoverage,
     totals,

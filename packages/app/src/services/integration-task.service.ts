@@ -1,6 +1,10 @@
-import type { PlatformTaskRuntimeSnapshot } from '@navet/app/platform/provider-feature-models';
+import type {
+  PlatformAutomationCreateResult,
+  PlatformTaskRuntimeSnapshot,
+} from '@navet/app/platform/provider-feature-models';
 import type { ProviderTaskFeatureService } from '@navet/app/platform/provider-feature-services';
 import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
+import type { HabitRule } from '@navet/core/habits';
 import {
   getCurrentIntegrationProviderIdFromStore,
   getNativeIntegrationEntityId,
@@ -42,5 +46,16 @@ export const integrationTaskService: ProviderTaskFeatureService = {
       throw new Error('Task support is not implemented yet for the current integration');
     }
     await service.triggerAutomation(getNativeIntegrationEntityId(entityId));
+  },
+  createAutomationFromHabitRule: async (
+    rule: HabitRule,
+    options?: { name?: string; description?: string }
+  ): Promise<PlatformAutomationCreateResult> => {
+    const service = getCurrentTaskFeatureService();
+    if (!service?.createAutomationFromHabitRule) {
+      throw new Error('Creating automations is not supported for the current integration yet');
+    }
+
+    return await service.createAutomationFromHabitRule(rule, options);
   },
 };

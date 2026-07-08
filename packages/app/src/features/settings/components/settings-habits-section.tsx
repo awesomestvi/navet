@@ -1,25 +1,73 @@
-import { Button, MessageBar, Panel, Switch } from '@navet/app/components/primitives';
+import { Button, Panel } from '@navet/app/components/primitives';
 import { useHabitStore } from '@navet/app/features/habits';
 import { useI18n } from '@navet/app/hooks';
-import { Brain, RotateCcw, ShieldCheck } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { Brain, Database, Lightbulb, ListChecks, RotateCcw, ShieldCheck } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
 import { OnOffPillToggle } from './settings-pill-toggle';
 import { SettingsItem, SettingsSectionShell } from './settings-section-shell';
 
-function formatMinuteRange(startMinute: number, endMinute: number) {
-  const format = (minute: number) => {
-    const hours = Math.floor(minute / 60)
-      .toString()
-      .padStart(2, '0');
-    const minutes = (minute % 60).toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
-  };
-
-  return `${format(startMinute)}-${format(endMinute)}`;
+function HabitsAssuranceRow({
+  icon: Icon,
+  title,
+  body,
+  styles,
+}: {
+  icon: LucideIcon;
+  title: string;
+  body: string;
+  styles: SettingsSectionController['styles'];
+}) {
+  return (
+    <div
+      className={`flex gap-3 rounded-[18px] border p-3.5 md:p-4 ${styles.borderColor} ${styles.softBg}`}
+    >
+      <span
+        className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${styles.borderColor} ${styles.iconBg}`}
+      >
+        <Icon className={`h-4 w-4 ${styles.mutedColor}`} />
+      </span>
+      <div className="min-w-0">
+        <p className={`text-sm font-medium ${styles.textColor}`}>{title}</p>
+        <p className={`mt-1 text-sm leading-relaxed ${styles.subtleColor}`}>{body}</p>
+      </div>
+    </div>
+  );
 }
 
-export function SettingsHabitsSection({ controller }: { controller: SettingsSectionController }) {
+function HabitsMetricPanel({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  styles,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: number;
+  detail?: string;
+  styles: SettingsSectionController['styles'];
+}) {
+  return (
+    <Panel muted className="p-4">
+      <div className="flex items-start justify-between gap-3">
+        <p className={`text-sm font-medium ${styles.subtleColor}`}>{label}</p>
+        <Icon className={`h-4 w-4 ${styles.mutedColor}`} />
+      </div>
+      <p className={`mt-3 text-2xl font-semibold tabular-nums ${styles.textColor}`}>{value}</p>
+      {detail ? <p className={`mt-1 text-sm ${styles.subtleColor}`}>{detail}</p> : null}
+    </Panel>
+  );
+}
+
+export function SettingsHabitsSection({
+  controller,
+  embedded = false,
+}: {
+  controller: SettingsSectionController;
+  embedded?: boolean;
+}) {
   const { t } = useI18n();
   const {
     enabled,
@@ -28,7 +76,7 @@ export function SettingsHabitsSection({ controller }: { controller: SettingsSect
     lastRunAt,
     events,
     insights,
-    rules,
+    feedback,
     setEnabled,
     setDebugEnabled,
     resetLocalData,
@@ -40,21 +88,15 @@ export function SettingsHabitsSection({ controller }: { controller: SettingsSect
       lastRunAt: state.lastRunAt,
       events: state.events,
       insights: state.insights,
-      rules: state.rules,
+      feedback: state.feedback,
       setEnabled: state.setEnabled,
       setDebugEnabled: state.setDebugEnabled,
       resetLocalData: state.resetLocalData,
     }))
   );
 
-  return (
-    <SettingsSectionShell
-      id="habits"
-      icon={Brain}
-      title={t('habits.settings.sectionTitle')}
-      description={t('habits.settings.sectionDescription')}
-      styles={controller.styles}
-    >
+  const content = (
+    <>
       <SettingsItem
         title={t('habits.settings.enable.title')}
         description={t('habits.settings.enable.description')}
@@ -66,7 +108,7 @@ export function SettingsHabitsSection({ controller }: { controller: SettingsSect
             onChange={setEnabled}
             ariaLabel={t('habits.settings.enable.title')}
           />
-          <p className="min-w-0 text-sm text-white/65">
+          <p className={`min-w-0 text-sm ${controller.styles.subtleColor}`}>
             {t('habits.settings.enable.helper', {
               tier: hardwareProfile.tier,
             })}
@@ -80,12 +122,18 @@ export function SettingsHabitsSection({ controller }: { controller: SettingsSect
         styles={controller.styles}
       >
         <div className="space-y-3">
-          <MessageBar tone="info" title={t('habits.settings.privacy.localTitle')}>
-            {t('habits.settings.privacy.localBody')}
-          </MessageBar>
-          <MessageBar tone="warning" title={t('habits.settings.privacy.safetyTitle')}>
-            {t('habits.settings.privacy.safetyBody')}
-          </MessageBar>
+          <HabitsAssuranceRow
+            icon={Database}
+            title={t('habits.settings.privacy.localTitle')}
+            body={t('habits.settings.privacy.localBody')}
+            styles={controller.styles}
+          />
+          <HabitsAssuranceRow
+            icon={ShieldCheck}
+            title={t('habits.settings.privacy.safetyTitle')}
+            body={t('habits.settings.privacy.safetyBody')}
+            styles={controller.styles}
+          />
           <Button
             variant="soft"
             size="small"
@@ -104,69 +152,26 @@ export function SettingsHabitsSection({ controller }: { controller: SettingsSect
       >
         <div className="space-y-3">
           <div className="grid gap-3 md:grid-cols-3">
-            <Panel muted className="p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/55">
-                {t('habits.settings.rules.events')}
-              </p>
-              <p className="mt-2 text-2xl font-semibold">{events.length}</p>
-              <p className="mt-1 text-sm text-white/55">
-                Capped at {hardwareProfile.maxJournalEvents}
-              </p>
-            </Panel>
-            <Panel muted className="p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/55">
-                {t('habits.settings.rules.suggestions')}
-              </p>
-              <p className="mt-2 text-2xl font-semibold">{insights.length}</p>
-            </Panel>
-            <Panel muted className="p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/55">
-                {t('habits.settings.rules.activeRules')}
-              </p>
-              <p className="mt-2 text-2xl font-semibold">
-                {rules.filter((rule) => rule.enabled).length}
-              </p>
-            </Panel>
+            <HabitsMetricPanel
+              icon={Database}
+              label={t('habits.settings.rules.events')}
+              value={events.length}
+              detail={`Capped at ${hardwareProfile.maxJournalEvents}`}
+              styles={controller.styles}
+            />
+            <HabitsMetricPanel
+              icon={Lightbulb}
+              label={t('habits.settings.rules.suggestions')}
+              value={insights.length}
+              styles={controller.styles}
+            />
+            <HabitsMetricPanel
+              icon={ListChecks}
+              label={t('habits.settings.rules.activeRules')}
+              value={feedback.filter((entry) => entry.outcome === 'created_rule').length}
+              styles={controller.styles}
+            />
           </div>
-
-          {rules.length > 0 ? (
-            <div className="space-y-2">
-              {rules.map((rule) => (
-                <Panel key={rule.id} muted className="flex items-center justify-between gap-3 p-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium">
-                      {rule.action.type === 'turn_on'
-                        ? t('habits.rules.turnOn')
-                        : t('habits.rules.turnOff')}
-                    </p>
-                    <p className="mt-1 text-sm text-white/65">
-                      {t('habits.rules.window', {
-                        count: rule.action.entityIds.length,
-                        range: formatMinuteRange(rule.trigger.startMinute, rule.trigger.endMinute),
-                      })}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <ShieldCheck className="h-4 w-4 text-white/55" />
-                    <Switch
-                      checked={rule.enabled}
-                      onCheckedChange={(checked) =>
-                        void useHabitStore.getState().saveRule({
-                          ...rule,
-                          enabled: checked,
-                          updatedAt: new Date().toISOString(),
-                        })
-                      }
-                    />
-                  </div>
-                </Panel>
-              ))}
-            </div>
-          ) : (
-            <Panel muted className="p-4 text-sm">
-              {t('habits.settings.rules.empty')}
-            </Panel>
-          )}
         </div>
       </SettingsItem>
 
@@ -181,7 +186,9 @@ export function SettingsHabitsSection({ controller }: { controller: SettingsSect
             onChange={setDebugEnabled}
             ariaLabel={t('habits.settings.debug.switchLabel')}
           />
-          <p className="text-sm text-white/65">{t('habits.settings.debug.helper')}</p>
+          <p className={`text-sm ${controller.styles.subtleColor}`}>
+            {t('habits.settings.debug.helper')}
+          </p>
 
           {debugEnabled ? (
             <Panel muted className="space-y-2 p-4 text-sm">
@@ -202,6 +209,22 @@ export function SettingsHabitsSection({ controller }: { controller: SettingsSect
           ) : null}
         </div>
       </SettingsItem>
+    </>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <SettingsSectionShell
+      id="habits"
+      icon={Brain}
+      title={t('habits.settings.sectionTitle')}
+      description={t('habits.settings.sectionDescription')}
+      styles={controller.styles}
+    >
+      {content}
     </SettingsSectionShell>
   );
 }

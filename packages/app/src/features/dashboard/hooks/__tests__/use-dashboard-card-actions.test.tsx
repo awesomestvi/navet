@@ -228,6 +228,57 @@ describe('useDashboardCardActions', () => {
     );
   });
 
+  it('adds a generic entity custom card for manual-only entities', () => {
+    const showAutoEntity = vi.fn();
+    const addCard = vi.fn(() => ({
+      id: 'custom-entity',
+      type: 'entity' as const,
+      size: 'small' as const,
+      room: 'Kitchen',
+      data: { entityId: 'home_assistant:todo.groceries' },
+      createdAt: 1,
+    }));
+    const addSection = vi.fn();
+    const updateCard = vi.fn();
+    const removeCard = vi.fn();
+    const hideAutoEntity = vi.fn();
+    const homeLayoutController = {
+      layout: {
+        mode: 'flow' as const,
+        sections: [],
+      },
+      addCard: vi.fn(),
+      removeCard: vi.fn(),
+      addSection,
+    };
+
+    const { result } = renderHook(() =>
+      useDashboardCardActions({
+        activeRoom: 'Kitchen',
+        activeSection: 'dashboard',
+        isEditMode: true,
+        addCard,
+        removeCard,
+        updateCard,
+        hideAutoEntity,
+        showAutoEntity,
+        t: (key: string) => key,
+        addCardTargetSectionId: null,
+        homeLayoutController,
+      })
+    );
+
+    act(() => {
+      result.current.handleAddGenericEntityCard('home_assistant:todo.groceries');
+    });
+
+    expect(addCard).toHaveBeenCalledWith('entity', 'small', 'Kitchen', {
+      entityId: 'home_assistant:todo.groceries',
+    });
+    expect(showAutoEntity).not.toHaveBeenCalled();
+    expect(toastSuccess).toHaveBeenCalledWith('dashboard.feedback.entityAdded');
+  });
+
   it('removes deleted custom widgets from the home layout', () => {
     const showAutoEntity = vi.fn();
     const addCard = vi.fn();

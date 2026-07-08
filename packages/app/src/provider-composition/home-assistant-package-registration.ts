@@ -62,6 +62,8 @@ export function createHomeAssistantAppProviderPackageRegistration({
         resolveMediaSource: (mediaContentId) =>
           homeAssistantService.resolveMediaSource(mediaContentId),
         getAutomationConfig: (entityId) => homeAssistantService.getAutomationConfig(entityId),
+        saveAutomationConfig: (configKey, config) =>
+          homeAssistantService.saveAutomationConfig(configKey, config),
         getCameraCapabilities: async (entityId) =>
           (await homeAssistantService.getCameraCapabilities(entityId)) as Record<string, unknown>,
         enableCameraMotionDetection: (entityId) =>

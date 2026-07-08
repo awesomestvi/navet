@@ -15,6 +15,7 @@ import type {
   HomeDashboardLayoutState,
   HomeDashboardSectionSpan,
 } from '../hooks/use-home-dashboard-layout';
+import type { DashboardPackId } from '../packs/dashboard-packs';
 import type { CustomCard } from '../stores/custom-cards-store';
 import {
   getRenderedRowLayouts,
@@ -32,6 +33,8 @@ export interface HomeDashboardOverviewProps {
   hiddenEntityCount: number;
   allCustomCards: CustomCard[];
   homeLayout: HomeDashboardLayoutState;
+  canRedoHomeLayout?: boolean;
+  canUndoHomeLayout?: boolean;
   removeHomeCard: (cardId: string) => void;
   moveHomeCard: (activeId: string, overId: string | null, sectionId?: string) => void;
   setHomeLayoutMode: (mode: HomeDashboardLayoutState['mode']) => void;
@@ -47,7 +50,10 @@ export interface HomeDashboardOverviewProps {
     newW: number,
     minWidthsBySection?: Record<string, number>
   ) => void;
+  redoHomeLayout?: () => void;
+  undoHomeLayout?: () => void;
   onOpenAddCardDialog?: (targetSectionId?: string) => void;
+  onApplyDashboardPack?: (packId: DashboardPackId) => void;
   onUpdateCard?: (cardId: string, data: Record<string, unknown>) => void;
   onToggleEditMode?: () => void;
   onNavigateSection?: (section: Section) => void;

@@ -9,8 +9,10 @@ export const svMessages = {
   'common.on': 'På',
   'common.open': 'Öppna',
   'common.cardUnavailable': 'Kort inte tillgangligt',
+  'common.redo': 'Gör om',
   'common.reset': 'Återställ',
   'common.restart': 'Starta om',
+  'common.undo': 'Ångra',
   'common.logout': 'Logga ut',
   'header.greeting.morning': 'God morgon, {name}!',
   'header.greeting.afternoon': 'God eftermiddag, {name}!',
@@ -89,6 +91,20 @@ export const svMessages = {
   'settings.dashboard.sectionTitle': 'Dashboard',
   'settings.dashboard.sectionDescription':
     'Hantera vad som visas på ytan och hur den lokala konfigurationen säkerhetskopieras.',
+  'settings.dashboard.profileMode.title': 'Dashboard-profil',
+  'settings.dashboard.profileMode.description':
+    'Använd en samordnad uppsättning för personliga webbläsare, väggpaneler eller lugna nattdisplayer.',
+  'settings.dashboard.profileMode.standard.title': 'Standard',
+  'settings.dashboard.profileMode.standard.description':
+    'Behåller full dashboard-krom, hälsning och sammanfattningsrad för vardagsanvändning.',
+  'settings.dashboard.profileMode.wallDisplay.title': 'Väggdisplay',
+  'settings.dashboard.profileMode.wallDisplay.description':
+    'Aktiverar kioskläge, håll vaken, klockrubrik, tät layout och sammanfattningsrad.',
+  'settings.dashboard.profileMode.bedside.title': 'Sängbord',
+  'settings.dashboard.profileMode.bedside.description':
+    'Använder kioskläge, håll vaken, klockrubrik och en lugnare layout utan sammanfattningsrad.',
+  'settings.dashboard.profileMode.custom.description':
+    'De aktuella dashboard-inställningarna matchar inte längre en sparad profil.',
   'settings.dashboard.headerTitle.title': 'Rubrik i sidhuvud',
   'settings.dashboard.headerTitle.description':
     'Välj vad den stora dashboard-rubriken ska visa i toppfältet.',
@@ -120,7 +136,6 @@ export const svMessages = {
   'settings.dashboard.keepAwake.caveat':
     'Navet försöker först använda webbläsarens wake lock och faller sedan tillbaka till tyst ljud om det behövs.',
   'settings.dashboard.keepAwake.statusLabel': 'Status för vakenhållning',
-  'settings.dashboard.keepAwake.experimental': 'Experimentellt',
   'settings.dashboard.keepAwake.bestEffort':
     'Funktionen är best effort. Navet fortsätter att försöka, men vissa inbyggda webbläsare och svagare skärmar kan fortfarande somna eller blockera autoplay.',
   'settings.dashboard.keepAwake.activateFallback': 'Tryck för att aktivera reservljud',
@@ -187,6 +202,9 @@ export const svMessages = {
   'settings.experimental.sectionTitle': 'Experimentellt',
   'settings.experimental.sectionDescription':
     'Valfria funktioner och enhetsbeteenden som fungerar i bästa fall medan stöd mellan webbläsare och väggpaneler fortfarande sätter sig.',
+  'settings.experimental.localHabits.title': 'Lokala vanor',
+  'settings.experimental.localHabits.description':
+    'Visa fliken Lokala vanor för privata rutinförslag och lokala regler på den här enheten.',
   'settings.system.sectionTitle': 'System',
   'settings.system.sectionDescription':
     'Anslutningsdetaljer, providerhantering och återställningsåtgärder för den här Navet-enheten.',
@@ -413,6 +431,14 @@ export const svMessages = {
   'dashboard.homeOverview.stats.visibleDevices': 'Synliga enheter',
   'dashboard.homeOverview.stats.featuredCards': 'Utvalda kort',
   'dashboard.homeOverview.stats.hiddenDevices': 'Dolda enheter',
+  'dashboard.packs.title': 'Förinställningar',
+  'dashboard.packs.commandCenter': 'Kommandocenter',
+  'dashboard.packs.securityMonitor': 'Säkerhetsvy',
+  'dashboard.packs.energyWall': 'Energivägg',
+  'dashboard.packs.confirmTitle': 'Tillämpa förinställningen?',
+  'dashboard.packs.confirmDescription':
+    'Detta ordnar om din Home-dashboard med förinställningen {name}.',
+  'dashboard.packs.confirmAction': 'Tillämpa förinställning',
   'dashboard.homePersonal.eyebrow': 'Personligt hem',
   'dashboard.homePersonal.title': 'Gor Hem till din dashboard, inte var.',
   'dashboard.homePersonal.description':
@@ -483,6 +509,8 @@ export const svMessages = {
   'calendar.event.openMap': 'Öppna karta',
   'dashboard.feedback.widgetAdded': 'Lade till widgeten {type} i {room}!',
   'dashboard.feedback.cardAddedToHome': 'Kort lades till på Hem',
+  'dashboard.feedback.packApplied': '{name} applicerades på Hem',
+  'dashboard.feedback.packEmpty': '{name} har inga matchande kort ännu',
   'dashboard.feedback.widgetDeleted': 'Widget borttagen',
   'dashboard.feedback.entityAdded': 'Enhet tillagd i dashboarden',
   'dashboard.feedback.entityRemoved': 'Enhet borttagen från dashboarden',
@@ -1214,6 +1242,7 @@ export const svMessages = {
   'tasks.automation.details.if': 'Om',
   'tasks.automation.details.then': 'Då',
   'tasks.automation.details.diagnostics': 'Diagnostik',
+  'tasks.automation.details.dependencies': 'Beroenden',
   'tasks.automation.details.noDescription':
     'Ingen beskrivning är tillgänglig för denna automation.',
   'tasks.automation.details.entityId': 'Enhets-id',
@@ -1642,6 +1671,9 @@ export const svMessages = {
   'energy.widgets.flow.branchSupply': 'Aktiv tillforsel in i hemmet',
   'energy.hero.eyebrow': 'Energiöversikt',
   'energy.hero.title': 'Energi i korthet.',
+  'energy.explainability.title': 'Varför det ser ut så här',
+  'energy.explainability.description':
+    'Navet förklarar livebelastningen med spårade enheter, nätflöde och lokal produktion.',
   'energy.hero.description': 'Aktuell last, dagens bild och enheterna bakom den.',
   'energy.hero.reconfigure': 'Konfigurera om',
   'energy.hero.reconfigureTitle': 'Konfigurera om energisensorer',
@@ -1693,10 +1725,23 @@ export const svMessages = {
   'habits.actions.dismiss': 'Avfarda',
   'habits.actions.remindLater': 'Inte nu',
   'habits.actions.createRule': 'Skapa regel',
+  'habits.confirmCreateRule.title': 'Skapa den har automatiseringen?',
+  'habits.confirmCreateRule.description':
+    'Navet lagger till den foreslagna rutinen hos din aktuella leverantor sa den visas med dina automatiseringar.',
+  'habits.confirmCreateRule.routine': 'Rutin',
+  'habits.confirmCreateRule.when': 'Nar',
+  'habits.confirmCreateRule.action': 'Atgard',
+  'habits.confirmCreateRule.devices': 'Enheter',
+  'habits.confirmCreateRule.deviceCount': '{count} enhet(er)',
+  'habits.confirmCreateRule.confidence': 'Sakerhet',
+  'habits.confirmCreateRule.safety':
+    'Navet skapar bara lagrisk-automatiseringar for ljus och brytare fran forklarbara lokala signaler.',
+  'habits.confirmCreateRule.actionButton': 'Skapa automatisering',
+  'habits.confirmCreateRule.createFailed': 'Kunde inte skapa leverantorens automatisering.',
   'habits.timeline.title': 'Senaste vanaaktivitet',
   'habits.timeline.dismissed': 'Forslag avfardat',
   'habits.timeline.remind_later': 'Forslag uppskjutet',
-  'habits.timeline.created_rule': 'Lokal regel skapad',
+  'habits.timeline.created_rule': 'Automatisering skapad',
   'habits.timeline.accepted': 'Forslag accepterat',
   'habits.timeline.undone': 'Forslag korrigerat',
   'habits.timeline.rule': 'Regel uppdaterad',
@@ -1731,6 +1776,7 @@ export const svMessages = {
     'Inga lokala regler an. Skapa en fran en foreslagen rutin nar du hittar en som passar bra.',
   'habits.rules.turnOn': 'Sla pa enhet',
   'habits.rules.turnOff': 'Sla av enhet',
+  'habits.rules.notify': 'Skicka avisering',
   'habits.rules.window': '{count} enhet(er) i tidsfonster {range}',
   'habits.settings.debug.title': 'Debugvy for utvecklare',
   'habits.settings.debug.description':

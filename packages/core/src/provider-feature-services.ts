@@ -1,6 +1,8 @@
 import type { EnergySourceConfig } from './energy-types';
+import type { HabitRule } from './habits';
 import type { IntegrationServiceTarget } from './integration-service-target';
 import type {
+  PlatformAutomationCreateResult,
   PlatformAutomationDetails,
   PlatformCalendarEvent,
   PlatformCalendarRequestOptions,
@@ -215,4 +217,8 @@ export interface ProviderTaskFeatureService {
   subscribeTaskRuntimeSnapshot: (listener: () => void) => () => void;
   getAutomationDetails: (entityId: string) => Promise<PlatformAutomationDetails>;
   triggerAutomation: (entityId: string) => Promise<void>;
+  createAutomationFromHabitRule?: (
+    rule: HabitRule,
+    options?: { name?: string; description?: string }
+  ) => Promise<PlatformAutomationCreateResult>;
 }

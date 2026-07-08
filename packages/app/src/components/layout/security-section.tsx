@@ -51,9 +51,13 @@ function filterSecuritySectionDevices(
 
 interface SecuritySectionProps {
   openAddEntityRequestKey?: number;
+  suppressEditActions?: boolean;
 }
 
-export function SecuritySection({ openAddEntityRequestKey = 0 }: SecuritySectionProps) {
+export function SecuritySection({
+  openAddEntityRequestKey = 0,
+  suppressEditActions = false,
+}: SecuritySectionProps) {
   const { t } = useI18n();
   const theme = useThemeMode();
   const surface = getThemeSurfaceTokens(theme);
@@ -158,8 +162,8 @@ export function SecuritySection({ openAddEntityRequestKey = 0 }: SecuritySection
           <SecurityCameraDashboard
             model={model}
             isEditMode={isEditMode}
-            onToggleEditMode={toggleEditMode}
-            onAddEntity={openAddEntityDialog}
+            onToggleEditMode={suppressEditActions ? undefined : toggleEditMode}
+            onAddEntity={suppressEditActions ? undefined : openAddEntityDialog}
             alarms={visibleAlarms}
             cardSizes={cardSizes}
             updateCardSize={updateCardSize}

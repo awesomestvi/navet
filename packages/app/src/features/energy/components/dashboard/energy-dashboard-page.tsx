@@ -52,6 +52,7 @@ import {
 } from 'lucide-react';
 import { type CSSProperties, memo, type ReactNode, useMemo, useState } from 'react';
 import { EnergyNowCardView } from '../widgets/energy-now-card-view';
+import { EnergyInsightCard } from './energy-insight-card';
 
 interface EnergyDashboardPageProps {
   dashboard: EnergyDashboardModel;
@@ -61,6 +62,7 @@ interface EnergyDashboardPageProps {
   isEditMode?: boolean;
   onOpenAddCardDialog?: () => void;
   onToggleEditMode?: () => void;
+  suppressEditActions?: boolean;
   onDeleteCard?: (cardId: string) => void;
   onUpdateCard?: (cardId: string, updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>) => void;
 }
@@ -115,6 +117,7 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
   isEditMode: controlledEditMode,
   onOpenAddCardDialog,
   onToggleEditMode,
+  suppressEditActions = false,
   onDeleteCard,
   onUpdateCard,
 }: EnergyDashboardPageProps) {
@@ -189,7 +192,7 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
   };
   const heroActions = (
     <div className="flex min-h-10 items-center justify-end gap-2">
-      {isEditMode ? (
+      {isEditMode && !suppressEditActions && onOpenAddCardDialog ? (
         <button
           type="button"
           onClick={onOpenAddCardDialog}
@@ -201,7 +204,9 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
           </span>
         </button>
       ) : null}
-      <SectionCustomizeButton isEditMode={isEditMode} onToggle={toggleEditMode} />
+      {isEditMode && suppressEditActions ? null : (
+        <SectionCustomizeButton isEditMode={isEditMode} onToggle={toggleEditMode} />
+      )}
     </div>
   );
   return (
@@ -234,6 +239,29 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
           surface={surface}
         />
       </section>
+
+      {dashboard.explanations.length > 0 ? (
+        <section className="space-y-3" aria-label={t('energy.explainability.title')}>
+          <div className="flex flex-col gap-1">
+            <h2 className={`text-base font-semibold ${surface.textPrimary}`}>
+              {t('energy.explainability.title')}
+            </h2>
+            <p className={`text-sm ${surface.textSecondary}`}>
+              {t('energy.explainability.description')}
+            </p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            {dashboard.explanations.map((explanation) => (
+              <EnergyInsightCard
+                key={explanation.id}
+                title={explanation.title}
+                description={explanation.description}
+                severity={explanation.tone === 'warn' ? 'warning' : 'default'}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section>
         <CompactLoadSparklines

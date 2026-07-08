@@ -97,6 +97,31 @@ describe('buildEnergyDashboardModel', () => {
     expect(
       getEnergyModeSummary(dashboard.mode, overview, dashboard.totals.renewableSharePct)
     ).toContain('Grid import');
+    expect(dashboard.explanations.map((explanation) => explanation.id)).toContain(
+      'grid-import-peak'
+    );
+  });
+
+  it('explains live load with tracked consumers and local generation', () => {
+    const overview = getMockEnergyOverview('today');
+
+    const dashboard = buildEnergyDashboardModel({
+      overview,
+      range: 'today',
+      trend: overview.trend,
+      periodTotals: { today: 24.8, week: 166.5, month: 707.2 },
+      sourceConfig: {
+        solarPowerEntityId: 'sensor.solar_power',
+        gridImportPowerEntityId: 'sensor.grid_import_power',
+        devices: [],
+      },
+    });
+
+    expect(dashboard.explanations.map((explanation) => explanation.id)).toEqual([
+      'top-live-driver',
+      'solar-offset',
+    ]);
+    expect(dashboard.explanations[0]?.affectedConsumerIds).toEqual([overview.topConsumers[0]?.id]);
   });
 
   it('does not expose instantaneous battery power as a today energy metric', () => {

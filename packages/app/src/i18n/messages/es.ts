@@ -9,8 +9,10 @@ export const esMessages = {
   'common.on': 'Encendido',
   'common.open': 'Abrir',
   'common.cardUnavailable': 'Tarjeta no disponible',
+  'common.redo': 'Rehacer',
   'common.reset': 'Restablecer',
   'common.restart': 'Reiniciar',
+  'common.undo': 'Deshacer',
   'common.logout': 'Cerrar sesión',
   'header.greeting.morning': 'Buenos días, {name}!',
   'header.greeting.afternoon': 'Buenas tardes, {name}!',
@@ -34,7 +36,7 @@ export const esMessages = {
   'settings.nav.localization': 'Localización',
   'settings.nav.interaction': 'Interacción',
   'settings.nav.dashboard': 'Panel',
-  'settings.nav.habits': 'Habitos',
+  'settings.nav.habits': 'Hábitos',
   'settings.nav.experimental': 'Experimental',
   'settings.nav.system': 'Sistema',
   'settings.nav.project': 'Proyecto',
@@ -90,6 +92,20 @@ export const esMessages = {
   'settings.dashboard.sectionTitle': 'Panel',
   'settings.dashboard.sectionDescription':
     'Gestiona qué aparece en el panel y cómo se respalda esta configuración local.',
+  'settings.dashboard.profileMode.title': 'Perfil del panel',
+  'settings.dashboard.profileMode.description':
+    'Aplica una configuración coordinada para navegadores personales, paneles de pared o pantallas nocturnas tranquilas.',
+  'settings.dashboard.profileMode.standard.title': 'Estándar',
+  'settings.dashboard.profileMode.standard.description':
+    'Mantiene la navegación completa, el saludo y la barra de resumen para el uso diario.',
+  'settings.dashboard.profileMode.wallDisplay.title': 'Pantalla de pared',
+  'settings.dashboard.profileMode.wallDisplay.description':
+    'Activa modo quiosco, mantener despierto, encabezado con reloj, diseño denso y barra de resumen.',
+  'settings.dashboard.profileMode.bedside.title': 'Mesita',
+  'settings.dashboard.profileMode.bedside.description':
+    'Usa modo quiosco, mantener despierto, reloj y un diseño más tranquilo sin barra de resumen.',
+  'settings.dashboard.profileMode.custom.description':
+    'La configuración actual del panel ya no coincide con un perfil guardado.',
   'settings.dashboard.headerTitle.title': 'Título del encabezado',
   'settings.dashboard.headerTitle.description':
     'Elige qué muestra el título grande del panel en la barra superior.',
@@ -120,7 +136,6 @@ export const esMessages = {
   'settings.dashboard.keepAwake.caveat':
     'Navet primero intenta usar wake lock del navegador y luego recurre a audio silencioso si hace falta.',
   'settings.dashboard.keepAwake.statusLabel': 'Estado de pantalla activa',
-  'settings.dashboard.keepAwake.experimental': 'Experimental',
   'settings.dashboard.keepAwake.bestEffort':
     'Solo funciona como best effort. Navet seguirá reintentándolo, pero algunos navegadores integrados y pantallas de bajo consumo aún pueden dormir o bloquear el autoplay.',
   'settings.dashboard.keepAwake.activateFallback': 'Tocar para activar el audio de respaldo',
@@ -188,6 +203,9 @@ export const esMessages = {
   'settings.experimental.sectionTitle': 'Experimental',
   'settings.experimental.sectionDescription':
     'Funciones opcionales y comportamientos del dispositivo de mejor esfuerzo que todavía se están asentando entre navegadores y paneles de pared.',
+  'settings.experimental.localHabits.title': 'Hábitos locales',
+  'settings.experimental.localHabits.description':
+    'Muestra la pestaña Hábitos locales para sugerencias privadas de rutinas y reglas locales en este dispositivo.',
   'settings.system.sectionTitle': 'Sistema',
   'settings.system.sectionDescription':
     'Detalles de conexión, gestión de proveedores y acciones de recuperación para este dispositivo Navet.',
@@ -416,6 +434,14 @@ export const esMessages = {
   'dashboard.homeOverview.stats.visibleDevices': 'Dispositivos visibles',
   'dashboard.homeOverview.stats.featuredCards': 'Tarjetas destacadas',
   'dashboard.homeOverview.stats.hiddenDevices': 'Dispositivos ocultos',
+  'dashboard.packs.title': 'Preajustes',
+  'dashboard.packs.commandCenter': 'Centro de mando',
+  'dashboard.packs.securityMonitor': 'Monitor de seguridad',
+  'dashboard.packs.energyWall': 'Muro de energía',
+  'dashboard.packs.confirmTitle': '¿Aplicar este preajuste?',
+  'dashboard.packs.confirmDescription':
+    'Esto reorganizará tu panel de Home usando el preajuste {name}.',
+  'dashboard.packs.confirmAction': 'Aplicar preajuste',
   'dashboard.homePersonal.eyebrow': 'Inicio personal',
   'dashboard.homePersonal.title': 'Haz que Inicio sea tu dashboard, no el nuestro.',
   'dashboard.homePersonal.description':
@@ -487,6 +513,8 @@ export const esMessages = {
   'calendar.event.openMap': 'Abrir mapa',
   'dashboard.feedback.widgetAdded': '¡Widget {type} agregado a {room}!',
   'dashboard.feedback.cardAddedToHome': 'Tarjeta agregada a Inicio',
+  'dashboard.feedback.packApplied': '{name} aplicado a Inicio',
+  'dashboard.feedback.packEmpty': '{name} aún no tiene tarjetas compatibles',
   'dashboard.feedback.widgetDeleted': 'Widget eliminado',
   'dashboard.feedback.entityAdded': 'Entidad agregada al panel',
   'dashboard.feedback.entityRemoved': 'Entidad eliminada del panel',
@@ -1226,6 +1254,7 @@ export const esMessages = {
   'tasks.automation.details.if': 'Si',
   'tasks.automation.details.then': 'Entonces',
   'tasks.automation.details.diagnostics': 'Diagnóstico',
+  'tasks.automation.details.dependencies': 'Dependencias',
   'tasks.automation.details.noDescription':
     'No hay descripción disponible para esta automatización.',
   'tasks.automation.details.entityId': 'Id de entidad',
@@ -1659,6 +1688,9 @@ export const esMessages = {
   'energy.widgets.flow.branchSupply': 'Suministro activo hacia el hogar',
   'energy.hero.eyebrow': 'Panel de energía',
   'energy.hero.title': 'Energía de un vistazo.',
+  'energy.explainability.title': 'Por qué se ve así',
+  'energy.explainability.description':
+    'Navet explica la carga en vivo usando dispositivos seguidos, flujo de red y generación local.',
   'energy.hero.description':
     'Carga en vivo, el resumen de hoy y los dispositivos que lo conforman.',
   'energy.hero.reconfigure': 'Reconfigurar',
@@ -1712,10 +1744,23 @@ export const esMessages = {
   'habits.actions.dismiss': 'Descartar',
   'habits.actions.remindLater': 'Ahora no',
   'habits.actions.createRule': 'Crear regla',
+  'habits.confirmCreateRule.title': 'Crear esta automatizacion?',
+  'habits.confirmCreateRule.description':
+    'Navet agregara esta rutina sugerida a tu proveedor actual para que aparezca con tus automatizaciones.',
+  'habits.confirmCreateRule.routine': 'Rutina',
+  'habits.confirmCreateRule.when': 'Cuando',
+  'habits.confirmCreateRule.action': 'Accion',
+  'habits.confirmCreateRule.devices': 'Dispositivos',
+  'habits.confirmCreateRule.deviceCount': '{count} dispositivo(s)',
+  'habits.confirmCreateRule.confidence': 'Confianza',
+  'habits.confirmCreateRule.safety':
+    'Navet solo crea automatizaciones de luces e interruptores de bajo riesgo a partir de evidencia local explicable.',
+  'habits.confirmCreateRule.actionButton': 'Crear automatizacion',
+  'habits.confirmCreateRule.createFailed': 'No se pudo crear la automatizacion del proveedor.',
   'habits.timeline.title': 'Actividad reciente de habitos',
   'habits.timeline.dismissed': 'Sugerencia descartada',
   'habits.timeline.remind_later': 'Sugerencia pospuesta',
-  'habits.timeline.created_rule': 'Regla local creada',
+  'habits.timeline.created_rule': 'Automatizacion creada',
   'habits.timeline.accepted': 'Sugerencia aceptada',
   'habits.timeline.undone': 'Sugerencia corregida',
   'habits.timeline.rule': 'Regla actualizada',
@@ -1751,6 +1796,7 @@ export const esMessages = {
     'Todavia no hay reglas locales. Crea una a partir de una rutina sugerida cuando veas una que encaje bien.',
   'habits.rules.turnOn': 'Encender dispositivo',
   'habits.rules.turnOff': 'Apagar dispositivo',
+  'habits.rules.notify': 'Enviar notificacion',
   'habits.rules.window': '{count} dispositivo(s) en la franja {range}',
   'habits.settings.debug.title': 'Vista de depuracion para desarrolladores',
   'habits.settings.debug.description':

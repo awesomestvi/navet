@@ -9,8 +9,10 @@ export const enMessages = {
   'common.on': 'On',
   'common.open': 'Open',
   'common.cardUnavailable': 'Card unavailable',
+  'common.redo': 'Redo',
   'common.reset': 'Reset',
   'common.restart': 'Restart',
+  'common.undo': 'Undo',
   'common.logout': 'Logout',
   'header.greeting.morning': 'Good morning, {name}!',
   'header.greeting.afternoon': 'Good afternoon, {name}!',
@@ -87,6 +89,20 @@ export const enMessages = {
   'settings.dashboard.sectionTitle': 'Dashboard',
   'settings.dashboard.sectionDescription':
     'Manage what appears on the board and how this local setup is backed up.',
+  'settings.dashboard.profileMode.title': 'Dashboard profile',
+  'settings.dashboard.profileMode.description':
+    'Apply a coordinated setup for personal browsers, wall panels, or quiet night displays.',
+  'settings.dashboard.profileMode.standard.title': 'Standard',
+  'settings.dashboard.profileMode.standard.description':
+    'Keeps the full dashboard chrome, greeting, and summary bar for everyday use.',
+  'settings.dashboard.profileMode.wallDisplay.title': 'Wall display',
+  'settings.dashboard.profileMode.wallDisplay.description':
+    'Enables kiosk mode, keep-awake, clock header, dense layout, and the summary bar.',
+  'settings.dashboard.profileMode.bedside.title': 'Bedside',
+  'settings.dashboard.profileMode.bedside.description':
+    'Uses kiosk mode, keep-awake, a clock header, and a calmer layout without the summary bar.',
+  'settings.dashboard.profileMode.custom.description':
+    'Current dashboard settings no longer match a saved preset.',
   'settings.dashboard.headerTitle.title': 'Header title',
   'settings.dashboard.headerTitle.description':
     'Choose what the large dashboard heading shows in the top bar.',
@@ -118,7 +134,6 @@ export const enMessages = {
   'settings.dashboard.keepAwake.caveat':
     'Navet first requests browser wake lock, then falls back to silent audio if needed.',
   'settings.dashboard.keepAwake.statusLabel': 'Keep-awake status',
-  'settings.dashboard.keepAwake.experimental': 'Experimental',
   'settings.dashboard.keepAwake.bestEffort':
     'Best effort only. Navet keeps retrying, but some embedded browsers and low-power displays may still sleep or block autoplay.',
   'settings.dashboard.keepAwake.activateFallback': 'Tap to activate fallback audio',
@@ -202,10 +217,23 @@ export const enMessages = {
   'habits.actions.dismiss': 'Dismiss',
   'habits.actions.remindLater': 'Not now',
   'habits.actions.createRule': 'Create rule',
+  'habits.confirmCreateRule.title': 'Create this automation?',
+  'habits.confirmCreateRule.description':
+    'Navet will add this suggested routine to your current provider when supported, or keep it local in Navet.',
+  'habits.confirmCreateRule.routine': 'Routine',
+  'habits.confirmCreateRule.when': 'When',
+  'habits.confirmCreateRule.action': 'Action',
+  'habits.confirmCreateRule.devices': 'Devices',
+  'habits.confirmCreateRule.deviceCount': '{count} device(s)',
+  'habits.confirmCreateRule.confidence': 'Confidence',
+  'habits.confirmCreateRule.safety':
+    'Navet only creates low-risk light and switch automations from explainable local evidence.',
+  'habits.confirmCreateRule.actionButton': 'Create automation',
+  'habits.confirmCreateRule.createFailed': 'Could not save this routine.',
   'habits.timeline.title': 'Recent habits activity',
   'habits.timeline.dismissed': 'Suggestion dismissed',
   'habits.timeline.remind_later': 'Suggestion snoozed',
-  'habits.timeline.created_rule': 'Local rule created',
+  'habits.timeline.created_rule': 'Automation created',
   'habits.timeline.accepted': 'Suggestion accepted',
   'habits.timeline.undone': 'Suggestion corrected',
   'habits.timeline.rule': 'Rule updated',
@@ -215,7 +243,7 @@ export const enMessages = {
   'habits.confidence.high': 'High confidence',
   'habits.settings.sectionTitle': 'Local habits',
   'habits.settings.sectionDescription':
-    'Private, explainable routine suggestions and local rules that run only on this Navet install.',
+    'Private, explainable routine suggestions that can become provider automations or local Navet rules when you approve them.',
   'habits.settings.enable.title': 'Enable local habits',
   'habits.settings.enable.description':
     'Let Navet learn from repeated manual light and switch actions on this device and suggest calm routines.',
@@ -225,21 +253,22 @@ export const enMessages = {
     'What Navet stores locally, and the hard limits that keep the feature boring and safe.',
   'habits.settings.privacy.localTitle': 'Stored only on this device',
   'habits.settings.privacy.localBody':
-    'Events, feedback, and created rules stay in local browser storage. Nothing is sent to a cloud service.',
+    'Events and feedback stay in local browser storage. Approved routines are saved to your current provider when supported, otherwise they stay local.',
   'habits.settings.privacy.safetyTitle': 'Security-sensitive devices are excluded',
   'habits.settings.privacy.safetyBody':
     'Locks, alarms, cameras, garage-like controls, and similar risky actions are blocked from suggestion and rule creation in v1.',
   'habits.settings.reset': 'Reset local habits data',
   'habits.settings.rules.title': 'Suggestions and rules',
   'habits.settings.rules.description':
-    'A quick summary of what Navet has learned, which local rules are active, and the rules you can still edit or turn off at any time.',
+    'A quick summary of what Navet has learned and which suggestions have become routines.',
   'habits.settings.rules.events': 'Journal events',
   'habits.settings.rules.suggestions': 'Suggestions',
-  'habits.settings.rules.activeRules': 'Active rules',
+  'habits.settings.rules.activeRules': 'Created routines',
   'habits.settings.rules.empty':
-    'No local rules yet. Create one from a suggested routine when you see a good match.',
-  'habits.rules.turnOn': 'Turn on device',
-  'habits.rules.turnOff': 'Turn off device',
+    'No created routines yet. Create one from a suggested routine when you see a good match.',
+  'habits.rules.turnOn': 'Turn selected devices on',
+  'habits.rules.turnOff': 'Turn selected devices off',
+  'habits.rules.notify': 'Send notification',
   'habits.rules.window': '{count} device(s) in window {range}',
   'habits.settings.debug.title': 'Developer debug view',
   'habits.settings.debug.description':
@@ -254,6 +283,9 @@ export const enMessages = {
   'settings.experimental.sectionTitle': 'Experimental',
   'settings.experimental.sectionDescription':
     'Opt-in features and best-effort device behaviors that are still settling across browsers and wall panels.',
+  'settings.experimental.localHabits.title': 'Local habits',
+  'settings.experimental.localHabits.description':
+    'Show the Local habits tab for private routine suggestions and local rules on this device.',
   'settings.system.sectionTitle': 'System',
   'settings.system.sectionDescription':
     'Connection details, provider management, and recovery actions for this Navet device.',
@@ -478,6 +510,14 @@ export const enMessages = {
   'dashboard.homeOverview.stats.visibleDevices': 'Visible devices',
   'dashboard.homeOverview.stats.featuredCards': 'Featured cards',
   'dashboard.homeOverview.stats.hiddenDevices': 'Hidden devices',
+  'dashboard.packs.title': 'Presets',
+  'dashboard.packs.commandCenter': 'Command center',
+  'dashboard.packs.securityMonitor': 'Security monitor',
+  'dashboard.packs.energyWall': 'Energy wall',
+  'dashboard.packs.confirmTitle': 'Apply this preset?',
+  'dashboard.packs.confirmDescription':
+    'This will rearrange your Home dashboard using the {name} preset.',
+  'dashboard.packs.confirmAction': 'Apply preset',
   'dashboard.homePersonal.eyebrow': 'Personal Home',
   'dashboard.homePersonal.title': 'Shape Home around how you use it.',
   'dashboard.homePersonal.description':
@@ -547,6 +587,8 @@ export const enMessages = {
   'calendar.event.openMap': 'Open Map',
   'dashboard.feedback.widgetAdded': 'Added {type} widget to {room}!',
   'dashboard.feedback.cardAddedToHome': 'Card added to Home',
+  'dashboard.feedback.packApplied': '{name} applied to Home',
+  'dashboard.feedback.packEmpty': '{name} has no matching cards yet',
   'dashboard.feedback.widgetDeleted': 'Widget deleted',
   'dashboard.feedback.entityAdded': 'Entity added to dashboard',
   'dashboard.feedback.entityRemoved': 'Entity removed from dashboard',
@@ -1278,6 +1320,7 @@ export const enMessages = {
   'tasks.automation.details.if': 'If',
   'tasks.automation.details.then': 'Then',
   'tasks.automation.details.diagnostics': 'Diagnostics',
+  'tasks.automation.details.dependencies': 'Dependencies',
   'tasks.automation.details.noDescription': 'No description is available for this automation.',
   'tasks.automation.details.entityId': 'Entity id',
   'tasks.automation.details.room': 'Room',
@@ -1703,6 +1746,9 @@ export const enMessages = {
   'energy.widgets.flow.branchSupply': 'Active supply into the home',
   'energy.hero.eyebrow': 'Energy Dashboard',
   'energy.hero.title': 'Energy at a glance.',
+  'energy.explainability.title': 'Why it looks this way',
+  'energy.explainability.description':
+    'Navet explains the live load using tracked devices, grid flow, and local generation.',
   'energy.hero.description': "Live load, today's story, and the devices shaping it.",
   'energy.hero.reconfigure': 'Reconfigure',
   'energy.hero.reconfigureTitle': 'Reconfigure energy sensors',

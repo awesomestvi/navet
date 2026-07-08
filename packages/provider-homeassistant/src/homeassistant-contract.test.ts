@@ -107,6 +107,7 @@ beforeEach(() => {
     browseMediaSource: vi.fn(async () => ({ title: 'Media' })),
     resolveMediaSource: vi.fn(async () => ({ url: '/media', mime_type: 'image/jpeg' })),
     getAutomationConfig: vi.fn(async () => ({ config: {} })),
+    saveAutomationConfig: vi.fn(async () => undefined),
     getCameraCapabilities: vi.fn(async () => ({ frontend_stream_types: [] })),
     enableCameraMotionDetection: vi.fn(async () => undefined),
     disableCameraMotionDetection: vi.fn(async () => undefined),

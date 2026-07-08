@@ -130,6 +130,11 @@ export interface PlatformAutomationDetails {
   config: Record<string, unknown>;
 }
 
+export interface PlatformAutomationCreateResult {
+  automationId: string;
+  entityId?: string;
+}
+
 export interface PlatformCalendarRequestOptions extends PlatformFeatureRequestOptions {
   startDateTime?: string;
   endDateTime?: string;

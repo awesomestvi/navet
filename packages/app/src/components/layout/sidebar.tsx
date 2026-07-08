@@ -124,6 +124,7 @@ export const Sidebar = memo(function Sidebar({
   const resolvedTextPrimary = textPrimary ?? surface.textPrimary;
   const resolvedTextSecondary = textSecondary ?? surface.textSecondary;
   const inactiveColor = `${surface.textMuted} ${resolvedHoverBg}`;
+  const sidebarDividerClass = theme === 'light' ? 'bg-slate-300/90' : 'bg-white/14';
   const [isMobileNavHidden, setIsMobileNavHidden] = useState(false);
   const [isOrbitOpen, setIsOrbitOpen] = useState(false);
   const [isSidebarCustomizationOpen, setIsSidebarCustomizationOpen] = useState(false);
@@ -304,9 +305,7 @@ export const Sidebar = memo(function Sidebar({
             {customMenuItems.length > 0 ? (
               <div
                 aria-hidden="true"
-                className={`mx-auto h-px w-6 rounded-full ${
-                  theme === 'light' ? 'bg-slate-300/90' : 'bg-white/14'
-                }`}
+                className={`mx-auto h-px w-6 rounded-full ${sidebarDividerClass}`}
               />
             ) : null}
             {customMenuItems.map((item) => (
@@ -346,6 +345,28 @@ export const Sidebar = memo(function Sidebar({
                 ) : null}
               </div>
             ))}
+            {isEditMode ? (
+              <>
+                <div
+                  aria-hidden="true"
+                  className={`mx-auto h-px w-6 rounded-full ${sidebarDividerClass}`}
+                />
+                <InteractivePill
+                  onClick={() => {
+                    setEditingSidebarActionId(null);
+                    setIsSidebarCustomizationOpen(true);
+                  }}
+                  aria-label="Customize sidebar"
+                  title="Customize sidebar"
+                  active={false}
+                  variant="ghost"
+                  className={`flex h-10 w-10 items-center justify-center rounded-[22px] gap-0 px-0 py-0 md:gap-0 md:px-0 transition-colors ${inactiveColor}`}
+                  disabled={customSidebarActions.length >= ADVANCED_CUSTOM_SIDEBAR_ACTION_LIMIT}
+                >
+                  <Plus className="h-5 w-5" />
+                </InteractivePill>
+              </>
+            ) : null}
           </div>
           <div className="flex flex-col gap-4">
             {homeAssistantShell.canToggleKiosk ? (
@@ -360,22 +381,6 @@ export const Sidebar = memo(function Sidebar({
                 className={`flex h-10 w-10 items-center justify-center rounded-[22px] gap-0 px-0 py-0 md:gap-0 md:px-0 transition-colors ${inactiveColor}`}
               >
                 <HomeAssistantSidebarIcon className="h-5 w-5" />
-              </InteractivePill>
-            ) : null}
-            {isEditMode ? (
-              <InteractivePill
-                onClick={() => {
-                  setEditingSidebarActionId(null);
-                  setIsSidebarCustomizationOpen(true);
-                }}
-                aria-label="Customize sidebar"
-                title="Customize sidebar"
-                active={false}
-                variant="ghost"
-                className={`flex h-10 w-10 items-center justify-center rounded-[22px] gap-0 px-0 py-0 md:gap-0 md:px-0 transition-colors ${inactiveColor}`}
-                disabled={customSidebarActions.length >= ADVANCED_CUSTOM_SIDEBAR_ACTION_LIMIT}
-              >
-                <Plus className="h-5 w-5" />
               </InteractivePill>
             ) : null}
           </div>

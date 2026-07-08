@@ -28,6 +28,11 @@ export interface HomeAssistantPanelHass {
       device_id?: string | string[];
     }
   ) => Promise<unknown>;
+  callApi?: <T = unknown>(
+    method: string,
+    path: string,
+    parameters?: Record<string, unknown>
+  ) => Promise<T>;
   callWS: <T = unknown>(message: Record<string, unknown>) => Promise<T>;
 }
 
@@ -110,6 +115,25 @@ export class HomeAssistantPanelAdapter {
     }
 
     await this.hass.callService(domain, service, normalizedServiceData, target);
+  }
+
+  async saveAutomationConfig(configKey: string, config: Record<string, unknown>): Promise<void> {
+    const path = `config/automation/config/${encodeURIComponent(configKey)}`;
+    if (this.hass.callApi) {
+      await this.hass.callApi('POST', path, config);
+      return;
+    }
+
+    const response = await fetch(`/api/${path}`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Home Assistant automation config save failed with ${response.status}`);
+    }
   }
 
   async loadRegistries(): Promise<{

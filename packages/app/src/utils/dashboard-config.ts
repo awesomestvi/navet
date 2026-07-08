@@ -540,6 +540,7 @@ const cardTypes = new Set<CardType>([
   'media-stack',
   'button',
   'map',
+  'entity',
 ]);
 const cardSizes = new Set(['small', 'medium', 'large', 'extra-large']);
 const MAX_IMPORTED_CARDS = 200;
@@ -917,6 +918,13 @@ export const importDashboardConfig = (
     settings.dashboardSpaceMode === 'default' || settings.dashboardSpaceMode === 'more_space'
       ? settings.dashboardSpaceMode
       : defaultSettings.dashboardSpaceMode;
+  const importedDashboardProfileMode =
+    settings.dashboardProfileMode === 'standard' ||
+    settings.dashboardProfileMode === 'wall_display' ||
+    settings.dashboardProfileMode === 'bedside' ||
+    settings.dashboardProfileMode === 'custom'
+      ? settings.dashboardProfileMode
+      : defaultSettings.dashboardProfileMode;
 
   useThemeStore.getState().applyImportedTheme({
     theme:
@@ -937,6 +945,7 @@ export const importDashboardConfig = (
   });
 
   setSettingsProfileSharedValues({
+    dashboardProfileMode: importedDashboardProfileMode,
     dashboardSpaceMode: importedDashboardSpaceMode,
     effectsQuality,
     headerCustomText: importedHeaderCustomText,
@@ -988,6 +997,9 @@ export const importDashboardConfig = (
     kioskMode: shouldSyncSettingToProfile('kioskMode')
       ? importedKioskMode
       : currentSettingsState.kioskMode,
+    dashboardProfileMode: shouldSyncSettingToProfile('dashboardProfileMode')
+      ? importedDashboardProfileMode
+      : currentSettingsState.dashboardProfileMode,
     dashboardSpaceMode: shouldSyncSettingToProfile('dashboardSpaceMode')
       ? importedDashboardSpaceMode
       : currentSettingsState.dashboardSpaceMode,

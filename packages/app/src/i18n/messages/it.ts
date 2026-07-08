@@ -12,8 +12,10 @@ export const itMessages = {
   'common.on': 'Acceso',
   'common.open': 'Apri',
   'common.cardUnavailable': 'Scheda non disponibile',
+  'common.redo': 'Ripeti',
   'common.reset': 'Reimposta',
   'common.restart': 'Riavvia',
+  'common.undo': 'Annulla',
   'common.logout': 'Esci',
   'common.close': 'Chiudi',
   'entityNameEditor.edit': 'Modifica {name}',
@@ -95,6 +97,20 @@ export const itMessages = {
   'settings.dashboard.sectionTitle': 'Dashboard',
   'settings.dashboard.sectionDescription':
     'Gestisci cosa appare sulla bacheca e come viene salvata la configurazione locale.',
+  'settings.dashboard.profileMode.title': 'Profilo dashboard',
+  'settings.dashboard.profileMode.description':
+    'Applica una configurazione coordinata per browser personali, pannelli a parete o display notturni tranquilli.',
+  'settings.dashboard.profileMode.standard.title': 'Standard',
+  'settings.dashboard.profileMode.standard.description':
+    'Mantiene navigazione completa, saluto e riepilogo per l’uso quotidiano.',
+  'settings.dashboard.profileMode.wallDisplay.title': 'Display a parete',
+  'settings.dashboard.profileMode.wallDisplay.description':
+    'Attiva modalità chiosco, tieni sveglio, intestazione orologio, layout denso e riepilogo.',
+  'settings.dashboard.profileMode.bedside.title': 'Comodino',
+  'settings.dashboard.profileMode.bedside.description':
+    'Usa modalità chiosco, tieni sveglio, orologio e un layout più calmo senza riepilogo.',
+  'settings.dashboard.profileMode.custom.description':
+    'Le impostazioni dashboard attuali non corrispondono più a un profilo salvato.',
   'settings.dashboard.headerTitle.title': 'Titolo intestazione',
   'settings.dashboard.headerTitle.description':
     'Scegli cosa mostra il grande titolo della dashboard nella barra superiore.',
@@ -125,7 +141,6 @@ export const itMessages = {
   'settings.dashboard.keepAwake.caveat':
     'Navet prova prima il wake lock del browser e poi passa all’audio silenzioso se serve.',
   'settings.dashboard.keepAwake.statusLabel': 'Stato del mantenimento attivo',
-  'settings.dashboard.keepAwake.experimental': 'Sperimentale',
   'settings.dashboard.keepAwake.bestEffort':
     'Solo best effort. Navet continuerà a riprovare, ma alcuni browser incorporati e schermi a basso consumo potrebbero comunque andare in standby o bloccare l’autoplay.',
   'settings.dashboard.keepAwake.activateFallback': 'Tocca per attivare l’audio di fallback',
@@ -192,6 +207,9 @@ export const itMessages = {
   'settings.experimental.sectionTitle': 'Sperimentale',
   'settings.experimental.sectionDescription':
     'Funzionalità opzionali e comportamenti del dispositivo best-effort che si stanno ancora assestando tra browser e pannelli a parete.',
+  'settings.experimental.localHabits.title': 'Abitudini locali',
+  'settings.experimental.localHabits.description':
+    'Mostra la scheda Abitudini locali per suggerimenti privati sulle routine e regole locali su questo dispositivo.',
   'settings.system.sectionTitle': 'Sistema',
   'settings.system.sectionDescription':
     'Dettagli di connessione, gestione provider e azioni di ripristino per questo dispositivo Navet.',
@@ -432,6 +450,8 @@ export const itMessages = {
   'dashboard.sections.itemCount.other': '{count} elementi',
   'dashboard.feedback.widgetAdded': 'Widget {type} aggiunto a {room}!',
   'dashboard.feedback.cardAddedToHome': 'Scheda aggiunta a Casa',
+  'dashboard.feedback.packApplied': '{name} applicato a Casa',
+  'dashboard.feedback.packEmpty': '{name} non ha ancora schede compatibili',
   'dashboard.feedback.widgetDeleted': 'Widget eliminato',
   'weather.today': 'Oggi',
   'weather.dayFallback': 'Giorno {day}',
@@ -642,6 +662,7 @@ export const itMessages = {
   'tasks.automation.details.if': 'Se',
   'tasks.automation.details.then': 'Allora',
   'tasks.automation.details.diagnostics': 'Diagnostica',
+  'tasks.automation.details.dependencies': 'Dipendenze',
   'tasks.automation.details.noDescription':
     'Nessuna descrizione disponibile per questa automazione.',
   'tasks.automation.details.entityId': 'ID entità',
@@ -667,6 +688,9 @@ export const itMessages = {
   'errorDisplay.connectionInterrupted': 'Ripristino necessario',
   'energy.hero.eyebrow': 'Dashboard energia',
   'energy.hero.title': 'Energia a colpo d’occhio.',
+  'energy.explainability.title': 'Perché appare così',
+  'energy.explainability.description':
+    'Navet spiega il carico live usando dispositivi monitorati, flusso di rete e produzione locale.',
   'energy.hero.description': 'Carico live, andamento di oggi e dispositivi che lo determinano.',
   'energy.hero.reconfigure': 'Riconfigura',
   'energy.hero.reconfigureTitle': 'Riconfigura sensori energia',
@@ -727,6 +751,14 @@ export const itMessages = {
   'dashboard.homeOverview.stats.visibleDevices': 'Dispositivi visibili',
   'dashboard.homeOverview.stats.featuredCards': 'Schede in evidenza',
   'dashboard.homeOverview.stats.hiddenDevices': 'Dispositivi nascosti',
+  'dashboard.packs.title': 'Preimpostazioni',
+  'dashboard.packs.commandCenter': 'Centro di comando',
+  'dashboard.packs.securityMonitor': 'Monitor sicurezza',
+  'dashboard.packs.energyWall': 'Parete energia',
+  'dashboard.packs.confirmTitle': 'Applicare questa preimpostazione?',
+  'dashboard.packs.confirmDescription':
+    'Questo riorganizzerà la dashboard Home usando la preimpostazione {name}.',
+  'dashboard.packs.confirmAction': 'Applica preimpostazione',
   'dashboard.homePersonal.eyebrow': 'Casa personale',
   'dashboard.homePersonal.title': 'Fai sentire Casa come la tua dashboard, non la nostra.',
   'dashboard.homePersonal.description':
@@ -1663,10 +1695,23 @@ export const itMessages = {
   'habits.actions.dismiss': 'Ignora',
   'habits.actions.remindLater': 'Non ora',
   'habits.actions.createRule': 'Crea regola',
+  'habits.confirmCreateRule.title': 'Creare questa automazione?',
+  'habits.confirmCreateRule.description':
+    'Navet aggiungera questa routine suggerita al provider corrente, cosi apparira con le tue automazioni.',
+  'habits.confirmCreateRule.routine': 'Routine',
+  'habits.confirmCreateRule.when': 'Quando',
+  'habits.confirmCreateRule.action': 'Azione',
+  'habits.confirmCreateRule.devices': 'Dispositivi',
+  'habits.confirmCreateRule.deviceCount': '{count} dispositivo/i',
+  'habits.confirmCreateRule.confidence': 'Affidabilita',
+  'habits.confirmCreateRule.safety':
+    'Navet crea solo automazioni a basso rischio per luci e interruttori da evidenze locali spiegabili.',
+  'habits.confirmCreateRule.actionButton': 'Crea automazione',
+  'habits.confirmCreateRule.createFailed': 'Impossibile creare l automazione del provider.',
   'habits.timeline.title': 'Attivita recenti delle abitudini',
   'habits.timeline.dismissed': 'Suggerimento ignorato',
   'habits.timeline.remind_later': 'Suggerimento rimandato',
-  'habits.timeline.created_rule': 'Regola locale creata',
+  'habits.timeline.created_rule': 'Automazione creata',
   'habits.timeline.accepted': 'Suggerimento accettato',
   'habits.timeline.undone': 'Suggerimento corretto',
   'habits.timeline.rule': 'Regola aggiornata',
@@ -1701,6 +1746,7 @@ export const itMessages = {
     'Nessuna regola locale per ora. Creane una da una routine suggerita quando ne trovi una adatta.',
   'habits.rules.turnOn': 'Accendi dispositivo',
   'habits.rules.turnOff': 'Spegni dispositivo',
+  'habits.rules.notify': 'Invia notifica',
   'habits.rules.window': '{count} dispositivo(i) nella fascia {range}',
   'habits.settings.debug.title': 'Vista di debug per sviluppatori',
   'habits.settings.debug.description':

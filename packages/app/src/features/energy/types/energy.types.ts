@@ -107,6 +107,14 @@ export interface EnergyWhatChanged {
   tone: 'default' | 'good' | 'warn';
 }
 
+export interface EnergyExplanation {
+  id: string;
+  title: string;
+  description: string;
+  tone: 'default' | 'good' | 'warn';
+  affectedConsumerIds: string[];
+}
+
 export interface EnergyNode {
   id: string;
   name: string;
@@ -189,6 +197,7 @@ export interface EnergyDashboardModel {
   selectedRange: EnergyRange;
   insights: EnergyInsight[];
   whatChanged: EnergyWhatChanged;
+  explanations: EnergyExplanation[];
   topConsumers: EnergyConsumer[];
   dataCoverage: {
     hasLiveLoad: boolean;

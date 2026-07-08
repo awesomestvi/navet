@@ -2,6 +2,7 @@ import type {
   EnergyConsumer,
   EnergyDashboardModel,
   EnergyDashboardScenario,
+  EnergyExplanation,
   EnergyFlowDatum,
   EnergyInsight,
   EnergyNode,
@@ -37,6 +38,10 @@ function cloneDashboard(dashboard: EnergyDashboardModel): EnergyDashboardModel {
     insights: dashboard.insights.map((insight) => ({
       ...insight,
       affectedNodeIds: [...insight.affectedNodeIds],
+    })),
+    explanations: dashboard.explanations.map((explanation) => ({
+      ...explanation,
+      affectedConsumerIds: [...explanation.affectedConsumerIds],
     })),
     topConsumers: dashboard.topConsumers.map((consumer) => ({ ...consumer })),
     whatChanged: { ...dashboard.whatChanged },
@@ -169,6 +174,23 @@ const defaultInsights: EnergyInsight[] = [
     title: 'Solar covered most of the lunch peak',
     description: 'PV covered 72% of household demand during the midday spike.',
     affectedNodeIds: ['solar', 'home'],
+  },
+];
+
+const defaultExplanations: EnergyExplanation[] = [
+  {
+    id: 'top-live-driver',
+    title: 'Heating loop is the biggest live driver',
+    description: '3.6 kW now, with 31% of tracked load today.',
+    tone: 'warn',
+    affectedConsumerIds: ['hvac'],
+  },
+  {
+    id: 'solar-offset',
+    title: 'Solar is offsetting live demand',
+    description: '4.2 kW of solar is covering about 82% of the current load.',
+    tone: 'good',
+    affectedConsumerIds: [],
   },
 ];
 
@@ -481,6 +503,7 @@ const defaultDashboard: EnergyDashboardModel = {
   },
   selectedRange: 'today',
   insights: defaultInsights,
+  explanations: defaultExplanations,
   whatChanged: {
     title: 'Heating stepped up before sunrise',
     description:

@@ -655,6 +655,9 @@ function getAllowedSizes(
     if (card.type === 'map') {
       return ['small', 'medium', 'large'];
     }
+    if (card.type === 'entity') {
+      return ['extra-small', 'small', 'medium', 'large'];
+    }
     if (card.type === 'ups') {
       return ['small', 'medium', 'large'];
     }
