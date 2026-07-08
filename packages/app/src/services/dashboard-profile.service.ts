@@ -22,6 +22,7 @@ export interface DashboardProfileLoadResult {
 export interface DashboardProfileSaveResult {
   saved: boolean;
   permanentFailure: boolean;
+  preconditionFailed: boolean;
   etag: string | null;
   lastModified: string | null;
   generation: string | null;
@@ -129,6 +130,7 @@ export async function saveDashboardProfile(
     return {
       saved: false,
       permanentFailure: true,
+      preconditionFailed: false,
       etag: null,
       lastModified: null,
       generation: null,
@@ -157,6 +159,7 @@ export async function saveDashboardProfile(
     return {
       saved: response.ok,
       permanentFailure: isPermanentProfileSaveFailure(response.status),
+      preconditionFailed: response.status === 412,
       ...metadata,
     };
   } catch (error) {
@@ -164,6 +167,7 @@ export async function saveDashboardProfile(
     return {
       saved: false,
       permanentFailure: false,
+      preconditionFailed: false,
       etag: null,
       lastModified: null,
       generation: null,

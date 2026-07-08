@@ -101,6 +101,7 @@ describe('dashboard add-on endpoints', () => {
     ).resolves.toEqual({
       saved: false,
       permanentFailure: true,
+      preconditionFailed: false,
       etag: '"etag-3"',
       lastModified: null,
       generation: null,
@@ -148,6 +149,7 @@ describe('dashboard add-on endpoints', () => {
     ).resolves.toEqual({
       saved: true,
       permanentFailure: false,
+      preconditionFailed: false,
       etag: '"etag-4"',
       lastModified: 'Wed, 03 Jan 2024 12:00:00 GMT',
       generation: null,
@@ -156,6 +158,42 @@ describe('dashboard add-on endpoints', () => {
     const headers = (fetchMock.mock.calls[0]?.[1] as RequestInit).headers as Headers;
     expect(headers.get('If-Match')).toBe('"etag-3"');
     expect(headers.get('If-Unmodified-Since')).toBeNull();
+  });
+
+  it('marks precondition failures so profile sync can refresh validators', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ error: 'Dashboard profile changed before save' }), {
+        status: 412,
+        headers: { ETag: '"etag-current"', 'Last-Modified': 'Thu, 04 Jan 2024 12:00:00 GMT' },
+      })
+    );
+
+    await expect(
+      saveDashboardProfile(
+        {
+          version: 3,
+          app: 'navet',
+          exportedAt: new Date().toISOString(),
+          theme: {
+            theme: 'glass',
+            primaryColor: 'blue',
+          },
+          settings: {},
+          navigation: {
+            currentRoom: 'all',
+            activeSection: 'home',
+          },
+        },
+        { etag: '"etag-stale"' }
+      )
+    ).resolves.toEqual({
+      saved: false,
+      permanentFailure: false,
+      preconditionFailed: true,
+      etag: '"etag-current"',
+      lastModified: 'Thu, 04 Jan 2024 12:00:00 GMT',
+      generation: null,
+    });
   });
 
   it('treats missing shared-profile endpoints as permanent write failures', async () => {
@@ -183,6 +221,7 @@ describe('dashboard add-on endpoints', () => {
     ).resolves.toEqual({
       saved: false,
       permanentFailure: true,
+      preconditionFailed: false,
       etag: null,
       lastModified: null,
       generation: null,

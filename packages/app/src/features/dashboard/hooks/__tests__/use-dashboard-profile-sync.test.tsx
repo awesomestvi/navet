@@ -216,6 +216,7 @@ describe('useDashboardProfileSync', () => {
     saveDashboardProfile.mockResolvedValue({
       saved: true,
       permanentFailure: false,
+      preconditionFailed: false,
       etag: '"saved"',
       lastModified: 'Mon, 01 Jan 2024 00:00:02 GMT',
       generation: 'server-1',
@@ -437,6 +438,7 @@ describe('useDashboardProfileSync', () => {
     saveDashboardProfile.mockResolvedValue({
       saved: true,
       permanentFailure: false,
+      preconditionFailed: false,
       etag: '"saved-2"',
       lastModified: 'Mon, 01 Jan 2024 00:00:02 GMT',
       generation: 'server-2',
@@ -512,6 +514,7 @@ describe('useDashboardProfileSync', () => {
     saveDashboardProfile.mockResolvedValue({
       saved: false,
       permanentFailure: false,
+      preconditionFailed: false,
       etag: null,
       lastModified: null,
       generation: 'server-1',
@@ -581,6 +584,7 @@ describe('useDashboardProfileSync', () => {
     saveDashboardProfile.mockResolvedValue({
       saved: true,
       permanentFailure: false,
+      preconditionFailed: false,
       etag: '"saved-local"',
       lastModified: 'Mon, 01 Jan 2024 00:01:02 GMT',
       generation: 'server-1',
@@ -636,6 +640,7 @@ describe('useDashboardProfileSync', () => {
       .mockResolvedValueOnce({
         saved: false,
         permanentFailure: false,
+        preconditionFailed: false,
         etag: null,
         lastModified: null,
         generation: 'server-1',
@@ -643,6 +648,7 @@ describe('useDashboardProfileSync', () => {
       .mockResolvedValueOnce({
         saved: true,
         permanentFailure: false,
+        preconditionFailed: false,
         etag: '"saved-local"',
         lastModified: 'Mon, 01 Jan 2024 00:01:02 GMT',
         generation: 'server-1',
@@ -715,6 +721,7 @@ describe('useDashboardProfileSync', () => {
     saveDashboardProfile.mockResolvedValue({
       saved: false,
       permanentFailure: false,
+      preconditionFailed: false,
       etag: null,
       lastModified: null,
       generation: 'server-1',
@@ -782,6 +789,7 @@ describe('useDashboardProfileSync', () => {
       .mockResolvedValueOnce({
         saved: false,
         permanentFailure: false,
+        preconditionFailed: false,
         etag: '"remote-2"',
         lastModified: 'Mon, 01 Jan 2024 00:01:05 GMT',
         generation: 'server-1',
@@ -789,6 +797,7 @@ describe('useDashboardProfileSync', () => {
       .mockResolvedValueOnce({
         saved: true,
         permanentFailure: false,
+        preconditionFailed: false,
         etag: '"saved-local"',
         lastModified: 'Mon, 01 Jan 2024 00:01:06 GMT',
         generation: 'server-1',
@@ -812,6 +821,82 @@ describe('useDashboardProfileSync', () => {
       etag: '"remote-1"',
       keepalive: undefined,
       lastModified: 'Mon, 01 Jan 2024 00:01:00 GMT',
+    });
+    expect(saveDashboardProfile).toHaveBeenNthCalledWith(2, currentProfile, {
+      etag: '"remote-2"',
+      keepalive: undefined,
+      lastModified: 'Mon, 01 Jan 2024 00:01:05 GMT',
+    });
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('refreshes validators and retries when a stale deployed profile save gets a precondition failure', async () => {
+    const remoteProfile = buildProfile({
+      exportedAt: '2024-01-01T00:01:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'green' },
+    });
+    loadDashboardProfile
+      .mockResolvedValueOnce({
+        available: true,
+        profile: null,
+        notModified: false,
+        etag: '"initial"',
+        lastModified: 'Mon, 01 Jan 2024 00:00:00 GMT',
+        generation: 'server-1',
+      })
+      .mockResolvedValueOnce({
+        available: true,
+        profile: null,
+        notModified: true,
+        etag: '"initial"',
+        lastModified: 'Mon, 01 Jan 2024 00:00:00 GMT',
+        generation: 'server-1',
+      })
+      .mockResolvedValueOnce({
+        available: true,
+        profile: remoteProfile,
+        notModified: false,
+        etag: '"remote-2"',
+        lastModified: 'Mon, 01 Jan 2024 00:01:05 GMT',
+        generation: 'server-1',
+      });
+    saveDashboardProfile
+      .mockResolvedValueOnce({
+        saved: false,
+        permanentFailure: false,
+        preconditionFailed: true,
+        etag: null,
+        lastModified: null,
+        generation: 'server-1',
+      })
+      .mockResolvedValueOnce({
+        saved: true,
+        permanentFailure: false,
+        preconditionFailed: false,
+        etag: '"saved-local"',
+        lastModified: 'Mon, 01 Jan 2024 00:01:06 GMT',
+        generation: 'server-1',
+      });
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    currentProfile = buildProfile({
+      exportedAt: '2024-01-01T00:00:05.000Z',
+      theme: { theme: 'glass', primaryColor: 'red' },
+    });
+    act(() => {
+      useThemeStore.setState({ ...useThemeStore.getState(), primaryColor: 'red' });
+    });
+
+    await advanceTime(2_000);
+
+    expect(loadDashboardProfile).toHaveBeenNthCalledWith(3);
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(2);
+    expect(saveDashboardProfile).toHaveBeenNthCalledWith(1, currentProfile, {
+      etag: '"initial"',
+      keepalive: undefined,
+      lastModified: 'Mon, 01 Jan 2024 00:00:00 GMT',
     });
     expect(saveDashboardProfile).toHaveBeenNthCalledWith(2, currentProfile, {
       etag: '"remote-2"',

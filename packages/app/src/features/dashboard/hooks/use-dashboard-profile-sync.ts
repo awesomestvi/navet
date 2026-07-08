@@ -695,6 +695,29 @@ export function useDashboardProfileSync() {
         });
       }
 
+      if (!result.saved && !options.keepalive && result.preconditionFailed) {
+        const refreshed = await loadDashboardProfile();
+
+        if (refreshed.available) {
+          failureCountRef.current = 0;
+          updateRemoteMetadata({
+            clearMissingValidators: !refreshed.notModified,
+            etag: refreshed.etag,
+            generation: refreshed.generation,
+            lastModified: refreshed.lastModified,
+            profile: refreshed.profile,
+          });
+
+          result = await saveDashboardProfile(profile, {
+            etag: refreshed.etag ?? undefined,
+            keepalive: options.keepalive,
+            lastModified: refreshed.lastModified ?? undefined,
+          });
+        } else {
+          failureCountRef.current += 1;
+        }
+      }
+
       savingRef.current = false;
 
       if (!result.saved) {
