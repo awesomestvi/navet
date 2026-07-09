@@ -1,6 +1,8 @@
 export const STORAGE_KEYS = {
   cardSizes: 'navet-card-sizes',
   mediaSectionCardSizes: 'navet-media-section-card-sizes',
+  mediaDefaultViews: 'navet-media-default-views',
+  mediaBrowserExpandedViews: 'navet-media-browser-expanded-views',
   cardOrders: 'navet-card-orders',
   roomOrder: 'navet-room-order',
   hiddenRooms: 'navet-hidden-rooms',
@@ -28,6 +30,8 @@ export const STORAGE_KEYS = {
 export const LEGACY_STORAGE_KEYS = {
   cardSizes: 'ha-dashboard-card-sizes',
   mediaSectionCardSizes: 'ha-dashboard-media-section-card-sizes',
+  mediaDefaultViews: 'ha-dashboard-media-default-views',
+  mediaBrowserExpandedViews: 'ha-dashboard-media-browser-expanded-views',
   cardOrders: 'ha-dashboard-card-orders',
   roomOrder: 'ha-dashboard-room-order',
   hiddenRooms: 'ha-dashboard-hidden-rooms',

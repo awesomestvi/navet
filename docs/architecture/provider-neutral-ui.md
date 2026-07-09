@@ -68,6 +68,9 @@ That is acceptable. Provider-aware work should stay in provider packages, or tem
 app-owned compatibility seams while extraction is in flight. Shared cards should still consume a
 stable view model.
 
+See [media-dashboard-provider-limitations.md](media-dashboard-provider-limitations.md) for the
+current media dashboard boundary, provider behavior, resource handling, and known limits.
+
 ## Compatibility Note
 
 The repo still contains compatibility hooks and derived device snapshots inside `@navet/app`. They

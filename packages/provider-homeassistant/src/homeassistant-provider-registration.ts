@@ -16,6 +16,7 @@ import {
 
 interface HomeAssistantBrowseNode {
   title?: string;
+  media_title?: string;
   media_class?: string;
   media_content_id?: string;
   media_content_type?: string;
@@ -23,6 +24,11 @@ interface HomeAssistantBrowseNode {
   can_expand?: boolean;
   can_play?: boolean;
   thumbnail?: string | null;
+  media_image_url?: string | null;
+  artist?: string;
+  media_artist?: string;
+  album?: string;
+  media_album_name?: string;
 }
 
 function mapHomeAssistantBrowseResult(result: HomeAssistantBrowseNode): {
@@ -34,16 +40,20 @@ function mapHomeAssistantBrowseResult(result: HomeAssistantBrowseNode): {
   canExpand?: boolean;
   canPlay?: boolean;
   thumbnail?: string | null;
+  artist?: string;
+  album?: string;
 } {
   return {
-    title: result.title ?? '',
+    title: result.media_title ?? result.title ?? '',
     mediaClass: result.media_class,
     mediaContentId: result.media_content_id,
     mediaContentType: result.media_content_type,
     children: result.children?.map(mapHomeAssistantBrowseResult),
     canExpand: result.can_expand,
     canPlay: result.can_play,
-    thumbnail: result.thumbnail ?? null,
+    thumbnail: result.thumbnail ?? result.media_image_url ?? null,
+    artist: result.artist ?? result.media_artist,
+    album: result.album ?? result.media_album_name,
   };
 }
 

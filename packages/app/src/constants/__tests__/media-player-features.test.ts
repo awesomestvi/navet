@@ -12,7 +12,13 @@ describe('getMediaPlayerCapabilities', () => {
     [
       'spotify speaker',
       4127295,
-      { canAnnounce: true, canBrowseMedia: true, canEnqueue: true, canSearchMedia: false },
+      {
+        canAnnounce: true,
+        canBrowseMedia: true,
+        canEnqueue: true,
+        canPause: true,
+        canSearchMedia: false,
+      },
     ],
     ['browse helper', 131072, { canBrowseMedia: true, canPlayMedia: false }],
     ['search helper', 4194304, { canSearchMedia: true, canPlayMedia: false }],

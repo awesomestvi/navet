@@ -143,6 +143,7 @@ export interface MediaDevice extends BaseDevice {
   room: string;
   title: string;
   artist: string;
+  album?: string;
   entityType?: string;
   deviceClass?: string;
   source?: string;

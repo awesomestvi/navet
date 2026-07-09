@@ -35,6 +35,7 @@ export interface MediaPlayerCapabilities {
   canGroup: boolean;
   canMuteVolume: boolean;
   canNextTrack: boolean;
+  canPause: boolean;
   canPlay: boolean;
   canPlayMedia: boolean;
   canPreviousTrack: boolean;
@@ -67,6 +68,7 @@ export function getMediaPlayerCapabilities(supportedFeatures: number): MediaPlay
     canGroup: hasMediaPlayerFeature(supportedFeatures, MEDIA_PLAYER_FEATURES.GROUPING),
     canMuteVolume: hasMediaPlayerFeature(supportedFeatures, MEDIA_PLAYER_FEATURES.VOLUME_MUTE),
     canNextTrack: hasMediaPlayerFeature(supportedFeatures, MEDIA_PLAYER_FEATURES.NEXT_TRACK),
+    canPause: hasMediaPlayerFeature(supportedFeatures, MEDIA_PLAYER_FEATURES.PAUSE),
     canPlay: hasMediaPlayerFeature(supportedFeatures, MEDIA_PLAYER_FEATURES.PLAY),
     canPlayMedia: hasMediaPlayerFeature(supportedFeatures, MEDIA_PLAYER_FEATURES.PLAY_MEDIA),
     canPreviousTrack: hasMediaPlayerFeature(

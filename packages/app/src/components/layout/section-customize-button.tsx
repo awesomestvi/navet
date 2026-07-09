@@ -1,6 +1,6 @@
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
-import { Check, Edit3 } from 'lucide-react';
+import { Check, Pencil } from 'lucide-react';
 
 interface SectionCustomizeButtonProps {
   isEditMode: boolean;
@@ -11,12 +11,14 @@ export function SectionCustomizeButton({ isEditMode, onToggle }: SectionCustomiz
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const label = isEditMode ? t('dashboard.roomNav.doneEditing') : t('dashboard.roomNav.customize');
 
   return (
     <button
       type="button"
       onClick={onToggle}
-      className={`inline-flex items-center gap-1.5 rounded-[22px] border px-2.5 py-1.5 text-xs font-medium transition-colors md:gap-2 md:px-3 md:py-2 md:text-sm ${
+      aria-label={label}
+      className={`inline-flex h-9 w-9 items-center justify-center rounded-[22px] text-xs font-medium transition-colors xl:w-auto xl:gap-2 xl:border xl:px-3 xl:text-sm ${
         isEditMode
           ? 'border-transparent text-white shadow-sm'
           : `${surface.border} ${surface.textSecondary} ${surface.hoverBg}`
@@ -25,16 +27,14 @@ export function SectionCustomizeButton({ isEditMode, onToggle }: SectionCustomiz
     >
       {isEditMode ? (
         <>
-          <Check className="h-4 w-4 text-white" />
-          <span className="hidden text-xs font-medium text-white md:inline">
-            {t('dashboard.roomNav.doneEditing')}
-          </span>
+          <Check className="h-5 w-5 text-white" />
+          <span className="hidden text-xs font-medium text-white xl:inline">{label}</span>
         </>
       ) : (
         <>
-          <Edit3 className={`h-4 w-4 ${surface.textSecondary}`} />
-          <span className={`hidden text-xs font-medium md:inline ${surface.textSecondary}`}>
-            {t('dashboard.roomNav.customize')}
+          <Pencil className={`h-5 w-5 ${surface.textSecondary}`} />
+          <span className={`hidden text-xs font-medium xl:inline ${surface.textSecondary}`}>
+            {label}
           </span>
         </>
       )}

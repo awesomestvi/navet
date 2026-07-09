@@ -105,6 +105,8 @@ interface MediaDialogPlaybackControlsProps {
   isPlaying: boolean;
   canNextTrack: boolean;
   canPreviousTrack: boolean;
+  canTogglePlayback: boolean;
+  canSeek: boolean;
   durationSeconds: number;
   elapsedSeconds: number;
   onCycleRepeat: () => void;
@@ -124,6 +126,8 @@ export function MediaDialogPlaybackControls({
   isPlaying,
   canNextTrack,
   canPreviousTrack,
+  canTogglePlayback,
+  canSeek,
   durationSeconds,
   elapsedSeconds,
   onCycleRepeat,
@@ -186,10 +190,17 @@ export function MediaDialogPlaybackControls({
           max={sliderMax}
           step={1}
           ariaLabel={t('media.seek')}
-          onValueChange={(value) => setPendingSeek(value)}
-          onValueCommit={(value) => onSeek(value)}
-          onInteractionStart={() => setIsSeeking(true)}
+          onValueChange={(value) => {
+            if (canSeek) setPendingSeek(value);
+          }}
+          onValueCommit={(value) => {
+            if (canSeek) onSeek(value);
+          }}
+          onInteractionStart={() => {
+            if (canSeek) setIsSeeking(true);
+          }}
           onInteractionEnd={() => setIsSeeking(false)}
+          disabled={!canSeek}
           rootClassName="relative flex h-6 w-full items-center touch-none select-none"
           trackClassName="relative h-[3px] grow rounded-full"
           rangeClassName="absolute h-full rounded-full"
@@ -246,8 +257,12 @@ export function MediaDialogPlaybackControls({
           size="large"
           variant="neutral"
           aria-label={isPlaying ? t('media.pausePlayback') : t('media.resumePlayback')}
-          onClick={onTogglePlay}
-          className="h-20 w-20 backdrop-blur-xl transition-colors"
+          disabled={!canTogglePlayback}
+          onClick={() => {
+            if (!canTogglePlayback) return;
+            onTogglePlay();
+          }}
+          className="h-20 w-20 backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
           iconStyle={transportIconStyle}
           style={controller.activeTransportStyle}
         >

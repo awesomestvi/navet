@@ -11,7 +11,7 @@ import { getClimateDashboardGroup } from '@navet/app/features/climate/utils/clim
 import { buildRoomStatusSummaryItems } from '@navet/app/features/sensors/components/home-status-summary-model';
 import { SummaryBar } from '@navet/app/features/sensors/components/info-badge-strip';
 import { useTaskRoutines } from '@navet/app/features/tasks/hooks/use-task-automation-groups';
-import { useI18n, useIntegrationStore, useMediaQuery, useTheme } from '@navet/app/hooks';
+import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
 import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { integrationSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
@@ -82,7 +82,6 @@ export function shouldSubscribeTaskRoutines(activeSection: DashboardController['
 
 function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterProps) {
   const { t } = useI18n();
-  const isMobileViewport = useMediaQuery('(max-width: 767px)');
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const manageableRoomsByProviderId = useIntegrationStore(
@@ -314,7 +313,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
             onToggle={onToggleEditMode ?? (() => {})}
             className="relative"
             actions={null}
-            showCustomizeButton={!isMobileViewport && !isEditMode}
+            showCustomizeButton={false}
           >
             <RenderProfiler id="ClimateSection">
               <div className="space-y-8">
@@ -401,7 +400,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
             onToggle={onToggleEditMode ?? (() => {})}
             className="relative"
             actions={null}
-            showCustomizeButton={!isMobileViewport && !isEditMode}
+            showCustomizeButton={false}
           >
             <RenderProfiler id="LightsSection">
               <Suspense fallback={<LoadingSpinner message={t('common.loading')} />}>
@@ -495,6 +494,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
             onAddEntity={headerAddAction}
             addEntityLabel={headerAddLabel}
             suppressEditActions={isEditMode}
+            showCustomizeButton={false}
           />
         )}
 

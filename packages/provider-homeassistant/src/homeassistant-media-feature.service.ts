@@ -1,8 +1,4 @@
-import type {
-  PlatformMediaBrowseResult,
-  PlatformMediaItem,
-  PlatformMessageClient,
-} from '@navet/core/provider-feature-models';
+import type { PlatformMessageClient } from '@navet/core/provider-feature-models';
 import type { ProviderMediaFeatureService } from '@navet/core/provider-feature-services';
 import {
   browseHomeAssistantMediaPlayer,
@@ -30,44 +26,13 @@ interface MediaThumbnailEnvelope {
   content?: string;
 }
 
-interface MediaBrowseNode {
-  title?: string;
-  media_class?: string;
-  media_content_id?: string;
-  media_content_type?: string;
-  children?: MediaBrowseNode[];
-  can_expand?: boolean;
-  can_play?: boolean;
-  thumbnail?: string | null;
-}
-
 let mediaThumbnailCommandSupported: boolean | null = null;
-
-function mapMediaItem(item: MediaBrowseNode): PlatformMediaItem {
-  return {
-    title: item.title ?? '',
-    mediaClass: item.media_class,
-    mediaContentId: item.media_content_id,
-    mediaContentType: item.media_content_type,
-    children: item.children?.map(mapMediaItem),
-    canExpand: item.can_expand,
-    canPlay: item.can_play,
-    thumbnail: item.thumbnail ?? null,
-  };
-}
-
-function mapMediaBrowseResult(result: MediaBrowseNode): PlatformMediaBrowseResult {
-  return mapMediaItem(result);
-}
 
 export const homeAssistantMediaFeatureService: ProviderMediaFeatureService = {
   playMedia: (entityId, media) => playHomeAssistantMedia(entityId, media),
-  browseMediaPlayer: async (entityId, media) =>
-    mapMediaBrowseResult(await browseHomeAssistantMediaPlayer(entityId, media)),
+  browseMediaPlayer: (entityId, media) => browseHomeAssistantMediaPlayer(entityId, media),
   searchMediaPlayer: (entityId, query, media) =>
-    searchHomeAssistantMediaPlayer(entityId, query, media).then((result) =>
-      mapMediaBrowseResult(result)
-    ),
+    searchHomeAssistantMediaPlayer(entityId, query, media),
   selectMediaPlayerSource: (entityId, source) =>
     selectHomeAssistantMediaPlayerSource(entityId, source),
   selectMediaPlayerSoundMode: (entityId, soundMode) =>
@@ -76,8 +41,7 @@ export const homeAssistantMediaFeatureService: ProviderMediaFeatureService = {
   clearMediaPlayerPlaylist: (entityId) => clearHomeAssistantMediaPlayerPlaylist(entityId),
   updateMediaPlayerPower: (entityId, state) => updateHomeAssistantMediaPlayerPower(entityId, state),
   sendRemoteCommand: (entityId, command) => sendHomeAssistantRemoteCommand(entityId, command),
-  browseMediaSource: async (mediaContentId) =>
-    mapMediaBrowseResult(await browseHomeAssistantMediaSource(mediaContentId)),
+  browseMediaSource: (mediaContentId) => browseHomeAssistantMediaSource(mediaContentId),
   resolveMediaSource: async (mediaContentId) => {
     const resolved = await resolveHomeAssistantMediaSource(mediaContentId);
     return {

@@ -40,6 +40,7 @@ export interface HomeAssistantEntityRegistryEntry {
 
 export interface HomeAssistantMediaSourceItem {
   title: string;
+  media_title?: string;
   media_class: string;
   media_content_id: string;
   media_content_type?: string;
@@ -47,10 +48,16 @@ export interface HomeAssistantMediaSourceItem {
   can_expand?: boolean;
   can_play?: boolean;
   thumbnail?: string | null;
+  media_image_url?: string | null;
+  artist?: string;
+  media_artist?: string;
+  album?: string;
+  media_album_name?: string;
 }
 
 export interface HomeAssistantMediaBrowseResult {
   title?: string;
+  media_title?: string;
   media_class?: string;
   media_content_id?: string;
   media_content_type?: string;
@@ -58,10 +65,16 @@ export interface HomeAssistantMediaBrowseResult {
   can_expand?: boolean;
   can_play?: boolean;
   thumbnail?: string | null;
+  media_image_url?: string | null;
+  artist?: string;
+  media_artist?: string;
+  album?: string;
+  media_album_name?: string;
 }
 
 export interface HomeAssistantMediaSearchResult {
   title?: string;
+  media_title?: string;
   media_class?: string;
   media_content_id?: string;
   media_content_type?: string;

@@ -117,6 +117,8 @@ export function MediaDialogContent({
   onSeek,
   canNextTrack,
   canPreviousTrack,
+  canSeek,
+  canTogglePlayback = true,
   onSelectSource,
   onToggleMute,
   onTogglePlay,
@@ -217,6 +219,8 @@ export function MediaDialogContent({
         isPlaying={isPlaying}
         canNextTrack={canNextTrack}
         canPreviousTrack={canPreviousTrack}
+        canSeek={canSeek ?? capabilities.canSeek}
+        canTogglePlayback={canTogglePlayback}
         durationSeconds={durationSeconds}
         elapsedSeconds={elapsedSeconds}
         onCycleRepeat={onCycleRepeat}

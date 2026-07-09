@@ -1,5 +1,4 @@
 import { useAuthBaseUrl } from '@navet/app/auth/AuthProvider';
-import { SectionCustomizeButton } from '@navet/app/components/layout/section-customize-button';
 import { DashboardHeroSection } from '@navet/app/components/patterns';
 import { BaseCard, InteractivePill } from '@navet/app/components/primitives';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
@@ -116,7 +115,6 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
   energyOrderedCardIds = [],
   isEditMode: controlledEditMode,
   onOpenAddCardDialog,
-  onToggleEditMode,
   suppressEditActions = false,
   onDeleteCard,
   onUpdateCard,
@@ -124,7 +122,7 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
   const { t } = useI18n();
   const haBaseUrl = useAuthBaseUrl();
   const { theme, accentColor } = useTheme();
-  const [uncontrolledEditMode, setUncontrolledEditMode] = useState(false);
+  const [uncontrolledEditMode] = useState(false);
   const [hiddenConsumerIds, setHiddenConsumerIds] = usePersistedState<string[]>(
     STORAGE_KEYS.energyHiddenConsumerIds,
     []
@@ -168,14 +166,6 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
   const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
   const importedTodayLabel = `${formatEnergyValue(dashboard.totals.importTodayKWh)} kWh`;
   const generatedTodayLabel = `${formatEnergyValue(dashboard.totals.solarTodayKWh)} kWh`;
-  const toggleEditMode = () => {
-    if (onToggleEditMode) {
-      onToggleEditMode();
-      return;
-    }
-
-    setUncontrolledEditMode((previous) => !previous);
-  };
   const handleConsumerVisibilityChange = (consumerId: string, visible: boolean) => {
     setHiddenConsumerIds((previous) => {
       const nextSet = new Set(previous);
@@ -204,9 +194,6 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
           </span>
         </button>
       ) : null}
-      {isEditMode && suppressEditActions ? null : (
-        <SectionCustomizeButton isEditMode={isEditMode} onToggle={toggleEditMode} />
-      )}
     </div>
   );
   return (

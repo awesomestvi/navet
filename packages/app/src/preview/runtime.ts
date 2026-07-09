@@ -7,10 +7,12 @@ import { createProviderScopedId } from '@navet/app/utils/provider-ids';
 import type { NavetProviderContract } from '@navet/core/provider-contract';
 import type {
   PlatformAutomationDetails,
+  PlatformMediaBrowseResult,
   PlatformTaskRuntimeSnapshot,
 } from '@navet/core/provider-feature-models';
 import type {
   ProviderLightFeatureService,
+  ProviderMediaFeatureService,
   ProviderSecurityFeatureService,
   ProviderTaskFeatureService,
 } from '@navet/core/provider-feature-services';
@@ -976,6 +978,97 @@ const previewLightFeatureService: ProviderLightFeatureService = {
   },
 };
 
+const PREVIEW_MEDIA_LIBRARY: PlatformMediaBrowseResult = {
+  title: 'Media Library',
+  mediaClass: 'directory',
+  children: [
+    {
+      title: 'Recently played',
+      mediaClass: 'directory',
+      mediaContentId: 'preview:recently-played',
+      mediaContentType: 'track',
+      canExpand: true,
+      canPlay: false,
+    },
+    {
+      title: 'Made for the morning',
+      mediaClass: 'playlist',
+      mediaContentId: 'preview:playlist:morning',
+      mediaContentType: 'playlist',
+      canExpand: false,
+      canPlay: true,
+    },
+  ],
+};
+
+const PREVIEW_RECENT_MEDIA: PlatformMediaBrowseResult = {
+  title: 'Recently played',
+  mediaClass: 'directory',
+  mediaContentId: 'preview:recently-played',
+  mediaContentType: 'track',
+  children: [
+    {
+      title: 'Olalla',
+      artist: 'Blanco White',
+      album: 'On the Other Side',
+      mediaClass: 'track',
+      mediaContentId: 'preview:track:olalla',
+      mediaContentType: 'track',
+      canExpand: false,
+      canPlay: true,
+    },
+    {
+      title: 'Above the Clouds of Pompeii',
+      artist: "Bear's Den",
+      album: 'Islands',
+      mediaClass: 'track',
+      mediaContentId: 'preview:track:pompeii',
+      mediaContentType: 'track',
+      canExpand: false,
+      canPlay: true,
+    },
+    {
+      title: 'Bed Head',
+      artist: 'Manchester Orchestra',
+      album: 'The Million Masks of God',
+      mediaClass: 'track',
+      mediaContentId: 'preview:track:bed-head',
+      mediaContentType: 'track',
+      canExpand: false,
+      canPlay: true,
+    },
+  ],
+};
+
+function getPreviewMediaBrowseResult(mediaContentId?: string) {
+  return mediaContentId === PREVIEW_RECENT_MEDIA.mediaContentId
+    ? PREVIEW_RECENT_MEDIA
+    : PREVIEW_MEDIA_LIBRARY;
+}
+
+const previewMediaFeatureService: ProviderMediaFeatureService = {
+  playMedia: async () => undefined,
+  browseMediaPlayer: async (_entityId, media) => getPreviewMediaBrowseResult(media?.mediaContentId),
+  searchMediaPlayer: async (_entityId, query) => ({
+    title: `Search: ${query}`,
+    mediaClass: 'directory',
+    children: PREVIEW_RECENT_MEDIA.children?.filter((item) =>
+      `${item.title} ${item.artist ?? ''} ${item.album ?? ''}`
+        .toLowerCase()
+        .includes(query.toLowerCase())
+    ),
+  }),
+  selectMediaPlayerSource: async () => undefined,
+  selectMediaPlayerSoundMode: async () => undefined,
+  seekMediaPlayer: async () => undefined,
+  clearMediaPlayerPlaylist: async () => undefined,
+  updateMediaPlayerPower: async () => undefined,
+  sendRemoteCommand: async () => undefined,
+  browseMediaSource: async (mediaContentId) => getPreviewMediaBrowseResult(mediaContentId),
+  resolveMediaSource: async (mediaContentId) => ({ url: mediaContentId }),
+  fetchMediaThumbnailDataUrl: async () => null,
+};
+
 const previewSecurityFeatureService: ProviderSecurityFeatureService = {
   lockEntity: async (entityId) =>
     updatePreviewEntity(entityId, (entity) =>
@@ -1149,8 +1242,8 @@ const previewProviderPackageRegistration: ProviderPackageRegistration = {
       sensors: true,
       climate: true,
       mediaControls: true,
-      mediaBrowse: false,
-      mediaArtwork: false,
+      mediaBrowse: true,
+      mediaArtwork: true,
       cameraSnapshot: true,
       cameraStreams: false,
       energyNow: false,
@@ -1160,6 +1253,7 @@ const previewProviderPackageRegistration: ProviderPackageRegistration = {
       tasks: true,
     },
     lightFeatureService: previewLightFeatureService,
+    mediaFeatureService: previewMediaFeatureService,
     securityFeatureService: previewSecurityFeatureService,
     taskFeatureService: previewTaskFeatureService,
     entityRuntimeService: createPreviewEntityRuntimeService({

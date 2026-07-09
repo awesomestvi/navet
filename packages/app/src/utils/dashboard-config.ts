@@ -115,6 +115,7 @@ export function resetDashboardProfileState() {
 
   [
     STORAGE_KEYS.cardSizes,
+    STORAGE_KEYS.mediaDefaultViews,
     STORAGE_KEYS.cardOrders,
     STORAGE_KEYS.cardZones,
     STORAGE_KEYS.homeDashboardLayout,
@@ -147,6 +148,7 @@ export function resetDashboardProfileState() {
   resetStore(useHomeDashboardLayoutStore);
 
   notifyPersistedStateChanged(STORAGE_KEYS.cardSizes, {});
+  notifyPersistedStateChanged(STORAGE_KEYS.mediaDefaultViews, {});
   notifyPersistedStateChanged(STORAGE_KEYS.cardOrders, {});
   notifyPersistedStateChanged(STORAGE_KEYS.roomOrder, []);
 }

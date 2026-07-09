@@ -1,4 +1,4 @@
-import { getMediaPlayerCapabilities } from '@navet/app/constants/media-player-features';
+import type { NavetMediaCapabilities } from '@navet/app/core/navet-device-state';
 import { renderHookWithProviders } from '@navet/app/test/render';
 import { act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -65,6 +65,31 @@ vi.mock('../use-media-artwork-resolution', () => ({
 
 import { useMediaCardController } from '../use-media-card-controller';
 
+const mediaCapabilities: NavetMediaCapabilities = {
+  canAnnounce: false,
+  canBrowseMedia: true,
+  canClearPlaylist: true,
+  canEnqueue: false,
+  canGroup: false,
+  canMuteVolume: true,
+  canNextTrack: true,
+  canPause: true,
+  canPlay: true,
+  canPlayMedia: true,
+  canPreviousTrack: true,
+  canRepeat: true,
+  canSearchMedia: false,
+  canSeek: true,
+  canSelectSoundMode: true,
+  canSelectSource: true,
+  canSetVolume: true,
+  canShuffle: true,
+  canStop: false,
+  canTurnOff: true,
+  canTurnOn: true,
+  canVolumeStep: false,
+};
+
 const defaultParams = {
   entityId: 'media_player.kitchen',
   entityName: 'Kitchen TV',
@@ -74,7 +99,7 @@ const defaultParams = {
   initialState: 'idle' as const,
   initialVolume: 20,
   initialMuted: false,
-  initialMediaCapabilities: getMediaPlayerCapabilities(448439),
+  initialMediaCapabilities: mediaCapabilities,
 };
 
 function setMediaEntities(includeRemote: boolean) {
@@ -84,7 +109,6 @@ function setMediaEntities(includeRemote: boolean) {
       state: 'idle',
       attributes: {
         device_class: 'tv',
-        supported_features: 448439,
         volume_level: 0.2,
         is_volume_muted: false,
       },
@@ -184,11 +208,13 @@ describe('useMediaCardController', () => {
     expect(serviceMock.sendRemoteCommand).toHaveBeenCalledWith('remote.kitchen', 'DPAD_CENTER');
   });
 
-  it('exposes capability-driven media actions from supported feature flags', () => {
+  it('exposes capability-driven media actions from normalized capabilities', () => {
     const { result } = renderHookWithProviders(() => useMediaCardController(defaultParams));
 
     expect(result.current.mediaCapabilities.canBrowseMedia).toBe(true);
     expect(result.current.mediaCapabilities.canSeek).toBe(true);
+    expect(result.current.mediaCapabilities.canPause).toBe(true);
+    expect(result.current.canTogglePlayback).toBe(true);
 
     act(() => result.current.seekTo(30));
     act(() => result.current.selectSoundMode('Movie'));
@@ -200,5 +226,22 @@ describe('useMediaCardController', () => {
       'Movie'
     );
     expect(serviceMock.clearMediaPlayerPlaylist).toHaveBeenCalledWith('media_player.kitchen');
+  });
+
+  it('does not seek Spotify account media players even when Home Assistant advertises seek', () => {
+    const { result } = renderHookWithProviders(() =>
+      useMediaCardController({
+        ...defaultParams,
+        entityId: 'media_player.spotify_premium',
+        entityName: 'Spotify Premium',
+        deviceClass: undefined,
+      })
+    );
+
+    expect(result.current.mediaCapabilities.canSeek).toBe(false);
+
+    act(() => result.current.seekTo(30));
+
+    expect(serviceMock.seekMediaPlayer).not.toHaveBeenCalled();
   });
 });

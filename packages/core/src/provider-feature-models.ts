@@ -9,6 +9,8 @@ export interface PlatformMediaItem {
   canExpand?: boolean;
   canPlay?: boolean;
   thumbnail?: string | null;
+  artist?: string;
+  album?: string;
 }
 
 export interface PlatformMediaBrowseResult extends PlatformMediaItem {}

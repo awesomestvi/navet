@@ -7,6 +7,7 @@ import {
   getMediaEntityTypeKey,
   type MediaEntityTypeKey,
 } from '@navet/app/features/media/components/media-card/get-media-entity-type-key';
+import { MediaDashboard } from '@navet/app/features/media/components/media-dashboard/media-dashboard';
 import {
   useDeviceCollectionsByKeys,
   useEditMode,
@@ -53,6 +54,20 @@ const AUDIO_MEDIA_TYPE_KEYS = new Set<MediaEntityTypeKey>([
   'media.type.receiver',
   'media.type.soundbar',
 ]);
+
+function isActiveAudioDevice(device: MediaSectionDevice) {
+  if (device.state !== 'playing' && device.state !== 'paused') {
+    return false;
+  }
+
+  return AUDIO_MEDIA_TYPE_KEYS.has(getMediaEntityTypeKey(device.entityType, device.deviceClass));
+}
+
+function isSpotifyAccountDevice(device: MediaSectionDevice) {
+  return (
+    device.id.toLowerCase().includes('spotify') || device.name.toLowerCase().includes('spotify')
+  );
+}
 
 export function buildMediaSections(
   mediaDevices: MediaSectionDevice[],
@@ -195,7 +210,11 @@ export function MediaSection() {
   );
 
   const sections = useMemo(() => {
-    return buildMediaSections(mediaDevices, {
+    const sectionDevices = isEditMode
+      ? mediaDevices
+      : mediaDevices.filter((device) => !isSpotifyAccountDevice(device));
+
+    return buildMediaSections(sectionDevices, {
       audioTitle,
       audioSingular,
       audioPlural,
@@ -208,13 +227,19 @@ export function MediaSection() {
     audioPlural,
     audioSingular,
     audioTitle,
+    isEditMode,
     mediaDevices,
     tvPlural,
     tvSingular,
     tvTitle,
     typeLabels,
   ]);
-
+  const featuredMediaDevice = useMemo(
+    () =>
+      mediaDevices.find((device) => device.state === 'playing' && isActiveAudioDevice(device)) ??
+      mediaDevices.find(isActiveAudioDevice),
+    [mediaDevices]
+  );
   if (allMediaDevices.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-6">
@@ -249,8 +274,12 @@ export function MediaSection() {
       onToggle={toggleEditMode}
       className="relative space-y-8"
       actions={isMobileViewport ? null : addHiddenEntityAction}
-      showCustomizeButton={!isMobileViewport}
+      showCustomizeButton={false}
     >
+      {!isEditMode ? (
+        <MediaDashboard devices={mediaDevices} initialDeviceId={featuredMediaDevice?.id} />
+      ) : null}
+
       {sections.length > 0 ? (
         sections.map((section) => (
           <EntityGrid
@@ -267,7 +296,7 @@ export function MediaSection() {
             usesHideAction
           />
         ))
-      ) : (
+      ) : isEditMode ? (
         <div className="flex h-full items-center justify-center p-6 pt-14">
           <DashboardEmptyState
             icon={Tv}
@@ -279,7 +308,7 @@ export function MediaSection() {
             className="w-full max-w-md"
           />
         </div>
-      )}
+      ) : null}
 
       {isAddEntityDialogOpen ? (
         <Suspense fallback={null}>

@@ -1,7 +1,7 @@
 import { CardEmptyState } from '@navet/app/components/patterns';
 import { BaseCard } from '@navet/app/components/primitives';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
-import { getMediaPlayerCapabilities } from '@navet/app/constants/media-player-features';
+import { EMPTY_NAVET_MEDIA_CAPABILITIES } from '@navet/app/core/navet-device-state';
 import { MediaCard } from '@navet/app/features/media';
 import type { MediaStackIdleBehavior } from '@navet/app/features/media/components/media/media-dialog.types';
 import { useAreaRooms, useDeviceCollectionsByKeys, useI18n } from '@navet/app/hooks';
@@ -42,7 +42,7 @@ function sortPlayers(left: MediaDevice, right: MediaDevice) {
 
 const noopCardSizeChange = () => {};
 const noop = () => {};
-const EMPTY_CAPABILITIES = getMediaPlayerCapabilities(0);
+const EMPTY_CAPABILITIES = EMPTY_NAVET_MEDIA_CAPABILITIES;
 const MediaDialog = lazy(async () => {
   const module = await import('@navet/app/features/media/components/media/media-dialog');
   return { default: module.MediaDialog };
@@ -246,7 +246,6 @@ export const MediaStackWidget = memo(function MediaStackWidget({
       supportsGrouping={selection.device.supportsGrouping}
       supportsPreviousTrack={selection.device.supportsPreviousTrack}
       supportsNextTrack={selection.device.supportsNextTrack}
-      supportedFeatures={selection.device.supportedFeatures}
       groupMembers={selection.device.groupMembers}
       size={size}
       onSizeChange={noopCardSizeChange}

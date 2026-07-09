@@ -55,6 +55,7 @@ interface RoomNavProps {
   onAddEntity?: () => void;
   addEntityLabel?: string;
   suppressEditActions?: boolean;
+  showCustomizeButton?: boolean;
 }
 
 interface RoomNavItemProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> {
@@ -184,6 +185,7 @@ export const RoomNav = memo(function RoomNav({
   onAddEntity,
   addEntityLabel = 'Add Entity',
   suppressEditActions = false,
+  showCustomizeButton = true,
 }: RoomNavProps) {
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
@@ -440,7 +442,7 @@ export const RoomNav = memo(function RoomNav({
               />
             ) : null}
 
-            {showEditActions ? (
+            {showEditActions && showCustomizeButton ? (
               <InteractivePill
                 onClick={onToggleEditMode}
                 active={isEditMode}

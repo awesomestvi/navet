@@ -53,6 +53,7 @@ interface MediaMediumViewProps {
   elapsedSeconds: number;
   durationSeconds: number;
   theme: ThemeType;
+  hideTransportControls?: boolean;
   repeatMode: 'off' | 'one' | 'all';
   shuffleEnabled: boolean;
   canRepeat: boolean;
@@ -64,8 +65,10 @@ interface MediaMediumViewProps {
   onPrevious: () => void;
   canPreviousTrack: boolean;
   onTogglePlay: () => void;
+  canTogglePlayback: boolean;
   onNext: () => void;
   canNextTrack: boolean;
+  canSeek: boolean;
   onToggleMute: () => void;
   onVolumeChange: (value: number) => void;
   onVolumeInteractionStart: () => void;
@@ -88,6 +91,7 @@ export function MediaMediumView({
   elapsedSeconds,
   durationSeconds,
   theme,
+  hideTransportControls = false,
   repeatMode,
   shuffleEnabled,
   canRepeat,
@@ -99,8 +103,10 @@ export function MediaMediumView({
   onPrevious,
   canPreviousTrack,
   onTogglePlay,
+  canTogglePlayback,
   onNext,
   canNextTrack,
+  canSeek,
   onToggleMute,
   onVolumeChange,
   onVolumeInteractionStart,
@@ -252,265 +258,273 @@ export function MediaMediumView({
                 />
               </div>
 
-              <div className="relative">
-                <RoundControlButton
-                  theme={theme}
-                  size="small"
-                  variant="neutral"
-                  aria-label={isPlaying ? t('media.pausePlayback') : t('media.resumePlayback')}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onTogglePlay();
-                  }}
-                  className="h-8.5 w-8.5 backdrop-blur-xl transition-colors"
-                  iconStyle={controlIconStyle}
-                  style={subduedFallback ? undefined : activeUtilityButtonStyle}
+              {!hideTransportControls ? (
+                <div className="relative">
+                  <RoundControlButton
+                    theme={theme}
+                    size="small"
+                    variant="neutral"
+                    aria-label={isPlaying ? t('media.pausePlayback') : t('media.resumePlayback')}
+                    disabled={!canTogglePlayback}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (!canTogglePlayback) return;
+                      onTogglePlay();
+                    }}
+                    className="h-8.5 w-8.5 backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+                    iconStyle={controlIconStyle}
+                    style={subduedFallback ? undefined : activeUtilityButtonStyle}
+                  >
+                    {isPlaying ? (
+                      <Pause className={primaryControlSizes.icon} fill="currentColor" />
+                    ) : (
+                      <Play className={primaryControlSizes.icon} fill="currentColor" />
+                    )}
+                  </RoundControlButton>
+                </div>
+              ) : null}
+            </div>
+
+            {!hideTransportControls ? (
+              <div className="flex items-center gap-2">
+                <span
+                  className={`shrink-0 text-[10px] tabular-nums ${subtitleTone}`}
+                  style={readableForeground.subtitleStyle}
                 >
-                  {isPlaying ? (
-                    <Pause className={primaryControlSizes.icon} fill="currentColor" />
-                  ) : (
-                    <Play className={primaryControlSizes.icon} fill="currentColor" />
-                  )}
-                </RoundControlButton>
+                  {formatMediaTime(hasSeekDuration ? Math.max(0, pendingSeek) : 0)}
+                </span>
+                <Slider
+                  value={hasSeekDuration ? Math.min(durationSeconds, pendingSeek) : 0}
+                  min={0}
+                  max={hasSeekDuration ? Math.max(durationSeconds, elapsedSeconds, pendingSeek) : 1}
+                  step={1}
+                  ariaLabel={t('media.seek')}
+                  onValueChange={(value) => {
+                    if (hasSeekDuration && canSeek) {
+                      setPendingSeek(value);
+                    }
+                  }}
+                  onValueCommit={(value) => {
+                    if (hasSeekDuration && canSeek) {
+                      onSeek(value);
+                    }
+                  }}
+                  onInteractionStart={() => {
+                    if (hasSeekDuration && canSeek) {
+                      setIsSeeking(true);
+                    }
+                  }}
+                  onInteractionEnd={() => {
+                    if (hasSeekDuration) {
+                      setIsSeeking(false);
+                    }
+                  }}
+                  disabled={!hasSeekDuration || !canSeek}
+                  rootClassName="relative flex h-4 min-w-0 flex-1 items-center touch-none select-none"
+                  trackClassName="relative h-[3px] grow rounded-full"
+                  rangeClassName="absolute h-full rounded-full"
+                  thumbClassName="block h-3 w-3 rounded-full outline-none"
+                  touchThumbClassName="block h-6 w-6 rounded-full outline-none"
+                  trackStyle={trackBaseStyle}
+                  rangeStyle={trackFillStyle}
+                  thumbStyle={trackThumbStyle}
+                />
+                <span
+                  className={`shrink-0 text-[10px] tabular-nums ${subtitleTone}`}
+                  style={readableForeground.subtitleStyle}
+                >
+                  {hasSeekDuration ? durationLabel : formatMediaTime(0)}
+                </span>
               </div>
-            </div>
+            ) : null}
 
-            <div className="flex items-center gap-2">
-              <span
-                className={`shrink-0 text-[10px] tabular-nums ${subtitleTone}`}
-                style={readableForeground.subtitleStyle}
-              >
-                {formatMediaTime(hasSeekDuration ? Math.max(0, pendingSeek) : 0)}
-              </span>
-              <Slider
-                value={hasSeekDuration ? Math.min(durationSeconds, pendingSeek) : 0}
-                min={0}
-                max={hasSeekDuration ? Math.max(durationSeconds, elapsedSeconds, pendingSeek) : 1}
-                step={1}
-                ariaLabel={t('media.seek')}
-                onValueChange={(value) => {
-                  if (hasSeekDuration) {
-                    setPendingSeek(value);
-                  }
-                }}
-                onValueCommit={(value) => {
-                  if (hasSeekDuration) {
-                    onSeek(value);
-                  }
-                }}
-                onInteractionStart={() => {
-                  if (hasSeekDuration) {
-                    setIsSeeking(true);
-                  }
-                }}
-                onInteractionEnd={() => {
-                  if (hasSeekDuration) {
-                    setIsSeeking(false);
-                  }
-                }}
-                disabled={!hasSeekDuration}
-                rootClassName="relative flex h-4 min-w-0 flex-1 items-center touch-none select-none"
-                trackClassName="relative h-[3px] grow rounded-full"
-                rangeClassName="absolute h-full rounded-full"
-                thumbClassName="block h-3 w-3 rounded-full outline-none"
-                touchThumbClassName="block h-6 w-6 rounded-full outline-none"
-                trackStyle={trackBaseStyle}
-                rangeStyle={trackFillStyle}
-                thumbStyle={trackThumbStyle}
-              />
-              <span
-                className={`shrink-0 text-[10px] tabular-nums ${subtitleTone}`}
-                style={readableForeground.subtitleStyle}
-              >
-                {hasSeekDuration ? durationLabel : formatMediaTime(0)}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1.5 pt-0.5">
-              <RoundControlButton
-                theme={theme}
-                size="small"
-                variant="neutral"
-                aria-label={isVolumeMode ? t('media.muteVolume') : t('media.volume')}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  if (isVolumeMode) {
-                    registerVolumeInteraction();
-                    onToggleMute();
-                    return;
-                  }
-                  toggleVolumeMode();
-                }}
-                className="h-7.5 w-7.5 backdrop-blur-xl transition-colors"
-                iconStyle={controlIconStyle}
-                style={
-                  subduedFallback
-                    ? undefined
-                    : isVolumeMode
-                      ? muteButtonStyle
-                      : volumeToggleButtonStyle
-                }
-              >
-                {isVolumeMode ? (
-                  <VolumeX className={controlSizes.icon} />
-                ) : (
-                  <Volume2 className={controlSizes.icon} />
-                )}
-              </RoundControlButton>
-
-              <div className="relative flex-1 px-1.5">
-                {isVolumeMode ? (
-                  <Slider
-                    value={displayVolume}
-                    ariaLabel={t('media.volume')}
-                    onValueChange={(value) => {
-                      registerVolumeInteraction();
-                      onVolumeChange(value);
-                    }}
-                    onInteractionStart={() => {
-                      registerVolumeInteraction();
-                      onVolumeInteractionStart();
-                    }}
-                    onInteractionEnd={onVolumeInteractionEnd}
-                    rootClassName="relative flex h-5 w-full items-center touch-none select-none"
-                    trackClassName="relative h-[3px] grow rounded-full"
-                    rangeClassName="absolute h-full rounded-full"
-                    thumbClassName="block h-3.5 w-3.5 rounded-full outline-none"
-                    touchThumbClassName="block h-6 w-6 rounded-full outline-none"
-                    trackStyle={trackBaseStyle}
-                    rangeStyle={trackFillStyle}
-                    thumbStyle={trackThumbStyle}
-                  />
-                ) : null}
-              </div>
-
-              {isVolumeMode ? (
+            {!hideTransportControls ? (
+              <div className="flex items-center gap-1.5 pt-0.5">
                 <RoundControlButton
                   theme={theme}
                   size="small"
                   variant="neutral"
-                  aria-label={t('media.volume')}
+                  aria-label={isVolumeMode ? t('media.muteVolume') : t('media.volume')}
                   onClick={(event) => {
                     event.stopPropagation();
-                    registerVolumeInteraction();
-                    onVolumeChange(100);
+                    if (isVolumeMode) {
+                      registerVolumeInteraction();
+                      onToggleMute();
+                      return;
+                    }
+                    toggleVolumeMode();
                   }}
                   className="h-7.5 w-7.5 backdrop-blur-xl transition-colors"
                   iconStyle={controlIconStyle}
-                  style={subduedFallback ? undefined : activeUtilityButtonStyle}
+                  style={
+                    subduedFallback
+                      ? undefined
+                      : isVolumeMode
+                        ? muteButtonStyle
+                        : volumeToggleButtonStyle
+                  }
                 >
-                  <Volume2 className={controlSizes.icon} />
+                  {isVolumeMode ? (
+                    <VolumeX className={controlSizes.icon} />
+                  ) : (
+                    <Volume2 className={controlSizes.icon} />
+                  )}
                 </RoundControlButton>
-              ) : (
-                <>
-                  {canShuffle ? (
-                    <RoundControlButton
-                      theme={theme}
-                      size="small"
-                      variant="neutral"
-                      aria-label={shuffleEnabled ? t('media.shuffle') : t('media.linearPlayback')}
-                      aria-pressed={shuffleEnabled}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onToggleShuffle();
+
+                <div className="relative flex-1 px-1.5">
+                  {isVolumeMode ? (
+                    <Slider
+                      value={displayVolume}
+                      ariaLabel={t('media.volume')}
+                      onValueChange={(value) => {
+                        registerVolumeInteraction();
+                        onVolumeChange(value);
                       }}
-                      className="h-7.5 w-7.5 backdrop-blur-xl transition-colors"
-                      iconStyle={controlIconStyle}
-                      style={
-                        subduedFallback
-                          ? undefined
-                          : shuffleEnabled
-                            ? activeUtilityButtonStyle
-                            : neutralButtonStyle
-                      }
-                    >
-                      {shuffleEnabled ? (
-                        <Shuffle className={controlSizes.icon} />
-                      ) : (
-                        <span className="relative flex items-center justify-center">
+                      onInteractionStart={() => {
+                        registerVolumeInteraction();
+                        onVolumeInteractionStart();
+                      }}
+                      onInteractionEnd={onVolumeInteractionEnd}
+                      rootClassName="relative flex h-5 w-full items-center touch-none select-none"
+                      trackClassName="relative h-[3px] grow rounded-full"
+                      rangeClassName="absolute h-full rounded-full"
+                      thumbClassName="block h-3.5 w-3.5 rounded-full outline-none"
+                      touchThumbClassName="block h-6 w-6 rounded-full outline-none"
+                      trackStyle={trackBaseStyle}
+                      rangeStyle={trackFillStyle}
+                      thumbStyle={trackThumbStyle}
+                    />
+                  ) : null}
+                </div>
+
+                {isVolumeMode ? (
+                  <RoundControlButton
+                    theme={theme}
+                    size="small"
+                    variant="neutral"
+                    aria-label={t('media.volume')}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      registerVolumeInteraction();
+                      onVolumeChange(100);
+                    }}
+                    className="h-7.5 w-7.5 backdrop-blur-xl transition-colors"
+                    iconStyle={controlIconStyle}
+                    style={subduedFallback ? undefined : activeUtilityButtonStyle}
+                  >
+                    <Volume2 className={controlSizes.icon} />
+                  </RoundControlButton>
+                ) : (
+                  <>
+                    {canShuffle ? (
+                      <RoundControlButton
+                        theme={theme}
+                        size="small"
+                        variant="neutral"
+                        aria-label={shuffleEnabled ? t('media.shuffle') : t('media.linearPlayback')}
+                        aria-pressed={shuffleEnabled}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onToggleShuffle();
+                        }}
+                        className="h-7.5 w-7.5 backdrop-blur-xl transition-colors"
+                        iconStyle={controlIconStyle}
+                        style={
+                          subduedFallback
+                            ? undefined
+                            : shuffleEnabled
+                              ? activeUtilityButtonStyle
+                              : neutralButtonStyle
+                        }
+                      >
+                        {shuffleEnabled ? (
                           <Shuffle className={controlSizes.icon} />
-                          <Slash
-                            className={offToggleSlashClassName}
-                            style={mirroredOffToggleSlashStyle}
-                          />
-                        </span>
-                      )}
-                    </RoundControlButton>
-                  ) : null}
+                        ) : (
+                          <span className="relative flex items-center justify-center">
+                            <Shuffle className={controlSizes.icon} />
+                            <Slash
+                              className={offToggleSlashClassName}
+                              style={mirroredOffToggleSlashStyle}
+                            />
+                          </span>
+                        )}
+                      </RoundControlButton>
+                    ) : null}
 
-                  {canRepeat ? (
+                    {canRepeat ? (
+                      <RoundControlButton
+                        theme={theme}
+                        size="small"
+                        variant="neutral"
+                        aria-label={
+                          repeatMode === 'one'
+                            ? t('media.repeatOne')
+                            : repeatMode === 'all'
+                              ? t('media.repeatAll')
+                              : t('media.repeatOff')
+                        }
+                        aria-pressed={repeatMode !== 'off'}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onCycleRepeat();
+                        }}
+                        className="h-7.5 w-7.5 backdrop-blur-xl transition-colors"
+                        iconStyle={controlIconStyle}
+                        style={
+                          subduedFallback
+                            ? undefined
+                            : repeatMode !== 'off'
+                              ? activeUtilityButtonStyle
+                              : neutralButtonStyle
+                        }
+                      >
+                        {repeatMode === 'off' ? (
+                          <RepeatOff className={controlSizes.icon} />
+                        ) : repeatMode === 'one' ? (
+                          <Repeat1 className={controlSizes.icon} />
+                        ) : (
+                          <Repeat className={controlSizes.icon} />
+                        )}
+                      </RoundControlButton>
+                    ) : null}
+
                     <RoundControlButton
                       theme={theme}
                       size="small"
                       variant="neutral"
-                      aria-label={
-                        repeatMode === 'one'
-                          ? t('media.repeatOne')
-                          : repeatMode === 'all'
-                            ? t('media.repeatAll')
-                            : t('media.repeatOff')
-                      }
-                      aria-pressed={repeatMode !== 'off'}
+                      aria-label={t('media.previousTrack')}
+                      disabled={!canPreviousTrack}
                       onClick={(event) => {
                         event.stopPropagation();
-                        onCycleRepeat();
+                        onPrevious();
                       }}
-                      className="h-7.5 w-7.5 backdrop-blur-xl transition-colors"
+                      className="h-7.5 w-7.5 backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
                       iconStyle={controlIconStyle}
-                      style={
-                        subduedFallback
-                          ? undefined
-                          : repeatMode !== 'off'
-                            ? activeUtilityButtonStyle
-                            : neutralButtonStyle
-                      }
+                      style={subduedFallback ? undefined : activeUtilityButtonStyle}
                     >
-                      {repeatMode === 'off' ? (
-                        <RepeatOff className={controlSizes.icon} />
-                      ) : repeatMode === 'one' ? (
-                        <Repeat1 className={controlSizes.icon} />
-                      ) : (
-                        <Repeat className={controlSizes.icon} />
-                      )}
+                      <SkipBack className={controlSizes.icon} />
                     </RoundControlButton>
-                  ) : null}
 
-                  <RoundControlButton
-                    theme={theme}
-                    size="small"
-                    variant="neutral"
-                    aria-label={t('media.previousTrack')}
-                    disabled={!canPreviousTrack}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onPrevious();
-                    }}
-                    className="h-7.5 w-7.5 backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
-                    iconStyle={controlIconStyle}
-                    style={subduedFallback ? undefined : activeUtilityButtonStyle}
-                  >
-                    <SkipBack className={controlSizes.icon} />
-                  </RoundControlButton>
-
-                  <RoundControlButton
-                    theme={theme}
-                    size="small"
-                    variant="neutral"
-                    aria-label={t('media.nextTrack')}
-                    disabled={!canNextTrack}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onNext();
-                    }}
-                    className="h-7.5 w-7.5 backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
-                    iconStyle={controlIconStyle}
-                    style={subduedFallback ? undefined : activeUtilityButtonStyle}
-                  >
-                    <SkipForward className={controlSizes.icon} />
-                  </RoundControlButton>
-                </>
-              )}
-            </div>
+                    <RoundControlButton
+                      theme={theme}
+                      size="small"
+                      variant="neutral"
+                      aria-label={t('media.nextTrack')}
+                      disabled={!canNextTrack}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onNext();
+                      }}
+                      className="h-7.5 w-7.5 backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+                      iconStyle={controlIconStyle}
+                      style={subduedFallback ? undefined : activeUtilityButtonStyle}
+                    >
+                      <SkipForward className={controlSizes.icon} />
+                    </RoundControlButton>
+                  </>
+                )}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

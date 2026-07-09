@@ -2,6 +2,7 @@ import { CardErrorBoundary } from '@navet/app/components/shared/card-error-bound
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { getBaseCardRadiusClassName } from '@navet/app/components/system/tokens';
 import {
+  type NavetMediaCapabilities,
   readNavetCameraState,
   readNavetClimateState,
   readNavetCoverState,
@@ -417,6 +418,7 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
       room={device.room as string}
       title={device.title as string}
       artist={device.artist as string}
+      album={device.album as string | undefined}
       entityType={device.entityType as string | undefined}
       deviceClass={device.deviceClass as string | undefined}
       source={device.source as string | undefined}
@@ -428,7 +430,10 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
       elapsedSeconds={device.elapsedSeconds as number | undefined}
       durationSeconds={device.durationSeconds as number | undefined}
       positionUpdatedAt={device.positionUpdatedAt as string | undefined}
+      mediaCapabilities={device.mediaCapabilities as NavetMediaCapabilities}
       supportsGrouping={device.supportsGrouping as boolean | undefined}
+      supportsPreviousTrack={device.supportsPreviousTrack as boolean | undefined}
+      supportsNextTrack={device.supportsNextTrack as boolean | undefined}
       groupMembers={device.groupMembers as string[] | undefined}
       size={size}
       onSizeChange={handleSizeChange}

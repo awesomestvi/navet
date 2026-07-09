@@ -1,4 +1,3 @@
-import { SectionCustomizeButton } from '@navet/app/components/layout/section-customize-button';
 import { DashboardHeroSection } from '@navet/app/components/patterns';
 import {
   Badge,
@@ -452,13 +451,11 @@ function resolveHomeAssistantImageUrl(imageUrl: string | undefined) {
 function StatusBanner({
   model,
   isEditMode,
-  onToggleEditMode,
   onAddEntity,
   surface,
 }: {
   model: CameraDashboardModel['summary'];
   isEditMode: boolean;
-  onToggleEditMode?: () => void;
   onAddEntity?: () => void;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
@@ -466,9 +463,9 @@ function StatusBanner({
   const { t } = useI18n();
   const isMobileViewport = useMediaQuery('(max-width: 767px)');
   const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
-  const badges = !isMobileViewport ? (
-    <div className="flex min-h-10 items-center justify-end gap-2">
-      {isEditMode && onAddEntity ? (
+  const badges =
+    !isMobileViewport && isEditMode && onAddEntity ? (
+      <div className="flex min-h-10 items-center justify-end gap-2">
         <button
           type="button"
           onClick={onAddEntity}
@@ -479,12 +476,8 @@ function StatusBanner({
             {t('dashboard.addEntity.title')}
           </span>
         </button>
-      ) : null}
-      {onToggleEditMode ? (
-        <SectionCustomizeButton isEditMode={isEditMode} onToggle={onToggleEditMode} />
-      ) : null}
-    </div>
-  ) : null;
+      </div>
+    ) : null;
 
   return kioskMode ? null : (
     <DashboardHeroSection
@@ -1167,7 +1160,6 @@ function DetailsSection({
 export function SecurityCameraDashboard({
   model,
   isEditMode,
-  onToggleEditMode = () => {},
   onAddEntity,
   alarms = [],
   cardSizes,
@@ -1305,7 +1297,6 @@ export function SecurityCameraDashboard({
       <StatusBanner
         model={model.summary}
         isEditMode={isEditMode}
-        onToggleEditMode={onToggleEditMode}
         onAddEntity={onAddEntity}
         surface={surface}
       />

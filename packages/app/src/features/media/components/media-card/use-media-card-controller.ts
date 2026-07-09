@@ -1,5 +1,7 @@
-import { getMediaPlayerCapabilities } from '@navet/app/constants/media-player-features';
-import { readNavetMediaState } from '@navet/app/core/navet-device-state';
+import {
+  EMPTY_NAVET_MEDIA_CAPABILITIES,
+  readNavetMediaState,
+} from '@navet/app/core/navet-device-state';
 import {
   useProviderMediaCompanionEntity,
   useProviderMediaEntity,
@@ -53,7 +55,6 @@ export function useMediaCardController({
   initialSupportsPreviousTrack = true,
   initialSupportsNextTrack = true,
   initialMediaCapabilities,
-  initialSupportedFeatures: _initialSupportedFeatures,
   initialGroupMembers = [],
 }: UseMediaCardControllerParams) {
   const { t } = useI18n();
@@ -102,14 +103,26 @@ export function useMediaCardController({
         : (initialDurationSeconds ?? 0);
   const mediaCapabilities = providerState?.mediaCapabilities ??
     initialMediaCapabilities ?? {
-      ...getMediaPlayerCapabilities(0),
+      ...EMPTY_NAVET_MEDIA_CAPABILITIES,
       canGroup: providerState?.supportsGrouping ?? initialSupportsGrouping,
       canMuteVolume: true,
       canNextTrack: providerState?.supportsNextTrack ?? initialSupportsNextTrack,
+      canPause: true,
       canPlay: true,
       canPreviousTrack: providerState?.supportsPreviousTrack ?? initialSupportsPreviousTrack,
       canSetVolume: true,
     };
+  const isSpotifyAccountMediaPlayer =
+    !isTv &&
+    [entityId, runtimeEntityId, entityName]
+      .filter((value): value is string => typeof value === 'string' && value.length > 0)
+      .some((value) => value.toLowerCase().includes('spotify'));
+  const effectiveMediaCapabilities = isSpotifyAccountMediaPlayer
+    ? {
+        ...mediaCapabilities,
+        canSeek: false,
+      }
+    : mediaCapabilities;
   const canSetVolume = mediaCapabilities?.canSetVolume ?? true;
   const canMuteVolume = mediaCapabilities?.canMuteVolume ?? true;
   const resolvedInitialSupportsGrouping =
@@ -146,6 +159,9 @@ export function useMediaCardController({
   const [groupMembers, setGroupMembers] = useState<string[]>(resolvedInitialGroupMembers);
 
   const isPlaying = state === 'playing';
+  const canTogglePlayback = isPlaying
+    ? (mediaCapabilities?.canPause ?? true)
+    : (mediaCapabilities?.canPlay ?? true);
   const repeatMode = (
     liveAttrs?.repeat === 'one' || liveAttrs?.repeat === 'all' ? liveAttrs.repeat : 'off'
   ) as 'off' | 'one' | 'all';
@@ -343,10 +359,10 @@ export function useMediaCardController({
     );
 
   const seekTo = (nextElapsedSeconds: number) =>
-    void runMediaAction(
-      () => integrationMediaFeatureService.seekMediaPlayer(entityId, nextElapsedSeconds),
-      t('media.feedback.seekFailed')
-    );
+    void runMediaAction(async () => {
+      if (!effectiveMediaCapabilities?.canSeek) return;
+      await integrationMediaFeatureService.seekMediaPlayer(entityId, nextElapsedSeconds);
+    }, t('media.feedback.seekFailed'));
 
   const clearPlaylist = () =>
     void runMediaAction(
@@ -398,6 +414,7 @@ export function useMediaCardController({
     availableGroupingPlayers,
     canNextTrack,
     canPreviousTrack,
+    canTogglePlayback,
     closeDialog,
     detachGroupMember,
     displayArtist,
@@ -410,7 +427,7 @@ export function useMediaCardController({
     handleNext,
     handlePrevious,
     handleVolumeChange,
-    mediaCapabilities,
+    mediaCapabilities: effectiveMediaCapabilities,
     isOff: state === 'off',
     isMuted,
     isOpen,

@@ -15,6 +15,8 @@ Use this page as the map for the documentation set.
   Product overview, support status, repo layout, and quick development basics.
 - [HOME_ASSISTANT.md](HOME_ASSISTANT.md)
   Home Assistant deployment guide for the custom panel via HACS, add-on, and standalone paths.
+- [NAVET_DEV.md](NAVET_DEV.md)
+  Install and update Navet Dev through the add-on, Docker, or an advanced manual custom-panel build.
 - [HOMEY.md](HOMEY.md)
   Homey standalone setup.
 - [OPENHAB.md](OPENHAB.md)
@@ -40,6 +42,8 @@ Use this page as the map for the documentation set.
   Shared provider contract and responsibilities.
 - [architecture/provider-neutral-ui.md](architecture/provider-neutral-ui.md)
   Shared UI boundary rules.
+- [architecture/media-dashboard-provider-limitations.md](architecture/media-dashboard-provider-limitations.md)
+  Media dashboard contract, Home Assistant behavior, artwork handling, and current limits.
 - [architecture/marketing-website.md](architecture/marketing-website.md)
   Website-specific structure and reuse rules.
 - [design-system/README.md](design-system/README.md)

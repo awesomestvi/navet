@@ -43,4 +43,30 @@ describe('preview runtime', () => {
     expect(nextEntity?.primaryState).toBe('off');
     expect(nextEntity?.attributes.value).toBe('off');
   });
+
+  it('provides deterministic media browsing for isolated previews', async () => {
+    installPreviewRuntime(getPreviewRuntimeScenario('default'));
+
+    const mediaService = getProviderRuntimeRegistration('home_assistant').mediaFeatureService;
+    const library = await mediaService?.browseMediaPlayer('media_player.living_room_speaker');
+    const recentlyPlayed = await mediaService?.browseMediaPlayer(
+      'media_player.living_room_speaker',
+      { mediaContentId: 'preview:recently-played', mediaContentType: 'track' }
+    );
+
+    expect(library?.children).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ title: 'Recently played', canExpand: true }),
+      ])
+    );
+    expect(recentlyPlayed?.children).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: 'Olalla',
+          artist: 'Blanco White',
+          album: 'On the Other Side',
+        }),
+      ])
+    );
+  });
 });

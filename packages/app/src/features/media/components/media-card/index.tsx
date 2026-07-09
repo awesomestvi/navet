@@ -81,6 +81,7 @@ interface MediaCardProps {
   room: string;
   title: string;
   artist: string;
+  album?: string;
   entityType?: string;
   deviceClass?: string;
   source?: string;
@@ -96,7 +97,6 @@ interface MediaCardProps {
   supportsGrouping?: boolean;
   supportsPreviousTrack?: boolean;
   supportsNextTrack?: boolean;
-  supportedFeatures?: number;
   groupMembers?: string[];
   size: CardSize;
   onSizeChange: (id: string, size: CardSize) => void;
@@ -104,6 +104,8 @@ interface MediaCardProps {
   mediaStackAppearance?: boolean;
   mediaStackSettings?: MediaDialogMediaStackSettings;
   openSettingsRequestKey?: number;
+  disableTransportPlayback?: boolean;
+  hideTransportControls?: boolean;
   /**
    * When true, TV remote UI (D-pad, channel keys) renders as if a `remote.*` entity exists.
    * Use in Storybook where HA is not connected; ignored for non-TV cards.
@@ -117,6 +119,7 @@ export const MediaCard = memo(function MediaCard({
   room: _room,
   title,
   artist,
+  album,
   entityType,
   deviceClass,
   source: initialSource,
@@ -132,7 +135,6 @@ export const MediaCard = memo(function MediaCard({
   supportsGrouping: initialSupportsGrouping,
   supportsPreviousTrack: initialSupportsPreviousTrack,
   supportsNextTrack: initialSupportsNextTrack,
-  supportedFeatures: initialSupportedFeatures,
   groupMembers: initialGroupMembers,
   size,
   onSizeChange: _onSizeChange,
@@ -140,6 +142,8 @@ export const MediaCard = memo(function MediaCard({
   mediaStackAppearance = false,
   mediaStackSettings,
   openSettingsRequestKey = 0,
+  disableTransportPlayback = false,
+  hideTransportControls = false,
   simulateTvRemote = false,
 }: MediaCardProps) {
   const { theme } = useTheme();
@@ -186,6 +190,7 @@ export const MediaCard = memo(function MediaCard({
     detachGroupMember,
     canNextTrack,
     canPreviousTrack,
+    canTogglePlayback,
     shuffleEnabled,
     soundMode,
     soundModeList,
@@ -209,6 +214,7 @@ export const MediaCard = memo(function MediaCard({
     artworkKey: [entityPicture, title, artist].filter(Boolean).join('::'),
     initialTitle: title,
     initialArtist: artist,
+    initialAlbum: album,
     initialSource,
     initialSourceList,
     initialState: state,
@@ -221,7 +227,6 @@ export const MediaCard = memo(function MediaCard({
     initialSupportsGrouping,
     initialSupportsPreviousTrack,
     initialSupportsNextTrack,
-    initialSupportedFeatures,
     initialGroupMembers,
   });
   const stateSurface = getCardStateSurfaceTokens(theme, !isOff);
@@ -231,6 +236,15 @@ export const MediaCard = memo(function MediaCard({
   const isMediumVertical = mediaSize === 'medium-vertical';
   const isLarge = mediaSize === 'large';
   const isTv = deviceClass?.toLowerCase() === 'tv';
+  const isSpotifyAccountCard =
+    !isTv &&
+    [id, name, resolvedPlayerName]
+      .filter((value): value is string => typeof value === 'string' && value.length > 0)
+      .some((value) => value.toLowerCase().includes('spotify'));
+  const effectiveHideTransportControls =
+    hideTransportControls || (isSpotifyAccountCard && (source?.trim().length ?? 0) > 0);
+  const useSpotifyConnectPresentation =
+    isLarge && isSpotifyAccountCard && effectiveHideTransportControls;
   const tvRemoteAvailable = simulateTvRemote === true ? true : remoteAvailable;
   const isGlass = theme === 'glass';
   const hasArtwork = Boolean(resolvedAlbumArt);
@@ -281,18 +295,22 @@ export const MediaCard = memo(function MediaCard({
     theme,
   };
   const mediaControlProps = {
+    hideTransportControls: effectiveHideTransportControls,
     onOpenDialog: openDialog,
     onSeek: seekTo,
+    canSeek: effectiveHideTransportControls ? false : (mediaCapabilities?.canSeek ?? false),
     onCycleRepeat: cycleRepeat,
     onToggleShuffle: toggleShuffle,
-    canRepeat: mediaCapabilities?.canRepeat ?? false,
-    canShuffle: mediaCapabilities?.canShuffle ?? false,
+    canRepeat: effectiveHideTransportControls ? false : (mediaCapabilities?.canRepeat ?? false),
+    canShuffle: effectiveHideTransportControls ? false : (mediaCapabilities?.canShuffle ?? false),
     onToggleMute: toggleMute,
     onPrevious: handlePrevious,
-    canPreviousTrack,
+    canPreviousTrack: effectiveHideTransportControls ? false : canPreviousTrack,
     onTogglePlay: togglePlay,
+    canTogglePlayback:
+      effectiveHideTransportControls || disableTransportPlayback ? false : canTogglePlayback,
     onNext: handleNext,
-    canNextTrack,
+    canNextTrack: effectiveHideTransportControls ? false : canNextTrack,
     repeatMode,
     shuffleEnabled,
     onVolumeChange: handleVolumeChange,
@@ -419,6 +437,8 @@ export const MediaCard = memo(function MediaCard({
             <MediaLargeView
               {...mediaIdentityProps}
               {...mediaControlProps}
+              hideHeader={useSpotifyConnectPresentation}
+              fallbackArtworkIcon={useSpotifyConnectPresentation ? 'spotify' : 'disc'}
               elapsedSeconds={elapsedSeconds}
               durationSeconds={durationSeconds}
             />
@@ -478,6 +498,10 @@ export const MediaCard = memo(function MediaCard({
             onSelectSource={selectSource}
             onRemoteCommand={sendRemoteCommand}
             capabilities={mediaCapabilities}
+            canTogglePlayback={
+              effectiveHideTransportControls || disableTransportPlayback ? false : canTogglePlayback
+            }
+            canSeek={effectiveHideTransportControls ? false : (mediaCapabilities?.canSeek ?? false)}
             soundMode={soundMode}
             soundModeList={soundModeList}
             onSelectSoundMode={selectSoundMode}

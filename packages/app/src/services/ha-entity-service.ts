@@ -27,6 +27,47 @@ type HAServiceCaller = (
   target?: HAServiceTarget
 ) => Promise<void>;
 
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isMediaBrowseResult(value: unknown): value is HomeAssistantMediaBrowseResult {
+  return (
+    isObjectRecord(value) &&
+    (typeof value.title === 'string' ||
+      Array.isArray(value.children) ||
+      typeof value.media_content_id === 'string')
+  );
+}
+
+function normalizeMediaBrowseServiceResponse(
+  response: unknown,
+  entityId: string
+): HomeAssistantMediaBrowseResult {
+  const payload = isObjectRecord(response) && 'response' in response ? response.response : response;
+
+  if (isMediaBrowseResult(payload)) {
+    return payload;
+  }
+
+  if (isObjectRecord(payload)) {
+    const targetedResult = payload[entityId];
+    if (isMediaBrowseResult(targetedResult)) {
+      return targetedResult;
+    }
+  }
+
+  return {};
+}
+
+function isUnknownHomeAssistantCommandError(error: unknown): boolean {
+  return (
+    isObjectRecord(error) &&
+    typeof error.code === 'string' &&
+    (error.code === 'unknown_command' || error.code === 'not_supported')
+  );
+}
+
 /**
  * Provides domain-specific Home Assistant service calls for entity control.
  * Handles lights, switches, climate, media players, cameras, locks, vacuums, and covers.
@@ -231,10 +272,8 @@ class HAEntityService {
     }
   ): Promise<void> {
     const serviceData: Record<string, unknown> = {
-      media: {
-        media_content_id: media.mediaContentId,
-        media_content_type: media.mediaContentType,
-      },
+      media_content_id: media.mediaContentId,
+      media_content_type: media.mediaContentType,
     };
     if (media.enqueue) {
       serviceData.enqueue = media.enqueue;
@@ -255,6 +294,26 @@ class HAEntityService {
       throw new Error('Home Assistant is not connected');
     }
 
+    const command: {
+      type: string;
+      entity_id: string;
+      media_content_id?: string;
+      media_content_type?: string;
+    } = {
+      type: 'media_player/browse_media',
+      entity_id: entityId,
+    };
+    if (media.mediaContentId) command.media_content_id = media.mediaContentId;
+    if (media.mediaContentType) command.media_content_type = media.mediaContentType;
+
+    try {
+      return normalizeMediaBrowseServiceResponse(await conn.sendMessagePromise(command), entityId);
+    } catch (error) {
+      if (!isUnknownHomeAssistantCommandError(error)) {
+        throw error;
+      }
+    }
+
     const serviceData: Record<string, unknown> = {};
     if (media.mediaContentId) serviceData.media_content_id = media.mediaContentId;
     if (media.mediaContentType) serviceData.media_content_type = media.mediaContentType;
@@ -268,7 +327,7 @@ class HAEntityService {
       return_response: true,
     });
 
-    return (response as { response?: HomeAssistantMediaBrowseResult }).response ?? {};
+    return normalizeMediaBrowseServiceResponse(response, entityId);
   }
 
   async searchMediaPlayer(
@@ -279,6 +338,31 @@ class HAEntityService {
     const conn = this.connection();
     if (!conn) {
       throw new Error('Home Assistant is not connected');
+    }
+
+    const command: {
+      type: string;
+      entity_id: string;
+      search_query: string;
+      media_content_id?: string;
+      media_content_type?: string;
+    } = {
+      type: 'media_player/search_media',
+      entity_id: entityId,
+      search_query: query,
+    };
+    if (media.mediaContentId) command.media_content_id = media.mediaContentId;
+    if (media.mediaContentType) command.media_content_type = media.mediaContentType;
+
+    try {
+      return normalizeMediaBrowseServiceResponse(
+        await conn.sendMessagePromise(command),
+        entityId
+      ) as HomeAssistantMediaSearchResult;
+    } catch (error) {
+      if (!isUnknownHomeAssistantCommandError(error)) {
+        throw error;
+      }
     }
 
     const serviceData: Record<string, unknown> = { search_query: query };
@@ -294,7 +378,10 @@ class HAEntityService {
       return_response: true,
     });
 
-    return (response as { response?: HomeAssistantMediaSearchResult }).response ?? {};
+    return normalizeMediaBrowseServiceResponse(
+      response,
+      entityId
+    ) as HomeAssistantMediaSearchResult;
   }
 
   async seekMediaPlayer(entityId: string, seekPosition: number): Promise<void> {

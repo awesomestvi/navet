@@ -48,6 +48,7 @@ home UI.
 Most people should start with one of these guides:
 
 - Home Assistant users: start with [docs/HOME_ASSISTANT.md](docs/HOME_ASSISTANT.md)
+- Development builds: use [docs/NAVET_DEV.md](docs/NAVET_DEV.md)
 - Homey users: start with [docs/HOMEY.md](docs/HOMEY.md)
 - openHAB users: start with [docs/OPENHAB.md](docs/OPENHAB.md)
 
@@ -56,6 +57,7 @@ Most people should start with one of these guides:
 Use these docs if you want more context:
 
 - [Home Assistant setup](docs/HOME_ASSISTANT.md)
+- [Navet Dev installation](docs/NAVET_DEV.md)
 - [Homey setup](docs/HOMEY.md)
 - [openHAB setup](docs/OPENHAB.md)
 - [Widgets guide](docs/WIDGETS.md)

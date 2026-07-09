@@ -231,7 +231,7 @@ async function executeHomeAssistantCommand(entity: NavetEntity, command: NavetCo
     case 'play_pause':
       await callHomeAssistantService(
         'media_player',
-        'media_play_pause',
+        entity.primaryState === 'playing' ? 'media_pause' : 'media_play',
         {},
         {
           entityId: entity.externalId,

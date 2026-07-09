@@ -92,7 +92,7 @@ describe('HAEntityService', () => {
     );
   });
 
-  it('plays media through the Home Assistant media selector payload', async () => {
+  it('plays media through the Home Assistant play_media service payload', async () => {
     const connection = { id: 'connection' };
     const service = new HAEntityService(() => connection as never);
 
@@ -109,10 +109,8 @@ describe('HAEntityService', () => {
       'play_media',
       {
         entity_id: 'media_player.spotify',
-        media: {
-          media_content_id: 'spotify:playlist:daily-mix',
-          media_content_type: 'playlist',
-        },
+        media_content_id: 'spotify:playlist:daily-mix',
+        media_content_type: 'playlist',
         enqueue: 'replace',
         announce: true,
       },
@@ -160,36 +158,60 @@ describe('HAEntityService', () => {
     );
   });
 
-  it('requests browse and search media responses over websocket', async () => {
-    const browseResponse = { response: { title: 'Library', children: [] } };
-    const searchResponse = { response: { title: 'Search', children: [] } };
+  it('requests browse and search media responses with Home Assistant media websocket commands', async () => {
+    const browseResponse = { title: 'Library', children: [] };
+    const searchResponse = { title: 'Search', children: [] };
     const sendMessagePromise = vi
       .fn()
       .mockResolvedValueOnce(browseResponse)
       .mockResolvedValueOnce(searchResponse);
     const service = new HAEntityService(() => ({ sendMessagePromise }) as never);
 
-    await expect(service.browseMediaPlayer('media_player.browse')).resolves.toEqual(
-      browseResponse.response
-    );
+    await expect(service.browseMediaPlayer('media_player.browse')).resolves.toEqual(browseResponse);
     await expect(service.searchMediaPlayer('media_player.search', 'Beatles')).resolves.toEqual(
-      searchResponse.response
+      searchResponse
     );
 
     expect(sendMessagePromise).toHaveBeenNthCalledWith(1, {
-      type: 'call_service',
-      domain: 'media_player',
-      service: 'browse_media',
-      service_data: {},
-      target: { entity_id: 'media_player.browse' },
-      return_response: true,
+      type: 'media_player/browse_media',
+      entity_id: 'media_player.browse',
+    });
+    expect(sendMessagePromise).toHaveBeenNthCalledWith(2, {
+      type: 'media_player/search_media',
+      entity_id: 'media_player.search',
+      search_query: 'Beatles',
+    });
+  });
+
+  it('falls back to service responses when Home Assistant media websocket commands are unavailable', async () => {
+    const targetedBrowseResponse = {
+      response: {
+        'media_player.spotify': {
+          title: 'Spotify',
+          children: [{ title: 'Playlists', media_content_id: 'spotify://playlists' }],
+        },
+      },
+    };
+    const sendMessagePromise = vi
+      .fn()
+      .mockRejectedValueOnce({ code: 'unknown_command' })
+      .mockResolvedValueOnce(targetedBrowseResponse);
+    const service = new HAEntityService(() => ({ sendMessagePromise }) as never);
+
+    await expect(service.browseMediaPlayer('media_player.spotify')).resolves.toEqual(
+      targetedBrowseResponse.response['media_player.spotify']
+    );
+
+    expect(sendMessagePromise).toHaveBeenNthCalledWith(1, {
+      type: 'media_player/browse_media',
+      entity_id: 'media_player.spotify',
     });
     expect(sendMessagePromise).toHaveBeenNthCalledWith(2, {
       type: 'call_service',
       domain: 'media_player',
-      service: 'search_media',
-      service_data: { search_query: 'Beatles' },
-      target: { entity_id: 'media_player.search' },
+      service: 'browse_media',
+      service_data: {},
+      target: { entity_id: 'media_player.spotify' },
       return_response: true,
     });
   });

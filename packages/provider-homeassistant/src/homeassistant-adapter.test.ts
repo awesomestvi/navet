@@ -63,6 +63,20 @@ function lawnMowerEntityFactory() {
   };
 }
 
+function mediaPlayerEntityFactory(state: 'playing' | 'paused' = 'playing') {
+  return {
+    entity_id: 'media_player.spotify',
+    state,
+    attributes: {
+      friendly_name: 'Spotify',
+      supported_features: 1 | 4 | 8 | 512 | 16384,
+    },
+    last_changed: '2026-05-30T10:00:00.000Z',
+    last_updated: '2026-05-30T10:00:00.000Z',
+    context: { id: 'ctx-5', parent_id: null, user_id: null },
+  };
+}
+
 const { callHomeAssistantServiceMock, resolveArtworkMock } = vi.hoisted(() => ({
   callHomeAssistantServiceMock: vi.fn(async () => undefined),
   resolveArtworkMock: vi.fn(async (entityId: string) => ({
@@ -77,6 +91,7 @@ describe('homeassistant-adapter', () => {
   const connectMock = vi.fn(async () => undefined);
   const disconnectMock = vi.fn(async () => undefined);
   const syncPanelHassMock = vi.fn();
+  let currentMediaPlayerState: 'playing' | 'paused' = 'playing';
 
   beforeEach(() => {
     callHomeAssistantServiceMock.mockReset();
@@ -84,6 +99,7 @@ describe('homeassistant-adapter', () => {
     connectMock.mockReset();
     disconnectMock.mockReset();
     syncPanelHassMock.mockReset();
+    currentMediaPlayerState = 'playing';
     configureHomeAssistantServiceBridge({
       callService: callHomeAssistantServiceMock,
       signPath: vi.fn(async (path: string) => ({ path })),
@@ -98,6 +114,7 @@ describe('homeassistant-adapter', () => {
         'alarm_control_panel.home': alarmEntityFactory(),
         'vacuum.roborock': vacuumEntityFactory(),
         'lawn_mower.backyard': lawnMowerEntityFactory(),
+        'media_player.spotify': mediaPlayerEntityFactory(currentMediaPlayerState),
       })),
       getEntityRegistry: vi.fn(() => []),
       getConfig: vi.fn(() => null),
@@ -141,6 +158,7 @@ describe('homeassistant-adapter', () => {
           'alarm_control_panel.home': alarmEntityFactory(),
           'vacuum.roborock': vacuumEntityFactory(),
           'lawn_mower.backyard': lawnMowerEntityFactory(),
+          'media_player.spotify': mediaPlayerEntityFactory(currentMediaPlayerState),
         },
         config: null,
         areas: [],
@@ -297,6 +315,37 @@ describe('homeassistant-adapter', () => {
       'dock',
       {},
       { entityId: 'lawn_mower.backyard' }
+    );
+  });
+
+  it('maps media playback toggles to explicit Home Assistant play and pause services', async () => {
+    const adapter = createHomeAssistantContractAdapter();
+
+    await adapter.execute({
+      type: 'play_pause',
+      entityId: createProviderScopedId('home_assistant', 'media_player.spotify'),
+    });
+
+    currentMediaPlayerState = 'paused';
+
+    await adapter.execute({
+      type: 'play_pause',
+      entityId: createProviderScopedId('home_assistant', 'media_player.spotify'),
+    });
+
+    expect(callHomeAssistantServiceMock).toHaveBeenNthCalledWith(
+      1,
+      'media_player',
+      'media_pause',
+      {},
+      { entityId: 'media_player.spotify' }
+    );
+    expect(callHomeAssistantServiceMock).toHaveBeenNthCalledWith(
+      2,
+      'media_player',
+      'media_play',
+      {},
+      { entityId: 'media_player.spotify' }
     );
   });
 

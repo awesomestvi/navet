@@ -1,6 +1,6 @@
 import type { Preview } from '@storybook/react';
 import type { ReactNode } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Toaster } from '@navet/app/components/ui/sonner';
 import { I18nProvider } from '@navet/app/i18n';
 import {
@@ -62,6 +62,27 @@ interface StorybookEnvironmentProps {
   previewRuntimeScenario?: PreviewRuntimeScenario | null;
 }
 
+function PreviewRuntimeBoundary({
+  children,
+  scenario,
+}: {
+  children: ReactNode;
+  scenario: PreviewRuntimeScenario;
+}) {
+  const [installedScenario, setInstalledScenario] = useState<PreviewRuntimeScenario | null>(null);
+
+  useEffect(() => {
+    installPreviewRuntime(scenario);
+    setInstalledScenario(scenario);
+
+    return () => {
+      resetPreviewRuntime();
+    };
+  }, [scenario]);
+
+  return installedScenario === scenario ? children : null;
+}
+
 function StorybookEnvironment({
   children,
   canvasBackgroundName,
@@ -71,6 +92,9 @@ function StorybookEnvironment({
   cardSize,
   previewRuntimeScenario,
 }: StorybookEnvironmentProps) {
+  const [defaultPreviewRuntimeScenario] = useState(() => getPreviewRuntimeScenario('default'));
+  const resolvedPreviewRuntimeScenario = previewRuntimeScenario ?? defaultPreviewRuntimeScenario;
+
   useEffect(() => {
     const accentColor = PRIMARY_COLOR_VALUES[primaryColor];
     const previousThemeState = useThemeStore.getState();
@@ -147,14 +171,6 @@ function StorybookEnvironment({
     };
   }, [primaryColor, theme, cardSize]);
 
-  useEffect(() => {
-    installPreviewRuntime(previewRuntimeScenario ?? getPreviewRuntimeScenario('default'));
-
-    return () => {
-      resetPreviewRuntime();
-    };
-  }, [previewRuntimeScenario]);
-
   return (
     <I18nProvider>
       <div
@@ -165,7 +181,9 @@ function StorybookEnvironment({
             CANVAS_BACKGROUNDS[theme],
         }}
       >
-        {children}
+        <PreviewRuntimeBoundary scenario={resolvedPreviewRuntimeScenario}>
+          {children}
+        </PreviewRuntimeBoundary>
       </div>
       <Toaster />
     </I18nProvider>

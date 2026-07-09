@@ -926,6 +926,10 @@ function createHomeAssistantState(
           entity.attributes.media_album_name) ||
         (typeof entity.attributes?.source === 'string' && entity.attributes.source) ||
         '',
+      album:
+        typeof entity.attributes?.media_album_name === 'string'
+          ? entity.attributes.media_album_name
+          : undefined,
       entityType: 'Media Player',
       deviceClass,
       source: typeof entity.attributes?.source === 'string' ? entity.attributes.source : undefined,

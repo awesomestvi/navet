@@ -10,6 +10,9 @@ Navet currently supports three Home Assistant deployment paths:
 - add-on
 - standalone Docker connected to Home Assistant
 
+To test frequently updated development builds, see [Install Navet Dev](NAVET_DEV.md). Published Dev
+builds are available for the add-on and Docker; HACS remains stable-only.
+
 ## Which Path Should You Choose?
 
 | Path | Best when | Notes |
@@ -75,7 +78,7 @@ Use the add-on if you want Navet packaged and managed from Home Assistant itself
 1. Open `Settings -> Add-ons -> Add-on Store`.
 2. Open the repository menu and choose `Repositories`.
 3. Add `https://github.com/awesomestvi/navet` as an Add-on Store repository.
-4. Install `Navet` for stable releases or `Navet Dev` for the nightly development surface.
+4. Install `Navet` for stable releases or `Navet Dev` for the published development channel.
 5. If you want native Home Assistant chrome hiding in add-on mode, also install the Navet HACS integration so Home Assistant can serve `/api/navet/static/navet-ha-shell.js` to the parent frontend.
 6. Start the add-on and open Navet from the Home Assistant sidebar.
 7. Optional but recommended for native Home Assistant chrome hiding in the add-on: add Navet's shell module under `frontend.extra_module_url`:

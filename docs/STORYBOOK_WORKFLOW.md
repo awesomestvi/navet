@@ -35,6 +35,7 @@ Use colocated stories by default.
 - use deterministic local fixtures
 - reuse helpers from `packages/app/src/storybook/`
 - do not connect stories to live provider sessions
+- use the preview runtime's deterministic media service for media browse and playback stories
 - initialize only the minimum store state a story needs
 - keep aggregate stories useful, but do not hide normal component stories behind them
 - when adding or renaming a public card story, register its shared docs copy in `packages/app/src/storybook/story-docs.ts`

@@ -8,6 +8,7 @@ export interface UseMediaCardControllerParams {
   artworkKey?: string;
   initialTitle: string;
   initialArtist: string;
+  initialAlbum?: string;
   initialSource?: string;
   initialSourceList?: string[];
   initialState: 'playing' | 'paused' | 'idle' | 'off';
@@ -20,6 +21,5 @@ export interface UseMediaCardControllerParams {
   initialSupportsPreviousTrack?: boolean;
   initialSupportsNextTrack?: boolean;
   initialMediaCapabilities?: NavetMediaCapabilities;
-  initialSupportedFeatures?: number;
   initialGroupMembers?: string[];
 }

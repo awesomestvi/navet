@@ -566,6 +566,7 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
           ...base,
           title: readString(state.title, entity.name),
           artist: readString(state.artist, ''),
+          album: readString(state.album, ''),
           entityType: typeof state.entityType === 'string' ? state.entityType : undefined,
           deviceClass: typeof state.deviceClass === 'string' ? state.deviceClass : undefined,
           source: typeof state.source === 'string' ? state.source : undefined,

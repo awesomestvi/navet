@@ -5,6 +5,7 @@ import type {
 } from './homeassistant-service-bridge';
 
 const MEDIA_PLAYER_FEATURES = {
+  PAUSE: 1,
   VOLUME_SET: 4,
   VOLUME_MUTE: 8,
   PREVIOUS_TRACK: 16,
@@ -190,6 +191,7 @@ export function getMediaPlayerCapabilities(supportedFeatures: number) {
     canGroup: hasMediaPlayerFeature(supportedFeatures, MEDIA_PLAYER_FEATURES.GROUPING),
     canMuteVolume: hasMediaPlayerFeature(supportedFeatures, MEDIA_PLAYER_FEATURES.VOLUME_MUTE),
     canNextTrack: hasMediaPlayerFeature(supportedFeatures, MEDIA_PLAYER_FEATURES.NEXT_TRACK),
+    canPause: hasMediaPlayerFeature(supportedFeatures, MEDIA_PLAYER_FEATURES.PAUSE),
     canPlay: hasMediaPlayerFeature(supportedFeatures, MEDIA_PLAYER_FEATURES.PLAY),
     canPlayMedia: hasMediaPlayerFeature(supportedFeatures, MEDIA_PLAYER_FEATURES.PLAY_MEDIA),
     canPreviousTrack: hasMediaPlayerFeature(

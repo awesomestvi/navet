@@ -19,6 +19,7 @@ export interface NavetMediaCapabilities {
   canGroup: boolean;
   canMuteVolume: boolean;
   canNextTrack: boolean;
+  canPause: boolean;
   canPlay: boolean;
   canPlayMedia: boolean;
   canPreviousTrack: boolean;
@@ -34,6 +35,31 @@ export interface NavetMediaCapabilities {
   canTurnOn: boolean;
   canVolumeStep: boolean;
 }
+
+export const EMPTY_NAVET_MEDIA_CAPABILITIES: NavetMediaCapabilities = {
+  canAnnounce: false,
+  canBrowseMedia: false,
+  canClearPlaylist: false,
+  canEnqueue: false,
+  canGroup: false,
+  canMuteVolume: false,
+  canNextTrack: false,
+  canPause: false,
+  canPlay: false,
+  canPlayMedia: false,
+  canPreviousTrack: false,
+  canRepeat: false,
+  canSearchMedia: false,
+  canSeek: false,
+  canSelectSoundMode: false,
+  canSelectSource: false,
+  canSetVolume: false,
+  canShuffle: false,
+  canStop: false,
+  canTurnOff: false,
+  canTurnOn: false,
+  canVolumeStep: false,
+};
 
 export interface NavetLightState extends NavetBaseDeviceState {
   brightnessPct?: number;
@@ -60,6 +86,7 @@ export interface NavetClimateState extends NavetBaseDeviceState {
 export interface NavetMediaState extends NavetBaseDeviceState {
   title?: string;
   artist?: string;
+  album?: string;
   deviceClass?: string;
   source?: string;
   sourceList?: string[];

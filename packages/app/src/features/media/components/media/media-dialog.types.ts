@@ -58,6 +58,8 @@ export interface MediaDialogProps {
   onPrevious: () => void;
   canPreviousTrack: boolean;
   onTogglePlay: () => void;
+  canTogglePlayback?: boolean;
+  canSeek?: boolean;
   onNext: () => void;
   canNextTrack: boolean;
   shuffleEnabled: boolean;
