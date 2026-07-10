@@ -334,7 +334,7 @@ export const RoomNav = memo(function RoomNav({
                     className={cn(
                       getThemeDropdownSurfaceClasses(theme),
                       useOverflowMegamenu
-                        ? 'w-[min(44rem,calc(100vw-2rem))] max-h-none overflow-visible p-2'
+                        ? 'flex max-h-[min(32rem,var(--radix-dropdown-menu-content-available-height))] w-[min(56rem,calc(100vw-2rem))] flex-col overflow-hidden p-2'
                         : 'w-56 overflow-visible p-1'
                     )}
                   >
@@ -349,7 +349,10 @@ export const RoomNav = memo(function RoomNav({
                       </>
                     ) : null}
                     <div
-                      className={cn(useOverflowMegamenu && 'grid grid-cols-2 gap-1 lg:grid-cols-3')}
+                      className={cn(
+                        useOverflowMegamenu &&
+                          'grid min-h-0 grid-cols-2 gap-1 overflow-y-auto overscroll-contain pr-1 md:grid-cols-3 min-[1025px]:grid-cols-4'
+                      )}
                     >
                       {overflowRooms.map((room) => (
                         <DropdownMenuItem

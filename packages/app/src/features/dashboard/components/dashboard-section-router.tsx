@@ -146,7 +146,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
       : undefined;
   const isHomeOverviewEditMode = activeSection === 'home' && isEditMode && isAllRooms(activeRoom);
   const sectionStackProps = {
-    className: 'flex flex-col gap-2 md:gap-6',
+    className: 'flex flex-col gap-2 md:gap-4 min-[1025px]:gap-6',
   };
   const totalRoutineCount =
     routines.automations.filter(isActiveRoutine).length +

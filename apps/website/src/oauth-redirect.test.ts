@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildNavetCallbackUrl,
+  getNavetHomeUrlFromCallback,
   isValidNavetCallbackUrl,
   isValidSpotifyAuthorizeUrl,
   NAVET_SPOTIFY_OAUTH_RELAY_URI,
+  normalizeNavetHomeUrl,
 } from './oauth-redirect';
 
 describe('Navet OAuth redirect relay', () => {
@@ -39,5 +41,18 @@ describe('Navet OAuth redirect relay', () => {
     ).toBe(
       'http://navet.local:5200/__navet_music__/spotify/callback?code=spotify-code&state=expected-state'
     );
+  });
+
+  it('derives and validates an editable Navet home address without weakening callback validation', () => {
+    expect(
+      getNavetHomeUrlFromCallback(
+        'http://navet.local:5200/__navet_music__/spotify/callback'
+      )
+    ).toBe('http://navet.local:5200/');
+    expect(normalizeNavetHomeUrl(' http://192.168.1.20:5200/dashboard?edit=true#music ')).toBe(
+      'http://192.168.1.20:5200/dashboard'
+    );
+    expect(normalizeNavetHomeUrl('javascript:alert(1)')).toBeNull();
+    expect(normalizeNavetHomeUrl('https://user:password@example.com')).toBeNull();
   });
 });

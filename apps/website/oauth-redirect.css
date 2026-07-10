@@ -1,0 +1,442 @@
+.navet-oauth-page {
+  position: relative;
+  min-height: 100svh;
+  overflow-y: auto;
+  color: #fff;
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(249, 115, 22, 0.3) 0%, rgba(249, 115, 22, 0.12) 24%, transparent 46%),
+    linear-gradient(180deg, #060a12 0%, #030712 100%);
+}
+
+.navet-oauth-page *,
+.navet-oauth-page *::before,
+.navet-oauth-page *::after {
+  box-sizing: border-box;
+}
+
+.navet-oauth-shell {
+  display: flex;
+  width: 100%;
+  max-width: 48rem;
+  min-height: 100svh;
+  margin: 0 auto;
+  padding: 1.25rem 1rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.navet-oauth-logo-wrap {
+  position: relative;
+  display: flex;
+  width: 5rem;
+  height: 5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.navet-oauth-logo-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: rgba(249, 115, 22, 0.12);
+  filter: blur(16px);
+}
+
+.navet-oauth-logo {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 5rem;
+  height: 5rem;
+}
+
+.navet-oauth-divider {
+  width: 7rem;
+  height: 1px;
+  margin-top: 1rem;
+  background: linear-gradient(90deg, transparent, #f97316, transparent);
+}
+
+.navet-oauth-shell > h1 {
+  max-width: 36rem;
+  margin: 1.25rem auto 0;
+  color: #fff;
+  font-size: clamp(1.875rem, 5vw, 2.25rem);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.navet-oauth-intro {
+  max-width: 28rem;
+  margin: 0.75rem auto 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.875rem;
+  line-height: 1.625;
+}
+
+.navet-oauth-panel {
+  position: relative;
+  width: 100%;
+  max-width: 28rem;
+  margin-top: 1.75rem;
+  overflow: hidden;
+  padding: 1rem;
+  border: 1px solid rgba(161, 161, 170, 0.18);
+  border-radius: 1.75rem;
+  text-align: left;
+  background:
+    radial-gradient(circle at top left, rgba(249, 115, 22, 0.18), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.1), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.025) 22%, transparent 58%),
+    rgba(18, 18, 21, 0.98);
+  box-shadow: 0 26px 62px -36px rgba(0, 0, 0, 0.78), inset 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.navet-oauth-state-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.25rem;
+}
+
+.navet-oauth-state-icon {
+  display: flex;
+  width: 3rem;
+  height: 3rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.navet-oauth-state-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.navet-oauth-state-icon--progress {
+  color: #fdba74;
+}
+
+.navet-oauth-state-icon--danger {
+  color: #fca5a5;
+}
+
+.navet-oauth-state-icon--success {
+  color: #86efac;
+}
+
+.navet-oauth-state-copy {
+  display: block;
+  min-width: 0;
+}
+
+.navet-oauth-state-copy strong {
+  display: block;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.navet-oauth-state-copy > span {
+  display: block;
+  margin-top: 0.25rem;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.navet-oauth-panel-divider {
+  height: 1px;
+  margin: 1.25rem 0 1rem;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.navet-oauth-action {
+  display: flex;
+  width: 100%;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(253, 186, 116, 0.2);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  background: linear-gradient(180deg, #fb923c, #f97316);
+  box-shadow: 0 18px 42px -24px rgba(249, 115, 22, 0.88);
+  transition: transform 180ms ease;
+}
+
+.navet-oauth-action:hover {
+  transform: scale(1.02);
+}
+
+.navet-oauth-action:active {
+  transform: scale(0.98);
+}
+
+.navet-oauth-action:focus-visible {
+  outline: 3px solid rgba(251, 146, 60, 0.38);
+  outline-offset: 3px;
+}
+
+.navet-oauth-action svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.navet-oauth-instance-panel {
+  width: 100%;
+  max-width: 28rem;
+  margin-top: 1.75rem;
+  padding: 1.25rem;
+  border: 1px solid rgba(161, 161, 170, 0.18);
+  border-radius: 1.75rem;
+  text-align: left;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 42%),
+    rgba(18, 18, 21, 0.98);
+  box-shadow: 0 26px 62px -36px rgba(0, 0, 0, 0.78), inset 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.navet-oauth-instance-label {
+  display: block;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.navet-oauth-instance-input-row {
+  display: grid;
+  margin-top: 0.5rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+}
+
+.navet-oauth-instance-input-row input {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0 0.875rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.875rem;
+  color: #fff;
+  font-size: 0.875rem;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.navet-oauth-instance-input-row input::placeholder {
+  color: rgba(255, 255, 255, 0.36);
+}
+
+.navet-oauth-instance-input-row input:focus-visible {
+  border-color: rgba(251, 146, 60, 0.72);
+  outline: 3px solid rgba(251, 146, 60, 0.16);
+  outline-offset: 1px;
+}
+
+.navet-oauth-instance-save {
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border: 1px solid rgba(253, 186, 116, 0.2);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: linear-gradient(180deg, #fb923c, #f97316);
+}
+
+.navet-oauth-instance-error {
+  margin: 0.5rem 0 0;
+  color: #fca5a5;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.navet-oauth-instance-cancel {
+  margin-top: 0.75rem;
+  padding: 0;
+  border: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.75rem;
+  background: transparent;
+}
+
+.navet-oauth-instance-cancel:hover {
+  color: #fff;
+}
+
+.navet-oauth-instance-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.navet-oauth-instance-summary > div {
+  min-width: 0;
+}
+
+.navet-oauth-instance-summary a {
+  display: block;
+  margin-top: 0.25rem;
+  overflow: hidden;
+  color: #fdba74;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.navet-oauth-instance-summary button {
+  display: flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.navet-oauth-instance-summary button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.navet-oauth-instance-summary button:focus-visible,
+.navet-oauth-instance-save:focus-visible {
+  outline: 3px solid rgba(251, 146, 60, 0.3);
+  outline-offset: 2px;
+}
+
+.navet-oauth-instance-summary svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.navet-oauth-secondary-action {
+  display: flex;
+  width: 100%;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.04);
+  margin-top: 0.625rem;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.navet-oauth-secondary-action:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.navet-oauth-secondary-action:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.18);
+  outline-offset: 3px;
+}
+
+.navet-oauth-secondary-action svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.navet-oauth-close-message {
+  margin: 0.25rem auto 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.navet-oauth-spinner {
+  animation: navet-oauth-spin 1s linear infinite;
+}
+
+.navet-oauth-footer {
+  width: 100%;
+  max-width: 28rem;
+  margin: 1rem auto 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.navet-oauth-intro + .navet-oauth-footer {
+  margin-top: 2rem;
+}
+
+.navet-oauth-footer p {
+  display: flex;
+  margin: 0;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.navet-oauth-footer p svg {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.0625rem;
+  flex: 0 0 auto;
+}
+
+.navet-oauth-footer nav {
+  display: flex;
+  margin-top: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.navet-oauth-footer a {
+  color: rgba(255, 255, 255, 0.68);
+  text-underline-offset: 0.2em;
+}
+
+.navet-oauth-footer a:hover {
+  color: #fff;
+}
+
+@keyframes navet-oauth-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (min-width: 640px) {
+  .navet-oauth-shell {
+    padding-inline: 1.5rem;
+  }
+
+  .navet-oauth-panel {
+    padding: 1.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navet-oauth-action,
+  .navet-oauth-secondary-action,
+  .navet-oauth-spinner {
+    animation: none;
+    transition: none;
+  }
+}

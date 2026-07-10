@@ -305,6 +305,41 @@ describe('Sidebar mobile navigation', () => {
     expect(screen.getByRole('button', { name: 'Edit Movie status' })).toBeInTheDocument();
   });
 
+  it('uses compact desktop rail spacing when custom actions would crowd the sidebar', () => {
+    setMediaQueryMatch('(max-width: 767px)', false);
+    useEditModeStore.getState().setEditMode(true);
+    useSettingsStore.getState().updateSettings({
+      advancedCustomizationEnabled: true,
+      customSidebarActions: Array.from({ length: 4 }, (_, index) => ({
+        id: `custom-action-${index}`,
+        label: `Custom action ${index + 1}`,
+        icon: 'link',
+        targetType: 'url' as const,
+        targetUrl: `https://example.com/${index}`,
+        visibility: 'always' as const,
+      })),
+    });
+
+    renderWithProviders(<Sidebar mobileRoomNavigation={mobileRoomNavigation} />);
+
+    expect(screen.getByTestId('desktop-sidebar')).toHaveAttribute('data-density', 'compact');
+    expect(screen.getByRole('button', { name: 'Customize sidebar' })).toBeInTheDocument();
+  });
+
+  it('uses compact desktop rail spacing on short screens', () => {
+    setMediaQueryMatch('(max-width: 767px)', false);
+    setMediaQueryMatch('(max-height: 800px)', true);
+
+    renderWithProviders(<Sidebar mobileRoomNavigation={mobileRoomNavigation} />);
+
+    const desktopSidebar = screen.getByTestId('desktop-sidebar');
+    expect(desktopSidebar).toHaveAttribute('data-density', 'compact');
+    expect(within(desktopSidebar).getByRole('button', { name: 'Home' })).toHaveClass(
+      'h-10',
+      'w-10'
+    );
+  });
+
   it('opens external-link custom sidebar actions in a new tab on desktop', () => {
     setMediaQueryMatch('(max-width: 767px)', false);
     useSettingsStore.getState().updateSettings({

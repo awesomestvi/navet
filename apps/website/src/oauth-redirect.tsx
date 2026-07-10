@@ -1,9 +1,21 @@
-import { ArrowRight, CheckCircle2, Music2, ShieldCheck } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
+import navetLogo from '../../../assets/public/logo.svg';
+import {
+  AlertCircle,
+  ArrowRight,
+  CheckCircle2,
+  LoaderCircle,
+  Pencil,
+  ShieldCheck,
+  X,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import '../oauth-redirect.css';
 
 export const NAVET_SPOTIFY_OAUTH_RELAY_URI = 'https://navet.app/redirect/oauth';
 const INSTANCE_STORAGE_KEY = 'navet-oauth-relay-instance';
+const HOME_STORAGE_KEY = 'navet-oauth-relay-home';
 const NAVET_SPOTIFY_CALLBACK_PATH = '/__navet_music__/spotify/callback';
+const NAVET_ISSUES_URL = 'https://github.com/awesomestvi/navet/issues/new';
 
 export function isValidNavetCallbackUrl(value: string): boolean {
   try {
@@ -43,7 +55,41 @@ export function buildNavetCallbackUrl(instanceUrl: string, search: string): stri
   return callback.toString();
 }
 
+export function normalizeNavetHomeUrl(value: string): string | null {
+  try {
+    const url = new URL(value.trim());
+    if (
+      (url.protocol !== 'http:' && url.protocol !== 'https:') ||
+      url.username ||
+      url.password
+    ) {
+      return null;
+    }
+
+    url.search = '';
+    url.hash = '';
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+export function getNavetHomeUrlFromCallback(callbackUrl: string): string | null {
+  if (!isValidNavetCallbackUrl(callbackUrl)) return null;
+  const url = new URL(callbackUrl);
+  url.pathname = url.pathname.slice(0, -NAVET_SPOTIFY_CALLBACK_PATH.length) || '/';
+  url.search = '';
+  url.hash = '';
+  return url.toString();
+}
+
 export function NavetOAuthRedirectPage() {
+  const storedHomeUrl = window.localStorage.getItem(HOME_STORAGE_KEY) ?? '';
+  const [closeBlocked, setCloseBlocked] = useState(false);
+  const [homeUrl, setHomeUrl] = useState(storedHomeUrl);
+  const [homeDraft, setHomeDraft] = useState(storedHomeUrl);
+  const [homeError, setHomeError] = useState('');
+  const [isEditingHome, setIsEditingHome] = useState(!storedHomeUrl);
   const startParams = useMemo(
     () => new URLSearchParams(window.location.hash.replace(/^#/, '')),
     []
@@ -53,9 +99,13 @@ export function NavetOAuthRedirectPage() {
   const isStartRequest = instance !== null || authorize !== null;
 
   useEffect(() => {
+    document.title = 'Connect Spotify · Navet';
+
     if (!instance || !authorize) return;
     if (!isValidNavetCallbackUrl(instance) || !isValidSpotifyAuthorizeUrl(authorize)) return;
     window.sessionStorage.setItem(INSTANCE_STORAGE_KEY, instance);
+    const navetHomeUrl = getNavetHomeUrlFromCallback(instance);
+    if (navetHomeUrl) window.localStorage.setItem(HOME_STORAGE_KEY, navetHomeUrl);
     window.location.replace(authorize);
   }, [authorize, instance]);
 
@@ -63,67 +113,210 @@ export function NavetOAuthRedirectPage() {
   const callbackUrl = storedInstance
     ? buildNavetCallbackUrl(storedInstance, window.location.search)
     : null;
-  const invalidStart = isStartRequest &&
-    (!instance || !authorize || !isValidNavetCallbackUrl(instance) || !isValidSpotifyAuthorizeUrl(authorize));
+  const invalidStart =
+    isStartRequest &&
+    (!instance ||
+      !authorize ||
+      !isValidNavetCallbackUrl(instance) ||
+      !isValidSpotifyAuthorizeUrl(authorize));
+  const heading = invalidStart
+    ? 'Spotify connection couldn’t start'
+    : callbackUrl
+      ? 'Return to Navet'
+      : isStartRequest
+        ? 'Connecting to Spotify'
+        : 'Spotify connection expired';
+  const intro = invalidStart
+    ? 'The authorization link is incomplete or no longer valid.'
+    : callbackUrl
+      ? 'Spotify approved the connection. Finish setup in the Navet dashboard that sent you here.'
+      : isStartRequest
+        ? 'Navet is handing you over to Spotify to approve the connection.'
+        : 'Open Music in your Navet dashboard and choose Connect to start again.';
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#0c0d10] px-4 py-10 text-white">
-      <div className="w-full max-w-xl overflow-hidden rounded-[2rem] border border-white/10 bg-[#15161a] shadow-2xl shadow-black/40">
-        <div className="h-1 bg-gradient-to-r from-[#ff7a1a] via-[#1db954] to-[#fa2d48]" />
-        <div className="space-y-6 p-6 md:p-8">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1db954] text-white">
-              <Music2 className="h-5 w-5" aria-hidden="true" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
-                Navet OAuth relay
-              </p>
-              <h1 className="mt-1 text-xl font-semibold tracking-tight">
-                {callbackUrl ? 'Return to your Navet' : 'Connecting Spotify'}
-              </h1>
-            </div>
-          </div>
-
-          {invalidStart ? (
-            <div className="rounded-2xl border border-red-400/25 bg-red-400/10 p-4 text-sm leading-6 text-red-100">
-              This authorization link is invalid. Return to Navet and start Spotify setup again.
-            </div>
-          ) : callbackUrl ? (
-            <>
-              <div className="flex items-start gap-3 rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#1db954]" />
-                <p className="text-sm leading-6 text-white/70">
-                  Spotify returned the authorization response. Continue to the local Navet instance
-                  that started this connection.
-                </p>
-              </div>
-              <a
-                href={callbackUrl}
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-white px-5 text-sm font-semibold text-black transition-colors hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1db954]"
-              >
-                Return to Navet
-                <ArrowRight className="h-4 w-4" />
-              </a>
-            </>
-          ) : isStartRequest ? (
-            <div className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-white/65">
-              <ShieldCheck className="h-5 w-5 shrink-0 text-[#1db954]" />
-              Opening Spotify securely…
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-amber-400/25 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
-              This relay session has expired. Return to Navet and start Spotify setup again in the
-              same browser tab.
-            </div>
-          )}
-
-          <p className="text-xs leading-5 text-white/40">
-            The local Navet address is stored only in this browser tab. Spotify credentials remain
-            on your Navet server.
-          </p>
+    <main className="navet-oauth-page">
+      <section className="navet-oauth-shell" aria-labelledby="navet-oauth-title">
+        <div className="navet-oauth-logo-wrap">
+          <span className="navet-oauth-logo-glow" aria-hidden="true" />
+          <img className="navet-oauth-logo" src={navetLogo} alt="" />
         </div>
-      </div>
+        <div className="navet-oauth-divider" aria-hidden="true" />
+
+        <h1 id="navet-oauth-title">{heading}</h1>
+        <p className="navet-oauth-intro">{intro}</p>
+
+        {invalidStart || callbackUrl || isStartRequest ? (
+          <div className="navet-oauth-panel" aria-live="polite">
+            {invalidStart ? (
+              <StatusRow
+                icon={<AlertCircle aria-hidden="true" />}
+                title="Invalid authorization link"
+                detail="Return to Navet, open Music, and choose Connect again."
+                tone="danger"
+              />
+            ) : callbackUrl ? (
+              <>
+                <StatusRow
+                  icon={<CheckCircle2 aria-hidden="true" />}
+                  title="Spotify approved"
+                  detail="Your Navet dashboard is ready to finish the connection."
+                  tone="success"
+                />
+                <div className="navet-oauth-panel-divider" aria-hidden="true" />
+                <a className="navet-oauth-action" href={callbackUrl}>
+                  Return to Navet
+                  <ArrowRight aria-hidden="true" />
+                </a>
+              </>
+            ) : (
+              <StatusRow
+                icon={<LoaderCircle className="navet-oauth-spinner" aria-hidden="true" />}
+                title="Opening Spotify"
+                detail="You’ll return here automatically after approving the connection."
+                tone="progress"
+              />
+            )}
+          </div>
+        ) : null}
+
+        {!invalidStart && !callbackUrl && !isStartRequest ? (
+          <div className="navet-oauth-instance-panel">
+            {isEditingHome ? (
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const normalizedHomeUrl = normalizeNavetHomeUrl(homeDraft);
+                  if (!normalizedHomeUrl) {
+                    setHomeError('Enter a valid http or https address.');
+                    return;
+                  }
+
+                  window.localStorage.setItem(HOME_STORAGE_KEY, normalizedHomeUrl);
+                  setHomeUrl(normalizedHomeUrl);
+                  setHomeDraft(normalizedHomeUrl);
+                  setHomeError('');
+                  setIsEditingHome(false);
+                }}
+              >
+                <label className="navet-oauth-instance-label" htmlFor="navet-instance-url">
+                  Navet instance
+                </label>
+                <div className="navet-oauth-instance-input-row">
+                  <input
+                    id="navet-instance-url"
+                    type="url"
+                    value={homeDraft}
+                    onChange={(event) => {
+                      setHomeDraft(event.currentTarget.value);
+                      setHomeError('');
+                    }}
+                    placeholder="http://navet.local:5200"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    aria-describedby={homeError ? 'navet-instance-error' : undefined}
+                  />
+                  <button type="submit" className="navet-oauth-instance-save">
+                    Save
+                  </button>
+                </div>
+                {homeError ? (
+                  <p id="navet-instance-error" className="navet-oauth-instance-error">
+                    {homeError}
+                  </p>
+                ) : null}
+                {homeUrl ? (
+                  <button
+                    type="button"
+                    className="navet-oauth-instance-cancel"
+                    onClick={() => {
+                      setHomeDraft(homeUrl);
+                      setHomeError('');
+                      setIsEditingHome(false);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                ) : null}
+              </form>
+            ) : (
+              <>
+                <div className="navet-oauth-instance-summary">
+                  <div>
+                    <span className="navet-oauth-instance-label">Navet instance</span>
+                    <a href={homeUrl}>{homeUrl}</a>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingHome(true)}
+                    aria-label="Edit Navet instance"
+                  >
+                    <Pencil aria-hidden="true" />
+                  </button>
+                </div>
+                <div className="navet-oauth-panel-divider" aria-hidden="true" />
+                <a className="navet-oauth-action" href={homeUrl}>
+                  Return to Navet
+                  <ArrowRight aria-hidden="true" />
+                </a>
+              </>
+            )}
+
+            <button
+              type="button"
+              className="navet-oauth-secondary-action"
+              onClick={() => {
+                setCloseBlocked(false);
+                window.close();
+                window.setTimeout(() => setCloseBlocked(true), 200);
+              }}
+            >
+              <X aria-hidden="true" />
+              Close this tab
+            </button>
+            {closeBlocked ? (
+              <p className="navet-oauth-close-message" role="status">
+                Your browser couldn’t close this tab automatically. You can close it manually.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        <footer className="navet-oauth-footer">
+          <p>
+            <ShieldCheck aria-hidden="true" />
+            <span>Your Navet address is saved in this browser. Credentials stay on your server.</span>
+          </p>
+          <nav aria-label="OAuth relay links">
+            <a href="/">navet.app</a>
+            <span aria-hidden="true">·</span>
+            <a href={NAVET_ISSUES_URL}>Report a bug</a>
+          </nav>
+        </footer>
+      </section>
     </main>
+  );
+}
+
+function StatusRow({
+  detail,
+  icon,
+  title,
+  tone,
+}: {
+  detail: string;
+  icon: React.ReactNode;
+  title: string;
+  tone: 'danger' | 'progress' | 'success';
+}) {
+  return (
+    <div className="navet-oauth-state-row">
+      <span className={`navet-oauth-state-icon navet-oauth-state-icon--${tone}`}>{icon}</span>
+      <span className="navet-oauth-state-copy">
+        <strong>{title}</strong>
+        <span>{detail}</span>
+      </span>
+    </div>
   );
 }

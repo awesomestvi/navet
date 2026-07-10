@@ -89,7 +89,7 @@ describe('DashboardLayout', () => {
 
     expect(screen.getByTestId('dashboard-layout-content')).toHaveClass('px-2.5');
     expect(screen.getByTestId('dashboard-layout-content')).toHaveClass('md:px-4');
-    expect(screen.getByTestId('dashboard-layout-content')).toHaveClass('lg:px-5');
+    expect(screen.getByTestId('dashboard-layout-content')).toHaveClass('min-[1025px]:px-5');
   });
 
   it('hides the dashboard chrome and renders the kiosk more menu in kiosk mode', () => {

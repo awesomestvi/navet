@@ -324,7 +324,14 @@ describe('RoomNav', () => {
     fireEvent.pointerDown(screen.getByRole('button', { name: 'Rooms' }));
     await waitFor(() => expect(screen.getByRole('menu')).toBeInTheDocument());
 
-    expect(within(screen.getByRole('menu')).getByText('Rooms')).toBeInTheDocument();
+    const menu = screen.getByRole('menu');
+    expect(within(menu).getByText('Rooms')).toBeInTheDocument();
+    expect(menu).toHaveClass('overflow-hidden');
+    expect(within(menu).getByRole('menuitem', { name: 'Studio' }).parentElement).toHaveClass(
+      'overflow-y-auto',
+      'md:grid-cols-3',
+      'min-[1025px]:grid-cols-4'
+    );
   });
 
   it('keeps hidden rooms out of the strip and overflow menu', async () => {

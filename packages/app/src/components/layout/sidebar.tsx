@@ -131,6 +131,7 @@ export const Sidebar = memo(function Sidebar({
   const [editingSidebarActionId, setEditingSidebarActionId] = useState<string | null>(null);
   const lastScrollYRef = useRef(0);
   const isMobile = useMediaQuery('(max-width: 767px)');
+  const isShortDesktopViewport = useMediaQuery('(max-height: 800px)');
   const homeAssistantShell = useHomeAssistantPanelShell();
 
   useEffect(() => {
@@ -223,6 +224,10 @@ export const Sidebar = memo(function Sidebar({
       setIsSidebarCustomizationOpen,
     ]
   );
+  const canAddCustomSidebarAction =
+    isEditMode && customSidebarActions.length < ADVANCED_CUSTOM_SIDEBAR_ACTION_LIMIT;
+  const useCompactDesktopRail =
+    isShortDesktopViewport || customMenuItems.length + (canAddCustomSidebarAction ? 1 : 0) >= 4;
   const dockItems = useMemo(
     () =>
       getOrderedSectionNavigationItems(t, MOBILE_SECTION_DOCK_ORDER).map((item) => ({
@@ -261,9 +266,15 @@ export const Sidebar = memo(function Sidebar({
     <>
       {/* Desktop Sidebar */}
       <div
+        data-testid="desktop-sidebar"
+        data-density={useCompactDesktopRail ? 'compact' : 'comfortable'}
         className={`fixed left-0 top-0 hidden h-full w-16 ${surface.shellPanel} border-r md:flex z-50`}
       >
-        <div className="flex w-full flex-col items-center justify-between px-0 py-5">
+        <div
+          className={`flex w-full flex-col items-center justify-between px-0 ${
+            useCompactDesktopRail ? 'py-3' : 'py-5'
+          }`}
+        >
           <div className="flex h-10 w-10 items-center justify-center">
             <ImageWithFallback
               src={getPublicAssetUrl('logo.svg')}
@@ -271,7 +282,7 @@ export const Sidebar = memo(function Sidebar({
               className="h-10 w-10"
             />
           </div>
-          <div className="flex flex-col gap-4">
+          <div className={`flex flex-col ${useCompactDesktopRail ? 'gap-2' : 'gap-4'}`}>
             {menuItems.map((item) => (
               <InteractivePill
                 key={item.id}
@@ -302,7 +313,7 @@ export const Sidebar = memo(function Sidebar({
                 <item.icon className="h-5 w-5" />
               </InteractivePill>
             ))}
-            {customMenuItems.length > 0 ? (
+            {customMenuItems.length > 0 && !useCompactDesktopRail ? (
               <div
                 aria-hidden="true"
                 className={`mx-auto h-px w-6 rounded-full ${sidebarDividerClass}`}
@@ -345,7 +356,7 @@ export const Sidebar = memo(function Sidebar({
                 ) : null}
               </div>
             ))}
-            {isEditMode ? (
+            {canAddCustomSidebarAction ? (
               <>
                 <div
                   aria-hidden="true"
@@ -361,7 +372,6 @@ export const Sidebar = memo(function Sidebar({
                   active={false}
                   variant="ghost"
                   className={`flex h-10 w-10 items-center justify-center rounded-[22px] gap-0 px-0 py-0 md:gap-0 md:px-0 transition-colors ${inactiveColor}`}
-                  disabled={customSidebarActions.length >= ADVANCED_CUSTOM_SIDEBAR_ACTION_LIMIT}
                 >
                   <Plus className="h-5 w-5" />
                 </InteractivePill>

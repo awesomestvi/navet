@@ -1,7 +1,7 @@
-import {
-  RUNTIME_SAMPLE_MEDIA,
-  RUNTIME_SAMPLE_SCREENSHOTS,
-} from '@navet/app/assets/runtime-sample-images';
+import artworksOriginal from '@assets/reference/media/artworks-original.jpg';
+import cameraSampleImageAvif from '@assets/reference/media/camera-sample.avif';
+import cameraSampleImageWebp from '@assets/reference/media/camera-sample.webp';
+import { RUNTIME_SAMPLE_SCREENSHOTS } from '@navet/app/assets/runtime-sample-images';
 import { AuthProvider } from '@navet/app/auth/AuthProvider';
 import { RoomNav } from '@navet/app/components/layout/room-nav';
 import {
@@ -52,6 +52,7 @@ import {
   installPreviewRuntime,
   resetPreviewRuntime,
 } from '@navet/app/preview/runtime';
+import { useEditModeStore } from '@navet/app/stores/edit-mode-store';
 import { useNavigationStore } from '@navet/app/stores/navigation-store';
 import { defaultSettings, useSettingsStore } from '@navet/app/stores/settings-store';
 import { useThemeStore } from '@navet/app/stores/theme-store';
@@ -78,6 +79,7 @@ const DEMO_ROOMS = [
   'Outside',
   'Toilet',
   'Unassigned',
+  ...Array.from({ length: 48 }, (_, index) => `Demo Room ${String(index + 1).padStart(2, '0')}`),
 ];
 
 const energyTrend = [
@@ -97,11 +99,11 @@ const energyTrend = [
 
 const demoEnergyScenario = getEnergyDashboardScenario('default');
 const demoEnergySourceDiagnostics = getMockEnergySourceDiagnostics(demoEnergyScenario.dashboard);
-const { artwork: sampleArtworkImage } = RUNTIME_SAMPLE_MEDIA;
-const sampleCameraFallbackImage = '/assets/reference/media/camera-sample.webp';
+const sampleArtworkImage = artworksOriginal;
+const sampleCameraFallbackImage = cameraSampleImageWebp;
 const sampleCameraSources = [
-  { srcSet: '/assets/reference/media/camera-sample.avif', type: 'image/avif' },
-  { srcSet: '/assets/reference/media/camera-sample.webp', type: 'image/webp' },
+  { srcSet: cameraSampleImageAvif, type: 'image/avif' },
+  { srcSet: cameraSampleImageWebp, type: 'image/webp' },
 ] as const;
 const {
   energyTablet: demoEnergyImage,
@@ -525,6 +527,7 @@ const groupedSensors = [
 
 function useDemoDisplayDefaults() {
   useEffect(() => {
+    useEditModeStore.getState().setEditMode(false);
     useThemeStore.getState().setTheme('dark');
     useThemeStore.getState().setPrimaryColor('orange');
     useThemeStore.getState().setCustomPrimaryColor(null);
@@ -1018,7 +1021,7 @@ function LightsShot() {
     <div className="space-y-6">
       <SectionBlock title="Common areas">
         <DashboardGrid>
-          <CardSlot size="medium">
+          <CardSlot size="small">
             <LightCard
               id="light.living_room"
               name="Living Room"
@@ -1026,12 +1029,12 @@ function LightsShot() {
               initialState
               initialBrightness={68}
               initialTemp={3200}
-              size="medium"
+              size="small"
               onSizeChange={noopCardSizeChange}
               isEditMode={false}
             />
           </CardSlot>
-          <CardSlot size="medium">
+          <CardSlot size="small">
             <LightCard
               id="light.kitchen"
               name="Kitchen"
@@ -1039,7 +1042,7 @@ function LightsShot() {
               initialState
               initialBrightness={84}
               initialTemp={4100}
-              size="medium"
+              size="small"
               onSizeChange={noopCardSizeChange}
               isEditMode={false}
             />
@@ -1137,6 +1140,7 @@ function MediaShot() {
               room="Kitchen"
               title="Morning Mix"
               artist="Navet Radio"
+              entityPicture={sampleArtworkImage}
               entityType="Speaker"
               source="Spotify"
               sourceList={['Spotify', 'AirPlay', 'Radio']}
@@ -1160,6 +1164,7 @@ function MediaShot() {
               room="Bedroom"
               title="Deep Focus"
               artist="Navet Radio"
+              entityPicture={sampleArtworkImage}
               entityType="Speaker"
               source="AirPlay"
               sourceList={['Spotify', 'AirPlay', 'Radio']}
@@ -1536,26 +1541,31 @@ function sanitizeDemoSection(value: unknown): DemoSection {
 function DemoContent() {
   useDemoDisplayDefaults();
   const [activeRoom, setActiveRoom] = useState<string>(ALL_ROOMS_ID);
+  const isEditMode = useEditModeStore((state) => state.isEditMode);
+  const toggleEditMode = useEditModeStore((state) => state.toggleEditMode);
   const activeSection = useNavigationStore((state) => state.activeSection);
   const demoSection = getDemoSectionFromPath();
   const section = sanitizeDemoSection(activeSection ?? demoSection ?? 'home');
 
   return (
     <DashboardLayout
+      mobileEditActions={{ isEditMode, onToggleEditMode: toggleEditMode }}
       mobileRoomNavigation={
         section === 'home'
           ? { activeRoom, onRoomChange: setActiveRoom, rooms: DEMO_ROOMS }
           : undefined
       }
     >
-      <div className="flex w-full flex-col gap-6">
+      <div className="flex w-full flex-col gap-4 min-[1025px]:gap-6">
         {section === 'home' ? (
           <RoomNav
             rooms={DEMO_ROOMS}
             activeRoom={activeRoom}
             onRoomChange={setActiveRoom}
-            isEditMode={false}
-            onToggleEditMode={() => undefined}
+            isEditMode={isEditMode}
+            onToggleEditMode={toggleEditMode}
+            suppressEditActions={isEditMode}
+            showCustomizeButton={false}
           />
         ) : null}
         <DemoSectionContent section={section} activeRoom={activeRoom} />

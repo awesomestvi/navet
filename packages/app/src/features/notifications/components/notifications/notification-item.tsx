@@ -128,7 +128,8 @@ export function NotificationItem({
                   onClick={() => void onPrimaryAction(notification.id)}
                   active={notification.source === 'update'}
                   intent="action"
-                  className="h-8 shrink-0 whitespace-nowrap rounded-full px-3 text-xs font-medium"
+                  size="compact"
+                  className="shrink-0 whitespace-nowrap font-medium"
                 >
                   {primaryActionLabel}
                 </InteractivePill>
@@ -136,7 +137,8 @@ export function NotificationItem({
               <InteractivePill
                 onClick={() => void onDelete(notification.id)}
                 intent="action"
-                className="h-8 shrink-0 whitespace-nowrap rounded-full px-3 text-xs font-medium"
+                size="compact"
+                className="shrink-0 whitespace-nowrap font-medium"
               >
                 {secondaryActionLabel}
               </InteractivePill>

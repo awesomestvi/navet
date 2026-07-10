@@ -195,11 +195,11 @@ export const DashboardLayout = memo(function DashboardLayout({
           className={`safe-area-pt-5 min-w-0 flex flex-col overflow-x-clip ${
             !showNavetSidebar
               ? dashboardSpaceMode === 'more_space'
-                ? 'gap-3 px-1.5 py-2 pb-24 md:gap-4 md:px-3 md:py-4 md:pb-24 lg:px-4 lg:py-5 lg:pb-24'
-                : 'gap-3 p-2 pb-24 md:gap-4 md:p-4 md:pb-24 lg:p-5 lg:pb-24'
+                ? 'gap-3 px-1.5 py-2 pb-24 md:gap-4 md:px-3 md:py-4 md:pb-24 min-[1025px]:px-4 min-[1025px]:py-5 min-[1025px]:pb-24'
+                : 'gap-3 p-2 pb-24 md:gap-4 md:px-3 md:py-4 md:pb-24 min-[1025px]:p-5 min-[1025px]:pb-24'
               : dashboardSpaceMode === 'more_space'
-                ? 'gap-3.5 px-2.5 py-3 pb-20 md:ml-16 md:gap-6 md:px-4 md:py-6 md:pb-6 lg:px-5 lg:py-8 lg:pb-8'
-                : 'gap-3.5 p-3 pb-20 md:ml-16 md:gap-6 md:p-6 md:pb-6 lg:p-8 lg:pb-8'
+                ? 'gap-3.5 px-2.5 py-3 pb-20 md:ml-16 md:gap-4 md:px-4 md:py-5 md:pb-6 min-[1025px]:gap-6 min-[1025px]:px-5 min-[1025px]:py-8 min-[1025px]:pb-8'
+                : 'gap-3.5 p-3 pb-20 md:ml-16 md:gap-4 md:px-4 md:py-5 md:pb-6 min-[1025px]:gap-6 min-[1025px]:p-8 min-[1025px]:pb-8'
           }`}
         >
           {showNavetHeader ? (

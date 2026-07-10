@@ -36,8 +36,8 @@ export function NotificationHeader({
           onClick={onMarkAllAsRead}
           variant="secondary"
           size="small"
-          leading={<Check className="h-3.5 w-3.5" />}
-          className="min-h-8 justify-start rounded-full px-3 text-xs"
+          leading={<Check className="h-3 w-3" />}
+          className="min-h-7 justify-start rounded-full px-2.5 text-[11px]"
         >
           {t('notifications.header.markAllRead')}
         </Button>
@@ -46,8 +46,8 @@ export function NotificationHeader({
         onClick={onClearAll}
         variant="secondary"
         size="small"
-        leading={<Trash2 className="h-3.5 w-3.5" />}
-        className="min-h-8 justify-start rounded-full px-3 text-xs"
+        leading={<Trash2 className="h-3 w-3" />}
+        className="min-h-7 justify-start rounded-full px-2.5 text-[11px]"
       >
         {t('notifications.header.clearAll')}
       </Button>
