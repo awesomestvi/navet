@@ -6,7 +6,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(__dirname, '..');
 const distDir = path.join(workspaceRoot, 'dist');
 const indexPath = path.join(distDir, 'index.html');
-const routeClones = ['install', 'roadmap'];
+const routeClones = ['install', 'roadmap', 'redirect/oauth'];
 
 if (!fs.existsSync(indexPath)) {
   throw new Error(`Website index.html is missing: ${indexPath}`);
