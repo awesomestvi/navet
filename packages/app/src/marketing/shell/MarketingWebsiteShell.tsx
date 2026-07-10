@@ -1,22 +1,21 @@
-import { Text } from '@navet/app/components/primitives';
+import logoHorizontalLight from '@assets/public/logo-horizontal-light.svg';
+import { Text } from '@navet/app/components/primitives/text';
 import {
   getThemeFocusRingClassName,
   navetSpacingTokens,
   navetTypographyTokens,
 } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
-import { useTheme } from '@navet/app/hooks';
+import { useTheme } from '@navet/app/hooks/use-theme';
 import {
   getMarketingWebsitePath,
   MARKETING_URLS,
 } from '@navet/app/marketing/constants/marketingLinks';
 import { GithubMark } from '@navet/app/marketing/icons/GithubMark';
-import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { storage } from '@navet/app/utils/storage';
+import { AnimatedGridPattern } from '@website/components/effects/animated-grid-pattern';
 import { Menu, Star, X } from 'lucide-react';
 import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { AnimatedGridPattern } from '../../../../../apps/website/src/components/effects/animated-grid-pattern';
-import logoHorizontalLight from '../../../../../assets/public/logo-horizontal-light.svg';
 
 const GITHUB_STARS_CACHE_KEY = 'marketing:github-stars';
 const GITHUB_STARS_CACHE_TTL_MS = 60 * 60 * 1000;
@@ -178,16 +177,9 @@ export function MarketingWebsiteShell({
     const previousNoAnimation = root.dataset.noAnimation;
     const previousLowPower = root.dataset.lowPower;
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const previousTemperatureUnit = useSettingsStore.getState().temperatureUnit;
-    const previousUse24HourTime = useSettingsStore.getState().use24HourTime;
-
     root.dataset.effectsQuality = 'high';
     root.dataset.lowPower = 'false';
     root.dataset.noAnimation = prefersReducedMotion ? 'true' : 'false';
-    useSettingsStore.setState({
-      temperatureUnit: 'celsius',
-      use24HourTime: true,
-    });
 
     return () => {
       if (previousEffectsQuality) {
@@ -207,11 +199,6 @@ export function MarketingWebsiteShell({
       } else {
         delete root.dataset.noAnimation;
       }
-
-      useSettingsStore.setState({
-        temperatureUnit: previousTemperatureUnit,
-        use24HourTime: previousUse24HourTime,
-      });
     };
   }, []);
 

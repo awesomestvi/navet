@@ -254,7 +254,7 @@
     }
   }
 
-  @media (max-width: 1024px) {
+  @media (max-width: 63.999rem) {
     .marketing-hero-layout {
       grid-template-columns: minmax(0, 1fr);
       justify-items: center;
@@ -296,7 +296,7 @@
     }
   }
 
-  @media (min-width: 900px) and (max-width: 1100px) and (orientation: portrait) {
+  @media (min-width: 64rem) and (max-width: 68.75rem) {
     .marketing-hero-background-shell {
       inset: 0;
     }
@@ -320,7 +320,26 @@
 
     .marketing-hero-title {
       max-width: 11.5ch;
-      font-size: 3.05rem;
+      font-size: 2.625rem;
+      line-height: 0.98;
+    }
+
+    .marketing-hero-copy > * + * {
+      margin-top: 1rem;
+    }
+
+    .marketing-hero-copy-stack > * + * {
+      margin-top: 0.75rem;
+    }
+
+    .marketing-hero-subheadline {
+      font-size: 1rem;
+      line-height: 1.625rem;
+    }
+
+    .marketing-hero-support-line {
+      font-size: 0.875rem;
+      line-height: 1.375rem;
     }
 
     .marketing-hero-visual-frame {
@@ -329,7 +348,7 @@
     }
   }
 
-  @media (max-width: 1024px) and (orientation: portrait) {
+  @media (max-width: 63.999rem) and (orientation: portrait) {
     .marketing-hero-layout {
       grid-template-columns: minmax(0, 1fr);
       justify-items: center;

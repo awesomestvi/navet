@@ -3,7 +3,7 @@ import {
   navetTypographyTokens,
 } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
-import { useTheme } from '@navet/app/hooks';
+import { useTheme } from '@navet/app/hooks/use-theme';
 import { ArrowUpRight } from 'lucide-react';
 import { type AnchorHTMLAttributes, forwardRef, type ReactNode } from 'react';
 

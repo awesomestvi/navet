@@ -1,17 +1,20 @@
-import { Button, Heading, Link, Text } from '@navet/app/components/primitives';
+import heroBackgroundRoomAvif from '@assets/reference/marketing/use-cases/navet-hero-background-room.avif';
+import heroBackgroundRoomPng from '@assets/reference/marketing/use-cases/navet-hero-background-room.png';
+import heroBackgroundRoomWebp from '@assets/reference/marketing/use-cases/navet-hero-background-room.webp';
+import heroDashboardOverlayAvif from '@assets/reference/marketing/use-cases/navet-hero-dashboard-overlay.avif';
+import heroDashboardOverlayPng from '@assets/reference/marketing/use-cases/navet-hero-dashboard-overlay.png';
+import heroDashboardOverlayWebp from '@assets/reference/marketing/use-cases/navet-hero-dashboard-overlay.webp';
+import { Button } from '@navet/app/components/primitives/button';
+import { Heading } from '@navet/app/components/primitives/heading';
+import { Link } from '@navet/app/components/primitives/link';
+import { Text } from '@navet/app/components/primitives/text';
 import { cn } from '@navet/app/components/ui/utils';
 import { MarketingPillGroup } from '@navet/app/marketing/components/MarketingEditorial';
 import { MarketingResponsiveImage } from '@navet/app/marketing/components/MarketingResponsiveImage';
 import { MARKETING_HERO_CONTENT } from '@navet/app/marketing/data/marketingContent';
 import { GithubMark } from '@navet/app/marketing/icons/GithubMark';
+import { AnimatedGradientText } from '@website/components/effects/animated-gradient-text';
 import { ArrowRight, ChevronDown } from 'lucide-react';
-import { AnimatedGradientText } from '../../../../../apps/website/src/components/effects/animated-gradient-text';
-import heroBackgroundRoomAvif from '../../../../../assets/reference/marketing/use-cases/navet-hero-background-room.avif';
-import heroBackgroundRoomPng from '../../../../../assets/reference/marketing/use-cases/navet-hero-background-room.png';
-import heroBackgroundRoomWebp from '../../../../../assets/reference/marketing/use-cases/navet-hero-background-room.webp';
-import heroDashboardOverlayAvif from '../../../../../assets/reference/marketing/use-cases/navet-hero-dashboard-overlay.avif';
-import heroDashboardOverlayPng from '../../../../../assets/reference/marketing/use-cases/navet-hero-dashboard-overlay.png';
-import heroDashboardOverlayWebp from '../../../../../assets/reference/marketing/use-cases/navet-hero-dashboard-overlay.webp';
 
 function MarketingHeroVisual({ mobile = false }: { mobile?: boolean }) {
   return (
@@ -54,6 +57,8 @@ function MarketingHeroVisual({ mobile = false }: { mobile?: boolean }) {
             { srcSet: heroDashboardOverlayWebp, type: 'image/webp' },
           ]}
           alt="Navet dashboard product preview shown on a tablet-style device"
+          width={1536}
+          height={1024}
           className={cn(
             'block h-auto w-full',
             mobile ? 'translate-y-1 scale-[1.12] origin-top' : undefined
@@ -116,10 +121,10 @@ export function MarketingHeroSection() {
                   {MARKETING_HERO_CONTENT.headline.accent}
                 </AnimatedGradientText>
               </Heading>
-              <Text className="max-w-[30rem] text-[15px] leading-6 text-white/78 sm:text-base sm:leading-7 md:text-xl md:leading-8">
+              <Text className="marketing-hero-subheadline max-w-[30rem] text-[15px] leading-6 text-white/78 sm:text-base sm:leading-7 md:text-xl md:leading-8">
                 {MARKETING_HERO_CONTENT.subheadline}
               </Text>
-              <Text className="max-w-[26rem] text-sm leading-[1.35rem] text-white/58 sm:leading-6 md:text-base">
+              <Text className="marketing-hero-support-line max-w-[26rem] text-sm leading-[1.35rem] text-white/58 sm:leading-6 md:text-base">
                 {MARKETING_HERO_CONTENT.supportLine}
               </Text>
             </div>

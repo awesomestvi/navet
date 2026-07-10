@@ -1,10 +1,10 @@
+import { resolveDashboardPerformanceProfile } from '@navet/app/features/dashboard/hooks/use-dashboard-performance-mode';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { useEffect, useState } from 'react';
-import { resolveDashboardPerformanceProfile } from '../../../dashboard/hooks/use-dashboard-performance-mode';
 import { resolveArtworkPalette } from './media-artwork-palette';
 
 export interface MediaArtworkPalette {

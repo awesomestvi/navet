@@ -14,7 +14,7 @@ import type { PrimaryColor, ThemeMode } from '@navet/app/stores/theme-store';
 import { useThemeStore } from '@navet/app/stores/theme-store';
 import { navetStorybookTheme } from './navet-theme';
 // @ts-ignore - side-effect stylesheet import for Storybook runtime.
-import '@navet/app/styles/index.css';
+import '@website/website.css';
 
 const PRIMARY_COLOR_VALUES: Record<Exclude<PrimaryColor, 'custom'>, string> = {
   orange: '#f97316',

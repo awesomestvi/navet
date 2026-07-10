@@ -26,6 +26,7 @@ import {
 } from '@navet/app/marketing/data/marketingDemoData';
 import { MarketingSectionShell } from '@navet/app/marketing/shell/MarketingSectionShell';
 import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
+import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { BorderBeam } from '@website/components/effects/border-beam';
 import { type CSSProperties, useCallback, useEffect, useRef } from 'react';
 import { type BentoCardKey, getMarketingBentoCardSize } from './bento-card-size';
@@ -327,6 +328,9 @@ function MarketingBentoCard({ cardKey }: { cardKey: BentoCardKey }) {
 function MarketingLightEntitySeed() {
   useEffect(() => {
     const previousState = homeAssistantStore.getState();
+    const previousTemperatureUnit = useSettingsStore.getState().temperatureUnit;
+    const previousUse24HourTime = useSettingsStore.getState().use24HourTime;
+    useSettingsStore.setState({ temperatureUnit: 'celsius', use24HourTime: true });
 
     homeAssistantStore.setState({
       ...previousState,
@@ -428,6 +432,10 @@ function MarketingLightEntitySeed() {
 
     return () => {
       homeAssistantStore.setState(previousState);
+      useSettingsStore.setState({
+        temperatureUnit: previousTemperatureUnit,
+        use24HourTime: previousUse24HourTime,
+      });
     };
   }, []);
 

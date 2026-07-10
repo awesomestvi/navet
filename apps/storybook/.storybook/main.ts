@@ -4,11 +4,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const storybookDir = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(storybookDir, '../../..');
+const repoRoot = path.resolve(storybookDir, '..', '..', '..');
 const storybookBasePath = process.env.STORYBOOK_BASE_PATH?.trim() || './';
 
 const config: StorybookConfig = {
-  stories: ['../../../packages/**/*.stories.@(ts|tsx)'],
+  stories: [path.join(repoRoot, 'packages/**/*.stories.@(ts|tsx)')],
   addons: [
     '@storybook/addon-docs',
     '@storybook/addon-a11y',
@@ -21,7 +21,7 @@ const config: StorybookConfig = {
       },
     },
   },
-  staticDirs: ['../../../assets/public'],
+  staticDirs: [path.join(repoRoot, 'assets/public')],
   managerHead: async (head) => `
     ${head}
     <style>

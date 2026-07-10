@@ -1,3 +1,13 @@
+import beachFriendsAvif from '@assets/reference/photo-frame/beach-friends.avif';
+import beachFriendsWebp from '@assets/reference/photo-frame/beach-friends.webp';
+import cityCafeAvif from '@assets/reference/photo-frame/city-cafe.avif';
+import cityCafeWebp from '@assets/reference/photo-frame/city-cafe.webp';
+import countryWalkAvif from '@assets/reference/photo-frame/country-walk.avif';
+import countryWalkWebp from '@assets/reference/photo-frame/country-walk.webp';
+import desertFriendsAvif from '@assets/reference/photo-frame/desert-friends.avif';
+import desertFriendsWebp from '@assets/reference/photo-frame/desert-friends.webp';
+import nightOutAvif from '@assets/reference/photo-frame/night-out.avif';
+import nightOutWebp from '@assets/reference/photo-frame/night-out.webp';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { getCardSizeOverlayStyle } from '@navet/app/components/shared/card-size-selector';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
@@ -10,23 +20,16 @@ type PhotoStoryArgs = {
   shuffleEnabled: boolean;
 };
 
-function createStoryPhotoFrameImage(name: string): PhotoFrameImage {
+function createStoryPhotoFrameImage(webp: string, avif: string): PhotoFrameImage {
   return {
-    src: new URL(`../../../../../../assets/reference/photo-frame/${name}.webp`, import.meta.url)
-      .href,
+    src: webp,
     sources: [
       {
-        srcSet: new URL(
-          `../../../../../../assets/reference/photo-frame/${name}.avif`,
-          import.meta.url
-        ).href,
+        srcSet: avif,
         type: 'image/avif',
       },
       {
-        srcSet: new URL(
-          `../../../../../../assets/reference/photo-frame/${name}.webp`,
-          import.meta.url
-        ).href,
+        srcSet: webp,
         type: 'image/webp',
       },
     ],
@@ -34,11 +37,11 @@ function createStoryPhotoFrameImage(name: string): PhotoFrameImage {
 }
 
 const STORY_PHOTO_FRAME_IMAGES: readonly PhotoFrameImage[] = [
-  createStoryPhotoFrameImage('country-walk'),
-  createStoryPhotoFrameImage('night-out'),
-  createStoryPhotoFrameImage('desert-friends'),
-  createStoryPhotoFrameImage('city-cafe'),
-  createStoryPhotoFrameImage('beach-friends'),
+  createStoryPhotoFrameImage(countryWalkWebp, countryWalkAvif),
+  createStoryPhotoFrameImage(nightOutWebp, nightOutAvif),
+  createStoryPhotoFrameImage(desertFriendsWebp, desertFriendsAvif),
+  createStoryPhotoFrameImage(cityCafeWebp, cityCafeAvif),
+  createStoryPhotoFrameImage(beachFriendsWebp, beachFriendsAvif),
 ];
 
 function PhotoStoryPreview({ size, shuffleEnabled }: PhotoStoryArgs) {

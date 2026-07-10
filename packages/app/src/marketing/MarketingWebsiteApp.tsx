@@ -1,4 +1,3 @@
-import { I18nProvider } from '@navet/app/i18n';
 import { MarketingHomePage } from '@navet/app/marketing/pages/MarketingHomePage';
 import { resolveMarketingWebsiteRoute } from '@navet/app/marketing/routing/marketingWebsiteRoutes';
 import { applyMarketingWebsiteMetadata } from '@navet/app/marketing/seo/marketingMetadata';
@@ -44,9 +43,5 @@ function WebsiteContent() {
 }
 
 export default function MarketingWebsiteApp() {
-  return (
-    <I18nProvider>
-      <WebsiteContent />
-    </I18nProvider>
-  );
+  return <WebsiteContent />;
 }

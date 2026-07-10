@@ -8,7 +8,7 @@ import {
   navetSpacingTokens,
 } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
-import { useTheme } from '@navet/app/hooks';
+import { useTheme } from '@navet/app/hooks/use-theme';
 import { Loader2 } from 'lucide-react';
 import { type ButtonHTMLAttributes, forwardRef, type ReactNode } from 'react';
 

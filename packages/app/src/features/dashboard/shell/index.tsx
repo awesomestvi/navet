@@ -5,7 +5,7 @@ import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-col
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { resolveWallpaperBackgroundImage } from '@navet/app/constants/built-in-wallpapers';
 import { CustomExtensionsDialog } from '@navet/app/features/settings/components/custom-extensions-dialog';
-import { usePrimaryColor, useThemeMode, useWallpaper } from '@navet/app/hooks';
+import { useMediaQuery, usePrimaryColor, useThemeMode, useWallpaper } from '@navet/app/hooks';
 import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
@@ -41,6 +41,7 @@ export const DashboardLayout = memo(function DashboardLayout({
     (state) => state.activeCustomSidebarActionId
   );
   const dashboardSpaceMode = useSettingsStore(settingsSelectors.dashboardSpaceMode);
+  const useReducedTabletPadding = useMediaQuery('(min-width: 768px) and (max-width: 1024px)');
   const showNavetSidebar = !kioskMode || activeCustomSidebarActionId !== null;
   const showNavetHeader = !kioskMode;
   const surface = getThemeSurfaceTokens(theme);
@@ -70,6 +71,17 @@ export const DashboardLayout = memo(function DashboardLayout({
   const [isSidebarCustomizationOpen, setIsSidebarCustomizationOpen] = useState(false);
   const wallpaperBackgroundImage = resolveWallpaperBackgroundImage(wallpaper);
   const accentColorValue = getThemeColorValue(primaryColor);
+  const contentSpacingClassName = useReducedTabletPadding
+    ? showNavetSidebar
+      ? 'ml-16 gap-4 px-4 py-5 pb-6'
+      : 'gap-4 px-3 py-4 pb-24'
+    : !showNavetSidebar
+      ? dashboardSpaceMode === 'more_space'
+        ? 'gap-3 px-1.5 py-2 pb-24 md:gap-4 md:px-3 md:py-4 md:pb-24 lg:px-4 lg:py-5 lg:pb-24'
+        : 'gap-3 p-2 pb-24 md:gap-4 md:p-4 md:pb-24 lg:p-5 lg:pb-24'
+      : dashboardSpaceMode === 'more_space'
+        ? 'gap-3.5 px-2.5 py-3 pb-20 md:ml-16 md:gap-6 md:px-4 md:py-6 md:pb-6 lg:px-5 lg:py-8 lg:pb-8'
+        : 'gap-3.5 p-3 pb-20 md:ml-16 md:gap-6 md:p-6 md:pb-6 lg:p-8 lg:pb-8';
 
   const bgColor =
     theme === 'light'
@@ -192,15 +204,7 @@ export const DashboardLayout = memo(function DashboardLayout({
 
         <div
           data-testid="dashboard-layout-content"
-          className={`safe-area-pt-5 min-w-0 flex flex-col overflow-x-clip ${
-            !showNavetSidebar
-              ? dashboardSpaceMode === 'more_space'
-                ? 'gap-3 px-1.5 py-2 pb-24 md:gap-4 md:px-3 md:py-4 md:pb-24 min-[1025px]:px-4 min-[1025px]:py-5 min-[1025px]:pb-24'
-                : 'gap-3 p-2 pb-24 md:gap-4 md:px-3 md:py-4 md:pb-24 min-[1025px]:p-5 min-[1025px]:pb-24'
-              : dashboardSpaceMode === 'more_space'
-                ? 'gap-3.5 px-2.5 py-3 pb-20 md:ml-16 md:gap-4 md:px-4 md:py-5 md:pb-6 min-[1025px]:gap-6 min-[1025px]:px-5 min-[1025px]:py-8 min-[1025px]:pb-8'
-                : 'gap-3.5 p-3 pb-20 md:ml-16 md:gap-4 md:px-4 md:py-5 md:pb-6 min-[1025px]:gap-6 min-[1025px]:p-8 min-[1025px]:pb-8'
-          }`}
+          className={`safe-area-pt-5 min-w-0 flex flex-col overflow-x-clip ${contentSpacingClassName}`}
         >
           {showNavetHeader ? (
             <Header

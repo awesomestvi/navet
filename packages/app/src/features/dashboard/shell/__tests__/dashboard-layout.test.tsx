@@ -1,5 +1,6 @@
 import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { useThemeStore } from '@navet/app/stores/theme-store';
+import { setMediaQueryMatch } from '@navet/app/test/browser-mocks';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import { fireEvent, screen } from '@testing-library/react';
@@ -77,8 +78,9 @@ describe('DashboardLayout', () => {
     expect(screen.queryByTestId('kiosk-orbit-menu')).not.toBeInTheDocument();
   });
 
-  it('uses tighter shell padding in more-space mode', () => {
+  it('uses tighter shell padding on 768px to 1024px screens', () => {
     setPath('/dashboard');
+    setMediaQueryMatch('(min-width: 768px) and (max-width: 1024px)', true);
     useSettingsStore.getState().updateSettings({ dashboardSpaceMode: 'more_space' });
 
     renderWithProviders(
@@ -87,9 +89,22 @@ describe('DashboardLayout', () => {
       </DashboardLayout>
     );
 
-    expect(screen.getByTestId('dashboard-layout-content')).toHaveClass('px-2.5');
-    expect(screen.getByTestId('dashboard-layout-content')).toHaveClass('md:px-4');
-    expect(screen.getByTestId('dashboard-layout-content')).toHaveClass('min-[1025px]:px-5');
+    expect(screen.getByTestId('dashboard-layout-content')).toHaveClass('px-4', 'py-5');
+    expect(screen.getByTestId('dashboard-layout-content')).not.toHaveClass('lg:px-5');
+  });
+
+  it('keeps the original shell padding above 1024px', () => {
+    setPath('/dashboard');
+    setMediaQueryMatch('(min-width: 768px) and (max-width: 1024px)', false);
+
+    renderWithProviders(
+      <DashboardLayout>
+        <main>Dashboard content</main>
+      </DashboardLayout>
+    );
+
+    expect(screen.getByTestId('dashboard-layout-content')).toHaveClass('md:p-6', 'lg:p-8');
+    expect(screen.getByTestId('dashboard-layout-content')).not.toHaveClass('px-4', 'py-5');
   });
 
   it('hides the dashboard chrome and renders the kiosk more menu in kiosk mode', () => {

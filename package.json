@@ -13,6 +13,9 @@
     "url": "https://github.com/awesomestvi/navet/issues"
   },
   "type": "module",
+  "imports": {
+    "#website-functions/*": "./apps/website/functions/*.ts"
+  },
   "packageManager": "pnpm@11.9.0+sha512.bd682d5d03fe525ef7c9fd6780c6884d1e756ac4c9c9fe00c538782824310dcf90e3ddc4f53835f06dfaebd5085e41855e0bcbb3b60de2ac5bbab89e5036f03b",
   "scripts": {
     "build": "pnpm --filter @navet/standalone build",
@@ -56,6 +59,7 @@
     "check:stories": "node scripts/check-storybook-standards.mjs",
     "check:ui-kit": "node scripts/check-ui-kit-boundaries.mjs",
     "check:bundle-budget": "node scripts/check-bundle-budget.mjs",
+    "check:website-audit": "node scripts/check-website-audit.mjs",
     "check:provider-boundaries": "node scripts/check-provider-boundaries.mjs",
     "check:docker": "node scripts/check-docker-runtime.mjs",
     "check:lockfile": "node scripts/check-pnpm-lock-sync.mjs",

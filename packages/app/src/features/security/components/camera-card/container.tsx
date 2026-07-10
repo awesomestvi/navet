@@ -1,5 +1,6 @@
 import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import { readNavetCameraState } from '@navet/app/core/navet-device-state';
+import { resolveDashboardPerformanceProfile } from '@navet/app/features/dashboard/hooks/use-dashboard-performance-mode';
 import { useCameraPlaybackPlan } from '@navet/app/features/security/hooks/use-camera-playback-plan';
 import { useProviderCameraTopology } from '@navet/app/hooks';
 import { useProviderEntityModel } from '@navet/app/hooks/use-provider-device';
@@ -25,7 +26,6 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { resolveDashboardPerformanceProfile } from '../../../dashboard/hooks/use-dashboard-performance-mode';
 import { CameraLiveViewer } from './camera-live-viewer';
 import { CameraSettingsDialog } from './camera-settings-dialog';
 import { CameraStreamPlayer } from './camera-stream-player';

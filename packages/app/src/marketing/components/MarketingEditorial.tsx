@@ -1,4 +1,5 @@
-import { Tag, Text } from '@navet/app/components/primitives';
+import { Tag } from '@navet/app/components/primitives/tag';
+import { Text } from '@navet/app/components/primitives/text';
 import { cn } from '@navet/app/components/ui/utils';
 import type { ReactNode } from 'react';
 

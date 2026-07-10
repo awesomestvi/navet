@@ -19,6 +19,7 @@ import {
 } from '@navet/app/components/shared/theme/card-state-surface-tokens';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { CardWrapper } from '@navet/app/components/ui/card-wrapper';
+import { useSwitchCardAppearance } from '@navet/app/features/lighting/components/use-switch-card-appearance';
 import {
   useI18n,
   useProviderEntityModel,
@@ -29,7 +30,6 @@ import { invokeIntegrationNativeAction } from '@navet/app/services/integration-n
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { Droplets, Home, Leaf, Minus, MoonStar, Plus, ThermometerSun, Wind } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { useSwitchCardAppearance } from '../../../lighting/components/use-switch-card-appearance';
 
 interface HumidifierCardProps {
   id: string;

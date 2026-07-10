@@ -59,5 +59,8 @@ describe('Apple Music developer token endpoint', () => {
     await expect(response.json()).resolves.toEqual({
       error: 'Navet Apple Music authorization is unavailable',
     });
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    expect(response.headers.get('Cross-Origin-Resource-Policy')).toBe('cross-origin');
+    expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
   });
 });

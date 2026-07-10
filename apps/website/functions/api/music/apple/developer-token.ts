@@ -10,6 +10,11 @@ interface PagesFunctionContext {
 
 const TOKEN_LIFETIME_SECONDS = 30 * 24 * 60 * 60;
 const APPLE_IDENTIFIER_PATTERN = /^[a-zA-Z0-9]{10}$/;
+const RESPONSE_SECURITY_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Cross-Origin-Resource-Policy': 'cross-origin',
+  'X-Content-Type-Options': 'nosniff',
+} as const;
 
 function base64Url(bytes: Uint8Array): string {
   let binary = '';
@@ -78,6 +83,7 @@ export async function onRequestGet(context: PagesFunctionContext): Promise<Respo
     const payload = await createAppleMusicDeveloperToken(context.env);
     return Response.json(payload, {
       headers: {
+        ...RESPONSE_SECURITY_HEADERS,
         'Cache-Control': 'public, max-age=3600',
         'Content-Type': 'application/json; charset=utf-8',
       },
@@ -88,6 +94,7 @@ export async function onRequestGet(context: PagesFunctionContext): Promise<Respo
       {
         status: 503,
         headers: {
+          ...RESPONSE_SECURITY_HEADERS,
           'Cache-Control': 'no-store',
           'Content-Type': 'application/json; charset=utf-8',
         },

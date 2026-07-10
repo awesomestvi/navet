@@ -8,7 +8,6 @@ import demoTabletImageAvif from '@assets/reference/marketing/screenshots/navet-t
 import demoTabletImage from '@assets/reference/marketing/screenshots/navet-tablet-portrait-home.jpg';
 import demoTabletImageWebp from '@assets/reference/marketing/screenshots/navet-tablet-portrait-home.webp';
 import artworksOriginalAvif from '@assets/reference/media/artworks-original.avif';
-import artworksOriginal from '@assets/reference/media/artworks-original.jpg';
 import artworksOriginalWebp from '@assets/reference/media/artworks-original.webp';
 import cameraSampleImageAvif from '@assets/reference/media/camera-sample.avif';
 import cameraSampleImage from '@assets/reference/media/camera-sample.webp';
@@ -204,7 +203,7 @@ export const MARKETING_PREVIEW_CARDS = {
     title: 'Smells Like Teen Spirit',
     artist: 'Nirvana',
     entityType: 'Speaker',
-    entityPicture: artworksOriginal,
+    entityPicture: artworksOriginalAvif,
     state: 'playing',
     volume: 42,
     isMuted: false,

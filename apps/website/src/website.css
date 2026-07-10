@@ -1,0 +1,3 @@
+@import "@navet/app/styles/index.css";
+
+@source "./**/*.{js,ts,jsx,tsx}";

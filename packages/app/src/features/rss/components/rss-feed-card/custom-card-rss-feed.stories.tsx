@@ -1,3 +1,6 @@
+import storyWeatherImage from '@assets/reference/photo-frame/beach-friends.webp';
+import storyEnergyImage from '@assets/reference/photo-frame/city-cafe.webp';
+import storyHomeImage from '@assets/reference/photo-frame/country-walk.webp';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
@@ -5,19 +8,6 @@ import { buildCustomCard, CustomWidgetStoryFrame } from '@navet/app/storybook/st
 import type { Meta, StoryObj } from '@storybook/react';
 import type { RSSItem, RSSProvider } from './types';
 import { RSSFeedCardView } from './view';
-
-const storyEnergyImage = new URL(
-  '../../../../../../../assets/reference/photo-frame/city-cafe.webp',
-  import.meta.url
-).href;
-const storyHomeImage = new URL(
-  '../../../../../../../assets/reference/photo-frame/country-walk.webp',
-  import.meta.url
-).href;
-const storyWeatherImage = new URL(
-  '../../../../../../../assets/reference/photo-frame/beach-friends.webp',
-  import.meta.url
-).href;
 
 const STORY_PROVIDER: RSSProvider = {
   id: 'bbc-world',

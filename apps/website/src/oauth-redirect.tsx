@@ -1,4 +1,4 @@
-import navetLogo from '../../../assets/public/logo.svg';
+import navetLogo from '@assets/public/logo.svg';
 import {
   AlertCircle,
   ArrowRight,
@@ -17,6 +17,37 @@ const HOME_STORAGE_KEY = 'navet-oauth-relay-home';
 const NAVET_SPOTIFY_CALLBACK_PATH = '/__navet_music__/spotify/callback';
 const NAVET_ISSUES_URL = 'https://github.com/awesomestvi/navet/issues/new';
 
+function isPrivateIpv4(hostname: string): boolean {
+  const octets = hostname.split('.').map(Number);
+  if (octets.length !== 4 || octets.some((octet) => !Number.isInteger(octet) || octet < 0 || octet > 255)) {
+    return false;
+  }
+
+  const [first, second] = octets;
+  return (
+    first === 10 ||
+    first === 127 ||
+    (first === 169 && second === 254) ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 168)
+  );
+}
+
+function isLocalNavetHostname(hostname: string): boolean {
+  const normalized = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  return (
+    normalized === 'localhost' ||
+    normalized.endsWith('.localhost') ||
+    normalized.endsWith('.local') ||
+    normalized === '::1' ||
+    (normalized.includes(':') &&
+      (normalized.startsWith('fc') ||
+        normalized.startsWith('fd') ||
+        normalized.startsWith('fe80:'))) ||
+    isPrivateIpv4(normalized)
+  );
+}
+
 export function isValidNavetCallbackUrl(value: string): boolean {
   try {
     const url = new URL(value);
@@ -24,6 +55,7 @@ export function isValidNavetCallbackUrl(value: string): boolean {
       (url.protocol === 'http:' || url.protocol === 'https:') &&
       !url.username &&
       !url.password &&
+      isLocalNavetHostname(url.hostname) &&
       url.pathname.endsWith(NAVET_SPOTIFY_CALLBACK_PATH)
     );
   } catch {
@@ -34,14 +66,22 @@ export function isValidNavetCallbackUrl(value: string): boolean {
 export function isValidSpotifyAuthorizeUrl(value: string): boolean {
   try {
     const url = new URL(value);
+    const state = url.searchParams.get('state');
     return (
       url.origin === 'https://accounts.spotify.com' &&
       url.pathname === '/authorize' &&
-      url.searchParams.get('redirect_uri') === NAVET_SPOTIFY_OAUTH_RELAY_URI
+      url.searchParams.get('redirect_uri') === NAVET_SPOTIFY_OAUTH_RELAY_URI &&
+      Boolean(state && state.length <= 512)
     );
   } catch {
     return false;
   }
+}
+
+export function getSpotifyAuthorizeState(value: string): string | null {
+  if (!isValidSpotifyAuthorizeUrl(value)) return null;
+  const state = new URL(value).searchParams.get('state');
+  return state && state.length <= 512 ? state : null;
 }
 
 export function buildNavetCallbackUrl(instanceUrl: string, search: string): string | null {
@@ -53,6 +93,23 @@ export function buildNavetCallbackUrl(instanceUrl: string, search: string): stri
     if (value) callback.searchParams.set(key, value);
   }
   return callback.toString();
+}
+
+export function buildStoredNavetCallbackUrl(storedRequest: string, search: string): string | null {
+  try {
+    const request = JSON.parse(storedRequest) as { callback?: unknown; state?: unknown };
+    const returnedState = new URLSearchParams(search).get('state');
+    if (
+      typeof request.callback !== 'string' ||
+      typeof request.state !== 'string' ||
+      returnedState !== request.state
+    ) {
+      return null;
+    }
+    return buildNavetCallbackUrl(request.callback, search);
+  } catch {
+    return null;
+  }
 }
 
 export function normalizeNavetHomeUrl(value: string): string | null {
@@ -103,15 +160,17 @@ export function NavetOAuthRedirectPage() {
 
     if (!instance || !authorize) return;
     if (!isValidNavetCallbackUrl(instance) || !isValidSpotifyAuthorizeUrl(authorize)) return;
-    window.sessionStorage.setItem(INSTANCE_STORAGE_KEY, instance);
+    const state = getSpotifyAuthorizeState(authorize);
+    if (!state) return;
+    window.sessionStorage.setItem(INSTANCE_STORAGE_KEY, JSON.stringify({ callback: instance, state }));
     const navetHomeUrl = getNavetHomeUrlFromCallback(instance);
     if (navetHomeUrl) window.localStorage.setItem(HOME_STORAGE_KEY, navetHomeUrl);
     window.location.replace(authorize);
   }, [authorize, instance]);
 
-  const storedInstance = window.sessionStorage.getItem(INSTANCE_STORAGE_KEY);
-  const callbackUrl = storedInstance
-    ? buildNavetCallbackUrl(storedInstance, window.location.search)
+  const storedRequest = window.sessionStorage.getItem(INSTANCE_STORAGE_KEY);
+  const callbackUrl = storedRequest
+    ? buildStoredNavetCallbackUrl(storedRequest, window.location.search)
     : null;
   const invalidStart =
     isStartRequest &&

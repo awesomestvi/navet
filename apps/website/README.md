@@ -30,3 +30,7 @@ deployment-facing app shell.
   tokens. Configure `APPLE_MUSIC_TEAM_ID`, `APPLE_MUSIC_KEY_ID`, and
   `APPLE_MUSIC_PRIVATE_KEY` as encrypted Cloudflare Pages secrets. The private key must be the
   PKCS#8 `.p8` key issued by Apple and must never be exposed as a public build variable.
+- `functions/api/music/apple/developer-token.ts` at the repository root re-exports the same tested
+  handler for Wrangler deployments driven by the root `wrangler.jsonc`. Keep both entrypoints so
+  Pages can discover the function whether the configured project root is the repository or
+  `apps/website`.

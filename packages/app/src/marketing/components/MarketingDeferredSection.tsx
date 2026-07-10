@@ -39,8 +39,6 @@ export function MarketingDeferredSection({
       observer?.disconnect();
     };
 
-    cleanupDeferredLoad = scheduleDeferredLoad(reveal);
-
     if (typeof window.IntersectionObserver === 'function' && placeholderRef.current) {
       observer = new window.IntersectionObserver(
         (entries) => {
@@ -48,9 +46,11 @@ export function MarketingDeferredSection({
             reveal();
           }
         },
-        { rootMargin: '320px 0px' }
+        { rootMargin: '100% 0px' }
       );
       observer.observe(placeholderRef.current);
+    } else {
+      cleanupDeferredLoad = scheduleDeferredLoad(reveal);
     }
 
     return () => {

@@ -4,7 +4,7 @@ import {
   navetTypographyTokens,
 } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
-import { useTheme } from '@navet/app/hooks';
+import { useTheme } from '@navet/app/hooks/use-theme';
 import type { ReactNode } from 'react';
 
 export interface TagProps {

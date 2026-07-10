@@ -1,5 +1,5 @@
+import generatedWallpaperManifest from '@assets/public/wallpapers/generated/manifest.json';
 import { getPublicAssetUrl } from '@navet/app/utils/public-assets';
-import generatedWallpaperManifest from '../../../../assets/public/wallpapers/generated/manifest.json';
 
 export const BUILT_IN_WALLPAPER_IDS = [
   'aurora-haze-01',
