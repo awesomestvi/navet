@@ -1,10 +1,18 @@
 import { getMediaPlayerCapabilities } from '@navet/app/constants/media-player-features';
 import { renderWithProviders } from '@navet/app/test/render';
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { MediaDialog } from '../media-dialog';
 
-const { useThemeMock, useMediaArtworkColorsMock, entityRoomSelectorMock } = vi.hoisted(() => ({
+const {
+  browseMediaPlayerMock,
+  playMediaMock,
+  useThemeMock,
+  useMediaArtworkColorsMock,
+  entityRoomSelectorMock,
+} = vi.hoisted(() => ({
+  browseMediaPlayerMock: vi.fn(),
+  playMediaMock: vi.fn(),
   useThemeMock: vi.fn(),
   useMediaArtworkColorsMock: vi.fn(),
   entityRoomSelectorMock: vi.fn((_props?: unknown) => <div>Bathroom</div>),
@@ -19,9 +27,18 @@ vi.mock('@navet/app/hooks', async () => {
       mediaBrowse: false,
       mediaControls: false,
     }),
+    useEntityProviderFeature: () => true,
     useTheme: () => useThemeMock(),
   };
 });
+
+vi.mock('@navet/app/services/integration-media-feature.service', () => ({
+  integrationMediaFeatureService: {
+    browseMediaPlayer: browseMediaPlayerMock,
+    playMedia: playMediaMock,
+    searchMediaPlayer: vi.fn(),
+  },
+}));
 
 vi.mock('@navet/app/components/shared/entity-room-selector', () => ({
   EntityRoomSelector: (props: unknown) => entityRoomSelectorMock(props),
@@ -46,7 +63,7 @@ vi.mock('../use-media-artwork-colors', async () => {
 });
 
 describe('MediaDialog', () => {
-  it('keeps the header identity while rendering the simplified Apple-like playback layout', () => {
+  it('keeps the header identity and browses media through the opened player', async () => {
     entityRoomSelectorMock.mockClear();
     useThemeMock.mockReturnValue({ theme: 'dark' });
     useMediaArtworkColorsMock.mockReturnValue({
@@ -85,7 +102,9 @@ describe('MediaDialog', () => {
         repeatMode="off"
         onToggleShuffle={vi.fn()}
         onCycleRepeat={vi.fn()}
-        capabilities={getMediaPlayerCapabilities(4 | 8 | 16 | 32 | 2 | 32768 | 262144)}
+        capabilities={getMediaPlayerCapabilities(
+          4 | 8 | 16 | 32 | 2 | 512 | 32768 | 131072 | 262144
+        )}
         sourceList={[]}
         onSelectSource={vi.fn()}
         soundModeList={[]}
@@ -113,8 +132,61 @@ describe('MediaDialog', () => {
     expect(screen.getAllByText('Touch').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Cigarettes After Sex').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByRole('button', { name: 'Pause playback' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Playback' })).not.toBeInTheDocument();
     expect(screen.queryByText('Volume')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Done' })).not.toBeInTheDocument();
+
+    browseMediaPlayerMock.mockImplementation(async (_entityId, media) =>
+      media?.mediaContentId === 'spotify:account:vishal'
+        ? {
+            title: 'Vishal Chauhan',
+            children: [
+              {
+                title: 'Daily Mix',
+                mediaContentId: 'spotify:playlist:daily',
+                mediaContentType: 'playlist',
+                mediaClass: 'playlist',
+                thumbnail: '/image/ab67616d00001e02dailyMixArtwork',
+                canPlay: true,
+              },
+            ],
+          }
+        : {
+            title: 'Media Library',
+            children: [
+              {
+                title: 'Vishal Chauhan',
+                mediaContentId: 'spotify:account:vishal',
+                mediaContentType: 'directory',
+                canExpand: true,
+                canPlay: false,
+              },
+            ],
+          }
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Browse' }));
+
+    fireEvent.click(await screen.findByText('Vishal Chauhan'));
+    expect(screen.getByTestId('spotify-browse-icon')).toBeInTheDocument();
+    expect(browseMediaPlayerMock).toHaveBeenCalledWith('media_player.bathroom', {
+      mediaContentId: undefined,
+      mediaContentType: undefined,
+    });
+
+    expect(await screen.findByText('Daily Mix')).toBeInTheDocument();
+    expect(screen.queryByTestId('spotify-browse-icon')).not.toBeInTheDocument();
+    expect(screen.getByTestId('media-browse-artwork')).toHaveAttribute(
+      'src',
+      'https://i.scdn.co/image/ab67616d00001e02dailyMixArtwork'
+    );
+
+    fireEvent.click(screen.getByText('Daily Mix'));
+    await waitFor(() =>
+      expect(playMediaMock).toHaveBeenCalledWith('media_player.bathroom', {
+        mediaContentId: 'spotify:playlist:daily',
+        mediaContentType: 'playlist',
+      })
+    );
   });
 
   it('keeps the seek slider visible when the media dialog is idle', () => {
@@ -327,7 +399,24 @@ describe('MediaDialog', () => {
 
     expect(screen.getByRole('dialog')).toHaveClass('flex', 'flex-col', 'max-h-[88vh]');
     expect(screen.getByRole('dialog')).toHaveClass('max-sm:!h-[min(88dvh,calc(100dvh-1rem))]');
-    expect(document.body.querySelector('.media-dialog-body.h-full.overflow-y-auto')).not.toBeNull();
+    expect(screen.getByRole('dialog')).toHaveClass(
+      'max-sm:!touch-pan-y',
+      'max-sm:!overflow-x-hidden',
+      'max-sm:!overflow-y-auto',
+      'max-sm:!overscroll-contain',
+      'max-sm:[-webkit-overflow-scrolling:touch]'
+    );
+    const dialogBody = document.body.querySelector('.media-dialog-body');
+    expect(dialogBody).toHaveClass(
+      'h-full',
+      'max-h-full',
+      'min-h-0',
+      'touch-pan-y',
+      'overflow-x-hidden',
+      'overflow-y-auto',
+      'overscroll-contain',
+      '[-webkit-overflow-scrolling:touch]'
+    );
   });
 
   it('opens speaker grouping from a single control and closes when toggled again', () => {
@@ -391,13 +480,13 @@ describe('MediaDialog', () => {
     expect(screen.queryByRole('button', { name: 'Playback' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Group' })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Speaker Group' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Group Speakers' }));
 
     expect(screen.getAllByText('Touch').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Kitchen')).toBeInTheDocument();
     expect(screen.getByText('Living Room')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Speaker Group' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Group Speakers' }));
 
     expect(screen.queryByText('Kitchen')).not.toBeInTheDocument();
   });

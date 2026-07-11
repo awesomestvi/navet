@@ -1,12 +1,10 @@
 import { CardDialogHeader } from '@navet/app/components/patterns';
-import { InteractivePill } from '@navet/app/components/primitives';
 import { RoundControlButton } from '@navet/app/components/primitives/round-control-button';
 import { Slider } from '@navet/app/components/primitives/slider';
 import { getCardReadableTextTokens } from '@navet/app/components/shared/theme/card-readable-text-tokens';
 import { getMediaTVViewSurfaceTokens } from '@navet/app/components/shared/theme/media-tv-view-surface-tokens';
 import { useI18n } from '@navet/app/hooks';
 import {
-  Check,
   Pause,
   Play,
   Repeat,
@@ -26,10 +24,12 @@ import { getMediaDisplayVolume } from './media-card-style-utils';
 import type { MediaDialogGroupingPlayer, MediaDialogProps } from './media-dialog.types';
 import { MediaFallbackArtwork } from './media-fallback-artwork';
 import { formatMediaTime } from './media-time';
+import { SpeakerDestinationRow } from './speaker-destination-row';
 import { getTvDpadLayout, TvDpad } from './tv-dpad';
 import { TvSourceSelector } from './tv-source-selector';
 import { TvTransportControls } from './tv-transport-controls';
 import { TvChannelControls, TvVolumeControls } from './tv-volume-controls';
+import { withAlpha } from './use-media-artwork-colors';
 import type { MediaDialogController } from './use-media-dialog-controller';
 
 interface MediaDialogHeaderProps {
@@ -144,15 +144,16 @@ export function MediaDialogPlaybackControls({
   const [pendingSeek, setPendingSeek] = useState(elapsedSeconds);
   const [isSeeking, setIsSeeking] = useState(false);
   const timelineTrackStyle: CSSProperties = {
-    backgroundColor: `${controller.readableForeground.subtitleColor}33`,
+    backgroundColor: withAlpha(controller.readableForeground.subtitleColor, 0.38),
+    boxShadow: `inset 0 0 0 1px ${withAlpha(controller.readableForeground.titleColor, 0.12)}`,
   };
   const timelineRangeStyle: CSSProperties = {
     background: `linear-gradient(90deg, ${controller.readableForeground.titleColor} 0%, ${controller.readableForeground.subtitleColor} 100%)`,
-    boxShadow: `0 0 18px ${controller.readableForeground.titleColor}2e`,
+    boxShadow: `0 0 18px ${withAlpha(controller.readableForeground.titleColor, 0.18)}`,
   };
   const timelineThumbStyle: CSSProperties = {
     backgroundColor: controller.readableForeground.titleColor,
-    boxShadow: `0 0 0 1px ${controller.readableForeground.titleColor}38, 0 0 14px ${controller.readableForeground.titleColor}52`,
+    boxShadow: `0 0 0 1px ${withAlpha(controller.readableForeground.titleColor, 0.22)}, 0 0 14px ${withAlpha(controller.readableForeground.titleColor, 0.32)}`,
   };
   const sliderMax = Math.max(1, durationSeconds, elapsedSeconds, pendingSeek);
 
@@ -202,7 +203,7 @@ export function MediaDialogPlaybackControls({
           onInteractionEnd={() => setIsSeeking(false)}
           disabled={!canSeek}
           rootClassName="relative flex h-6 w-full items-center touch-none select-none"
-          trackClassName="relative h-[3px] grow rounded-full"
+          trackClassName="relative h-1 grow rounded-full"
           rangeClassName="absolute h-full rounded-full"
           thumbClassName="block h-4 w-4 rounded-full outline-none"
           touchThumbClassName="block h-6 w-6 rounded-full outline-none"
@@ -343,7 +344,8 @@ export function MediaDialogVolumeControl({
   const { t } = useI18n();
   const displayVolume = getMediaDisplayVolume(volume, isMuted);
   const volumeTrackStyle = {
-    backgroundColor: `${controller.readableForeground.subtitleColor}33`,
+    backgroundColor: withAlpha(controller.readableForeground.subtitleColor, 0.38),
+    boxShadow: `inset 0 0 0 1px ${withAlpha(controller.readableForeground.titleColor, 0.12)}`,
   };
   const volumeFillStyle = {
     width: `${displayVolume}%`,
@@ -351,7 +353,7 @@ export function MediaDialogVolumeControl({
   };
   const volumeThumbStyle: CSSProperties = {
     backgroundColor: controller.readableForeground.titleColor,
-    boxShadow: `0 0 0 1px ${controller.readableForeground.titleColor}38, 0 0 14px ${controller.readableForeground.titleColor}52`,
+    boxShadow: `0 0 0 1px ${withAlpha(controller.readableForeground.titleColor, 0.22)}, 0 0 14px ${withAlpha(controller.readableForeground.titleColor, 0.32)}`,
   };
 
   if (!canMuteVolume && !canSetVolume) {
@@ -383,7 +385,7 @@ export function MediaDialogVolumeControl({
             onInteractionStart={onVolumeInteractionStart}
             onInteractionEnd={onVolumeInteractionEnd}
             rootClassName="relative flex h-6 w-full items-center touch-none select-none"
-            trackClassName="relative h-[3px] grow rounded-full"
+            trackClassName="relative h-1 grow rounded-full"
             rangeClassName="absolute h-full rounded-full"
             thumbClassName="block h-4 w-4 rounded-full outline-none"
             touchThumbClassName="block h-6 w-6 rounded-full outline-none"
@@ -617,79 +619,6 @@ interface MediaDialogGroupingProps {
   onDetachGroupMember: (entityId: string) => void;
 }
 
-function SpeakerDestinationRow({
-  controller,
-  active = false,
-  disabled = false,
-  icon,
-  onClick,
-  subtitle,
-  title,
-}: {
-  controller: MediaDialogController;
-  active?: boolean;
-  disabled?: boolean;
-  icon: React.ReactNode;
-  onClick: () => void;
-  subtitle?: string;
-  title: string;
-}) {
-  return (
-    <InteractivePill
-      onClick={onClick}
-      disabled={disabled}
-      active={active}
-      intent="navigation"
-      variant="default"
-      className={`min-h-12 w-full items-center justify-start gap-3 rounded-[1.35rem] px-3.5 py-2.5 text-left ${
-        disabled ? 'cursor-default disabled:opacity-100' : ''
-      }`}
-      style={controller.readableForeground.titleStyle}
-    >
-      <div
-        className={`flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-full ${
-          active
-            ? controller.isGlass
-              ? 'bg-white/16'
-              : 'bg-white/12'
-            : controller.isGlass
-              ? 'bg-white/10'
-              : 'bg-white/[0.06]'
-        }`}
-        style={controller.readableForeground.titleStyle}
-      >
-        {icon}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div
-          className={`truncate text-sm font-medium ${controller.surface.textPrimary}`}
-          style={controller.readableForeground.titleStyle}
-        >
-          {title}
-        </div>
-        {subtitle ? (
-          <div
-            className={`truncate pt-0.5 text-xs ${controller.surface.textSecondary}`}
-            style={controller.readableForeground.subtitleStyle}
-          >
-            {subtitle}
-          </div>
-        ) : null}
-      </div>
-      {active ? (
-        <div
-          className={`flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-full ${
-            controller.isGlass ? 'bg-white/14' : 'bg-white/10'
-          }`}
-          style={controller.readableForeground.titleStyle}
-        >
-          <Check className="h-4 w-4" />
-        </div>
-      ) : null}
-    </InteractivePill>
-  );
-}
-
 export function MediaDialogGrouping({
   availableGroupingPlayers,
   controller,
@@ -715,22 +644,30 @@ export function MediaDialogGrouping({
         <div className="space-y-2">
           <div className="space-y-2">
             <SpeakerDestinationRow
-              controller={controller}
               title={entityName}
               active
               disabled
+              isGlass={controller.isGlass}
               icon={<Volume2 className="h-4 w-4" />}
               onClick={() => undefined}
+              primaryTextClassName={controller.surface.textPrimary}
+              secondaryTextClassName={controller.surface.textSecondary}
+              titleStyle={controller.readableForeground.titleStyle}
+              subtitleStyle={controller.readableForeground.subtitleStyle}
             />
             {hasAttachedMembers
               ? attachedPlayers.map((player) => (
                   <SpeakerDestinationRow
                     key={player.id}
-                    controller={controller}
                     title={player.name}
                     active
+                    isGlass={controller.isGlass}
                     icon={<Speaker className="h-4 w-4" />}
                     onClick={() => onDetachGroupMember(player.id)}
+                    primaryTextClassName={controller.surface.textPrimary}
+                    secondaryTextClassName={controller.surface.textSecondary}
+                    titleStyle={controller.readableForeground.titleStyle}
+                    subtitleStyle={controller.readableForeground.subtitleStyle}
                   />
                 ))
               : null}
@@ -743,10 +680,14 @@ export function MediaDialogGrouping({
               {availablePlayers.map((player) => (
                 <SpeakerDestinationRow
                   key={player.id}
-                  controller={controller}
                   title={player.name}
+                  isGlass={controller.isGlass}
                   icon={<Speaker className="h-4 w-4" />}
                   onClick={() => onAttachGroupMember(player.id)}
+                  primaryTextClassName={controller.surface.textPrimary}
+                  secondaryTextClassName={controller.surface.textSecondary}
+                  titleStyle={controller.readableForeground.titleStyle}
+                  subtitleStyle={controller.readableForeground.subtitleStyle}
                 />
               ))}
             </div>

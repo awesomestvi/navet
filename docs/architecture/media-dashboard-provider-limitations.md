@@ -14,7 +14,8 @@ payloads directly.
 - Per-player default browser folders and expanded/collapsed browser views persist in dashboard
   profile storage.
 - Spotify Connect recovery can activate another media player that advertises a Spotify source when
-  the Spotify account entity is idle.
+  the Spotify account entity is idle. Selecting that output also scopes subsequent browsing and
+  playback to the output entity, matching Home Assistant's per-player media browser behavior.
 
 ## Component Structure
 
@@ -69,9 +70,10 @@ payloads directly.
   `source_list`, the dashboard offers other media players currently reporting a Spotify source as
   fallback output candidates. Selecting one activates its Spotify source when necessary and sends a
   provider-neutral play/pause command to that player.
-- Browsed Spotify media is still submitted through the selected Spotify account entity. Activating a
-  Connect target and starting a browsed item are separate operations; the provider decides where the
-  account's playback ultimately appears.
+- When an active or user-selected Spotify Connect output is available, the dashboard browses and
+  plays through that media-player entity. This lets provider-native roots such as a Sonos player's
+  Spotify media source use the same path as Home Assistant's player dialog. Without an output target,
+  browsing falls back to the Spotify account entity.
 - Transport controls are hidden for the Spotify account panel so Navet does not wake a dormant
   account on an unintended personal device.
 - Providers may expose `canBrowseMedia` without useful children for a given entity state. The

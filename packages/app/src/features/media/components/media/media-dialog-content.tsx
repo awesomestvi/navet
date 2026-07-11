@@ -1,11 +1,12 @@
 import { CardDialogTabList, CardDialogTabTrigger } from '@navet/app/components/patterns';
 import { ModalSurface } from '@navet/app/components/primitives/modal-surface';
 import { TabPanel, Tabs } from '@navet/app/components/primitives/tabs';
-import { useI18n } from '@navet/app/hooks';
+import { useEntityProviderFeature, useI18n } from '@navet/app/hooks';
 import * as Popover from '@radix-ui/react-popover';
-import { Layers3, Sliders, Speaker, Tv2 } from 'lucide-react';
+import { Layers3, ListMusic, Sliders, Speaker, Tv2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MediaDialogProps } from './media-dialog.types';
+import { MediaDialogBrowser } from './media-dialog-browser';
 import {
   MediaDialogArtwork,
   MediaDialogGrouping,
@@ -152,9 +153,11 @@ export function MediaDialogContent({
   }, [defaultTvDialogMode, initialTab, isTvDevice]);
   const [activeTab, setActiveTab] = useState<string>(defaultTab);
   const [isGroupingPickerOpen, setIsGroupingPickerOpen] = useState(false);
+  const supportsMediaBrowse = useEntityProviderFeature(entityId, 'mediaBrowse');
+  const canBrowseMedia = capabilities.canBrowseMedia && supportsMediaBrowse;
   const hasGroupingControls = supportsGrouping;
   const shouldRenderTabs = isTvDevice || Boolean(mediaStackSettings);
-  const groupingLabel = groupMembers.length > 1 ? t('media.group.title') : t('media.group.action');
+  const groupingLabel = t('media.group.action');
   const groupingTrigger = hasGroupingControls ? (
     <button
       ref={groupingTriggerRef}
@@ -244,8 +247,47 @@ export function MediaDialogContent({
         volume={volume}
       />
       {upNextTitle ? <MediaDialogUpNext controller={controller} title={upNextTitle} /> : null}
-      {hasGroupingControls ? (
-        <div className="flex justify-center pt-3">
+    </div>
+  );
+  const tvControlsPanel = (
+    <div className="space-y-5 pt-2 md:space-y-6 md:pt-3">
+      <MediaDialogTvControls
+        controller={controller}
+        source={source}
+        sourceList={sourceList}
+        isPlaying={isPlaying}
+        remoteAvailable={remoteAvailable}
+        canSetVolume={capabilities.canSetVolume}
+        canMuteVolume={capabilities.canMuteVolume}
+        canSelectSource={capabilities.canSelectSource}
+        isMuted={isMuted}
+        volume={volume}
+        onToggleMute={onToggleMute}
+        onVolumeChange={onVolumeChange}
+        onVolumeInteractionEnd={onVolumeInteractionEnd}
+        onVolumeInteractionStart={onVolumeInteractionStart}
+        onSelectSource={onSelectSource}
+        onRemoteCommand={onRemoteCommand}
+        onTogglePlay={onTogglePlay}
+      />
+    </div>
+  );
+  const stackSettingsPanel = mediaStackSettings ? (
+    <MediaStackDialogSettings controller={controller} settings={mediaStackSettings} />
+  ) : null;
+  const browserPanel = canBrowseMedia ? (
+    <MediaDialogBrowser
+      canPlayMedia={capabilities.canPlayMedia}
+      canSearchMedia={capabilities.canSearchMedia}
+      controller={controller}
+      entityId={entityId}
+      isActive={activeTab === 'browse'}
+    />
+  ) : null;
+  const speakerQuickActions =
+    !isTvDevice && !mediaStackSettings ? (
+      <div className="flex items-center justify-center gap-2 pt-6 pb-2">
+        {hasGroupingControls ? (
           <Popover.Root open={isGroupingPickerOpen} onOpenChange={setIsGroupingPickerOpen}>
             <Popover.Anchor asChild>{groupingTrigger}</Popover.Anchor>
             {groupingPanel ? (
@@ -279,36 +321,36 @@ export function MediaDialogContent({
               </Popover.Portal>
             ) : null}
           </Popover.Root>
-        </div>
-      ) : null}
-    </div>
-  );
-  const tvControlsPanel = (
-    <div className="space-y-5 pt-2 md:space-y-6 md:pt-3">
-      <MediaDialogTvControls
-        controller={controller}
-        source={source}
-        sourceList={sourceList}
-        isPlaying={isPlaying}
-        remoteAvailable={remoteAvailable}
-        canSetVolume={capabilities.canSetVolume}
-        canMuteVolume={capabilities.canMuteVolume}
-        canSelectSource={capabilities.canSelectSource}
-        isMuted={isMuted}
-        volume={volume}
-        onToggleMute={onToggleMute}
-        onVolumeChange={onVolumeChange}
-        onVolumeInteractionEnd={onVolumeInteractionEnd}
-        onVolumeInteractionStart={onVolumeInteractionStart}
-        onSelectSource={onSelectSource}
-        onRemoteCommand={onRemoteCommand}
-        onTogglePlay={onTogglePlay}
-      />
-    </div>
-  );
-  const stackSettingsPanel = mediaStackSettings ? (
-    <MediaStackDialogSettings controller={controller} settings={mediaStackSettings} />
-  ) : null;
+        ) : null}
+        {browserPanel ? (
+          <button
+            type="button"
+            aria-label={t('media.browse')}
+            aria-pressed={activeTab === 'browse'}
+            onClick={() =>
+              setActiveTab((current) => (current === 'browse' ? 'playback' : 'browse'))
+            }
+            className={`inline-flex h-[38px] items-center justify-center gap-2 rounded-full border px-3 transition-colors ${
+              controller.surface.border
+            } ${
+              activeTab === 'browse'
+                ? controller.isGlass
+                  ? 'bg-white/16'
+                  : 'bg-white/12'
+                : controller.isGlass
+                  ? 'bg-white/8 hover:bg-white/12'
+                  : 'bg-white/[0.05] hover:bg-white/[0.09]'
+            }`}
+            style={controller.readableForeground.titleStyle}
+          >
+            <ListMusic className="h-[0.95rem] w-[0.95rem]" />
+            <span className="text-xs font-medium leading-none tracking-[0.01em]">
+              {t('media.browse')}
+            </span>
+          </button>
+        ) : null}
+      </div>
+    ) : null;
 
   useEffect(() => {
     setActiveTab((current) => {
@@ -352,9 +394,9 @@ export function MediaDialogContent({
       onOpenChange={onOpenChange}
       title={entityName}
       description={entityType}
-      bodyClassName="media-dialog-body relative flex h-full min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-6 py-6 max-sm:px-3.5 max-sm:pt-2 max-sm:pb-3 md:px-7 md:py-6"
+      bodyClassName="media-dialog-body relative flex h-full max-h-full min-h-0 flex-1 touch-pan-y flex-col overflow-x-hidden overflow-y-auto overscroll-contain px-6 pt-6 pb-10 [-webkit-overflow-scrolling:touch] max-sm:px-3.5 max-sm:pt-2 max-sm:pb-8 md:px-7 md:pt-6 md:pb-10"
       overlayClassName={`animate-in fade-in ${controller.surface.dialogBackdrop}`}
-      contentClassName="flex h-auto max-h-[88vh] w-[min(92vw,27rem)] flex-col max-sm:!h-[min(88dvh,calc(100dvh-1rem))] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+      contentClassName="flex h-auto max-h-[88vh] min-h-0 w-[min(92vw,27rem)] flex-col overflow-hidden max-sm:!h-[min(88dvh,calc(100dvh-1rem))] max-sm:!touch-pan-y max-sm:!overflow-x-hidden max-sm:!overflow-y-auto max-sm:!overscroll-contain max-sm:[-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
       contentStyle={controller.dialogSurfaceStyle}
     >
       <div className="relative space-y-6">
@@ -419,9 +461,12 @@ export function MediaDialogContent({
             </Tabs>
           ) : mediaStackSettings ? (
             stackSettingsPanel
+          ) : activeTab === 'browse' && browserPanel ? (
+            browserPanel
           ) : (
             musicPlaybackPanel
           )}
+          {speakerQuickActions}
         </div>
       </div>
     </ModalSurface>
