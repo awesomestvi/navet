@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.0
+
+- Updated Navet to `0.9.0`
+- Added more flexible room and entity layouts, dashboard packs, manual entity cards, and a faster home-edit command bar
+- Added discovery and room assignment for newly available provider entities
+- Added provider-aware media browsing, search, source selection, playback queues, and richer speaker destinations
+- Improved speaker grouping, destination selection, and playback reliability
+- Improved room navigation, section customization, automation insights, and energy summaries
+- Improved OAuth redirects and music-service authorization flows for hosted installs
+
 ## 0.8.0
 
 - Updated Navet to `0.8.0`

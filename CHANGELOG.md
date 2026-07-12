@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.9.0 - 2026-07-13
+
+## New
+
+- The dashboard now offers more flexible room and entity layouts, including dashboard packs, manual entity cards, and a faster home-edit command bar.
+- Newly added provider entities can be discovered and assigned to the appropriate room without waiting for them to appear automatically.
+- Media dashboards now provide provider-aware browsing, search, source selection, playback queues, and richer speaker destinations.
+
+## Fixed
+
+- Speaker grouping and playback now handle group changes, destination selection, and supported playback actions more reliably.
+- Dashboard profile changes now synchronize more consistently while editing cards and layouts.
+
+## Improved
+
+- Room navigation, section customization, automation insights, and energy summaries now use clearer layouts and denser controls.
+- Spotify and other supported media flows now share a more consistent browsing and multi-speaker playback experience.
+- OAuth redirects and the marketing site are more robust across hosted routes and music-service authorization flows.
+
 ## 0.8.0 - 2026-07-07
 
 ## New
