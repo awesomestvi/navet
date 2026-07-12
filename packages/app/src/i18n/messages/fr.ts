@@ -731,6 +731,7 @@ export const frMessages = {
   'media.muteVolume': 'Couper le son',
   'media.unmuteVolume': 'Retablir le son',
   'media.volume': 'Volume',
+  'media.groupedSpeakers': 'Enceintes groupées',
   'media.quickVolume': 'Volume rapide',
   'media.shuffle': 'Aléatoire',
   'media.linearPlayback': 'Lecture linéaire',

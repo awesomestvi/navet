@@ -728,6 +728,7 @@ export const esMessages = {
   'media.muteVolume': 'Silenciar volumen',
   'media.unmuteVolume': 'Activar volumen',
   'media.volume': 'Volumen',
+  'media.groupedSpeakers': 'Altavoces agrupados',
   'media.quickVolume': 'Volumen rápido',
   'media.shuffle': 'Aleatorio',
   'media.linearPlayback': 'Reproducción lineal',

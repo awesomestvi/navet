@@ -87,6 +87,9 @@ export type PlatformEntitySnapshotMap = Record<string, PlatformEntitySnapshot>;
 export interface PlatformEntityRegistryEntry {
   entityId: string;
   deviceId?: string | null;
+  deviceName?: string | null;
+  manufacturer?: string | null;
+  model?: string | null;
   areaId?: string | null;
   name?: string | null;
   platform?: string | null;

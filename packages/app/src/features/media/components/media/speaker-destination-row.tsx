@@ -56,12 +56,15 @@ export function SpeakerDestinationRow({
         {icon}
       </div>
       <div className="min-w-0 flex-1">
-        <div className={`truncate text-sm font-medium ${primaryTextClassName}`} style={titleStyle}>
+        <div
+          className={`truncate text-sm font-medium leading-4 ${primaryTextClassName}`}
+          style={titleStyle}
+        >
           {title}
         </div>
         {subtitle ? (
           <div
-            className={`truncate pt-0.5 text-xs ${secondaryTextClassName}`}
+            className={`truncate text-xs leading-4 ${secondaryTextClassName}`}
             style={subtitleStyle}
           >
             {subtitle}

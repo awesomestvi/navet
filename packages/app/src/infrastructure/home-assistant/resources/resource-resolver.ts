@@ -341,7 +341,9 @@ export class HomeAssistantResourceResolver {
           }
 
           if (sameOrigin || !sameHaOrigin) {
-            if (isHomeAssistantRelativeUrl(resource.pathname)) {
+            const isExternalCdnImagePath =
+              !sameOrigin && !sameHaOrigin && resource.pathname.startsWith('/image/');
+            if (isHomeAssistantRelativeUrl(resource.pathname) && !isExternalCdnImagePath) {
               if (runtime.kind === 'ha_panel') {
                 return {
                   id: sanitized,

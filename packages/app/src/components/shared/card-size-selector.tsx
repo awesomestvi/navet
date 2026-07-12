@@ -352,10 +352,14 @@ export function getCardSpanClass(size: CardSize): string {
     case 'large':
       return 'col-span-4 row-span-4'; // 2 logical columns × 2 rows
     case 'extra-large':
-      return 'col-span-6 row-span-4'; // 3 logical columns × 2 rows
+      return 'col-span-4 row-span-4 md:col-span-6'; // Large on mobile, 3 logical columns × 2 rows otherwise
     default:
       return 'col-span-2 row-span-2';
   }
+}
+
+export function getResponsiveCardSize(size: CardSize, logicalColumns: number): CardSize {
+  return size === 'extra-large' && logicalColumns <= 2 ? 'large' : size;
 }
 
 export function getDashboardGridColumnCount(logicalColumns: number): number {

@@ -104,6 +104,7 @@ export function MediaDialogContent({
   room,
   mediaStackSettings,
   groupMembers,
+  groupingPlayerSubtitle,
   isMuted,
   isOpen,
   isPlaying,
@@ -200,6 +201,7 @@ export function MediaDialogContent({
       controller={controller}
       entityId={entityId}
       entityName={entityName}
+      entitySubtitle={groupingPlayerSubtitle}
       groupMembers={groupMembers}
       onAttachGroupMember={onAttachGroupMember}
       onDetachGroupMember={onDetachGroupMember}

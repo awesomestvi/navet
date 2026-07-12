@@ -8,7 +8,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import type { NavetMediaCapabilities } from '@navet/app/core/navet-device-state';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import type { ThemeMode } from '@navet/app/stores/theme-store';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { lazy, memo, Suspense, useEffect, useState } from 'react';
 import type { MediaDialogMediaStackSettings } from '../media/media-dialog.types';
 import { MediaLargeView } from '../media/media-large-view';
@@ -16,6 +16,12 @@ import { MediaMediumVerticalView } from '../media/media-medium-vertical-view';
 import { MediaMediumView } from '../media/media-medium-view';
 import { MediaSmallView } from '../media/media-small-view';
 import { MediaTvView } from '../media/media-tv-view';
+import {
+  getMediaArtworkPaletteSource,
+  useMediaArtworkColors,
+  withAlpha,
+} from '../media/use-media-artwork-colors';
+import { useStableMediaArtwork } from '../media/use-stable-media-artwork';
 import { getMediaEntityTypeKey } from './get-media-entity-type-key';
 import { resolveMediaPlayerName } from './resolve-media-player-name';
 import { useMediaCardController } from './use-media-card-controller';
@@ -24,6 +30,14 @@ const MediaDialog = lazy(async () => {
   const module = await import('../media/media-dialog');
   return { default: module.MediaDialog };
 });
+
+function MediaStackContainer({ enabled, children }: { enabled: boolean; children: ReactNode }) {
+  return enabled ? (
+    <div className="relative h-full w-full overflow-visible">{children}</div>
+  ) : (
+    children
+  );
+}
 
 function getActiveTvShellBg(theme: ThemeMode) {
   if (theme === 'light') {
@@ -102,6 +116,7 @@ interface MediaCardProps {
   onSizeChange: (id: string, size: CardSize) => void;
   isEditMode: boolean;
   mediaStackAppearance?: boolean;
+  mediaStackCount?: number;
   mediaStackSettings?: MediaDialogMediaStackSettings;
   openSettingsRequestKey?: number;
   disableTransportPlayback?: boolean;
@@ -140,6 +155,7 @@ export const MediaCard = memo(function MediaCard({
   onSizeChange: _onSizeChange,
   isEditMode,
   mediaStackAppearance = false,
+  mediaStackCount,
   mediaStackSettings,
   openSettingsRequestKey = 0,
   disableTransportPlayback = false,
@@ -163,6 +179,7 @@ export const MediaCard = memo(function MediaCard({
     albumArt: resolvedAlbumArt,
     artworkResource,
     clearPlaylist,
+    currentPlayerIdentifier,
     cycleRepeat,
     closeDialog,
     durationSeconds,
@@ -230,6 +247,14 @@ export const MediaCard = memo(function MediaCard({
     initialGroupMembers,
   });
   const stateSurface = getCardStateSurfaceTokens(theme, !isOff);
+  const stableArtwork = useStableMediaArtwork(resolvedAlbumArt);
+  const stackPaletteArtwork = getMediaArtworkPaletteSource(stableArtwork, artworkResource);
+  const stackPalette = useMediaArtworkColors(
+    stackPaletteArtwork,
+    theme,
+    id,
+    `${displayTitle}::${displayArtist}`
+  );
 
   const isSmall = mediaSize === 'small';
   const isMedium = mediaSize === 'medium';
@@ -284,7 +309,7 @@ export const MediaCard = memo(function MediaCard({
     artwork: resolvedAlbumArt,
     artworkResource,
     onArtworkError: handleArtworkError,
-    entityName: resolvedPlayerName,
+    entityName: mediaStackCount ? `${resolvedPlayerName} +${mediaStackCount}` : resolvedPlayerName,
     entityTypeKey: mediaEntityTypeKey,
     title: displayTitle,
     artist: displayArtist,
@@ -338,113 +363,161 @@ export const MediaCard = memo(function MediaCard({
     }
   }, [mediaStackSettings, openDialog, openSettingsRequestKey]);
 
-  const stackBackplates = mediaStackAppearance ? (
-    <>
-      <div
-        aria-hidden="true"
-        className={`pointer-events-none absolute inset-[8px] translate-x-2 translate-y-2 rounded-[1.35rem] border ${shellBorder} opacity-30`}
-      />
-      <div
-        aria-hidden="true"
-        className={`pointer-events-none absolute inset-[4px] translate-x-1 translate-y-1 rounded-[1.45rem] border ${shellBorder} opacity-45`}
-      />
-    </>
-  ) : null;
-  const stackBadge = mediaStackAppearance ? (
-    <div className="pointer-events-none absolute right-3 top-3 z-[1]">
-      <span
-        className={`inline-flex items-center rounded-full border px-2 py-1 text-[0.65rem] font-medium uppercase tracking-[0.14em] ${surface.textPrimary}`}
-        style={{
-          backgroundColor: theme === 'light' ? 'rgba(255,255,255,0.84)' : 'rgba(24,24,27,0.58)',
-          borderColor: theme === 'light' ? 'rgba(24,24,27,0.08)' : 'rgba(255,255,255,0.14)',
-        }}
-      >
-        {t('widgets.mediaStack.badge')}
-      </span>
-    </div>
-  ) : null;
+  const stackLayerColors =
+    theme === 'light'
+      ? ['rgba(226, 232, 240, 0.96)', 'rgba(241, 245, 249, 0.9)']
+      : theme === 'black'
+        ? ['rgba(63, 63, 70, 0.98)', 'rgba(39, 39, 42, 0.94)']
+        : ['rgba(82, 82, 91, 0.98)', 'rgba(63, 63, 70, 0.94)'];
+  const visibleStackLayerCount = Math.min(2, Math.max(1, mediaStackCount ?? 2));
+  const stackLayerShadows = mediaStackCount
+    ? []
+    : [`0 -26px 0 -14px ${stackLayerColors[0]}`, `0 -44px 0 -22px ${stackLayerColors[1]}`].slice(
+        0,
+        visibleStackLayerCount
+      );
+  const stackShellStyle: CSSProperties = mediaStackAppearance
+    ? {
+        ...activeTvShellStyle,
+        boxShadow: [...stackLayerShadows, activeTvShellStyle?.boxShadow].filter(Boolean).join(', '),
+      }
+    : (activeTvShellStyle ?? {});
+  const stackBadge =
+    mediaStackAppearance && !mediaStackCount ? (
+      <div className="pointer-events-none absolute right-3 top-3 z-[1]">
+        <span
+          className={`inline-flex items-center rounded-full border px-2 py-1 text-[0.65rem] font-medium uppercase tracking-[0.14em] ${surface.textPrimary}`}
+          style={{
+            backgroundColor: theme === 'light' ? 'rgba(255,255,255,0.84)' : 'rgba(24,24,27,0.58)',
+            borderColor: theme === 'light' ? 'rgba(24,24,27,0.08)' : 'rgba(255,255,255,0.14)',
+          }}
+        >
+          {t('widgets.mediaStack.badge')}
+        </span>
+      </div>
+    ) : null;
+  const stackLayerSurfaceClassName =
+    backgroundClassName ||
+    (theme === 'light' ? 'bg-white' : theme === 'black' ? 'bg-black' : 'bg-zinc-950');
+  const stackLayerBackground = `radial-gradient(circle at 18% 14%, ${withAlpha(
+    stackPalette.highlight,
+    0.2
+  )} 0%, transparent 34%), linear-gradient(165deg, ${withAlpha(
+    stackPalette.dominant,
+    0.72
+  )} 0%, ${withAlpha(stackPalette.dominant, 0.62)} 42%, ${withAlpha(
+    stackPalette.gradientEnd,
+    0.68
+  )} 100%)`;
 
   return (
     <>
-      <BaseCard
-        size={size}
-        {...cardInteraction.cardProps}
-        interactive={!isEditMode}
-        className={`${isEditMode ? '' : 'cursor-pointer'}`}
-        backgroundClassName={backgroundClassName}
-        frameClassName={`${cardShell.rootFrameClassName} ${shellBorder} ${cardShadow} ${shellBlur} ${stateSurface.containerClassName}`}
-        style={activeTvShellStyle}
-        disableDefaultSheen
-        overlay={
-          <>
-            {shellOverlayClassName ? (
-              <div className={`absolute inset-0 ${shellOverlayClassName}`} />
+      <MediaStackContainer enabled={Boolean(mediaStackCount)}>
+        {mediaStackCount && mediaStackCount > 1 ? (
+          <div
+            aria-hidden="true"
+            className={`pointer-events-none absolute inset-x-5 -top-3.5 bottom-4 rounded-[24px] border ${stackLayerSurfaceClassName}`}
+            style={{
+              zIndex: 0,
+              background: stackLayerBackground,
+              borderColor: theme === 'light' ? 'rgba(148,163,184,0.26)' : 'rgba(255,255,255,0.09)',
+              boxShadow: '0 14px 30px -16px rgba(0,0,0,0.72)',
+            }}
+          />
+        ) : null}
+        {mediaStackCount ? (
+          <div
+            aria-hidden="true"
+            className={`pointer-events-none absolute inset-x-2.5 -top-1.5 bottom-2 rounded-[24px] border ${stackLayerSurfaceClassName}`}
+            style={{
+              zIndex: 0,
+              background: stackLayerBackground,
+              borderColor: theme === 'light' ? 'rgba(148,163,184,0.34)' : 'rgba(255,255,255,0.12)',
+              boxShadow: '0 9px 22px -13px rgba(0,0,0,0.62)',
+            }}
+          />
+        ) : null}
+        <BaseCard
+          size={size}
+          {...cardInteraction.cardProps}
+          interactive={!isEditMode}
+          className={`relative z-[1] ${isEditMode ? '' : 'cursor-pointer'}`}
+          backgroundClassName={backgroundClassName}
+          frameClassName={`${cardShell.rootFrameClassName} ${shellBorder} ${cardShadow} ${shellBlur} ${stateSurface.containerClassName}`}
+          style={stackShellStyle}
+          disableDefaultSheen
+          overlay={
+            <>
+              {shellOverlayClassName ? (
+                <div className={`absolute inset-0 ${shellOverlayClassName}`} />
+              ) : null}
+              {tvOnGlowClassName ? (
+                <div className={`absolute inset-0 ${tvOnGlowClassName}`} />
+              ) : null}
+            </>
+          }
+          contentClassName="h-full"
+        >
+          <div className="relative h-full flex flex-col">
+            {stackBadge}
+            {isTv ? (
+              <MediaTvView
+                size={mediaSize}
+                playerName={resolvedPlayerName}
+                source={source}
+                sourceList={sourceList}
+                isOn={!isOff}
+                isPlaying={isPlaying}
+                volume={volume}
+                isMuted={isMuted}
+                theme={theme}
+                remoteAvailable={tvRemoteAvailable}
+                canSetVolume={mediaCapabilities?.canSetVolume ?? false}
+                canMuteVolume={mediaCapabilities?.canMuteVolume ?? false}
+                canSelectSource={mediaCapabilities?.canSelectSource ?? false}
+                onTogglePlay={togglePlay}
+                onToggleMute={toggleMute}
+                onVolumeChange={handleVolumeChange}
+                onVolumeInteractionStart={startVolumeInteraction}
+                onVolumeInteractionEnd={endVolumeInteraction}
+                onSelectSource={selectSource}
+                onRemoteCommand={sendRemoteCommand}
+                onOpenDialog={openDialog}
+              />
+            ) : isSmall ? (
+              <MediaSmallView
+                {...mediaIdentityProps}
+                {...mediaControlProps}
+                elapsedSeconds={elapsedSeconds}
+                durationSeconds={durationSeconds}
+              />
+            ) : isMedium ? (
+              <MediaMediumView
+                {...mediaIdentityProps}
+                {...mediaControlProps}
+                elapsedSeconds={elapsedSeconds}
+                durationSeconds={durationSeconds}
+              />
+            ) : isMediumVertical ? (
+              <MediaMediumVerticalView
+                {...mediaIdentityProps}
+                {...mediaControlProps}
+                elapsedSeconds={elapsedSeconds}
+                durationSeconds={durationSeconds}
+              />
+            ) : isLarge ? (
+              <MediaLargeView
+                {...mediaIdentityProps}
+                {...mediaControlProps}
+                hideHeader={useSpotifyConnectPresentation}
+                fallbackArtworkIcon={useSpotifyConnectPresentation ? 'spotify' : 'disc'}
+                elapsedSeconds={elapsedSeconds}
+                durationSeconds={durationSeconds}
+              />
             ) : null}
-            {tvOnGlowClassName ? <div className={`absolute inset-0 ${tvOnGlowClassName}`} /> : null}
-          </>
-        }
-        contentClassName="h-full"
-      >
-        <div className="relative h-full flex flex-col">
-          {stackBackplates}
-          {stackBadge}
-          {isTv ? (
-            <MediaTvView
-              size={mediaSize}
-              playerName={resolvedPlayerName}
-              source={source}
-              sourceList={sourceList}
-              isOn={!isOff}
-              isPlaying={isPlaying}
-              volume={volume}
-              isMuted={isMuted}
-              theme={theme}
-              remoteAvailable={tvRemoteAvailable}
-              canSetVolume={mediaCapabilities?.canSetVolume ?? false}
-              canMuteVolume={mediaCapabilities?.canMuteVolume ?? false}
-              canSelectSource={mediaCapabilities?.canSelectSource ?? false}
-              onTogglePlay={togglePlay}
-              onToggleMute={toggleMute}
-              onVolumeChange={handleVolumeChange}
-              onVolumeInteractionStart={startVolumeInteraction}
-              onVolumeInteractionEnd={endVolumeInteraction}
-              onSelectSource={selectSource}
-              onRemoteCommand={sendRemoteCommand}
-              onOpenDialog={openDialog}
-            />
-          ) : isSmall ? (
-            <MediaSmallView
-              {...mediaIdentityProps}
-              {...mediaControlProps}
-              elapsedSeconds={elapsedSeconds}
-              durationSeconds={durationSeconds}
-            />
-          ) : isMedium ? (
-            <MediaMediumView
-              {...mediaIdentityProps}
-              {...mediaControlProps}
-              elapsedSeconds={elapsedSeconds}
-              durationSeconds={durationSeconds}
-            />
-          ) : isMediumVertical ? (
-            <MediaMediumVerticalView
-              {...mediaIdentityProps}
-              {...mediaControlProps}
-              elapsedSeconds={elapsedSeconds}
-              durationSeconds={durationSeconds}
-            />
-          ) : isLarge ? (
-            <MediaLargeView
-              {...mediaIdentityProps}
-              {...mediaControlProps}
-              hideHeader={useSpotifyConnectPresentation}
-              fallbackArtworkIcon={useSpotifyConnectPresentation ? 'spotify' : 'disc'}
-              elapsedSeconds={elapsedSeconds}
-              durationSeconds={durationSeconds}
-            />
-          ) : null}
-        </div>
-      </BaseCard>
+          </div>
+        </BaseCard>
+      </MediaStackContainer>
 
       {isOpen && (
         <Suspense fallback={null}>
@@ -477,6 +550,7 @@ export const MediaCard = memo(function MediaCard({
             supportsGrouping={supportsGrouping}
             groupMembers={groupMembers}
             availableGroupingPlayers={availableGroupingPlayers}
+            groupingPlayerSubtitle={currentPlayerIdentifier}
             onPrevious={handlePrevious}
             canPreviousTrack={canPreviousTrack}
             onTogglePlay={togglePlay}

@@ -38,6 +38,7 @@ interface CardRendererOptions {
   handleSizeChange: (id: string, size: CardSize) => void;
   isEditMode: boolean;
   headerSubtitleOverride?: string;
+  presentationVariant?: 'media-stack';
 }
 
 type CardRenderFn = (options: CardRendererOptions) => ReactElement | null;
@@ -411,7 +412,7 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
     />
   ),
 
-  media: ({ device, size, handleSizeChange, isEditMode }) => (
+  media: ({ device, size, handleSizeChange, isEditMode, presentationVariant }) => (
     <MediaCard
       id={device.id as string}
       name={device.name as string}
@@ -438,6 +439,7 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
       size={size}
       onSizeChange={handleSizeChange}
       isEditMode={isEditMode}
+      mediaStackAppearance={presentationVariant === 'media-stack'}
     />
   ),
 

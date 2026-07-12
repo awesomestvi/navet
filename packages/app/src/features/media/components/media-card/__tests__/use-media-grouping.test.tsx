@@ -114,6 +114,15 @@ describe('useMediaGrouping', () => {
       useMediaGrouping({
         entityId: 'media_player.kitchen',
         entities: createEntities(),
+        entityRegistry: [
+          { entityId: 'media_player.kitchen', platform: 'music_assistant' },
+          {
+            entityId: 'media_player.living_room',
+            manufacturer: 'Sonos',
+            model: 'One SL',
+            platform: 'sonos',
+          },
+        ],
         groupMembers: [],
         runAction: runActionMock,
         t: (key) => key,
@@ -125,8 +134,10 @@ describe('useMediaGrouping', () => {
         id: 'media_player.living_room',
         isAttached: false,
         name: 'Living Room Speaker',
+        subtitle: 'Sonos One SL',
       },
     ]);
+    expect(result.current.currentPlayerIdentifier).toBe('Music Assistant');
   });
 
   it('joins a media group through a provider-neutral command', () => {
@@ -134,6 +145,7 @@ describe('useMediaGrouping', () => {
       useMediaGrouping({
         entityId: 'media_player.kitchen',
         entities: createEntities(),
+        entityRegistry: [],
         groupMembers: ['media_player.den'],
         runAction: runActionMock,
         t: (key) => key,
@@ -149,11 +161,57 @@ describe('useMediaGrouping', () => {
     });
   });
 
+  it('uses entity metadata and the provider name when registry platforms are unavailable', () => {
+    const entities = createEntities();
+    if (entities['media_player.living_room']) {
+      entities['media_player.living_room'].attributes.integration = 'sonos';
+    }
+
+    const { result } = renderHookWithProviders(() =>
+      useMediaGrouping({
+        entityId: 'media_player.kitchen',
+        entities,
+        entityRegistry: [],
+        groupMembers: [],
+        runAction: runActionMock,
+        t: (key) => key,
+      })
+    );
+
+    expect(result.current.availableGroupingPlayers[0]?.subtitle).toBe('Sonos');
+    expect(result.current.currentPlayerIdentifier).toBe('Home Assistant');
+  });
+
+  it('keeps the wrapper integration alongside the physical speaker identity', () => {
+    const { result } = renderHookWithProviders(() =>
+      useMediaGrouping({
+        entityId: 'media_player.kitchen',
+        entities: createEntities(),
+        entityRegistry: [
+          {
+            entityId: 'media_player.living_room',
+            manufacturer: 'APPLE',
+            model: 'HomePod mini',
+            platform: 'music_assistant',
+          },
+        ],
+        groupMembers: [],
+        runAction: runActionMock,
+        t: (key) => key,
+      })
+    );
+
+    expect(result.current.availableGroupingPlayers[0]?.subtitle).toBe(
+      'Apple HomePod mini · Music Assistant'
+    );
+  });
+
   it('leaves a media group through a provider-neutral command', () => {
     const { result } = renderHookWithProviders(() =>
       useMediaGrouping({
         entityId: 'media_player.kitchen',
         entities: createEntities(),
+        entityRegistry: [],
         groupMembers: ['media_player.living_room'],
         runAction: runActionMock,
         t: (key) => key,

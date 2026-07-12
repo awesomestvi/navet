@@ -36,6 +36,7 @@ export default defineConfig({
     alias: {
       '@assets': path.resolve(__dirname, './assets'),
       '@docs': path.resolve(__dirname, './docs'),
+      '@website': path.resolve(__dirname, './apps/website/src'),
       '@navet/core': path.resolve(__dirname, './packages/core/src'),
       '@navet/ui': path.resolve(__dirname, './packages/ui/src'),
       '@navet/app': path.resolve(__dirname, './packages/app/src'),

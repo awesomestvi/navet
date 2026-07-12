@@ -361,6 +361,7 @@ export const zhMessages = {
   'media.muteVolume': '静音',
   'media.unmuteVolume': '取消静音',
   'media.volume': '音量',
+  'media.groupedSpeakers': '已组合扬声器',
   'media.quickVolume': '快速音量',
   'media.shuffle': '随机播放',
   'media.linearPlayback': '顺序播放',

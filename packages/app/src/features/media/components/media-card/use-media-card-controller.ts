@@ -323,9 +323,15 @@ export function useMediaCardController({
     setElapsedSeconds,
   });
 
-  const { availableGroupingPlayers, attachGroupMember, detachGroupMember } = useMediaGrouping({
+  const {
+    availableGroupingPlayers,
+    attachGroupMember,
+    currentPlayerIdentifier,
+    detachGroupMember,
+  } = useMediaGrouping({
     entityId,
     entities: mediaPlayerEntities,
+    entityRegistry,
     groupMembers,
     runAction,
     t,
@@ -412,6 +418,7 @@ export function useMediaCardController({
     attachGroupMember,
     artworkResource,
     availableGroupingPlayers,
+    currentPlayerIdentifier,
     canNextTrack,
     canPreviousTrack,
     canTogglePlayback,

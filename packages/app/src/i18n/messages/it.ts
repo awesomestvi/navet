@@ -1012,6 +1012,7 @@ export const itMessages = {
   'media.muteVolume': 'Disattiva audio',
   'media.unmuteVolume': 'Riattiva audio',
   'media.volume': 'Volume',
+  'media.groupedSpeakers': 'Altoparlanti raggruppati',
   'media.quickVolume': 'Volume rapido',
   'media.shuffle': 'Casuale',
   'media.repeatOff': 'Ripetizione disattivata',

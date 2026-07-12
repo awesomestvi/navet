@@ -2,6 +2,7 @@ import { DashboardEmptyState } from '@navet/app/components/patterns';
 import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
+import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { useDashboardEntitiesStore } from '@navet/app/features/dashboard/stores/dashboard-entities-store';
 import {
   getMediaEntityTypeKey,
@@ -13,9 +14,11 @@ import {
   useEditMode,
   useI18n,
   useMediaQuery,
+  usePersistedState,
   useTheme,
 } from '@navet/app/hooks';
 import type { MediaDevice } from '@navet/app/types/device.types';
+import { getProviderNativeId } from '@navet/app/utils/provider-ids';
 import { Plus, Tv } from 'lucide-react';
 import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -67,6 +70,43 @@ function isSpotifyAccountDevice(device: MediaSectionDevice) {
   return (
     device.id.toLowerCase().includes('spotify') || device.name.toLowerCase().includes('spotify')
   );
+}
+
+export function collapseSameRoomMediaGroups(mediaDevices: MediaSectionDevice[]) {
+  const groupKey = (entityId: string, providerId: MediaSectionDevice['providerId']) =>
+    `${providerId ?? 'unscoped'}:${getProviderNativeId(entityId)}`;
+  const devicesByNativeId = new Map(
+    mediaDevices.map((device) => [groupKey(device.id, device.providerId), device] as const)
+  );
+  const hiddenIds = new Set<string>();
+  const stackedIds = new Set<string>();
+
+  for (const device of mediaDevices) {
+    if (hiddenIds.has(device.id) || (device.groupMembers?.length ?? 0) < 2) continue;
+
+    const matchedMembers = [device.id, ...(device.groupMembers ?? [])]
+      .map((entityId) => devicesByNativeId.get(groupKey(entityId, device.providerId)))
+      .filter((member): member is MediaSectionDevice => Boolean(member))
+      .filter(
+        (member, index, members) => members.findIndex(({ id }) => id === member.id) === index
+      );
+    if (matchedMembers.length < 2) continue;
+
+    const rooms = new Set(
+      matchedMembers.map((member) => member.room.trim().toLowerCase()).filter(Boolean)
+    );
+    if (rooms.size !== 1) continue;
+
+    const representative = matchedMembers[0];
+    if (!representative) continue;
+    stackedIds.add(representative.id);
+    for (const member of matchedMembers.slice(1)) hiddenIds.add(member.id);
+  }
+
+  return {
+    devices: mediaDevices.filter((device) => !hiddenIds.has(device.id)),
+    cardVariantById: new Map([...stackedIds].map((id) => [id, 'media-stack'] as const)),
+  };
 }
 
 export function buildMediaSections(
@@ -144,6 +184,11 @@ export function MediaSection() {
   const devices = useDeviceCollectionsByKeys(['media']);
   const { isEditMode, toggleEditMode } = useEditMode();
   const [isAddEntityDialogOpen, setIsAddEntityDialogOpen] = useState(false);
+  const [activeNowPlayingGroupIds, setActiveNowPlayingGroupIds] = useState<string[]>([]);
+  const [collapsedSections, setCollapsedSections] = usePersistedState<Record<string, boolean>>(
+    STORAGE_KEYS.mediaCollapsedSections,
+    {}
+  );
   const { hiddenEntityIds, hideEntity, showEntity } = useDashboardEntitiesStore(
     useShallow((state) => ({
       hiddenEntityIds: state.hiddenEntityIds,
@@ -209,10 +254,53 @@ export function MediaSection() {
     [t]
   );
 
+  const groupedMediaPresentation = useMemo(
+    () =>
+      isEditMode
+        ? { devices: mediaDevices, cardVariantById: new Map<string, 'media-stack'>() }
+        : collapseSameRoomMediaGroups(mediaDevices),
+    [isEditMode, mediaDevices]
+  );
+  const activeNowPlayingGroupIdSet = useMemo(
+    () => new Set(activeNowPlayingGroupIds),
+    [activeNowPlayingGroupIds]
+  );
+  const activeNowPlayingGroupNameSet = useMemo(
+    () =>
+      new Set(
+        mediaDevices
+          .filter((device) => activeNowPlayingGroupIdSet.has(device.id))
+          .map((device) => device.name.trim().toLowerCase())
+          .filter(Boolean)
+      ),
+    [activeNowPlayingGroupIdSet, mediaDevices]
+  );
+  const handleActiveNowPlayingGroupChange = useCallback((entityIds: string[]) => {
+    setActiveNowPlayingGroupIds((current) =>
+      current.length === entityIds.length && current.every((id, index) => id === entityIds[index])
+        ? current
+        : entityIds
+    );
+  }, []);
+  const toggleSectionCollapse = useCallback(
+    (sectionId: string) => {
+      setCollapsedSections((current) => ({
+        ...current,
+        [sectionId]: !current[sectionId],
+      }));
+    },
+    [setCollapsedSections]
+  );
+
   const sections = useMemo(() => {
     const sectionDevices = isEditMode
-      ? mediaDevices
-      : mediaDevices.filter((device) => !isSpotifyAccountDevice(device));
+      ? groupedMediaPresentation.devices
+      : groupedMediaPresentation.devices.filter(
+          (device) =>
+            !isSpotifyAccountDevice(device) &&
+            !activeNowPlayingGroupIdSet.has(device.id) &&
+            !activeNowPlayingGroupNameSet.has(device.name.trim().toLowerCase())
+        );
 
     return buildMediaSections(sectionDevices, {
       audioTitle,
@@ -227,8 +315,10 @@ export function MediaSection() {
     audioPlural,
     audioSingular,
     audioTitle,
+    activeNowPlayingGroupIdSet,
+    activeNowPlayingGroupNameSet,
     isEditMode,
-    mediaDevices,
+    groupedMediaPresentation.devices,
     tvPlural,
     tvSingular,
     tvTitle,
@@ -277,7 +367,11 @@ export function MediaSection() {
       showCustomizeButton={false}
     >
       {!isEditMode ? (
-        <MediaDashboard devices={mediaDevices} initialDeviceId={featuredMediaDevice?.id} />
+        <MediaDashboard
+          devices={mediaDevices}
+          initialDeviceId={featuredMediaDevice?.id}
+          onActiveGroupChange={handleActiveNowPlayingGroupChange}
+        />
       ) : null}
 
       {sections.length > 0 ? (
@@ -294,6 +388,18 @@ export function MediaSection() {
             onRemoveEntity={handleRemoveEntity}
             allowEntityRemoval
             usesHideAction
+            cardVariantById={groupedMediaPresentation.cardVariantById}
+            sectionId={section.key}
+            isCollapsed={
+              section.key === 'audio' || section.key === 'tv'
+                ? (collapsedSections[section.key] ?? false)
+                : false
+            }
+            onToggleCollapse={
+              section.key === 'audio' || section.key === 'tv'
+                ? () => toggleSectionCollapse(section.key)
+                : undefined
+            }
           />
         ))
       ) : isEditMode ? (

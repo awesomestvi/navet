@@ -4,7 +4,12 @@ import { getDashboardCardFootprint } from '@navet/app/components/shared/card-siz
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { EMPTY_NAVET_MEDIA_CAPABILITIES } from '@navet/app/core/navet-device-state';
-import { useProviderMediaEntity } from '@navet/app/features/media/hooks/use-provider-media-playback-data';
+import {
+  useProviderMediaEntity,
+  useProviderMediaEntityRegistry,
+  useProviderMediaPlayerEntities,
+} from '@navet/app/features/media/hooks/use-provider-media-playback-data';
+import { normalizeMediaPlaybackState } from '@navet/app/features/media/media-state';
 import {
   useEntityProviderFeature,
   useI18n,
@@ -22,6 +27,7 @@ import { normalizeResourceUrl } from '@navet/app/services/integration-resource.s
 import type { MediaDevice } from '@navet/app/types/device.types';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { resolveAddonLocalEndpointUrl } from '@navet/app/utils/home-assistant-connection-target';
+import { getProviderNativeId } from '@navet/app/utils/provider-ids';
 import { sanitizeImageUrl } from '@navet/app/utils/url-security';
 import * as Popover from '@radix-ui/react-popover';
 import {
@@ -46,6 +52,7 @@ type MediaDashboardDevice = MediaDevice & { type: 'media' };
 interface MediaDashboardProps {
   devices: MediaDashboardDevice[];
   initialDeviceId?: string;
+  onActiveGroupChange?: (entityIds: string[]) => void;
 }
 
 type MediaFeedbackKey =
@@ -165,6 +172,43 @@ function isSpotifyAccountDevice(device: MediaDashboardDevice) {
   return (
     device.id.toLowerCase().includes('spotify') || device.name.toLowerCase().includes('spotify')
   );
+}
+
+function isMusicAssistantDevice(device: MediaDashboardDevice, registryPlatform?: string | null) {
+  const identity = `${device.id} ${device.name} ${device.source ?? ''}`.toLowerCase();
+  return (
+    registryPlatform === 'music_assistant' ||
+    identity.includes('music assistant') ||
+    device.id.toLowerCase().includes('media_player.mass_') ||
+    device.id.toLowerCase().includes('media_player.music_assistant')
+  );
+}
+
+function getPhysicalSpeakerKey(device: MediaDashboardDevice) {
+  const normalizedRoom = device.room.trim().toLowerCase();
+  if (
+    normalizedRoom &&
+    !['unknown', 'unassigned', 'no room', 'media', 'home'].includes(normalizedRoom)
+  ) {
+    return normalizedRoom;
+  }
+
+  return device.name
+    .toLowerCase()
+    .replace(/\bmusic assistant\b/g, '')
+    .replace(/\bspeaker\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getPlaybackProviderLabel(device: MediaDashboardDevice, registryPlatform?: string | null) {
+  if (isMusicAssistantDevice(device, registryPlatform)) return 'Music Assistant';
+  const identity = `${device.id} ${device.name} ${device.source ?? ''}`.toLowerCase();
+  if (identity.includes('spotify')) return 'Spotify';
+  if (identity.includes('apple music')) return 'Apple Music';
+  if (identity.includes('youtube')) return 'YouTube';
+  const source = device.source?.trim();
+  return source && !['unknown', 'none', 'idle'].includes(source.toLowerCase()) ? source : undefined;
 }
 
 function SpotifyCardHeaderIcon({ isLightTheme }: { isLightTheme: boolean }) {
@@ -360,6 +404,37 @@ function resolveSpotifyImageThumbnailUrl(thumbnail: string | null | undefined) {
   return sanitizeImageUrl(`https://i.scdn.co/image/${match[1]}`);
 }
 
+export function resolveMusicAssistantThumbnailSourceUrl(thumbnail: string | null | undefined) {
+  const trimmedThumbnail = thumbnail?.trim();
+  if (!trimmedThumbnail) {
+    return null;
+  }
+
+  try {
+    const thumbnailUrl = new URL(trimmedThumbnail, 'http://navet.local');
+    if (!thumbnailUrl.pathname.toLowerCase().includes('/imageproxy')) {
+      return null;
+    }
+
+    let sourceUrl = thumbnailUrl.searchParams.get('path');
+    if (!sourceUrl) {
+      return null;
+    }
+
+    for (let decodePass = 0; decodePass < 2; decodePass += 1) {
+      const decodedSourceUrl = decodeURIComponent(sourceUrl);
+      if (decodedSourceUrl === sourceUrl) {
+        break;
+      }
+      sourceUrl = decodedSourceUrl;
+    }
+
+    return sanitizeImageUrl(sourceUrl);
+  } catch {
+    return null;
+  }
+}
+
 function resolveMediaBrowserThumbnailUrl(
   item: PlatformMediaItem,
   providerId?: IntegrationProviderId
@@ -370,6 +445,7 @@ function resolveMediaBrowserThumbnailUrl(
 
   return (
     resolveSpotifyImageThumbnailUrl(item.thumbnail) ??
+    resolveMusicAssistantThumbnailSourceUrl(item.thumbnail) ??
     normalizeResourceUrl(item.thumbnail ?? '', providerId)
   );
 }
@@ -879,45 +955,42 @@ function MediaBrowserTile({
         ) : (
           <span className="absolute inset-0 flex items-center justify-center">
             {isArtist ? (
-              <span className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_35%_28%,rgba(29,185,84,0.22),transparent_38%),linear-gradient(135deg,rgba(255,255,255,0.13),rgba(255,255,255,0.035))]">
+              <span
+                className={`absolute inset-0 flex items-center justify-center ${
+                  theme === 'glass'
+                    ? 'bg-[radial-gradient(circle_at_35%_28%,rgba(29,185,84,0.22),transparent_38%),linear-gradient(135deg,rgba(255,255,255,0.13),rgba(255,255,255,0.035))]'
+                    : theme === 'light'
+                      ? 'bg-slate-100'
+                      : theme === 'black'
+                        ? 'bg-black'
+                        : 'bg-zinc-900'
+                }`}
+              >
                 <span
                   className={`flex h-[58%] w-[58%] items-center justify-center rounded-full border text-2xl font-semibold shadow-inner ${
                     theme === 'light'
                       ? 'border-white/80 bg-white/72 text-slate-700'
-                      : 'border-white/16 bg-black/22 text-white/86'
+                      : theme === 'glass'
+                        ? 'border-white/16 bg-black/22 text-white/86'
+                        : 'border-zinc-700 bg-zinc-900 text-zinc-100'
                   }`}
                 >
                   {itemInitials || <UserRound className="h-9 w-9" />}
                 </span>
               </span>
             ) : (
-              <>
-                <span
-                  className={`absolute left-[18%] top-[19%] h-[18%] w-[38%] rounded-t-lg border border-b-0 ${
-                    theme === 'light'
-                      ? 'border-slate-200 bg-slate-50'
-                      : 'border-white/12 bg-white/[0.09]'
-                  }`}
-                />
-                <span
-                  className={`relative flex h-[58%] w-[68%] items-center justify-center rounded-xl border shadow-inner ${
-                    theme === 'light'
-                      ? 'border-slate-200 bg-linear-to-br from-white to-slate-100'
-                      : 'border-white/12 bg-linear-to-br from-white/[0.13] to-white/[0.045]'
-                  }`}
-                >
-                  <ItemIcon className={`h-7 w-7 ${surface.textSecondary}`} />
-                </span>
-              </>
+              <ItemIcon className={`h-10 w-10 ${surface.textSecondary}`} />
             )}
           </span>
         )}
         <span className="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-black/42 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
         <span
-          className={`absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border backdrop-blur-md ${
+          className={`absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border ${
             theme === 'light'
               ? 'border-white/70 bg-white/78 text-slate-600'
-              : 'border-white/16 bg-black/32 text-white/82'
+              : theme === 'glass'
+                ? 'border-white/16 bg-black/32 text-white/82 backdrop-blur-md'
+                : 'border-zinc-700 bg-zinc-950 text-zinc-200'
           }`}
         >
           {item.canPlay ? (
@@ -1103,7 +1176,15 @@ function MediaBrowserVirtualTable({
   return (
     <div
       data-testid="media-browser-virtual-table-shell"
-      className={`min-h-0 overflow-hidden rounded-[22px] border ${surface.border} ${surface.panelMuted}`}
+      className={`min-h-0 overflow-hidden rounded-[22px] border ${surface.border} ${
+        theme === 'glass'
+          ? surface.panelMuted
+          : theme === 'light'
+            ? 'bg-white'
+            : theme === 'black'
+              ? 'bg-black'
+              : 'bg-zinc-950'
+      }`}
       style={{ height: `${height}px` }}
     >
       <div className="min-w-0">
@@ -1160,38 +1241,198 @@ function MediaBrowserVirtualTable({
   );
 }
 
-export function MediaDashboard({ devices, initialDeviceId }: MediaDashboardProps) {
+export function MediaDashboard({
+  devices,
+  initialDeviceId,
+  onActiveGroupChange,
+}: MediaDashboardProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const runAction = useServiceActionHandler();
+  const registryAnchorEntityId =
+    devices.find((device) => device.deviceClass?.toLowerCase() === 'speaker')?.id ??
+    devices.find((device) => getProviderNativeId(device.id).startsWith('media_player.'))?.id ??
+    '';
+  const mediaEntityRegistry = useProviderMediaEntityRegistry(registryAnchorEntityId);
+  const liveMediaPlayerEntities = useProviderMediaPlayerEntities(registryAnchorEntityId, true);
+  const resolvedDevices = useMemo(
+    () =>
+      devices.map((device) => {
+        const liveEntity = liveMediaPlayerEntities?.[getProviderNativeId(device.id)];
+        if (!liveEntity) return device;
+        const attributes = liveEntity.attributes;
+        const liveGroupMembers = Array.isArray(attributes.group_members)
+          ? attributes.group_members.filter(
+              (member): member is string => typeof member === 'string' && member.length > 0
+            )
+          : device.groupMembers;
+        return {
+          ...device,
+          state: normalizeMediaPlaybackState(liveEntity.state, device.deviceClass),
+          title: readLiveStringAttribute(attributes, 'media_title') ?? device.title,
+          artist: readLiveStringAttribute(attributes, 'media_artist') ?? device.artist,
+          album: readLiveStringAttribute(attributes, 'media_album_name') ?? device.album,
+          source: readLiveStringAttribute(attributes, 'source') ?? device.source,
+          entityPicture:
+            readLiveStringAttribute(attributes, 'entity_picture') ?? device.entityPicture,
+          durationSeconds:
+            typeof attributes.media_duration === 'number'
+              ? attributes.media_duration
+              : device.durationSeconds,
+          groupMembers: liveGroupMembers,
+        } satisfies MediaDashboardDevice;
+      }),
+    [devices, liveMediaPlayerEntities]
+  );
+  const mediaPlatformByEntityId = useMemo(
+    () => new Map(mediaEntityRegistry.map((entry) => [entry.entityId, entry.platform] as const)),
+    [mediaEntityRegistry]
+  );
+  const getMediaPlatform = useCallback(
+    (device: MediaDashboardDevice) => mediaPlatformByEntityId.get(getProviderNativeId(device.id)),
+    [mediaPlatformByEntityId]
+  );
+  const isMusicAssistantPlaybackDevice = useCallback(
+    (device: MediaDashboardDevice) => isMusicAssistantDevice(device, getMediaPlatform(device)),
+    [getMediaPlatform]
+  );
   const isSingleRowMediaLayout = useMediaQuery('(max-width: 899px)');
   const isVeryNarrowMediaDesktopLayout = useMediaQuery('(max-width: 999px)');
   const isNarrowMediaDesktopLayout = useMediaQuery('(max-width: 1099px)');
   const isMediumNarrowMediaDesktopLayout = useMediaQuery('(max-width: 1279px)');
   const isCompactDesktopMediaLayout = useMediaQuery('(max-width: 1399px)');
   const isMediumDesktopMediaLayout = useMediaQuery('(max-width: 1659px)');
-  const initialDevice = devices.find((device) => device.id === initialDeviceId);
-  const spotifyAccountDevice = devices.find(
+  const initialDevice = resolvedDevices.find((device) => device.id === initialDeviceId);
+  const spotifyAccountDevice = resolvedDevices.find(
     (device) => isAudioDevice(device) && isSpotifyAccountDevice(device)
   );
-  const availableSpotifyConnectTargets = devices.filter(isSpotifyConnectTargetDevice);
-  const availableAudioOutputTargets = devices.filter(
+  const availableSpotifyConnectTargets = resolvedDevices.filter(isSpotifyConnectTargetDevice);
+  const availableAudioOutputTargets = resolvedDevices.filter(
     (device) => isAudioDevice(device) && !isSpotifyAccountDevice(device)
   );
   const initialSpotifyConnectTarget = findActiveSpotifyConnectTarget(
     spotifyAccountDevice,
     availableAudioOutputTargets
   );
+  const browsablePlaybackDevices = resolvedDevices.filter((device) => {
+    if (!isAudioDevice(device)) return false;
+    const capabilities = getDeviceCapabilities(device);
+    const isMusicAssistant = isMusicAssistantPlaybackDevice(device);
+    return (
+      (capabilities.canBrowseMedia || isMusicAssistant) &&
+      (!spotifyAccountDevice || isMusicAssistant)
+    );
+  });
+  const hasCurrentMedia = (device: MediaDashboardDevice) =>
+    Boolean(
+      (device.title.trim() &&
+        device.title.trim().toLowerCase() !== device.name.trim().toLowerCase()) ||
+        device.artist.trim() ||
+        device.album?.trim() ||
+        device.entityPicture ||
+        (device.durationSeconds ?? 0) > 0
+    );
+  const resolveDeclaredPhysicalGroup = (device: MediaDashboardDevice) => {
+    const physicalKeys = new Set([getPhysicalSpeakerKey(device)]);
+    const entityIds = new Set([device.id]);
+    for (const memberId of device.groupMembers ?? []) {
+      const nativeMemberId = getProviderNativeId(memberId);
+      const memberDevice = resolvedDevices.find(
+        (candidate) => getProviderNativeId(candidate.id) === nativeMemberId
+      );
+      physicalKeys.add(
+        memberDevice ? getPhysicalSpeakerKey(memberDevice) : `entity:${nativeMemberId}`
+      );
+      if (memberDevice) entityIds.add(memberDevice.id);
+    }
+    return { entityIds, physicalKeys };
+  };
+  const activePlaybackClusters = Object.values(
+    resolvedDevices.reduce<Record<string, MediaDashboardDevice[]>>((clusters, device) => {
+      if (
+        !isAudioDevice(device) ||
+        !['playing', 'paused'].includes(device.state) ||
+        !hasCurrentMedia(device)
+      ) {
+        return clusters;
+      }
+      const key = `${device.title.trim().toLowerCase()}::${device.artist.trim().toLowerCase()}`;
+      if (!key.replaceAll(':', '')) return clusters;
+      const cluster = clusters[key] ?? [];
+      cluster.push(device);
+      clusters[key] = cluster;
+      return clusters;
+    }, {})
+  );
+  const inferredMusicAssistantGroup = activePlaybackClusters.find((cluster) => {
+    const roomCount = new Set(cluster.map(getPhysicalSpeakerKey)).size;
+    const hasDeclaredGroup = cluster.some((device) => (device.groupMembers?.length ?? 0) > 1);
+    const playingRoomCount = new Set(
+      cluster.filter((device) => device.state === 'playing').map(getPhysicalSpeakerKey)
+    ).size;
+    return (
+      roomCount > 1 &&
+      cluster.length >= roomCount &&
+      hasDeclaredGroup &&
+      cluster.some(isMusicAssistantPlaybackDevice) &&
+      playingRoomCount > 1
+    );
+  });
+  const inferredMusicAssistantDevice =
+    inferredMusicAssistantGroup?.find(isMusicAssistantPlaybackDevice) ??
+    inferredMusicAssistantGroup?.find((device) => getDeviceCapabilities(device).canBrowseMedia) ??
+    inferredMusicAssistantGroup?.[0];
+  const declaredGroupedPlaybackDevice =
+    resolvedDevices.find(
+      (device) =>
+        device.state === 'playing' &&
+        isAudioDevice(device) &&
+        !isMusicAssistantPlaybackDevice(device) &&
+        hasCurrentMedia(device) &&
+        resolveDeclaredPhysicalGroup(device).physicalKeys.size > 1
+    ) ??
+    resolvedDevices.find(
+      (device) =>
+        device.state === 'paused' &&
+        isAudioDevice(device) &&
+        !isMusicAssistantPlaybackDevice(device) &&
+        hasCurrentMedia(device) &&
+        resolveDeclaredPhysicalGroup(device).physicalKeys.size > 1
+    );
+  const activeBrowsableDevice =
+    browsablePlaybackDevices.find(
+      (device) =>
+        device.state === 'playing' &&
+        isMusicAssistantPlaybackDevice(device) &&
+        hasCurrentMedia(device)
+    ) ??
+    browsablePlaybackDevices.find(
+      (device) => device.state === 'playing' && isMusicAssistantPlaybackDevice(device)
+    ) ??
+    browsablePlaybackDevices.find(
+      (device) => device.state === 'playing' && hasCurrentMedia(device)
+    ) ??
+    browsablePlaybackDevices.find((device) => device.state === 'playing') ??
+    browsablePlaybackDevices.find(
+      (device) =>
+        device.state === 'paused' &&
+        isMusicAssistantPlaybackDevice(device) &&
+        hasCurrentMedia(device)
+    ) ??
+    browsablePlaybackDevices.find((device) => device.state === 'paused');
   const defaultDevice =
+    declaredGroupedPlaybackDevice ??
+    inferredMusicAssistantDevice ??
+    activeBrowsableDevice ??
     (initialDevice && isSpotifyAccountDevice(initialDevice) ? initialDevice : undefined) ??
     spotifyAccountDevice ??
     initialDevice ??
-    devices.find((device) => device.state === 'playing' && isAudioDevice(device)) ??
-    devices.find((device) => device.state === 'paused' && isAudioDevice(device)) ??
-    devices.find(isAudioDevice) ??
-    devices[0];
-  const [selectedDeviceId] = useState(defaultDevice?.id ?? '');
+    resolvedDevices.find((device) => device.state === 'playing' && isAudioDevice(device)) ??
+    resolvedDevices.find((device) => device.state === 'paused' && isAudioDevice(device)) ??
+    resolvedDevices.find(isAudioDevice) ??
+    resolvedDevices[0];
+  const selectedDeviceId = defaultDevice?.id ?? '';
   const [selectedSpotifyTargetId, setSelectedSpotifyTargetId] = useState(
     initialSpotifyConnectTarget?.id ?? ''
   );
@@ -1209,7 +1450,11 @@ export function MediaDashboard({ devices, initialDeviceId }: MediaDashboardProps
   const [directoryItemCounts, setDirectoryItemCounts] = useState<Record<string, number>>({});
   const directoryItemCountsRef = useRef<Record<string, number>>({});
   const directoryCountRequestsRef = useRef(new Set<string>());
-  const selectedDevice = devices.find((device) => device.id === selectedDeviceId) ?? defaultDevice;
+  const selectedDevice =
+    resolvedDevices.find((device) => device.id === selectedDeviceId) ?? defaultDevice;
+  const selectedDeviceUsesInferredMusicAssistantGroup = Boolean(
+    inferredMusicAssistantGroup?.some((device) => device.id === selectedDevice.id)
+  );
   const spotifyAccountControlsUnavailable =
     selectedDevice !== undefined && isSpotifyAccountDevice(selectedDevice);
   const spotifyConnectTargets = spotifyAccountControlsUnavailable
@@ -1228,7 +1473,9 @@ export function MediaDashboard({ devices, initialDeviceId }: MediaDashboardProps
   });
   const selectedSpotifyTarget =
     explicitlySelectedSpotifyTarget ?? activeSpotifyConnectTarget ?? fallbackAudioOutputTarget;
-  const mediaLibraryDevice = selectedSpotifyTarget ?? selectedDevice;
+  const mediaLibraryDevice = spotifyAccountControlsUnavailable
+    ? (selectedSpotifyTarget ?? selectedDevice)
+    : selectedDevice;
   const mediaLibraryEntityId = mediaLibraryDevice?.id;
   const defaultBrowseView = mediaLibraryEntityId
     ? defaultBrowseViews[mediaLibraryEntityId]
@@ -1243,6 +1490,9 @@ export function MediaDashboard({ devices, initialDeviceId }: MediaDashboardProps
   const providerSupportsMediaBrowse = useEntityProviderFeature(mediaLibraryEntityId, 'mediaBrowse');
   const canBrowseMedia = mediaLibraryCapabilities.canBrowseMedia || providerSupportsMediaBrowse;
   const dashboardTitleKey = 'media.dashboard.nowPlaying';
+  const playbackProviderLabel = selectedDeviceUsesInferredMusicAssistantGroup
+    ? 'Music Assistant'
+    : getPlaybackProviderLabel(selectedDevice, getMediaPlatform(selectedDevice));
   const unfilteredPlayableItems = (browseResult?.children ?? []).filter(
     (item) => item.mediaContentId || item.canExpand
   );
@@ -1265,8 +1515,31 @@ export function MediaDashboard({ devices, initialDeviceId }: MediaDashboardProps
       isMediaDirectoryItem(item) && !(browseHistory.length >= 2 && isArtworkCollectionItem(item))
   );
   const browseTileItems = playableItems.filter((item) => !browseDirectoryItems.includes(item));
+  const inferredGroupSize = selectedDeviceUsesInferredMusicAssistantGroup
+    ? new Set(inferredMusicAssistantGroup?.map(getPhysicalSpeakerKey) ?? []).size
+    : 1;
+  const selectedDeviceIsMusicAssistant = isMusicAssistantPlaybackDevice(selectedDevice);
+  const selectedDeclaredGroup = resolveDeclaredPhysicalGroup(selectedDevice);
+  const selectedGroupSize = selectedDeviceUsesInferredMusicAssistantGroup
+    ? inferredGroupSize
+    : selectedDeviceIsMusicAssistant
+      ? 1
+      : selectedDeclaredGroup.physicalKeys.size;
+  const selectedDeviceIsGrouped = selectedGroupSize > 1;
+  const activeNowPlayingGroupIdKey = (
+    selectedDeviceIsGrouped
+      ? selectedDeviceUsesInferredMusicAssistantGroup
+        ? (inferredMusicAssistantGroup?.map((device) => device.id) ?? [])
+        : [...selectedDeclaredGroup.entityIds]
+      : []
+  )
+    .sort()
+    .join('\n');
+  useEffect(() => {
+    onActiveGroupChange?.(activeNowPlayingGroupIdKey ? activeNowPlayingGroupIdKey.split('\n') : []);
+  }, [activeNowPlayingGroupIdKey, onActiveGroupChange]);
   const nowPlayingTypeLabel =
-    selectedDevice.deviceClass?.toLowerCase() === 'speaker'
+    selectedDeviceIsGrouped || selectedDevice.deviceClass?.toLowerCase() === 'speaker'
       ? t('media.type.speaker').toLowerCase()
       : t('media.type.player').toLowerCase();
   const largeCardFootprint = getDashboardCardFootprint('large', 4);
@@ -1612,10 +1885,22 @@ export function MediaDashboard({ devices, initialDeviceId }: MediaDashboardProps
     (showAllBrowserItems && playableItems.length > browserTileLimit);
   const handleCardSizeChange = useCallback(() => undefined, []);
   const quietPanelClassName = `rounded-xl border p-4 ${surface.border} ${
-    theme === 'light' ? 'bg-slate-50/90' : 'bg-black/18'
+    theme === 'light'
+      ? 'bg-slate-50'
+      : theme === 'glass'
+        ? 'bg-black/18'
+        : theme === 'black'
+          ? 'bg-black'
+          : 'bg-zinc-950'
   }`;
   const itemButtonClassName = `rounded-xl border text-left transition-colors ${surface.border} ${
-    theme === 'light' ? 'bg-white/72 hover:bg-slate-100' : 'bg-white/[0.045] hover:bg-white/[0.09]'
+    theme === 'light'
+      ? 'bg-white hover:bg-slate-100'
+      : theme === 'glass'
+        ? 'bg-white/[0.045] hover:bg-white/[0.09]'
+        : theme === 'black'
+          ? 'bg-black hover:bg-zinc-950'
+          : 'bg-zinc-900 hover:bg-zinc-800'
   }`;
   const mediaTileClassName = `group self-start rounded-xl text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
     theme === 'light'
@@ -1625,7 +1910,11 @@ export function MediaDashboard({ devices, initialDeviceId }: MediaDashboardProps
   const mediaTileArtworkClassName = `relative block aspect-square w-full overflow-hidden rounded-xl border shadow-sm ${surface.border} ${
     theme === 'light'
       ? 'bg-linear-to-br from-slate-100 via-white to-slate-200 group-hover:border-slate-300'
-      : 'bg-linear-to-br from-white/[0.08] via-white/[0.035] to-black/20 group-hover:border-white/22'
+      : theme === 'glass'
+        ? 'bg-linear-to-br from-white/[0.08] via-white/[0.035] to-black/20 group-hover:border-white/22'
+        : theme === 'black'
+          ? 'bg-black group-hover:border-zinc-700'
+          : 'bg-zinc-900 group-hover:border-zinc-600'
   }`;
   const selectBrowserItem = (item: PlatformMediaItem) => {
     const isDirectory = item.canExpand && !item.canPlay;
@@ -1751,6 +2040,8 @@ export function MediaDashboard({ devices, initialDeviceId }: MediaDashboardProps
           supportsPreviousTrack={selectedDevice.supportsPreviousTrack}
           supportsNextTrack={selectedDevice.supportsNextTrack}
           groupMembers={selectedDevice.groupMembers}
+          mediaStackAppearance={selectedDeviceIsGrouped}
+          mediaStackCount={selectedDeviceIsGrouped ? selectedGroupSize - 1 : undefined}
           size="large"
           onSizeChange={handleCardSizeChange}
           isEditMode={false}
@@ -1761,7 +2052,7 @@ export function MediaDashboard({ devices, initialDeviceId }: MediaDashboardProps
   );
 
   const browserPanel = (
-    <section className="min-w-0 space-y-4">
+    <section className="min-w-0 space-y-4 min-[900px]:col-span-3 min-[1920px]:col-span-5">
       {canBrowseMedia ? (
         <div className="flex h-9 items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
@@ -1901,7 +2192,10 @@ export function MediaDashboard({ devices, initialDeviceId }: MediaDashboardProps
         playableItems.length > 0 ? (
           <div className="space-y-4">
             {browseDirectoryItems.length > 0 ? (
-              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              <div
+                data-testid="media-browser-directory-grid"
+                className="grid grid-cols-1 gap-3 min-[900px]:grid-cols-3 min-[1920px]:grid-cols-5 lg:gap-4"
+              >
                 {visibleBrowseDirectoryItems.map((item) => {
                   const directoryCount = mediaLibraryEntityId
                     ? directoryItemCounts[getDirectoryItemCountKey(mediaLibraryEntityId, item)]
@@ -2034,15 +2328,16 @@ export function MediaDashboard({ devices, initialDeviceId }: MediaDashboardProps
   return (
     <section className="relative">
       <div className="pt-2">
-        <div className="grid gap-5 min-[900px]:grid-cols-[minmax(18rem,24rem)_minmax(20rem,1fr)]">
-          <section className="min-w-0 space-y-4">
+        <div className="grid gap-3 min-[900px]:grid-cols-4 min-[1920px]:grid-cols-6 lg:gap-4">
+          <section className="min-w-0 space-y-4 min-[900px]:col-span-1">
             <div className="flex h-9 items-center gap-3">
               <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>
-                {t(dashboardTitleKey)}
+                {playbackProviderLabel ?? t(dashboardTitleKey)}
               </h2>
               {!spotifyAccountControlsUnavailable ? (
                 <span className={`text-xs md:text-sm ${surface.textSecondary}`}>
-                  1 {nowPlayingTypeLabel}
+                  {selectedGroupSize} {nowPlayingTypeLabel}
+                  {selectedGroupSize > 1 ? 's' : ''}
                 </span>
               ) : null}
             </div>

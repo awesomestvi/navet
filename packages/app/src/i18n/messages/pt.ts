@@ -722,6 +722,7 @@ export const ptMessages = {
   'media.muteVolume': 'Silenciar volume',
   'media.unmuteVolume': 'Reativar volume',
   'media.volume': 'Volume',
+  'media.groupedSpeakers': 'Colunas agrupadas',
   'media.quickVolume': 'Volume rápido',
   'media.shuffle': 'Aleatório',
   'media.linearPlayback': 'Reprodução linear',

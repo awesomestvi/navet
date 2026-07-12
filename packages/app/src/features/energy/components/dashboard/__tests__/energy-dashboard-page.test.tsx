@@ -129,13 +129,10 @@ describe('EnergyDashboardPage', () => {
     expect(sourcesCard.getAttribute('style')).toBeNull();
   });
 
-  it('renders the shared customize button in the hero and toggles edit mode', () => {
-    const onToggleEditMode = vi.fn();
-    renderDashboardPage('default', { onToggleEditMode });
+  it('does not duplicate the section customize control in the hero', () => {
+    renderDashboardPage('default', { onToggleEditMode: vi.fn() });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Customize' }));
-
-    expect(onToggleEditMode).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: 'Customize' })).not.toBeInTheDocument();
   });
 
   it('renders custom energy cards in their own lane', () => {

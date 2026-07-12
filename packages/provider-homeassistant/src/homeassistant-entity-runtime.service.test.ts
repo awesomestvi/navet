@@ -9,6 +9,7 @@ import { configureHomeAssistantServiceBridge } from './homeassistant-service-bri
 const state = {
   entities: null as Record<string, unknown> | null,
   entityRegistry: [] as Array<Record<string, unknown>>,
+  deviceRegistry: [] as Array<Record<string, unknown>>,
   config: null as HassConfig | null,
 };
 const listeners = {
@@ -28,6 +29,7 @@ describe('homeAssistantEntityRuntimeService', () => {
   beforeEach(() => {
     state.entities = null;
     state.entityRegistry = [];
+    state.deviceRegistry = [];
     state.config = null;
     listeners.entities.clear();
     listeners.registries.clear();
@@ -95,7 +97,7 @@ describe('homeAssistantEntityRuntimeService', () => {
         entities: state.entities as never,
         config: state.config,
         areas: [],
-        deviceRegistry: [],
+        deviceRegistry: state.deviceRegistry as never,
         entityRegistry: [],
         connect: vi.fn(async () => undefined),
         disconnect: vi.fn(async () => undefined),
@@ -253,6 +255,33 @@ describe('homeAssistantEntityRuntimeService', () => {
     const secondEntry = homeAssistantEntityRuntimeService.getEntityRegistryEntry?.('light.kitchen');
 
     expect(secondEntry).toBe(firstEntry);
+  });
+
+  it('enriches registry entries with provider-neutral device identity', () => {
+    state.entityRegistry = [
+      {
+        entity_id: 'media_player.kitchen',
+        device_id: 'device-kitchen',
+        platform: 'apple_tv',
+      },
+    ];
+    state.deviceRegistry = [
+      {
+        id: 'device-kitchen',
+        manufacturer: 'Apple',
+        model: 'HomePod mini',
+        name: 'Kitchen HomePod',
+      },
+    ];
+
+    expect(
+      homeAssistantEntityRuntimeService.getEntityRegistryEntry?.('media_player.kitchen')
+    ).toMatchObject({
+      deviceName: 'Kitchen HomePod',
+      manufacturer: 'Apple',
+      model: 'HomePod mini',
+      platform: 'apple_tv',
+    });
   });
 
   it('notifies entity listeners only when the subscribed entity snapshot changes', () => {

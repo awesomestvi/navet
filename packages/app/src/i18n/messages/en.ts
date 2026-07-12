@@ -798,6 +798,7 @@ export const enMessages = {
   'media.muteVolume': 'Mute volume',
   'media.unmuteVolume': 'Unmute volume',
   'media.volume': 'Volume',
+  'media.groupedSpeakers': 'Grouped speakers',
   'media.quickVolume': 'Quick Volume',
   'media.shuffle': 'Shuffle',
   'media.linearPlayback': 'Linear playback',

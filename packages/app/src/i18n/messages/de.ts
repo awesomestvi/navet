@@ -730,6 +730,7 @@ export const deMessages = {
   'media.muteVolume': 'Ton stummschalten',
   'media.unmuteVolume': 'Stummschaltung aufheben',
   'media.volume': 'Lautstärke',
+  'media.groupedSpeakers': 'Gruppierte Lautsprecher',
   'media.quickVolume': 'Schnelllautstärke',
   'media.shuffle': 'Shuffle',
   'media.linearPlayback': 'Lineare Wiedergabe',

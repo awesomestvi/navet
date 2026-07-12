@@ -505,9 +505,9 @@ describe('Sidebar mobile navigation', () => {
     expect(setKioskEnabled).not.toHaveBeenCalled();
   });
 
-  it('falls back to the kiosk toggle in the mobile more sheet when home navigation is unavailable', () => {
+  it('uses parent-location navigation in the mobile more sheet when the shell API is unavailable', () => {
     window.history.replaceState({}, '', '/api/hassio_ingress/navet_dev/dashboard');
-    const { panelAppHeader } = setParentHomeAssistantShell({
+    const { locationAssign } = setParentHomeAssistantShell({
       includeShell: false,
       panel: false,
     });
@@ -520,10 +520,10 @@ describe('Sidebar mobile navigation', () => {
     fireEvent.click(within(dock).getByRole('button', { name: 'More' }));
     fireEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', {
-        name: 'Toggle Home Assistant kiosk',
+        name: 'Exit to Home Assistant',
       })
     );
 
-    expect(panelAppHeader.style.display).toBe('none');
+    expect(locationAssign).toHaveBeenCalledWith('/');
   });
 });

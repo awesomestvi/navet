@@ -1,6 +1,45 @@
 import { runProviderPackageRegistrationTests } from '@navet/core/provider-package-test-suite';
-import { vi } from 'vitest';
-import { createHomeAssistantProviderPackageRegistration } from './homeassistant-provider-registration';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  createHomeAssistantProviderPackageRegistration,
+  normalizeHomeAssistantBrowseLabel,
+} from './homeassistant-provider-registration';
+
+describe('normalizeHomeAssistantBrowseLabel', () => {
+  it('separates Music Assistant combined track labels when artist metadata is missing', () => {
+    expect(
+      normalizeHomeAssistantBrowseLabel({
+        title: 'Cigarettes After Sex - Cry',
+        media_class: 'track',
+      })
+    ).toEqual({ title: 'Cry', artist: 'Cigarettes After Sex' });
+  });
+
+  it('also separates Music Assistant combined album labels', () => {
+    expect(
+      normalizeHomeAssistantBrowseLabel({
+        title: 'Bright Eyes - Cassadaga',
+        media_class: 'album',
+      })
+    ).toEqual({ title: 'Cassadaga', artist: 'Bright Eyes' });
+  });
+
+  it('preserves explicit artist metadata and non-music labels', () => {
+    expect(
+      normalizeHomeAssistantBrowseLabel({
+        title: 'Song - Live',
+        media_class: 'track',
+        artist: 'Artist',
+      })
+    ).toEqual({ title: 'Song - Live', artist: 'Artist' });
+    expect(
+      normalizeHomeAssistantBrowseLabel({
+        title: 'Morning - Favorites',
+        media_class: 'playlist',
+      })
+    ).toEqual({ title: 'Morning - Favorites', artist: undefined });
+  });
+});
 
 runProviderPackageRegistrationTests({
   providerName: 'Home Assistant',

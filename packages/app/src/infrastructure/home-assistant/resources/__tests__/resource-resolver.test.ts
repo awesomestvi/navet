@@ -214,6 +214,22 @@ describe('HomeAssistantResourceResolver', () => {
     expect(resource.authStrategy).toBe('none');
   });
 
+  it('does not treat an external CDN image path as a Home Assistant image path', () => {
+    window.__NAVET_CONFIG__ = { hassUrl: oauthSessionFixture.haBaseUrl };
+    resetRuntimeContextForTests();
+    const resolver = new HomeAssistantResourceResolver(() => null);
+    const artworkUrl =
+      'https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/27/8d/78/cover.jpg/1000x1000bb.jpg';
+
+    const resource = resolver.resolveSync({
+      kind: 'absolute_url',
+      url: artworkUrl,
+    });
+
+    expect(resource.url).toBe(artworkUrl);
+    expect(resource.authStrategy).toBe('none');
+  });
+
   it('rejects unsafe URL schemes', () => {
     const resolver = new HomeAssistantResourceResolver(() => null);
 

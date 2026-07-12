@@ -722,6 +722,7 @@ export const svMessages = {
   'media.muteVolume': 'Stäng av ljud',
   'media.unmuteVolume': 'Sätt på ljud',
   'media.volume': 'Volym',
+  'media.groupedSpeakers': 'Grupperade högtalare',
   'media.quickVolume': 'Snabbvolym',
   'media.shuffle': 'Shuffle',
   'media.linearPlayback': 'Linjär uppspelning',

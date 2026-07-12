@@ -614,6 +614,7 @@ interface MediaDialogGroupingProps {
   controller: MediaDialogController;
   entityId: string;
   entityName: string;
+  entitySubtitle?: string;
   groupMembers: string[];
   onAttachGroupMember: (entityId: string) => void;
   onDetachGroupMember: (entityId: string) => void;
@@ -624,6 +625,7 @@ export function MediaDialogGrouping({
   controller,
   entityId,
   entityName,
+  entitySubtitle,
   groupMembers,
   onAttachGroupMember,
   onDetachGroupMember,
@@ -645,6 +647,7 @@ export function MediaDialogGrouping({
           <div className="space-y-2">
             <SpeakerDestinationRow
               title={entityName}
+              subtitle={entitySubtitle}
               active
               disabled
               isGlass={controller.isGlass}
@@ -660,6 +663,7 @@ export function MediaDialogGrouping({
                   <SpeakerDestinationRow
                     key={player.id}
                     title={player.name}
+                    subtitle={player.subtitle}
                     active
                     isGlass={controller.isGlass}
                     icon={<Speaker className="h-4 w-4" />}
@@ -681,6 +685,7 @@ export function MediaDialogGrouping({
                 <SpeakerDestinationRow
                   key={player.id}
                   title={player.name}
+                  subtitle={player.subtitle}
                   isGlass={controller.isGlass}
                   icon={<Speaker className="h-4 w-4" />}
                   onClick={() => onAttachGroupMember(player.id)}

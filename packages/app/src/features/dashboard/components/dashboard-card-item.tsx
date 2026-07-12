@@ -4,11 +4,16 @@ import {
   type PortalActionDockAnchorRect,
 } from '@navet/app/components/patterns/portal-action-dock';
 import { CardEditActionButton } from '@navet/app/components/shared/card-edit-action-button';
-import { type CardSize, getCardSpanClass } from '@navet/app/components/shared/card-size-selector';
+import {
+  type CardSize,
+  getCardSpanClass,
+  getResponsiveCardSize,
+} from '@navet/app/components/shared/card-size-selector';
 import { dispatchEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import { withTintAlpha } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { getBaseCardRadiusClassName } from '@navet/app/components/system/tokens';
 import { useAccentColor, useI18n, useTheme } from '@navet/app/hooks';
+import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceWithType } from '@navet/app/types/device.types';
@@ -42,6 +47,7 @@ interface DashboardCardItemProps {
   usesHideAction?: boolean;
   densePerformanceMode?: boolean;
   headerSubtitleOverride?: string;
+  presentationVariant?: 'media-stack';
 }
 
 const DashboardCardItemDraggable = lazy(async () => {
@@ -66,9 +72,11 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   usesHideAction = false,
   densePerformanceMode = false,
   headerSubtitleOverride,
+  presentationVariant,
 }: DashboardCardItemProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
+  const breakpointCols = useBreakpointCols();
   const accentColor = useAccentColor();
   const { ambientLightBleed, disableAnimations, effectsQuality, lowPowerMode } = useSettingsStore(
     useShallow((state) => ({
@@ -107,7 +115,10 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   const resolvedAmbientLightBleed =
     !densePerformanceMode && ambientLightBleed && performanceProfile.allowAmbientBleed;
   const allowedSizes = getAllowedSizes(device, card, allowExtraLargeSizes);
-  const resolvedSize = resolveAllowedSize(size, allowedSizes);
+  const resolvedSize = getResponsiveCardSize(
+    resolveAllowedSize(size, allowedSizes),
+    breakpointCols
+  );
   const spanClass = getCardSpanClass(resolvedSize);
   const editControlSize =
     device?.type === 'media' && resolvedSize === 'medium-vertical' ? 'medium' : resolvedSize;
@@ -152,6 +163,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
       handleSizeChange,
       isEditMode,
       headerSubtitleOverride,
+      presentationVariant,
     })
   ) : card ? (
     <WidgetCard

@@ -12,6 +12,7 @@ import {
   getHomeAssistantEntities,
   getHomeAssistantEntityRegistry,
   getHomeAssistantStoreState,
+  type HomeAssistantDeviceRegistryEntry,
   type HomeAssistantEntityRegistryEntry,
 } from './homeassistant-service-bridge';
 
@@ -19,6 +20,7 @@ const EMPTY_HASS_ENTITY_REGISTRY: HomeAssistantEntityRegistryEntry[] = [];
 let cachedSourceEntities: HassEntities | null | undefined;
 let cachedPlatformEntities: PlatformEntitySnapshotMap | null = null;
 let cachedSourceRegistry: HomeAssistantEntityRegistryEntry[] | null = null;
+let cachedSourceDeviceRegistry: HomeAssistantDeviceRegistryEntry[] | null = null;
 let cachedPlatformRegistry: PlatformEntityRegistryEntry[] = [];
 let cachedPlatformRegistryById: Record<string, PlatformEntityRegistryEntry> = {};
 let cachedSourceConfig: HassConfig | null = null;
@@ -86,21 +88,27 @@ function areEquivalentRegistryEntries(
   });
 }
 
-function toPlatformEntityRegistryEntry(entry: {
-  entity_id?: string;
-  entityId?: string;
-  device_id?: string | null;
-  deviceId?: string | null;
-  area_id?: string | null;
-  areaId?: string | null;
-  name?: string | null;
-  original_name?: string | null;
-  originalName?: string | null;
-  platform?: string | null;
-}): PlatformEntityRegistryEntry {
+function toPlatformEntityRegistryEntry(
+  entry: {
+    entity_id?: string;
+    entityId?: string;
+    device_id?: string | null;
+    deviceId?: string | null;
+    area_id?: string | null;
+    areaId?: string | null;
+    name?: string | null;
+    original_name?: string | null;
+    originalName?: string | null;
+    platform?: string | null;
+  },
+  deviceEntry?: HomeAssistantDeviceRegistryEntry
+): PlatformEntityRegistryEntry {
   return {
     entityId: entry.entity_id ?? entry.entityId ?? '',
     deviceId: entry.device_id ?? entry.deviceId ?? null,
+    deviceName: deviceEntry?.name_by_user ?? deviceEntry?.name ?? null,
+    manufacturer: deviceEntry?.manufacturer ?? null,
+    model: deviceEntry?.model ?? null,
     areaId: entry.area_id ?? entry.areaId ?? null,
     name: entry.name ?? entry.original_name ?? entry.originalName ?? null,
     platform: entry.platform ?? null,
@@ -159,11 +167,14 @@ function toPlatformEntitySnapshotMap(
 }
 
 function toPlatformEntityRegistryEntries(
-  entityRegistry: HomeAssistantEntityRegistryEntry[]
+  entityRegistry: HomeAssistantEntityRegistryEntry[],
+  deviceRegistry: HomeAssistantDeviceRegistryEntry[]
 ): PlatformEntityRegistryEntry[] {
+  const deviceRegistryChanged = !areDataEqual(cachedSourceDeviceRegistry ?? [], deviceRegistry);
   if (
-    entityRegistry === cachedSourceRegistry ||
-    areEquivalentRegistryEntries(cachedSourceRegistry, entityRegistry)
+    !deviceRegistryChanged &&
+    (entityRegistry === cachedSourceRegistry ||
+      areEquivalentRegistryEntries(cachedSourceRegistry, entityRegistry))
   ) {
     cachedSourceRegistry = entityRegistry;
     return cachedPlatformRegistry;
@@ -173,10 +184,19 @@ function toPlatformEntityRegistryEntries(
     (cachedSourceRegistry ?? []).map((entry) => [entry.entity_id, entry])
   );
   const previousPlatformRegistryById = cachedPlatformRegistryById;
+  const previousDeviceRegistryById = new Map(
+    (cachedSourceDeviceRegistry ?? []).map((device) => [device.id, device])
+  );
+  const deviceRegistryById = new Map(deviceRegistry.map((device) => [device.id, device]));
   cachedSourceRegistry = entityRegistry;
+  cachedSourceDeviceRegistry = deviceRegistry;
   cachedPlatformRegistry = entityRegistry.map((entry) => {
     const previousEntry = previousSourceRegistryById[entry.entity_id];
     const previousPlatformEntry = previousPlatformRegistryById[entry.entity_id];
+    const previousDeviceEntry = entry.device_id
+      ? previousDeviceRegistryById.get(entry.device_id)
+      : undefined;
+    const deviceEntry = entry.device_id ? deviceRegistryById.get(entry.device_id) : undefined;
 
     if (
       previousEntry &&
@@ -185,12 +205,13 @@ function toPlatformEntityRegistryEntries(
       previousEntry.area_id === entry.area_id &&
       previousEntry.name === entry.name &&
       previousEntry.original_name === entry.original_name &&
-      previousEntry.platform === entry.platform
+      previousEntry.platform === entry.platform &&
+      areDataEqual(previousDeviceEntry ?? null, deviceEntry ?? null)
     ) {
       return previousPlatformEntry;
     }
 
-    return toPlatformEntityRegistryEntry(entry);
+    return toPlatformEntityRegistryEntry(entry, deviceEntry);
   });
   cachedPlatformRegistryById = Object.fromEntries(
     cachedPlatformRegistry.map((entry) => [entry.entityId, entry])
@@ -223,6 +244,10 @@ function getHomeAssistantEntityRegistrySnapshot(): HomeAssistantEntityRegistryEn
   }
 
   return getHomeAssistantStoreState().entityRegistry ?? EMPTY_HASS_ENTITY_REGISTRY;
+}
+
+function getHomeAssistantDeviceRegistrySnapshot(): HomeAssistantDeviceRegistryEntry[] {
+  return getHomeAssistantStoreState().deviceRegistry ?? [];
 }
 
 function getHomeAssistantConfigSnapshot(): HassConfig | null {
@@ -269,11 +294,17 @@ function subscribeHomeAssistantEntitySnapshot(entityId: string, listener: () => 
 }
 
 function subscribeHomeAssistantEntityRegistryEntry(entityId: string, listener: () => void) {
-  toPlatformEntityRegistryEntries(getHomeAssistantEntityRegistrySnapshot());
+  toPlatformEntityRegistryEntries(
+    getHomeAssistantEntityRegistrySnapshot(),
+    getHomeAssistantDeviceRegistrySnapshot()
+  );
   let previousEntry = cachedPlatformRegistryById[entityId];
 
   return subscribeHomeAssistantEvent('registries', () => {
-    toPlatformEntityRegistryEntries(getHomeAssistantEntityRegistrySnapshot());
+    toPlatformEntityRegistryEntries(
+      getHomeAssistantEntityRegistrySnapshot(),
+      getHomeAssistantDeviceRegistrySnapshot()
+    );
     const nextEntry = cachedPlatformRegistryById[entityId];
     if (nextEntry === previousEntry) {
       return;
@@ -292,10 +323,16 @@ export const homeAssistantEntityRuntimeService: ProviderEntityRuntimeService = {
   subscribeEntitySnapshot: (entityId, listener) =>
     subscribeHomeAssistantEntitySnapshot(entityId, listener),
   getEntityRegistryEntries: () =>
-    toPlatformEntityRegistryEntries(getHomeAssistantEntityRegistrySnapshot()),
+    toPlatformEntityRegistryEntries(
+      getHomeAssistantEntityRegistrySnapshot(),
+      getHomeAssistantDeviceRegistrySnapshot()
+    ),
   subscribeEntityRegistryEntries: (listener) => subscribeHomeAssistantEvent('registries', listener),
   getEntityRegistryEntry: (entityId) => {
-    toPlatformEntityRegistryEntries(getHomeAssistantEntityRegistrySnapshot());
+    toPlatformEntityRegistryEntries(
+      getHomeAssistantEntityRegistrySnapshot(),
+      getHomeAssistantDeviceRegistrySnapshot()
+    );
     return cachedPlatformRegistryById[entityId];
   },
   subscribeEntityRegistryEntry: (entityId, listener) =>
@@ -308,6 +345,7 @@ export function resetHomeAssistantEntityRuntimeServiceCachesForTests() {
   cachedSourceEntities = undefined;
   cachedPlatformEntities = null;
   cachedSourceRegistry = null;
+  cachedSourceDeviceRegistry = null;
   cachedPlatformRegistry = [];
   cachedPlatformRegistryById = {};
   cachedSourceConfig = null;

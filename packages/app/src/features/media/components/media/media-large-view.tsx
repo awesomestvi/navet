@@ -314,11 +314,13 @@ export function MediaLargeView({
 
         <div className="flex min-h-0 flex-1 flex-col justify-end">
           <div className="mt-2.5 min-w-0">
-            <div
-              className={`truncate text-sm font-semibold ${iconTone}`}
-              style={foreground.titleStyle}
-            >
-              {title}
+            <div className="flex min-w-0 items-center gap-2">
+              <div
+                className={`min-w-0 flex-1 truncate text-sm font-semibold ${iconTone}`}
+                style={foreground.titleStyle}
+              >
+                {title}
+              </div>
             </div>
             <div className={`truncate text-xs ${subtitleTone}`} style={foreground.subtitleStyle}>
               {artist}

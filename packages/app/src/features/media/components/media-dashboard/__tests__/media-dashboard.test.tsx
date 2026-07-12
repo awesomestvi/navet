@@ -3,18 +3,41 @@ import {
   MEDIA_PLAYER_FEATURES,
 } from '@navet/app/constants/media-player-features';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
+import type { PlatformEntityRegistryEntry } from '@navet/app/platform/provider-feature-models';
 import { setMediaQueryMatch } from '@navet/app/test/browser-mocks';
 import { renderWithProviders } from '@navet/app/test/render';
 import type { MediaDevice } from '@navet/app/types/device.types';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { toast } from 'sonner';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MediaDashboard } from '../media-dashboard';
+import { MediaDashboard, resolveMusicAssistantThumbnailSourceUrl } from '../media-dashboard';
+
+describe('resolveMusicAssistantThumbnailSourceUrl', () => {
+  it('uses the public source image embedded in a Music Assistant imageproxy URL', () => {
+    expect(
+      resolveMusicAssistantThumbnailSourceUrl(
+        'http://music-assistant.local:8095/imageproxy?provider=spotify&size=500&path=https%253A%252F%252Fi.scdn.co%252Fimage%252Fab67616d0000b273cover'
+      )
+    ).toBe('https://i.scdn.co/image/ab67616d0000b273cover');
+  });
+
+  it('does not unwrap unsafe or unrelated thumbnail URLs', () => {
+    expect(
+      resolveMusicAssistantThumbnailSourceUrl(
+        'http://music-assistant.local:8095/imageproxy?path=javascript%253Aalert(1)'
+      )
+    ).toBeNull();
+    expect(
+      resolveMusicAssistantThumbnailSourceUrl('https://cdn.example.test/cover.jpg')
+    ).toBeNull();
+  });
+});
 
 const {
   browseMediaPlayerMock,
   dispatchEntityCommandMock,
   liveMediaEntityMock,
+  mediaEntityRegistryMock,
   playMediaMock,
   selectSourceMock,
 } = vi.hoisted(() => ({
@@ -32,6 +55,7 @@ const {
   }),
   dispatchEntityCommandMock: vi.fn().mockResolvedValue({ accepted: true }),
   liveMediaEntityMock: vi.fn(),
+  mediaEntityRegistryMock: vi.fn(() => [] as PlatformEntityRegistryEntry[]),
   playMediaMock: vi.fn().mockResolvedValue(undefined),
   selectSourceMock: vi.fn().mockResolvedValue(undefined),
 }));
@@ -51,6 +75,9 @@ vi.mock('@navet/app/commands', () => ({
 
 vi.mock('@navet/app/features/media/hooks/use-provider-media-playback-data', () => ({
   useProviderMediaEntity: liveMediaEntityMock,
+  useProviderMediaCompanionEntity: vi.fn(() => undefined),
+  useProviderMediaEntityRegistry: mediaEntityRegistryMock,
+  useProviderMediaPlayerEntities: vi.fn(() => null),
 }));
 
 const mediaCapabilities = getMediaPlayerCapabilities(
@@ -98,6 +125,7 @@ describe('MediaDashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    mediaEntityRegistryMock.mockReturnValue([]);
     browseMediaPlayerMock.mockResolvedValue({
       title: 'Library',
       children: [
@@ -129,6 +157,275 @@ describe('MediaDashboard', () => {
     expect(screen.queryByRole('combobox', { name: 'Source' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Resume playback' })).not.toBeInTheDocument();
     expect(screen.queryByText('Coming next')).not.toBeInTheDocument();
+  });
+
+  it('shows an active browsable provider in Now Playing', async () => {
+    const spotifyAccount = createMediaDevice();
+    const musicAssistant = createMediaDevice({
+      id: 'media_player.mass_bathroom',
+      name: 'Music Assistant Bathroom',
+      room: 'Bathroom',
+      state: 'playing',
+      title: 'The Silence',
+      artist: 'Manchester Orchestra',
+      source: 'Music Assistant',
+      groupMembers: ['media_player.mass_bathroom', 'media_player.mass_living_room'],
+    });
+    const sonosOutput = createMediaDevice({
+      id: 'media_player.bathroom',
+      name: 'Bathroom',
+      state: 'playing',
+      source: 'Spotify',
+      sourceList: ['Spotify'],
+    });
+    const browseHelper = createMediaDevice({
+      id: 'media_player.browse',
+      name: 'Browse',
+      state: 'playing',
+      title: 'Browse',
+      artist: '',
+      album: '',
+      source: undefined,
+      entityPicture: undefined,
+      durationSeconds: undefined,
+    });
+
+    renderWithProviders(
+      <MediaDashboard devices={[spotifyAccount, browseHelper, sonosOutput, musicAssistant]} />
+    );
+
+    expect(await screen.findByText('The Silence')).toBeVisible();
+    expect(screen.getByText('Manchester Orchestra')).toBeVisible();
+    expect(screen.getByText('Music Assistant')).toBeVisible();
+    expect(screen.queryByText('2 speakers')).not.toBeInTheDocument();
+    expect(screen.queryByText('Music Assistant Bathroom +1')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Group Speakers')).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(browseMediaPlayerMock).toHaveBeenCalledWith('media_player.mass_bathroom', {
+        mediaContentId: undefined,
+        mediaContentType: undefined,
+      })
+    );
+  });
+
+  it('identifies opaque Music Assistant players from the entity registry', async () => {
+    const spotifyAccount = createMediaDevice();
+    const musicAssistant = createMediaDevice({
+      id: 'media_player.bathroom',
+      name: 'Bathroom',
+      room: 'Bathroom',
+      state: 'playing',
+      title: 'Strawberries',
+      artist: 'Caamp',
+      source: undefined,
+      mediaCapabilities: mediaCapabilitiesWithoutBrowse,
+      groupMembers: ['media_player.bathroom', 'media_player.living_room'],
+    });
+    const browseHelper = createMediaDevice({
+      id: 'media_player.browse',
+      name: 'Browse',
+      state: 'idle',
+      title: 'Browse',
+      artist: '',
+      source: undefined,
+    });
+    mediaEntityRegistryMock.mockReturnValue([
+      { entityId: 'media_player.bathroom', platform: 'music_assistant' },
+    ]);
+
+    renderWithProviders(
+      <MediaDashboard devices={[spotifyAccount, browseHelper, musicAssistant]} />
+    );
+
+    expect(await screen.findByText('Strawberries')).toBeVisible();
+    expect(screen.getByText('Music Assistant')).toBeVisible();
+    expect(screen.queryByText('2 speakers')).not.toBeInTheDocument();
+    expect(screen.queryByText('Bathroom +1')).not.toBeInTheDocument();
+  });
+
+  it('collapses mirrored wrapper and output playback into a room stack', async () => {
+    const onActiveGroupChange = vi.fn();
+    const mirroredDevices = [
+      ['media_player.bathroom_wrapper', 'Bathroom'],
+      ['media_player.bathroom', 'Bathroom'],
+      ['media_player.living_room_wrapper', 'Living Room'],
+      ['media_player.living_room', 'Living Room'],
+    ].map(([id, room]) =>
+      createMediaDevice({
+        id,
+        name: room,
+        room,
+        state: 'playing',
+        title: 'Strawberries',
+        artist: 'Caamp',
+        source: 'Spotify',
+        groupMembers: ['media_player.bathroom_wrapper', 'media_player.living_room_wrapper'],
+      })
+    );
+    mediaEntityRegistryMock.mockReturnValue([
+      { entityId: 'media_player.bathroom_wrapper', platform: 'music_assistant' },
+      { entityId: 'media_player.living_room_wrapper', platform: 'music_assistant' },
+    ]);
+
+    renderWithProviders(
+      <MediaDashboard devices={mirroredDevices} onActiveGroupChange={onActiveGroupChange} />
+    );
+
+    expect(await screen.findByText('Music Assistant')).toBeVisible();
+    expect(screen.getByText('2 speakers')).toBeVisible();
+    expect(screen.getByText('Bathroom +1')).toBeVisible();
+    await waitFor(() =>
+      expect(onActiveGroupChange).toHaveBeenCalledWith([
+        'media_player.bathroom',
+        'media_player.bathroom_wrapper',
+        'media_player.living_room',
+        'media_player.living_room_wrapper',
+      ])
+    );
+  });
+
+  it('does not keep a stack after Music Assistant removes group membership', async () => {
+    const onActiveGroupChange = vi.fn();
+    const ungroupedDevices = ['Bathroom', 'Living Room'].map((name) =>
+      createMediaDevice({
+        id: `media_player.${name.toLowerCase().replace(' ', '_')}`,
+        name,
+        room: name,
+        state: name === 'Bathroom' ? 'playing' : 'paused',
+        title: 'Strawberries',
+        artist: 'Caamp',
+        groupMembers: [],
+      })
+    );
+    mediaEntityRegistryMock.mockReturnValue([
+      { entityId: 'media_player.bathroom', platform: 'music_assistant' },
+      { entityId: 'media_player.living_room', platform: 'music_assistant' },
+    ]);
+
+    renderWithProviders(
+      <MediaDashboard devices={ungroupedDevices} onActiveGroupChange={onActiveGroupChange} />
+    );
+
+    await waitFor(() => expect(onActiveGroupChange).toHaveBeenCalledWith([]));
+    expect(screen.queryByText('Bathroom +1')).not.toBeInTheDocument();
+  });
+
+  it('ignores stale Music Assistant grouping during direct single-speaker playback', async () => {
+    const staleMembers = ['media_player.bathroom_ma', 'media_player.living_room_ma'];
+    const devices = [
+      createMediaDevice({
+        id: 'media_player.bathroom',
+        name: 'Bathroom',
+        room: 'Bathroom',
+        state: 'playing',
+        title: 'AirPlay track',
+        artist: 'Phone',
+        source: 'AirPlay',
+        groupMembers: ['media_player.bathroom', 'media_player.bathroom_ma'],
+      }),
+      createMediaDevice({
+        id: 'media_player.bathroom_ma',
+        name: 'Bathroom',
+        room: 'Bathroom',
+        state: 'paused',
+        title: 'AirPlay track',
+        artist: 'Phone',
+        groupMembers: staleMembers,
+      }),
+      createMediaDevice({
+        id: 'media_player.living_room_ma',
+        name: 'Living Room',
+        room: 'Living Room',
+        state: 'paused',
+        title: 'AirPlay track',
+        artist: 'Phone',
+        groupMembers: staleMembers,
+      }),
+    ];
+    mediaEntityRegistryMock.mockReturnValue([
+      { entityId: 'media_player.bathroom', platform: 'sonos' },
+      { entityId: 'media_player.bathroom_ma', platform: 'music_assistant' },
+      { entityId: 'media_player.living_room_ma', platform: 'music_assistant' },
+    ]);
+
+    renderWithProviders(<MediaDashboard devices={devices} />);
+
+    expect(await screen.findByText('AirPlay track')).toBeVisible();
+    expect(screen.queryByText('Bathroom +1')).not.toBeInTheDocument();
+    expect(screen.queryByText('2 speakers')).not.toBeInTheDocument();
+  });
+
+  it('publishes native AirPlay group members so their individual cards can be hidden', async () => {
+    const onActiveGroupChange = vi.fn();
+    const groupMembers = ['media_player.bathroom', 'media_player.living_room'];
+    const devices = ['Bathroom', 'Living Room'].map((name) =>
+      createMediaDevice({
+        id: `media_player.${name.toLowerCase().replace(' ', '_')}`,
+        name,
+        room: name,
+        state: 'playing',
+        title: 'Grouped AirPlay track',
+        artist: 'Phone',
+        source: 'AirPlay',
+        groupMembers,
+      })
+    );
+    mediaEntityRegistryMock.mockReturnValue([
+      { entityId: 'media_player.bathroom', platform: 'sonos' },
+      { entityId: 'media_player.living_room', platform: 'sonos' },
+    ]);
+
+    renderWithProviders(
+      <MediaDashboard devices={devices} onActiveGroupChange={onActiveGroupChange} />
+    );
+
+    expect(await screen.findByText('Bathroom +1')).toBeVisible();
+    await waitFor(() =>
+      expect(onActiveGroupChange).toHaveBeenCalledWith([
+        'media_player.bathroom',
+        'media_player.living_room',
+      ])
+    );
+  });
+
+  it('keeps a paused AirPlay group selected and stacked until membership changes', async () => {
+    const onActiveGroupChange = vi.fn();
+    const groupMembers = ['media_player.bathroom', 'media_player.living_room'];
+    const groupedDevices = ['Bathroom', 'Living Room'].map((name) =>
+      createMediaDevice({
+        id: `media_player.${name.toLowerCase().replace(' ', '_')}`,
+        name,
+        room: name,
+        state: 'paused',
+        title: 'Paused AirPlay track',
+        artist: 'Phone',
+        source: 'AirPlay',
+        groupMembers,
+      })
+    );
+    const browseHelper = createMediaDevice({
+      id: 'media_player.browse',
+      name: 'Browse',
+      state: 'playing',
+      title: 'Browse',
+      artist: '',
+    });
+
+    renderWithProviders(
+      <MediaDashboard
+        devices={[browseHelper, ...groupedDevices]}
+        onActiveGroupChange={onActiveGroupChange}
+      />
+    );
+
+    expect(await screen.findByText('Bathroom +1')).toBeVisible();
+    expect(screen.getByText('Paused AirPlay track')).toBeVisible();
+    await waitFor(() =>
+      expect(onActiveGroupChange).toHaveBeenCalledWith([
+        'media_player.bathroom',
+        'media_player.living_room',
+      ])
+    );
   });
 
   it('loads provider media browser items and plays playable results', async () => {
@@ -331,6 +628,10 @@ describe('MediaDashboard', () => {
 
     renderWithProviders(<MediaDashboard devices={[createMediaDevice()]} />);
 
+    expect(await screen.findByTestId('media-browser-directory-grid')).toHaveClass(
+      'min-[900px]:grid-cols-3',
+      'min-[1920px]:grid-cols-5'
+    );
     fireEvent.click(await screen.findByText('Albums'));
     expect(await screen.findByRole('heading', { name: 'Albums' })).toBeInTheDocument();
     const albumGrid = screen.getByTestId('media-browser-compact-grid');

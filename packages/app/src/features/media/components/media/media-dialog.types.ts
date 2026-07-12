@@ -5,6 +5,7 @@ import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
 export interface MediaDialogGroupingPlayer {
   id: string;
   name: string;
+  subtitle?: string;
   isAttached: boolean;
 }
 
@@ -55,6 +56,7 @@ export interface MediaDialogProps {
   supportsGrouping: boolean;
   groupMembers: string[];
   availableGroupingPlayers: MediaDialogGroupingPlayer[];
+  groupingPlayerSubtitle?: string;
   onPrevious: () => void;
   canPreviousTrack: boolean;
   onTogglePlay: () => void;

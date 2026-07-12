@@ -1,6 +1,6 @@
 import type { MediaDevice } from '@navet/app/types/device.types';
 import { describe, expect, it } from 'vitest';
-import { buildMediaSections } from '../media-section';
+import { buildMediaSections, collapseSameRoomMediaGroups } from '../media-section';
 
 function createMediaDevice(overrides: Partial<MediaDevice> = {}): MediaDevice & { type: 'media' } {
   return {
@@ -15,6 +15,8 @@ function createMediaDevice(overrides: Partial<MediaDevice> = {}): MediaDevice & 
     isMuted: overrides.isMuted ?? false,
     entityType: overrides.entityType,
     deviceClass: overrides.deviceClass,
+    groupMembers: overrides.groupMembers,
+    providerId: overrides.providerId,
     type: 'media',
   };
 }
@@ -64,5 +66,50 @@ describe('buildMediaSections', () => {
     expect(sections[1]?.devices.map((device) => device.id)).toEqual([
       'media_player.living_room_tv',
     ]);
+  });
+});
+
+describe('collapseSameRoomMediaGroups', () => {
+  it('renders one stacked card for a live same-room group', () => {
+    const bathroom = createMediaDevice({
+      id: 'media_player.bathroom_left',
+      name: 'Bathroom left',
+      room: 'Bathroom',
+      groupMembers: ['media_player.bathroom_left', 'media_player.bathroom_right'],
+    });
+    const bathroomRight = createMediaDevice({
+      id: 'media_player.bathroom_right',
+      name: 'Bathroom right',
+      room: 'Bathroom',
+      groupMembers: ['media_player.bathroom_left', 'media_player.bathroom_right'],
+    });
+
+    const collapsed = collapseSameRoomMediaGroups([bathroom, bathroomRight]);
+
+    expect(collapsed.devices.map((device) => device.id)).toEqual(['media_player.bathroom_left']);
+    expect(collapsed.cardVariantById.get('media_player.bathroom_left')).toBe('media-stack');
+  });
+
+  it('restores member cards after the group is removed', () => {
+    const devices = [
+      createMediaDevice({ id: 'media_player.bathroom_left', room: 'Bathroom', groupMembers: [] }),
+      createMediaDevice({ id: 'media_player.bathroom_right', room: 'Bathroom', groupMembers: [] }),
+    ];
+
+    const collapsed = collapseSameRoomMediaGroups(devices);
+
+    expect(collapsed.devices).toHaveLength(2);
+    expect(collapsed.cardVariantById.size).toBe(0);
+  });
+
+  it('does not collapse a multi-room group', () => {
+    const groupMembers = ['media_player.bathroom', 'media_player.kitchen'];
+    const collapsed = collapseSameRoomMediaGroups([
+      createMediaDevice({ id: groupMembers[0], room: 'Bathroom', groupMembers }),
+      createMediaDevice({ id: groupMembers[1], room: 'Kitchen', groupMembers }),
+    ]);
+
+    expect(collapsed.devices).toHaveLength(2);
+    expect(collapsed.cardVariantById.size).toBe(0);
   });
 });

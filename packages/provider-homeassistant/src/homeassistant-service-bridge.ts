@@ -19,6 +19,8 @@ export interface HomeAssistantAreaRegistryEntry {
 export interface HomeAssistantDeviceRegistryEntry {
   id: string;
   area_id?: string | null;
+  manufacturer?: string | null;
+  model?: string | null;
   name?: string | null;
   name_by_user?: string | null;
 }

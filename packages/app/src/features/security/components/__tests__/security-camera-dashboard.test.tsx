@@ -67,8 +67,16 @@ vi.mock('@navet/app/stores/settings-store', async () => {
       selector: (state: {
         cameraStreamPreferences: Record<string, 'auto'>;
         cameraStreamPreference: 'auto';
+        cameraWebRtcStreamSources: Record<string, 'provider'>;
+        cameraDirectStreamUrls: Record<string, string>;
       }) => unknown
-    ) => selector({ cameraStreamPreferences: {}, cameraStreamPreference: 'auto' }),
+    ) =>
+      selector({
+        cameraStreamPreferences: {},
+        cameraStreamPreference: 'auto',
+        cameraWebRtcStreamSources: {},
+        cameraDirectStreamUrls: {},
+      }),
   };
 });
 
@@ -425,8 +433,7 @@ describe('SecurityCameraDashboard', () => {
     expect(secureCard?.className).toContain('to-green-950/95');
   });
 
-  it('puts add entity before done editing and shows status badges in the now header', () => {
-    const onAddEntity = vi.fn();
+  it('keeps entity actions out of the hero and shows status badges in the now header', () => {
     const model = buildSecurityCameraDashboardModel({
       cameras: [camera({ id: 'camera.garage', name: 'Garage Camera', state: 'idle' })],
       locks: [lock({ id: 'lock.front', name: 'Front Door', state: true })],
@@ -437,22 +444,15 @@ describe('SecurityCameraDashboard', () => {
       <SecurityCameraDashboard
         model={model}
         isEditMode
-        onAddEntity={onAddEntity}
+        onAddEntity={vi.fn()}
         cardSizes={{}}
         updateCardSize={vi.fn()}
         surface={getThemeSurfaceTokens('glass')}
       />
     );
 
-    const addEntityButton = screen.getByRole('button', { name: /add entity/i });
-    const doneEditingButton = screen.getByRole('button', { name: /done editing/i });
-
-    expect(addEntityButton.compareDocumentPosition(doneEditingButton)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING
-    );
-
-    fireEvent.click(addEntityButton);
-    expect(onAddEntity).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: /add entity/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /done editing/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId('security-hero-actions-divider')).not.toBeInTheDocument();
 
     const nowHeaderButton = screen.getByRole('button', { name: /now/i });
@@ -557,7 +557,7 @@ describe('SecurityCameraDashboard', () => {
       'col-span-4 row-span-2'
     );
     expect(screen.getByTestId('security-now-card:security.now.live').className).toContain(
-      'col-span-6 row-span-4'
+      'col-span-4 row-span-4 md:col-span-6'
     );
 
     rerender(

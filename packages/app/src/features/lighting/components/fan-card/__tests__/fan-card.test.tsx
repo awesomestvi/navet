@@ -18,6 +18,7 @@ const { serviceMock } = vi.hoisted(() => ({
     getPanelHass: vi.fn(() => null),
     getConnection: vi.fn(() => null),
     addListener: vi.fn(() => () => undefined),
+    disconnect: vi.fn(),
   },
 }));
 

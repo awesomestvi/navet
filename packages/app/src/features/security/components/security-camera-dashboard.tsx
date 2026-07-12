@@ -14,7 +14,7 @@ import { DashboardResizeTrigger } from '@navet/app/features/dashboard/components
 import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit-dashboard-grid';
 import { useProgressiveBatching } from '@navet/app/features/dashboard/hooks/use-progressive-batching';
 import { useCameraPlaybackPlan } from '@navet/app/features/security/hooks/use-camera-playback-plan';
-import { useI18n, useMediaQuery, useProviderCameraTopology } from '@navet/app/hooks';
+import { useProviderCameraTopology } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { usePersistedState } from '@navet/app/hooks/use-persisted-state';
 import { useProviderEntityModel } from '@navet/app/hooks/use-provider-device';
@@ -26,7 +26,7 @@ import { type CameraViewMode, useSettingsStore } from '@navet/app/stores/setting
 import type { CameraDevice, DeviceWithType, SecuritySeverity } from '@navet/app/types/device.types';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import type { NavetAlarmEntity } from '@navet/core/alarm-types';
-import { ChevronDown, Plus } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { resolveDashboardPerformanceProfile } from '../../dashboard/hooks/use-dashboard-performance-mode';
@@ -450,34 +450,13 @@ function resolveHomeAssistantImageUrl(imageUrl: string | undefined) {
 
 function StatusBanner({
   model,
-  isEditMode,
-  onAddEntity,
   surface,
 }: {
   model: CameraDashboardModel['summary'];
-  isEditMode: boolean;
-  onAddEntity?: () => void;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
   const { accentColor } = useTheme();
-  const { t } = useI18n();
-  const isMobileViewport = useMediaQuery('(max-width: 767px)');
   const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
-  const badges =
-    !isMobileViewport && isEditMode && onAddEntity ? (
-      <div className="flex min-h-10 items-center justify-end gap-2">
-        <button
-          type="button"
-          onClick={onAddEntity}
-          className={`inline-flex items-center gap-1.5 rounded-[22px] border px-2.5 py-1.5 text-xs font-medium transition-colors md:gap-2 md:px-3 md:py-2 md:text-sm ${surface.border} ${surface.textSecondary} ${surface.hoverBg}`}
-        >
-          <Plus className={`h-4 w-4 ${surface.textSecondary}`} />
-          <span className={`hidden text-xs font-medium md:inline ${surface.textSecondary}`}>
-            {t('dashboard.addEntity.title')}
-          </span>
-        </button>
-      </div>
-    ) : null;
 
   return kioskMode ? null : (
     <DashboardHeroSection
@@ -485,8 +464,6 @@ function StatusBanner({
       surface={surface}
       title={model.title}
       description="Monitor live cameras, locks, openings, and alarms from one place."
-      actions={badges}
-      actionsClassName="md:absolute md:top-0 md:right-0 md:mt-0 md:max-w-[22rem] md:justify-end"
     />
   );
 }
@@ -1160,7 +1137,6 @@ function DetailsSection({
 export function SecurityCameraDashboard({
   model,
   isEditMode,
-  onAddEntity,
   alarms = [],
   cardSizes,
   updateCardSize,
@@ -1294,12 +1270,7 @@ export function SecurityCameraDashboard({
           }
         }
       `}</style>
-      <StatusBanner
-        model={model.summary}
-        isEditMode={isEditMode}
-        onAddEntity={onAddEntity}
-        surface={surface}
-      />
+      <StatusBanner model={model.summary} surface={surface} />
 
       <FlatSection
         id="now"

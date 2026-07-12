@@ -31,6 +31,32 @@ interface HomeAssistantBrowseNode {
   media_album_name?: string;
 }
 
+export function normalizeHomeAssistantBrowseLabel(result: HomeAssistantBrowseNode) {
+  const title = result.media_title ?? result.title ?? '';
+  const artist = result.artist ?? result.media_artist;
+  const mediaClass = result.media_class?.trim().toLowerCase();
+  const mediaContentType = result.media_content_type?.trim().toLowerCase();
+  const usesCombinedMusicLabel =
+    mediaClass === 'track' ||
+    mediaClass === 'album' ||
+    mediaContentType === 'track' ||
+    mediaContentType === 'album';
+
+  if (artist || !usesCombinedMusicLabel) {
+    return { title, artist };
+  }
+
+  const separatorIndex = title.indexOf(' - ');
+  if (separatorIndex <= 0 || separatorIndex >= title.length - 3) {
+    return { title, artist };
+  }
+
+  return {
+    title: title.slice(separatorIndex + 3).trim(),
+    artist: title.slice(0, separatorIndex).trim(),
+  };
+}
+
 function mapHomeAssistantBrowseResult(result: HomeAssistantBrowseNode): {
   title: string;
   mediaClass?: string;
@@ -43,8 +69,10 @@ function mapHomeAssistantBrowseResult(result: HomeAssistantBrowseNode): {
   artist?: string;
   album?: string;
 } {
+  const label = normalizeHomeAssistantBrowseLabel(result);
+
   return {
-    title: result.media_title ?? result.title ?? '',
+    title: label.title,
     mediaClass: result.media_class,
     mediaContentId: result.media_content_id,
     mediaContentType: result.media_content_type,
@@ -52,7 +80,7 @@ function mapHomeAssistantBrowseResult(result: HomeAssistantBrowseNode): {
     canExpand: result.can_expand,
     canPlay: result.can_play,
     thumbnail: result.thumbnail ?? result.media_image_url ?? null,
-    artist: result.artist ?? result.media_artist,
+    artist: label.artist,
     album: result.album ?? result.media_album_name,
   };
 }

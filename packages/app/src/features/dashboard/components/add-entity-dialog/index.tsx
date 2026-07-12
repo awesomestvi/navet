@@ -182,7 +182,7 @@ export function AddEntityDialog({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${surface.dialogBackdrop}`}
+      className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 ${surface.dialogBackdrop}`}
     >
       <div
         className={`${bgColor} rounded-2xl border ${borderColor} w-full max-w-2xl max-h-[80vh] overflow-hidden`}
