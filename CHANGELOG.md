@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.9.1 - 2026-07-14
+
+## Fixed
+
+- Now Playing can retain and resume paused media sessions when a provider becomes idle and clears its metadata, including restoring the remembered playback position when supported.
+- Media controls now route through the matching physical player when a provider library entity mirrors the same room and session, avoiding broken pause and resume behavior.
+- Active and grouped speakers no longer appear twice between Now Playing and the remaining media sections.
+
+## Improved
+
+- Media artwork, volume, and speaker grouping stay synchronized more reliably across provider wrappers, physical outputs, and grouped players.
+- The media browser and speaker-grouping dialog use more responsive layouts with cleaner mobile scrolling and direct group-member removal.
+
 ## 0.9.0 - 2026-07-13
 
 ## New

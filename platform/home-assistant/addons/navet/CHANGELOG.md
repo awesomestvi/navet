@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.1
+
+- Updated Navet to `0.9.1`
+- Fixed Now Playing session recovery when Home Assistant media entities become idle and clear their metadata
+- Routed mirrored media controls through the matching physical player for more reliable pause and resume behavior
+- Prevented active and grouped speakers from appearing twice in media sections
+- Improved media artwork, volume, grouping synchronization, responsive browser layouts, and mobile grouping controls
+
 ## 0.9.0
 
 - Updated Navet to `0.9.0`
