@@ -344,7 +344,14 @@ export function MediaMediumView({
                   theme={theme}
                   size="small"
                   variant="neutral"
-                  aria-label={isVolumeMode ? t('media.muteVolume') : t('media.volume')}
+                  aria-label={
+                    isVolumeMode
+                      ? isMuted
+                        ? t('media.unmuteVolume')
+                        : t('media.muteVolume')
+                      : t('media.volume')
+                  }
+                  aria-pressed={isVolumeMode ? isMuted : undefined}
                   onClick={(event) => {
                     event.stopPropagation();
                     if (isVolumeMode) {
@@ -365,6 +372,12 @@ export function MediaMediumView({
                   }
                 >
                   {isVolumeMode ? (
+                    isMuted ? (
+                      <VolumeX className={controlSizes.icon} />
+                    ) : (
+                      <Volume2 className={controlSizes.icon} />
+                    )
+                  ) : isMuted ? (
                     <VolumeX className={controlSizes.icon} />
                   ) : (
                     <Volume2 className={controlSizes.icon} />
@@ -397,24 +410,7 @@ export function MediaMediumView({
                   ) : null}
                 </div>
 
-                {isVolumeMode ? (
-                  <RoundControlButton
-                    theme={theme}
-                    size="small"
-                    variant="neutral"
-                    aria-label={t('media.volume')}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      registerVolumeInteraction();
-                      onVolumeChange(100);
-                    }}
-                    className="h-7.5 w-7.5 backdrop-blur-xl transition-colors"
-                    iconStyle={controlIconStyle}
-                    style={subduedFallback ? undefined : activeUtilityButtonStyle}
-                  >
-                    <Volume2 className={controlSizes.icon} />
-                  </RoundControlButton>
-                ) : (
+                {!isVolumeMode ? (
                   <>
                     {canShuffle ? (
                       <RoundControlButton
@@ -522,7 +518,7 @@ export function MediaMediumView({
                       <SkipForward className={controlSizes.icon} />
                     </RoundControlButton>
                   </>
-                )}
+                ) : null}
               </div>
             ) : null}
           </div>

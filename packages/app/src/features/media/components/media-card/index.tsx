@@ -121,6 +121,7 @@ interface MediaCardProps {
   openSettingsRequestKey?: number;
   disableTransportPlayback?: boolean;
   hideTransportControls?: boolean;
+  onTogglePlayback?: () => void;
   /**
    * When true, TV remote UI (D-pad, channel keys) renders as if a `remote.*` entity exists.
    * Use in Storybook where HA is not connected; ignored for non-TV cards.
@@ -160,6 +161,7 @@ export const MediaCard = memo(function MediaCard({
   openSettingsRequestKey = 0,
   disableTransportPlayback = false,
   hideTransportControls = false,
+  onTogglePlayback,
   simulateTvRemote = false,
 }: MediaCardProps) {
   const { theme } = useTheme();
@@ -331,7 +333,7 @@ export const MediaCard = memo(function MediaCard({
     onToggleMute: toggleMute,
     onPrevious: handlePrevious,
     canPreviousTrack: effectiveHideTransportControls ? false : canPreviousTrack,
-    onTogglePlay: togglePlay,
+    onTogglePlay: onTogglePlayback ?? togglePlay,
     canTogglePlayback:
       effectiveHideTransportControls || disableTransportPlayback ? false : canTogglePlayback,
     onNext: handleNext,
@@ -475,7 +477,7 @@ export const MediaCard = memo(function MediaCard({
                 canSetVolume={mediaCapabilities?.canSetVolume ?? false}
                 canMuteVolume={mediaCapabilities?.canMuteVolume ?? false}
                 canSelectSource={mediaCapabilities?.canSelectSource ?? false}
-                onTogglePlay={togglePlay}
+                onTogglePlay={onTogglePlayback ?? togglePlay}
                 onToggleMute={toggleMute}
                 onVolumeChange={handleVolumeChange}
                 onVolumeInteractionStart={startVolumeInteraction}
@@ -553,7 +555,7 @@ export const MediaCard = memo(function MediaCard({
             groupingPlayerSubtitle={currentPlayerIdentifier}
             onPrevious={handlePrevious}
             canPreviousTrack={canPreviousTrack}
-            onTogglePlay={togglePlay}
+            onTogglePlay={onTogglePlayback ?? togglePlay}
             onNext={handleNext}
             canNextTrack={canNextTrack}
             shuffleEnabled={shuffleEnabled}

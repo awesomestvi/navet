@@ -16,6 +16,7 @@ export interface ModalSurfaceProps {
   contentClassName?: string;
   overlayClassName?: string;
   bodyClassName?: string;
+  shellBodyClassName?: string;
   contentStyle?: CSSProperties;
   contentGlowClassName?: string;
   contentGlowStyle?: CSSProperties;
@@ -32,6 +33,7 @@ export function ModalSurface({
   contentClassName,
   overlayClassName,
   bodyClassName,
+  shellBodyClassName,
   contentStyle,
   contentGlowClassName,
   contentGlowStyle,
@@ -55,6 +57,8 @@ export function ModalSurface({
       contentGlowClassName={contentGlowClassName}
       contentGlowStyle={contentGlowStyle}
       contentOverlayClassName={contentOverlayClassName}
+      shellBodyClassName={shellBodyClassName}
+      bodyClassName={shellBodyClassName}
       bodyPadding={false}
     >
       <div className={cn('relative', navetUiKitRadiusTokens.dialog, bodyClassName)}>{children}</div>

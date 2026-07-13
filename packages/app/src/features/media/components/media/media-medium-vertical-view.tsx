@@ -325,7 +325,11 @@ export function MediaMediumVerticalView({
                 iconStyle={controlIconStyle}
                 style={volumeToggleButtonStyle}
               >
-                <Volume2 className={controlSizes.icon} />
+                {isMuted ? (
+                  <VolumeX className={controlSizes.icon} />
+                ) : (
+                  <Volume2 className={controlSizes.icon} />
+                )}
               </RoundControlButton>
 
               {isVolumeMode ? (
@@ -360,6 +364,7 @@ export function MediaMediumVerticalView({
                   size="small"
                   variant="neutral"
                   aria-label={isMuted ? t('media.unmuteVolume') : t('media.muteVolume')}
+                  aria-pressed={isMuted}
                   onClick={(event) => {
                     event.stopPropagation();
                     registerVolumeInteraction();
@@ -369,7 +374,11 @@ export function MediaMediumVerticalView({
                   iconStyle={controlIconStyle}
                   style={muteButtonStyle}
                 >
-                  <VolumeX className={controlSizes.icon} />
+                  {isMuted ? (
+                    <VolumeX className={controlSizes.icon} />
+                  ) : (
+                    <Volume2 className={controlSizes.icon} />
+                  )}
                 </RoundControlButton>
               ) : (
                 <div className="flex shrink-0 items-center gap-1.5">

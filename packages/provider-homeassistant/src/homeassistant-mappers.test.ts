@@ -366,6 +366,8 @@ describe('homeassistant-mappers', () => {
             media_image_url: 'https://cdn.example.test/album.jpg',
             media_title: 'Sunshine (My Girl)',
             media_artist: 'Wuki',
+            media_content_id: 'spotify:track:2example',
+            media_content_type: 'music',
             supported_features: 65281,
           }
         ),
@@ -382,6 +384,8 @@ describe('homeassistant-mappers', () => {
         attributes: expect.objectContaining({
           entityPicture:
             '/api/media_player_proxy/media_player.living_homepods_ma_group?token=proxy',
+          mediaContentId: 'spotify:track:2example',
+          mediaContentType: 'music',
         }),
         resources: expect.objectContaining({
           media_artwork: expect.objectContaining({

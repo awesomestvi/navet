@@ -581,6 +581,10 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
             typeof state.durationSeconds === 'number' ? state.durationSeconds : undefined,
           positionUpdatedAt:
             typeof state.positionUpdatedAt === 'string' ? state.positionUpdatedAt : undefined,
+          mediaContentId:
+            typeof state.mediaContentId === 'string' ? state.mediaContentId : undefined,
+          mediaContentType:
+            typeof state.mediaContentType === 'string' ? state.mediaContentType : undefined,
           mediaCapabilities:
             state.mediaCapabilities && typeof state.mediaCapabilities === 'object'
               ? (state.mediaCapabilities as DeviceCollection['media'][number]['mediaCapabilities'])

@@ -225,4 +225,33 @@ describe('useMediaGrouping', () => {
       entityId: 'media_player.living_room',
     });
   });
+
+  it('hands coordination to a remaining player before removing the current player', async () => {
+    const { result } = renderHookWithProviders(() =>
+      useMediaGrouping({
+        entityId: 'media_player.kitchen',
+        entities: createEntities(),
+        entityRegistry: [],
+        groupMembers: ['media_player.kitchen', 'media_player.living_room'],
+        runAction: runActionMock,
+        t: (key) => key,
+      })
+    );
+
+    act(() => result.current.detachGroupMember('media_player.kitchen'));
+
+    await act(async () => {
+      await runActionMock.mock.results.at(-1)?.value;
+    });
+
+    expect(dispatchEntityCommandMock).toHaveBeenNthCalledWith(1, {
+      type: 'join_group',
+      entityId: 'media_player.living_room',
+      members: ['media_player.kitchen'],
+    });
+    expect(dispatchEntityCommandMock).toHaveBeenNthCalledWith(2, {
+      type: 'leave_group',
+      entityId: 'media_player.kitchen',
+    });
+  });
 });

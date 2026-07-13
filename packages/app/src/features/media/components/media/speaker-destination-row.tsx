@@ -4,6 +4,7 @@ import type { CSSProperties, ReactNode } from 'react';
 
 interface SpeakerDestinationRowProps {
   active?: boolean;
+  ariaLabel?: string;
   disabled?: boolean;
   icon: ReactNode;
   isGlass: boolean;
@@ -18,6 +19,7 @@ interface SpeakerDestinationRowProps {
 
 export function SpeakerDestinationRow({
   active = false,
+  ariaLabel,
   disabled = false,
   icon,
   isGlass,
@@ -31,6 +33,7 @@ export function SpeakerDestinationRow({
 }: SpeakerDestinationRowProps) {
   return (
     <InteractivePill
+      aria-label={ariaLabel}
       onClick={onClick}
       disabled={disabled}
       active={active}

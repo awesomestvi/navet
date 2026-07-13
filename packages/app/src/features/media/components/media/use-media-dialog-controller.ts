@@ -80,21 +80,39 @@ export function useMediaDialogController({
                 palette.dominant,
                 0.05
               )} 0%, ${withAlpha(palette.darkMuted, 0.08)} 100%)`
-        : `linear-gradient(180deg, rgba(0,0,0,0.035) 0%, rgba(0,0,0,0.01) 42%, rgba(0,0,0,0.03) 68%, rgba(0,0,0,0.07) 100%), linear-gradient(160deg, ${withAlpha(
-            palette.dominant,
-            0.12
-          )} 0%, ${withAlpha(palette.dominant, 0.06)} 48%, ${withAlpha(
-            palette.darkMuted,
-            0.08
-          )} 100%), linear-gradient(165deg, ${withAlpha(
-            palette.dominant,
-            0.72
-          )} 0%, ${withAlpha(palette.dominant, 0.62)} 42%, ${withAlpha(
-            palette.gradientEnd,
-            0.68
-          )} 100%)`;
+        : theme === 'glass'
+          ? `linear-gradient(180deg, rgba(0,0,0,0.035) 0%, rgba(0,0,0,0.01) 42%, rgba(0,0,0,0.03) 68%, rgba(0,0,0,0.07) 100%), linear-gradient(160deg, ${withAlpha(
+              palette.dominant,
+              0.12
+            )} 0%, ${withAlpha(palette.dominant, 0.06)} 48%, ${withAlpha(
+              palette.darkMuted,
+              0.08
+            )} 100%), linear-gradient(165deg, ${withAlpha(
+              palette.dominant,
+              0.72
+            )} 0%, ${withAlpha(palette.dominant, 0.62)} 42%, ${withAlpha(
+              palette.gradientEnd,
+              0.68
+            )} 100%)`
+          : theme === 'black'
+            ? `linear-gradient(160deg, ${withAlpha(palette.dominant, 0.06)} 0%, ${withAlpha(
+                palette.darkMuted,
+                0.04
+              )} 100%), linear-gradient(180deg, rgba(0,0,0,0.995) 0%, rgba(0,0,0,0.995) 100%)`
+            : `linear-gradient(160deg, ${withAlpha(palette.dominant, 0.14)} 0%, ${withAlpha(
+                palette.darkMuted,
+                0.08
+              )} 100%), linear-gradient(180deg, rgba(24,24,27,0.995) 0%, rgba(9,9,11,0.995) 100%)`;
   const dialogSurfaceStyle = {
     background: dialogBackground,
+    backgroundColor:
+      theme === 'light'
+        ? '#ffffff'
+        : theme === 'glass'
+          ? withAlpha(palette.gradientEnd, 0.68)
+          : theme === 'black'
+            ? '#000000'
+            : '#18181b',
     borderColor:
       theme === 'light' ? 'rgba(15, 23, 42, 0.08)' : withAlpha(resolvedSubtitleColor, 0.18),
     boxShadow:

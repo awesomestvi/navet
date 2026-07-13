@@ -630,55 +630,62 @@ export function MediaDialogGrouping({
   onAttachGroupMember,
   onDetachGroupMember,
 }: MediaDialogGroupingProps) {
+  const { t } = useI18n();
   const attachedPlayers = availableGroupingPlayers.filter((player) => player.isAttached);
   const availablePlayers = availableGroupingPlayers.filter((player) => !player.isAttached);
   const hasAttachedMembers = groupMembers.some((memberId) => memberId !== entityId);
 
   return (
     <div
-      className={`overflow-hidden rounded-[2rem] border p-3 backdrop-blur-xl ${controller.surface.border}`}
+      className={`flex w-full max-h-[min(34rem,70dvh)] flex-col overflow-hidden rounded-[2rem] border p-3 backdrop-blur-xl max-sm:max-h-[min(28rem,56dvh)] ${controller.surface.border}`}
       style={{
         ...controller.dialogSurfaceStyle,
         boxShadow: `${controller.dialogSurfaceStyle.boxShadow}, 0 22px 46px -28px rgba(0, 0, 0, 0.52)`,
       }}
     >
-      <div className="space-y-3">
-        <div className="space-y-2">
-          <div className="space-y-2">
-            <SpeakerDestinationRow
-              title={entityName}
-              subtitle={entitySubtitle}
-              active
-              disabled
-              isGlass={controller.isGlass}
-              icon={<Volume2 className="h-4 w-4" />}
-              onClick={() => undefined}
-              primaryTextClassName={controller.surface.textPrimary}
-              secondaryTextClassName={controller.surface.textSecondary}
-              titleStyle={controller.readableForeground.titleStyle}
-              subtitleStyle={controller.readableForeground.subtitleStyle}
-            />
-            {hasAttachedMembers
-              ? attachedPlayers.map((player) => (
-                  <SpeakerDestinationRow
-                    key={player.id}
-                    title={player.name}
-                    subtitle={player.subtitle}
-                    active
-                    isGlass={controller.isGlass}
-                    icon={<Speaker className="h-4 w-4" />}
-                    onClick={() => onDetachGroupMember(player.id)}
-                    primaryTextClassName={controller.surface.textPrimary}
-                    secondaryTextClassName={controller.surface.textSecondary}
-                    titleStyle={controller.readableForeground.titleStyle}
-                    subtitleStyle={controller.readableForeground.subtitleStyle}
-                  />
-                ))
-              : null}
-          </div>
-        </div>
+      <div className="shrink-0 pb-2">
+        <SpeakerDestinationRow
+          title={entityName}
+          subtitle={entitySubtitle}
+          active
+          ariaLabel={hasAttachedMembers ? `${t('media.group.detach')} ${entityName}` : undefined}
+          disabled={!hasAttachedMembers}
+          isGlass={controller.isGlass}
+          icon={<Volume2 className="h-4 w-4" />}
+          onClick={() => onDetachGroupMember(entityId)}
+          primaryTextClassName={controller.surface.textPrimary}
+          secondaryTextClassName={controller.surface.textSecondary}
+          titleStyle={controller.readableForeground.titleStyle}
+          subtitleStyle={controller.readableForeground.subtitleStyle}
+        />
+      </div>
 
-        <div className="space-y-2 pt-1">
+      <section
+        aria-label={t('media.group.available')}
+        className="min-h-0 w-full flex-1 touch-pan-y space-y-3 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]"
+      >
+        {hasAttachedMembers ? (
+          <div className="space-y-2">
+            {attachedPlayers.map((player) => (
+              <SpeakerDestinationRow
+                key={player.id}
+                title={player.name}
+                subtitle={player.subtitle}
+                active
+                ariaLabel={`${t('media.group.detach')} ${player.name}`}
+                isGlass={controller.isGlass}
+                icon={<Speaker className="h-4 w-4" />}
+                onClick={() => onDetachGroupMember(player.id)}
+                primaryTextClassName={controller.surface.textPrimary}
+                secondaryTextClassName={controller.surface.textSecondary}
+                titleStyle={controller.readableForeground.titleStyle}
+                subtitleStyle={controller.readableForeground.subtitleStyle}
+              />
+            ))}
+          </div>
+        ) : null}
+
+        <div className="space-y-2">
           {availablePlayers.length > 0 ? (
             <div className="space-y-2">
               {availablePlayers.map((player) => (
@@ -698,7 +705,7 @@ export function MediaDialogGrouping({
             </div>
           ) : null}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

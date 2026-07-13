@@ -16,6 +16,17 @@ payloads directly.
 - Spotify Connect recovery can activate another media player that advertises a Spotify source when
   the Spotify account entity is idle. Selecting that output also scopes subsequent browsing and
   playback to the output entity, matching Home Assistant's per-player media browser behavior.
+- Automatically inferred Spotify Connect outputs follow the currently active speaker. Only a
+  speaker explicitly chosen by the user remains pinned, so starting playback in another room also
+  retargets Liked Songs, Recently Played, and other library actions to that room.
+- Now Playing persists the last real media session, including its output player, provider label,
+  artwork reference, media identifier, position, and group membership. If a provider collapses a
+  paused session to idle and clears its metadata, the dashboard can retain the paused presentation
+  across reloads and recreate the media session from the normalized media identifier.
+- When a browsable provider wrapper and a physical output mirror the same room and media, Now
+  Playing keeps the wrapper as its metadata/library surface but routes transport commands through
+  the matching physical player. This matches the entity used by the working per-player card and
+  avoids destroying a resumable Spotify Connect session by pausing the library wrapper.
 
 ## Component Structure
 
@@ -41,6 +52,9 @@ payloads directly.
   `media_title`, `media_image_url`, `media_artist`, and `media_album_name` fields.
 - Play/pause dispatch is state-aware: a playing entity receives pause and any other state receives
   play. Pause capability is mapped separately from play capability.
+- Home Assistant `media_content_id` and `media_content_type` attributes are normalized into the
+  app media snapshot. They remain provider-neutral inputs to the media feature service rather than
+  leaking Home Assistant service payloads into the card.
 
 ## Artwork And Metadata
 
@@ -66,6 +80,10 @@ payloads directly.
 - Spotify-backed Home Assistant media players may be idle until a source/output is selected. When
   source selection is supported and sources are present, the dashboard surfaces the selector as the
   first recovery path.
+- Remembered-session recovery is best effort. Navet first calls provider media playback with the
+  remembered identifier and seeks to the remembered position when supported. If the provider
+  rejects that replay, Navet falls back to its normal play/pause command so players that retained an
+  internal queue can still resume.
 - If a Spotify-backed player exposes source selection but Home Assistant returns an empty
   `source_list`, the dashboard offers other media players currently reporting a Spotify source as
   fallback output candidates. Selecting one activates its Spotify source when necessary and sends a
@@ -78,6 +96,11 @@ payloads directly.
   account on an unintended personal device.
 - Providers may expose `canBrowseMedia` without useful children for a given entity state. The
   dashboard keeps an empty browser state until real browse results arrive.
+- Home Assistant owns Spotify artist expansion inside its Spotify integration. If its bundled
+  Spotify client cannot parse the current artist-albums response, both Spotify and Sonos browse
+  entities fail before Navet receives album children. Navet must not invent playable album or track
+  identifiers; recovery requires a fixed Home Assistant Spotify client or a separate authenticated
+  Navet music-source adapter.
 - TV remotes still use existing TV-specific media card/dialog controls. The dashboard prioritizes
   audio players and does not duplicate the D-pad remote surface.
 

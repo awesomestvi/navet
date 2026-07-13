@@ -84,4 +84,31 @@ describe('useMediaDialogController', () => {
     expect(result.current.dialogSurfaceStyle.background).toContain('rgba(24,24,27,0.985)');
     expect(result.current.dialogSurfaceStyle.background).not.toContain('rgba(0,0,0,0.24)');
   });
+
+  it('keeps artwork-tinted dark dialogs opaque', () => {
+    useThemeMock.mockReturnValue({ theme: 'dark' });
+    useMediaArtworkColorsMock.mockReturnValue({
+      dominant: 'rgb(190, 200, 215)',
+      vibrant: 'rgb(150, 165, 188)',
+      darkMuted: 'rgb(48, 54, 66)',
+      highlight: 'rgb(240, 244, 250)',
+      gradientEnd: 'rgb(18, 22, 29)',
+    });
+
+    const { result } = renderHook(() =>
+      useMediaDialogController({
+        artwork: 'data:image/jpeg;base64,art',
+        artworkResource: null,
+        artist: 'Manchester Orchestra',
+        durationSeconds: 308,
+        elapsedSeconds: 42,
+        entityId: 'media_player.bathroom',
+        title: 'The Silence',
+      })
+    );
+
+    expect(result.current.dialogSurfaceStyle.backgroundColor).toBe('#18181b');
+    expect(result.current.dialogSurfaceStyle.background).toContain('rgba(24,24,27,0.995)');
+    expect(result.current.dialogSurfaceStyle.background).not.toContain('rgba(0,0,0,0.035)');
+  });
 });

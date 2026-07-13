@@ -299,6 +299,8 @@ export function MediaDialogContent({
                   align="center"
                   sideOffset={10}
                   className="z-[920] w-[min(19.5rem,calc(100vw-2.5rem))] outline-none"
+                  onWheel={(event) => event.stopPropagation()}
+                  onTouchMove={(event) => event.stopPropagation()}
                   onInteractOutside={(event) => {
                     if (
                       groupingTriggerRef.current &&
@@ -396,9 +398,10 @@ export function MediaDialogContent({
       onOpenChange={onOpenChange}
       title={entityName}
       description={entityType}
-      bodyClassName="media-dialog-body relative flex h-full max-h-full min-h-0 flex-1 touch-pan-y flex-col overflow-x-hidden overflow-y-auto overscroll-contain px-6 pt-6 pb-10 [-webkit-overflow-scrolling:touch] max-sm:px-3.5 max-sm:pt-2 max-sm:pb-8 md:px-7 md:pt-6 md:pb-10"
+      bodyClassName="media-dialog-body relative flex h-full max-h-full min-h-0 flex-1 touch-pan-y flex-col overflow-x-hidden overflow-y-auto overscroll-contain px-6 pt-6 pb-10 [-webkit-overflow-scrolling:touch] max-sm:px-3.5 max-sm:pt-2 max-sm:pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] md:px-7 md:pt-6 md:pb-10"
+      shellBodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden"
       overlayClassName={`animate-in fade-in ${controller.surface.dialogBackdrop}`}
-      contentClassName="flex h-auto max-h-[88vh] min-h-0 w-[min(92vw,27rem)] flex-col overflow-hidden max-sm:!h-[min(88dvh,calc(100dvh-1rem))] max-sm:!touch-pan-y max-sm:!overflow-x-hidden max-sm:!overflow-y-auto max-sm:!overscroll-contain max-sm:[-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+      contentClassName="flex h-auto max-h-[88vh] min-h-0 w-[min(92vw,27rem)] flex-col overflow-hidden max-sm:!h-[min(88dvh,calc(100dvh-1rem))] max-sm:!overflow-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
       contentStyle={controller.dialogSurfaceStyle}
     >
       <div className="relative space-y-6">

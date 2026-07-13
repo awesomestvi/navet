@@ -1,6 +1,10 @@
 import type { MediaDevice } from '@navet/app/types/device.types';
 import { describe, expect, it } from 'vitest';
-import { buildMediaSections, collapseSameRoomMediaGroups } from '../media-section';
+import {
+  buildMediaSections,
+  collapseSameRoomMediaGroups,
+  excludePromotedMediaDevices,
+} from '../media-section';
 
 function createMediaDevice(overrides: Partial<MediaDevice> = {}): MediaDevice & { type: 'media' } {
   return {
@@ -111,5 +115,30 @@ describe('collapseSameRoomMediaGroups', () => {
 
     expect(collapsed.devices).toHaveLength(2);
     expect(collapsed.cardVariantById.size).toBe(0);
+  });
+});
+
+describe('excludePromotedMediaDevices', () => {
+  it('removes the promoted speaker and matching provider aliases from regular sections', () => {
+    const identityDevices = [
+      createMediaDevice({ id: 'media_player.bathroom', name: 'Bathroom', room: 'Bathroom' }),
+      createMediaDevice({
+        id: 'media_player.bathroom_wrapper',
+        name: 'Bathroom',
+        room: 'Bathroom',
+      }),
+      createMediaDevice({ id: 'media_player.living_room', name: 'Living Room' }),
+    ];
+    const displayedDevices = identityDevices.filter(
+      (device) => device.id !== 'media_player.bathroom_wrapper'
+    );
+
+    expect(
+      excludePromotedMediaDevices(
+        displayedDevices,
+        ['media_player.bathroom_wrapper'],
+        identityDevices
+      ).map((device) => device.id)
+    ).toEqual(['media_player.living_room']);
   });
 });

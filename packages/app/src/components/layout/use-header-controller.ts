@@ -61,7 +61,7 @@ export function useHeaderController() {
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const user = useIntegrationStore(integrationSelectors.currentUser);
-  const shouldResolveAvatarFromProvider = !lowPowerMode && !user?.avatarUrl;
+  const shouldResolveAvatarFromProvider = !user?.avatarUrl;
   const providerPersons = useIntegrationStore(
     (state) =>
       shouldResolveAvatarFromProvider
@@ -102,12 +102,12 @@ export function useHeaderController() {
   }, [t, user?.name]);
 
   const matchedPersonCanonicalId = useMemo(() => {
-    if (lowPowerMode || user?.avatarUrl) {
+    if (user?.avatarUrl) {
       return null;
     }
 
     return resolveMatchedPersonCanonicalId(providerPersons, user?.name);
-  }, [lowPowerMode, providerPersons, user?.avatarUrl, user?.name]);
+  }, [providerPersons, user?.avatarUrl, user?.name]);
   const matchedPersonEntity = useIntegrationStore(
     (state) =>
       matchedPersonCanonicalId

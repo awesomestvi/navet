@@ -155,6 +155,8 @@ export interface MediaDevice extends BaseDevice {
   elapsedSeconds?: number;
   durationSeconds?: number;
   positionUpdatedAt?: string;
+  mediaContentId?: string;
+  mediaContentType?: string;
   mediaCapabilities?: NavetMediaCapabilities;
   supportsGrouping?: boolean;
   supportsPreviousTrack?: boolean;

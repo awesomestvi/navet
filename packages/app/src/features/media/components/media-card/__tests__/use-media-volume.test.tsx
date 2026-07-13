@@ -184,6 +184,40 @@ describe('useMediaVolume', () => {
     });
   });
 
+  it('remembers to unmute across renders while dragging from a muted state', async () => {
+    const { result } = renderHookWithProviders(() =>
+      useMediaVolume({
+        canMuteVolume: true,
+        canSetVolume: true,
+        entityId: 'media_player.office',
+        initialVolume: 0,
+        initialMuted: true,
+        t: (key) => key,
+      })
+    );
+
+    act(() => result.current.startVolumeInteraction());
+    act(() => result.current.handleVolumeChange(10));
+
+    expect(result.current.isMuted).toBe(false);
+
+    act(() => result.current.endVolumeInteraction());
+
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    expect(dispatchEntityCommandMock).toHaveBeenNthCalledWith(1, {
+      entityId: 'media_player.office',
+      type: 'unmute',
+    });
+    expect(dispatchEntityCommandMock).toHaveBeenNthCalledWith(2, {
+      entityId: 'media_player.office',
+      type: 'set_volume',
+      volume: 10,
+    });
+  });
+
   it('keeps volume adjustment active until the volume commit resolves', async () => {
     let resolveDispatch: ((value: CommandResult) => void) | null = null;
     dispatchEntityCommandMock.mockImplementationOnce(

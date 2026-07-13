@@ -28,6 +28,7 @@ export function useMediaVolume({
   const [previousVolume, setPreviousVolume] = useState(initialVolume > 0 ? initialVolume : 50);
   const [isAdjustingVolume, setIsAdjustingVolume] = useState(false);
   const pendingVolumeRef = useRef<number | null>(null);
+  const pendingUnmuteRef = useRef(false);
   const isAdjustingVolumeRef = useRef(false);
   const volumeCommitTimeoutRef = useRef<number | null>(null);
   const syncSettleTimeoutRef = useRef<number | null>(null);
@@ -127,7 +128,10 @@ export function useMediaVolume({
       setVolume(nextVolume);
       if (nextVolume > 0) setPreviousVolume(nextVolume);
       const shouldUnmute = nextVolume > 0 && isMuted && canMuteVolume;
-      if (shouldUnmute) setIsMuted(false);
+      if (shouldUnmute) {
+        pendingUnmuteRef.current = true;
+        setIsMuted(false);
+      }
 
       pendingVolumeRef.current = nextVolume;
       if (volumeCommitTimeoutRef.current !== null) {
@@ -140,8 +144,12 @@ export function useMediaVolume({
       }
       volumeCommitTimeoutRef.current = window.setTimeout(() => {
         const pendingVolume = pendingVolumeRef.current;
+        const shouldUnmute =
+          pendingVolume !== null && pendingVolume > 0 && pendingUnmuteRef.current;
         volumeCommitTimeoutRef.current = null;
         if (pendingVolume === null) return;
+        pendingVolumeRef.current = null;
+        pendingUnmuteRef.current = false;
         commitPendingVolume(pendingVolume, shouldUnmute);
       }, HA_CONTROL_DEBOUNCE_MS);
     },
@@ -156,6 +164,7 @@ export function useMediaVolume({
     if (!canSetVolume) {
       setVolumeAdjusting(false);
       pendingVolumeRef.current = null;
+      pendingUnmuteRef.current = false;
       return;
     }
     if (volumeCommitTimeoutRef.current !== null) {
@@ -165,10 +174,13 @@ export function useMediaVolume({
     const pendingVolume = pendingVolumeRef.current;
     pendingVolumeRef.current = null;
     if (pendingVolume === null) {
+      pendingUnmuteRef.current = false;
       setVolumeAdjusting(false);
       return;
     }
-    const shouldUnmute = pendingVolume > 0 && isMuted && canMuteVolume;
+    const shouldUnmute =
+      pendingVolume > 0 && (pendingUnmuteRef.current || (isMuted && canMuteVolume));
+    pendingUnmuteRef.current = false;
     if (shouldUnmute) {
       setIsMuted(false);
     }

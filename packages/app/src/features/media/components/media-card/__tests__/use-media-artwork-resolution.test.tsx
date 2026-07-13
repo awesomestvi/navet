@@ -87,6 +87,25 @@ describe('useMediaArtworkResolution', () => {
     expect(fetchMediaThumbnailDataUrlMock).toHaveBeenCalledWith('media_player.kitchen');
   });
 
+  it('never exposes a raw Home Assistant media proxy URL while artwork resolution is pending', () => {
+    installRuntimeProxyConfig();
+    fetchMediaThumbnailDataUrlMock.mockReturnValue(new Promise(() => undefined));
+
+    const { result } = renderHook(() =>
+      useMediaArtworkResolution({
+        entityId: 'media_player.living_room',
+        providerId: 'home_assistant',
+        liveEntityPicture:
+          '/api/media_player_proxy/media_player.living_room?token=stale-token&cache=artwork-hash',
+        homeAssistantUrl: 'http://homeassistant.local:8123',
+      })
+    );
+
+    expect(result.current.albumArt).toBe(
+      '/__navet_ha_proxy__/api/media_player_proxy/media_player.living_room?token=stale-token&cache=artwork-hash'
+    );
+  });
+
   it('uses websocket thumbnail data before panel-mode media proxy fallback artwork', async () => {
     window.__NAVET_PANEL__ = true;
     resetRuntimeContextForTests();

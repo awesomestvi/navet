@@ -1,11 +1,9 @@
 import { dispatchEntityCommand } from '@navet/app/commands';
-import { BaseCard } from '@navet/app/components/primitives';
 import { getDashboardCardFootprint } from '@navet/app/components/shared/card-size';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { EMPTY_NAVET_MEDIA_CAPABILITIES } from '@navet/app/core/navet-device-state';
 import {
-  useProviderMediaEntity,
   useProviderMediaEntityRegistry,
   useProviderMediaPlayerEntities,
 } from '@navet/app/features/media/hooks/use-provider-media-playback-data';
@@ -29,22 +27,17 @@ import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { resolveAddonLocalEndpointUrl } from '@navet/app/utils/home-assistant-connection-target';
 import { getProviderNativeId } from '@navet/app/utils/provider-ids';
 import { sanitizeImageUrl } from '@navet/app/utils/url-security';
-import * as Popover from '@radix-ui/react-popover';
 import {
   ArrowLeft,
   Bookmark,
-  ChevronDown,
   Clock3,
   Folder,
   ListMusic,
   Play,
   Search,
-  Speaker,
   UserRound,
-  Volume2,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { SpeakerDestinationRow } from '../media/speaker-destination-row';
 import { MediaCard } from '../media-card';
 
 type MediaDashboardDevice = MediaDevice & { type: 'media' };
@@ -52,7 +45,7 @@ type MediaDashboardDevice = MediaDevice & { type: 'media' };
 interface MediaDashboardProps {
   devices: MediaDashboardDevice[];
   initialDeviceId?: string;
-  onActiveGroupChange?: (entityIds: string[]) => void;
+  onPromotedEntitiesChange?: (entityIds: string[]) => void;
 }
 
 type MediaFeedbackKey =
@@ -65,6 +58,15 @@ type MediaDefaultBrowseView = Pick<
   PlatformMediaItem,
   'title' | 'mediaClass' | 'mediaContentId' | 'mediaContentType' | 'canExpand' | 'canPlay'
 >;
+
+interface RememberedMediaSession {
+  version: 1 | 2;
+  device: MediaDashboardDevice;
+  mediaLibraryEntityId?: string;
+  transportEntityId?: string;
+  playbackProviderLabel?: string;
+  rememberedAt: string;
+}
 
 const SPOTIFY_ICON_PATH =
   'M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z';
@@ -85,10 +87,12 @@ const MEDIA_BROWSER_TABLE_HEADER_HEIGHT = 42;
 const MEDIA_BROWSER_TABLE_ROW_HEIGHT = 64;
 const MEDIA_BROWSER_TABLE_OVERSCAN = 6;
 const COMPACT_MOBILE_BROWSER_HEIGHT = 170;
+const REMEMBERED_POSITION_WRITE_INTERVAL_SECONDS = 15;
 const EMPTY_OPEN_MEDIA_ARTWORK_RESULT: OpenMediaArtworkResult = { artworkUrls: [] };
 const EMPTY_SPOTIFY_TRACK_METADATA: SpotifyTrackMetadata = { artworkUrls: [] };
 const EMPTY_MEDIA_DEFAULT_BROWSE_VIEWS: Record<string, MediaDefaultBrowseView> = {};
 const EMPTY_MEDIA_BROWSER_EXPANDED_VIEWS: Record<string, boolean> = {};
+const EMPTY_REMEMBERED_MEDIA_SESSION: RememberedMediaSession | null = null;
 const openMediaArtworkCache = new Map<string, OpenMediaArtworkResult>();
 const spotifyTrackMetadataCache = new Map<string, SpotifyTrackMetadata>();
 
@@ -211,35 +215,94 @@ function getPlaybackProviderLabel(device: MediaDashboardDevice, registryPlatform
   return source && !['unknown', 'none', 'idle'].includes(source.toLowerCase()) ? source : undefined;
 }
 
-function SpotifyCardHeaderIcon({ isLightTheme }: { isLightTheme: boolean }) {
-  return (
-    <div
-      data-testid="spotify-card-header-icon"
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border"
-      style={{
-        backgroundColor: isLightTheme ? 'rgba(29,185,84,0.16)' : 'rgba(29,185,84,0.18)',
-        borderColor: isLightTheme ? 'rgba(29,185,84,0.32)' : 'rgba(29,185,84,0.4)',
-      }}
-    >
-      <svg
-        aria-hidden="true"
-        className="h-4 w-4"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        style={{ color: '#1DB954' }}
-      >
-        <path d={SPOTIFY_ICON_PATH} />
-      </svg>
-    </div>
+function hasCurrentMedia(device: MediaDashboardDevice) {
+  return Boolean(
+    (device.title.trim() &&
+      device.title.trim().toLowerCase() !== device.name.trim().toLowerCase()) ||
+      device.artist.trim() ||
+      device.album?.trim() ||
+      device.entityPicture ||
+      (device.durationSeconds ?? 0) > 0
   );
 }
 
-function getSpotifyConnectSourceName(device: MediaDashboardDevice) {
-  if (device.source?.toLowerCase().includes('spotify')) {
-    return device.source;
+function getMediaActivityTimestamp(device: MediaDashboardDevice) {
+  if (!device.positionUpdatedAt) return 0;
+  const timestamp = Date.parse(device.positionUpdatedAt);
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function compareMediaActivity(left: MediaDashboardDevice, right: MediaDashboardDevice) {
+  const timestampDifference = getMediaActivityTimestamp(right) - getMediaActivityTimestamp(left);
+  return timestampDifference || (right.elapsedSeconds ?? 0) - (left.elapsedSeconds ?? 0);
+}
+
+function isSameMediaSession(left: MediaDashboardDevice, right: MediaDashboardDevice) {
+  const leftTitle = left.title.trim().toLowerCase();
+  const rightTitle = right.title.trim().toLowerCase();
+  const leftArtist = left.artist.trim().toLowerCase();
+  const rightArtist = right.artist.trim().toLowerCase();
+  if (
+    leftTitle &&
+    rightTitle &&
+    leftTitle === rightTitle &&
+    (!leftArtist || !rightArtist || leftArtist === rightArtist)
+  ) {
+    return true;
   }
 
-  return device.sourceList?.find((source) => source.toLowerCase().includes('spotify'));
+  const leftContentId = left.mediaContentId?.trim();
+  const rightContentId = right.mediaContentId?.trim();
+  if (leftContentId && rightContentId) return leftContentId === rightContentId;
+
+  return false;
+}
+
+function isRememberedSessionUsable(
+  session: RememberedMediaSession | null,
+  devices: MediaDashboardDevice[]
+) {
+  if (
+    (session?.version !== 1 && session?.version !== 2) ||
+    !session.device?.id ||
+    !hasCurrentMedia(session.device)
+  )
+    return false;
+
+  const currentDevice = devices.find((device) => device.id === session.device.id);
+  if (!currentDevice) return false;
+
+  return (
+    !session.device.providerId ||
+    !currentDevice.providerId ||
+    session.device.providerId === currentDevice.providerId
+  );
+}
+
+function restoreRememberedDevice(
+  session: RememberedMediaSession,
+  currentDevice: MediaDashboardDevice
+): MediaDashboardDevice {
+  return {
+    ...session.device,
+    ...currentDevice,
+    title: session.device.title,
+    artist: session.device.artist,
+    album: session.device.album,
+    entityPicture: session.device.entityPicture,
+    elapsedSeconds: session.device.elapsedSeconds,
+    durationSeconds: session.device.durationSeconds,
+    positionUpdatedAt: session.device.positionUpdatedAt,
+    mediaContentId: session.device.mediaContentId,
+    mediaContentType: session.device.mediaContentType,
+    groupMembers:
+      (currentDevice.groupMembers?.length ?? 0) > 1
+        ? currentDevice.groupMembers
+        : session.device.groupMembers,
+    // Home Assistant's Spotify entity can collapse a paused session to idle and clear all media
+    // attributes. Navet keeps presenting that last resumable session as paused.
+    state: currentDevice.state === 'idle' ? 'paused' : currentDevice.state,
+  };
 }
 
 function readLiveStringAttribute(attrs: Record<string, unknown> | undefined, key: string) {
@@ -247,18 +310,20 @@ function readLiveStringAttribute(attrs: Record<string, unknown> | undefined, key
   return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
 }
 
-function isSpotifyConnectTargetDevice(device: MediaDashboardDevice) {
-  return (
-    isAudioDevice(device) &&
-    !isSpotifyAccountDevice(device) &&
-    getSpotifyConnectSourceName(device) !== undefined
-  );
-}
-
 function findActiveSpotifyConnectTarget(
   spotifyDevice: MediaDashboardDevice | undefined,
   targets: MediaDashboardDevice[]
 ) {
+  const playingTarget = targets.find((target) => target.state === 'playing');
+  if (playingTarget) return playingTarget;
+
+  const retainedTarget = targets
+    .filter(
+      (target) => (target.state === 'paused' || target.state === 'idle') && hasCurrentMedia(target)
+    )
+    .sort(compareMediaActivity)[0];
+  if (retainedTarget) return retainedTarget;
+
   const spotifySource = spotifyDevice?.source?.trim().toLowerCase();
   if (spotifySource) {
     const sourceTarget = targets.find((target) => {
@@ -268,7 +333,7 @@ function findActiveSpotifyConnectTarget(
     if (sourceTarget) return sourceTarget;
   }
 
-  return targets.find((target) => target.state === 'playing');
+  return undefined;
 }
 
 function getDeviceCapabilities(device: MediaDashboardDevice) {
@@ -1244,7 +1309,7 @@ function MediaBrowserVirtualTable({
 export function MediaDashboard({
   devices,
   initialDeviceId,
-  onActiveGroupChange,
+  onPromotedEntitiesChange,
 }: MediaDashboardProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
@@ -1280,6 +1345,10 @@ export function MediaDashboard({
             typeof attributes.media_duration === 'number'
               ? attributes.media_duration
               : device.durationSeconds,
+          mediaContentId:
+            readLiveStringAttribute(attributes, 'media_content_id') ?? device.mediaContentId,
+          mediaContentType:
+            readLiveStringAttribute(attributes, 'media_content_type') ?? device.mediaContentType,
           groupMembers: liveGroupMembers,
         } satisfies MediaDashboardDevice;
       }),
@@ -1303,17 +1372,23 @@ export function MediaDashboard({
   const isMediumNarrowMediaDesktopLayout = useMediaQuery('(max-width: 1279px)');
   const isCompactDesktopMediaLayout = useMediaQuery('(max-width: 1399px)');
   const isMediumDesktopMediaLayout = useMediaQuery('(max-width: 1659px)');
+  const [rememberedSession, setRememberedSession] =
+    usePersistedState<RememberedMediaSession | null>(
+      STORAGE_KEYS.mediaNowPlayingSession,
+      EMPTY_REMEMBERED_MEDIA_SESSION
+    );
+  const usableRememberedSession = isRememberedSessionUsable(rememberedSession, resolvedDevices)
+    ? rememberedSession
+    : null;
+  const rememberedCurrentDevice = usableRememberedSession
+    ? resolvedDevices.find((device) => device.id === usableRememberedSession.device.id)
+    : undefined;
   const initialDevice = resolvedDevices.find((device) => device.id === initialDeviceId);
   const spotifyAccountDevice = resolvedDevices.find(
     (device) => isAudioDevice(device) && isSpotifyAccountDevice(device)
   );
-  const availableSpotifyConnectTargets = resolvedDevices.filter(isSpotifyConnectTargetDevice);
   const availableAudioOutputTargets = resolvedDevices.filter(
     (device) => isAudioDevice(device) && !isSpotifyAccountDevice(device)
-  );
-  const initialSpotifyConnectTarget = findActiveSpotifyConnectTarget(
-    spotifyAccountDevice,
-    availableAudioOutputTargets
   );
   const browsablePlaybackDevices = resolvedDevices.filter((device) => {
     if (!isAudioDevice(device)) return false;
@@ -1324,15 +1399,6 @@ export function MediaDashboard({
       (!spotifyAccountDevice || isMusicAssistant)
     );
   });
-  const hasCurrentMedia = (device: MediaDashboardDevice) =>
-    Boolean(
-      (device.title.trim() &&
-        device.title.trim().toLowerCase() !== device.name.trim().toLowerCase()) ||
-        device.artist.trim() ||
-        device.album?.trim() ||
-        device.entityPicture ||
-        (device.durationSeconds ?? 0) > 0
-    );
   const resolveDeclaredPhysicalGroup = (device: MediaDashboardDevice) => {
     const physicalKeys = new Set([getPhysicalSpeakerKey(device)]);
     const entityIds = new Set([device.id]);
@@ -1383,23 +1449,24 @@ export function MediaDashboard({
     inferredMusicAssistantGroup?.find(isMusicAssistantPlaybackDevice) ??
     inferredMusicAssistantGroup?.find((device) => getDeviceCapabilities(device).canBrowseMedia) ??
     inferredMusicAssistantGroup?.[0];
+  const activeDeclaredGroupedPlaybackDevice = resolvedDevices.find(
+    (device) =>
+      device.state === 'playing' &&
+      isAudioDevice(device) &&
+      !isMusicAssistantPlaybackDevice(device) &&
+      hasCurrentMedia(device) &&
+      resolveDeclaredPhysicalGroup(device).physicalKeys.size > 1
+  );
+  const retainedDeclaredGroupedPlaybackDevice = resolvedDevices.find(
+    (device) =>
+      (device.state === 'paused' || device.state === 'idle') &&
+      isAudioDevice(device) &&
+      !isMusicAssistantPlaybackDevice(device) &&
+      hasCurrentMedia(device) &&
+      resolveDeclaredPhysicalGroup(device).physicalKeys.size > 1
+  );
   const declaredGroupedPlaybackDevice =
-    resolvedDevices.find(
-      (device) =>
-        device.state === 'playing' &&
-        isAudioDevice(device) &&
-        !isMusicAssistantPlaybackDevice(device) &&
-        hasCurrentMedia(device) &&
-        resolveDeclaredPhysicalGroup(device).physicalKeys.size > 1
-    ) ??
-    resolvedDevices.find(
-      (device) =>
-        device.state === 'paused' &&
-        isAudioDevice(device) &&
-        !isMusicAssistantPlaybackDevice(device) &&
-        hasCurrentMedia(device) &&
-        resolveDeclaredPhysicalGroup(device).physicalKeys.size > 1
-    );
+    activeDeclaredGroupedPlaybackDevice ?? retainedDeclaredGroupedPlaybackDevice;
   const activeBrowsableDevice =
     browsablePlaybackDevices.find(
       (device) =>
@@ -1433,9 +1500,6 @@ export function MediaDashboard({
     resolvedDevices.find(isAudioDevice) ??
     resolvedDevices[0];
   const selectedDeviceId = defaultDevice?.id ?? '';
-  const [selectedSpotifyTargetId, setSelectedSpotifyTargetId] = useState(
-    initialSpotifyConnectTarget?.id ?? ''
-  );
   const [browseResult, setBrowseResult] = useState<PlatformMediaBrowseResult | null>(null);
   const [browseHistory, setBrowseHistory] = useState<PlatformMediaItem[]>([]);
   const [isBrowsing, setIsBrowsing] = useState(false);
@@ -1452,17 +1516,8 @@ export function MediaDashboard({
   const directoryCountRequestsRef = useRef(new Set<string>());
   const selectedDevice =
     resolvedDevices.find((device) => device.id === selectedDeviceId) ?? defaultDevice;
-  const selectedDeviceUsesInferredMusicAssistantGroup = Boolean(
-    inferredMusicAssistantGroup?.some((device) => device.id === selectedDevice.id)
-  );
   const spotifyAccountControlsUnavailable =
     selectedDevice !== undefined && isSpotifyAccountDevice(selectedDevice);
-  const spotifyConnectTargets = spotifyAccountControlsUnavailable
-    ? availableSpotifyConnectTargets
-    : [];
-  const explicitlySelectedSpotifyTarget = availableAudioOutputTargets.find(
-    (device) => device.id === selectedSpotifyTargetId
-  );
   const activeSpotifyConnectTarget = findActiveSpotifyConnectTarget(
     selectedDevice,
     availableAudioOutputTargets
@@ -1471,19 +1526,94 @@ export function MediaDashboard({
     const outputCapabilities = getDeviceCapabilities(device);
     return outputCapabilities.canBrowseMedia || outputCapabilities.canPlayMedia;
   });
+  const rememberedSpotifyTarget = availableAudioOutputTargets.find(
+    (device) =>
+      device.id === usableRememberedSession?.transportEntityId ||
+      device.id === usableRememberedSession?.device.id
+  );
   const selectedSpotifyTarget =
-    explicitlySelectedSpotifyTarget ?? activeSpotifyConnectTarget ?? fallbackAudioOutputTarget;
-  const mediaLibraryDevice = spotifyAccountControlsUnavailable
-    ? (selectedSpotifyTarget ?? selectedDevice)
-    : selectedDevice;
+    activeSpotifyConnectTarget ?? rememberedSpotifyTarget ?? fallbackAudioOutputTarget;
+  const activeBrowsableNowPlayingDevice =
+    browsablePlaybackDevices.find(
+      (device) =>
+        device.state === 'playing' &&
+        isMusicAssistantPlaybackDevice(device) &&
+        hasCurrentMedia(device)
+    ) ??
+    browsablePlaybackDevices.find(
+      (device) => device.state === 'playing' && hasCurrentMedia(device)
+    );
+  const activeNowPlayingDevice = resolvedDevices.find(
+    (device) =>
+      device.state === 'playing' &&
+      isAudioDevice(device) &&
+      !isSpotifyAccountDevice(device) &&
+      hasCurrentMedia(device)
+  );
+  const retainedNowPlayingDevice = resolvedDevices
+    .filter(
+      (device) =>
+        (device.state === 'paused' || device.state === 'idle') &&
+        isAudioDevice(device) &&
+        !isSpotifyAccountDevice(device) &&
+        hasCurrentMedia(device)
+    )
+    .sort(compareMediaActivity)[0];
+  const liveNowPlayingDevice =
+    activeDeclaredGroupedPlaybackDevice ??
+    inferredMusicAssistantDevice ??
+    activeBrowsableNowPlayingDevice ??
+    activeNowPlayingDevice ??
+    retainedDeclaredGroupedPlaybackDevice ??
+    retainedNowPlayingDevice;
+  const rememberedNowPlayingDevice =
+    !liveNowPlayingDevice &&
+    usableRememberedSession &&
+    rememberedCurrentDevice?.state === 'idle' &&
+    !hasCurrentMedia(rememberedCurrentDevice)
+      ? restoreRememberedDevice(usableRememberedSession, rememberedCurrentDevice)
+      : undefined;
+  const usingRememberedSession = rememberedNowPlayingDevice !== undefined;
+  const nowPlayingDevice = liveNowPlayingDevice ?? rememberedNowPlayingDevice ?? selectedDevice;
+  const matchingPhysicalTransportDevice = isMusicAssistantPlaybackDevice(nowPlayingDevice)
+    ? resolvedDevices
+        .filter(
+          (device) =>
+            device.id !== nowPlayingDevice.id &&
+            isAudioDevice(device) &&
+            !isSpotifyAccountDevice(device) &&
+            !isMusicAssistantPlaybackDevice(device) &&
+            getPhysicalSpeakerKey(device) === getPhysicalSpeakerKey(nowPlayingDevice) &&
+            isSameMediaSession(device, nowPlayingDevice)
+        )
+        .sort((left, right) => {
+          const playbackRank = (device: MediaDashboardDevice) =>
+            device.state === 'playing' ? 2 : device.state === 'paused' ? 1 : 0;
+          return playbackRank(right) - playbackRank(left) || compareMediaActivity(left, right);
+        })[0]
+    : undefined;
+  const rememberedTransportDevice = usableRememberedSession?.transportEntityId
+    ? resolvedDevices.find((device) => device.id === usableRememberedSession.transportEntityId)
+    : undefined;
+  const nowPlayingTransportDevice =
+    matchingPhysicalTransportDevice ??
+    (usingRememberedSession ? rememberedTransportDevice : undefined) ??
+    nowPlayingDevice;
+  const selectedDeviceUsesInferredMusicAssistantGroup = Boolean(
+    inferredMusicAssistantGroup?.some((device) => device.id === nowPlayingDevice.id)
+  );
+  const rememberedMediaLibraryDevice = usableRememberedSession?.mediaLibraryEntityId
+    ? resolvedDevices.find((device) => device.id === usableRememberedSession.mediaLibraryEntityId)
+    : undefined;
+  const mediaLibraryDevice = usingRememberedSession
+    ? (rememberedMediaLibraryDevice ?? rememberedCurrentDevice ?? selectedDevice)
+    : spotifyAccountControlsUnavailable
+      ? (selectedSpotifyTarget ?? selectedDevice)
+      : selectedDevice;
   const mediaLibraryEntityId = mediaLibraryDevice?.id;
   const defaultBrowseView = mediaLibraryEntityId
     ? defaultBrowseViews[mediaLibraryEntityId]
     : undefined;
-  const liveEntity = useProviderMediaEntity(selectedDevice?.id ?? '');
-  const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
-  const outputLiveEntity = useProviderMediaEntity(mediaLibraryEntityId ?? '');
-  const outputLiveAttrs = outputLiveEntity?.attributes as Record<string, unknown> | undefined;
   const mediaLibraryCapabilities = mediaLibraryDevice
     ? getDeviceCapabilities(mediaLibraryDevice)
     : EMPTY_NAVET_MEDIA_CAPABILITIES;
@@ -1492,7 +1622,86 @@ export function MediaDashboard({
   const dashboardTitleKey = 'media.dashboard.nowPlaying';
   const playbackProviderLabel = selectedDeviceUsesInferredMusicAssistantGroup
     ? 'Music Assistant'
-    : getPlaybackProviderLabel(selectedDevice, getMediaPlatform(selectedDevice));
+    : usingRememberedSession
+      ? usableRememberedSession?.playbackProviderLabel
+      : getPlaybackProviderLabel(nowPlayingDevice, getMediaPlatform(nowPlayingDevice));
+  const continuingRememberedDevice =
+    rememberedSession && isSameMediaSession(rememberedSession.device, nowPlayingDevice)
+      ? rememberedSession.device
+      : undefined;
+  const nextRememberedPlaybackState =
+    nowPlayingDevice.state === 'idle' ? ('paused' as const) : nowPlayingDevice.state;
+  const keepPreviousRememberedPosition = Boolean(
+    continuingRememberedDevice &&
+      continuingRememberedDevice.state === nextRememberedPlaybackState &&
+      Math.abs(
+        (nowPlayingDevice.elapsedSeconds ?? 0) - (continuingRememberedDevice.elapsedSeconds ?? 0)
+      ) < REMEMBERED_POSITION_WRITE_INTERVAL_SECONDS
+  );
+  const sessionDeviceToRemember =
+    !usingRememberedSession &&
+    hasCurrentMedia(nowPlayingDevice) &&
+    ['playing', 'paused', 'idle'].includes(nowPlayingDevice.state)
+      ? {
+          ...continuingRememberedDevice,
+          ...nowPlayingDevice,
+          artist: nowPlayingDevice.artist.trim() || continuingRememberedDevice?.artist || '',
+          album: nowPlayingDevice.album?.trim() || continuingRememberedDevice?.album,
+          entityPicture:
+            nowPlayingDevice.entityPicture ?? continuingRememberedDevice?.entityPicture,
+          durationSeconds:
+            nowPlayingDevice.durationSeconds ?? continuingRememberedDevice?.durationSeconds,
+          elapsedSeconds: keepPreviousRememberedPosition
+            ? continuingRememberedDevice?.elapsedSeconds
+            : (nowPlayingDevice.elapsedSeconds ?? continuingRememberedDevice?.elapsedSeconds),
+          positionUpdatedAt: keepPreviousRememberedPosition
+            ? continuingRememberedDevice?.positionUpdatedAt
+            : (nowPlayingDevice.positionUpdatedAt ?? continuingRememberedDevice?.positionUpdatedAt),
+          mediaContentId:
+            nowPlayingDevice.mediaContentId ?? continuingRememberedDevice?.mediaContentId,
+          mediaContentType:
+            nowPlayingDevice.mediaContentType ?? continuingRememberedDevice?.mediaContentType,
+          state: nextRememberedPlaybackState,
+        }
+      : null;
+  const nextRememberedSessionKey = sessionDeviceToRemember
+    ? JSON.stringify({
+        device: sessionDeviceToRemember,
+        mediaLibraryEntityId,
+        transportEntityId: nowPlayingTransportDevice.id,
+        playbackProviderLabel,
+      })
+    : '';
+  const currentRememberedSessionKey = rememberedSession
+    ? JSON.stringify({
+        device: rememberedSession.device,
+        mediaLibraryEntityId: rememberedSession.mediaLibraryEntityId,
+        transportEntityId: rememberedSession.transportEntityId,
+        playbackProviderLabel: rememberedSession.playbackProviderLabel,
+      })
+    : '';
+  useEffect(() => {
+    if (!sessionDeviceToRemember || nextRememberedSessionKey === currentRememberedSessionKey) {
+      return;
+    }
+
+    setRememberedSession({
+      version: 2,
+      device: sessionDeviceToRemember,
+      mediaLibraryEntityId,
+      transportEntityId: nowPlayingTransportDevice.id,
+      playbackProviderLabel,
+      rememberedAt: new Date().toISOString(),
+    });
+  }, [
+    currentRememberedSessionKey,
+    mediaLibraryEntityId,
+    nextRememberedSessionKey,
+    nowPlayingTransportDevice.id,
+    playbackProviderLabel,
+    sessionDeviceToRemember,
+    setRememberedSession,
+  ]);
   const unfilteredPlayableItems = (browseResult?.children ?? []).filter(
     (item) => item.mediaContentId || item.canExpand
   );
@@ -1518,65 +1727,34 @@ export function MediaDashboard({
   const inferredGroupSize = selectedDeviceUsesInferredMusicAssistantGroup
     ? new Set(inferredMusicAssistantGroup?.map(getPhysicalSpeakerKey) ?? []).size
     : 1;
-  const selectedDeviceIsMusicAssistant = isMusicAssistantPlaybackDevice(selectedDevice);
-  const selectedDeclaredGroup = resolveDeclaredPhysicalGroup(selectedDevice);
+  const selectedDeviceIsMusicAssistant = isMusicAssistantPlaybackDevice(nowPlayingDevice);
+  const selectedDeclaredGroup = resolveDeclaredPhysicalGroup(nowPlayingDevice);
   const selectedGroupSize = selectedDeviceUsesInferredMusicAssistantGroup
     ? inferredGroupSize
     : selectedDeviceIsMusicAssistant
       ? 1
       : selectedDeclaredGroup.physicalKeys.size;
   const selectedDeviceIsGrouped = selectedGroupSize > 1;
-  const activeNowPlayingGroupIdKey = (
-    selectedDeviceIsGrouped
+  const hasPromotedNowPlayingDevice = liveNowPlayingDevice !== undefined || usingRememberedSession;
+  const promotedEntityIdKey = [
+    ...(hasPromotedNowPlayingDevice ? [nowPlayingDevice.id, nowPlayingTransportDevice.id] : []),
+    ...(selectedDeviceIsGrouped
       ? selectedDeviceUsesInferredMusicAssistantGroup
         ? (inferredMusicAssistantGroup?.map((device) => device.id) ?? [])
         : [...selectedDeclaredGroup.entityIds]
-      : []
-  )
+      : []),
+  ]
+    .filter((entityId, index, entityIds) => entityIds.indexOf(entityId) === index)
     .sort()
     .join('\n');
   useEffect(() => {
-    onActiveGroupChange?.(activeNowPlayingGroupIdKey ? activeNowPlayingGroupIdKey.split('\n') : []);
-  }, [activeNowPlayingGroupIdKey, onActiveGroupChange]);
+    onPromotedEntitiesChange?.(promotedEntityIdKey ? promotedEntityIdKey.split('\n') : []);
+  }, [onPromotedEntitiesChange, promotedEntityIdKey]);
   const nowPlayingTypeLabel =
-    selectedDeviceIsGrouped || selectedDevice.deviceClass?.toLowerCase() === 'speaker'
+    selectedDeviceIsGrouped || nowPlayingDevice.deviceClass?.toLowerCase() === 'speaker'
       ? t('media.type.speaker').toLowerCase()
       : t('media.type.player').toLowerCase();
   const largeCardFootprint = getDashboardCardFootprint('large', 4);
-  const spotifyConnectIsPlaying =
-    selectedDevice !== undefined &&
-    spotifyAccountControlsUnavailable &&
-    (outputLiveEntity?.state === 'playing' ||
-      selectedSpotifyTarget?.state === 'playing' ||
-      liveEntity?.state === 'playing' ||
-      selectedDevice.state === 'playing');
-  const spotifyConnectArtwork =
-    typeof outputLiveAttrs?.entity_picture === 'string'
-      ? outputLiveAttrs.entity_picture
-      : (selectedSpotifyTarget?.entityPicture ??
-        (typeof liveAttrs?.entity_picture === 'string'
-          ? liveAttrs.entity_picture
-          : selectedDevice?.entityPicture));
-  const spotifyConnectTitle =
-    readLiveStringAttribute(outputLiveAttrs, 'media_title') ??
-    readLiveStringAttribute(outputLiveAttrs, 'media_channel') ??
-    selectedSpotifyTarget?.title ??
-    readLiveStringAttribute(liveAttrs, 'media_title') ??
-    readLiveStringAttribute(liveAttrs, 'app_name') ??
-    readLiveStringAttribute(liveAttrs, 'media_channel') ??
-    selectedDevice?.title;
-  const spotifyConnectSubtitle =
-    readLiveStringAttribute(outputLiveAttrs, 'media_artist') ??
-    readLiveStringAttribute(outputLiveAttrs, 'media_album_name') ??
-    selectedSpotifyTarget?.artist ??
-    selectedSpotifyTarget?.album ??
-    readLiveStringAttribute(liveAttrs, 'media_artist') ??
-    readLiveStringAttribute(liveAttrs, 'media_album_name') ??
-    readLiveStringAttribute(liveAttrs, 'source') ??
-    selectedDevice?.artist ??
-    selectedDevice?.album ??
-    selectedDevice?.source ??
-    selectedDevice?.name;
 
   const runMediaCommand = useCallback(
     (
@@ -1589,6 +1767,52 @@ export function MediaDashboard({
     },
     [runAction, t]
   );
+
+  const toggleNowPlaying = useCallback(() => {
+    const currentDevice = resolvedDevices.find(
+      (device) => device.id === nowPlayingTransportDevice.id
+    );
+    const shouldRecreateSession =
+      currentDevice?.state === 'idle' && Boolean(nowPlayingDevice.mediaContentId?.trim());
+
+    if (!shouldRecreateSession) {
+      runMediaCommand(() =>
+        dispatchEntityCommand({ type: 'play_pause', entityId: nowPlayingTransportDevice.id })
+      );
+      return;
+    }
+
+    runMediaCommand(async () => {
+      try {
+        await integrationMediaFeatureService.playMedia(nowPlayingTransportDevice.id, {
+          mediaContentId: nowPlayingDevice.mediaContentId ?? '',
+          mediaContentType:
+            nowPlayingDevice.mediaContentType ??
+            inferMediaContentType({
+              title: nowPlayingDevice.title,
+              mediaContentId: nowPlayingDevice.mediaContentId,
+            }),
+        });
+
+        if (
+          (nowPlayingDevice.elapsedSeconds ?? 0) > 0 &&
+          getDeviceCapabilities(nowPlayingDevice).canSeek
+        ) {
+          await integrationMediaFeatureService.seekMediaPlayer(
+            nowPlayingTransportDevice.id,
+            nowPlayingDevice.elapsedSeconds ?? 0
+          );
+        }
+      } catch {
+        // Some players keep an internal queue despite reporting idle. Preserve that provider-native
+        // recovery path when replaying the remembered media identifier is unsupported.
+        await dispatchEntityCommand({
+          type: 'play_pause',
+          entityId: nowPlayingTransportDevice.id,
+        });
+      }
+    });
+  }, [nowPlayingDevice, nowPlayingTransportDevice.id, resolvedDevices, runMediaCommand]);
 
   const browseMedia = useCallback(
     (item?: PlatformMediaItem, nextHistory?: PlatformMediaItem[], fallbackToRoot = false) => {
@@ -1728,72 +1952,6 @@ export function MediaDashboard({
       }
     }, 'media.feedback.playMediaFailed');
   };
-  const playOnSpotifyTarget = (targetDevice: MediaDashboardDevice) => {
-    const spotifySource = getSpotifyConnectSourceName(targetDevice);
-
-    setSelectedSpotifyTargetId(targetDevice.id);
-
-    runMediaCommand(async () => {
-      if (spotifySource && !targetDevice.source?.toLowerCase().includes('spotify')) {
-        await integrationMediaFeatureService.selectMediaPlayerSource(
-          targetDevice.id,
-          spotifySource
-        );
-      }
-
-      await dispatchEntityCommand({ type: 'play_pause', entityId: targetDevice.id });
-    }, 'media.feedback.updatePlaybackFailed');
-  };
-  const selectedGroupMembers = selectedSpotifyTarget?.groupMembers ?? [];
-  const attachGroupingTarget = (targetId: string) => {
-    if (!selectedSpotifyTarget) return;
-    const members = [...new Set([...selectedGroupMembers, targetId])].filter(
-      (memberId) => memberId !== selectedSpotifyTarget.id
-    );
-    runMediaCommand(
-      () =>
-        dispatchEntityCommand({
-          type: 'join_group',
-          entityId: selectedSpotifyTarget.id,
-          members,
-        }),
-      'media.feedback.updatePlaybackFailed'
-    );
-  };
-  const detachGroupingTarget = (targetId: string) => {
-    runMediaCommand(
-      () => dispatchEntityCommand({ type: 'leave_group', entityId: targetId }),
-      'media.feedback.updatePlaybackFailed'
-    );
-  };
-  const selectedOutputIsPlaying =
-    outputLiveEntity?.state === 'playing' || selectedSpotifyTarget?.state === 'playing';
-  const attachedOutputTargets = availableAudioOutputTargets.filter(
-    (target) => target.id !== selectedSpotifyTarget?.id && selectedGroupMembers.includes(target.id)
-  );
-  const availableOutputTargets = availableAudioOutputTargets.filter(
-    (target) => target.id !== selectedSpotifyTarget?.id && !selectedGroupMembers.includes(target.id)
-  );
-  const selectOrGroupOutputTarget = (target: MediaDashboardDevice) => {
-    if (!selectedSpotifyTarget || target.id === selectedSpotifyTarget.id) return;
-
-    if (selectedGroupMembers.includes(target.id)) {
-      detachGroupingTarget(target.id);
-      return;
-    }
-
-    if (
-      selectedOutputIsPlaying &&
-      selectedSpotifyTarget.supportsGrouping &&
-      target.supportsGrouping
-    ) {
-      attachGroupingTarget(target.id);
-      return;
-    }
-
-    setSelectedSpotifyTargetId(target.id);
-  };
-
   const browseMediaDirectory = (item: PlatformMediaItem) => {
     browseMedia(item, [...browseHistory, item]);
   };
@@ -1926,133 +2084,56 @@ export function MediaDashboard({
     playMediaItem(item);
   };
 
-  const spotifyConnectPanel = selectedDevice ? (
-    <section className="min-w-0 space-y-3">
-      <BaseCard
-        data-testid="spotify-connect-card"
-        size="large"
-        interactive={false}
-        fullBleed={spotifyConnectIsPlaying}
-        disableDefaultSheen={spotifyConnectIsPlaying}
-        disableDefaultLightOverlay={Boolean(spotifyConnectIsPlaying && spotifyConnectArtwork)}
-        className="w-full max-w-[24rem]"
-        style={{
-          minHeight: `${largeCardFootprint.heightPx}px`,
-          height: `${largeCardFootprint.heightPx}px`,
-        }}
-        contentClassName="h-full"
-        title={spotifyConnectIsPlaying ? undefined : selectedDevice.name}
-        subtitle={spotifyConnectIsPlaying ? undefined : t('media.dashboard.nowPlaying')}
-        headerLeading={
-          spotifyConnectIsPlaying ? undefined : (
-            <SpotifyCardHeaderIcon isLightTheme={theme === 'light'} />
-          )
-        }
-      >
-        {spotifyConnectIsPlaying && spotifyConnectArtwork ? (
-          <>
-            <img
-              src={spotifyConnectArtwork}
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 h-full w-full object-cover"
-              decoding="async"
-            />
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.08)_0%,rgba(0,0,0,0.02)_42%,rgba(0,0,0,0.36)_100%)]" />
-            <div className="relative z-[1] flex h-full min-h-0 flex-col justify-end p-3">
-              <div className="min-w-0">
-                <div className="truncate text-sm font-semibold text-white">
-                  {spotifyConnectTitle}
-                </div>
-                <div className="truncate text-xs text-white/78">{spotifyConnectSubtitle}</div>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="flex h-full min-h-0 flex-col justify-end">
-            <div className="shrink-0">
-              <div data-testid="spotify-connect-targets" className="grid gap-2">
-                {spotifyConnectTargets.length > 0 ? (
-                  spotifyConnectTargets.slice(0, 4).map((targetDevice) => (
-                    <button
-                      key={targetDevice.id}
-                      type="button"
-                      aria-pressed={selectedSpotifyTargetId === targetDevice.id}
-                      className={`${itemButtonClassName} flex min-h-10 items-center gap-2.5 px-3 py-2 ${surface.textPrimary} ${
-                        selectedSpotifyTargetId === targetDevice.id
-                          ? theme === 'light'
-                            ? 'border-slate-400 bg-slate-100'
-                            : 'border-white/35 bg-white/[0.12]'
-                          : ''
-                      }`}
-                      onClick={() => playOnSpotifyTarget(targetDevice)}
-                    >
-                      <Speaker className={`h-3.5 w-3.5 shrink-0 ${surface.textSecondary}`} />
-                      <span className="min-w-0 truncate text-sm font-medium">
-                        {targetDevice.name}
-                      </span>
-                    </button>
-                  ))
-                ) : (
-                  <p
-                    className={`rounded-xl border px-3 py-2 text-sm ${surface.border} ${surface.textMuted}`}
-                  >
-                    {t('media.dashboard.sourcesEmpty')}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </BaseCard>
-    </section>
-  ) : null;
-
   const nowPlayingPanel = (
     <section className="min-w-0 space-y-3">
       <div
-        className="w-full max-w-[24rem]"
+        data-testid="media-now-playing-card"
+        className="w-full"
         style={{
           minHeight: `${largeCardFootprint.heightPx}px`,
           height: `${largeCardFootprint.heightPx}px`,
         }}
       >
         <MediaCard
-          id={selectedDevice.id}
-          name={selectedDevice.name}
-          room={selectedDevice.room}
-          title={selectedDevice.title}
-          artist={selectedDevice.artist}
-          album={selectedDevice.album}
-          entityType={selectedDevice.entityType}
-          deviceClass={selectedDevice.deviceClass}
-          source={selectedDevice.source}
-          sourceList={selectedDevice.sourceList}
-          entityPicture={selectedDevice.entityPicture}
-          state={selectedDevice.state}
-          volume={selectedDevice.volume}
-          isMuted={selectedDevice.isMuted}
-          elapsedSeconds={selectedDevice.elapsedSeconds}
-          durationSeconds={selectedDevice.durationSeconds}
-          positionUpdatedAt={selectedDevice.positionUpdatedAt}
-          mediaCapabilities={selectedDevice.mediaCapabilities}
-          supportsGrouping={selectedDevice.supportsGrouping}
-          supportsPreviousTrack={selectedDevice.supportsPreviousTrack}
-          supportsNextTrack={selectedDevice.supportsNextTrack}
-          groupMembers={selectedDevice.groupMembers}
+          id={nowPlayingDevice.id}
+          name={nowPlayingDevice.name}
+          room={nowPlayingDevice.room}
+          title={nowPlayingDevice.title}
+          artist={nowPlayingDevice.artist}
+          album={nowPlayingDevice.album}
+          entityType={nowPlayingDevice.entityType}
+          deviceClass={nowPlayingDevice.deviceClass}
+          source={nowPlayingDevice.source}
+          sourceList={nowPlayingDevice.sourceList}
+          entityPicture={nowPlayingDevice.entityPicture}
+          state={nowPlayingDevice.state}
+          volume={nowPlayingDevice.volume}
+          isMuted={nowPlayingDevice.isMuted}
+          elapsedSeconds={nowPlayingDevice.elapsedSeconds}
+          durationSeconds={nowPlayingDevice.durationSeconds}
+          positionUpdatedAt={nowPlayingDevice.positionUpdatedAt}
+          mediaCapabilities={nowPlayingDevice.mediaCapabilities}
+          supportsGrouping={nowPlayingDevice.supportsGrouping}
+          supportsPreviousTrack={nowPlayingDevice.supportsPreviousTrack}
+          supportsNextTrack={nowPlayingDevice.supportsNextTrack}
+          groupMembers={nowPlayingDevice.groupMembers}
           mediaStackAppearance={selectedDeviceIsGrouped}
           mediaStackCount={selectedDeviceIsGrouped ? selectedGroupSize - 1 : undefined}
           size="large"
           onSizeChange={handleCardSizeChange}
           isEditMode={false}
-          hideTransportControls={spotifyAccountControlsUnavailable}
+          hideTransportControls={isSpotifyAccountDevice(nowPlayingDevice)}
+          onTogglePlayback={toggleNowPlaying}
         />
       </div>
     </section>
   );
 
   const browserPanel = (
-    <section className="min-w-0 space-y-4 min-[900px]:col-span-3 min-[1920px]:col-span-5">
+    <section
+      data-testid="media-browser-panel"
+      className="min-w-0 space-y-4 min-[900px]:col-span-2 min-[1660px]:col-span-3 min-[1920px]:col-span-5"
+    >
       {canBrowseMedia ? (
         <div className="flex h-9 items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
@@ -2090,87 +2171,6 @@ export function MediaDashboard({
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            {spotifyAccountControlsUnavailable && availableAudioOutputTargets.length > 0 ? (
-              <Popover.Root>
-                <Popover.Trigger asChild>
-                  <button
-                    type="button"
-                    aria-label={t('media.spotify.output')}
-                    className={`relative flex h-9 min-w-9 shrink-0 items-center justify-center gap-2 rounded-full border px-2.5 transition-colors sm:w-auto sm:max-w-44 ${surface.border} ${
-                      theme === 'light'
-                        ? 'bg-white/72 hover:bg-slate-100'
-                        : 'bg-white/[0.06] hover:bg-white/[0.1]'
-                    }`}
-                  >
-                    <Speaker className={`h-4 w-4 shrink-0 ${surface.textSecondary}`} />
-                    <span
-                      className={`hidden min-w-0 truncate text-xs font-medium sm:block ${surface.textPrimary}`}
-                    >
-                      {selectedSpotifyTarget?.name}
-                    </span>
-                    <ChevronDown
-                      className={`hidden h-3.5 w-3.5 shrink-0 sm:block ${surface.textMuted}`}
-                    />
-                    {selectedGroupMembers.length > 1 ? (
-                      <span className="absolute -right-1 -top-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[0.6rem] font-bold text-black">
-                        {selectedGroupMembers.length}
-                      </span>
-                    ) : null}
-                  </button>
-                </Popover.Trigger>
-                <Popover.Portal>
-                  <Popover.Content
-                    align="end"
-                    sideOffset={8}
-                    className={`z-[920] w-72 overflow-hidden rounded-[2rem] border p-3 shadow-2xl backdrop-blur-xl ${surface.border} ${surface.panel}`}
-                  >
-                    <div className="space-y-3">
-                      <div className="space-y-2">
-                        {selectedSpotifyTarget ? (
-                          <SpeakerDestinationRow
-                            title={selectedSpotifyTarget.name}
-                            active
-                            disabled
-                            isGlass={theme === 'glass'}
-                            icon={<Volume2 className="h-4 w-4" />}
-                            onClick={() => undefined}
-                            primaryTextClassName={surface.textPrimary}
-                            secondaryTextClassName={surface.textSecondary}
-                          />
-                        ) : null}
-                        {attachedOutputTargets.map((target) => (
-                          <SpeakerDestinationRow
-                            key={target.id}
-                            title={target.name}
-                            active
-                            isGlass={theme === 'glass'}
-                            icon={<Speaker className="h-4 w-4" />}
-                            onClick={() => selectOrGroupOutputTarget(target)}
-                            primaryTextClassName={surface.textPrimary}
-                            secondaryTextClassName={surface.textSecondary}
-                          />
-                        ))}
-                      </div>
-                      {availableOutputTargets.length > 0 ? (
-                        <div className="space-y-2 pt-1">
-                          {availableOutputTargets.map((target) => (
-                            <SpeakerDestinationRow
-                              key={target.id}
-                              title={target.name}
-                              isGlass={theme === 'glass'}
-                              icon={<Speaker className="h-4 w-4" />}
-                              onClick={() => selectOrGroupOutputTarget(target)}
-                              primaryTextClassName={surface.textPrimary}
-                              secondaryTextClassName={surface.textSecondary}
-                            />
-                          ))}
-                        </div>
-                      ) : null}
-                    </div>
-                  </Popover.Content>
-                </Popover.Portal>
-              </Popover.Root>
-            ) : null}
             {hasHiddenBrowserItems ? (
               <button
                 type="button"
@@ -2194,7 +2194,7 @@ export function MediaDashboard({
             {browseDirectoryItems.length > 0 ? (
               <div
                 data-testid="media-browser-directory-grid"
-                className="grid grid-cols-1 gap-3 min-[900px]:grid-cols-3 min-[1920px]:grid-cols-5 lg:gap-4"
+                className="grid grid-cols-1 gap-3 min-[900px]:grid-cols-2 min-[1660px]:grid-cols-3 min-[1920px]:grid-cols-5 lg:gap-4"
               >
                 {visibleBrowseDirectoryItems.map((item) => {
                   const directoryCount = mediaLibraryEntityId
@@ -2328,20 +2328,21 @@ export function MediaDashboard({
   return (
     <section className="relative">
       <div className="pt-2">
-        <div className="grid gap-3 min-[900px]:grid-cols-4 min-[1920px]:grid-cols-6 lg:gap-4">
+        <div
+          data-testid="media-dashboard-layout"
+          className="grid gap-3 min-[900px]:grid-cols-3 min-[1660px]:grid-cols-4 min-[1920px]:grid-cols-6 lg:gap-4"
+        >
           <section className="min-w-0 space-y-4 min-[900px]:col-span-1">
             <div className="flex h-9 items-center gap-3">
               <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>
                 {playbackProviderLabel ?? t(dashboardTitleKey)}
               </h2>
-              {!spotifyAccountControlsUnavailable ? (
-                <span className={`text-xs md:text-sm ${surface.textSecondary}`}>
-                  {selectedGroupSize} {nowPlayingTypeLabel}
-                  {selectedGroupSize > 1 ? 's' : ''}
-                </span>
-              ) : null}
+              <span className={`text-xs md:text-sm ${surface.textSecondary}`}>
+                {selectedGroupSize} {nowPlayingTypeLabel}
+                {selectedGroupSize > 1 ? 's' : ''}
+              </span>
             </div>
-            {spotifyAccountControlsUnavailable ? spotifyConnectPanel : nowPlayingPanel}
+            {nowPlayingPanel}
           </section>
           {browserPanel}
         </div>

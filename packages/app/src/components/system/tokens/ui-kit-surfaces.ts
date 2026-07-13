@@ -33,7 +33,7 @@ export function getUiKitModalContentClassName(theme: ThemeType) {
   const surface = getThemeSurfaceTokens(theme);
 
   return cn(
-    'fixed left-1/2 top-1/2 z-50 w-[92vw] -translate-x-1/2 -translate-y-1/2 overflow-hidden border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200',
+    'fixed left-1/2 top-1/2 z-50 w-[92vw] -translate-x-1/2 -translate-y-1/2 overflow-hidden border shadow-2xl animate-in fade-in zoom-in duration-200',
     navetUiKitRadiusTokens.dialog,
     surface.border,
     theme === 'glass' ? 'backdrop-blur-2xl' : '',

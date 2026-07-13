@@ -404,7 +404,11 @@ export function MediaSmallView({
               iconStyle={controlIconStyle}
               style={volumeToggleButtonStyle}
             >
-              <Volume2 className={controlSizes.icon} />
+              {isMuted ? (
+                <VolumeX className={controlSizes.icon} />
+              ) : (
+                <Volume2 className={controlSizes.icon} />
+              )}
             </RoundControlButton>
 
             {isVolumeMode ? (
@@ -439,6 +443,7 @@ export function MediaSmallView({
                 size="small"
                 variant="neutral"
                 aria-label={isMuted ? t('media.unmuteVolume') : t('media.muteVolume')}
+                aria-pressed={isMuted}
                 onClick={(event) => {
                   event.stopPropagation();
                   registerVolumeInteraction();
@@ -449,9 +454,9 @@ export function MediaSmallView({
                 style={muteButtonStyle}
               >
                 {isMuted ? (
-                  <Volume2 className={controlSizes.icon} />
-                ) : (
                   <VolumeX className={controlSizes.icon} />
+                ) : (
+                  <Volume2 className={controlSizes.icon} />
                 )}
               </RoundControlButton>
             ) : (

@@ -1,5 +1,6 @@
 import { useMediaArtwork } from '@navet/app/features/media/hooks/use-media-artwork';
 import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
+import { normalizeResourceUrl } from '@navet/app/services/integration-resource.service';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -40,7 +41,9 @@ export function useMediaArtworkResolution({
     fallbackPicture: liveEntityPicture,
     artworkKey: artworkRequestKey,
   });
-  const directArtwork = liveEntityPicture ?? null;
+  const directArtwork = liveEntityPicture
+    ? (normalizeResourceUrl(liveEntityPicture, providerId) ?? liveEntityPicture)
+    : null;
   const fallbackArtwork =
     artworkResource?.kind === 'image' ? (artworkResource.url ?? directArtwork) : directArtwork;
 

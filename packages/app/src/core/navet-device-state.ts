@@ -96,6 +96,8 @@ export interface NavetMediaState extends NavetBaseDeviceState {
   elapsedSeconds?: number;
   durationSeconds?: number;
   positionUpdatedAt?: string;
+  mediaContentId?: string;
+  mediaContentType?: string;
   mediaCapabilities?: NavetMediaCapabilities;
   supportsGrouping?: boolean;
   supportsPreviousTrack?: boolean;

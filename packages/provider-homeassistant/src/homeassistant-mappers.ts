@@ -946,6 +946,14 @@ function createHomeAssistantState(
         typeof entity.attributes?.media_position_updated_at === 'string'
           ? entity.attributes.media_position_updated_at
           : undefined,
+      mediaContentId:
+        typeof entity.attributes?.media_content_id === 'string'
+          ? entity.attributes.media_content_id
+          : undefined,
+      mediaContentType:
+        typeof entity.attributes?.media_content_type === 'string'
+          ? entity.attributes.media_content_type
+          : undefined,
       mediaCapabilities,
       supportsGrouping: mediaCapabilities.canGroup,
       supportsPreviousTrack: mediaCapabilities.canPreviousTrack,

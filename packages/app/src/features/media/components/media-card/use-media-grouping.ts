@@ -190,15 +190,27 @@ export function useMediaGrouping({
 
   const detachGroupMember = useCallback(
     (memberEntityId: string) => {
-      if (memberEntityId === entityId) {
-        return;
-      }
-
       void runAction(async () => {
+        if (getProviderNativeId(memberEntityId) === nativeEntityId) {
+          const remainingMembers = groupMembers.filter(
+            (groupMemberId) => getProviderNativeId(groupMemberId) !== nativeEntityId
+          );
+          const nextCoordinator = remainingMembers[0];
+          if (!nextCoordinator) {
+            return;
+          }
+
+          await dispatchEntityCommand({
+            type: 'join_group',
+            entityId: nextCoordinator,
+            members: [nativeEntityId, ...remainingMembers.slice(1)],
+          });
+        }
+
         await dispatchEntityCommand({ type: 'leave_group', entityId: memberEntityId });
       }, t('media.feedback.groupDetachFailed'));
     },
-    [entityId, runAction, t]
+    [groupMembers, nativeEntityId, runAction, t]
   );
 
   return {

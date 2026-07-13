@@ -176,6 +176,26 @@ export function buildMediaSections(
   return groupedSections;
 }
 
+export function excludePromotedMediaDevices(
+  mediaDevices: MediaSectionDevice[],
+  promotedEntityIds: string[],
+  identityDevices: MediaSectionDevice[] = mediaDevices
+) {
+  const promotedEntityIdSet = new Set(promotedEntityIds);
+  const promotedDeviceNameSet = new Set(
+    identityDevices
+      .filter((device) => promotedEntityIdSet.has(device.id))
+      .map((device) => device.name.trim().toLowerCase())
+      .filter(Boolean)
+  );
+
+  return mediaDevices.filter(
+    (device) =>
+      !promotedEntityIdSet.has(device.id) &&
+      !promotedDeviceNameSet.has(device.name.trim().toLowerCase())
+  );
+}
+
 export function MediaSection() {
   const { t } = useI18n();
   const { theme } = useTheme();
@@ -184,7 +204,7 @@ export function MediaSection() {
   const devices = useDeviceCollectionsByKeys(['media']);
   const { isEditMode, toggleEditMode } = useEditMode();
   const [isAddEntityDialogOpen, setIsAddEntityDialogOpen] = useState(false);
-  const [activeNowPlayingGroupIds, setActiveNowPlayingGroupIds] = useState<string[]>([]);
+  const [promotedMediaEntityIds, setPromotedMediaEntityIds] = useState<string[]>([]);
   const [collapsedSections, setCollapsedSections] = usePersistedState<Record<string, boolean>>(
     STORAGE_KEYS.mediaCollapsedSections,
     {}
@@ -261,22 +281,8 @@ export function MediaSection() {
         : collapseSameRoomMediaGroups(mediaDevices),
     [isEditMode, mediaDevices]
   );
-  const activeNowPlayingGroupIdSet = useMemo(
-    () => new Set(activeNowPlayingGroupIds),
-    [activeNowPlayingGroupIds]
-  );
-  const activeNowPlayingGroupNameSet = useMemo(
-    () =>
-      new Set(
-        mediaDevices
-          .filter((device) => activeNowPlayingGroupIdSet.has(device.id))
-          .map((device) => device.name.trim().toLowerCase())
-          .filter(Boolean)
-      ),
-    [activeNowPlayingGroupIdSet, mediaDevices]
-  );
-  const handleActiveNowPlayingGroupChange = useCallback((entityIds: string[]) => {
-    setActiveNowPlayingGroupIds((current) =>
+  const handlePromotedEntitiesChange = useCallback((entityIds: string[]) => {
+    setPromotedMediaEntityIds((current) =>
       current.length === entityIds.length && current.every((id, index) => id === entityIds[index])
         ? current
         : entityIds
@@ -292,14 +298,29 @@ export function MediaSection() {
     [setCollapsedSections]
   );
 
+  const featuredMediaDevice = useMemo(
+    () =>
+      mediaDevices.find((device) => device.state === 'playing' && isActiveAudioDevice(device)) ??
+      mediaDevices.find(isActiveAudioDevice),
+    [mediaDevices]
+  );
+  const promotedEntityIdsForSections = useMemo(
+    () =>
+      promotedMediaEntityIds.length > 0
+        ? promotedMediaEntityIds
+        : featuredMediaDevice
+          ? [featuredMediaDevice.id]
+          : [],
+    [featuredMediaDevice, promotedMediaEntityIds]
+  );
+
   const sections = useMemo(() => {
     const sectionDevices = isEditMode
       ? groupedMediaPresentation.devices
-      : groupedMediaPresentation.devices.filter(
-          (device) =>
-            !isSpotifyAccountDevice(device) &&
-            !activeNowPlayingGroupIdSet.has(device.id) &&
-            !activeNowPlayingGroupNameSet.has(device.name.trim().toLowerCase())
+      : excludePromotedMediaDevices(
+          groupedMediaPresentation.devices.filter((device) => !isSpotifyAccountDevice(device)),
+          promotedEntityIdsForSections,
+          mediaDevices
         );
 
     return buildMediaSections(sectionDevices, {
@@ -315,21 +336,15 @@ export function MediaSection() {
     audioPlural,
     audioSingular,
     audioTitle,
-    activeNowPlayingGroupIdSet,
-    activeNowPlayingGroupNameSet,
     isEditMode,
     groupedMediaPresentation.devices,
+    mediaDevices,
+    promotedEntityIdsForSections,
     tvPlural,
     tvSingular,
     tvTitle,
     typeLabels,
   ]);
-  const featuredMediaDevice = useMemo(
-    () =>
-      mediaDevices.find((device) => device.state === 'playing' && isActiveAudioDevice(device)) ??
-      mediaDevices.find(isActiveAudioDevice),
-    [mediaDevices]
-  );
   if (allMediaDevices.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-6">
@@ -370,7 +385,7 @@ export function MediaSection() {
         <MediaDashboard
           devices={mediaDevices}
           initialDeviceId={featuredMediaDevice?.id}
-          onActiveGroupChange={handleActiveNowPlayingGroupChange}
+          onPromotedEntitiesChange={handlePromotedEntitiesChange}
         />
       ) : null}
 

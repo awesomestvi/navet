@@ -135,6 +135,7 @@ describe('MediaDialog', () => {
     expect(screen.queryByRole('button', { name: 'Playback' })).not.toBeInTheDocument();
     expect(screen.queryByText('Volume')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Done' })).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog')).not.toHaveClass('backdrop-blur-xl', 'backdrop-blur-2xl');
 
     browseMediaPlayerMock.mockImplementation(async (_entityId, media) =>
       media?.mediaContentId === 'spotify:account:vishal'
@@ -399,13 +400,7 @@ describe('MediaDialog', () => {
 
     expect(screen.getByRole('dialog')).toHaveClass('flex', 'flex-col', 'max-h-[88vh]');
     expect(screen.getByRole('dialog')).toHaveClass('max-sm:!h-[min(88dvh,calc(100dvh-1rem))]');
-    expect(screen.getByRole('dialog')).toHaveClass(
-      'max-sm:!touch-pan-y',
-      'max-sm:!overflow-x-hidden',
-      'max-sm:!overflow-y-auto',
-      'max-sm:!overscroll-contain',
-      'max-sm:[-webkit-overflow-scrolling:touch]'
-    );
+    expect(screen.getByRole('dialog')).toHaveClass('max-sm:!overflow-hidden');
     const dialogBody = document.body.querySelector('.media-dialog-body');
     expect(dialogBody).toHaveClass(
       'h-full',
@@ -429,6 +424,7 @@ describe('MediaDialog', () => {
       highlight: 'rgb(242, 242, 245)',
       gradientEnd: 'rgb(10, 10, 12)',
     });
+    const onDetachGroupMember = vi.fn();
 
     renderWithProviders(
       <MediaDialog
@@ -473,7 +469,7 @@ describe('MediaDialog', () => {
         onVolumeInteractionStart={vi.fn()}
         onVolumeInteractionEnd={vi.fn()}
         onAttachGroupMember={vi.fn()}
-        onDetachGroupMember={vi.fn()}
+        onDetachGroupMember={onDetachGroupMember}
       />
     );
 
@@ -485,6 +481,14 @@ describe('MediaDialog', () => {
     expect(screen.getAllByText('Touch').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Kitchen')).toBeInTheDocument();
     expect(screen.getByText('Living Room')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Detach Bathroom' })).toHaveClass('w-full');
+    expect(screen.getByRole('button', { name: 'Detach Kitchen' })).toHaveClass('w-full');
+    expect(screen.getByRole('button', { name: 'Detach Bathroom' })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Detach Kitchen' }));
+    expect(onDetachGroupMember).toHaveBeenCalledWith('media_player.kitchen');
+    fireEvent.click(screen.getByRole('button', { name: 'Detach Bathroom' }));
+    expect(onDetachGroupMember).toHaveBeenCalledWith('media_player.bathroom');
 
     fireEvent.click(screen.getByRole('button', { name: 'Group Speakers' }));
 

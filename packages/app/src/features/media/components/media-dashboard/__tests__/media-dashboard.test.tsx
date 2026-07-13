@@ -39,6 +39,7 @@ const {
   liveMediaEntityMock,
   mediaEntityRegistryMock,
   playMediaMock,
+  seekMediaMock,
   selectSourceMock,
 } = vi.hoisted(() => ({
   browseMediaPlayerMock: vi.fn().mockResolvedValue({
@@ -57,6 +58,7 @@ const {
   liveMediaEntityMock: vi.fn(),
   mediaEntityRegistryMock: vi.fn(() => [] as PlatformEntityRegistryEntry[]),
   playMediaMock: vi.fn().mockResolvedValue(undefined),
+  seekMediaMock: vi.fn().mockResolvedValue(undefined),
   selectSourceMock: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -65,7 +67,7 @@ vi.mock('@navet/app/services/integration-media-feature.service', () => ({
     browseMediaPlayer: browseMediaPlayerMock,
     playMedia: playMediaMock,
     selectMediaPlayerSource: selectSourceMock,
-    seekMediaPlayer: vi.fn().mockResolvedValue(undefined),
+    seekMediaPlayer: seekMediaMock,
   },
 }));
 
@@ -208,6 +210,75 @@ describe('MediaDashboard', () => {
     );
   });
 
+  it('remembers an idle media session and replays its media identifier when Home Assistant clears it', async () => {
+    const browseHelper = createMediaDevice({
+      id: 'media_player.browse',
+      name: 'Browse',
+      state: 'playing',
+      title: 'Browse',
+      artist: '',
+      album: '',
+      entityPicture: undefined,
+      durationSeconds: undefined,
+    });
+    const bathroom = createMediaDevice({
+      id: 'media_player.bathroom',
+      name: 'Bathroom',
+      room: 'Bathroom',
+      state: 'idle',
+      title: 'The Reservoir',
+      artist: 'Small Forward',
+      entityPicture: '/api/media_player_proxy/media_player.bathroom',
+      elapsedSeconds: 2,
+      durationSeconds: 308,
+      positionUpdatedAt: '2026-07-13T12:00:00.000Z',
+      mediaContentId: 'spotify:track:the-reservoir',
+      mediaContentType: 'music',
+      mediaCapabilities: { ...mediaCapabilities, canSeek: true },
+    });
+    const view = renderWithProviders(<MediaDashboard devices={[browseHelper, bathroom]} />);
+
+    expect(screen.getByText('The Reservoir')).toBeInTheDocument();
+    expect(screen.getByText('Small Forward')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Bathroom' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Resume playback' })).toBeEnabled();
+
+    view.unmount();
+    renderWithProviders(
+      <MediaDashboard
+        devices={[
+          browseHelper,
+          {
+            ...bathroom,
+            title: 'Bathroom',
+            artist: '',
+            entityPicture: undefined,
+            elapsedSeconds: undefined,
+            durationSeconds: undefined,
+            positionUpdatedAt: undefined,
+            mediaContentId: undefined,
+            mediaContentType: undefined,
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByText('The Reservoir')).toBeInTheDocument();
+    expect(screen.getByText('Small Forward')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Bathroom' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Resume playback' }));
+
+    await waitFor(() =>
+      expect(playMediaMock).toHaveBeenCalledWith('media_player.bathroom', {
+        mediaContentId: 'spotify:track:the-reservoir',
+        mediaContentType: 'music',
+      })
+    );
+    expect(seekMediaMock).toHaveBeenCalledWith('media_player.bathroom', 2);
+    expect(dispatchEntityCommandMock).not.toHaveBeenCalled();
+  });
+
   it('identifies opaque Music Assistant players from the entity registry', async () => {
     const spotifyAccount = createMediaDevice();
     const musicAssistant = createMediaDevice({
@@ -243,8 +314,49 @@ describe('MediaDashboard', () => {
     expect(screen.queryByText('Bathroom +1')).not.toBeInTheDocument();
   });
 
+  it('routes Now Playing transport through the matching physical player instead of its media-library wrapper', async () => {
+    const musicAssistant = createMediaDevice({
+      id: 'media_player.bathroom',
+      name: 'Bathroom',
+      room: 'Bathroom',
+      state: 'playing',
+      title: "Don't Let Me Go",
+      artist: 'Cigarettes After Sex',
+      source: 'Spotify',
+      mediaContentId: 'spotify://track/dont-let-me-go',
+      mediaContentType: 'music',
+    });
+    const physicalPlayer = createMediaDevice({
+      id: 'media_player.bathroom_bathroom',
+      name: 'Bathroom',
+      room: 'Bathroom',
+      state: 'playing',
+      title: "Don't Let Me Go",
+      artist: 'Cigarettes After Sex',
+      source: 'Spotify Connect',
+      mediaContentId: 'x-sonos-spotify:dont-let-me-go',
+      mediaContentType: 'music',
+    });
+    mediaEntityRegistryMock.mockReturnValue([
+      { entityId: 'media_player.bathroom', platform: 'music_assistant' },
+      { entityId: 'media_player.bathroom_bathroom', platform: 'sonos' },
+    ]);
+
+    renderWithProviders(<MediaDashboard devices={[musicAssistant, physicalPlayer]} />);
+
+    expect(screen.getByText('Music Assistant')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Pause playback' }));
+
+    await waitFor(() =>
+      expect(dispatchEntityCommandMock).toHaveBeenCalledWith({
+        type: 'play_pause',
+        entityId: 'media_player.bathroom_bathroom',
+      })
+    );
+  });
+
   it('collapses mirrored wrapper and output playback into a room stack', async () => {
-    const onActiveGroupChange = vi.fn();
+    const onPromotedEntitiesChange = vi.fn();
     const mirroredDevices = [
       ['media_player.bathroom_wrapper', 'Bathroom'],
       ['media_player.bathroom', 'Bathroom'],
@@ -268,14 +380,17 @@ describe('MediaDashboard', () => {
     ]);
 
     renderWithProviders(
-      <MediaDashboard devices={mirroredDevices} onActiveGroupChange={onActiveGroupChange} />
+      <MediaDashboard
+        devices={mirroredDevices}
+        onPromotedEntitiesChange={onPromotedEntitiesChange}
+      />
     );
 
     expect(await screen.findByText('Music Assistant')).toBeVisible();
     expect(screen.getByText('2 speakers')).toBeVisible();
     expect(screen.getByText('Bathroom +1')).toBeVisible();
     await waitFor(() =>
-      expect(onActiveGroupChange).toHaveBeenCalledWith([
+      expect(onPromotedEntitiesChange).toHaveBeenCalledWith([
         'media_player.bathroom',
         'media_player.bathroom_wrapper',
         'media_player.living_room',
@@ -285,7 +400,7 @@ describe('MediaDashboard', () => {
   });
 
   it('does not keep a stack after Music Assistant removes group membership', async () => {
-    const onActiveGroupChange = vi.fn();
+    const onPromotedEntitiesChange = vi.fn();
     const ungroupedDevices = ['Bathroom', 'Living Room'].map((name) =>
       createMediaDevice({
         id: `media_player.${name.toLowerCase().replace(' ', '_')}`,
@@ -303,10 +418,15 @@ describe('MediaDashboard', () => {
     ]);
 
     renderWithProviders(
-      <MediaDashboard devices={ungroupedDevices} onActiveGroupChange={onActiveGroupChange} />
+      <MediaDashboard
+        devices={ungroupedDevices}
+        onPromotedEntitiesChange={onPromotedEntitiesChange}
+      />
     );
 
-    await waitFor(() => expect(onActiveGroupChange).toHaveBeenCalledWith([]));
+    await waitFor(() =>
+      expect(onPromotedEntitiesChange).toHaveBeenCalledWith(['media_player.bathroom'])
+    );
     expect(screen.queryByText('Bathroom +1')).not.toBeInTheDocument();
   });
 
@@ -356,7 +476,7 @@ describe('MediaDashboard', () => {
   });
 
   it('publishes native AirPlay group members so their individual cards can be hidden', async () => {
-    const onActiveGroupChange = vi.fn();
+    const onPromotedEntitiesChange = vi.fn();
     const groupMembers = ['media_player.bathroom', 'media_player.living_room'];
     const devices = ['Bathroom', 'Living Room'].map((name) =>
       createMediaDevice({
@@ -376,12 +496,12 @@ describe('MediaDashboard', () => {
     ]);
 
     renderWithProviders(
-      <MediaDashboard devices={devices} onActiveGroupChange={onActiveGroupChange} />
+      <MediaDashboard devices={devices} onPromotedEntitiesChange={onPromotedEntitiesChange} />
     );
 
     expect(await screen.findByText('Bathroom +1')).toBeVisible();
     await waitFor(() =>
-      expect(onActiveGroupChange).toHaveBeenCalledWith([
+      expect(onPromotedEntitiesChange).toHaveBeenCalledWith([
         'media_player.bathroom',
         'media_player.living_room',
       ])
@@ -389,7 +509,7 @@ describe('MediaDashboard', () => {
   });
 
   it('keeps a paused AirPlay group selected and stacked until membership changes', async () => {
-    const onActiveGroupChange = vi.fn();
+    const onPromotedEntitiesChange = vi.fn();
     const groupMembers = ['media_player.bathroom', 'media_player.living_room'];
     const groupedDevices = ['Bathroom', 'Living Room'].map((name) =>
       createMediaDevice({
@@ -401,6 +521,8 @@ describe('MediaDashboard', () => {
         artist: 'Phone',
         source: 'AirPlay',
         groupMembers,
+        mediaContentId: 'https://example.test/paused-airplay-track.mp3',
+        mediaContentType: 'music',
       })
     );
     const browseHelper = createMediaDevice({
@@ -411,21 +533,42 @@ describe('MediaDashboard', () => {
       artist: '',
     });
 
-    renderWithProviders(
+    const view = renderWithProviders(
       <MediaDashboard
         devices={[browseHelper, ...groupedDevices]}
-        onActiveGroupChange={onActiveGroupChange}
+        onPromotedEntitiesChange={onPromotedEntitiesChange}
       />
     );
 
     expect(await screen.findByText('Bathroom +1')).toBeVisible();
     expect(screen.getByText('Paused AirPlay track')).toBeVisible();
     await waitFor(() =>
-      expect(onActiveGroupChange).toHaveBeenCalledWith([
+      expect(onPromotedEntitiesChange).toHaveBeenCalledWith([
         'media_player.bathroom',
         'media_player.living_room',
       ])
     );
+
+    view.rerender(
+      <MediaDashboard
+        devices={[
+          browseHelper,
+          ...groupedDevices.map((device) => ({
+            ...device,
+            state: 'idle' as const,
+            title: device.name,
+            artist: '',
+            entityPicture: undefined,
+            mediaContentId: undefined,
+            mediaContentType: undefined,
+          })),
+        ]}
+        onPromotedEntitiesChange={onPromotedEntitiesChange}
+      />
+    );
+
+    expect(await screen.findByText('Bathroom +1')).toBeVisible();
+    expect(screen.getByText('Paused AirPlay track')).toBeVisible();
   });
 
   it('loads provider media browser items and plays playable results', async () => {
@@ -628,8 +771,21 @@ describe('MediaDashboard', () => {
 
     renderWithProviders(<MediaDashboard devices={[createMediaDevice()]} />);
 
-    expect(await screen.findByTestId('media-browser-directory-grid')).toHaveClass(
+    expect(screen.getByTestId('media-dashboard-layout')).toHaveClass(
       'min-[900px]:grid-cols-3',
+      'min-[1660px]:grid-cols-4',
+      'min-[1920px]:grid-cols-6'
+    );
+    expect(screen.getByTestId('media-browser-panel')).toHaveClass(
+      'min-[900px]:col-span-2',
+      'min-[1660px]:col-span-3',
+      'min-[1920px]:col-span-5'
+    );
+    expect(screen.getByTestId('media-now-playing-card')).toHaveClass('w-full');
+    expect(screen.getByTestId('media-now-playing-card')).not.toHaveClass('max-w-[24rem]');
+    expect(await screen.findByTestId('media-browser-directory-grid')).toHaveClass(
+      'min-[900px]:grid-cols-2',
+      'min-[1660px]:grid-cols-3',
       'min-[1920px]:grid-cols-5'
     );
     fireEvent.click(await screen.findByText('Albums'));
@@ -944,11 +1100,68 @@ describe('MediaDashboard', () => {
 
     expect(screen.getByText('Warning Signs')).toBeInTheDocument();
     expect(screen.getByText('Band of Horses')).toBeInTheDocument();
-    expect(screen.getByTestId('spotify-connect-card').querySelector('img')).toHaveAttribute(
-      'src',
-      '/api/media_player_proxy/media_player.bathroom'
+    expect(screen.queryByTestId('spotify-connect-card')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Bathroom' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Spotify output' })).not.toBeInTheDocument();
+  });
+
+  it('retains a paused Spotify output in the shared Now Playing card after its live session clears', () => {
+    const spotifyAccount = createMediaDevice({
+      id: 'media_player.spotify',
+      name: 'Spotify Premium',
+      source: 'Kitchen',
+    });
+    const kitchen = createMediaDevice({
+      id: 'media_player.kitchen',
+      name: 'Kitchen',
+      sourceList: ['Spotify Connect'],
+      title: 'Kitchen',
+    });
+    const bathroom = createMediaDevice({
+      id: 'media_player.bathroom',
+      name: 'Bathroom',
+      state: 'paused',
+      sourceList: ['Spotify Connect'],
+      title: 'The Gold',
+      artist: 'Manchester Orchestra',
+      entityPicture: '/api/media_player_proxy/media_player.bathroom',
+      elapsedSeconds: 214,
+      positionUpdatedAt: '2026-07-13T12:00:00.000Z',
+      mediaContentId: 'spotify:track:the-gold',
+      mediaContentType: 'music',
+    });
+    const view = renderWithProviders(
+      <MediaDashboard devices={[spotifyAccount, kitchen, bathroom]} />
     );
-    expect(screen.getByRole('button', { name: 'Spotify output' })).toHaveClass('min-w-9');
+
+    expect(screen.getByText('The Gold')).toBeInTheDocument();
+    expect(screen.getByText('Manchester Orchestra')).toBeInTheDocument();
+    expect(screen.queryByTestId('spotify-connect-card')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Bathroom' })).toBeInTheDocument();
+
+    view.rerender(
+      <MediaDashboard
+        devices={[
+          spotifyAccount,
+          kitchen,
+          {
+            ...bathroom,
+            state: 'idle',
+            title: 'Bathroom',
+            artist: '',
+            entityPicture: undefined,
+            elapsedSeconds: undefined,
+            positionUpdatedAt: undefined,
+            mediaContentId: undefined,
+            mediaContentType: undefined,
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByText('The Gold')).toBeInTheDocument();
+    expect(screen.getByText('Manchester Orchestra')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Bathroom' })).toBeInTheDocument();
   });
 
   it('uses an idle speaker for media browsing instead of the Spotify account', async () => {
@@ -979,87 +1192,11 @@ describe('MediaDashboard', () => {
     );
 
     expect(screen.queryByText('Play on')).not.toBeInTheDocument();
-    expect(screen.getByTestId('spotify-connect-card')).toHaveStyle({
-      height: '364px',
-      minHeight: '364px',
-    });
-    expect(screen.getByTestId('spotify-connect-targets')).not.toHaveClass('sm:grid-cols-3');
-    expect(screen.getByTestId('spotify-card-header-icon')).toBeInTheDocument();
-    expect(screen.getByText('Spotify Premium')).toBeInTheDocument();
+    expect(screen.queryByTestId('spotify-connect-card')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Kitchen' })).toBeInTheDocument();
   });
 
-  it('starts Spotify Connect playback on the selected Spotify-capable media player', async () => {
-    renderWithProviders(
-      <MediaDashboard
-        devices={[
-          createMediaDevice({
-            state: 'idle',
-            source: undefined,
-            sourceList: ['Kitchen', 'Living Room'],
-          }),
-          createMediaDevice({
-            id: 'media_player.living_room',
-            name: 'Living Room',
-            source: undefined,
-            sourceList: ['Spotify'],
-          }),
-        ]}
-      />
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: 'Living Room' }));
-
-    await waitFor(() =>
-      expect(selectSourceMock).toHaveBeenCalledWith('media_player.living_room', 'Spotify')
-    );
-    expect(dispatchEntityCommandMock).toHaveBeenCalledWith({
-      type: 'play_pause',
-      entityId: 'media_player.living_room',
-    });
-  });
-
-  it('groups compatible speakers from the media library header', async () => {
-    renderWithProviders(
-      <MediaDashboard
-        devices={[
-          createMediaDevice({
-            id: 'media_player.spotify',
-            name: 'Spotify Premium',
-          }),
-          createMediaDevice({
-            id: 'media_player.bathroom',
-            name: 'Bathroom',
-            state: 'playing',
-            supportsGrouping: true,
-            groupMembers: ['media_player.bathroom'],
-            source: undefined,
-            sourceList: [],
-          }),
-          createMediaDevice({
-            id: 'media_player.living_room',
-            name: 'Living Room',
-            supportsGrouping: true,
-            source: undefined,
-            sourceList: [],
-          }),
-        ]}
-      />
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: 'Spotify output' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Living Room' }));
-
-    await waitFor(() =>
-      expect(dispatchEntityCommandMock).toHaveBeenCalledWith({
-        type: 'join_group',
-        entityId: 'media_player.bathroom',
-        members: ['media_player.living_room'],
-      })
-    );
-  });
-
-  it('renders the destination control when a provider omits group members', () => {
+  it('does not render a speaker selector in the media library header', () => {
     renderWithProviders(
       <MediaDashboard
         devices={[
@@ -1075,7 +1212,7 @@ describe('MediaDashboard', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: 'Spotify output' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Spotify output' })).not.toBeInTheDocument();
   });
 
   it('does not show transport play for dormant Spotify', async () => {
@@ -1172,6 +1309,99 @@ describe('MediaDashboard', () => {
       expect(playMediaMock).toHaveBeenCalledWith('media_player.bathroom', {
         mediaContentId: 'spotify:playlist:daily',
         mediaContentType: 'playlist',
+      })
+    );
+  });
+
+  it('follows a newly active speaker when playing a recently browsed track', async () => {
+    browseMediaPlayerMock.mockImplementation(async (_entityId, media) => {
+      if (media?.mediaContentId === 'spotify:directory:recently-played') {
+        return {
+          title: 'Recently played',
+          children: [
+            {
+              title: 'Bed Head',
+              mediaContentId: 'spotify:track:bed-head',
+              mediaContentType: 'track',
+              mediaClass: 'track',
+              canPlay: true,
+            },
+          ],
+        };
+      }
+
+      return {
+        title: 'Media Library',
+        children: [
+          {
+            title: 'Recently played',
+            mediaContentId: 'spotify:directory:recently-played',
+            mediaContentType: 'track',
+            mediaClass: 'directory',
+            canExpand: true,
+            canPlay: false,
+          },
+        ],
+      };
+    });
+    const spotifyAccount = createMediaDevice({
+      id: 'media_player.spotify',
+      name: 'Spotify Premium',
+      source: 'Living Room',
+    });
+    const livingRoom = createMediaDevice({
+      id: 'media_player.living_room',
+      name: 'Living Room',
+      state: 'idle',
+      source: 'Spotify Connect',
+      sourceList: ['Spotify Connect'],
+    });
+    const bathroom = createMediaDevice({
+      id: 'media_player.bathroom',
+      name: 'Bathroom',
+      state: 'idle',
+      source: 'Spotify Connect',
+      sourceList: ['Spotify Connect'],
+    });
+    const view = renderWithProviders(
+      <MediaDashboard devices={[spotifyAccount, livingRoom, bathroom]} />
+    );
+
+    await waitFor(() =>
+      expect(browseMediaPlayerMock).toHaveBeenCalledWith('media_player.living_room', {
+        mediaContentId: undefined,
+        mediaContentType: undefined,
+      })
+    );
+
+    view.rerender(
+      <MediaDashboard
+        devices={[
+          { ...spotifyAccount, source: 'Bathroom' },
+          livingRoom,
+          {
+            ...bathroom,
+            state: 'playing',
+            title: 'The Silence',
+            artist: 'Manchester Orchestra',
+          },
+        ]}
+      />
+    );
+
+    await waitFor(() =>
+      expect(browseMediaPlayerMock).toHaveBeenCalledWith('media_player.bathroom', {
+        mediaContentId: undefined,
+        mediaContentType: undefined,
+      })
+    );
+    fireEvent.click(await screen.findByText('Recently played'));
+    fireEvent.click(await screen.findByText('Bed Head'));
+
+    await waitFor(() =>
+      expect(playMediaMock).toHaveBeenCalledWith('media_player.bathroom', {
+        mediaContentId: 'spotify:track:bed-head',
+        mediaContentType: 'track',
       })
     );
   });

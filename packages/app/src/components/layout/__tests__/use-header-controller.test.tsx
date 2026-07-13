@@ -56,7 +56,8 @@ describe('useHeaderController', () => {
     );
   });
 
-  it('does not rerender for unrelated provider entity updates when resolving avatar resources', () => {
+  it('resolves avatar resources in low-power mode without rerendering for unrelated provider updates', () => {
+    useSettingsStore.getState().updateSettings({ lowPowerMode: true });
     integrationStore.setState({
       ...integrationStore.getState(),
       currentProviderId: 'home_assistant',
