@@ -31,7 +31,7 @@ export {
   SettingsDialogDoneButton,
   settingsDialogContentClass,
 } from './dialog-primitives';
-export { EntityCardHeader } from './entity-card-header';
+export { EntityCardHeader, type EntityCardHeaderVariant } from './entity-card-header';
 export { EntityCardHeaderIcon } from './entity-card-header-icon';
 export { EntityCardTitleBlock, type EntityCardTitleLayout } from './entity-card-title-block';
 export { Heading, type HeadingProps } from './heading';

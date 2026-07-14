@@ -13,6 +13,7 @@ interface UseEntityCardInteractionControllerOptions {
   ariaLabel: string;
   ariaPressed?: boolean;
   isEditMode?: boolean;
+  cardTapAction?: CardAction;
   onToggle?: () => void;
   onOpenControls?: () => void;
   onOpenSettings?: () => void;
@@ -34,6 +35,7 @@ export function useEntityCardInteractionController({
   ariaLabel,
   ariaPressed,
   isEditMode = false,
+  cardTapAction,
   onToggle,
   onOpenControls,
   onOpenSettings,
@@ -77,7 +79,8 @@ export function useEntityCardInteractionController({
     [onOpenControls, onOpenSettings, onToggle]
   );
 
-  const cardTapAction: CardAction = interactionMode === 'toggle-first' ? 'toggle' : 'controls';
+  const resolvedCardTapAction: CardAction =
+    cardTapAction ?? (interactionMode === 'toggle-first' ? 'toggle' : 'controls');
   const hasCardAction = Boolean(onToggle || onOpenControls);
   const shouldIgnoreNestedInteraction = useCallback(
     (target: EventTarget | null, currentTarget: EventTarget | null) => {
@@ -111,7 +114,7 @@ export function useEntityCardInteractionController({
         if (shouldIgnoreNestedInteraction(event.target, event.currentTarget)) {
           return;
         }
-        runAction(cardTapAction);
+        runAction(resolvedCardTapAction);
       },
       onKeyDown: (event: ReactKeyboardEvent<HTMLElement>) => {
         if (event.target !== event.currentTarget) {
@@ -120,14 +123,14 @@ export function useEntityCardInteractionController({
 
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
-          runAction(cardTapAction);
+          runAction(resolvedCardTapAction);
         }
       },
     };
   }, [
     ariaLabel,
     ariaPressed,
-    cardTapAction,
+    resolvedCardTapAction,
     hasCardAction,
     isEditMode,
     runAction,

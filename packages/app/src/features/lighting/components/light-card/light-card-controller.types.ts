@@ -20,6 +20,7 @@ export interface LightCardControllerParams {
   initialTemp: number;
   size: CardSize;
   isEditMode: boolean;
+  cardTapAction?: 'toggle' | 'controls';
   providerState?: NavetLightState | null;
 }
 

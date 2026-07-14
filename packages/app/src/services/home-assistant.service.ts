@@ -314,6 +314,18 @@ class HomeAssistantService {
     return this.connectionService.getConnection();
   }
 
+  async callApi<T = unknown>(
+    method: string,
+    path: string,
+    parameters?: Record<string, unknown>
+  ): Promise<T> {
+    if (this.panelAdapter) {
+      return await this.panelAdapter.callApi<T>(method, path, parameters);
+    }
+
+    return await this.connectionService.callApi<T>(method, path, parameters);
+  }
+
   async loadRegistries(): Promise<void> {
     if (this.panelAdapter) {
       const { areas, devices, entities } = await this.panelAdapter.loadRegistries();

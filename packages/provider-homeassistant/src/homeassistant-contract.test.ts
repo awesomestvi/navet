@@ -2,7 +2,10 @@ import { runProviderContractTests } from '@navet/core/contract-test-suite';
 import { createProviderScopedId } from '@navet/core/ids';
 import { createHomeAssistantContractAdapter } from '@navet/provider-homeassistant/homeassistant-adapter';
 import { beforeEach, expect, vi } from 'vitest';
-import { configureHomeAssistantServiceBridge } from './homeassistant-service-bridge';
+import {
+  configureHomeAssistantServiceBridge,
+  type HomeAssistantServiceBridge,
+} from './homeassistant-service-bridge';
 
 function lightEntityFactory(overrides: Record<string, unknown> = {}) {
   return {
@@ -77,6 +80,7 @@ beforeEach(() => {
   }
   currentSession = null;
   configureHomeAssistantServiceBridge({
+    callApi: vi.fn(async () => []) as unknown as HomeAssistantServiceBridge['callApi'],
     callService: callServiceMock,
     signPath: vi.fn(async (path: string) => ({ path })),
     getCameraStreamUrl: vi.fn(async () => ({ url: '/stream' })),

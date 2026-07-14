@@ -1,5 +1,8 @@
 import { CardActionRow } from '@navet/app/components/patterns/card-action-row';
-import { EntityCardHeader } from '@navet/app/components/primitives/entity-card-header';
+import {
+  EntityCardHeader,
+  type EntityCardHeaderVariant,
+} from '@navet/app/components/primitives/entity-card-header';
 import { EntityCardTitleBlock } from '@navet/app/components/primitives/entity-card-title-block';
 import { CardSettingsActionButton } from '@navet/app/components/shared/card-settings-action-button';
 import {
@@ -75,6 +78,7 @@ export interface BaseCardProps extends HTMLAttributes<HTMLDivElement> {
   headerLayout?: 'title-first' | 'eyebrow-first';
   headerAlign?: 'start' | 'center';
   headerTone?: CardTextTone;
+  headerVariant?: EntityCardHeaderVariant;
   footer?: ReactNode;
   actionRow?: BaseCardActionRowConfig;
   settingsAction?: BaseCardSettingsActionProps;
@@ -186,6 +190,7 @@ export function BaseCard({
   headerLayout = 'eyebrow-first',
   headerAlign = 'start',
   headerTone,
+  headerVariant = 'default',
   footer,
   actionRow,
   settingsAction,
@@ -248,6 +253,7 @@ export function BaseCard({
         layout={headerLayout}
         align={headerAlign}
         tone={resolvedHeaderTone}
+        variant={headerVariant}
         leading={headerLeading}
         trailing={headerTrailing}
         className={headerClassName}

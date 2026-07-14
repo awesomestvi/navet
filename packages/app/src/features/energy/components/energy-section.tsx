@@ -14,9 +14,6 @@ interface EnergySectionProps {
   energyCustomCards?: CustomCard[];
   energyOrderedCardIds?: string[];
   isEditMode?: boolean;
-  onOpenAddCardDialog?: () => void;
-  onToggleEditMode?: () => void;
-  suppressEditActions?: boolean;
   onDeleteCard?: (cardId: string) => void;
   onUpdateCard?: (cardId: string, updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>) => void;
 }
@@ -25,9 +22,6 @@ export const EnergySection = memo(function EnergySection({
   energyCustomCards = [],
   energyOrderedCardIds = [],
   isEditMode = false,
-  onOpenAddCardDialog,
-  onToggleEditMode,
-  suppressEditActions = false,
   onDeleteCard,
   onUpdateCard,
 }: EnergySectionProps) {
@@ -122,9 +116,6 @@ export const EnergySection = memo(function EnergySection({
       energyCustomCards={energyCustomCards}
       energyOrderedCardIds={energyOrderedCardIds}
       isEditMode={isEditMode}
-      onOpenAddCardDialog={onOpenAddCardDialog}
-      onToggleEditMode={onToggleEditMode}
-      suppressEditActions={suppressEditActions}
       onDeleteCard={onDeleteCard}
       onUpdateCard={onUpdateCard}
     />

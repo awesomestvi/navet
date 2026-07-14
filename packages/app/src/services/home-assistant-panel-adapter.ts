@@ -117,23 +117,35 @@ export class HomeAssistantPanelAdapter {
     await this.hass.callService(domain, service, normalizedServiceData, target);
   }
 
-  async saveAutomationConfig(configKey: string, config: Record<string, unknown>): Promise<void> {
-    const path = `config/automation/config/${encodeURIComponent(configKey)}`;
+  async callApi<T = unknown>(
+    method: string,
+    path: string,
+    parameters?: Record<string, unknown>
+  ): Promise<T> {
+    const normalizedPath = path.replace(/^\/?api\//, '').replace(/^\//, '');
     if (this.hass.callApi) {
-      await this.hass.callApi('POST', path, config);
-      return;
+      return await this.hass.callApi<T>(method, normalizedPath, parameters);
     }
 
-    const response = await fetch(`/api/${path}`, {
-      method: 'POST',
+    const normalizedMethod = method.toUpperCase();
+    const hasBody =
+      parameters !== undefined && normalizedMethod !== 'GET' && normalizedMethod !== 'HEAD';
+    const response = await fetch(`/api/${normalizedPath}`, {
+      method: normalizedMethod,
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(config),
+      headers: hasBody ? { 'Content-Type': 'application/json' } : undefined,
+      ...(hasBody ? { body: JSON.stringify(parameters) } : {}),
     });
 
     if (!response.ok) {
-      throw new Error(`Home Assistant automation config save failed with ${response.status}`);
+      throw new Error(`Home Assistant API request failed with ${response.status}`);
     }
+
+    return (await response.json()) as T;
+  }
+
+  async saveAutomationConfig(configKey: string, config: Record<string, unknown>): Promise<void> {
+    await this.callApi('POST', `config/automation/config/${encodeURIComponent(configKey)}`, config);
   }
 
   async loadRegistries(): Promise<{

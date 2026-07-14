@@ -20,6 +20,8 @@ export function createHomeAssistantAppProviderPackageRegistration({
   return createHomeAssistantProviderPackageRegistration({
     dependencies: {
       homeAssistantService: {
+        callApi: (method, path, parameters) =>
+          homeAssistantService.callApi(method, path, parameters),
         callService: async (domain, service, serviceData, target) =>
           homeAssistantService.callService(domain, service, serviceData, target as never),
         signPath: (path, expiresSeconds) => homeAssistantService.signPath(path, expiresSeconds),

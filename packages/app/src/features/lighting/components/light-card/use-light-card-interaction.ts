@@ -6,6 +6,7 @@ interface UseLightCardInteractionParams {
   isOn: boolean;
   isEditMode: boolean;
   isSmall: boolean;
+  cardTapAction?: 'toggle' | 'controls';
   toggleLightState: (nextIsOn: boolean) => void;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -15,6 +16,7 @@ export function useLightCardInteraction({
   isOn,
   isEditMode,
   isSmall,
+  cardTapAction,
   toggleLightState,
   setIsOpen,
 }: UseLightCardInteractionParams) {
@@ -24,12 +26,14 @@ export function useLightCardInteraction({
     ariaLabel: name,
     ariaPressed: isOn,
     isEditMode,
+    cardTapAction,
     onToggle: () => toggleLightState(!isOn),
     onOpenControls: handleSettingsClick,
     onOpenSettings: handleSettingsClick,
   });
 
-  const showSettingsButton = cardInteraction.interactionMode !== 'control-first';
+  const showSettingsButton =
+    cardTapAction !== 'controls' && cardInteraction.interactionMode !== 'control-first';
   const showPresetOverflow = showSettingsButton || isSmall;
 
   return {

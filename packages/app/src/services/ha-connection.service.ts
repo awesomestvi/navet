@@ -315,6 +315,48 @@ class HAConnectionService {
     await callHassService(this.connection, domain, service, normalizedServiceData, target);
   }
 
+  async callApi<T = unknown>(
+    method: string,
+    path: string,
+    parameters?: Record<string, unknown>
+  ): Promise<T> {
+    const session = this.activeConfiguration;
+    if (!session) {
+      throw new Error('Home Assistant is not connected');
+    }
+
+    if (session.auth?.expired) {
+      await session.auth.refreshAccessToken();
+    }
+
+    const normalizedPath = path.replace(/^\/?api\//, '').replace(/^\//, '');
+    const url = `${session.hassUrl.replace(/\/$/, '')}/api/${normalizedPath}`;
+    const headers: Record<string, string> = {};
+    const normalizedMethod = method.toUpperCase();
+    const hasBody =
+      parameters !== undefined && normalizedMethod !== 'GET' && normalizedMethod !== 'HEAD';
+
+    if (session.auth?.accessToken) {
+      headers.Authorization = `Bearer ${session.auth.accessToken}`;
+    }
+    if (hasBody) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    const response = await fetch(url, {
+      method: normalizedMethod,
+      credentials: session.auth?.accessToken ? undefined : 'same-origin',
+      headers,
+      ...(hasBody ? { body: JSON.stringify(parameters) } : {}),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Home Assistant API request failed with ${response.status}`);
+    }
+
+    return (await response.json()) as T;
+  }
+
   async saveAutomationConfig(configKey: string, config: Record<string, unknown>): Promise<void> {
     const session = this.activeConfiguration;
     if (!session) {

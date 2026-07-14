@@ -150,10 +150,10 @@ describe('DashboardSectionRouter home controls', () => {
 });
 
 describe('shouldSubscribeTaskRoutines', () => {
-  it('subscribes only on home and tasks sections', () => {
+  it('subscribes on sections that surface routines or quick scenes', () => {
     expect(shouldSubscribeTaskRoutines('home')).toBe(true);
     expect(shouldSubscribeTaskRoutines('tasks')).toBe(true);
-    expect(shouldSubscribeTaskRoutines('lights')).toBe(false);
+    expect(shouldSubscribeTaskRoutines('lights')).toBe(true);
     expect(shouldSubscribeTaskRoutines('security')).toBe(false);
   });
 });

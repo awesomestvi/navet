@@ -4,6 +4,7 @@ import {
   createHomeAssistantProviderPackageRegistration,
   normalizeHomeAssistantBrowseLabel,
 } from './homeassistant-provider-registration';
+import type { HomeAssistantServiceBridge } from './homeassistant-service-bridge';
 
 describe('normalizeHomeAssistantBrowseLabel', () => {
   it('separates Music Assistant combined track labels when artist metadata is missing', () => {
@@ -48,6 +49,7 @@ runProviderPackageRegistrationTests({
     createHomeAssistantProviderPackageRegistration({
       getSession: () => null,
       bridge: {
+        callApi: vi.fn(async () => []) as unknown as HomeAssistantServiceBridge['callApi'],
         callService: vi.fn(async () => undefined),
         signPath: vi.fn(async (path: string) => ({ path })),
         getCameraStreamUrl: vi.fn(async () => ({ url: '/stream' })),

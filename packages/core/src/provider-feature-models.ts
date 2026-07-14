@@ -84,6 +84,26 @@ export interface PlatformEntitySnapshot {
 
 export type PlatformEntitySnapshotMap = Record<string, PlatformEntitySnapshot>;
 
+export interface PlatformEntityHistoryRequest {
+  entityId: string;
+  startTime: string;
+  endTime?: string;
+  includeAttributes?: boolean;
+  significantChangesOnly?: boolean;
+}
+
+export interface PlatformEntityHistoryPoint {
+  state: string;
+  changedAt: string;
+  updatedAt?: string;
+  attributes?: Record<string, unknown>;
+}
+
+export interface PlatformEntityHistorySeries {
+  entityId: string;
+  points: PlatformEntityHistoryPoint[];
+}
+
 export interface PlatformEntityRegistryEntry {
   entityId: string;
   deviceId?: string | null;

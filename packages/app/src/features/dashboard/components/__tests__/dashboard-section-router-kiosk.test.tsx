@@ -9,7 +9,7 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DashboardSectionRouter } from '../dashboard-section-router';
 
-let allViewGridRenderCount = 0;
+let lightsDashboardRenderCount = 0;
 
 vi.mock('@navet/app/components/layout/room-nav', () => ({
   RoomNav: () => <nav data-testid="room-nav">Room nav</nav>,
@@ -25,17 +25,17 @@ vi.mock('../home-dashboard-overview', () => ({
   HomeDashboardOverview: () => <main>Home dashboard</main>,
 }));
 
-vi.mock('../../all-view-grid', () => ({
-  AllViewGrid: () => {
-    allViewGridRenderCount += 1;
-    return <div>All view grid</div>;
+vi.mock('@navet/app/features/lighting/dashboard/lights-dashboard', () => ({
+  LightsDashboard: () => {
+    lightsDashboardRenderCount += 1;
+    return <div>Lights dashboard</div>;
   },
 }));
 
 describe('DashboardSectionRouter kiosk mode', () => {
   beforeEach(async () => {
     await resetAppStores();
-    allViewGridRenderCount = 0;
+    lightsDashboardRenderCount = 0;
   });
 
   it('renders RoomNav outside kiosk mode', async () => {
@@ -152,9 +152,9 @@ describe('DashboardSectionRouter kiosk mode', () => {
     controller.cardOrders = { Kitchen: [light.id] };
 
     const { rerender } = renderWithProviders(<DashboardSectionRouter controller={controller} />);
-    expect(await screen.findByText('All view grid')).toBeInTheDocument();
+    expect(await screen.findByText('Lights dashboard')).toBeInTheDocument();
 
-    expect(allViewGridRenderCount).toBe(1);
+    expect(lightsDashboardRenderCount).toBe(1);
 
     const nextController = {
       ...controller,
@@ -176,8 +176,8 @@ describe('DashboardSectionRouter kiosk mode', () => {
 
     rerender(<DashboardSectionRouter controller={nextController} />);
 
-    expect(await screen.findByText('All view grid')).toBeInTheDocument();
-    expect(allViewGridRenderCount).toBe(1);
+    expect(await screen.findByText('Lights dashboard')).toBeInTheDocument();
+    expect(lightsDashboardRenderCount).toBe(1);
   });
 });
 

@@ -12,6 +12,8 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { useTheme } from '@navet/app/hooks';
 import type { CSSProperties, ReactNode } from 'react';
 
+export type EntityCardHeaderVariant = 'default' | 'large';
+
 interface EntityCardHeaderProps {
   title: string;
   subtitle: string;
@@ -31,6 +33,7 @@ interface EntityCardHeaderProps {
   backgroundColor?: string | null;
   titleStyle?: CSSProperties;
   subtitleStyle?: CSSProperties;
+  variant?: EntityCardHeaderVariant;
 }
 
 export function EntityCardHeader({
@@ -52,6 +55,7 @@ export function EntityCardHeader({
   backgroundColor,
   titleStyle,
   subtitleStyle,
+  variant = 'default',
 }: EntityCardHeaderProps) {
   const { theme, accentColor: themeAccentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
@@ -65,38 +69,49 @@ export function EntityCardHeader({
   const isTiny = isTinyCardSize(size);
   const isExtraSmall = isExtraSmallCardSize(size);
   const useCompactLayout = compact && !isTiny;
+  const useLargeVariant = variant === 'large';
   const isStandardCompact = size === 'small' || size === 'medium' || size === 'medium-vertical';
   const marginBottom =
     marginBottomClassName ??
-    (isTiny || isExtraSmall || useCompactLayout ? 'mb-1' : isStandardCompact ? 'mb-2' : 'mb-2');
-  const headerGap = isTiny
-    ? 'gap-1.5'
-    : useCompactLayout
-      ? 'gap-1.5'
-      : isExtraSmall
-        ? 'gap-2'
+    (useLargeVariant
+      ? 'mb-3'
+      : isTiny || isExtraSmall || useCompactLayout
+        ? 'mb-1'
         : isStandardCompact
-          ? 'gap-2'
-          : 'gap-2';
-  const subtitleClassBase = useCompactLayout
-    ? 'truncate text-[10px] leading-[12px] tracking-normal'
-    : layout === 'eyebrow-first'
-      ? 'truncate text-[11px] leading-[14px] tracking-normal'
-      : 'truncate text-[11px] leading-[14px]';
-  const titleClassBase = useCompactLayout
-    ? 'truncate text-[11px] font-semibold leading-[13px]'
-    : 'truncate text-[12px] font-semibold leading-[18px]';
-  const crossAxisAlignment = align === 'center' ? 'items-center' : 'items-start';
+          ? 'mb-2'
+          : 'mb-2');
+  const headerGap = useLargeVariant ? 'gap-3' : isTiny || useCompactLayout ? 'gap-1.5' : 'gap-2';
+  const subtitleClassBase = useLargeVariant
+    ? 'truncate text-[11px] leading-[15px] tracking-normal'
+    : useCompactLayout
+      ? 'truncate text-[10px] leading-[12px] tracking-normal'
+      : layout === 'eyebrow-first'
+        ? 'truncate text-[11px] leading-[14px] tracking-normal'
+        : 'truncate text-[11px] leading-[14px]';
+  const titleClassBase = useLargeVariant
+    ? 'truncate text-[14px] font-semibold leading-[18px]'
+    : useCompactLayout
+      ? 'truncate text-[11px] font-semibold leading-[13px]'
+      : 'truncate text-[12px] font-semibold leading-[18px]';
+  const crossAxisAlignment = align === 'center' || useLargeVariant ? 'items-center' : 'items-start';
+  const contentFrameClassName = useLargeVariant
+    ? 'flex min-h-10 items-center'
+    : isTiny || isExtraSmall || useCompactLayout
+      ? ''
+      : 'flex min-h-8 items-center';
+  const titleStackClassName = useLargeVariant
+    ? 'flex min-h-10 min-w-0 flex-col justify-center overflow-hidden'
+    : isTiny || isExtraSmall || useCompactLayout
+      ? ''
+      : 'flex h-8 min-w-0 flex-col justify-center overflow-hidden';
 
   return (
     <div className={`flex ${crossAxisAlignment} ${headerGap} ${marginBottom} ${className}`}>
       {leading ? <div className="shrink-0">{leading}</div> : null}
       <div
-        className={`${isTiny || isExtraSmall || useCompactLayout ? '' : 'flex min-h-8 items-center'} min-w-0 flex-1 overflow-hidden ${contentClassName}`}
+        className={`${contentFrameClassName} min-w-0 flex-1 overflow-hidden ${contentClassName}`}
       >
-        <div
-          className={`${isTiny || isExtraSmall || useCompactLayout ? '' : 'flex h-8 min-w-0 flex-col justify-center overflow-hidden'} min-w-0`}
-        >
+        <div className={`${titleStackClassName} min-w-0`}>
           <EntityCardTitleBlock
             title={title}
             subtitle={subtitle}

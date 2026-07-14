@@ -104,6 +104,22 @@ describe('HomeAssistantPanelAdapter', () => {
     );
   });
 
+  it('routes REST calls through the injected hass session', async () => {
+    const callApi = vi.fn(async () => [[{ state: 'on' }]]) as unknown as NonNullable<
+      HomeAssistantPanelHass['callApi']
+    >;
+    const adapter = new HomeAssistantPanelAdapter(createPanelHass({ callApi }));
+
+    await expect(
+      adapter.callApi('GET', '/api/history/period?filter_entity_id=light.kitchen')
+    ).resolves.toEqual([[{ state: 'on' }]]);
+    expect(callApi).toHaveBeenCalledWith(
+      'GET',
+      'history/period?filter_entity_id=light.kitchen',
+      undefined
+    );
+  });
+
   it('loads registries with Home Assistant websocket commands', async () => {
     const callWS = createCallWS([
       [{ area_id: 'kitchen', name: 'Kitchen' }],

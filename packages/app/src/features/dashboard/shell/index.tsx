@@ -94,7 +94,10 @@ export const DashboardLayout = memo(function DashboardLayout({
   const textColor = surface.textPrimary;
 
   return (
-    <div className={`relative min-h-screen overflow-x-clip ${bgColor} ${textColor}`}>
+    <div
+      data-testid="dashboard-document-surface"
+      className={`relative min-h-[100dvh] overflow-x-clip ${bgColor} ${textColor}`}
+    >
       {/* Background Wallpaper with Theme-Specific Overlay */}
       {wallpaperBackgroundImage && (
         <div className="fixed inset-0 z-0">
@@ -181,7 +184,7 @@ export const DashboardLayout = memo(function DashboardLayout({
       )}
 
       {/* Content */}
-      <div className="relative z-10 overflow-x-clip">
+      <div className="relative z-10 min-h-[100dvh] overflow-x-clip">
         {showNavetSidebar ? (
           <Sidebar
             activeColorValue={headerController.activeColorValue}

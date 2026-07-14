@@ -78,6 +78,22 @@ describe('DashboardLayout', () => {
     expect(screen.queryByTestId('kiosk-orbit-menu')).not.toBeInTheDocument();
   });
 
+  it('keeps the dashboard surface behind content taller than the viewport', () => {
+    useThemeStore.getState().setWallpaper('/wallpapers/custom-room-shot.jpg');
+
+    renderWithProviders(
+      <DashboardLayout>
+        <main style={{ minHeight: '180vh' }}>Long dashboard content</main>
+      </DashboardLayout>
+    );
+
+    expect(screen.getByTestId('dashboard-document-surface')).toHaveClass('min-h-[100dvh]');
+    expect(screen.getByTestId('dashboard-layout-content').parentElement).toHaveClass(
+      'min-h-[100dvh]'
+    );
+    expect(screen.getByTestId('dashboard-wallpaper-image')).toHaveClass('absolute', 'inset-0');
+  });
+
   it('uses tighter shell padding on 768px to 1024px screens', () => {
     setPath('/dashboard');
     setMediaQueryMatch('(min-width: 768px) and (max-width: 1024px)', true);

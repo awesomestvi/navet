@@ -4,7 +4,10 @@ import {
   createHomeAssistantContractAdapter,
   createHomeAssistantProviderContract,
 } from './homeassistant-adapter';
-import { configureHomeAssistantServiceBridge } from './homeassistant-service-bridge';
+import {
+  configureHomeAssistantServiceBridge,
+  type HomeAssistantServiceBridge,
+} from './homeassistant-service-bridge';
 
 function lightEntityFactory() {
   return {
@@ -101,6 +104,7 @@ describe('homeassistant-adapter', () => {
     syncPanelHassMock.mockReset();
     currentMediaPlayerState = 'playing';
     configureHomeAssistantServiceBridge({
+      callApi: vi.fn(async () => []) as unknown as HomeAssistantServiceBridge['callApi'],
       callService: callHomeAssistantServiceMock,
       signPath: vi.fn(async (path: string) => ({ path })),
       getCameraStreamUrl: vi.fn(async () => ({ url: '/stream' })),

@@ -34,6 +34,7 @@ import HAConnectionService from '../ha-connection.service';
 
 describe('HAConnectionService', () => {
   beforeEach(() => {
+    vi.unstubAllGlobals();
     vi.useRealTimers();
     connectionListeners.clear();
     createHomeAssistantClientMock.mockReset();
@@ -59,6 +60,38 @@ describe('HAConnectionService', () => {
 
     expect(createHomeAssistantClientMock).toHaveBeenCalledWith(session);
     expect(service.getConnection()).toBe(connection);
+  });
+
+  it('calls the REST API with the active OAuth session', async () => {
+    const connection = createConnection();
+    createHomeAssistantClientMock.mockResolvedValueOnce({ connection });
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => [[{ state: 'on' }]],
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const service = new HAConnectionService();
+    await service.authenticate({
+      providerId: 'home_assistant',
+      runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://ha.example.com',
+      hassUrl: 'https://ha.example.com',
+      auth: { accessToken: 'access-token', expired: false } as never,
+    });
+
+    await expect(
+      service.callApi('GET', '/api/history/period?filter_entity_id=light.kitchen')
+    ).resolves.toEqual([[{ state: 'on' }]]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://ha.example.com/api/history/period?filter_entity_id=light.kitchen',
+      {
+        method: 'GET',
+        credentials: undefined,
+        headers: { Authorization: 'Bearer access-token' },
+      }
+    );
   });
 
   it('subscribes to Home Assistant config and entity updates and emits connection lifecycle events', async () => {

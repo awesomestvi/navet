@@ -44,6 +44,7 @@ type NavetProviderContract = {
 - entity lookup
 - generic command execution
 - live updates through subscriptions
+- optional normalized entity-history queries with provider-owned transport and payload mapping
 - optional provider feature services such as media, camera, energy, notification, task, and admin
   operations
 

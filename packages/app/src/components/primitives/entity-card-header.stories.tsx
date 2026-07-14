@@ -2,7 +2,7 @@ import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import type { Meta, StoryObj } from '@storybook/react';
 import { ChevronRight, Lightbulb } from 'lucide-react';
-import { EntityCardHeader } from './entity-card-header';
+import { EntityCardHeader, type EntityCardHeaderVariant } from './entity-card-header';
 import { EntityCardHeaderIcon } from './entity-card-header-icon';
 
 function FramedEntityCardHeader(args: {
@@ -11,6 +11,7 @@ function FramedEntityCardHeader(args: {
   size: 'tiny' | 'extra-small' | 'small' | 'medium' | 'large' | 'extra-large';
   layout?: 'title-first' | 'eyebrow-first';
   align?: 'start' | 'center';
+  variant?: EntityCardHeaderVariant;
 }) {
   const { theme } = useTheme();
   const frameClassName =
@@ -28,7 +29,15 @@ function FramedEntityCardHeader(args: {
         size={args.size}
         layout={args.layout}
         align={args.align}
-        leading={<EntityCardHeaderIcon IconComponent={Lightbulb} isActive size={args.size} />}
+        variant={args.variant}
+        leading={
+          <EntityCardHeaderIcon
+            IconComponent={Lightbulb}
+            isActive
+            size={args.size}
+            variant={args.variant}
+          />
+        }
         trailing={
           <button
             type="button"
@@ -51,7 +60,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Composable entity-card header pattern combining leading icon, title block, and trailing controls. This story reflects the shared 12px title, 11px subtitle, and 32px text-stack height baseline across card sizes.',
+          'Composable entity-card header pattern combining leading icon, title block, and trailing controls. Headers keep the compact baseline by default; larger cards can explicitly opt into the large header variant.',
       },
     },
   },
@@ -61,6 +70,7 @@ const meta = {
     size: 'medium',
     layout: 'eyebrow-first',
     align: 'start',
+    variant: 'default',
   },
 } satisfies Meta<typeof FramedEntityCardHeader>;
 
@@ -96,6 +106,15 @@ export const EyebrowLayout: Story = {
 export const CompactSize: Story = {
   args: {
     size: 'extra-small',
+  },
+};
+
+export const LargeVariant: Story = {
+  args: {
+    size: 'large',
+    variant: 'large',
+    subtitle: '3 of 5 lights on · 48% average brightness',
+    title: 'Kitchen',
   },
 };
 

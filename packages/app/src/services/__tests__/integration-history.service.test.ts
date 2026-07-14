@@ -10,6 +10,7 @@ vi.mock('@navet/app/provider-runtime-registry', () => ({
 }));
 
 import {
+  getIntegrationEntityHistory,
   getIntegrationHistoryMessageClient,
   integrationHistoryService,
   supportsIntegrationEnergyStatistics,
@@ -60,6 +61,48 @@ describe('integrationHistoryService', () => {
 
     expect(getIntegrationHistoryMessageClient('homey:sensor.energy')).toBeNull();
     expect(getProviderRuntimeRegistrationMock).toHaveBeenCalledWith('homey');
+  });
+
+  it('delegates raw history with a native id and restores the provider-scoped id', async () => {
+    const getEntityHistory = vi.fn(async ({ entityId }: { entityId: string }) => ({
+      entityId,
+      points: [{ state: 'on', changedAt: '2026-07-14T08:30:00Z' }],
+    }));
+    getProviderRuntimeRegistrationMock.mockReturnValue({
+      historyFeatureService: {
+        getMessageClient: () => null,
+        getEntityHistory,
+      },
+    });
+
+    await expect(
+      getIntegrationEntityHistory({
+        entityId: 'home_assistant:binary_sensor.motion',
+        startTime: '2026-07-14T08:00:00Z',
+        endTime: '2026-07-14T09:00:00Z',
+      })
+    ).resolves.toEqual({
+      entityId: 'home_assistant:binary_sensor.motion',
+      points: [{ state: 'on', changedAt: '2026-07-14T08:30:00Z' }],
+    });
+    expect(getEntityHistory).toHaveBeenCalledWith({
+      entityId: 'binary_sensor.motion',
+      startTime: '2026-07-14T08:00:00Z',
+      endTime: '2026-07-14T09:00:00Z',
+    });
+  });
+
+  it('returns null when the provider does not implement raw entity history', async () => {
+    getProviderRuntimeRegistrationMock.mockReturnValue({
+      historyFeatureService: { getMessageClient: () => null },
+    });
+
+    await expect(
+      getIntegrationEntityHistory({
+        entityId: 'homey:sensor.temperature',
+        startTime: '2026-07-14T08:00:00Z',
+      })
+    ).resolves.toBeNull();
   });
 
   it('uses provider-owned history support gates instead of provider identity checks', () => {

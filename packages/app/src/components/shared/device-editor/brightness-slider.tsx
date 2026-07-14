@@ -24,6 +24,7 @@ interface BrightnessSliderProps {
   max?: number;
   step?: number;
   labelKey?: TranslationKey;
+  inverseSurface?: boolean;
 }
 
 export const BrightnessSlider = memo(function BrightnessSlider({
@@ -40,6 +41,7 @@ export const BrightnessSlider = memo(function BrightnessSlider({
   max = 100,
   step = 1,
   labelKey = 'lighting.brightness',
+  inverseSurface,
 }: BrightnessSliderProps) {
   const { theme, accentColor } = useTheme();
   const { t } = useI18n();
@@ -48,7 +50,8 @@ export const BrightnessSlider = memo(function BrightnessSlider({
   const isDialogPresentation = presentation === 'dialog';
   const editorSurface = getDeviceEditorSurfaceTokens(isOn);
   const activeColor = activeColorOverride ?? accentColor;
-  const useInverseActiveLightSurface = theme === 'light' && isOn && Boolean(activeColorOverride);
+  const useInverseActiveLightSurface =
+    theme === 'light' && isOn && (inverseSurface ?? Boolean(activeColorOverride));
   const textTokens = getCardReadableTextTokens({
     theme: useInverseActiveLightSurface ? 'dark' : theme,
     tone: isOn ? 'primary' : 'neutral',

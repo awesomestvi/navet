@@ -3,6 +3,7 @@ import { getDashboardCardFootprint } from '@navet/app/components/shared/card-siz
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { EMPTY_NAVET_MEDIA_CAPABILITIES } from '@navet/app/core/navet-device-state';
+import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit-dashboard-grid';
 import {
   useProviderMediaEntityRegistry,
   useProviderMediaPlayerEntities,
@@ -16,6 +17,7 @@ import {
   useServiceActionHandler,
   useTheme,
 } from '@navet/app/hooks';
+import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import type {
   PlatformMediaBrowseResult,
   PlatformMediaItem,
@@ -27,14 +29,21 @@ import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { resolveAddonLocalEndpointUrl } from '@navet/app/utils/home-assistant-connection-target';
 import { getProviderNativeId } from '@navet/app/utils/provider-ids';
 import { sanitizeImageUrl } from '@navet/app/utils/url-security';
+import type { LucideIcon } from 'lucide-react';
 import {
   ArrowLeft,
   Bookmark,
+  Camera,
   Clock3,
   Folder,
+  Image as ImageIcon,
+  Images,
+  Library,
   ListMusic,
-  Play,
+  RadioTower,
   Search,
+  Sparkles,
+  Upload,
   UserRound,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -428,6 +437,23 @@ function isSpotifyProviderDirectory(item: PlatformMediaItem) {
   return [item.mediaContentId, item.mediaContentType, item.thumbnail, item.title].some((value) =>
     value?.toLowerCase().includes('spotify')
   );
+}
+
+function getMediaLibraryDirectoryIcon(item: PlatformMediaItem): LucideIcon {
+  const identity = [item.title, item.mediaContentId, item.mediaContentType]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  if (identity.includes('favorite')) return Bookmark;
+  if (identity.includes('upload')) return Upload;
+  if (identity.includes('camera')) return Camera;
+  if (identity.includes('radio')) return RadioTower;
+  if (identity.includes('generated') || identity.includes('ai image')) return Sparkles;
+  if (identity.includes('my media')) return Library;
+  if (identity.includes('images')) return Images;
+  if (identity.includes('image')) return ImageIcon;
+  return Folder;
 }
 
 function isArtistMediaItem(item: PlatformMediaItem) {
@@ -948,39 +974,51 @@ function useSpotifyTrackMetadata(item: PlatformMediaItem) {
 }
 
 interface MediaBrowserTileProps {
+  artworkIcon?: LucideIcon;
   compact?: boolean;
+  fallbackSubtitle?: string;
   item: PlatformMediaItem;
   mediaTileClassName: string;
   mediaTileArtworkClassName: string;
   onSelect: (item: PlatformMediaItem) => void;
   providerId?: IntegrationProviderId;
+  preferIconArtwork?: boolean;
+  showSpotifyIcon?: boolean;
+  statusLabel?: string;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
   theme: ReturnType<typeof useTheme>['theme'];
 }
 
 function MediaBrowserTile({
+  artworkIcon,
   compact = false,
+  fallbackSubtitle,
   item,
   mediaTileClassName,
   mediaTileArtworkClassName,
   onSelect,
   providerId,
+  preferIconArtwork = false,
+  showSpotifyIcon = false,
+  statusLabel,
   surface,
   theme,
 }: MediaBrowserTileProps) {
   const isDirectory = item.canExpand && !item.canPlay;
   const isArtist = isArtistMediaItem(item);
   const ItemIcon = isArtist ? UserRound : isDirectory ? Folder : ListMusic;
+  const ArtworkIcon = artworkIcon ?? ItemIcon;
   const itemInitials = getMediaItemInitials(item);
   const providerThumbnailUrl = resolveMediaBrowserThumbnailUrl(item, providerId);
   const openArtwork = useOpenMediaBrowserArtwork(item);
   const spotifyMetadata = useSpotifyTrackMetadata(item);
   const itemTitle = spotifyMetadata.title ?? item.title ?? item.mediaContentId;
-  const itemSubtitle =
+  const resolvedItemSubtitle =
     getMediaBrowserItemSubtitle(item, openArtwork) ??
     spotifyMetadata.artistName ??
     getMediaBrowserItemAlbum(item, openArtwork) ??
     spotifyMetadata.albumTitle;
+  const itemSubtitle = resolvedItemSubtitle || fallbackSubtitle;
   const [failedArtworkUrls, setFailedArtworkUrls] = useState<Set<string>>(() => new Set());
   const artworkUrl =
     [providerThumbnailUrl, ...spotifyMetadata.artworkUrls, ...openArtwork.artworkUrls].find(
@@ -1001,7 +1039,7 @@ function MediaBrowserTile({
   return (
     <button type="button" className={mediaTileClassName} onClick={() => onSelect(item)}>
       <span className={mediaTileArtworkClassName}>
-        {artworkUrl ? (
+        {artworkUrl && !preferIconArtwork ? (
           <img
             src={artworkUrl}
             alt=""
@@ -1043,36 +1081,48 @@ function MediaBrowserTile({
                   {itemInitials || <UserRound className="h-9 w-9" />}
                 </span>
               </span>
+            ) : preferIconArtwork ? (
+              <span
+                data-testid="media-library-main-icon"
+                className={`flex h-16 w-16 items-center justify-center ${
+                  theme === 'light' ? 'text-slate-700' : 'text-zinc-100'
+                }`}
+              >
+                {showSpotifyIcon ? (
+                  <svg
+                    data-testid="spotify-library-icon"
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="h-8 w-8 text-[#1DB954]"
+                  >
+                    <path d={SPOTIFY_ICON_PATH} />
+                  </svg>
+                ) : (
+                  <ArtworkIcon className="h-8 w-8" aria-hidden="true" />
+                )}
+              </span>
             ) : (
               <ItemIcon className={`h-10 w-10 ${surface.textSecondary}`} />
             )}
           </span>
         )}
         <span className="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-black/42 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-        <span
-          className={`absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border ${
-            theme === 'light'
-              ? 'border-white/70 bg-white/78 text-slate-600'
-              : theme === 'glass'
-                ? 'border-white/16 bg-black/32 text-white/82 backdrop-blur-md'
-                : 'border-zinc-700 bg-zinc-950 text-zinc-200'
-          }`}
-        >
-          {item.canPlay ? (
-            <Play className="h-3 w-3 fill-current" />
-          ) : (
-            <ItemIcon className="h-3 w-3" />
-          )}
-        </span>
       </span>
       <span
         className={`${compact ? 'mt-1.5 block truncate' : 'mt-2 overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]'} text-sm font-semibold leading-tight ${surface.textPrimary}`}
       >
         {itemTitle}
       </span>
-      {itemSubtitle ? (
+      {itemSubtitle || statusLabel ? (
         <span className={`mt-0.5 block truncate text-xs ${surface.textSecondary}`}>
           {itemSubtitle}
+          {itemSubtitle && statusLabel ? ' · ' : null}
+          {statusLabel ? (
+            <span role="status" aria-label={statusLabel}>
+              {statusLabel}
+            </span>
+          ) : null}
         </span>
       ) : null}
     </button>
@@ -1372,6 +1422,16 @@ export function MediaDashboard({
   const isMediumNarrowMediaDesktopLayout = useMediaQuery('(max-width: 1279px)');
   const isCompactDesktopMediaLayout = useMediaQuery('(max-width: 1399px)');
   const isMediumDesktopMediaLayout = useMediaQuery('(max-width: 1659px)');
+  const breakpointCols = useBreakpointCols();
+  const {
+    gridStyle: dashboardGridStyle,
+    innerContainerStyle,
+    innerRef,
+    isAutoScaled,
+    outerContainerStyle,
+    outerRef,
+    renderedGridCols,
+  } = useFitDashboardGrid(breakpointCols);
   const [rememberedSession, setRememberedSession] =
     usePersistedState<RememberedMediaSession | null>(
       STORAGE_KEYS.mediaNowPlayingSession,
@@ -1754,7 +1814,11 @@ export function MediaDashboard({
     selectedDeviceIsGrouped || nowPlayingDevice.deviceClass?.toLowerCase() === 'speaker'
       ? t('media.type.speaker').toLowerCase()
       : t('media.type.player').toLowerCase();
-  const largeCardFootprint = getDashboardCardFootprint('large', 4);
+  const largeCardFootprint = getDashboardCardFootprint('large', breakpointCols);
+  const nowPlayingColumnSpan = Math.min(4, renderedGridCols);
+  const browserColumnSpan = isSingleRowMediaLayout
+    ? renderedGridCols
+    : Math.max(2, renderedGridCols - nowPlayingColumnSpan);
 
   const runMediaCommand = useCallback(
     (
@@ -2051,15 +2115,6 @@ export function MediaDashboard({
           ? 'bg-black'
           : 'bg-zinc-950'
   }`;
-  const itemButtonClassName = `rounded-xl border text-left transition-colors ${surface.border} ${
-    theme === 'light'
-      ? 'bg-white hover:bg-slate-100'
-      : theme === 'glass'
-        ? 'bg-white/[0.045] hover:bg-white/[0.09]'
-        : theme === 'black'
-          ? 'bg-black hover:bg-zinc-950'
-          : 'bg-zinc-900 hover:bg-zinc-800'
-  }`;
   const mediaTileClassName = `group self-start rounded-xl text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
     theme === 'light'
       ? 'focus-visible:ring-slate-400 focus-visible:ring-offset-white'
@@ -2074,6 +2129,16 @@ export function MediaDashboard({
           ? 'bg-black group-hover:border-zinc-700'
           : 'bg-zinc-900 group-hover:border-zinc-600'
   }`;
+  const compactMediaTileGridClassName = isSingleRowMediaLayout
+    ? 'flex items-start gap-3 overflow-x-auto overflow-y-hidden pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+    : isNarrowMediaDesktopLayout
+      ? 'grid grid-cols-[repeat(auto-fill,6.5rem)] auto-rows-[9.25rem] content-start items-start justify-between gap-x-3 gap-y-3 overflow-hidden'
+      : 'grid grid-cols-[repeat(auto-fill,8rem)] auto-rows-[10.625rem] content-start items-start justify-between gap-x-4 gap-y-3 overflow-hidden';
+  const compactMediaTileWidthClassName = isSingleRowMediaLayout
+    ? 'w-[6.5rem] shrink-0'
+    : isNarrowMediaDesktopLayout
+      ? 'w-[6.5rem]'
+      : 'w-32';
   const selectBrowserItem = (item: PlatformMediaItem) => {
     const isDirectory = item.canExpand && !item.canPlay;
     if (isDirectory) {
@@ -2132,7 +2197,8 @@ export function MediaDashboard({
   const browserPanel = (
     <section
       data-testid="media-browser-panel"
-      className="min-w-0 space-y-4 min-[900px]:col-span-2 min-[1660px]:col-span-3 min-[1920px]:col-span-5"
+      className="min-w-0 space-y-4"
+      style={{ gridColumn: `span ${browserColumnSpan} / span ${browserColumnSpan}` }}
     >
       {canBrowseMedia ? (
         <div className="flex h-9 items-center justify-between gap-3">
@@ -2194,7 +2260,7 @@ export function MediaDashboard({
             {browseDirectoryItems.length > 0 ? (
               <div
                 data-testid="media-browser-directory-grid"
-                className="grid grid-cols-1 gap-3 min-[900px]:grid-cols-2 min-[1660px]:grid-cols-3 min-[1920px]:grid-cols-5 lg:gap-4"
+                className={compactMediaTileGridClassName}
               >
                 {visibleBrowseDirectoryItems.map((item) => {
                   const directoryCount = mediaLibraryEntityId
@@ -2202,52 +2268,28 @@ export function MediaDashboard({
                     : undefined;
                   const showSpotifyIcon =
                     browseHistory.length === 0 && isSpotifyProviderDirectory(item);
+                  const statusLabel =
+                    directoryCount === undefined
+                      ? undefined
+                      : `${directoryCount} ${directoryCount === 1 ? 'item' : 'items'}`;
 
                   return (
-                    <button
+                    <MediaBrowserTile
                       key={getMediaItemKey(item)}
-                      type="button"
-                      className={`${itemButtonClassName} flex min-h-13 items-center justify-between gap-2.5 px-3 py-2`}
-                      onClick={() => browseMediaDirectory(item)}
-                    >
-                      <span className="flex min-w-0 items-center gap-2.5">
-                        <span
-                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                            theme === 'light' ? 'bg-slate-100' : 'bg-white/8'
-                          }`}
-                        >
-                          {showSpotifyIcon ? (
-                            <svg
-                              data-testid="spotify-library-icon"
-                              aria-hidden="true"
-                              viewBox="0 0 24 24"
-                              fill="currentColor"
-                              className="h-4 w-4 text-[#1DB954]"
-                            >
-                              <path d={SPOTIFY_ICON_PATH} />
-                            </svg>
-                          ) : (
-                            <Folder className={`h-3.5 w-3.5 ${surface.textMuted}`} />
-                          )}
-                        </span>
-                        <span className={`truncate text-sm font-medium ${surface.textPrimary}`}>
-                          {item.title || item.mediaContentId}
-                        </span>
-                      </span>
-                      {directoryCount !== undefined ? (
-                        <span
-                          role="status"
-                          aria-label={`${directoryCount} ${directoryCount === 1 ? 'item' : 'items'}`}
-                          className={`min-w-6 shrink-0 rounded-full px-1.5 py-0.5 text-center text-[0.6875rem] font-semibold tabular-nums ${
-                            theme === 'light'
-                              ? 'bg-slate-200/80 text-slate-600'
-                              : 'bg-white/10 text-white/68'
-                          }`}
-                        >
-                          {directoryCount}
-                        </span>
-                      ) : null}
-                    </button>
+                      artworkIcon={getMediaLibraryDirectoryIcon(item)}
+                      compact
+                      fallbackSubtitle={showSpotifyIcon ? 'Spotify' : t('media.dashboard.browser')}
+                      item={item}
+                      mediaTileArtworkClassName={mediaTileArtworkClassName}
+                      mediaTileClassName={`${mediaTileClassName} ${compactMediaTileWidthClassName}`}
+                      onSelect={selectBrowserItem}
+                      preferIconArtwork
+                      providerId={selectedDevice.providerId}
+                      showSpotifyIcon={showSpotifyIcon}
+                      statusLabel={statusLabel}
+                      surface={surface}
+                      theme={theme}
+                    />
                   );
                 })}
               </div>
@@ -2270,11 +2312,7 @@ export function MediaDashboard({
                   style={useCompactFolderGrid ? { height: `${compactBrowserHeight}px` } : undefined}
                   className={
                     useCompactFolderGrid
-                      ? isSingleRowMediaLayout
-                        ? 'flex items-start gap-3 overflow-x-auto overflow-y-hidden pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
-                        : isNarrowMediaDesktopLayout
-                          ? 'grid grid-cols-[repeat(auto-fill,6.5rem)] auto-rows-[9.25rem] content-start items-start justify-between gap-x-3 gap-y-3 overflow-hidden'
-                          : 'grid grid-cols-[repeat(auto-fill,8rem)] auto-rows-[10.625rem] content-start items-start justify-between gap-x-4 gap-y-3 overflow-hidden'
+                      ? compactMediaTileGridClassName
                       : 'grid grid-cols-2 items-start gap-4 sm:grid-cols-[repeat(auto-fill,minmax(7.75rem,9rem))]'
                   }
                 >
@@ -2285,13 +2323,7 @@ export function MediaDashboard({
                       item={item}
                       mediaTileArtworkClassName={mediaTileArtworkClassName}
                       mediaTileClassName={`${mediaTileClassName} ${
-                        useCompactFolderGrid
-                          ? isSingleRowMediaLayout
-                            ? 'w-[6.5rem] shrink-0'
-                            : isNarrowMediaDesktopLayout
-                              ? 'w-[6.5rem]'
-                              : 'w-32'
-                          : 'w-full'
+                        useCompactFolderGrid ? compactMediaTileWidthClassName : 'w-full'
                       }`}
                       onSelect={selectBrowserItem}
                       providerId={selectedDevice.providerId}
@@ -2328,23 +2360,37 @@ export function MediaDashboard({
   return (
     <section className="relative">
       <div className="pt-2">
-        <div
-          data-testid="media-dashboard-layout"
-          className="grid gap-3 min-[900px]:grid-cols-3 min-[1660px]:grid-cols-4 min-[1920px]:grid-cols-6 lg:gap-4"
-        >
-          <section className="min-w-0 space-y-4 min-[900px]:col-span-1">
-            <div className="flex h-9 items-center gap-3">
-              <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>
-                {playbackProviderLabel ?? t(dashboardTitleKey)}
-              </h2>
-              <span className={`text-xs md:text-sm ${surface.textSecondary}`}>
-                {selectedGroupSize} {nowPlayingTypeLabel}
-                {selectedGroupSize > 1 ? 's' : ''}
-              </span>
+        <div ref={outerRef} className="relative w-full" style={outerContainerStyle}>
+          <div
+            ref={innerRef}
+            className={`w-full${isAutoScaled ? ' absolute left-0 top-0 origin-top-left' : ''}`}
+            style={innerContainerStyle}
+          >
+            <div
+              data-testid="media-dashboard-layout"
+              className="grid w-full gap-3 lg:gap-4"
+              style={{ gridTemplateColumns: dashboardGridStyle.gridTemplateColumns }}
+            >
+              <section
+                className="min-w-0 space-y-4"
+                style={{
+                  gridColumn: `span ${nowPlayingColumnSpan} / span ${nowPlayingColumnSpan}`,
+                }}
+              >
+                <div className="flex h-9 items-center gap-3">
+                  <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>
+                    {playbackProviderLabel ?? t(dashboardTitleKey)}
+                  </h2>
+                  <span className={`text-xs md:text-sm ${surface.textSecondary}`}>
+                    {selectedGroupSize} {nowPlayingTypeLabel}
+                    {selectedGroupSize > 1 ? 's' : ''}
+                  </span>
+                </div>
+                {nowPlayingPanel}
+              </section>
+              {browserPanel}
             </div>
-            {nowPlayingPanel}
-          </section>
-          {browserPanel}
+          </div>
         </div>
       </div>
     </section>

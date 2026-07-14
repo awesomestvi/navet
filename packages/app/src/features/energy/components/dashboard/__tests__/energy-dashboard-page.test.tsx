@@ -8,7 +8,7 @@ import { renderWithProviders } from '@navet/app/test/render';
 import { fireEvent, screen } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { EnergyDashboardPage } from '../energy-dashboard-page';
+import { buildUntrackedTrend, EnergyDashboardPage } from '../energy-dashboard-page';
 
 vi.mock('@navet/app/features/dashboard/components/dashboard-card-item', () => ({
   DashboardCardItem: ({
@@ -74,6 +74,126 @@ describe('EnergyDashboardPage', () => {
     expect(dots.at(-1)).toHaveAttribute('data-ring', '4');
   });
 
+  it('shows total tracked consumption without imported or generated energy', () => {
+    renderDashboardPage('default');
+
+    expect(screen.getByTestId('load-orb-consumption')).toHaveTextContent('48.4 kWh today');
+  });
+
+  it('subtracts device histories point-by-point from the whole-home sparkline', () => {
+    const scenario = getEnergyDashboardScenario('default');
+    const [bathroom, toilet] = scenario.dashboard.topConsumers;
+    if (!bathroom || !toilet) {
+      throw new Error('Expected at least two demo energy consumers');
+    }
+    const consumers = [
+      { ...bathroom, id: 'bathroom', powerW: 1280 },
+      { ...toilet, id: 'toilet', powerW: 750 },
+    ];
+
+    const trend = buildUntrackedTrend({
+      consumers,
+      consumerTrends: {
+        bathroom: [
+          { label: 'Earlier', value: 1000 },
+          { label: 'Now', value: 1280 },
+        ],
+        toilet: [
+          { label: 'Earlier', value: 500 },
+          { label: 'Now', value: 750 },
+        ],
+      },
+      wholeHomeCurrentW: 4000,
+      wholeHomePoints: [
+        { label: 'Earlier', value: 3 },
+        { label: 'Now', value: 4 },
+      ],
+    });
+
+    expect(trend.at(-1)?.value).toBe(1970);
+  });
+
+  it('hides untracked when whole-home consumption minus devices is not positive', () => {
+    renderDashboardPage('default');
+
+    expect(screen.queryByText('Untracked')).not.toBeInTheDocument();
+  });
+
+  it('calculates active and idle device shares from total tracked consumption', () => {
+    renderDashboardPage('default');
+
+    expect(screen.getByText('Active · 39% of consumption today')).toBeInTheDocument();
+    expect(screen.getByText('Idle · 17% of consumption today')).toBeInTheDocument();
+  });
+
+  it('shows zero live power for idle demo devices', () => {
+    const scenario = getEnergyDashboardScenario('default');
+    const idleConsumers = scenario.dashboard.topConsumers.filter(
+      (consumer) => consumer.status === 'idle'
+    );
+
+    expect(idleConsumers).not.toHaveLength(0);
+    expect(idleConsumers.every((consumer) => consumer.powerW === 0)).toBe(true);
+  });
+
+  it('does not include idle devices in the live-load orb', () => {
+    renderDashboardPage('default');
+
+    const orbColors = new Set(
+      screen.getAllByTestId('load-orb-dot').map((dot) => dot.style.backgroundColor)
+    );
+    expect(orbColors).not.toContain('rgb(16, 185, 129)');
+    expect(orbColors).not.toContain('rgb(244, 63, 94)');
+  });
+
+  it('shows untracked consumption in gray when no device has tracked consumption', () => {
+    const scenario = getEnergyDashboardScenario('default');
+    const dashboard = {
+      ...scenario.dashboard,
+      topConsumers: scenario.dashboard.topConsumers.map((consumer) => ({
+        ...consumer,
+        energyKWh: 0,
+        powerW: 0,
+        status: 'idle' as const,
+      })),
+    };
+
+    renderDashboardPage('default', { dashboard });
+
+    const dots = screen.getAllByTestId('load-orb-dot');
+    expect(dots).not.toHaveLength(0);
+    expect(dots.every((dot) => dot.style.backgroundColor === 'rgb(148, 163, 184)')).toBe(true);
+    expect(screen.getByText('Untracked', { selector: 'div.truncate' })).toBeInTheDocument();
+    expect(screen.getAllByText('Untracked')).toHaveLength(3);
+    expect(screen.getByText('Not assigned to a tracked device')).toBeInTheDocument();
+    expect(screen.getByTestId('load-orb-consumption')).toHaveTextContent('22.6 kWh today');
+    expect(screen.getAllByTestId('energy-now-chart-layer')).toHaveLength(7);
+  });
+
+  it('subtracts tracked devices from whole-home consumption to calculate untracked energy', () => {
+    const scenario = getEnergyDashboardScenario('default');
+    const selectedRange = scenario.dashboard.selectedRange;
+    const dashboard = {
+      ...scenario.dashboard,
+      topConsumers: scenario.dashboard.topConsumers.map((consumer, index) => ({
+        ...consumer,
+        energyKWh: index < 3 ? 4 : 0,
+      })),
+      ranges: {
+        ...scenario.dashboard.ranges,
+        [selectedRange]: {
+          ...scenario.dashboard.ranges[selectedRange],
+          totalUsageKWh: 20,
+        },
+      },
+    };
+
+    renderDashboardPage('default', { dashboard });
+
+    expect(screen.getAllByText('8.0 kWh')).toHaveLength(2);
+    expect(screen.getByTestId('load-orb-consumption')).toHaveTextContent('20.0 kWh today');
+  });
+
   it('promotes the orb and live energy split to lg widths in more-space mode', () => {
     useSettingsStore.getState().updateSettings({ dashboardSpaceMode: 'more_space' });
 
@@ -82,6 +202,14 @@ describe('EnergyDashboardPage', () => {
     const layout = screen.getByTestId('energy-live-layout');
     expect(layout).toHaveAttribute('data-space-mode', 'more_space');
     expect(layout).toHaveClass('lg:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)]');
+  });
+
+  it('keeps live energy and its orb side-by-side at xl widths in default mode', () => {
+    renderDashboardPage('default');
+
+    const layout = screen.getByTestId('energy-live-layout');
+    expect(layout).toHaveAttribute('data-space-mode', 'default');
+    expect(layout).toHaveClass('xl:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)]');
   });
 
   it('defaults to devices and toggles the table content to sources from the pills', () => {
@@ -129,10 +257,11 @@ describe('EnergyDashboardPage', () => {
     expect(sourcesCard.getAttribute('style')).toBeNull();
   });
 
-  it('does not duplicate the section customize control in the hero', () => {
-    renderDashboardPage('default', { onToggleEditMode: vi.fn() });
+  it('does not render the energy dashboard hero', () => {
+    renderDashboardPage('default');
 
-    expect(screen.queryByRole('button', { name: 'Customize' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Energy at a glance.')).not.toBeInTheDocument();
+    expect(screen.queryByText('See where power is flowing right now.')).not.toBeInTheDocument();
   });
 
   it('renders custom energy cards in their own lane', () => {
@@ -184,18 +313,5 @@ describe('EnergyDashboardPage', () => {
         sensorEntityIds: ['home_assistant:sensor.remaining_electricity'],
       },
     });
-  });
-
-  it('opens the shared energy add card dialog from the hero in edit mode', () => {
-    const onOpenAddCardDialog = vi.fn();
-
-    renderDashboardPage('default', {
-      isEditMode: true,
-      onOpenAddCardDialog,
-    });
-
-    fireEvent.click(screen.getAllByRole('button', { name: 'Add Card' })[0] as HTMLButtonElement);
-
-    expect(onOpenAddCardDialog).toHaveBeenCalledTimes(1);
   });
 });

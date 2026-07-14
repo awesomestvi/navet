@@ -22,6 +22,10 @@ export const TopConsumersList = memo(function TopConsumersList({
 }: TopConsumersListProps) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const totalConsumptionTodayKWh = consumers.reduce(
+    (total, consumer) => total + Math.max(0, consumer.energyKWh),
+    0
+  );
 
   return (
     <EnergyWidgetShell title={title} eyebrow={eyebrow}>
@@ -42,7 +46,12 @@ export const TopConsumersList = memo(function TopConsumersList({
                 </div>
                 <Text tone="muted" className="mt-1 text-sm">
                   {(consumer.room ?? 'Unassigned').trim()} ·{' '}
-                  {formatEnergyPercent(consumer.shareOfLoad * 100)}% of live load
+                  {totalConsumptionTodayKWh > 0
+                    ? formatEnergyPercent(
+                        (Math.max(0, consumer.energyKWh) / totalConsumptionTodayKWh) * 100
+                      )
+                    : formatEnergyPercent(0)}
+                  % of consumption today
                 </Text>
               </div>
               <div className="text-right">

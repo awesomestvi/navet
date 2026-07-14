@@ -63,6 +63,11 @@ type HomeAssistantMediaBrowseRequest = {
 };
 
 export interface HomeAssistantServiceBridge {
+  callApi<T = unknown>(
+    method: string,
+    path: string,
+    parameters?: Record<string, unknown>
+  ): Promise<T>;
   callService(
     domain: string,
     service: string,
@@ -164,6 +169,14 @@ export function callHomeAssistantService(
   target?: IntegrationServiceTarget
 ) {
   return getBridge().callService(domain, service, serviceData, target);
+}
+
+export function callHomeAssistantApi<T = unknown>(
+  method: string,
+  path: string,
+  parameters?: Record<string, unknown>
+) {
+  return getBridge().callApi<T>(method, path, parameters);
 }
 
 export function signHomeAssistantPath(path: string, expiresSeconds?: number) {

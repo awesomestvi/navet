@@ -56,9 +56,9 @@ const SettingsSection = lazy(async () => {
   const module = await import('@navet/app/features/settings/components/settings-section');
   return { default: module.SettingsSection };
 });
-const AllViewGrid = lazy(async () => {
-  const module = await import('../all-view-grid');
-  return { default: module.AllViewGrid };
+const LightsDashboard = lazy(async () => {
+  const module = await import('@navet/app/features/lighting/dashboard/lights-dashboard');
+  return { default: module.LightsDashboard };
 });
 const AddEntityDialog = lazy(async () => {
   const module = await import('./add-entity-dialog');
@@ -77,7 +77,7 @@ function isActiveRoutine(routine: { enabled?: boolean; state: string }) {
 }
 
 export function shouldSubscribeTaskRoutines(activeSection: DashboardController['activeSection']) {
-  return activeSection === 'home' || activeSection === 'tasks';
+  return activeSection === 'home' || activeSection === 'tasks' || activeSection === 'lights';
 }
 
 function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterProps) {
@@ -151,6 +151,10 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   const totalRoutineCount =
     routines.automations.filter(isActiveRoutine).length +
     routines.quickActions.filter(isActiveRoutine).length;
+  const lightScenes = useMemo(
+    () => routines.quickActions.filter((routine) => routine.type === 'scene'),
+    [routines.quickActions]
+  );
   const roomClimateEntityIds = useMemo(() => {
     if (isAllRooms(activeRoom)) {
       return undefined;
@@ -288,9 +292,6 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
               energyCustomCards={sectionData.energyCustomCards}
               energyOrderedCardIds={sectionData.energyOrderedCardIds}
               isEditMode={isEditMode}
-              onOpenAddCardDialog={controller.onOpenAddCardDialog}
-              onToggleEditMode={onToggleEditMode}
-              suppressEditActions={isEditMode}
               onDeleteCard={handleDeleteCard}
               onUpdateCard={handleUpdateCard}
             />
@@ -404,18 +405,13 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
           >
             <RenderProfiler id="LightsSection">
               <Suspense fallback={<LoadingSpinner message={t('common.loading')} />}>
-                <AllViewGrid
+                <LightsDashboard
                   deviceMap={lightDeviceMap}
                   rooms={lightRooms}
                   cardOrders={cardOrders}
+                  scenes={lightScenes}
                   isEditMode={isEditMode}
-                  cardSizes={cardSizes}
-                  grouping="custom"
-                  updateCardSize={updateCardSize}
                   onRemoveEntity={handleRemoveEntity}
-                  allowEntityRemoval
-                  usesHideAction
-                  densePerformanceMode={controller.densePerformanceMode}
                 />
               </Suspense>
             </RenderProfiler>

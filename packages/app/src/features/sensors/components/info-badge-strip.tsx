@@ -3,14 +3,16 @@ import { useI18n, useTheme } from '@navet/app/hooks';
 import type { Section } from '@navet/app/navigation/sections';
 import { darkenColor } from '@navet/app/utils/color-utils';
 import { openCustomExtensionUrl } from '@navet/app/utils/custom-extensions';
-import { memo } from 'react';
+import { memo, type ReactNode } from 'react';
 import type { HomeStatusSummaryItem } from './home-status-summary-model';
 
 interface SummaryBarProps {
   items: HomeStatusSummaryItem[];
-  onNavigate: (section: Section) => void;
+  onNavigate?: (section: Section) => void;
   className?: string;
   ariaLabel?: string;
+  leadingContent?: ReactNode;
+  trailingContent?: ReactNode;
 }
 
 export const SummaryBar = memo(function SummaryBar({
@@ -18,6 +20,8 @@ export const SummaryBar = memo(function SummaryBar({
   onNavigate,
   className = '',
   ariaLabel = 'Status summary',
+  leadingContent,
+  trailingContent,
 }: SummaryBarProps) {
   const { theme } = useTheme();
   const { t } = useI18n();
@@ -30,10 +34,11 @@ export const SummaryBar = memo(function SummaryBar({
   return (
     <nav className={`min-w-0 ${className}`} aria-label={ariaLabel}>
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 md:mx-0 md:flex-wrap md:gap-2 md:overflow-visible md:px-0 md:pb-0">
+        {leadingContent}
         {items.map((item) => {
           const IconComponent = item.icon;
           const iconColor = theme === 'light' ? darkenColor(item.iconColor, 68) : item.iconColor;
-          const isInteractive = Boolean(item.targetSection || item.targetUrl);
+          const isInteractive = Boolean(item.targetUrl || (item.targetSection && onNavigate));
           const chipClassName =
             theme === 'light'
               ? 'border-slate-200/70 bg-white/55 text-slate-900 shadow-[0_12px_28px_-24px_rgba(15,23,42,0.28)] hover:bg-white/75'
@@ -85,7 +90,7 @@ export const SummaryBar = memo(function SummaryBar({
                 }
 
                 if (item.targetSection) {
-                  onNavigate(item.targetSection);
+                  onNavigate?.(item.targetSection);
                 }
               }}
               className={`group inline-grid min-h-8 shrink-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-1 rounded-full border px-1.5 py-1 pr-2 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/25 md:min-h-9 md:gap-1.5 md:px-2 md:py-1.5 md:pr-3 ${chipClassName}`}
@@ -95,6 +100,7 @@ export const SummaryBar = memo(function SummaryBar({
             </button>
           );
         })}
+        {trailingContent}
       </div>
     </nav>
   );

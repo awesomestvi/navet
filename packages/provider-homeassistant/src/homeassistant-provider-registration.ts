@@ -103,6 +103,7 @@ function toHomeAssistantTarget(target?: {
 
 export interface HomeAssistantProviderDependencies {
   homeAssistantService: {
+    callApi: HomeAssistantServiceBridge['callApi'];
     callService: (
       domain: string,
       service: string,
@@ -178,6 +179,8 @@ function createHomeAssistantServiceBridgeFromDependencies(
   dependencies: HomeAssistantProviderDependencies
 ): HomeAssistantServiceBridge {
   return {
+    callApi: (method, path, parameters) =>
+      dependencies.homeAssistantService.callApi(method, path, parameters),
     callService: (domain, service, serviceData, target) =>
       dependencies.homeAssistantService.callService(
         domain,

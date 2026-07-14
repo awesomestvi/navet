@@ -1,4 +1,8 @@
-import type { PlatformMessageClient } from '@navet/app/platform/provider-feature-models';
+import type {
+  PlatformEntityHistoryRequest,
+  PlatformEntityHistorySeries,
+  PlatformMessageClient,
+} from '@navet/app/platform/provider-feature-models';
 import type { ProviderHistoryFeatureService } from '@navet/app/platform/provider-feature-services';
 import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
@@ -22,6 +26,20 @@ export function getIntegrationHistoryMessageClient(
   const providerId = resolveIntegrationProviderId(entityIdOrProviderId);
   const service = getProviderRuntimeRegistration(providerId).historyFeatureService;
   return service?.getMessageClient() ?? null;
+}
+
+export async function getIntegrationEntityHistory(
+  request: PlatformEntityHistoryRequest
+): Promise<PlatformEntityHistorySeries | null> {
+  const providerId = resolveIntegrationProviderId(request.entityId);
+  const service = getProviderRuntimeRegistration(providerId).historyFeatureService;
+  if (!service?.getEntityHistory) {
+    return null;
+  }
+
+  const nativeEntityId = request.entityId.replace(/^[^:]+:/, '');
+  const result = await service.getEntityHistory({ ...request, entityId: nativeEntityId });
+  return { ...result, entityId: request.entityId };
 }
 
 export function supportsIntegrationStatisticsHistory(

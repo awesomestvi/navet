@@ -10,6 +10,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { LightCardMedium } from './light-card-medium';
 import { LightCardSmall } from './light-card-small';
 import { getLightCardSurfaceTokens } from './light-card-surface-tokens';
+import { LightCardTableRow } from './light-card-table-row';
 import { kelvinToColor } from './light-card-utils';
 import { LightSettingsDialog } from './light-settings-dialog';
 import { useLightCardController } from './use-light-card-controller';
@@ -28,6 +29,8 @@ interface LightCardProps {
   size: CardSize;
   onSizeChange: (id: string, size: CardSize) => void;
   isEditMode: boolean;
+  cardTapAction?: 'toggle' | 'controls';
+  presentation?: 'card' | 'table-row';
 }
 
 function resolveLightCardSize(size: CardSize): CardSize {
@@ -45,6 +48,8 @@ export const LightCard = memo(function LightCard({
   size,
   onSizeChange: _onSizeChange,
   isEditMode,
+  cardTapAction,
+  presentation = 'card',
 }: LightCardProps) {
   const { theme, colors, accentColor } = useTheme();
   const { ambientLightBleed, lowPowerMode, effectsQuality } = useSettingsStore(
@@ -78,6 +83,7 @@ export const LightCard = memo(function LightCard({
     initialTemp,
     size: resolvedSize,
     isEditMode,
+    cardTapAction,
   });
   const cardShell = getCardShellSurfaceTokens(theme);
   const resolvedEffectsQuality = resolveEffectsQuality(effectsQuality, lowPowerMode);
@@ -165,7 +171,7 @@ export const LightCard = memo(function LightCard({
   return (
     <>
       <div ref={cardRef} className="relative h-full w-full overflow-visible">
-        {controller.isOn && showAmbientLightBleed && (
+        {presentation === 'card' && controller.isOn && showAmbientLightBleed && (
           <div
             data-ambient-light-bleed="true"
             aria-hidden="true"
@@ -178,112 +184,129 @@ export const LightCard = memo(function LightCard({
           />
         )}
 
-        <BaseCard
-          size={resolvedSize}
-          {...controller.cardInteraction.cardProps}
-          interactive={!isEditMode}
-          className={`relative z-10 ${CARD_VISUAL_TRANSITION_CLASS} ${!isEditMode ? 'cursor-pointer' : ''}`}
-          frameClassName={`${cardShell.rootFrameClassName} ${surfaceTokens.cardClassName}`}
-          style={surfaceTokens.cardStyle}
-          disableDefaultSheen
-          overlay={
-            <>
-              {surfaceTokens.activeGlowClassName ? (
-                <div
-                  className={surfaceTokens.activeGlowClassName}
-                  style={surfaceTokens.activeGlowStyle}
+        {presentation === 'table-row' ? (
+          <LightCardTableRow
+            name={name}
+            isOn={controller.isOn}
+            brightness={controller.brightness}
+            supportsBrightness={controller.supportsBrightness}
+            activeColor={surfaceTokens.contentAccentColor}
+            IconComponent={controller.IconComponent}
+            iconText={controller.iconText}
+            iconButtonProps={controller.iconButtonProps}
+            cardInteraction={controller.cardInteraction}
+            onBrightnessChange={controller.onBrightnessChange}
+            onBrightnessCommit={controller.onBrightnessCommit}
+            isEditMode={isEditMode}
+          />
+        ) : (
+          <BaseCard
+            size={resolvedSize}
+            {...controller.cardInteraction.cardProps}
+            interactive={!isEditMode}
+            className={`relative z-10 ${CARD_VISUAL_TRANSITION_CLASS} ${!isEditMode ? 'cursor-pointer' : ''}`}
+            frameClassName={`${cardShell.rootFrameClassName} ${surfaceTokens.cardClassName}`}
+            style={surfaceTokens.cardStyle}
+            disableDefaultSheen
+            overlay={
+              <>
+                {surfaceTokens.activeGlowClassName ? (
+                  <div
+                    className={surfaceTokens.activeGlowClassName}
+                    style={surfaceTokens.activeGlowStyle}
+                  />
+                ) : null}
+                {surfaceTokens.innerOverlayClassName ? (
+                  <div
+                    className={surfaceTokens.innerOverlayClassName}
+                    style={surfaceTokens.innerOverlayStyle}
+                  />
+                ) : null}
+                {surfaceTokens.shineOverlayClassName ? (
+                  <div className={surfaceTokens.shineOverlayClassName} />
+                ) : null}
+              </>
+            }
+            contentClassName="h-full"
+          >
+            <div className="relative flex h-full flex-col">
+              {isSmall ? (
+                <LightCardSmall
+                  name={name}
+                  room={room}
+                  size={resolvedSize}
+                  brightness={controller.brightness}
+                  currentColor={controller.currentColor}
+                  currentEffect={controller.currentEffect}
+                  colorSwatchColor={controller.colorSwatchColor}
+                  currentTempColor={currentTempColor}
+                  brightnessPresets={controller.brightnessPresets}
+                  effectOptions={controller.effectOptions}
+                  isOn={controller.isOn}
+                  activeColor={surfaceTokens.contentAccentColor}
+                  IconComponent={controller.IconComponent}
+                  iconText={controller.iconText}
+                  iconButtonProps={controller.iconButtonProps}
+                  settingsButtonProps={controller.settingsButtonProps}
+                  showSettingsButton={controller.showSettingsButton}
+                  supportsBrightness={controller.supportsBrightness}
+                  supportsEffects={controller.supportsEffects}
+                  supportsColorControl={controller.supportsColorControl}
+                  supportsColorTemperature={controller.supportsColorTemperature}
+                  colorTemp={controller.colorTemp}
+                  minColorTemp={controller.minColorTemp}
+                  maxColorTemp={controller.maxColorTemp}
+                  isKelvinMode={isKelvinMode}
+                  isColorMode={isColorMode}
+                  onKelvinToggle={handleKelvinToggle}
+                  onColorActivate={handleColorActivate}
+                  onBrightnessChange={controller.onBrightnessChange}
+                  onBrightnessCommit={controller.onBrightnessCommit}
+                  onColorChange={controller.onColorChange}
+                  onEffectSelect={controller.onEffectSelect}
+                  onTempChange={handleTempChange}
+                  onTempCommit={handleTempCommit}
                 />
-              ) : null}
-              {surfaceTokens.innerOverlayClassName ? (
-                <div
-                  className={surfaceTokens.innerOverlayClassName}
-                  style={surfaceTokens.innerOverlayStyle}
+              ) : (
+                <LightCardMedium
+                  name={name}
+                  brightness={controller.brightness}
+                  currentColor={controller.currentColor}
+                  currentEffect={controller.currentEffect}
+                  colorSwatchColor={controller.colorSwatchColor}
+                  currentTempColor={currentTempColor}
+                  brightnessPresets={controller.brightnessPresets}
+                  effectOptions={controller.effectOptions}
+                  isOn={controller.isOn}
+                  activeColor={surfaceTokens.contentAccentColor}
+                  IconComponent={controller.IconComponent}
+                  iconText={controller.iconText}
+                  iconButtonProps={controller.iconButtonProps}
+                  settingsButtonProps={controller.settingsButtonProps}
+                  showSettingsButton={controller.showSettingsButton}
+                  showPresetOverflow={controller.showPresetOverflow}
+                  supportsBrightness={controller.supportsBrightness}
+                  supportsEffects={controller.supportsEffects}
+                  supportsColorControl={controller.supportsColorControl}
+                  supportsColorTemperature={controller.supportsColorTemperature}
+                  colorTemp={controller.colorTemp}
+                  minColorTemp={controller.minColorTemp}
+                  maxColorTemp={controller.maxColorTemp}
+                  isKelvinMode={isKelvinMode}
+                  isColorMode={isColorMode}
+                  onKelvinToggle={handleKelvinToggle}
+                  onColorActivate={handleColorActivate}
+                  onBrightnessChange={controller.onBrightnessChange}
+                  onBrightnessCommit={controller.onBrightnessCommit}
+                  onColorChange={controller.onColorChange}
+                  onEffectSelect={controller.onEffectSelect}
+                  onTempChange={handleTempChange}
+                  onTempCommit={handleTempCommit}
                 />
-              ) : null}
-              {surfaceTokens.shineOverlayClassName ? (
-                <div className={surfaceTokens.shineOverlayClassName} />
-              ) : null}
-            </>
-          }
-          contentClassName="h-full"
-        >
-          <div className="relative flex h-full flex-col">
-            {isSmall ? (
-              <LightCardSmall
-                name={name}
-                room={room}
-                size={resolvedSize}
-                brightness={controller.brightness}
-                currentColor={controller.currentColor}
-                currentEffect={controller.currentEffect}
-                colorSwatchColor={controller.colorSwatchColor}
-                currentTempColor={currentTempColor}
-                brightnessPresets={controller.brightnessPresets}
-                effectOptions={controller.effectOptions}
-                isOn={controller.isOn}
-                activeColor={surfaceTokens.contentAccentColor}
-                IconComponent={controller.IconComponent}
-                iconText={controller.iconText}
-                iconButtonProps={controller.iconButtonProps}
-                settingsButtonProps={controller.settingsButtonProps}
-                showSettingsButton={controller.showSettingsButton}
-                supportsBrightness={controller.supportsBrightness}
-                supportsEffects={controller.supportsEffects}
-                supportsColorControl={controller.supportsColorControl}
-                supportsColorTemperature={controller.supportsColorTemperature}
-                colorTemp={controller.colorTemp}
-                minColorTemp={controller.minColorTemp}
-                maxColorTemp={controller.maxColorTemp}
-                isKelvinMode={isKelvinMode}
-                isColorMode={isColorMode}
-                onKelvinToggle={handleKelvinToggle}
-                onColorActivate={handleColorActivate}
-                onBrightnessChange={controller.onBrightnessChange}
-                onBrightnessCommit={controller.onBrightnessCommit}
-                onColorChange={controller.onColorChange}
-                onEffectSelect={controller.onEffectSelect}
-                onTempChange={handleTempChange}
-                onTempCommit={handleTempCommit}
-              />
-            ) : (
-              <LightCardMedium
-                name={name}
-                brightness={controller.brightness}
-                currentColor={controller.currentColor}
-                currentEffect={controller.currentEffect}
-                colorSwatchColor={controller.colorSwatchColor}
-                currentTempColor={currentTempColor}
-                brightnessPresets={controller.brightnessPresets}
-                effectOptions={controller.effectOptions}
-                isOn={controller.isOn}
-                activeColor={surfaceTokens.contentAccentColor}
-                IconComponent={controller.IconComponent}
-                iconText={controller.iconText}
-                iconButtonProps={controller.iconButtonProps}
-                settingsButtonProps={controller.settingsButtonProps}
-                showSettingsButton={controller.showSettingsButton}
-                showPresetOverflow={controller.showPresetOverflow}
-                supportsBrightness={controller.supportsBrightness}
-                supportsEffects={controller.supportsEffects}
-                supportsColorControl={controller.supportsColorControl}
-                supportsColorTemperature={controller.supportsColorTemperature}
-                colorTemp={controller.colorTemp}
-                minColorTemp={controller.minColorTemp}
-                maxColorTemp={controller.maxColorTemp}
-                isKelvinMode={isKelvinMode}
-                isColorMode={isColorMode}
-                onKelvinToggle={handleKelvinToggle}
-                onColorActivate={handleColorActivate}
-                onBrightnessChange={controller.onBrightnessChange}
-                onBrightnessCommit={controller.onBrightnessCommit}
-                onColorChange={controller.onColorChange}
-                onEffectSelect={controller.onEffectSelect}
-                onTempChange={handleTempChange}
-                onTempCommit={handleTempCommit}
-              />
-            )}
-          </div>
-        </BaseCard>
+              )}
+            </div>
+          </BaseCard>
+        )}
       </div>
 
       {controller.isOpen ? (

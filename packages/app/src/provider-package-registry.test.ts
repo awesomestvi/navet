@@ -57,6 +57,7 @@ vi.mock('./integration-session-runtime', () => ({
 
 vi.mock('./services/home-assistant.service', () => ({
   homeAssistantService: {
+    callApi: vi.fn(async () => []),
     callService: vi.fn(async () => undefined),
     signPath: vi.fn(async (path: string) => ({ path })),
     getCameraStreamUrl: vi.fn(async () => ({ url: '/stream' })),

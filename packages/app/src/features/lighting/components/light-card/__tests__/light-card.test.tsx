@@ -160,6 +160,37 @@ describe('LightCard', () => {
     expect(screen.getByText('Controls')).toBeInTheDocument();
   });
 
+  it('can open controls from the card while preserving the global toggle-first preference', () => {
+    homeAssistantStore.setState({
+      connected: true,
+      connection: {} as never,
+      entities: {
+        'light.desk_lamp': createLightEntity('on'),
+      },
+    });
+    useSettingsStore.getState().updateSettings({ entityInteractionMode: 'toggle-first' });
+
+    renderWithProviders(
+      <LightCard
+        id="light.desk_lamp"
+        name="Desk Lamp"
+        room="Office"
+        initialState
+        initialBrightness={65}
+        initialTemp={3000}
+        size="extra-small"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+        cardTapAction="controls"
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Desk Lamp' }));
+
+    expect(dispatchEntityCommandMock).not.toHaveBeenCalled();
+    expect(screen.getByText('Controls')).toBeInTheDocument();
+  });
+
   it('shows the effect picker on medium cards and sends effect selections to Home Assistant', async () => {
     homeAssistantStore.setState({
       connected: true,

@@ -28,6 +28,7 @@ export function useLightCardController({
   initialTemp,
   size,
   isEditMode,
+  cardTapAction,
 }: LightCardControllerParams): LightCardController {
   const providerEntity = useProviderEntityModel(id);
   const providerState = readNavetLightState(providerEntity);
@@ -135,6 +136,7 @@ export function useLightCardController({
     isOn,
     isEditMode,
     isSmall,
+    cardTapAction,
     toggleLightState,
     setIsOpen: isOpen ? onClose : onOpen,
   });

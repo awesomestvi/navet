@@ -1,5 +1,4 @@
 import { useAuthBaseUrl } from '@navet/app/auth/AuthProvider';
-import { DashboardHeroSection } from '@navet/app/components/patterns';
 import { BaseCard, InteractivePill } from '@navet/app/components/primitives';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { CardEditActionButton } from '@navet/app/components/shared/card-edit-action-button';
@@ -33,7 +32,6 @@ import {
 import { useI18n, useTheme } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { useDeferredVisibility } from '@navet/app/hooks/use-deferred-visibility';
-import { useMediaQuery } from '@navet/app/hooks/use-media-query';
 import { usePersistedState } from '@navet/app/hooks/use-persisted-state';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { settingsSelectors } from '@navet/app/stores/selectors';
@@ -45,11 +43,20 @@ import {
   Flame,
   Leaf,
   PlugZap,
-  Plus,
   Sun,
+  SunMedium,
+  UtilityPole,
   Zap,
 } from 'lucide-react';
-import { type CSSProperties, memo, type ReactNode, useMemo, useState } from 'react';
+import {
+  type CSSProperties,
+  memo,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { EnergyNowCardView } from '../widgets/energy-now-card-view';
 import { EnergyInsightCard } from './energy-insight-card';
 
@@ -59,18 +66,22 @@ interface EnergyDashboardPageProps {
   energyCustomCards?: CustomCard[];
   energyOrderedCardIds?: string[];
   isEditMode?: boolean;
-  onOpenAddCardDialog?: () => void;
-  onToggleEditMode?: () => void;
-  suppressEditActions?: boolean;
   onDeleteCard?: (cardId: string) => void;
   onUpdateCard?: (cardId: string, updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>) => void;
 }
-const heroLegendColors = {
-  generated: themeColorValues.green,
-  liveLoad: themeColorValues.teal,
-  gridImport: themeColorValues.orange,
-  trackedDevices: themeColorValues.blue,
-};
+const ENERGY_CONSUMER_COLORS = [
+  '#3b82f6',
+  '#f59e0b',
+  '#10b981',
+  '#d946ef',
+  '#06b6d4',
+  '#f43f5e',
+  '#84cc16',
+  '#8b5cf6',
+  '#eab308',
+  '#14b8a6',
+] as const;
+const UNTRACKED_CONSUMPTION_COLOR = '#94a3b8';
 const ENERGY_WHOLE_HOME_SPARKLINE_CARD_ID = 'energy:whole-home-sparkline';
 const ENERGY_SPARKLINE_ALLOWED_SIZES: CardSize[] = ['small', 'medium', 'large'];
 const LOAD_ORB_DRIFT_BASE_DURATION_S = 8.5;
@@ -114,8 +125,6 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
   energyCustomCards = [],
   energyOrderedCardIds = [],
   isEditMode: controlledEditMode,
-  onOpenAddCardDialog,
-  suppressEditActions = false,
   onDeleteCard,
   onUpdateCard,
 }: EnergyDashboardPageProps) {
@@ -132,7 +141,6 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
     {}
   );
   const surface = getThemeSurfaceTokens(theme);
-  const isMobileViewport = useMediaQuery('(max-width: 767px)');
   const homeAssistantEnergyUrl = resolveHomeAssistantEnergyUrl(haBaseUrl);
   const isEditMode =
     typeof controlledEditMode === 'boolean' ? controlledEditMode : uncontrolledEditMode;
@@ -163,7 +171,6 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
     [dashboard, visibleConsumers]
   );
   const liveWatts = Math.round(filteredDashboard.totals.currentLoadW);
-  const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
   const importedTodayLabel = `${formatEnergyValue(dashboard.totals.importTodayKWh)} kWh`;
   const generatedTodayLabel = `${formatEnergyValue(dashboard.totals.solarTodayKWh)} kWh`;
   const handleConsumerVisibilityChange = (consumerId: string, visible: boolean) => {
@@ -180,50 +187,21 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
   const updateSparklineCardSize = (cardId: string, size: CardSize) => {
     setSparklineCardSizes((previous) => ({ ...previous, [cardId]: size }));
   };
-  const heroActions = (
-    <div className="flex min-h-10 items-center justify-end gap-2">
-      {isEditMode && !suppressEditActions && onOpenAddCardDialog ? (
-        <button
-          type="button"
-          onClick={onOpenAddCardDialog}
-          className={`inline-flex items-center gap-1.5 rounded-[22px] border px-2.5 py-1.5 text-xs font-medium transition-colors md:gap-2 md:px-3 md:py-2 md:text-sm ${surface.border} ${surface.textSecondary} ${surface.hoverBg}`}
-        >
-          <Plus className={`h-4 w-4 ${surface.textSecondary}`} />
-          <span className={`hidden text-xs font-medium md:inline ${surface.textSecondary}`}>
-            {t('dashboard.roomNav.addCard')}
-          </span>
-        </button>
-      ) : null}
-    </div>
-  );
   return (
     <div className="space-y-5">
-      {!kioskMode ? (
-        <DashboardHeroSection
-          accentColor={accentColor}
-          actions={isMobileViewport ? null : heroActions}
-          actionsClassName="md:absolute md:top-0 md:right-0 md:mt-0 md:max-w-[22rem] md:justify-end"
-          description="See where power is flowing right now."
-          surface={surface}
-          title={t('energy.hero.title')}
-        />
-      ) : null}
-
       <section>
         <DeviceTable
           accentColor={accentColor}
           consumers={filteredDashboard.topConsumers}
-          generatedColor={heroLegendColors.generated}
-          generatedTodayKWh={dashboard.totals.exportTodayKWh}
-          gridImportTodayKWh={dashboard.totals.importTodayKWh}
+          generatedTodayKWh={dashboard.totals.solarTodayKWh}
           homeAssistantEnergyUrl={homeAssistantEnergyUrl}
-          importColor={heroLegendColors.gridImport}
           loadW={liveWatts}
           openLabel={t('common.open')}
           importedTodayLabel={importedTodayLabel}
           generatedTodayLabel={generatedTodayLabel}
           sourceDiagnostics={sourceDiagnostics}
           surface={surface}
+          totalConsumptionTodayKWh={dashboard.ranges[dashboard.selectedRange].totalUsageKWh}
         />
       </section>
 
@@ -304,11 +282,36 @@ function CompactLoadSparklines({
   const { ref: viewportRef, isVisible } = useDeferredVisibility<HTMLDivElement>({
     rootMargin: '180px 0px',
   });
+  const [consumerTrends, setConsumerTrends] = useState<Record<string, EnergySeriesPoint[]>>({});
+  const handleConsumerTrendChange = useCallback(
+    (consumerId: string, points: EnergySeriesPoint[]) => {
+      setConsumerTrends((current) =>
+        current[consumerId] === points ? current : { ...current, [consumerId]: points }
+      );
+    },
+    []
+  );
   const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
     useFitDashboardGrid(breakpointCols, false);
   const wholeHomeCardSize = resolveSparklineCardSize(
     cardSizes[ENERGY_WHOLE_HOME_SPARKLINE_CARD_ID]
   );
+  const trackedTodayKWh = consumers.reduce(
+    (total, consumer) => total + Math.max(0, consumer.energyKWh),
+    0
+  );
+  const trackedCurrentW = consumers.reduce(
+    (total, consumer) => total + Math.max(0, consumer.powerW),
+    0
+  );
+  const untrackedTodayKWh = wholeHomeTodayKWh - trackedTodayKWh;
+  const untrackedCurrentW = Math.max(0, wholeHomeCurrentW - trackedCurrentW);
+  const untrackedTrend = buildUntrackedTrend({
+    consumerTrends,
+    consumers,
+    wholeHomeCurrentW,
+    wholeHomePoints,
+  });
 
   return (
     <div ref={viewportRef}>
@@ -322,22 +325,24 @@ function CompactLoadSparklines({
             className="grid w-full grid-flow-row-dense gap-3 lg:gap-4"
             style={gridStyle as CSSProperties}
           >
-            <SparklineCardFrame
-              accentColor={accentColor}
-              cardSize={wholeHomeCardSize}
-              isEditMode={isEditMode}
-              onSizeChange={(size) => onSizeChange(ENERGY_WHOLE_HOME_SPARKLINE_CARD_ID, size)}
-              theme={theme}
-            >
-              <EnergyNowCardView
+            {untrackedTodayKWh > 0 ? (
+              <SparklineCardFrame
                 accentColor={accentColor}
-                currentLoadW={wholeHomeCurrentW}
-                size={wholeHomeCardSize}
-                title="Whole home"
-                todayUsageKWh={wholeHomeTodayKWh}
-                trend={wholeHomePoints}
-              />
-            </SparklineCardFrame>
+                cardSize={wholeHomeCardSize}
+                isEditMode={isEditMode}
+                onSizeChange={(size) => onSizeChange(ENERGY_WHOLE_HOME_SPARKLINE_CARD_ID, size)}
+                theme={theme}
+              >
+                <EnergyNowCardView
+                  accentColor={accentColor}
+                  currentLoadW={untrackedCurrentW}
+                  size={wholeHomeCardSize}
+                  title="Untracked"
+                  todayUsageKWh={untrackedTodayKWh}
+                  trend={untrackedTrend}
+                />
+              </SparklineCardFrame>
+            ) : null}
             {consumers.map((consumer) => (
               <DeviceSparklineRow
                 key={consumer.id}
@@ -350,6 +355,7 @@ function CompactLoadSparklines({
                 isEditMode={isEditMode}
                 onHideConsumer={onHideConsumer}
                 onSizeChange={onSizeChange}
+                onTrendChange={handleConsumerTrendChange}
                 theme={theme}
               />
             ))}
@@ -380,6 +386,7 @@ function DeviceSparklineRow({
   isEditMode,
   onHideConsumer,
   onSizeChange,
+  onTrendChange,
   theme,
 }: {
   accentColor: string;
@@ -389,10 +396,15 @@ function DeviceSparklineRow({
   isEditMode: boolean;
   onHideConsumer: (consumerId: string) => void;
   onSizeChange: (cardId: string, size: CardSize) => void;
+  onTrendChange: (consumerId: string, points: EnergySeriesPoint[]) => void;
   theme: ThemeType;
 }) {
   const points = useEnergyLoadHistory(consumer.powerEntityId, consumer.powerW, enabled);
   const cardId = getEnergyConsumerSparklineCardId(consumer.id);
+
+  useEffect(() => {
+    onTrendChange(consumer.id, points);
+  }, [consumer.id, onTrendChange, points]);
 
   return (
     <SparklineCardFrame
@@ -520,22 +532,64 @@ function resolveSparklineCardSize(
   return 'medium';
 }
 
+export function buildUntrackedTrend({
+  consumerTrends,
+  consumers,
+  wholeHomeCurrentW,
+  wholeHomePoints,
+}: {
+  consumerTrends: Readonly<Record<string, EnergySeriesPoint[]>>;
+  consumers: EnergyConsumer[];
+  wholeHomeCurrentW: number;
+  wholeHomePoints: EnergySeriesPoint[];
+}) {
+  const latestWholeHomeValue = wholeHomePoints.at(-1)?.value ?? 0;
+  const wholeHomeScale = latestWholeHomeValue > 0 ? wholeHomeCurrentW / latestWholeHomeValue : 0;
+
+  return wholeHomePoints.map((point, pointIndex) => {
+    const wholeHomePowerW = point.value * wholeHomeScale;
+    const trackedPowerW = consumers.reduce((total, consumer) => {
+      const trend = consumerTrends[consumer.id] ?? [];
+      if (trend.length === 0) {
+        return total + Math.max(0, consumer.powerW);
+      }
+
+      const alignedIndex =
+        wholeHomePoints.length <= 1
+          ? trend.length - 1
+          : Math.round((pointIndex / (wholeHomePoints.length - 1)) * (trend.length - 1));
+      const alignedValue = trend[alignedIndex]?.value ?? 0;
+      const latestValue = trend.at(-1)?.value ?? 0;
+      const trendScale = latestValue > 0 ? Math.max(0, consumer.powerW) / latestValue : 0;
+
+      return total + Math.max(0, alignedValue * trendScale);
+    }, 0);
+
+    return {
+      ...point,
+      value: Math.max(0, wholeHomePowerW - trackedPowerW),
+      minValue: undefined,
+      maxValue: undefined,
+    };
+  });
+}
+
 function MinimalStat({
+  icon,
   label,
   value,
-  dotColor,
   className = '',
   surfaceText,
 }: {
+  icon: ReactNode;
   label: string;
   value: string;
-  dotColor: string;
   className?: string;
   surfaceText: string;
 }) {
   return (
     <div className={`flex items-center gap-2 text-sm ${surfaceText} ${className}`}>
-      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: dotColor }} />
+      {icon}
       <span className="font-semibold tabular-nums">{value}</span>
       <span>{label}</span>
     </div>
@@ -543,73 +597,74 @@ function MinimalStat({
 }
 
 function LoadOrb({
+  consumerColors,
   consumers,
-  generatedColor,
-  generatedTodayKWh,
-  importColor,
   loadW,
-  todayKWh,
   surface,
+  untrackedPowerW,
+  untrackedTodayKWh,
 }: {
+  consumerColors: ReadonlyMap<string, string>;
   consumers: EnergyConsumer[];
-  generatedColor: string;
-  generatedTodayKWh: number;
-  importColor: string;
   loadW: number;
-  todayKWh: number;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
+  untrackedPowerW: number;
+  untrackedTodayKWh: number;
 }) {
   const motionIntensity = getLoadOrbMotionIntensity(loadW);
   const dots = buildOrbDots(motionIntensity);
   const orbSegments = getLoadOrbSegments({
+    consumerColors,
     consumers,
-    exportedKWh: generatedTodayKWh,
-    importedKWh: todayKWh,
+    untrackedPowerW,
   });
+  const consumedTodayKWh =
+    consumers.reduce((total, consumer) => total + Math.max(0, consumer.energyKWh), 0) +
+    untrackedTodayKWh;
 
   return (
     <div className="relative flex min-h-[24rem] min-w-0 items-center justify-center overflow-visible px-2 py-4">
       <style>{LOAD_ORB_RIPPLE_KEYFRAMES}</style>
       <div className="absolute inset-0" aria-hidden="true">
-        {dots.map((dot) => (
-          <span
-            key={dot.id}
-            className="navet-load-orb-dot absolute rounded-full"
-            data-ring={dot.ring}
-            data-testid="load-orb-dot"
-            style={{
-              ['--load-orb-dot-opacity' as string]: String(dot.opacity),
-              ['--load-orb-dot-x' as string]: `${dot.x}px`,
-              ['--load-orb-dot-y' as string]: `${dot.y}px`,
-              ['--load-orb-drift-x' as string]: `${dot.driftX}px`,
-              ['--load-orb-drift-y' as string]: `${dot.driftY}px`,
-              animationDelay: `${dot.delayS}s`,
-              animationDuration: `${dot.durationS}s`,
-              animationIterationCount: 'infinite',
-              animationName: 'navet-load-orb-water-drift',
-              animationTimingFunction: 'ease-in-out',
-              backgroundColor: getLoadOrbDotColor({
-                angle: dot.angle,
-                generatedColor,
-                importColor,
-                segments: orbSegments,
-              }),
-              height: dot.size,
-              left: '50%',
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: dot.size,
-            }}
-          />
-        ))}
+        {orbSegments.length > 0
+          ? dots.map((dot) => (
+              <span
+                key={dot.id}
+                className="navet-load-orb-dot absolute rounded-full"
+                data-ring={dot.ring}
+                data-testid="load-orb-dot"
+                style={{
+                  ['--load-orb-dot-opacity' as string]: String(dot.opacity),
+                  ['--load-orb-dot-x' as string]: `${dot.x}px`,
+                  ['--load-orb-dot-y' as string]: `${dot.y}px`,
+                  ['--load-orb-drift-x' as string]: `${dot.driftX}px`,
+                  ['--load-orb-drift-y' as string]: `${dot.driftY}px`,
+                  animationDelay: `${dot.delayS}s`,
+                  animationDuration: `${dot.durationS}s`,
+                  animationIterationCount: 'infinite',
+                  animationName: 'navet-load-orb-water-drift',
+                  animationTimingFunction: 'ease-in-out',
+                  backgroundColor: getLoadOrbDotColor({
+                    angle: dot.angle,
+                    segments: orbSegments,
+                  }),
+                  height: dot.size,
+                  left: '50%',
+                  top: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: dot.size,
+                }}
+              />
+            ))
+          : null}
       </div>
       <div className="relative z-10 flex flex-col items-center justify-center text-center">
         <div className={`text-4xl font-semibold tracking-tight ${surface.textPrimary}`}>
           {loadW}
         </div>
         <div className={`text-sm font-medium ${surface.textSecondary}`}>Watts now</div>
-        <div className={`mt-1 text-xs ${surface.textMuted}`}>
-          {formatEnergyValue(todayKWh)} kWh today
+        <div className={`mt-1 text-xs ${surface.textMuted}`} data-testid="load-orb-consumption">
+          {formatEnergyValue(consumedTodayKWh)} kWh today
         </div>
       </div>
     </div>
@@ -619,46 +674,47 @@ function LoadOrb({
 function DeviceTable({
   accentColor,
   consumers,
-  generatedColor,
   generatedTodayKWh,
-  gridImportTodayKWh,
   homeAssistantEnergyUrl,
-  importColor,
   importedTodayLabel,
   loadW,
   openLabel,
   generatedTodayLabel,
   sourceDiagnostics,
   surface,
+  totalConsumptionTodayKWh,
 }: {
   accentColor: string;
   consumers: EnergyConsumer[];
-  generatedColor: string;
   generatedTodayKWh: number;
-  gridImportTodayKWh: number;
   homeAssistantEnergyUrl: string | null;
-  importColor: string;
   importedTodayLabel: string;
   loadW: number;
   openLabel: string;
   generatedTodayLabel: string;
   sourceDiagnostics: EnergySourceDiagnostic[];
   surface: ReturnType<typeof getThemeSurfaceTokens>;
+  totalConsumptionTodayKWh: number;
 }) {
   const { theme } = useTheme();
   const dashboardSpaceMode = useSettingsStore(settingsSelectors.dashboardSpaceMode);
   const unavailableDevices = getUnavailableDeviceDiagnostics(consumers, sourceDiagnostics);
+  const consumerColors = useMemo(() => buildEnergyConsumerColorMap(consumers), [consumers]);
+  const trackedConsumptionTodayKWh = useMemo(
+    () => consumers.reduce((total, consumer) => total + Math.max(0, consumer.energyKWh), 0),
+    [consumers]
+  );
+  const untrackedTodayKWh = Math.max(0, totalConsumptionTodayKWh - trackedConsumptionTodayKWh);
+  const trackedPowerW = consumers.reduce(
+    (total, consumer) => total + Math.max(0, consumer.powerW),
+    0
+  );
+  const untrackedPowerW = Math.max(0, loadW - trackedPowerW);
   const [contentView, setContentView] = useState<'devices' | 'sources'>('devices');
   const useSplitOrbLayout = dashboardSpaceMode === 'more_space';
   const contentLayoutClassName = useSplitOrbLayout
     ? 'grid gap-8 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)]'
-    : 'grid gap-8 p-5 2xl:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)]';
-  const tableOrderClassName = useSplitOrbLayout
-    ? 'order-2 flex min-w-0 flex-col lg:order-1'
-    : 'order-2 flex min-w-0 flex-col 2xl:order-1';
-  const orbPaneClassName = useSplitOrbLayout
-    ? `order-1 min-w-0 border-b pb-5 lg:order-2 lg:border-b-0 lg:border-l lg:pb-0 lg:pl-6 ${surface.border}`
-    : `order-1 min-w-0 border-b pb-5 2xl:order-2 2xl:border-b-0 2xl:border-l 2xl:pb-0 2xl:pl-6 ${surface.border}`;
+    : 'grid gap-8 p-5 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)]';
   const rowDividerClassName =
     theme === 'light'
       ? 'bg-slate-300/90'
@@ -675,7 +731,7 @@ function DeviceTable({
         data-space-mode={dashboardSpaceMode}
         className={contentLayoutClassName}
       >
-        <div className={tableOrderClassName}>
+        <div className="flex min-w-0 flex-col">
           <div className="mb-4 flex items-start justify-between gap-4">
             <div>
               <h2 className={`${navetTypographyTokens.sectionHeading} ${surface.textPrimary}`}>
@@ -709,17 +765,17 @@ function DeviceTable({
             </div>
             <div className={`hidden h-6 w-px shrink-0 md:block ${rowDividerClassName}`} />
             <MinimalStat
+              icon={<UtilityPole aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />}
               label="Imported today"
               value={importedTodayLabel}
-              dotColor={heroLegendColors.gridImport}
               className="min-w-[12.5rem]"
               surfaceText={surface.textSecondary}
             />
             {generatedTodayKWh > 0 ? (
               <MinimalStat
+                icon={<SunMedium aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />}
                 label="Generated today"
                 value={generatedTodayLabel}
-                dotColor={heroLegendColors.generated}
                 className="min-w-[13rem]"
                 surfaceText={surface.textSecondary}
               />
@@ -729,7 +785,7 @@ function DeviceTable({
             className={`min-h-0 flex-1 overflow-hidden rounded-[22px] border ${surface.border} ${surface.panelMuted}`}
           >
             {contentView === 'devices' ? (
-              consumers.length === 0 ? (
+              consumers.length === 0 && untrackedTodayKWh <= 0 ? (
                 <div className={`px-4 py-5 text-sm ${surface.textMuted}`}>
                   No available device usage has been reported yet.
                 </div>
@@ -756,14 +812,14 @@ function DeviceTable({
                             <span
                               aria-hidden="true"
                               className="h-2.5 w-2.5 shrink-0 rounded-full"
-                              style={{ backgroundColor: getEnergyConsumerColor(consumer) }}
+                              style={{ backgroundColor: consumerColors.get(consumer.id) }}
                             />
                             <div className={`truncate font-medium ${surface.textPrimary}`}>
                               {consumer.name}
                             </div>
                           </div>
                           <div className={`truncate text-xs sm:block ${surface.textMuted}`}>
-                            {getDeviceUsageSubtitle(consumer, gridImportTodayKWh)}
+                            {getDeviceUsageSubtitle(consumer, trackedConsumptionTodayKWh)}
                           </div>
                         </div>
                         <div className="flex shrink-0 justify-end sm:hidden">
@@ -793,6 +849,48 @@ function DeviceTable({
                       </div>
                     </div>
                   ))}
+                  {untrackedTodayKWh > 0 ? (
+                    <div
+                      className={`grid gap-3 px-4 py-3 text-sm sm:grid-cols-[minmax(0,1fr)_5rem_5rem_4rem] sm:items-center ${
+                        consumers.length % 2 === 0 ? surface.subtleBg : ''
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span
+                            aria-hidden="true"
+                            className="h-2.5 w-2.5 shrink-0 rounded-full"
+                            style={{ backgroundColor: UNTRACKED_CONSUMPTION_COLOR }}
+                          />
+                          <div className={`truncate font-medium ${surface.textPrimary}`}>
+                            Untracked
+                          </div>
+                        </div>
+                        <div className={`truncate text-xs ${surface.textMuted}`}>
+                          Not assigned to a tracked device
+                        </div>
+                      </div>
+                      <div className="min-w-0">
+                        <div className={`text-xs font-medium sm:hidden ${surface.textMuted}`}>
+                          Now
+                        </div>
+                        <div className={`font-medium sm:text-right ${surface.textPrimary}`}>
+                          {formatPowerValue(untrackedPowerW)}
+                        </div>
+                      </div>
+                      <div className="min-w-0">
+                        <div className={`text-xs font-medium sm:hidden ${surface.textMuted}`}>
+                          Today
+                        </div>
+                        <div className={`sm:text-right ${surface.textSecondary}`}>
+                          {formatTrackedEnergyValue(untrackedTodayKWh)}
+                        </div>
+                      </div>
+                      <div className={`text-xs font-medium sm:text-right ${surface.textMuted}`}>
+                        Untracked
+                      </div>
+                    </div>
+                  ) : null}
                 </>
               )
             ) : (
@@ -844,25 +942,15 @@ function DeviceTable({
           </div>
         </div>
 
-        <div className={orbPaneClassName}>
-          <div className="mb-4">
-            <h3 className={`${navetTypographyTokens.sectionHeading} ${surface.textPrimary}`}>
-              Import Attribution
-            </h3>
-            <p className={`mt-1 ${navetTypographyTokens.bodyCompact} ${surface.textSecondary}`}>
-              Orange shows import that is still unattributed, green shows export, and each device
-              color marks tracked import usage.
-            </p>
-          </div>
-          <div className="mx-auto flex max-w-[24rem] justify-center">
+        <div className="flex min-w-0 items-center justify-center">
+          <div className="flex w-full max-w-[24rem] justify-center">
             <LoadOrb
+              consumerColors={consumerColors}
               consumers={consumers}
-              generatedColor={generatedColor}
-              generatedTodayKWh={generatedTodayKWh}
               loadW={loadW}
-              todayKWh={gridImportTodayKWh}
-              importColor={importColor}
               surface={surface}
+              untrackedPowerW={untrackedPowerW}
+              untrackedTodayKWh={untrackedTodayKWh}
             />
           </div>
         </div>
@@ -871,22 +959,20 @@ function DeviceTable({
   );
 }
 
-function getDeviceUsageSubtitle(consumer: EnergyConsumer, gridImportTodayKWh: number) {
-  if (consumer.status === 'active') {
-    return `Active · ${formatEnergyPercent(consumer.shareOfLoad * 100)}% of live load`;
-  }
+function getDeviceUsageSubtitle(consumer: EnergyConsumer, trackedConsumptionTodayKWh: number) {
+  const statusLabel = consumer.status === 'active' ? 'Active' : 'Idle';
 
   if (consumer.energyKWh > 0) {
-    const gridShare =
-      gridImportTodayKWh > 0
-        ? formatEnergyPercent((consumer.energyKWh / gridImportTodayKWh) * 100)
+    const consumptionShare =
+      trackedConsumptionTodayKWh > 0
+        ? formatEnergyPercent((consumer.energyKWh / trackedConsumptionTodayKWh) * 100)
         : null;
-    return gridShare
-      ? `Idle · ${gridShare}% of grid consumed today`
-      : `Idle · ${formatTrackedEnergyValue(consumer.energyKWh)} today`;
+    return consumptionShare
+      ? `${statusLabel} · ${consumptionShare}% of consumption today`
+      : `${statusLabel} · ${formatTrackedEnergyValue(consumer.energyKWh)} today`;
   }
 
-  return 'Idle · no live draw';
+  return `${statusLabel} · no consumption today`;
 }
 
 function formatPowerValue(powerW: number) {
@@ -1198,88 +1284,58 @@ function buildOrbDots(motionIntensity = 1) {
   return dots;
 }
 
-function getLoadOrbDotColor({
-  angle,
-  generatedColor,
-  importColor,
-  segments,
-}: {
-  angle: number;
-  generatedColor: string;
-  importColor: string;
-  segments: LoadOrbSegment[];
-}) {
+function getLoadOrbDotColor({ angle, segments }: { angle: number; segments: LoadOrbSegment[] }) {
   const progress = (angle + Math.PI) / (Math.PI * 2);
 
   for (const segment of segments) {
     if (progress <= segment.end) {
-      if (segment.kind === 'export') {
-        return generatedColor;
-      }
-      if (segment.kind === 'import') {
-        return importColor;
-      }
       return segment.color;
     }
   }
 
-  return importColor;
+  return segments.at(-1)?.color ?? 'transparent';
 }
 
 interface LoadOrbSegment {
   color: string;
   end: number;
-  kind: 'device' | 'export' | 'import';
-  start: number;
 }
 
 function getLoadOrbSegments({
+  consumerColors,
   consumers,
-  exportedKWh,
-  importedKWh,
+  untrackedPowerW,
 }: {
+  consumerColors: ReadonlyMap<string, string>;
   consumers: EnergyConsumer[];
-  exportedKWh: number;
-  importedKWh: number;
+  untrackedPowerW: number;
 }): LoadOrbSegment[] {
-  const exported = Math.max(0, exportedKWh);
-  const imported = Math.max(0, importedKWh);
   const trackedConsumers = consumers
-    .filter((consumer) => consumer.energyKWh > 0)
-    .sort((left, right) => right.energyKWh - left.energyKWh);
-  const trackedTotal = trackedConsumers.reduce((sum, consumer) => sum + consumer.energyKWh, 0);
-  const deviceTracked = Math.min(trackedTotal, imported);
-  const remainingImport = Math.max(0, imported - deviceTracked);
-  const total = exported + remainingImport + deviceTracked;
+    .filter((consumer) => consumer.status === 'active' && consumer.powerW > 0)
+    .sort((left, right) => right.powerW - left.powerW);
+  const trackedTotal = trackedConsumers.reduce((sum, consumer) => sum + consumer.powerW, 0);
+  const totalConsumption = trackedTotal + untrackedPowerW;
 
-  if (total <= 0) {
-    return [{ kind: 'import', color: '', start: 0, end: 1 }];
+  if (totalConsumption <= 0) {
+    return [];
   }
 
   const segmentInputs: Array<{
     color: string;
-    kind: LoadOrbSegment['kind'];
     value: number;
   }> = [];
 
-  if (exported > 0) {
-    segmentInputs.push({ kind: 'export', color: '', value: exported });
-  }
-
-  if (remainingImport > 0) {
-    segmentInputs.push({ kind: 'import', color: '', value: remainingImport });
-  }
-
-  const trackedScale = trackedTotal > 0 ? deviceTracked / trackedTotal : 0;
-  for (const consumer of trackedConsumers) {
-    const value = consumer.energyKWh * trackedScale;
-    if (value <= 0) {
-      continue;
-    }
+  if (untrackedPowerW > 0) {
     segmentInputs.push({
-      kind: 'device',
-      color: getEnergyConsumerColor(consumer),
-      value,
+      color: UNTRACKED_CONSUMPTION_COLOR,
+      value: untrackedPowerW,
+    });
+  }
+
+  for (const consumer of trackedConsumers) {
+    segmentInputs.push({
+      color: consumerColors.get(consumer.id) ?? ENERGY_CONSUMER_COLORS[0],
+      value: consumer.powerW,
     });
   }
 
@@ -1289,35 +1345,20 @@ function getLoadOrbSegments({
   let cursor = 0;
 
   return segmentInputs.map((segment) => {
-    const share = minVisibleShare + (segment.value / total) * flexible;
-    const start = cursor;
+    const share = minVisibleShare + (segment.value / totalConsumption) * flexible;
     cursor += share;
     return {
       color: segment.color,
-      kind: segment.kind,
-      start,
       end: Math.min(1, cursor),
     };
   });
 }
 
-function getEnergyConsumerColor(consumer: EnergyConsumer) {
-  const seed = `${consumer.id}:${consumer.name}`;
-  let hash = 0;
-  for (let index = 0; index < seed.length; index += 1) {
-    hash = (hash * 31 + seed.charCodeAt(index)) >>> 0;
-  }
-  const palette = [
-    '#60a5fa',
-    '#a78bfa',
-    '#f472b6',
-    '#38bdf8',
-    '#e879f9',
-    '#fb7185',
-    '#818cf8',
-    '#22d3ee',
-    '#c084fc',
-    '#f9a8d4',
-  ] as const;
-  return palette[hash % palette.length];
+function buildEnergyConsumerColorMap(consumers: EnergyConsumer[]) {
+  return new Map(
+    consumers.map((consumer, index) => [
+      consumer.id,
+      ENERGY_CONSUMER_COLORS[index % ENERGY_CONSUMER_COLORS.length],
+    ])
+  );
 }

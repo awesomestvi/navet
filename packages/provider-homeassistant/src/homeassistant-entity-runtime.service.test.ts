@@ -4,7 +4,10 @@ import {
   homeAssistantEntityRuntimeService,
   resetHomeAssistantEntityRuntimeServiceCachesForTests,
 } from './homeassistant-entity-runtime.service';
-import { configureHomeAssistantServiceBridge } from './homeassistant-service-bridge';
+import {
+  configureHomeAssistantServiceBridge,
+  type HomeAssistantServiceBridge,
+} from './homeassistant-service-bridge';
 
 const state = {
   entities: null as Record<string, unknown> | null,
@@ -37,6 +40,7 @@ describe('homeAssistantEntityRuntimeService', () => {
     listeners.config.clear();
     resetHomeAssistantEntityRuntimeServiceCachesForTests();
     configureHomeAssistantServiceBridge({
+      callApi: vi.fn(async () => []) as unknown as HomeAssistantServiceBridge['callApi'],
       callService: vi.fn(async () => undefined),
       signPath: vi.fn(async (path: string) => ({ path })),
       getCameraStreamUrl: vi.fn(async () => ({ url: '/stream' })),

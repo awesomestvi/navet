@@ -12,6 +12,8 @@ import type {
   PlatformCameraStreamType,
   PlatformEnergyEntityMap,
   PlatformEnergyEntityRegistryEntry,
+  PlatformEntityHistoryRequest,
+  PlatformEntityHistorySeries,
   PlatformEntityRegistryEntry,
   PlatformEntitySnapshotMap,
   PlatformMediaBrowseResult,
@@ -158,6 +160,9 @@ export interface ProviderAdminFeatureService {
 
 export interface ProviderHistoryFeatureService {
   getMessageClient: () => PlatformMessageClient | null;
+  getEntityHistory?: (
+    request: PlatformEntityHistoryRequest
+  ) => Promise<PlatformEntityHistorySeries>;
   supportsStatisticsHistory?: (entityId: string) => boolean;
   supportsEnergyStatistics?: (entityId: string) => boolean;
 }

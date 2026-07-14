@@ -4,7 +4,7 @@ import {
 } from '@navet/app/constants/media-player-features';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import type { PlatformEntityRegistryEntry } from '@navet/app/platform/provider-feature-models';
-import { setMediaQueryMatch } from '@navet/app/test/browser-mocks';
+import { setMediaQueryMatch, setVisualViewportSize } from '@navet/app/test/browser-mocks';
 import { renderWithProviders } from '@navet/app/test/render';
 import type { MediaDevice } from '@navet/app/types/device.types';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
@@ -739,7 +739,8 @@ describe('MediaDashboard', () => {
     expect(await screen.findByLabelText('0 items')).toBeInTheDocument();
   });
 
-  it('keeps non-recent media folders in the compact two-row card footprint', async () => {
+  it('aligns now playing and media-library cards to the dashboard grid', async () => {
+    setVisualViewportSize(1700, 900);
     browseMediaPlayerMock.mockImplementation(async (_entityId, media) => {
       if (media?.mediaContentId === 'spotify:directory:albums') {
         return {
@@ -771,27 +772,22 @@ describe('MediaDashboard', () => {
 
     renderWithProviders(<MediaDashboard devices={[createMediaDevice()]} />);
 
-    expect(screen.getByTestId('media-dashboard-layout')).toHaveClass(
-      'min-[900px]:grid-cols-3',
-      'min-[1660px]:grid-cols-4',
-      'min-[1920px]:grid-cols-6'
-    );
-    expect(screen.getByTestId('media-browser-panel')).toHaveClass(
-      'min-[900px]:col-span-2',
-      'min-[1660px]:col-span-3',
-      'min-[1920px]:col-span-5'
-    );
-    expect(screen.getByTestId('media-now-playing-card')).toHaveClass('w-full');
-    expect(screen.getByTestId('media-now-playing-card')).not.toHaveClass('max-w-[24rem]');
-    expect(await screen.findByTestId('media-browser-directory-grid')).toHaveClass(
-      'min-[900px]:grid-cols-2',
-      'min-[1660px]:grid-cols-3',
-      'min-[1920px]:grid-cols-5'
-    );
+    expect(screen.getByTestId('media-dashboard-layout')).toHaveStyle({
+      gridTemplateColumns: 'repeat(16, minmax(80px, 1fr))',
+    });
+    expect(screen.getByTestId('media-browser-panel')).toHaveStyle({
+      gridColumn: 'span 12 / span 12',
+    });
+    expect(screen.getByTestId('media-now-playing-card')).toHaveStyle({ height: '368px' });
+    const directoryGrid = await screen.findByTestId('media-browser-directory-grid');
+    expect(directoryGrid).toHaveClass('grid-cols-[repeat(auto-fill,8rem)]');
+    const albumDirectory = screen.getByRole('button', { name: /^Albums/ });
+    expect(albumDirectory).toHaveClass('w-32');
+    expect(albumDirectory.querySelector('.aspect-square')).toBeInTheDocument();
     fireEvent.click(await screen.findByText('Albums'));
     expect(await screen.findByRole('heading', { name: 'Albums' })).toBeInTheDocument();
     const albumGrid = screen.getByTestId('media-browser-compact-grid');
-    expect(albumGrid).toHaveStyle({ height: '364px' });
+    expect(albumGrid).toHaveStyle({ height: '368px' });
     expect(albumGrid.children).toHaveLength(16);
   });
 
