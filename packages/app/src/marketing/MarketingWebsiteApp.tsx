@@ -4,11 +4,6 @@ import { applyMarketingWebsiteMetadata } from '@navet/app/marketing/seo/marketin
 import { MarketingWebsiteShell } from '@navet/app/marketing/shell/MarketingWebsiteShell';
 import { lazy, Suspense, useEffect } from 'react';
 
-const MarketingInstallPage = lazy(async () => {
-  const module = await import('@navet/app/marketing/pages/MarketingInstallPage');
-  return { default: module.MarketingInstallPage };
-});
-
 const MarketingRoadmapPage = lazy(async () => {
   const module = await import('@navet/app/marketing/pages/MarketingRoadmapPage');
   return { default: module.MarketingRoadmapPage };
@@ -27,11 +22,7 @@ function WebsiteContent() {
 
   return (
     <MarketingWebsiteShell currentPathname={route.pathname}>
-      {route.id === 'install' ? (
-        <Suspense fallback={<DeferredPageFallback />}>
-          <MarketingInstallPage />
-        </Suspense>
-      ) : route.id === 'roadmap' ? (
+      {route.id === 'roadmap' ? (
         <Suspense fallback={<DeferredPageFallback />}>
           <MarketingRoadmapPage />
         </Suspense>

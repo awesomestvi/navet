@@ -95,6 +95,7 @@ Search `packages/` and `apps/` first. Do not assume a repo-root `src/` directory
 - `apps/standalone/src`: standalone runtime entrypoint
 - `apps/demo/src`: demo runtime entrypoint
 - `apps/website/src`: website runtime entrypoint
+- `apps/docs`: public documentation site; its content config explicitly selects publishable Markdown
 - `apps/ha-panel`: Home Assistant panel wrapper/build surface
 - `apps/storybook`: Storybook host app
 - `platform/home-assistant/`: add-on and custom-component release surfaces

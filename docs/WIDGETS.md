@@ -1,4 +1,8 @@
-# Widgets
+---
+title: Widgets
+description: Available widget types, supported sizes, placement, and current limits.
+editUrl: https://github.com/awesomestvi/navet/edit/main/docs/WIDGETS.md
+---
 
 Widgets are Navet-owned dashboard blocks. They are separate from provider-backed entity cards such
 as weather, calendar, lights, or cameras.

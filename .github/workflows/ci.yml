@@ -58,10 +58,19 @@ jobs:
         run: pnpm check:bundle-budget
 
       - name: Build marketing website
-        run: pnpm website:build:app
+        run: pnpm website:build
 
       - name: Check marketing website performance and security gates
         run: pnpm check:website-audit
+
+      - name: Build public demo
+        run: pnpm build:demo
+
+      - name: Build Storybook
+        run: pnpm storybook:build
+
+      - name: Build public documentation
+        run: pnpm docs:build
 
       - name: Run Lighthouse CI
         run: pnpm dlx @lhci/cli@0.15.1 autorun --config=./lighthouserc.cjs

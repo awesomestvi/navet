@@ -1,0 +1,676 @@
+:root {
+  color-scheme: light;
+  --navet-accent: #f97316;
+  --navet-canvas: #fafaf9;
+  --navet-surface: #ffffff;
+  --navet-surface-raised: #f8fafc;
+  --navet-surface-subtle: #f1f5f9;
+  --navet-chrome: rgba(255, 255, 255, 0.82);
+  --navet-border: rgba(203, 213, 225, 0.8);
+  --navet-border-strong: #cbd5e1;
+  --navet-text: #020617;
+  --navet-text-secondary: #334155;
+  --navet-text-muted: #64748b;
+
+  --sl-font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --sl-font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --sl-nav-height: 4.5rem;
+  --sl-sidebar-width: 16rem;
+  --sl-content-width: 50rem;
+  --sl-color-accent-low: #ffedd5;
+  --sl-color-accent: #ea580c;
+  --sl-color-accent-high: #7c2d12;
+  --sl-color-white: var(--navet-text);
+  --sl-color-gray-1: #1e293b;
+  --sl-color-gray-2: #475569;
+  --sl-color-gray-3: #64748b;
+  --sl-color-gray-4: #cbd5e1;
+  --sl-color-gray-5: #e2e8f0;
+  --sl-color-gray-6: #f1f5f9;
+  --sl-color-black: var(--navet-canvas);
+  --sl-color-bg: var(--navet-canvas);
+  --sl-color-bg-nav: transparent;
+  --sl-color-bg-sidebar: var(--navet-canvas);
+  --sl-color-hairline-light: var(--navet-border);
+  --sl-color-hairline: var(--navet-border-strong);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --navet-canvas: #06080d;
+  --navet-surface: #0d1119;
+  --navet-surface-raised: #121722;
+  --navet-surface-subtle: rgba(28, 28, 32, 0.92);
+  --navet-chrome: rgba(6, 8, 13, 0.58);
+  --navet-border: rgba(255, 255, 255, 0.09);
+  --navet-border-strong: rgba(255, 255, 255, 0.17);
+  --navet-text: #ffffff;
+  --navet-text-secondary: rgba(255, 255, 255, 0.7);
+  --navet-text-muted: rgba(255, 255, 255, 0.48);
+
+  --sl-color-accent-low: #431407;
+  --sl-color-accent: #fb923c;
+  --sl-color-accent-high: #ffedd5;
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #f4f4f5;
+  --sl-color-gray-2: #d4d4d8;
+  --sl-color-gray-3: #a1a1aa;
+  --sl-color-gray-4: #52525b;
+  --sl-color-gray-5: #27272a;
+  --sl-color-gray-6: #18181b;
+  --sl-color-black: var(--navet-canvas);
+  --sl-color-bg: var(--navet-canvas);
+  --sl-color-bg-sidebar: var(--navet-canvas);
+}
+
+html,
+body {
+  background: var(--navet-canvas);
+  color: var(--navet-text);
+}
+
+:root:not([data-theme="dark"]) body {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(249, 115, 22, 0.1), transparent 24rem),
+    radial-gradient(circle at 88% 10%, rgba(59, 130, 246, 0.07), transparent 22rem),
+    linear-gradient(180deg, #fafaf9 0%, #f8fafc 100%);
+  background-attachment: fixed;
+}
+
+@keyframes navet-docs-grid-pan {
+  from {
+    background-position: 0 0, 0 0;
+  }
+
+  to {
+    background-position: -64px -64px, -64px -64px;
+  }
+}
+
+:root[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at top, rgba(249, 115, 22, 0.18), transparent 24rem),
+    radial-gradient(circle at 82% 12%, rgba(59, 130, 246, 0.12), transparent 20rem),
+    linear-gradient(180deg, #080c13 0%, #06080d 100%);
+  background-attachment: fixed;
+}
+
+:root[data-theme="dark"] body::before,
+:root[data-theme="dark"] body::after,
+:root:not([data-theme="dark"]) body::before,
+:root:not([data-theme="dark"]) body::after {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+}
+
+:root:not([data-theme="dark"]) body::before {
+  background-image:
+    linear-gradient(rgba(15, 23, 42, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.045) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.34), transparent 72%);
+  opacity: 0.3;
+  animation: navet-docs-grid-pan 24s linear infinite;
+}
+
+:root:not([data-theme="dark"]) body::after {
+  background:
+    radial-gradient(circle at calc(100% + 4rem) -8rem, rgba(249, 115, 22, 0.1), transparent 38%),
+    radial-gradient(circle at -8rem 28rem, rgba(59, 130, 246, 0.08), transparent 42%);
+  mask-image: linear-gradient(180deg, black, rgba(0, 0, 0, 0.58) 58%, transparent 100%);
+}
+
+:root[data-theme="dark"] body::before {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.48), transparent 78%);
+  opacity: 0.24;
+  animation: navet-docs-grid-pan 24s linear infinite;
+}
+
+:root[data-theme="dark"] body::after {
+  background:
+    radial-gradient(circle at calc(100% + 4rem) -8rem, rgba(249, 115, 22, 0.2), rgba(251, 191, 36, 0.1) 22%, transparent 42%),
+    radial-gradient(circle at -8rem 28rem, rgba(59, 130, 246, 0.14), rgba(14, 165, 233, 0.08) 24%, transparent 44%),
+    radial-gradient(ellipse at 50% 22rem, rgba(249, 115, 22, 0.09), rgba(251, 191, 36, 0.04) 24%, transparent 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 16%),
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.025) 22%, rgba(249, 115, 22, 0.035) 46%, rgba(255, 255, 255, 0.015) 62%, transparent 78%);
+  mask-image: linear-gradient(180deg, black, rgba(0, 0, 0, 0.72) 58%, transparent 100%);
+}
+
+.page {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+}
+
+* {
+  scrollbar-color: color-mix(in srgb, var(--navet-text-muted) 38%, transparent) transparent;
+}
+
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--navet-accent) 78%, white);
+  outline-offset: 3px;
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(8px);
+}
+
+/* A single product bar shared with navet.app. */
+header.header {
+  height: var(--sl-nav-height);
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.navet-header-shell {
+  display: grid;
+  width: calc(100% - 2rem);
+  max-width: 82.5rem;
+  min-height: 4rem;
+  grid-template-columns: auto 1fr auto;
+  gap: clamp(1rem, 2vw, 2rem);
+  align-items: center;
+  margin: 0.75rem auto;
+  padding: 0.5rem 0.75rem 0.5rem 1rem;
+  border: 1px solid var(--navet-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--navet-surface) 82%, transparent);
+  box-shadow: 0 20px 60px -40px rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(20px);
+}
+
+.navet-brand {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+}
+
+.navet-brand img {
+  width: auto;
+  height: 2.75rem;
+}
+
+.navet-brand-logo--dark {
+  display: none;
+}
+
+:root[data-theme="dark"] .navet-brand-logo--light {
+  display: none;
+}
+
+:root[data-theme="dark"] .navet-brand-logo--dark {
+  display: block;
+}
+
+.navet-primary-nav,
+.navet-header-tools {
+  display: flex;
+  align-items: center;
+}
+
+.navet-primary-nav {
+  justify-content: flex-end;
+  gap: 0.2rem;
+}
+
+.navet-primary-nav a {
+  display: inline-flex;
+  min-height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.72rem;
+  border-radius: 999px;
+  color: var(--navet-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 150ms ease, background 150ms ease;
+}
+
+.navet-primary-nav a:hover,
+.navet-primary-nav a.is-active {
+  background: var(--navet-surface-subtle);
+  color: var(--navet-text);
+}
+
+.navet-header-tools {
+  gap: 0.5rem;
+}
+
+.navet-search {
+  width: clamp(10rem, 18vw, 15rem);
+}
+
+.navet-github-stars {
+  display: inline-flex;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0 0.78rem;
+  border: 1px solid var(--navet-border);
+  border-radius: 999px;
+  background: var(--navet-surface-subtle);
+  color: var(--navet-text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 150ms ease, border-color 150ms ease, background 150ms ease;
+}
+
+.navet-github-stars:hover {
+  border-color: var(--navet-border-strong);
+  background: var(--navet-surface);
+  color: var(--navet-text);
+}
+
+.navet-github-mark {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: 0 0 auto;
+}
+
+.navet-github-stars-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  color: var(--navet-text-muted);
+  font-size: 0.72rem;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+}
+
+.navet-github-stars-meta[hidden] {
+  display: none;
+}
+
+.navet-github-star {
+  width: 0.72rem;
+  height: 0.72rem;
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+
+site-search button[data-open-modal],
+.navet-theme-toggle button,
+starlight-menu-button button {
+  border: 1px solid var(--navet-border) !important;
+  border-radius: 999px !important;
+  background: var(--navet-surface-subtle) !important;
+  color: var(--navet-text-secondary) !important;
+  box-shadow: none !important;
+}
+
+.navet-theme-toggle {
+  display: flex;
+}
+
+.navet-theme-toggle button {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  padding: 0 !important;
+  cursor: pointer;
+}
+
+.navet-theme-icon {
+  display: none;
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+:root[data-theme="dark"] .navet-theme-icon--sun,
+:root[data-theme="light"] .navet-theme-icon--moon {
+  display: block;
+}
+
+site-search button[data-open-modal]:hover,
+.navet-theme-toggle button:hover,
+starlight-menu-button button:hover {
+  border-color: var(--navet-border-strong) !important;
+  color: var(--navet-text) !important;
+}
+
+/* Documentation shell: quiet structure, familiar Navet surfaces. */
+.sidebar-pane {
+  border-inline-end: 1px solid var(--navet-border);
+  background: var(--navet-chrome);
+  backdrop-filter: blur(24px) saturate(120%);
+  -webkit-backdrop-filter: blur(24px) saturate(120%);
+}
+
+.sidebar-content {
+  padding: 1.75rem 1rem 2rem 1.25rem;
+}
+
+.sidebar-content .top-level > li + li {
+  margin-top: 0.3rem;
+}
+
+.sidebar-content summary,
+.sidebar-content a {
+  border-radius: 12px;
+}
+
+.sidebar-content .large {
+  color: var(--navet-text);
+  font-size: 0.76rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.sidebar-content a {
+  padding-block: 0.46rem;
+  color: var(--navet-text-secondary);
+  font-size: 0.85rem;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.sidebar-content a:hover {
+  background: var(--navet-surface-subtle);
+  color: var(--navet-text);
+}
+
+.sidebar-content a[aria-current="page"] {
+  background: color-mix(in srgb, var(--navet-accent) 13%, var(--navet-surface));
+  color: var(--navet-text);
+  font-weight: 600;
+}
+
+.sidebar-content a[aria-current="page"]::before {
+  background-color: var(--navet-accent);
+}
+
+.main-pane,
+.main-frame,
+.content-panel {
+  background: transparent;
+}
+
+.content-panel,
+.right-sidebar {
+  border: 0;
+}
+
+.right-sidebar-panel {
+  padding-top: 1.5rem;
+}
+
+.right-sidebar-panel a {
+  color: var(--navet-text-muted);
+}
+
+.right-sidebar-panel a[aria-current="true"] {
+  color: var(--navet-text);
+}
+
+.sl-markdown-content {
+  color: var(--navet-text-secondary);
+  font-size: 0.98rem;
+  line-height: 1.72;
+}
+
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3,
+.sl-markdown-content h4,
+h1[data-page-title] {
+  color: var(--navet-text);
+  font-weight: 620;
+  letter-spacing: -0.035em;
+}
+
+.navet-page-heading {
+  padding-top: clamp(1.5rem, 4vw, 3rem);
+}
+
+.navet-page-heading p {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.8rem;
+  color: var(--navet-text-muted);
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.navet-page-heading p span {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--navet-accent);
+  box-shadow: 0 0 0 0.26rem color-mix(in srgb, var(--navet-accent) 15%, transparent);
+}
+
+.navet-page-heading h1 {
+  max-width: 15ch;
+  margin: 0;
+  color: var(--navet-text);
+  font-size: clamp(2.45rem, 5vw, 4rem);
+  font-weight: 620;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+}
+
+h1[data-page-title] {
+  max-width: 14ch;
+  font-size: clamp(2.6rem, 5vw, 4.15rem);
+  line-height: 0.98;
+  letter-spacing: -0.058em;
+}
+
+.sl-markdown-content h2 {
+  font-size: 1.52rem;
+}
+
+.sl-markdown-content h3 {
+  font-size: 1.1rem;
+}
+
+.sl-markdown-content a {
+  color: var(--navet-text);
+  font-weight: 560;
+  text-decoration-color: color-mix(in srgb, var(--navet-accent) 55%, transparent);
+  text-underline-offset: 0.2em;
+}
+
+.sl-markdown-content code:not(:where(.not-content *)) {
+  border: 1px solid var(--navet-border);
+  border-radius: 0.5rem;
+  background: var(--navet-surface-raised);
+  color: var(--navet-text);
+}
+
+.expressive-code {
+  overflow: hidden;
+  border: 1px solid var(--navet-border);
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+.starlight-aside {
+  border: 1px solid var(--navet-border);
+  border-inline-start-width: 1px;
+  border-radius: 18px;
+  background: var(--navet-surface-raised);
+  box-shadow: none;
+}
+
+.pagination-links {
+  gap: 0.75rem;
+}
+
+.pagination-links a {
+  min-height: 4.5rem;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--navet-border);
+  border-radius: 20px;
+  background: var(--navet-surface);
+  color: var(--navet-text-muted);
+  box-shadow: none;
+  font-family: var(--sl-font);
+  text-decoration: none;
+  transition: color 150ms ease, border-color 150ms ease, background 150ms ease;
+}
+
+.pagination-links a > span {
+  color: var(--navet-text-muted);
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.pagination-links .link-title {
+  display: inline-block;
+  margin-top: 0.32rem;
+  color: var(--navet-text);
+  font-family: var(--sl-font);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  line-height: 1.25;
+  text-transform: none;
+}
+
+.pagination-links a > svg {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  padding: 0.48rem;
+  border-radius: 999px;
+  background: var(--navet-surface-subtle);
+  color: var(--navet-text-secondary);
+}
+
+.pagination-links a:hover {
+  border-color: var(--navet-border-strong);
+  background: var(--navet-surface-raised);
+  color: var(--navet-text);
+}
+
+.pagination-links a:hover > svg {
+  background: color-mix(in srgb, var(--navet-accent) 13%, var(--navet-surface-subtle));
+  color: var(--navet-accent);
+}
+
+@media (min-width: 50rem) {
+  header.header {
+    border-bottom: 1px solid var(--navet-border);
+    background: var(--navet-chrome);
+    backdrop-filter: blur(24px) saturate(120%);
+    -webkit-backdrop-filter: blur(24px) saturate(120%);
+  }
+
+  .navet-header-shell {
+    width: 100%;
+    max-width: none;
+    min-height: var(--sl-nav-height);
+    grid-template-columns: calc(var(--sl-sidebar-width) - 1.25rem) minmax(0, 1fr) auto;
+    gap: 1rem;
+    margin: 0;
+    padding: 0 1.25rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  .navet-primary-nav {
+    justify-content: center;
+  }
+
+  .sidebar-pane {
+    inset-block-start: var(--sl-nav-height);
+    padding-top: 0;
+  }
+}
+
+@media (min-width: 72rem) {
+  .right-sidebar-panel {
+    padding-top: clamp(10.5rem, 11vw, 13.5rem);
+  }
+}
+
+@media (max-width: 72rem) {
+  .navet-primary-nav a:not(.is-active) {
+    display: none;
+  }
+}
+
+@media (max-width: 50rem) {
+  :root {
+    --sl-nav-height: 4.75rem;
+  }
+
+  .navet-header-shell {
+    width: calc(100% - 1rem);
+    min-height: 3.75rem;
+    grid-template-columns: auto 1fr;
+    margin: 0.5rem auto;
+    padding: 0.4rem 0.55rem 0.4rem 0.8rem;
+  }
+
+  .navet-brand img {
+    height: 2.5rem;
+  }
+
+  .navet-primary-nav,
+  .navet-search {
+    display: none;
+  }
+
+  .navet-header-tools {
+    justify-self: end;
+  }
+
+  .navet-github-stars {
+    width: 2.5rem;
+    padding: 0;
+  }
+
+  .navet-github-stars-meta {
+    display: none;
+  }
+
+  .navet-github-label {
+    display: none;
+  }
+
+  .sidebar-content {
+    padding: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before {
+    animation: none;
+  }
+
+  .navet-primary-nav a {
+    transition: none;
+  }
+}

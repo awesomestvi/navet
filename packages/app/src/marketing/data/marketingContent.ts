@@ -1,22 +1,28 @@
 import { MARKETING_URLS } from '@navet/app/marketing/constants/marketingLinks';
-import { Bot, LayoutDashboard, Palette, PanelsTopLeft, Smartphone, ToggleLeft } from 'lucide-react';
+import {
+  Cable,
+  LayoutDashboard,
+  Palette,
+  PanelsTopLeft,
+  Smartphone,
+  ToggleLeft,
+} from 'lucide-react';
 
 export const MARKETING_HERO_CONTENT = {
   headline: {
-    lead: 'One surface for the',
-    accent: 'smart home',
+    lead: 'A calmer dashboard for',
+    accent: 'your smart home',
   },
   subheadline:
-    'Navet turns provider integrations into a cleaner daily dashboard for wall panels, tablets, desktops, and phones, with shared UI already running across Home Assistant, Homey, and openHAB.',
-  supportLine: 'Less dashboard maintenance, more useful control.',
-  pills: ['3 providers', '30+ shared surfaces', 'Wall panels to phones'],
-  primaryCtas: [{ label: 'Try the demo', href: MARKETING_URLS.demo }],
+    'Navet is a polished, local-first smart-home dashboard for Home Assistant, Homey, and openHAB, designed for wall panels, tablets, desktops, and phones.',
+  supportLine: 'Rooms, devices, and routines without the admin-screen clutter.',
+  pills: ['Local-first', '3 supported platforms', 'Wall panels to phones'],
+  primaryCtas: [{ label: 'Explore the demo', href: MARKETING_URLS.demo }],
   secondaryCtas: [
-    { label: 'View GitHub', href: MARKETING_URLS.github, external: true },
     {
       label: 'How to install',
       href: MARKETING_URLS.install.page,
-      external: false,
+      external: true,
     },
   ],
 } as const;
@@ -41,10 +47,10 @@ export const MARKETING_FEATURES = [
     icon: LayoutDashboard,
   },
   {
-    title: 'Provider-neutral by design',
+    title: 'Works with your platform',
     description:
-      'Shared UI sits above provider adapters instead of collapsing into one backend-specific frontend.',
-    icon: Bot,
+      'Use Navet with Home Assistant, Homey, or openHAB without changing how the dashboard feels.',
+    icon: Cable,
   },
   {
     title: 'Built for real surfaces',
@@ -53,17 +59,17 @@ export const MARKETING_FEATURES = [
     icon: Smartphone,
   },
   {
-    title: 'A calmer daily dashboard',
+    title: 'Daily control without the clutter',
     description:
-      'The product aims for quick household control instead of raw admin screens and startup-style marketing noise.',
+      'Reach the rooms, devices, and routines you use every day without digging through raw admin screens.',
     icon: ToggleLeft,
   },
 ] as const;
 
 export const MARKETING_PRODUCT_PROOF = {
-  title: 'Less dashboard maintenance. More useful control.',
+  title: 'Rooms first. Controls close at hand.',
   description:
-    'Navet is not trying to expose every backend concept on the first screen. It keeps the interface direct, room-based, and practical for the routines people repeat every day.',
+    'Navet keeps daily control direct and room-based, with the details you need close by and backend complexity out of the way.',
   columns: [
     {
       kicker: 'Dashboard shape',
@@ -72,7 +78,7 @@ export const MARKETING_PRODUCT_PROOF = {
     },
     {
       kicker: 'Device coverage',
-      title: 'Core controls already share the same surface.',
+      title: 'Core controls share one visual language.',
       items: [
         'Lights',
         'Switches',
@@ -99,12 +105,13 @@ export const MARKETING_PRODUCT_PROOF = {
 } as const;
 
 export const MARKETING_CURRENT_SUPPORT = {
-  title: '3 providers.',
-  subtitle: '30+ shared surfaces already in motion.',
+  title: 'Works with three smart-home platforms.',
+  subtitle:
+    'Choose the platform you already use, then keep the same Navet experience across screens.',
   providers: [
-    { name: 'Home Assistant', status: 'Available in Navet today' },
-    { name: 'Homey', status: 'Available in Navet today' },
-    { name: 'openHAB', status: 'Available in Navet today' },
+    { name: 'Home Assistant', status: 'Most mature integration' },
+    { name: 'Homey', status: 'Supported in standalone mode' },
+    { name: 'openHAB', status: 'Supported in standalone mode' },
   ],
   dashboardSections: [
     'Home',
@@ -135,30 +142,6 @@ export const MARKETING_CURRENT_SUPPORT = {
   widgets: ['RSS', 'Photo', 'Note', 'Battery', 'UPS', 'Energy now', 'Button', 'Map'],
 } as const;
 
-export const MARKETING_INSTALL_OPTIONS = [
-  {
-    label: 'Home Assistant',
-    title: 'Home Assistant Custom Panel',
-    description:
-      'Run Navet in the Home Assistant sidebar through HACS when you want a Home Assistant-hosted experience.',
-    href: MARKETING_URLS.install.homeAssistantCustomPanel,
-  },
-  {
-    label: 'Home Assistant',
-    title: 'Home Assistant Add-on',
-    description:
-      'Use Ingress when you want Home Assistant to own installation, updates, and the local app lifecycle.',
-    href: MARKETING_URLS.install.homeAssistantAddon,
-  },
-  {
-    label: 'Standalone',
-    title: 'Standalone Docker',
-    description:
-      'Run Navet as its own app when you want the same dashboard shell with provider setup that matches your deployment.',
-    href: MARKETING_URLS.install.standaloneDocker,
-  },
-] as const;
-
 export const MARKETING_PRIVACY = {
   eyebrow: 'PRIVACY',
   title: 'Local by default.',
@@ -167,20 +150,15 @@ export const MARKETING_PRIVACY = {
   pills: ['Local storage', 'Self-hosted friendly', 'Provider tokens stay local'],
 } as const;
 
-export const MARKETING_SECONDARY_INSTALLS = [
-  { title: 'Homey standalone setup', href: MARKETING_URLS.install.homey },
-  { title: 'openHAB standalone setup', href: MARKETING_URLS.install.openhab },
-] as const;
-
 export const MARKETING_ROADMAP = {
-  title: 'Clear about what ships now and what still needs work.',
+  title: 'What Navet supports now—and what comes next.',
   description:
-    'Provider-neutral architecture is already real in the product, but maturity is not equal everywhere. The roadmap keeps current proof separate from the next layer of expansion.',
+    'See what is ready today, what the team is improving next, and where broader platform support fits.',
   now: [
-    'Provider-neutral app shell',
+    'Home Assistant, Homey, and openHAB support',
     'Core dashboard cards',
     'Themes',
-    'Mature Home Assistant path',
+    'Wall-panel, tablet, desktop, and phone layouts',
   ],
   next: [
     'More entity coverage',

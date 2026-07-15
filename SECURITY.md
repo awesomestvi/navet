@@ -1,4 +1,8 @@
-# Security Policy
+---
+title: Security policy
+description: Supported versions, vulnerability reporting, and safe deployment guidance.
+editUrl: https://github.com/awesomestvi/navet/edit/main/SECURITY.md
+---
 
 ## Reporting A Vulnerability
 
@@ -40,7 +44,7 @@ dashboard data, and external feeds as sensitive.
 - serve Navet behind HTTPS
 - do not ship real provider credentials in static assets, demo content, or exported configs
 - use least-privilege provider accounts where possible
-- keep public demos on `/demo` only
+- keep public demo data on `demo.navet.app` only
 - validate release and deployment changes before publishing
 
 ### Authentication

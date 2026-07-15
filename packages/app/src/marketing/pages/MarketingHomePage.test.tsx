@@ -60,15 +60,21 @@ describe('MarketingHomePage', () => {
     win.cancelIdleCallback = vi.fn();
   });
 
-  it('keeps the privacy section in the homepage flow before the demo CTA', async () => {
+  it('places the demo CTA directly after product proof and keeps the privacy promise', async () => {
     renderWithProviders(<MarketingHomePage />);
 
-    const privacyHeading = await screen.findByRole('heading', { name: 'Local by default.' });
+    const productPreview = await screen.findByText('Product preview section');
     const demoHeading = await screen.findByRole('heading', {
       name: 'Use the demo. Then run it at home.',
     });
+    const featureGrid = await screen.findByText('Feature grid section');
+    const privacyHeading = await screen.findByRole('heading', { name: 'Local by default.' });
 
-    expect(privacyHeading.compareDocumentPosition(demoHeading)).toBe(
+    expect(productPreview.compareDocumentPosition(demoHeading)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(demoHeading.compareDocumentPosition(featureGrid)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(featureGrid.compareDocumentPosition(privacyHeading)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
     expect(screen.getByText('Provider tokens stay local')).toBeInTheDocument();

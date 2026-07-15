@@ -1,0 +1,59 @@
+<navet-theme-toggle class="navet-theme-toggle">
+  <button type="button" aria-label="Switch to light theme" title="Switch to light theme">
+    <svg class="navet-theme-icon navet-theme-icon--sun" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="3.5"></circle>
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"></path>
+    </svg>
+    <svg class="navet-theme-icon navet-theme-icon--moon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M20.2 15.2A8.2 8.2 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"></path>
+    </svg>
+  </button>
+</navet-theme-toggle>
+
+<script>
+  const storageKey = "starlight-theme";
+
+  class NavetThemeToggle extends HTMLElement {
+    private button: HTMLButtonElement | null;
+    private observer: MutationObserver;
+
+    constructor() {
+      super();
+      this.button = this.querySelector("button");
+      this.observer = new MutationObserver(() => this.updateLabel());
+      this.button?.addEventListener("click", () => this.toggleTheme());
+    }
+
+    connectedCallback() {
+      this.observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["data-theme"],
+      });
+      this.updateLabel();
+    }
+
+    disconnectedCallback() {
+      this.observer.disconnect();
+    }
+
+    private toggleTheme() {
+      const nextTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      document.documentElement.dataset.theme = nextTheme;
+      localStorage.setItem(storageKey, nextTheme);
+      window.StarlightThemeProvider?.updatePickers(nextTheme);
+      this.updateLabel();
+    }
+
+    private updateLabel() {
+      if (!this.button) return;
+      const nextTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      const label = `Switch to ${nextTheme} theme`;
+      this.button.setAttribute("aria-label", label);
+      this.button.title = label;
+    }
+  }
+
+  if (!customElements.get("navet-theme-toggle")) {
+    customElements.define("navet-theme-toggle", NavetThemeToggle);
+  }
+</script>

@@ -1,4 +1,8 @@
-# Product Roadmap
+---
+title: Product roadmap
+description: Current Navet product direction and planned provider expansion.
+editUrl: https://github.com/awesomestvi/navet/edit/main/docs/ROADMAP.md
+---
 
 This is the public roadmap for Navet. It answers two questions:
 

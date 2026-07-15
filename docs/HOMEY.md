@@ -1,4 +1,8 @@
-# Homey
+---
+title: Homey
+description: Connect a standalone Navet installation to Homey.
+editUrl: https://github.com/awesomestvi/navet/edit/main/docs/HOMEY.md
+---
 
 Use this guide when you want Navet to connect to Homey in standalone mode.
 

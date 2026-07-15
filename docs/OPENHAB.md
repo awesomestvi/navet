@@ -1,4 +1,8 @@
-# openHAB
+---
+title: openHAB
+description: Connect a standalone Navet installation to openHAB.
+editUrl: https://github.com/awesomestvi/navet/edit/main/docs/OPENHAB.md
+---
 
 Use this guide when you want Navet to connect to openHAB in standalone mode.
 

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const storybookDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(storybookDir, '..', '..', '..');
-const storybookBasePath = process.env.STORYBOOK_BASE_PATH?.trim() || './';
+const storybookBasePath = process.env.STORYBOOK_BASE_PATH?.trim() || '/';
 
 const config: StorybookConfig = {
   stories: [path.join(repoRoot, 'packages/**/*.stories.@(ts|tsx)')],

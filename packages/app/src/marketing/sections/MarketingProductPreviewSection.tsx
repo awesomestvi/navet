@@ -445,6 +445,9 @@ function MarketingLightEntitySeed() {
 function MarketingBentoSequence({ sequenceIndex }: { sequenceIndex: number }) {
   return (
     <div
+      aria-hidden="true"
+      inert
+      role="presentation"
       className="relative shrink-0"
       style={{ width: `${BENTO_SEQUENCE_WIDTH_PX}px`, height: `${BENTO_SEQUENCE_HEIGHT_PX}px` }}
     >
@@ -500,15 +503,25 @@ export function MarketingProductPreviewSection({ className }: { className?: stri
   }, []);
 
   useEffect(() => {
-    if (!marqueeViewportRef.current || !marqueeTrackRef.current) {
+    const viewport = marqueeViewportRef.current;
+    if (!viewport || !marqueeTrackRef.current) {
       return;
     }
 
     marqueeOffsetRef.current = -BENTO_LOOP_SPAN_PX;
     applyMarqueeTransform();
+    const prefersReducedMotion =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      return;
+    }
+
     const autoplaySpeedPxPerMs = BENTO_LOOP_SPAN_PX / 280000;
+    let isInView = typeof window.IntersectionObserver !== 'function';
 
     const step = (time: number) => {
+      autoplayFrameRef.current = null;
       if (!marqueeTrackRef.current) {
         return;
       }
@@ -526,31 +539,74 @@ export function MarketingProductPreviewSection({ className }: { className?: stri
         applyMarqueeTransform();
       }
 
-      autoplayFrameRef.current = window.requestAnimationFrame(step);
+      if (isInView && document.visibilityState !== 'hidden') {
+        autoplayFrameRef.current = window.requestAnimationFrame(step);
+      }
     };
 
-    autoplayFrameRef.current = window.requestAnimationFrame(step);
-
-    return () => {
+    const stopAutoplay = () => {
       if (autoplayFrameRef.current != null) {
         window.cancelAnimationFrame(autoplayFrameRef.current);
       }
       autoplayFrameRef.current = null;
       autoplayLastTimeRef.current = null;
     };
+
+    const startAutoplay = () => {
+      if (autoplayFrameRef.current == null && isInView && document.visibilityState !== 'hidden') {
+        autoplayFrameRef.current = window.requestAnimationFrame(step);
+      }
+    };
+
+    const observer =
+      typeof window.IntersectionObserver === 'function'
+        ? new window.IntersectionObserver(
+            (entries) => {
+              isInView = entries.some((entry) => entry.isIntersecting);
+              if (isInView) {
+                startAutoplay();
+              } else {
+                stopAutoplay();
+              }
+            },
+            { rootMargin: '120px 0px' }
+          )
+        : null;
+    observer?.observe(viewport);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        stopAutoplay();
+      } else {
+        startAutoplay();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    startAutoplay();
+
+    return () => {
+      observer?.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      stopAutoplay();
+    };
   }, [applyMarqueeTransform, normalizeMarqueeOffset]);
 
   return (
     <MarketingSectionShell
-      title="Shared UI, already moving like a real product."
-      description="These are real Navet cards and widgets running on static demo data. The point is product proof: rooms, controls, utility surfaces, and theme behavior that already belong to the same dashboard."
+      title="The controls you use every day, working together."
+      description="These are real Navet cards and widgets running on sample data, from room controls and media to weather, energy, and household details."
       variant="editorial"
       compactMobile
       className={className}
     >
       <MarketingLightEntitySeed />
+      <p className="sr-only">
+        A visual preview of Navet room controls, media, weather, energy, security, and household
+        widgets.
+      </p>
       <div
         ref={marqueeViewportRef}
+        aria-hidden="true"
         className="marketing-bento-marquee relative left-1/2 right-1/2 mt-4 w-[calc(100vw/0.82)] -translate-x-1/2 scale-[0.82] overflow-hidden px-0 py-1.5 origin-top cursor-grab select-none active:cursor-grabbing touch-none sm:left-auto sm:right-auto sm:w-auto sm:translate-x-0 sm:-mx-8 sm:-mt-3 sm:scale-100 sm:px-8 lg:-mx-28 lg:px-28 xl:-mx-36 xl:px-36"
         style={
           {

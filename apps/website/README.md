@@ -18,19 +18,19 @@ deployment-facing app shell.
 
 ## Deployment
 
-- Cloudflare Pages builds directly from the repo on push.
-- Cloudflare Pages project root: `apps/website`
+- Cloudflare Pages builds the marketing site directly from the repo on push.
+- Cloudflare Pages project root: repository root
 - Build command: `pnpm website:build`
-- Output directory: `dist`
-- The workspace build clones `index.html` into `/install/`, `/roadmap/`, and `/redirect/oauth/` so
-  direct page loads work even when only the website bundle is deployed.
-- The website bundle stages the marketing site at `/`, the public demo at `/demo/`, and Storybook
-  at `/storybook/` inside the same Cloudflare Pages output directory.
+- Output directory: `apps/website/dist`
+- Production domain: `navet.app`
+- Demo, Storybook, and docs deploy from separate Cloudflare Pages projects at
+  `demo.navet.app`, `storybook.navet.app`, and `docs.navet.app`.
+- The website build clones `index.html` into `/roadmap/` and `/redirect/oauth/` so direct page
+  loads work when only the marketing output is deployed.
 - The Pages Function at `/api/music/apple/developer-token` signs short-lived MusicKit developer
   tokens. Configure `APPLE_MUSIC_TEAM_ID`, `APPLE_MUSIC_KEY_ID`, and
   `APPLE_MUSIC_PRIVATE_KEY` as encrypted Cloudflare Pages secrets. The private key must be the
   PKCS#8 `.p8` key issued by Apple and must never be exposed as a public build variable.
 - `functions/api/music/apple/developer-token.ts` at the repository root re-exports the same tested
   handler for Wrangler deployments driven by the root `wrangler.jsonc`. Keep both entrypoints so
-  Pages can discover the function whether the configured project root is the repository or
-  `apps/website`.
+  Pages can discover the function from the repository-root project configuration.

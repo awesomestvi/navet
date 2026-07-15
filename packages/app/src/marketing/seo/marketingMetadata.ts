@@ -1,10 +1,10 @@
-import logoHorizontalLight from '@assets/public/logo-horizontal-light.svg';
 import { getMarketingPublicSiteUrl } from '@navet/app/marketing/constants/marketingLinks';
 import type { MarketingWebsiteRoute } from '@navet/app/marketing/routing/marketingWebsiteRoutes';
 
-const DEFAULT_TITLE = 'Navet - A beautiful smart-home dashboard';
+const DEFAULT_TITLE = 'Navet — A calmer smart-home dashboard';
 const DEFAULT_DESCRIPTION =
-  'Navet is a provider-neutral smart-home dashboard with polished UI for wall panels, tablets, desktops, and phones, with support today for Home Assistant, Homey, and openHAB.';
+  'Navet is a polished, local-first smart-home dashboard for Home Assistant, Homey, and openHAB, built for wall panels, tablets, desktops, and phones.';
+const SOCIAL_IMAGE_PATH = '/navet-social-card.jpg';
 
 export interface MarketingWebsiteMetadata {
   title: string;
@@ -40,26 +40,13 @@ export function getMarketingWebsiteMetadata(
   route: MarketingWebsiteRoute
 ): MarketingWebsiteMetadata {
   const siteUrl = getMarketingPublicSiteUrl();
-  const socialImageUrl = new URL(
-    logoHorizontalLight,
-    typeof window === 'undefined' ? siteUrl : window.location.origin
-  ).toString();
-
-  if (route.id === 'install') {
-    return {
-      title: 'Install Navet',
-      description:
-        'Choose the Navet install path that fits your provider and how you want the dashboard to be hosted.',
-      canonicalUrl: new URL(route.pathname.slice(1), siteUrl).toString(),
-      socialImageUrl,
-    };
-  }
+  const socialImageUrl = new URL(SOCIAL_IMAGE_PATH, siteUrl).toString();
 
   if (route.id === 'roadmap') {
     return {
-      title: 'Navet Roadmap',
+      title: 'Navet Roadmap — What is shipping now and next',
       description:
-        'See what Navet ships today, what is coming next for dashboards and kiosk use, and where future provider work fits.',
+        'See what Navet supports today, what the team is improving next, and where broader smart-home platform support fits.',
       canonicalUrl: new URL(route.pathname.slice(1), siteUrl).toString(),
       socialImageUrl,
     };
@@ -80,6 +67,7 @@ export function applyMarketingWebsiteMetadata(route: MarketingWebsiteRoute) {
   upsertCanonicalLink(metadata.canonicalUrl);
   upsertMeta('meta[name="description"]', { name: 'description', content: metadata.description });
   upsertMeta('meta[property="og:type"]', { property: 'og:type', content: 'website' });
+  upsertMeta('meta[property="og:site_name"]', { property: 'og:site_name', content: 'Navet' });
   upsertMeta('meta[property="og:title"]', { property: 'og:title', content: metadata.title });
   upsertMeta('meta[property="og:description"]', {
     property: 'og:description',
@@ -89,6 +77,22 @@ export function applyMarketingWebsiteMetadata(route: MarketingWebsiteRoute) {
   upsertMeta('meta[property="og:image"]', {
     property: 'og:image',
     content: metadata.socialImageUrl,
+  });
+  upsertMeta('meta[property="og:image:type"]', {
+    property: 'og:image:type',
+    content: 'image/jpeg',
+  });
+  upsertMeta('meta[property="og:image:width"]', {
+    property: 'og:image:width',
+    content: '1200',
+  });
+  upsertMeta('meta[property="og:image:height"]', {
+    property: 'og:image:height',
+    content: '630',
+  });
+  upsertMeta('meta[property="og:image:alt"]', {
+    property: 'og:image:alt',
+    content: 'Navet dashboard shown across smart-home screens',
   });
   upsertMeta('meta[name="twitter:card"]', {
     name: 'twitter:card',
@@ -102,5 +106,9 @@ export function applyMarketingWebsiteMetadata(route: MarketingWebsiteRoute) {
   upsertMeta('meta[name="twitter:image"]', {
     name: 'twitter:image',
     content: metadata.socialImageUrl,
+  });
+  upsertMeta('meta[name="twitter:image:alt"]', {
+    name: 'twitter:image:alt',
+    content: 'Navet dashboard shown across smart-home screens',
   });
 }

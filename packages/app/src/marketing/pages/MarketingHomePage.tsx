@@ -79,64 +79,34 @@ export function MarketingHomePage() {
     <>
       <MarketingHeroSection />
       <MarketingDeferredSection
-        fallback={
-          <DeferredSectionFallback
-            className="mt-10 sm:mt-14 md:mt-18 lg:mt-20"
-            minHeightClassName="min-h-[640px] sm:min-h-[760px]"
-          />
-        }
+        fallback={<DeferredSectionFallback minHeightClassName="min-h-[640px] sm:min-h-[760px]" />}
       >
-        <MarketingProductPreviewSection className="mt-10 sm:mt-14 md:mt-18 lg:mt-20" />
+        <MarketingProductPreviewSection />
       </MarketingDeferredSection>
       <MarketingDeferredSection
-        fallback={
-          <DeferredSectionFallback
-            className="mt-10 sm:mt-14 md:mt-36 lg:mt-40"
-            minHeightClassName="min-h-[560px] sm:min-h-[720px]"
-          />
-        }
+        fallback={<DeferredSectionFallback minHeightClassName="min-h-[280px] sm:min-h-[320px]" />}
       >
-        <MarketingFeatureGridSection className="mt-10 sm:mt-14 md:mt-36 lg:mt-40" />
+        <MarketingDemoCtaSection />
       </MarketingDeferredSection>
       <MarketingDeferredSection
-        fallback={
-          <DeferredSectionFallback
-            className="mt-10 sm:mt-14 md:mt-36 lg:mt-40"
-            minHeightClassName="min-h-[340px] sm:min-h-[420px]"
-          />
-        }
+        fallback={<DeferredSectionFallback minHeightClassName="min-h-[560px] sm:min-h-[720px]" />}
       >
-        <MarketingThemeShowcaseSection className="mt-10 sm:mt-14 md:mt-36 lg:mt-40" />
+        <MarketingFeatureGridSection />
       </MarketingDeferredSection>
       <MarketingDeferredSection
-        fallback={
-          <DeferredSectionFallback
-            className="mt-10 sm:mt-14 md:mt-36 lg:mt-40"
-            minHeightClassName="min-h-[220px] sm:min-h-[240px]"
-          />
-        }
+        fallback={<DeferredSectionFallback minHeightClassName="min-h-[220px] sm:min-h-[240px]" />}
       >
-        <MarketingPrivacySection className="mt-10 sm:mt-14 md:mt-36 lg:mt-40" />
+        <MarketingPrivacySection />
       </MarketingDeferredSection>
       <MarketingDeferredSection
-        fallback={
-          <DeferredSectionFallback
-            className="mt-10 sm:mt-14 md:mt-36 lg:mt-40"
-            minHeightClassName="min-h-[280px] sm:min-h-[320px]"
-          />
-        }
+        fallback={<DeferredSectionFallback minHeightClassName="min-h-[340px] sm:min-h-[420px]" />}
       >
-        <MarketingDemoCtaSection className="mt-10 sm:mt-14 md:mt-36 lg:mt-40" />
+        <MarketingThemeShowcaseSection />
       </MarketingDeferredSection>
       <MarketingDeferredSection
-        fallback={
-          <DeferredSectionFallback
-            className="mt-10 sm:mt-14 md:mt-36 lg:mt-40"
-            minHeightClassName="min-h-[260px] sm:min-h-[280px]"
-          />
-        }
+        fallback={<DeferredSectionFallback minHeightClassName="min-h-[260px] sm:min-h-[280px]" />}
       >
-        <MarketingCurrentSupportSection className="mt-10 sm:mt-14 md:mt-36 lg:mt-40" />
+        <MarketingCurrentSupportSection />
       </MarketingDeferredSection>
     </>
   );

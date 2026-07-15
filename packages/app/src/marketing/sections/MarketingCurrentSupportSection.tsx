@@ -164,8 +164,8 @@ export function MarketingCurrentSupportSection({ className }: { className?: stri
               items={MARKETING_CURRENT_SUPPORT.widgets}
             />
             <SupportEditorialColumn
-              kicker={`${MARKETING_CURRENT_SUPPORT.providers.length} provider adapters`}
-              title="A provider-neutral layer that is already proving out the model."
+              kicker={`${MARKETING_CURRENT_SUPPORT.providers.length} supported platforms`}
+              title="Start with the smart-home platform you already use."
               items={MARKETING_CURRENT_SUPPORT.providers.map((provider) => provider.name)}
             />
           </div>

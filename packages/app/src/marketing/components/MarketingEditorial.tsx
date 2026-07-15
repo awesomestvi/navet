@@ -30,13 +30,15 @@ export function MarketingHeadline({
   children,
   className,
   compactMobile = false,
+  as: Component = 'h2',
 }: {
   children: ReactNode;
   className?: string;
   compactMobile?: boolean;
+  as?: 'h1' | 'h2';
 }) {
   return (
-    <h2
+    <Component
       className={cn(
         compactMobile
           ? 'text-[1.9rem] leading-[1.02] font-semibold tracking-[-0.04em] text-white sm:text-3xl md:text-5xl'
@@ -45,7 +47,7 @@ export function MarketingHeadline({
       )}
     >
       {children}
-    </h2>
+    </Component>
   );
 }
 

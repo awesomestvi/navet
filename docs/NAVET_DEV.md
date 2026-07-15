@@ -1,4 +1,8 @@
-# Install Navet Dev
+---
+title: Navet Dev
+description: Install and update development builds through Home Assistant, Docker, or a manual panel build.
+editUrl: https://github.com/awesomestvi/navet/edit/main/docs/NAVET_DEV.md
+---
 
 Navet Dev is the frequently updated development channel for testing changes before a stable
 release. It can contain unfinished features and regressions. Keep a Home Assistant backup and a
@@ -214,4 +218,4 @@ dashboard configuration before switching rather than assuming it will appear in 
 - HACS offers only stable versions: this is expected; use the add-on or Docker for published Dev
   builds.
 
-For stable Home Assistant setup and runtime details, see [HOME_ASSISTANT.md](HOME_ASSISTANT.md).
+For stable Home Assistant setup and runtime details, see the [Home Assistant guide](/install/home-assistant/).

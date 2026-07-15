@@ -11,7 +11,7 @@ export function MarketingDemoCtaSection({ className }: { className?: string }) {
   return (
     <MarketingSectionShell
       title="Use the demo. Then run it at home."
-      description="The public demo uses realistic fixture data and the actual UI surface, so you can judge the product before connecting your own provider runtime."
+      description="The public demo uses realistic sample data and the actual Navet interface, so you can explore the product before connecting your smart-home platform."
       variant="editorial"
       compactMobile
       className={className}
@@ -26,7 +26,7 @@ export function MarketingDemoCtaSection({ className }: { className?: string }) {
           sizes="(max-width: 639px) 100vw, (max-width: 1023px) 80vw, 50vw"
         />
         <div className="space-y-3 p-4 sm:space-y-4 sm:p-6 md:p-8">
-          <Text className="text-base font-semibold">Static sample data. Real Navet UI.</Text>
+          <Text className="text-base font-semibold">Sample data. Real Navet UI.</Text>
           <Text tone="muted">
             Explore the layout, cards, widgets, and theme surfaces without signing into a provider
             first.

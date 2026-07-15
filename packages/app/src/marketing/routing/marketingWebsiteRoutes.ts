@@ -1,13 +1,12 @@
-export type MarketingWebsiteRouteId = 'home' | 'install' | 'roadmap';
+export type MarketingWebsiteRouteId = 'home' | 'roadmap';
 
 export interface MarketingWebsiteRoute {
   id: MarketingWebsiteRouteId;
-  pathname: '/' | '/install/' | '/roadmap/';
+  pathname: '/' | '/roadmap/';
 }
 
 export const MARKETING_WEBSITE_ROUTES: Record<MarketingWebsiteRouteId, MarketingWebsiteRoute> = {
   home: { id: 'home', pathname: '/' },
-  install: { id: 'install', pathname: '/install/' },
   roadmap: { id: 'roadmap', pathname: '/roadmap/' },
 };
 
@@ -36,10 +35,6 @@ export function resolveMarketingWebsiteRoute(
   baseUrl = '/'
 ): MarketingWebsiteRoute {
   const normalizedPathname = normalizeWebsitePathname(pathname, baseUrl);
-
-  if (normalizedPathname === MARKETING_WEBSITE_ROUTES.install.pathname) {
-    return MARKETING_WEBSITE_ROUTES.install;
-  }
 
   if (normalizedPathname === MARKETING_WEBSITE_ROUTES.roadmap.pathname) {
     return MARKETING_WEBSITE_ROUTES.roadmap;

@@ -1,2 +1,3 @@
-/install    /index.html   200
-/roadmap    /index.html   200
+/install     https://docs.navet.app/install/   301
+/install/*   https://docs.navet.app/install/:splat   301
+/roadmap     /index.html   200

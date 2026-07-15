@@ -1,0 +1,45 @@
+---
+import Search from "virtual:starlight/components/Search";
+import NavetGithubStars from "./NavetGithubStars.astro";
+import NavetThemeToggle from "./NavetThemeToggle.astro";
+
+const pathname = Astro.url.pathname;
+
+const navItems = [
+  { label: "Home", href: "https://navet.app/" },
+  { label: "Demo", href: "https://demo.navet.app/" },
+  { label: "Docs", href: "/", active: true },
+  { label: "Storybook", href: "https://storybook.navet.app/" },
+];
+---
+
+<div class="navet-header-shell">
+  <a class="navet-brand" href="https://navet.app/" aria-label="Navet home">
+    <img class="navet-brand-logo navet-brand-logo--light" src="/logo-horizontal.svg" alt="" />
+    <img
+      class="navet-brand-logo navet-brand-logo--dark"
+      src="/logo-horizontal-light.svg"
+      alt=""
+    />
+  </a>
+
+  <nav class="navet-primary-nav" aria-label="Primary">
+    {
+      navItems.map((item) => (
+        <a
+          href={item.href}
+          aria-current={item.active && pathname === "/" ? "page" : undefined}
+          class:list={{ "is-active": item.active }}
+        >
+          {item.label}
+        </a>
+      ))
+    }
+  </nav>
+
+  <div class="navet-header-tools print:hidden">
+    <NavetGithubStars />
+    <div class="navet-search"><Search /></div>
+    <NavetThemeToggle />
+  </div>
+</div>

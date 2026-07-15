@@ -12,7 +12,6 @@ import { cn } from '@navet/app/components/ui/utils';
 import { MarketingPillGroup } from '@navet/app/marketing/components/MarketingEditorial';
 import { MarketingResponsiveImage } from '@navet/app/marketing/components/MarketingResponsiveImage';
 import { MARKETING_HERO_CONTENT } from '@navet/app/marketing/data/marketingContent';
-import { GithubMark } from '@navet/app/marketing/icons/GithubMark';
 import { AnimatedGradientText } from '@website/components/effects/animated-gradient-text';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 
@@ -150,7 +149,7 @@ export function MarketingHeroSection() {
             <MarketingHeroVisual mobile />
             <div className="space-y-3 sm:space-y-4">
               <div className="marketing-hero-secondary-links flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:justify-start">
-                {MARKETING_HERO_CONTENT.secondaryCtas.map((cta, index) => (
+                {MARKETING_HERO_CONTENT.secondaryCtas.map((cta) => (
                   <Link
                     key={cta.label}
                     href={cta.href}
@@ -159,7 +158,6 @@ export function MarketingHeroSection() {
                     showExternalIcon={cta.external}
                     className="text-white"
                   >
-                    {index === 0 ? <GithubMark className="h-4 w-4" /> : null}
                     {cta.label}
                   </Link>
                 ))}

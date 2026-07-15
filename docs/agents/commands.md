@@ -33,6 +33,9 @@ pnpm preview
 pnpm storybook
 pnpm website:dev
 pnpm website:preview
+pnpm docs:dev
+pnpm docs:build
+pnpm docs:preview
 pnpm check:stories
 pnpm check:ui-kit
 pnpm check:provider-boundaries
@@ -67,6 +70,7 @@ pnpm wallpapers:check
 - provider contract or auth/runtime change: `pnpm test:tier1`
 - Storybook or UI-kit work: `pnpm check:stories` and `pnpm test:storybook`
 - website or marketing work: `pnpm website:build`
+- public documentation work: `pnpm docs:build`
 - bundle investigation: `pnpm check:bundle-budget` and `pnpm report:bundle`
 - release file validation: `pnpm release:check`
 

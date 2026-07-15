@@ -45,4 +45,14 @@ describe('MarketingSectionShell', () => {
     expect(screen.getByText('Provider data stays on your own hardware.')).toBeInTheDocument();
     expect(screen.getByText('Compact section body')).toBeInTheDocument();
   });
+
+  it('supports a route-level h1 without changing the visual heading treatment', () => {
+    renderWithProviders(
+      <MarketingSectionShell title="Navet roadmap" headingAs="h1">
+        <div>Roadmap body</div>
+      </MarketingSectionShell>
+    );
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Navet roadmap' })).toBeInTheDocument();
+  });
 });

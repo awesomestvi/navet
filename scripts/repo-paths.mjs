@@ -7,9 +7,7 @@ export const repoRoot = resolve(scriptsDir, '..');
 
 export const appPaths = {
   standaloneDist: resolve(repoRoot, 'apps/standalone/dist'),
-  demoDist: resolve(repoRoot, 'apps/demo/dist'),
   websiteDist: resolve(repoRoot, 'apps/website/dist'),
-  storybookDist: resolve(repoRoot, 'apps/storybook/dist'),
   haPanelDist: resolve(repoRoot, 'apps/ha-panel/dist'),
   siblingHacsRepoRoot: resolve(repoRoot, '../navet-hacs'),
 };

@@ -87,6 +87,7 @@ Do not assume a repo-root `src/` directory. Search `packages/` and `apps/` first
 - `apps/standalone/src`: standalone runtime entrypoint
 - `apps/demo/src`: demo runtime entrypoint
 - `apps/website/src`: marketing website code
+- `apps/docs`: public Astro Starlight documentation site
 - `apps/ha-panel`: Home Assistant panel wrapper and build config
 - `apps/storybook`: Storybook app and config
 

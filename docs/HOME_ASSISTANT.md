@@ -1,6 +1,14 @@
-# Home Assistant
+---
+title: Home Assistant
+description: Install Navet as a Home Assistant custom panel, add-on, or standalone application.
+editUrl: https://github.com/awesomestvi/navet/edit/main/docs/HOME_ASSISTANT.md
+---
 
 Use this guide when you want Navet to connect to Home Assistant.
+
+To explore the interface without connecting a provider, use the public demo at
+[`demo.navet.app`](https://demo.navet.app/). The demo is a separate static deployment and contains
+sample data only.
 
 ## Overview
 
@@ -10,7 +18,7 @@ Navet currently supports three Home Assistant deployment paths:
 - add-on
 - standalone Docker connected to Home Assistant
 
-To test frequently updated development builds, see [Install Navet Dev](NAVET_DEV.md). Published Dev
+To test frequently updated development builds, see [Install Navet Dev](/install/navet-dev/). Published Dev
 builds are available for the add-on and Docker; HACS remains stable-only.
 
 ## Which Path Should You Choose?

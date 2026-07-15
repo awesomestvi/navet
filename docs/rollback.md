@@ -38,13 +38,13 @@ Rollback by reinstalling the previous GitHub release custom panel asset bundle.
 Because release workflows build the panel assets per tag, the authoritative rollback point is the
 earlier release tag and its attached artifact, not the current `main` branch tip.
 
-## Demo, Storybook, Website
+## Demo, Storybook, Docs, Website
 
 These are continuous `main` surfaces, not versioned production artifacts in phase 1.
 
-If a Cloudflare Pages deployment must be reverted, restore the earlier known-good commit in the
-connected branch or trigger a redeploy from that commit rather than treating the website bundle as
-the user rollback channel for runtime installs.
+If a Cloudflare Pages deployment must be reverted, roll back the affected Pages project to its
+earlier known-good deployment. The marketing website, demo, Storybook, and docs are independent
+projects even though they build from the same connected branch.
 
 ## Operator Guidance
 

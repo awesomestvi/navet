@@ -11,9 +11,10 @@ Versioned release surfaces:
 
 Continuous `main` surfaces:
 
-- website bundle on Cloudflare Pages
-- public demo inside the website bundle at `/demo/`
-- Storybook inside the website bundle at `/storybook/`
+- marketing website on Cloudflare Pages at `navet.app`
+- public demo on its own Cloudflare Pages project at `demo.navet.app`
+- Storybook on its own Cloudflare Pages project at `storybook.navet.app`
+- public documentation on its own Cloudflare Pages project at `docs.navet.app`
 
 ## Branches And Tags
 
@@ -168,7 +169,7 @@ Behavior:
 - marks prerelease tags as GitHub prereleases
 - never moves `latest` on prerelease tags
 
-### Website bundle deploy
+### Public site deploys
 
 Trigger:
 
@@ -176,13 +177,14 @@ Trigger:
 
 Behavior:
 
-- runs the configured website build
-- stages the demo under `/demo/`
-- stages Storybook under `/storybook/`
-- deploys the single output bundle to Cloudflare Pages
+- the marketing project runs `pnpm website:build` and deploys `apps/website/dist`
+- the demo project runs `pnpm build:demo` and deploys `apps/demo/dist`
+- the Storybook project runs `pnpm storybook:build` and deploys `apps/storybook/dist`
+- the docs project runs `pnpm docs:build` and deploys `apps/docs/dist`
+- every surface builds independently from the repository root and receives its own preview deploy
 
-Cloudflare Pages remains a continuous documentation and marketing surface. It is not part of tagged release
-promotion in phase 1.
+Cloudflare Pages remains a continuous documentation, demo, Storybook, and marketing surface. It is
+not part of tagged release promotion in phase 1.
 
 ## Maintainer Flow
 

@@ -1,6 +1,9 @@
 import { GITHUB_REPO_URL } from '@navet/app/constants/urls';
 
 const DEFAULT_PUBLIC_SITE_URL = 'https://navet.app/';
+const DEMO_SITE_URL = 'https://demo.navet.app/';
+const DOCS_SITE_URL = 'https://docs.navet.app/';
+const STORYBOOK_SITE_URL = 'https://storybook.navet.app/';
 
 function normalizeBaseUrl(url: string) {
   return url.endsWith('/') ? url : `${url}/`;
@@ -22,19 +25,19 @@ export function getMarketingWebsitePath(pathname: string) {
 
 export const MARKETING_URLS = {
   website: getMarketingPublicSiteUrl(),
-  demo: joinUrl(getMarketingPublicSiteUrl(), 'demo/'),
-  storybook: joinUrl(getMarketingPublicSiteUrl(), 'storybook/'),
+  demo: DEMO_SITE_URL,
+  storybook: STORYBOOK_SITE_URL,
   github: GITHUB_REPO_URL,
-  roadmapDoc: `${GITHUB_REPO_URL}/blob/main/docs/ROADMAP.md`,
-  docsIndex: `${GITHUB_REPO_URL}/blob/main/docs/README.md`,
-  gettingStarted: `${GITHUB_REPO_URL}#getting-started`,
+  roadmapDoc: joinUrl(DOCS_SITE_URL, 'roadmap/'),
+  docsIndex: DOCS_SITE_URL,
+  gettingStarted: joinUrl(DOCS_SITE_URL, 'getting-started/'),
   install: {
-    page: getMarketingWebsitePath('/install/'),
-    homeAssistantGuide: `${GITHUB_REPO_URL}/blob/main/docs/HOME_ASSISTANT.md`,
-    homeAssistantCustomPanel: `${GITHUB_REPO_URL}/blob/main/docs/HOME_ASSISTANT.md#home-assistant-custom-panel`,
-    homeAssistantAddon: `${GITHUB_REPO_URL}/blob/main/docs/HOME_ASSISTANT.md#home-assistant-add-on`,
-    standaloneDocker: `${GITHUB_REPO_URL}/blob/main/docs/HOME_ASSISTANT.md#standalone-docker`,
-    homey: `${GITHUB_REPO_URL}/blob/main/docs/HOMEY.md`,
-    openhab: `${GITHUB_REPO_URL}/blob/main/docs/OPENHAB.md`,
+    page: joinUrl(DOCS_SITE_URL, 'install/'),
+    homeAssistantGuide: joinUrl(DOCS_SITE_URL, 'install/home-assistant/'),
+    homeAssistantCustomPanel: `${joinUrl(DOCS_SITE_URL, 'install/home-assistant/')}#home-assistant-custom-panel`,
+    homeAssistantAddon: `${joinUrl(DOCS_SITE_URL, 'install/home-assistant/')}#home-assistant-add-on`,
+    standaloneDocker: `${joinUrl(DOCS_SITE_URL, 'install/home-assistant/')}#standalone-docker`,
+    homey: joinUrl(DOCS_SITE_URL, 'install/homey/'),
+    openhab: joinUrl(DOCS_SITE_URL, 'install/openhab/'),
   },
 } as const;

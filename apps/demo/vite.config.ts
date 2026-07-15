@@ -22,7 +22,8 @@ export default defineConfig({
   root: __dirname,
   publicDir: path.resolve(repoRoot, 'assets/public'),
   cacheDir: path.resolve(repoRoot, '.cache/vite-demo'),
-  base: './',
+  // The public demo is deployed at the root of demo.navet.app.
+  base: '/',
   envPrefix: ['VITE_'],
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version ?? '0.0.0'),

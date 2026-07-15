@@ -46,6 +46,7 @@ Do not assume a repo-root `src/` directory. Navet is organized as apps and packa
 - Standalone app entrypoint: `/apps/standalone/src`
 - Demo app entrypoint: `/apps/demo/src`
 - Website app entrypoint: `/apps/website/src`
+- Public documentation app: `/apps/docs`
 - Home Assistant panel wrapper: `/apps/ha-panel`
 - Storybook app: `/apps/storybook`
 

@@ -4,9 +4,9 @@ A smart-home dashboard frontend for wall panels, tablets, phones, and desktop sc
 
 ![Navet dashboard demo on iPad frame](assets/reference/marketing/use-cases/navet-ipad-frame-dashboard.jpg)
 
-[Live demo](https://navet.app/demo/) ·
-[Storybook](https://navet.app/storybook/) ·
-[Docs](docs/README.md) ·
+[Live demo](https://demo.navet.app/) ·
+[Storybook](https://storybook.navet.app/) ·
+[Docs](https://docs.navet.app/) ·
 [Security policy](SECURITY.md) ·
 [Code of conduct](CODE_OF_CONDUCT.md)
 
@@ -47,22 +47,23 @@ home UI.
 
 Most people should start with one of these guides:
 
-- Home Assistant users: start with [docs/HOME_ASSISTANT.md](docs/HOME_ASSISTANT.md)
-- Development builds: use [docs/NAVET_DEV.md](docs/NAVET_DEV.md)
-- Homey users: start with [docs/HOMEY.md](docs/HOMEY.md)
-- openHAB users: start with [docs/OPENHAB.md](docs/OPENHAB.md)
+- Home Assistant users: start with the [Home Assistant guide](https://docs.navet.app/install/home-assistant/)
+- Development builds: use the [Navet Dev guide](https://docs.navet.app/install/navet-dev/)
+- Homey users: start with the [Homey guide](https://docs.navet.app/install/homey/)
+- openHAB users: start with the [openHAB guide](https://docs.navet.app/install/openhab/)
 
 ## Need More Details?
 
 Use these docs if you want more context:
 
-- [Home Assistant setup](docs/HOME_ASSISTANT.md)
-- [Navet Dev installation](docs/NAVET_DEV.md)
-- [Homey setup](docs/HOMEY.md)
-- [openHAB setup](docs/OPENHAB.md)
-- [Widgets guide](docs/WIDGETS.md)
-- [Public roadmap](docs/ROADMAP.md)
-- [Full docs map](docs/README.md)
+- [Home Assistant setup](https://docs.navet.app/install/home-assistant/)
+- [Navet Dev installation](https://docs.navet.app/install/navet-dev/)
+- [Homey setup](https://docs.navet.app/install/homey/)
+- [openHAB setup](https://docs.navet.app/install/openhab/)
+- [Widgets guide](https://docs.navet.app/guide/widgets/)
+- [Public roadmap](https://docs.navet.app/roadmap/)
+- [Public documentation](https://docs.navet.app/)
+- [Repository documentation map](docs/README.md)
 
 ## Screenshots
 

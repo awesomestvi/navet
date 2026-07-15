@@ -105,7 +105,7 @@ Fallback source:
 
 ## Publishing Rules
 
-- Cloudflare Pages deploys the website bundle, demo, and Storybook
+- Cloudflare Pages deploys the marketing website, demo, Storybook, and docs as independent projects
 - GitHub Pages is retired for this surface
 - dev tags publish immutable app and add-on images and refresh the moving `edge` and `dev` aliases
 - prerelease tags do not move `latest`

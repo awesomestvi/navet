@@ -27,8 +27,8 @@ export default defineConfig({
   publicDir: path.resolve(repoRoot, 'assets/public'),
   cacheDir: path.resolve(repoRoot, '.cache/vite-website'),
   // The marketing site is deployed from the domain root, and we clone index.html
-  // into nested route entrypoints like /install/. Root-relative assets keep those
-  // entrypoints loading the shared /assets bundle instead of resolving /install/assets.
+  // into nested route entrypoints like /roadmap/. Root-relative assets keep those
+  // entrypoints loading the shared /assets bundle instead of resolving /roadmap/assets.
   base: '/',
   envPrefix: ['VITE_'],
   define: {

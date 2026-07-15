@@ -22,6 +22,7 @@ export function MarketingRoadmapSection() {
       title={MARKETING_ROADMAP.title}
       description={MARKETING_ROADMAP.description}
       variant="editorial"
+      headingAs="h1"
     >
       <div className="grid gap-4 lg:grid-cols-3">
         <RoadmapColumn title="Now" items={MARKETING_ROADMAP.now} />
@@ -29,9 +30,9 @@ export function MarketingRoadmapSection() {
         <RoadmapColumn title="Later" items={MARKETING_ROADMAP.later} />
       </div>
       <Text tone="muted">
-        Full public roadmap:{' '}
+        Detailed public roadmap:{' '}
         <Link href={MARKETING_URLS.roadmapDoc} target="_blank" rel="noreferrer" showExternalIcon>
-          docs/ROADMAP.md
+          Read the roadmap in the docs
         </Link>
       </Text>
     </MarketingSectionShell>

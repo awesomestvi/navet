@@ -14,6 +14,7 @@ interface MarketingSectionShellProps {
   variant?: 'default' | 'editorial';
   headerClassName?: string;
   compactMobile?: boolean;
+  headingAs?: 'h1' | 'h2';
 }
 
 export function MarketingSectionShell({
@@ -24,6 +25,7 @@ export function MarketingSectionShell({
   variant = 'default',
   headerClassName,
   compactMobile = false,
+  headingAs = 'h2',
 }: MarketingSectionShellProps) {
   const hasHeader = Boolean(title || description);
   const isEditorial = variant === 'editorial';
@@ -56,6 +58,7 @@ export function MarketingSectionShell({
         >
           {title ? (
             <MarketingHeadline
+              as={headingAs}
               compactMobile={compactMobile}
               className={isEditorial ? 'max-w-[13ch]' : 'md:text-4xl'}
             >

@@ -21,8 +21,8 @@ const GITHUB_STARS_CACHE_KEY = 'marketing:github-stars';
 const GITHUB_STARS_CACHE_TTL_MS = 60 * 60 * 1000;
 
 const WEBSITE_PRIMARY_NAV_ITEMS = [
-  { href: getMarketingWebsitePath('/install/'), label: 'Install' },
   { href: MARKETING_URLS.demo, label: 'Demo' },
+  { href: MARKETING_URLS.docsIndex, label: 'Docs' },
   { href: MARKETING_URLS.storybook, label: 'Storybook' },
 ] as const;
 
@@ -352,6 +352,7 @@ export function MarketingWebsiteShell({
           <div
             id={mobileNavId}
             aria-hidden={!isMobileNavOpen}
+            inert={!isMobileNavOpen}
             className={cn(
               'overflow-hidden transition-[max-height,opacity,margin] duration-200 md:hidden',
               isMobileNavOpen ? 'mt-3 max-h-64 opacity-100' : 'max-h-0 opacity-0'
@@ -388,7 +389,7 @@ export function MarketingWebsiteShell({
           className={cn(
             'pb-12 md:pb-16',
             isHomePage
-              ? 'space-y-16 pt-0 sm:space-y-20 md:space-y-28 lg:space-y-32'
+              ? 'space-y-14 pt-0 sm:space-y-16 md:space-y-20 lg:space-y-24'
               : 'space-y-24 pt-28 md:space-y-28 lg:space-y-32 lg:pt-36'
           )}
         >
@@ -405,8 +406,11 @@ export function MarketingWebsiteShell({
             <WebsiteNavLink href={MARKETING_URLS.demo} className="min-h-0 px-0">
               Demo
             </WebsiteNavLink>
-            <WebsiteNavLink href={getMarketingWebsitePath('/install/')} className="min-h-0 px-0">
+            <WebsiteNavLink href={MARKETING_URLS.install.page} className="min-h-0 px-0">
               Install
+            </WebsiteNavLink>
+            <WebsiteNavLink href={MARKETING_URLS.docsIndex} className="min-h-0 px-0">
+              Docs
             </WebsiteNavLink>
             <WebsiteNavLink href={MARKETING_URLS.github} className="min-h-0 px-0">
               GitHub

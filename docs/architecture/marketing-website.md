@@ -24,9 +24,12 @@ Secondary and future audience:
 
 Current positioning:
 
-> Home Assistant as the brain. Navet as the beautiful frontend.
+> Navet is a provider-neutral, local-first smart-home dashboard for the platform people already
+> use.
 
-Homepage structure and copy should reinforce that message.
+Homepage structure and copy should lead with the daily dashboard experience, then show Home
+Assistant, Homey, and openHAB as supported platforms. It must not frame Navet as a Home Assistant
+frontend or make one provider the product's architecture.
 
 ## Boundaries And Reuse
 
@@ -67,7 +70,6 @@ Required stories:
 - `Pages/Marketing/FeatureGrid`
 - `Pages/Marketing/ThemeShowcase`
 - `Pages/Marketing/DemoCTA`
-- `Pages/Marketing/InstallOptions`
 - `Pages/Marketing/CurrentSupport`
 - `Pages/Marketing/Roadmap`
 
@@ -96,6 +98,8 @@ Routing and links:
 - Public website routes are resolved by the marketing route helpers.
 - External links are centralized in `packages/app/src/marketing/constants/marketingLinks.ts`.
 - This includes demo, docs/install links, GitHub, roadmap, and Storybook URLs.
+- Public surfaces use dedicated origins: `navet.app`, `demo.navet.app`, `docs.navet.app`, and
+  `storybook.navet.app`.
 - The public website workspace root is `apps/website/`.
 
 ## Install Honesty And Performance

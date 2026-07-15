@@ -38,7 +38,12 @@ describe('MarketingWebsiteShell', () => {
 
     expect(within(header).getByRole('link', { name: 'Navet home' })).toBeInTheDocument();
     expect(within(header).queryByRole('link', { name: 'Home' })).not.toBeInTheDocument();
+    expect(within(header).queryByRole('link', { name: 'Install' })).not.toBeInTheDocument();
     expect(within(header).getByRole('link', { name: 'Demo' })).toBeInTheDocument();
+    expect(within(header).getByRole('link', { name: 'Docs' })).toHaveAttribute(
+      'href',
+      'https://docs.navet.app/'
+    );
     expect(within(header).getByRole('link', { name: 'Storybook' })).toBeInTheDocument();
     expect(within(header).getByRole('link', { name: /GitHub/i })).toBeInTheDocument();
   });
@@ -54,6 +59,8 @@ describe('MarketingWebsiteShell', () => {
 
     const toggle = screen.getByRole('button', { name: 'Open navigation menu' });
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    const mobileNavContainer = document.getElementById(toggle.getAttribute('aria-controls') ?? '');
+    expect(mobileNavContainer).toHaveAttribute('inert');
     expect(screen.queryByRole('navigation', { name: 'Mobile primary' })).not.toBeInTheDocument();
 
     fireEvent.click(toggle);
@@ -63,8 +70,14 @@ describe('MarketingWebsiteShell', () => {
       'true'
     );
     const mobileNav = screen.getByRole('navigation', { name: 'Mobile primary' });
+    expect(mobileNavContainer).not.toHaveAttribute('inert');
     expect(mobileNav).toBeInTheDocument();
+    expect(within(mobileNav).queryByRole('link', { name: 'Install' })).not.toBeInTheDocument();
     expect(within(mobileNav).getByRole('link', { name: 'Demo' })).toBeInTheDocument();
+    expect(within(mobileNav).getByRole('link', { name: 'Docs' })).toHaveAttribute(
+      'href',
+      'https://docs.navet.app/'
+    );
     expect(within(mobileNav).getByRole('link', { name: 'Storybook' })).toBeInTheDocument();
     expect(within(mobileNav).getByRole('link', { name: /^GitHub$/i })).toBeInTheDocument();
   });

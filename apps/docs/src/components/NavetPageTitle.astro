@@ -1,0 +1,20 @@
+---
+const { title } = Astro.locals.starlightRoute.entry.data;
+const section = Astro.url.pathname.split("/").filter(Boolean)[0];
+const sectionLabels: Record<string, string> = {
+  "getting-started": "Getting started",
+  install: "Installation",
+  guide: "User guide",
+  integrations: "Integrations",
+  help: "Help and safety",
+  roadmap: "Product roadmap",
+  developers: "Developer guide",
+  security: "Security",
+};
+const label = sectionLabels[section] || "Navet guide";
+---
+
+<div class="navet-page-heading">
+  <p><span aria-hidden="true"></span>{label}</p>
+  <h1 id="_top">{title}</h1>
+</div>

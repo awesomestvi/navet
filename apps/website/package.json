@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "generate:social-card": "node scripts/generate-social-card.mjs",
     "build": "vite build && node scripts/clone-route-entrypoints.mjs",
     "preview": "vite preview"
   },

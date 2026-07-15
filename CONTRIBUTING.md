@@ -1,4 +1,8 @@
-# Contributing To Navet
+---
+title: Contributing to Navet
+description: Set up the repository, make changes, and validate contributions.
+editUrl: https://github.com/awesomestvi/navet/edit/main/CONTRIBUTING.md
+---
 
 Use this file for the shortest path from clone to productive work.
 

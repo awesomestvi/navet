@@ -50,5 +50,6 @@
     /* Type declarations */
     "typeRoots": ["node_modules/@types", "packages/app/src/types"]
   },
-  "include": ["packages", "apps", "public", ".storybook"]
+  "include": ["packages", "apps", "public", ".storybook"],
+  "exclude": ["apps/docs"]
 }
