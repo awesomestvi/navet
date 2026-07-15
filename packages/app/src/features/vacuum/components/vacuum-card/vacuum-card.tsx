@@ -353,7 +353,7 @@ function VacuumRobotVisual({
       </style>
       <div
         className={cn(
-          'absolute right-2 -top-4 h-5 w-16 transition-all duration-700',
+          'absolute right-2 -top-4 h-5 w-16 transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-700',
           isCharging || isReturning ? 'opacity-100' : 'opacity-60'
         )}
         aria-hidden="true"
@@ -394,7 +394,7 @@ function VacuumRobotVisual({
           {isCleaning ? <VacuumSideBrush subtitleColor={subtitleColor} compact /> : null}
           <div
             className={cn(
-              'relative z-[1] flex h-[4.9rem] w-[4.9rem] items-center justify-center rounded-full border transition-all duration-700',
+              'relative z-[1] flex h-[4.9rem] w-[4.9rem] items-center justify-center rounded-full border transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-700',
               isUnavailable && 'opacity-45 grayscale-[0.25]',
               isPaused && 'scale-[0.98]',
               displayState === 'error' && 'ring-1 ring-amber-400/30'
@@ -432,7 +432,7 @@ function VacuumRobotVisual({
           {isCleaning ? <VacuumSideBrush subtitleColor={subtitleColor} /> : null}
           <div
             className={cn(
-              'relative z-[1] flex h-[4.9rem] w-[4.9rem] items-center justify-center rounded-full border transition-all duration-700',
+              'relative z-[1] flex h-[4.9rem] w-[4.9rem] items-center justify-center rounded-full border transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-700',
               isUnavailable && 'opacity-45 grayscale-[0.25]',
               isPaused && 'scale-[0.98]',
               displayState === 'error' && 'ring-1 ring-amber-400/30'

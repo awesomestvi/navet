@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { mapHomeAssistantEntitiesToNavetEntities } from './homeassistant-mappers';
+import {
+  buildHomeAssistantProviderRooms,
+  mapHomeAssistantEntitiesToNavetEntities,
+} from './homeassistant-mappers';
 
 function makeEntity(entity_id: string, state: string, attributes: Record<string, unknown>) {
   return {
@@ -13,6 +16,30 @@ function makeEntity(entity_id: string, state: string, attributes: Record<string,
 }
 
 describe('homeassistant-mappers', () => {
+  it('builds rooms from an already normalized entity array', () => {
+    const mappedEntities = mapHomeAssistantEntitiesToNavetEntities({
+      entities: {
+        'light.kitchen': makeEntity('light.kitchen', 'on', {
+          friendly_name: 'Kitchen Light',
+        }),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [],
+    });
+    const rooms = buildHomeAssistantProviderRooms(
+      { entities: null, areas: [], deviceRegistry: [], entityRegistry: [] },
+      mappedEntities
+    );
+
+    expect(rooms).toEqual([
+      expect.objectContaining({
+        name: 'Unassigned',
+        memberIds: ['home_assistant:light.kitchen'],
+      }),
+    ]);
+  });
+
   it('humanizes generic Home Assistant entity type labels', () => {
     const entities = mapHomeAssistantEntitiesToNavetEntities({
       entities: {

@@ -155,9 +155,10 @@ export function AppearanceEffectsQualityItem({
   controller: SettingsSectionController;
 }) {
   const { t } = useI18n();
-  const { effectsQuality, styles, updateScopedSettings } = controller;
+  const { effectsQuality, effectsQualityUserOverride, styles, updateScopedSettings } = controller;
   const detectedTier = useMemo(() => detectDeviceTier(), []);
-  const qualityOptions: Array<{ value: EffectsQuality; label: string }> = [
+  const qualityOptions: Array<{ value: EffectsQuality | 'auto'; label: string }> = [
+    { value: 'auto', label: t('settings.system.effectsQuality.auto') },
     { value: 'high', label: t('settings.system.effectsQuality.high') },
     { value: 'medium', label: t('settings.system.effectsQuality.medium') },
     { value: 'low', label: t('settings.system.effectsQuality.low') },
@@ -172,7 +173,11 @@ export function AppearanceEffectsQualityItem({
       <div className="space-y-2">
         <div className="flex flex-wrap gap-2">
           {qualityOptions.map((option) => {
-            const isActive = effectsQuality === option.value;
+            const isActive =
+              option.value === 'auto'
+                ? !effectsQualityUserOverride
+                : effectsQualityUserOverride && effectsQuality === option.value;
+            const resolvedQuality = option.value === 'auto' ? detectedTier : option.value;
             return (
               <InteractivePill
                 key={option.label}
@@ -181,8 +186,9 @@ export function AppearanceEffectsQualityItem({
                 onClick={() =>
                   updateScopedSettings(
                     {
-                      effectsQuality: option.value,
-                      ...getLegacyReducedEffectsFlags(option.value),
+                      effectsQuality: resolvedQuality,
+                      effectsQualityUserOverride: option.value !== 'auto',
+                      ...getLegacyReducedEffectsFlags(resolvedQuality),
                     },
                     ['effectsQuality']
                   )
@@ -294,7 +300,7 @@ export function AppearanceWallpaperItem({ controller }: { controller: SettingsSe
               type="button"
               onClick={handleRemoveWallpaper}
               aria-label={t('settings.appearance.wallpaper.remove')}
-              className={`absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full ${styles.floatingButtonBg} ${styles.floatingButtonText} shadow-lg transition-all hover:scale-110`}
+              className={`absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full ${styles.floatingButtonBg} ${styles.floatingButtonText} shadow-lg transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] hover:scale-110`}
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -355,7 +361,7 @@ export function AppearanceWallpaperItem({ controller }: { controller: SettingsSe
                   onClick={() => handleSelectWallpaper(option.token)}
                   aria-pressed={isSelected}
                   aria-label={t('settings.appearance.wallpaper.optionAria', { id: option.id })}
-                  className="group relative h-14 w-14 overflow-hidden rounded-full border transition-all md:h-16 md:w-16"
+                  className="group relative h-14 w-14 overflow-hidden rounded-full border transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] md:h-16 md:w-16"
                   style={{
                     borderColor: isSelected ? `${styles.accentColor}88` : undefined,
                     boxShadow: isSelected ? `0 0 0 1px ${styles.accentColor}55` : undefined,

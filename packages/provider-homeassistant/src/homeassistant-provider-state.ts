@@ -11,10 +11,12 @@ export function buildHomeAssistantProviderState(
   input: HomeAssistantProviderStateInput,
   options: { connected: boolean }
 ): NavetProviderState {
+  const entities = mapHomeAssistantEntitiesToNavetEntities(input);
+
   return {
     providerId: 'home_assistant',
     connected: options.connected,
-    entities: mapHomeAssistantEntitiesToNavetEntities(input),
-    rooms: buildHomeAssistantProviderRooms(input),
+    entities,
+    rooms: buildHomeAssistantProviderRooms(input, entities),
   };
 }

@@ -113,7 +113,7 @@ export const EnergyNowDashboardWidget = memo(function EnergyNowDashboardWidget({
     <BaseCard
       size={size}
       fullBleed
-      className="transition-all duration-500"
+      className="transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-500"
       style={tintSurface.panelStyle}
       frameClassName="overflow-hidden"
       overlay={

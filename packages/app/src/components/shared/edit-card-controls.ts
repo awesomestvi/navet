@@ -51,7 +51,7 @@ export function getEditControlButtonClass(
   theme?: ThemeType
 ) {
   const baseClass =
-    'rounded-full border flex items-center justify-center transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]';
+    'rounded-full border flex items-center justify-center transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-200 hover:scale-[1.02] active:scale-[0.98]';
 
   if (theme === 'glass') {
     if (variant === 'destructive') {

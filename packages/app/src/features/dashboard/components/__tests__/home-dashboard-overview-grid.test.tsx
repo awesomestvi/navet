@@ -18,6 +18,7 @@ const measurementMock = vi.hoisted(() =>
 const breakpointColsMock = vi.hoisted(() => vi.fn(() => 6));
 const progressiveBatchingMock = vi.hoisted(() => vi.fn(() => Number.POSITIVE_INFINITY));
 const mockSettingsState = vi.hoisted(() => ({
+  disableAnimations: false,
   lowPowerMode: false,
   effectsQuality: 'high' as const,
 }));
@@ -57,7 +58,20 @@ vi.mock('@navet/app/stores/settings-store', async (importOriginal) => {
 });
 
 vi.mock('../dashboard-card-item', () => ({
-  DashboardCardItem: ({ id }: { id: string }) => <div data-testid={`card-${id}`}>{id}</div>,
+  DashboardCardItem: ({
+    id,
+    optimizeOffscreenPaint,
+  }: {
+    id: string;
+    optimizeOffscreenPaint?: boolean;
+  }) => (
+    <div
+      data-testid={`card-${id}`}
+      className={optimizeOffscreenPaint ? '[content-visibility:auto]' : undefined}
+    >
+      {id}
+    </div>
+  ),
 }));
 
 function createDevice(id: string, size: CardSize = 'small'): DeviceWithType {
@@ -91,6 +105,7 @@ describe('home dashboard overview grid layout', () => {
     breakpointColsMock.mockClear();
     progressiveBatchingMock.mockClear();
     mockSettingsState.lowPowerMode = false;
+    mockSettingsState.disableAnimations = false;
     mockSettingsState.effectsQuality = 'high';
     breakpointColsMock.mockReturnValue(6);
     progressiveBatchingMock.mockReturnValue(Number.POSITIVE_INFINITY);
@@ -205,5 +220,34 @@ describe('home dashboard overview grid layout', () => {
     expect(measurementMock).toHaveBeenCalledWith(expect.any(Number));
     expect(getScaledInner(container).style.transform).toContain('scale(');
     expect(screen.getByTestId('card-light.kitchen')).toBeInTheDocument();
+  });
+
+  it('progressively mounts home cards and enables offscreen paint optimization in low-power mode', () => {
+    mockSettingsState.lowPowerMode = true;
+    progressiveBatchingMock.mockReturnValue(1);
+    const cards = new Map([
+      ['light.kitchen', createDevice('light.kitchen')],
+      ['light.hall', createDevice('light.hall')],
+    ]);
+
+    const { container } = renderWithProviders(
+      <PresentationCardGrid
+        cardIds={['light.kitchen', 'light.hall']}
+        gridCols={4}
+        allCards={cards}
+        cardSizes={{}}
+        updateCardSize={vi.fn()}
+        showHero
+      />
+    );
+
+    expect(progressiveBatchingMock).toHaveBeenCalledWith(
+      2,
+      false,
+      expect.objectContaining({ enabled: true, initialBatch: 6, batchSize: 6 })
+    );
+    expect(screen.getByTestId('card-light.kitchen')).toBeInTheDocument();
+    expect(screen.queryByTestId('card-light.hall')).not.toBeInTheDocument();
+    expect(container.querySelector('[class*="content-visibility:auto"]')).toBeTruthy();
   });
 });

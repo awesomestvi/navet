@@ -217,6 +217,7 @@ export const esMessages = {
   'settings.system.effectsQuality.title': 'Calidad visual',
   'settings.system.effectsQuality.description':
     'Elige cuántos efectos de vidrio en vivo debe usar Navet. Alta mantiene el acabado completo, Media usa vidrio simulado y Baja reduce los efectos para el hardware más limitado.',
+  'settings.system.effectsQuality.auto': 'Auto',
   'settings.system.effectsQuality.high': 'Alta',
   'settings.system.effectsQuality.medium': 'Media',
   'settings.system.effectsQuality.low': 'Baja',

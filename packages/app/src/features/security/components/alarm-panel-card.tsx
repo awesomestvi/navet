@@ -708,7 +708,7 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
         key={action}
         aria-label={getActionLabel(action, t)}
         disabled={isDisabledAction}
-        className={`group relative flex overflow-hidden ${fullWidth ? 'flex-1' : 'w-full'} border transition-all duration-200 ${
+        className={`group relative flex overflow-hidden ${fullWidth ? 'flex-1' : 'w-full'} border transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-200 ${
           buttonBaseClassName
         } ${
           isUnavailableAction

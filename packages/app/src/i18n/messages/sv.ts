@@ -216,6 +216,7 @@ export const svMessages = {
   'settings.system.effectsQuality.title': 'Visuell kvalitet',
   'settings.system.effectsQuality.description':
     'Välj hur mycket levande glaseffekt Navet ska använda. Hög behåller full effekt, Medium använder simulerat glas och Låg minimerar effekter för de svagaste enheterna.',
+  'settings.system.effectsQuality.auto': 'Auto',
   'settings.system.effectsQuality.high': 'Hög',
   'settings.system.effectsQuality.medium': 'Medium',
   'settings.system.effectsQuality.low': 'Låg',

@@ -416,7 +416,7 @@ function HumidifierModeControls({
               event.stopPropagation();
               onModeChange(availableMode);
             }}
-            className={`${actionSize.button} rounded-full border px-3 text-[11px] font-semibold tracking-[0.08em] uppercase transition-all duration-300 ${
+            className={`${actionSize.button} rounded-full border px-3 text-[11px] font-semibold tracking-[0.08em] uppercase transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-300 ${
               active
                 ? 'border-white/22 bg-white/16 text-white'
                 : 'border-white/10 bg-white/[0.04] text-white/72 hover:bg-white/10'
@@ -902,7 +902,7 @@ export const HumidifierCard = memo(function HumidifierCard({
       >
         {isOn ? (
           <div
-            className={`absolute inset-0 bg-gradient-to-br ${cardColors.glow} to-transparent transition-all duration-500`}
+            className={`absolute inset-0 bg-gradient-to-br ${cardColors.glow} to-transparent transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-500`}
           />
         ) : null}
         {cardShell.sheenOverlayClassName ? (

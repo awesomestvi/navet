@@ -73,7 +73,7 @@ export const ColorTemperatureSection = memo(function ColorTemperatureSection({
             />
           </Slider.Track>
           <Slider.Thumb
-            className={`block w-5 h-5 rounded-full shadow-lg focus:outline-none focus:ring-2 transition-all duration-500 border-2 ${
+            className={`block w-5 h-5 rounded-full shadow-lg focus:outline-none focus:ring-2 transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-500 border-2 ${
               isOn
                 ? 'bg-white border-white cursor-pointer'
                 : 'bg-gray-600 border-gray-600 focus:ring-gray-500/50 cursor-not-allowed'

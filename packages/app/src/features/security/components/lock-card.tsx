@@ -311,7 +311,7 @@ export const LockCard = memo(function LockCard({
         <>
           {theme === 'light' ? null : (
             <div
-              className={`absolute inset-0 bg-linear-to-b ${cardColors.glow} via-transparent to-transparent transition-all duration-500`}
+              className={`absolute inset-0 bg-linear-to-b ${cardColors.glow} via-transparent to-transparent transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-500`}
             />
           )}
           {theme === 'light' ? null : displayIsLocked &&

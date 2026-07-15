@@ -97,6 +97,13 @@ export function getAppChunkName(id: string) {
     return 'hooks-shell'
   }
 
+  const localeMessageMatch = moduleId.match(
+    /\/packages\/app\/src\/i18n\/messages\/(de|es|fr|it|pt|sv|zh)\.[cm]?[jt]sx?$/
+  )
+  if (localeMessageMatch?.[1]) {
+    return `locale-${localeMessageMatch[1]}`
+  }
+
   if (moduleId.includes('/packages/app/src/i18n/')) {
     return 'i18n-shell'
   }

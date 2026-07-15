@@ -263,7 +263,7 @@ export function PhotoFrameWidget({
                 type="button"
                 key={`photo-dot-${index}`}
                 onClick={() => setCurrentIndex(index)}
-                className="pointer-events-auto h-2 w-2 rounded-full transition-all"
+                className="pointer-events-auto h-2 w-2 rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform,filter]"
                 style={{
                   backgroundColor:
                     index === safeIndex

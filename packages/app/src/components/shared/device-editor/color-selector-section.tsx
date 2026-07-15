@@ -56,7 +56,7 @@ export const ColorSelectorSection = memo(function ColorSelectorSection({
             key={color}
             onClick={() => onColorChange(color)}
             disabled={!isOn}
-            className={`h-8 w-8 rounded-full transition-all duration-300 ${
+            className={`h-8 w-8 rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-300 ${
               isOn ? 'hover:scale-110' : editorSurface.disabledCircleClassName
             } ${selectedColor === color ? 'scale-110 shadow-lg' : ''}`}
             style={{

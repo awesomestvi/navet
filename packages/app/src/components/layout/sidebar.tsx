@@ -283,6 +283,8 @@ export const Sidebar = memo(function Sidebar({
             <ImageWithFallback
               src={getPublicAssetUrl('logo.svg')}
               alt={t('sidebar.brandLogoAlt')}
+              width={40}
+              height={40}
               className="h-10 w-10"
             />
           </div>
@@ -481,7 +483,7 @@ export const Sidebar = memo(function Sidebar({
                 return showHomeRoomDropdown ? (
                   <div
                     key={item.section}
-                    className={`relative min-h-11 min-w-[5.1rem] shrink-0 rounded-[20px] transition-all ${getMobileTabPill(true).className}`}
+                    className={`relative min-h-11 min-w-[5.1rem] shrink-0 rounded-[20px] transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] ${getMobileTabPill(true).className}`}
                     style={getMobileTabPill(true).style}
                   >
                     <button
@@ -641,7 +643,7 @@ function MobileDockButton({
       aria-label={label}
       aria-current={isActive ? 'page' : undefined}
       type="button"
-      className={`flex min-h-11 min-w-[4.25rem] shrink-0 flex-col items-center justify-center gap-1 rounded-[20px] px-2 py-1.5 transition-all ${pill.className}`}
+      className={`flex min-h-11 min-w-[4.25rem] shrink-0 flex-col items-center justify-center gap-1 rounded-[20px] px-2 py-1.5 transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] ${pill.className}`}
       style={pill.style}
     >
       <Icon className="h-4 w-4 shrink-0" />

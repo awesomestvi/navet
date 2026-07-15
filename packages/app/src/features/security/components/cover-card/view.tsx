@@ -411,7 +411,7 @@ export function CoverCardView({
                       type="button"
                       key={type}
                       onClick={() => setDeviceClass(type)}
-                      className={`group flex min-h-14 items-center gap-2.5 rounded-[18px] border px-3 py-2.5 text-left transition-all duration-200 ${
+                      className={`group flex min-h-14 items-center gap-2.5 rounded-[18px] border px-3 py-2.5 text-left transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-200 ${
                         isSelected
                           ? deviceTypeAccent.selectedButton
                           : theme === 'light'

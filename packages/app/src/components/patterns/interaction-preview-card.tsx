@@ -194,7 +194,7 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
             handleCardTap();
           }
         }}
-        className={`relative z-10 cursor-pointer overflow-hidden rounded-3xl border p-4 transition-all duration-300 ${lightSurface.cardClassName} ${
+        className={`relative z-10 cursor-pointer overflow-hidden rounded-3xl border p-4 transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-300 ${lightSurface.cardClassName} ${
           !isOn ? 'grayscale-[0.08] opacity-90' : ''
         }`}
         style={lightSurface.cardStyle}
@@ -290,7 +290,7 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
                           event.stopPropagation();
                           setBrightness(nextBrightness);
                         }}
-                        className={`flex ${actionSizes.button} items-center justify-center rounded-full border text-xs font-semibold transition-all hover:scale-105 active:scale-95 ${
+                        className={`flex ${actionSizes.button} items-center justify-center rounded-full border text-xs font-semibold transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] hover:scale-105 active:scale-95 ${
                           isSelected ? controlStyles.selectedText : controlStyles.softButton
                         }`}
                         style={
@@ -311,7 +311,7 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
                       event.stopPropagation();
                       showControlsOpenedToast();
                     }}
-                    className={`flex ${actionSizes.button} items-center justify-center rounded-full border transition-all hover:scale-105 active:scale-95 ${controlStyles.softButton}`}
+                    className={`flex ${actionSizes.button} items-center justify-center rounded-full border transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] hover:scale-105 active:scale-95 ${controlStyles.softButton}`}
                     style={
                       mode === 'control-first'
                         ? getBrightnessPresetSelectedStyle(theme, accentColor, true)
@@ -331,7 +331,7 @@ export function InteractionPreviewCard({ mode, accentColor, theme }: Interaction
                       event.stopPropagation();
                       showControlsOpenedToast();
                     }}
-                    className={`flex ${actionSizes.button} items-center justify-center rounded-full border transition-all hover:scale-105 active:scale-95 ${controlStyles.softButton}`}
+                    className={`flex ${actionSizes.button} items-center justify-center rounded-full border transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] hover:scale-105 active:scale-95 ${controlStyles.softButton}`}
                   >
                     <Settings2 className={actionSizes.icon} />
                   </button>

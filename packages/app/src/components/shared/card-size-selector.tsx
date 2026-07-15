@@ -189,7 +189,7 @@ export const CardSizeSelector = memo(function CardSizeSelector({
                       onSizeChange(size.value);
                       setOpen(false);
                     }}
-                    className="flex h-16 w-16 items-center justify-center rounded-[20px] border transition-all duration-200"
+                    className="flex h-16 w-16 items-center justify-center rounded-[20px] border transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-200"
                     style={{
                       borderColor: isActive ? `${accentColor}80` : inactiveButtonBorderColor,
                       backgroundColor: isActive

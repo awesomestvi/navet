@@ -218,6 +218,7 @@ export const deMessages = {
   'settings.system.effectsQuality.title': 'Visuelle Qualität',
   'settings.system.effectsQuality.description':
     'Lege fest, wie viel lebendigen Glaseffekt Navet verwenden soll. Hoch behält die volle Optik, Mittel nutzt simuliertes Glas und Niedrig reduziert Effekte für die schwächsten Geräte.',
+  'settings.system.effectsQuality.auto': 'Auto',
   'settings.system.effectsQuality.high': 'Hoch',
   'settings.system.effectsQuality.medium': 'Mittel',
   'settings.system.effectsQuality.low': 'Niedrig',

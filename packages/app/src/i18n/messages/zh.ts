@@ -142,6 +142,7 @@ export const zhMessages = {
   'settings.system.animations.title': '禁用动画',
   'settings.system.lowPowerMode.title': '低功耗模式',
   'settings.system.effectsQuality.title': '视觉质量',
+  'settings.system.effectsQuality.auto': '自动',
   'settings.system.effectsQuality.high': '高',
   'settings.system.effectsQuality.medium': '中',
   'settings.system.effectsQuality.low': '低',

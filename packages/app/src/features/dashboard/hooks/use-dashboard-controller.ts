@@ -23,6 +23,7 @@ import {
   usePersistedState,
   useRoomNavigation,
 } from '@navet/app/hooks';
+import { useAdaptiveEffectsQuality } from '@navet/app/hooks/use-adaptive-effects-quality';
 import type { Section } from '@navet/app/navigation/sections';
 import { isStandaloneMode } from '@navet/app/runtime/app-mode';
 import {
@@ -121,6 +122,7 @@ const CLIMATE_DASHBOARD_GROUPS: DashboardClimateSectionGroup[] = [
 
 export function useDashboardController(): DashboardController {
   const { activeSection, setActiveSection } = useNavigation();
+  useAdaptiveEffectsQuality(activeSection);
   const { t } = useI18n();
   const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);

@@ -24,7 +24,7 @@ interface ThemeAppearancePickerProps {
 
 const CUSTOM_ACCENT_CHANGE_DEBOUNCE_MS = 120;
 const THEME_PICKER_PILL_CLASS_NAME =
-  'inline-flex h-9 items-center justify-center rounded-full border px-3.5 text-sm font-medium transition-all';
+  'inline-flex h-9 items-center justify-center rounded-full border px-3.5 text-sm font-medium transition-[color,background-color,border-color,box-shadow,opacity,transform,filter]';
 
 interface ThemeAppearancePickerPillProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   active: boolean;

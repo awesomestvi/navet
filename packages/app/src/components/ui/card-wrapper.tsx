@@ -75,7 +75,7 @@ export const CardWrapper = memo(function CardWrapper({
           <div className={`pointer-events-none absolute inset-0 z-[1] ${lightOverlayClassName}`} />
         ) : null
       }
-      frameClassName={`transition-all duration-500 ${interactionClassName || ''} ${className} ${
+      frameClassName={`transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-500 ${interactionClassName || ''} ${className} ${
         showShadow && theme === 'light' ? 'shadow-lg' : ''
       }`}
       style={style}

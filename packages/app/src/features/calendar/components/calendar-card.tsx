@@ -75,7 +75,7 @@ export const CalendarCard = memo(function CalendarCard({
         size={effectiveSize}
         interactive={!inEditMode}
         className={`
-          group transition-all duration-300
+          group transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-300
           ${!inEditMode ? 'cursor-pointer' : ''}
         `}
         style={hasCustomTint ? tintSurface.panelStyle : undefined}

@@ -53,7 +53,7 @@ export const LightEffectPicker = memo(function LightEffectPicker({
               type="button"
               disabled={!isOn}
               className={cn(
-                'flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm font-medium transition-all duration-200',
+                'flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm font-medium transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-200',
                 'border-white/8 bg-white/5 text-white/88 hover:border-white/14 hover:bg-white/8',
                 !isOn && 'opacity-50 hover:border-white/8 hover:bg-white/5'
               )}

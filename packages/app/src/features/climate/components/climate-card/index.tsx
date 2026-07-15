@@ -151,7 +151,7 @@ export const ClimateCard = memo(function ClimateCard({
       >
         {isSurfaceActive && (
           <div
-            className={`absolute inset-0 bg-gradient-to-br ${controller.cardColors.glow} to-transparent transition-all duration-500`}
+            className={`absolute inset-0 bg-gradient-to-br ${controller.cardColors.glow} to-transparent transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-500`}
           />
         )}
 

@@ -182,6 +182,8 @@ export function RSSArticleListLarge({
                 <img
                   src={item.imageUrl}
                   alt={item.title}
+                  width={80}
+                  height={80}
                   className="h-full w-full object-cover opacity-80 transition-opacity group-hover/item:opacity-100"
                   loading="lazy"
                   decoding="async"

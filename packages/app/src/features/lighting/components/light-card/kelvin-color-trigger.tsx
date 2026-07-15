@@ -48,7 +48,7 @@ export const KelvinColorTrigger = memo(function KelvinColorTrigger({
       }}
       className={`h-8 w-8 ${controlSizes.button} relative flex shrink-0 items-center justify-center overflow-hidden rounded-full ${
         isActive && isOn ? 'border-0' : 'border'
-      } transition-all duration-200 ${!isOn ? 'opacity-50' : 'hover:scale-105 cursor-pointer'}`}
+      } transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-200 ${!isOn ? 'opacity-50' : 'hover:scale-105 cursor-pointer'}`}
       style={{
         background: isActive && isOn ? kelvinBg : mutedBg,
         borderColor: isActive && isOn ? `${currentTempColor}80` : borderColor,

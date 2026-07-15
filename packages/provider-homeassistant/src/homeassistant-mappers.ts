@@ -1452,7 +1452,8 @@ export function mapHomeAssistantEntitiesToNavetEntities(
 }
 
 export function buildHomeAssistantProviderRooms(
-  input: HomeAssistantNavetMappingInput
+  input: HomeAssistantNavetMappingInput,
+  mappedEntities: NavetEntity[] = mapHomeAssistantEntitiesToNavetEntities(input)
 ): NavetProviderRoom[] {
-  return buildProviderRoomMap(mapHomeAssistantEntitiesToNavetEntities(input));
+  return buildProviderRoomMap(mappedEntities);
 }

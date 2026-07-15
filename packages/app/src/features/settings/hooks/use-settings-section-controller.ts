@@ -71,6 +71,7 @@ export function useSettingsSectionController() {
   const {
     disableAnimations,
     effectsQuality,
+    effectsQualityUserOverride,
     headerCustomText,
     headerTitleMode,
     lowPowerMode,
@@ -92,6 +93,7 @@ export function useSettingsSectionController() {
     useShallow((state) => ({
       disableAnimations: state.disableAnimations,
       effectsQuality: state.effectsQuality,
+      effectsQualityUserOverride: state.effectsQualityUserOverride,
       lowPowerMode: state.lowPowerMode,
       headerCustomText: state.headerCustomText,
       headerTitleMode: state.headerTitleMode,
@@ -240,6 +242,7 @@ export function useSettingsSectionController() {
     dashboardSpaceMode,
     disableAnimations,
     effectsQuality,
+    effectsQualityUserOverride,
     headerCustomText,
     headerTitleMode,
     entityInteractionMode,

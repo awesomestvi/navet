@@ -13,7 +13,6 @@ import {
   removeLocalStorageWithMigration,
   writeLocalStorageWithMigration,
 } from '@navet/app/utils/local-storage-migration';
-import { storage } from '@navet/app/utils/storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
@@ -130,6 +129,10 @@ export const defaultSettings: UserSettings = {
 
 function isCameraViewMode(value: unknown): value is CameraViewMode {
   return value === 'live' || value === 'auto' || value === 'snapshot';
+}
+
+function isEffectsQuality(value: unknown): value is EffectsQuality {
+  return value === 'high' || value === 'medium' || value === 'low';
 }
 
 function isCameraStreamPreference(value: unknown): value is CameraStreamPreference {
@@ -282,17 +285,8 @@ function pickKnownSettings(value: unknown): Partial<UserSettings> {
   ) as Partial<UserSettings>;
 }
 
-/**
- * On first load (no persisted settings), auto-detect the device's rendering
- * tier so RPi-class hardware gets low effects without manual configuration.
- * Returns the default 'high' on subsequent loads — persist middleware then
- * overwrites it with the user's saved preference.
- */
 function getInitialEffectsQuality(): EffectsQuality {
-  if (storage.get<unknown>(STORE_STORAGE_KEYS.settings, null) === null) {
-    return detectDeviceTier();
-  }
-  return defaultSettings.effectsQuality;
+  return detectDeviceTier();
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -443,7 +437,12 @@ export const useSettingsStore = create<SettingsState>()(
           customSummaryPills: normalizeCustomSummaryPills(supportedSettings.customSummaryPills),
         }));
       },
-      resetSettings: () => set(defaultSettings),
+      resetSettings: () =>
+        set({
+          ...defaultSettings,
+          effectsQuality: detectDeviceTier(),
+          effectsQualityUserOverride: false,
+        }),
     }),
     {
       name: STORE_STORAGE_KEYS.settings,
@@ -454,9 +453,17 @@ export const useSettingsStore = create<SettingsState>()(
       })),
       merge: (persisted, current) => {
         const next = pickKnownSettings(persisted);
+        const effectsQualityUserOverride =
+          next.effectsQualityUserOverride === true ||
+          (next.effectsQualityUserOverride === undefined && isEffectsQuality(next.effectsQuality));
         return {
           ...current,
           ...next,
+          effectsQuality:
+            effectsQualityUserOverride && isEffectsQuality(next.effectsQuality)
+              ? next.effectsQuality
+              : detectDeviceTier(),
+          effectsQualityUserOverride,
           headerTitleMode: isHeaderTitleMode(next.headerTitleMode)
             ? next.headerTitleMode
             : current.headerTitleMode,

@@ -46,6 +46,7 @@ interface DashboardCardItemProps {
   allowExtraLargeSizes?: boolean;
   usesHideAction?: boolean;
   densePerformanceMode?: boolean;
+  optimizeOffscreenPaint?: boolean;
   headerSubtitleOverride?: string;
   presentationVariant?: 'media-stack';
 }
@@ -71,6 +72,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
   allowExtraLargeSizes = zone === 'hero' || zone === undefined,
   usesHideAction = false,
   densePerformanceMode = false,
+  optimizeOffscreenPaint = false,
   headerSubtitleOverride,
   presentationVariant,
 }: DashboardCardItemProps) {
@@ -273,7 +275,9 @@ export const DashboardCardItem = memo(function DashboardCardItem({
     </>
   );
 
-  const containerClassName = `relative h-full ${resolveDashboardCardContainmentClass(device, resolvedAmbientLightBleed)} ${spanClass} [&>*]:cursor-inherit`;
+  const containerClassName = `relative h-full ${resolveDashboardCardContainmentClass(device, resolvedAmbientLightBleed)} ${spanClass} ${
+    optimizeOffscreenPaint ? '[content-visibility:auto] [contain-intrinsic-block-size:10rem]' : ''
+  } [&>*]:cursor-inherit`;
 
   if (draggable && zone) {
     return (
@@ -883,6 +887,7 @@ function areDashboardCardItemPropsEqual(
     previous.allowExtraLargeSizes === next.allowExtraLargeSizes &&
     previous.usesHideAction === next.usesHideAction &&
     previous.densePerformanceMode === next.densePerformanceMode &&
+    previous.optimizeOffscreenPaint === next.optimizeOffscreenPaint &&
     previous.headerSubtitleOverride === next.headerSubtitleOverride
   );
 }

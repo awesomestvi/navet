@@ -308,6 +308,7 @@ export const enMessages = {
   'settings.system.effectsQuality.title': 'Visual quality',
   'settings.system.effectsQuality.description':
     'Choose how much live glass rendering Navet should use. High keeps the full look, Medium uses simulated glass, and Low strips effects down for the slowest devices.',
+  'settings.system.effectsQuality.auto': 'Auto',
   'settings.system.effectsQuality.high': 'High',
   'settings.system.effectsQuality.medium': 'Medium',
   'settings.system.effectsQuality.low': 'Low',

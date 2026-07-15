@@ -266,6 +266,16 @@
     scroll-behavior: auto;
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      scroll-behavior: auto !important;
+      transition: none !important;
+    }
+  }
+
   /* Universal suppression — catches all backdrop-blur values including arbitrary Tailwind classes */
   html[data-effects-quality="low"] * {
     /* biome-ignore lint/complexity/noImportantStyles: must override Tailwind utilities regardless of cascade layer order for RPi low-quality mode */

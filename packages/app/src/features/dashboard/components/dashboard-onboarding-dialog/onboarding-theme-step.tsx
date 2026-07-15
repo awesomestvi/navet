@@ -108,7 +108,7 @@ export function OnboardingThemeStep({
                 type="button"
                 onClick={() => setSelectedTheme(option.value)}
                 aria-pressed={isActive}
-                className={`rounded-full border px-4 py-2 text-sm font-medium transition-all ${textColor}`}
+                className={`rounded-full border px-4 py-2 text-sm font-medium transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] ${textColor}`}
                 style={
                   isActive
                     ? {
@@ -233,7 +233,7 @@ export function OnboardingThemeStep({
                 onClick={() => setSelectedWallpaper(option.token)}
                 aria-pressed={isActive}
                 aria-label={t('settings.appearance.wallpaper.optionAria', { id: option.id })}
-                className="group relative h-14 w-14 overflow-hidden rounded-full border transition-all md:h-16 md:w-16"
+                className="group relative h-14 w-14 overflow-hidden rounded-full border transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] md:h-16 md:w-16"
                 style={{
                   borderColor: isActive ? `${accentColor}88` : undefined,
                   boxShadow: isActive ? `0 0 0 1px ${accentColor}55` : undefined,

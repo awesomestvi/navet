@@ -28,8 +28,8 @@ export function getInteractivePillStyles({
   const pickerTokens = getThemeAppearancePickerTokens(theme, accent);
   const isGhost = variant === 'ghost';
   const baseClassName = isGhost
-    ? `border ${pickerTokens.textClassName} transition-all`
-    : `border ${pickerTokens.textClassName} ${pickerTokens.optionBorderClassName} transition-all`;
+    ? `border ${pickerTokens.textClassName} transition-[color,background-color,border-color,box-shadow,opacity,transform,filter]`
+    : `border ${pickerTokens.textClassName} ${pickerTokens.optionBorderClassName} transition-[color,background-color,border-color,box-shadow,opacity,transform,filter]`;
 
   if (!isActive) {
     void intent;
@@ -42,7 +42,8 @@ export function getInteractivePillStyles({
 
   if (theme === 'light') {
     return {
-      className: 'border text-slate-950 transition-all hover:bg-white',
+      className:
+        'border text-slate-950 transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] hover:bg-white',
       style: {
         backgroundColor: '#ffffff',
         borderColor: `${accent}80`,
@@ -51,7 +52,7 @@ export function getInteractivePillStyles({
   }
 
   return {
-    className: `border ${pickerTokens.textClassName} ${pickerTokens.optionBorderClassName} transition-all shadow-sm`,
+    className: `border ${pickerTokens.textClassName} ${pickerTokens.optionBorderClassName} transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] shadow-sm`,
     style: pickerTokens.activeOptionStyle,
   };
 }

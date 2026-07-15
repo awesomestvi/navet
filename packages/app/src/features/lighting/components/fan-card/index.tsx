@@ -188,7 +188,7 @@ const FanPresetOverflowButton = memo(function FanPresetOverflowButton({
                   style={
                     active ? getBrightnessPresetSelectedStyle(theme, activeColor, true) : undefined
                   }
-                  className={`${buttonClassName} relative flex shrink-0 items-center justify-center rounded-full transition-all duration-300 ${
+                  className={`${buttonClassName} relative flex shrink-0 items-center justify-center rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-300 ${
                     active
                       ? roundControl.selectedText
                       : `${roundControl.softButton} cursor-pointer hover:scale-105 active:scale-95`
@@ -206,7 +206,7 @@ const FanPresetOverflowButton = memo(function FanPresetOverflowButton({
         disabled={!isOn}
         aria-label={t('lighting.moreFanPresets')}
         onClick={handleOpen}
-        className={`${buttonClassName} rounded-full transition-all duration-300 flex items-center justify-center ${
+        className={`${buttonClassName} rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-300 flex items-center justify-center ${
           !isOn
             ? roundControl.softDisabledButton
             : `${roundControl.softButton} cursor-pointer hover:scale-105 active:scale-95`
@@ -582,7 +582,7 @@ export const FanCard = memo(function FanCard({
                                     )
                                   : undefined
                               }
-                              className={`${actionSize.button} relative flex shrink-0 items-center justify-center rounded-full transition-all duration-300 ${
+                              className={`${actionSize.button} relative flex shrink-0 items-center justify-center rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-300 ${
                                 !isOn
                                   ? directionIsReverse
                                     ? disabledSelectedClasses
@@ -620,7 +620,7 @@ export const FanCard = memo(function FanCard({
                                     )
                                   : undefined
                               }
-                              className={`${actionSize.button} relative flex shrink-0 items-center justify-center rounded-full transition-all duration-300 ${
+                              className={`${actionSize.button} relative flex shrink-0 items-center justify-center rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-300 ${
                                 !isOn
                                   ? fanOscillating
                                     ? disabledSelectedClasses
@@ -657,7 +657,7 @@ export const FanCard = memo(function FanCard({
                                           )
                                         : undefined
                                     }
-                                    className={`${actionSize.button} relative flex shrink-0 items-center justify-center rounded-full transition-all duration-300 ${
+                                    className={`${actionSize.button} relative flex shrink-0 items-center justify-center rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-300 ${
                                       !isOn
                                         ? active
                                           ? disabledSelectedClasses

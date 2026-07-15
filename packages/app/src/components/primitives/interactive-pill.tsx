@@ -72,7 +72,7 @@ export const InteractivePill = forwardRef<HTMLButtonElement, InteractivePillProp
         ref={ref}
         type="button"
         className={cn(
-          'inline-flex items-center justify-center transition-all disabled:cursor-not-allowed disabled:opacity-50',
+          'inline-flex items-center justify-center transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] disabled:cursor-not-allowed disabled:opacity-50',
           sizeClassName.frame,
           navetRadiusTokens.pill,
           sizeClassName.text,

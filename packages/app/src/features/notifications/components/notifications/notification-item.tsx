@@ -69,7 +69,7 @@ export function NotificationItem({
 
   return (
     <div
-      className={`group relative p-4 transition-all ${surface.hoverClassName} ${!notification.read ? surface.unreadItemClassName : ''}`}
+      className={`group relative p-4 transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] ${surface.hoverClassName} ${!notification.read ? surface.unreadItemClassName : ''}`}
     >
       <div className="flex gap-4">
         {/* Icon */}
@@ -113,7 +113,7 @@ export function NotificationItem({
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/8">
                 <div
-                  className="h-full rounded-full transition-all duration-300"
+                  className="h-full rounded-full transition-[width,background-color] duration-300"
                   style={{
                     width: `${notification.progress ?? 12}%`,
                     backgroundColor: accentColor,

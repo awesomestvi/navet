@@ -224,6 +224,7 @@ export const itMessages = {
   'settings.system.effectsQuality.title': 'Qualità visiva',
   'settings.system.effectsQuality.description':
     'Scegli quanto rendering vetro live Navet deve usare. Alta mantiene l’aspetto completo, Media usa vetro simulato e Bassa riduce gli effetti per i dispositivi più lenti.',
+  'settings.system.effectsQuality.auto': 'Auto',
   'settings.system.effectsQuality.high': 'Alta',
   'settings.system.effectsQuality.medium': 'Media',
   'settings.system.effectsQuality.low': 'Bassa',

@@ -109,7 +109,7 @@ export const BrightnessPresetsInline = memo(function BrightnessPresetsInline({
                   : getBrightnessPresetSelectedStyle(theme, activeColor, isOn)
                 : undefined
             }
-            className={`${buttonSize} rounded-full transition-all duration-300 flex items-center justify-center ${
+            className={`${buttonSize} rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-300 flex items-center justify-center ${
               !isOn
                 ? isSelected
                   ? disabledSelectedClasses
@@ -235,7 +235,7 @@ const BrightnessOverflowMenu = memo(function BrightnessOverflowMenu({
                         : getBrightnessPresetSelectedStyle(theme, activeColor, true)
                       : undefined
                   }
-                  className={`${buttonSize} rounded-full transition-all duration-300 flex items-center justify-center ${
+                  className={`${buttonSize} rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-300 flex items-center justify-center ${
                     isSelected ? selectedClasses : unselectedClasses
                   } cursor-pointer hover:scale-105 active:scale-95`}
                 >
@@ -252,7 +252,7 @@ const BrightnessOverflowMenu = memo(function BrightnessOverflowMenu({
           type="button"
           disabled={!isOn}
           aria-label={t('deviceEditor.moreBrightnessPresets')}
-          className={`${buttonSize} rounded-full transition-all duration-300 flex items-center justify-center ${
+          className={`${buttonSize} rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-300 flex items-center justify-center ${
             !isOn
               ? disabledTriggerClasses
               : `cursor-pointer ${unselectedClasses} hover:scale-105 active:scale-95`

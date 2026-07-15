@@ -75,7 +75,7 @@ export function VacuumPlannerSection({
                   type="button"
                   onClick={() => handleAreaToggle(area.id)}
                   className={cn(
-                    'group relative min-h-12 w-full rounded-[18px] border px-3 py-2.5 text-left transition-all',
+                    'group relative min-h-12 w-full rounded-[18px] border px-3 py-2.5 text-left transition-[color,background-color,border-color,box-shadow,opacity,transform,filter]',
                     navetRadiusTokens.pill,
                     getThemeFocusRingClassName(theme),
                     pillStyles.className

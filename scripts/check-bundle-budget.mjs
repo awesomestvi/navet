@@ -3,7 +3,8 @@ import { basename, join } from 'node:path';
 import { appPaths } from './repo-paths.mjs';
 
 const MAX_ENTRY_JS_BYTES = 100 * 1024;
-const MAX_EAGER_CHUNK_BYTES = 2_200 * 1024;
+const MAX_EAGER_CHUNK_BYTES = 1_600 * 1024;
+const MAX_TOTAL_EAGER_JS_BYTES = 2_400 * 1024;
 const MAX_MAIN_CSS_BYTES = 550 * 1024;
 const LAZY_CHUNK_PREFIXES = [
   'dashboard-card-item-draggable-',
@@ -33,6 +34,7 @@ const LAZY_CHUNK_PREFIXES = [
   'entity-card-weather-',
   'home-dashboard-overview-edit-',
   'leaflet-vendor-',
+  'locale-',
   'sections-',
   'settings-',
 ];
@@ -87,15 +89,40 @@ assertWithinBudget(`Entry bundle ${basename(entryScriptPath)}`, entryScriptSize,
 assertWithinBudget(`Main stylesheet ${basename(mainCssPath)}`, mainCssSize, MAX_MAIN_CSS_BYTES);
 
 const entrySource = readFileSync(entryScriptFilePath, 'utf8');
-const staticImportMatches = Array.from(
-  entrySource.matchAll(/import(?:[^'"]*?from)?["'](\.\/[^"']+\.js)["']/g)
-);
-const staticImportPaths = staticImportMatches.map((match) => match[1]).filter(Boolean);
+const readStaticImportPaths = (source) =>
+  Array.from(
+    source.matchAll(/(?:import|export)(?:[^'"]*?from)?["'](\.\/[^"']+\.js)["']/g)
+  )
+    .map((match) => match[1])
+    .filter(Boolean);
+const staticImportPaths = readStaticImportPaths(entrySource);
 
 for (const importPath of staticImportPaths) {
   const importSize = statSync(join(assetsDir, importPath.replace('./', ''))).size;
   assertWithinBudget(`Eager chunk ${basename(importPath)}`, importSize, MAX_EAGER_CHUNK_BYTES);
 }
+
+const eagerAssetPaths = new Set([basename(entryScriptPath)]);
+const pendingEagerAssetPaths = staticImportPaths.map((importPath) => importPath.replace('./', ''));
+
+while (pendingEagerAssetPaths.length > 0) {
+  const assetPath = pendingEagerAssetPaths.pop();
+  if (!assetPath || eagerAssetPaths.has(assetPath)) {
+    continue;
+  }
+
+  eagerAssetPaths.add(assetPath);
+  const source = readFileSync(join(assetsDir, assetPath), 'utf8');
+  for (const importPath of readStaticImportPaths(source)) {
+    pendingEagerAssetPaths.push(importPath.replace('./', ''));
+  }
+}
+
+const totalEagerJsSize = Array.from(eagerAssetPaths).reduce(
+  (total, assetPath) => total + statSync(join(assetsDir, assetPath)).size,
+  0
+);
+assertWithinBudget('Total eager JavaScript', totalEagerJsSize, MAX_TOTAL_EAGER_JS_BYTES);
 
 const eagerLazyImports = staticImportPaths.filter((importPath) =>
   LAZY_CHUNK_PREFIXES.some((prefix) => importPath.includes(prefix))
@@ -106,5 +133,5 @@ if (eagerLazyImports.length > 0) {
 }
 
 console.log(
-  `Bundle budgets passed: ${basename(entryScriptPath)} ${formatBytes(entryScriptSize)}, ${basename(mainCssPath)} ${formatBytes(mainCssSize)}`
+  `Bundle budgets passed: ${basename(entryScriptPath)} ${formatBytes(entryScriptSize)}, total eager JavaScript ${formatBytes(totalEagerJsSize)}, ${basename(mainCssPath)} ${formatBytes(mainCssSize)}`
 );

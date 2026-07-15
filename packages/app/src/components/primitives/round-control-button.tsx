@@ -50,7 +50,7 @@ export const RoundControlButton = forwardRef<HTMLButtonElement, RoundControlButt
         ref={ref}
         type="button"
         aria-label={resolvedAriaLabel}
-        className={`${controlSizes.button} flex shrink-0 items-center justify-center rounded-full transition-all duration-300 ${buttonClasses} ${className}`}
+        className={`${controlSizes.button} flex shrink-0 items-center justify-center rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-300 ${buttonClasses} ${className}`}
         {...props}
       >
         <span

@@ -126,7 +126,7 @@ export function getEntityIconPillStyles({
 
   if (isActive && inverseSurface) {
     return {
-      badgeClassName: `${badgeSizeClass} rounded-full flex shrink-0 items-center justify-center transition-all duration-500 ${interactiveClass} ${focusRingClass} border`,
+      badgeClassName: `${badgeSizeClass} rounded-full flex shrink-0 items-center justify-center transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-500 ${interactiveClass} ${focusRingClass} border`,
       badgeStyle: {
         backgroundColor: '#ffffff',
         borderColor: '#ffffff',
@@ -176,7 +176,7 @@ export function getEntityIconPillStyles({
     : undefined;
 
   return {
-    badgeClassName: `${badgeSizeClass} rounded-full flex shrink-0 items-center justify-center transition-all duration-500 ${interactiveClass} ${focusRingClass} ${
+    badgeClassName: `${badgeSizeClass} rounded-full flex shrink-0 items-center justify-center transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-500 ${interactiveClass} ${focusRingClass} ${
       isActive ? 'border' : inactiveBadgeClass
     }`,
     badgeStyle,

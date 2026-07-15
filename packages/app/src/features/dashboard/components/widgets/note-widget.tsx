@@ -130,7 +130,7 @@ export function NoteWidget({ initialNote = '', onNoteChange }: Omit<NoteWidgetPr
     <BaseCard
       size="large"
       fullBleed
-      className="transition-all duration-500"
+      className="transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-500"
       contentClassName="h-full"
     >
       <div className="relative flex h-full flex-col overflow-hidden rounded-[inherit]">

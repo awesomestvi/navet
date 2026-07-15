@@ -70,7 +70,7 @@ export const EnergyNowCardView = memo(function EnergyNowCardView({
     <BaseCard
       size={size}
       fullBleed
-      className="!shadow-none !drop-shadow-none transition-all duration-500"
+      className="!shadow-none !drop-shadow-none transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-500"
       style={tintSurface.panelStyle}
       frameClassName="overflow-hidden"
       overlay={

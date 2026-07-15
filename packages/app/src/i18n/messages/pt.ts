@@ -217,6 +217,7 @@ export const ptMessages = {
   'settings.system.effectsQuality.title': 'Qualidade visual',
   'settings.system.effectsQuality.description':
     'Escolha quanto de renderização de vidro ao vivo o Navet deve usar. Alta mantém o visual completo, Média usa vidro simulado e Baixa remove efeitos para os dispositivos mais lentos.',
+  'settings.system.effectsQuality.auto': 'Auto',
   'settings.system.effectsQuality.high': 'Alta',
   'settings.system.effectsQuality.medium': 'Média',
   'settings.system.effectsQuality.low': 'Baixa',

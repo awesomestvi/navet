@@ -236,7 +236,7 @@ export const ClimateSettingsDialog = memo(function ClimateSettingsDialog({
                     key={`${preset.label ?? preset.value}`}
                     onClick={() => (onTargetTempCommit ?? onTargetTempChange)(sourcePresetValue)}
                     disabled={!isOn}
-                    className={`flex h-10 min-w-10 items-center justify-center rounded-full border px-3 text-sm font-semibold transition-all duration-300 disabled:opacity-50 ${isOn ? 'hover:scale-105' : ''} ${isSelected ? `scale-105 shadow-lg ${styles.presetButtonActiveClassName}` : styles.presetButtonClassName}`}
+                    className={`flex h-10 min-w-10 items-center justify-center rounded-full border px-3 text-sm font-semibold transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-300 disabled:opacity-50 ${isOn ? 'hover:scale-105' : ''} ${isSelected ? `scale-105 shadow-lg ${styles.presetButtonActiveClassName}` : styles.presetButtonClassName}`}
                   >
                     <span
                       className="leading-none"

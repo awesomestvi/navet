@@ -26,6 +26,7 @@ import {
   useProviderHealth,
 } from './hooks';
 import { useKeepDeviceAwake } from './hooks/use-keep-device-awake';
+import { useMediaQuery } from './hooks/use-media-query';
 import { useViewportResize } from './hooks/use-viewport-resize';
 import { I18nProvider } from './i18n';
 import { resolveParentHomeAssistantBridge } from './infrastructure/home-assistant/runtime/parent-hass-bridge';
@@ -76,14 +77,13 @@ function AppContent() {
   const setProviderSessions = useCurrentIntegrationStore(integrationSelectors.setProviderSessions);
   const accentColor = useAccentColor();
   const [localHabitsFeatureEnabled] = useLocalHabitsFeature();
+  const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const { disableAnimations, lowPowerMode, effectsQuality, keepDeviceAwake } = useSettingsStore(
     useShallow(settingsSelectors.displaySettings)
   );
-  const resolvedEffectsQuality = resolveEffectsQuality(
-    effectsQuality,
-    disableAnimations || lowPowerMode
-  );
+  const resolvedEffectsQuality = resolveEffectsQuality(effectsQuality, lowPowerMode);
   const reducedEffectsEnabled = resolvedEffectsQuality === 'low';
+  const animationsDisabled = disableAnimations || reducedEffectsEnabled || prefersReducedMotion;
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === 'undefined' ? true : navigator.onLine
   );
@@ -389,16 +389,18 @@ function AppContent() {
   }, [accentColor]);
 
   useEffect(() => {
-    document.documentElement.dataset.noAnimation = reducedEffectsEnabled ? 'true' : 'false';
+    document.documentElement.dataset.noAnimation = animationsDisabled ? 'true' : 'false';
     document.documentElement.dataset.lowPower = reducedEffectsEnabled ? 'true' : 'false';
     document.documentElement.dataset.effectsQuality = resolvedEffectsQuality;
+    document.documentElement.dataset.reducedMotion = prefersReducedMotion ? 'true' : 'false';
 
     return () => {
       delete document.documentElement.dataset.noAnimation;
       delete document.documentElement.dataset.lowPower;
       delete document.documentElement.dataset.effectsQuality;
+      delete document.documentElement.dataset.reducedMotion;
     };
-  }, [reducedEffectsEnabled, resolvedEffectsQuality]);
+  }, [animationsDisabled, prefersReducedMotion, reducedEffectsEnabled, resolvedEffectsQuality]);
 
   useEffect(() => {
     syncViewportEnvironment();

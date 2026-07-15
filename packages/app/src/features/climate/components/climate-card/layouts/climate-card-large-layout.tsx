@@ -70,7 +70,7 @@ export const ClimateCardLargeLayout = memo(function ClimateCardLargeLayout({
                     controller.commitTargetTemp(sourcePresetValue);
                   }}
                   className={cn(
-                    'relative z-[3] min-w-[4.5rem] rounded-2xl border px-3 py-2 text-sm font-semibold transition-all',
+                    'relative z-[3] min-w-[4.5rem] rounded-2xl border px-3 py-2 text-sm font-semibold transition-[color,background-color,border-color,box-shadow,opacity,transform,filter]',
                     isSelected
                       ? 'border-white/20 bg-white/16'
                       : 'border-white/10 bg-white/6 hover:bg-white/10'

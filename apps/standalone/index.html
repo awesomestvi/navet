@@ -92,7 +92,6 @@
         box-shadow:
           0 20px 60px rgba(0, 0, 0, 0.35),
           inset 0 1px 0 rgba(255, 255, 255, 0.08);
-        backdrop-filter: blur(18px);
         text-align: center;
       }
 
@@ -137,13 +136,24 @@
           transform: rotate(360deg);
         }
       }
+
+      @media (prefers-reduced-motion: reduce) {
+        #app-boot {
+          transition: none;
+        }
+
+        .app-boot-spinner {
+          animation: none;
+          border-top-color: rgba(255, 255, 255, 0.12);
+        }
+      }
     </style>
   </head>
 
   <body>
     <div id="app-boot" aria-hidden="true">
       <div class="app-boot-card">
-        <img class="app-boot-logo" src="%BASE_URL%logo.svg" alt="" />
+        <img class="app-boot-logo" src="%BASE_URL%logo.svg" alt="" width="56" height="56" />
         <p class="app-boot-title">Navet</p>
         <p class="app-boot-copy" id="app-boot-copy">Starting your smart home dashboard</p>
         <div class="app-boot-spinner"></div>

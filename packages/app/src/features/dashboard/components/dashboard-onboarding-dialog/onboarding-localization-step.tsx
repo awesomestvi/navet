@@ -86,7 +86,7 @@ export function OnboardingLocalizationStep({
                 key={option.value}
                 onClick={() => updateSettings({ language: option.value })}
                 aria-pressed={isActive}
-                className={`rounded-full border px-4 py-2 text-sm font-medium transition-all ${textColor}`}
+                className={`rounded-full border px-4 py-2 text-sm font-medium transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] ${textColor}`}
                 style={
                   isActive
                     ? {
@@ -141,7 +141,7 @@ export function OnboardingLocalizationStep({
                   key={option.label}
                   onClick={() => updateSettings({ use24HourTime: option.value })}
                   aria-pressed={isActive}
-                  className={`rounded-full border px-4 py-2 text-sm font-medium transition-all ${textColor}`}
+                  className={`rounded-full border px-4 py-2 text-sm font-medium transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] ${textColor}`}
                   style={
                     isActive
                       ? {
@@ -195,7 +195,7 @@ export function OnboardingLocalizationStep({
                   key={option.value}
                   onClick={() => updateSettings({ temperatureUnit: option.value })}
                   aria-pressed={isActive}
-                  className={`rounded-full border px-4 py-2 text-sm font-medium transition-all ${textColor}`}
+                  className={`rounded-full border px-4 py-2 text-sm font-medium transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] ${textColor}`}
                   style={
                     isActive
                       ? {

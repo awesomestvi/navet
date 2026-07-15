@@ -57,8 +57,26 @@ describe('SettingsAppearanceSection', () => {
     fireEvent.click(screen.getByRole('button', { name: 'All devices' }));
 
     expect(useSettingsStore.getState().effectsQuality).toBe('medium');
+    expect(useSettingsStore.getState().effectsQualityUserOverride).toBe(true);
     expect(useSettingsStore.getState().disableAnimations).toBe(false);
     expect(useSettingsStore.getState().lowPowerMode).toBe(false);
+  });
+
+  it('returns visual quality to automatic device adaptation', () => {
+    useSettingsStore.getState().updateSettings({
+      effectsQuality: 'low',
+      effectsQualityUserOverride: true,
+    });
+    renderWithProviders(<TestSection />);
+
+    const qualityAutoButton = screen.getAllByRole('button', { name: 'Auto' }).at(-1);
+    if (!qualityAutoButton) {
+      throw new Error('Expected the automatic effects-quality control');
+    }
+    fireEvent.click(qualityAutoButton);
+    fireEvent.click(screen.getByRole('button', { name: 'All devices' }));
+
+    expect(useSettingsStore.getState().effectsQualityUserOverride).toBe(false);
   });
 
   it('disables ambience controls when low-power mode forces effective low quality', () => {

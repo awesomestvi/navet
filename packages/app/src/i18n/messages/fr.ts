@@ -218,6 +218,7 @@ export const frMessages = {
   'settings.system.effectsQuality.title': 'Qualité visuelle',
   'settings.system.effectsQuality.description':
     'Choisissez combien d’effets de verre dynamiques Navet doit utiliser. Élevée conserve le rendu complet, Moyenne passe au verre simulé et Faible réduit les effets pour les appareils les plus limités.',
+  'settings.system.effectsQuality.auto': 'Auto',
   'settings.system.effectsQuality.high': 'Élevée',
   'settings.system.effectsQuality.medium': 'Moyenne',
   'settings.system.effectsQuality.low': 'Faible',

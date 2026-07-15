@@ -10,7 +10,11 @@ vi.mock('@navet/app/hooks', async () => {
     ...actual,
     useAccentColor: () => '#f97316',
     useI18n: () => ({
-      t: (key: string) => key,
+      t: (key: string) =>
+        ({
+          'homeSummary.security': 'Security',
+          'homeSummary.noAlerts': 'No Alerts',
+        })[key] ?? key,
     }),
     useThemeMode: () => 'glass',
   };

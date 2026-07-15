@@ -32,6 +32,7 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
     innerContainerStyle,
     innerRef,
     isAutoScaled,
+    optimizeOffscreenPaint,
     outerContainerStyle,
     outerRef,
     visibleCardIds,
@@ -70,6 +71,7 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
                 handleSizeChange={updateCardSize}
                 allowExtraLargeSizes={showHero}
                 densePerformanceMode={densePerformanceMode}
+                optimizeOffscreenPaint={optimizeOffscreenPaint}
               />
             ) : (
               <DashboardCardItem
@@ -82,6 +84,7 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
                 onUpdateCard={onUpdateCard}
                 allowExtraLargeSizes={showHero}
                 densePerformanceMode={densePerformanceMode}
+                optimizeOffscreenPaint={optimizeOffscreenPaint}
               />
             );
           })}

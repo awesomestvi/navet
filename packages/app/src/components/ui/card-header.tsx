@@ -39,7 +39,7 @@ export const CardHeader = memo(function CardHeader({
       </div>
       {icon && (
         <div
-          className={`${iconSize} rounded-full ${iconBgColor} flex items-center justify-center flex-shrink-0 transition-all duration-500`}
+          className={`${iconSize} rounded-full ${iconBgColor} flex items-center justify-center flex-shrink-0 transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-500`}
         >
           <div className={`${iconInnerSize} ${iconColor} transition-colors duration-500`}>
             {icon}

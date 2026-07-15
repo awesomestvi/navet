@@ -13,6 +13,7 @@ function createController(): SettingsSectionController {
     customPrimaryColor: null,
     disableAnimations: false,
     effectsQuality: 'high',
+    effectsQualityUserOverride: false,
     entityInteractionMode: 'toggle-first',
     followSystemTheme: false,
     setFollowSystemTheme: vi.fn(),

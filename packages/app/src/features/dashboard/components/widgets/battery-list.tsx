@@ -98,7 +98,7 @@ export const BatteryListItem = memo(function BatteryListItem({
           style={{ background: subtleFill }}
         >
           <div
-            className="h-full rounded-full transition-all"
+            className="h-full rounded-full transition-[width,background-color]"
             style={{
               width: `${device.level}%`,
               backgroundColor: getLevelColor(device.level),

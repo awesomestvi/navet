@@ -163,7 +163,7 @@ const AlertDialogAction = React.forwardRef<
     <AlertDialogPrimitive.Action
       ref={ref}
       className={cn(
-        'inline-flex h-10 items-center justify-center gap-2 rounded-full border-0 px-5 text-sm font-medium text-white shadow-sm transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
+        'inline-flex h-10 items-center justify-center gap-2 rounded-full border-0 px-5 text-sm font-medium text-white shadow-sm transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
         className
       )}
       style={{ backgroundColor: accentColor }}
@@ -191,7 +191,7 @@ const AlertDialogCancel = React.forwardRef<
     <AlertDialogPrimitive.Cancel
       ref={ref}
       className={cn(
-        'inline-flex h-10 items-center justify-center gap-2 rounded-full border px-5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+        'inline-flex h-10 items-center justify-center gap-2 rounded-full border px-5 text-sm font-medium transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
         surface.ringOffset,
         cancelClass,
         className

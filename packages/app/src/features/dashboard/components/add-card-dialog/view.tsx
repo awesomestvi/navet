@@ -245,7 +245,7 @@ export function AddCardDialogView({
                           type="button"
                           key={size}
                           onClick={() => setSelectedSize(size)}
-                          className={`rounded-[20px] border p-3 transition-all ${hoverBg}`}
+                          className={`rounded-[20px] border p-3 transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] ${hoverBg}`}
                           style={{
                             borderColor:
                               selectedSize === size ? `${accent}55` : dialogSurface.tileBorder,

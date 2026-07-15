@@ -3,7 +3,10 @@ import {
   getCardGridAutoRowsStyle,
 } from '@navet/app/components/shared/card-size-selector';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
+import { settingsSelectors } from '@navet/app/stores/selectors';
+import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceWithType } from '@navet/app/types/device.types';
+import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { type CSSProperties, useMemo } from 'react';
 import {
   getCardGridGapPx,
@@ -11,6 +14,8 @@ import {
 } from '../components/home-dashboard-overview.shared';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { useAutoScaledGridMeasurements } from './use-auto-scaled-grid-measurements';
+import { resolveDashboardPerformanceProfile } from './use-dashboard-performance-mode';
+import { useProgressiveBatching } from './use-progressive-batching';
 
 interface UseHomeGridRuntimeOptions {
   allCards: Map<string, DeviceWithType | CustomCard>;
@@ -26,9 +31,47 @@ export function useHomeGridRuntime({
   allCards,
   cardIds,
   cardSizes,
+  densePerformanceMode = false,
   gridCols,
+  isEditMode,
 }: UseHomeGridRuntimeOptions) {
+  const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
+  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
+  const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const breakpointCols = useBreakpointCols();
+  const visibleDevices = useMemo(
+    () =>
+      cardIds.flatMap((cardId) => {
+        const entry = allCards.get(cardId);
+        return entry && !('createdAt' in entry) ? [entry] : [];
+      }),
+    [allCards, cardIds]
+  );
+  const performanceProfile = useMemo(
+    () =>
+      resolveDashboardPerformanceProfile({
+        activeSection: 'home',
+        deviceTier: detectDeviceTier(),
+        effectsQuality,
+        isEditMode,
+        lowPowerMode,
+        reducedEffectsEnabled: disableAnimations || lowPowerMode,
+        visibleCardCount: cardIds.length,
+        visibleDevices,
+      }),
+    [cardIds.length, disableAnimations, effectsQuality, isEditMode, lowPowerMode, visibleDevices]
+  );
+  const shouldBatchCards =
+    !isEditMode && (densePerformanceMode || performanceProfile.batchHeavyCards);
+  const batchedVisibleCount = useProgressiveBatching(cardIds.length, isEditMode, {
+    enabled: shouldBatchCards,
+    initialBatch: performanceProfile.progressiveBatchInitialCount,
+    batchSize: performanceProfile.progressiveBatchSize,
+  });
+  const visibleCardIds = useMemo(
+    () => (shouldBatchCards ? cardIds.slice(0, batchedVisibleCount) : cardIds),
+    [batchedVisibleCount, cardIds, shouldBatchCards]
+  );
   const logicalGridCols = Math.max(1, Math.min(gridCols ?? breakpointCols, breakpointCols));
   const gridGapPx = getCardGridGapPx(breakpointCols);
   const resolvedCardSizes = useMemo(
@@ -87,11 +130,12 @@ export function useHomeGridRuntime({
     innerRef,
     isAutoScaled,
     microCardMinWidth,
-    optimizeOffscreenPaint: false,
+    optimizeOffscreenPaint:
+      !isEditMode && (densePerformanceMode || performanceProfile.optimizeOffscreenPaint),
     outerContainerStyle,
     outerRef,
     renderedGridCols,
     targetGridWidth,
-    visibleCardIds: cardIds,
+    visibleCardIds,
   };
 }

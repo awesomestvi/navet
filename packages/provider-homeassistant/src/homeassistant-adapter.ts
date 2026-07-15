@@ -66,22 +66,19 @@ function buildProviderSession(session: HomeAssistantProviderSessionInput, connec
 
 function getHomeAssistantState(): NavetProviderState {
   const state = getHomeAssistantStoreState();
+  const mappingInput = {
+    entities: state.entities,
+    areas: state.areas,
+    deviceRegistry: state.deviceRegistry,
+    entityRegistry: state.entityRegistry,
+  };
+  const entities = mapHomeAssistantEntitiesToNavetEntities(mappingInput);
 
   return {
     providerId: 'home_assistant',
     connected: state.connected,
-    entities: mapHomeAssistantEntitiesToNavetEntities({
-      entities: state.entities,
-      areas: state.areas,
-      deviceRegistry: state.deviceRegistry,
-      entityRegistry: state.entityRegistry,
-    }),
-    rooms: buildHomeAssistantProviderRooms({
-      entities: state.entities,
-      areas: state.areas,
-      deviceRegistry: state.deviceRegistry,
-      entityRegistry: state.entityRegistry,
-    }),
+    entities,
+    rooms: buildHomeAssistantProviderRooms(mappingInput, entities),
   };
 }
 

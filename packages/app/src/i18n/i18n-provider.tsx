@@ -1,5 +1,5 @@
 import { useSettingsStore } from '@navet/app/stores/settings-store';
-import { createContext, type ReactNode, useContext, useMemo } from 'react';
+import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import {
   type AppLanguage,
@@ -7,7 +7,13 @@ import {
   LANGUAGE_OPTIONS,
   resolveAppLanguage,
 } from './config';
-import { MESSAGES, type TranslationKey } from './messages';
+import {
+  DEFAULT_MESSAGES,
+  getLoadedMessages,
+  loadMessages,
+  type MessageDictionary,
+  type TranslationKey,
+} from './messages';
 
 export type TranslationValues = Record<string, string | number>;
 export type TranslateFn = (key: TranslationKey, values?: TranslationValues) => string;
@@ -47,10 +53,43 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       use24HourTime: state.use24HourTime,
     }))
   );
+  const [loadedDictionary, setLoadedDictionary] = useState<{
+    language: AppLanguage;
+    messages: MessageDictionary;
+  }>(() => ({
+    language,
+    messages: getLoadedMessages(language) ?? DEFAULT_MESSAGES,
+  }));
+
+  useEffect(() => {
+    const cachedMessages = getLoadedMessages(language);
+    if (cachedMessages) {
+      setLoadedDictionary({ language, messages: cachedMessages });
+      return;
+    }
+
+    let active = true;
+    void loadMessages(language)
+      .then((messages) => {
+        if (active) {
+          setLoadedDictionary({ language, messages });
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setLoadedDictionary({ language, messages: DEFAULT_MESSAGES });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [language]);
 
   const value = useMemo<I18nContextValue>(() => {
     const locale = getLocaleForLanguage(language);
-    const dictionary = MESSAGES[language];
+    const dictionary =
+      loadedDictionary.language === language ? loadedDictionary.messages : DEFAULT_MESSAGES;
     const defaultDateFormatter = new Intl.DateTimeFormat(locale);
     const defaultDateTimeFormatter = new Intl.DateTimeFormat(locale, {
       hour12: !use24HourTime,
@@ -67,7 +106,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       language,
       locale,
       languageOptions: LANGUAGE_OPTIONS,
-      t: (key, values) => interpolateMessage(dictionary[key] ?? MESSAGES.en[key] ?? key, values),
+      t: (key, values) =>
+        interpolateMessage(dictionary[key] ?? DEFAULT_MESSAGES[key] ?? key, values),
       formatDate: (date, options) =>
         options
           ? new Intl.DateTimeFormat(locale, options).format(date)
@@ -94,7 +134,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
           : defaultNumberFormatter.format(value),
       formatRelativeTime: (value, unit) => defaultRelativeTimeFormatter.format(value, unit),
     };
-  }, [language, use24HourTime]);
+  }, [language, loadedDictionary, use24HourTime]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

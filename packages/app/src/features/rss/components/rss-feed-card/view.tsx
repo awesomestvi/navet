@@ -65,7 +65,7 @@ export function RSSFeedCardView({
     <BaseCard
       size={size}
       className={`
-        group transition-all duration-300
+        group transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-300
         ${rssSurface.containerShadowClassName}
         ${!inEditMode ? 'cursor-default' : ''}
       `}
