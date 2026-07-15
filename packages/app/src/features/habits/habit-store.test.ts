@@ -223,7 +223,7 @@ describe('useHabitStore', () => {
     expect(useHabitStore.getState().rules).toHaveLength(1);
   });
 
-  it('suppresses dismissed suggestions during cooldown', async () => {
+  it('does not suggest a rejected rule again', async () => {
     await useHabitStore
       .getState()
       .appendEvent(makePatternEvent('event-1', '2026-06-01T22:00:00.000Z'));
@@ -240,9 +240,14 @@ describe('useHabitStore', () => {
     await useHabitStore.getState().addFeedback({
       insightId: insight.id,
       candidateId: insight.candidateId,
-      outcome: 'dismissed',
+      outcome: 'dont_suggest',
       reason: 'not_useful',
     });
+
+    expect(useHabitStore.getState().insights).toHaveLength(0);
+
+    vi.setSystemTime(new Date('2026-06-19T22:10:00.000Z'));
+    useHabitStore.getState().recompute();
 
     expect(useHabitStore.getState().insights).toHaveLength(0);
   });

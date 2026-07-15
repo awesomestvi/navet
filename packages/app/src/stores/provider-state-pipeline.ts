@@ -228,13 +228,28 @@ export function replaceFlattenedProviderRecord<T>(
     return previousFlatRecord;
   }
 
-  const nextFlatRecord = { ...previousFlatRecord };
+  let nextFlatRecord = previousFlatRecord;
+  const getWritableRecord = () => {
+    if (nextFlatRecord === previousFlatRecord) {
+      nextFlatRecord = { ...previousFlatRecord };
+    }
+    return nextFlatRecord;
+  };
 
-  for (const key of Object.keys(previousProviderRecord)) {
-    delete nextFlatRecord[key];
+  for (const [key, previousValue] of Object.entries(previousProviderRecord)) {
+    if (!(key in nextProviderRecord)) {
+      delete getWritableRecord()[key];
+    } else if (nextProviderRecord[key] !== previousValue) {
+      getWritableRecord()[key] = nextProviderRecord[key];
+    }
   }
 
-  Object.assign(nextFlatRecord, nextProviderRecord);
+  for (const [key, nextValue] of Object.entries(nextProviderRecord)) {
+    if (!(key in previousProviderRecord)) {
+      getWritableRecord()[key] = nextValue;
+    }
+  }
+
   return nextFlatRecord;
 }
 
@@ -243,6 +258,10 @@ export function collectProviderEntityEvents(
   previousEntitiesByCanonicalId: Record<string, NavetEntity>,
   nextEntitiesByCanonicalId: Record<string, NavetEntity>
 ): NavetEntityEvent[] {
+  if (previousEntitiesByCanonicalId === nextEntitiesByCanonicalId) {
+    return [];
+  }
+
   const events: NavetEntityEvent[] = [];
   const timestamp = new Date().toISOString();
 

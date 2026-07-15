@@ -6,7 +6,8 @@ import {
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
-import { useEffect, useRef, useState } from 'react';
+import { subscribeVisibilityAwareAsyncTask } from '@navet/app/utils/visibility-aware-scheduler';
+import { useEffect, useState } from 'react';
 import { resolveDashboardPerformanceProfile } from '../../dashboard/hooks/use-dashboard-performance-mode';
 import { getCachedEnergyStatistics } from '../services/energy-statistics-cache';
 import { getPowerStatisticsHistory } from '../services/energy-statistics-service';
@@ -75,7 +76,6 @@ export function useEnergyLoadHistory(
   enabled = true
 ): EnergySeriesPoint[] {
   const [points, setPoints] = useState<EnergySeriesPoint[]>([]);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const supportsStatistics = supportsIntegrationEnergyStatistics(entityId);
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
@@ -140,17 +140,11 @@ export function useEnergyLoadHistory(
       }
     }
 
-    void fetchHistory();
-    timerRef.current = setInterval(
-      () => void fetchHistory(),
-      performanceProfile.reducePolling ? REFRESH_MS * 2 : REFRESH_MS
+    return subscribeVisibilityAwareAsyncTask(
+      fetchHistory,
+      performanceProfile.reducePolling ? REFRESH_MS * 2 : REFRESH_MS,
+      { runImmediately: true }
     );
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
   }, [
     enabled,
     entityId,

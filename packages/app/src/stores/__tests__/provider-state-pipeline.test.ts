@@ -4,6 +4,7 @@ import {
   buildProviderScopedState,
   buildRoomDescriptors,
   collectProviderEntityEvents,
+  replaceFlattenedProviderRecord,
 } from '../provider-state-pipeline';
 
 function makeLight(overrides: Partial<NavetEntity> = {}): NavetEntity {
@@ -109,6 +110,60 @@ describe('provider-state pipeline', () => {
     expect(
       collectProviderEntityEvents('home_assistant', previous, next).map((event) => event.type)
     ).toEqual(['entity_updated', 'entity_added', 'entity_removed']);
+  });
+
+  it('keeps a flattened record stable when a provider wrapper contains the same values', () => {
+    const kitchen = makeLight();
+    const previousProviderRecord = { [kitchen.canonicalId]: kitchen };
+    const flattenedRecord = {
+      ...previousProviderRecord,
+      'homey:socket-1': makeLight({
+        id: 'socket-1',
+        canonicalId: 'homey:socket-1',
+        providerId: 'homey',
+        externalId: 'socket-1',
+      }),
+    };
+
+    expect(
+      replaceFlattenedProviderRecord(flattenedRecord, previousProviderRecord, {
+        ...previousProviderRecord,
+      })
+    ).toBe(flattenedRecord);
+  });
+
+  it('patches only changed provider values in a flattened record', () => {
+    const kitchen = makeLight();
+    const hall = makeLight({
+      id: 'light.hall',
+      canonicalId: 'home_assistant:light.hall',
+      externalId: 'light.hall',
+    });
+    const homeySocket = makeLight({
+      id: 'socket-1',
+      canonicalId: 'homey:socket-1',
+      providerId: 'homey',
+      externalId: 'socket-1',
+    });
+    const flattenedRecord = {
+      [kitchen.canonicalId]: kitchen,
+      [hall.canonicalId]: hall,
+      [homeySocket.canonicalId]: homeySocket,
+    };
+    const updatedKitchen = makeLight({ primaryState: false });
+
+    const next = replaceFlattenedProviderRecord(
+      flattenedRecord,
+      { [kitchen.canonicalId]: kitchen, [hall.canonicalId]: hall },
+      { [updatedKitchen.canonicalId]: updatedKitchen }
+    );
+
+    expect(next).not.toBe(flattenedRecord);
+    expect(next).toEqual({
+      [updatedKitchen.canonicalId]: updatedKitchen,
+      [homeySocket.canonicalId]: homeySocket,
+    });
+    expect(next[homeySocket.canonicalId]).toBe(homeySocket);
   });
 
   it('merges provider-managed and derived room descriptors', () => {

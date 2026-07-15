@@ -36,19 +36,19 @@ interface SettingsSystemSectionProps {
 }
 
 const PROVIDER_FEATURE_LABELS = {
-  rooms: 'Rooms',
-  lighting: 'Lighting',
-  sensors: 'Sensors',
-  climate: 'Climate',
-  mediaControls: 'Media',
-  mediaBrowse: 'Browse',
-  mediaArtwork: 'Artwork',
-  cameraSnapshot: 'Snapshots',
-  cameraStreams: 'Streams',
-  energyNow: 'Energy',
-  calendar: 'Calendar',
-  weather: 'Weather',
-  notifications: 'Notifications',
+  rooms: 'settings.system.providers.features.rooms',
+  lighting: 'settings.system.providers.features.lighting',
+  sensors: 'settings.system.providers.features.sensors',
+  climate: 'settings.system.providers.features.climate',
+  mediaControls: 'settings.system.providers.features.media',
+  mediaBrowse: 'settings.system.providers.features.browse',
+  mediaArtwork: 'settings.system.providers.features.artwork',
+  cameraSnapshot: 'settings.system.providers.features.snapshots',
+  cameraStreams: 'settings.system.providers.features.streams',
+  energyNow: 'settings.system.providers.features.energy',
+  calendar: 'settings.system.providers.features.calendar',
+  weather: 'settings.system.providers.features.weather',
+  notifications: 'settings.system.providers.features.notifications',
 } as const;
 
 type ProviderCardStatus =
@@ -98,13 +98,14 @@ function getProviderStatusLabel(t: ReturnType<typeof useI18n>['t'], status: Prov
 }
 
 function getSupportedProviderFeatureLabels(
+  t: ReturnType<typeof useI18n>['t'],
   featureMatrix: {
     [K in keyof typeof PROVIDER_FEATURE_LABELS]: boolean;
   }
 ) {
   return Object.entries(PROVIDER_FEATURE_LABELS)
     .filter(([feature]) => featureMatrix[feature as keyof typeof PROVIDER_FEATURE_LABELS])
-    .map(([, label]) => label);
+    .map(([, key]) => t(key));
 }
 
 function getProviderInitials(provider: ProviderCard) {
@@ -138,11 +139,13 @@ function ProviderManagementToggle({
   onToggle,
   styles,
   totalProviders,
+  t,
 }: {
   expanded: boolean;
   onToggle: () => void;
   styles: SettingsSectionController['styles'];
   totalProviders: number;
+  t: ReturnType<typeof useI18n>['t'];
 }) {
   return (
     <button
@@ -153,7 +156,9 @@ function ProviderManagementToggle({
     >
       <Settings2 className="h-4 w-4" />
       <span>
-        {expanded ? 'Hide provider management' : `Manage ${totalProviders} other providers`}
+        {expanded
+          ? t('settings.system.providers.hideManagement')
+          : t('settings.system.providers.manageOthers', { count: totalProviders })}
       </span>
       {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
     </button>
@@ -199,7 +204,7 @@ function ProviderCardView({
   t: ReturnType<typeof useI18n>['t'];
   configUrl: string | null;
 }) {
-  const featureLabels = getSupportedProviderFeatureLabels(provider.featureMatrix);
+  const featureLabels = getSupportedProviderFeatureLabels(t, provider.featureMatrix);
   const usesUrlConnect = provider.loginMode === 'url_oauth' || provider.loginMode === 'url_session';
   const openUrl = getProviderOpenUrl(provider, configUrl);
 
@@ -221,7 +226,7 @@ function ProviderCardView({
                     </Badge>
                     {showActiveControls && provider.isActive ? (
                       <Badge tone="accent" className="text-[10px]">
-                        Active
+                        {t('settings.system.providers.active')}
                       </Badge>
                     ) : null}
                   </>
@@ -248,7 +253,7 @@ function ProviderCardView({
             </div>
           ) : (
             <p className={`mt-4 text-sm leading-relaxed ${styles.subtleColor}`}>
-              Planned provider support will appear here when this integration is ready.
+              {t('settings.system.providers.plannedDescription')}
             </p>
           )}
         </div>
@@ -275,7 +280,7 @@ function ProviderCardView({
               className="w-full rounded-full"
               onClick={() => setActiveProvider(provider.id)}
             >
-              Make active
+              {t('settings.system.providers.makeActive')}
             </Button>
           ) : null}
 
@@ -406,6 +411,7 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
               onToggle={() => setShowProviderManagement((current) => !current)}
               styles={styles}
               totalProviders={managedProviders.length}
+              t={t}
             />
           ) : null}
 
@@ -438,8 +444,10 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
               closeConnectDialog();
             }
           }}
-          title={`Connect ${connectDialogProvider.label}`}
-          description={`Enter the connection details for ${connectDialogProvider.label}.`}
+          title={t('login.connectProviderTitle', { provider: connectDialogProvider.label })}
+          description={t('settings.system.providers.connectDescription', {
+            provider: connectDialogProvider.label,
+          })}
           contentClassName="max-w-lg"
           bodyClassName="overflow-hidden rounded-[28px]"
         >
@@ -462,12 +470,12 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
           >
             <div>
               <p className="text-base font-semibold text-white">
-                Connect {connectDialogProvider.label}
+                {t('login.connectProviderTitle', { provider: connectDialogProvider.label })}
               </p>
               <p className="mt-1 text-sm leading-relaxed text-white/65">
-                Enter the URL
-                {connectDialogProvider.id === 'openhab' ? ', username, and password' : ''} to sign
-                in from Settings.
+                {connectDialogProvider.id === 'openhab'
+                  ? t('settings.system.providers.credentialsHelp')
+                  : t('settings.system.providers.urlHelp')}
               </p>
             </div>
 
@@ -477,7 +485,7 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                   htmlFor="provider-connect-url"
                   className="text-xs font-medium uppercase tracking-[0.16em] text-white/55"
                 >
-                  URL
+                  {t('settings.system.providers.url')}
                 </label>
                 <Input
                   id="provider-connect-url"
@@ -501,7 +509,7 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                       htmlFor="provider-connect-username"
                       className="text-xs font-medium uppercase tracking-[0.16em] text-white/55"
                     >
-                      Username
+                      {t('settings.system.providers.username')}
                     </label>
                     <Input
                       id="provider-connect-username"
@@ -512,7 +520,7 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                           [connectDialogProvider.id]: event.target.value,
                         }))
                       }
-                      placeholder="openHAB Username"
+                      placeholder={t('settings.system.providers.openhabUsernamePlaceholder')}
                       inputClassName="text-white"
                     />
                   </div>
@@ -521,7 +529,7 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                       htmlFor="provider-connect-password"
                       className="text-xs font-medium uppercase tracking-[0.16em] text-white/55"
                     >
-                      Password
+                      {t('settings.system.providers.password')}
                     </label>
                     <Input
                       id="provider-connect-password"
@@ -533,7 +541,7 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                           [connectDialogProvider.id]: event.target.value,
                         }))
                       }
-                      placeholder="openHAB Password"
+                      placeholder={t('settings.system.providers.openhabPasswordPlaceholder')}
                       inputClassName="text-white"
                     />
                   </div>

@@ -1,6 +1,8 @@
+import { defaultTranslate } from '@navet/app/i18n';
 import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
 import { integrationCameraFeatureService } from '@navet/app/services/integration-camera-feature.service';
 import { resolveCameraStreamResource } from '@navet/app/services/integration-camera-runtime.service';
+import { subscribeVisibilityAwareTask } from '@navet/app/utils/visibility-aware-scheduler';
 import { memo, type RefObject, useEffect, useRef, useState } from 'react';
 import type { CameraImageSourceKind } from './camera-view-mode';
 
@@ -12,6 +14,8 @@ interface CameraStreamPlayerProps {
   fitMode: 'cover' | 'contain';
   onLoad?: () => void;
   onError: (kind: CameraImageSourceKind, options?: CameraStreamErrorOptions) => void;
+  loadingLabel?: string;
+  webRtcTitle?: string;
 }
 
 const CAMERA_STREAM_LOAD_TIMEOUT_MS = 10_000;
@@ -35,12 +39,12 @@ interface CameraStreamErrorOptions {
   retryable?: boolean;
 }
 
-function CameraStreamLoadingIndicator() {
+function CameraStreamLoadingIndicator({ label }: { label: string }) {
   return (
     <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/24">
       <div
         role="status"
-        aria-label="Loading camera feed"
+        aria-label={label}
         className="flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-black/55 backdrop-blur-md"
       >
         <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/28 border-t-white" />
@@ -110,20 +114,18 @@ function scheduleStreamLoadTimeout(
 }
 
 function clearStreamStallWatchdog(
-  intervalRef: React.MutableRefObject<number | null>,
+  cleanupRef: React.MutableRefObject<(() => void) | null>,
   stagnantDurationRef: React.MutableRefObject<number>,
   lastObservedTimeRef: React.MutableRefObject<number | null>
 ) {
-  if (intervalRef.current !== null) {
-    window.clearInterval(intervalRef.current);
-    intervalRef.current = null;
-  }
+  cleanupRef.current?.();
+  cleanupRef.current = null;
   stagnantDurationRef.current = 0;
   lastObservedTimeRef.current = null;
 }
 
 function scheduleStreamStallWatchdog(
-  intervalRef: React.MutableRefObject<number | null>,
+  cleanupRef: React.MutableRefObject<(() => void) | null>,
   videoRef: RefObject<HTMLVideoElement | null>,
   kind: CameraImageSourceKind,
   hasLoadedFrameRef: React.MutableRefObject<boolean>,
@@ -131,8 +133,8 @@ function scheduleStreamStallWatchdog(
   lastObservedTimeRef: React.MutableRefObject<number | null>,
   onError: CameraStreamPlayerProps['onError']
 ) {
-  clearStreamStallWatchdog(intervalRef, stagnantDurationRef, lastObservedTimeRef);
-  intervalRef.current = window.setInterval(() => {
+  clearStreamStallWatchdog(cleanupRef, stagnantDurationRef, lastObservedTimeRef);
+  cleanupRef.current = subscribeVisibilityAwareTask(() => {
     const video = videoRef.current;
     if (!video || !hasLoadedFrameRef.current || document.hidden) {
       return;
@@ -158,7 +160,7 @@ function scheduleStreamStallWatchdog(
 
     stagnantDurationRef.current += CAMERA_STREAM_STALL_CHECK_INTERVAL_MS;
     if (stagnantDurationRef.current >= CAMERA_STREAM_STALL_THRESHOLD_MS) {
-      clearStreamStallWatchdog(intervalRef, stagnantDurationRef, lastObservedTimeRef);
+      clearStreamStallWatchdog(cleanupRef, stagnantDurationRef, lastObservedTimeRef);
       onError(kind);
     }
   }, CAMERA_STREAM_STALL_CHECK_INTERVAL_MS);
@@ -186,6 +188,7 @@ function MjpegCameraPlayer({
   streamResource,
   fitMode,
   onLoad,
+  loadingLabel = defaultTranslate('camera.loadingFeed'),
 }: Omit<CameraStreamPlayerProps, 'entityId' | 'kind'>) {
   const streamResourceUrl =
     streamResource?.kind === 'mjpeg_stream' ? streamResource.url : undefined;
@@ -197,11 +200,9 @@ function MjpegCameraPlayer({
       return;
     }
 
-    const interval = window.setInterval(() => {
+    return subscribeVisibilityAwareTask(() => {
       setReloadKey((current) => current + 1);
     }, MJPEG_STREAM_RECONNECT_INTERVAL_MS);
-
-    return () => window.clearInterval(interval);
   }, [streamResourceUrl]);
 
   useEffect(() => {
@@ -216,7 +217,7 @@ function MjpegCameraPlayer({
   return (
     <div className="relative h-full w-full">
       {reloadingStreamUrl && !hasLoadedFrame && reloadKey === 0 ? (
-        <CameraStreamLoadingIndicator />
+        <CameraStreamLoadingIndicator label={loadingLabel} />
       ) : null}
       {reloadingStreamUrl ? (
         <img
@@ -245,10 +246,11 @@ function HlsCameraPlayer({
   fitMode,
   onLoad,
   onError,
+  loadingLabel = defaultTranslate('camera.loadingFeed'),
 }: Omit<CameraStreamPlayerProps, 'kind'>) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const loadTimeoutRef = useRef<number | null>(null);
-  const stallIntervalRef = useRef<number | null>(null);
+  const stallWatchdogCleanupRef = useRef<(() => void) | null>(null);
   const stagnantDurationRef = useRef(0);
   const lastObservedTimeRef = useRef<number | null>(null);
   const hasLoadedFrameRef = useRef(false);
@@ -267,7 +269,7 @@ function HlsCameraPlayer({
     setHasLoadedFrame(true);
     clearStreamLoadTimeout(loadTimeoutRef);
     scheduleStreamStallWatchdog(
-      stallIntervalRef,
+      stallWatchdogCleanupRef,
       videoRef,
       'hls',
       hasLoadedFrameRef,
@@ -303,7 +305,7 @@ function HlsCameraPlayer({
         video.load();
       }
       clearStreamLoadTimeout(loadTimeoutRef);
-      clearStreamStallWatchdog(stallIntervalRef, stagnantDurationRef, lastObservedTimeRef);
+      clearStreamStallWatchdog(stallWatchdogCleanupRef, stagnantDurationRef, lastObservedTimeRef);
       hasLoadedFrameRef.current = false;
     };
 
@@ -497,7 +499,7 @@ function HlsCameraPlayer({
 
   return (
     <div className="relative h-full w-full">
-      {!hasLoadedFrame ? <CameraStreamLoadingIndicator /> : null}
+      {!hasLoadedFrame ? <CameraStreamLoadingIndicator label={loadingLabel} /> : null}
       <video
         ref={videoRef}
         autoPlay
@@ -521,12 +523,14 @@ function WebRtcCameraPlayer({
   fitMode,
   onLoad,
   onError,
+  loadingLabel = defaultTranslate('camera.loadingFeed'),
+  webRtcTitle = defaultTranslate('camera.webRtcStreamTitle'),
 }: Omit<CameraStreamPlayerProps, 'kind'>) {
   const streamResourceUrl =
     streamResource?.kind === 'webrtc_stream' ? streamResource.url : undefined;
   const videoRef = useRef<HTMLVideoElement>(null);
   const loadTimeoutRef = useRef<number | null>(null);
-  const stallIntervalRef = useRef<number | null>(null);
+  const stallWatchdogCleanupRef = useRef<(() => void) | null>(null);
   const stagnantDurationRef = useRef(0);
   const lastObservedTimeRef = useRef<number | null>(null);
   const hasLoadedFrameRef = useRef(false);
@@ -616,7 +620,7 @@ function WebRtcCameraPlayer({
         video.load();
       }
       clearStreamLoadTimeout(loadTimeoutRef);
-      clearStreamStallWatchdog(stallIntervalRef, stagnantDurationRef, lastObservedTimeRef);
+      clearStreamStallWatchdog(stallWatchdogCleanupRef, stagnantDurationRef, lastObservedTimeRef);
       hasLoadedFrameRef.current = false;
     };
 
@@ -798,9 +802,9 @@ function WebRtcCameraPlayer({
   if (streamResourceUrl) {
     return (
       <div className="relative h-full w-full overflow-hidden">
-        {!hasLoadedFrame ? <CameraStreamLoadingIndicator /> : null}
+        {!hasLoadedFrame ? <CameraStreamLoadingIndicator label={loadingLabel} /> : null}
         <iframe
-          title="Camera WebRTC stream"
+          title={webRtcTitle}
           src={streamResourceUrl}
           className={`${CAMERA_MEDIA_SURFACE_CLASS_NAME} border-0`}
           allow="autoplay; fullscreen; camera; microphone"
@@ -813,7 +817,7 @@ function WebRtcCameraPlayer({
 
   return (
     <div className="relative h-full w-full">
-      {!hasLoadedFrame ? <CameraStreamLoadingIndicator /> : null}
+      {!hasLoadedFrame ? <CameraStreamLoadingIndicator label={loadingLabel} /> : null}
       <video
         ref={videoRef}
         autoPlay
@@ -852,6 +856,8 @@ function areCameraStreamPlayerPropsEqual(
     previous.fitMode === next.fitMode &&
     previous.onLoad === next.onLoad &&
     previous.onError === next.onError &&
+    previous.loadingLabel === next.loadingLabel &&
+    previous.webRtcTitle === next.webRtcTitle &&
     getStreamResourceKey(previous.streamResource) === getStreamResourceKey(next.streamResource) &&
     (previous.kind === 'web_rtc' || previous.posterUrl === next.posterUrl)
   );

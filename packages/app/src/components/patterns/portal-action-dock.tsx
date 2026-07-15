@@ -1,4 +1,5 @@
 import { withTintAlpha } from '@navet/app/components/shared/theme/custom-card-tint-surface';
+import { useI18n } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { type ReactNode, useEffect } from 'react';
 import { createPortal } from 'react-dom';
@@ -29,6 +30,7 @@ export function PortalActionDock({
   title,
   subtitle,
 }: PortalActionDockProps) {
+  const { t } = useI18n();
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -83,7 +85,7 @@ export function PortalActionDock({
       <button
         type="button"
         className="absolute inset-0 bg-black/58"
-        aria-label="Close action dock"
+        aria-label={t('common.closeActionDock')}
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();

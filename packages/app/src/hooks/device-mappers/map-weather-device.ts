@@ -1,5 +1,6 @@
 import type { TranslateFn } from '@navet/app/i18n/index';
 import type { WeatherDevice } from '@navet/app/types/device.types';
+import { LruCache } from '@navet/app/utils/lru-cache';
 import { normalizeTemperatureUnit, type TemperatureUnit } from '@navet/app/utils/temperature';
 import {
   formatClock,
@@ -14,6 +15,28 @@ type WeatherEntityLike = {
   state: string;
   attributes?: Record<string, unknown>;
 };
+
+const WEATHER_DATE_FORMATTER_CACHE_MAX_ENTRIES = 16;
+const weatherDateFormatterCache = new LruCache<
+  string,
+  { hourly: Intl.DateTimeFormat; weekly: Intl.DateTimeFormat }
+>(WEATHER_DATE_FORMATTER_CACHE_MAX_ENTRIES);
+
+function getWeatherDateFormatters(locale: string, use24HourTime: boolean) {
+  const cacheKey = `${locale}:${use24HourTime ? '24' : '12'}`;
+  const cached = weatherDateFormatterCache.get(cacheKey);
+  if (cached) return cached;
+
+  const formatters = {
+    hourly: new Intl.DateTimeFormat(locale, {
+      hour: 'numeric',
+      hour12: !use24HourTime,
+    }),
+    weekly: new Intl.DateTimeFormat(locale, { weekday: 'short' }),
+  };
+  weatherDateFormatterCache.set(cacheKey, formatters);
+  return formatters;
+}
 
 function resolveTemperatureUnit(...values: unknown[]): TemperatureUnit | undefined {
   for (const value of values) {
@@ -70,11 +93,10 @@ export function mapWeatherDevice(
     entity.attributes?.native_unit_of_measurement
   );
 
-  const hourlyFormatter = new Intl.DateTimeFormat(locale, {
-    hour: 'numeric',
-    hour12: !use24HourTime,
-  });
-  const weeklyFormatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+  const { hourly: hourlyFormatter, weekly: weeklyFormatter } = getWeatherDateFormatters(
+    locale,
+    use24HourTime
+  );
 
   const forecast = selectedForecastSource
     .slice(0, 7)

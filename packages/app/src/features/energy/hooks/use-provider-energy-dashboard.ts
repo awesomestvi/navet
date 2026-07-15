@@ -1,3 +1,4 @@
+import { useI18n } from '@navet/app/hooks';
 import type { PlatformEnergySourceDiagnostic } from '@navet/app/platform/provider-feature-models';
 import { useMemo } from 'react';
 import type { EnergyRange } from '../types/energy.types';
@@ -23,22 +24,27 @@ function mapEnergySourceDiagnostics(
 }
 
 export function useProviderEnergyDashboard(range: EnergyRange) {
+  const { t } = useI18n();
   const providerData = useProviderEnergyData(range);
   const dashboard = useMemo(
     () =>
-      buildEnergyDashboardModel({
-        overview: providerData.overview,
-        range,
-        trend: providerData.recentLoadTrend,
-        periodTotals: providerData.periodTotals,
-        sourceConfig: providerData.haSourceConfig,
-      }),
+      buildEnergyDashboardModel(
+        {
+          overview: providerData.overview,
+          range,
+          trend: providerData.recentLoadTrend,
+          periodTotals: providerData.periodTotals,
+          sourceConfig: providerData.haSourceConfig,
+        },
+        t
+      ),
     [
       providerData.haSourceConfig,
       providerData.overview,
       providerData.periodTotals,
       providerData.recentLoadTrend,
       range,
+      t,
     ]
   );
   const sourceDiagnostics = useMemo(

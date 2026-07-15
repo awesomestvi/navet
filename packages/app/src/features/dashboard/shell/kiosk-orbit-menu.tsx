@@ -220,7 +220,7 @@ export const KioskOrbitMenu = memo(function KioskOrbitMenu({
                     {editActions?.isEditMode && onCustomizeSidebar ? (
                       <OrbitCompactActionButton
                         icon={Plus}
-                        label="Customize sidebar"
+                        label={t('sidebar.customize')}
                         onClick={onCustomizeSidebar}
                         disabled={customizeSidebarDisabled}
                       />

@@ -209,6 +209,8 @@ export function CameraLiveViewer({
                   : selectedStreamResource
               }
               fitMode={cameraFitMode}
+              loadingLabel={t('camera.loadingFeed')}
+              webRtcTitle={t('camera.webRtcStreamTitle')}
               onError={handleStreamError}
             />
           ) : snapshotSourceUrl && cameraState !== 'unavailable' ? (

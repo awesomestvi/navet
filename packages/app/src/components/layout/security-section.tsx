@@ -86,10 +86,13 @@ export function SecuritySection({
     () => filterSecuritySectionDevices(availableDevices, hiddenEntityIdSet),
     [availableDevices, hiddenEntityIdSet]
   );
-  const model = useMemo(() => buildSecurityCameraDashboardModel(visibleDevices), [visibleDevices]);
+  const model = useMemo(
+    () => buildSecurityCameraDashboardModel(visibleDevices, t),
+    [t, visibleDevices]
+  );
   const allEntitiesModel = useMemo(
-    () => buildSecurityCameraDashboardModel(availableDevices),
-    [availableDevices]
+    () => buildSecurityCameraDashboardModel(availableDevices, t),
+    [availableDevices, t]
   );
   const allSecurityDevices = useMemo(() => allEntitiesModel.allEntities, [allEntitiesModel]);
   const allSecurityDeviceMap = useMemo(

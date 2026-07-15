@@ -2,6 +2,13 @@ import { BaseCard } from '@navet/app/components/primitives';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useIntegrationStore, useTheme } from '@navet/app/hooks';
+import {
+  type AppLanguage,
+  defaultTranslate,
+  getLocaleForLanguage,
+  type TranslateFn,
+  type TranslationKey,
+} from '@navet/app/i18n';
 import { integrationSelectors } from '@navet/app/stores/selectors';
 import { Activity, CircleAlert, CircleHelp, CircleSlash } from 'lucide-react';
 
@@ -12,24 +19,58 @@ export interface GenericEntityWidgetData {
 interface GenericEntityWidgetProps {
   size: CardSize;
   data?: GenericEntityWidgetData;
+  language?: AppLanguage;
+  t?: TranslateFn;
 }
 
-function formatEntityState(value: unknown) {
+function formatEntityState(value: unknown, t: TranslateFn) {
   if (value === null || value === undefined || value === '') {
-    return 'Unknown';
+    return t('widgets.generic.unknown');
   }
 
   if (typeof value === 'boolean') {
-    return value ? 'On' : 'Off';
+    return value ? t('common.on') : t('common.off');
   }
 
   return String(value);
 }
 
-function formatEntityType(type: string | undefined) {
+const ENTITY_TYPE_KEYS: Record<string, TranslationKey> = {
+  light: 'deviceType.light',
+  lights: 'deviceType.light',
+  climate: 'deviceType.climate',
+  hvac: 'deviceType.hvac',
+  media: 'deviceType.media',
+  weather: 'deviceType.weather',
+  switch: 'deviceType.switch',
+  switches: 'deviceType.switch',
+  cover: 'deviceType.cover',
+  covers: 'deviceType.cover',
+  lock: 'deviceType.lock',
+  locks: 'deviceType.lock',
+  scene: 'deviceType.scene',
+  scenes: 'deviceType.scene',
+  automation: 'deviceType.automation',
+  person: 'deviceType.person',
+  persons: 'deviceType.person',
+  sensor: 'deviceType.sensor',
+  sensors: 'deviceType.sensor',
+  script: 'deviceType.script',
+  helper: 'deviceType.helper',
+  helpers: 'deviceType.helper',
+  vacuum: 'deviceType.vacuum',
+  calendar: 'deviceType.calendar',
+  camera: 'deviceType.camera',
+  cameras: 'deviceType.camera',
+};
+
+function formatEntityType(type: string | undefined, t: TranslateFn) {
   if (!type) {
-    return 'Entity';
+    return t('widgets.generic.entity');
   }
+
+  const translationKey = ENTITY_TYPE_KEYS[type];
+  if (translationKey) return t(translationKey);
 
   return type
     .split('_')
@@ -38,7 +79,7 @@ function formatEntityType(type: string | undefined) {
     .join(' ');
 }
 
-function formatLastUpdated(value: string | undefined) {
+function formatLastUpdated(value: string | undefined, locale: string) {
   if (!value) {
     return null;
   }
@@ -48,42 +89,47 @@ function formatLastUpdated(value: string | undefined) {
     return null;
   }
 
-  return date.toLocaleString(undefined, {
+  return date.toLocaleString(locale, {
     dateStyle: 'medium',
     timeStyle: 'short',
   });
 }
 
-function getAvailabilityMeta(availability: string | undefined) {
+function getAvailabilityMeta(availability: string | undefined, t: TranslateFn) {
   switch (availability) {
     case 'available':
       return {
-        label: 'Available',
+        label: t('widgets.generic.available'),
         Icon: Activity,
         className: 'text-emerald-300',
       };
     case 'unavailable':
       return {
-        label: 'Unavailable',
+        label: t('widgets.generic.unavailable'),
         Icon: CircleSlash,
         className: 'text-amber-300',
       };
     case 'unknown':
       return {
-        label: 'Unknown',
+        label: t('widgets.generic.unknown'),
         Icon: CircleHelp,
         className: 'text-white/55',
       };
     default:
       return {
-        label: 'Unknown',
+        label: t('widgets.generic.unknown'),
         Icon: CircleAlert,
         className: 'text-white/55',
       };
   }
 }
 
-export function GenericEntityWidget({ size, data }: GenericEntityWidgetProps) {
+export function GenericEntityWidget({
+  size,
+  data,
+  language = 'en',
+  t = defaultTranslate,
+}: GenericEntityWidgetProps) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const entityId = data?.entityId;
@@ -112,10 +158,10 @@ export function GenericEntityWidget({ size, data }: GenericEntityWidgetProps) {
     return null;
   });
 
-  const availability = getAvailabilityMeta(entity?.availability);
+  const availability = getAvailabilityMeta(entity?.availability, t);
   const AvailabilityIcon = availability.Icon;
-  const lastUpdated = formatLastUpdated(entity?.lastUpdated);
-  const entityType = formatEntityType(entity?.type);
+  const lastUpdated = formatLastUpdated(entity?.lastUpdated, getLocaleForLanguage(language));
+  const entityType = formatEntityType(entity?.type, t);
 
   return (
     <BaseCard size={size} className="overflow-hidden">
@@ -135,7 +181,7 @@ export function GenericEntityWidget({ size, data }: GenericEntityWidgetProps) {
             </span>
           </div>
           <h3 className={`truncate text-sm font-semibold ${surface.textPrimary}`}>
-            {entity?.name ?? entityId ?? 'Entity'}
+            {entity?.name ?? entityId ?? t('widgets.generic.entity')}
           </h3>
           {entity?.room ? (
             <p className={`mt-1 truncate text-xs ${surface.textSecondary}`}>{entity.room}</p>
@@ -144,7 +190,7 @@ export function GenericEntityWidget({ size, data }: GenericEntityWidgetProps) {
 
         <div className="min-w-0">
           <div className={`truncate text-2xl font-semibold ${surface.textPrimary}`}>
-            {formatEntityState(entity?.primaryState)}
+            {formatEntityState(entity?.primaryState, t)}
           </div>
           <div className={`mt-1 truncate text-[0.7rem] ${surface.textMuted}`}>
             {lastUpdated ?? entity?.externalId ?? entity?.canonicalId ?? entityId}

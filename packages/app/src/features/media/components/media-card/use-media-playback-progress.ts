@@ -2,6 +2,7 @@ import { resolveDashboardPerformanceProfile } from '@navet/app/features/dashboar
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
+import { subscribeVisibilityAwareTask } from '@navet/app/utils/visibility-aware-scheduler';
 import { useEffect } from 'react';
 
 interface UseMediaPlaybackProgressParams {
@@ -75,11 +76,10 @@ export function useMediaPlaybackProgress({
     };
 
     syncElapsed();
-    const timerId = window.setInterval(
+    return subscribeVisibilityAwareTask(
       syncElapsed,
       performanceProfile.reducePolling ? 2_000 : 1_000
     );
-    return () => window.clearInterval(timerId);
   }, [
     durationSeconds,
     isPlaying,

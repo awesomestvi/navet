@@ -1,4 +1,7 @@
+import { LruCache } from '@navet/app/utils/lru-cache';
 import type { ResolvedMediaResource } from './resource-types';
+
+const RESOURCE_CACHE_MAX_ENTRIES = 256;
 
 interface CacheEntry {
   expiresAt: number;
@@ -6,7 +9,7 @@ interface CacheEntry {
 }
 
 export class ResourceCache {
-  private entries = new Map<string, CacheEntry>();
+  private entries = new LruCache<string, CacheEntry>(RESOURCE_CACHE_MAX_ENTRIES);
 
   get(key: string) {
     const entry = this.entries.get(key);

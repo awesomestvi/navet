@@ -13,7 +13,8 @@ import {
 } from '@navet/app/components/primitives';
 import { IconPicker } from '@navet/app/components/shared/device-editor';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { useTheme } from '@navet/app/hooks';
+import { useI18n, useTheme } from '@navet/app/hooks';
+import type { TranslateFn, TranslationKey } from '@navet/app/i18n';
 import { useSettingsStore } from '@navet/app/stores';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import {
@@ -33,15 +34,15 @@ interface CustomExtensionsDialogProps {
 }
 
 const SECTION_OPTIONS = [
-  ['home', 'Home'],
-  ['energy', 'Energy'],
-  ['climate', 'Climate'],
-  ['security', 'Security'],
-  ['lights', 'Lights'],
-  ['media', 'Media'],
-  ['tasks', 'Tasks'],
-  ['settings', 'Settings'],
-] as const;
+  ['home', 'sidebar.home'],
+  ['energy', 'sidebar.energy'],
+  ['climate', 'sidebar.climate'],
+  ['security', 'sidebar.security'],
+  ['lights', 'sidebar.lights'],
+  ['media', 'sidebar.media'],
+  ['tasks', 'sidebar.tasks'],
+  ['settings', 'sidebar.settings'],
+] as const satisfies ReadonlyArray<readonly [string, TranslationKey]>;
 
 function createEmptySidebarActionDraft(): CustomSidebarAction {
   return {
@@ -96,7 +97,7 @@ function normalizeSidebarDraft(action: CustomSidebarAction): CustomSidebarAction
   };
 }
 
-function getSidebarValidationMessage(action: CustomSidebarAction): string | null {
+function getSidebarValidationMessage(action: CustomSidebarAction, t: TranslateFn): string | null {
   if (!action.label.trim()) {
     return null;
   }
@@ -108,7 +109,7 @@ function getSidebarValidationMessage(action: CustomSidebarAction): string | null
     );
 
     if (!safeUrl) {
-      return 'Enter a valid link.';
+      return t('settings.customExtensions.dialog.validLink');
     }
   }
 
@@ -121,6 +122,7 @@ export function CustomExtensionsDialog({
   onOpenChange,
   mode,
 }: CustomExtensionsDialogProps) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const customSidebarActions = useSettingsStore(settingsSelectors.customSidebarActions);
@@ -138,7 +140,7 @@ export function CustomExtensionsDialog({
   const hasReachedLimit =
     draftExistingAction === null &&
     customSidebarActions.length >= ADVANCED_CUSTOM_SIDEBAR_ACTION_LIMIT;
-  const validationMessage = getSidebarValidationMessage(draft);
+  const validationMessage = getSidebarValidationMessage(draft, t);
   const normalizedDraft = normalizeSidebarDraft(draft);
   const canSave = !hasReachedLimit && normalizedDraft !== null;
 
@@ -194,9 +196,15 @@ export function CustomExtensionsDialog({
       variant="modal"
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      title={draftExistingAction ? 'Edit sidebar action' : 'Add sidebar action'}
+      title={
+        draftExistingAction
+          ? t('settings.customExtensions.dialog.editTitle')
+          : t('settings.customExtensions.dialog.addTitle')
+      }
       description={
-        draftExistingAction ? 'Change this sidebar shortcut.' : 'Create a new sidebar shortcut.'
+        draftExistingAction
+          ? t('settings.customExtensions.dialog.editDescription')
+          : t('settings.customExtensions.dialog.addDescription')
       }
       theme={theme}
       disableOpenAutoFocus
@@ -207,19 +215,23 @@ export function CustomExtensionsDialog({
       <div className="max-h-[85vh] w-full min-w-0 overflow-y-auto">
         <CardDialogBody>
           <CardDialogHeader
-            title={draftExistingAction ? 'Edit sidebar action' : 'Add sidebar action'}
+            title={
+              draftExistingAction
+                ? t('settings.customExtensions.dialog.editTitle')
+                : t('settings.customExtensions.dialog.addTitle')
+            }
             description={
               draftExistingAction
-                ? 'Change this sidebar shortcut.'
-                : 'Create a new sidebar shortcut.'
+                ? t('settings.customExtensions.dialog.editDescription')
+                : t('settings.customExtensions.dialog.addDescription')
             }
             showRoomSelector={false}
           />
 
           <div className="mt-5 space-y-4">
             <CardDialogSection
-              label="Name"
-              helperText="Choose the label shown in the sidebar."
+              label={t('settings.customExtensions.dialog.name')}
+              helperText={t('settings.customExtensions.dialog.nameHelp')}
               helperTextClassName={surface.textMuted}
               labelClassName={surface.textPrimary}
             >
@@ -228,15 +240,15 @@ export function CustomExtensionsDialog({
                 onChange={(event) =>
                   setDraft((current) => ({ ...current, label: event.currentTarget.value }))
                 }
-                placeholder="Movie time"
-                aria-label="Sidebar action label"
+                placeholder={t('settings.customExtensions.dialog.namePlaceholder')}
+                aria-label={t('settings.customExtensions.sidebar.labelAria')}
                 maxLength={28}
               />
             </CardDialogSection>
 
             <CardDialogSection
-              label="Destination type"
-              helperText="Choose whether this shortcut opens a Navet section, a new browser tab, or an embedded page."
+              label={t('settings.customExtensions.dialog.destinationType')}
+              helperText={t('settings.customExtensions.dialog.destinationTypeHelp')}
               helperTextClassName={surface.textMuted}
               labelClassName={surface.textPrimary}
             >
@@ -261,22 +273,22 @@ export function CustomExtensionsDialog({
                         };
                   })
                 }
-                aria-label="Sidebar action target type"
+                aria-label={t('settings.customExtensions.sidebar.targetAria')}
               >
-                <option value="section">Open section</option>
-                <option value="url">Open URL</option>
-                <option value="iframe">Open inside Navet</option>
+                <option value="section">{t('settings.customExtensions.target.section')}</option>
+                <option value="url">{t('settings.customExtensions.target.url')}</option>
+                <option value="iframe">{t('settings.customExtensions.target.iframe')}</option>
               </Select>
             </CardDialogSection>
 
             <CardDialogSection
-              label="Destination"
+              label={t('settings.customExtensions.dialog.destination')}
               helperText={
                 draft.targetType === 'section'
-                  ? 'Choose the Navet section this shortcut should open.'
+                  ? t('settings.customExtensions.dialog.sectionHelp')
                   : draft.targetType === 'iframe'
-                    ? 'Paste the link Navet should try to embed. Some sites block framing and may need the external fallback.'
-                    : 'Paste the link this shortcut should open in a new tab.'
+                    ? t('settings.customExtensions.dialog.embedHelp')
+                    : t('settings.customExtensions.dialog.urlHelp')
               }
               helperTextClassName={surface.textMuted}
               labelClassName={surface.textPrimary}
@@ -294,11 +306,11 @@ export function CustomExtensionsDialog({
                         targetUrl: undefined,
                       }))
                     }
-                    aria-label="Sidebar action section"
+                    aria-label={t('settings.customExtensions.sidebar.sectionAria')}
                   >
                     {SECTION_OPTIONS.map(([value, label]) => (
                       <option key={value} value={value}>
-                        {label}
+                        {t(label)}
                       </option>
                     ))}
                   </Select>
@@ -314,7 +326,7 @@ export function CustomExtensionsDialog({
                       }))
                     }
                     placeholder="https://navet.app/"
-                    aria-label="Sidebar action URL"
+                    aria-label={t('settings.customExtensions.sidebar.urlAria')}
                   />
                 )}
 
@@ -334,7 +346,7 @@ export function CustomExtensionsDialog({
                   }))
                 }
                 isLightOn={theme !== 'light'}
-                label="Sidebar icon"
+                label={t('settings.customExtensions.dialog.icon')}
                 inputVariant="default"
               />
             </CardDialogSection>
@@ -343,8 +355,9 @@ export function CustomExtensionsDialog({
               <div
                 className={`rounded-[20px] border px-4 py-3 text-sm text-red-300 ${surface.border} ${surface.panelMuted}`}
               >
-                You already have {ADVANCED_CUSTOM_SIDEBAR_ACTION_LIMIT} custom sidebar actions. Edit
-                or remove one before adding another.
+                {t('settings.customExtensions.dialog.limit', {
+                  count: ADVANCED_CUSTOM_SIDEBAR_ACTION_LIMIT,
+                })}
               </div>
             ) : null}
           </div>
@@ -353,17 +366,19 @@ export function CustomExtensionsDialog({
             <div className="flex items-center gap-2">
               {draftExistingAction ? (
                 <InteractivePill active size="small" accentColor="#e11d48" onClick={handleDelete}>
-                  Delete
+                  {t('settings.customExtensions.dialog.delete')}
                 </InteractivePill>
               ) : null}
             </div>
 
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="small" onClick={handleClose}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button variant="primary" size="small" onClick={handleSave} disabled={!canSave}>
-                {draftExistingAction ? 'Save changes' : 'Add sidebar action'}
+                {draftExistingAction
+                  ? t('settings.customExtensions.dialog.saveChanges')
+                  : t('settings.customExtensions.sidebar.add')}
               </Button>
             </div>
           </CardDialogFooter>

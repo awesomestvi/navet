@@ -1,4 +1,5 @@
 import { fetchMediaThumbnailDataUrl } from '@navet/app/features/media/utils/media-thumbnail';
+import { LruCache } from '@navet/app/utils/lru-cache';
 import { sanitizeImageUrl } from '@navet/app/utils/url-security';
 import type { HomeAssistantResourceResolver } from '../resources/resource-resolver';
 import type { ResolvedMediaResource } from '../resources/resource-types';
@@ -14,6 +15,9 @@ const COVER_ART_ARCHIVE_THUMBNAIL_SIZE = 500;
 const MUSICBRAINZ_API_URL = 'https://musicbrainz.org/ws/2/release';
 const COVER_ART_ARCHIVE_RELEASE_URL = 'https://coverartarchive.org/release';
 const COVER_ART_ARCHIVE_RELEASE_GROUP_URL = 'https://coverartarchive.org/release-group';
+const OBJECT_URL_CACHE_MAX_ENTRIES = 32;
+const LOOKUP_CACHE_MAX_ENTRIES = 128;
+const NEGATIVE_CACHE_MAX_ENTRIES = 128;
 
 interface ObjectUrlEntry {
   expiresAt: number;
@@ -408,9 +412,12 @@ function scoreMusicBrainzRelease(release: MusicBrainzRelease, attrs: Record<stri
 }
 
 export class MediaArtworkService {
-  private objectUrlCache = new Map<string, ObjectUrlEntry>();
-  private lookupCache = new Map<string, LookupCacheEntry>();
-  private negativeCache = new Map<string, number>();
+  private objectUrlCache = new LruCache<string, ObjectUrlEntry>(
+    OBJECT_URL_CACHE_MAX_ENTRIES,
+    (entry) => URL.revokeObjectURL(entry.url)
+  );
+  private lookupCache = new LruCache<string, LookupCacheEntry>(LOOKUP_CACHE_MAX_ENTRIES);
+  private negativeCache = new LruCache<string, number>(NEGATIVE_CACHE_MAX_ENTRIES);
 
   constructor(
     private resolver: HomeAssistantResourceResolver,
@@ -425,7 +432,6 @@ export class MediaArtworkService {
         continue;
       }
 
-      URL.revokeObjectURL(entry.url);
       this.objectUrlCache.delete(key);
     }
 

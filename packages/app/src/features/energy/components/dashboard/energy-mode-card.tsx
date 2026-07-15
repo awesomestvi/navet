@@ -1,7 +1,8 @@
 import { Text } from '@navet/app/components/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import type { EnergyDashboardMode } from '@navet/app/features/energy/types/energy.types';
-import { useTheme } from '@navet/app/hooks';
+import { useI18n, useTheme } from '@navet/app/hooks';
+import type { TranslateFn } from '@navet/app/i18n';
 import { BatteryCharging, Gauge, Leaf, Zap } from 'lucide-react';
 import { memo } from 'react';
 
@@ -10,26 +11,26 @@ interface EnergyModeCardProps {
   summary: string;
 }
 
-function getModeAppearance(mode: EnergyDashboardMode) {
+function getModeAppearance(mode: EnergyDashboardMode, t: TranslateFn) {
   switch (mode) {
     case 'eco':
       return {
-        label: 'Eco',
+        label: t('energy.dashboard.mode.eco'),
         Icon: Leaf,
       };
     case 'peak':
       return {
-        label: 'Peak',
+        label: t('energy.dashboard.mode.peak'),
         Icon: Zap,
       };
     case 'battery_saver':
       return {
-        label: 'Battery Saver',
+        label: t('energy.dashboard.mode.batterySaver'),
         Icon: BatteryCharging,
       };
     default:
       return {
-        label: 'Normal',
+        label: t('energy.dashboard.mode.normal'),
         Icon: Gauge,
       };
   }
@@ -37,8 +38,9 @@ function getModeAppearance(mode: EnergyDashboardMode) {
 
 export const EnergyModeCard = memo(function EnergyModeCard({ mode, summary }: EnergyModeCardProps) {
   const { theme, accentColor } = useTheme();
+  const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
-  const { label, Icon } = getModeAppearance(mode);
+  const { label, Icon } = getModeAppearance(mode, t);
 
   return (
     <div
@@ -55,7 +57,7 @@ export const EnergyModeCard = memo(function EnergyModeCard({ mode, summary }: En
           <div
             className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
           >
-            Current mode
+            {t('energy.dashboard.mode.current')}
           </div>
           <div className={`mt-2 text-2xl font-semibold tracking-tight ${surface.textPrimary}`}>
             {label}

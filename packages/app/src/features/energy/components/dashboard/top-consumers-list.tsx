@@ -5,7 +5,7 @@ import {
   formatEnergyPercent,
   formatEnergyValue,
 } from '@navet/app/features/energy/utils/energy-formatters';
-import { useTheme } from '@navet/app/hooks';
+import { useI18n, useTheme } from '@navet/app/hooks';
 import { memo } from 'react';
 import { EnergyWidgetShell } from '../energy-widget-shell';
 
@@ -21,6 +21,7 @@ export const TopConsumersList = memo(function TopConsumersList({
   consumers,
 }: TopConsumersListProps) {
   const { theme } = useTheme();
+  const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
   const totalConsumptionTodayKWh = consumers.reduce(
     (total, consumer) => total + Math.max(0, consumer.energyKWh),
@@ -31,7 +32,7 @@ export const TopConsumersList = memo(function TopConsumersList({
     <EnergyWidgetShell title={title} eyebrow={eyebrow}>
       {consumers.length === 0 ? (
         <Text tone="muted" className="text-sm">
-          No device-level consumption is available yet.
+          {t('energy.dashboard.topConsumersEmpty')}
         </Text>
       ) : (
         <div className="space-y-3">
@@ -45,13 +46,13 @@ export const TopConsumersList = memo(function TopConsumersList({
                   {index + 1}. {consumer.name}
                 </div>
                 <Text tone="muted" className="mt-1 text-sm">
-                  {(consumer.room ?? 'Unassigned').trim()} ·{' '}
+                  {(consumer.room ?? t('energy.widgets.common.unassignedRoom')).trim()} ·{' '}
                   {totalConsumptionTodayKWh > 0
                     ? formatEnergyPercent(
                         (Math.max(0, consumer.energyKWh) / totalConsumptionTodayKWh) * 100
                       )
                     : formatEnergyPercent(0)}
-                  % of consumption today
+                  {t('energy.dashboard.ofConsumptionToday')}
                 </Text>
               </div>
               <div className="text-right">
@@ -59,7 +60,9 @@ export const TopConsumersList = memo(function TopConsumersList({
                   {formatEnergyValue(consumer.powerW / 1000)} kW
                 </div>
                 <Text tone="muted" className="mt-1 text-sm">
-                  {formatEnergyValue(consumer.energyKWh)} kWh today
+                  {t('energy.dashboard.kwhToday', {
+                    value: formatEnergyValue(consumer.energyKWh),
+                  })}
                 </Text>
               </div>
             </div>

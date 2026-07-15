@@ -94,6 +94,13 @@ export const EnergySparkline = memo(function EnergySparkline({
       }),
     [locale, use24HourTime]
   );
+  const yAxisNumberFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat(locale, {
+        maximumFractionDigits: 0,
+      }),
+    [locale]
+  );
 
   const { baseline, line, pts, chartHeight, minVal, maxVal } = useMemo(() => {
     if (data.length < 2) {
@@ -163,13 +170,11 @@ export const EnergySparkline = memo(function EnergySparkline({
       const y = PAD_TOP + (1 - (value - minVal) / span) * chartHeight;
       return {
         key: value,
-        label: new Intl.NumberFormat(locale, {
-          maximumFractionDigits: 0,
-        }).format(roundedValue),
+        label: yAxisNumberFormatter.format(roundedValue),
         topPercent: (y / height) * 100,
       };
     });
-  }, [chartHeight, height, locale, maxVal, minVal, showYAxisMarks]);
+  }, [chartHeight, height, maxVal, minVal, showYAxisMarks, yAxisNumberFormatter]);
 
   if (data.length < 2) {
     return null;

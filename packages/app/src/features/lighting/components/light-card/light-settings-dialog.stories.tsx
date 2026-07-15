@@ -1,5 +1,6 @@
 import { Button } from '@navet/app/components/primitives/button';
 import { TEMP_OPTIONS } from '@navet/app/constants/light-constants';
+import { defaultTranslate } from '@navet/app/i18n';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react';
@@ -44,7 +45,10 @@ function LightSettingsDialogStory() {
         effectOptions={[]}
         minColorTemp={2200}
         maxColorTemp={6400}
-        tempOptions={TEMP_OPTIONS}
+        tempOptions={TEMP_OPTIONS.map(({ labelKey, ...option }) => ({
+          ...option,
+          label: defaultTranslate(labelKey),
+        }))}
         brightnessPresets={presets}
         colorTemp={colorTemp}
         selectedColor={selectedColor}

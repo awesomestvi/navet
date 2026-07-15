@@ -1,3 +1,4 @@
+import { LruCache } from '@navet/app/utils/lru-cache';
 import { useEffect, useState } from 'react';
 
 type EdgeSide = 'top' | 'right' | 'bottom' | 'left';
@@ -244,7 +245,10 @@ export function shouldBlurArtworkEdges(
   return analyzeArtworkEdges(imageData, options).shouldBlur;
 }
 
-const artworkEdgeAnalysisCache = new Map<string, ArtworkEdgeAnalysis>();
+const ARTWORK_EDGE_ANALYSIS_CACHE_MAX_ENTRIES = 96;
+const artworkEdgeAnalysisCache = new LruCache<string, ArtworkEdgeAnalysis>(
+  ARTWORK_EDGE_ANALYSIS_CACHE_MAX_ENTRIES
+);
 
 export function useArtworkEdgeBlur(
   artwork: string | null | undefined,

@@ -7,6 +7,7 @@ import { type PhotoFrameSourceMode, resolvePhotoFrameSourceMode } from './photo-
 
 const MAX_MEDIA_SOURCE_DEPTH = 2;
 const MAX_MEDIA_SOURCE_IMAGES = 48;
+const MAX_CONCURRENT_MEDIA_SOURCE_RESOLUTIONS = 4;
 
 interface UsePhotoFrameSourcesOptions {
   sourceMode?: PhotoFrameSourceMode;
@@ -59,6 +60,23 @@ async function resolveMediaSourceImageUrl(mediaContentId: string) {
   return normalizeResourceUrl(resolved.url, 'home_assistant') ?? resolved.url;
 }
 
+async function resolveMediaSourceImageUrls(mediaContentIds: string[]) {
+  const resolvedUrls = new Array<string | null>(mediaContentIds.length).fill(null);
+  let nextIndex = 0;
+
+  async function resolveNext() {
+    while (nextIndex < mediaContentIds.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      resolvedUrls[index] = await resolveMediaSourceImageUrl(mediaContentIds[index] ?? '');
+    }
+  }
+
+  const workerCount = Math.min(MAX_CONCURRENT_MEDIA_SOURCE_RESOLUTIONS, mediaContentIds.length);
+  await Promise.all(Array.from({ length: workerCount }, () => resolveNext()));
+  return resolvedUrls.filter((url): url is string => url !== null);
+}
+
 async function collectMediaSourceImageUrls(mediaSourceId: string) {
   const collectedUrls: string[] = [];
   const queue = [{ mediaContentId: mediaSourceId, depth: 0 }];
@@ -83,16 +101,15 @@ async function collectMediaSourceImageUrls(mediaSourceId: string) {
       continue;
     }
 
+    const remainingImageCount = MAX_MEDIA_SOURCE_IMAGES - collectedUrls.length;
+    const imageContentIds: string[] = [];
     for (const child of mediaChildren) {
-      if (collectedUrls.length >= MAX_MEDIA_SOURCE_IMAGES) {
+      if (imageContentIds.length >= remainingImageCount) {
         break;
       }
 
       if (isImageMediaClass(child.mediaClass)) {
-        const imageUrl = await resolveMediaSourceImageUrl(child.mediaContentId ?? '');
-        if (imageUrl) {
-          collectedUrls.push(imageUrl);
-        }
+        imageContentIds.push(child.mediaContentId ?? '');
         continue;
       }
 
@@ -103,6 +120,8 @@ async function collectMediaSourceImageUrls(mediaSourceId: string) {
         });
       }
     }
+
+    collectedUrls.push(...(await resolveMediaSourceImageUrls(imageContentIds)));
   }
 
   return collectedUrls;

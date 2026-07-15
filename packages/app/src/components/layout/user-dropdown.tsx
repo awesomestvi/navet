@@ -24,6 +24,7 @@ import { integrationSelectors } from '@navet/app/stores/selectors';
 import { INTEGRATION_PROVIDER_IDS, INTEGRATION_PROVIDERS } from '@navet/app/types/provider';
 import { LogOut, RefreshCw } from 'lucide-react';
 import { memo, useMemo, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 interface UserDropdownProps {
   avatarUrl?: string | null;
@@ -42,7 +43,11 @@ export const UserDropdown = memo(function UserDropdown({
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
   const user = useIntegrationStore(integrationSelectors.currentUser);
-  const providerRuntime = useIntegrationStore(integrationSelectors.providerRuntime);
+  const connectedProviderIds = useIntegrationStore(
+    useShallow((state) =>
+      INTEGRATION_PROVIDER_IDS.filter((providerId) => state.providerRuntime[providerId]?.connected)
+    )
+  );
   const performLogout = useLogout();
 
   const handleLogout = () => {
@@ -70,12 +75,8 @@ export const UserDropdown = memo(function UserDropdown({
     'inline-flex w-full items-center gap-2 rounded-full bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-500/15';
 
   const fullName = user?.name?.trim() || t('userDropdown.defaultUser');
-  const connectedProviderLabels = useMemo(
-    () =>
-      INTEGRATION_PROVIDER_IDS.filter((providerId) => providerRuntime[providerId]?.connected).map(
-        (providerId) => INTEGRATION_PROVIDERS[providerId].label
-      ),
-    [providerRuntime]
+  const connectedProviderLabels = connectedProviderIds.map(
+    (providerId) => INTEGRATION_PROVIDERS[providerId].label
   );
   const connected = connectedProviderLabels.length > 0;
   const initials = useMemo(() => {

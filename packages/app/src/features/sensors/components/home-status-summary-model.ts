@@ -4,6 +4,7 @@ import {
   normalizeMediaPlaybackState,
 } from '@navet/app/features/media/media-state';
 import { getSecurityAlertCount } from '@navet/app/features/security/utils/security-alert-count';
+import { defaultTranslate, type TranslateFn } from '@navet/app/i18n';
 import type { Section } from '@navet/app/navigation/sections';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import type { CustomSummaryPill } from '@navet/app/utils/custom-extensions';
@@ -67,7 +68,8 @@ function formatEnergyKWh(value: number): string {
 
 function getEnergySummary(
   devices: DeviceWithType[],
-  options: StatusSummaryOptions = {}
+  options: StatusSummaryOptions,
+  t: TranslateFn
 ): HomeStatusSummaryItem | null {
   if (
     typeof options.gridImportTodayKWh === 'number' &&
@@ -75,7 +77,7 @@ function getEnergySummary(
   ) {
     return {
       id: 'energy',
-      title: 'Energy',
+      title: t('homeSummary.energy'),
       value: formatEnergyKWh(options.gridImportTodayKWh),
       icon: Zap,
       iconColor: '#f59e0b',
@@ -124,20 +126,20 @@ function getEnergySummary(
 
   return {
     id: 'energy',
-    title: 'Energy',
+    title: t('homeSummary.energy'),
     value:
       powerValues.length > 0
         ? formatPowerValue(totalPower)
         : energySources.length === 1
-          ? '1 Source'
-          : `${energySources.length} Sources`,
+          ? t('homeSummary.source', { count: 1 })
+          : t('homeSummary.sources', { count: energySources.length }),
     icon: Zap,
     iconColor: '#f59e0b',
     targetSection: 'energy',
   };
 }
 
-function getLightSummary(devices: DeviceWithType[]): HomeStatusSummaryItem | null {
+function getLightSummary(devices: DeviceWithType[], t: TranslateFn): HomeStatusSummaryItem | null {
   const lights = devices.filter((device) => device.type === 'lights');
   if (lights.length === 0) {
     return null;
@@ -147,15 +149,18 @@ function getLightSummary(devices: DeviceWithType[]): HomeStatusSummaryItem | nul
 
   return {
     id: 'lights',
-    title: 'Lights',
-    value: onCount === 1 ? '1 On' : `${onCount} On`,
+    title: t('homeSummary.lights'),
+    value: t('homeSummary.on', { count: onCount }),
     icon: Lightbulb,
     iconColor: '#facc15',
     targetSection: 'lights',
   };
 }
 
-function getSecuritySummary(devices: DeviceWithType[]): HomeStatusSummaryItem | null {
+function getSecuritySummary(
+  devices: DeviceWithType[],
+  t: TranslateFn
+): HomeStatusSummaryItem | null {
   const alertCount = getSecurityAlertCount(devices);
   const hasSecurityCandidates = devices.some(
     (device) =>
@@ -186,15 +191,20 @@ function getSecuritySummary(devices: DeviceWithType[]): HomeStatusSummaryItem | 
 
   return {
     id: 'security',
-    title: 'Security',
-    value: alertCount === 0 ? 'No Alerts' : alertCount === 1 ? '1 Alert' : `${alertCount} Alerts`,
+    title: t('homeSummary.security'),
+    value:
+      alertCount === 0
+        ? t('homeSummary.noAlerts')
+        : t(alertCount === 1 ? 'homeSummary.alert' : 'homeSummary.alerts', {
+            count: alertCount,
+          }),
     icon: Shield,
     iconColor: alertCount === 0 ? '#22c55e' : '#f87171',
     targetSection: 'security',
   };
 }
 
-function getMediaSummary(devices: DeviceWithType[]): HomeStatusSummaryItem | null {
+function getMediaSummary(devices: DeviceWithType[], t: TranslateFn): HomeStatusSummaryItem | null {
   const media = devices.filter((device) => device.type === 'media');
   if (media.length === 0) {
     return null;
@@ -209,18 +219,18 @@ function getMediaSummary(devices: DeviceWithType[]): HomeStatusSummaryItem | nul
   }).length;
   const value =
     activeCount === 0
-      ? 'None Playing'
+      ? t('homeSummary.nonePlaying')
       : activeCount === playingCount
         ? playingCount === 1
-          ? '1 Playing'
-          : `${playingCount} Playing`
+          ? t('homeSummary.playing', { count: 1 })
+          : t('homeSummary.playing', { count: playingCount })
         : activeCount === 1
-          ? '1 Active'
-          : `${activeCount} Active`;
+          ? t('homeSummary.active', { count: 1 })
+          : t('homeSummary.active', { count: activeCount });
 
   return {
     id: 'media',
-    title: 'Speakers & TVs',
+    title: t('homeSummary.media'),
     value,
     icon: Speaker,
     iconColor: activeCount > 0 ? '#60a5fa' : '#cbd5e1',
@@ -228,7 +238,10 @@ function getMediaSummary(devices: DeviceWithType[]): HomeStatusSummaryItem | nul
   };
 }
 
-function formatCustomSummaryDeviceValue(device: DeviceWithType | undefined): string | null {
+function formatCustomSummaryDeviceValue(
+  device: DeviceWithType | undefined,
+  t: TranslateFn
+): string | null {
   if (!device) {
     return null;
   }
@@ -245,9 +258,13 @@ function formatCustomSummaryDeviceValue(device: DeviceWithType | undefined): str
     case 'lights':
     case 'switches':
     case 'locks':
-      return device.state ? 'On' : 'Off';
+      return device.state ? t('common.on') : t('common.off');
     case 'media':
-      return device.state === 'playing' ? 'Playing' : device.state === 'paused' ? 'Paused' : 'Idle';
+      return device.state === 'playing'
+        ? t('media.status.playing')
+        : device.state === 'paused'
+          ? t('media.status.paused')
+          : t('media.status.idle');
     case 'climate':
     case 'hvac':
       return `${formatDisplayTemperature(Math.round(device.currentTemperature ?? device.temperature))}°`;
@@ -260,14 +277,15 @@ function formatCustomSummaryDeviceValue(device: DeviceWithType | undefined): str
 
 function buildCustomSummaryItems(
   deviceMap: Map<string, DeviceWithType>,
-  customSummaryPills: CustomSummaryPill[] = []
+  customSummaryPills: CustomSummaryPill[] = [],
+  t: TranslateFn
 ): HomeStatusSummaryItem[] {
   return customSummaryPills.flatMap((item) => {
     const value =
       item.valueSourceType === 'static'
         ? (item.staticValue ?? '')
         : item.entityId
-          ? formatCustomSummaryDeviceValue(deviceMap.get(item.entityId))
+          ? formatCustomSummaryDeviceValue(deviceMap.get(item.entityId), t)
           : null;
 
     if (!value && item.visibility === 'when_value_available') {
@@ -373,7 +391,8 @@ function resolveAmbientTemperatureSourceUnit(
 
 function getClimateSummary(
   devices: DeviceWithType[],
-  options: StatusSummaryOptions = {}
+  options: StatusSummaryOptions,
+  t: TranslateFn
 ): HomeStatusSummaryItem | null {
   const allowedClimateEntityIds = options.climateEntityIds;
   const climateDevices = devices.filter((device) =>
@@ -420,11 +439,13 @@ function getClimateSummary(
   }
 
   const value =
-    values.length === 0 ? `${climateDevices.length} Active` : formatClimateSummaryValue(values);
+    values.length === 0
+      ? t('homeSummary.active', { count: climateDevices.length })
+      : formatClimateSummaryValue(values);
 
   return {
     id: 'climate',
-    title: 'Climate',
+    title: t('homeSummary.climate'),
     value,
     icon: Fan,
     iconColor: '#22d3ee',
@@ -434,53 +455,57 @@ function getClimateSummary(
 
 function buildStatusSummaryItems(
   deviceMap: Map<string, DeviceWithType>,
-  options: StatusSummaryOptions = {}
+  options: StatusSummaryOptions,
+  t: TranslateFn
 ): HomeStatusSummaryItem[] {
   const devices = Array.from(deviceMap.values());
   const securitySummary =
     options.securityAlertCount !== undefined
       ? {
           id: 'security',
-          title: 'Security',
+          title: t('homeSummary.security'),
           value:
             options.securityAlertCount === 0
-              ? 'No Alerts'
-              : options.securityAlertCount === 1
-                ? '1 Alert'
-                : `${options.securityAlertCount} Alerts`,
+              ? t('homeSummary.noAlerts')
+              : t(options.securityAlertCount === 1 ? 'homeSummary.alert' : 'homeSummary.alerts', {
+                  count: options.securityAlertCount,
+                }),
           icon: Shield,
           iconColor: options.securityAlertCount === 0 ? '#22c55e' : '#f87171',
           targetSection: 'security' as const,
         }
-      : getSecuritySummary(devices);
+      : getSecuritySummary(devices, t);
 
   return [
-    getEnergySummary(devices, options),
-    getClimateSummary(devices, options),
+    getEnergySummary(devices, options, t),
+    getClimateSummary(devices, options, t),
     securitySummary,
-    getLightSummary(devices),
-    getMediaSummary(devices),
-    ...buildCustomSummaryItems(deviceMap, options.customSummaryPills),
+    getLightSummary(devices, t),
+    getMediaSummary(devices, t),
+    ...buildCustomSummaryItems(deviceMap, options.customSummaryPills, t),
   ].filter((item): item is HomeStatusSummaryItem => item !== null);
 }
 
 export function buildHomeStatusSummaryItems(
   deviceMap: Map<string, DeviceWithType>,
-  options: StatusSummaryOptions = {}
+  options: StatusSummaryOptions = {},
+  t: TranslateFn = defaultTranslate
 ): HomeStatusSummaryItem[] {
-  return buildStatusSummaryItems(deviceMap, options);
+  return buildStatusSummaryItems(deviceMap, options, t);
 }
 
 export function buildRoomStatusSummaryItems(
   deviceMap: Map<string, DeviceWithType>,
   room: string,
-  options: StatusSummaryOptions = {}
+  options: StatusSummaryOptions = {},
+  t: TranslateFn = defaultTranslate
 ): HomeStatusSummaryItem[] {
   const roomDevices = Array.from(deviceMap.values()).filter(
     (device) => getDeviceRoomLabel(device) === room
   );
   return buildStatusSummaryItems(
     new Map(roomDevices.map((device) => [device.id, device] as const)),
-    options
+    options,
+    t
   );
 }

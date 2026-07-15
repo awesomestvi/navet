@@ -278,6 +278,7 @@ function CompactLoadSparklines({
   wholeHomePoints: EnergySeriesPoint[];
   wholeHomeTodayKWh: number;
 }) {
+  const { t } = useI18n();
   const breakpointCols = useBreakpointCols();
   const { ref: viewportRef, isVisible } = useDeferredVisibility<HTMLDivElement>({
     rootMargin: '180px 0px',
@@ -337,7 +338,7 @@ function CompactLoadSparklines({
                   accentColor={accentColor}
                   currentLoadW={untrackedCurrentW}
                   size={wholeHomeCardSize}
-                  title="Untracked"
+                  title={t('energy.dashboard.untracked')}
                   todayUsageKWh={untrackedTodayKWh}
                   trend={untrackedTrend}
                 />
@@ -444,6 +445,7 @@ function SparklineCardFrame({
   onSizeChange: (size: CardSize) => void;
   theme: ThemeType;
 }) {
+  const { t } = useI18n();
   return (
     <div className={`${getCardSpanClass(cardSize)} relative h-full min-w-0`}>
       <div className="relative h-full">
@@ -491,8 +493,8 @@ function SparklineCardFrame({
                     inline
                     theme={theme}
                     variant="warning"
-                    aria-label="Hide energy sensor"
-                    title="Hide energy sensor"
+                    aria-label={t('energy.dashboard.hideSensor')}
+                    title={t('energy.dashboard.hideSensor')}
                     onClick={(event) => {
                       event.preventDefault();
                       event.stopPropagation();
@@ -611,6 +613,7 @@ function LoadOrb({
   untrackedPowerW: number;
   untrackedTodayKWh: number;
 }) {
+  const { t } = useI18n();
   const motionIntensity = getLoadOrbMotionIntensity(loadW);
   const dots = buildOrbDots(motionIntensity);
   const orbSegments = getLoadOrbSegments({
@@ -662,9 +665,11 @@ function LoadOrb({
         <div className={`text-4xl font-semibold tracking-tight ${surface.textPrimary}`}>
           {loadW}
         </div>
-        <div className={`text-sm font-medium ${surface.textSecondary}`}>Watts now</div>
+        <div className={`text-sm font-medium ${surface.textSecondary}`}>
+          {t('energy.dashboard.wattsNow')}
+        </div>
         <div className={`mt-1 text-xs ${surface.textMuted}`} data-testid="load-orb-consumption">
-          {formatEnergyValue(consumedTodayKWh)} kWh today
+          {t('energy.dashboard.kwhToday', { value: formatEnergyValue(consumedTodayKWh) })}
         </div>
       </div>
     </div>
@@ -696,6 +701,7 @@ function DeviceTable({
   surface: ReturnType<typeof getThemeSurfaceTokens>;
   totalConsumptionTodayKWh: number;
 }) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const dashboardSpaceMode = useSettingsStore(settingsSelectors.dashboardSpaceMode);
   const unavailableDevices = getUnavailableDeviceDiagnostics(consumers, sourceDiagnostics);
@@ -735,12 +741,12 @@ function DeviceTable({
           <div className="mb-4 flex items-start justify-between gap-4">
             <div>
               <h2 className={`${navetTypographyTokens.sectionHeading} ${surface.textPrimary}`}>
-                Live Energy
+                {t('energy.dashboard.liveEnergy')}
               </h2>
               <p
                 className={`mt-1 max-w-xl ${navetTypographyTokens.bodyCompact} ${surface.textSecondary}`}
               >
-                See which devices are driving demand.
+                {t('energy.dashboard.liveEnergyDescription')}
               </p>
             </div>
           </div>
@@ -752,7 +758,7 @@ function DeviceTable({
                 size="compact"
                 onClick={() => setContentView('devices')}
               >
-                Devices
+                {t('energy.dashboard.devices')}
               </InteractivePill>
               <InteractivePill
                 active={contentView === 'sources'}
@@ -760,13 +766,13 @@ function DeviceTable({
                 size="compact"
                 onClick={() => setContentView('sources')}
               >
-                Sources
+                {t('energy.dashboard.sources')}
               </InteractivePill>
             </div>
             <div className={`hidden h-6 w-px shrink-0 md:block ${rowDividerClassName}`} />
             <MinimalStat
               icon={<UtilityPole aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />}
-              label="Imported today"
+              label={t('energy.dashboard.importedToday')}
               value={importedTodayLabel}
               className="min-w-[12.5rem]"
               surfaceText={surface.textSecondary}
@@ -774,7 +780,7 @@ function DeviceTable({
             {generatedTodayKWh > 0 ? (
               <MinimalStat
                 icon={<SunMedium aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />}
-                label="Generated today"
+                label={t('energy.dashboard.generatedToday')}
                 value={generatedTodayLabel}
                 className="min-w-[13rem]"
                 surfaceText={surface.textSecondary}
@@ -787,17 +793,17 @@ function DeviceTable({
             {contentView === 'devices' ? (
               consumers.length === 0 && untrackedTodayKWh <= 0 ? (
                 <div className={`px-4 py-5 text-sm ${surface.textMuted}`}>
-                  No available device usage has been reported yet.
+                  {t('energy.dashboard.noDeviceUsage')}
                 </div>
               ) : (
                 <>
                   <div
                     className={`hidden grid-cols-[minmax(0,1fr)_5rem_5rem_4rem] items-center gap-3 px-4 pt-3 pb-2 text-xs font-medium sm:grid ${surface.textMuted}`}
                   >
-                    <div>Device</div>
-                    <div className="text-right">Now</div>
-                    <div className="text-right">Today</div>
-                    <div className="text-right">Status</div>
+                    <div>{t('energy.dashboard.device')}</div>
+                    <div className="text-right">{t('energy.dashboard.now')}</div>
+                    <div className="text-right">{t('energy.stats.today')}</div>
+                    <div className="text-right">{t('dashboard.zones.status')}</div>
                   </div>
                   {consumers.map((consumer, index) => (
                     <div
@@ -819,7 +825,7 @@ function DeviceTable({
                             </div>
                           </div>
                           <div className={`truncate text-xs sm:block ${surface.textMuted}`}>
-                            {getDeviceUsageSubtitle(consumer, trackedConsumptionTodayKWh)}
+                            {getDeviceUsageSubtitle(consumer, trackedConsumptionTodayKWh, t)}
                           </div>
                         </div>
                         <div className="flex shrink-0 justify-end sm:hidden">
@@ -829,7 +835,7 @@ function DeviceTable({
                       <div className="grid grid-cols-2 gap-3 sm:contents">
                         <div className="min-w-0">
                           <div className={`text-xs font-medium sm:hidden ${surface.textMuted}`}>
-                            Now
+                            {t('energy.dashboard.now')}
                           </div>
                           <div className={`font-medium sm:text-right ${surface.textPrimary}`}>
                             {formatPowerValue(consumer.powerW)}
@@ -837,7 +843,7 @@ function DeviceTable({
                         </div>
                         <div className="min-w-0">
                           <div className={`text-xs font-medium sm:hidden ${surface.textMuted}`}>
-                            Today
+                            {t('energy.stats.today')}
                           </div>
                           <div className={`sm:text-right ${surface.textSecondary}`}>
                             {formatTrackedEnergyValue(consumer.energyKWh)}
@@ -863,16 +869,16 @@ function DeviceTable({
                             style={{ backgroundColor: UNTRACKED_CONSUMPTION_COLOR }}
                           />
                           <div className={`truncate font-medium ${surface.textPrimary}`}>
-                            Untracked
+                            {t('energy.dashboard.untracked')}
                           </div>
                         </div>
                         <div className={`truncate text-xs ${surface.textMuted}`}>
-                          Not assigned to a tracked device
+                          {t('energy.dashboard.untrackedDescription')}
                         </div>
                       </div>
                       <div className="min-w-0">
                         <div className={`text-xs font-medium sm:hidden ${surface.textMuted}`}>
-                          Now
+                          {t('energy.dashboard.now')}
                         </div>
                         <div className={`font-medium sm:text-right ${surface.textPrimary}`}>
                           {formatPowerValue(untrackedPowerW)}
@@ -880,14 +886,14 @@ function DeviceTable({
                       </div>
                       <div className="min-w-0">
                         <div className={`text-xs font-medium sm:hidden ${surface.textMuted}`}>
-                          Today
+                          {t('energy.stats.today')}
                         </div>
                         <div className={`sm:text-right ${surface.textSecondary}`}>
                           {formatTrackedEnergyValue(untrackedTodayKWh)}
                         </div>
                       </div>
                       <div className={`text-xs font-medium sm:text-right ${surface.textMuted}`}>
-                        Untracked
+                        {t('energy.dashboard.untracked')}
                       </div>
                     </div>
                   ) : null}
@@ -917,13 +923,15 @@ function DeviceTable({
                       <div className={`truncate font-medium ${surface.textSecondary}`}>
                         {device.label}
                       </div>
-                      <div className={`truncate text-xs ${surface.textMuted}`}>Unavailable</div>
+                      <div className={`truncate text-xs ${surface.textMuted}`}>
+                        {t('common.unavailable')}
+                      </div>
                     </div>
                     <div className={`hidden text-right text-sm sm:block ${surface.textMuted}`}>
                       -
                     </div>
                     <div className={`text-xs font-medium sm:text-right ${surface.textMuted}`}>
-                      Unavailable
+                      {t('common.unavailable')}
                     </div>
                   </div>
                 ))}
@@ -936,8 +944,8 @@ function DeviceTable({
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <p>
               {contentView === 'devices'
-                ? 'Wrong sensors or missing sources should be corrected in Home Assistant Energy.'
-                : 'Source selection is managed in Home Assistant Energy.'}
+                ? t('energy.dashboard.sensorHelp')
+                : t('energy.dashboard.sourceHelp')}
             </p>
           </div>
         </div>
@@ -959,8 +967,15 @@ function DeviceTable({
   );
 }
 
-function getDeviceUsageSubtitle(consumer: EnergyConsumer, trackedConsumptionTodayKWh: number) {
-  const statusLabel = consumer.status === 'active' ? 'Active' : 'Idle';
+function getDeviceUsageSubtitle(
+  consumer: EnergyConsumer,
+  trackedConsumptionTodayKWh: number,
+  t: ReturnType<typeof useI18n>['t']
+) {
+  const statusLabel =
+    consumer.status === 'active'
+      ? t('energy.dashboard.status.active')
+      : t('energy.dashboard.status.idle');
 
   if (consumer.energyKWh > 0) {
     const consumptionShare =
@@ -968,11 +983,14 @@ function getDeviceUsageSubtitle(consumer: EnergyConsumer, trackedConsumptionToda
         ? formatEnergyPercent((consumer.energyKWh / trackedConsumptionTodayKWh) * 100)
         : null;
     return consumptionShare
-      ? `${statusLabel} · ${consumptionShare}% of consumption today`
-      : `${statusLabel} · ${formatTrackedEnergyValue(consumer.energyKWh)} today`;
+      ? t('energy.dashboard.usageShare', { status: statusLabel, value: consumptionShare })
+      : t('energy.dashboard.usageToday', {
+          status: statusLabel,
+          value: formatTrackedEnergyValue(consumer.energyKWh),
+        });
   }
 
-  return `${statusLabel} · no consumption today`;
+  return t('energy.dashboard.noConsumptionToday', { status: statusLabel });
 }
 
 function formatPowerValue(powerW: number) {
@@ -1039,6 +1057,7 @@ function SourceDiagnostics({
   sources: EnergySourceDiagnostic[];
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const sourceRows = getSourceDiagnostics(sources);
   const sectionStyle = getInheritedDialogSectionStyle(theme, accentColor, accentColor);
@@ -1065,10 +1084,12 @@ function SourceDiagnostics({
                 tone="primary"
                 baseColor={accentColor}
               />
-              <div className={`text-base font-semibold ${surface.textPrimary}`}>Sources</div>
+              <div className={`text-base font-semibold ${surface.textPrimary}`}>
+                {t('energy.dashboard.sources')}
+              </div>
             </div>
             <p className={`mt-1 text-sm ${surface.textMuted}`}>
-              Manage source selection in Home Assistant Energy
+              {t('energy.dashboard.manageSources')}
             </p>
           </div>
           {homeAssistantEnergyUrl ? (

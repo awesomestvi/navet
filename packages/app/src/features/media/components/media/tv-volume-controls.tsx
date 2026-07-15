@@ -57,7 +57,7 @@ export function TvVolumeControls({
         <TvControlButton
           theme={theme}
           size="small"
-          label="Volume down"
+          label={t('media.volumeDown')}
           style={controlStyle}
           iconClassName={iconClassName}
           onPress={handleVolumeDown}
@@ -81,7 +81,7 @@ export function TvVolumeControls({
         <TvControlButton
           theme={theme}
           size="small"
-          label="Volume up"
+          label={t('media.volumeUp')}
           style={controlStyle}
           iconClassName={iconClassName}
           onPress={handleVolumeUp}
@@ -112,6 +112,7 @@ export function TvChannelControls({
   tvControlClusterGap,
   onRemoteCommand,
 }: TvChannelControlsProps) {
+  const { t } = useI18n();
   if (!remoteAvailable) {
     return null;
   }
@@ -121,7 +122,7 @@ export function TvChannelControls({
       <TvControlButton
         theme={theme}
         size="small"
-        label="Channel down"
+        label={t('media.remote.channelDown')}
         style={controlStyle}
         iconClassName={iconClassName}
         onPress={() => onRemoteCommand('channelDown')}
@@ -131,7 +132,7 @@ export function TvChannelControls({
       <TvControlButton
         theme={theme}
         size="small"
-        label="Channel up"
+        label={t('media.remote.channelUp')}
         style={controlStyle}
         iconClassName={iconClassName}
         onPress={() => onRemoteCommand('channelUp')}

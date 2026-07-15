@@ -319,6 +319,7 @@ function HumidifierHumidityControls({
   onCommit: (value: number) => void;
 }) {
   const { theme } = useTheme();
+  const { t } = useI18n();
   const controlSizes = getCardActionControlSizes(size);
   const hoverScale = size === 'small' ? 'hover:scale-105' : '';
   const nextDown = clampHumidity(targetHumidity - step, minHumidity, maxHumidity);
@@ -334,7 +335,7 @@ function HumidifierHumidityControls({
           event.stopPropagation();
           onCommit(nextDown);
         }}
-        aria-label="Decrease target humidity"
+        aria-label={t('climate.humidifier.decreaseTarget')}
         disabled={!isOn}
         className={`${hoverScale} disabled:opacity-50`}
       >
@@ -348,7 +349,7 @@ function HumidifierHumidityControls({
           event.stopPropagation();
           onCommit(nextUp);
         }}
-        aria-label="Increase target humidity"
+        aria-label={t('climate.humidifier.increaseTarget')}
         disabled={!isOn}
         className={`${hoverScale} disabled:opacity-50`}
       >
@@ -564,6 +565,7 @@ const HumidifierSettingsDialog = memo(function HumidifierSettingsDialog({
   onModeChange: (mode: string) => void;
 }) {
   const { theme } = useTheme();
+  const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
   const contentInsetClassName = 'px-6 max-sm:px-3.5';
 
@@ -654,7 +656,7 @@ const HumidifierSettingsDialog = memo(function HumidifierSettingsDialog({
                 onClick={() => onOpenChange(false)}
                 className="rounded-full border border-white/12 bg-white/8 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/12"
               >
-                Done
+                {t('common.done')}
               </button>
             </div>
           </div>

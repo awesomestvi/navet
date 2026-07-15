@@ -266,7 +266,7 @@ export const ClimateSettingsDialog = memo(function ClimateSettingsDialog({
   const controlsTabContent = (
     <div className={`py-6 max-sm:py-3 ${contentInsetClassName}`}>
       {siblingEntities.length > 0 ? (
-        <DialogSectionRow label="Controls">
+        <DialogSectionRow label={t('common.controls')}>
           <div className="space-y-2">
             {siblingEntities.map(({ id, entity }) => (
               <ClimateSiblingControlRow
@@ -286,9 +286,9 @@ export const ClimateSettingsDialog = memo(function ClimateSettingsDialog({
           </div>
         </DialogSectionRow>
       ) : (
-        <DialogSectionRow label="Controls">
+        <DialogSectionRow label={t('common.controls')}>
           <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">
-            No extra controls available
+            {t('climate.settings.noExtraControls')}
           </div>
         </DialogSectionRow>
       )}
@@ -375,6 +375,7 @@ function ClimateSiblingControlRow({
   state: string;
   attributes: Record<string, unknown>;
 }) {
+  const { t } = useI18n();
   const domain = entityId.split('.')[0] ?? '';
   const isFan = domain === 'fan';
   const isToggle =
@@ -473,7 +474,7 @@ function ClimateSiblingControlRow({
           </span>
         ) : (
           <span className="rounded-full border border-white/12 bg-white/8 px-2.5 py-1 text-xs font-medium text-white/88">
-            Run
+            {t('climate.settings.run')}
           </span>
         )}
       </button>
@@ -482,7 +483,9 @@ function ClimateSiblingControlRow({
         <div className="space-y-2 border-t border-white/10 px-4 pt-3 pb-3">
           {fanPercentage !== undefined ? (
             <div className="flex items-center justify-between gap-3">
-              <span className="text-xs font-medium text-white/72">Speed</span>
+              <span className="text-xs font-medium text-white/72">
+                {t('climate.settings.speed')}
+              </span>
               <div className="flex items-center gap-2">
                 <button
                   type="button"

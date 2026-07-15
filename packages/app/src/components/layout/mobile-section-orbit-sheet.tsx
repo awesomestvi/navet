@@ -133,8 +133,8 @@ export const MobileSectionOrbitSheet = memo(function MobileSectionOrbitSheet({
                   {item.onEdit ? (
                     <button
                       type="button"
-                      aria-label={`Edit ${item.label}`}
-                      title={`Edit ${item.label}`}
+                      aria-label={t('common.editItem', { item: item.label })}
+                      title={t('common.editItem', { item: item.label })}
                       className={`absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full ${orbitEditButtonStyles.className}`}
                       style={orbitEditButtonStyles.style}
                       onClick={(event) => {
@@ -176,7 +176,7 @@ export const MobileSectionOrbitSheet = memo(function MobileSectionOrbitSheet({
                 onClick={onCustomizeSidebar}
                 className="h-[38px] w-full justify-start [&_svg]:h-4 [&_svg]:w-4"
               >
-                <span className="truncate">Customize sidebar</span>
+                <span className="truncate">{t('sidebar.customize')}</span>
               </InteractivePill>
             ) : null}
           </div>

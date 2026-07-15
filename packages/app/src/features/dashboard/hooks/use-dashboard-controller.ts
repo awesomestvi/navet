@@ -410,7 +410,7 @@ export function useDashboardController(): DashboardController {
   const onboarding = useOnboardingController({ allEntityIds, changeRoom, resetDashboard });
   const handleApplyDashboardPack = useCallback(
     (packId: DashboardPackId) => {
-      const nextLayout = buildDashboardPackLayout(packId, availableDeviceMap.values());
+      const nextLayout = buildDashboardPackLayout(packId, availableDeviceMap.values(), t);
       const packLabelKey =
         DASHBOARD_PACKS.find((pack) => pack.id === packId)?.labelKey ?? 'dashboard.packs.title';
 

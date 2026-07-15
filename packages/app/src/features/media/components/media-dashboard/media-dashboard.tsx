@@ -27,6 +27,7 @@ import { normalizeResourceUrl } from '@navet/app/services/integration-resource.s
 import type { MediaDevice } from '@navet/app/types/device.types';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { resolveAddonLocalEndpointUrl } from '@navet/app/utils/home-assistant-connection-target';
+import { LruCache } from '@navet/app/utils/lru-cache';
 import { getProviderNativeId } from '@navet/app/utils/provider-ids';
 import { sanitizeImageUrl } from '@navet/app/utils/url-security';
 import type { LucideIcon } from 'lucide-react';
@@ -77,6 +78,14 @@ interface RememberedMediaSession {
   rememberedAt: string;
 }
 
+interface MediaDashboardDeviceIndex {
+  audioOutputTargets: MediaDashboardDevice[];
+  browsablePlaybackDevices: MediaDashboardDevice[];
+  byId: Map<string, MediaDashboardDevice>;
+  byNativeId: Map<string, MediaDashboardDevice>;
+  spotifyAccountDevice?: MediaDashboardDevice;
+}
+
 const SPOTIFY_ICON_PATH =
   'M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z';
 const COMMONS_FILE_REDIRECT_URL = 'https://commons.wikimedia.org/wiki/Special:Redirect/file';
@@ -97,13 +106,18 @@ const MEDIA_BROWSER_TABLE_ROW_HEIGHT = 64;
 const MEDIA_BROWSER_TABLE_OVERSCAN = 6;
 const COMPACT_MOBILE_BROWSER_HEIGHT = 170;
 const REMEMBERED_POSITION_WRITE_INTERVAL_SECONDS = 15;
+const MEDIA_BROWSER_METADATA_CACHE_MAX_ENTRIES = 128;
 const EMPTY_OPEN_MEDIA_ARTWORK_RESULT: OpenMediaArtworkResult = { artworkUrls: [] };
 const EMPTY_SPOTIFY_TRACK_METADATA: SpotifyTrackMetadata = { artworkUrls: [] };
 const EMPTY_MEDIA_DEFAULT_BROWSE_VIEWS: Record<string, MediaDefaultBrowseView> = {};
 const EMPTY_MEDIA_BROWSER_EXPANDED_VIEWS: Record<string, boolean> = {};
 const EMPTY_REMEMBERED_MEDIA_SESSION: RememberedMediaSession | null = null;
-const openMediaArtworkCache = new Map<string, OpenMediaArtworkResult>();
-const spotifyTrackMetadataCache = new Map<string, SpotifyTrackMetadata>();
+const openMediaArtworkCache = new LruCache<string, OpenMediaArtworkResult>(
+  MEDIA_BROWSER_METADATA_CACHE_MAX_ENTRIES
+);
+const spotifyTrackMetadataCache = new LruCache<string, SpotifyTrackMetadata>(
+  MEDIA_BROWSER_METADATA_CACHE_MAX_ENTRIES
+);
 
 interface OpenMediaArtworkResult {
   artworkUrls: string[];
@@ -246,6 +260,79 @@ function compareMediaActivity(left: MediaDashboardDevice, right: MediaDashboardD
   return timestampDifference || (right.elapsedSeconds ?? 0) - (left.elapsedSeconds ?? 0);
 }
 
+function findPreferredDevice(
+  devices: Iterable<MediaDashboardDevice>,
+  predicate: (device: MediaDashboardDevice) => boolean,
+  compare: (
+    left: MediaDashboardDevice,
+    right: MediaDashboardDevice
+  ) => number = compareMediaActivity
+) {
+  let preferred: MediaDashboardDevice | undefined;
+
+  for (const device of devices) {
+    if (!predicate(device)) continue;
+    if (!preferred || compare(device, preferred) < 0) {
+      preferred = device;
+    }
+  }
+
+  return preferred;
+}
+
+function getPlaybackStateRank(device: MediaDashboardDevice) {
+  return device.state === 'playing' ? 2 : device.state === 'paused' ? 1 : 0;
+}
+
+function comparePhysicalTransportPreference(
+  left: MediaDashboardDevice,
+  right: MediaDashboardDevice
+) {
+  return (
+    getPlaybackStateRank(right) - getPlaybackStateRank(left) || compareMediaActivity(left, right)
+  );
+}
+
+function createMediaDashboardDeviceIndex(
+  devices: MediaDashboardDevice[],
+  isMusicAssistantPlaybackDevice: (device: MediaDashboardDevice) => boolean
+): MediaDashboardDeviceIndex {
+  const byId = new Map<string, MediaDashboardDevice>();
+  const byNativeId = new Map<string, MediaDashboardDevice>();
+  const audioDevices: MediaDashboardDevice[] = [];
+  const audioOutputTargets: MediaDashboardDevice[] = [];
+  let spotifyAccountDevice: MediaDashboardDevice | undefined;
+
+  for (const device of devices) {
+    byId.set(device.id, device);
+    byNativeId.set(getProviderNativeId(device.id), device);
+
+    if (!isAudioDevice(device)) continue;
+    audioDevices.push(device);
+    if (isSpotifyAccountDevice(device)) {
+      spotifyAccountDevice ??= device;
+    } else {
+      audioOutputTargets.push(device);
+    }
+  }
+
+  const browsablePlaybackDevices = audioDevices.filter((device) => {
+    const isMusicAssistant = isMusicAssistantPlaybackDevice(device);
+    return (
+      (getDeviceCapabilities(device).canBrowseMedia || isMusicAssistant) &&
+      (!spotifyAccountDevice || isMusicAssistant)
+    );
+  });
+
+  return {
+    audioOutputTargets,
+    browsablePlaybackDevices,
+    byId,
+    byNativeId,
+    spotifyAccountDevice,
+  };
+}
+
 function isSameMediaSession(left: MediaDashboardDevice, right: MediaDashboardDevice) {
   const leftTitle = left.title.trim().toLowerCase();
   const rightTitle = right.title.trim().toLowerCase();
@@ -269,7 +356,7 @@ function isSameMediaSession(left: MediaDashboardDevice, right: MediaDashboardDev
 
 function isRememberedSessionUsable(
   session: RememberedMediaSession | null,
-  devices: MediaDashboardDevice[]
+  devicesById: ReadonlyMap<string, MediaDashboardDevice>
 ) {
   if (
     (session?.version !== 1 && session?.version !== 2) ||
@@ -278,7 +365,7 @@ function isRememberedSessionUsable(
   )
     return false;
 
-  const currentDevice = devices.find((device) => device.id === session.device.id);
+  const currentDevice = devicesById.get(session.device.id);
   if (!currentDevice) return false;
 
   return (
@@ -326,11 +413,10 @@ function findActiveSpotifyConnectTarget(
   const playingTarget = targets.find((target) => target.state === 'playing');
   if (playingTarget) return playingTarget;
 
-  const retainedTarget = targets
-    .filter(
-      (target) => (target.state === 'paused' || target.state === 'idle') && hasCurrentMedia(target)
-    )
-    .sort(compareMediaActivity)[0];
+  const retainedTarget = findPreferredDevice(
+    targets,
+    (target) => (target.state === 'paused' || target.state === 'idle') && hasCurrentMedia(target)
+  );
   if (retainedTarget) return retainedTarget;
 
   const spotifySource = spotifyDevice?.source?.trim().toLowerCase();
@@ -431,6 +517,19 @@ function isArtworkCollectionItem(item: PlatformMediaItem) {
     isAlbumMediaItem(item) ||
     ['playlist', 'podcast', 'show'].includes(mediaClass)
   );
+}
+
+function partitionMediaBrowserItems(items: PlatformMediaItem[], hideNestedArtwork: boolean) {
+  const directories: PlatformMediaItem[] = [];
+  const tiles: PlatformMediaItem[] = [];
+
+  for (const item of items) {
+    const isVisibleDirectory =
+      isMediaDirectoryItem(item) && !(hideNestedArtwork && isArtworkCollectionItem(item));
+    (isVisibleDirectory ? directories : tiles).push(item);
+  }
+
+  return { directories, tiles };
 }
 
 function isSpotifyProviderDirectory(item: PlatformMediaItem) {
@@ -1254,6 +1353,7 @@ function MediaBrowserVirtualTable({
   surface,
   theme,
 }: MediaBrowserVirtualTableProps) {
+  const { t } = useI18n();
   const [scrollTop, setScrollTop] = useState(0);
   const listRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -1308,8 +1408,8 @@ function MediaBrowserVirtualTable({
             className={`grid h-[42px] grid-cols-[1.5rem_minmax(0,1fr)] items-center gap-2 px-3 text-xs font-medium md:grid-cols-[2rem_minmax(0,1fr)_minmax(9rem,0.65fr)_4rem] md:gap-3 md:px-4 ${surface.textMuted}`}
           >
             <span className="text-right">#</span>
-            <span>Title</span>
-            <span className="hidden md:block">Album</span>
+            <span>{t('media.metadata.title')}</span>
+            <span className="hidden md:block">{t('media.metadata.album')}</span>
             <span className="hidden justify-self-end md:block">
               <Clock3 className="h-3.5 w-3.5" />
             </span>
@@ -1320,14 +1420,14 @@ function MediaBrowserVirtualTable({
             className="overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             style={{ height: `${listHeight}px` }}
             onScroll={(event) => {
-              const next = event.currentTarget.scrollTop;
               if (rafRef.current !== null) {
                 return;
               }
 
+              const scrollContainer = event.currentTarget;
               rafRef.current = window.requestAnimationFrame(() => {
                 rafRef.current = null;
-                setScrollTop(next);
+                setScrollTop(scrollContainer.scrollTop);
               });
             }}
           >
@@ -1416,6 +1516,10 @@ export function MediaDashboard({
     (device: MediaDashboardDevice) => isMusicAssistantDevice(device, getMediaPlatform(device)),
     [getMediaPlatform]
   );
+  const deviceIndex = useMemo(
+    () => createMediaDashboardDeviceIndex(resolvedDevices, isMusicAssistantPlaybackDevice),
+    [isMusicAssistantPlaybackDevice, resolvedDevices]
+  );
   const isSingleRowMediaLayout = useMediaQuery('(max-width: 899px)');
   const isVeryNarrowMediaDesktopLayout = useMediaQuery('(max-width: 999px)');
   const isNarrowMediaDesktopLayout = useMediaQuery('(max-width: 1099px)');
@@ -1437,36 +1541,22 @@ export function MediaDashboard({
       STORAGE_KEYS.mediaNowPlayingSession,
       EMPTY_REMEMBERED_MEDIA_SESSION
     );
-  const usableRememberedSession = isRememberedSessionUsable(rememberedSession, resolvedDevices)
+  const usableRememberedSession = isRememberedSessionUsable(rememberedSession, deviceIndex.byId)
     ? rememberedSession
     : null;
   const rememberedCurrentDevice = usableRememberedSession
-    ? resolvedDevices.find((device) => device.id === usableRememberedSession.device.id)
+    ? deviceIndex.byId.get(usableRememberedSession.device.id)
     : undefined;
-  const initialDevice = resolvedDevices.find((device) => device.id === initialDeviceId);
-  const spotifyAccountDevice = resolvedDevices.find(
-    (device) => isAudioDevice(device) && isSpotifyAccountDevice(device)
-  );
-  const availableAudioOutputTargets = resolvedDevices.filter(
-    (device) => isAudioDevice(device) && !isSpotifyAccountDevice(device)
-  );
-  const browsablePlaybackDevices = resolvedDevices.filter((device) => {
-    if (!isAudioDevice(device)) return false;
-    const capabilities = getDeviceCapabilities(device);
-    const isMusicAssistant = isMusicAssistantPlaybackDevice(device);
-    return (
-      (capabilities.canBrowseMedia || isMusicAssistant) &&
-      (!spotifyAccountDevice || isMusicAssistant)
-    );
-  });
+  const initialDevice = initialDeviceId ? deviceIndex.byId.get(initialDeviceId) : undefined;
+  const spotifyAccountDevice = deviceIndex.spotifyAccountDevice;
+  const availableAudioOutputTargets = deviceIndex.audioOutputTargets;
+  const browsablePlaybackDevices = deviceIndex.browsablePlaybackDevices;
   const resolveDeclaredPhysicalGroup = (device: MediaDashboardDevice) => {
     const physicalKeys = new Set([getPhysicalSpeakerKey(device)]);
     const entityIds = new Set([device.id]);
     for (const memberId of device.groupMembers ?? []) {
       const nativeMemberId = getProviderNativeId(memberId);
-      const memberDevice = resolvedDevices.find(
-        (candidate) => getProviderNativeId(candidate.id) === nativeMemberId
-      );
+      const memberDevice = deviceIndex.byNativeId.get(nativeMemberId);
       physicalKeys.add(
         memberDevice ? getPhysicalSpeakerKey(memberDevice) : `entity:${nativeMemberId}`
       );
@@ -1574,8 +1664,7 @@ export function MediaDashboard({
   const [directoryItemCounts, setDirectoryItemCounts] = useState<Record<string, number>>({});
   const directoryItemCountsRef = useRef<Record<string, number>>({});
   const directoryCountRequestsRef = useRef(new Set<string>());
-  const selectedDevice =
-    resolvedDevices.find((device) => device.id === selectedDeviceId) ?? defaultDevice;
+  const selectedDevice = deviceIndex.byId.get(selectedDeviceId) ?? defaultDevice;
   const spotifyAccountControlsUnavailable =
     selectedDevice !== undefined && isSpotifyAccountDevice(selectedDevice);
   const activeSpotifyConnectTarget = findActiveSpotifyConnectTarget(
@@ -1610,15 +1699,14 @@ export function MediaDashboard({
       !isSpotifyAccountDevice(device) &&
       hasCurrentMedia(device)
   );
-  const retainedNowPlayingDevice = resolvedDevices
-    .filter(
-      (device) =>
-        (device.state === 'paused' || device.state === 'idle') &&
-        isAudioDevice(device) &&
-        !isSpotifyAccountDevice(device) &&
-        hasCurrentMedia(device)
-    )
-    .sort(compareMediaActivity)[0];
+  const retainedNowPlayingDevice = findPreferredDevice(
+    resolvedDevices,
+    (device) =>
+      (device.state === 'paused' || device.state === 'idle') &&
+      isAudioDevice(device) &&
+      !isSpotifyAccountDevice(device) &&
+      hasCurrentMedia(device)
+  );
   const liveNowPlayingDevice =
     activeDeclaredGroupedPlaybackDevice ??
     inferredMusicAssistantDevice ??
@@ -1636,24 +1724,20 @@ export function MediaDashboard({
   const usingRememberedSession = rememberedNowPlayingDevice !== undefined;
   const nowPlayingDevice = liveNowPlayingDevice ?? rememberedNowPlayingDevice ?? selectedDevice;
   const matchingPhysicalTransportDevice = isMusicAssistantPlaybackDevice(nowPlayingDevice)
-    ? resolvedDevices
-        .filter(
-          (device) =>
-            device.id !== nowPlayingDevice.id &&
-            isAudioDevice(device) &&
-            !isSpotifyAccountDevice(device) &&
-            !isMusicAssistantPlaybackDevice(device) &&
-            getPhysicalSpeakerKey(device) === getPhysicalSpeakerKey(nowPlayingDevice) &&
-            isSameMediaSession(device, nowPlayingDevice)
-        )
-        .sort((left, right) => {
-          const playbackRank = (device: MediaDashboardDevice) =>
-            device.state === 'playing' ? 2 : device.state === 'paused' ? 1 : 0;
-          return playbackRank(right) - playbackRank(left) || compareMediaActivity(left, right);
-        })[0]
+    ? findPreferredDevice(
+        resolvedDevices,
+        (device) =>
+          device.id !== nowPlayingDevice.id &&
+          isAudioDevice(device) &&
+          !isSpotifyAccountDevice(device) &&
+          !isMusicAssistantPlaybackDevice(device) &&
+          getPhysicalSpeakerKey(device) === getPhysicalSpeakerKey(nowPlayingDevice) &&
+          isSameMediaSession(device, nowPlayingDevice),
+        comparePhysicalTransportPreference
+      )
     : undefined;
   const rememberedTransportDevice = usableRememberedSession?.transportEntityId
-    ? resolvedDevices.find((device) => device.id === usableRememberedSession.transportEntityId)
+    ? deviceIndex.byId.get(usableRememberedSession.transportEntityId)
     : undefined;
   const nowPlayingTransportDevice =
     matchingPhysicalTransportDevice ??
@@ -1663,7 +1747,7 @@ export function MediaDashboard({
     inferredMusicAssistantGroup?.some((device) => device.id === nowPlayingDevice.id)
   );
   const rememberedMediaLibraryDevice = usableRememberedSession?.mediaLibraryEntityId
-    ? resolvedDevices.find((device) => device.id === usableRememberedSession.mediaLibraryEntityId)
+    ? deviceIndex.byId.get(usableRememberedSession.mediaLibraryEntityId)
     : undefined;
   const mediaLibraryDevice = usingRememberedSession
     ? (rememberedMediaLibraryDevice ?? rememberedCurrentDevice ?? selectedDevice)
@@ -1779,11 +1863,10 @@ export function MediaDashboard({
   const playableItems = isRecentlyPlayedView
     ? deduplicateMediaItems(unfilteredPlayableItems)
     : unfilteredPlayableItems;
-  const browseDirectoryItems = playableItems.filter(
-    (item) =>
-      isMediaDirectoryItem(item) && !(browseHistory.length >= 2 && isArtworkCollectionItem(item))
+  const { directories: browseDirectoryItems, tiles: browseTileItems } = partitionMediaBrowserItems(
+    playableItems,
+    browseHistory.length >= 2
   );
-  const browseTileItems = playableItems.filter((item) => !browseDirectoryItems.includes(item));
   const inferredGroupSize = selectedDeviceUsesInferredMusicAssistantGroup
     ? new Set(inferredMusicAssistantGroup?.map(getPhysicalSpeakerKey) ?? []).size
     : 1;
@@ -1833,9 +1916,7 @@ export function MediaDashboard({
   );
 
   const toggleNowPlaying = useCallback(() => {
-    const currentDevice = resolvedDevices.find(
-      (device) => device.id === nowPlayingTransportDevice.id
-    );
+    const currentDevice = deviceIndex.byId.get(nowPlayingTransportDevice.id);
     const shouldRecreateSession =
       currentDevice?.state === 'idle' && Boolean(nowPlayingDevice.mediaContentId?.trim());
 
@@ -1876,7 +1957,7 @@ export function MediaDashboard({
         });
       }
     });
-  }, [nowPlayingDevice, nowPlayingTransportDevice.id, resolvedDevices, runMediaCommand]);
+  }, [deviceIndex.byId, nowPlayingDevice, nowPlayingTransportDevice.id, runMediaCommand]);
 
   const browseMedia = useCallback(
     (item?: PlatformMediaItem, nextHistory?: PlatformMediaItem[], fallbackToRoot = false) => {

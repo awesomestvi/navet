@@ -1,4 +1,5 @@
 import { Input } from '@navet/app/components/primitives';
+import { useI18n } from '@navet/app/hooks';
 import { Search, X } from 'lucide-react';
 import type { RefObject } from 'react';
 
@@ -37,6 +38,8 @@ export function HeaderSearchInput({
   textSecondary,
   widthClassName = 'w-full',
 }: HeaderSearchInputProps) {
+  const { t } = useI18n();
+
   return (
     <Input
       ref={inputRef}
@@ -54,7 +57,7 @@ export function HeaderSearchInput({
             type="button"
             onClick={onClear}
             className={`rounded p-0.5 ${hoverBg} transition-colors`}
-            aria-label="Clear search"
+            aria-label={t('header.clearSearch')}
           >
             <X className={`h-4 w-4 ${textSecondary}`} />
           </button>

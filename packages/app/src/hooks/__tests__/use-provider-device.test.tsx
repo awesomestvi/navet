@@ -1,4 +1,7 @@
-import { useProviderEntityModel } from '@navet/app/hooks/use-provider-device';
+import {
+  useProviderEntityModel,
+  useProviderEntityModels,
+} from '@navet/app/hooks/use-provider-device';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { renderHookWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
@@ -154,5 +157,72 @@ describe('provider lookup hooks', () => {
 
     expect(renderCount).toBe(1);
     expect(result.current).toBe(initialEntity);
+  });
+
+  it('keeps a bounded entity record stable when an entity outside the set changes', async () => {
+    await resetAppStores();
+
+    const kitchenLight: NavetEntity = {
+      id: 'home_assistant:light.kitchen',
+      canonicalId: 'home_assistant:light.kitchen',
+      providerId: 'home_assistant',
+      externalId: 'light.kitchen',
+      type: 'light',
+      name: 'Kitchen Light',
+      room: 'Kitchen',
+      primaryState: 'on',
+      availability: 'available',
+      capabilities: [],
+      attributes: {},
+    };
+    const drivewayCamera: NavetEntity = {
+      ...kitchenLight,
+      id: 'home_assistant:camera.driveway',
+      canonicalId: 'home_assistant:camera.driveway',
+      externalId: 'camera.driveway',
+      type: 'camera',
+      name: 'Driveway Camera',
+    };
+    integrationStore.setState((state) => ({
+      currentProviderId: 'home_assistant',
+      providerEntitiesByProviderId: {
+        ...state.providerEntitiesByProviderId,
+        home_assistant: {
+          [kitchenLight.canonicalId]: kitchenLight,
+          [drivewayCamera.canonicalId]: drivewayCamera,
+        },
+      },
+      providerEntityLookupByProviderId: {
+        ...state.providerEntityLookupByProviderId,
+        home_assistant: {
+          [kitchenLight.externalId]: kitchenLight.canonicalId,
+          [drivewayCamera.externalId]: drivewayCamera.canonicalId,
+        },
+      },
+    }));
+
+    let renderCount = 0;
+    const { result } = renderHookWithProviders(() => {
+      renderCount += 1;
+      return useProviderEntityModels(['light.kitchen']);
+    });
+    const initialEntities = result.current;
+
+    integrationStore.setState((state) => ({
+      providerEntitiesByProviderId: {
+        ...state.providerEntitiesByProviderId,
+        home_assistant: {
+          ...state.providerEntitiesByProviderId.home_assistant,
+          [drivewayCamera.canonicalId]: {
+            ...drivewayCamera,
+            primaryState: 'recording',
+          },
+        },
+      },
+    }));
+
+    expect(result.current).toBe(initialEntities);
+    expect(result.current['light.kitchen']).toBe(kitchenLight);
+    expect(renderCount).toBe(1);
   });
 });

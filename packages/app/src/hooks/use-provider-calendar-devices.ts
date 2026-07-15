@@ -12,16 +12,18 @@ import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { UNKNOWN_ROOM_LABEL } from '@navet/app/utils/device-location';
 import { createProviderScopedId } from '@navet/app/utils/provider-ids';
 import { areDataEqual, areStringArraysEqual } from '@navet/app/utils/structural-equality';
+import { subscribeVisibilityAwareAsyncTask } from '@navet/app/utils/visibility-aware-scheduler';
 import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useIntegrationStore } from './use-integration-store';
 import {
   useProviderEntityRegistryEntries,
-  useProviderEntitySnapshots,
+  useProviderEntitySnapshotsByPrefix,
 } from './use-provider-entity';
 import { useProviderFeature } from './use-provider-feature-support';
 
 const EMPTY_CALENDAR_DEVICES: PlatformCalendarDevice[] = [];
 const EMPTY_CALENDAR_ENTITY_IDS: string[] = [];
+const CALENDAR_ENTITY_PREFIXES = ['calendar.'] as const;
 
 function resolveEntityName(
   entityId: string,
@@ -60,12 +62,13 @@ export function useProviderCalendarDevices(
   const enabled = options?.enabled ?? true;
   const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
   const resolvedProviderId = providerId ?? currentProviderId;
-  const providerRuntime = useIntegrationStore(
+  const entitiesHydrated = useIntegrationStore(
     (state) =>
-      state.providerRuntime[resolvedProviderId] ?? state.providerRuntime[state.currentProviderId]
+      (state.providerRuntime[resolvedProviderId] ?? state.providerRuntime[state.currentProviderId])
+        .entitiesHydrated
   );
   const supportsCalendar = useProviderFeature('calendar', resolvedProviderId) && enabled;
-  const entities = useProviderEntitySnapshots({
+  const entities = useProviderEntitySnapshotsByPrefix(CALENDAR_ENTITY_PREFIXES, {
     providerId: resolvedProviderId,
     enabled: supportsCalendar,
   });
@@ -112,14 +115,6 @@ export function useProviderCalendarDevices(
     }
 
     let cancelled = false;
-    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const scheduleRefresh = () => {
-      refreshTimer = setTimeout(() => {
-        void refreshEvents();
-      }, CALENDAR_EVENTS_REFRESH_INTERVAL);
-    };
-
     async function refreshEvents() {
       const entries = await Promise.all(
         stableCalendarEntityIds.map(async (entityId) => {
@@ -139,19 +134,17 @@ export function useProviderCalendarDevices(
           return areDataEqual(previousEvents, nextEvents) ? previousEvents : nextEvents;
         });
       });
-
-      if (!cancelled) {
-        scheduleRefresh();
-      }
     }
 
-    void refreshEvents();
+    const unsubscribe = subscribeVisibilityAwareAsyncTask(
+      refreshEvents,
+      CALENDAR_EVENTS_REFRESH_INTERVAL,
+      { runImmediately: true }
+    );
 
     return () => {
       cancelled = true;
-      if (refreshTimer) {
-        clearTimeout(refreshTimer);
-      }
+      unsubscribe();
     };
   }, [resolvedProviderId, stableCalendarEntityIds, supportsCalendar]);
 
@@ -247,10 +240,10 @@ export function useProviderCalendarDevices(
       return;
     }
 
-    if (providerRuntime.entitiesHydrated) {
+    if (entitiesHydrated) {
       lastResolvedDevicesRef.current = EMPTY_CALENDAR_DEVICES;
     }
-  }, [providerRuntime.entitiesHydrated, resolvedDevices, supportsCalendar]);
+  }, [entitiesHydrated, resolvedDevices, supportsCalendar]);
 
   return useMemo(() => {
     if (resolvedDevices.length > 0) {
@@ -261,12 +254,12 @@ export function useProviderCalendarDevices(
       return EMPTY_CALENDAR_DEVICES;
     }
 
-    if (!providerRuntime.entitiesHydrated) {
+    if (!entitiesHydrated) {
       return lastResolvedDevicesRef.current;
     }
 
     return EMPTY_CALENDAR_DEVICES;
-  }, [providerRuntime.entitiesHydrated, resolvedDevices, supportsCalendar]);
+  }, [entitiesHydrated, resolvedDevices, supportsCalendar]);
 }
 
 export const useProviderCalendarDevicesCollection = useProviderCalendarDevices;

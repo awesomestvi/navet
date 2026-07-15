@@ -4,16 +4,20 @@ import { useHeaderController } from '@navet/app/components/layout/use-header-con
 import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { resolveWallpaperBackgroundImage } from '@navet/app/constants/built-in-wallpapers';
-import { CustomExtensionsDialog } from '@navet/app/features/settings/components/custom-extensions-dialog';
 import { useMediaQuery, usePrimaryColor, useThemeMode, useWallpaper } from '@navet/app/hooks';
 import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
-import { memo, useMemo, useState } from 'react';
+import { lazy, memo, Suspense, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { resolveDashboardPerformanceProfile } from '../hooks/use-dashboard-performance-mode';
 import { KioskOrbitMenu } from './kiosk-orbit-menu';
 import type { DashboardLayoutProps } from './types';
+
+const CustomExtensionsDialog = lazy(async () => {
+  const module = await import('@navet/app/features/settings/components/custom-extensions-dialog');
+  return { default: module.CustomExtensionsDialog };
+});
 
 /**
  * Dashboard Layout Component
@@ -232,17 +236,21 @@ export const DashboardLayout = memo(function DashboardLayout({
             roomNavigation={mobileRoomNavigation}
           />
         ) : null}
-        <CustomExtensionsDialog
-          editingActionId={editingSidebarActionId}
-          isOpen={isSidebarCustomizationOpen}
-          onOpenChange={(open) => {
-            setIsSidebarCustomizationOpen(open);
-            if (!open) {
-              setEditingSidebarActionId(null);
-            }
-          }}
-          mode="sidebar"
-        />
+        {isSidebarCustomizationOpen ? (
+          <Suspense fallback={null}>
+            <CustomExtensionsDialog
+              editingActionId={editingSidebarActionId}
+              isOpen
+              onOpenChange={(open) => {
+                setIsSidebarCustomizationOpen(open);
+                if (!open) {
+                  setEditingSidebarActionId(null);
+                }
+              }}
+              mode="sidebar"
+            />
+          </Suspense>
+        ) : null}
       </div>
     </div>
   );

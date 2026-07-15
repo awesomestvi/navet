@@ -1,5 +1,6 @@
 import type { PlatformMediaItem } from '@navet/app/platform/provider-feature-models';
 import { resolveAddonLocalEndpointUrl } from '@navet/app/utils/home-assistant-connection-target';
+import { LruCache } from '@navet/app/utils/lru-cache';
 import { sanitizeImageUrl } from '@navet/app/utils/url-security';
 
 export interface MediaDialogBrowserMetadata {
@@ -9,7 +10,10 @@ export interface MediaDialogBrowserMetadata {
   title?: string;
 }
 
-const metadataCache = new Map<string, Promise<MediaDialogBrowserMetadata>>();
+const MEDIA_DIALOG_METADATA_CACHE_MAX_ENTRIES = 128;
+const metadataCache = new LruCache<string, Promise<MediaDialogBrowserMetadata>>(
+  MEDIA_DIALOG_METADATA_CACHE_MAX_ENTRIES
+);
 const SPOTIFY_METADATA_ENDPOINT = '/__navet_spotify_metadata__';
 const SPOTIFY_ITEM_PATTERN = /(track|album|artist|playlist|show|episode)[/:]([a-zA-Z0-9]{10,})/i;
 

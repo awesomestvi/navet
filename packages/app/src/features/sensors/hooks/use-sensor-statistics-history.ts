@@ -11,11 +11,16 @@ import {
   supportsIntegrationStatisticsHistory,
 } from '@navet/app/services/integration-history.service';
 import { getNativeIntegrationEntityId } from '@navet/app/services/integration-provider-context.service';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { LruCache } from '@navet/app/utils/lru-cache';
+import { subscribeVisibilityAwareAsyncTask } from '@navet/app/utils/visibility-aware-scheduler';
+import { useEffect, useMemo, useState } from 'react';
 
 const REFRESH_MS = ENERGY_STATISTICS_REFRESH_INTERVAL;
 const CACHE_TTL_MS = Math.max(30_000, REFRESH_MS - 1_000);
-const historyCache = new Map<string, { expiresAt: number; data: RecorderStatisticPoint[] }>();
+const SENSOR_HISTORY_CACHE_MAX_ENTRIES = 80;
+const historyCache = new LruCache<string, { expiresAt: number; data: RecorderStatisticPoint[] }>(
+  SENSOR_HISTORY_CACHE_MAX_ENTRIES
+);
 const NON_TREND_DEVICE_CLASSES = new Set(['date', 'enum', 'timestamp']);
 const NON_TREND_UNITS = new Set(['', '%']);
 
@@ -81,7 +86,6 @@ export interface SensorStatisticsPoint {
 
 export function useSensorStatisticsHistory(entityId: string | undefined) {
   const entity = useProviderEntitySnapshot(entityId ?? '');
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [points, setPoints] = useState<SensorStatisticsPoint[]>([]);
   const nativeEntityId = useMemo(
     () => (entityId ? getNativeIntegrationEntityId(entityId) : undefined),
@@ -168,14 +172,7 @@ export function useSensorStatisticsHistory(entityId: string | undefined) {
       }
     }
 
-    void fetchHistory();
-    timerRef.current = setInterval(() => void fetchHistory(), REFRESH_MS);
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
+    return subscribeVisibilityAwareAsyncTask(fetchHistory, REFRESH_MS, { runImmediately: true });
   }, [canFetch, entityId, historyMode, nativeEntityId]);
 
   return {

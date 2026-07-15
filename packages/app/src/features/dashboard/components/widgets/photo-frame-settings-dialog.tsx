@@ -108,14 +108,14 @@ export function PhotoFrameSettingsDialog({
               size="compact"
               onClick={() => onShuffleEnabledChange(true)}
             >
-              On
+              {t('common.on')}
             </CardDialogChoicePill>
             <CardDialogChoicePill
               active={!shuffleEnabled}
               size="compact"
               onClick={() => onShuffleEnabledChange(false)}
             >
-              Off
+              {t('common.off')}
             </CardDialogChoicePill>
           </div>
         </CardDialogSection>

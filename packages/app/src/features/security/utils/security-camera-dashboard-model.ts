@@ -1,3 +1,4 @@
+import { defaultTranslate, type TranslateFn } from '@navet/app/i18n';
 import type {
   CameraDevice,
   DeviceCollection,
@@ -417,22 +418,26 @@ function getHighestSeverity(entities: DeviceWithType[]): SecuritySeverity {
     .sort((left, right) => SEVERITY_ORDER[left] - SEVERITY_ORDER[right])[0];
 }
 
-function readStateLabel(device: DeviceWithType): string {
+function readStateLabel(device: DeviceWithType, t: TranslateFn): string {
   switch (device.type) {
     case 'covers':
-      return device.position > 0 ? 'Open' : 'Closed';
+      return device.position > 0 ? t('common.open') : t('security.status.closed');
     case 'locks':
-      return device.state ? 'Locked' : 'Unlocked';
+      return device.state ? t('security.status.locked') : t('security.status.unlocked');
     case 'cameras':
       return normalizeText(device.state).replace(/\b\w/g, (segment) => segment.toUpperCase());
     case 'persons':
-      return device.state === 'home' ? 'Home' : 'Away';
+      return device.state === 'home' ? t('security.status.home') : t('security.status.away');
     case 'helpers':
-      return device.serviceAction === 'press' ? 'Action' : device.state ? 'On' : 'Off';
+      return device.serviceAction === 'press'
+        ? t('security.status.action')
+        : device.state
+          ? t('common.on')
+          : t('common.off');
     case 'sensors':
       return device.value;
     default:
-      return 'Active';
+      return t('security.severity.active');
   }
 }
 
@@ -441,9 +446,9 @@ function getRoomSuffix(device: DeviceWithType): string {
   return room !== UNKNOWN_ROOM_LABEL ? room : '';
 }
 
-function formatAttentionSnippet(device: DeviceWithType): string {
+function formatAttentionSnippet(device: DeviceWithType, t: TranslateFn): string {
   const room = getRoomSuffix(device);
-  const stateLabel = readStateLabel(device).toLowerCase();
+  const stateLabel = readStateLabel(device, t).toLocaleLowerCase();
   return room ? `${device.name} ${stateLabel} · ${room}` : `${device.name} ${stateLabel}`;
 }
 
@@ -452,18 +457,25 @@ function joinSummaryParts(parts: string[]): string {
 }
 
 function getSecureCountSummaryText(
-  securedCounts: SecurityDashboardSummary['securedCounts']
+  securedCounts: SecurityDashboardSummary['securedCounts'],
+  t: TranslateFn
 ): string {
   const parts = [
-    securedCounts.openingsClosed > 0 ? `${securedCounts.openingsClosed} openings closed` : '',
-    securedCounts.locksLocked > 0 ? `${securedCounts.locksLocked} locks locked` : '',
+    securedCounts.openingsClosed > 0
+      ? t('security.summary.openingsClosed', { count: securedCounts.openingsClosed })
+      : '',
+    securedCounts.locksLocked > 0
+      ? t('security.summary.locksLocked', { count: securedCounts.locksLocked })
+      : '',
     securedCounts.hazardSensorsClear > 0
-      ? `${securedCounts.hazardSensorsClear} hazard sensors clear`
+      ? t('security.summary.hazardSensorsClear', { count: securedCounts.hazardSensorsClear })
       : '',
     securedCounts.motionSensorsClear > 0
-      ? `${securedCounts.motionSensorsClear} motion sensors clear`
+      ? t('security.summary.motionSensorsClear', { count: securedCounts.motionSensorsClear })
       : '',
-    securedCounts.camerasAvailable > 0 ? `${securedCounts.camerasAvailable} cameras available` : '',
+    securedCounts.camerasAvailable > 0
+      ? t('security.summary.camerasAvailable', { count: securedCounts.camerasAvailable })
+      : '',
   ];
 
   return joinSummaryParts(parts.slice(0, 3).filter(Boolean));
@@ -511,7 +523,8 @@ function buildSecuredCounts(allEntities: DeviceWithType[]) {
 }
 
 function buildSecureOverviewItems(
-  securedCounts: SecurityDashboardSummary['securedCounts']
+  securedCounts: SecurityDashboardSummary['securedCounts'],
+  t: TranslateFn
 ): DeviceWithType[] {
   const items: DeviceWithType[] = [];
 
@@ -519,10 +532,10 @@ function buildSecureOverviewItems(
     items.push({
       id: 'security.aggregate.openings.secure',
       type: 'sensors',
-      name: 'Openings',
+      name: t('security.group.openings'),
       room: UNKNOWN_ROOM_LABEL,
       size: 'small',
-      value: `${securedCounts.openingsClosed} closed`,
+      value: t('security.summary.closed', { count: securedCounts.openingsClosed }),
       unit: '',
       deviceClass: 'door',
       securityKind: 'opening',
@@ -535,10 +548,10 @@ function buildSecureOverviewItems(
     items.push({
       id: 'security.aggregate.locks.secure',
       type: 'sensors',
-      name: 'Locks',
+      name: t('security.group.locks'),
       room: UNKNOWN_ROOM_LABEL,
       size: 'small',
-      value: `${securedCounts.locksLocked} locked`,
+      value: t('security.summary.locked', { count: securedCounts.locksLocked }),
       unit: '',
       deviceClass: 'lock',
       securityKind: 'lock',
@@ -551,10 +564,10 @@ function buildSecureOverviewItems(
     items.push({
       id: 'security.aggregate.motion.secure',
       type: 'sensors',
-      name: 'Motion & occupancy',
+      name: t('security.group.motionOccupancy'),
       room: UNKNOWN_ROOM_LABEL,
       size: 'small',
-      value: `${securedCounts.motionSensorsClear} clear`,
+      value: t('security.summary.clear', { count: securedCounts.motionSensorsClear }),
       unit: '',
       deviceClass: 'motion',
       securityKind: 'motion',
@@ -567,10 +580,10 @@ function buildSecureOverviewItems(
     items.push({
       id: 'security.aggregate.hazards.secure',
       type: 'sensors',
-      name: 'Hazards',
+      name: t('security.group.hazards'),
       room: UNKNOWN_ROOM_LABEL,
       size: 'small',
-      value: `${securedCounts.hazardSensorsClear} clear`,
+      value: t('security.summary.clear', { count: securedCounts.hazardSensorsClear }),
       unit: '',
       deviceClass: 'smoke',
       securityKind: 'safety',
@@ -608,7 +621,10 @@ function getAttentionGroupIconShape(groupId: string): {
   }
 }
 
-function buildAttentionOverviewItems(groupSummaries: SecurityGroupSummary[]): DeviceWithType[] {
+function buildAttentionOverviewItems(
+  groupSummaries: SecurityGroupSummary[],
+  t: TranslateFn
+): DeviceWithType[] {
   return groupSummaries
     .filter((group) => group.id !== 'presence')
     .filter((group) =>
@@ -637,7 +653,7 @@ function buildAttentionOverviewItems(groupSummaries: SecurityGroupSummary[]): De
         name: group.label,
         room: UNKNOWN_ROOM_LABEL,
         size: 'small',
-        value: buildGroupSummaryText(group.id, attentionEntities),
+        value: buildGroupSummaryText(group.id, attentionEntities, t),
         unit: '',
         deviceClass: iconShape.deviceClass,
         securityKind: iconShape.securityKind,
@@ -695,17 +711,20 @@ function isSecureMotionSensor(device: DeviceWithType): boolean {
   return device.type === 'sensors' && device.securityKind === 'motion';
 }
 
-function buildGroupedSecureMotionItem(motionDevices: DeviceWithType[]): DeviceWithType {
+function buildGroupedSecureMotionItem(
+  motionDevices: DeviceWithType[],
+  t: TranslateFn
+): DeviceWithType {
   const firstMotionDevice = motionDevices[0];
   const count = motionDevices.length;
 
   return {
     id: SECURE_MOTION_GROUP_ID,
     type: 'sensors',
-    name: 'Motion sensors',
+    name: t('security.group.motionSensors'),
     room: firstMotionDevice?.room ?? UNKNOWN_ROOM_LABEL,
     size: 'small',
-    value: `${count} clear`,
+    value: t('security.summary.clear', { count }),
     unit: '',
     securityKind: 'motion',
     securitySeverity: 'normal',
@@ -714,7 +733,7 @@ function buildGroupedSecureMotionItem(motionDevices: DeviceWithType[]): DeviceWi
   };
 }
 
-function collapseSecureMotionDevices(devices: DeviceWithType[]): DeviceWithType[] {
+function collapseSecureMotionDevices(devices: DeviceWithType[], t: TranslateFn): DeviceWithType[] {
   const motionDevices = devices.filter(isSecureMotionSensor);
 
   if (motionDevices.length <= 1) {
@@ -723,14 +742,15 @@ function collapseSecureMotionDevices(devices: DeviceWithType[]): DeviceWithType[
 
   return [
     ...devices.filter((device) => !isSecureMotionSensor(device)),
-    buildGroupedSecureMotionItem(motionDevices),
+    buildGroupedSecureMotionItem(motionDevices, t),
   ].sort(compareSecurityDevices);
 }
 
 function getSecureItems(
-  securedCounts: SecurityDashboardSummary['securedCounts']
+  securedCounts: SecurityDashboardSummary['securedCounts'],
+  t: TranslateFn
 ): DeviceWithType[] {
-  return buildSecureOverviewItems(securedCounts);
+  return buildSecureOverviewItems(securedCounts, t);
 }
 
 function getLiveItems(allEntities: DeviceWithType[]): DeviceWithType[] {
@@ -754,7 +774,8 @@ function buildHeroCopy(
   attentionItems: DeviceWithType[],
   activityItems: DeviceWithType[],
   unknownItems: DeviceWithType[],
-  securedCounts: SecurityDashboardSummary['securedCounts']
+  securedCounts: SecurityDashboardSummary['securedCounts'],
+  t: TranslateFn
 ) {
   const highestSeverity = getHighestSeverity(allEntities);
 
@@ -762,8 +783,10 @@ function buildHeroCopy(
     const topItem = attentionItems.find((item) => getSecuritySeverity(item) === 'critical');
     return {
       highestSeverity,
-      title: 'Critical alert',
-      subtitle: topItem ? formatAttentionSnippet(topItem) : 'Immediate attention required',
+      title: t('security.overview.hero.critical'),
+      subtitle: topItem
+        ? formatAttentionSnippet(topItem, t)
+        : t('security.overview.hero.immediate'),
     };
   }
 
@@ -771,33 +794,46 @@ function buildHeroCopy(
     const warningItems = attentionItems.filter((item) => getSecuritySeverity(item) === 'warning');
     return {
       highestSeverity,
-      title: `${warningItems.length} ${warningItems.length === 1 ? 'thing needs attention' : 'things need attention'}`,
-      subtitle: joinSummaryParts(warningItems.slice(0, 2).map(formatAttentionSnippet)),
+      title: t(
+        warningItems.length === 1
+          ? 'security.overview.hero.attentionOne'
+          : 'security.overview.hero.attention',
+        { count: warningItems.length }
+      ),
+      subtitle: joinSummaryParts(
+        warningItems.slice(0, 2).map((item) => formatAttentionSnippet(item, t))
+      ),
     };
   }
 
   if (highestSeverity === 'active') {
     return {
       highestSeverity,
-      title: 'Security active',
+      title: t('security.overview.hero.active'),
       subtitle:
-        joinSummaryParts(activityItems.slice(0, 2).map(formatAttentionSnippet)) ||
-        'Live security activity detected',
+        joinSummaryParts(
+          activityItems.slice(0, 2).map((item) => formatAttentionSnippet(item, t))
+        ) || t('security.overview.hero.liveDetected'),
     };
   }
 
   if (highestSeverity === 'unknown') {
     return {
       highestSeverity,
-      title: 'Some devices unavailable',
-      subtitle: `${unknownItems.length} ${unknownItems.length === 1 ? 'device is' : 'devices are'} unavailable`,
+      title: t('security.overview.hero.unavailable'),
+      subtitle: t(
+        unknownItems.length === 1
+          ? 'security.overview.hero.unavailableOne'
+          : 'security.overview.hero.unavailableCount',
+        { count: unknownItems.length }
+      ),
     };
   }
 
   return {
     highestSeverity,
-    title: 'All secure',
-    subtitle: getSecureCountSummaryText(securedCounts) || 'No security issues found',
+    title: t('security.overview.hero.allSecure'),
+    subtitle: getSecureCountSummaryText(securedCounts, t) || t('security.overview.hero.noIssues'),
   };
 }
 
@@ -805,19 +841,19 @@ function getGroupSeverity(entities: DeviceWithType[]): SecuritySeverity {
   return getHighestSeverity(entities);
 }
 
-function buildSeverityBreakdownText(entities: DeviceWithType[]): string {
+function buildSeverityBreakdownText(entities: DeviceWithType[], t: TranslateFn): string {
   const counts = countBySeverity(entities);
   const parts = [
-    counts.critical > 0 ? `${counts.critical} critical` : '',
-    counts.warning > 0 ? `${counts.warning} attention` : '',
-    counts.active > 0 ? `${counts.active} active` : '',
-    counts.unknown > 0 ? `${counts.unknown} unavailable` : '',
-    counts.normal > 0 ? `${counts.normal} normal` : '',
+    counts.critical > 0 ? t('security.summary.critical', { count: counts.critical }) : '',
+    counts.warning > 0 ? t('security.summary.attention', { count: counts.warning }) : '',
+    counts.active > 0 ? t('security.summary.active', { count: counts.active }) : '',
+    counts.unknown > 0 ? t('security.summary.unavailable', { count: counts.unknown }) : '',
+    counts.normal > 0 ? t('security.summary.normal', { count: counts.normal }) : '',
   ];
   return joinSummaryParts(parts);
 }
 
-function buildGroupSummaryText(id: string, entities: DeviceWithType[]): string {
+function buildGroupSummaryText(id: string, entities: DeviceWithType[], t: TranslateFn): string {
   const normalCount = entities.filter((entity) => getSecuritySeverity(entity) === 'normal').length;
   const warningCount = entities.filter(
     (entity) => getSecuritySeverity(entity) === 'warning'
@@ -833,72 +869,79 @@ function buildGroupSummaryText(id: string, entities: DeviceWithType[]): string {
   switch (id) {
     case 'doors-windows':
       return joinSummaryParts([
-        normalCount > 0 ? `${normalCount} closed` : '',
-        warningCount > 0 ? `${warningCount} open` : '',
-        unknownCount > 0 ? `${unknownCount} unavailable` : '',
+        normalCount > 0 ? t('security.summary.closed', { count: normalCount }) : '',
+        warningCount > 0 ? t('security.summary.open', { count: warningCount }) : '',
+        unknownCount > 0 ? t('security.summary.unavailable', { count: unknownCount }) : '',
       ]);
     case 'locks':
       return joinSummaryParts([
-        normalCount > 0 ? `${normalCount} locked` : '',
-        warningCount > 0 ? `${warningCount} unlocked` : '',
-        activeCount > 0 ? `${activeCount} changing` : '',
-        unknownCount > 0 ? `${unknownCount} unavailable` : '',
+        normalCount > 0 ? t('security.summary.locked', { count: normalCount }) : '',
+        warningCount > 0 ? t('security.summary.unlocked', { count: warningCount }) : '',
+        activeCount > 0 ? t('security.summary.changing', { count: activeCount }) : '',
+        unknownCount > 0 ? t('security.summary.unavailable', { count: unknownCount }) : '',
       ]);
     case 'motion-occupancy':
       return joinSummaryParts([
-        activeCount > 0 ? `${activeCount} active` : '',
-        normalCount > 0 ? `${normalCount} clear` : '',
-        unknownCount > 0 ? `${unknownCount} unavailable` : '',
+        activeCount > 0 ? t('security.summary.active', { count: activeCount }) : '',
+        normalCount > 0 ? t('security.summary.clear', { count: normalCount }) : '',
+        unknownCount > 0 ? t('security.summary.unavailable', { count: unknownCount }) : '',
       ]);
     case 'hazards':
       return joinSummaryParts([
-        criticalCount + warningCount > 0 ? `${criticalCount + warningCount} alerts` : '',
-        normalCount > 0 ? `${normalCount} clear` : '',
-        unknownCount > 0 ? `${unknownCount} unavailable` : '',
+        criticalCount + warningCount > 0
+          ? t('security.summary.alerts', { count: criticalCount + warningCount })
+          : '',
+        normalCount > 0 ? t('security.summary.clear', { count: normalCount }) : '',
+        unknownCount > 0 ? t('security.summary.unavailable', { count: unknownCount }) : '',
       ]);
     case 'cameras':
       return joinSummaryParts([
-        activeCount > 0 ? `${activeCount} live` : '',
-        normalCount > 0 ? `${normalCount} available` : '',
-        unknownCount > 0 ? `${unknownCount} unavailable` : '',
+        activeCount > 0 ? t('security.summary.live', { count: activeCount }) : '',
+        normalCount > 0 ? t('security.summary.available', { count: normalCount }) : '',
+        unknownCount > 0 ? t('security.summary.unavailable', { count: unknownCount }) : '',
       ]);
     case 'sirens':
       return joinSummaryParts([
-        criticalCount > 0 ? `${criticalCount} on` : '',
-        normalCount > 0 ? `${normalCount} off` : '',
-        unknownCount > 0 ? `${unknownCount} unavailable` : '',
+        criticalCount > 0 ? t('security.summary.on', { count: criticalCount }) : '',
+        normalCount > 0 ? t('security.summary.off', { count: normalCount }) : '',
+        unknownCount > 0 ? t('security.summary.unavailable', { count: unknownCount }) : '',
       ]);
     case 'alarms':
       return joinSummaryParts([
-        criticalCount > 0 ? `${criticalCount} triggered` : '',
-        warningCount > 0 ? `${warningCount} pending` : '',
-        activeCount > 0 ? `${activeCount} armed` : '',
-        normalCount > 0 ? `${normalCount} disarmed` : '',
-        unknownCount > 0 ? `${unknownCount} unavailable` : '',
+        criticalCount > 0 ? t('security.summary.triggered', { count: criticalCount }) : '',
+        warningCount > 0 ? t('security.summary.pending', { count: warningCount }) : '',
+        activeCount > 0 ? t('security.summary.armed', { count: activeCount }) : '',
+        normalCount > 0 ? t('security.summary.disarmed', { count: normalCount }) : '',
+        unknownCount > 0 ? t('security.summary.unavailable', { count: unknownCount }) : '',
       ]);
     case 'presence':
       return joinSummaryParts([
-        normalCount > 0 ? `${normalCount} settled` : '',
-        unknownCount > 0 ? `${unknownCount} unavailable` : '',
+        normalCount > 0 ? t('security.summary.settled', { count: normalCount }) : '',
+        unknownCount > 0 ? t('security.summary.unavailable', { count: unknownCount }) : '',
       ]);
     case 'system':
       return joinSummaryParts([
-        warningCount + criticalCount > 0 ? `${warningCount + criticalCount} issues` : '',
-        unknownCount > 0 ? `${unknownCount} unavailable` : '',
-        normalCount > 0 ? `${normalCount} healthy` : '',
+        warningCount + criticalCount > 0
+          ? t('security.summary.issues', { count: warningCount + criticalCount })
+          : '',
+        unknownCount > 0 ? t('security.summary.unavailable', { count: unknownCount }) : '',
+        normalCount > 0 ? t('security.summary.healthy', { count: normalCount }) : '',
       ]);
     case 'actions':
       return joinSummaryParts([
-        normalCount > 0 ? `${normalCount} ready` : '',
-        activeCount > 0 ? `${activeCount} active` : '',
-        unknownCount > 0 ? `${unknownCount} unavailable` : '',
+        normalCount > 0 ? t('security.summary.ready', { count: normalCount }) : '',
+        activeCount > 0 ? t('security.summary.active', { count: activeCount }) : '',
+        unknownCount > 0 ? t('security.summary.unavailable', { count: unknownCount }) : '',
       ]);
     default:
-      return buildSeverityBreakdownText(entities);
+      return buildSeverityBreakdownText(entities, t);
   }
 }
 
-function buildGroupSummaries(allEntities: DeviceWithType[]): SecurityGroupSummary[] {
+function buildGroupSummaries(
+  allEntities: DeviceWithType[],
+  t: TranslateFn
+): SecurityGroupSummary[] {
   const definitions: Array<{
     id: string;
     label: string;
@@ -906,24 +949,24 @@ function buildGroupSummaries(allEntities: DeviceWithType[]): SecurityGroupSummar
   }> = [
     {
       id: 'alarms',
-      label: 'Alarm',
+      label: t('security.group.alarm'),
       include: (device) => device.securityKind === 'alarm',
     },
     {
       id: 'doors-windows',
-      label: 'Doors & windows',
+      label: t('security.group.doorsWindows'),
       include: (device) =>
         device.type === 'covers' ||
         ['door', 'window', 'garageDoor', 'opening'].includes(device.securityKind ?? ''),
     },
     {
       id: 'locks',
-      label: 'Locks',
+      label: t('security.group.locks'),
       include: (device) => device.type === 'locks' || device.securityKind === 'lock',
     },
     {
       id: 'motion-occupancy',
-      label: 'Motion & occupancy',
+      label: t('security.group.motionOccupancy'),
       include: (device) =>
         ['motion', 'occupancy', 'presence', 'vibration', 'sound'].includes(
           device.securityKind ?? ''
@@ -931,7 +974,7 @@ function buildGroupSummaries(allEntities: DeviceWithType[]): SecurityGroupSummar
     },
     {
       id: 'hazards',
-      label: 'Hazards',
+      label: t('security.group.hazards'),
       include: (device) =>
         ['smoke', 'carbonMonoxide', 'gas', 'waterLeak', 'safety'].includes(
           device.securityKind ?? ''
@@ -939,17 +982,17 @@ function buildGroupSummaries(allEntities: DeviceWithType[]): SecurityGroupSummar
     },
     {
       id: 'cameras',
-      label: 'Cameras',
+      label: t('security.group.cameras'),
       include: (device) => device.type === 'cameras' || device.securityKind === 'camera',
     },
     {
       id: 'sirens',
-      label: 'Sirens',
+      label: t('security.group.sirens'),
       include: (device) => device.securityKind === 'siren',
     },
     {
       id: 'presence',
-      label: 'Presence',
+      label: t('security.group.presence'),
       include: (device) =>
         device.type === 'persons' ||
         device.securityKind === 'person' ||
@@ -957,7 +1000,7 @@ function buildGroupSummaries(allEntities: DeviceWithType[]): SecurityGroupSummar
     },
     {
       id: 'system',
-      label: 'System',
+      label: t('security.group.system'),
       include: (device) =>
         ['connectivity', 'battery', 'problem', 'tamper'].includes(device.securityKind ?? ''),
     },
@@ -977,7 +1020,8 @@ function buildGroupSummaries(allEntities: DeviceWithType[]): SecurityGroupSummar
                 rawEntities.filter(
                   (entity) =>
                     !isSecureMotionSensor(entity) || getSecuritySeverity(entity) === 'normal'
-                )
+                ),
+                t
               ),
               ...rawEntities.filter(
                 (entity) => isSecureMotionSensor(entity) && getSecuritySeverity(entity) !== 'normal'
@@ -993,7 +1037,7 @@ function buildGroupSummaries(allEntities: DeviceWithType[]): SecurityGroupSummar
         severity,
         total: rawEntities.length,
         ...severityCounts,
-        summaryText: buildGroupSummaryText(definition.id, rawEntities),
+        summaryText: buildGroupSummaryText(definition.id, rawEntities, t),
         entities,
         defaultExpanded: severity === 'critical' || severity === 'warning',
       } satisfies SecurityGroupSummary;
@@ -1003,7 +1047,8 @@ function buildGroupSummaries(allEntities: DeviceWithType[]): SecurityGroupSummar
 
 export function buildSecurityCameraDashboardModel(
   devices: Pick<DeviceCollection, 'cameras' | 'locks' | 'sensors'> &
-    Partial<Pick<DeviceCollection, 'covers' | 'persons' | 'helpers'>>
+    Partial<Pick<DeviceCollection, 'covers' | 'persons' | 'helpers'>>,
+  t: TranslateFn = defaultTranslate
 ): CameraDashboardModel {
   const groups = createEmptyGroups();
   const dedupedCameras = collapseCameraVariants(devices.cameras);
@@ -1048,15 +1093,16 @@ export function buildSecurityCameraDashboardModel(
   const unknownItems = allEntities
     .filter((entity) => getSecuritySeverity(entity) === 'unknown')
     .sort(compareSecurityDevices);
-  const secureItems = getSecureItems(securedCounts);
-  const groupSummaries = buildGroupSummaries(allEntities);
-  const attentionItems = buildAttentionOverviewItems(groupSummaries);
+  const secureItems = getSecureItems(securedCounts, t);
+  const groupSummaries = buildGroupSummaries(allEntities, t);
+  const attentionItems = buildAttentionOverviewItems(groupSummaries, t);
   const hero = buildHeroCopy(
     allEntities,
     attentionEntityItems,
     activityItems,
     unknownItems,
-    securedCounts
+    securedCounts,
+    t
   );
 
   return {

@@ -258,7 +258,7 @@ export function LoginPage() {
             <div className="relative space-y-5">
               <ul
                 className="m-0 flex list-none flex-col gap-2 p-0"
-                aria-label="Choose a smart home provider"
+                aria-label={t('login.providerChooser.title')}
               >
                 {selectableProviders.map((candidateId) => {
                   const candidateContent = PROVIDER_OPTION_CONTENT[candidateId];
@@ -372,27 +372,33 @@ export function LoginPage() {
 
                       {requiresCredentials ? (
                         <>
-                          <FieldBlock label="openHAB Username" htmlFor="openhab-username">
+                          <FieldBlock
+                            label={`openHAB ${t('login.username')}`}
+                            htmlFor="openhab-username"
+                          >
                             <Input
                               id="openhab-username"
                               type="text"
                               value={openhabUsername}
                               onChange={(event) => setOpenhabUsername(event.target.value)}
                               autoComplete="username"
-                              placeholder="openhab"
+                              placeholder={t('login.username')}
                               inputClassName={fieldInputClassName}
                               disabled={isLoading}
                             />
                           </FieldBlock>
 
-                          <FieldBlock label="openHAB Password" htmlFor="openhab-password">
+                          <FieldBlock
+                            label={`openHAB ${t('login.password')}`}
+                            htmlFor="openhab-password"
+                          >
                             <Input
                               id="openhab-password"
                               type="password"
                               value={openhabPassword}
                               onChange={(event) => setOpenhabPassword(event.target.value)}
                               autoComplete="current-password"
-                              placeholder="Password"
+                              placeholder={t('login.password')}
                               inputClassName={fieldInputClassName}
                               disabled={isLoading}
                             />

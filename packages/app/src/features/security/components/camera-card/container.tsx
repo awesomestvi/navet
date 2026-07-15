@@ -2,7 +2,7 @@ import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mo
 import { readNavetCameraState } from '@navet/app/core/navet-device-state';
 import { resolveDashboardPerformanceProfile } from '@navet/app/features/dashboard/hooks/use-dashboard-performance-mode';
 import { useCameraPlaybackPlan } from '@navet/app/features/security/hooks/use-camera-playback-plan';
-import { useProviderCameraTopology } from '@navet/app/hooks';
+import { useI18n, useProviderCameraTopology } from '@navet/app/hooks';
 import { useProviderEntityModel } from '@navet/app/hooks/use-provider-device';
 import type {
   PlatformCameraTransport,
@@ -17,6 +17,7 @@ import {
   useSettingsStore,
 } from '@navet/app/stores/settings-store';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
+import { subscribeVisibilityAwareTask } from '@navet/app/utils/visibility-aware-scheduler';
 import {
   memo,
   useCallback,
@@ -69,14 +70,14 @@ const CAMERA_CLOCK_INTERVAL_MS = 30_000;
 const CAMERA_STREAM_RETRY_DELAY_MS = 5_000;
 const cameraClockSubscribers = new Set<() => void>();
 let cameraClockNow = Date.now();
-let cameraClockIntervalId: number | null = null;
+let cameraClockCleanup: (() => void) | null = null;
 
 function subscribeToCameraClock(callback: () => void) {
   cameraClockSubscribers.add(callback);
 
-  if (cameraClockIntervalId === null) {
+  if (cameraClockCleanup === null) {
     cameraClockNow = Date.now();
-    cameraClockIntervalId = window.setInterval(() => {
+    cameraClockCleanup = subscribeVisibilityAwareTask(() => {
       cameraClockNow = Date.now();
       for (const subscriber of cameraClockSubscribers) {
         subscriber();
@@ -87,9 +88,9 @@ function subscribeToCameraClock(callback: () => void) {
   return () => {
     cameraClockSubscribers.delete(callback);
 
-    if (cameraClockSubscribers.size === 0 && cameraClockIntervalId !== null) {
-      window.clearInterval(cameraClockIntervalId);
-      cameraClockIntervalId = null;
+    if (cameraClockSubscribers.size === 0) {
+      cameraClockCleanup?.();
+      cameraClockCleanup = null;
     }
   };
 }
@@ -141,6 +142,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   size,
   isEditMode,
 }: CameraCardProps) {
+  const { t } = useI18n();
   const providerEntity = useProviderEntityModel(id);
   const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
@@ -316,14 +318,10 @@ export const CameraCardContainer = memo(function CameraCardContainer({
       return;
     }
 
-    const refreshIfVisible = () => {
-      if (document.visibilityState === 'visible') {
-        setRefreshKey((key) => key + 1);
-      }
-    };
-    const interval = window.setInterval(refreshIfVisible, effectiveRefreshIntervalMs);
-
-    return () => window.clearInterval(interval);
+    return subscribeVisibilityAwareTask(
+      () => setRefreshKey((key) => key + 1),
+      effectiveRefreshIntervalMs
+    );
   }, [
     cameraState,
     isVisible,
@@ -472,6 +470,8 @@ export const CameraCardContainer = memo(function CameraCardContainer({
         posterUrl={imageUrl}
         streamResource={playbackModel?.selectedStreamResource ?? null}
         fitMode={cameraFitMode}
+        loadingLabel={t('camera.loadingFeed')}
+        webRtcTitle={t('camera.webRtcStreamTitle')}
         onError={handleStreamError}
       />
     );
@@ -481,6 +481,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     id,
     imageUrl,
     playbackModel?.selectedStreamResource,
+    t,
     shouldRenderLiveStream,
   ]);
 

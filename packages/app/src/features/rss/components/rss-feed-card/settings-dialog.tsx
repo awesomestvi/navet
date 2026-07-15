@@ -123,7 +123,7 @@ export function RSSFeedSettingsDialog({
     () => [
       {
         key: 'feeds',
-        label: 'Feeds',
+        label: t('rss.settings.feedsTab'),
         icon: Sliders,
         content: (
           <div className="space-y-4">
@@ -146,7 +146,7 @@ export function RSSFeedSettingsDialog({
       },
       {
         key: 'setup',
-        label: 'Setup',
+        label: t('rss.settings.setupTab'),
         icon: Plus,
         content: (
           <div className="space-y-4">

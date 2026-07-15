@@ -33,9 +33,9 @@ export function isSupportedLanguage(value: string): value is AppLanguage {
   return SUPPORTED_LANGUAGES.includes(value as AppLanguage);
 }
 
-export function resolveAppLanguage(value: string | null | undefined): AppLanguage {
+function resolveSupportedLanguage(value: string | null | undefined): AppLanguage | null {
   if (!value) {
-    return 'en';
+    return null;
   }
 
   const normalized = value.trim().toLowerCase();
@@ -44,7 +44,11 @@ export function resolveAppLanguage(value: string | null | undefined): AppLanguag
   }
 
   const languageCode = normalized.split(/[-_]/)[0];
-  return isSupportedLanguage(languageCode) ? languageCode : 'en';
+  return isSupportedLanguage(languageCode) ? languageCode : null;
+}
+
+export function resolveAppLanguage(value: string | null | undefined): AppLanguage {
+  return resolveSupportedLanguage(value) ?? 'en';
 }
 
 export function getNavigatorLanguage(): AppLanguage {
@@ -54,7 +58,7 @@ export function getNavigatorLanguage(): AppLanguage {
 
   const languageSources = [navigator.language, ...(navigator.languages ?? [])];
   for (const candidate of languageSources) {
-    const resolved = resolveAppLanguage(candidate);
+    const resolved = resolveSupportedLanguage(candidate);
     if (resolved) {
       return resolved;
     }

@@ -193,8 +193,8 @@ export const SectionCanvas = memo(function SectionCanvas({
               />
             ) : (
               <EmptyCanvas
-                label="Drop cards here"
-                description="Drag device cards or widgets into this section."
+                label={t('dashboard.section.dropCards')}
+                description={t('dashboard.section.dropCardsDescription')}
                 surface={surface}
                 compact
                 onClick={handleOpenAddCard}

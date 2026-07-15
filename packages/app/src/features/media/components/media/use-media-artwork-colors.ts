@@ -4,6 +4,7 @@ import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
+import { LruCache } from '@navet/app/utils/lru-cache';
 import { useEffect, useState } from 'react';
 import { resolveArtworkPalette } from './media-artwork-palette';
 
@@ -59,7 +60,8 @@ const FALLBACK_COLORS: Record<ThemeType, MediaArtworkPalette> = {
   },
 };
 
-const paletteCache = new Map<string, MediaArtworkPalette>();
+const ARTWORK_PALETTE_CACHE_MAX_ENTRIES = 96;
+const paletteCache = new LruCache<string, MediaArtworkPalette>(ARTWORK_PALETTE_CACHE_MAX_ENTRIES);
 const pendingPaletteRequests = new Map<string, Promise<MediaArtworkPalette | null>>();
 const ARTWORK_PALETTE_CLEAR_DELAY_MS = 700;
 

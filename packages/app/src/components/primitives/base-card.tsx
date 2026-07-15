@@ -59,6 +59,7 @@ export interface BaseCardProps extends HTMLAttributes<HTMLDivElement> {
   contentClassName?: string;
   innerClassName?: string;
   headerClassName?: string;
+  headerMarginBottomClassName?: string;
   footerClassName?: string;
   interactive?: boolean;
   isActive?: boolean;
@@ -171,6 +172,7 @@ export function BaseCard({
   contentClassName = '',
   innerClassName = '',
   headerClassName = '',
+  headerMarginBottomClassName,
   footerClassName = '',
   interactive = false,
   isActive = false,
@@ -257,6 +259,7 @@ export function BaseCard({
         leading={headerLeading}
         trailing={headerTrailing}
         className={headerClassName}
+        marginBottomClassName={headerMarginBottomClassName}
         titleStyle={{ color: readableTextTokens.titleColor }}
         subtitleStyle={{ color: readableTextTokens.subtitleColor }}
       />

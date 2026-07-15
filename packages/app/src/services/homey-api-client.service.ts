@@ -1,4 +1,5 @@
 import type { HomeySnapshot } from '../types/homey';
+import { subscribeVisibilityAwareAsyncTask } from '../utils/visibility-aware-scheduler';
 import type { HomeyCapabilityCommand, HomeySnapshotClient } from './homey.service';
 import { homeyService } from './homey.service';
 
@@ -8,7 +9,7 @@ const HOMEY_SNAPSHOT_POLL_INTERVAL_MS = 15_000;
 type HomeySnapshotListener = (snapshot: HomeySnapshot) => void;
 
 const snapshotListeners = new Set<HomeySnapshotListener>();
-let snapshotPollIntervalId: number | null = null;
+let snapshotPollCleanup: (() => void) | null = null;
 let snapshotRefreshInFlight: Promise<HomeySnapshot> | null = null;
 let latestSnapshot: HomeySnapshot = {
   connected: false,
@@ -84,37 +85,25 @@ function handleSnapshotRefreshEvent() {
   void refreshHomeySnapshot().catch(() => undefined);
 }
 
-function handleSnapshotVisibilityChange() {
-  if (document.visibilityState !== 'visible') {
-    return;
-  }
-
-  handleSnapshotRefreshEvent();
-}
-
 function stopSnapshotPolling() {
-  if (snapshotPollIntervalId !== null) {
-    window.clearInterval(snapshotPollIntervalId);
-    snapshotPollIntervalId = null;
-  }
+  snapshotPollCleanup?.();
+  snapshotPollCleanup = null;
 
   window.removeEventListener('focus', handleSnapshotRefreshEvent);
   window.removeEventListener('online', handleSnapshotRefreshEvent);
-  document.removeEventListener('visibilitychange', handleSnapshotVisibilityChange);
 }
 
 function startSnapshotPolling() {
-  if (snapshotPollIntervalId !== null || typeof window === 'undefined') {
+  if (snapshotPollCleanup !== null || typeof window === 'undefined') {
     return;
   }
 
-  snapshotPollIntervalId = window.setInterval(() => {
-    void refreshHomeySnapshot().catch(() => undefined);
+  snapshotPollCleanup = subscribeVisibilityAwareAsyncTask(async () => {
+    await refreshHomeySnapshot().catch(() => undefined);
   }, HOMEY_SNAPSHOT_POLL_INTERVAL_MS);
 
   window.addEventListener('focus', handleSnapshotRefreshEvent);
   window.addEventListener('online', handleSnapshotRefreshEvent);
-  document.addEventListener('visibilitychange', handleSnapshotVisibilityChange);
 }
 
 export const homeyApiClient: HomeySnapshotClient = {

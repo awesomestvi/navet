@@ -1,9 +1,10 @@
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { cn } from '@navet/app/components/ui/utils';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import type { Section } from '@navet/app/navigation/sections';
 import { darkenColor } from '@navet/app/utils/color-utils';
 import { openCustomExtensionUrl } from '@navet/app/utils/custom-extensions';
-import { memo, type ReactNode } from 'react';
+import { type HTMLAttributes, memo, type ReactNode } from 'react';
 import type { HomeStatusSummaryItem } from './home-status-summary-model';
 
 interface SummaryBarProps {
@@ -105,5 +106,10 @@ export const SummaryBar = memo(function SummaryBar({
     </nav>
   );
 });
+
+/** Canonical Home dashboard rhythm between a summary bar and its surrounding content. */
+export function SummaryBarStack({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div {...props} className={cn('space-y-3', className)} />;
+}
 
 export const InfoBadgeStrip = SummaryBar;

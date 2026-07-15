@@ -42,7 +42,7 @@ export function TvTransportControls({
         <TvControlButton
           theme={theme}
           size="small"
-          label="Menu"
+          label={t('media.remote.menu')}
           style={controlStyle}
           iconClassName={iconClassName}
           onPress={() => onRemoteCommand('menu')}
@@ -54,7 +54,7 @@ export function TvTransportControls({
         <TvControlButton
           theme={theme}
           size="small"
-          label="Home"
+          label={t('media.remote.home')}
           style={controlStyle}
           iconClassName={iconClassName}
           onPress={() => onRemoteCommand('home')}
@@ -83,7 +83,7 @@ export function TvTransportControls({
         <TvControlButton
           theme={theme}
           size="small"
-          label="Back"
+          label={t('media.remote.back')}
           style={controlStyle}
           iconClassName={iconClassName}
           onPress={() => onRemoteCommand('back')}

@@ -1,6 +1,7 @@
 import { isCompactCardSize } from '@navet/app/components/shared/card-size-selector';
 import { useAreaRooms, useDashboardWidgetRoomOptions, useI18n, useTheme } from '@navet/app/hooks';
 import { sanitizeExternalUrl } from '@navet/app/utils/url-security';
+import { subscribeVisibilityAwareTask } from '@navet/app/utils/visibility-aware-scheduler';
 import { memo, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { RSSFeedSettingsDialog } from './settings-dialog';
@@ -57,11 +58,10 @@ export const RSSFeedCardContainer = memo(function RSSFeedCardContainer({
 
   useEffect(() => {
     void providerSelectionKey;
-    const intervalId = window.setInterval(() => {
-      setRefreshNonce((value) => value + 1);
-    }, RSS_REFRESH_INTERVAL_SECONDS * 1000);
-
-    return () => window.clearInterval(intervalId);
+    return subscribeVisibilityAwareTask(
+      () => setRefreshNonce((value) => value + 1),
+      RSS_REFRESH_INTERVAL_SECONDS * 1000
+    );
   }, [providerSelectionKey]);
 
   useEffect(() => {

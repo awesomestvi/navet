@@ -2,6 +2,7 @@ import { BaseCard } from '@navet/app/components/primitives';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import type { RSSCardData } from '@navet/app/features/rss';
+import { useI18n } from '@navet/app/i18n';
 import { Component, lazy, type ReactNode, Suspense, useState } from 'react';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { useCustomCardsStore } from '../stores/custom-cards-store';
@@ -15,8 +16,11 @@ import type { PhotoFrameImage } from './widgets/photo-frame-image';
 import type { PhotoFrameSourceMode } from './widgets/photo-frame-types';
 import type { UpsWidgetData } from './widgets/ups-widget';
 
-class WidgetErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
-  constructor(props: { children: ReactNode }) {
+class WidgetErrorBoundary extends Component<
+  { children: ReactNode; fallbackLabel: string },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode; fallbackLabel: string }) {
     super(props);
     this.state = { hasError: false };
   }
@@ -29,7 +33,7 @@ class WidgetErrorBoundary extends Component<{ children: ReactNode }, { hasError:
     if (this.state.hasError) {
       return (
         <BaseCard size="medium" className="bg-white/5 text-xs text-white/40">
-          <div className="flex h-full items-center justify-center">Widget failed to load</div>
+          <div className="flex h-full items-center justify-center">{this.props.fallbackLabel}</div>
         </BaseCard>
       );
     }
@@ -128,6 +132,7 @@ export function WidgetCard({
   onUpdate,
   openSettingsRequestKey: controlledOpenSettingsRequestKey,
 }: WidgetCardProps) {
+  const { language, t } = useI18n();
   const updateCustomCard = useCustomCardsStore((state) => state.updateCard);
   const handleCardUpdate = onUpdate ?? updateCustomCard;
   const [openSettingsRequestKey, setOpenSettingsRequestKey] = useState(0);
@@ -309,6 +314,8 @@ export function WidgetCard({
         <GenericEntityWidget
           size={card.size}
           data={card.data as GenericEntityWidgetData | undefined}
+          language={language}
+          t={t}
         />
       );
       break;
@@ -318,7 +325,7 @@ export function WidgetCard({
 
   return (
     <div className="relative h-full">
-      <WidgetErrorBoundary>
+      <WidgetErrorBoundary fallbackLabel={t('widgets.failed')}>
         <Suspense fallback={<WidgetFallback size={card.size} />}>{widgetContent}</Suspense>
       </WidgetErrorBoundary>
     </div>

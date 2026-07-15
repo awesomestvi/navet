@@ -73,7 +73,7 @@ export interface HabitFeedback {
   id: string;
   insightId: string;
   candidateId: string;
-  outcome: 'dismissed' | 'remind_later' | 'accepted' | 'undone' | 'created_rule';
+  outcome: 'dismissed' | 'dont_suggest' | 'remind_later' | 'accepted' | 'undone' | 'created_rule';
   timestamp: string;
   reason?: 'wrong_time' | 'wrong_room' | 'wrong_action' | 'not_useful' | 'unsafe' | 'other';
 }
@@ -206,6 +206,8 @@ function getFeedbackPenalty(candidateId: string, feedback: HabitFeedback[]) {
     }
 
     switch (item.outcome) {
+      case 'dont_suggest':
+        return penalty + 0.3;
       case 'dismissed':
         return penalty + 0.18;
       case 'remind_later':

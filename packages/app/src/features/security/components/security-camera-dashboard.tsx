@@ -19,6 +19,7 @@ import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { usePersistedState } from '@navet/app/hooks/use-persisted-state';
 import { useProviderEntityModel } from '@navet/app/hooks/use-provider-device';
 import { type ThemeType, useTheme } from '@navet/app/hooks/use-theme';
+import { type TranslateFn, useI18n } from '@navet/app/i18n';
 import { integrationCameraFeatureService } from '@navet/app/services/integration-camera-feature.service';
 import { normalizeResourceUrl } from '@navet/app/services/integration-resource.service';
 import { settingsSelectors } from '@navet/app/stores/selectors';
@@ -65,31 +66,35 @@ const NOW_ALARM_ALLOWED_SIZES: CardSize[] = ['medium', 'large'];
 const SECURITY_DASHBOARD_COLLAPSED_SECTIONS_KEY = 'navet-security-dashboard-collapsed-sections';
 const SECURITY_DASHBOARD_SELECTED_GROUP_KEY = 'navet-security-dashboard-selected-group';
 
-function getSeverityLabel(severity: SecuritySeverity): string {
+function getSeverityLabel(severity: SecuritySeverity, t: TranslateFn): string {
   switch (severity) {
     case 'critical':
-      return 'Critical';
+      return t('security.severity.critical');
     case 'warning':
-      return 'Attention';
+      return t('security.severity.attention');
     case 'active':
-      return 'Active';
+      return t('security.severity.active');
     case 'unknown':
-      return 'Unavailable';
+      return t('common.unavailable');
     default:
-      return 'Normal';
+      return t('security.severity.normal');
   }
 }
 
-function readDeviceStatusLabel(device: DeviceWithType): string {
+function readDeviceStatusLabel(device: DeviceWithType, t: TranslateFn): string {
   switch (device.type) {
     case 'locks':
-      return device.state ? 'Locked' : 'Unlocked';
+      return device.state ? t('security.status.locked') : t('security.status.unlocked');
     case 'cameras':
       return device.state.replace(/\b\w/g, (segment) => segment.toUpperCase());
     case 'persons':
-      return device.state === 'home' ? 'Home' : 'Away';
+      return device.state === 'home' ? t('security.status.home') : t('security.status.away');
     case 'helpers':
-      return device.serviceAction === 'press' ? 'Action' : device.state ? 'On' : 'Off';
+      return device.serviceAction === 'press'
+        ? t('security.status.action')
+        : device.state
+          ? t('common.on')
+          : t('common.off');
     case 'sensors':
       if (
         device.securityKind === 'door' ||
@@ -98,18 +103,18 @@ function readDeviceStatusLabel(device: DeviceWithType): string {
         device.securityKind === 'opening'
       ) {
         if (device.status === 'active') {
-          return 'Open';
+          return t('common.open');
         }
         if (device.status === 'clear') {
-          return 'Closed';
+          return t('security.status.closed');
         }
         if (device.status === 'unavailable') {
-          return 'Unavailable';
+          return t('common.unavailable');
         }
       }
       return device.value;
     default:
-      return 'Active';
+      return t('security.severity.active');
   }
 }
 
@@ -456,6 +461,7 @@ function StatusBanner({
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
   const { accentColor } = useTheme();
+  const { t } = useI18n();
   const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
 
   return kioskMode ? null : (
@@ -463,17 +469,18 @@ function StatusBanner({
       accentColor={accentColor}
       surface={surface}
       title={model.title}
-      description="Monitor live cameras, locks, openings, and alarms from one place."
+      description={t('security.overview.description')}
     />
   );
 }
 
 function NowStatusBadges({ model }: { model: CameraDashboardModel['summary'] }) {
   const { theme } = useTheme();
+  const { t } = useI18n();
   const needsAttention = model.attentionEntityCount;
   const primaryBadge =
     needsAttention > 0 ? (
-      <Badge tone="danger">{needsAttention} to check</Badge>
+      <Badge tone="danger">{t('security.overview.toCheck', { count: needsAttention })}</Badge>
     ) : needsAttention === 0 && model.secureItems.length > 0 ? (
       <Badge
         tone="success"
@@ -481,7 +488,7 @@ function NowStatusBadges({ model }: { model: CameraDashboardModel['summary'] }) 
           theme === 'light' ? 'border-emerald-300/90 bg-emerald-100/95 text-emerald-800' : ''
         }
       >
-        {model.secureItems.length} secure
+        {t('security.overview.secure', { count: model.secureItems.length })}
       </Badge>
     ) : null;
   const liveBadge =
@@ -493,7 +500,7 @@ function NowStatusBadges({ model }: { model: CameraDashboardModel['summary'] }) 
             : 'border-sky-400/30 bg-sky-500/10 text-sky-100'
         }
       >
-        {model.liveItems.length} live
+        {t('security.overview.live', { count: model.liveItems.length })}
       </Badge>
     ) : null;
 
@@ -524,6 +531,7 @@ function FlatSection({
   onToggleCollapse?: (id: string) => void;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
+  const { t } = useI18n();
   const headerContent = (
     <div className="flex min-w-0 flex-wrap items-center gap-1.5 md:gap-2">
       <div className="flex min-w-0 items-center gap-1.5">
@@ -542,7 +550,9 @@ function FlatSection({
         ) : null}
       </div>
       {typeof count === 'number' ? (
-        <span className={`text-xs md:text-sm ${surface.textSecondary}`}>{count} items</span>
+        <span className={`text-xs md:text-sm ${surface.textSecondary}`}>
+          {t('security.overview.items', { count })}
+        </span>
       ) : null}
       {headerSuffix ? <div className="flex min-w-0 flex-1 items-center">{headerSuffix}</div> : null}
     </div>
@@ -594,6 +604,7 @@ function CompactEntityRow({
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
   const { theme } = useTheme();
+  const { t } = useI18n();
   const Icon = getDeviceTypeIcon(
     device.type,
     'deviceClass' in device && typeof device.deviceClass === 'string'
@@ -606,8 +617,9 @@ function CompactEntityRow({
         ? 'warning'
         : 'normal'
       : (device.securitySeverity ?? 'normal');
-  const statusLabel = readDeviceStatusLabel(device);
-  const trailingLabel = trailingLabelMode === 'status' ? statusLabel : getSeverityLabel(severity);
+  const statusLabel = readDeviceStatusLabel(device, t);
+  const trailingLabel =
+    trailingLabelMode === 'status' ? statusLabel : getSeverityLabel(severity, t);
   const thumbnailUrl = preferThumbnail ? readCompactThumbnailUrl(device, allEntities) : undefined;
   const content = (
     <>
@@ -874,11 +886,12 @@ function SecureLane({
   onItemClick?: (device: DeviceWithType) => void;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
+  const { t } = useI18n();
   return (
     <NowLane
       items={items}
       tone="success"
-      emptyLabel="No secure devices."
+      emptyLabel={t('security.overview.noSecureDevices')}
       trailingLabelMode="status"
       showInlineStatus={false}
       emphasizeStatusBySecure
@@ -1065,6 +1078,7 @@ function DetailsSection({
   surface: ReturnType<typeof getThemeSurfaceTokens>;
 }) {
   const { theme } = useTheme();
+  const { t } = useI18n();
   const selectedGroup =
     groupSummaries.find((group) => group.id === selectedGroupId) ?? groupSummaries[0] ?? null;
 
@@ -1076,7 +1090,7 @@ function DetailsSection({
     <div className="space-y-4">
       <div
         role="tablist"
-        aria-label="Security detail groups"
+        aria-label={t('security.overview.detailGroups')}
         className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         <div className="flex w-max min-w-full flex-nowrap gap-2">
@@ -1143,6 +1157,7 @@ export function SecurityCameraDashboard({
   onRemoveEntity,
   surface,
 }: SecurityCameraDashboardProps) {
+  const { t } = useI18n();
   const breakpointCols = useBreakpointCols();
   const {
     outerRef: nowOuterRef,
@@ -1274,7 +1289,7 @@ export function SecurityCameraDashboard({
 
       <FlatSection
         id="now"
-        title="Now"
+        title={t('security.overview.now')}
         headerSuffix={<NowStatusBadges model={model.summary} />}
         isCollapsed={collapsedSections.now ?? false}
         onToggleCollapse={toggleSectionCollapse}
@@ -1305,7 +1320,7 @@ export function SecurityCameraDashboard({
                   <NowLane
                     items={model.summary.attentionItems}
                     tone="danger"
-                    emptyLabel="Nothing needs attention."
+                    emptyLabel={t('security.overview.nothingNeedsAttention')}
                     animateAttention
                     trailingLabelMode="status"
                     showInlineStatus={false}
@@ -1331,7 +1346,7 @@ export function SecurityCameraDashboard({
                 <NowLane
                   items={model.summary.liveItems}
                   tone="accent"
-                  emptyLabel="No live activity."
+                  emptyLabel={t('security.overview.noLiveActivity')}
                   trailingLabelMode="status"
                   showInlineStatus={false}
                   emphasizeStatusByActivity
@@ -1360,7 +1375,7 @@ export function SecurityCameraDashboard({
       {model.summary.totalEntities > 0 ? (
         <FlatSection
           id="details"
-          title="All Security"
+          title={t('security.overview.allSecurity')}
           count={model.summary.totalEntities}
           isCollapsed={collapsedSections.details ?? false}
           onToggleCollapse={toggleSectionCollapse}

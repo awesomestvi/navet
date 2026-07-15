@@ -25,8 +25,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@navet/app/components/ui/alert-dialog';
-import { useTheme } from '@navet/app/hooks';
+import { useI18n, useTheme } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
+import type { TranslateFn } from '@navet/app/i18n';
 import { integrationSecurityFeatureService } from '@navet/app/services/integration-security-feature.service';
 import type { NavetAlarmAction, NavetAlarmEntity } from '@navet/core/alarm-types';
 import {
@@ -98,32 +99,32 @@ function compareAlarms(left: NavetAlarmEntity, right: NavetAlarmEntity) {
   return left.name.localeCompare(right.name);
 }
 
-function getAlarmStateLabel(state: NavetAlarmEntity['state']) {
+function getAlarmStateLabel(state: NavetAlarmEntity['state'], t: TranslateFn) {
   switch (state) {
     case 'disarmed':
-      return 'Disarmed';
+      return t('security.alarm.state.disarmed');
     case 'armed_home':
-      return 'Armed Home';
+      return t('security.alarm.state.armedHome');
     case 'armed_away':
-      return 'Armed Away';
+      return t('security.alarm.state.armedAway');
     case 'armed_night':
-      return 'Armed Night';
+      return t('security.alarm.state.armedNight');
     case 'armed_vacation':
-      return 'Armed Vacation';
+      return t('security.alarm.state.armedVacation');
     case 'armed_custom_bypass':
-      return 'Custom Bypass';
+      return t('security.alarm.state.customBypass');
     case 'arming':
-      return 'Arming';
+      return t('security.alarm.state.arming');
     case 'pending':
-      return 'Pending';
+      return t('security.alarm.state.pending');
     case 'disarming':
-      return 'Disarming';
+      return t('security.alarm.state.disarming');
     case 'triggered':
-      return 'Triggered';
+      return t('security.alarm.state.triggered');
     case 'unavailable':
-      return 'Unavailable';
+      return t('common.unavailable');
     default:
-      return 'Unknown';
+      return t('security.alarm.state.unknown');
   }
 }
 
@@ -397,22 +398,22 @@ function getAlarmStateIcon(state: NavetAlarmEntity['state']) {
   }
 }
 
-function getActionLabel(action: NavetAlarmAction) {
+function getActionLabel(action: NavetAlarmAction, t: TranslateFn) {
   switch (action) {
     case 'arm_home':
-      return 'Arm Home';
+      return t('security.alarm.action.armHome');
     case 'arm_away':
-      return 'Arm Away';
+      return t('security.alarm.action.armAway');
     case 'arm_night':
-      return 'Arm Night';
+      return t('security.alarm.action.armNight');
     case 'arm_vacation':
-      return 'Arm Vacation';
+      return t('security.alarm.action.armVacation');
     case 'arm_custom_bypass':
-      return 'Custom Bypass';
+      return t('security.alarm.action.customBypass');
     case 'disarm':
-      return 'Disarm';
+      return t('security.alarm.action.disarm');
     case 'trigger':
-      return 'Emergency Trigger';
+      return t('security.alarm.action.trigger');
   }
 }
 
@@ -524,6 +525,7 @@ function isPostSubmitArmTransitionSatisfied(
 }
 
 export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardProps) {
+  const { t } = useI18n();
   const sortedAlarms = useMemo(() => [...alarms].sort(compareAlarms), [alarms]);
   const [selectedAlarmId, setSelectedAlarmId] = useState<string | null>(
     sortedAlarms[0]?.id ?? null
@@ -593,7 +595,7 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
     }
 
     if (requiresCode && code.trim().length === 0) {
-      toast.error('Enter a code before sending this action.');
+      toast.error(t('security.alarm.feedback.codeRequired'));
       return;
     }
 
@@ -605,7 +607,9 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
         setPostSubmitAction({ action, alarmId: selectedAlarm.id });
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to update the alarm.');
+      toast.error(
+        error instanceof Error ? error.message : t('security.alarm.feedback.updateFailed')
+      );
     } finally {
       clearCode();
       setPendingAction(null);
@@ -640,10 +644,12 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
   };
 
   const maskedCodeValue =
-    selectedAlarm.codeFormat === 'number' ? '•'.repeat(code.length) || 'No code entered' : null;
+    selectedAlarm.codeFormat === 'number'
+      ? '•'.repeat(code.length) || t('security.alarm.code.noneEntered')
+      : null;
   const selectorPillSize = 'small';
   const actionGridClassName = 'grid-cols-2';
-  const actionAwaitingCode = draftAction !== null ? getActionLabel(draftAction) : null;
+  const actionAwaitingCode = draftAction !== null ? getActionLabel(draftAction, t) : null;
   const isMedium = size === 'medium';
   const emergencyTriggerClassName = getEmergencyTriggerClassName(
     selectedAlarm.state,
@@ -700,7 +706,7 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
       <button
         type="button"
         key={action}
-        aria-label={getActionLabel(action)}
+        aria-label={getActionLabel(action, t)}
         disabled={isDisabledAction}
         className={`group relative flex overflow-hidden ${fullWidth ? 'flex-1' : 'w-full'} border transition-all duration-200 ${
           buttonBaseClassName
@@ -748,7 +754,9 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
             isPendingCurrentAction ? 'motion-safe:animate-pulse' : ''
           }`}
         >
-          {isPendingCurrentAction ? `${getActionLabel(action)}...` : getActionLabel(action)}
+          {isPendingCurrentAction
+            ? t('security.alarm.action.pending', { action: getActionLabel(action, t) })
+            : getActionLabel(action, t)}
         </span>
       </button>
     );
@@ -769,7 +777,7 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
       <BaseCard
         size={size}
         title={selectedAlarm.name}
-        subtitle={getAlarmStateLabel(selectedAlarm.state)}
+        subtitle={getAlarmStateLabel(selectedAlarm.state, t)}
         headerLeading={
           <EntityCardHeaderIcon
             IconComponent={AlarmIcon}
@@ -789,7 +797,7 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
               style={emergencyTriggerPalette.pillStyle}
               disabled
             >
-              Alarm Triggered
+              {t('security.alarm.triggeredBadge')}
             </InteractivePill>
           ) : supportedActions.includes('trigger') ? (
             <InteractivePill
@@ -801,7 +809,7 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
               disabled={unavailable || Boolean(pendingForSelectedAlarm)}
               onClick={() => void handleAction('trigger')}
             >
-              Emergency Trigger
+              {t('security.alarm.action.trigger')}
             </InteractivePill>
           ) : undefined
         }
@@ -818,7 +826,7 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
             }`}
           >
             {sortedAlarms.length > 1 ? (
-              <fieldset className="flex flex-wrap gap-2" aria-label="Alarm selector">
+              <fieldset className="flex flex-wrap gap-2" aria-label={t('security.alarm.selector')}>
                 {sortedAlarms.map((alarm) => (
                   <InteractivePill
                     key={alarm.id}
@@ -840,7 +848,9 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
               <div
                 className={`flex flex-wrap gap-x-4 gap-y-1 text-sm ${securitySurface.secondaryTextClassName}`}
               >
-                {selectedAlarm.changedBy ? <span>Changed by {selectedAlarm.changedBy}</span> : null}
+                {selectedAlarm.changedBy ? (
+                  <span>{t('security.alarm.changedBy', { name: selectedAlarm.changedBy })}</span>
+                ) : null}
               </div>
             ) : null}
 
@@ -874,7 +884,7 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
                 <div
                   className={`inline-flex max-w-[calc(100%-1rem)] items-center justify-center truncate rounded-full border border-white/12 bg-black/45 font-semibold text-white/92 backdrop-blur-md ${unavailableOverlayLabelClassName}`}
                 >
-                  Unavailable
+                  {t('common.unavailable')}
                 </div>
               </div>
             </>
@@ -890,19 +900,31 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
             clearCode();
           }
         }}
-        title={actionAwaitingCode ? `${actionAwaitingCode} code` : 'Alarm code'}
-        description={`Enter the code for ${selectedAlarm.name} to continue.`}
+        title={
+          actionAwaitingCode
+            ? t('security.alarm.code.actionTitle', { action: actionAwaitingCode })
+            : t('security.alarm.code.title')
+        }
+        description={t('security.alarm.code.description', { name: selectedAlarm.name })}
         theme={theme}
         overlayClassName={themeSurface.dialogBackdrop}
-        contentTitle={actionAwaitingCode ? `${actionAwaitingCode} code` : 'Alarm code'}
-        contentDescription={`Enter the code for ${selectedAlarm.name} to continue.`}
+        contentTitle={
+          actionAwaitingCode
+            ? t('security.alarm.code.actionTitle', { action: actionAwaitingCode })
+            : t('security.alarm.code.title')
+        }
+        contentDescription={t('security.alarm.code.description', { name: selectedAlarm.name })}
         maxWidth="sm"
         bodyPadding={false}
       >
         <CardDialogBody>
           <CardDialogHeader
-            title={actionAwaitingCode ? `${actionAwaitingCode} code` : 'Alarm code'}
-            description={`Enter the code for ${selectedAlarm.name} to continue.`}
+            title={
+              actionAwaitingCode
+                ? t('security.alarm.code.actionTitle', { action: actionAwaitingCode })
+                : t('security.alarm.code.title')
+            }
+            description={t('security.alarm.code.description', { name: selectedAlarm.name })}
             showRoomSelector={false}
             editableTitle={false}
           />
@@ -914,7 +936,7 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
                 autoComplete="off"
                 value={code}
                 onChange={(event) => setCode(event.target.value)}
-                placeholder="Enter alarm code"
+                placeholder={t('security.alarm.code.placeholder')}
                 disabled={Boolean(pendingForSelectedAlarm) || unavailable}
               />
             </div>
@@ -924,7 +946,7 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
                 role="status"
                 aria-live="polite"
                 aria-atomic="true"
-                aria-label="Entered code"
+                aria-label={t('security.alarm.code.entered')}
                 className={`${numpadDisplayClassName} mx-auto border border-white/10 bg-black/16 text-center ${securitySurface.primaryTextClassName}`}
               >
                 {maskedCodeValue}
@@ -946,7 +968,7 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
                           key={`${rowIndex}-${columnIndex}-${key}`}
                           variant="ghost"
                           size="small"
-                          aria-label={key === 'Cancel' ? 'Clear code' : undefined}
+                          aria-label={key === 'Cancel' ? t('security.alarm.code.clear') : undefined}
                           className={`${numpadKeyClassName} ${numpadButtonClassName}`}
                           disabled={unavailable || Boolean(pendingForSelectedAlarm)}
                           onClick={() => {
@@ -986,7 +1008,9 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
               }
               onClick={() => void (draftAction ? submitAction(draftAction) : undefined)}
             >
-              {actionAwaitingCode ? `Confirm ${actionAwaitingCode}` : 'Confirm'}
+              {actionAwaitingCode
+                ? t('security.alarm.code.confirmAction', { action: actionAwaitingCode })
+                : t('security.alarm.code.confirm')}
             </Button>
           </CardDialogFooter>
         </CardDialogBody>
@@ -1002,15 +1026,16 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Trigger this alarm remotely?</AlertDialogTitle>
+            <AlertDialogTitle>{t('security.alarm.triggerConfirm.title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This is an emergency action and should only be used when you intentionally want to
-              trigger the alarm.
+              {t('security.alarm.triggerConfirm.description')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmedTrigger}>Trigger alarm</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmedTrigger}>
+              {t('security.alarm.triggerConfirm.action')}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

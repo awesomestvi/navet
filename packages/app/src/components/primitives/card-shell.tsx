@@ -6,6 +6,7 @@ import type {
 import { BaseCard } from '@navet/app/components/primitives/base-card';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { CardSizeSelector } from '@navet/app/components/shared/card-size-selector';
+import { useI18n } from '@navet/app/hooks';
 import type { ReactNode } from 'react';
 
 export interface CardShellProps {
@@ -101,6 +102,7 @@ export function CardShell({
   underlay,
   className = '',
 }: CardShellProps) {
+  const { t } = useI18n();
   const showEditOverlay = isEditMode && !!onSizeChange && !hideSizeSelector;
 
   return (
@@ -155,7 +157,7 @@ export function CardShell({
             type="button"
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => onSettingsOpenChange(false)}
-            aria-label="Close dialog"
+            aria-label={t('common.closeDialog')}
           />
           <div className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto p-4">
             {settingsDialog}

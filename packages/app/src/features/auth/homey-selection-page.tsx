@@ -4,12 +4,13 @@ import { isHomeyAuthSession } from '@navet/app/auth/types';
 import { Button } from '@navet/app/components/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@navet/app/components/ui/utils';
-import { useTheme } from '@navet/app/hooks';
+import { useI18n, useTheme } from '@navet/app/hooks';
 import { getPublicAssetUrl } from '@navet/app/utils/public-assets';
 import { AlertCircle, ArrowRight, Home, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
 export function HomeySelectionPage() {
+  const { t } = useI18n();
   const { session, replaceSession, logout } = useAuthSession();
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -44,7 +45,9 @@ export function HomeySelectionPage() {
       const nextSession = await selectHomey(homeyId);
       replaceSession(nextSession);
     } catch (selectionError) {
-      setError(selectionError instanceof Error ? selectionError.message : 'Unable to select Homey');
+      setError(
+        selectionError instanceof Error ? selectionError.message : t('login.homeySelection.error')
+      );
     } finally {
       setSubmittingId(null);
     }
@@ -66,11 +69,10 @@ export function HomeySelectionPage() {
           <h1
             className={`mx-auto mt-5 max-w-xl text-3xl font-semibold tracking-tight md:text-4xl ${textColor}`}
           >
-            Choose a Homey
+            {t('login.homeySelection.title')}
           </h1>
           <p className={`mx-auto mt-3 max-w-md text-sm leading-relaxed ${mutedColor}`}>
-            Navet found multiple Homeys in your Athom account. Pick the one this dashboard should
-            use.
+            {t('login.homeySelection.description')}
           </p>
 
           <div
@@ -157,7 +159,7 @@ export function HomeySelectionPage() {
               onClick={() => void logout()}
               className="relative mt-4 w-full rounded-full"
             >
-              Sign out
+              {t('common.logout')}
             </Button>
           </div>
         </div>

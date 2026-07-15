@@ -1,3 +1,5 @@
+import { useI18n } from '@navet/app/hooks';
+import { getLocaleForLanguage } from '@navet/app/i18n';
 import { useMemo } from 'react';
 import type { CalendarEvent, CalendarEventGroup } from './types';
 
@@ -6,6 +8,12 @@ function toIsoDate(baseDate: Date, dayOffset: number, hours: number, minutes = 0
   nextDate.setDate(baseDate.getDate() + dayOffset);
   nextDate.setHours(hours, minutes, 0, 0);
   return nextDate.toISOString();
+}
+
+function formatMockTime(locale: string, hours: number, minutes = 0) {
+  return new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' }).format(
+    new Date(2000, 0, 1, hours, minutes)
+  );
 }
 
 function groupEventsByDay(events: CalendarEvent[]): CalendarEventGroup[] {
@@ -33,16 +41,18 @@ function groupEventsByDay(events: CalendarEvent[]): CalendarEventGroup[] {
 }
 
 export function useCalendarData(events?: CalendarEvent[]) {
+  const { language, t } = useI18n();
   const currentDate = useMemo(() => new Date(), []);
+  const locale = getLocaleForLanguage(language);
 
   const mockEvents = useMemo<CalendarEvent[]>(
     () => [
       {
         id: '1',
-        title: 'Friday planning',
-        startTime: '9:00 AM',
-        endTime: '9:30 AM',
-        timeDisplay: '9:00 AM',
+        title: t('calendar.mock.fridayPlanning'),
+        startTime: formatMockTime(locale, 9),
+        endTime: formatMockTime(locale, 9, 30),
+        timeDisplay: formatMockTime(locale, 9),
         startDateTime: toIsoDate(currentDate, 0, 9, 0),
         endDateTime: toIsoDate(currentDate, 0, 9, 30),
         type: 'event',
@@ -52,36 +62,36 @@ export function useCalendarData(events?: CalendarEvent[]) {
       },
       {
         id: '2',
-        title: 'Groceries pickup',
-        startTime: '1:00 PM',
-        endTime: '1:30 PM',
-        timeDisplay: '1:00 PM',
+        title: t('calendar.mock.groceriesPickup'),
+        startTime: formatMockTime(locale, 13),
+        endTime: formatMockTime(locale, 13, 30),
+        timeDisplay: formatMockTime(locale, 13),
         startDateTime: toIsoDate(currentDate, 0, 13, 0),
         endDateTime: toIsoDate(currentDate, 0, 13, 30),
-        location: 'Market Hall',
+        location: t('calendar.mock.marketHall'),
         type: 'event',
         color: 'bg-purple-500',
         sortKey: toIsoDate(currentDate, 0, 13, 0),
       },
       {
         id: '3',
-        title: 'Food waste pickup tomorrow',
+        title: t('calendar.mock.foodWastePickup'),
         startTime: '--',
         endTime: '--',
         timeDisplay: '--',
         startDateTime: toIsoDate(currentDate, 1, 0, 0),
         isAllDay: true,
-        location: 'Home',
+        location: t('calendar.mock.home'),
         type: 'event',
         color: 'bg-green-500',
         sortKey: toIsoDate(currentDate, 1, 0, 0),
       },
       {
         id: '4',
-        title: 'Appointment: Handledarkurs',
-        startTime: '5:00 PM',
-        endTime: '8:10 PM',
-        timeDisplay: '5:00 PM',
+        title: t('calendar.mock.drivingCourse'),
+        startTime: formatMockTime(locale, 17),
+        endTime: formatMockTime(locale, 20, 10),
+        timeDisplay: formatMockTime(locale, 17),
         startDateTime: toIsoDate(currentDate, 3, 17, 0),
         endDateTime: toIsoDate(currentDate, 3, 20, 10),
         location: 'LBS Kreativa Gymnasiet Bredgatan 10, 222 21 Lund',
@@ -91,19 +101,19 @@ export function useCalendarData(events?: CalendarEvent[]) {
       },
       {
         id: '5',
-        title: 'Swimming lessons',
-        startTime: '3:30 PM',
-        endTime: '4:00 PM',
-        timeDisplay: '3:30 PM',
+        title: t('calendar.mock.swimmingLessons'),
+        startTime: formatMockTime(locale, 15, 30),
+        endTime: formatMockTime(locale, 16),
+        timeDisplay: formatMockTime(locale, 15, 30),
         startDateTime: toIsoDate(currentDate, 3, 15, 30),
         endDateTime: toIsoDate(currentDate, 3, 16, 0),
-        location: 'Tillfallig Simhall',
+        location: t('calendar.mock.swimmingPool'),
         type: 'event',
         color: 'bg-indigo-500',
         sortKey: toIsoDate(currentDate, 3, 15, 30),
       },
     ],
-    [currentDate]
+    [currentDate, locale, t]
   );
 
   const sourceEvents = useMemo(() => events ?? mockEvents, [events, mockEvents]);

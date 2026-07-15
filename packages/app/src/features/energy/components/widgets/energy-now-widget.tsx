@@ -85,7 +85,7 @@ export const EnergyNowWidget = memo(function EnergyNowWidget({
               <div
                 className={`flex h-[118px] items-center justify-center rounded-2xl border border-dashed px-4 text-center text-sm ${surface.border} ${surface.textMuted}`}
               >
-                Not enough data to show sparkline yet.
+                {t('energy.dashboard.sparklineEmpty')}
               </div>
             )}
           </div>

@@ -18,7 +18,7 @@ import { Toaster } from './components/ui/sonner';
 import { HomeySelectionPage } from './features/auth/homey-selection-page';
 import { LoginPage } from './features/auth/login-page';
 import { DashboardPage } from './features/dashboard';
-import { initializeHabitEngine, stopHabitEngine } from './features/habits';
+import { initializeHabitEngine, stopHabitEngine, useLocalHabitsFeature } from './features/habits';
 import {
   useAccentColor,
   useCurrentIntegrationConnectionState,
@@ -40,7 +40,6 @@ import { startNavigationStoreSync } from './stores/navigation-store';
 import { initializeSearchStore } from './stores/search-store';
 import { appErrorSelectors, integrationSelectors, settingsSelectors } from './stores/selectors';
 import { resolveEffectsQuality } from './utils/effects-quality';
-import { isProductionEnvironment } from './utils/environment';
 import { clearViewportCssVars, syncViewportCssVars } from './utils/viewport';
 
 function getConnectionAttemptKey(session: AuthSession) {
@@ -76,6 +75,7 @@ function AppContent() {
   );
   const setProviderSessions = useCurrentIntegrationStore(integrationSelectors.setProviderSessions);
   const accentColor = useAccentColor();
+  const [localHabitsFeatureEnabled] = useLocalHabitsFeature();
   const { disableAnimations, lowPowerMode, effectsQuality, keepDeviceAwake } = useSettingsStore(
     useShallow(settingsSelectors.displaySettings)
   );
@@ -410,17 +410,20 @@ function AppContent() {
 
   useEffect(() => {
     initializeSearchStore();
-    if (!isProductionEnvironment()) {
-      initializeHabitEngine();
-    }
     const stopNavigationSync = startNavigationStoreSync();
     return () => {
-      if (!isProductionEnvironment()) {
-        stopHabitEngine();
-      }
       stopNavigationSync();
     };
   }, []);
+
+  useEffect(() => {
+    if (!localHabitsFeatureEnabled) {
+      return;
+    }
+
+    initializeHabitEngine();
+    return stopHabitEngine;
+  }, [localHabitsFeatureEnabled]);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);

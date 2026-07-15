@@ -2,6 +2,13 @@
  * Calendar utilities
  */
 
+import { LruCache } from '@navet/app/utils/lru-cache';
+
+const CALENDAR_TIME_FORMATTER_CACHE_MAX_ENTRIES = 16;
+const calendarTimeFormatterCache = new LruCache<string, Intl.DateTimeFormat>(
+  CALENDAR_TIME_FORMATTER_CACHE_MAX_ENTRIES
+);
+
 export function parseCalendarDate(value: unknown): Date | null {
   if (typeof value === 'string' && value) {
     const parsed = new Date(value);
@@ -33,16 +40,15 @@ export function formatCalendarTime(
   use24HourTime = false
 ): string {
   if (!date) return '--';
-  const timeFormatterByLocale = new Map<string, Intl.DateTimeFormat>();
   const formatterKey = `${locale}:${use24HourTime ? '24' : '12'}`;
-  let formatter = timeFormatterByLocale.get(formatterKey);
+  let formatter = calendarTimeFormatterCache.get(formatterKey);
   if (!formatter) {
     formatter = new Intl.DateTimeFormat(locale, {
       hour: 'numeric',
       minute: '2-digit',
       hour12: !use24HourTime,
     });
-    timeFormatterByLocale.set(formatterKey, formatter);
+    calendarTimeFormatterCache.set(formatterKey, formatter);
   }
   return formatter.format(date);
 }

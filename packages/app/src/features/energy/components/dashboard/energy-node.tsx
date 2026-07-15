@@ -5,7 +5,7 @@ import type {
   EnergyFlowSourceType,
 } from '@navet/app/features/energy/types/energy.types';
 import { formatEnergyNodeValue } from '@navet/app/features/energy/utils/energy-formatters';
-import { useTheme } from '@navet/app/hooks';
+import { useI18n, useTheme } from '@navet/app/hooks';
 import { Battery, Flame, Home, Leaf, SunMedium, TowerControl } from 'lucide-react';
 import { type CSSProperties, memo } from 'react';
 
@@ -45,6 +45,7 @@ export const EnergyNode = memo(function EnergyNode({
   style,
   onSelect,
 }: EnergyNodeProps) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const Icon = getNodeIcon(node.icon);
@@ -81,7 +82,9 @@ export const EnergyNode = memo(function EnergyNode({
         </div>
         {node.todayValue !== undefined ? (
           <Text tone="muted" className="mt-1 text-xs">
-            Today {formatEnergyNodeValue(node.todayValue, node.todayUnit)} {node.todayUnit}
+            {t('energy.dashboard.flow.todayValue', {
+              value: `${formatEnergyNodeValue(node.todayValue, node.todayUnit)} ${node.todayUnit}`,
+            })}
           </Text>
         ) : null}
       </div>

@@ -5,10 +5,12 @@ import type {
   PlatformEntitySnapshotMap,
 } from '@navet/app/platform/provider-feature-models';
 import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
+import type { IntegrationStore } from '@navet/app/stores/integration-store';
 import { integrationSelectors } from '@navet/app/stores/selectors';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
 import { areStringArraysEqual } from '@navet/app/utils/structural-equality';
+import type { NavetEntity } from '@navet/core/types';
 import { useMemo, useRef, useSyncExternalStore } from 'react';
 import { useIntegrationStore } from './use-integration-store';
 import { useProviderEntityModel } from './use-provider-device';
@@ -221,6 +223,82 @@ export function useProviderEntitySnapshots(options?: {
   return useProviderEntityRuntimeSnapshots(resolvedProviderId, enabled);
 }
 
+/**
+ * Subscribes to entity domains while preserving the filtered map reference
+ * when provider updates affect only entities outside those domains.
+ */
+export function useProviderEntitySnapshotsByPrefix(
+  prefixes: readonly string[],
+  options?: {
+    providerId?: IntegrationProviderId;
+    enabled?: boolean;
+  }
+): PlatformEntitySnapshotMap {
+  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
+  const resolvedProviderId = options?.providerId ?? currentProviderId;
+  const enabled = options?.enabled ?? true;
+  const normalizedPrefixes = useMemo(
+    () => prefixes.map((prefix) => prefix.trim()).filter(Boolean),
+    [prefixes]
+  );
+  const runtimeService = resolvedProviderId
+    ? (getProviderRuntimeRegistration(resolvedProviderId).entityRuntimeService ?? null)
+    : null;
+  const filterKey = `${resolvedProviderId ?? ''}\n${normalizedPrefixes.join('\n')}`;
+  const previousFilterKeyRef = useRef('');
+  const previousSourceSnapshotsRef = useRef<PlatformEntitySnapshotMap | null | undefined>(
+    undefined
+  );
+  const previousSnapshotsRef = useRef<PlatformEntitySnapshotMap>(EMPTY_ENTITY_SNAPSHOTS);
+
+  return useSyncExternalStore(
+    enabled && runtimeService ? runtimeService.subscribeEntitySnapshots : subscribeNoop,
+    () => {
+      if (!enabled || !runtimeService || normalizedPrefixes.length === 0) {
+        previousSnapshotsRef.current = EMPTY_ENTITY_SNAPSHOTS;
+        return EMPTY_ENTITY_SNAPSHOTS;
+      }
+
+      const snapshots = runtimeService.getEntitySnapshots();
+      if (!snapshots) {
+        previousFilterKeyRef.current = filterKey;
+        previousSourceSnapshotsRef.current = snapshots;
+        previousSnapshotsRef.current = EMPTY_ENTITY_SNAPSHOTS;
+        return EMPTY_ENTITY_SNAPSHOTS;
+      }
+
+      if (
+        previousFilterKeyRef.current === filterKey &&
+        previousSourceSnapshotsRef.current === snapshots
+      ) {
+        return previousSnapshotsRef.current;
+      }
+
+      const nextSnapshots: PlatformEntitySnapshotMap = {};
+      for (const [entityId, snapshot] of Object.entries(snapshots)) {
+        if (normalizedPrefixes.some((prefix) => entityId.startsWith(prefix))) {
+          nextSnapshots[entityId] = snapshot;
+        }
+      }
+
+      const previousSnapshots = previousSnapshotsRef.current;
+      const nextEntityIds = Object.keys(nextSnapshots);
+      previousFilterKeyRef.current = filterKey;
+      previousSourceSnapshotsRef.current = snapshots;
+      if (
+        Object.keys(previousSnapshots).length === nextEntityIds.length &&
+        nextEntityIds.every((entityId) => previousSnapshots[entityId] === nextSnapshots[entityId])
+      ) {
+        return previousSnapshots;
+      }
+
+      previousSnapshotsRef.current = nextSnapshots;
+      return nextSnapshots;
+    },
+    () => EMPTY_ENTITY_SNAPSHOTS
+  );
+}
+
 export function useProviderEntityRegistryEntry(
   entityId: string
 ): PlatformEntityRegistryEntry | undefined {
@@ -279,26 +357,38 @@ export function useProviderEntityIdsByPrefix(
         .sort((left, right) => left.localeCompare(right)),
     [prefixes]
   );
+  const selectEntityIds = useMemo(() => {
+    let previousProviderEntities: Record<string, NavetEntity> | undefined;
+    let previousEntityIds = EMPTY_ENTITY_IDS;
 
-  return useIntegrationStore((state) => {
-    if (!enabled || !resolvedProviderId || normalizedPrefixes.length === 0) {
-      return EMPTY_ENTITY_IDS;
-    }
+    return (state: IntegrationStore) => {
+      if (!enabled || !resolvedProviderId || normalizedPrefixes.length === 0) {
+        return EMPTY_ENTITY_IDS;
+      }
 
-    const providerEntities = state.providerEntitiesByProviderId[resolvedProviderId];
-    if (!providerEntities) {
-      return EMPTY_ENTITY_IDS;
-    }
+      const providerEntities = state.providerEntitiesByProviderId[resolvedProviderId];
+      if (!providerEntities) {
+        return EMPTY_ENTITY_IDS;
+      }
 
-    return Object.values(providerEntities)
-      .map((entity) => entity.externalId)
-      .filter(
-        (entityId): entityId is string =>
-          typeof entityId === 'string' &&
-          normalizedPrefixes.some((prefix) => entityId.startsWith(prefix))
-      )
-      .sort((left, right) => left.localeCompare(right));
-  }, areStringArraysEqual);
+      if (providerEntities === previousProviderEntities) {
+        return previousEntityIds;
+      }
+
+      previousProviderEntities = providerEntities;
+      previousEntityIds = Object.values(providerEntities)
+        .map((entity) => entity.externalId)
+        .filter(
+          (entityId): entityId is string =>
+            typeof entityId === 'string' &&
+            normalizedPrefixes.some((prefix) => entityId.startsWith(prefix))
+        )
+        .sort((left, right) => left.localeCompare(right));
+      return previousEntityIds;
+    };
+  }, [enabled, normalizedPrefixes, resolvedProviderId]);
+
+  return useIntegrationStore(selectEntityIds, areStringArraysEqual);
 }
 
 export function useProviderEntityRegistryEntries(options?: {
@@ -338,16 +428,11 @@ export function useProviderEntityRegistryEntriesByIds(
         return EMPTY_ENTITY_REGISTRY;
       }
 
+      const registryEntriesById = new Map(
+        runtimeService.getEntityRegistryEntries().map((entry) => [entry.entityId, entry])
+      );
       const nextEntries = resolvedEntityIds
-        .map((entityId) => {
-          if (runtimeService.getEntityRegistryEntry) {
-            return runtimeService.getEntityRegistryEntry(entityId);
-          }
-
-          return runtimeService
-            .getEntityRegistryEntries()
-            .find((entry) => entry.entityId === entityId);
-        })
+        .map((entityId) => registryEntriesById.get(entityId))
         .filter((entry): entry is PlatformEntityRegistryEntry => entry !== undefined);
       const previousEntries = previousEntriesRef.current;
       if (
@@ -443,12 +528,7 @@ export function useProviderEntitySnapshotRecord(
 
       const previousRecord = previousRecordRef.current;
       const nextRecord = Object.fromEntries(
-        resolvedEntityIds.map((entityId) => [
-          entityId,
-          runtimeService.getEntitySnapshot
-            ? runtimeService.getEntitySnapshot(entityId)
-            : snapshotMap[entityId],
-        ])
+        resolvedEntityIds.map((entityId) => [entityId, snapshotMap[entityId]])
       );
       const unchanged =
         Object.keys(previousRecord).length === resolvedEntityIds.length &&

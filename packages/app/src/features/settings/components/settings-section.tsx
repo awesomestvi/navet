@@ -9,7 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@navet/app/components/ui/alert-dialog';
-import { isDevOrLocalBuild } from '@navet/app/constants/app-build-metadata';
+import { useLocalHabitsFeature } from '@navet/app/features/habits';
 import { useI18n, usePersistedState } from '@navet/app/hooks';
 import {
   Brain,
@@ -48,24 +48,17 @@ interface SettingsSectionProps {
 }
 
 const SETTINGS_TAB_STORAGE_KEY = 'navet-settings-active-tab';
-const LOCAL_HABITS_TAB_STORAGE_KEY = 'navet-settings-local-habits-tab-enabled';
-
 export function SettingsSection({ hiddenTabs = [] }: SettingsSectionProps) {
   const { t } = useI18n();
   const controller = useSettingsSectionController();
   const hiddenTabSet = new Set<string>(hiddenTabs);
-  const canShowLocalHabitsTab = isDevOrLocalBuild();
-  const [localHabitsTabEnabled, setLocalHabitsTabEnabled] = usePersistedState<boolean>(
-    LOCAL_HABITS_TAB_STORAGE_KEY,
-    false
-  );
-  const showLocalHabitsTab = canShowLocalHabitsTab && localHabitsTabEnabled;
+  const [localHabitsEnabled, setLocalHabitsEnabled] = useLocalHabitsFeature();
   const navItems = [
     { id: 'appearance', label: t('settings.nav.appearance'), icon: Palette },
     { id: 'localization', label: t('settings.nav.localization'), icon: Languages },
     { id: 'interaction', label: t('settings.nav.interaction'), icon: Hand },
     { id: 'dashboard', label: t('settings.nav.dashboard'), icon: LayoutGrid },
-    ...(showLocalHabitsTab ? [{ id: 'habits', label: t('settings.nav.habits'), icon: Brain }] : []),
+    ...(localHabitsEnabled ? [{ id: 'habits', label: t('settings.nav.habits'), icon: Brain }] : []),
     { id: 'experimental', label: t('settings.nav.experimental'), icon: FlaskConical },
     { id: 'system', label: t('settings.nav.system'), icon: Server },
     { id: 'project', label: t('settings.nav.project'), icon: Info },
@@ -126,7 +119,7 @@ export function SettingsSection({ hiddenTabs = [] }: SettingsSectionProps) {
           <TabPanel value="dashboard">
             <SettingsDashboardSection controller={controller} />
           </TabPanel>
-          {showLocalHabitsTab ? (
+          {localHabitsEnabled ? (
             <TabPanel value="habits">
               <SettingsHabitsSection controller={controller} />
             </TabPanel>
@@ -134,8 +127,8 @@ export function SettingsSection({ hiddenTabs = [] }: SettingsSectionProps) {
           <TabPanel value="experimental">
             <SettingsExperimentalSection
               controller={controller}
-              localHabitsTabEnabled={localHabitsTabEnabled}
-              onLocalHabitsTabEnabledChange={setLocalHabitsTabEnabled}
+              localHabitsEnabled={localHabitsEnabled}
+              onLocalHabitsEnabledChange={setLocalHabitsEnabled}
             />
           </TabPanel>
           {hiddenTabSet.has('system') ? null : (

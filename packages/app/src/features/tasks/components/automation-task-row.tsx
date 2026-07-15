@@ -1,5 +1,5 @@
 import { dispatchEntityCommand } from '@navet/app/commands';
-import { Button, IconButton, Panel, Switch, Tag } from '@navet/app/components/primitives';
+import { Button, IconButton, Panel, Tag } from '@navet/app/components/primitives';
 import { EntityCardHeader } from '@navet/app/components/primitives/entity-card-header';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
@@ -316,12 +316,27 @@ export function AutomationTaskRow({ automation, shouldReduceMotion }: Automation
         </div>
 
         <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
-          <Switch
-            checked={automation.enabled}
-            disabled={isUpdatingEnabled}
-            onCheckedChange={handleEnabledChange}
-            aria-label={t('tasks.automation.toggleAutomation', { name: automation.name })}
-          />
+          <Button
+            variant="secondary"
+            size="small"
+            leading={
+              automation.enabled ? (
+                <PowerOff className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Power className="h-4 w-4" aria-hidden="true" />
+              )
+            }
+            loading={isUpdatingEnabled}
+            onClick={() => handleEnabledChange(!automation.enabled)}
+            aria-label={
+              automation.enabled
+                ? t('tasks.automation.disableAutomation', { name: automation.name })
+                : t('tasks.automation.enableAutomation', { name: automation.name })
+            }
+            className="min-w-24 flex-1 sm:flex-none"
+          >
+            {automation.enabled ? t('tasks.automation.disable') : t('tasks.automation.enable')}
+          </Button>
           <Button
             variant="secondary"
             size="small"

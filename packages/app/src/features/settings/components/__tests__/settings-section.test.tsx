@@ -1,24 +1,14 @@
 import { renderWithProviders } from '@navet/app/test/render';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { SettingsSection } from '../settings-section';
-
-const { isDevOrLocalBuildMock } = vi.hoisted(() => ({
-  isDevOrLocalBuildMock: vi.fn(() => true),
-}));
-
-vi.mock('@navet/app/constants/app-build-metadata', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@navet/app/constants/app-build-metadata')>()),
-  isDevOrLocalBuild: isDevOrLocalBuildMock,
-}));
 
 describe('SettingsSection', () => {
   beforeEach(() => {
     localStorage.clear();
-    isDevOrLocalBuildMock.mockReturnValue(true);
   });
 
-  it('shows the habits tab after enabling it from experimental in dev builds', () => {
+  it('shows the habits tab after enabling the production-safe experimental feature', () => {
     renderWithProviders(<SettingsSection />);
 
     expect(screen.queryByRole('tab', { name: 'Habits' })).not.toBeInTheDocument();
@@ -51,15 +41,5 @@ describe('SettingsSection', () => {
     renderWithProviders(<SettingsSection />);
 
     expect(screen.getByRole('heading', { name: 'System' })).toBeInTheDocument();
-  });
-
-  it('hides local habits in non-dev builds', () => {
-    isDevOrLocalBuildMock.mockReturnValue(false);
-
-    renderWithProviders(<SettingsSection />);
-
-    expect(screen.queryByRole('tab', { name: 'Habits' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('tab', { name: 'Experimental' }));
-    expect(screen.queryByRole('group', { name: 'Local habits' })).not.toBeInTheDocument();
   });
 });

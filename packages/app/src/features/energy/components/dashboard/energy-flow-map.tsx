@@ -11,7 +11,7 @@ import {
   formatEnergyPercent,
   formatEnergyValue,
 } from '@navet/app/features/energy/utils/energy-formatters';
-import { useTheme } from '@navet/app/hooks';
+import { useI18n, useTheme } from '@navet/app/hooks';
 import { memo, useMemo } from 'react';
 import { EnergyBeam } from './energy-beam';
 import { EnergyNode } from './energy-node';
@@ -60,6 +60,7 @@ export const EnergyFlowMap = memo(function EnergyFlowMap({
   onNodeSelect,
   staticBeams = false,
 }: EnergyFlowMapProps) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const railColor =
@@ -180,16 +181,18 @@ export const EnergyFlowMap = memo(function EnergyFlowMap({
           <div
             className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
           >
-            Energy Flow
+            {t('energy.dashboard.flow.title')}
           </div>
           <div className={`mt-2 text-xl font-semibold tracking-tight ${surface.textPrimary}`}>
-            {hasStorageOrExport ? 'Supply, storage, and export in one view' : 'Grid to home load'}
+            {hasStorageOrExport
+              ? t('energy.dashboard.flow.fullTitle')
+              : t('energy.dashboard.flow.simpleTitle')}
           </div>
         </div>
         <Text tone="muted" className="max-w-xs text-right text-sm leading-6">
           {hasStorageOrExport
-            ? 'Inactive paths stay quiet. Motion falls back to static beams for reduced-motion and low-power modes.'
-            : 'Live grid import is shown when Home Assistant exposes current demand.'}
+            ? t('energy.dashboard.flow.fullDescription')
+            : t('energy.dashboard.flow.simpleDescription')}
         </Text>
       </div>
 
@@ -198,7 +201,7 @@ export const EnergyFlowMap = memo(function EnergyFlowMap({
           viewBox="0 0 100 100"
           className="absolute inset-0 h-full w-full"
           role="img"
-          aria-label="Energy flow map"
+          aria-label={t('energy.dashboard.flow.aria')}
         >
           {railFlows.map((flow) => (
             <EnergyBeam
@@ -255,7 +258,9 @@ export const EnergyFlowMap = memo(function EnergyFlowMap({
             </div>
             {node.todayValue !== undefined ? (
               <div className={`mt-1 text-sm ${surface.textMuted}`}>
-                Today {formatEnergyNodeValue(node.todayValue, node.todayUnit)} {node.todayUnit}
+                {t('energy.dashboard.flow.todayValue', {
+                  value: `${formatEnergyNodeValue(node.todayValue, node.todayUnit)} ${node.todayUnit}`,
+                })}
               </div>
             ) : null}
           </div>
@@ -316,7 +321,9 @@ export const EnergyFlowMap = memo(function EnergyFlowMap({
               {exportNode.label}
             </div>
             <div className={`mt-1 text-sm ${surface.textSecondary}`}>
-              {formatEnergyValue(exportNode.valueKw)} kW export
+              {t('energy.dashboard.flow.exportValue', {
+                value: formatEnergyValue(exportNode.valueKw),
+              })}
             </div>
           </div>
         ) : null}

@@ -1,3 +1,4 @@
+import { LOCAL_HABITS_FEATURE_STORAGE_KEY } from '@navet/app/features/habits';
 import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
 import { automationEntityFactory } from '@navet/app/test/fixtures/home-assistant/entities/automation';
 import { lightEntityFactory } from '@navet/app/test/fixtures/home-assistant/entities/light';
@@ -11,10 +12,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { callServiceMock } = vi.hoisted(() => ({
   callServiceMock: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock('@navet/app/utils/environment', () => ({
-  isProductionEnvironment: vi.fn(() => false),
 }));
 
 function getDomain(entityId: string) {
@@ -72,7 +69,6 @@ vi.mock('@navet/app/commands', () => ({
 }));
 
 import { TasksSection } from '@navet/app/features/tasks/index';
-import { isProductionEnvironment } from '@navet/app/utils/environment';
 
 function setRoutineEntities() {
   const automationCoffee = automationEntityFactory({
@@ -158,7 +154,6 @@ describe('TasksSection', () => {
   beforeEach(async () => {
     await resetAppStores();
     callServiceMock.mockClear();
-    vi.mocked(isProductionEnvironment).mockReturnValue(false);
   });
 
   it('renders a loading state before Home Assistant entities hydrate', () => {
@@ -239,14 +234,19 @@ describe('TasksSection', () => {
     expect(screen.getAllByText('Needs attention').length).toBeGreaterThan(0);
   });
 
-  it('hides habit insights in production', () => {
-    vi.mocked(isProductionEnvironment).mockReturnValue(true);
+  it('shows habit insights only after the experimental feature is enabled', () => {
     setRoutineEntities();
 
-    renderWithProviders(<TasksSection />);
+    const firstRender = renderWithProviders(<TasksSection />);
 
     expect(screen.queryByText('Suggested routines')).not.toBeInTheDocument();
     expect(screen.getAllByText('Automations').length).toBeGreaterThan(0);
+
+    firstRender.unmount();
+    localStorage.setItem(LOCAL_HABITS_FEATURE_STORAGE_KEY, JSON.stringify(true));
+    renderWithProviders(<TasksSection />);
+
+    expect(screen.getByText('Suggested routines')).toBeInTheDocument();
   });
 
   it('filters automations with active and disabled pills', () => {
@@ -311,8 +311,8 @@ describe('TasksSection', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Run Movie time' }));
     fireEvent.click(screen.getByRole('button', { name: 'Run Good night' }));
     fireEvent.click(screen.getByRole('button', { name: /Automations/ }));
-    fireEvent.click(screen.getByRole('switch', { name: 'Toggle Brew coffee' }));
-    fireEvent.click(screen.getByRole('switch', { name: 'Toggle Night mode' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Disable Brew coffee' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Enable Night mode' }));
 
     await waitFor(() => {
       expect(callServiceMock).toHaveBeenNthCalledWith(

@@ -1,5 +1,6 @@
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { useI18n, usePersistedState, useProviderCalendarDevicesCollection } from '@navet/app/hooks';
+import { subscribeVisibilityAwareTask } from '@navet/app/utils/visibility-aware-scheduler';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   getCalendarEventSortValue,
@@ -38,13 +39,10 @@ export function useCalendarCardSources(cardId?: string, fallbackEvents: Calendar
   const lastResolvedSelectedEventsRef = useRef<CalendarEvent[]>(fallbackEvents);
 
   useEffect(() => {
-    const timerId = window.setInterval(() => {
-      setTimeWindowTick(Date.now());
-    }, CALENDAR_TIME_WINDOW_REFRESH_MS);
-
-    return () => {
-      window.clearInterval(timerId);
-    };
+    return subscribeVisibilityAwareTask(
+      () => setTimeWindowTick(Date.now()),
+      CALENDAR_TIME_WINDOW_REFRESH_MS
+    );
   }, []);
 
   const availableCalendars = useMemo(

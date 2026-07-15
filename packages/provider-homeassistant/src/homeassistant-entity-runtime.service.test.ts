@@ -233,6 +233,41 @@ describe('homeAssistantEntityRuntimeService', () => {
     expect(secondSnapshot).toBe(firstSnapshot);
   });
 
+  it('replaces the entity map when an entity is removed while reusing retained snapshots', () => {
+    state.entities = {
+      'sensor.kitchen_temperature': {
+        entity_id: 'sensor.kitchen_temperature',
+        state: '21',
+        attributes: { unit_of_measurement: 'C' },
+        last_changed: '2026-05-30T10:00:00.000Z',
+        last_updated: '2026-05-30T10:00:00.000Z',
+        context: { id: 'ctx-1', parent_id: null, user_id: null },
+      },
+      'sensor.hall_temperature': {
+        entity_id: 'sensor.hall_temperature',
+        state: '19',
+        attributes: { unit_of_measurement: 'C' },
+        last_changed: '2026-05-30T10:00:00.000Z',
+        last_updated: '2026-05-30T10:00:00.000Z',
+        context: { id: 'ctx-2', parent_id: null, user_id: null },
+      },
+    };
+
+    const firstSnapshots = homeAssistantEntityRuntimeService.getEntitySnapshots();
+
+    state.entities = {
+      'sensor.kitchen_temperature': state.entities['sensor.kitchen_temperature'],
+    };
+
+    const secondSnapshots = homeAssistantEntityRuntimeService.getEntitySnapshots();
+
+    expect(secondSnapshots).not.toBe(firstSnapshots);
+    expect(secondSnapshots?.['sensor.kitchen_temperature']).toBe(
+      firstSnapshots?.['sensor.kitchen_temperature']
+    );
+    expect(secondSnapshots?.['sensor.hall_temperature']).toBeUndefined();
+  });
+
   it('reuses registry entry references when cloned registry payloads are semantically unchanged', () => {
     state.entityRegistry = [
       {

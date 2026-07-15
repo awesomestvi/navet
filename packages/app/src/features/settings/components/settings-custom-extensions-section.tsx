@@ -1,4 +1,6 @@
 import { Button, Input, Select } from '@navet/app/components/primitives';
+import { useI18n } from '@navet/app/hooks';
+import type { TranslationKey } from '@navet/app/i18n';
 import {
   ADVANCED_CUSTOM_SIDEBAR_ACTION_LIMIT,
   ADVANCED_CUSTOM_SUMMARY_PILL_LIMIT,
@@ -20,29 +22,29 @@ interface SettingsCustomExtensionsSectionProps {
 }
 
 const ICON_OPTIONS = [
-  ['home', 'Home'],
-  ['energy', 'Energy'],
-  ['climate', 'Climate'],
-  ['security', 'Security'],
-  ['lights', 'Lights'],
-  ['media', 'Media'],
-  ['tasks', 'Tasks'],
-  ['settings', 'Settings'],
-  ['link', 'Link'],
-  ['sparkles', 'Sparkles'],
-  ['bell', 'Bell'],
-] as const;
+  ['home', 'sidebar.home'],
+  ['energy', 'sidebar.energy'],
+  ['climate', 'sidebar.climate'],
+  ['security', 'sidebar.security'],
+  ['lights', 'sidebar.lights'],
+  ['media', 'sidebar.media'],
+  ['tasks', 'sidebar.tasks'],
+  ['settings', 'sidebar.settings'],
+  ['link', 'settings.customExtensions.icon.link'],
+  ['sparkles', 'settings.customExtensions.icon.sparkles'],
+  ['bell', 'settings.customExtensions.icon.bell'],
+] as const satisfies ReadonlyArray<readonly [string, TranslationKey]>;
 
 const SECTION_OPTIONS = [
-  ['home', 'Home'],
-  ['energy', 'Energy'],
-  ['climate', 'Climate'],
-  ['security', 'Security'],
-  ['lights', 'Lights'],
-  ['media', 'Media'],
-  ['tasks', 'Tasks'],
-  ['settings', 'Settings'],
-] as const;
+  ['home', 'sidebar.home'],
+  ['energy', 'sidebar.energy'],
+  ['climate', 'sidebar.climate'],
+  ['security', 'sidebar.security'],
+  ['lights', 'sidebar.lights'],
+  ['media', 'sidebar.media'],
+  ['tasks', 'sidebar.tasks'],
+  ['settings', 'sidebar.settings'],
+] as const satisfies ReadonlyArray<readonly [string, TranslationKey]>;
 
 function isValidSidebarDraft(action: CustomSidebarAction): boolean {
   if (!action.label.trim()) {
@@ -96,6 +98,7 @@ export function SettingsCustomExtensionsSection({
   mode = 'all',
   showActivation = true,
 }: SettingsCustomExtensionsSectionProps) {
+  const { t } = useI18n();
   const {
     advancedCustomizationEnabled,
     customSidebarActions,
@@ -130,18 +133,18 @@ export function SettingsCustomExtensionsSection({
     <>
       {showActivation ? (
         <SettingsItem
-          title="Custom extensions"
-          description="Opt into curated extension slots for extra sidebar actions and summary pills. These options stay bounded on purpose and may need manual setup."
+          title={t('settings.customExtensions.title')}
+          description={t('settings.customExtensions.description')}
           styles={styles}
         >
           <div className="space-y-3">
             <OnOffPillToggle
               value={advancedCustomizationEnabled}
               onChange={(checked) => updateSettings({ advancedCustomizationEnabled: checked })}
-              ariaLabel="Advanced customization"
+              ariaLabel={t('settings.customExtensions.advancedAria')}
             />
             <p className={`max-w-2xl text-sm leading-relaxed ${styles.subtleColor}`}>
-              Advanced options can make Navet less consistent and may need manual setup.
+              {t('settings.customExtensions.warning')}
             </p>
           </div>
         </SettingsItem>
@@ -151,14 +154,16 @@ export function SettingsCustomExtensionsSection({
         <>
           {showSidebarEditor ? (
             <SettingsItem
-              title="Sidebar actions"
-              description={`Add up to ${ADVANCED_CUSTOM_SIDEBAR_ACTION_LIMIT} curated actions that appear alongside Navet's built-in sidebar destinations.`}
+              title={t('settings.customExtensions.sidebar.title')}
+              description={t('settings.customExtensions.sidebar.description', {
+                count: ADVANCED_CUSTOM_SIDEBAR_ACTION_LIMIT,
+              })}
               styles={styles}
             >
               <div className="space-y-3">
                 {sidebarDrafts.length === 0 ? (
                   <p className={`text-sm leading-relaxed ${styles.subtleColor}`}>
-                    No custom sidebar actions yet.
+                    {t('settings.customExtensions.sidebar.empty')}
                   </p>
                 ) : null}
 
@@ -181,11 +186,11 @@ export function SettingsCustomExtensionsSection({
                               )
                             );
                           }}
-                          placeholder="Label"
-                          aria-label="Sidebar action label"
+                          placeholder={t('settings.customExtensions.labelPlaceholder')}
+                          aria-label={t('settings.customExtensions.sidebar.labelAria')}
                         />
                         <Select
-                          aria-label="Sidebar action icon"
+                          aria-label={t('settings.customExtensions.sidebar.iconAria')}
                           value={item.icon}
                           onChange={(event) => {
                             const nextValue = event.currentTarget
@@ -204,12 +209,12 @@ export function SettingsCustomExtensionsSection({
                         >
                           {ICON_OPTIONS.map(([value, label]) => (
                             <option key={value} value={value}>
-                              {label}
+                              {t(label)}
                             </option>
                           ))}
                         </Select>
                         <Select
-                          aria-label="Sidebar action target"
+                          aria-label={t('settings.customExtensions.sidebar.targetAria')}
                           value={item.targetType}
                           onChange={(event) => {
                             const nextValue = event.currentTarget
@@ -226,12 +231,16 @@ export function SettingsCustomExtensionsSection({
                             );
                           }}
                         >
-                          <option value="section">Open section</option>
-                          <option value="url">Open URL</option>
-                          <option value="iframe">Open inside Navet</option>
+                          <option value="section">
+                            {t('settings.customExtensions.target.section')}
+                          </option>
+                          <option value="url">{t('settings.customExtensions.target.url')}</option>
+                          <option value="iframe">
+                            {t('settings.customExtensions.target.iframe')}
+                          </option>
                         </Select>
                         <Select
-                          aria-label="Sidebar action visibility"
+                          aria-label={t('settings.customExtensions.sidebar.visibilityAria')}
                           value={item.visibility ?? 'always'}
                           onChange={(event) => {
                             const nextValue = event.currentTarget
@@ -248,13 +257,19 @@ export function SettingsCustomExtensionsSection({
                             );
                           }}
                         >
-                          <option value="always">Desktop and mobile</option>
-                          <option value="desktop_only">Desktop only</option>
-                          <option value="mobile_only">Mobile only</option>
+                          <option value="always">
+                            {t('settings.customExtensions.visibility.all')}
+                          </option>
+                          <option value="desktop_only">
+                            {t('settings.customExtensions.visibility.desktop')}
+                          </option>
+                          <option value="mobile_only">
+                            {t('settings.customExtensions.visibility.mobile')}
+                          </option>
                         </Select>
                         {item.targetType === 'section' ? (
                           <Select
-                            aria-label="Sidebar action section"
+                            aria-label={t('settings.customExtensions.sidebar.sectionAria')}
                             value={item.targetSection ?? 'home'}
                             onChange={(event) => {
                               const nextValue = event.currentTarget
@@ -274,7 +289,7 @@ export function SettingsCustomExtensionsSection({
                           >
                             {SECTION_OPTIONS.map(([value, label]) => (
                               <option key={value} value={value}>
-                                {label}
+                                {t(label)}
                               </option>
                             ))}
                           </Select>
@@ -290,7 +305,7 @@ export function SettingsCustomExtensionsSection({
                               );
                             }}
                             placeholder="https://example.com"
-                            aria-label="Sidebar action URL"
+                            aria-label={t('settings.customExtensions.sidebar.urlAria')}
                             containerClassName="md:col-span-2"
                           />
                         )}
@@ -301,9 +316,9 @@ export function SettingsCustomExtensionsSection({
                         >
                           {isValid
                             ? item.targetType === 'iframe'
-                              ? 'Matches Navet’s embedded sidebar rules. Some sites may still block framing.'
-                              : 'Matches Navet’s curated sidebar slot rules.'
-                            : 'Add a label and a valid section or URL before saving.'}
+                              ? t('settings.customExtensions.sidebar.validEmbedded')
+                              : t('settings.customExtensions.sidebar.valid')
+                            : t('settings.customExtensions.sidebar.invalid')}
                         </p>
                         <Button
                           variant="ghost"
@@ -315,7 +330,7 @@ export function SettingsCustomExtensionsSection({
                             )
                           }
                         >
-                          Remove
+                          {t('settings.customExtensions.remove')}
                         </Button>
                       </div>
                     </div>
@@ -342,7 +357,7 @@ export function SettingsCustomExtensionsSection({
                       ])
                     }
                   >
-                    Add sidebar action
+                    {t('settings.customExtensions.sidebar.add')}
                   </Button>
                   <Button
                     variant="secondary"
@@ -355,7 +370,7 @@ export function SettingsCustomExtensionsSection({
                       })
                     }
                   >
-                    Save sidebar actions
+                    {t('settings.customExtensions.sidebar.save')}
                   </Button>
                 </div>
               </div>
@@ -364,14 +379,16 @@ export function SettingsCustomExtensionsSection({
 
           {showSummaryEditor ? (
             <SettingsItem
-              title="Summary pills"
-              description={`Add up to ${ADVANCED_CUSTOM_SUMMARY_PILL_LIMIT} custom pills in the home summary bar using a fixed Navet-owned schema.`}
+              title={t('settings.customExtensions.summary.title')}
+              description={t('settings.customExtensions.summary.description', {
+                count: ADVANCED_CUSTOM_SUMMARY_PILL_LIMIT,
+              })}
               styles={styles}
             >
               <div className="space-y-3">
                 {summaryDrafts.length === 0 ? (
                   <p className={`text-sm leading-relaxed ${styles.subtleColor}`}>
-                    No custom summary pills yet.
+                    {t('settings.customExtensions.summary.empty')}
                   </p>
                 ) : null}
 
@@ -394,11 +411,11 @@ export function SettingsCustomExtensionsSection({
                               )
                             );
                           }}
-                          placeholder="Label"
-                          aria-label="Summary pill label"
+                          placeholder={t('settings.customExtensions.labelPlaceholder')}
+                          aria-label={t('settings.customExtensions.summary.labelAria')}
                         />
                         <Select
-                          aria-label="Summary pill icon"
+                          aria-label={t('settings.customExtensions.summary.iconAria')}
                           value={item.icon}
                           onChange={(event) => {
                             const nextValue = event.currentTarget
@@ -417,12 +434,12 @@ export function SettingsCustomExtensionsSection({
                         >
                           {ICON_OPTIONS.map(([value, label]) => (
                             <option key={value} value={value}>
-                              {label}
+                              {t(label)}
                             </option>
                           ))}
                         </Select>
                         <Select
-                          aria-label="Summary value source"
+                          aria-label={t('settings.customExtensions.summary.sourceAria')}
                           value={item.valueSourceType}
                           onChange={(event) => {
                             const nextValue = event.currentTarget
@@ -439,11 +456,15 @@ export function SettingsCustomExtensionsSection({
                             );
                           }}
                         >
-                          <option value="static">Static text</option>
-                          <option value="entity">Entity value</option>
+                          <option value="static">
+                            {t('settings.customExtensions.source.static')}
+                          </option>
+                          <option value="entity">
+                            {t('settings.customExtensions.source.entity')}
+                          </option>
                         </Select>
                         <Select
-                          aria-label="Summary pill visibility"
+                          aria-label={t('settings.customExtensions.summary.visibilityAria')}
                           value={item.visibility ?? 'always'}
                           onChange={(event) => {
                             const nextValue = event.currentTarget
@@ -460,8 +481,12 @@ export function SettingsCustomExtensionsSection({
                             );
                           }}
                         >
-                          <option value="always">Always show</option>
-                          <option value="when_value_available">Only when value is available</option>
+                          <option value="always">
+                            {t('settings.customExtensions.visibility.always')}
+                          </option>
+                          <option value="when_value_available">
+                            {t('settings.customExtensions.visibility.available')}
+                          </option>
                         </Select>
                         {item.valueSourceType === 'static' ? (
                           <Input
@@ -476,8 +501,8 @@ export function SettingsCustomExtensionsSection({
                                 )
                               );
                             }}
-                            placeholder="Ready"
-                            aria-label="Summary pill value"
+                            placeholder={t('settings.customExtensions.summary.valuePlaceholder')}
+                            aria-label={t('settings.customExtensions.summary.valueAria')}
                             containerClassName="md:col-span-2"
                           />
                         ) : (
@@ -492,12 +517,12 @@ export function SettingsCustomExtensionsSection({
                               );
                             }}
                             placeholder="sensor.entryway_temperature"
-                            aria-label="Summary pill entity ID"
+                            aria-label={t('settings.customExtensions.summary.entityAria')}
                             containerClassName="md:col-span-2"
                           />
                         )}
                         <Select
-                          aria-label="Summary pill action"
+                          aria-label={t('settings.customExtensions.summary.actionAria')}
                           value={item.actionType ?? 'none'}
                           onChange={(event) => {
                             const nextValue = event.currentTarget
@@ -514,13 +539,15 @@ export function SettingsCustomExtensionsSection({
                             );
                           }}
                         >
-                          <option value="none">No tap action</option>
-                          <option value="section">Open section</option>
-                          <option value="url">Open URL</option>
+                          <option value="none">{t('settings.customExtensions.action.none')}</option>
+                          <option value="section">
+                            {t('settings.customExtensions.target.section')}
+                          </option>
+                          <option value="url">{t('settings.customExtensions.target.url')}</option>
                         </Select>
                         {(item.actionType ?? 'none') === 'section' ? (
                           <Select
-                            aria-label="Summary pill section"
+                            aria-label={t('settings.customExtensions.summary.sectionAria')}
                             value={item.actionSection ?? 'home'}
                             onChange={(event) => {
                               const nextValue = event.currentTarget
@@ -539,7 +566,7 @@ export function SettingsCustomExtensionsSection({
                           >
                             {SECTION_OPTIONS.map(([value, label]) => (
                               <option key={value} value={value}>
-                                {label}
+                                {t(label)}
                               </option>
                             ))}
                           </Select>
@@ -555,7 +582,7 @@ export function SettingsCustomExtensionsSection({
                               );
                             }}
                             placeholder="https://example.com/status"
-                            aria-label="Summary pill action URL"
+                            aria-label={t('settings.customExtensions.summary.actionUrlAria')}
                           />
                         ) : (
                           <div />
@@ -566,8 +593,8 @@ export function SettingsCustomExtensionsSection({
                           className={`text-sm leading-relaxed ${isValid ? styles.subtleColor : 'text-amber-300'}`}
                         >
                           {isValid
-                            ? 'Uses the bounded summary-pill model.'
-                            : 'Add a label, a value source, and any required action target before saving.'}
+                            ? t('settings.customExtensions.summary.valid')
+                            : t('settings.customExtensions.summary.invalid')}
                         </p>
                         <Button
                           variant="ghost"
@@ -579,7 +606,7 @@ export function SettingsCustomExtensionsSection({
                             )
                           }
                         >
-                          Remove
+                          {t('settings.customExtensions.remove')}
                         </Button>
                       </div>
                     </div>
@@ -607,7 +634,7 @@ export function SettingsCustomExtensionsSection({
                       ])
                     }
                   >
-                    Add summary pill
+                    {t('settings.customExtensions.summary.add')}
                   </Button>
                   <Button
                     variant="secondary"
@@ -620,7 +647,7 @@ export function SettingsCustomExtensionsSection({
                       })
                     }
                   >
-                    Save summary pills
+                    {t('settings.customExtensions.summary.save')}
                   </Button>
                 </div>
               </div>

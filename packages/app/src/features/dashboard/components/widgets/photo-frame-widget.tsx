@@ -4,6 +4,7 @@ import { type CardSize, isCompactCardSize } from '@navet/app/components/shared/c
 import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
 import { useAreaRooms, useI18n, useTheme } from '@navet/app/hooks';
 import { useDeferredVisibility } from '@navet/app/hooks/use-deferred-visibility';
+import { subscribeVisibilityAwareTask } from '@navet/app/utils/visibility-aware-scheduler';
 import { ChevronLeft, ChevronRight, ImageIcon, Settings2, Shuffle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { PhotoFrameImage } from './photo-frame-image';
@@ -120,11 +121,7 @@ export function PhotoFrameWidget({
       return;
     }
 
-    const intervalId = window.setInterval(() => {
-      jumpToRandomPhoto();
-    }, PHOTO_SHUFFLE_INTERVAL_MS);
-
-    return () => window.clearInterval(intervalId);
+    return subscribeVisibilityAwareTask(jumpToRandomPhoto, PHOTO_SHUFFLE_INTERVAL_MS);
   }, [isVisible, jumpToRandomPhoto, photoCount, shuffleEnabled]);
 
   useEffect(() => {

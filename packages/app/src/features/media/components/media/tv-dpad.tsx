@@ -1,5 +1,6 @@
 import { getMediaControlSurfaceTokens } from '@navet/app/components/shared/theme/media-widget-surface-tokens';
 import type { TvRemoteAction } from '@navet/app/features/media/tv-remote-commands';
+import { useI18n } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react';
 import type { CSSProperties } from 'react';
@@ -70,6 +71,7 @@ export function TvDpad({
   layout,
   onRemoteCommand,
 }: TvDpadProps) {
+  const { t } = useI18n();
   const d = layout;
   const mediaControlSurface = getMediaControlSurfaceTokens(theme);
 
@@ -100,7 +102,7 @@ export function TvDpad({
         <TvControlButton
           theme={theme}
           size={d.buttonSize}
-          label="Up"
+          label={t('media.remote.up')}
           disabled={disabled}
           className="absolute left-1/2 -translate-x-1/2"
           style={{ ...style, top: d.edgeInset }}
@@ -112,7 +114,7 @@ export function TvDpad({
         <TvControlButton
           theme={theme}
           size={d.buttonSize}
-          label="Left"
+          label={t('media.remote.left')}
           disabled={disabled}
           style={{ ...style, left: d.edgeInset }}
           className="absolute top-1/2 -translate-y-1/2"
@@ -124,7 +126,7 @@ export function TvDpad({
         <TvControlButton
           theme={theme}
           size={d.buttonSize}
-          label="Right"
+          label={t('media.remote.right')}
           disabled={disabled}
           style={{ ...style, right: d.edgeInset }}
           className="absolute top-1/2 -translate-y-1/2"
@@ -136,7 +138,7 @@ export function TvDpad({
         <TvControlButton
           theme={theme}
           size={d.buttonSize}
-          label="Down"
+          label={t('media.remote.down')}
           disabled={disabled}
           style={{ ...style, bottom: d.edgeInset }}
           className="absolute left-1/2 -translate-x-1/2"
@@ -148,7 +150,7 @@ export function TvDpad({
         <TvControlButton
           theme={theme}
           size={d.centerSize}
-          label="Select"
+          label={t('media.remote.select')}
           disabled={disabled}
           style={style}
           className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 ${d.centerClassName}`}

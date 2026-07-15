@@ -1,4 +1,4 @@
-import type { TranslationKey } from '@navet/app/i18n';
+import { defaultTranslate, type TranslateFn, type TranslationKey } from '@navet/app/i18n';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import type { HomeDashboardLayoutState } from '../hooks/use-home-dashboard-layout';
 
@@ -11,7 +11,7 @@ export interface DashboardPackDefinition {
 
 interface DashboardPackSectionDefinition {
   id: string;
-  title: string;
+  titleKey: TranslationKey;
   width: number;
   select: (devices: DeviceWithType[]) => string[];
 }
@@ -107,7 +107,7 @@ function makeSectionDefinitions(packId: DashboardPackId): DashboardPackSectionDe
       return [
         {
           id: 'access',
-          title: 'Access',
+          titleKey: 'dashboard.packs.section.access',
           width: 6,
           select: (devices) => [
             ...securityAttention(devices),
@@ -116,13 +116,13 @@ function makeSectionDefinitions(packId: DashboardPackId): DashboardPackSectionDe
         },
         {
           id: 'cameras',
-          title: 'Cameras',
+          titleKey: 'dashboard.packs.section.cameras',
           width: 6,
           select: (devices) => byType(devices, ['cameras']),
         },
         {
           id: 'presence',
-          title: 'Presence',
+          titleKey: 'dashboard.packs.section.presence',
           width: 6,
           select: (devices) => byType(devices, ['persons', 'sensors']),
         },
@@ -131,19 +131,19 @@ function makeSectionDefinitions(packId: DashboardPackId): DashboardPackSectionDe
       return [
         {
           id: 'energy',
-          title: 'Live Energy',
+          titleKey: 'dashboard.packs.section.liveEnergy',
           width: 6,
           select: energyDevices,
         },
         {
           id: 'climate',
-          title: 'Climate Load',
+          titleKey: 'dashboard.packs.section.climateLoad',
           width: 6,
           select: (devices) => byType(devices, ['climate', 'hvac', 'fans', 'weather']),
         },
         {
           id: 'devices',
-          title: 'Device Draw',
+          titleKey: 'dashboard.packs.section.deviceDraw',
           width: 6,
           select: (devices) => byType(devices, ['switches', 'sensors']),
         },
@@ -152,25 +152,25 @@ function makeSectionDefinitions(packId: DashboardPackId): DashboardPackSectionDe
       return [
         {
           id: 'attention',
-          title: 'Needs Attention',
+          titleKey: 'dashboard.packs.section.needsAttention',
           width: 6,
           select: (devices) => [...securityAttention(devices), ...energyDevices(devices)],
         },
         {
           id: 'comfort',
-          title: 'Comfort',
+          titleKey: 'dashboard.packs.section.comfort',
           width: 6,
           select: (devices) => byType(devices, ['weather', 'climate', 'hvac', 'lights']),
         },
         {
           id: 'household',
-          title: 'Household',
+          titleKey: 'dashboard.packs.section.household',
           width: 4,
           select: (devices) => byType(devices, ['calendars', 'persons', 'media']),
         },
         {
           id: 'actions',
-          title: 'Quick Actions',
+          titleKey: 'dashboard.packs.section.quickActions',
           width: 4,
           select: (devices) => byType(devices, ['scenes', 'switches']),
         },
@@ -180,7 +180,8 @@ function makeSectionDefinitions(packId: DashboardPackId): DashboardPackSectionDe
 
 export function buildDashboardPackLayout(
   packId: DashboardPackId,
-  devices: Iterable<DeviceWithType>
+  devices: Iterable<DeviceWithType>,
+  t: TranslateFn = defaultTranslate
 ): HomeDashboardLayoutState {
   const sortedDevices = Array.from(devices).sort(compareByName);
   const usedCardIds = new Set<string>();
@@ -198,7 +199,7 @@ export function buildDashboardPackLayout(
     return [
       {
         id: `dashboard-pack-${packId}-${definition.id}`,
-        title: definition.title,
+        title: t(definition.titleKey),
         x: index % 2 === 0 ? 0 : 6,
         y: Math.floor(index / 2),
         w: definition.width,

@@ -37,9 +37,8 @@ import {
   Search,
   X,
 } from 'lucide-react';
-import { memo, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, memo, type RefObject, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { CustomExtensionsDialog } from '../../features/settings/components/custom-extensions-dialog';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import type { MobileRoomNavigation } from './mobile-room-dropdown';
 import { getVisibleRoomNavRooms } from './room-nav.utils';
@@ -48,6 +47,11 @@ import {
   getSectionNavigationItems,
   MOBILE_SECTION_DOCK_ORDER,
 } from './section-navigation';
+
+const CustomExtensionsDialog = lazy(async () => {
+  const module = await import('../../features/settings/components/custom-extensions-dialog');
+  return { default: module.CustomExtensionsDialog };
+});
 
 interface SidebarProps {
   activeColorValue?: string;
@@ -337,8 +341,8 @@ export const Sidebar = memo(function Sidebar({
                 {isEditMode ? (
                   <button
                     type="button"
-                    aria-label={`Edit ${item.label}`}
-                    title={`Edit ${item.label}`}
+                    aria-label={t('common.editItem', { item: item.label })}
+                    title={t('common.editItem', { item: item.label })}
                     className={`absolute -right-1 -top-1 flex h-4.5 w-4.5 items-center justify-center rounded-full border ${
                       theme === 'light'
                         ? 'border-slate-300 bg-white text-slate-700'
@@ -367,8 +371,8 @@ export const Sidebar = memo(function Sidebar({
                     setEditingSidebarActionId(null);
                     setIsSidebarCustomizationOpen(true);
                   }}
-                  aria-label="Customize sidebar"
-                  title="Customize sidebar"
+                  aria-label={t('sidebar.customize')}
+                  title={t('sidebar.customize')}
                   active={false}
                   variant="ghost"
                   className={`flex h-10 w-10 items-center justify-center rounded-[22px] gap-0 px-0 py-0 md:gap-0 md:px-0 transition-colors ${inactiveColor}`}
@@ -596,17 +600,21 @@ export const Sidebar = memo(function Sidebar({
             : undefined
         }
       />
-      <CustomExtensionsDialog
-        editingActionId={editingSidebarActionId}
-        isOpen={isSidebarCustomizationOpen}
-        onOpenChange={(open) => {
-          setIsSidebarCustomizationOpen(open);
-          if (!open) {
-            setEditingSidebarActionId(null);
-          }
-        }}
-        mode="sidebar"
-      />
+      {isSidebarCustomizationOpen ? (
+        <Suspense fallback={null}>
+          <CustomExtensionsDialog
+            editingActionId={editingSidebarActionId}
+            isOpen
+            onOpenChange={(open) => {
+              setIsSidebarCustomizationOpen(open);
+              if (!open) {
+                setEditingSidebarActionId(null);
+              }
+            }}
+            mode="sidebar"
+          />
+        </Suspense>
+      ) : null}
     </>
   );
 });

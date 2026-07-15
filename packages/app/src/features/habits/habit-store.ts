@@ -70,6 +70,10 @@ function applyInsightStatus(insight: HabitInsight, feedback: HabitFeedback[]): H
     return insight;
   }
 
+  if (latest.outcome === 'dont_suggest') {
+    return null;
+  }
+
   const ageMs = Date.now() - new Date(latest.timestamp).getTime();
   const ageDays = ageMs / (1000 * 60 * 60 * 24);
 

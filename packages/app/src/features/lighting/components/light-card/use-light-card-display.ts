@@ -10,6 +10,7 @@ import {
 } from '@navet/app/constants/icon-map';
 import { TEMP_OPTIONS } from '@navet/app/constants/light-constants';
 import type { NavetLightState } from '@navet/app/core/navet-device-state';
+import { useI18n } from '@navet/app/hooks';
 import type { PlatformEntitySnapshot } from '@navet/app/platform/provider-feature-models';
 import type { LucideIcon } from 'lucide-react';
 import { useMemo } from 'react';
@@ -50,6 +51,7 @@ export function useLightCardDisplay({
   providerState,
   supportsAdvancedLightControls,
 }: UseLightCardDisplayParams): UseLightCardDisplayResult {
+  const { t } = useI18n();
   const supportsBrightness =
     (liveEntity ? supportsBrightnessControl(liveEntity) : false) ||
     typeof providerState?.brightnessPct === 'number';
@@ -62,8 +64,10 @@ export function useLightCardDisplay({
 
   const tempOptions = useMemo(
     () =>
-      TEMP_OPTIONS.filter((option) => option.value >= minColorTemp && option.value <= maxColorTemp),
-    [minColorTemp, maxColorTemp]
+      TEMP_OPTIONS.filter(
+        (option) => option.value >= minColorTemp && option.value <= maxColorTemp
+      ).map(({ labelKey, ...option }) => ({ ...option, label: t(labelKey) })),
+    [minColorTemp, maxColorTemp, t]
   );
 
   const isExtraSmall = isExtraSmallCardSize(size);

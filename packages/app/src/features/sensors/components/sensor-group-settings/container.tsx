@@ -1,5 +1,5 @@
 import { BaseCardDialogWithState } from '@navet/app/components/primitives';
-import { useTheme } from '@navet/app/hooks';
+import { useI18n, useTheme } from '@navet/app/hooks';
 import { memo } from 'react';
 import { iconMap } from '../sensors';
 import { SENSOR_GROUP_COLOR_MAP } from './data';
@@ -25,6 +25,7 @@ export const SensorGroupSettingsContainer = memo(function SensorGroupSettingsCon
   onSensorsUpdate,
 }: SensorGroupSettingsDialogProps) {
   const colors = SENSOR_GROUP_COLOR_MAP[accentColor];
+  const { t } = useI18n();
   const { theme } = useTheme();
   const controller = useSensorGroupSettings({
     currentSensors,
@@ -44,7 +45,7 @@ export const SensorGroupSettingsContainer = memo(function SensorGroupSettingsCon
         }
       }}
       title={groupName}
-      description="Widget"
+      description={t('widgets.common.widget')}
       roomSelector={
         showRoomSelector && roomValue && roomLabel && roomOptions
           ? {

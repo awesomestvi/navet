@@ -1,7 +1,10 @@
 import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { buildHomeStatusSummaryItems } from '@navet/app/features/sensors/components/home-status-summary-model';
-import { SummaryBar } from '@navet/app/features/sensors/components/info-badge-strip';
+import {
+  SummaryBar,
+  SummaryBarStack,
+} from '@navet/app/features/sensors/components/info-badge-strip';
 import { useAccentColor, useI18n, useThemeMode } from '@navet/app/hooks';
 import { useSettingsStore } from '@navet/app/stores';
 import { settingsSelectors } from '@navet/app/stores/selectors';
@@ -72,19 +75,24 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   );
   const statusSummaryItems = useMemo(
     () =>
-      buildHomeStatusSummaryItems(summaryDeviceMap, {
-        gridImportTodayKWh: energySummary.gridImportTodayKWh,
-        routineCount,
-        securityAlertCount,
-        temperatureUnit,
-        customSummaryPills: advancedCustomizationEnabled ? customSummaryPills : [],
-      }),
+      buildHomeStatusSummaryItems(
+        summaryDeviceMap,
+        {
+          gridImportTodayKWh: energySummary.gridImportTodayKWh,
+          routineCount,
+          securityAlertCount,
+          temperatureUnit,
+          customSummaryPills: advancedCustomizationEnabled ? customSummaryPills : [],
+        },
+        t
+      ),
     [
       advancedCustomizationEnabled,
       customSummaryPills,
       summaryDeviceMap,
       energySummary.gridImportTodayKWh,
       routineCount,
+      t,
       securityAlertCount,
       temperatureUnit,
     ]
@@ -102,10 +110,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   }, [isEditMode]);
 
   const presentation = (
-    <div
-      className={`space-y-3 md:space-y-3${isEditMode ? ' hidden' : ''}`}
-      aria-hidden={isEditMode}
-    >
+    <SummaryBarStack className={isEditMode ? 'hidden' : undefined} aria-hidden={isEditMode}>
       {infoBadgeStrip}
       <HomePresentation
         flowCards={flowCards}
@@ -125,7 +130,7 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
         densePerformanceMode={densePerformanceMode}
         onToggleEditMode={onToggleEditMode}
       />
-    </div>
+    </SummaryBarStack>
   );
 
   if (!isEditMode) {

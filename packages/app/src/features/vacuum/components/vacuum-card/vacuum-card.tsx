@@ -1,5 +1,6 @@
 import { cn } from '@navet/app/components/ui/utils';
-import type { useTheme } from '@navet/app/hooks';
+import { useI18n, type useTheme } from '@navet/app/hooks';
+import { subscribeVisibilityAwareTask } from '@navet/app/utils/visibility-aware-scheduler';
 import { type CSSProperties, memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   getCompactVisualClassName,
@@ -92,6 +93,7 @@ function VacuumRobotVisual({
   variant?: 'compact' | 'detail';
   className?: string;
 }) {
+  const { t } = useI18n();
   const isCleaning = displayState === 'cleaning' || displayState === 'mopping';
   const isReturning = displayState === 'returning';
   const isCharging =
@@ -212,8 +214,7 @@ function VacuumRobotVisual({
     };
 
     capturePose();
-    const intervalId = window.setInterval(capturePose, 240);
-    return () => window.clearInterval(intervalId);
+    return subscribeVisibilityAwareTask(capturePose, 240);
   }, [isCompact, isCleaning, isReturning]);
 
   useLayoutEffect(() => {
@@ -474,7 +475,7 @@ function VacuumRobotVisual({
                 className="absolute inset-x-0 -bottom-5 text-center text-[10px]"
                 style={{ color: subtitleColor }}
               >
-                Pause
+                {t('vacuum.status.paused')}
               </div>
             ) : null}
           </div>

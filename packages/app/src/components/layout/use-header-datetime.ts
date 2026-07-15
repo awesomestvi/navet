@@ -1,5 +1,6 @@
 import { useI18n } from '@navet/app/hooks';
 import type { TranslationKey } from '@navet/app/i18n';
+import { subscribeVisibilityAwareTask } from '@navet/app/utils/visibility-aware-scheduler';
 import { useEffect, useMemo, useState } from 'react';
 
 type GreetingPeriod = 'morning' | 'afternoon' | 'evening' | 'night';
@@ -51,7 +52,7 @@ export function useHeaderDateTime() {
   const [greeting, setGreeting] = useState(() => createGreetingState(new Date().getHours()));
 
   useEffect(() => {
-    const intervalId = window.setInterval(() => {
+    return subscribeVisibilityAwareTask(() => {
       const nextDateTime = new Date();
       setCurrentDateTime(nextDateTime);
       setGreeting((currentGreeting) => {
@@ -64,7 +65,6 @@ export function useHeaderDateTime() {
         return createGreetingState(nextDateTime.getHours());
       });
     }, 1000 * 30);
-    return () => window.clearInterval(intervalId);
   }, []);
 
   const formattedDate = useMemo(

@@ -1,10 +1,11 @@
+import { useI18n } from '@navet/app/hooks';
 import { useCallback, useRef, useState } from 'react';
 import type { SensorReading } from '../sensors';
-import { AVAILABLE_SENSORS } from './data';
+import { AVAILABLE_SENSOR_DEFINITIONS } from './data';
 import type { AvailableSensor, SensorGroupSettingsDialogProps } from './types';
 
 export function useSensorGroupSettings({
-  availableSensors = AVAILABLE_SENSORS,
+  availableSensors: suppliedAvailableSensors,
   currentSensors,
   maxSensors,
   onClose,
@@ -19,6 +20,14 @@ export function useSensorGroupSettings({
   | 'onSensorsUpdate'
   | 'closeOnSelect'
 >) {
+  const { t } = useI18n();
+  const availableSensors =
+    suppliedAvailableSensors ??
+    AVAILABLE_SENSOR_DEFINITIONS.map(({ labelKey, valueKey, ...sensor }) => ({
+      ...sensor,
+      label: t(labelKey),
+      value: valueKey ? t(valueKey) : sensor.value,
+    }));
   const [selectedSensors, setSelectedSensors] = useState<SensorReading[]>(currentSensors);
   const [searchQuery, setSearchQuery] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(-1);

@@ -1,6 +1,7 @@
 import { ENERGY_STATISTICS_REFRESH_INTERVAL } from '@navet/app/constants';
 import { getIntegrationHistoryMessageClient } from '@navet/app/services/integration-history.service';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { subscribeVisibilityAwareAsyncTask } from '@navet/app/utils/visibility-aware-scheduler';
+import { useEffect, useMemo, useState } from 'react';
 import { getCachedEnergyStatistics } from '../services/energy-statistics-cache';
 import { getEnergyStatisticsToday } from '../services/energy-statistics-service';
 
@@ -23,7 +24,6 @@ export function useEnergyStatisticsToday(
 ): EnergyStatisticsTodayState {
   const [todayKWh, setTodayKWh] = useState<Record<string, number>>({});
   const [hasLoaded, setHasLoaded] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const entityUnitsKey = useMemo(() => JSON.stringify(entityUnits), [entityUnits]);
 
   useEffect(() => {
@@ -54,12 +54,7 @@ export function useEnergyStatisticsToday(
       }
     }
 
-    void fetchStats();
-    timerRef.current = setInterval(() => void fetchStats(), REFRESH_MS);
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    return subscribeVisibilityAwareAsyncTask(fetchStats, REFRESH_MS, { runImmediately: true });
   }, [enabled, entityUnitsKey]);
 
   return { hasLoaded, values: todayKWh };

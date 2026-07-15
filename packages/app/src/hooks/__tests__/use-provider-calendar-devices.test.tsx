@@ -68,8 +68,10 @@ vi.mock('../use-integration-store', () => ({
 
 vi.mock('../use-provider-entity', () => ({
   useProviderEntityRegistryEntries: () => [],
-  useProviderEntitySnapshots: (options?: { enabled?: boolean }) =>
-    options?.enabled === false ? null : mockEntities,
+  useProviderEntitySnapshotsByPrefix: (
+    _prefixes: readonly string[],
+    options?: { enabled?: boolean }
+  ) => (options?.enabled === false ? {} : (mockEntities ?? {})),
 }));
 
 vi.mock('../use-provider-feature-support', () => ({

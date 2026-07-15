@@ -1,4 +1,5 @@
-import { useTheme } from '@navet/app/hooks';
+import { useI18n, useTheme } from '@navet/app/hooks';
+import type { TranslationKey } from '@navet/app/i18n';
 import * as Popover from '@radix-ui/react-popover';
 import { Maximize2 } from 'lucide-react';
 import { memo, useEffect, useRef, useState } from 'react';
@@ -38,65 +39,65 @@ interface CardSizeSelectorProps {
 // Widget size labels reflect the actual responsive dashboard grid sizing
 const sizes: {
   value: CardSize;
-  label: string;
+  labelKey: TranslationKey;
   description: string;
-  dimensions: string;
+  dimensionsKey: TranslationKey;
   cols: number;
   rows: number;
 }[] = [
   {
     value: 'tiny',
-    label: 'Tiny',
+    labelKey: 'cardSize.tiny.label',
     description: '0.5 × 0.5',
-    dimensions: 'Micro tile',
+    dimensionsKey: 'cardSize.tiny.description',
     cols: 0.5,
     rows: 0.5,
   },
   {
     value: 'extra-small',
-    label: 'Extra-Small',
+    labelKey: 'cardSize.extraSmall.label',
     description: '1 × 0.5',
-    dimensions: 'Compact tile',
+    dimensionsKey: 'cardSize.extraSmall.description',
     cols: 1,
     rows: 0.5,
   },
   {
     value: 'small',
-    label: 'Small',
+    labelKey: 'cardSize.small.label',
     description: '1 × 1',
-    dimensions: 'Single tile',
+    dimensionsKey: 'cardSize.small.description',
     cols: 1,
     rows: 1,
   },
   {
     value: 'medium',
-    label: 'Medium',
+    labelKey: 'cardSize.medium.label',
     description: '2 × 1',
-    dimensions: 'Wide tile',
+    dimensionsKey: 'cardSize.medium.description',
     cols: 2,
     rows: 1,
   },
   {
     value: 'medium-vertical',
-    label: 'Medium Vertical',
+    labelKey: 'cardSize.mediumVertical.label',
     description: '1 × 2',
-    dimensions: 'Tall tile',
+    dimensionsKey: 'cardSize.mediumVertical.description',
     cols: 1,
     rows: 2,
   },
   {
     value: 'large',
-    label: 'Large',
+    labelKey: 'cardSize.large.label',
     description: '2 × 2',
-    dimensions: 'Large tile',
+    dimensionsKey: 'cardSize.large.description',
     cols: 2,
     rows: 2,
   },
   {
     value: 'extra-large',
-    label: 'Extra-Large',
+    labelKey: 'cardSize.extraLarge.label',
     description: '3 × 2',
-    dimensions: 'Extra-large tile',
+    dimensionsKey: 'cardSize.extraLarge.description',
     cols: 3,
     rows: 2,
   },
@@ -110,6 +111,7 @@ export const CardSizeSelector = memo(function CardSizeSelector({
   triggerInline = false,
   options,
 }: CardSizeSelectorProps) {
+  const { t } = useI18n();
   const { theme, primaryColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const [open, setOpen] = useState(false);
@@ -121,7 +123,13 @@ export const CardSizeSelector = memo(function CardSizeSelector({
   const activeAccentBgAlpha = theme === 'light' ? '00' : '22';
   const arrowFillClass = theme === 'light' ? 'fill-white' : 'fill-[#1c1c1e]';
 
-  const sourceSizes = options ?? sizes;
+  const sourceSizes =
+    options ??
+    sizes.map(({ labelKey, dimensionsKey, ...size }) => ({
+      ...size,
+      label: t(labelKey),
+      dimensions: t(dimensionsKey),
+    }));
   const availableSizes = allowedSizes
     ? sourceSizes.filter((size) => allowedSizes.includes(size.value))
     : sourceSizes;

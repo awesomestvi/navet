@@ -54,9 +54,11 @@ import {
   useProviderEntityIdsByPrefix,
   useProviderEntityRegistryEntries,
   useProviderEntityRegistryEntriesByDeviceId,
+  useProviderEntityRegistryEntriesByIds,
   useProviderEntityRegistryEntry,
   useProviderEntitySnapshot,
   useProviderEntitySnapshotRecord,
+  useProviderEntitySnapshotsByPrefix,
   useProviderTemperatureUnit,
 } from '../use-provider-entity';
 
@@ -379,6 +381,45 @@ describe('useProviderEntity hooks', () => {
     expect(result.current).toBe(firstRecord);
   });
 
+  it('preserves a prefix-filtered snapshot map when another entity domain changes', () => {
+    serviceMock.getEntities.mockReturnValue({
+      'calendar.family': {
+        state: 'on',
+        attributes: { friendly_name: 'Family Calendar' },
+      },
+      'light.kitchen': {
+        state: 'on',
+        attributes: { friendly_name: 'Kitchen Light' },
+      },
+    });
+
+    const { result } = renderHookWithProviders(() =>
+      useProviderEntitySnapshotsByPrefix(['calendar.'], { providerId: 'home_assistant' })
+    );
+    const firstSnapshots = result.current;
+
+    act(() => {
+      serviceMock.getEntities.mockReturnValue({
+        'calendar.family': {
+          state: 'on',
+          attributes: { friendly_name: 'Family Calendar' },
+        },
+        'light.kitchen': {
+          state: 'off',
+          attributes: { friendly_name: 'Kitchen Light' },
+        },
+      });
+      for (const listener of serviceMock.entityListeners) {
+        listener();
+      }
+    });
+
+    expect(result.current).toBe(firstSnapshots);
+    expect(result.current).toEqual({
+      'calendar.family': expect.objectContaining({ state: 'on' }),
+    });
+  });
+
   it('reads a single entity registry entry through the provider runtime service', () => {
     const { result } = renderHookWithProviders(() =>
       useProviderEntityRegistryEntry('home_assistant:light.kitchen')
@@ -431,5 +472,18 @@ describe('useProviderEntity hooks', () => {
     });
 
     expect(result.current).toBe(firstEntries);
+  });
+
+  it('reads an ordered registry subset from one provider snapshot', () => {
+    const { result } = renderHookWithProviders(() =>
+      useProviderEntityRegistryEntriesByIds(['switch.kitchen_boost', 'light.kitchen'], {
+        providerId: 'home_assistant',
+      })
+    );
+
+    expect(result.current.map((entry) => entry.entityId)).toEqual([
+      'switch.kitchen_boost',
+      'light.kitchen',
+    ]);
   });
 });

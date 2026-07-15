@@ -61,12 +61,10 @@ export function EmbeddedSidebarPage({ title, url }: EmbeddedSidebarPageProps) {
               <div className="max-w-md space-y-4">
                 <div>
                   <h2 className={`text-lg font-semibold ${surface.textPrimary}`}>
-                    This page may be blocking embedding
+                    {t('sidebar.embedded.blockedTitle')}
                   </h2>
                   <p className={`mt-2 text-sm leading-relaxed ${surface.textSecondary}`}>
-                    {title} at {hostname} did not finish loading inside Navet. Some sites send
-                    X-Frame-Options or Content-Security-Policy headers that prevent iframe
-                    rendering.
+                    {t('sidebar.embedded.blockedDescription', { title, hostname })}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-2">
@@ -76,7 +74,7 @@ export function EmbeddedSidebarPage({ title, url }: EmbeddedSidebarPageProps) {
                     leading={<RefreshCw className="h-4 w-4" />}
                     onClick={() => setReloadKey((current) => current + 1)}
                   >
-                    Retry
+                    {t('sidebar.embedded.retry')}
                   </Button>
                   <Button
                     variant="secondary"
@@ -84,7 +82,7 @@ export function EmbeddedSidebarPage({ title, url }: EmbeddedSidebarPageProps) {
                     leading={<ExternalLink className="h-4 w-4" />}
                     onClick={() => openCustomExtensionUrl(url)}
                   >
-                    Open externally
+                    {t('sidebar.embedded.openExternally')}
                   </Button>
                 </div>
               </div>

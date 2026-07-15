@@ -1,7 +1,9 @@
+import { useI18n } from '@navet/app/hooks';
 import {
   useProviderEntityRegistryEntries,
   useProviderEntitySnapshots,
 } from '@navet/app/hooks/use-provider-entity';
+import type { TranslateFn } from '@navet/app/i18n';
 import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
 import { getIntegrationHistoryMessageClient } from '@navet/app/services/integration-history.service';
 import { useEffect, useMemo, useState } from 'react';
@@ -63,14 +65,19 @@ function buildLiveStats(
   solarW: number,
   batterySoc: number,
   gridImportW: number,
-  gridExportW: number
+  gridExportW: number,
+  t: TranslateFn
 ): EnergyStat[] {
   return [
-    { label: 'Home Load', value: `${(homeLoadW / 1000).toFixed(1)} kW`, tone: 'default' },
+    {
+      label: t('energy.model.summary.liveHomeLoad'),
+      value: `${(homeLoadW / 1000).toFixed(1)} kW`,
+      tone: 'default',
+    },
     ...(config.solarPowerEntityId
       ? [
           {
-            label: 'Solar',
+            label: t('energy.model.solar'),
             value: `${(solarW / 1000).toFixed(1)} kW`,
             tone: (solarW > 0 ? 'good' : 'default') as EnergyStat['tone'],
           },
@@ -79,7 +86,7 @@ function buildLiveStats(
     ...(config.batterySocEntityId
       ? [
           {
-            label: 'Battery',
+            label: t('energy.model.battery'),
             value: `${batterySoc.toFixed(0)}%`,
             tone: (batterySoc > 30
               ? 'good'
@@ -92,11 +99,15 @@ function buildLiveStats(
     ...(config.gridImportPowerEntityId || config.gridExportPowerEntityId
       ? [
           {
-            label: 'Grid',
+            label: t('energy.model.grid'),
             value:
               gridImportW > 0
-                ? `${(gridImportW / 1000).toFixed(1)} kW import`
-                : `${(gridExportW / 1000).toFixed(1)} kW export`,
+                ? t('energy.widgets.storage.importKw', {
+                    value: (gridImportW / 1000).toFixed(1),
+                  })
+                : t('energy.dashboard.flow.exportValue', {
+                    value: (gridExportW / 1000).toFixed(1),
+                  }),
             tone: (gridImportW > 0 ? 'warn' : 'good') as EnergyStat['tone'],
           },
         ]
@@ -122,13 +133,14 @@ function buildFlow(
   batteryChargeW: number,
   gridImportW: number,
   gridExportW: number,
-  homeLoadW: number
+  homeLoadW: number,
+  t: TranslateFn
 ): EnergyFlowDatum[] {
   const flow: EnergyFlowDatum[] = [];
   if (solarW > 0)
     flow.push({
       id: 'solar',
-      label: 'Solar',
+      label: t('energy.model.solar'),
       value: +(solarW / 1000).toFixed(2),
       direction: 'source',
       tone: 'solar',
@@ -136,7 +148,7 @@ function buildFlow(
   if (batteryDischargeW > 0)
     flow.push({
       id: 'battery',
-      label: 'Battery Discharge',
+      label: t('energy.model.batteryDischarge'),
       value: +(batteryDischargeW / 1000).toFixed(2),
       direction: 'storage',
       tone: 'battery',
@@ -144,7 +156,7 @@ function buildFlow(
   if (batteryChargeW > 0)
     flow.push({
       id: 'battery-charge',
-      label: 'Battery Charging',
+      label: t('energy.model.batteryCharging'),
       value: +(batteryChargeW / 1000).toFixed(2),
       direction: 'sink',
       tone: 'battery',
@@ -152,7 +164,7 @@ function buildFlow(
   if (gridImportW > 0)
     flow.push({
       id: 'grid',
-      label: 'Grid Import',
+      label: t('energy.model.gridImport'),
       value: +(gridImportW / 1000).toFixed(2),
       direction: 'source',
       tone: 'grid',
@@ -160,7 +172,7 @@ function buildFlow(
   if (gridExportW > 0)
     flow.push({
       id: 'grid-export',
-      label: 'Grid Export',
+      label: t('energy.model.gridExport'),
       value: +(gridExportW / 1000).toFixed(2),
       direction: 'source',
       tone: 'grid',
@@ -168,7 +180,7 @@ function buildFlow(
   if (homeLoadW > 0)
     flow.push({
       id: 'home',
-      label: 'Home Load',
+      label: t('energy.model.summary.liveHomeLoad'),
       value: +(homeLoadW / 1000).toFixed(2),
       direction: 'sink',
       tone: 'load',
@@ -401,6 +413,7 @@ export function useEnergyHaData(
   currentLoadStatisticId?: string;
   haSourceConfig: EnergySourceConfig | null;
 } {
+  const { t } = useI18n();
   const entityStructure = useProviderEntitySnapshots({
     providerId: 'home_assistant',
     enabled,
@@ -587,24 +600,24 @@ export function useEnergyHaData(
 
     addEntry(
       'grid-import',
-      'Grid import',
+      t('energy.model.gridImport'),
       haSourceConfig.gridImportEnergyEntityId,
       config.gridImportPowerEntityId
     );
     addEntry(
       'grid-export',
-      'Grid export',
+      t('energy.model.gridExport'),
       haSourceConfig.gridExportEnergyEntityId,
       config.gridExportPowerEntityId
     );
     addEntry(
       'solar',
-      'Solar production',
+      t('energy.model.summary.solarProduction'),
       haSourceConfig.solarEnergyEntityId,
       config.solarPowerEntityId
     );
-    addEntry('gas', 'Gas', haSourceConfig.gasEnergyEntityId);
-    addEntry('hot-water', 'Hot water', haSourceConfig.hotWaterEnergyEntityId);
+    addEntry('gas', t('energy.model.gas'), haSourceConfig.gasEnergyEntityId);
+    addEntry('hot-water', t('energy.model.hotWater'), haSourceConfig.hotWaterEnergyEntityId);
 
     for (const device of haSourceConfig.devices) {
       const runtimeDevice = config.devices.find(
@@ -619,7 +632,7 @@ export function useEnergyHaData(
     }
 
     return entries;
-  }, [configEntities, haSourceConfig, runtimeSourceConfig, todayKWh]);
+  }, [configEntities, haSourceConfig, runtimeSourceConfig, t, todayKWh]);
 
   const { overview, currentLoadStatisticId } = useMemo(() => {
     if (!isConfigured || !runtimeSourceConfig) {
@@ -649,14 +662,23 @@ export function useEnergyHaData(
 
     return {
       overview: {
-        liveStats: buildLiveStats(config, homeLoadW, solarW, batterySoc, gridImportW, gridExportW),
+        liveStats: buildLiveStats(
+          config,
+          homeLoadW,
+          solarW,
+          batterySoc,
+          gridImportW,
+          gridExportW,
+          t
+        ),
         flow: buildFlow(
           solarW,
           batteryDischargeW,
           batteryChargeW,
           gridImportW,
           gridExportW,
-          homeLoadW
+          homeLoadW,
+          t
         ),
         trend: getMockEnergyOverview(range).trend, // replaced by statistics in follow-up
         topConsumers: buildConsumers(config.devices, entities, todayKWh, homeLoadW),
@@ -708,7 +730,7 @@ export function useEnergyHaData(
       },
       currentLoadStatisticId,
     };
-  }, [runtimeSourceConfig, configEntities, isConfigured, range, todayKWh]);
+  }, [runtimeSourceConfig, configEntities, isConfigured, range, t, todayKWh]);
 
   return {
     energySourceDiagnostics,

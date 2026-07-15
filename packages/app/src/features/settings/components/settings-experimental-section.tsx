@@ -1,4 +1,3 @@
-import { isDevOrLocalBuild } from '@navet/app/constants/app-build-metadata';
 import { useI18n } from '@navet/app/hooks';
 import { FlaskConical } from 'lucide-react';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
@@ -7,18 +6,17 @@ import { SettingsItem, SettingsSectionShell } from './settings-section-shell';
 
 interface SettingsExperimentalSectionProps {
   controller: SettingsSectionController;
-  localHabitsTabEnabled?: boolean;
-  onLocalHabitsTabEnabledChange?: (enabled: boolean) => void;
+  localHabitsEnabled?: boolean;
+  onLocalHabitsEnabledChange?: (enabled: boolean) => void;
 }
 
 export function SettingsExperimentalSection({
   controller,
-  localHabitsTabEnabled = false,
-  onLocalHabitsTabEnabledChange = () => {},
+  localHabitsEnabled = false,
+  onLocalHabitsEnabledChange = () => {},
 }: SettingsExperimentalSectionProps) {
   const { t } = useI18n();
   const { styles } = controller;
-  const showLocalHabitsToggle = isDevOrLocalBuild();
 
   return (
     <SettingsSectionShell
@@ -28,19 +26,17 @@ export function SettingsExperimentalSection({
       description={t('settings.experimental.sectionDescription')}
       styles={styles}
     >
-      {showLocalHabitsToggle ? (
-        <SettingsItem
-          title={t('settings.experimental.localHabits.title')}
-          description={t('settings.experimental.localHabits.description')}
-          styles={styles}
-        >
-          <OnOffPillToggle
-            value={localHabitsTabEnabled}
-            onChange={onLocalHabitsTabEnabledChange}
-            ariaLabel={t('settings.experimental.localHabits.title')}
-          />
-        </SettingsItem>
-      ) : null}
+      <SettingsItem
+        title={t('settings.experimental.localHabits.title')}
+        description={t('settings.experimental.localHabits.description')}
+        styles={styles}
+      >
+        <OnOffPillToggle
+          value={localHabitsEnabled}
+          onChange={onLocalHabitsEnabledChange}
+          ariaLabel={t('settings.experimental.localHabits.title')}
+        />
+      </SettingsItem>
     </SettingsSectionShell>
   );
 }

@@ -1,8 +1,10 @@
 import { BRIGHTNESS_PRESET_DEFINITIONS } from '@navet/app/constants/light-constants';
+import { useI18n } from '@navet/app/hooks';
 import { useMemo } from 'react';
 import { useLightPresetStore } from '../stores/light-preset-store';
 
 export const useBrightnessPresets = (lightId: string) => {
+  const { t } = useI18n();
   const globalBrightnessPresetOrder = useLightPresetStore(
     (state) => state.globalBrightnessPresetOrder
   );
@@ -27,7 +29,7 @@ export const useBrightnessPresets = (lightId: string) => {
           icon: preset.icon,
           brightness: brightnessPresetValues[preset.key] ?? preset.defaultBrightness,
           key: preset.key,
-          label: preset.label,
+          label: t(preset.labelKey),
         },
       ])
     );
@@ -42,7 +44,7 @@ export const useBrightnessPresets = (lightId: string) => {
       icon: preset.icon,
       brightness: brightnessPresetValues[preset.key] ?? preset.defaultBrightness,
       key: preset.key,
-      label: preset.label,
+      label: t(preset.labelKey),
     }));
 
     return [...orderedPresets, ...missingPresets];
@@ -51,5 +53,6 @@ export const useBrightnessPresets = (lightId: string) => {
     globalBrightnessPresetValues,
     lightPresetConfig?.brightnessPresetOrder,
     lightPresetConfig?.brightnessPresetValues,
+    t,
   ]);
 };

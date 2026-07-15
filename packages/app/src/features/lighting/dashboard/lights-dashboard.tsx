@@ -8,16 +8,21 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit-dashboard-grid';
 import { LightCard } from '@navet/app/features/lighting/components/light-card';
 import type { HomeStatusSummaryItem } from '@navet/app/features/sensors/components/home-status-summary-model';
-import { SummaryBar } from '@navet/app/features/sensors/components/info-badge-strip';
+import {
+  SummaryBar,
+  SummaryBarStack,
+} from '@navet/app/features/sensors/components/info-badge-strip';
 import type { QuickActionRoutine } from '@navet/app/features/tasks/types';
-import { useI18n, useIntegrationStore, useMediaQuery, useTheme } from '@navet/app/hooks';
+import { useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
-import { integrationSelectors } from '@navet/app/stores/selectors';
+import { useProviderEntityModels } from '@navet/app/hooks/use-provider-device';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import { UNKNOWN_ROOM_LABEL } from '@navet/app/utils/device-location';
 import {
   ChevronDown,
   ChevronRight,
+  ChevronsDown,
+  ChevronsUp,
   CircleAlert,
   Lightbulb,
   Power,
@@ -287,8 +292,9 @@ const LightsRoomSection = memo(function LightsRoomSection({
         size="large"
         title={displayName}
         subtitle={roomStateSummary}
-        headerLayout="eyebrow-first"
+        headerLayout="title-first"
         headerVariant="large"
+        headerMarginBottomClassName={expanded ? undefined : 'mb-0'}
         headerLeading={
           <EntityCardHeaderIcon
             IconComponent={Lightbulb}
@@ -332,37 +338,37 @@ const LightsRoomSection = memo(function LightsRoomSection({
           </RoundControlButton>
         }
       >
-        <div className="flex h-full min-h-0 flex-col">
-          {expanded && room.dimmableCount > 0 && !allUnavailable ? (
-            <div className="mt-2 w-full">
-              <div className="flex items-center justify-between gap-3 text-xs">
-                <span className={surface.textSecondary}>
-                  {t('lighting.dashboard.roomBrightnessScope', {
-                    supported: room.dimmableCount,
-                    total: room.totalCount,
-                  })}
-                </span>
-                <span className={`tabular-nums ${surface.textPrimary}`}>
-                  {brightness}%{pendingBrightness ? '…' : ''}
-                </span>
+        {expanded ? (
+          <div className="flex h-full min-h-0 flex-col">
+            {room.dimmableCount > 0 && !allUnavailable ? (
+              <div className="mt-2 w-full">
+                <div className="flex items-center justify-between gap-3 text-xs">
+                  <span className={surface.textSecondary}>
+                    {t('lighting.dashboard.roomBrightnessScope', {
+                      supported: room.dimmableCount,
+                      total: room.totalCount,
+                    })}
+                  </span>
+                  <span className={`tabular-nums ${surface.textPrimary}`}>
+                    {brightness}%{pendingBrightness ? '…' : ''}
+                  </span>
+                </div>
+                <div className="pt-1.5 pb-2">
+                  <BrightnessSlider
+                    value={brightness}
+                    onChange={setBrightness}
+                    onCommit={(value) => void handleBrightnessCommit(value)}
+                    isOn={room.activeCount > 0}
+                    disabled={isEditMode || pendingBrightness}
+                    showLabel={false}
+                    size="medium"
+                    activeColor={accentColor}
+                    inverseSurface={false}
+                  />
+                </div>
               </div>
-              <div className="pt-1.5 pb-2">
-                <BrightnessSlider
-                  value={brightness}
-                  onChange={setBrightness}
-                  onCommit={(value) => void handleBrightnessCommit(value)}
-                  isOn={room.activeCount > 0}
-                  disabled={isEditMode || pendingBrightness}
-                  showLabel={false}
-                  size="medium"
-                  activeColor={accentColor}
-                  inverseSurface={false}
-                />
-              </div>
-            </div>
-          ) : null}
+            ) : null}
 
-          {expanded ? (
             <div
               className={`mt-4 overflow-hidden rounded-2xl border ${surface.border} ${surface.subtleBg}`}
               data-testid={`lights-room-grid-${room.room}`}
@@ -376,8 +382,8 @@ const LightsRoomSection = memo(function LightsRoomSection({
                 />
               ))}
             </div>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </BaseCard>
     </section>
   );
@@ -394,7 +400,14 @@ export const LightsDashboard = memo(function LightsDashboard({
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const entities = useIntegrationStore(integrationSelectors.providerEntitiesByCanonicalId);
+  const lightEntityIds = useMemo(
+    () =>
+      Array.from(deviceMap.values())
+        .filter((device) => device.type === 'lights')
+        .map((device) => device.id),
+    [deviceMap]
+  );
+  const entities = useProviderEntityModels(lightEntityIds);
   const narrow = useMediaQuery('(max-width: 767px)');
   const breakpointCols = useBreakpointCols();
   const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
@@ -471,6 +484,15 @@ export const LightsDashboard = memo(function LightsDashboard({
   const handleExpandedChange = useCallback((roomName: string, expanded: boolean) => {
     setExpandedRooms((current) => ({ ...current, [roomName]: expanded }));
   }, []);
+  const allRoomsCollapsed = useMemo(
+    () =>
+      model.rooms.length > 0 &&
+      model.rooms.every((room) => !(expandedRooms[room.room] ?? (!narrow || room.activeCount > 0))),
+    [expandedRooms, model.rooms, narrow]
+  );
+  const toggleAllRooms = useCallback(() => {
+    setExpandedRooms(Object.fromEntries(model.rooms.map((room) => [room.room, allRoomsCollapsed])));
+  }, [allRoomsCollapsed, model.rooms]);
 
   const handleWholeHomePower = async () => {
     setAllPowerPending(true);
@@ -498,7 +520,7 @@ export const LightsDashboard = memo(function LightsDashboard({
   };
 
   return (
-    <div className="space-y-3 md:space-y-3" data-testid="lights-dashboard">
+    <SummaryBarStack data-testid="lights-dashboard">
       <SummaryBar
         items={summaryItems}
         ariaLabel={t('lighting.dashboard.summary', {
@@ -515,11 +537,29 @@ export const LightsDashboard = memo(function LightsDashboard({
               loading={allPowerPending}
               disabled={model.totalCount === model.unavailableCount || isEditMode}
               onClick={() => void handleWholeHomePower()}
-              className="h-8 shrink-0 md:h-10"
+              className="h-[34px] shrink-0 md:h-[42px]"
             >
               {model.activeCount > 0
-                ? t('lighting.dashboard.turnAllOff')
-                : t('lighting.dashboard.turnAllOn')}
+                ? t('lighting.dashboard.turnOffAllLights')
+                : t('lighting.dashboard.turnOnAllLights')}
+            </Button>
+            <Button
+              variant="secondary"
+              size="compact"
+              leading={
+                allRoomsCollapsed ? (
+                  <ChevronsDown className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <ChevronsUp className="h-4 w-4" aria-hidden="true" />
+                )
+              }
+              disabled={model.rooms.length === 0}
+              onClick={toggleAllRooms}
+              className="h-[34px] shrink-0 md:h-[42px]"
+            >
+              {allRoomsCollapsed
+                ? t('lighting.dashboard.expandAll')
+                : t('lighting.dashboard.collapseAll')}
             </Button>
             <span className={`h-6 shrink-0 border-l ${surface.border}`} aria-hidden="true" />
           </div>
@@ -579,6 +619,6 @@ export const LightsDashboard = memo(function LightsDashboard({
           </div>
         </div>
       </div>
-    </div>
+    </SummaryBarStack>
   );
 });

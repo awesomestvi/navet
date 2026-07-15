@@ -293,7 +293,7 @@ export function AppearanceWallpaperItem({ controller }: { controller: SettingsSe
             <button
               type="button"
               onClick={handleRemoveWallpaper}
-              aria-label="Remove wallpaper"
+              aria-label={t('settings.appearance.wallpaper.remove')}
               className={`absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full ${styles.floatingButtonBg} ${styles.floatingButtonText} shadow-lg transition-all hover:scale-110`}
             >
               <X className="h-3.5 w-3.5" />

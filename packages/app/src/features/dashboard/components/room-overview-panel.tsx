@@ -1,5 +1,5 @@
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { useTheme } from '@navet/app/hooks';
+import { useI18n, useTheme } from '@navet/app/hooks';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceWithType } from '@navet/app/types/device.types';
@@ -68,6 +68,7 @@ export const RoomOverviewPanel = memo(function RoomOverviewPanel({
   orderedCardIds,
   deviceMap,
 }: RoomOverviewPanelProps) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
   const surface = getThemeSurfaceTokens(theme);
@@ -79,13 +80,13 @@ export const RoomOverviewPanel = memo(function RoomOverviewPanel({
   const metrics = [
     {
       id: 'temperature',
-      label: 'Temperature',
+      label: t('climate.temperature'),
       value: temperature !== null ? formatTemperature(temperature, temperatureUnit) : null,
       icon: Thermometer,
     },
     {
       id: 'humidity',
-      label: 'Humidity',
+      label: t('weather.humidity'),
       value: humidity !== null ? `${Math.round(humidity)}%` : null,
       icon: Droplets,
     },

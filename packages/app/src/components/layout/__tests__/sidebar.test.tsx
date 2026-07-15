@@ -367,7 +367,7 @@ describe('Sidebar mobile navigation', () => {
     );
   });
 
-  it('opens the customization dialog instead of triggering a custom desktop sidebar action in edit mode', () => {
+  it('opens the customization dialog instead of triggering a custom desktop sidebar action in edit mode', async () => {
     setMediaQueryMatch('(max-width: 767px)', false);
     useEditModeStore.getState().setEditMode(true);
     useSettingsStore.getState().updateSettings({
@@ -389,7 +389,7 @@ describe('Sidebar mobile navigation', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Movie status' }));
 
     expect(useNavigationStore.getState().activeSection).toBe('home');
-    const dialog = screen.getByRole('dialog');
+    const dialog = await screen.findByRole('dialog');
     expect(dialog).toBeInTheDocument();
     expect(within(dialog).getAllByText('Edit sidebar action').length).toBeGreaterThan(0);
     expect(within(dialog).getByDisplayValue('Movie status')).toBeInTheDocument();

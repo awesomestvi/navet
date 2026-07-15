@@ -28,6 +28,7 @@ import {
   useTheme,
 } from '@navet/app/hooks';
 import { useProviderEntityModel } from '@navet/app/hooks/use-provider-device';
+import type { TranslationKey } from '@navet/app/i18n';
 import { invokeIntegrationNativeAction } from '@navet/app/services/integration-native-action.service';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
@@ -60,11 +61,11 @@ const FAN_SPEED_PERCENTAGES: Record<FanSpeed, number> = {
 
 const FAN_SPEED_ACTIONS: Array<{
   speed: FanSpeed;
-  label: string;
+  labelKey: TranslationKey;
 }> = [
-  { speed: 'low', label: 'Low' },
-  { speed: 'medium', label: 'Medium' },
-  { speed: 'high', label: 'High' },
+  { speed: 'low', labelKey: 'lighting.fanSpeed.low' },
+  { speed: 'medium', labelKey: 'lighting.fanSpeed.medium' },
+  { speed: 'high', labelKey: 'lighting.fanSpeed.high' },
 ];
 
 const CARD_VISUAL_TRANSITION_CLASS =
@@ -168,16 +169,16 @@ const FanPresetOverflowButton = memo(function FanPresetOverflowButton({
         >
           <fieldset
             className="flex flex-wrap items-center justify-center gap-2"
-            aria-label="Fan presets"
+            aria-label={t('lighting.fanPresets')}
           >
-            {presets.map(({ speed, label }) => {
+            {presets.map(({ speed, labelKey }) => {
               const active = activeSpeed === speed;
 
               return (
                 <button
                   key={speed}
                   type="button"
-                  aria-label={`Fan ${label}`}
+                  aria-label={t('lighting.fanPreset', { preset: t(labelKey) })}
                   aria-pressed={active}
                   onClick={(event) => {
                     event.stopPropagation();
@@ -203,7 +204,7 @@ const FanPresetOverflowButton = memo(function FanPresetOverflowButton({
       <button
         type="button"
         disabled={!isOn}
-        aria-label="More fan presets"
+        aria-label={t('lighting.moreFanPresets')}
         onClick={handleOpen}
         className={`${buttonClassName} rounded-full transition-all duration-300 flex items-center justify-center ${
           !isOn
@@ -419,7 +420,9 @@ export const FanCard = memo(function FanCard({
   const disabledSelectedClasses = 'cursor-not-allowed text-white opacity-70';
   const showFanPresets = supportsFanSpeed && !hasAdvancedFanControls;
   const showPresetOverflow = supportsFanSpeed && hasAdvancedFanControls;
-  const directionLabel = fanDirection === 'reverse' ? 'Reverse' : 'Forward';
+  const directionLabel = t(
+    fanDirection === 'reverse' ? 'lighting.fanDirection.reverse' : 'lighting.fanDirection.forward'
+  );
   const directionIsReverse = fanDirection === 'reverse';
   const isExtraSmall = resolvedSize === 'extra-small';
   const hasActionRowButtons =
@@ -563,7 +566,7 @@ export const FanCard = memo(function FanCard({
                           {fanDirection !== undefined ? (
                             <button
                               type="button"
-                              aria-label={`Fan direction ${directionLabel}`}
+                              aria-label={t('lighting.fanDirection', { direction: directionLabel })}
                               aria-pressed={isOn && directionIsReverse}
                               disabled={!isOn}
                               onClick={(event) => {
@@ -599,7 +602,9 @@ export const FanCard = memo(function FanCard({
                           {fanOscillating !== undefined ? (
                             <button
                               type="button"
-                              aria-label={`Fan oscillation ${fanOscillating ? 'On' : 'Off'}`}
+                              aria-label={t('lighting.fanOscillation', {
+                                state: t(fanOscillating ? 'common.on' : 'common.off'),
+                              })}
                               aria-pressed={isOn && fanOscillating}
                               disabled={!isOn}
                               onClick={(event) => {
@@ -629,14 +634,14 @@ export const FanCard = memo(function FanCard({
                             </button>
                           ) : null}
                           {showFanPresets
-                            ? FAN_SPEED_ACTIONS.map(({ speed, label }) => {
+                            ? FAN_SPEED_ACTIONS.map(({ speed, labelKey }) => {
                                 const active = activeSpeed === speed;
 
                                 return (
                                   <button
                                     key={speed}
                                     type="button"
-                                    aria-label={`Fan ${label}`}
+                                    aria-label={t('lighting.fanPreset', { preset: t(labelKey) })}
                                     aria-pressed={active}
                                     disabled={!isOn}
                                     onClick={(event) => {

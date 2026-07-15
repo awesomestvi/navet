@@ -143,13 +143,20 @@ function formatCleaningTime(value: unknown): string | undefined {
   return `${Math.max(0, Math.round(numeric))} min`;
 }
 
+const vacuumDateFormatterByClockMode = new Map<boolean, Intl.DateTimeFormat>();
+
 function formatDate(date: Date, use24HourTime: boolean): string {
-  return new Intl.DateTimeFormat(undefined, {
-    weekday: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: !use24HourTime,
-  }).format(date);
+  let formatter = vacuumDateFormatterByClockMode.get(use24HourTime);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(undefined, {
+      weekday: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: !use24HourTime,
+    });
+    vacuumDateFormatterByClockMode.set(use24HourTime, formatter);
+  }
+  return formatter.format(date);
 }
 
 function normalizeLevelMetric(

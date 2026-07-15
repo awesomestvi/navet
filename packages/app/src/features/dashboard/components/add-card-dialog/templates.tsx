@@ -6,8 +6,14 @@ import type { CardTemplate } from './types';
 
 function BatteryIcon(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <title>Battery</title>
+    <svg
+      {...props}
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
       <rect x="2" y="7" width="16" height="10" rx="2" />
       <path d="M22 11v2" />
     </svg>
@@ -16,8 +22,14 @@ function BatteryIcon(props: SVGProps<SVGSVGElement>) {
 
 function UpsIcon(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <title>UPS</title>
+    <svg
+      {...props}
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
       <rect x="3" y="4" width="18" height="16" rx="3" />
       <path d="M8 8h8" />
       <path d="M8 12h4" />
@@ -29,8 +41,14 @@ function UpsIcon(props: SVGProps<SVGSVGElement>) {
 
 function Zap(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <title>Action</title>
+    <svg
+      {...props}
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
       <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
     </svg>
   );
@@ -38,8 +56,14 @@ function Zap(props: SVGProps<SVGSVGElement>) {
 
 function Newspaper(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <title>News</title>
+    <svg
+      {...props}
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
       <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" />
       <path d="M18 14h-8" />
       <path d="M15 18h-5" />
@@ -50,8 +74,14 @@ function Newspaper(props: SVGProps<SVGSVGElement>) {
 
 function Image(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <title>Photo</title>
+    <svg
+      {...props}
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
       <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
       <circle cx="9" cy="9" r="2" />
       <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
@@ -61,8 +91,14 @@ function Image(props: SVGProps<SVGSVGElement>) {
 
 function StickyNote(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <title>Note</title>
+    <svg
+      {...props}
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
       <path d="M15.5 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z" />
       <path d="M15 3v6h6" />
       <path d="M10 16s.8 1 2 1c1.3 0 2-1 2-1" />
@@ -74,8 +110,14 @@ function StickyNote(props: SVGProps<SVGSVGElement>) {
 
 function MapPinIcon(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <title>Map</title>
+    <svg
+      {...props}
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
       <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
       <circle cx="12" cy="10" r="3" />
     </svg>

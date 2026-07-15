@@ -1,6 +1,6 @@
 import { navetRadiusTokens } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
-import { useTheme } from '@navet/app/hooks';
+import { useI18n, useTheme } from '@navet/app/hooks';
 import { Check } from 'lucide-react';
 import { useMemo } from 'react';
 
@@ -21,6 +21,7 @@ export interface StepperProps {
 // Status: in-progress. Compact horizontal stepper for short multi-step flows.
 export function Stepper({ items, currentStep, className, size = 'default' }: StepperProps) {
   const { theme, accentColor } = useTheme();
+  const { t } = useI18n();
   const currentIndex = useMemo(
     () => Math.max(0, Math.min(items.length - 1, currentStep)),
     [currentStep, items.length]
@@ -112,7 +113,7 @@ export function Stepper({ items, currentStep, className, size = 'default' }: Ste
                 </div>
                 {item.optional && !isCompact ? (
                   <div className={cn('uppercase tracking-[0.14em] opacity-60', 'text-[11px]')}>
-                    Optional
+                    {t('common.optional')}
                   </div>
                 ) : null}
               </div>

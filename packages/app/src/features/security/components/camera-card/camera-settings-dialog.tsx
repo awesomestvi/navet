@@ -237,13 +237,14 @@ const CAMERA_WEB_RTC_STREAM_SOURCE_OPTIONS: CameraWebRtcStreamSource[] = ['provi
 const CAMERA_FIT_MODE_OPTIONS: CameraFitMode[] = ['contain', 'cover'];
 
 function CameraInfoPopoverIcon({ label, children }: { label: string; children: ReactNode }) {
+  const { t } = useI18n();
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
         <button
           type="button"
           className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white/58 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35"
-          aria-label={`${label} information`}
+          aria-label={t('common.informationAbout', { item: label })}
         >
           <Info className="h-3.5 w-3.5" aria-hidden="true" />
         </button>

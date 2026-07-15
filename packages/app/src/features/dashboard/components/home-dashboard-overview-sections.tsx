@@ -1,5 +1,6 @@
 import { DashboardEmptyState } from '@navet/app/components/patterns';
 import type { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { useI18n } from '@navet/app/hooks';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import { Wand2 } from 'lucide-react';
 import type { HomeEditorSection } from '../hooks/use-home-dashboard-editor';
@@ -130,6 +131,7 @@ export function HomePresentation({
   emptyDescription: string;
   onToggleEditMode?: () => void;
 }) {
+  const { t } = useI18n();
   const sectionGridCols = gridCols;
   const hasCards = flowCards.length > 0 || sections.some((section) => section.cardIds.length > 0);
   const nonEmptySections = sections.filter((section) => section.cardIds.length > 0);
@@ -142,7 +144,7 @@ export function HomePresentation({
           description={emptyDescription}
           surface={surface}
           accentColor={accentColor}
-          actionLabel="Edit dashboard"
+          actionLabel={t('dashboard.edit')}
           onAction={onToggleEditMode}
           actionIcon={Wand2}
           className="mx-auto max-w-3xl"

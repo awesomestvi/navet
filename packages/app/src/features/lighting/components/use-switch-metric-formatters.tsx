@@ -13,6 +13,7 @@ interface UseSwitchMetricFormattersParams {
   labels: {
     power: string;
     voltage: string;
+    current: string;
     energy: string;
   };
 }
@@ -100,13 +101,15 @@ export function useSwitchMetricFormatters({
           return labels.power;
         case 'Voltage':
           return labels.voltage;
+        case 'Current':
+          return labels.current;
         case 'Energy':
           return labels.energy;
         default:
           return getSwitchMetricDisplayLabel(metric.label, deviceName, metricLabels);
       }
     },
-    [deviceName, labels.energy, labels.power, labels.voltage, metricLabels]
+    [deviceName, labels.current, labels.energy, labels.power, labels.voltage, metricLabels]
   );
 
   const renderMetricIcon = useCallback((metric: DeviceMetric, className: string) => {

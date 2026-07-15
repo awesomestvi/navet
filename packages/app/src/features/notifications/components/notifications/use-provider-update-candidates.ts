@@ -1,12 +1,12 @@
 import { useIntegrationStore } from '@navet/app/hooks';
-import { useProviderEntitySnapshots } from '@navet/app/hooks/use-provider-entity';
+import { useProviderEntitySnapshotsByPrefix } from '@navet/app/hooks/use-provider-entity';
 import type {
   PlatformEntitySnapshotMap,
   PlatformUpdateNotificationCandidate,
 } from '@navet/app/platform/provider-feature-models';
 import { integrationSelectors } from '@navet/app/stores/selectors';
 
-const EMPTY_UPDATE_ENTITIES: PlatformEntitySnapshotMap = {};
+const UPDATE_ENTITY_PREFIXES = ['update.'] as const;
 
 const HTML_ENTITY_REPLACEMENTS: Record<string, string> = {
   '&amp;': '&',
@@ -55,10 +55,6 @@ function detectRestartRequired(...values: Array<string | null | undefined>): boo
       normalized.includes('home assistant') &&
       normalized.includes('required'))
   );
-}
-
-function selectNoUpdateEntities(): PlatformEntitySnapshotMap {
-  return EMPTY_UPDATE_ENTITIES;
 }
 
 export function mapHomeAssistantUpdateCandidates(
@@ -126,25 +122,12 @@ export function mapHomeAssistantUpdateCandidates(
   });
 }
 
-function selectProviderUpdateEntities(
-  entities: PlatformEntitySnapshotMap | null
-): PlatformEntitySnapshotMap {
-  if (!entities) {
-    return EMPTY_UPDATE_ENTITIES;
-  }
-
-  return Object.fromEntries(
-    Object.entries(entities).filter(([entityId]) => entityId.startsWith('update.'))
-  );
-}
-
 export function useProviderUpdateCandidates(enabled = true): PlatformUpdateNotificationCandidate[] {
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const isHomeAssistantProvider = enabled && currentProviderId === 'home_assistant';
-  const entities = useProviderEntitySnapshots({ enabled: isHomeAssistantProvider });
-  const updateEntities = isHomeAssistantProvider
-    ? selectProviderUpdateEntities(entities)
-    : selectNoUpdateEntities();
+  const updateEntities = useProviderEntitySnapshotsByPrefix(UPDATE_ENTITY_PREFIXES, {
+    enabled: isHomeAssistantProvider,
+  });
 
   if (!isHomeAssistantProvider) {
     return [];

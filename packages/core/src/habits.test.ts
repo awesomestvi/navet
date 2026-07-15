@@ -66,7 +66,7 @@ describe('habits detection', () => {
     expect(candidates).toHaveLength(0);
   });
 
-  it('reduces priority after dismissal feedback', () => {
+  it('applies a stronger confidence penalty when a rule should not be suggested again', () => {
     const events = [
       makeEvent({ timestamp: '2026-05-26T21:00:00.000Z' }),
       makeEvent({ timestamp: '2026-06-02T21:04:00.000Z' }),
@@ -98,6 +98,25 @@ describe('habits detection', () => {
     });
 
     expect(penalized.confidence).toBeLessThan(baseline.confidence);
+
+    const dontSuggestCandidates = detectHabitCandidates({
+      events,
+      feedback: [
+        {
+          id: 'feedback:2',
+          candidateId: baseline.id,
+          insightId: `insight:${baseline.id}`,
+          outcome: 'dont_suggest',
+          timestamp: '2026-06-10T21:11:00.000Z',
+          reason: 'not_useful',
+        },
+      ],
+      rules: [],
+      profile,
+      now: new Date('2026-06-10T21:12:00.000Z'),
+    });
+
+    expect(dontSuggestCandidates[0]?.confidence ?? 0).toBeLessThan(penalized.confidence);
   });
 
   it('drops confidence after a quick reversal', () => {

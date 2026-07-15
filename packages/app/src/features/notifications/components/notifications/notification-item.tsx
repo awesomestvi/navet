@@ -156,7 +156,7 @@ export function NotificationItem({
                     showExternalIcon
                     className={surface.textSecondary}
                   >
-                    View changes
+                    {t('notifications.action.viewChanges')}
                   </Link>
                 </>
               ) : null}

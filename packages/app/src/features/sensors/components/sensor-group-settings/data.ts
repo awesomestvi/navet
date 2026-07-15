@@ -1,9 +1,15 @@
+import type { TranslationKey } from '@navet/app/i18n';
 import type { AvailableSensor, SensorGroupColorConfig } from './types';
 
-export const AVAILABLE_SENSORS: AvailableSensor[] = [
+export type AvailableSensorDefinition = Omit<AvailableSensor, 'label'> & {
+  labelKey: TranslationKey;
+  valueKey?: TranslationKey;
+};
+
+export const AVAILABLE_SENSOR_DEFINITIONS: AvailableSensorDefinition[] = [
   {
     id: 'energy-today',
-    label: 'Today',
+    labelKey: 'energy.model.today',
     value: '12.4',
     unit: 'kWh',
     icon: 'zap',
@@ -11,7 +17,7 @@ export const AVAILABLE_SENSORS: AvailableSensor[] = [
   },
   {
     id: 'energy-current',
-    label: 'Current',
+    labelKey: 'climate.current',
     value: '2.3',
     unit: 'kW',
     icon: 'activity',
@@ -19,7 +25,7 @@ export const AVAILABLE_SENSORS: AvailableSensor[] = [
   },
   {
     id: 'energy-bathroom',
-    label: 'Bathroom',
+    labelKey: 'sensorGroup.sample.bathroom',
     value: '450',
     unit: 'W',
     icon: 'zap',
@@ -27,7 +33,7 @@ export const AVAILABLE_SENSORS: AvailableSensor[] = [
   },
   {
     id: 'energy-kitchen',
-    label: 'Kitchen',
+    labelKey: 'sensorGroup.sample.kitchen',
     value: '1.2',
     unit: 'kW',
     icon: 'zap',
@@ -35,7 +41,7 @@ export const AVAILABLE_SENSORS: AvailableSensor[] = [
   },
   {
     id: 'energy-bedroom',
-    label: 'Bedroom',
+    labelKey: 'sensorGroup.sample.bedroom',
     value: '320',
     unit: 'W',
     icon: 'zap',
@@ -43,7 +49,7 @@ export const AVAILABLE_SENSORS: AvailableSensor[] = [
   },
   {
     id: 'energy-living',
-    label: 'Living Room',
+    labelKey: 'sensorGroup.sample.livingRoom',
     value: '890',
     unit: 'W',
     icon: 'zap',
@@ -51,7 +57,7 @@ export const AVAILABLE_SENSORS: AvailableSensor[] = [
   },
   {
     id: 'energy-week',
-    label: 'This Week',
+    labelKey: 'calendar.settings.thisWeek',
     value: '84.2',
     unit: 'kWh',
     icon: 'trend-up',
@@ -59,7 +65,7 @@ export const AVAILABLE_SENSORS: AvailableSensor[] = [
   },
   {
     id: 'energy-month',
-    label: 'This Month',
+    labelKey: 'calendar.settings.thisMonth',
     value: '342',
     unit: 'kWh',
     icon: 'trend-up',
@@ -67,7 +73,7 @@ export const AVAILABLE_SENSORS: AvailableSensor[] = [
   },
   {
     id: 'temp-indoor',
-    label: 'Temperature',
+    labelKey: 'climate.temperature',
     value: '21',
     unit: '°C',
     icon: 'thermometer',
@@ -75,7 +81,7 @@ export const AVAILABLE_SENSORS: AvailableSensor[] = [
   },
   {
     id: 'humidity-indoor',
-    label: 'Humidity',
+    labelKey: 'weather.humidity',
     value: '55',
     unit: '%',
     icon: 'droplets',
@@ -83,7 +89,7 @@ export const AVAILABLE_SENSORS: AvailableSensor[] = [
   },
   {
     id: 'temp-outdoor',
-    label: 'Outdoor Temp',
+    labelKey: 'sensorGroup.sample.outdoorTemperature',
     value: '18',
     unit: '°C',
     icon: 'thermometer',
@@ -91,7 +97,7 @@ export const AVAILABLE_SENSORS: AvailableSensor[] = [
   },
   {
     id: 'humidity-outdoor',
-    label: 'Outdoor Humidity',
+    labelKey: 'sensorGroup.sample.outdoorHumidity',
     value: '72',
     unit: '%',
     icon: 'droplets',
@@ -99,7 +105,7 @@ export const AVAILABLE_SENSORS: AvailableSensor[] = [
   },
   {
     id: 'temp-bedroom',
-    label: 'Bedroom Temp',
+    labelKey: 'sensorGroup.sample.bedroomTemperature',
     value: '19',
     unit: '°C',
     icon: 'thermometer',
@@ -107,7 +113,7 @@ export const AVAILABLE_SENSORS: AvailableSensor[] = [
   },
   {
     id: 'humidity-bedroom',
-    label: 'Bedroom Humidity',
+    labelKey: 'sensorGroup.sample.bedroomHumidity',
     value: '48',
     unit: '%',
     icon: 'droplets',
@@ -115,15 +121,16 @@ export const AVAILABLE_SENSORS: AvailableSensor[] = [
   },
   {
     id: 'air-quality',
-    label: 'Air Quality',
+    labelKey: 'sections.climate.airQuality.title',
     value: 'Good',
+    valueKey: 'charts.quality.goodLabel',
     unit: '',
     icon: 'wind',
     category: 'environmental',
   },
   {
     id: 'wind-speed',
-    label: 'Wind Speed',
+    labelKey: 'weather.metric.wind',
     value: '12',
     unit: 'km/h',
     icon: 'wind',
@@ -131,7 +138,7 @@ export const AVAILABLE_SENSORS: AvailableSensor[] = [
   },
   {
     id: 'uv-index',
-    label: 'UV Index',
+    labelKey: 'weather.metric.uvIndex',
     value: '5',
     unit: '',
     icon: 'sun',
@@ -139,7 +146,7 @@ export const AVAILABLE_SENSORS: AvailableSensor[] = [
   },
   {
     id: 'pressure',
-    label: 'Pressure',
+    labelKey: 'weather.metric.pressure',
     value: '1013',
     unit: 'hPa',
     icon: 'gauge',
@@ -147,7 +154,7 @@ export const AVAILABLE_SENSORS: AvailableSensor[] = [
   },
   {
     id: 'co2',
-    label: 'CO2 Level',
+    labelKey: 'sensorGroup.sample.co2Level',
     value: '420',
     unit: 'ppm',
     icon: 'wind',
@@ -155,7 +162,7 @@ export const AVAILABLE_SENSORS: AvailableSensor[] = [
   },
   {
     id: 'noise-level',
-    label: 'Noise Level',
+    labelKey: 'sensorGroup.sample.noiseLevel',
     value: '42',
     unit: 'dB',
     icon: 'activity',
@@ -163,7 +170,7 @@ export const AVAILABLE_SENSORS: AvailableSensor[] = [
   },
   {
     id: 'light-level',
-    label: 'Light Level',
+    labelKey: 'sensorGroup.sample.lightLevel',
     value: '450',
     unit: 'lux',
     icon: 'sun',

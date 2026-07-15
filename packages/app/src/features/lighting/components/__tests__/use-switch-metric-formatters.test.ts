@@ -40,6 +40,7 @@ describe('getSwitchMetricDisplayLabel', () => {
         labels: {
           power: 'Power',
           voltage: 'Voltage',
+          current: 'Current',
           energy: 'Energy',
         },
       })
@@ -64,6 +65,7 @@ describe('getSwitchMetricDisplayLabel', () => {
         labels: {
           power: 'Power',
           voltage: 'Voltage',
+          current: 'Current',
           energy: 'Energy',
         },
       })

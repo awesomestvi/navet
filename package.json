@@ -63,6 +63,7 @@
     "check:provider-boundaries": "node scripts/check-provider-boundaries.mjs",
     "check:docker": "node scripts/check-docker-runtime.mjs",
     "check:lockfile": "node scripts/check-pnpm-lock-sync.mjs",
+    "check:i18n": "node scripts/check-i18n.mjs",
     "check:commitmsg": "node scripts/check-commit-message.mjs",
     "validate": "node scripts/validate-scope.mjs",
     "check:fix": "biome check --apply ./packages",

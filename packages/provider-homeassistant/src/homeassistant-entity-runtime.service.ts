@@ -18,6 +18,7 @@ import {
 
 const EMPTY_HASS_ENTITY_REGISTRY: HomeAssistantEntityRegistryEntry[] = [];
 let cachedSourceEntities: HassEntities | null | undefined;
+let cachedSourceEntityCount = 0;
 let cachedPlatformEntities: PlatformEntitySnapshotMap | null = null;
 let cachedSourceRegistry: HomeAssistantEntityRegistryEntry[] | null = null;
 let cachedSourceDeviceRegistry: HomeAssistantDeviceRegistryEntry[] | null = null;
@@ -25,43 +26,6 @@ let cachedPlatformRegistry: PlatformEntityRegistryEntry[] = [];
 let cachedPlatformRegistryById: Record<string, PlatformEntityRegistryEntry> = {};
 let cachedSourceConfig: HassConfig | null = null;
 let cachedPlatformConfig: HassConfig | null = null;
-
-function areEquivalentEntitySnapshots(
-  previous: HassEntities | null | undefined,
-  next: HassEntities | null | undefined
-) {
-  if (previous === next) {
-    return true;
-  }
-
-  if (!previous || !next) {
-    return false;
-  }
-
-  const previousEntries = Object.entries(previous);
-  const nextEntries = Object.entries(next);
-  if (previousEntries.length !== nextEntries.length) {
-    return false;
-  }
-
-  for (const [entityId, entity] of previousEntries) {
-    const nextEntity = next[entityId];
-    if (!nextEntity) {
-      return false;
-    }
-
-    if (
-      entity.state !== nextEntity.state ||
-      entity.last_changed !== nextEntity.last_changed ||
-      entity.last_updated !== nextEntity.last_updated ||
-      !areDataEqual(entity.attributes ?? {}, nextEntity.attributes ?? {})
-    ) {
-      return false;
-    }
-  }
-
-  return true;
-}
 
 function areEquivalentRegistryEntries(
   previous: HomeAssistantEntityRegistryEntry[] | null,
@@ -118,16 +82,13 @@ function toPlatformEntityRegistryEntry(
 function toPlatformEntitySnapshotMap(
   entities: HassEntities | null | undefined
 ): PlatformEntitySnapshotMap | null {
-  if (
-    entities === cachedSourceEntities ||
-    areEquivalentEntitySnapshots(cachedSourceEntities, entities)
-  ) {
-    cachedSourceEntities = entities;
+  if (entities === cachedSourceEntities) {
     return cachedPlatformEntities;
   }
 
   if (!entities) {
     cachedSourceEntities = entities;
+    cachedSourceEntityCount = 0;
     cachedPlatformEntities = null;
     return null;
   }
@@ -135,23 +96,28 @@ function toPlatformEntitySnapshotMap(
   const previousSourceEntities = cachedSourceEntities;
   const previousPlatformEntities = cachedPlatformEntities;
   const nextPlatformEntities: PlatformEntitySnapshotMap = {};
+  let nextEntityCount = 0;
+  let snapshotsChanged = !previousSourceEntities || !previousPlatformEntities;
 
   for (const [entityId, entity] of Object.entries(entities)) {
+    nextEntityCount += 1;
     const previousEntity = previousSourceEntities?.[entityId];
     const previousSnapshot = previousPlatformEntities?.[entityId];
 
     if (
-      previousEntity &&
       previousSnapshot &&
-      previousEntity.state === entity.state &&
-      previousEntity.last_changed === entity.last_changed &&
-      previousEntity.last_updated === entity.last_updated &&
-      areDataEqual(previousEntity.attributes ?? {}, entity.attributes ?? {})
+      (previousEntity === entity ||
+        (previousEntity &&
+          previousEntity.state === entity.state &&
+          previousEntity.last_changed === entity.last_changed &&
+          previousEntity.last_updated === entity.last_updated &&
+          areDataEqual(previousEntity.attributes ?? {}, entity.attributes ?? {})))
     ) {
       nextPlatformEntities[entityId] = previousSnapshot;
       continue;
     }
 
+    snapshotsChanged = true;
     nextPlatformEntities[entityId] = {
       entityId,
       state: entity.state,
@@ -161,7 +127,14 @@ function toPlatformEntitySnapshotMap(
     } satisfies PlatformEntitySnapshot;
   }
 
+  snapshotsChanged ||= nextEntityCount !== cachedSourceEntityCount;
   cachedSourceEntities = entities;
+  cachedSourceEntityCount = nextEntityCount;
+
+  if (!snapshotsChanged) {
+    return cachedPlatformEntities;
+  }
+
   cachedPlatformEntities = nextPlatformEntities;
   return cachedPlatformEntities;
 }
@@ -343,6 +316,7 @@ export const homeAssistantEntityRuntimeService: ProviderEntityRuntimeService = {
 
 export function resetHomeAssistantEntityRuntimeServiceCachesForTests() {
   cachedSourceEntities = undefined;
+  cachedSourceEntityCount = 0;
   cachedPlatformEntities = null;
   cachedSourceRegistry = null;
   cachedSourceDeviceRegistry = null;

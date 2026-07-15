@@ -12,15 +12,17 @@ import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { UNKNOWN_ROOM_LABEL } from '@navet/app/utils/device-location';
 import { createProviderScopedId } from '@navet/app/utils/provider-ids';
 import { areDataEqual } from '@navet/app/utils/structural-equality';
+import { subscribeVisibilityAwareAsyncTask } from '@navet/app/utils/visibility-aware-scheduler';
 import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useIntegrationStore } from './use-integration-store';
 import {
   useProviderEntityRegistryEntries,
-  useProviderEntitySnapshots,
+  useProviderEntitySnapshotsByPrefix,
 } from './use-provider-entity';
 import { useProviderFeature } from './use-provider-feature-support';
 
 const EMPTY_WEATHER_DEVICES: PlatformWeatherDevice[] = [];
+const WEATHER_ENTITY_PREFIXES = ['sun.', 'weather.'] as const;
 
 type WeatherForecastState = Record<
   string,
@@ -67,12 +69,13 @@ export function useProviderWeatherDevices(
   const enabled = options?.enabled ?? true;
   const currentProviderId = useIntegrationStore((state) => state.currentProviderId);
   const resolvedProviderId = providerId ?? currentProviderId;
-  const providerRuntime = useIntegrationStore(
+  const entitiesHydrated = useIntegrationStore(
     (state) =>
-      state.providerRuntime[resolvedProviderId] ?? state.providerRuntime[state.currentProviderId]
+      (state.providerRuntime[resolvedProviderId] ?? state.providerRuntime[state.currentProviderId])
+        .entitiesHydrated
   );
   const supportsWeather = useProviderFeature('weather', resolvedProviderId) && enabled;
-  const entities = useProviderEntitySnapshots({
+  const entities = useProviderEntitySnapshotsByPrefix(WEATHER_ENTITY_PREFIXES, {
     providerId: resolvedProviderId,
     enabled: supportsWeather,
   });
@@ -109,8 +112,6 @@ export function useProviderWeatherDevices(
     }
 
     let cancelled = false;
-    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
-
     const refreshForecasts = async () => {
       try {
         const scopedEntityId = createProviderScopedId(resolvedProviderId, primaryWeatherEntityId);
@@ -139,21 +140,15 @@ export function useProviderWeatherDevices(
       }
     };
 
-    const scheduleRefresh = () => {
-      refreshTimer = setTimeout(() => {
-        void refreshForecasts();
-        scheduleRefresh();
-      }, WEATHER_FORECAST_REFRESH_INTERVAL);
-    };
-
-    void refreshForecasts();
-    scheduleRefresh();
+    const unsubscribe = subscribeVisibilityAwareAsyncTask(
+      refreshForecasts,
+      WEATHER_FORECAST_REFRESH_INTERVAL,
+      { runImmediately: true }
+    );
 
     return () => {
       cancelled = true;
-      if (refreshTimer) {
-        clearTimeout(refreshTimer);
-      }
+      unsubscribe();
     };
   }, [resolvedProviderId, primaryWeatherEntityId, supportsWeather]);
 
@@ -212,10 +207,10 @@ export function useProviderWeatherDevices(
       return;
     }
 
-    if (providerRuntime.entitiesHydrated) {
+    if (entitiesHydrated) {
       lastResolvedDevicesRef.current = EMPTY_WEATHER_DEVICES;
     }
-  }, [providerRuntime.entitiesHydrated, resolvedDevices, supportsWeather]);
+  }, [entitiesHydrated, resolvedDevices, supportsWeather]);
 
   return useMemo(() => {
     if (resolvedDevices.length > 0) {
@@ -226,12 +221,12 @@ export function useProviderWeatherDevices(
       return EMPTY_WEATHER_DEVICES;
     }
 
-    if (!providerRuntime.entitiesHydrated) {
+    if (!entitiesHydrated) {
       return lastResolvedDevicesRef.current;
     }
 
     return EMPTY_WEATHER_DEVICES;
-  }, [providerRuntime.entitiesHydrated, resolvedDevices, supportsWeather]);
+  }, [entitiesHydrated, resolvedDevices, supportsWeather]);
 }
 
 export const useProviderWeatherDevicesCollection = useProviderWeatherDevices;

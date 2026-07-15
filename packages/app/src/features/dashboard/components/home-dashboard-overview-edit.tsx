@@ -192,14 +192,14 @@ export default function HomeDashboardOverviewEdit({
           <div className="w-70 rounded-3xl border border-white/20 bg-white/10 p-4 backdrop-blur-xl">
             <div className="flex items-center gap-3 text-white/80">
               <Columns2 className="h-5 w-5" />
-              <div className="text-sm font-semibold">Move column</div>
+              <div className="text-sm font-semibold">{t('dashboard.column.moveDragLabel')}</div>
             </div>
           </div>
         ) : activeDragSection ? (
           <div className="w-70 rounded-3xl border border-white/20 bg-white/10 p-4 backdrop-blur-xl">
             <div className="flex items-center gap-3 text-white/80">
               <GripVertical className="h-5 w-5" />
-              <div className="text-sm font-semibold">Move section</div>
+              <div className="text-sm font-semibold">{t('dashboard.section.moveDragLabel')}</div>
             </div>
           </div>
         ) : activeDragCard && activeDragSize ? (

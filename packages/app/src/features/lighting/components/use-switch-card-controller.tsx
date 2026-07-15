@@ -157,6 +157,7 @@ export function useSwitchCardController({
     labels: {
       power: t('lighting.metrics.power'),
       voltage: t('lighting.metrics.voltage'),
+      current: t('lighting.metrics.current'),
       energy: t('lighting.metrics.energy'),
     },
   });

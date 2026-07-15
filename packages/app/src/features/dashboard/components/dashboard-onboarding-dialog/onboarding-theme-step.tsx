@@ -165,6 +165,7 @@ export function OnboardingThemeStep({
           />
           {PRIMARY_COLOR_OPTIONS.filter((option) => option.value !== 'custom').map((option) => {
             const isActive = selectedAccent === option.value;
+            const optionLabel = t(option.labelKey);
 
             return (
               <button
@@ -182,8 +183,8 @@ export function OnboardingThemeStep({
                       }
                     : undefined),
                 }}
-                title={option.label}
-                aria-label={`Select ${option.label} accent color`}
+                title={optionLabel}
+                aria-label={t('themePicker.selectAccent', { color: optionLabel })}
               />
             );
           })}

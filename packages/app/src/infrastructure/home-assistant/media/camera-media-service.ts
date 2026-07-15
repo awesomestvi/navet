@@ -6,6 +6,7 @@ import type {
   PlatformCameraTransport,
 } from '@navet/app/platform/provider-feature-models';
 import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
+import { LruCache } from '@navet/app/utils/lru-cache';
 import { getProviderNativeId } from '@navet/core/ids';
 import type { HomeAssistantResourceResolver } from '../resources/resource-resolver';
 
@@ -26,6 +27,7 @@ const CAMERA_RETRY_DELAYS_MS = [1_000, 3_000, 7_000];
 const CAMERA_SNAPSHOT_REFRESH_MS = 10_000;
 const CAMERA_FALLBACK_REFRESH_MS = 30_000;
 const CAMERA_CAPABILITIES_TIMEOUT_MS = 750;
+const CAMERA_CAPABILITIES_CACHE_MAX_ENTRIES = 64;
 
 function canAttemptLivePlayback(
   cameraState: PlatformCameraState,
@@ -74,7 +76,9 @@ function resolveDirectStreamResource(input: {
 }
 
 export class CameraMediaService {
-  private cachedStreamTypes = new Map<string, PlatformCameraTransport[]>();
+  private cachedStreamTypes = new LruCache<string, PlatformCameraTransport[]>(
+    CAMERA_CAPABILITIES_CACHE_MAX_ENTRIES
+  );
 
   constructor(
     private resolver: HomeAssistantResourceResolver,

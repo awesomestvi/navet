@@ -1,3 +1,4 @@
+import { defaultTranslate, type TranslateFn } from '@navet/app/i18n';
 import type {
   EnergyConsumer,
   EnergyDashboardMode,
@@ -105,21 +106,22 @@ function buildDataCoverage(overview: EnergyOverview, sourceConfig: EnergySourceC
 export function getEnergyModeSummary(
   mode: EnergyDashboardMode,
   overview: EnergyOverview,
-  renewableSharePct: number
+  renewableSharePct: number,
+  t: TranslateFn = defaultTranslate
 ) {
   if (mode === 'peak') {
     const importKw = roundEnergyValue(overview.totals.importW / 1000);
-    return `Grid import is carrying ${importKw} kW while high-demand loads overlap.`;
+    return t('energy.model.mode.peak', { import: importKw });
   }
 
   if (mode === 'battery_saver') {
     const batteryPercent = overview.totals.batteryPercent.toFixed(BATTERY_PERCENT_DECIMALS);
-    return `Battery discharge is trimming the evening peak with ${batteryPercent}% reserve remaining.`;
+    return t('energy.model.mode.batterySaver', { percent: batteryPercent });
   }
 
   if (mode === 'eco') {
     const renewablePct = renewableSharePct.toFixed(BATTERY_PERCENT_DECIMALS);
-    return `Low-carbon sources are covering ${renewablePct}% of today's supply.`;
+    return t('energy.model.mode.eco', { percent: renewablePct });
   }
 
   if (
@@ -128,10 +130,10 @@ export function getEnergyModeSummary(
     (overview.totals.batteryPowerW ?? 0) === 0 &&
     overview.totals.batteryPercent <= 0
   ) {
-    return 'Live grid demand is steady and no HA Energy source changes are reported.';
+    return t('energy.model.mode.gridSteady');
   }
 
-  return 'The home is balanced between local generation, storage, and grid supply.';
+  return t('energy.model.mode.balanced');
 }
 
 function getNodeStatus(value: number, configured: boolean): EnergyDashboardNode['status'] {
@@ -149,7 +151,8 @@ function getNodeStatus(value: number, configured: boolean): EnergyDashboardNode[
 function buildNodes(
   overview: EnergyOverview,
   sourceConfig: EnergySourceConfig | null,
-  renewableSharePct: number
+  renewableSharePct: number,
+  t: TranslateFn
 ): EnergyDashboardNode[] {
   const hasSolar = Boolean(
     sourceConfig?.solarEnergyEntityId ||
@@ -177,7 +180,7 @@ function buildNodes(
   const nodes: EnergyDashboardNode[] = [
     {
       id: 'home',
-      label: 'Home',
+      label: t('energy.model.home'),
       icon: 'home',
       value: roundEnergyValue(overview.totals.currentLoadW / 1000),
       unit: 'kW',
@@ -190,7 +193,7 @@ function buildNodes(
   if (hasSolar) {
     nodes.push({
       id: 'solar',
-      label: 'Solar',
+      label: t('energy.model.solar'),
       icon: 'solar',
       value: roundEnergyValue(overview.totals.solarW / 1000),
       unit: 'kW',
@@ -203,7 +206,7 @@ function buildNodes(
   if (hasGrid) {
     nodes.push({
       id: 'grid',
-      label: 'Grid',
+      label: t('energy.model.grid'),
       icon: 'grid',
       value: roundEnergyValue(
         (overview.totals.exportW > 0 ? overview.totals.exportW : overview.totals.importW) / 1000
@@ -220,7 +223,7 @@ function buildNodes(
   if (hasBattery) {
     nodes.push({
       id: 'battery',
-      label: 'Battery',
+      label: t('energy.model.battery'),
       icon: 'battery',
       value: roundEnergyValue(overview.totals.batteryPercent),
       unit: '%',
@@ -234,7 +237,7 @@ function buildNodes(
   if (hasGas) {
     nodes.push({
       id: 'gas',
-      label: 'Gas',
+      label: t('energy.model.gas'),
       icon: 'gas',
       value: roundEnergyValue(overview.totals.gasTodayKWh),
       unit: 'kWh',
@@ -247,7 +250,7 @@ function buildNodes(
   if (hasRenewable) {
     nodes.push({
       id: 'renewable',
-      label: 'Low-carbon',
+      label: t('energy.model.lowCarbon'),
       icon: 'renewable',
       value: roundEnergyValue(renewableSharePct),
       unit: '%',
@@ -423,19 +426,22 @@ function buildDaySnapshotBase(
   };
 }
 
-function buildEnergyBreakdown(values: {
-  solarKWh?: number;
-  gridImportKWh?: number;
-  gridExportKWh?: number;
-  gasKWh?: number;
-  hotWaterKWh?: number;
-}): EnergyRangeSnapshot['energyBreakdown'] {
+function buildEnergyBreakdown(
+  values: {
+    solarKWh?: number;
+    gridImportKWh?: number;
+    gridExportKWh?: number;
+    gasKWh?: number;
+    hotWaterKWh?: number;
+  },
+  t: TranslateFn
+): EnergyRangeSnapshot['energyBreakdown'] {
   const items: EnergyRangeSnapshot['energyBreakdown'] = [];
 
   if ((values.solarKWh ?? 0) > 0) {
     items.push({
       id: 'solar',
-      label: 'Solar',
+      label: t('energy.model.solar'),
       value: roundEnergyValue(values.solarKWh ?? 0, 1),
       unit: 'kWh',
       tone: 'solar',
@@ -445,7 +451,7 @@ function buildEnergyBreakdown(values: {
   if ((values.gridImportKWh ?? 0) > 0) {
     items.push({
       id: 'grid',
-      label: 'Grid import',
+      label: t('energy.model.gridImport'),
       value: roundEnergyValue(values.gridImportKWh ?? 0, 1),
       unit: 'kWh',
       tone: 'grid',
@@ -455,7 +461,7 @@ function buildEnergyBreakdown(values: {
   if ((values.gridExportKWh ?? 0) > 0) {
     items.push({
       id: 'grid-export',
-      label: 'Grid export',
+      label: t('energy.model.gridExport'),
       value: roundEnergyValue(values.gridExportKWh ?? 0, 1),
       unit: 'kWh',
       tone: 'grid',
@@ -465,7 +471,7 @@ function buildEnergyBreakdown(values: {
   if ((values.gasKWh ?? 0) > 0) {
     items.push({
       id: 'gas',
-      label: 'Gas',
+      label: t('energy.model.gas'),
       value: roundEnergyValue(values.gasKWh ?? 0, 1),
       unit: 'kWh',
       tone: 'gas',
@@ -475,7 +481,7 @@ function buildEnergyBreakdown(values: {
   if ((values.hotWaterKWh ?? 0) > 0) {
     items.push({
       id: 'hot-water',
-      label: 'Hot water',
+      label: t('energy.model.hotWater'),
       value: roundEnergyValue(values.hotWaterKWh ?? 0, 1),
       unit: 'kWh',
       tone: 'gas',
@@ -488,7 +494,8 @@ function buildEnergyBreakdown(values: {
 function buildNowSnapshot(
   overview: EnergyOverview,
   trend: EnergySeriesPoint[],
-  day: DaySnapshotBase
+  day: DaySnapshotBase,
+  t: TranslateFn
 ): EnergyRangeSnapshot {
   return {
     id: 'now',
@@ -496,12 +503,20 @@ function buildNowSnapshot(
     liveConsumption:
       trend.length > 0
         ? trend
-        : [{ label: 'Now', value: roundEnergyValue(overview.totals.currentLoadW / 1000, 1) }],
-    energyBreakdown: buildEnergyBreakdown({
-      gridImportKWh: overview.totals.importW > 0 ? overview.totals.importW / 1000 : 0,
-      gridExportKWh: overview.totals.exportW > 0 ? overview.totals.exportW / 1000 : 0,
-      solarKWh: overview.totals.solarW > 0 ? overview.totals.solarW / 1000 : 0,
-    }),
+        : [
+            {
+              label: t('energy.model.now'),
+              value: roundEnergyValue(overview.totals.currentLoadW / 1000, 1),
+            },
+          ],
+    energyBreakdown: buildEnergyBreakdown(
+      {
+        gridImportKWh: overview.totals.importW > 0 ? overview.totals.importW / 1000 : 0,
+        gridExportKWh: overview.totals.exportW > 0 ? overview.totals.exportW / 1000 : 0,
+        solarKWh: overview.totals.solarW > 0 ? overview.totals.solarW / 1000 : 0,
+      },
+      t
+    ),
     costBreakdown: [],
     batteryForecast: [],
   };
@@ -510,22 +525,35 @@ function buildNowSnapshot(
 function buildTodaySnapshot(
   overview: EnergyOverview,
   trend: EnergySeriesPoint[],
-  day: DaySnapshotBase
+  day: DaySnapshotBase,
+  t: TranslateFn
 ): EnergyRangeSnapshot {
   return {
     id: 'today',
     ...day,
-    liveConsumption: trend.length > 0 ? trend : [{ label: 'Today', value: day.totalUsageKWh }],
-    energyBreakdown: buildEnergyBreakdown({
-      solarKWh: day.solarProductionKWh,
-      gridImportKWh: day.gridImportKWh,
-      gridExportKWh: day.gridExportKWh,
-      gasKWh: overview.totals.gasTodayKWh,
-      hotWaterKWh: overview.totals.hotWaterTodayKWh,
-    }),
+    liveConsumption:
+      trend.length > 0 ? trend : [{ label: t('energy.model.today'), value: day.totalUsageKWh }],
+    energyBreakdown: buildEnergyBreakdown(
+      {
+        solarKWh: day.solarProductionKWh,
+        gridImportKWh: day.gridImportKWh,
+        gridExportKWh: day.gridExportKWh,
+        gasKWh: overview.totals.gasTodayKWh,
+        hotWaterKWh: overview.totals.hotWaterTodayKWh,
+      },
+      t
+    ),
     costBreakdown:
       day.estimatedCost > 0
-        ? [{ id: 'cost', label: 'Energy cost', value: day.estimatedCost, unit: '$', tone: 'cost' }]
+        ? [
+            {
+              id: 'cost',
+              label: t('energy.model.energyCost'),
+              value: day.estimatedCost,
+              unit: '$',
+              tone: 'cost',
+            },
+          ]
         : [],
     batteryForecast: [],
   };
@@ -533,7 +561,8 @@ function buildTodaySnapshot(
 
 function buildWeekSnapshot(
   periodTotals: BuildEnergyDashboardModelParams['periodTotals'],
-  _day: DaySnapshotBase
+  _day: DaySnapshotBase,
+  t: TranslateFn
 ): EnergyRangeSnapshot {
   const weekUsage = periodTotals.week;
   const weekGridImport = periodTotals.week;
@@ -546,7 +575,7 @@ function buildWeekSnapshot(
     gridExportKWh: 0,
     estimatedCost: 0,
     liveConsumption: [],
-    energyBreakdown: buildEnergyBreakdown({ gridImportKWh: weekGridImport }),
+    energyBreakdown: buildEnergyBreakdown({ gridImportKWh: weekGridImport }, t),
     costBreakdown: [],
     batteryForecast: [],
   };
@@ -554,7 +583,8 @@ function buildWeekSnapshot(
 
 function buildMonthSnapshot(
   periodTotals: BuildEnergyDashboardModelParams['periodTotals'],
-  _day: DaySnapshotBase
+  _day: DaySnapshotBase,
+  t: TranslateFn
 ): EnergyRangeSnapshot {
   const monthUsage = periodTotals.month;
   const monthGridImport = periodTotals.month;
@@ -567,7 +597,7 @@ function buildMonthSnapshot(
     gridExportKWh: 0,
     estimatedCost: 0,
     liveConsumption: [],
-    energyBreakdown: buildEnergyBreakdown({ gridImportKWh: monthGridImport }),
+    energyBreakdown: buildEnergyBreakdown({ gridImportKWh: monthGridImport }, t),
     costBreakdown: [],
     batteryForecast: [],
   };
@@ -576,42 +606,46 @@ function buildMonthSnapshot(
 function buildRangeSnapshots(
   overview: EnergyOverview,
   trend: EnergySeriesPoint[],
-  periodTotals: BuildEnergyDashboardModelParams['periodTotals']
+  periodTotals: BuildEnergyDashboardModelParams['periodTotals'],
+  t: TranslateFn
 ): Record<EnergyRange, EnergyRangeSnapshot> {
   const day = buildDaySnapshotBase(overview, periodTotals);
 
   return {
-    now: buildNowSnapshot(overview, trend, day),
-    today: buildTodaySnapshot(overview, trend, day),
-    week: buildWeekSnapshot(periodTotals, day),
-    month: buildMonthSnapshot(periodTotals, day),
+    now: buildNowSnapshot(overview, trend, day, t),
+    today: buildTodaySnapshot(overview, trend, day, t),
+    week: buildWeekSnapshot(periodTotals, day, t),
+    month: buildMonthSnapshot(periodTotals, day, t),
   };
 }
 
 function deriveWhatChanged(
   overview: EnergyOverview,
-  topConsumers: EnergyConsumer[]
+  topConsumers: EnergyConsumer[],
+  t: TranslateFn
 ): EnergyDashboardModel['whatChanged'] {
   const heating = topConsumers.find((consumer) => consumer.category === 'hvac');
   if (heating && heating.energyKWh > 0) {
     return {
-      title: 'Heating moved ahead of yesterday',
-      description: `Heating used ${Math.max(8, Math.round(heating.shareOfLoad * 58))}% more than yesterday's baseline window.`,
+      title: t('energy.model.changed.heatingTitle'),
+      description: t('energy.model.changed.heatingDescription', {
+        percent: Math.max(8, Math.round(heating.shareOfLoad * 58)),
+      }),
       tone: heating.shareOfLoad > 0.25 ? 'warn' : 'default',
     };
   }
 
   if (overview.totals.exportW > 0) {
     return {
-      title: 'The house flipped into export',
-      description: 'Midday production is now pushing excess energy back to the grid.',
+      title: t('energy.model.changed.exportTitle'),
+      description: t('energy.model.changed.exportDescription'),
       tone: 'good',
     };
   }
 
   return {
-    title: 'Live demand is steady',
-    description: 'No major swings versus the previous comparison window.',
+    title: t('energy.model.changed.steadyTitle'),
+    description: t('energy.model.changed.steadyDescription'),
     tone: 'default',
   };
 }
@@ -619,7 +653,8 @@ function deriveWhatChanged(
 function buildEnergyExplanations(
   overview: EnergyOverview,
   dataCoverage: EnergyDashboardModel['dataCoverage'],
-  renewableSharePct: number
+  renewableSharePct: number,
+  t: TranslateFn
 ): EnergyExplanation[] {
   const explanations: EnergyExplanation[] = [];
   const [topConsumer] = [...overview.topConsumers].sort(
@@ -629,8 +664,11 @@ function buildEnergyExplanations(
   if (topConsumer && topConsumer.powerW > 0) {
     explanations.push({
       id: 'top-live-driver',
-      title: `${topConsumer.name} is the biggest live driver`,
-      description: `${formatEnergyValue(topConsumer.powerW / 1000)} kW now, with ${formatEnergyValue(topConsumer.shareOfLoad * 100, 0)}% of tracked load today.`,
+      title: t('energy.model.explanation.topTitle', { name: topConsumer.name }),
+      description: t('energy.model.explanation.topDescription', {
+        power: formatEnergyValue(topConsumer.powerW / 1000),
+        share: formatEnergyValue(topConsumer.shareOfLoad * 100, 0),
+      }),
       tone: topConsumer.shareOfLoad >= 0.3 ? 'warn' : 'default',
       affectedConsumerIds: [topConsumer.id],
     });
@@ -639,8 +677,11 @@ function buildEnergyExplanations(
   if (overview.totals.importW > PEAK_IMPORT_THRESHOLD_W) {
     explanations.push({
       id: 'grid-import-peak',
-      title: 'Grid import is elevated',
-      description: `${formatEnergyValue(overview.totals.importW / 1000)} kW is coming from the grid while live home load is ${formatEnergyValue(overview.totals.currentLoadW / 1000)} kW.`,
+      title: t('energy.model.explanation.gridTitle'),
+      description: t('energy.model.explanation.gridDescription', {
+        import: formatEnergyValue(overview.totals.importW / 1000),
+        load: formatEnergyValue(overview.totals.currentLoadW / 1000),
+      }),
       tone: 'warn',
       affectedConsumerIds: topConsumer ? [topConsumer.id] : [],
     });
@@ -649,8 +690,11 @@ function buildEnergyExplanations(
   if (overview.totals.solarW > 0) {
     explanations.push({
       id: 'solar-offset',
-      title: 'Solar is offsetting live demand',
-      description: `${formatEnergyValue(overview.totals.solarW / 1000)} kW of solar is covering about ${formatEnergyValue(renewableSharePct, 0)}% of the current load.`,
+      title: t('energy.model.explanation.solarTitle'),
+      description: t('energy.model.explanation.solarDescription', {
+        solar: formatEnergyValue(overview.totals.solarW / 1000),
+        share: formatEnergyValue(renewableSharePct, 0),
+      }),
       tone: 'good',
       affectedConsumerIds: [],
     });
@@ -659,9 +703,8 @@ function buildEnergyExplanations(
   if (!dataCoverage.hasTrackedDevices) {
     explanations.push({
       id: 'tracked-devices-missing',
-      title: 'Device-level drivers are not configured yet',
-      description:
-        'Add tracked energy devices to explain which appliances contribute most to live load and today usage.',
+      title: t('energy.model.explanation.untrackedTitle'),
+      description: t('energy.model.explanation.untrackedDescription'),
       tone: 'default',
       affectedConsumerIds: [],
     });
@@ -672,7 +715,8 @@ function buildEnergyExplanations(
 
 function buildSummary(
   overview: EnergyOverview,
-  dataCoverage: EnergyDashboardModel['dataCoverage']
+  dataCoverage: EnergyDashboardModel['dataCoverage'],
+  t: TranslateFn
 ): EnergyDashboardModel['summary'] {
   const gridTone =
     overview.totals.exportW > 0
@@ -684,48 +728,54 @@ function buildSummary(
   const summary: EnergyDashboardModel['summary'] = [
     {
       id: 'load',
-      label: 'Live home load',
+      label: t('energy.model.summary.liveHomeLoad'),
       value: formatEnergyValue(overview.totals.currentLoadW / 1000),
-      caption: 'kW live',
+      caption: t('energy.model.caption.live'),
     },
   ];
 
   if (dataCoverage.hasGridImport || dataCoverage.hasGridExport) {
     summary.push({
       id: 'grid',
-      label: 'Grid',
+      label: t('energy.model.grid'),
       value: formatEnergyValue(
         (overview.totals.exportW > 0 ? overview.totals.exportW : overview.totals.importW) / 1000
       ),
-      caption: overview.totals.exportW > 0 ? 'kW export' : 'kW import',
+      caption:
+        overview.totals.exportW > 0
+          ? t('energy.model.caption.export')
+          : t('energy.model.caption.import'),
       tone: gridTone,
     });
 
     summary.push({
       id: 'today-grid',
-      label: 'Grid today',
+      label: t('energy.model.summary.gridToday'),
       value: formatEnergyValue(overview.totals.importTodayKWh),
-      caption: 'kWh imported',
+      caption: t('energy.model.caption.imported'),
     });
   }
 
   if (dataCoverage.hasTrackedDevices) {
     summary.push({
       id: 'tracked-devices',
-      label: 'Tracked devices',
+      label: t('energy.model.summary.trackedDevices'),
       value: formatEnergyValue(
         overview.topConsumers.reduce((total, consumer) => total + consumer.energyKWh, 0)
       ),
-      caption: `${overview.topConsumers.length} device${overview.topConsumers.length === 1 ? '' : 's'} today`,
+      caption: t('energy.model.caption.devicesToday', { count: overview.topConsumers.length }),
     });
   }
 
   if (dataCoverage.hasSolar) {
     summary.push({
       id: 'solar',
-      label: 'Solar production',
+      label: t('energy.model.summary.solarProduction'),
       value: formatEnergyValue(overview.totals.solarW / 1000),
-      caption: overview.totals.solarW > 0 ? 'kW now' : 'kWh source configured',
+      caption:
+        overview.totals.solarW > 0
+          ? t('energy.model.caption.now')
+          : t('energy.model.caption.sourceConfigured'),
       tone: overview.totals.solarW > 0 ? 'good' : 'default',
     });
   }
@@ -733,9 +783,9 @@ function buildSummary(
   if (dataCoverage.hasBattery) {
     summary.push({
       id: 'battery',
-      label: 'Battery',
+      label: t('energy.model.battery'),
       value: formatEnergyValue(overview.totals.batteryPercent, 0),
-      caption: '% state of charge',
+      caption: t('energy.model.caption.stateOfCharge'),
       tone: overview.totals.batteryPercent > 25 ? 'good' : 'warn',
     });
   }
@@ -761,13 +811,10 @@ function buildTotals(overview: EnergyOverview, renewableSharePct: number) {
   };
 }
 
-export function buildEnergyDashboardModel({
-  overview,
-  range,
-  trend,
-  periodTotals,
-  sourceConfig,
-}: BuildEnergyDashboardModelParams): EnergyDashboardModel {
+export function buildEnergyDashboardModel(
+  { overview, range, trend, periodTotals, sourceConfig }: BuildEnergyDashboardModelParams,
+  t: TranslateFn = defaultTranslate
+): EnergyDashboardModel {
   const renewableSharePct =
     overview.totals.currentLoadW > 0
       ? Math.min(
@@ -778,16 +825,16 @@ export function buildEnergyDashboardModel({
         )
       : 0;
 
-  const nodes = buildNodes(overview, sourceConfig, renewableSharePct);
+  const nodes = buildNodes(overview, sourceConfig, renewableSharePct, t);
   const flows = buildFlows(overview, nodes);
   const dataCoverage = buildDataCoverage(overview, sourceConfig);
   const selectedRange = normalizeEnergyRange(range);
   const mode = resolveMode(overview);
-  const modeSummary = getEnergyModeSummary(mode, overview, renewableSharePct);
-  const summary = buildSummary(overview, dataCoverage);
-  const ranges = buildRangeSnapshots(overview, trend, periodTotals);
-  const whatChanged = deriveWhatChanged(overview, overview.topConsumers);
-  const explanations = buildEnergyExplanations(overview, dataCoverage, renewableSharePct);
+  const modeSummary = getEnergyModeSummary(mode, overview, renewableSharePct, t);
+  const summary = buildSummary(overview, dataCoverage, t);
+  const ranges = buildRangeSnapshots(overview, trend, periodTotals, t);
+  const whatChanged = deriveWhatChanged(overview, overview.topConsumers, t);
+  const explanations = buildEnergyExplanations(overview, dataCoverage, renewableSharePct, t);
   const totals = buildTotals(overview, renewableSharePct);
 
   return {

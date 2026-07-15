@@ -222,6 +222,7 @@ export function ThemeAppearancePicker({
               .filter((option) => option.value !== 'custom')
               .map((option) => {
                 const isActive = selectedAccent === option.value;
+                const optionLabel = t(option.labelKey);
 
                 return (
                   <button
@@ -239,8 +240,8 @@ export function ThemeAppearancePicker({
                           }
                         : undefined),
                     }}
-                    title={option.label}
-                    aria-label={`Select ${option.label} accent color`}
+                    title={optionLabel}
+                    aria-label={t('themePicker.selectAccent', { color: optionLabel })}
                   >
                     {isActive ? (
                       <Check className="h-3 w-3 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" />

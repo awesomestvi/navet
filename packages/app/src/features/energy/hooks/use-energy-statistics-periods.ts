@@ -3,7 +3,8 @@ import {
   getIntegrationHistoryMessageClient,
   supportsIntegrationEnergyStatistics,
 } from '@navet/app/services/integration-history.service';
-import { useEffect, useRef, useState } from 'react';
+import { subscribeVisibilityAwareAsyncTask } from '@navet/app/utils/visibility-aware-scheduler';
+import { useEffect, useState } from 'react';
 import { getCachedEnergyStatistics } from '../services/energy-statistics-cache';
 import { getEnergyStatisticsPeriods } from '../services/energy-statistics-service';
 
@@ -22,7 +23,6 @@ export function useEnergyStatisticsPeriods(
   enabled = true
 ): EnergyPeriodTotals {
   const [totals, setTotals] = useState<EnergyPeriodTotals>({ today: 0, week: 0, month: 0 });
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const supportsStatistics = supportsIntegrationEnergyStatistics(entityId);
 
   useEffect(() => {
@@ -48,12 +48,7 @@ export function useEnergyStatisticsPeriods(
       }
     }
 
-    void fetchStats();
-    timerRef.current = setInterval(() => void fetchStats(), REFRESH_MS);
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    return subscribeVisibilityAwareAsyncTask(fetchStats, REFRESH_MS, { runImmediately: true });
   }, [enabled, entityId, supportsStatistics, unit]);
 
   return totals;
