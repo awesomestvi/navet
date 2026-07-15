@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.10.0
+
+- Updated Navet to `0.10.0`
+- Added a room-first Lights dashboard with room status, brightness and power controls, scene shortcuts, and responsive light lists
+- Improved provider-backed Energy, Media, Security, Tasks, Habits, Settings, and home dashboard surfaces
+- Improved recovery from provider changes, unavailable data, and page visibility transitions across dashboard entities and resources
+- Expanded translation coverage across every supported language and added automated catalog consistency checks
+- Reduced unnecessary dashboard work with bounded resource caches, visibility-aware scheduling, and deferred settings UI
+
 ## 0.9.1
 
 - Updated Navet to `0.9.1`

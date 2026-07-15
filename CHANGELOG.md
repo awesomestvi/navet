@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.10.0 - 2026-07-15
+
+## New
+
+- The Lights dashboard now organizes provider-backed lights by room with room status, brightness and power controls, scene shortcuts, expandable sections, and responsive card or table layouts.
+
+## Fixed
+
+- Dashboard entities, calendars, weather, alarms, camera streams, photo frames, update notifications, and media controls now recover more reliably from provider changes, unavailable data, and visibility transitions.
+- Dashboard labels and controls now use complete localized messages more consistently instead of falling back to untranslated or hard-coded English text.
+
+## Improved
+
+- Energy, Media, Security, Tasks, Habits, Settings, and home overview surfaces now use clearer responsive layouts, denser controls, and more consistent shared card treatments.
+- Energy history and live-consumption views now use provider-backed history services with clearer source diagnostics, tracked and untracked usage, and localized status details.
+- Dashboard rendering now limits resource and media metadata caches, schedules background work around page visibility, and avoids loading heavier settings UI until it is opened.
+- Translation coverage has been expanded across German, Spanish, French, Italian, Portuguese, Swedish, and Chinese, with an automated catalog consistency check for future changes.
+
 ## 0.9.1 - 2026-07-14
 
 ## Fixed
