@@ -166,6 +166,7 @@ Behavior:
 - publishes standalone app release images
 - publishes add-on release images
 - creates the GitHub release from `CHANGELOG.md`
+- publishes the same `CHANGELOG.md` entries on the docs changelog during the next docs build
 - marks prerelease tags as GitHub prereleases
 - never moves `latest` on prerelease tags
 

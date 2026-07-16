@@ -1,155 +1,184 @@
-import { Text } from '@navet/app/components/primitives';
-import { getCardShellSurfaceTokens } from '@navet/app/components/shared/theme/card-shell-surface-tokens';
-import { getEntityIconPillStyles } from '@navet/app/components/shared/theme/entity-icon-pill-styles';
+import navetLogo from '@assets/public/logo.svg';
+import homeAssistantLogo from '@navet/app/assets/providers/home-assistant.svg';
+import homeyLogoAvif from '@navet/app/assets/providers/homey.avif';
+import homeyLogo from '@navet/app/assets/providers/homey.png';
+import homeyLogoWebp from '@navet/app/assets/providers/homey.webp';
+import openhabLogo from '@navet/app/assets/providers/openhab.svg';
+import { Link, Panel, Text } from '@navet/app/components/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { CardWrapper } from '@navet/app/components/ui/card-wrapper';
 import { cn } from '@navet/app/components/ui/utils';
 import { useTheme } from '@navet/app/hooks';
-import {
-  MarketingEyebrow,
-  MarketingPillGroup,
-} from '@navet/app/marketing/components/MarketingEditorial';
-import {
-  MARKETING_FEATURES,
-  MARKETING_PRODUCT_PROOF,
-} from '@navet/app/marketing/data/marketingContent';
+import { MarketingResponsiveImage } from '@navet/app/marketing/components/MarketingResponsiveImage';
+import { MARKETING_URLS } from '@navet/app/marketing/constants/marketingLinks';
 import { MarketingSectionShell } from '@navet/app/marketing/shell/MarketingSectionShell';
+import { ArrowDown, ArrowRight, Check } from 'lucide-react';
 
-const FEATURE_CARD_STYLES = [
+const PROVIDERS = [
   {
-    primaryColor: 'green',
-    iconSurface:
-      'bg-[linear-gradient(180deg,rgba(73,220,177,0.10),rgba(8,13,16,0.98))] text-emerald-100',
+    name: 'Home Assistant',
+    src: homeAssistantLogo,
+    alt: 'Home Assistant logo',
   },
   {
-    primaryColor: 'orange',
-    iconSurface:
-      'bg-[linear-gradient(180deg,rgba(255,177,79,0.10),rgba(18,12,8,0.98))] text-orange-100',
+    name: 'Homey',
+    src: homeyLogo,
+    alt: 'Homey logo',
+    sources: [
+      { srcSet: homeyLogoAvif, type: 'image/avif' as const },
+      { srcSet: homeyLogoWebp, type: 'image/webp' as const },
+    ],
   },
   {
-    primaryColor: 'blue',
-    iconSurface:
-      'bg-[linear-gradient(180deg,rgba(74,168,255,0.10),rgba(9,14,22,0.98))] text-sky-100',
+    name: 'openHAB',
+    src: openhabLogo,
+    alt: 'openHAB logo',
   },
-  {
-    primaryColor: 'purple',
-    iconSurface:
-      'bg-[linear-gradient(180deg,rgba(167,139,250,0.10),rgba(14,11,24,0.98))] text-violet-100',
-  },
-  {
-    primaryColor: 'pink',
-    iconSurface:
-      'bg-[linear-gradient(180deg,rgba(244,114,182,0.10),rgba(20,10,16,0.98))] text-pink-100',
-  },
-  {
-    primaryColor: 'yellow',
-    iconSurface:
-      'bg-[linear-gradient(180deg,rgba(253,224,71,0.10),rgba(22,16,7,0.98))] text-amber-100',
-  },
+] as const;
+
+const DASHBOARD_OUTCOMES = [
+  'Find daily controls by room and purpose.',
+  'Use familiar interactions for lights, climate, media, and security.',
+  'Move between a wall panel, tablet, desktop, and phone without relearning the layout.',
 ] as const;
 
 export function MarketingFeatureGridSection({ className }: { className?: string }) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const shell = getCardShellSurfaceTokens(theme);
-  const numberTone =
-    theme === 'light' ? 'text-slate-400/80' : theme === 'glass' ? 'text-white/34' : 'text-white/28';
 
   return (
     <MarketingSectionShell
-      title={MARKETING_PRODUCT_PROOF.title}
-      description={MARKETING_PRODUCT_PROOF.description}
+      title="Your platform runs the home. Navet makes it easier to use."
+      description="Keep Home Assistant, Homey, or openHAB as the system behind your devices. Navet turns that setup into a focused daily dashboard for the people and screens in your home."
       variant="editorial"
       compactMobile
       className={className}
     >
-      <div className="grid gap-6 sm:gap-8 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-        <div className="grid gap-5 pt-0 sm:gap-8 sm:pt-8 md:grid-cols-2 xl:grid-cols-1">
-          {MARKETING_PRODUCT_PROOF.columns.map((column) => (
-            <div key={column.title} className="space-y-3 sm:space-y-4">
-              <MarketingEyebrow compactMobile>{column.kicker}</MarketingEyebrow>
-              <Text
-                className={cn(
-                  'max-w-[18ch] text-[1.35rem] font-semibold tracking-[-0.03em] sm:text-2xl',
-                  surface.textPrimary
-                )}
-              >
-                {column.title}
-              </Text>
-              <MarketingPillGroup items={column.items} compactMobile mobileBehavior="wrap" />
-            </div>
-          ))}
-        </div>
-        <div className="grid gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-2">
-          {MARKETING_FEATURES.map((feature, index) => {
-            const Icon = feature.icon;
-            const style = FEATURE_CARD_STYLES[index % FEATURE_CARD_STYLES.length];
-            const iconPill = getEntityIconPillStyles({
-              isActive: true,
-              isInteractive: false,
-              primaryColor: style.primaryColor,
-              size: 'medium',
-              theme,
-              tone: 'primary',
-            });
+      <Panel className="relative overflow-hidden p-5 sm:p-8 lg:p-10">
+        <div className="relative grid items-stretch gap-5 lg:grid-cols-[minmax(0,1fr)_9rem_minmax(0,1fr)] lg:gap-7">
+          <div
+            className={cn(
+              'rounded-[1.5rem] border p-5 sm:p-6',
+              surface.border,
+              theme === 'light' ? 'bg-white/70' : 'bg-black/16'
+            )}
+          >
+            <Text
+              className={cn('text-xs font-semibold uppercase tracking-[0.16em]', surface.textMuted)}
+            >
+              Your existing setup
+            </Text>
+            <Text
+              className={cn('mt-3 text-xl font-semibold tracking-[-0.025em]', surface.textPrimary)}
+            >
+              Keep the platform you already trust.
+            </Text>
+            <Text tone="muted" className="mt-2 text-sm leading-6">
+              Navet connects to your current smart-home system instead of asking you to rebuild it.
+            </Text>
 
-            return (
-              <div key={feature.title}>
-                <CardWrapper
+            <div className="mt-6 space-y-2.5">
+              {PROVIDERS.map((provider) => (
+                <div
+                  key={provider.name}
                   className={cn(
-                    'min-h-[148px] p-4 sm:min-h-[172px] sm:p-5 md:p-6',
-                    theme === 'glass'
-                      ? `${shell.backdropClassName} ${surface.panel} ${surface.border} ${surface.cardShadow}`
-                      : `${surface.panel} ${surface.border} ${theme === 'light' ? 'shadow-[0_18px_42px_-34px_rgba(15,23,42,0.16)]' : surface.cardShadow}`
+                    'flex items-center gap-3 rounded-2xl border px-3.5 py-3',
+                    surface.border,
+                    theme === 'light' ? 'bg-slate-50/85' : 'bg-white/[0.035]'
                   )}
-                  showShadow={theme === 'light'}
                 >
-                  <div className="relative z-10 flex h-full flex-col gap-4 sm:gap-5">
-                    <div className="flex items-start justify-between gap-4">
-                      <div
-                        className={cn(iconPill.badgeClassName, style.iconSurface)}
-                        style={iconPill.badgeStyle}
-                      >
-                        <Icon
-                          className={cn(iconPill.iconClassName, 'h-5 w-5')}
-                          style={iconPill.iconStyle}
-                          aria-hidden="true"
-                        />
-                      </div>
-                      <div
-                        className={cn(
-                          'text-[11px] font-medium uppercase tracking-[0.18em]',
-                          numberTone
-                        )}
-                      >
-                        0{index + 1}
-                      </div>
-                    </div>
-                    <div className="space-y-2.5">
-                      <Text
-                        className={cn(
-                          'text-base font-semibold tracking-[-0.02em] sm:text-lg',
-                          surface.textPrimary
-                        )}
-                      >
-                        {feature.title}
-                      </Text>
-                      <Text
-                        className={cn(
-                          'max-w-[30ch] text-sm leading-6 sm:text-[15px] sm:leading-7',
-                          theme === 'light' ? 'text-slate-600' : surface.textSecondary
-                        )}
-                      >
-                        {feature.description}
-                      </Text>
-                    </div>
-                  </div>
-                </CardWrapper>
-              </div>
-            );
-          })}
+                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-400/10">
+                    <MarketingResponsiveImage
+                      src={provider.src}
+                      sources={'sources' in provider ? provider.sources : undefined}
+                      alt={provider.alt}
+                      width={20}
+                      height={20}
+                      className="h-5 w-5 object-contain"
+                    />
+                  </span>
+                  <Text className={cn('font-semibold', surface.textPrimary)}>{provider.name}</Text>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center justify-center gap-4 py-1 lg:flex-row lg:gap-2 lg:py-0">
+            <ArrowDown className="h-5 w-5 text-orange-400 lg:hidden" aria-hidden="true" />
+            <ArrowRight
+              className="hidden h-5 w-5 shrink-0 text-orange-400 lg:block"
+              aria-hidden="true"
+            />
+            <div className="relative flex items-center justify-center">
+              <div className="absolute h-24 w-24 rounded-full bg-orange-500/15 blur-2xl" />
+              <img
+                src={navetLogo}
+                alt="Navet"
+                width={72}
+                height={72}
+                className="relative h-16 w-16 drop-shadow-[0_16px_32px_rgba(249,115,22,0.24)] sm:h-[4.5rem] sm:w-[4.5rem]"
+              />
+            </div>
+            <ArrowDown className="h-5 w-5 text-orange-400 lg:hidden" aria-hidden="true" />
+            <ArrowRight
+              className="hidden h-5 w-5 shrink-0 text-orange-400 lg:block"
+              aria-hidden="true"
+            />
+          </div>
+
+          <div
+            className={cn(
+              'rounded-[1.5rem] border p-5 sm:p-6',
+              surface.border,
+              theme === 'light'
+                ? 'bg-[linear-gradient(145deg,rgba(255,255,255,0.94),rgba(255,247,237,0.82))]'
+                : 'bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.13),transparent_42%),rgba(255,255,255,0.035)]'
+            )}
+          >
+            <Text className="text-xs font-semibold uppercase tracking-[0.16em] text-orange-400">
+              Your Navet dashboard
+            </Text>
+            <Text
+              className={cn('mt-3 text-xl font-semibold tracking-[-0.025em]', surface.textPrimary)}
+            >
+              Give everyday control a simpler home.
+            </Text>
+            <Text tone="muted" className="mt-2 text-sm leading-6">
+              Provider details stay in the background while the controls people use remain close at
+              hand.
+            </Text>
+
+            <ul className="mt-6 space-y-4">
+              {DASHBOARD_OUTCOMES.map((outcome) => (
+                <li key={outcome} className="flex gap-3">
+                  <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-400/12 text-emerald-400">
+                    <Check className="h-3 w-3" strokeWidth={2.5} aria-hidden="true" />
+                  </span>
+                  <Text className={cn('text-sm leading-6', surface.textSecondary)}>{outcome}</Text>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-      </div>
+
+        <div
+          className={cn(
+            'mt-6 flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between',
+            surface.border
+          )}
+        >
+          <Text tone="muted" className="text-sm">
+            Explore a sample home before connecting your own devices.
+          </Text>
+          <div className="flex flex-wrap gap-x-5 gap-y-3">
+            <Link href={MARKETING_URLS.demo} target="_blank" showExternalIcon>
+              Open the live demo
+            </Link>
+            <Link href={MARKETING_URLS.install.page} target="_blank" showExternalIcon>
+              Choose an installation
+            </Link>
+          </div>
+        </div>
+      </Panel>
     </MarketingSectionShell>
   );
 }

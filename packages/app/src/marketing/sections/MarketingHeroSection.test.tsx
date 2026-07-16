@@ -12,7 +12,7 @@ describe('MarketingHeroSection', () => {
         .length
     ).toBeGreaterThan(0);
     expect(
-      screen.getByRole('heading', { name: /A calmer dashboard for your smart home/i })
+      screen.getByRole('heading', { name: /A smart home dashboard for every screen/i })
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Explore the demo/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /How to install/i })).toBeInTheDocument();

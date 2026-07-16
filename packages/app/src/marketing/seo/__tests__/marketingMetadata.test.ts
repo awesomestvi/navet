@@ -11,10 +11,10 @@ describe('marketing website metadata', () => {
   it('applies homepage metadata', () => {
     applyMarketingWebsiteMetadata(MARKETING_WEBSITE_ROUTES.home);
 
-    expect(document.title).toBe('Navet — A calmer smart-home dashboard');
+    expect(document.title).toBe('Smart Home Dashboard for Home Assistant & Homey | Navet');
     expect(
       document.head.querySelector('meta[name="description"]')?.getAttribute('content')
-    ).toContain('local-first smart-home dashboard');
+    ).toContain('local-first smart home dashboard');
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
       'https://navet.app/'
     );

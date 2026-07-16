@@ -1,0 +1,163 @@
+---
+import DefaultTableOfContents from "@astrojs/starlight/components/TableOfContents.astro";
+import changelogSource from "../../../../CHANGELOG.md?raw";
+
+const isChangelog = Astro.url.pathname.replace(/\/+$/, "") === "/changelog";
+const dateFormatter = new Intl.DateTimeFormat("en", {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
+const releases = [...changelogSource.matchAll(/^##\s+([^\s]+)\s+-\s+(\d{4}-\d{2}-\d{2})$/gm)].map((match) => ({
+  version: match[1],
+  date: match[2],
+  id: `release-${match[1].toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+}));
+---
+
+{
+  isChangelog ? (
+    <nav class="navet-release-timeline" aria-labelledby="navet-release-timeline-title" data-release-timeline>
+      <h2 id="navet-release-timeline-title">Timeline</h2>
+      <ol>
+        {releases.map((release, index) => (
+          <li class:list={{ "is-active": index === 0 }}>
+            <a href={`#${release.id}`} aria-current={index === 0 ? "location" : undefined}>
+              <span>{release.version}</span>
+              <time datetime={release.date}>{dateFormatter.format(new Date(`${release.date}T00:00:00Z`))}</time>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  ) : (
+    <DefaultTableOfContents />
+  )
+}
+
+<style>
+  .navet-release-timeline ol {
+    position: relative;
+    display: grid;
+    gap: 0.15rem;
+    margin: 0;
+    padding: 0.35rem 0 0.35rem 0.95rem;
+    background: linear-gradient(var(--navet-border-strong), var(--navet-border-strong)) 0.25rem 0 / 1px 100% no-repeat;
+    max-height: clamp(14rem, calc(100vh - var(--sl-nav-height) - 16rem), 34rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-color: color-mix(in srgb, var(--navet-text-muted) 32%, transparent) transparent;
+    scrollbar-width: thin;
+    list-style: none;
+  }
+
+  .navet-release-timeline li {
+    position: relative;
+    margin: 0;
+  }
+
+  .navet-release-timeline li::before {
+    position: absolute;
+    inset-block: 0.15rem;
+    inset-inline-start: calc(-0.95rem + 3.5px);
+    width: 2px;
+    border-radius: 999px;
+    background: transparent;
+    content: "";
+  }
+
+  .navet-release-timeline li.is-active::before {
+    background: var(--navet-accent);
+    box-shadow: 0 0 0 0.18rem color-mix(in srgb, var(--navet-accent) 12%, transparent);
+  }
+
+  .navet-release-timeline a {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.5rem;
+    align-items: baseline;
+    padding: 0.35rem 0;
+    color: var(--navet-text-muted);
+    font-size: 0.78rem;
+    font-weight: 540;
+    line-height: 1.25;
+    text-decoration: none;
+    transition: color 120ms ease;
+  }
+
+  .navet-release-timeline a span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .navet-release-timeline time {
+    color: var(--navet-text-muted);
+    font-size: 0.64rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .navet-release-timeline li.is-active a,
+  .navet-release-timeline a:hover {
+    color: var(--navet-text);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .navet-release-timeline a {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  const timeline = document.querySelector("[data-release-timeline]");
+
+  if (timeline instanceof HTMLElement) {
+    const links = [...timeline.querySelectorAll("a[href^='#release-']")];
+    const list = timeline.querySelector("ol");
+    const targets = links
+      .map((link) => document.querySelector(link.getAttribute("href") ?? ""))
+      .filter((target): target is HTMLElement => target instanceof HTMLElement);
+    let frame = 0;
+
+    const updateTimeline = () => {
+      frame = 0;
+      const scrollPadding = Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop);
+      const threshold = (Number.isFinite(scrollPadding)
+        ? scrollPadding
+        : (document.querySelector("header")?.getBoundingClientRect().height ?? 72) + 24) + 2;
+      let active = targets[0];
+
+      for (const target of targets) {
+        if (target.getBoundingClientRect().top <= threshold) active = target;
+        else break;
+      }
+
+      for (const link of links) {
+        const selected = link.getAttribute("href") === `#${active?.id}`;
+        link.parentElement?.classList.toggle("is-active", selected);
+        if (selected) {
+          link.setAttribute("aria-current", "location");
+          if (list instanceof HTMLOListElement) {
+            const listRect = list.getBoundingClientRect();
+            const linkRect = link.getBoundingClientRect();
+            const top = linkRect.top - listRect.top + list.scrollTop;
+            const bottom = top + link.offsetHeight;
+            if (top < list.scrollTop) list.scrollTop = Math.max(0, top - 12);
+            else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight + 12;
+          }
+        } else link.removeAttribute("aria-current");
+      }
+    };
+
+    const scheduleUpdate = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(updateTimeline);
+    };
+
+    updateTimeline();
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+  }
+</script>

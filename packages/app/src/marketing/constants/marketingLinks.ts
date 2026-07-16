@@ -31,6 +31,11 @@ export const MARKETING_URLS = {
   roadmapDoc: joinUrl(DOCS_SITE_URL, 'roadmap/'),
   docsIndex: DOCS_SITE_URL,
   gettingStarted: joinUrl(DOCS_SITE_URL, 'getting-started/'),
+  changelog: joinUrl(DOCS_SITE_URL, 'changelog/'),
+  resources: joinUrl(DOCS_SITE_URL, 'resources/'),
+  userGuide: joinUrl(DOCS_SITE_URL, 'guide/'),
+  widgetGuide: joinUrl(DOCS_SITE_URL, 'guide/widgets/'),
+  integrations: joinUrl(DOCS_SITE_URL, 'integrations/'),
   install: {
     page: joinUrl(DOCS_SITE_URL, 'install/'),
     homeAssistantGuide: joinUrl(DOCS_SITE_URL, 'install/home-assistant/'),

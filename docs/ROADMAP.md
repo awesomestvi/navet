@@ -20,13 +20,17 @@ Navet currently ships:
   sections
 - dashboard editing with card ordering, sizing, locking, visibility, import/export, undo/redo, and
   Home overview layout packs
-- custom widgets including RSS, photo, note, battery, UPS, energy-now, button, map, and generic
-  entity cards
-- cards for lights, switches, fans, climate, covers, locks, cameras, media, weather, calendars,
-  people, sensors, scenes, and vacuums
+- addable widgets for info summaries, RSS, photos, notes, battery and UPS status, live energy,
+  action buttons, maps, and generic provider entities
+- entity-card families for lights, switches, fans, climate and HVAC, humidifiers, covers, locks,
+  alarm panels, cameras, media, weather, calendars, people, sensors, sensor groups, scenes, helpers,
+  vacuums, and lawn mowers
 - task automation details, dependency summaries, and habit-suggested routine creation for providers
   that expose the automation creation capability
-- dashboard profile presets for standard and wall-display setups
+- dashboard profile presets for standard and wall-display setups, including kiosk mode and kiosk
+  navigation
+- sensor history sparklines and dedicated energy charts when the connected provider exposes the
+  required statistics
 - PWA install support, themes, localization, and public demo and Storybook publishing
 
 ## Likely Next
@@ -35,26 +39,25 @@ Navet currently ships:
 
 - [ ] Multiple dashboards
 - [ ] Multiple views per dashboard
-- [ ] Full-width panel mode
+- [ ] User-configurable full-width views
 - [ ] Per-view column count
-- [ ] Stack cards and more flexible section layout
+- [ ] User-configurable card stacks and more flexible section layouts
 - [ ] Reordering and customizing top-level navigation
 - [ ] Better mobile gesture navigation
 
 ### Cards And Widgets
 
-- [ ] History graphs
-- [ ] Statistics graphs
+- [ ] Standalone configurable history graph cards
+- [ ] Standalone configurable statistics graph cards
 - [ ] Conditional cards
 - [ ] Entity filter cards
 - [ ] Floor plan cards
 - [ ] Logbook cards
-- [ ] Gauge cards
-- [ ] Badge rows
-- [ ] Alarm panel cards
+- [ ] Generic gauge cards
+- [ ] User-configurable badge rows
 - [ ] Timer cards
-- [ ] Todo and shopping list cards
-- [ ] Template sensor cards
+- [ ] Dedicated todo and shopping list cards
+- [ ] Dedicated template-sensor cards
 - [ ] More provider-backed automation creation targets
 
 ### Multi-user

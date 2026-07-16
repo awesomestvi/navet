@@ -1,21 +1,14 @@
 import { MARKETING_URLS } from '@navet/app/marketing/constants/marketingLinks';
-import {
-  Cable,
-  LayoutDashboard,
-  Palette,
-  PanelsTopLeft,
-  Smartphone,
-  ToggleLeft,
-} from 'lucide-react';
 
 export const MARKETING_HERO_CONTENT = {
   headline: {
-    lead: 'A calmer dashboard for',
-    accent: 'your smart home',
+    lead: 'A smart home dashboard for',
+    accent: 'every screen',
   },
   subheadline:
-    'Navet is a polished, local-first smart-home dashboard for Home Assistant, Homey, and openHAB, designed for wall panels, tablets, desktops, and phones.',
-  supportLine: 'Rooms, devices, and routines without the admin-screen clutter.',
+    'Use Navet as a polished, local-first dashboard for Home Assistant, Homey, or openHAB on wall panels, tablets, desktops, and phones.',
+  supportLine:
+    'Control smart lights, climate, media, energy, and security by room—without the admin-screen clutter.',
   pills: ['Local-first', '3 supported platforms', 'Wall panels to phones'],
   primaryCtas: [{ label: 'Explore the demo', href: MARKETING_URLS.demo }],
   secondaryCtas: [
@@ -23,83 +16,6 @@ export const MARKETING_HERO_CONTENT = {
       label: 'How to install',
       href: MARKETING_URLS.install.page,
       external: true,
-    },
-  ],
-} as const;
-
-export const MARKETING_FEATURES = [
-  {
-    title: 'Rooms that stay familiar',
-    description:
-      'Home, lights, media, energy, climate, security, tasks, and settings stay consistent across the home.',
-    icon: PanelsTopLeft,
-  },
-  {
-    title: 'Coverage people actually use',
-    description:
-      'Lights, climate, media, locks, cameras, scenes, sensors, calendars, and more already fit the same product language.',
-    icon: Palette,
-  },
-  {
-    title: 'Details beyond device cards',
-    description:
-      'RSS, photo, note, battery, UPS, map, and energy widgets cover the information that should not be buried.',
-    icon: LayoutDashboard,
-  },
-  {
-    title: 'Works with your platform',
-    description:
-      'Use Navet with Home Assistant, Homey, or openHAB without changing how the dashboard feels.',
-    icon: Cable,
-  },
-  {
-    title: 'Built for real surfaces',
-    description:
-      'The same home stays usable on kiosk displays, tablets on the wall, desktops, and phones in hand.',
-    icon: Smartphone,
-  },
-  {
-    title: 'Daily control without the clutter',
-    description:
-      'Reach the rooms, devices, and routines you use every day without digging through raw admin screens.',
-    icon: ToggleLeft,
-  },
-] as const;
-
-export const MARKETING_PRODUCT_PROOF = {
-  title: 'Rooms first. Controls close at hand.',
-  description:
-    'Navet keeps daily control direct and room-based, with the details you need close by and backend complexity out of the way.',
-  columns: [
-    {
-      kicker: 'Dashboard shape',
-      title: 'Rooms first, not settings first.',
-      items: ['Home', 'Lights', 'Media', 'Energy', 'Climate', 'Security', 'Tasks', 'Settings'],
-    },
-    {
-      kicker: 'Device coverage',
-      title: 'Core controls share one visual language.',
-      items: [
-        'Lights',
-        'Switches',
-        'Fans',
-        'Climate',
-        'Covers',
-        'Locks',
-        'Cameras',
-        'Media players',
-        'Weather',
-        'Calendars',
-        'People',
-        'Sensors',
-        'Scenes',
-        'Vacuums',
-      ],
-    },
-    {
-      kicker: 'Utility widgets',
-      title: 'The extra details still belong on the dashboard.',
-      items: ['RSS', 'Photo', 'Note', 'Battery', 'UPS', 'Energy now', 'Button', 'Map'],
     },
   ],
 } as const;
@@ -127,19 +43,35 @@ export const MARKETING_CURRENT_SUPPORT = {
     'Lights',
     'Switches',
     'Fans',
-    'Climate',
+    'Climate & HVAC',
+    'Humidifiers',
     'Covers',
     'Locks',
+    'Alarm panels',
     'Cameras',
     'Media players',
     'Weather',
     'Calendars',
     'People',
     'Sensors',
+    'Sensor groups',
     'Scenes',
+    'Helpers',
     'Vacuums',
+    'Lawn mowers',
   ],
-  widgets: ['RSS', 'Photo', 'Note', 'Battery', 'UPS', 'Energy now', 'Button', 'Map'],
+  widgets: [
+    'Info',
+    'RSS',
+    'Photo',
+    'Note',
+    'Battery',
+    'UPS',
+    'Energy now',
+    'Button',
+    'Map',
+    'Entity',
+  ],
 } as const;
 
 export const MARKETING_PRIVACY = {
@@ -155,15 +87,19 @@ export const MARKETING_ROADMAP = {
   description:
     'See what is ready today, what the team is improving next, and where broader platform support fits.',
   now: [
-    'Home Assistant, Homey, and openHAB support',
-    'Core dashboard cards',
-    'Themes',
-    'Wall-panel, tablet, desktop, and phone layouts',
+    'Home Assistant, Homey, and openHAB integrations',
+    'Eight focused dashboard sections with editable Home layouts',
+    'Nineteen entity-card families and ten addable widget types',
+    'PWA installation, four themes, localization, and layouts from wall panels to phones',
   ],
   next: [
-    'More entity coverage',
-    'Easier dashboard customization',
-    'Better kiosk and tablet performance',
+    'Multiple dashboards, views, and more flexible panel and stack layouts',
+    'Standalone history, statistics, conditional, filter, floor-plan, logbook, gauge, timer, and list cards',
+    'Per-user dashboards and profile editing',
   ],
-  later: ['Broader provider maturity', 'Additional provider integrations'],
+  later: [
+    'Continued Homey and openHAB maturity',
+    'Hubitat support when product demand justifies it',
+    'SmartThings support when product demand justifies it',
+  ],
 } as const;

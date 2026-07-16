@@ -13,6 +13,14 @@ they are deliberately added to that map.
 Every published Markdown file needs Starlight frontmatter with at least `title`, `description`, and
 an exact GitHub `editUrl`.
 
+## Discovery pages
+
+- `/changelog/` renders `CHANGELOG.md` at build time through
+  `src/components/ChangelogFeed.astro`. Keep writing release notes in the root changelog; there is
+  no second public changelog to update.
+- `/resources/` is curated in `src/components/ResourcesHub.astro`. Add real showcases, guides, and
+  videos there as they are published; do not add placeholder links or duplicate guide content.
+
 ## Local commands
 
 The docs workspace requires Node.js 22.12 or newer, matching the supported Astro runtime.

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { gzipSync } from 'node:zlib';
-import { appPaths } from './repo-paths.mjs';
+import { appPaths, repoRoot } from './repo-paths.mjs';
 
 const MAX_INITIAL_CODE_GZIP_BYTES = 650 * 1024;
 const MAX_STYLESHEET_GZIP_BYTES = 65 * 1024;
@@ -22,6 +22,9 @@ function requireFile(filePath, label) {
 const distDir = appPaths.websiteDist;
 const indexPath = join(distDir, 'index.html');
 const indexHtml = requireFile(indexPath, 'built website index').toString('utf8');
+const packageVersion = JSON.parse(
+  requireFile(join(repoRoot, 'package.json'), 'root package manifest').toString('utf8')
+).version;
 const initialAssetNames = Array.from(
   indexHtml.matchAll(/<(?:script|link)[^>]+(?:src|href)="\/assets\/([^"]+\.(?:js|css))"/g),
   (match) => match[1]
@@ -33,10 +36,11 @@ if (/\<script[^>]+src=["']https?:\/\//i.test(indexHtml)) {
 }
 
 for (const requiredSeoMarkup of [
-  '<title>Navet — A calmer smart-home dashboard</title>',
+  '<title>Smart Home Dashboard for Home Assistant &amp; Homey | Navet</title>',
   '<link rel="canonical" href="https://navet.app/"',
   'https://navet.app/navet-social-card.jpg',
   'application/ld+json',
+  `"softwareVersion": "${packageVersion}"`,
 ]) {
   if (!indexHtml.includes(requiredSeoMarkup)) {
     fail(`homepage is missing SEO markup: ${requiredSeoMarkup}`);

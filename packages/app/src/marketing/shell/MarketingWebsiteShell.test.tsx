@@ -48,6 +48,23 @@ describe('MarketingWebsiteShell', () => {
     expect(within(header).getByRole('link', { name: /GitHub/i })).toBeInTheDocument();
   });
 
+  it('adds an explicit Home link on secondary marketing pages', () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 500 }));
+
+    renderWithProviders(
+      <MarketingWebsiteShell currentPathname="/roadmap/">
+        <div>Roadmap body</div>
+      </MarketingWebsiteShell>
+    );
+
+    const header = screen.getByRole('banner');
+    expect(within(header).getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open navigation menu' }));
+    const mobileNav = screen.getByRole('navigation', { name: 'Mobile primary' });
+    expect(within(mobileNav).getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
+  });
+
   it('toggles the attached mobile navigation menu with aria state', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 500 }));
 

@@ -7,11 +7,16 @@ import { ArrowRight, Layers3 } from 'lucide-react';
 
 const CUSTOM_CARD_TYPES = new Set(['helpers', 'grouped-sensors', 'weather', 'calendars']);
 const CUSTOM_WIDGET_TYPES = [
+  'info summary',
   'rss feed',
   'photo',
   'quick note',
   'battery overview',
-  'action',
+  'UPS status',
+  'energy now',
+  'action button',
+  'map',
+  'generic entity',
 ] as const;
 
 function toTitleCase(value: string) {
@@ -117,6 +122,10 @@ function EntityCardCatalogPage() {
             </span>
           ))}
         </div>
+        <p className={`mt-3 text-xs ${surface.textMuted}`}>
+          Media stack remains supported for compatible saved profiles, but is not offered in the
+          custom-widget chooser.
+        </p>
       </section>
     </div>
   );

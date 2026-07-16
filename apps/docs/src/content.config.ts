@@ -15,6 +15,8 @@ const routeIds = new Map([
   ["docs/integrations.md", "integrations"],
   ["docs/help.md", "help"],
   ["docs/ROADMAP.md", "roadmap"],
+  ["docs/resources.mdx", "resources"],
+  ["docs/changelog.mdx", "changelog"],
   ["docs/developers.md", "developers/index"],
   ["CONTRIBUTING.md", "developers/contributing"],
   ["SECURITY.md", "security"],

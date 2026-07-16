@@ -108,7 +108,7 @@ export function MarketingHeroSection() {
               >
                 {MARKETING_HERO_CONTENT.headline.lead}{' '}
                 <AnimatedGradientText
-                  className="inline-block pr-[0.04em] text-inherit"
+                  className="-mb-[0.12em] inline-block pb-[0.12em] pr-[0.04em] text-inherit"
                   colorFrom="#ffb14f"
                   colorTo="#ffd18a"
                   speed={1.2}

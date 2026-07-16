@@ -1,0 +1,88 @@
+---
+const showcases = [
+  {
+    title: "A home at a glance",
+    description: "Rooms, weather, energy, and everyday controls composed for a shared wall display.",
+    image: "https://raw.githubusercontent.com/awesomestvi/navet/main/assets/reference/marketing/screenshots/navet-ipad-landscape-home.jpg",
+    alt: "Navet home dashboard on an iPad",
+  },
+  {
+    title: "Energy without the spreadsheet",
+    description: "Live consumption and source context designed to be understood in a few seconds.",
+    image: "https://raw.githubusercontent.com/awesomestvi/navet/main/assets/reference/marketing/screenshots/navet-ipad-landscape-energy.jpg",
+    alt: "Navet energy dashboard on an iPad",
+  },
+  {
+    title: "Control that travels",
+    description: "The same household dashboard, adapted for quick checks and actions on mobile.",
+    image: "https://raw.githubusercontent.com/awesomestvi/navet/main/assets/reference/marketing/screenshots/navet-mobile-pwa-home.jpg",
+    alt: "Navet mobile dashboard",
+  },
+];
+
+const guides = [
+  { type: "Start here", title: "Build your first dashboard", description: "Go from install to a useful first room without learning the whole system.", href: "/getting-started/" },
+  { type: "Integration", title: "Connect Home Assistant", description: "Choose the installation that fits your Home Assistant setup.", href: "/install/home-assistant/" },
+  { type: "Guide", title: "Find the right widget", description: "See what Navet can show and control across your home.", href: "/guide/widgets/" },
+  { type: "Open source", title: "Shape Navet with us", description: "Explore the architecture, contribution flow, and public roadmap.", href: "/developers/contributing/" },
+];
+---
+
+<div class="navet-resources">
+  <section class="navet-resource-lead" aria-labelledby="resource-lead-title">
+    <div>
+      <p class="navet-resource-kicker">Explore the product</p>
+      <h2 id="resource-lead-title">See how Navet fits into a real home.</h2>
+      <p>Try the dashboard, inspect its building blocks, or catch up on what changed.</p>
+    </div>
+    <div class="navet-resource-actions">
+      <a class="navet-resource-action navet-resource-action--primary" href="https://demo.navet.app/">
+        <span>Live demo</span><small>Use a complete sample home</small><b aria-hidden="true">↗</b>
+      </a>
+      <a class="navet-resource-action" href="https://storybook.navet.app/">
+        <span>Component library</span><small>Browse cards and UI patterns</small><b aria-hidden="true">↗</b>
+      </a>
+      <a class="navet-resource-action" href="/changelog/">
+        <span>Changelog</span><small>Follow every stable release</small><b aria-hidden="true">→</b>
+      </a>
+    </div>
+  </section>
+
+  <section class="navet-resource-section" aria-labelledby="showcase-title">
+    <div class="navet-resource-section-heading">
+      <div><p>Showcase</p><h2 id="showcase-title">Designed for the screens you already have</h2></div>
+      <a href="https://demo.navet.app/">Explore the demo <span aria-hidden="true">↗</span></a>
+    </div>
+    <div class="navet-showcase-grid">
+      {showcases.map((item, index) => (
+        <article class:list={["navet-showcase-card", { "navet-showcase-card--wide": index === 0 }]}>
+          <div class="navet-showcase-media"><img src={item.image} alt={item.alt} loading={index === 0 ? "eager" : "lazy"} /></div>
+          <div><h3>{item.title}</h3><p>{item.description}</p></div>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="navet-resource-section" aria-labelledby="guides-title">
+    <div class="navet-resource-section-heading">
+      <div><p>Guides & stories</p><h2 id="guides-title">A useful place to begin</h2></div>
+    </div>
+    <div class="navet-guide-grid">
+      {guides.map((item) => (
+        <a class="navet-guide-card" href={item.href}>
+          <small>{item.type}</small><h3>{item.title}</h3><p>{item.description}</p><span aria-hidden="true">Read →</span>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="navet-video-callout" aria-labelledby="videos-title">
+    <div class="navet-video-mark" aria-hidden="true"><span>▶</span></div>
+    <div>
+      <p>Videos</p>
+      <h2 id="videos-title">Walkthroughs are next.</h2>
+      <p>The library is ready for installation guides, dashboard tours, and community setups. Until the first videos arrive, the live demo is the fastest way to explore.</p>
+    </div>
+    <a href="https://github.com/awesomestvi/navet/issues/new?template=feature_request.yml">Suggest a video <span aria-hidden="true">↗</span></a>
+  </section>
+</div>

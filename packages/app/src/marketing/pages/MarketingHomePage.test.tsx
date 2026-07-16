@@ -11,6 +11,10 @@ vi.mock('@navet/app/marketing/sections/MarketingHeroSection', () => ({
   MarketingHeroSection: () => <section>Hero section</section>,
 }));
 
+vi.mock('@navet/app/marketing/sections/MarketingReleaseResourcesSection', () => ({
+  MarketingReleaseResourcesSection: () => <section>Release resources section</section>,
+}));
+
 vi.mock('@navet/app/marketing/sections/MarketingProductPreviewSection', () => ({
   MarketingProductPreviewSection: () => <section>Product preview section</section>,
 }));
@@ -63,6 +67,7 @@ describe('MarketingHomePage', () => {
   it('places the demo CTA directly after product proof and keeps the privacy promise', async () => {
     renderWithProviders(<MarketingHomePage />);
 
+    const releaseResources = await screen.findByText('Release resources section');
     const productPreview = await screen.findByText('Product preview section');
     const demoHeading = await screen.findByRole('heading', {
       name: 'Use the demo. Then run it at home.',
@@ -70,6 +75,9 @@ describe('MarketingHomePage', () => {
     const featureGrid = await screen.findByText('Feature grid section');
     const privacyHeading = await screen.findByRole('heading', { name: 'Local by default.' });
 
+    expect(releaseResources.compareDocumentPosition(productPreview)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
     expect(productPreview.compareDocumentPosition(demoHeading)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );

@@ -8,6 +8,9 @@ describe('marketing links', () => {
     expect(MARKETING_URLS.storybook).toBe('https://storybook.navet.app/');
     expect(MARKETING_URLS.docsIndex).toBe('https://docs.navet.app/');
     expect(MARKETING_URLS.gettingStarted).toBe('https://docs.navet.app/getting-started/');
+    expect(MARKETING_URLS.changelog).toBe('https://docs.navet.app/changelog/');
+    expect(MARKETING_URLS.resources).toBe('https://docs.navet.app/resources/');
+    expect(MARKETING_URLS.userGuide).toBe('https://docs.navet.app/guide/');
     expect(MARKETING_URLS.install.page).toBe('https://docs.navet.app/install/');
     expect(MARKETING_URLS.install.homeAssistantGuide).toBe(
       'https://docs.navet.app/install/home-assistant/'

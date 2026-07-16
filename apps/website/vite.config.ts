@@ -59,6 +59,13 @@ export default defineConfig({
   },
   assetsInclude: ['**/*.svg'],
   plugins: [
+    {
+      name: 'navet-version-html',
+      enforce: 'pre',
+      transformIndexHtml(html) {
+        return html.replaceAll('%NAVET_VERSION%', packageJson.version ?? '0.0.0');
+      },
+    },
     react(),
     babel({
       include: REACT_COMPILER_INCLUDE,

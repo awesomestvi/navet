@@ -6,6 +6,7 @@ import {
   navetTypographyTokens,
 } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
+import { APP_VERSION } from '@navet/app/constants/app-version';
 import { useTheme } from '@navet/app/hooks/use-theme';
 import {
   getMarketingWebsitePath,
@@ -319,6 +320,9 @@ export function MarketingWebsiteShell({
             </a>
 
             <nav aria-label="Primary" className="hidden items-center gap-1.5 md:flex">
+              {!isHomePage ? (
+                <WebsiteNavLink href={getMarketingWebsitePath('/')}>Home</WebsiteNavLink>
+              ) : null}
               {WEBSITE_PRIMARY_NAV_ITEMS.map((item) => (
                 <WebsiteNavLink key={item.label} href={item.href}>
                   {item.label}
@@ -365,6 +369,14 @@ export function MarketingWebsiteShell({
               )}
             >
               <nav aria-label="Mobile primary" className="flex flex-col gap-1.5">
+                {!isHomePage ? (
+                  <WebsiteNavLink
+                    href={getMarketingWebsitePath('/')}
+                    className="justify-start rounded-[18px] px-3 py-2"
+                  >
+                    Home
+                  </WebsiteNavLink>
+                ) : null}
                 {WEBSITE_PRIMARY_NAV_ITEMS.map((item) => (
                   <WebsiteNavLink
                     key={item.label}
@@ -411,6 +423,18 @@ export function MarketingWebsiteShell({
             </WebsiteNavLink>
             <WebsiteNavLink href={MARKETING_URLS.docsIndex} className="min-h-0 px-0">
               Docs
+            </WebsiteNavLink>
+            <WebsiteNavLink href={MARKETING_URLS.changelog} className="min-h-0 px-0">
+              Changelog
+            </WebsiteNavLink>
+            <WebsiteNavLink
+              href={`${MARKETING_URLS.github}/releases/tag/v${APP_VERSION}`}
+              className="min-h-0 px-0"
+            >
+              Latest: v{APP_VERSION}
+            </WebsiteNavLink>
+            <WebsiteNavLink href={MARKETING_URLS.resources} className="min-h-0 px-0">
+              Resources
             </WebsiteNavLink>
             <WebsiteNavLink href={MARKETING_URLS.github} className="min-h-0 px-0">
               GitHub

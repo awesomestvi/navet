@@ -1,5 +1,6 @@
 import { MarketingDeferredSection } from '@navet/app/marketing/components/MarketingDeferredSection';
 import { MarketingHeroSection } from '@navet/app/marketing/sections/MarketingHeroSection';
+import { MarketingReleaseResourcesSection } from '@navet/app/marketing/sections/MarketingReleaseResourcesSection';
 import { lazy } from 'react';
 
 const MarketingProductPreviewSection = lazy(async () => {
@@ -78,6 +79,7 @@ export function MarketingHomePage() {
   return (
     <>
       <MarketingHeroSection />
+      <MarketingReleaseResourcesSection />
       <MarketingDeferredSection
         fallback={<DeferredSectionFallback minHeightClassName="min-h-[640px] sm:min-h-[760px]" />}
       >

@@ -1,0 +1,183 @@
+---
+import changelogSource from "../../../../CHANGELOG.md?raw";
+
+type ChangeGroup = {
+  title: string;
+  kind: "new" | "improved" | "fixed" | "other";
+  items: string[];
+};
+
+type Release = {
+  version: string;
+  date: string;
+  groups: ChangeGroup[];
+};
+
+const getKind = (heading: string): ChangeGroup["kind"] => {
+  const normalized = heading.toLowerCase();
+  if (normalized.includes("new") || normalized.includes("feature")) return "new";
+  if (normalized.includes("improv")) return "improved";
+  if (normalized.includes("fix") || normalized.includes("bug")) return "fixed";
+  return "other";
+};
+
+const renderInline = (value: string) => value
+  .replaceAll("&", "&amp;")
+  .replaceAll("<", "&lt;")
+  .replaceAll(">", "&gt;")
+  .replace(/`([^`]+)`/g, "<code>$1</code>")
+  .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2">$1</a>');
+
+const releases: Release[] = [];
+let release: Release | undefined;
+let group: ChangeGroup | undefined;
+
+for (const rawLine of changelogSource.replace(/\r\n/g, "\n").split("\n")) {
+  const line = rawLine.trim();
+  const releaseMatch = line.match(/^##\s+([^\s]+)\s+-\s+(\d{4}-\d{2}-\d{2})$/);
+
+  if (releaseMatch) {
+    release = { version: releaseMatch[1], date: releaseMatch[2], groups: [] };
+    releases.push(release);
+    group = undefined;
+    continue;
+  }
+
+  const groupMatch = line.match(/^##\s+(.+)$/);
+  if (groupMatch && release) {
+    const title = groupMatch[1];
+    group = {
+      title,
+      kind: getKind(title),
+      items: [],
+    };
+    release.groups.push(group);
+    continue;
+  }
+
+  const itemMatch = line.match(/^-\s+(.+)$/);
+  if (itemMatch && group) group.items.push(itemMatch[1]);
+}
+
+const formatDate = (value: string) => new Date(`${value}T00:00:00Z`).toLocaleDateString("en", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+const releaseId = (version: string) => `release-${version.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+---
+
+<div class="navet-changelog" data-changelog>
+  <div class="navet-changelog-intro">
+    <p>
+      Every Navet release, collected from the same changelog used to publish GitHub Releases.
+      <a href="https://github.com/awesomestvi/navet/releases">View releases on GitHub <span aria-hidden="true">↗</span></a>
+    </p>
+  </div>
+
+  <div class="navet-changelog-toolbar" aria-label="Filter release notes">
+    <div class="navet-changelog-filters" role="group" aria-label="Change type">
+      <button type="button" class="is-active" data-change-filter="all" aria-pressed="true">All updates</button>
+      <button type="button" data-change-filter="new" aria-pressed="false">New</button>
+      <button type="button" data-change-filter="improved" aria-pressed="false">Improved</button>
+      <button type="button" data-change-filter="fixed" aria-pressed="false">Fixed</button>
+    </div>
+
+    <label class="navet-changelog-search">
+      <span class="sr-only">Search releases</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+      <input type="search" placeholder="Search updates" data-change-search />
+    </label>
+  </div>
+
+  <p class="navet-changelog-empty" data-change-empty hidden>No releases match this view.</p>
+
+  <div class="navet-release-list">
+    {releases.map((item, index) => {
+      return (
+        <article
+          class="navet-release"
+          id={releaseId(item.version)}
+          data-release
+          data-search-text={`${item.version} ${item.date} ${item.groups.flatMap((entry) => entry.items).join(" ")}`.toLowerCase()}
+        >
+          <header>
+            <time datetime={item.date}>{formatDate(item.date)}</time>
+            <h2>
+              <a href={`https://github.com/awesomestvi/navet/releases/tag/v${item.version}`}>Navet {item.version}</a>
+            </h2>
+            {index === 0 && <span class="navet-release-latest">Latest</span>}
+          </header>
+
+          <div class="navet-release-groups">
+            {item.groups.map((entry) => (
+              <section data-change-kind={entry.kind}>
+                <h3><span aria-hidden="true"></span>{entry.title}</h3>
+                <ul>{entry.items.map((change) => <li set:html={renderInline(change)} />)}</ul>
+              </section>
+            ))}
+          </div>
+        </article>
+      );
+    })}
+  </div>
+
+  <div class="navet-changelog-source">
+    <span aria-hidden="true">↻</span>
+    <p><strong>One source of truth.</strong> This page reads <a href="https://github.com/awesomestvi/navet/blob/main/CHANGELOG.md">CHANGELOG.md</a> during every docs build.</p>
+  </div>
+</div>
+
+<script>
+  const root = document.querySelector("[data-changelog]");
+
+  if (root instanceof HTMLElement) {
+    const filters = [...root.querySelectorAll("[data-change-filter]")];
+    const releases = [...root.querySelectorAll("[data-release]")];
+    const search = root.querySelector("[data-change-search]");
+    const empty = root.querySelector("[data-change-empty]");
+    let activeFilter = "all";
+
+    const applyFilters = () => {
+      const query = search instanceof HTMLInputElement ? search.value.trim().toLowerCase() : "";
+      let visibleCount = 0;
+
+      for (const release of releases) {
+        if (!(release instanceof HTMLElement)) continue;
+        const groups = [...release.querySelectorAll("[data-change-kind]")];
+        let visibleGroups = 0;
+
+        for (const group of groups) {
+          if (!(group instanceof HTMLElement)) continue;
+          const visible = activeFilter === "all" || group.dataset.changeKind === activeFilter;
+          group.hidden = !visible;
+          if (visible) visibleGroups += 1;
+        }
+
+        const matchesSearch = !query || release.dataset.searchText?.includes(query);
+        const visible = visibleGroups > 0 && matchesSearch;
+        release.hidden = !visible;
+        if (visible) visibleCount += 1;
+      }
+
+      if (empty instanceof HTMLElement) empty.hidden = visibleCount !== 0;
+    };
+
+    for (const filter of filters) {
+      filter.addEventListener("click", () => {
+        if (!(filter instanceof HTMLButtonElement)) return;
+        activeFilter = filter.dataset.changeFilter ?? "all";
+        for (const item of filters) {
+          const selected = item === filter;
+          item.classList.toggle("is-active", selected);
+          item.setAttribute("aria-pressed", String(selected));
+        }
+        applyFilters();
+      });
+    }
+
+    search?.addEventListener("input", applyFilters);
+  }
+</script>

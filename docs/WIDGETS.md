@@ -25,6 +25,7 @@ Widgets are included in dashboard export and import.
 | `battery` | low-battery overview |
 | `ups` | UPS status overview |
 | `energy-now` | live energy snapshot |
+| `media-stack` | responsive media summary retained in saved and imported dashboard profiles |
 | `button` | custom action button |
 | `map` | people and tracker locations |
 | `entity` | generic fallback card for a normalized provider entity |
@@ -48,8 +49,9 @@ Widget sizing is per widget type, not global.
 |---|---|
 | `button` | `tiny`, `extra-small`, `small` |
 | `photo`, `note` | `small`, `medium`, `large`, `extra-large` |
-| `battery`, `ups`, `energy-now`, `entity`, `info`, `map` | `small`, `medium`, `large` |
-| `rss` | `medium`, `large` |
+| `info`, `entity` | `extra-small`, `small`, `medium`, `large` |
+| `battery`, `ups`, `energy-now`, `media-stack`, `map` | `small`, `medium`, `large` |
+| `rss` | `small`, `medium`, `large`, `extra-large` |
 
 ## Placement
 
@@ -65,6 +67,9 @@ directly.
 ## Limits And Notes
 
 - Widgets are part of Navet itself, not provider-native card definitions.
+- Ten widget types are available from the Add card flow. `media-stack` remains runtime-supported
+  for compatible saved and imported dashboard profiles, but is intentionally hidden from the
+  custom-widget chooser.
 - RSS uses Navet's same-origin proxy instead of direct browser fetches.
 - The `entity` widget is a fallback for entities without a richer dedicated Navet card.
 - Supported sizes and placement depend on widget type.

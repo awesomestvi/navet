@@ -199,6 +199,11 @@ header.header {
   height: 2.75rem;
 }
 
+.navet-brand-mark,
+.navet-explore-menu {
+  display: none;
+}
+
 .navet-brand-logo--dark {
   display: none;
 }
@@ -576,6 +581,567 @@ h1[data-page-title] {
   color: var(--navet-accent);
 }
 
+/* Changelog: a compact release ledger generated from the repository changelog. */
+.navet-changelog,
+.navet-resources {
+  margin-top: 2rem;
+}
+
+.navet-changelog {
+  margin-top: 0;
+}
+
+.navet-changelog-intro,
+.navet-changelog-toolbar,
+.navet-resource-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.navet-changelog-intro {
+  padding: 0 0 1.5rem;
+  border-bottom: 1px solid var(--navet-border);
+}
+
+.navet-changelog-intro p {
+  max-width: 38rem;
+  margin: 0;
+  color: var(--navet-text-secondary);
+}
+
+.navet-resource-section-heading > a,
+.navet-video-callout > a {
+  flex: 0 0 auto;
+  color: var(--navet-text);
+  font-size: 0.82rem;
+  font-weight: 620;
+  text-decoration: none;
+}
+
+.navet-changelog-intro p a {
+  color: var(--navet-text);
+  font-size: inherit;
+  font-weight: 620;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--navet-accent) 55%, transparent);
+  text-underline-offset: 0.2em;
+}
+
+.navet-changelog-toolbar {
+  margin: 0;
+  padding: 1.25rem 0;
+}
+
+.navet-changelog-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.navet-changelog-filters button {
+  display: inline-flex;
+  height: 2.35rem;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0 0.85rem;
+  border: 1px solid var(--navet-border);
+  border-radius: 999px;
+  background: var(--navet-surface);
+  color: var(--navet-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 620;
+  line-height: 1;
+}
+
+.navet-changelog-filters button:hover,
+.navet-changelog-filters button.is-active {
+  border-color: color-mix(in srgb, var(--navet-accent) 42%, var(--navet-border));
+  background: color-mix(in srgb, var(--navet-accent) 11%, var(--navet-surface));
+  color: var(--navet-text);
+}
+
+.navet-changelog-search {
+  display: flex;
+  width: min(14rem, 100%);
+  height: 2.35rem;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0 0.75rem;
+  border: 1px solid var(--navet-border);
+  border-radius: 999px;
+  background: var(--navet-surface);
+}
+
+.navet-changelog-search:focus-within {
+  border-color: color-mix(in srgb, var(--navet-accent) 68%, var(--navet-border));
+  outline: 2px solid color-mix(in srgb, var(--navet-accent) 18%, transparent);
+}
+
+.navet-changelog-search svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: var(--navet-text-muted);
+  stroke-linecap: round;
+  stroke-width: 1.7;
+}
+
+.navet-changelog-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--navet-text);
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.navet-changelog-search input::placeholder {
+  color: var(--navet-text-muted);
+}
+
+.navet-release-list {
+  margin-top: 0;
+}
+
+.navet-release {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.34fr) minmax(0, 1fr);
+  gap: clamp(1.25rem, 4vw, 3.5rem);
+  padding: 2rem 0 2.25rem;
+  border-top: 1px solid var(--navet-border);
+}
+
+.navet-release:first-child {
+  border-top-color: var(--navet-border-strong);
+}
+
+.navet-release[hidden],
+.navet-release-groups section[hidden],
+.navet-changelog-empty[hidden] {
+  display: none;
+}
+
+.navet-release header {
+  position: relative;
+}
+
+.navet-release time {
+  display: block;
+  color: var(--navet-text-muted);
+  font-size: 0.7rem;
+  font-weight: 620;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.navet-release h2 {
+  margin: 0.4rem 0 0;
+  font-size: clamp(1.2rem, 2.2vw, 1.55rem);
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+}
+
+.navet-release h2 a {
+  color: var(--navet-text);
+  text-decoration: none;
+}
+
+.navet-release h2 a:hover {
+  color: var(--navet-accent);
+}
+
+.navet-release-latest {
+  display: inline-flex;
+  margin-top: 0.8rem;
+  padding: 0.22rem 0.52rem;
+  border: 1px solid color-mix(in srgb, var(--navet-accent) 38%, var(--navet-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--navet-accent) 11%, var(--navet-surface));
+  color: var(--navet-accent);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.navet-release-groups {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.navet-release-groups section {
+  margin: 0;
+}
+
+.navet-release-groups h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 0 0.65rem;
+  color: var(--navet-text);
+  font-size: 0.78rem;
+  font-weight: 680;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.navet-release-groups h3 span {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--navet-text-muted);
+}
+
+.navet-release-groups [data-change-kind="new"] h3 span {
+  background: #22c55e;
+  box-shadow: 0 0 0 0.22rem color-mix(in srgb, #22c55e 13%, transparent);
+}
+
+.navet-release-groups [data-change-kind="improved"] h3 span {
+  background: #3b82f6;
+  box-shadow: 0 0 0 0.22rem color-mix(in srgb, #3b82f6 13%, transparent);
+}
+
+.navet-release-groups [data-change-kind="fixed"] h3 span {
+  background: var(--navet-accent);
+  box-shadow: 0 0 0 0.22rem color-mix(in srgb, var(--navet-accent) 13%, transparent);
+}
+
+.navet-release-groups ul {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.navet-release-groups li {
+  position: relative;
+  margin: 0;
+  padding-left: 1rem;
+  color: var(--navet-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.58;
+}
+
+.navet-release-groups li::before {
+  position: absolute;
+  top: 0.68em;
+  left: 0;
+  width: 0.25rem;
+  height: 0.25rem;
+  border-radius: 50%;
+  background: var(--navet-border-strong);
+  content: "";
+}
+
+.navet-changelog-empty {
+  margin: 2rem 0;
+  padding: 2rem;
+  border: 1px dashed var(--navet-border-strong);
+  border-radius: 20px;
+  color: var(--navet-text-muted);
+  text-align: center;
+}
+
+.navet-changelog-source {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--navet-border);
+  border-radius: 18px;
+  background: var(--navet-surface);
+}
+
+.navet-changelog-source > span {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--navet-accent) 12%, var(--navet-surface-subtle));
+  color: var(--navet-accent);
+}
+
+.navet-changelog-source p {
+  margin: 0;
+  color: var(--navet-text-muted);
+  font-size: 0.78rem;
+}
+
+/* Resources: product surfaces arranged like rooms around one shared dashboard. */
+.navet-resource-lead {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(18rem, 1.15fr);
+  gap: clamp(1.5rem, 5vw, 4rem);
+  padding: clamp(1.4rem, 4vw, 2.5rem);
+  border: 1px solid var(--navet-border);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 20% 0%, color-mix(in srgb, var(--navet-accent) 18%, transparent), transparent 50%),
+    var(--navet-surface);
+}
+
+.navet-resource-lead::after {
+  position: absolute;
+  width: 8rem;
+  height: 8rem;
+  top: -4rem;
+  right: -4rem;
+  border: 1px solid color-mix(in srgb, var(--navet-accent) 28%, transparent);
+  border-radius: 50%;
+  content: "";
+  box-shadow:
+    0 0 0 2rem color-mix(in srgb, var(--navet-accent) 5%, transparent),
+    0 0 0 4rem color-mix(in srgb, var(--navet-accent) 3%, transparent);
+}
+
+.navet-resource-kicker,
+.navet-resource-section-heading p,
+.navet-video-callout > div > p:first-child {
+  margin: 0 0 0.65rem;
+  color: var(--navet-accent);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.navet-resource-lead h2 {
+  max-width: 14ch;
+  margin: 0;
+  color: var(--navet-text);
+  font-size: clamp(1.7rem, 4vw, 2.65rem);
+  letter-spacing: -0.052em;
+  line-height: 1.02;
+}
+
+.navet-resource-lead > div:first-child > p:last-child {
+  max-width: 30rem;
+  margin: 1rem 0 0;
+  color: var(--navet-text-muted);
+  font-size: 0.9rem;
+}
+
+.navet-resource-actions {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.navet-resource-action {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.15rem 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--navet-border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--navet-surface-raised) 92%, transparent);
+  color: var(--navet-text);
+  text-decoration: none;
+  transition: transform 150ms ease, border-color 150ms ease, background 150ms ease;
+}
+
+.navet-resource-action span {
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.navet-resource-action small {
+  color: var(--navet-text-muted);
+  font-size: 0.7rem;
+}
+
+.navet-resource-action b {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  align-self: center;
+  color: var(--navet-text-muted);
+  font-weight: 500;
+}
+
+.navet-resource-action:hover {
+  border-color: var(--navet-border-strong);
+  background: var(--navet-surface-raised);
+  transform: translateY(-1px);
+}
+
+.navet-resource-action--primary {
+  border-color: color-mix(in srgb, var(--navet-accent) 45%, var(--navet-border));
+  background: color-mix(in srgb, var(--navet-accent) 12%, var(--navet-surface));
+}
+
+.navet-resource-section {
+  margin-top: clamp(3rem, 7vw, 5rem);
+}
+
+.navet-resource-section-heading {
+  margin-bottom: 1.15rem;
+}
+
+.navet-resource-section-heading h2,
+.navet-video-callout h2 {
+  margin: 0;
+  color: var(--navet-text);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+}
+
+.navet-showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.navet-showcase-card {
+  overflow: hidden;
+  margin: 0;
+  border: 1px solid var(--navet-border);
+  border-radius: 22px;
+  background: var(--navet-surface);
+}
+
+.navet-showcase-card--wide {
+  grid-column: 1 / -1;
+}
+
+.navet-showcase-media {
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  background: var(--navet-surface-subtle);
+}
+
+.navet-showcase-card--wide .navet-showcase-media {
+  aspect-ratio: 16 / 8.2;
+}
+
+.navet-showcase-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 350ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.navet-showcase-card:hover img {
+  transform: scale(1.018);
+}
+
+.navet-showcase-card > div:last-child {
+  padding: 1rem 1.1rem 1.15rem;
+}
+
+.navet-showcase-card h3,
+.navet-guide-card h3 {
+  margin: 0;
+  color: var(--navet-text);
+  font-size: 1rem;
+  letter-spacing: -0.025em;
+}
+
+.navet-showcase-card p,
+.navet-guide-card p {
+  margin: 0.45rem 0 0;
+  color: var(--navet-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.navet-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.navet-guide-card {
+  display: flex;
+  min-height: 12rem;
+  flex-direction: column;
+  padding: 1.15rem;
+  border: 1px solid var(--navet-border);
+  border-radius: 20px;
+  background: var(--navet-surface);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 150ms ease, transform 150ms ease;
+}
+
+.navet-guide-card:hover {
+  border-color: var(--navet-border-strong);
+  transform: translateY(-2px);
+}
+
+.navet-guide-card small {
+  margin-bottom: 1rem;
+  color: var(--navet-accent);
+  font-size: 0.64rem;
+  font-weight: 680;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.navet-guide-card span {
+  margin-top: auto;
+  padding-top: 1rem;
+  color: var(--navet-text);
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.navet-video-callout {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 1.2rem;
+  align-items: center;
+  margin-top: clamp(3rem, 7vw, 5rem);
+  padding: clamp(1.2rem, 3vw, 1.75rem);
+  border: 1px dashed var(--navet-border-strong);
+  border-radius: 24px;
+}
+
+.navet-video-mark {
+  display: grid;
+  width: 3.5rem;
+  height: 3.5rem;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--navet-accent) 13%, var(--navet-surface));
+  color: var(--navet-accent);
+}
+
+.navet-video-mark span {
+  margin-left: 0.15rem;
+}
+
+.navet-video-callout > div > p:last-child {
+  max-width: 37rem;
+  margin: 0.65rem 0 0;
+  color: var(--navet-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
 @media (min-width: 50rem) {
   header.header {
     border-bottom: 1px solid var(--navet-border);
@@ -615,27 +1181,244 @@ h1[data-page-title] {
   }
 }
 
-@media (max-width: 72rem) {
-  .navet-primary-nav a:not(.is-active) {
+@media (min-width: 50rem) and (max-width: 62rem) {
+  .navet-header-shell {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .navet-search {
+    width: 2.5rem;
+  }
+
+  .navet-search button[data-open-modal] {
+    width: 2.5rem;
+    justify-content: center;
+    padding: 0 !important;
+  }
+
+  .navet-search button[data-open-modal] > span,
+  .navet-search button[data-open-modal] > kbd {
+    display: none !important;
+  }
+}
+
+@media (min-width: 50rem) and (max-width: 64rem) {
+  .navet-github-label {
     display: none;
+  }
+
+  .navet-github-stars {
+    padding-inline: 0.65rem;
+  }
+}
+
+@media (max-width: 72rem) {
+  .navet-page-heading {
+    padding-top: 1rem;
   }
 }
 
 @media (max-width: 50rem) {
   :root {
-    --sl-nav-height: 4.75rem;
+    --sl-nav-height: 4rem;
+  }
+
+  header.header {
+    border-bottom: 1px solid var(--navet-border);
+    background: var(--navet-chrome);
+    backdrop-filter: blur(24px) saturate(120%);
+    -webkit-backdrop-filter: blur(24px) saturate(120%);
   }
 
   .navet-header-shell {
-    width: calc(100% - 1rem);
-    min-height: 3.75rem;
-    grid-template-columns: auto 1fr;
-    margin: 0.5rem auto;
-    padding: 0.4rem 0.55rem 0.4rem 0.8rem;
+    width: 100%;
+    min-height: var(--sl-nav-height);
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 0.5rem;
+    margin: 0;
+    padding-block: 0.5rem;
+    padding-inline: 4rem 1rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
   }
 
-  .navet-brand img {
+  starlight-menu-button button {
+    top: 0.75rem;
+    inset-inline-start: 0.75rem;
+    inset-inline-end: auto;
+    display: grid;
+    width: 2.5rem;
     height: 2.5rem;
+    place-items: center;
+    padding: 0;
+    border: 0 !important;
+    border-radius: 0.65rem !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  starlight-menu-button button svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  starlight-menu-button[aria-expanded="true"] button {
+    border-color: transparent !important;
+    background: transparent !important;
+    color: var(--navet-accent) !important;
+  }
+
+  .navet-page-heading {
+    padding-top: 0.5rem;
+  }
+
+  .navet-brand-mark {
+    display: none;
+  }
+
+  .navet-brand .navet-brand-logo {
+    height: 2.5rem;
+  }
+
+  .navet-brand-logo--light {
+    display: block !important;
+  }
+
+  .navet-brand-logo--dark {
+    display: none !important;
+  }
+
+  :root[data-theme="dark"] .navet-brand-logo--light {
+    display: none !important;
+  }
+
+  :root[data-theme="dark"] .navet-brand-logo--dark {
+    display: block !important;
+  }
+
+  .navet-explore-menu {
+    position: relative;
+    display: block;
+    justify-self: end;
+  }
+
+  .navet-explore-menu summary {
+    display: inline-flex;
+    min-height: 2.5rem;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0 0.55rem;
+    border-radius: 999px;
+    color: var(--navet-text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .navet-explore-menu summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .navet-explore-menu summary:hover,
+  .navet-explore-menu[open] summary {
+    background: var(--navet-surface-subtle);
+    color: var(--navet-text);
+  }
+
+  .navet-explore-menu summary svg {
+    width: 0.75rem;
+    height: 0.75rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.5;
+    transition: transform 150ms ease;
+  }
+
+  .navet-explore-menu[open] summary svg {
+    transform: rotate(180deg);
+  }
+
+  .navet-explore-panel {
+    position: absolute;
+    z-index: calc(var(--sl-z-index-navbar) + 1);
+    top: calc(100% + 0.75rem);
+    right: 0;
+    width: 13rem;
+    padding: 0.45rem;
+    border: 1px solid var(--navet-border);
+    border-radius: 14px;
+    background: var(--navet-surface-raised);
+    box-shadow: 0 20px 50px -22px rgba(0, 0, 0, 0.8);
+  }
+
+  .navet-explore-menu nav {
+    display: grid;
+    gap: 0.2rem;
+  }
+
+  .navet-explore-menu nav a {
+    display: flex;
+    min-height: 2.5rem;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0.7rem;
+    border-radius: 9px;
+    color: var(--navet-text-secondary);
+    font-size: 0.82rem;
+    font-weight: 550;
+    text-decoration: none;
+  }
+
+  .navet-explore-menu nav a:hover,
+  .navet-explore-menu nav a[aria-current="page"] {
+    background: var(--navet-surface-subtle);
+    color: var(--navet-text);
+  }
+
+  .navet-explore-menu nav a b {
+    color: var(--navet-text-muted);
+    font-weight: 500;
+  }
+
+  .navet-explore-search {
+    margin-top: 0.35rem;
+    padding-top: 0.45rem;
+    border-top: 1px solid var(--navet-border);
+  }
+
+  .navet-explore-search site-search {
+    display: block;
+  }
+
+  .navet-explore-search button[data-open-modal] {
+    display: flex;
+    width: 100%;
+    height: 2.5rem;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    padding: 0 0.7rem;
+    border: 0 !important;
+    border-radius: 9px !important;
+    background: var(--navet-surface-subtle) !important;
+    color: var(--navet-text-secondary) !important;
+    font-size: 0.82rem;
+  }
+
+  .navet-explore-search button[data-open-modal] > span {
+    display: block !important;
+  }
+
+  .navet-explore-search button[data-open-modal] > kbd {
+    display: none !important;
   }
 
   .navet-primary-nav,
@@ -648,20 +1431,98 @@ h1[data-page-title] {
   }
 
   .navet-github-stars {
-    width: 2.5rem;
-    padding: 0;
-  }
-
-  .navet-github-stars-meta {
-    display: none;
+    width: auto;
+    min-width: 0;
+    height: 1.875rem;
+    gap: 0.25rem;
+    padding: 0 0.625rem;
   }
 
   .navet-github-label {
     display: none;
   }
 
+  .navet-github-mark {
+    display: block;
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  .navet-github-stars-meta {
+    gap: 0.25rem;
+    color: var(--navet-text-secondary);
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+
+  .navet-github-star {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+
+  .navet-theme-toggle {
+    display: none;
+  }
+
+  @media (max-width: 22rem) {
+    .navet-header-shell {
+      gap: 0.25rem;
+    }
+
+    .navet-explore-menu summary {
+      padding-inline: 0.35rem;
+    }
+
+    .navet-github-stars {
+      padding-inline: 0.4rem;
+    }
+  }
+
   .sidebar-content {
     padding: 1rem;
+  }
+
+  .navet-changelog-intro,
+  .navet-changelog-toolbar,
+  .navet-resource-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .navet-changelog-search {
+    width: 100%;
+  }
+
+  .navet-release {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .navet-release-latest {
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin: 0;
+  }
+
+  .navet-resource-lead,
+  .navet-showcase-grid,
+  .navet-guide-grid,
+  .navet-video-callout {
+    grid-template-columns: 1fr;
+  }
+
+  .navet-showcase-card--wide {
+    grid-column: auto;
+  }
+
+  .navet-showcase-card--wide .navet-showcase-media,
+  .navet-showcase-media {
+    aspect-ratio: 16 / 10;
+  }
+
+  .navet-video-callout > a {
+    justify-self: start;
   }
 }
 
@@ -671,6 +1532,12 @@ h1[data-page-title] {
   }
 
   .navet-primary-nav a {
+    transition: none;
+  }
+
+  .navet-resource-action,
+  .navet-showcase-media img,
+  .navet-guide-card {
     transition: none;
   }
 }

@@ -154,7 +154,7 @@ export function MarketingCurrentSupportSection({ className }: { className?: stri
               items={MARKETING_CURRENT_SUPPORT.dashboardSections}
             />
             <SupportEditorialColumn
-              kicker={`${MARKETING_CURRENT_SUPPORT.cards.length} entity card types`}
+              kicker={`${MARKETING_CURRENT_SUPPORT.cards.length} entity card families`}
               title="Coverage across the core smart-home controls."
               items={MARKETING_CURRENT_SUPPORT.cards}
             />

@@ -3,9 +3,7 @@ import Search from "virtual:starlight/components/Search";
 import NavetGithubStars from "./NavetGithubStars.astro";
 import NavetThemeToggle from "./NavetThemeToggle.astro";
 
-const pathname = Astro.url.pathname;
-
-const navItems = [
+const primaryNavItems = [
   { label: "Home", href: "https://navet.app/" },
   { label: "Demo", href: "https://demo.navet.app/" },
   { label: "Docs", href: "/", active: true },
@@ -15,6 +13,7 @@ const navItems = [
 
 <div class="navet-header-shell">
   <a class="navet-brand" href="https://navet.app/" aria-label="Navet home">
+    <img class="navet-brand-mark" src="/logo.svg" alt="" />
     <img class="navet-brand-logo navet-brand-logo--light" src="/logo-horizontal.svg" alt="" />
     <img
       class="navet-brand-logo navet-brand-logo--dark"
@@ -23,12 +22,41 @@ const navItems = [
     />
   </a>
 
+  <details class="navet-explore-menu">
+    <summary>
+      <span>Explore</span>
+      <svg viewBox="0 0 12 12" aria-hidden="true">
+        <path d="m3 4.5 3 3 3-3" />
+      </svg>
+    </summary>
+    <div class="navet-explore-panel">
+      <nav aria-label="Explore Navet">
+        {
+          primaryNavItems.map((item) => (
+            <a
+              href={item.href}
+              aria-current={item.active ? "page" : undefined}
+              target={item.href.startsWith("http") ? "_blank" : undefined}
+              rel={item.href.startsWith("http") ? "noreferrer" : undefined}
+            >
+              <span>{item.label}</span>
+              {item.href.startsWith("http") && <b aria-hidden="true">↗</b>}
+            </a>
+          ))
+        }
+      </nav>
+      <div class="navet-explore-search" aria-label="Search documentation">
+        <Search />
+      </div>
+    </div>
+  </details>
+
   <nav class="navet-primary-nav" aria-label="Primary">
     {
-      navItems.map((item) => (
+      primaryNavItems.map((item) => (
         <a
           href={item.href}
-          aria-current={item.active && pathname === "/" ? "page" : undefined}
+          aria-current={item.active ? "page" : undefined}
           class:list={{ "is-active": item.active }}
         >
           {item.label}

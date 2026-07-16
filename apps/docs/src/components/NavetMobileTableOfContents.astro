@@ -1,0 +1,17 @@
+---
+import DefaultMobileTableOfContents from "@astrojs/starlight/components/MobileTableOfContents.astro";
+
+const isChangelog = Astro.url.pathname.replace(/\/+$/, "") === "/changelog";
+---
+
+{
+  isChangelog ? (
+    <style is:global>
+      html {
+        --sl-mobile-toc-height: 0rem;
+      }
+    </style>
+  ) : (
+    <DefaultMobileTableOfContents />
+  )
+}

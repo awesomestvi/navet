@@ -22,7 +22,9 @@ export default defineConfig({
       },
       components: {
         Header: "./src/components/NavetHeader.astro",
+        MobileTableOfContents: "./src/components/NavetMobileTableOfContents.astro",
         PageTitle: "./src/components/NavetPageTitle.astro",
+        TableOfContents: "./src/components/NavetTableOfContents.astro",
       },
       customCss: ["./src/styles/navet.css"],
       social: [
@@ -54,8 +56,6 @@ export default defineConfig({
           ],
         },
         { label: "Integrations", link: "/integrations/" },
-        { label: "Help and safety", link: "/help/" },
-        { label: "Roadmap", link: "/roadmap/" },
         {
           label: "Developers",
           items: [
@@ -63,7 +63,21 @@ export default defineConfig({
             { label: "Contributing", link: "/developers/contributing/" },
           ],
         },
-        { label: "Security", link: "/security/" },
+        {
+          label: "Discover",
+          items: [
+            { label: "Resources", link: "/resources/" },
+            { label: "Changelog", link: "/changelog/" },
+            { label: "Roadmap", link: "/roadmap/" },
+          ],
+        },
+        {
+          label: "Support",
+          items: [
+            { label: "Help and safety", link: "/help/" },
+            { label: "Security", link: "/security/" },
+          ],
+        },
       ],
     }),
   ],
