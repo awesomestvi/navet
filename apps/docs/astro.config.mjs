@@ -61,6 +61,7 @@ export default defineConfig({
           items: [
             { label: "Developer overview", link: "/developers/" },
             { label: "Contributing", link: "/developers/contributing/" },
+            { label: "Code of Conduct", link: "/developers/code-of-conduct/" },
           ],
         },
         {

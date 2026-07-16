@@ -19,6 +19,7 @@ const routeIds = new Map([
   ["docs/changelog.mdx", "changelog"],
   ["docs/developers.md", "developers/index"],
   ["CONTRIBUTING.md", "developers/contributing"],
+  ["CODE_OF_CONDUCT.md", "developers/code-of-conduct"],
   ["SECURITY.md", "security"],
 ]);
 
