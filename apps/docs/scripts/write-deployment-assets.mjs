@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const appDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const distDir = path.join(appDir, "dist");
-const assetNames = ["robots.txt"];
+const assetNames = ["_headers", "robots.txt"];
 
 for (const assetName of assetNames) {
   fs.copyFileSync(path.join(appDir, assetName), path.join(distDir, assetName));

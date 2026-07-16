@@ -6,7 +6,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(__dirname, '..');
 const distDir = path.join(workspaceRoot, 'dist');
 const indexPath = path.join(distDir, 'index.html');
-const deploymentAssetNames = ['_redirects', 'robots.txt', 'sitemap.xml'];
+const deploymentAssetNames = ['_headers', '_redirects', 'robots.txt', 'sitemap.xml'];
 const routeClones = [
   {
     path: 'roadmap',
