@@ -621,9 +621,10 @@ h1[data-page-title] {
 }
 
 .navet-changelog-intro p a {
-  color: var(--navet-text);
-  font-size: inherit;
-  font-weight: 620;
+  color: inherit;
+  font-size: 1em;
+  font-weight: inherit;
+  line-height: inherit;
   white-space: nowrap;
   text-decoration: underline;
   text-decoration-color: color-mix(in srgb, var(--navet-accent) 55%, transparent);
