@@ -10,14 +10,14 @@ if (!supportedSurfaces.has(surface)) {
 }
 
 const repoRoot = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
-const sharedHeadersPath = path.join(repoRoot, 'assets/public/_headers');
+const sharedHeadersPath = path.join(repoRoot, 'apps/website/_headers');
 const outputHeadersPath = path.join(repoRoot, `apps/${surface}/dist/_headers`);
 const sharedHeaders = await readFile(sharedHeadersPath, 'utf8');
 const rootRuleStart = sharedHeaders.indexOf('\n/\n');
 const rootRuleEnd = sharedHeaders.indexOf('\n\n/roadmap/*', rootRuleStart);
 
 if (rootRuleStart === -1 || rootRuleEnd === -1) {
-  throw new Error('Could not find the root CSP rule in assets/public/_headers');
+  throw new Error('Could not find the root CSP rule in apps/website/_headers');
 }
 
 const rootRule = sharedHeaders.slice(rootRuleStart, rootRuleEnd);
