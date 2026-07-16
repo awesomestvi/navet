@@ -6,7 +6,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(__dirname, '..');
 const distDir = path.join(workspaceRoot, 'dist');
 const indexPath = path.join(distDir, 'index.html');
-const redirectsPath = path.join(workspaceRoot, '_redirects');
+const deploymentAssetNames = ['_redirects', 'robots.txt', 'sitemap.xml'];
 const routeClones = [
   {
     path: 'roadmap',
@@ -91,6 +91,8 @@ for (const route of routeClones) {
   fs.writeFileSync(path.join(routeDir, 'index.html'), applyRouteMetadata(indexHtml, route));
 }
 
-fs.copyFileSync(redirectsPath, path.join(distDir, '_redirects'));
+for (const assetName of deploymentAssetNames) {
+  fs.copyFileSync(path.join(workspaceRoot, assetName), path.join(distDir, assetName));
+}
 
 console.log(`Cloned website route entrypoints into ${distDir}`);
