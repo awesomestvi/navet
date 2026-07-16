@@ -27,9 +27,9 @@ Astro telemetry is disabled in all three commands.
 
 Create a separate Pages project for the documentation site with:
 
-- project root: repository root
-- build command: `pnpm docs:build`
-- output directory: `apps/docs/dist`
+- project root: `apps/docs`
+- build command: `pnpm --dir ../.. docs:build`
+- output directory: `dist`
 - production branch: `main`
 - custom domain: `docs.navet.app`
 - environment variable: `NODE_VERSION=22`

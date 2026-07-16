@@ -9,9 +9,9 @@ This workspace builds the public Navet demo at `https://demo.navet.app`.
 
 ## Cloudflare Pages
 
-- project root: repository root
-- build command: `pnpm build:demo`
-- output directory: `apps/demo/dist`
+- project root: `apps/demo`
+- build command: `pnpm --dir ../.. build:demo`
+- output directory: `dist`
 - production branch: `main`
 - custom domain: `demo.navet.app`
 - environment variables: `NODE_VERSION=22` and `PNPM_VERSION=11.9.0`
