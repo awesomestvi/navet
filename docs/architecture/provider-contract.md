@@ -12,8 +12,10 @@ requests.
 
 At a high level, a provider package provides two related layers:
 
-- A contract surface used by app/runtime wiring.
+- A small state/resource contract used by app/runtime wiring.
 - A command adapter (`SmartHomeProviderAdapter`) used by UI interactions to execute commands.
+- A runtime registration that declares capability flags, a feature matrix, and optional richer
+  feature services.
 
 The contract API is currently:
 
@@ -36,7 +38,7 @@ type NavetProviderContract = {
 `createSnapshotBackedProviderAdapter` in `@navet/core` currently turns contract state into a
 `SmartHomeProviderAdapter` with `connect/disconnect/listEntities/getEntity/execute/subscribeToEvents`.
 
-## What The Shared Contract Carries
+## What The Small Contract Carries
 
 - normalized entities
 - room and room-descriptor data
@@ -44,9 +46,17 @@ type NavetProviderContract = {
 - entity lookup
 - generic command execution
 - live updates through subscriptions
-- optional normalized entity-history queries with provider-owned transport and payload mapping
-- optional provider feature services such as media, camera, energy, notification, task, and admin
-  operations
+
+## What Runtime Registration Adds
+
+`IntegrationProviderRuntimeRegistration` sits beside the small contract. It declares whether a
+provider is implemented or planned, publishes the dashboard feature matrix, and may register
+provider-owned services for media, lights, native actions, cameras, security, climate, rooms and
+entities, history, energy, calendars, weather, notifications, tasks, and entity runtime access.
+
+Keeping these services out of `NavetProviderContract` prevents the base contract from growing into
+a mirror of Home Assistant. Shared feature UI asks the app/runtime seam for an optional service and
+must handle its absence.
 
 ## What It Does Not Carry
 
@@ -97,6 +107,18 @@ Owns:
 - openHAB: implemented
 - Hubitat: planned (contract + registration entry only)
 - SmartThings: planned (contract + registration entry only)
+
+Current runtime feature scope:
+
+| Capability group | Home Assistant | Homey | openHAB |
+|---|---:|---:|---:|
+| rooms, realtime entities, lighting, switches, sensors | Yes | Yes | Yes |
+| climate, media, cameras, energy, calendar, weather | Yes | No | No |
+| notifications, tasks, history, security, administration | Yes | No | No |
+
+The app may keep multiple implemented sessions connected at once. Provider-scoped IDs and
+provider-owned state remain separate; selected provider collections are merged for dashboard use,
+while an active provider resolves operations that require a single feature-service owner.
 
 ## Testing Expectations
 

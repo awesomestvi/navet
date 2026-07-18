@@ -926,6 +926,20 @@ describe('MediaDashboard', () => {
 
     expect(await screen.findByRole('button', { name: 'Show less' })).toBeInTheDocument();
     expect(screen.getByTestId('media-browser-virtual-table-shell')).toBeInTheDocument();
+    expect(screen.getByTestId('media-browser-virtual-table')).toHaveClass(
+      'touch-pan-y',
+      'overscroll-contain',
+      '[-webkit-overflow-scrolling:touch]'
+    );
+    expect(screen.getByTestId('media-browser-virtual-table')).toHaveAttribute(
+      'data-card-nodrag',
+      'true'
+    );
+
+    const trackSearch = screen.getByRole('searchbox', { name: 'Search' });
+    fireEvent.change(trackSearch, { target: { value: 'Track 20' } });
+    expect(await screen.findByText('Track 20')).toBeInTheDocument();
+    expect(screen.queryByText('Track 1')).not.toBeInTheDocument();
   });
 
   it('removes duplicate entries from recently played while preserving their order', async () => {
@@ -1444,7 +1458,7 @@ describe('MediaDashboard', () => {
     );
   });
 
-  it('fills Spotify recently played rows with CDN artwork, artist, and album metadata', async () => {
+  it('prefers Spotify artist metadata over incorrect provider labels in recently played rows', async () => {
     localStorage.setItem(
       STORAGE_KEYS.mediaDefaultViews,
       JSON.stringify({
@@ -1458,7 +1472,7 @@ describe('MediaDashboard', () => {
         },
       })
     );
-    browseMediaPlayerMock.mockResolvedValueOnce({
+    browseMediaPlayerMock.mockResolvedValue({
       title: 'Recently played',
       children: [
         {
@@ -1467,11 +1481,12 @@ describe('MediaDashboard', () => {
           mediaContentType: 'track',
           mediaClass: 'track',
           thumbnail: '/image/ab67616d00001e02bedheadart',
+          artist: 'Deer',
           canPlay: true,
         },
         ...Array.from({ length: 20 }, (_, index) => ({
           title: `Track ${index + 2}`,
-          mediaContentId: `spotify:track:${String(index + 2).padStart(22, '0')}`,
+          mediaContentId: `provider:track:${index + 2}`,
           mediaContentType: 'track',
           mediaClass: 'track',
           canPlay: true,
@@ -1495,24 +1510,18 @@ describe('MediaDashboard', () => {
 
     const { container } = renderWithProviders(<MediaDashboard devices={[createMediaDevice()]} />);
 
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Show all' })).toBeInTheDocument()
-    );
-    const recentGrid = screen.getByTestId('media-browser-compact-grid');
-    expect(recentGrid).toHaveStyle({ height: '364px' });
-    expect(recentGrid.children).toHaveLength(16);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Show all' }));
-
     await waitFor(() => expect(screen.getByText('Manchester Orchestra')).toBeInTheDocument());
-    expect(screen.getByTestId('media-browser-virtual-table-shell')).toHaveStyle({
-      height: '364px',
-    });
-    expect(screen.getByTestId('media-browser-virtual-table')).toHaveStyle({ height: '320px' });
-    expect(screen.getByText('The Million Masks Of God')).toBeInTheDocument();
+    expect(screen.queryByText('Deer')).not.toBeInTheDocument();
     expect(container.querySelector('img')).toHaveAttribute(
       'src',
       'https://i.scdn.co/image/ab67616d00001e02bedheadart'
     );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show all' }));
+    const trackSearch = await screen.findByRole('searchbox', { name: 'Search' });
+    fireEvent.change(trackSearch, { target: { value: 'Manchester Orchestra' } });
+
+    expect(await screen.findByText('Bed Head')).toBeInTheDocument();
+    expect(screen.queryByText('Track 2')).not.toBeInTheDocument();
   });
 });

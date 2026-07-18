@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "ASTRO_TELEMETRY_DISABLED=1 astro dev --host 127.0.0.1",
-    "build": "ASTRO_TELEMETRY_DISABLED=1 astro build && node scripts/write-deployment-assets.mjs",
+    "build": "ASTRO_TELEMETRY_DISABLED=1 astro build && node scripts/write-deployment-assets.mjs && node ../../scripts/inject-cloudflare-web-analytics.mjs docs",
     "preview": "ASTRO_TELEMETRY_DISABLED=1 astro preview --host 127.0.0.1"
   },
   "devDependencies": {

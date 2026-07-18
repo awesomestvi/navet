@@ -26,6 +26,10 @@ Shared UI should work from:
 - normalized runtime status
 - generic command callbacks
 
+Those inputs may contain entities from multiple selected providers. Shared UI must preserve
+provider-scoped/canonical identity and route commands back to the entity's owning provider instead
+of assuming that every visible entity belongs to the active provider.
+
 Mental model:
 
 ```tsx

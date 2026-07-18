@@ -47,16 +47,19 @@ These rules apply to all code written for Navet.
 ## Before Writing Code
 
 1. Check whether an existing component, hook, utility, or pattern should be reused.
-2. Before building any new UI element, scan `packages/app/src/components/primitives/` first and
+2. For dashboard UI, follow [`../../ai/skills/navet-ux.md`](../../ai/skills/navet-ux.md): inspect
+   the target screen, name the primary Navet reference, and define information priority and
+   responsive behavior before implementing.
+3. Before building any new UI element, scan `packages/app/src/components/primitives/` first and
    check whether the work really belongs in the current app-owned layer or should be part of an
    explicit `@navet/ui` extraction. If a primitive already covers the use case, use it instead of
    re-implementing it inline or in a feature folder.
-3. Before adding a new Storybook story file, check whether a story for that component already exists. Add to the existing story file rather than creating a duplicate.
-4. Before writing new UI logic, check whether unit tests already exist. Extend existing tests before adding duplicate coverage.
-5. If creating something new, make it reusable when that is realistically beneficial.
-6. Explain any architectural decision that affects maintainability or performance.
-7. Flag any tradeoff where visual richness may hurt performance on low-power devices.
-8. Do not produce shortcut code that solves the immediate task but worsens the codebase.
+4. Before adding a new Storybook story file, check whether a story for that component already exists. Add to the existing story file rather than creating a duplicate.
+5. Before writing new UI logic, check whether unit tests already exist. Extend existing tests before adding duplicate coverage.
+6. If creating something new, make it reusable when that is realistically beneficial.
+7. Explain any architectural decision that affects maintainability or performance.
+8. Flag any tradeoff where visual richness may hurt performance on low-power devices.
+9. Do not produce shortcut code that solves the immediate task but worsens the codebase.
 
 ## Before Finalizing Code
 
@@ -65,6 +68,8 @@ These rules apply to all code written for Navet.
 - Is this the simplest maintainable solution?
 - Will this perform well on weaker devices?
 - Does this avoid duplication?
+- For UI work, does the rendered result match the named Navet reference across supported themes,
+  states, and sizes?
 
 ## Documentation Rules
 

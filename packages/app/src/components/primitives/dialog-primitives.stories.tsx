@@ -51,9 +51,9 @@ function DialogActionsStory() {
           >
             <div className="space-y-4 p-4">
               <div className={`rounded-2xl border p-4 ${surface.border} ${surface.subtleBg}`}>
-                <p className={`text-sm font-medium ${surface.textPrimary}`}>Dialog actions</p>
+                <p className={`text-sm font-medium ${surface.textPrimary}`}>Kitchen lights</p>
                 <p className={`mt-1 text-sm ${surface.textSecondary}`}>
-                  Shared footer and done actions for dialog content built elsewhere.
+                  Choose how this card behaves, then return to the dashboard.
                 </p>
               </div>
               <DialogDoneFooter label="Done" />

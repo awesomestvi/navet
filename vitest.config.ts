@@ -22,6 +22,7 @@ export default defineConfig({
         ],
         test: {
           name: `storybook:${storybookConfigDir}`,
+          dir: dirname,
           coverage: {
             exclude: ['**/*.json', '**/package.json'],
           },

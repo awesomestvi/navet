@@ -1,24 +1,40 @@
-# Navet For HACS
+# Navet for Home Assistant
 
-This repository contains only the Home Assistant HACS integration packaging for Navet.
-It intentionally excludes `repository.yaml` and all Home Assistant add-on packaging files.
+Navet has been downloaded through HACS. Complete the Home Assistant setup once, then open your
+dashboard directly from the sidebar.
 
-![Navet dashboard demo on iPad frame](https://raw.githubusercontent.com/awesomestvi/navet/main/assets/reference/marketing/use-cases/navet-ipad-frame-dashboard.jpg)
+## Open Your Dashboard
 
-Install with HACS:
+1. Restart Home Assistant after downloading or updating Navet.
+2. Go to **Settings -> Devices & services**.
+3. Select **Add integration**, search for **Navet**, and confirm the setup.
+4. Open **Navet** from the Home Assistant sidebar.
 
-1. Add `https://github.com/awesomestvi/navet-hacs` as a custom repository with category
-   `Integration`.
-2. Install `Navet`.
-3. Restart Home Assistant.
-4. Add the `Navet` integration from `Settings -> Devices & services`.
-5. Open Navet from the Home Assistant sidebar.
+Navet uses your current Home Assistant session, so there is no separate URL, access token, or Navet
+account to configure. Your rooms and devices should appear automatically.
 
-Navet source, docs, issues, and release workflow live in the main monorepo:
+## Use Navet Full Screen
 
-- source: `https://github.com/awesomestvi/navet`
-- docs: `https://github.com/awesomestvi/navet/blob/main/docs/HOME_ASSISTANT.md`
-- issues: `https://github.com/awesomestvi/navet/issues`
+Navet can hide the Home Assistant header and sidebar while its dashboard is open. Add the following
+to `configuration.yaml`:
 
-This repository is generated from `platform/home-assistant/custom_components/navet/` in the
-monorepo. Run `pnpm sync:hacs` from the monorepo to refresh it.
+```yaml
+frontend:
+  extra_module_url:
+    - /api/navet/static/navet-ha-shell.js
+```
+
+Restart Home Assistant after saving the change. The module is served locally by the Navet
+integration.
+
+## If Navet Does Not Appear
+
+1. Confirm Home Assistant was restarted after the HACS download.
+2. Check that **Navet** appears under **Settings -> Devices & services**.
+3. If it is missing, add the integration manually and confirm the empty setup form.
+4. Hard-refresh your browser if the sidebar still shows an older panel bundle.
+
+Still stuck? Read the [Home Assistant guide](https://docs.navet.app/install/home-assistant/) or
+[open a GitHub issue](https://github.com/awesomestvi/navet/issues). Include your Navet and Home
+Assistant versions, the exact action that failed, and clear reproduction steps. Remove tokens,
+private URLs, entity names, and household details from logs and screenshots first.

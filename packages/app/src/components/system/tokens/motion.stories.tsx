@@ -48,9 +48,9 @@ const meta = {
         component: [
           'Shared motion profile tokens aligned to Navet’s existing effects-quality model.',
           '',
-          'What this page covers:',
+          'What this story proves:',
           '- Canonical duration steps.',
-          '- Low-power, balanced, and premium motion profiles.',
+          '- Low-power, balanced, and full-effects motion profiles.',
           '- Explicit mapping from `effectsQuality` to motion behavior.',
         ].join('\n'),
       },

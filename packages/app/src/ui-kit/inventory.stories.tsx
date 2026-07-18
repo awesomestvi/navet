@@ -1,3 +1,4 @@
+import { WorkbenchIntro, WorkbenchPage, WorkbenchPanel } from '@navet/app/storybook/workbench-docs';
 import * as patterns from '@navet/app/ui-kit/patterns';
 import * as primitives from '@navet/app/ui-kit/primitives';
 import * as tokens from '@navet/app/ui-kit/tokens';
@@ -94,17 +95,18 @@ const inventory = [
 
 function InventoryStory() {
   return (
-    <div className="mx-auto max-w-4xl space-y-4">
+    <WorkbenchPage>
+      <WorkbenchIntro eyebrow="Shared UI inventory" title="Know what is stable before you compose">
+        <p>
+          Browse the public primitives, patterns, and token helpers that feature work can depend on.
+          This is an authoring map, not a list of every internal implementation detail.
+        </p>
+      </WorkbenchIntro>
       {inventory.map((section) => (
-        <section
-          key={section.group}
-          className="rounded-[28px] border border-white/10 bg-white/6 p-6"
-        >
-          <h2 className="text-xl font-semibold text-white">{section.group}</h2>
-          <p className="mt-2 text-sm leading-6 text-white/70">{section.description}</p>
-          <div className="mt-4 overflow-hidden rounded-[20px] border border-white/10">
-            <table className="min-w-full divide-y divide-white/10 text-left text-sm text-white/82">
-              <thead className="bg-black/20 text-white/60">
+        <WorkbenchPanel key={section.group} title={section.group} summary={section.description}>
+          <div className="overflow-x-auto rounded-[16px] border border-current/10">
+            <table className="min-w-full divide-y divide-current/10 text-left text-sm">
+              <thead className="bg-current/5 opacity-75">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Export</th>
                   <th className="px-4 py-3 font-semibold">Import path</th>
@@ -112,29 +114,28 @@ function InventoryStory() {
                   <th className="px-4 py-3 font-semibold">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/10">
+              <tbody className="divide-y divide-current/10">
                 {section.entries.map(([name, path, useFor = 'shared UI composition']) => (
                   <tr key={name}>
                     <td className="px-4 py-3 font-medium">{name}</td>
                     <td className="px-4 py-3 font-mono text-xs">{path}</td>
-                    <td className="px-4 py-3 text-white/70">{useFor}</td>
+                    <td className="px-4 py-3 opacity-75">{useFor}</td>
                     <td className="px-4 py-3">Stable</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </section>
+        </WorkbenchPanel>
       ))}
-      <section className="rounded-[28px] border border-white/10 bg-white/6 p-6">
-        <h2 className="text-xl font-semibold text-white">Inventory rule</h2>
-        <p className="mt-2 text-sm leading-6 text-white/78">
+      <WorkbenchPanel title="Inventory rule">
+        <p className="text-sm leading-6">
           This page tracks the stable UI-kit surface, not every implementation detail. If a new
           primitive or pattern is intended for cross-feature use, export it through
           `packages/app/src/ui-kit/` and add it here in the same change.
         </p>
-      </section>
-    </div>
+      </WorkbenchPanel>
+    </WorkbenchPage>
   );
 }
 

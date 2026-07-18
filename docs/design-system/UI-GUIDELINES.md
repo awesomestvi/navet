@@ -17,6 +17,24 @@ Navet should feel:
 - deliberate rather than generic
 - consistent across cards, settings, dialogs, and section views
 
+These are observable qualities, not prompts to invent a style. In particular, "premium" means
+precise alignment, restrained effects, legible state, and dependable interaction. It does not mean
+more glass, gradients, shadows, hero copy, or whitespace.
+
+## Canonical References
+
+Use references in this order:
+
+1. The same component family and immediate neighbors on the target screen.
+2. Home for dashboard outer spacing, section rhythm, summary-bar spacing, card-grid density, and
+   responsive behavior.
+3. The relevant primitive or pattern in Storybook.
+4. UI-kit recipes and token stories.
+
+Marketing pages and isolated experimental stories are not dashboard references. When creating a
+new surface, record the primary reference and describe why an existing recipe is being reused,
+extended, or replaced.
+
 ## Current Theme Model
 
 Supported themes:
@@ -74,6 +92,24 @@ Target ownership:
 - keep touch targets comfortable and obvious
 - do not rely on hover as the primary interaction affordance
 - reduce simultaneous controls in compact card sizes
+- preserve the shared dashboard shell and its user-selected spacing mode
+- do not introduce feature-local page padding, max-width containers, or centered shells inside a
+  dashboard section
+- follow Home's compact mobile rhythm and wider-breakpoint section separation unless the target
+  feature already has a more specific established layout
+
+## Information Hierarchy
+
+Order content by user value:
+
+1. identity
+2. current state or value
+3. exception or warning
+4. primary household action
+5. secondary detail and configuration
+
+Do not add labels, badges, descriptions, or calls to action solely to fill space. Section headings
+organize operational content; they should not become marketing-style hero blocks.
 
 ## Card Rules
 
@@ -82,6 +118,19 @@ Target ownership:
 - degrade cleanly across supported card sizes
 - do not duplicate the same action in multiple parts of the card
 - move overflow controls into dialogs rather than overloading compact card surfaces
+- make every supported card size an intentional composition rather than clipping or scaling a
+  desktop layout
+- prefer one semantic surface; avoid placing a card inside a panel inside another section card
+
+## Interaction, Accessibility, And Copy
+
+- use the shared minimum 44 px touch target and prefer 48 px for primary controls
+- preserve focus-visible behavior and provide a reduced-motion path
+- do not use hover, color, or motion as the only affordance or state signal
+- use sentence case, concise household language, and existing translation keys
+- reserve uppercase for established eyebrow tokens, external identifiers, and short technical
+  codes
+- test realistic long names, translated text, missing artwork, and missing optional values
 
 ## Shared UI Placement
 
@@ -98,3 +147,16 @@ Target ownership:
 - avoid expensive visual treatment in frequently updating or always-visible dashboard surfaces
 - be careful with blur, nested layers, and animation on low-power hardware
 - prefer CSS transforms and shared token logic over heavy per-card custom effects
+
+## Visual Acceptance
+
+Before handoff, compare the rendered result with the named canonical reference across:
+
+- normal, active, unavailable, loading, empty, and error states supported by the feature
+- smallest and largest card sizes or viewport widths
+- `glass`, `dark`, `light`, and `black`
+- accent contrast, keyboard focus, touch/no-hover use, and reduced motion
+- high and reduced effects quality when effects are present
+
+Correct visible hierarchy, overflow, alignment, and surface mismatches before treating the design
+as complete.

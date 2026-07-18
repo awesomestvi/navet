@@ -56,6 +56,12 @@ A quick visual reference for all Navet brand assets.
 
 **Best for:** iOS home screen installs • Android PWA prompts • Desktop PWA installs
 
+### 7. Social Preview Card
+**File:** `/assets/public/navet-social-card.jpg`
+
+**Best for:** Open Graph and social-link previews. Regenerate it through the website asset workflow
+rather than editing the raster output by hand.
+
 ---
 
 ## 🎨 Color Palette
@@ -81,6 +87,7 @@ End:   #ea580c (Tailwind orange-600)
 | Favicon | `favicon.svg` | 32×32 | Browser tabs |
 | Apple Icon | `apple-touch-icon.svg` | 180×180 | iOS home screen |
 | Raster Install Icons | `apple-touch-icon.png`, `pwa-192.png`, `pwa-512.png` | manifest/install assets | PWA installs |
+| Social Preview | `navet-social-card.jpg` | social metadata asset | Open Graph and link previews |
 
 ---
 
@@ -116,4 +123,4 @@ import logo from '/logo.svg';
 
 **All assets are located in `/assets/public/` directory**
 
-*Last Updated: May 25, 2026*
+*Last Updated: July 16, 2026*

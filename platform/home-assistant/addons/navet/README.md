@@ -1,33 +1,27 @@
-# Navet Home Assistant Add-on
+# Navet
 
-This add-on serves Navet through Home Assistant Ingress.
-This directory is the monorepo source for the add-on published from `awesomestvi/navet`.
+Navet is installed and ready to use through Home Assistant. It reuses your Home Assistant session,
+so there is no separate Home Assistant URL or access token to enter.
 
-![Navet dashboard demo on iPad frame](https://raw.githubusercontent.com/awesomestvi/navet/main/assets/reference/marketing/use-cases/navet-ipad-frame-dashboard.jpg)
+## Open Your Dashboard
 
-[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fawesomestvi%2Fnavet)
+1. Select **Start** and wait for the add-on to finish starting.
+2. Select **Open Web UI** to open Navet through Home Assistant Ingress.
+3. Enable **Show in sidebar** for quicker access next time.
+4. Enable **Start on boot** if you want Navet available whenever Home Assistant starts.
 
-## Current Behavior
+Your rooms and devices should appear automatically. From there, arrange the dashboard around the
+controls, status, and routines you use most.
 
-- pulls a prebuilt container image published by CI
-- uses the authenticated Home Assistant Ingress session when opened from the sidebar
-- does not require manual Home Assistant URL or token entry
-- supports optional `dashboard_config_url` import on first launch
-- keeps the direct host port disabled by default
+## If Navet Does Not Open
 
-If the optional direct port is opened outside Ingress, Navet behaves like the standalone runtime
-and uses OAuth login instead of the Ingress session.
+1. Confirm the add-on status is **Running**.
+2. Open the **Log** tab and look for the first error shown during startup.
+3. Restart the add-on, then open it with **Open Web UI** or the Home Assistant sidebar.
+4. Keep the optional direct port disabled unless you intentionally need standalone-style access.
+   Direct access does not reuse the Home Assistant Ingress session.
 
-## Install
-
-1. Open `Settings -> Add-ons -> Add-on Store`.
-2. Open the repository menu and choose `Repositories`.
-3. Add `https://github.com/awesomestvi/navet` as an Add-on Store repository.
-4. Install `Navet`.
-
-## Configuration
-
-- `dashboard_config_url`: optional Navet dashboard config import URL for first launch
-- `homey_client_id`: optional Athom Web API client ID for Homey login from the add-on
-- `homey_client_secret`: optional Athom Web API client secret for Homey login from the add-on
-- `homey_redirect_uri`: optional exact Homey OAuth callback URL override when the add-on cannot infer the public ingress URL correctly
+Still stuck? Read the [Home Assistant guide](https://docs.navet.app/install/home-assistant/) or
+[open a GitHub issue](https://github.com/awesomestvi/navet/issues). Include your Navet and Home
+Assistant versions, what you were doing, and the smallest set of steps that reproduces the problem.
+Remove tokens, private URLs, entity names, and household details from logs and screenshots first.

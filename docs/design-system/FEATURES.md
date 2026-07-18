@@ -101,6 +101,10 @@ Current widget templates:
 - map
 - entity
 
+`media-stack` remains a supported stored widget type for compatible saved/imported profiles, but
+is intentionally absent from the Add card chooser. The chooser also exposes scene and energy
+metric presets backed by the existing `button` and `info` types.
+
 Dashboard owns widget registration and placement. Feature folders may own the actual widget behavior
 when the widget is domain-specific.
 
@@ -131,6 +135,10 @@ The settings feature owns dashboard profile modes. Current presets include `stan
 `wall_display`; applying a preset updates dashboard spacing, header title mode, keep-awake,
 kiosk-mode, and Home summary-bar settings as a scoped profile change.
 
+Settings also owns provider management, four theme families, built-in/custom accent colors,
+wallpapers, interaction policy, adaptive effects controls, custom sidebar extensions, dashboard
+import/export, experimental options, and project/runtime information.
+
 ## Shared UI Ownership
 
 - `packages/app/src/components/primitives/`: current low-level reusable building blocks
@@ -149,6 +157,10 @@ Shared UI should prefer normalized provider/runtime state from:
 - `packages/app/src/stores/`
 - `packages/app/src/hooks/`
 
+The runtime can retain multiple implemented provider sessions. Dashboard collections merge the
+currently selected providers while preserving provider-scoped and canonical IDs; provider-specific
+feature operations still resolve through the matching active/owning runtime registration.
+
 Provider-specific runtime, auth, media, and resource behavior should remain in:
 
 - provider packages (`packages/provider-*/`) for runtime-capable providers
@@ -159,6 +171,14 @@ Ownership rule of thumb:
 - if the work is generic shared UI and provider-neutral, the long-term destination is `@navet/ui`
 - if the work is staying in app-owned shared UI for now, document it as a current implementation
   seam rather than as the final architecture
+
+Current feature-service baseline:
+
+| Capability group | Home Assistant | Homey | openHAB |
+|---|---:|---:|---:|
+| rooms, realtime state, lighting, switches, sensors | Yes | Yes | Yes |
+| climate, media, cameras, energy, calendar, weather | Yes | No | No |
+| notifications, tasks, history, security, administration | Yes | No | No |
 
 ## Testing And Stories
 

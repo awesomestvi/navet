@@ -42,24 +42,24 @@ function CardShellStory() {
         size="small"
         className={`${surface.panel} ${surface.border} border rounded-2xl p-4`}
       >
-        <p className={`text-sm font-medium ${surface.textPrimary}`}>Small Card Shell</p>
-        <p className={`mt-1 text-xs ${surface.textMuted}`}>Basic shell primitive</p>
+        <p className={`text-sm font-medium ${surface.textPrimary}`}>Kitchen window</p>
+        <p className={`mt-1 text-xs ${surface.textMuted}`}>Small card shell</p>
       </CardShell>
 
       <CardShell
         size="medium"
         className={`${surface.panel} ${surface.border} border rounded-2xl p-4`}
       >
-        <p className={`text-sm font-medium ${surface.textPrimary}`}>Medium Card Shell</p>
-        <p className={`mt-1 text-xs ${surface.textMuted}`}>With more content space</p>
+        <p className={`text-sm font-medium ${surface.textPrimary}`}>Living room climate</p>
+        <p className={`mt-1 text-xs ${surface.textMuted}`}>21.5 °C · Heating to 22 °C</p>
       </CardShell>
 
       <CardShell
         size="large"
         className={`${surface.panel} ${surface.border} border rounded-2xl p-4`}
       >
-        <p className={`text-sm font-medium ${surface.textPrimary}`}>Large Card Shell</p>
-        <p className={`mt-1 text-xs ${surface.textMuted}`}>Maximum content area</p>
+        <p className={`text-sm font-medium ${surface.textPrimary}`}>Whole-home energy</p>
+        <p className={`mt-1 text-xs ${surface.textMuted}`}>2.4 kW now · 18.7 kWh today</p>
       </CardShell>
     </div>
   );
@@ -70,7 +70,7 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Basic card shell primitive in different sizes',
+        story: 'Card shell composition at three dashboard sizes with realistic household content.',
       },
     },
   },
@@ -87,8 +87,8 @@ function CardShellWithBaseCardStory() {
         frameClassName={`${surface.panel} ${surface.border} border rounded-2xl`}
       >
         <div className="p-4">
-          <p className={`text-sm font-medium ${surface.textPrimary}`}>Base Card</p>
-          <p className={`mt-1 text-xs ${surface.textMuted}`}>With shell primitive</p>
+          <p className={`text-sm font-medium ${surface.textPrimary}`}>Reading corner</p>
+          <p className={`mt-1 text-xs ${surface.textMuted}`}>BaseCard inside CardShell</p>
         </div>
       </BaseCard>
     </div>
@@ -100,7 +100,7 @@ export const WithBaseCard: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Card shell used with BaseCard component',
+        story: 'CardShell composed with BaseCard for a compact light control surface.',
       },
     },
   },

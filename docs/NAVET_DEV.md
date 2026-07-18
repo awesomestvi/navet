@@ -49,6 +49,10 @@ session. It does not need a Home Assistant URL or long-lived access token in nor
 The optional direct port is disabled by default. Opening the add-on outside Ingress changes it to
 the standalone-style OAuth flow.
 
+To test Homey as an additional provider, set the add-on's `homey_client_id`,
+`homey_client_secret`, and optional `homey_redirect_uri` options, restart it, then connect Homey in
+**Settings -> System**. openHAB can be added there with its browser-reachable URL and credentials.
+
 ### Update
 
 Each Navet Dev publish advances the version in the add-on repository. Home Assistant will show an
@@ -83,7 +87,7 @@ you already standardize on `edge`.
 ### Requirements
 
 - Docker with Compose support
-- a Home Assistant URL reachable by the browser that opens Navet
+- the credentials and browser-reachable URL required by the provider you want to test
 
 ### Install
 
@@ -98,7 +102,11 @@ services:
     ports:
       - "8081:80"
     environment:
+      # Optional Home Assistant discovery hint.
       NAVET_HASS_URL: "http://homeassistant.local:8123"
+      # Optional Homey OAuth client settings.
+      NAVET_HOMEY_CLIENT_ID: "your-athom-client-id"
+      NAVET_HOMEY_CLIENT_SECRET: "your-athom-client-secret"
     volumes:
       - navet-dev-data:/data
 
@@ -106,9 +114,11 @@ volumes:
   navet-dev-data:
 ```
 
-Change `NAVET_HASS_URL` to the browser-reachable URL of your Home Assistant instance. You may omit
-it and select Home Assistant during first-run discovery instead. Do not use a container-only
-hostname unless the browser can also resolve it.
+Remove any environment variables for providers you are not testing. For Home Assistant, change
+`NAVET_HASS_URL` to the browser-reachable instance URL or omit it and use first-run discovery. For
+Homey, register the exact callback URL described in the [Homey guide](/install/homey/). openHAB
+needs no container environment variable; choose it in Navet and enter its base URL and credentials.
+Do not use a container-only hostname unless the browser can also resolve it.
 
 Start Navet Dev:
 
@@ -116,7 +126,7 @@ Start Navet Dev:
 docker compose up -d
 ```
 
-Open `http://localhost:8081` and complete Home Assistant OAuth login. Port `8081` lets this Dev
+Open `http://localhost:8081` and complete the provider login. Port `8081` lets this Dev
 container run alongside a stable Navet container using port `8080`. Navet stores OAuth and dashboard
 profile state in the `/data` volume.
 

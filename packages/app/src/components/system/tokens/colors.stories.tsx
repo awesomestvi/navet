@@ -1,4 +1,4 @@
-import { ColorInputSwatch, Input } from '@navet/app/components/primitives';
+import { Input } from '@navet/app/components/primitives';
 import { themeColorValues } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
@@ -20,6 +20,88 @@ type TokenRow = {
   values: Record<ThemeType, string>;
 };
 
+const TOKEN_LABELS: Record<string, string> = {
+  'surface.textPrimary': 'Primary text',
+  'surface.textSecondary': 'Secondary text',
+  'surface.textMuted': 'Muted text',
+  'surface.panel': 'Primary panel',
+  'surface.panelMuted': 'Muted panel',
+  'surface.iconBg': 'Icon background',
+  'surface.subtleBg': 'Subtle background',
+  'surface.border': 'Default border',
+  'colors.light.gradient': 'Active light',
+  'colors.media.gradient': 'Media',
+  'colors.lock.locked.gradient': 'Locked',
+  'colors.lock.unlocked.gradient': 'Unlocked',
+  'colors.cover.open.gradient': 'Open cover',
+  'colors.climate.heating.gradient': 'Heating',
+  'colors.climate.cooling.gradient': 'Cooling',
+  'colors.person.home.gradient': 'Home presence',
+  'colors.vacuum.cleaning.gradient': 'Vacuum cleaning',
+  'colors.rss.gradient': 'RSS feed',
+  'colors.calendar.gradient': 'Calendar',
+};
+
+function getTokenLabel(token: string) {
+  const mappedLabel = TOKEN_LABELS[token];
+  if (mappedLabel) {
+    return mappedLabel;
+  }
+
+  const finalSegment = token.split('.').at(-1) ?? token;
+  return finalSegment
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/^\w/, (letter) => letter.toUpperCase());
+}
+
+function formatColorClass(value: string) {
+  return value
+    .replace(/^(?:text|bg|border)-/, '')
+    .replace(/-(\d)/g, ' $1')
+    .replace('/', ' · ')
+    .replace(/^\w/, (letter) => letter.toUpperCase());
+}
+
+function getReadableValue(kind: TokenKind, value: string) {
+  if (kind === 'hex') {
+    return value.toUpperCase();
+  }
+
+  if (kind === 'semantic') {
+    return 'Shared status recipe';
+  }
+
+  if (value.includes('linear-gradient')) {
+    return 'Layered glass';
+  }
+
+  if (value.includes('rgba')) {
+    return 'Translucent neutral';
+  }
+
+  if (kind === 'gradient') {
+    const from = value.match(/from-([^\s]+)/)?.[1];
+    const to = value.match(/to-([^\s]+)/)?.[1];
+    if (from && to) {
+      return `${formatColorClass(from)} → ${formatColorClass(to)}`;
+    }
+  }
+
+  return formatColorClass(value);
+}
+
+function getResolvedGroup(row: TokenRow) {
+  if (row.kind === 'text') {
+    return 'Text';
+  }
+
+  if (row.kind === 'surface' || row.kind === 'border') {
+    return 'Surfaces and borders';
+  }
+
+  return 'Device and content states';
+}
+
 function repeatAcrossThemes(value: string): Record<ThemeType, string> {
   return {
     light: value,
@@ -29,69 +111,117 @@ function repeatAcrossThemes(value: string): Record<ThemeType, string> {
   };
 }
 
-function AccentSwatch({ name, value }: { name: string; value: string }) {
-  return (
-    <article className="text-center">
-      <div className="flex justify-center">
-        <ColorInputSwatch
-          value={value}
-          ariaLabel={`${name} accent`}
-          title={`${name} accent`}
-          mode="swatch"
-          size="large"
-          className="shadow-[0_10px_20px_-16px_rgba(0,0,0,0.28)]"
-        />
-      </div>
-      <div className="mt-3">
-        <p className={`${navetTypographyTokens.label} text-white capitalize`}>{name}</p>
-        <p className={`mt-0.5 font-mono ${navetTypographyTokens.caption} text-white/58`}>{value}</p>
-      </div>
-    </article>
-  );
+function isThemeInvariant(row: TokenRow) {
+  return new Set(THEME_COLUMNS.map((themeMode) => row.values[themeMode])).size === 1;
 }
 
 function TokenCell({
   kind,
   themeMode,
   value,
+  valueClassName,
+  showValue = true,
+  centered = false,
 }: {
   kind: TokenKind;
   themeMode: ThemeType;
   value: string;
+  valueClassName: string;
+  showValue?: boolean;
+  centered?: boolean;
 }) {
   const themeSurface = getThemeSurfaceTokens(themeMode);
+  const readableValue = getReadableValue(kind, value);
 
   return (
-    <div className="space-y-2">
+    <div className={`min-w-0 ${centered ? 'flex flex-col items-center' : ''}`}>
       {kind === 'hex' ? (
         <div
-          className="h-14 rounded-[16px] border"
+          className="h-14 w-14 rounded-full border"
           style={{ backgroundColor: value, borderColor: `${value}55` }}
         />
       ) : kind === 'semantic' ? (
-        <div
-          className={`flex h-14 items-center rounded-[16px] border px-3 text-xs font-medium ${value}`}
-        >
-          Sample
+        <div className="rounded-xl bg-zinc-950 p-1.5">
+          <div
+            className={`flex h-9 items-center rounded-lg border px-3 text-xs font-medium ${value}`}
+          >
+            Status
+          </div>
         </div>
       ) : kind === 'text' ? (
         <div
-          className={`flex h-14 items-center rounded-[16px] border px-3 ${themeSurface.border} ${themeSurface.panelMuted}`}
+          className={`flex h-12 items-center rounded-xl border px-4 ${themeSurface.border} ${themeSurface.panelMuted}`}
         >
           <span className={`${value} text-sm font-semibold`}>Aa</span>
         </div>
       ) : kind === 'border' ? (
-        <div className={`h-14 rounded-[16px] border-2 ${themeSurface.panelMuted} ${value}`} />
+        <div className={`h-12 rounded-xl border-2 ${themeSurface.panelMuted} ${value}`} />
       ) : kind === 'surface' ? (
-        <div className={`h-14 rounded-[16px] border ${themeSurface.border} ${value}`} />
+        <div className={`h-12 rounded-xl border ${themeSurface.border} ${value}`} />
       ) : (
         <div
-          className={`h-14 rounded-[16px] border ${themeSurface.border} bg-gradient-to-br ${value}`}
+          className={`h-12 rounded-xl border ${themeSurface.border} bg-gradient-to-br ${value}`}
         />
       )}
 
-      <code className="block break-all text-[11px] leading-5 text-white/58">{value}</code>
+      {showValue ? (
+        <p className={`mt-2 truncate text-xs ${valueClassName}`} title={value}>
+          {readableValue}
+        </p>
+      ) : null}
+      <code translate="no" className="sr-only">
+        {value}
+      </code>
     </div>
+  );
+}
+
+function StableTokenCard({
+  row,
+  activeTheme,
+  surface,
+  className,
+  centered = false,
+}: {
+  row: TokenRow;
+  activeTheme: ThemeType;
+  surface: ReturnType<typeof getThemeSurfaceTokens>;
+  className?: string;
+  centered?: boolean;
+}) {
+  const value = row.values[activeTheme];
+
+  return (
+    <li className={`min-w-0 ${centered ? 'text-center' : ''} ${className ?? ''}`}>
+      <article
+        data-color-scope="theme-invariant"
+        data-token={row.token}
+        data-token-kind={row.kind}
+        data-token-value={value}
+        className="h-full min-w-0 pb-2"
+      >
+        <TokenCell
+          kind={row.kind}
+          themeMode={activeTheme}
+          value={value}
+          valueClassName={surface.textMuted}
+          showValue={false}
+          centered={centered}
+        />
+        <p className={`mt-3 text-sm font-semibold ${surface.textPrimary}`}>
+          {getTokenLabel(row.token)}
+        </p>
+        {row.kind === 'hex' ? (
+          <p className={`mt-1 font-mono text-xs ${surface.textMuted}`}>{value.toUpperCase()}</p>
+        ) : null}
+        <code translate="no" className="sr-only">
+          {row.token}
+        </code>
+        {row.kind === 'hex' ? null : (
+          <p className={`mt-1 text-xs leading-5 ${surface.textSecondary}`}>{row.meaning}</p>
+        )}
+      </article>
+    </li>
   );
 }
 
@@ -373,6 +503,7 @@ function ColorsStory() {
 
     return tokenRows.filter((row) => {
       const searchable = [
+        getTokenLabel(row.token),
         row.token,
         row.meaning,
         row.values.light,
@@ -386,122 +517,257 @@ function ColorsStory() {
       return searchable.includes(normalizedQuery);
     });
   }, [query, tokenRows]);
+  const invariantRows = filteredRows.filter(isThemeInvariant);
+  const invariantPaletteRows = invariantRows.filter((row) => row.kind === 'hex');
+  const invariantRecipeRows = invariantRows.filter((row) => row.kind !== 'hex');
+  const themeResolvedRows = filteredRows.filter((row) => !isThemeInvariant(row));
+  const themeResolvedGroups = [
+    {
+      label: 'Text',
+      rows: themeResolvedRows.filter((row) => getResolvedGroup(row) === 'Text'),
+    },
+    {
+      label: 'Surfaces and borders',
+      rows: themeResolvedRows.filter((row) => getResolvedGroup(row) === 'Surfaces and borders'),
+    },
+    {
+      label: 'Device and content states',
+      rows: themeResolvedRows.filter(
+        (row) => getResolvedGroup(row) === 'Device and content states'
+      ),
+    },
+  ].filter((group) => group.rows.length > 0);
 
   return (
-    <div className="space-y-8">
+    <div>
       <section className="max-w-4xl">
-        <p className={`${navetTypographyTokens.eyebrow} ${surface.textMuted}`}>
-          Navet Color System
-        </p>
-        <h1 className={`mt-3 ${navetTypographyTokens.pageHeading} ${surface.textPrimary}`}>
-          Accent palette and searchable design tokens
-        </h1>
-        <p className={`mt-4 max-w-3xl ${navetTypographyTokens.body} ${surface.textSecondary}`}>
-          A cleaner Navet color reference inspired by Fluent UI’s color docs. Use the accent gallery
-          for quick visual browsing, then use the token explorer to find exact tokens, meanings, and
-          their values across Light, Dark, Glass, and Black themes.
-        </p>
+        <div style={{ paddingBottom: '32px' }}>
+          <p className={`${navetTypographyTokens.eyebrow} ${surface.textMuted}`}>
+            Navet Color System
+          </p>
+          <h1 className={`mt-3 ${navetTypographyTokens.pageHeading} ${surface.textPrimary}`}>
+            Navet colors
+          </h1>
+          <p className={`mt-4 max-w-3xl ${navetTypographyTokens.body} ${surface.textSecondary}`}>
+            Browse the colors shared by every theme, then compare the roles that adapt across Light,
+            Dark, Glass, and Black.
+          </p>
+        </div>
       </section>
 
       <section
-        className={`rounded-[28px] border p-6 backdrop-blur-xl ${surface.panel} ${surface.border}`}
+        aria-labelledby="color-token-search-heading"
+        className={`border-b ${surface.border}`}
       >
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className={`${navetTypographyTokens.eyebrow} ${surface.textMuted}`}>Accent Colors</p>
-            <h2 className={`mt-2 ${navetTypographyTokens.sectionHeading} ${surface.textPrimary}`}>
-              Preset accent palette
+        <div className="py-8">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2
+              id="color-token-search-heading"
+              className={`${navetTypographyTokens.sectionHeading} ${surface.textPrimary}`}
+            >
+              Find a color token
             </h2>
-          </div>
-        </div>
-
-        <div className="mt-3 flex flex-wrap items-start gap-x-4 gap-y-3">
-          {Object.entries(themeColorValues).map(([name, value]) => (
-            <AccentSwatch key={name} name={name} value={value} />
-          ))}
-        </div>
-      </section>
-
-      <section
-        className={`rounded-[28px] border p-6 backdrop-blur-xl ${surface.panel} ${surface.border}`}
-      >
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className={`${navetTypographyTokens.eyebrow} ${surface.textMuted}`}>
-              Token Explorer
+            <p
+              aria-live="polite"
+              className={`${navetTypographyTokens.helper} ${surface.textMuted}`}
+            >
+              {invariantRows.length} shared · {themeResolvedRows.length} adaptive
             </p>
-            <h2 className={`mt-2 ${navetTypographyTokens.sectionHeading} ${surface.textPrimary}`}>
-              Search Navet tokens by name, meaning, or color
-            </h2>
           </div>
-          <p className={`${navetTypographyTokens.helper} ${surface.textMuted}`}>
-            {filteredRows.length} tokens
+          <div className="mt-4 max-w-3xl">
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              name="color-token-search"
+              aria-label="Search color tokens"
+              autoComplete="off"
+              placeholder="Search by token, purpose, color, or class…"
+              leading={<Search aria-hidden="true" className={`h-4 w-4 ${surface.textMuted}`} />}
+              inputClassName="rounded-[18px]"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section
+        aria-labelledby="theme-invariant-colors-heading"
+        className={`border-b pt-8 pb-10 ${surface.border}`}
+      >
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2
+              id="theme-invariant-colors-heading"
+              className={`${navetTypographyTokens.sectionHeading} ${surface.textPrimary}`}
+            >
+              Colors shared by every theme
+            </h2>
+            <p className={`mt-2 max-w-3xl text-sm leading-6 ${surface.textSecondary}`}>
+              Preset accents and status recipes keep the same values everywhere.
+            </p>
+          </div>
+        </div>
+
+        {invariantPaletteRows.length > 0 ? (
+          <div className="mt-5">
+            <h3 className={`text-sm font-semibold ${surface.textPrimary}`}>Accent palette</h3>
+            <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-6">
+              {invariantPaletteRows.map((row) => (
+                <StableTokenCard
+                  key={row.token}
+                  row={row}
+                  activeTheme={theme}
+                  surface={surface}
+                  className="w-20 shrink-0"
+                  centered
+                />
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {invariantRecipeRows.length > 0 ? (
+          <div className="mt-8">
+            <h3 className={`text-sm font-semibold ${surface.textPrimary}`}>Status recipes</h3>
+            <p className={`mt-1 text-xs leading-5 ${surface.textMuted}`}>
+              Shown on a dark sample so the shared foreground colors remain readable.
+            </p>
+            <ul
+              className="mt-4 grid gap-x-5 gap-y-7"
+              style={{
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
+              }}
+            >
+              {invariantRecipeRows.map((row) => (
+                <StableTokenCard key={row.token} row={row} activeTheme={theme} surface={surface} />
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {invariantRows.length === 0 && filteredRows.length > 0 ? (
+          <p className={`mt-5 text-sm ${surface.textMuted}`}>No shared colors match this search.</p>
+        ) : null}
+      </section>
+
+      <section aria-labelledby="theme-resolved-colors-heading" className="pt-8 pb-6">
+        <div>
+          <h2
+            id="theme-resolved-colors-heading"
+            className={`${navetTypographyTokens.sectionHeading} ${surface.textPrimary}`}
+          >
+            Colors that adapt by theme
+          </h2>
+          <p className={`mt-2 max-w-3xl text-sm leading-6 ${surface.textSecondary}`}>
+            Read across a row to compare how the same role changes in each theme.
           </p>
         </div>
 
-        <div className="mt-5">
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search for tokens by name or color"
-            leading={<Search className={`h-4 w-4 ${surface.textMuted}`} />}
-            inputClassName="rounded-[18px]"
-          />
-        </div>
-
-        <div className="mt-5 overflow-x-auto">
-          <div className="min-w-[1080px] overflow-hidden rounded-[24px] border border-white/10">
-            <div className="grid grid-cols-[320px_repeat(4,minmax(150px,1fr))] gap-4 border-b border-white/10 bg-white/[0.04] px-5 py-4">
-              <p className={`${navetTypographyTokens.eyebrow} ${surface.textMuted}`}>
-                Design Token
-              </p>
-              {THEME_COLUMNS.map((themeMode) => (
-                <p
-                  key={themeMode}
-                  className={`${navetTypographyTokens.eyebrow} ${surface.textMuted}`}
-                >
-                  {themeMode === 'black'
-                    ? 'Black'
-                    : themeMode[0].toUpperCase() + themeMode.slice(1)}
-                </p>
-              ))}
-            </div>
-
-            {filteredRows.map((row) => (
-              <div
-                key={row.token}
-                className="grid grid-cols-[320px_repeat(4,minmax(150px,1fr))] gap-4 border-b border-white/8 px-5 py-4 last:border-b-0"
-              >
-                <div>
-                  <p className="font-mono text-[12px] leading-5 text-white/88">{row.token}</p>
-                  <p className={`mt-1 ${navetTypographyTokens.helper} ${surface.textSecondary}`}>
-                    {row.meaning}
-                  </p>
-                </div>
+        {themeResolvedRows.length > 0 ? (
+          <div className="mt-5 overflow-x-auto">
+            <table
+              aria-label="Theme-resolved Navet color tokens"
+              className="w-full table-fixed border-collapse"
+              style={{ minWidth: '1080px' }}
+            >
+              <colgroup>
+                <col style={{ width: '320px' }} />
                 {THEME_COLUMNS.map((themeMode) => (
-                  <TokenCell
-                    key={`${row.token}-${themeMode}`}
-                    kind={row.kind}
-                    themeMode={themeMode}
-                    value={row.values[themeMode]}
-                  />
+                  <col key={themeMode} />
                 ))}
-              </div>
-            ))}
-
-            {filteredRows.length === 0 ? (
-              <div className="px-5 py-10 text-center">
-                <p className={`${navetTypographyTokens.label} ${surface.textPrimary}`}>
-                  No matching tokens
-                </p>
-                <p className={`mt-2 ${navetTypographyTokens.helper} ${surface.textMuted}`}>
-                  Try searching for a token name like `surface.panel`, `colors.lock`, or `orange`.
-                </p>
-              </div>
-            ) : null}
+              </colgroup>
+              <thead>
+                <tr>
+                  <th
+                    scope="col"
+                    className={`border-b px-5 py-4 text-left ${surface.border} ${navetTypographyTokens.eyebrow} ${surface.textMuted}`}
+                  >
+                    Token and purpose
+                  </th>
+                  {THEME_COLUMNS.map((themeMode) => (
+                    <th
+                      key={themeMode}
+                      scope="col"
+                      data-theme={themeMode}
+                      className={`border-b px-3 py-4 text-left ${surface.border} ${navetTypographyTokens.eyebrow} ${surface.textMuted}`}
+                    >
+                      {themeMode[0].toUpperCase() + themeMode.slice(1)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              {themeResolvedGroups.map((group) => (
+                <tbody key={group.label}>
+                  <tr>
+                    <th
+                      scope="rowgroup"
+                      colSpan={5}
+                      className={`border-b px-5 text-left text-xs font-semibold uppercase tracking-[0.14em] ${surface.border} ${surface.textMuted}`}
+                    >
+                      <div className="py-4">{group.label}</div>
+                    </th>
+                  </tr>
+                  {group.rows.map((row) => (
+                    <tr
+                      key={row.token}
+                      data-color-scope="theme-resolved"
+                      data-token={row.token}
+                      data-token-kind={row.kind}
+                      className={`border-b ${surface.border}`}
+                    >
+                      <th scope="row" className="px-5 py-5 text-left align-top font-normal">
+                        <p className={`text-sm font-semibold ${surface.textPrimary}`}>
+                          {getTokenLabel(row.token)}
+                        </p>
+                        <p
+                          className={`mt-1 ${navetTypographyTokens.helper} ${surface.textSecondary}`}
+                        >
+                          {row.meaning}
+                        </p>
+                        <code
+                          translate="no"
+                          className={`mt-2 block break-words font-mono text-[11px] leading-4 ${surface.textMuted}`}
+                        >
+                          {row.token}
+                        </code>
+                      </th>
+                      {THEME_COLUMNS.map((themeMode) => (
+                        <td
+                          key={`${row.token}-${themeMode}`}
+                          data-theme={themeMode}
+                          data-token-value={row.values[themeMode]}
+                          className="px-3 py-5 align-top"
+                        >
+                          <TokenCell
+                            kind={row.kind}
+                            themeMode={themeMode}
+                            value={row.values[themeMode]}
+                            valueClassName={surface.textMuted}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              ))}
+            </table>
           </div>
-        </div>
+        ) : filteredRows.length > 0 ? (
+          <p className={`mt-5 text-sm ${surface.textMuted}`}>
+            No adaptive colors match this search.
+          </p>
+        ) : null}
       </section>
+
+      {filteredRows.length === 0 ? (
+        <section aria-live="polite" className={`border-t px-5 py-8 text-center ${surface.border}`}>
+          <p className={`${navetTypographyTokens.label} ${surface.textPrimary}`}>
+            No matching color tokens
+          </p>
+          <p className={`mt-2 ${navetTypographyTokens.helper} ${surface.textMuted}`}>
+            Try a token name such as `surface.panel`, `colors.lock`, or `orange`.
+          </p>
+        </section>
+      ) : null}
     </div>
   );
 }
@@ -514,17 +780,17 @@ const meta = {
     docs: {
       description: {
         component: [
-          "Navet color documentation page inspired by the structure of Fluent UI's color docs.",
+          'Navet color reference organized by whether a token is stable or resolved by theme.',
           '',
-          'What this page covers:',
-          '- Preset accent colors from `themeColorValues`',
-          '- Semantic status colors from `navetSemanticColorTokens`',
-          '- Searchable runtime color tokens across Light, Dark, Glass, and Black',
+          'What this story proves:',
+          '- Theme-invariant preset accents and semantic status recipes are documented once.',
+          '- Theme-resolved surface and domain tokens are compared across Light, Dark, Glass, and Black.',
+          '- Semantic table markup and token metadata keep the reference readable for people and tooling.',
           '',
-          'Usage notes:',
-          '- Use the accent gallery for quick visual browsing',
-          '- Use the token explorer when you need the exact Navet token and its meaning',
-          '- Search works across token names, meanings, and color/class values',
+          'Use this story when:',
+          '- Use the stable palette when a raw accent or status recipe is explicitly required.',
+          '- Prefer the theme-resolved matrix for product surfaces, text, borders, and card states.',
+          '- Search across token names, meanings, colors, and generated classes.',
         ].join('\n'),
       },
     },

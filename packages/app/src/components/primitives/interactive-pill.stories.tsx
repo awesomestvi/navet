@@ -71,7 +71,7 @@ const meta = {
           '- Use `active` to mark the selected value.',
           '- Keep labels short so the row stays readable and balanced.',
           '',
-          'Review expectations:',
+          'Review before merging:',
           '- Check idle borders in light mode.',
           '- Check active pills in glass, dark, light, and black themes.',
           '- Prefer this primitive over inventing one-off pill styles in feature code.',

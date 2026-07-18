@@ -1,3 +1,10 @@
+import {
+  WorkbenchCode,
+  WorkbenchInset,
+  WorkbenchIntro,
+  WorkbenchPage,
+  WorkbenchPanel,
+} from '@navet/app/storybook/workbench-docs';
 import type { Meta, StoryObj } from '@storybook/react';
 
 const layerCards = [
@@ -41,91 +48,77 @@ const storybookSurfaces = [
 
 function StartHereStory() {
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <section className="rounded-[28px] border border-white/10 bg-white/6 p-6 backdrop-blur-xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/60">
-          Navet UI kit
-        </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">Start here</h1>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-white/78">
+    <WorkbenchPage width="reading">
+      <WorkbenchIntro eyebrow="Navet UI kit" title="Start with the shared language">
+        <p>
           Storybook is the official developer surface for Navet&apos;s UI kit. Build new UI from
           `/app/ui-kit/primitives`, `/app/ui-kit/patterns`, and `/app/ui-kit/tokens` before reaching
           into feature code.
         </p>
-      </section>
+      </WorkbenchIntro>
 
       <section className="grid gap-4 md:grid-cols-3">
         {layerCards.map((layer) => (
-          <article
-            key={layer.title}
-            className="rounded-[24px] border border-white/10 bg-white/5 p-5"
-          >
-            <h2 className="text-lg font-semibold text-white">{layer.title}</h2>
-            <p className="mt-2 text-sm leading-6 text-white/74">{layer.description}</p>
-            <pre className="mt-3 overflow-x-auto rounded-xl bg-black/20 p-3 text-xs text-white/82">
-              {`import { ... } from '${layer.importPath}';`}
-            </pre>
-          </article>
+          <WorkbenchPanel key={layer.title} title={layer.title} summary={layer.description}>
+            <WorkbenchCode>{`import { ... } from '${layer.importPath}';`}</WorkbenchCode>
+          </WorkbenchPanel>
         ))}
       </section>
 
       <section className="grid gap-4 md:grid-cols-[1fr_1.15fr]">
-        <article className="rounded-[28px] border border-white/10 bg-white/6 p-6">
-          <h2 className="text-xl font-semibold text-white">Contribution flow</h2>
-          <ol className="mt-4 space-y-3 text-sm leading-6 text-white/78">
+        <WorkbenchPanel title="Contribution flow">
+          <ol className="space-y-3 text-sm leading-6">
             {workflowSteps.map((step, index) => (
               <li key={step} className="flex gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/8 text-xs font-semibold text-white">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-current/15 text-xs font-semibold">
                   {index + 1}
                 </span>
                 <span>{step}</span>
               </li>
             ))}
           </ol>
-        </article>
+        </WorkbenchPanel>
 
-        <article className="rounded-[28px] border border-white/10 bg-white/6 p-6">
-          <h2 className="text-xl font-semibold text-white">Storybook map</h2>
-          <div className="mt-4 overflow-hidden rounded-[20px] border border-white/10">
-            <table className="min-w-full divide-y divide-white/10 text-left text-sm text-white/82">
-              <thead className="bg-black/20 text-white/60">
+        <WorkbenchPanel title="Storybook map">
+          <div className="overflow-hidden rounded-[16px] border border-current/10">
+            <table className="min-w-full divide-y divide-current/10 text-left text-sm">
+              <thead className="bg-current/5 opacity-75">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Root</th>
                   <th className="px-4 py-3 font-semibold">Use for</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/10">
+              <tbody className="divide-y divide-current/10">
                 {storybookSurfaces.map(([root, useFor]) => (
                   <tr key={root}>
-                    <td className="px-4 py-3 font-medium text-white">{root}</td>
+                    <td className="px-4 py-3 font-medium">{root}</td>
                     <td className="px-4 py-3">{useFor}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </article>
+        </WorkbenchPanel>
       </section>
 
-      <section className="rounded-[28px] border border-white/10 bg-white/6 p-6">
-        <h2 className="text-xl font-semibold text-white">Rules</h2>
-        <div className="mt-4 grid gap-3 text-sm leading-6 text-white/78 md:grid-cols-2">
-          <p className="rounded-[18px] border border-white/10 bg-black/15 p-4">
+      <WorkbenchPanel title="Authoring rules">
+        <div className="grid gap-3 text-sm leading-6 md:grid-cols-2">
+          <WorkbenchInset>
             Author new shared controls in `components/primitives` or `components/patterns`.
-          </p>
-          <p className="rounded-[18px] border border-white/10 bg-black/15 p-4">
+          </WorkbenchInset>
+          <WorkbenchInset>
             Keep `components/system` as a curated public surface, not the default authoring folder.
-          </p>
-          <p className="rounded-[18px] border border-white/10 bg-black/15 p-4">
+          </WorkbenchInset>
+          <WorkbenchInset>
             Use `components/shared` only for app-specific shared UI and compatibility shims.
-          </p>
-          <p className="rounded-[18px] border border-white/10 bg-black/15 p-4">
+          </WorkbenchInset>
+          <WorkbenchInset>
             Prefer deterministic Storybook fixtures over live Home Assistant data or app-only side
             effects.
-          </p>
+          </WorkbenchInset>
         </div>
-      </section>
-    </div>
+      </WorkbenchPanel>
+    </WorkbenchPage>
   );
 }
 

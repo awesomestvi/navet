@@ -6,9 +6,9 @@ const meta = {
   component: SectionCard,
   tags: ['autodocs'],
   args: {
-    title: 'Section card',
+    title: 'Kitchen climate',
     children: (
-      <div className="text-sm text-white/76">Use for shared section-level content blocks.</div>
+      <div className="text-sm text-current/76">21.5 °C · Humidity 46% · Air quality good</div>
     ),
   },
 } satisfies Meta<typeof SectionCard>;

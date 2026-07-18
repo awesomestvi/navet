@@ -75,7 +75,6 @@ deliberately rather than silently decaying.
 |---|---|---|
 | `packages/app/src/hooks/device-mappers/__tests__/map-sensor-device.test.ts` | Weak fixture assumptions for a high-risk domain | Rewrite |
 | `packages/app/src/hooks/device-mappers/__tests__/map-weather-device.test.ts` | Needs real forecast/documented weather fixtures | Rewrite |
-| `packages/app/src/hooks/device-mappers/__tests__/map-fan-device.test.ts` | Needs real percentage/preset/unavailable behavior | Rewrite |
 | `packages/app/src/features/vacuum/components/vacuum/__tests__/use-vacuum-control.test.tsx` | Vendor-sensitive behavior without strong fixtures | Rewrite |
 | `packages/app/src/features/security/components/__tests__/lock-card.test.tsx` | Missing contract-backed lock states | Rewrite |
 | `packages/app/src/features/security/components/cover-card/__tests__/cover-card.test.tsx` | Needs documented cover/tilt/partial-position behavior | Rewrite |

@@ -1,8 +1,7 @@
 import { useTheme } from '@navet/app/hooks';
-import { InteractivePill } from '@navet/app/ui-kit/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/ui-kit/tokens';
 import type { Meta, StoryObj } from '@storybook/react';
-import { ArrowRight, Layers3, Paintbrush, Sparkles } from 'lucide-react';
+import { ArrowUpRight, Layers3, Paintbrush, Sparkles } from 'lucide-react';
 import { toId } from 'storybook/internal/csf';
 
 function toDocsPath(storyName: string) {
@@ -27,7 +26,7 @@ function SystemOverviewPage() {
         'Theme/Colors',
         'Theme/Controls',
         'Theme/Fonts',
-        'Theme/Light Card Surface Tokens',
+        'Theme/Active Card Surfaces',
         'Theme/Motion',
         'Theme/Spacing',
         'Theme/Stroke Widths',
@@ -96,75 +95,134 @@ function SystemOverviewPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <header
-        className={`rounded-3xl border p-6 backdrop-blur-xl ${surface.panel} ${surface.border}`}
-      >
-        <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${surface.textMuted}`}>
+    <div className="mx-auto max-w-5xl py-2 md:py-4">
+      <header className="relative overflow-hidden border-b border-white/10 pb-8 md:pb-10">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-24 -top-32 h-72 w-72 rounded-full blur-3xl"
+          style={{ background: `${accentColor}1c` }}
+        />
+        <p
+          className={`relative flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
+        >
+          <span
+            aria-hidden="true"
+            className="h-2 w-2 rounded-full"
+            style={{ background: accentColor, boxShadow: `0 0 0 6px ${accentColor}14` }}
+          />
+          Developer workbench
+        </p>
+        <h1
+          className={`relative mt-5 max-w-3xl text-3xl font-semibold leading-[1.04] tracking-[-0.04em] md:text-4xl ${surface.textPrimary}`}
+        >
           Navet UI system
-        </p>
-        <h1 className={`mt-2 text-2xl font-semibold tracking-tight ${surface.textPrimary}`}>
-          Storybook overview
         </h1>
-        <p className={`mt-2 max-w-2xl text-sm ${surface.textSecondary}`}>
-          Start here to navigate the internal system layer and review shared building blocks before
-          touching feature-level UI.
+        <p className={`relative mt-4 max-w-2xl text-sm leading-6 ${surface.textSecondary}`}>
+          Find the shared tokens, primitives, and patterns used by the Navet applications. Review an
+          existing implementation here before adding feature-level UI.
         </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <InteractivePill active intent="navigation">
-            System first
-          </InteractivePill>
-          <InteractivePill intent="action">Theme-aware</InteractivePill>
-          <InteractivePill intent="navigation">Composable</InteractivePill>
-        </div>
+        <nav
+          aria-label="Developer references"
+          className="relative mt-6 flex flex-wrap gap-x-6 gap-y-3"
+        >
+          {[
+            { label: 'Start here', story: 'Concepts/UI Kit Start Here' },
+            { label: 'Component inventory', story: 'Concepts/UI Kit Inventory' },
+            { label: 'Composition recipes', story: 'Concepts/UI Kit Recipes' },
+          ].map(({ label, story }) => (
+            <a
+              key={story}
+              href={toDocsPath(story)}
+              target="_top"
+              rel="noreferrer"
+              className={`group inline-flex items-center gap-1.5 border-b pb-1 text-sm font-medium transition-colors ${surface.textPrimary}`}
+              style={{ borderColor: `${accentColor}80` }}
+            >
+              {label}
+              <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            </a>
+          ))}
+        </nav>
       </header>
 
-      <section className="mt-4 grid gap-3 md:grid-cols-3">
+      <section className="relative mt-7 md:mt-9">
+        <div
+          aria-hidden="true"
+          className="absolute bottom-0 top-0 w-px bg-white/10"
+          style={{ left: 'calc(1.25rem - 0.5px)' }}
+        />
         {sections.map((section) => {
           const Icon = section.icon;
 
           return (
             <article
               key={section.title}
-              className={`rounded-3xl border p-4 backdrop-blur-xl ${surface.panelMuted} ${surface.border}`}
+              className="relative grid gap-4 border-b border-white/10 py-6 last:border-b-0 md:grid-cols-[190px_1fr] md:gap-8 md:py-8"
+              style={{ paddingInlineStart: '3.5rem' }}
             >
-              <div
-                className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border"
-                style={{
-                  borderColor: `${accentColor}55`,
-                  background: `linear-gradient(180deg, ${accentColor}22, transparent 140%)`,
-                }}
-              >
-                <Icon className={`h-4 w-4 ${surface.textPrimary}`} />
-              </div>
-              <h2 className={`mt-3 text-lg font-semibold ${surface.textPrimary}`}>
-                {section.title}
-              </h2>
-              <p className={`mt-1 text-xs ${surface.textMuted}`}>
-                {section.stories.length} story entries
-              </p>
-              <p className={`mt-2 text-sm leading-6 ${surface.textSecondary}`}>
-                {section.description}
-              </p>
-
-              <ul className="mt-3 space-y-1.5">
-                {section.stories.map((name) => (
-                  <li
-                    key={name}
-                    className={`inline-flex items-center gap-1.5 text-xs ${surface.textSubtle}`}
+              <div>
+                <p
+                  className={`text-xs font-semibold uppercase tracking-[0.16em] ${surface.textMuted}`}
+                >
+                  {String(section.stories.length).padStart(2, '0')} entries
+                </p>
+                <div className="relative mt-2">
+                  <div
+                    className="absolute inline-flex h-10 w-10 items-center justify-center rounded-xl border"
+                    style={{
+                      top: '50%',
+                      left: '-3.5rem',
+                      borderColor: `${accentColor}4d`,
+                      background: `linear-gradient(145deg, ${accentColor}24, rgba(10, 15, 24, 0.96))`,
+                      boxShadow: '0 0 0 5px rgba(7, 11, 18, 0.92)',
+                      transform: 'translateY(-50%)',
+                    }}
                   >
-                    <ArrowRight className="h-3.5 w-3.5" />
-                    <a
-                      href={toDocsPath(name)}
-                      target="_top"
-                      rel="noreferrer"
-                      className={`underline-offset-2 transition-colors hover:underline ${surface.textPrimary}`}
+                    <Icon className="h-4 w-4" style={{ color: accentColor }} />
+                  </div>
+                  <h2 className={`text-2xl font-semibold tracking-tight ${surface.textPrimary}`}>
+                    {section.title}
+                  </h2>
+                </div>
+              </div>
+
+              <div>
+                <p className={`max-w-2xl text-sm leading-7 ${surface.textSecondary}`}>
+                  {section.description}
+                </p>
+                <details className="group mt-5">
+                  <summary
+                    className={`inline-flex cursor-pointer list-none items-center gap-2 text-sm font-medium [&::-webkit-details-marker]:hidden ${surface.textPrimary}`}
+                  >
+                    Browse {section.title.toLowerCase()}
+                    <span
+                      aria-hidden="true"
+                      className="text-base transition-transform group-open:rotate-45"
+                      style={{ color: accentColor }}
                     >
-                      {name}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+                      +
+                    </span>
+                  </summary>
+                  <ul className="mt-5 grid gap-x-8 gap-y-3 sm:grid-cols-2">
+                    {section.stories.map((name) => (
+                      <li key={name}>
+                        <a
+                          href={toDocsPath(name)}
+                          target="_top"
+                          rel="noreferrer"
+                          className={`group/link inline-flex items-start gap-2 text-xs leading-5 transition-colors ${surface.textSubtle}`}
+                        >
+                          <ArrowUpRight
+                            className="mt-0.5 h-3.5 w-3.5 shrink-0 transition-transform group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5"
+                            style={{ color: accentColor }}
+                          />
+                          <span className="group-hover/link:underline">{name}</span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              </div>
             </article>
           );
         })}
@@ -180,26 +238,8 @@ const meta = {
   parameters: {
     docs: {
       description: {
-        component: [
-          "High-level navigation page for Navet's internal UI system. Use this story as the entry point into the shared token, primitive, and pattern layers before working in feature-level UI.",
-          '',
-          'How the system is organized:',
-          '- `Theme` covers visual decision helpers and documentation stories for shared tokens such as surface treatments, readable text behavior, typography, and accent shells.',
-          '- `Primitives` covers low-level reusable building blocks such as pills, buttons, modal shells, sheet shells, and card surface containers.',
-          '- `Patterns` covers composed UI sections such as hero layouts, section cards, empty states, and interactive previews.',
-          '- `/app/ui-kit/*` is the canonical shared import surface for Navet developers.',
-          '',
-          'How to use this page:',
-          '- Start here when you want to understand what already exists before creating new UI.',
-          '- Prefer `/app/ui-kit/primitives`, `/app/ui-kit/patterns`, and `/app/ui-kit/tokens` in examples and new shared code.',
-          '- Jump into the linked docs pages for the specific token, primitive, or pattern you want to inspect.',
-          '- Prefer evolving shared stories and shared exports before adding one-off feature styling.',
-          '',
-          'Review expectations:',
-          '- Check components across all four Navet themes using the Storybook toolbar.',
-          '- Use the Storybook toolbar to review glass, dark, light, and black theme behavior.',
-          '- Token stories should verify light-theme readability and tinted-surface text contrast.',
-        ].join('\n'),
+        component:
+          "Reference Navet's shared tokens, primitives, and patterns before creating feature-level UI. Use the toolbar to review entries across supported themes, accent colors, and card sizes.",
       },
     },
   },

@@ -23,6 +23,10 @@ Use this page as the map for the documentation set.
   openHAB standalone setup.
 - [WIDGETS.md](WIDGETS.md)
   Widget reference: types, sizes, placement, and limits.
+- [integrations.md](integrations.md)
+  Public provider status, capability matrix, and multi-provider behavior.
+- [user-guide.md](user-guide.md)
+  Current dashboard sections, editing, profiles, kiosk behavior, and provider availability.
 - [ROADMAP.md](ROADMAP.md)
   Public roadmap.
 - [../SECURITY.md](../SECURITY.md)

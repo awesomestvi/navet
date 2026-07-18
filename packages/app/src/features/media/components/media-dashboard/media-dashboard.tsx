@@ -1,4 +1,5 @@
 import { dispatchEntityCommand } from '@navet/app/commands';
+import { Input } from '@navet/app/components/primitives';
 import { getDashboardCardFootprint } from '@navet/app/components/shared/card-size';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
@@ -36,16 +37,21 @@ import {
   Bookmark,
   Camera,
   Clock3,
+  DiscAlbum,
   Folder,
+  Heart,
   Image as ImageIcon,
   Images,
   Library,
   ListMusic,
+  Podcast,
   RadioTower,
   Search,
   Sparkles,
+  TrendingUp,
   Upload,
   UserRound,
+  UsersRound,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MediaCard } from '../media-card';
@@ -101,7 +107,7 @@ const SPOTIFY_TRACK_ID_PATTERN = /^[a-zA-Z0-9]{22}$/;
 const BROWSE_COLLAPSED_ITEM_LIMIT = 8;
 const COMPACT_FOLDER_ITEM_LIMIT = 16;
 const DIRECTORY_COUNT_FETCH_CONCURRENCY = 3;
-const MEDIA_BROWSER_TABLE_HEADER_HEIGHT = 42;
+const MEDIA_BROWSER_TABLE_HEADER_HEIGHT = 50;
 const MEDIA_BROWSER_TABLE_ROW_HEIGHT = 64;
 const MEDIA_BROWSER_TABLE_OVERSCAN = 6;
 const COMPACT_MOBILE_BROWSER_HEIGHT = 170;
@@ -544,6 +550,14 @@ function getMediaLibraryDirectoryIcon(item: PlatformMediaItem): LucideIcon {
     .join(' ')
     .toLowerCase();
 
+  if (identity.includes('top artist')) return UsersRound;
+  if (identity.includes('top track')) return TrendingUp;
+  if (identity.includes('recently played')) return Clock3;
+  if (identity.includes('liked song')) return Heart;
+  if (identity.includes('playlist')) return ListMusic;
+  if (identity.includes('podcast')) return Podcast;
+  if (identity.includes('artist')) return UserRound;
+  if (identity.includes('album')) return DiscAlbum;
   if (identity.includes('favorite')) return Bookmark;
   if (identity.includes('upload')) return Upload;
   if (identity.includes('camera')) return Camera;
@@ -715,6 +729,14 @@ function getMediaItemAlbum(item: PlatformMediaItem) {
 
 function getMediaBrowserItemSubtitle(item: PlatformMediaItem, openArtwork: OpenMediaArtworkResult) {
   return getMediaItemArtist(item) ?? openArtwork.artistName ?? undefined;
+}
+
+function getResolvedMediaBrowserArtist(
+  item: PlatformMediaItem,
+  openArtwork: OpenMediaArtworkResult,
+  spotifyMetadata: SpotifyTrackMetadata
+) {
+  return spotifyMetadata.artistName ?? getMediaBrowserItemSubtitle(item, openArtwork);
 }
 
 function getMediaBrowserItemAlbum(item: PlatformMediaItem, openArtwork: OpenMediaArtworkResult) {
@@ -1028,6 +1050,19 @@ async function resolveSpotifyTrackMetadata(trackId: string) {
   return await fetchSpotifyOEmbedMetadata(trackId).catch(() => EMPTY_SPOTIFY_TRACK_METADATA);
 }
 
+async function getCachedSpotifyTrackMetadata(trackId: string) {
+  const cachedMetadata = spotifyTrackMetadataCache.get(trackId);
+  if (cachedMetadata) {
+    return cachedMetadata;
+  }
+
+  const metadata = await resolveSpotifyTrackMetadata(trackId).catch(
+    () => EMPTY_SPOTIFY_TRACK_METADATA
+  );
+  spotifyTrackMetadataCache.set(trackId, metadata);
+  return metadata;
+}
+
 function useSpotifyTrackMetadata(item: PlatformMediaItem) {
   const trackId = useMemo(() => getSpotifyTrackId(item), [item]);
   const [metadata, setMetadata] = useState<SpotifyTrackMetadata>(EMPTY_SPOTIFY_TRACK_METADATA);
@@ -1042,17 +1077,8 @@ function useSpotifyTrackMetadata(item: PlatformMediaItem) {
       };
     }
 
-    const cachedMetadata = spotifyTrackMetadataCache.get(trackId);
-    if (cachedMetadata) {
-      setMetadata(cachedMetadata);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    void resolveSpotifyTrackMetadata(trackId)
+    void getCachedSpotifyTrackMetadata(trackId)
       .then((nextMetadata) => {
-        spotifyTrackMetadataCache.set(trackId, nextMetadata);
         if (!cancelled) {
           setMetadata(nextMetadata);
         }
@@ -1073,9 +1099,9 @@ function useSpotifyTrackMetadata(item: PlatformMediaItem) {
 }
 
 interface MediaBrowserTileProps {
+  accentColor: string;
   artworkIcon?: LucideIcon;
   compact?: boolean;
-  fallbackSubtitle?: string;
   item: PlatformMediaItem;
   mediaTileClassName: string;
   mediaTileArtworkClassName: string;
@@ -1089,9 +1115,9 @@ interface MediaBrowserTileProps {
 }
 
 function MediaBrowserTile({
+  accentColor,
   artworkIcon,
   compact = false,
-  fallbackSubtitle,
   item,
   mediaTileClassName,
   mediaTileArtworkClassName,
@@ -1113,17 +1139,30 @@ function MediaBrowserTile({
   const spotifyMetadata = useSpotifyTrackMetadata(item);
   const itemTitle = spotifyMetadata.title ?? item.title ?? item.mediaContentId;
   const resolvedItemSubtitle =
-    getMediaBrowserItemSubtitle(item, openArtwork) ??
-    spotifyMetadata.artistName ??
+    getResolvedMediaBrowserArtist(item, openArtwork, spotifyMetadata) ??
     getMediaBrowserItemAlbum(item, openArtwork) ??
     spotifyMetadata.albumTitle;
-  const itemSubtitle = resolvedItemSubtitle || fallbackSubtitle;
+  const itemSubtitle = statusLabel ? undefined : resolvedItemSubtitle;
   const [failedArtworkUrls, setFailedArtworkUrls] = useState<Set<string>>(() => new Set());
   const artworkUrl =
     [providerThumbnailUrl, ...spotifyMetadata.artworkUrls, ...openArtwork.artworkUrls].find(
       (candidateUrl): candidateUrl is string =>
         typeof candidateUrl === 'string' && !failedArtworkUrls.has(candidateUrl)
     ) ?? null;
+  const directoryAtmosphereStyle = {
+    background: `radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, ${accentColor} ${
+      theme === 'light' ? '7%' : '9%'
+    }, transparent) 0%, transparent 58%), radial-gradient(100% 75% at 100% 100%, ${
+      theme === 'light' ? 'rgba(148,163,184,0.07)' : 'rgba(255,255,255,0.035)'
+    } 0%, transparent 66%)`,
+    boxShadow:
+      theme === 'light'
+        ? 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -18px 32px rgba(148,163,184,0.045)'
+        : 'inset 0 1px 0 rgba(255,255,255,0.065), inset 0 -18px 32px rgba(0,0,0,0.14)',
+  };
+  const directoryIconStyle = {
+    color: theme === 'light' ? '#475569' : 'rgba(255,255,255,0.88)',
+  };
 
   useEffect(() => {
     setFailedArtworkUrls(new Set());
@@ -1183,22 +1222,29 @@ function MediaBrowserTile({
             ) : preferIconArtwork ? (
               <span
                 data-testid="media-library-main-icon"
-                className={`flex h-16 w-16 items-center justify-center ${
-                  theme === 'light' ? 'text-slate-700' : 'text-zinc-100'
-                }`}
+                className="absolute inset-0 flex items-center justify-center"
               >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0"
+                  style={directoryAtmosphereStyle}
+                />
                 {showSpotifyIcon ? (
                   <svg
                     data-testid="spotify-library-icon"
                     aria-hidden="true"
                     viewBox="0 0 24 24"
                     fill="currentColor"
-                    className="h-8 w-8 text-[#1DB954]"
+                    className="relative h-9 w-9 text-[#1DB954]"
                   >
                     <path d={SPOTIFY_ICON_PATH} />
                   </svg>
                 ) : (
-                  <ArtworkIcon className="h-8 w-8" aria-hidden="true" />
+                  <ArtworkIcon
+                    className="relative h-9 w-9"
+                    aria-hidden="true"
+                    style={directoryIconStyle}
+                  />
                 )}
               </span>
             ) : (
@@ -1249,8 +1295,7 @@ function MediaBrowserTableRow({
   const openArtwork = useOpenMediaBrowserArtwork(item);
   const spotifyMetadata = useSpotifyTrackMetadata(item);
   const itemTitle = spotifyMetadata.title ?? item.title ?? item.mediaContentId;
-  const itemSubtitle = getMediaBrowserItemSubtitle(item, openArtwork) ?? spotifyMetadata.artistName;
-  const itemAlbum = getMediaBrowserItemAlbum(item, openArtwork) || spotifyMetadata.albumTitle || '';
+  const itemSubtitle = getResolvedMediaBrowserArtist(item, openArtwork, spotifyMetadata);
   const [failedArtworkUrls, setFailedArtworkUrls] = useState<Set<string>>(() => new Set());
   const artworkUrl =
     [providerThumbnailUrl, ...spotifyMetadata.artworkUrls, ...openArtwork.artworkUrls].find(
@@ -1271,7 +1316,7 @@ function MediaBrowserTableRow({
   return (
     <button
       type="button"
-      className={`grid h-16 w-full grid-cols-[1.5rem_minmax(0,1fr)] items-center gap-2 px-3 text-left text-sm transition-colors md:grid-cols-[2rem_minmax(0,1fr)_minmax(9rem,0.65fr)_4rem] md:gap-3 md:px-4 ${
+      className={`flex h-16 w-full items-center px-3 text-left text-sm transition-colors md:px-4 ${
         index % 2 === 0 ? surface.subtleBg : ''
       } ${
         theme === 'light'
@@ -1282,9 +1327,6 @@ function MediaBrowserTableRow({
       }`}
       onClick={() => onSelect(item)}
     >
-      <span className={`text-right text-sm tabular-nums ${surface.textSecondary}`}>
-        {index + 1}
-      </span>
       <span className="flex min-w-0 items-center gap-3">
         <span
           className={`relative h-10 w-10 shrink-0 overflow-hidden rounded-md border ${surface.border} ${
@@ -1324,12 +1366,6 @@ function MediaBrowserTableRow({
           ) : null}
         </span>
       </span>
-      <span className={`hidden min-w-0 truncate text-sm md:block ${surface.textSecondary}`}>
-        {itemAlbum}
-      </span>
-      <span className={`hidden text-right text-sm tabular-nums md:block ${surface.textSecondary}`}>
-        {''}
-      </span>
     </button>
   );
 }
@@ -1354,14 +1390,73 @@ function MediaBrowserVirtualTable({
   theme,
 }: MediaBrowserVirtualTableProps) {
   const { t } = useI18n();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchMetadata, setSearchMetadata] = useState<Map<string, SpotifyTrackMetadata>>(
+    () => new Map()
+  );
+  const [isResolvingSearchMetadata, setIsResolvingSearchMetadata] = useState(false);
   const [scrollTop, setScrollTop] = useState(0);
   const listRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const isSearchActive = normalizedSearchQuery.length > 0;
+  const filteredItems = useMemo(() => {
+    if (!normalizedSearchQuery) {
+      return items;
+    }
+
+    return items.filter((item) => {
+      const trackId = getSpotifyTrackId(item);
+      const resolvedMetadata = trackId ? searchMetadata.get(trackId) : undefined;
+      return [resolvedMetadata?.title, resolvedMetadata?.artistName, item.title, item.artist].some(
+        (value) => value?.toLowerCase().includes(normalizedSearchQuery)
+      );
+    });
+  }, [items, normalizedSearchQuery, searchMetadata]);
+
+  useEffect(() => {
+    setSearchQuery('');
+    setSearchMetadata(new Map());
+  }, [resetKey]);
+
+  useEffect(() => {
+    if (!isSearchActive) {
+      setIsResolvingSearchMetadata(false);
+      return;
+    }
+
+    const trackIds = Array.from(
+      new Set(
+        items.map((item) => getSpotifyTrackId(item)).filter((id): id is string => Boolean(id))
+      )
+    );
+    if (trackIds.length === 0) {
+      setIsResolvingSearchMetadata(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsResolvingSearchMetadata(true);
+    void Promise.all(
+      trackIds.map(
+        async (trackId) => [trackId, await getCachedSpotifyTrackMetadata(trackId)] as const
+      )
+    ).then((entries) => {
+      if (!cancelled) {
+        setSearchMetadata(new Map(entries));
+        setIsResolvingSearchMetadata(false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isSearchActive, items]);
 
   useEffect(() => {
     setScrollTop(0);
     listRef.current?.scrollTo?.({ top: 0 });
-  }, [resetKey]);
+  }, [normalizedSearchQuery, resetKey]);
 
   useEffect(() => {
     return () => {
@@ -1371,22 +1466,22 @@ function MediaBrowserVirtualTable({
     };
   }, []);
 
-  const visibleCount = Math.max(
-    1,
-    Math.floor((height - MEDIA_BROWSER_TABLE_HEADER_HEIGHT - 2) / MEDIA_BROWSER_TABLE_ROW_HEIGHT)
+  const listHeight = Math.max(
+    MEDIA_BROWSER_TABLE_ROW_HEIGHT,
+    height - MEDIA_BROWSER_TABLE_HEADER_HEIGHT - 2
   );
-  const listHeight = visibleCount * MEDIA_BROWSER_TABLE_ROW_HEIGHT;
+  const visibleCount = Math.max(1, Math.ceil(listHeight / MEDIA_BROWSER_TABLE_ROW_HEIGHT));
   const startIndex = Math.max(
     0,
     Math.floor(scrollTop / MEDIA_BROWSER_TABLE_ROW_HEIGHT) - MEDIA_BROWSER_TABLE_OVERSCAN
   );
   const endIndex = Math.min(
-    items.length,
+    filteredItems.length,
     startIndex + visibleCount + MEDIA_BROWSER_TABLE_OVERSCAN * 2
   );
-  const virtualItems = items.slice(startIndex, endIndex);
+  const virtualItems = filteredItems.slice(startIndex, endIndex);
   const topOffset = startIndex * MEDIA_BROWSER_TABLE_ROW_HEIGHT;
-  const totalHeight = items.length * MEDIA_BROWSER_TABLE_ROW_HEIGHT;
+  const totalHeight = filteredItems.length * MEDIA_BROWSER_TABLE_ROW_HEIGHT;
 
   return (
     <div
@@ -1404,21 +1499,27 @@ function MediaBrowserVirtualTable({
     >
       <div className="min-w-0">
         <div className="min-w-0">
-          <div
-            className={`grid h-[42px] grid-cols-[1.5rem_minmax(0,1fr)] items-center gap-2 px-3 text-xs font-medium md:grid-cols-[2rem_minmax(0,1fr)_minmax(9rem,0.65fr)_4rem] md:gap-3 md:px-4 ${surface.textMuted}`}
-          >
-            <span className="text-right">#</span>
-            <span>{t('media.metadata.title')}</span>
-            <span className="hidden md:block">{t('media.metadata.album')}</span>
-            <span className="hidden justify-self-end md:block">
-              <Clock3 className="h-3.5 w-3.5" />
-            </span>
+          <div data-card-nodrag="true" className="flex h-[50px] items-center px-3 py-2 md:px-4">
+            <Input
+              type="search"
+              size="small"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder={t('media.search.placeholder')}
+              aria-label={t('media.search')}
+              leading={<Search className="h-3.5 w-3.5" />}
+              variant="soft"
+              containerClassName="w-full"
+              inputClassName="h-8"
+            />
           </div>
           <div
             ref={listRef}
             data-testid="media-browser-virtual-table"
-            className="overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            data-card-nodrag="true"
+            className="touch-pan-y overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             style={{ height: `${listHeight}px` }}
+            onTouchMove={(event) => event.stopPropagation()}
             onScroll={(event) => {
               if (rafRef.current !== null) {
                 return;
@@ -1431,24 +1532,35 @@ function MediaBrowserVirtualTable({
               });
             }}
           >
-            <div className="relative" style={{ height: totalHeight }}>
-              <div
-                className="absolute inset-x-0 top-0"
-                style={{ transform: `translateY(${topOffset}px)` }}
-              >
-                {virtualItems.map((item, virtualIndex) => (
-                  <MediaBrowserTableRow
-                    key={`${startIndex + virtualIndex}:${getMediaItemKey(item)}`}
-                    index={startIndex + virtualIndex}
-                    item={item}
-                    onSelect={onSelect}
-                    providerId={providerId}
-                    surface={surface}
-                    theme={theme}
-                  />
-                ))}
+            {filteredItems.length > 0 ? (
+              <div className="relative" style={{ height: totalHeight }}>
+                <div
+                  className="absolute inset-x-0 top-0"
+                  style={{ transform: `translateY(${topOffset}px)` }}
+                >
+                  {virtualItems.map((item, virtualIndex) => (
+                    <MediaBrowserTableRow
+                      key={`${startIndex + virtualIndex}:${getMediaItemKey(item)}`}
+                      index={startIndex + virtualIndex}
+                      item={item}
+                      onSelect={onSelect}
+                      providerId={providerId}
+                      surface={surface}
+                      theme={theme}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div
+                className={`flex items-center justify-center px-4 text-center text-sm ${surface.textSecondary}`}
+                style={{ height: `${listHeight}px` }}
+              >
+                {isResolvingSearchMetadata
+                  ? t('common.loading')
+                  : t('media.dashboard.browserEmpty')}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1462,7 +1574,7 @@ export function MediaDashboard({
   onPromotedEntitiesChange,
 }: MediaDashboardProps) {
   const { t } = useI18n();
-  const { theme } = useTheme();
+  const { accentColor, theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const runAction = useServiceActionHandler();
   const registryAnchorEntityId =
@@ -2196,12 +2308,12 @@ export function MediaDashboard({
           ? 'bg-black'
           : 'bg-zinc-950'
   }`;
-  const mediaTileClassName = `group self-start rounded-xl text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+  const mediaTileClassName = `group self-start rounded-[1.375rem] text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
     theme === 'light'
       ? 'focus-visible:ring-slate-400 focus-visible:ring-offset-white'
       : 'focus-visible:ring-white/40 focus-visible:ring-offset-zinc-950'
   }`;
-  const mediaTileArtworkClassName = `relative block aspect-square w-full overflow-hidden rounded-xl border shadow-sm ${surface.border} ${
+  const mediaTileArtworkClassName = `relative block aspect-square w-full overflow-hidden rounded-[1.375rem] border shadow-sm ${surface.border} ${
     theme === 'light'
       ? 'bg-linear-to-br from-slate-100 via-white to-slate-200 group-hover:border-slate-300'
       : theme === 'glass'
@@ -2357,9 +2469,9 @@ export function MediaDashboard({
                   return (
                     <MediaBrowserTile
                       key={getMediaItemKey(item)}
+                      accentColor={accentColor}
                       artworkIcon={getMediaLibraryDirectoryIcon(item)}
                       compact
-                      fallbackSubtitle={showSpotifyIcon ? 'Spotify' : t('media.dashboard.browser')}
                       item={item}
                       mediaTileArtworkClassName={mediaTileArtworkClassName}
                       mediaTileClassName={`${mediaTileClassName} ${compactMediaTileWidthClassName}`}
@@ -2400,6 +2512,7 @@ export function MediaDashboard({
                   {visibleBrowseTileItems.map((item, index) => (
                     <MediaBrowserTile
                       key={`${index}:${getMediaItemKey(item)}`}
+                      accentColor={accentColor}
                       compact={useCompactFolderGrid}
                       item={item}
                       mediaTileArtworkClassName={mediaTileArtworkClassName}

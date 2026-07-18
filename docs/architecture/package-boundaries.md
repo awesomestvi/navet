@@ -55,10 +55,13 @@ they are app-internal support code. Do not treat them as the preferred shared su
 ## Runtime Flow
 
 1. `@navet/app` selects the runtime mode and active provider.
-2. The provider package exposes normalized provider state and command execution.
-3. `@navet/ui` renders from normalized entities and view models.
-4. UI interactions emit generic `NavetCommand` values.
-5. The provider package translates those commands into provider-native requests.
+2. Each connected provider package exposes normalized provider state and command execution.
+3. `@navet/app` keeps provider-scoped collections and merges the selected provider collections for
+   shared dashboard consumption.
+4. `@navet/ui` renders from normalized entities and view models.
+5. UI interactions emit generic `NavetCommand` values or call an optional provider feature
+   service when the interaction needs a richer contract.
+6. The matching provider package translates that work into provider-native requests.
 
 ## Provider Status
 
@@ -69,6 +72,11 @@ they are app-internal support code. Do not treat them as the preferred shared su
 | openHAB | implemented | standalone base-URL and username/password flow |
 | Hubitat | planned | provider contract + registration entry only |
 | SmartThings | planned | provider contract + registration entry only |
+
+Feature-service support is narrower than implementation status. Home Assistant registers the
+advanced climate, media, camera, energy, calendar, weather, notification, task, history, security,
+and administration services. Homey and openHAB currently register rooms, realtime entities,
+lighting, switches, and sensors.
 
 ## Working Rule
 

@@ -1,60 +1,39 @@
-# Navet Dev Home Assistant Add-on
+# Navet Dev
 
-This add-on serves the current development image of Navet through Home Assistant Ingress.
-This directory is the monorepo source for the add-on published from `awesomestvi/navet`.
+> **Development channel:** Navet Dev contains unreleased changes and may be less stable than Navet.
+> Use it to test upcoming features, not as the only dashboard your household depends on.
 
-## Current Behavior
+Navet Dev runs through Home Assistant Ingress and reuses your Home Assistant session. There is no
+separate Home Assistant URL or access token to enter.
 
-- pulls the current dev `Navet Dev` add-on image published from the Navet Dev workflow
-- uses the authenticated Home Assistant Ingress session
-- does not require manual Home Assistant URL or token entry
-- supports optional `dashboard_config_url` import on first launch
-- refreshes the moving `dev` and `edge` image tags on each Navet Dev publish
+## Start Testing
 
-Published image tag shape:
+1. Select **Start** and wait for the add-on to finish starting.
+2. Select **Open Web UI** to open Navet Dev.
+3. Enable **Show in sidebar** if you plan to test it regularly.
+4. Before an important update, export any dashboard configuration you want to keep.
 
-```text
-ghcr.io/awesomestvi/{arch}-navet-addon:0.x.y-dev.YYYYMMDDHHMMSS
-```
+Stable Navet and Navet Dev may use different storage. Do not assume changes made in one channel
+will appear in the other.
 
-`platform/home-assistant/addons/navet-dev/config.yaml` is channel metadata, not the immutable
-Navet Dev release source of truth. Immutable dev publishes use workflow-generated versions in the
-form `0.x.y-dev.YYYYMMDDHHMMSS` and matching `navet-dev-*` tags. Use `pnpm release:dev-version`
-only when you intentionally need to refresh the repository metadata outside that publish flow.
-Each Navet Dev publish refreshes the `dev` and `edge` tags as moving aliases for that same image
-and advances `config.yaml` on `main` so Home Assistant supervised installs see the new version.
-The same local `pnpm release:dev-publish` flow also rewrites the `## In Progress` section in
-`CHANGELOG.md` from the latest relevant release baseline: it uses the most recent `navet-dev-*`
-tag unless a newer stable `v*` tag exists, then folds in current committed, staged, and
-in-progress worktree scope.
+## When Something Breaks
 
-If you want an immutable Navet Dev publish, the local helper command is:
+1. Confirm the add-on status is **Running**.
+2. Open the **Log** tab and capture the first relevant error.
+3. Restart the add-on and repeat the action once.
+4. Check whether the same action works in stable Navet. This helps separate a regression from a
+   configuration problem.
 
-```bash
-pnpm release:dev-publish
-```
+[Open a GitHub issue](https://github.com/awesomestvi/navet/issues) with the Navet Dev version, your
+Home Assistant version, the exact action that failed, and clear reproduction steps. Remove tokens,
+private URLs, entity names, and household details from logs and screenshots first.
 
-It creates the matching tag from the current `HEAD` in this format:
+## Return to Stable
 
-```text
-navet-dev-0.x.y-dev.YYYYMMDDHHMMSS
-```
+1. Export any dashboard configuration you need from Navet Dev.
+2. Stop Navet Dev.
+3. Start or install the stable **Navet** add-on.
+4. Verify its configuration, then open its Web UI.
 
-That tag triggers a dedicated workflow which publishes exact-version dev images, creates the
-matching metadata commit on `main`, and creates a GitHub prerelease while also refreshing the
-moving `edge` and `dev` aliases. The local helper mirrors that behavior. Add `-- --push` to push
-the commit and tag.
-
-If opened outside Ingress through an optional direct port, Navet behaves like the standalone
-runtime and uses OAuth login instead.
-
-## Install
-
-1. Open `Settings -> Add-ons -> Add-on Store`.
-2. Open the repository menu and choose `Repositories`.
-3. Add `https://github.com/awesomestvi/navet` as an Add-on Store repository.
-4. Install `Navet Dev`.
-
-## Configuration
-
-- `dashboard_config_url`: optional Navet dashboard config import URL for first launch
+For update behavior, channel details, and advanced troubleshooting, see the
+[Navet Dev guide](https://docs.navet.app/install/navet-dev/).

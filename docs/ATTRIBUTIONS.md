@@ -7,6 +7,8 @@ This project includes components from [shadcn/ui](https://ui.shadcn.com/) used u
 
 ## Open Source Libraries
 
+Representative libraries used by the current app and public surfaces include:
+
 - **React** - UI framework
 - **Tailwind CSS** - Styling
 - **Radix UI** - Accessible components
@@ -14,11 +16,19 @@ This project includes components from [shadcn/ui](https://ui.shadcn.com/) used u
 - **@dnd-kit** - Drag and drop
 - **Lucide React** - Icons
 - **Sonner** - Toast notifications
+- **hls.js** - HLS media playback
+- **Leaflet / React Leaflet** - Map rendering
+- **Workbox** - PWA update and offline support
+- **Astro Starlight** - Public documentation site
+- **Storybook** - Isolated UI documentation and review
 
 ## Design Inspiration
 
-- **Apple iOS** - Human Interface Guidelines
-- **Frosted Glass** - iOS widget aesthetics
+- **Apple Human Interface Guidelines** - Interaction, hierarchy, and touch-oriented reference
+- **Frosted glass interfaces** - One influence on Navet's optional `glass` theme
+
+These are influences, not the product architecture. Navet uses its own room-first dashboard model,
+shared component system, and Liquid Glass (`glass`), `dark`, `light`, and `black` theme families.
 
 ## Project Inspiration
 

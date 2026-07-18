@@ -1,6 +1,8 @@
-# Navet Logo Assets
+# Navet Public Assets
 
-This folder contains all official Navet logo files and brand assets.
+This folder contains Navet's public logos, install icons, social-preview asset, web manifest, and
+small runtime bootstrap/fallback files. Brand guidance applies to the logo and social assets;
+`config.js`, `boot-i18n.js`, `offline.html`, and `site.webmanifest` are application runtime files.
 
 ## Files
 
@@ -18,6 +20,19 @@ This folder contains all official Navet logo files and brand assets.
 - **apple-touch-icon.png** (360x360) - Rasterized iOS home screen icon
 - **pwa-192.png** - PWA install icon referenced by the web manifest as 192x192
 - **pwa-512.png** - Large PWA install icon referenced by the web manifest as 512x512
+
+### Social Preview
+
+- **navet-social-card.jpg** - Open Graph and social-link preview image
+
+### Runtime Files
+
+- **config.js** - deployment/runtime configuration bootstrap
+- **boot-i18n.js** - localized boot and loading messages
+- **boot-i18n.d.ts** and **boot-i18n.test.ts** - type surface and regression coverage for the boot
+  catalog
+- **offline.html** - PWA offline fallback
+- **site.webmanifest** - install metadata and icon references
 
 ## Logo Concept
 
@@ -103,9 +118,9 @@ These logo files are **not** covered by the repository code license.
 
 They are governed by Navet brand usage rules:
 
-- [../docs/branding/BRANDING.md](../docs/branding/BRANDING.md)
-- [../docs/branding/TRADEMARK_POLICY.md](../docs/branding/TRADEMARK_POLICY.md)
+- [../../docs/branding/BRANDING.md](../../docs/branding/BRANDING.md)
+- [../../docs/branding/TRADEMARK_POLICY.md](../../docs/branding/TRADEMARK_POLICY.md)
 
 ---
 
-**Last Updated:** May 25, 2026
+**Last Updated:** July 16, 2026

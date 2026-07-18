@@ -3,9 +3,18 @@
 Navet is a smart-home dashboard frontend with a package architecture direction built around
 provider-neutral core and UI layers, provider packages, and an official app-composition layer.
 Today it runs as a standalone Docker app, a Home Assistant add-on through Ingress, and a Home
-Assistant custom panel. Home Assistant is the reference adapter today. Homey support exists in the
-codebase. openHAB, Hubitat, and SmartThings are planned providers, with openHAB the first intended
-second proof after Home Assistant and Homey.
+Assistant custom panel. Home Assistant is the reference adapter today. Homey and openHAB are
+implemented standalone providers. Hubitat and SmartThings currently have planned package and
+registration surfaces only.
+
+Current capability baseline:
+
+- Home Assistant: rooms, lighting, sensors, climate, media, cameras, energy, calendar, weather,
+  notifications, tasks, history, security, and provider administration
+- Homey: rooms, realtime entities, lighting, switches, and sensors
+- openHAB: rooms, realtime entities, lighting, switches, and sensors
+- standalone Navet can retain multiple implemented provider sessions and aggregate selected
+  providers in shared dashboard collections
 
 ## Required Reading
 
@@ -30,6 +39,12 @@ Read the relevant skill file for the area you are touching:
 - Cameras, media, entity pictures, RSS, external URLs: [`/ai/skills/external-resources.md`](ai/skills/external-resources.md)
 - UI/UX and dashboard behavior: [`/ai/skills/navet-ux.md`](ai/skills/navet-ux.md)
 - Performance and kiosk constraints: [`/ai/skills/performance.md`](ai/skills/performance.md)
+
+For dashboard UI work, reading `navet-ux.md` is mandatory, not optional based on task size. Before
+writing JSX or styles, also inspect the exact neighboring product surface and the relevant
+Storybook primitive, pattern, or card story. Use
+[`/docs/design-system/AI-DESIGN-CONTEXT.md`](docs/design-system/AI-DESIGN-CONTEXT.md) as the short
+reference packet; do not infer Navet's visual language from words such as "premium" or "glass."
 
 ## Repo Layout
 
@@ -79,10 +94,11 @@ Path resolution rule:
   `/homeassistant/core`; do not infer behavior from Navet's current implementation.
 - Do not change tests just to match the current implementation.
 - Never use or suggest `git commit --no-verify`, `git push --no-verify`, or any equivalent hook-bypass flag.
-- Treat `IntegrationProviderId`, `NavetDevice`, `NavetRoom`, `NavetRoomDescriptor`,
-  `NavetProviderSnapshot`, `SmartHomeProviderAdapter`, `NavetEntity`, `NavetCommand`,
-  `CommandResult`, provider-scoped IDs, canonical IDs, runtime, snapshot, contract, and resource
-  resolution as the current architecture vocabulary.
+- Treat `IntegrationProviderId`, `SmartHomeProviderAdapter`, `NavetEntity`, `NavetCommand`,
+  `CommandResult`, provider-scoped IDs, canonical IDs, runtime, contract, capability, feature
+  service, and resource resolution as the preferred architecture vocabulary.
+- `NavetDevice`, `NavetRoom`, `NavetRoomDescriptor`, and `NavetProviderSnapshot` remain current
+  compatibility models inside `@navet/app`; do not present them as the target public contract.
 - Prefer incremental extraction over a rewrite.
 - Follow [`docs/agents/commands.md`](docs/agents/commands.md) before running repo commands.
 

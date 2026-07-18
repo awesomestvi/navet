@@ -64,9 +64,14 @@ export function ThemeTokenShowcase({
           {rows.map(([key, value]) => (
             <div
               key={key}
-              className={`mt-3 grid gap-1 border px-4 py-3 sm:grid-cols-[160px_1fr] ${navetRadiusTokens.action} ${surface.border} ${surface.panelMuted}`}
+              className={`mt-3 grid gap-1 border px-4 py-3 ${navetRadiusTokens.action} ${surface.border} ${surface.panelMuted}`}
+              style={{
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
+              }}
             >
-              <span className={`${navetTypographyTokens.helper} font-medium ${surface.textSubtle}`}>
+              <span
+                className={`min-w-0 break-words ${navetTypographyTokens.helper} font-medium ${surface.textSubtle}`}
+              >
                 {key}
               </span>
               <code className={`break-all ${navetTypographyTokens.helper} ${surface.textPrimary}`}>

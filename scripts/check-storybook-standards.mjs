@@ -101,6 +101,7 @@ function getExpectedComponentGroup(filePath) {
 
 const storyFiles = walk(STORIES_ROOT);
 const violations = [];
+const storyTitles = new Map();
 
 for (const filePath of storyFiles) {
   const source = fs.readFileSync(filePath, 'utf8');
@@ -115,6 +116,16 @@ for (const filePath of storyFiles) {
   }
 
   const topLevelGroup = getTopLevelGroup(title);
+
+  if (storyTitles.has(title)) {
+    violations.push({
+      filePath,
+      reason: `duplicate meta title "${title}" also used by ${path.relative(ROOT_DIR, storyTitles.get(title))}`,
+    });
+  } else {
+    storyTitles.set(title, filePath);
+  }
+
   if (!ALLOWED_TOP_LEVEL_GROUPS.has(topLevelGroup)) {
     violations.push({
       filePath,

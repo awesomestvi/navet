@@ -1,35 +1,115 @@
 # Navet UX
 
-Read this file before changing dashboard layout, card behavior, section composition, settings
-surfaces, or core visual hierarchy.
+Read this file before changing dashboard layout, card behavior, section composition, settings,
+dialogs, navigation, or visual hierarchy. Also read the compact
+[`AI-DESIGN-CONTEXT.md`](../../docs/design-system/AI-DESIGN-CONTEXT.md) packet.
+
+## Design From Evidence
+
+Before writing JSX or styles:
+
+1. Inspect the exact screen and the components that currently render it.
+2. Name one primary Navet reference and, when useful, one supporting reference.
+3. Inspect the nearest primitive or pattern and its Storybook story.
+4. Write a compact intent note: information priority, primary action, density, responsive change,
+   and the one visual detail that makes the surface recognizably part of Navet.
+5. Decide whether the work reuses, extends, or intentionally replaces an existing recipe. A new
+   recipe needs a concrete reason.
+
+Reference order:
+
+1. The same component family and its immediate neighbors on the target screen.
+2. Home for dashboard outer spacing, section rhythm, summary-bar spacing, card-grid density, and
+   responsive behavior.
+3. The relevant shared primitive or pattern story.
+4. UI-kit recipes and token stories.
+
+Do not treat a marketing page, an isolated experimental story, or a generic design trend as a
+dashboard reference.
 
 ## Product Direction
 
-- Navet should feel premium, glanceable, and wall-panel friendly
-- the first screen should prioritize useful live information and obvious controls
-- avoid generic smart-home UI that could be mistaken for any other dashboard
+Navet is an operational smart-home surface. It should be:
 
-## Interaction Rules
+- glanceable: live state and exceptions are understood before decoration
+- compact but calm: useful density with clear grouping, not crowded controls
+- direct: the common household action is obvious and available without entering edit mode
+- tactile: controls read as controls on touch screens without depending on hover
+- recognizably Navet: rounded, theme-native surfaces; restrained accent; strong live-state
+  hierarchy; and consistent card geometry
 
-- prefer low-friction actions for common household controls
-- avoid burying important live state behind edit-first flows
-- keep touch targets suitable for kiosk and tablet use
-- use progressive disclosure instead of dense always-visible configuration
+"Premium" is an outcome of alignment, restraint, typography, state clarity, and interaction
+quality. It is not permission to add glass, gradients, large hero copy, decorative charts, or
+empty space.
 
-## Visual Rules
+## Hierarchy And Composition
 
-- preserve Navet's current theme model: `glass`, `dark`, `light`, `black`
-- reuse the existing shared UI and theme system before inventing new patterns
-- keep surfaces theme-native: in `dark` and `black`, cards should stay dark-surface cards, not glass or frosted treatments
-- use accent color as tint, border, glow, or emphasis inside the active theme surface instead of swapping the surface family
-- when a card needs to become accent-aware, prefer shared surface helpers such as the existing accent/tinted card tokens instead of feature-local gradient recipes
-- when a card sits beside adjacent cards in an established lane or section, inherit that same surface family first; do not make one card look like a different theme or material system
-- in dashboard pairs or lanes, prefer the same shared card recipe across neighboring cards; for example, the energy dashboard `Sources` card should stay in the same surface family as `Live Energy`, but may become accent-aware by layering a shared accent surface helper on top of that family rather than switching to a feature-local material treatment
-- avoid over-contained cards and nested shells that reduce density without improving clarity
+- Start with content and state: identity, current value, exception, primary action, then secondary
+  detail and settings.
+- Preserve the target screen's existing outer shell and spacing mode. Do not add a feature-local
+  max-width, page padding, or centered container to a dashboard section.
+- Match Home's responsive rhythm when creating or reshaping a dashboard section: compact mobile
+  spacing, denser card grids, and increased section separation at larger breakpoints.
+- Prefer one clear surface over a card inside a panel inside a section card.
+- A section heading should organize content, not become a decorative hero.
+- Keep compact cards single-purpose. Put configuration and secondary controls in the established
+  dialog or sheet pattern.
+- Use existing card sizes and make every supported size an intentional layout, not a clipped
+  desktop composition.
 
-## Validation Rules
+## Interaction And Copy
 
-- for small UI-only tweaks, do not run tests by default
-- instead, prompt the user to run the most relevant targeted validation command and report back
-- prefer `pnpm test:storybook`, `pnpm check:stories`, or a focused `pnpm test <path>` over broad
-  suites when suggesting UI validation
+- Keep touch targets at least 44 px and prefer 48 px for primary controls.
+- Do not rely on hover, color alone, or motion alone to reveal state or affordance.
+- Keep focus-visible and reduced-motion behavior when extending shared controls.
+- Use progressive disclosure for configuration; do not hide useful live state behind it.
+- Use sentence case, short household language, and the existing translation system.
+- Do not invent explanatory subtitles, status labels, badges, or calls to action merely to fill a
+  composition. Every visible line must help the user understand state or act.
+- Uppercase is an exception for established eyebrow tokens, external identifiers, and short
+  technical codes; it is not a default heading style.
+
+## Themes And Visual Treatment
+
+- Preserve the theme model: `glass`, `dark`, `light`, `black`.
+- Resolve surfaces, readable text, focus, controls, spacing, and motion through shared helpers
+  before writing feature-local classes.
+- Only `glass` uses frosted or translucent card treatments. `dark` and `black` remain dark-surface
+  families; `light` remains a light-surface family.
+- Layer accent through a shared tint, border, glow, icon, or text emphasis. Do not replace the
+  current theme or lane surface with a one-off material recipe.
+- Neighboring cards inherit the same surface family and geometry before expressing different
+  semantic states.
+- Do not introduce a new font, base type scale, palette, radius system, shadow language, or page
+  shell unless the task explicitly redesigns that foundation.
+- Use motion to explain state change or spatial continuity. Avoid ambient animation and expensive
+  effects on always-visible or frequently updating surfaces.
+
+## Architecture
+
+- Shared UI consumes normalized Navet state and provider-neutral view models.
+- Reuse current primitives from `packages/app/src/components/primitives/` and patterns from
+  `packages/app/src/components/patterns/` before creating feature-local equivalents.
+- Treat those app-owned paths as current authoring seams; do not move a component to `@navet/ui`
+  unless provider-neutral extraction is part of the task.
+- Keep provider payloads, service calls, and feature-specific state outside generic visual
+  primitives.
+
+## Review Before Handoff
+
+Review the result against the named reference, not only against the request:
+
+- normal, active, unavailable, loading, empty, and error states that the feature supports
+- smallest and largest supported card sizes or viewport widths
+- `glass`, `dark`, `light`, and `black`, including readable accent states
+- touch, keyboard focus, reduced motion, and no-hover use
+- realistic long names, translated copy, missing artwork, and missing optional data
+- high and reduced effects quality when visual effects are involved
+
+If a visual review surface is available, inspect it and correct visible hierarchy, overflow,
+alignment, and theme mismatches before calling the work complete.
+
+For small UI-only tweaks, do not run tests by default. Tell the user the most relevant focused
+validation, usually `pnpm test:storybook`, `pnpm check:stories`, or `pnpm test <path>`. For broader
+UI work, follow `docs/agents/commands.md` and use the smallest routeable validation that covers the
+change.

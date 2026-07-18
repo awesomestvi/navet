@@ -74,6 +74,11 @@ Implemented providers today:
 - `@navet/provider-homey`
 - `@navet/provider-openhab`
 
+Their expected matrices differ: Home Assistant covers the advanced feature-service set, while
+Homey and openHAB currently cover rooms, realtime entities, lighting, switches, and sensors. Tests
+must assert each provider's declared runtime registration rather than treating `implemented` as
+feature parity.
+
 These suites are Tier 1 by default.
 
 ### `@navet/app`
@@ -82,6 +87,7 @@ Test:
 
 - provider registration and wiring
 - runtime selection and session bootstrap
+- simultaneous session bootstrap, selected-provider aggregation, and provider-scoped identity
 - integration store behavior
 - app service fallbacks when a provider feature service is missing or optional
 - deployment entrypoints such as standalone, ingress, and panel wiring

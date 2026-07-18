@@ -84,8 +84,8 @@ function CardDialogPatternStory() {
                 <div className={`rounded-2xl border p-4 ${surface.border} ${surface.subtleBg}`}>
                   <p className={`text-sm ${surface.textPrimary}`}>
                     {activeTab === 'controls'
-                      ? 'Primary controls content'
-                      : 'Presentation and tint controls'}
+                      ? 'Brightness 68% · Warm white'
+                      : 'Card size, room, and accent color'}
                   </p>
                 </div>
               </CardDialogSection>

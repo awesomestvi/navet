@@ -4,7 +4,9 @@ description: Connect a standalone Navet installation to Homey.
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/HOMEY.md
 ---
 
-Use this guide when you want Navet to connect to Homey in standalone mode.
+Use this guide when you want Navet to connect to Homey as the primary provider in standalone mode.
+The same OAuth client settings can enable Homey as an additional provider in the Home Assistant
+add-on.
 
 ## Overview
 
@@ -73,6 +75,10 @@ such as when Navet sits behind a reverse proxy or the public callback URL differ
 origin users open. Navet also supports a custom callback path if you register a different exact URL
 with Athom, such as `https://navet.example.com/callback`.
 
+For the Home Assistant add-on, set the corresponding `homey_client_id`, `homey_client_secret`, and
+optional `homey_redirect_uri` add-on options, restart the add-on, then connect Homey from
+**Settings -> System** inside Navet.
+
 ### 3. Start Navet
 
 ```bash
@@ -91,6 +97,11 @@ docker compose up -d
 
 - Navet stores the Homey session through same-origin runtime endpoints in the Navet app.
 - Homey devices and zones load after sign-in.
+- The current Homey runtime contributes rooms, realtime entities, lighting, switches, and sensors.
+  Climate, media, cameras, energy, calendar, weather, notifications, tasks, history, security, and
+  provider-administration feature services are not registered for Homey yet.
+- In a standalone installation, Homey can stay connected alongside Home Assistant or openHAB;
+  selected providers are combined in shared dashboard collections.
 - You do not need to enter a separate Homey base URL.
 - If you sign out from Navet, the stored Homey session is cleared from the Navet side.
 

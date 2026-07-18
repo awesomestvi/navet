@@ -2,13 +2,13 @@ function doc(overview: string, covers: string[], usage: string[], review: string
   return [
     overview,
     '',
-    'What this page covers:',
+    'What this story proves:',
     ...covers.map((item) => `- ${item}`),
     '',
-    'How to use it:',
+    'Use this story when:',
     ...usage.map((item) => `- ${item}`),
     '',
-    'Review expectations:',
+    'Review before merging:',
     ...review.map((item) => `- ${item}`),
   ].join('\n');
 }
@@ -1324,7 +1324,7 @@ const ADDITIONAL_STORY_DOCS: Record<string, string> = {
     'Shared hero-section pattern for dashboard summaries that combine a headline, supporting metrics, and primary actions.',
     [
       'How high-priority dashboard context is framed before the main card grid begins.',
-      'The balance between overview content and action entrypoints in a premium first-screen section.',
+      'The balance between overview content and action entrypoints in a calm first-screen section.',
     ],
     [
       'Use this story when changing hero hierarchy, spacing, or summary/action composition.',
@@ -1333,6 +1333,36 @@ const ADDITIONAL_STORY_DOCS: Record<string, string> = {
     [
       'Check that the headline and supporting information are easy to scan from a distance.',
       'Check that the hero remains useful without crowding the cards beneath it.',
+    ]
+  ),
+  'Components/Primitives/Icon Button': doc(
+    'Accessible icon-only action used where a text label would make a card header, toolbar, or dialog control too crowded.',
+    [
+      'Compact, small, and default hit-target tiers without changing the icon scale arbitrarily.',
+      'Subtle, ghost, secondary, pending, and unavailable action states.',
+    ],
+    [
+      'Choose an icon-only action only when the symbol is familiar in context.',
+      'Provide a specific `label`; it is the control name announced by assistive technology.',
+    ],
+    [
+      'Confirm every example has a meaningful accessible name and visible keyboard focus.',
+      'Confirm compact controls remain comfortable on touch-first dashboard hardware.',
+    ]
+  ),
+  'Pages/Tasks/Habit Insights': doc(
+    'Local habit suggestions shown inside Tasks after Navet recognizes a repeated household routine.',
+    [
+      'Suggestion, learning, empty, and disabled states for the local-habits surface.',
+      'The evidence, confidence, safety context, and explicit confirmation required before creating a rule.',
+    ],
+    [
+      'Use this story when changing habit explanation, feedback actions, or automation confirmation.',
+      'Keep examples grounded in ordinary household routines and use names people would recognize at home.',
+    ],
+    [
+      'Confirm Navet explains why it made a suggestion before asking for a decision.',
+      'Confirm dismissing and creating a rule are distinct, understandable actions in every theme.',
     ]
   ),
   'Components/Patterns/Form Field': doc(
@@ -2269,12 +2299,210 @@ const ADDITIONAL_STORY_DOCS: Record<string, string> = {
       'Check that all sizes are usable and well-proportioned.',
     ]
   ),
+  'Pages/Security/Dashboard/Page': doc(
+    'Complete security dashboard for monitoring alarms, cameras, locks, and openings from one calm household surface.',
+    [
+      'Normal, issue, snapshot-only, empty, and black-theme dashboard states.',
+      'How high-severity information is prioritized without turning the whole page into an alarm state.',
+    ],
+    [
+      'Use this story when changing security hierarchy, dashboard spacing, or cross-card status language.',
+      'Review the relevant entity-card stories before changing a control that is shared with another dashboard.',
+    ],
+    [
+      'Confirm the current security state reads immediately at dashboard distance.',
+      'Confirm unavailable devices and urgent conditions remain distinct in every theme.',
+    ]
+  ),
+  'Pages/Lights/Room first': doc(
+    'Room-first lighting dashboard showing how Navet groups everyday controls around the household space people recognize.',
+    [
+      'Populated, empty, unavailable, non-dimmable, light-theme, and black-theme room states.',
+      'The relationship between room summary, card density, and direct lighting actions.',
+    ],
+    [
+      'Use this story when changing the lighting page composition or room-level control hierarchy.',
+      'Keep examples named like real rooms and fixtures instead of backend entity identifiers.',
+    ],
+    [
+      'Confirm the most common lighting actions remain one glance and one tap away.',
+      'Confirm the grid stays legible on both wall displays and narrower touch screens.',
+    ]
+  ),
+  'Pages/Energy/Dashboard/Page': doc(
+    'Complete energy dashboard that turns live power, cost, production, storage, and history into a readable household overview.',
+    [
+      'Normal, loading, empty, partial-data, peak-demand, compact, light, and black-theme states.',
+      'How summary metrics, charts, and flow information establish a clear reading order.',
+    ],
+    [
+      'Use this story when changing energy-page hierarchy, responsive layout, or missing-data behavior.',
+      'Validate chart-level changes in their focused stories before judging the full page.',
+    ],
+    [
+      'Confirm units, time ranges, and cost context are unambiguous.',
+      'Confirm partial provider data remains honest and useful rather than looking broken.',
+    ]
+  ),
+  'Pages/Energy/Dashboard/Flow Map': doc(
+    'Household energy-flow map connecting grid, solar, battery, and home consumption with directional context.',
+    [
+      'Importing, exporting, solar-surplus, battery-charging, grid-only, and partial-data flows.',
+      'How direction, magnitude, labels, and reduced-motion behavior work together.',
+    ],
+    [
+      'Use this story when changing flow semantics, connector motion, or source and destination labels.',
+      'Keep color as supporting information; direction and text must carry the meaning too.',
+    ],
+    [
+      'Confirm every flow is understandable with motion reduced.',
+      'Confirm values and directions agree across all source combinations.',
+    ]
+  ),
+  'Pages/Marketing/Hero': doc(
+    'Navet website hero that introduces the product through calm household control, privacy, and immediate product context.',
+    [
+      'The primary promise, supporting proof, calls to action, and first product impression.',
+      'How website storytelling inherits Navet typography, orange emphasis, and dark atmospheric surfaces.',
+    ],
+    [
+      'Use this story when changing the first-screen product promise or call-to-action hierarchy.',
+      'Keep claims concrete and demonstrable in the product or documentation.',
+    ],
+    [
+      'Confirm a new visitor can explain what Navet is after one scan.',
+      'Confirm the product remains the focal point rather than decorative effects.',
+    ]
+  ),
+  'Pages/Marketing/FeatureGrid': doc(
+    'Feature grid that translates Navet capabilities into recognizable household outcomes rather than a checklist of technology.',
+    [
+      'Feature grouping, supporting copy, icons, and responsive reading order.',
+      'The balance between breadth and scanability on the website.',
+    ],
+    [
+      'Use this story when adding or reprioritizing a product capability.',
+      'Describe what the household can do before naming the implementation detail.',
+    ],
+    [
+      'Confirm every feature is distinct and supported by the current product.',
+      'Confirm the grid remains easy to skim on narrow screens.',
+    ]
+  ),
+  'Pages/Marketing/ProductPreview': doc(
+    'Website product preview that shows the real Navet dashboard language in context.',
+    [
+      'Dashboard framing, device examples, and the transition from marketing copy to product proof.',
+      'How representative household data makes the preview credible.',
+    ],
+    [
+      'Use this story when changing the website product mock or the examples shown inside it.',
+      'Match current dashboard UI instead of inventing a parallel marketing-only interface.',
+    ],
+    [
+      'Confirm labels and states look like real Navet data.',
+      'Confirm the preview remains readable without pretending to be a fully interactive dashboard.',
+    ]
+  ),
+  'Pages/Marketing/Privacy': doc(
+    'Privacy section explaining Navet’s local-first approach in plain, verifiable language.',
+    [
+      'The privacy promise, supporting evidence, and relationship to provider connections.',
+      'How reassurance is delivered without fear-based framing.',
+    ],
+    [
+      'Use this story when changing privacy positioning or local-control explanations.',
+      'Prefer specific product behavior over broad security claims.',
+    ],
+    [
+      'Confirm claims match the current architecture and documentation.',
+      'Confirm the section is understandable without smart-home infrastructure knowledge.',
+    ]
+  ),
+  'Pages/Marketing/CurrentSupport': doc(
+    'Current integration-support section setting accurate expectations about what works today.',
+    [
+      'Implemented providers, capability depth, and honest status language.',
+      'How support breadth is communicated without implying feature parity.',
+    ],
+    [
+      'Use this story when provider support or capability coverage changes.',
+      'Keep status language synchronized with the public documentation.',
+    ],
+    [
+      'Confirm every listed capability is currently available.',
+      'Confirm planned providers cannot be mistaken for implemented support.',
+    ]
+  ),
+  'Pages/Marketing/ThemeShowcase': doc(
+    'Theme showcase demonstrating how the same Navet product language adapts across supported household appearances.',
+    [
+      'Dark, glass, light, and black theme framing with consistent product hierarchy.',
+      'How wallpaper and accent color support rather than redefine the interface.',
+    ],
+    [
+      'Use this story when changing website theme examples or appearance positioning.',
+      'Use real theme behavior and shared tokens in every example.',
+    ],
+    [
+      'Confirm the examples remain recognizably the same product.',
+      'Confirm text and controls retain contrast across every showcased theme.',
+    ]
+  ),
+  'Pages/Marketing/Roadmap': doc(
+    'Roadmap section describing Navet’s direction while separating current capability from planned work.',
+    [
+      'Near-term themes, sequencing, and expectation-setting language.',
+      'How future direction supports the current product story.',
+    ],
+    [
+      'Use this story when public roadmap priorities change.',
+      'Frame direction as intent unless delivery is already confirmed.',
+    ],
+    [
+      'Confirm planned work is visibly distinct from available functionality.',
+      'Confirm roadmap copy stays useful without promising dates the team cannot support.',
+    ]
+  ),
+  'Pages/Marketing/DemoCTA': doc(
+    'Closing call to action that helps visitors choose between trying Navet and reading the documentation.',
+    [
+      'Primary and secondary conversion paths, supporting reassurance, and end-of-page rhythm.',
+      'How the CTA closes the product story without introducing a new promise.',
+    ],
+    [
+      'Use this story when changing the website’s final action hierarchy.',
+      'Keep each action label explicit about what happens next.',
+    ],
+    [
+      'Confirm the primary path is obvious and the documentation remains easy to reach.',
+      'Confirm the section stays calm and credible rather than urgent.',
+    ]
+  ),
 };
 
 const STORY_DOC_ALIASES: Record<string, string> = {
   'App Shell/Header/Section Customize Button': 'App Shell/Section Customize Button',
   'App Shell/Header/Section Customize Shell': 'App Shell/Section Customize Shell',
   'App Shell/Header/Notification Panel': 'App Shell/Notifications/Panel',
+  'Pages/Dashboard/Add Card Dialog': 'Dashboard/Add Card Dialog',
+  'Pages/Dashboard/Edit Actions': 'Dashboard/Edit Actions',
+  'Pages/Dashboard/Onboarding Dialog': 'Dashboard/Onboarding Dialog',
+  'Pages/Energy/Charts/Area': 'Cards/Charts/Energy Area Chart',
+  'Pages/Energy/Charts/Bar': 'Cards/Charts/Energy Bar Chart',
+  'Pages/Energy/Charts/Gauge': 'Cards/Charts/Energy Gauge',
+  'Pages/Energy/Charts/Quality Bar': 'Cards/Charts/Energy Quality Bar',
+  'Pages/Energy/Charts/Sparkline': 'Cards/Charts/Energy Sparkline',
+  'Pages/Energy/Primitives/Widget Shell': 'Cards/Widgets/Energy Widget Shell',
+  'Pages/Energy/Widgets/Consumers': 'Cards/Widgets/Energy Consumers',
+  'Pages/Energy/Widgets/Flow': 'Cards/Widgets/Energy Flow',
+  'Pages/Settings/Appearance': 'Settings/Appearance Section',
+  'Pages/Settings/Dashboard': 'Settings/Dashboard Section',
+  'Pages/Settings/Interaction': 'Settings/Interaction Section',
+  'Pages/Settings/Localization': 'Settings/Localization Section',
+  'Pages/Settings/Project': 'Settings/Project Section',
+  'Pages/Settings/Section Shell': 'Settings/Section',
+  'Pages/Settings/System': 'Settings/System Section',
 };
 
 export function getStoryDocsDescription(title: string) {

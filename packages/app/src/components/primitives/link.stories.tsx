@@ -77,7 +77,7 @@ export const InlineText: Story = {
   render: (args) => (
     <p className="max-w-xl text-sm leading-6 text-white/80">
       View the full changelog before updating in{' '}
-      <Link {...args} href="https://example.com/releases/navet" target="_blank" showExternalIcon>
+      <Link {...args} href="https://docs.navet.app/changelog/" target="_blank" showExternalIcon>
         release notes
       </Link>
       .
@@ -88,7 +88,7 @@ export const InlineText: Story = {
 export const External: Story = {
   args: {
     children: 'View release notes',
-    href: 'https://example.com/releases/navet',
+    href: 'https://docs.navet.app/changelog/',
     target: '_blank',
     showExternalIcon: true,
   },

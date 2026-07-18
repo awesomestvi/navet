@@ -44,6 +44,12 @@ Use colocated stories by default.
   package ownership
 - if a provider-neutral shared UI surface is extracted into `@navet/ui`, colocate its stories with
   that package instead of forcing them to remain app-owned
+- when a story supports new or substantially reshaped UI, identify the canonical product or
+  component reference in the story description or review notes
+- cover the component's meaningful states and sizes; do not present only the ideal default state
+- review theme-native surfaces in `glass`, `dark`, `light`, and `black` when the story harness can
+  switch themes
+- use realistic long, missing, and translated data when those cases affect layout
 
 ## Commands
 
@@ -54,6 +60,13 @@ pnpm website:build
 pnpm check:stories
 pnpm test:storybook
 ```
+
+Development behavior:
+
+- Existing stories, preview decorators, and preview styles update through Vite HMR.
+- Restart Storybook after adding or removing a story file so the story index is rebuilt reliably.
+- Restart Storybook after changing `.storybook/manager.ts` or `manager.css`. Storybook emits the
+  manager shell as a separate IIFE bundle, so manager-only styling is not part of preview HMR.
 
 ## Related Docs
 

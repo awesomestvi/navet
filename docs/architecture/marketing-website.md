@@ -69,6 +69,7 @@ Required stories:
 - `Pages/Marketing/ProductPreview`
 - `Pages/Marketing/FeatureGrid`
 - `Pages/Marketing/ThemeShowcase`
+- `Pages/Marketing/Privacy`
 - `Pages/Marketing/DemoCTA`
 - `Pages/Marketing/CurrentSupport`
 - `Pages/Marketing/Roadmap`

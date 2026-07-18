@@ -16,7 +16,7 @@ function SectionCustomizeShellStory() {
         <div className="space-y-4">
           <div className="pr-16">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
-              Example section
+              Kitchen overview
             </p>
             <h3 className="mt-2 text-lg font-semibold text-white">Living Room Lights</h3>
             <p className="mt-2 max-w-xl text-sm text-white/60">

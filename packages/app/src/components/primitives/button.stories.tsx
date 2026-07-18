@@ -26,17 +26,17 @@ const meta = {
         component: [
           'Canonical action-button primitive used across dashboard controls, settings forms, dialogs, and compact icon actions.',
           '',
-          'What this page covers:',
+          'What this story proves:',
           '- Primary and secondary emphasis levels for common action hierarchy.',
           '- Disabled behavior for non-interactive and pending states.',
           '- Icon-only composition with explicit accessibility labels.',
           '',
-          'Usage notes:',
+          'Use this story when:',
           '- Prefer this primitive over feature-local button wrappers when behavior and semantics are standard.',
           '- Always provide `label` for `iconOnly` buttons so assistive technologies expose meaningful names.',
           '- Keep variant choice tied to action priority, not visual preference.',
           '',
-          'Review expectations:',
+          'Review before merging:',
           '- Verify readable contrast and affordance across active and disabled states.',
           '- Verify icon-only controls remain hit-target compliant for compact, small, and default sizes.',
         ].join('\n'),
@@ -104,30 +104,6 @@ export const Disabled: Story = {
     docs: {
       description: {
         story: 'Disabled state showing non-interactive styling while preserving visual context.',
-      },
-    },
-  },
-};
-
-export const IconButtons: Story = {
-  render: () => (
-    <div className="flex flex-wrap items-center gap-4">
-      <Button iconOnly label="Open settings" variant="subtle" size="compact">
-        <Settings2 className="h-4 w-4" />
-      </Button>
-      <Button iconOnly label="Open settings" variant="subtle" size="small">
-        <Settings2 className="h-4 w-4" />
-      </Button>
-      <Button iconOnly label="Open settings" variant="subtle" size="default">
-        <Settings2 className="h-4 w-4" />
-      </Button>
-    </div>
-  ),
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'Icon-only button usage across supported sizes, including required accessible labeling via the `label` prop.',
       },
     },
   },

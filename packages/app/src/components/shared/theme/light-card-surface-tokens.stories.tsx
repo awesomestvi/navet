@@ -1,10 +1,13 @@
+import { BaseCard } from '@navet/app/components/primitives/base-card';
 import { getCardReadableTextTokens } from '@navet/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@navet/app/components/shared/theme/card-shell-surface-tokens';
 import { getLightCardSurfaceTokens } from '@navet/app/components/shared/theme/light-card-surface-tokens';
 import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import type { PrimaryColor, ThemeType } from '@navet/app/hooks/use-theme';
+import { LightCardHeader } from '@navet/app/features/lighting/components/light-card/light-card-header';
+import { type PrimaryColor, type ThemeType, useTheme } from '@navet/app/hooks/use-theme';
 import { generateThemeColors } from '@navet/app/hooks/use-theme-colors';
+import { EntityCardStoryFrame } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react';
 import { Lightbulb } from 'lucide-react';
 
@@ -13,6 +16,7 @@ const THEMES: ThemeType[] = ['glass', 'dark', 'light', 'black'];
 const VARIANTS: Array<{
   key: string;
   label: string;
+  detail: string;
   isOn: boolean;
   accent: PrimaryColor;
   selectedColor?: string | null;
@@ -21,34 +25,18 @@ const VARIANTS: Array<{
 }> = [
   {
     key: 'accent-blue',
-    label: 'No explicit color, blue accent',
+    label: 'Accent fallback',
+    detail: 'No device color · blue dashboard accent',
     isOn: true,
     accent: 'blue',
     selectedColor: null,
     currentColor: null,
     customColor: '#FFA500',
-  },
-  {
-    key: 'accent-purple',
-    label: 'No explicit color, purple accent',
-    isOn: true,
-    accent: 'purple',
-    selectedColor: null,
-    currentColor: null,
-    customColor: '#FFA500',
-  },
-  {
-    key: 'explicit-red',
-    label: 'Explicit red light, blue accent',
-    isOn: true,
-    accent: 'blue',
-    selectedColor: '#ef4444',
-    currentColor: '#ef4444',
-    customColor: '#ef4444',
   },
   {
     key: 'explicit-teal',
-    label: 'Explicit teal light, orange accent',
+    label: 'Explicit device color',
+    detail: 'Teal device color · orange dashboard accent',
     isOn: true,
     accent: 'orange',
     selectedColor: '#14b8a6',
@@ -57,7 +45,8 @@ const VARIANTS: Array<{
   },
   {
     key: 'off',
-    label: 'Off state',
+    label: 'Neutral off state',
+    detail: 'Inactive cards return to the shared surface family',
     isOn: false,
     accent: 'blue',
     selectedColor: null,
@@ -113,111 +102,136 @@ function LightCardSurfaceReference({
     accentColor,
     baseColor: variant.isOn ? baseColor : undefined,
   });
+  const useInverseForeground = theme === 'light' && variant.isOn;
+  const titleColor = useInverseForeground ? '#ffffff' : textTokens.titleColor;
+  const subtitleColor = useInverseForeground ? 'rgba(255,255,255,0.76)' : textTokens.subtitleColor;
 
   return (
-    <article
-      className={`relative h-56 w-92 overflow-visible rounded-[32px] p-3 ${getFrameClassName(theme)}`}
-    >
-      {variant.isOn ? (
-        <div
-          aria-hidden="true"
-          className={`pointer-events-none absolute -inset-full z-0 blur-3xl ${
-            theme === 'light' ? 'opacity-40' : 'opacity-20'
-          }`}
-          style={{
-            background: `radial-gradient(circle, ${tokens.glowColor || baseColor} 0%, transparent 70%)`,
-          }}
-        />
-      ) : null}
+    <article className="min-w-0">
+      <div className="min-h-[4.5rem]">
+        <h4 className={`text-sm font-semibold ${surface.textPrimary}`}>{variant.label}</h4>
+        <p className={`mt-1 text-xs leading-5 ${surface.textSecondary}`}>{variant.detail}</p>
+      </div>
 
       <div
-        className={`relative z-10 h-full overflow-hidden rounded-3xl ${cardShell.rootFrameClassName} ${tokens.cardClassName}`}
-        style={tokens.cardStyle}
+        className={`relative mt-3 flex min-h-[13.5rem] items-center justify-center overflow-hidden rounded-[28px] p-3 ${getFrameClassName(theme)}`}
       >
-        {tokens.activeGlowClassName ? (
-          <div className={tokens.activeGlowClassName} style={tokens.activeGlowStyle} />
+        {variant.isOn ? (
+          <div
+            aria-hidden="true"
+            className={`pointer-events-none absolute -inset-1/2 blur-3xl ${
+              theme === 'light' ? 'opacity-35' : 'opacity-20'
+            }`}
+            style={{
+              background: `radial-gradient(circle, ${tokens.glowColor || baseColor} 0%, transparent 68%)`,
+            }}
+          />
         ) : null}
-        {tokens.innerOverlayClassName ? (
-          <div className={tokens.innerOverlayClassName} style={tokens.innerOverlayStyle} />
-        ) : null}
-        {tokens.shineOverlayClassName ? <div className={tokens.shineOverlayClassName} /> : null}
 
-        <div className="relative flex h-full flex-col p-4">
-          <div className="flex items-start gap-3">
-            <div
-              className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${surface.border} ${surface.subtleBg}`}
-              style={
-                variant.isOn
-                  ? { borderColor: `${baseColor}50`, backgroundColor: `${baseColor}18` }
-                  : undefined
-              }
-            >
-              <Lightbulb
-                className="h-5 w-5"
-                style={{ color: variant.isOn ? textTokens.titleColor : undefined }}
+        <EntityCardStoryFrame className="relative z-10" size="medium">
+          <BaseCard
+            size="medium"
+            frameClassName={`${cardShell.rootFrameClassName} ${tokens.cardClassName}`}
+            style={tokens.cardStyle}
+            tone={variant.isOn ? 'primary' : 'neutral'}
+            accentColor={tokens.contentAccentColor ?? accentColor}
+            readableBackgroundColor={variant.isOn ? baseColor : undefined}
+            disableDefaultSheen
+            disableDefaultLightOverlay
+            overlay={
+              <>
+                {tokens.activeGlowClassName ? (
+                  <div className={tokens.activeGlowClassName} style={tokens.activeGlowStyle} />
+                ) : null}
+                {tokens.innerOverlayClassName ? (
+                  <div className={tokens.innerOverlayClassName} style={tokens.innerOverlayStyle} />
+                ) : null}
+                {tokens.shineOverlayClassName ? (
+                  <div className={tokens.shineOverlayClassName} />
+                ) : null}
+              </>
+            }
+          >
+            <div className="flex h-full min-h-0 flex-col">
+              <LightCardHeader
+                name="Living room lamp"
+                isOn={variant.isOn}
+                IconComponent={Lightbulb}
+                size="medium"
+                activeColor={tokens.contentAccentColor}
+                themeOverride={theme}
               />
-            </div>
 
-            <div className="min-w-0 flex-1">
-              <p className={`text-[11px] ${tokens.stateSurface.mutedTextClassName}`}>
-                Light surface tokens
-              </p>
-              <h4
-                className={`mt-1 text-sm font-semibold ${tokens.stateSurface.primaryTextClassName}`}
-                style={{ color: textTokens.titleColor }}
-              >
-                {variant.label}
-              </h4>
-              <p
-                className={`mt-1 text-xs ${tokens.stateSurface.secondaryTextClassName}`}
-                style={{ color: textTokens.subtitleColor }}
-              >
-                {variant.isOn
-                  ? `Base color: ${baseColor}`
-                  : 'Off cards stay on neutral shared surfaces.'}
-              </p>
-            </div>
-          </div>
+              <div className="mt-auto">
+                <div className="flex items-end justify-between gap-3">
+                  <div>
+                    <p
+                      className={`text-2xl font-semibold tracking-tight ${tokens.stateSurface.primaryTextClassName}`}
+                      style={{ color: titleColor }}
+                    >
+                      {variant.isOn ? '64%' : 'Off'}
+                    </p>
+                    <p
+                      className={`mt-0.5 text-xs ${tokens.stateSurface.mutedTextClassName}`}
+                      style={{ color: subtitleColor }}
+                    >
+                      {variant.isOn ? 'Brightness' : 'Inactive'}
+                    </p>
+                  </div>
 
-          <div className="mt-auto space-y-3">
-            <div
-              className={`rounded-2xl border px-3 py-2.5 ${surface.border} ${surface.panelMuted}`}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <span className={`text-xs ${tokens.stateSurface.mutedTextClassName}`}>
-                  Surface source
-                </span>
-                <span
-                  className={`text-xs font-semibold ${tokens.stateSurface.primaryTextClassName}`}
-                  style={{ color: textTokens.titleColor }}
+                  <span
+                    aria-hidden="true"
+                    className="h-3 w-3 rounded-full border border-current"
+                    style={{
+                      color: variant.isOn ? titleColor : subtitleColor,
+                      backgroundColor: variant.isOn
+                        ? (tokens.contentAccentColor ?? accentColor)
+                        : 'transparent',
+                    }}
+                  />
+                </div>
+
+                <div
+                  aria-hidden="true"
+                  className="mt-3 h-1.5 overflow-hidden rounded-full"
+                  style={{
+                    backgroundColor: useInverseForeground ? '#ffffff30' : `${subtitleColor}30`,
+                  }}
                 >
-                  {variant.selectedColor ||
-                  variant.currentColor ||
-                  (variant.customColor && variant.customColor !== '#FFA500')
-                    ? 'Explicit light color'
-                    : 'Dashboard accent'}
-                </span>
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: variant.isOn ? '64%' : '0%',
+                      backgroundColor: titleColor,
+                    }}
+                  />
+                </div>
               </div>
             </div>
-
-            <div className="flex gap-2">
-              <div
-                className={`h-9 flex-1 rounded-full border ${surface.border} ${surface.subtleBg}`}
-              />
-              <div
-                className={`h-9 w-9 rounded-full border ${surface.border} ${surface.subtleBg}`}
-              />
-            </div>
-          </div>
-        </div>
+          </BaseCard>
+        </EntityCardStoryFrame>
       </div>
     </article>
   );
 }
 
 function LightCardSurfaceTokensShowcase() {
+  const { theme: activeTheme } = useTheme();
+  const activeSurface = getThemeSurfaceTokens(activeTheme);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      <header className="max-w-3xl">
+        <h2 className={`text-xl font-semibold ${activeSurface.textPrimary}`}>
+          Active card surface decisions
+        </h2>
+        <p className={`mt-2 text-sm leading-6 ${activeSurface.textSecondary}`}>
+          Compare the three surface rules that shared active-state cards must preserve: use the
+          dashboard accent when a device has no color, respect an explicit device color, and return
+          inactive cards to the neutral surface family.
+        </p>
+      </header>
+
       {THEMES.map((theme) => {
         const surface = getThemeSurfaceTokens(theme);
 
@@ -226,11 +240,21 @@ function LightCardSurfaceTokensShowcase() {
             key={theme}
             className={`rounded-3xl border p-4 ${surface.border} ${surface.panelMuted}`}
           >
-            <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${surface.textMuted}`}>
-              {theme}
-            </p>
+            <div className="flex items-center justify-between gap-3">
+              <p
+                className={`text-xs font-semibold uppercase tracking-[0.2em] ${surface.textMuted}`}
+              >
+                {theme} theme
+              </p>
+              <p className={`text-xs ${surface.textMuted}`}>Three state rules</p>
+            </div>
 
-            <div className="mt-4 grid gap-4 xl:grid-cols-2">
+            <div
+              className="mt-4 grid gap-4"
+              style={{
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
+              }}
+            >
               {VARIANTS.map((variant) => (
                 <LightCardSurfaceReference
                   key={`${theme}-${variant.key}`}
@@ -247,19 +271,19 @@ function LightCardSurfaceTokensShowcase() {
 }
 
 const meta = {
-  title: 'Theme/Light Card Surface Tokens',
+  title: 'Theme/Active Card Surfaces',
   component: LightCardSurfaceTokensShowcase,
   tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
         component: [
-          'Visual matrix for `getLightCardSurfaceTokens(...)` across all themes.',
+          'Focused visual matrix for the active-card surface rules shared by lighting, fan, security, and interaction-preview cards.',
           '',
           'What this page verifies:',
-          '- Active light cards without a real light color fall back to the selected dashboard accent.',
-          '- Active light cards with an explicit light color stay on that real color instead of being overridden by the accent.',
-          '- Off light cards stay on the neutral shared surface system.',
+          '- Active cards without a device color fall back to the selected dashboard accent.',
+          '- Active cards with an explicit device color keep that real color instead of being overridden by the accent.',
+          '- Inactive cards return to the neutral shared surface system.',
           '- Overlay, glow, border, and readable text decisions stay coherent across `glass`, `dark`, `light`, and `black`.',
         ].join('\n'),
       },

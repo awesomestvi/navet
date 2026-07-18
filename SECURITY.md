@@ -61,7 +61,15 @@ Important same-origin endpoints include:
 - `/__navet_auth__/session`
 - `/__navet_profile__/default`
 - `/__navet_ha_proxy__/`
+- `/__navet_homey__/` and `/__navet_homey_proxy__/`
+- `/__navet_openhab__/session` and `/__navet_openhab_proxy__/`
 - `/__navet_rss_proxy__/`
+- `/__navet_spotify_metadata__/`
+- `/__navet_music__/spotify/callback`
+
+Home Assistant discovery and provider OAuth/session callbacks are also security-sensitive even when
+they do not proxy arbitrary provider data. Keep Homey client secrets and music-service credentials
+server-side; never expose them through public Vite variables or dashboard exports.
 
 Keep them tightly scoped:
 

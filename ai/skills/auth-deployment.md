@@ -15,9 +15,13 @@ Navet currently runs in:
 ## Provider Reality
 
 - Home Assistant is implemented across panel, add-on, and standalone flows
-- Homey is implemented through the standalone cloud OAuth flow
-- openHAB is implemented through the standalone base-URL and username/password flow
+- Homey is implemented through the cloud OAuth flow; standalone uses environment variables and the
+  Home Assistant add-on exposes corresponding optional client settings
+- openHAB is implemented through the base-URL and username/password flow and can be added from
+  provider management when the browser can reach the server
 - Hubitat and SmartThings are planned provider packages with contract + registration entries, but full runtime support is not implemented yet
+- standalone auth state can retain multiple implemented provider sessions; selected provider
+  collections may be aggregated while one provider remains active for single-provider operations
 
 ## Rules
 

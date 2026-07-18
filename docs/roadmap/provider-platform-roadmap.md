@@ -13,6 +13,7 @@ Navet already has:
 - `@navet/provider-homey` as a working standalone provider
 - `@navet/provider-openhab` as a working standalone provider
 - `@navet/app` for product wiring, runtime selection, settings, and persistence
+- multi-provider session retention and selected-provider aggregation in shared dashboard collections
 
 Current implementation note:
 
@@ -23,6 +24,10 @@ Current implementation note:
 
 Hubitat and SmartThings have planned provider contracts and registration entries, but full runtime
 support is not implemented yet.
+
+The existing implemented providers are not feature-identical. Home Assistant owns the current
+advanced feature-service set. Homey and openHAB currently contribute rooms, realtime entities,
+lighting, switches, and sensors.
 
 ## Near-Term Work
 

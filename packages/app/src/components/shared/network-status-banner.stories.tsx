@@ -5,8 +5,11 @@ import { NetworkStatusBanner } from './network-status-banner';
 
 function NetworkStatusBannerStory(props: ComponentProps<typeof NetworkStatusBanner>) {
   return (
-    <div className="relative min-h-32">
-      <NetworkStatusBanner {...props} />
+    <div className="relative" style={{ minHeight: '11rem' }}>
+      <NetworkStatusBanner
+        {...props}
+        style={{ position: 'absolute', bottom: '1rem', paddingBottom: 0 }}
+      />
     </div>
   );
 }

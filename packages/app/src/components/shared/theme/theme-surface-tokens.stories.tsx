@@ -1,5 +1,7 @@
+import { BaseCard } from '@navet/app/components/primitives/base-card';
 import { getThemeSurfaceTokens } from '@navet/app/components/system/tokens';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
+import { EntityCardStoryFrame } from '@navet/app/storybook/story-frames';
 import type { Meta, StoryObj } from '@storybook/react';
 
 const THEMES: ThemeType[] = ['glass', 'dark', 'light', 'black'];
@@ -15,84 +17,58 @@ function ThemeSurfaceTokensShowcase() {
           >
             {theme}
           </h3>
-          <div className="grid gap-3 lg:grid-cols-3">
+          <div
+            className="grid gap-3"
+            style={{
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 344px), max-content))',
+            }}
+          >
             {EFFECTS.map((effectsQuality) => {
               const surface = getThemeSurfaceTokens(theme, effectsQuality);
 
               return (
-                <article
-                  key={`${theme}-${effectsQuality}`}
-                  className={`rounded-3xl border p-4 backdrop-blur-xl ${surface.panel} ${surface.border} ${surface.cardShadow}`}
-                >
-                  <p
-                    className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${surface.textMuted}`}
+                <EntityCardStoryFrame key={`${theme}-${effectsQuality}`} size="medium">
+                  <BaseCard
+                    size="medium"
+                    title="Surface token preview"
+                    subtitle={`${effectsQuality} effects`}
+                    themeOverride={theme}
+                    contentClassName="flex flex-col justify-end"
                   >
-                    effects: {effectsQuality}
-                  </p>
-                  <h4 className={`mt-2 text-sm font-semibold ${surface.textPrimary}`}>
-                    Surface token preview
-                  </h4>
-                  <p className={`mt-1 text-xs ${surface.textSecondary}`}>
-                    Text, border, hover, and subtle background classes driven by shared token
-                    decisions.
-                  </p>
-
-                  <div className="mt-3 space-y-3">
-                    <div
-                      className={`flex items-center justify-between gap-3 rounded-full border px-3 py-2 backdrop-blur-xl ${surface.border} ${surface.panel} ${surface.textPrimary}`}
-                    >
-                      <span className="text-[11px] font-medium uppercase tracking-[0.16em]">
-                        Shallow surface
-                      </span>
-                      <span className={`text-[11px] ${surface.textMuted}`}>
-                        settings / toolbar case
-                      </span>
-                    </div>
-
-                    <div
-                      className={`rounded-xl border p-3 ${surface.border} ${surface.panelMuted}`}
-                    >
-                      <p
-                        className={`text-[11px] font-medium uppercase tracking-[0.16em] ${surface.textMuted}`}
-                      >
-                        Card surface
-                      </p>
-                      <p className={`mt-1 text-sm font-semibold ${surface.textPrimary}`}>
-                        Shared shell copy
-                      </p>
-                      <p className={`mt-1 text-xs ${surface.textSecondary}`}>
-                        Surface tokens should keep copy legible and chrome consistent across themes.
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div
-                        className={`rounded-xl border px-2.5 py-2 text-[11px] ${surface.border} ${surface.subtleBg} ${surface.textSubtle}`}
-                      >
-                        subtleBg
+                    <div className="space-y-3">
+                      <div>
+                        <p className={`text-xs font-semibold ${surface.textPrimary}`}>
+                          Primary text
+                        </p>
+                        <p className={`mt-1 text-[11px] leading-4 ${surface.textSecondary}`}>
+                          Supporting text stays readable.
+                        </p>
                       </div>
-                      <button
-                        type="button"
-                        className={`rounded-xl border px-2.5 py-2 text-[11px] transition-colors ${surface.border} ${surface.textPrimary} ${surface.hoverBg}`}
-                      >
-                        hoverBg
-                      </button>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <div
-                        className={`rounded-xl border px-2.5 py-2 text-[11px] ${surface.border} ${surface.inputBg} ${surface.textSecondary} ${surface.placeholder}`}
-                      >
-                        inputBg
-                      </div>
-                      <div
-                        className={`rounded-xl border px-2.5 py-2 text-[11px] ${surface.border} ${surface.iconBg} ${surface.textPrimary}`}
-                      >
-                        iconBg
-                      </div>
+                      <dl className="grid grid-cols-3 gap-2">
+                        {[
+                          { label: 'Subtle', className: surface.subtleBg },
+                          { label: 'Input', className: surface.inputBg },
+                          { label: 'Icon', className: surface.iconBg },
+                        ].map((sample) => (
+                          <div key={sample.label} className="min-w-0">
+                            <dt className="sr-only">{sample.label} surface token</dt>
+                            <dd>
+                              <div
+                                className={`h-5 rounded-lg border ${surface.border} ${sample.className}`}
+                              />
+                              <span
+                                className={`mt-1 block truncate text-[10px] leading-4 ${surface.textMuted}`}
+                              >
+                                {sample.label}
+                              </span>
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
                     </div>
-                  </div>
-                </article>
+                  </BaseCard>
+                </EntityCardStoryFrame>
               );
             })}
           </div>
@@ -112,16 +88,16 @@ const meta = {
         component: [
           'Visual matrix for `getThemeSurfaceTokens(theme, effectsQuality)` across all themes and effects-quality levels.',
           '',
-          'What this page covers:',
+          'What this story proves:',
           '- Shared panel/text/border token mapping under `high`, `medium`, and `low` effects quality.',
-          '- Short pill-like surfaces so compact chrome regressions are visible during review.',
-          '- Input and icon-well treatments in the same token set as shell chrome and hover states.',
+          '- The real BaseCard shell remains readable across every theme and effects level.',
+          '- Subtle, input, and icon-well treatments stay aligned with the card surface.',
           '',
-          'Usage notes:',
+          'Use this story when:',
           '- Reach for these tokens when authoring shared primitives and patterns.',
           '- Avoid local theme forks when an existing surface token already expresses the intended state.',
           '',
-          'Review expectations:',
+          'Review before merging:',
           '- Verify text contrast and panel readability across all theme/effects combinations.',
           '- Verify compact dark surfaces stay flat rather than reading as cylindrical.',
           '- Verify glass remains the luminous surface family while dark stays in the flatter inactive-card direction.',

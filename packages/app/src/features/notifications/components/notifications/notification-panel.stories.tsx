@@ -180,6 +180,9 @@ const meta = {
   parameters: {
     layout: 'fullscreen',
     docs: {
+      story: {
+        height: '36rem',
+      },
       description: {
         component:
           'Notification panel for header bell interactions. On desktop it should anchor directly under the bell trigger; on mobile it should render as a bottom sheet. Clear-all confirmation should reset cleanly when the panel closes.',
@@ -210,6 +213,11 @@ export const MobileOpen: Story = {
   render: () => <NotificationPanelMobileStory />,
   parameters: {
     viewport: { defaultViewport: 'mobile1' },
+    docs: {
+      story: {
+        height: '44rem',
+      },
+    },
   },
 };
 

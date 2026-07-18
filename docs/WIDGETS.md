@@ -4,8 +4,9 @@ description: Available widget types, supported sizes, placement, and current lim
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/WIDGETS.md
 ---
 
-Widgets are Navet-owned dashboard blocks. They are separate from provider-backed entity cards such
-as weather, calendar, lights, or cameras.
+Widgets are Navet-owned dashboard blocks. Most are separate from provider-backed entity cards such
+as weather, calendar, lights, or cameras; the generic `entity` widget is the intentional bridge for
+a normalized provider entity that has no richer dedicated card.
 
 ## Overview
 
@@ -51,7 +52,7 @@ Widget sizing is per widget type, not global.
 | `photo`, `note` | `small`, `medium`, `large`, `extra-large` |
 | `info`, `entity` | `extra-small`, `small`, `medium`, `large` |
 | `battery`, `ups`, `energy-now`, `media-stack`, `map` | `small`, `medium`, `large` |
-| `rss` | `small`, `medium`, `large`, `extra-large` |
+| `rss` | `medium`, `large` in the Add card flow |
 
 ## Placement
 
@@ -59,7 +60,8 @@ Widgets can be placed in:
 
 - a room
 - the Home overview
-- the Energy section, for supported widget types
+- the Energy section, where the chooser is limited to `energy-now` and the energy-metric preset of
+  `info`
 
 There are internal room IDs for special overview areas, but users do not need to manage those
 directly.
@@ -67,7 +69,10 @@ directly.
 ## Limits And Notes
 
 - Widgets are part of Navet itself, not provider-native card definitions.
-- Ten widget types are available from the Add card flow. `media-stack` remains runtime-supported
+- The Widgets tab offers eleven choices. Nine create the base `info`, `rss`, `photo`, `note`,
+  `battery`, `ups`, `energy-now`, `button`, and `map` types; scene and energy-metric are presets of
+  `button` and `info`. Generic `entity` cards come from the Cards library rather than the Widgets
+  tab. `media-stack` remains runtime-supported
   for compatible saved and imported dashboard profiles, but is intentionally hidden from the
   custom-widget chooser.
 - RSS uses Navet's same-origin proxy instead of direct browser fetches.

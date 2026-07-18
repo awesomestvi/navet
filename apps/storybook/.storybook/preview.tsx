@@ -1,4 +1,14 @@
 import type { Preview } from '@storybook/react';
+import {
+  Controls,
+  Description,
+  Markdown,
+  Primary,
+  Stories,
+  Subtitle,
+  Title,
+  useOf,
+} from '@storybook/addon-docs/blocks';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { Toaster } from '@navet/app/components/ui/sonner';
@@ -12,9 +22,11 @@ import {
 import { defaultSettings, useSettingsStore } from '@navet/app/stores/settings-store';
 import type { PrimaryColor, ThemeMode } from '@navet/app/stores/theme-store';
 import { useThemeStore } from '@navet/app/stores/theme-store';
+import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { navetStorybookTheme } from './navet-theme';
 // @ts-ignore - side-effect stylesheet import for Storybook runtime.
 import '@website/website.css';
+import './storybook-preview.css';
 
 const PRIMARY_COLOR_VALUES: Record<Exclude<PrimaryColor, 'custom'>, string> = {
   orange: '#f97316',
@@ -27,8 +39,11 @@ const PRIMARY_COLOR_VALUES: Record<Exclude<PrimaryColor, 'custom'>, string> = {
   teal: '#14b8a6',
 };
 
+const PLAYGROUND_WALLPAPER = '/wallpapers/generated/nocturne-06.avif';
+
 const CANVAS_BACKGROUNDS: Record<ThemeMode, string> = {
-  dark: 'radial-gradient(circle at top, rgba(255,255,255,0.06), transparent 35%), #09090b',
+  dark:
+    `linear-gradient(180deg, rgba(4, 8, 15, 0.3), rgba(4, 8, 15, 0.64)), url("${PLAYGROUND_WALLPAPER}") center / cover`,
   glass:
     'radial-gradient(circle at top left, rgba(249,115,22,0.18), transparent 28%), radial-gradient(circle at bottom right, rgba(255,255,255,0.1), transparent 26%), linear-gradient(180deg, #050816 0%, #0f172a 100%)',
   light:
@@ -59,6 +74,8 @@ interface StorybookEnvironmentProps {
   theme: ThemeMode;
   primaryColor: Exclude<PrimaryColor, 'custom'>;
   cardSize?: string;
+  effectsQuality?: 'high' | 'reduced';
+  motion?: 'full' | 'reduced';
   previewRuntimeScenario?: PreviewRuntimeScenario | null;
 }
 
@@ -90,6 +107,8 @@ function StorybookEnvironment({
   theme,
   primaryColor,
   cardSize,
+  effectsQuality = 'high',
+  motion = 'full',
   previewRuntimeScenario,
 }: StorybookEnvironmentProps) {
   const [defaultPreviewRuntimeScenario] = useState(() => getPreviewRuntimeScenario('default'));
@@ -120,16 +139,16 @@ function StorybookEnvironment({
       language: 'en',
       use24HourTime: true,
       temperatureUnit: 'celsius',
-      effectsQuality: 'high',
+      effectsQuality,
       pageZoom: 100,
     });
 
     document.documentElement.style.setProperty('--navet-accent', accentColor);
     document.documentElement.dataset.navetStorybook = 'true';
     document.documentElement.dataset.navetPreviewRuntime = 'storybook';
-    document.documentElement.dataset.noAnimation = 'false';
-    document.documentElement.dataset.lowPower = 'false';
-    document.documentElement.dataset.effectsQuality = 'high';
+    document.documentElement.dataset.noAnimation = motion === 'reduced' ? 'true' : 'false';
+    document.documentElement.dataset.lowPower = effectsQuality === 'reduced' ? 'true' : 'false';
+    document.documentElement.dataset.effectsQuality = effectsQuality;
     document.documentElement.style.zoom = '1';
 
     return () => {
@@ -169,12 +188,12 @@ function StorybookEnvironment({
         document.documentElement.style.zoom = '';
       }
     };
-  }, [primaryColor, theme, cardSize]);
+  }, [primaryColor, theme, cardSize, effectsQuality, motion]);
 
   return (
     <I18nProvider>
       <div
-        className={isDocs ? 'w-full p-4 md:p-6' : 'min-h-screen p-6 md:p-10'}
+        className={isDocs ? 'navet-story-document w-full p-4 md:p-6' : 'navet-story-canvas min-h-screen p-5 md:p-8 lg:p-10'}
         style={{
           background:
             (canvasBackgroundName ? TOOLBAR_CANVAS_BACKGROUNDS[canvasBackgroundName] : null) ??
@@ -190,7 +209,81 @@ function StorybookEnvironment({
   );
 }
 
+function StoryGuide() {
+  const { preparedMeta } = useOf('meta', ['meta']);
+  const authoredDescription = preparedMeta.parameters.docs?.description?.component;
+  const sharedDescription = getStoryDocsDescription(preparedMeta.title);
+
+  if (authoredDescription) {
+    return <Description />;
+  }
+
+  if (sharedDescription) {
+    return <Markdown>{sharedDescription}</Markdown>;
+  }
+
+  const subject = preparedMeta.title.split('/').at(-1) ?? preparedMeta.title;
+
+  return (
+    <Markdown>{[
+      `${subject} reference for building and reviewing this Navet surface in isolation.`,
+      '',
+      'What this story proves:',
+      `- The supported composition and default hierarchy for ${subject.toLowerCase()}.`,
+      '- The real component behavior inside Navet’s shared theme and preview runtime.',
+      '',
+      'Use this story when:',
+      '- Changing layout, copy, states, or interaction details on this surface.',
+      '- Comparing a proposed feature implementation with the existing Navet UI language.',
+      '',
+      'Review before merging:',
+      '- Check all relevant themes, keyboard focus, touch targets, and reduced-effects mode.',
+      '- Use realistic household data and confirm the result remains understandable at dashboard distance.',
+    ].join('\n')}</Markdown>
+  );
+}
+
+function DocsSectionKicker() {
+  const { preparedMeta } = useOf('meta', ['meta']);
+  const titleSegments = preparedMeta.title.split('/');
+  const parentPath = titleSegments.slice(0, -1);
+  const sectionTitle = (parentPath.length > 0 ? parentPath : titleSegments).join(' / ');
+
+  return (
+    <p className="navet-docs-kicker">
+      <span aria-hidden="true" />
+      {sectionTitle}
+    </p>
+  );
+}
+
+function NavetDocsPage() {
+  return (
+    <>
+      <header className="navet-docs-masthead">
+        <DocsSectionKicker />
+        <Title />
+        <Subtitle />
+        <StoryGuide />
+        <div className="navet-docs-review-strip" aria-label="Recommended review coverage">
+          <strong>Review with</strong>
+          <span>Four themes</span>
+          <span>Touch input</span>
+          <span>Reduced effects</span>
+          <span>Real household data</span>
+        </div>
+      </header>
+      <main className="navet-docs-reference">
+        <Primary />
+        <Controls />
+        <Stories includePrimary={false} />
+      </main>
+    </>
+  );
+}
+
 const preview: Preview = {
+  tags: ['autodocs', 'test'],
   parameters: {
     layout: 'fullscreen',
     options: {
@@ -211,6 +304,7 @@ const preview: Preview = {
     },
     docs: {
       theme: navetStorybookTheme,
+      page: NavetDocsPage,
     },
     backgrounds: {
       default: 'canvas-dark',
@@ -349,6 +443,34 @@ const preview: Preview = {
         items: CARD_SIZE_TOOLBAR_ITEMS,
       },
     },
+    effectsQuality: {
+      name: 'Effects',
+      description: 'Rendering quality for dashboard-grade and lower-power hardware',
+      defaultValue: 'high',
+      toolbar: {
+        title: 'Effects quality',
+        icon: 'lightning',
+        dynamicTitle: true,
+        items: [
+          { value: 'high', title: 'High effects' },
+          { value: 'reduced', title: 'Reduced effects' },
+        ],
+      },
+    },
+    motion: {
+      name: 'Motion',
+      description: 'Motion preference used by the Navet preview runtime',
+      defaultValue: 'full',
+      toolbar: {
+        title: 'Motion preference',
+        icon: 'time',
+        dynamicTitle: true,
+        items: [
+          { value: 'full', title: 'Full motion' },
+          { value: 'reduced', title: 'Reduced motion' },
+        ],
+      },
+    },
   },
   decorators: [
     (Story, context) => {
@@ -370,6 +492,8 @@ const preview: Preview = {
           theme={context.globals.theme as ThemeMode}
           primaryColor={context.globals.primaryColor as Exclude<PrimaryColor, 'custom'>}
           cardSize={context.globals.cardSize}
+          effectsQuality={context.globals.effectsQuality as 'high' | 'reduced'}
+          motion={context.globals.motion as 'full' | 'reduced'}
           previewRuntimeScenario={
             (context.parameters.previewRuntime?.scenario as PreviewRuntimeScenario | undefined) ??
             null

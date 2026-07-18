@@ -1,20 +1,41 @@
 # Navet AI Design Context
 
-Use this as the fast design packet before creating or changing dashboard UI.
+Use this as the fast design packet before creating or changing dashboard UI. An agent should be
+able to name the product references it used before implementation begins.
 
 The full source of truth remains:
 
 - [UI-GUIDELINES.md](UI-GUIDELINES.md)
 - [README.md](README.md)
-- Storybook under `packages/app/src/ui-kit/`, `components/primitives/`, `components/patterns/`,
-  and feature card stories
+- Storybook under `packages/app/src/ui-kit/`, `packages/app/src/components/primitives/`,
+  `packages/app/src/components/patterns/`, and feature card stories
 
 ## Product Feel
 
-Navet should feel premium, glanceable, dense, and wall-panel friendly.
+Navet should feel glanceable, compact but calm, direct, tactile, and recognizably Navet.
 
 Build operational smart-home surfaces first. Avoid marketing-page composition, decorative hero
 sections, generic SaaS cards, and oversized empty space in dashboard surfaces.
+
+"Premium" describes the quality of alignment, state clarity, restraint, and interaction. It is
+not a visual recipe.
+
+## Reference-First Workflow
+
+Before writing JSX or styles:
+
+1. Inspect the target screen and its immediate neighbors.
+2. Choose a primary reference: the same component family when it exists, otherwise Home for
+   dashboard rhythm and responsive density.
+3. Inspect the nearest primitive or pattern story and its token helpers.
+4. State the intended information priority, primary action, responsive behavior, and one
+   product-specific visual detail.
+5. Reuse or extend the reference recipe. Introduce a new recipe only when the existing one cannot
+   express the required behavior.
+
+Home is the canonical dashboard reference for outer spacing, section rhythm, summary-bar spacing,
+card-grid density, and responsive behavior. A more specific neighboring feature surface wins for
+the component family it already establishes.
 
 ## Theme Model
 
@@ -60,6 +81,14 @@ Cards:
 - Degrade cleanly across supported card sizes.
 - Do not duplicate the same action in multiple card regions.
 - Move overflow controls into dialogs instead of crowding compact cards.
+- Treat every supported card size as an intentional composition.
+
+Dashboard sections:
+
+- Preserve the shared dashboard shell and the active dashboard spacing mode.
+- Do not add feature-local page padding, max-width containers, or centered content shells.
+- Use section headings to organize live content, not as decorative heroes.
+- Avoid card-inside-panel-inside-section nesting.
 
 Settings and dialogs:
 
@@ -72,6 +101,8 @@ Typography:
 - Use sentence case for visible UI text.
 - Avoid uppercase labels, buttons, headings, and metadata by default.
 - Use weight, color, spacing, and layout hierarchy before letter spacing or uppercase.
+- Do not introduce a new font or base type scale for a feature.
+- Do not add filler copy to balance a layout.
 
 ## Canonical Storybook Surfaces
 
@@ -88,7 +119,8 @@ Start in these stories before inventing a new UI recipe:
 - `Components/Primitives/CardShell`
 - `Components/Patterns/*`
 - `Cards/Overview/Catalog`
-- `Cards/Overview/State Matrix`
+- `Cards/Overview/Core State Matrix`
+- `Cards/Overview/Extended State Matrix`
 
 ## Anti-Patterns
 
@@ -101,6 +133,21 @@ Avoid:
 - Hover-only affordances.
 - Provider-specific payload fields in shared UI.
 - Raw Home Assistant service payloads as UI command models.
+- Recreating a nearby Navet surface from memory instead of inspecting it.
+- Using "premium," "modern," or "glass" as sufficient design direction.
+- Feature-local page shells, max-widths, spacing systems, palettes, radii, or type scales.
+- Validating only the default theme, ideal data, or one viewport.
+
+## Handoff Checklist
+
+Name the reference used, then review:
+
+- supported states and realistic missing or long data
+- smallest and largest size or viewport
+- all four themes and accent readability
+- touch, keyboard focus, reduced motion, and no-hover use
+- reduced effects quality when effects are present
+- visual hierarchy, overflow, alignment, and surface consistency in a rendered review surface
 
 ## Validation
 

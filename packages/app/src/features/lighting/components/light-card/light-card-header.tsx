@@ -6,6 +6,7 @@ import {
 } from '@navet/app/components/shared/card-size-selector';
 import { getCardStateSurfaceTokens } from '@navet/app/components/shared/theme/card-state-surface-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
+import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { LucideIcon } from 'lucide-react';
 import { type ButtonHTMLAttributes, memo } from 'react';
 
@@ -19,6 +20,7 @@ interface LightCardHeaderProps {
   onIconPointerDown?: ButtonHTMLAttributes<HTMLButtonElement>['onPointerDown'];
   iconAriaLabel?: string;
   activeColor?: string | null;
+  themeOverride?: ThemeType;
 }
 
 export const LightCardHeader = memo(function LightCardHeader({
@@ -31,9 +33,11 @@ export const LightCardHeader = memo(function LightCardHeader({
   onIconPointerDown,
   iconAriaLabel,
   activeColor,
+  themeOverride,
 }: LightCardHeaderProps) {
-  const { theme } = useTheme();
+  const { theme: activeTheme } = useTheme();
   const { t } = useI18n();
+  const theme = themeOverride ?? activeTheme;
   const effectiveTheme = theme === 'light' && isOn ? 'dark' : theme;
   const stateSurface = getCardStateSurfaceTokens(theme, isOn);
   const useInverseForeground = theme === 'light' && isOn;

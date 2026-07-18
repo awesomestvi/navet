@@ -1,103 +1,100 @@
+import { Button, IconButton, Input, Panel, SurfacePanel } from '@navet/app/components/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import type { ThemeType } from '@navet/app/hooks/use-theme';
+import { useTheme } from '@navet/app/hooks/use-theme';
 import type { Meta, StoryObj } from '@storybook/react';
 import { Search, Settings2 } from 'lucide-react';
-import {
-  getBaseCardRadiusClassName,
-  getButtonSizeTokens,
-  getDialogMaxWidthClassName,
-  getInputSizeTokens,
-  navetControlTokens,
-  navetDensityTokens,
-  navetLayoutTokens,
-} from './index';
+import { navetControlTokens, navetDensityTokens, navetLayoutTokens } from './index';
 import { ThemeTokenShowcase } from './theme-token-showcase';
 
-const THEMES: ThemeType[] = ['glass', 'dark', 'light', 'black'];
-
-function SurfacePreviewCard({ theme }: { theme: ThemeType }) {
+function ControlsPreview() {
+  const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const defaultButton = getButtonSizeTokens('default');
-  const compactButton = getButtonSizeTokens('compact');
-  const inputTokens = getInputSizeTokens('default');
 
   return (
-    <section
-      className={`space-y-4 ${getBaseCardRadiusClassName('medium')} border ${navetControlTokens.card.densityPaddingClassNames.comfortable} ${surface.panel} ${surface.border}`}
-    >
+    <SurfacePanel padding="lg" withSheen>
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>{theme}</p>
-          <h3 className={`mt-1 text-sm font-semibold ${surface.textPrimary}`}>Shared surfaces</h3>
+          <p className={`text-xs font-semibold uppercase tracking-[0.16em] ${surface.textMuted}`}>
+            {theme} theme
+          </p>
+          <h3 className={`mt-2 text-lg font-semibold ${surface.textPrimary}`}>
+            Shared control family
+          </h3>
+          <p className={`mt-1 text-sm leading-6 ${surface.textSecondary}`}>
+            These are the real Navet primitives. Use the toolbar to review every theme.
+          </p>
         </div>
-        <button
-          type="button"
-          className={`inline-flex items-center justify-center rounded-full border ${navetControlTokens.iconButton.sizes.compact.className} ${surface.border} ${surface.subtleBg} ${surface.textPrimary}`}
-        >
-          <Settings2 className="h-4 w-4" />
-        </button>
+        <IconButton
+          label="Control settings"
+          icon={<Settings2 className="h-4 w-4" />}
+          size="small"
+        />
       </div>
 
-      <div className="space-y-3">
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            className={`inline-flex items-center justify-center rounded-[20px] ${defaultButton.heightClassName} ${defaultButton.paddingXClassName} ${defaultButton.textClassName} bg-orange-500 text-white`}
-          >
-            Primary
-          </button>
-          <button
-            type="button"
-            className={`inline-flex items-center justify-center rounded-[20px] border ${compactButton.heightClassName} ${compactButton.paddingXClassName} ${compactButton.textClassName} ${surface.border} ${surface.subtleBg} ${surface.textPrimary}`}
-          >
-            Secondary
-          </button>
-        </div>
-
-        <div
-          className={`relative w-full rounded-[22px] border ${inputTokens.insetClassName} ${surface.border} ${surface.inputBg} ${surface.textPrimary}`}
-        >
-          <div
-            className={`pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 ${surface.textMuted}`}
-          >
-            <Search className="h-4 w-4" />
-          </div>
-          <div className={`${inputTokens.leadingPaddingClassName} text-sm`}>Search devices</div>
-        </div>
-
-        <div
-          className={`border ${surface.border} ${surface.panelMuted} ${navetControlTokens.dialog.radiusClassName} ${navetControlTokens.dialog.bodyPaddingClassName}`}
-        >
-          <div className="space-y-2">
-            <p className={`text-xs uppercase tracking-[0.16em] ${surface.textMuted}`}>Dialog</p>
-            <div className={`text-sm font-semibold ${surface.textPrimary}`}>Settings shell</div>
-            <div className={`text-sm ${surface.textSecondary}`}>
-              Max width token: <code>{getDialogMaxWidthClassName('md')}</code>
+      <div className="mt-6 grid gap-5 lg:grid-cols-2">
+        <div className="space-y-5">
+          <div>
+            <p className={`text-xs font-semibold uppercase tracking-[0.16em] ${surface.textMuted}`}>
+              Actions
+            </p>
+            <div className="mt-3 flex flex-wrap gap-3">
+              <Button>Save changes</Button>
+              <Button variant="secondary">Secondary</Button>
+              <Button variant="ghost">Cancel</Button>
             </div>
           </div>
+
+          <div>
+            <label
+              htmlFor="controls-story-search"
+              className={`text-xs font-semibold uppercase tracking-[0.16em] ${surface.textMuted}`}
+            >
+              Search field
+            </label>
+            <Input
+              id="controls-story-search"
+              containerClassName="mt-3"
+              placeholder="Search devices"
+              leading={<Search className="h-4 w-4" />}
+            />
+          </div>
         </div>
+
+        <Panel muted className="space-y-4">
+          <div>
+            <p className={`text-xs font-semibold uppercase tracking-[0.16em] ${surface.textMuted}`}>
+              Dialog
+            </p>
+            <h4 className={`mt-2 text-base font-semibold ${surface.textPrimary}`}>
+              Settings shell
+            </h4>
+            <p className={`mt-2 text-sm leading-6 ${surface.textSecondary}`}>
+              Shared controls keep the same action hierarchy inside Navet’s dialog surfaces.
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-end gap-3">
+            <Button variant="ghost" size="small">
+              Cancel
+            </Button>
+            <Button size="small">Done</Button>
+          </div>
+        </Panel>
       </div>
-    </section>
+    </SurfacePanel>
   );
 }
 
 function ControlsStory() {
   return (
     <ThemeTokenShowcase
-      intro="Semantic control tokens adapt the external draft’s sizing and density ideas to Navet’s existing four-theme system. Shared primitives should prefer these tokens over inline height, padding, radius, or dialog shell values."
+      intro="Semantic control tokens define the sizing and density of Navet’s shared buttons, fields, icon actions, panels, and dialog controls. Use these primitives before introducing feature-local control styles."
       tokens={{
         density: navetDensityTokens,
         controls: navetControlTokens,
         layout: navetLayoutTokens,
       }}
-      previewTitle="Theme surface coverage"
-      preview={
-        <div className="grid gap-4 xl:grid-cols-2">
-          {THEMES.map((theme) => (
-            <SurfacePreviewCard key={theme} theme={theme} />
-          ))}
-        </div>
-      }
+      previewTitle="Live Navet controls"
+      preview={<ControlsPreview />}
     />
   );
 }
@@ -110,20 +107,20 @@ const meta = {
     docs: {
       description: {
         component: [
-          'Shared semantic control and layout tokens adapted from the external draft.',
+          'Shared semantic control and layout tokens used by Navet’s canonical primitives.',
           '',
-          'What this page covers:',
+          'What this story proves:',
           '- Density tiers for compact, comfortable, and touch-first UI.',
           '- Shared button, input, card, and dialog sizing decisions.',
-          '- Four-theme surface previews for the primitives that now consume these tokens.',
+          '- Canonical Navet primitives rendered through the active Storybook theme.',
           '',
-          'Usage notes:',
+          'Use this story when:',
           '- Keep color resolution in the existing theme helpers; these tokens only define shared sizing and structure.',
           '- Prefer tokenized control dimensions before introducing inline component-specific values.',
           '',
-          'Review expectations:',
+          'Review before merging:',
           '- Verify touch targets stay appropriate across compact, comfortable, and touch-oriented tiers.',
-          '- Verify button, input, card, and dialog surfaces still read clearly in glass, dark, light, and black themes.',
+          '- Use the Storybook toolbar to verify button, input, card, and dialog surfaces in glass, dark, light, and black themes.',
         ].join('\n'),
       },
     },

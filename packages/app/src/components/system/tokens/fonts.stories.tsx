@@ -20,7 +20,12 @@ function FontsStory() {
       tokens={navetFontTokens}
       previewTitle="Reference usage"
       preview={
-        <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+        <div
+          className="grid gap-4"
+          style={{
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))',
+          }}
+        >
           <section className={`rounded-3xl border p-5 ${surface.border} ${surface.panelMuted}`}>
             <p className={`${navetTypographyTokens.eyebrow} ${surface.textMuted}`}>font-sans</p>
             <h3 className={`mt-2 ${navetTypographyTokens.sectionHeading} ${surface.textPrimary}`}>
@@ -103,15 +108,15 @@ const meta = {
         component: [
           'Typography family guidance for primary UI copy (`font-sans`) and technical values (`font-mono`).',
           '',
-          'What this page covers:',
+          'What this story proves:',
           '- Default reading voice and layout text behavior using the sans stack.',
           '- Focused mono usage for identifiers, diagnostics, and machine-like values.',
           '',
-          'Usage notes:',
+          'Use this story when:',
           '- Keep labels, settings copy, and navigational text in sans for consistency.',
           '- Reserve mono for values where alignment and scanning speed matter.',
           '',
-          'Review expectations:',
+          'Review before merging:',
           '- Confirm sans remains legible at helper/body/heading sizes.',
           '- Confirm mono remains readable without overpowering surrounding UI copy.',
         ].join('\n'),

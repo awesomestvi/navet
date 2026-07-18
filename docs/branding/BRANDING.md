@@ -17,16 +17,16 @@ The name perfectly captures what this application does: it serves as the **centr
 ### Core Values
 - **Centralization** - One place for everything
 - **Simplicity** - Clean, intuitive design
-- **Elegance** - iOS-inspired aesthetics
+- **Deliberateness** - A distinctive, premium dashboard rather than generic smart-home chrome
 - **Privacy** - Local-first, no tracking
 - **Openness** - Open source, community-driven
 
 ### Visual Identity
-- **Design Language**: iOS-inspired with adaptive glass aesthetics
+- **Design Language**: Glanceable, room-first dashboard surfaces with adaptive visual effects
 - **Logo**: Hub network node design (center with radiating connections)
 - **Primary Color**: Orange (#f97316) with gradient to #ea580c
 - **Color System**: 8 built-in accent colors plus a custom accent option
-- **Theme Modes**: Liquid Glass, Dark, Light, Black
+- **Theme Modes**: Liquid Glass (`glass`), Dark, Light, Black
 - **Typography**: System UI fonts for native feel
 
 ## Voice & Tone
@@ -79,7 +79,7 @@ The logo represents **"the hub"** concept with:
 
 ### Do's ✅
 - Refer to the app as "Navet" (capitalized)
-- Use "smart home" or "smart home system" instead of specific platform names
+- Use "smart home" for the product category and name supported providers when the distinction helps
 - Emphasize the hub/centralization concept
 - Highlight privacy and local-first features
 
@@ -87,7 +87,7 @@ The logo represents **"the hub"** concept with:
 - Don't write "navet" in lowercase (except in code/URLs)
 - Don't use "Home Assistant Dashboard" anymore
 - Don't over-explain the Swedish origin (mention it once if relevant)
-- Don't make platform-specific claims
+- Don't frame Navet as a Home Assistant-only product or imply equal capabilities across providers
 
 ## Legal
 
@@ -99,4 +99,4 @@ The logo represents **"the hub"** concept with:
 
 ---
 
-*Last Updated: April 8, 2026*
+*Last Updated: July 16, 2026*

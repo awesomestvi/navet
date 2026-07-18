@@ -5,6 +5,20 @@ This folder documents Navet's shared UI layers, stable export surfaces, and Stor
 Navet does not publish a separate design-system package. The design system is an in-repo set of
 authoring layers and curated export surfaces.
 
+## Guidance Ownership
+
+- [`UI-GUIDELINES.md`](UI-GUIDELINES.md) is the canonical visual and interaction standard.
+- [`AI-DESIGN-CONTEXT.md`](AI-DESIGN-CONTEXT.md) is the compact pre-implementation packet; it must
+  stay consistent with the full guidelines.
+- [`../../ai/skills/navet-ux.md`](../../ai/skills/navet-ux.md) is the operational workflow an agent
+  follows for a UI task.
+- Storybook and the current product are implementation evidence. A target screen's immediate
+  component family is the first visual reference; Home is the fallback reference for dashboard
+  spacing, section rhythm, density, and responsive behavior.
+
+If these disagree, investigate whether the code is an intentional current pattern, a compatibility
+seam, or stale implementation. Do not create a fourth interpretation in feature-local code.
+
 Architecture note:
 
 - `@navet/ui` is the target provider-neutral shared UI package boundary.

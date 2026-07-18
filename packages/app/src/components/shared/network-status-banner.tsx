@@ -3,6 +3,7 @@ import { navetSemanticColorTokens } from '@navet/app/components/system/tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { CheckCircle2, Info, OctagonAlert, WifiOff } from 'lucide-react';
+import type { CSSProperties } from 'react';
 
 type BannerTone = 'info' | 'success' | 'warning' | 'error';
 
@@ -53,6 +54,8 @@ interface NetworkStatusBannerProps {
   connecting: boolean;
   reconnecting: boolean;
   isOnline: boolean;
+  className?: string;
+  style?: CSSProperties;
   providerLabel?: string;
   lastError?: string | null;
   /** Override the derived tone for Storybook and special cases. */
@@ -64,6 +67,8 @@ export function NetworkStatusBanner({
   connecting,
   reconnecting,
   isOnline,
+  className = '',
+  style,
   providerLabel,
   lastError,
   tone: toneProp,
@@ -95,7 +100,10 @@ export function NetworkStatusBanner({
         t('network.disconnectedDescription', { provider: providerLabel ?? 'provider' });
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-70 px-3 pb-20 md:px-6 md:pb-6">
+    <div
+      style={style}
+      className={`pointer-events-none fixed inset-x-0 bottom-0 z-70 px-3 pb-20 md:px-6 md:pb-6 ${className}`}
+    >
       <div
         className={`mx-auto flex max-w-3xl items-start gap-3 rounded-2xl border px-4 py-3 shadow-xl ${navetSemanticColorTokens[tone]} ${bannerSurfaceClassName}`}
       >

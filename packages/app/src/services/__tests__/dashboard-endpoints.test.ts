@@ -12,6 +12,14 @@ function installIngressBase() {
   return base;
 }
 
+function getRequestHeaders(requestInit: RequestInit | undefined) {
+  if (!requestInit || !(requestInit.headers instanceof Headers)) {
+    throw new Error('Expected fetch to be called with Headers');
+  }
+
+  return requestInit.headers;
+}
+
 afterEach(() => {
   document.querySelector('base')?.remove();
   vi.restoreAllMocks();
@@ -65,14 +73,13 @@ describe('dashboard add-on endpoints', () => {
       credentials: 'same-origin',
       headers: expect.any(Headers),
     });
-    expect((fetchMock.mock.calls[0]?.[1] as RequestInit).headers).toEqual(
+    const headers = getRequestHeaders(fetchMock.mock.calls[0]?.[1] as RequestInit | undefined);
+    expect(headers).toEqual(
       expect.objectContaining({
         get: expect.any(Function),
       })
     );
-    expect(
-      ((fetchMock.mock.calls[0]?.[1] as RequestInit).headers as Headers).get('If-None-Match')
-    ).toBe('"etag-1"');
+    expect(headers.get('If-None-Match')).toBe('"etag-1"');
   });
 
   it('classifies bad shared-profile writes as permanent failures and returns metadata', async () => {
@@ -115,9 +122,8 @@ describe('dashboard add-on endpoints', () => {
       headers: expect.any(Headers),
       body: expect.any(String),
     });
-    expect(
-      ((fetchMock.mock.calls[0]?.[1] as RequestInit).headers as Headers).get('Content-Type')
-    ).toBe('application/json');
+    const headers = getRequestHeaders(fetchMock.mock.calls[0]?.[1] as RequestInit | undefined);
+    expect(headers.get('Content-Type')).toBe('application/json');
   });
 
   it('sends conditional headers when saving against loaded profile metadata', async () => {
@@ -155,7 +161,7 @@ describe('dashboard add-on endpoints', () => {
       generation: null,
     });
 
-    const headers = (fetchMock.mock.calls[0]?.[1] as RequestInit).headers as Headers;
+    const headers = getRequestHeaders(fetchMock.mock.calls[0]?.[1] as RequestInit | undefined);
     expect(headers.get('If-Match')).toBe('"etag-3"');
     expect(headers.get('If-Unmodified-Since')).toBeNull();
   });

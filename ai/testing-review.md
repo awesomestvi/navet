@@ -46,7 +46,6 @@ against stronger fixtures or documentation-backed behavior.
 
 - `packages/app/src/hooks/device-mappers/__tests__/map-sensor-device.test.ts`
 - `packages/app/src/hooks/device-mappers/__tests__/map-weather-device.test.ts`
-- `packages/app/src/hooks/device-mappers/__tests__/map-fan-device.test.ts`
 - `packages/app/src/features/vacuum/components/vacuum/__tests__/use-vacuum-control.test.tsx`
 - `packages/app/src/features/security/components/__tests__/lock-card.test.tsx`
 - `packages/app/src/features/security/components/cover-card/__tests__/cover-card.test.tsx`

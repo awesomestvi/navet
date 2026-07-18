@@ -1,131 +1,170 @@
-# Navet
+<div align="center">
+  <h1>
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="assets/public/logo-horizontal-light.svg">
+      <img src="assets/public/logo-horizontal.svg" alt="Navet" width="220">
+    </picture>
+  </h1>
 
-A smart-home dashboard frontend for wall panels, tablets, phones, and desktop screens.
+  <p><strong>A smart home dashboard for every screen.</strong></p>
 
-![Navet dashboard demo on iPad frame](assets/reference/marketing/use-cases/navet-ipad-frame-dashboard.jpg)
+  <p>
+    Use Home Assistant, Homey, or openHAB through one polished, room-first interface<br>
+    built for wall panels, tablets, desktops, and phones.
+  </p>
 
-[Live demo](https://demo.navet.app/) ·
-[Storybook](https://storybook.navet.app/) ·
-[Docs](https://docs.navet.app/) ·
-[Security policy](SECURITY.md) ·
-[Code of conduct](CODE_OF_CONDUCT.md)
+  <p>
+    <a href="https://demo.navet.app/"><strong>Explore the demo</strong></a>
+    ·
+    <a href="https://docs.navet.app/install/"><strong>Choose an installation</strong></a>
+    ·
+    <a href="https://docs.navet.app/">Read the docs</a>
+  </p>
 
-## What Navet Is
+  <p>
+    <a href="https://docs.navet.app/security/"><img src="https://img.shields.io/badge/local--first-self--hosted-14b8a6" alt="Local-first and self-hosted"></a>
+    <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-AGPL--3.0-f97316" alt="AGPL-3.0 license"></a>
+    <a href="https://github.com/awesomestvi/navet/stargazers"><img src="https://img.shields.io/github/stars/awesomestvi/navet?style=flat" alt="GitHub stars"></a>
+  </p>
+</div>
 
-Navet turns supported smart-home platforms into a room-first control surface with dedicated
-`home`, `lights`, `media`, `energy`, `climate`, `security`, `tasks`, and `settings` sections.
+![Navet dashboard running on an iPad](assets/reference/marketing/use-cases/navet-ipad-frame-dashboard.jpg)
 
-It is built for people who want a cleaner daily control surface than the default admin-first smart
-home UI.
+## Your home, without the admin-screen clutter
 
-## What You Get
+Navet turns the smart-home platform you already use into a calmer daily control surface. Rooms,
+lights, climate, media, energy, security, and routines stay easy to reach without making every
+household member navigate a configuration interface.
 
-- room-first dashboards for everyday household control
-- Home overview editing with layout packs, undo/redo, and manual entity cards
-- dedicated views for lights, media, energy, climate, security, tasks, and settings
-- cards for common smart-home device types such as lights, climate, cameras, locks, media players,
-  weather, sensors, scenes, calendars, and vacuums
-- built-in widgets such as RSS, photo, note, battery, UPS, energy-now, button, map, and generic
-  entity cards
-- task automation details with dependency summaries and habit-suggested routine creation where the
-  active provider supports it
-- dashboard profile presets for standard use and wall-display/kiosk setups
-- support for wall panels, tablets, phones, and desktop browsers
-- PWA install support, themes, and localization
+- **Room-first control.** See what matters where it happens, then act without digging through
+  entity lists.
+- **One interface across screens.** Use the same dashboard on a wall panel, tablet, desktop, or
+  phone.
+- **Local by default.** Provider data, dashboard state, and credentials stay on your device or
+  server—not on Navet servers.
+- **Open source.** Run it yourself, inspect the code, and help shape what comes next.
 
-## Supported Today
+## See Navet in action
 
-|  | Provider | Status | Runtime modes |
-|---|---|---|---|
-| <img src="packages/app/src/assets/providers/home-assistant.svg" alt="Home Assistant" width="50"> | Home Assistant | implemented | custom panel via HACS, add-on, standalone |
-| <img src="packages/app/src/assets/providers/homey.png" alt="Homey" width="50"> | Homey | implemented | standalone |
-| <img src="packages/app/src/assets/providers/openhab.svg" alt="openHAB" width="50"> | openHAB | implemented | standalone |
-| <img src="packages/app/src/assets/providers/hubitat.svg" alt="Hubitat" width="50"> | Hubitat | planned | contract + registration entry only |
-| <img src="packages/app/src/assets/providers/smartthings-icon.svg" alt="SmartThings" width="50"> | SmartThings | planned | contract + registration entry only |
-
-## Choose Your Setup
-
-Most people should start with one of these guides:
-
-- Home Assistant users: start with the [Home Assistant guide](https://docs.navet.app/install/home-assistant/)
-- Development builds: use the [Navet Dev guide](https://docs.navet.app/install/navet-dev/)
-- Homey users: start with the [Homey guide](https://docs.navet.app/install/homey/)
-- openHAB users: start with the [openHAB guide](https://docs.navet.app/install/openhab/)
-
-## Need More Details?
-
-Use these docs if you want more context:
-
-- [Home Assistant setup](https://docs.navet.app/install/home-assistant/)
-- [Navet Dev installation](https://docs.navet.app/install/navet-dev/)
-- [Homey setup](https://docs.navet.app/install/homey/)
-- [openHAB setup](https://docs.navet.app/install/openhab/)
-- [Widgets guide](https://docs.navet.app/guide/widgets/)
-- [Public roadmap](https://docs.navet.app/roadmap/)
-- [Public documentation](https://docs.navet.app/)
-- [Repository documentation map](docs/README.md)
-
-## Screenshots
-
-| Home | Energy | Security |
+| Home at a glance | Focused energy view | Security without the noise |
 |---|---|---|
-| ![Navet home dashboard on iPad](assets/reference/marketing/screenshots/navet-ipad-landscape-home.jpg) | ![Navet energy dashboard on iPad](assets/reference/marketing/screenshots/navet-ipad-landscape-energy.jpg) | ![Navet security dashboard on iPad](assets/reference/marketing/screenshots/navet-ipad-landscape-security.jpg) |
+| ![Navet home dashboard on an iPad](assets/reference/marketing/screenshots/navet-ipad-landscape-home.jpg) | ![Navet energy dashboard on an iPad](assets/reference/marketing/screenshots/navet-ipad-landscape-energy.jpg) | ![Navet security dashboard on an iPad](assets/reference/marketing/screenshots/navet-ipad-landscape-security.jpg) |
 
-| Tablet | Mobile home | Mobile controls |
+<div align="center">
+  <a href="https://demo.navet.app/"><strong>Open the live demo →</strong></a>
+</div>
+
+## Built for everyday control
+
+Navet includes focused sections for **Home**, **Lights**, **Media**, **Energy**, **Climate**,
+**Security**, **Tasks**, and **Settings**. Depending on your provider, you can control and monitor:
+
+- lights, switches, fans, covers, locks, alarm panels, scenes, vacuums, and lawn mowers
+- climate systems, humidifiers, weather, people, calendars, and sensors
+- cameras, media players, energy flows, task automations, and household notifications
+- Navet widgets for notes, photos, RSS, batteries, UPS status, maps, actions, and generic entities
+
+Home layouts are editable, dashboard profiles cover standard and wall-display use, and the PWA
+includes four theme families, wallpapers, adaptive visual effects, and localization.
+
+## Works with the platform you already use
+
+| Provider | Available today | Ways to run Navet |
 |---|---|---|
-| ![Navet tablet portrait dashboard](assets/reference/marketing/screenshots/navet-tablet-portrait-home.jpg) | ![Navet mobile PWA home dashboard](assets/reference/marketing/screenshots/navet-mobile-pwa-home.jpg) | ![Navet mobile PWA media or lights dashboard](assets/reference/marketing/screenshots/navet-mobile-pwa-media-or-lights.jpg) |
+| **Home Assistant** | Navet's broadest integration, including advanced climate, media, camera, energy, weather, calendar, notification, task, history, security, and administration services | Custom panel via HACS, Home Assistant add-on, or standalone |
+| **Homey** | Rooms, realtime entities, lights, switches, and sensors | Standalone; optional additional provider when OAuth is configured |
+| **openHAB** | Rooms, realtime entities, lights, switches, and sensors | Standalone; optional additional provider from Settings |
 
-## For Contributors
+A supported standalone installation can retain multiple provider sessions and combine selected
+providers in shared dashboard collections. Capabilities are not identical: Home Assistant is the
+most mature integration today. Check the
+[provider capability matrix](https://docs.navet.app/integrations/) before choosing a setup for
+media, cameras, energy, weather, calendars, notifications, or tasks.
 
-If you want to work on the repo:
+Hubitat and SmartThings are planned, not supported runtimes. Follow the
+[public roadmap](https://docs.navet.app/roadmap/) for progress.
 
-- start with [CONTRIBUTING.md](CONTRIBUTING.md)
-- then use [docs/README.md](docs/README.md) for the full docs map
+## Choose your installation
 
-Short architecture note:
+| If you use… | Start here |
+|---|---|
+| Home Assistant | [Choose a custom panel, add-on, or standalone installation](https://docs.navet.app/install/home-assistant/) |
+| Homey | [Connect Navet through the Homey OAuth flow](https://docs.navet.app/install/homey/) |
+| openHAB | [Connect Navet to your openHAB instance](https://docs.navet.app/install/openhab/) |
+| A development build | [Install Navet Dev](https://docs.navet.app/install/navet-dev/) |
 
-- Navet is organized around provider-neutral `@navet/core` and `@navet/ui`, provider packages,
-  and an `@navet/app` composition layer
-- `@navet/ui` is the target shared UI boundary
-- much of the current shared UI implementation still lives in
-  `packages/app/src/components/*` and `packages/app/src/ui-kit/*`
+Not sure which route fits? [Compare every installation option](https://docs.navet.app/install/).
 
-## Repo Layout
+## Private by design
 
-Reusable packages:
+Navet is made for self-hosted smart homes. It does not require a Navet cloud account, and it does
+not send your provider data to Navet servers. Treat any public deployment as a sensitive control
+surface: use HTTPS, least-privilege provider accounts, and the guidance in the
+[security policy](https://docs.navet.app/security/).
+
+Please report vulnerabilities privately to `security@navet.app` rather than opening a public issue.
+
+## Contribute to Navet
+
+Navet is an AGPL-3.0 open-source project. Whether you want to fix a bug, improve a provider, refine
+the dashboard, or document a setup, start with the [contribution guide](CONTRIBUTING.md).
+
+```bash
+git clone https://github.com/awesomestvi/navet.git
+cd navet
+pnpm install
+pnpm dev
+```
+
+Prerequisites: Node.js `^20.19.0` or `>=22.12.0`, pnpm 11, and Git.
+
+<details>
+<summary><strong>Repository architecture</strong></summary>
+
+Navet is moving toward provider-neutral core and UI packages, provider-owned adapters, and an
+official app-composition layer:
 
 ```text
 packages/
-  core/
-  ui/
-  provider-homeassistant/
-  provider-homey/
-  provider-openhab/
-  provider-hubitat/
-  provider-smartthings/
-  app/
-```
+  core/                       provider-neutral contracts and runtime types
+  ui/                         target provider-neutral shared UI boundary
+  provider-homeassistant/     Home Assistant adapter
+  provider-homey/             Homey adapter
+  provider-openhab/           openHAB adapter
+  provider-hubitat/           planned provider surface
+  provider-smartthings/       planned provider surface
+  app/                        dashboard and app composition
 
-Deployable surfaces:
-
-```text
 apps/
-  standalone/
-  ha-panel/
-  storybook/
-  demo/
-  website/
+  standalone/                 standalone application
+  ha-panel/                   Home Assistant panel wrapper
+  demo/                       public product demo
+  website/                    navet.app
+  docs/                       docs.navet.app
+  storybook/                  shared UI review surface
 ```
 
-Home Assistant release surfaces and shared assets:
+Much of the current shared UI implementation still lives in `packages/app/src/components/*` and
+`packages/app/src/ui-kit/*`; `@navet/ui` is the target shared boundary rather than a claim that the
+extraction is already complete. Read the [repository documentation map](docs/README.md) before
+making architecture changes.
 
-```text
-platform/
-  home-assistant/
-    addons/
-    custom_components/
+</details>
 
-assets/
-  public/
-  reference/
-```
+## Project links
+
+- [Website](https://navet.app/)
+- [Live demo](https://demo.navet.app/)
+- [Documentation](https://docs.navet.app/)
+- [Storybook](https://storybook.navet.app/)
+- [Roadmap](https://docs.navet.app/roadmap/)
+- [Security policy](https://docs.navet.app/security/)
+- [Code of conduct](CODE_OF_CONDUCT.md)
+- [Trademark policy](docs/branding/TRADEMARK_POLICY.md)
+
+## License
+
+Navet is licensed under the [GNU Affero General Public License v3.0](LICENSE.md). If you run a modified
+version for users over a network, the AGPL requires you to make the corresponding source available
+to those users. See the [terms of use](docs/TERMS_OF_USE.md) and
+[trademark policy](docs/branding/TRADEMARK_POLICY.md) for details.

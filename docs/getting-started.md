@@ -21,8 +21,17 @@ If you are unsure which Home Assistant route fits, compare them in
 ## What happens next
 
 After Navet connects to your provider, it loads your normalized rooms, devices, and entities into
-the dashboard. Start by confirming that the expected rooms appear, then use the
-[widget reference](/guide/widgets/) to understand what can be placed on a dashboard.
+the dashboard. Start by confirming that the expected rooms appear, then:
+
+1. Use **Customize** on Home to reorder, resize, hide, lock, or manually add cards.
+2. Try a Home layout pack or build sections and columns yourself.
+3. Open **Settings -> System** to connect another supported provider. Connected providers can be
+   selected together so their room and entity collections appear in the shared dashboard.
+4. Use the [widget reference](/guide/widgets/) for Navet-owned content such as RSS, notes, photos,
+   maps, battery summaries, and live energy.
+
+Home Assistant currently enables the broadest set of advanced dashboards and provider services.
+Read the [integration capability matrix](/integrations/) for the exact Homey and openHAB scope.
 
 ## Keep it private
 

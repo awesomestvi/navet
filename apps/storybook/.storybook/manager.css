@@ -1,0 +1,156 @@
+:root {
+  --navet-storybook-accent: #f97316;
+  --navet-storybook-accent-soft: rgba(249, 115, 22, 0.11);
+  --navet-storybook-bg: #06080d;
+  --navet-storybook-chrome: #080c13;
+  --navet-storybook-surface: #0d1119;
+  --navet-storybook-border: rgba(255, 255, 255, 0.085);
+  --navet-storybook-text: #f7f7f8;
+  --navet-storybook-secondary: #a8afb9;
+  --navet-storybook-muted: #747d8a;
+}
+
+body {
+  background:
+    radial-gradient(circle at top, rgba(249, 115, 22, 0.18), transparent 24rem),
+    radial-gradient(circle at 82% 12%, rgba(59, 130, 246, 0.12), transparent 20rem),
+    linear-gradient(180deg, #080c13 0%, #06080d 100%);
+  background-attachment: fixed;
+}
+
+#storybook-explorer-tree,
+.sidebar-container,
+.sidebar-subheading,
+.search-field input,
+.top-bar {
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.sidebar-container {
+  background: color-mix(in srgb, var(--navet-storybook-bg) 96%, transparent) !important;
+  border-right: 1px solid var(--navet-storybook-border) !important;
+}
+
+#storybook-sidebar-region {
+  padding-top: 2px;
+}
+
+#storybook-sidebar-region > div:first-child {
+  min-height: 58px;
+  border-bottom: 1px solid var(--navet-storybook-border);
+  margin-bottom: 10px;
+}
+
+#storybook-sidebar-region a[href="./"] {
+  min-width: 0;
+}
+
+.search-field {
+  margin-inline: 8px !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+  border: 1px solid var(--navet-storybook-border) !important;
+  border-radius: 11px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025) !important;
+}
+
+.search-field:focus-within {
+  border-color: rgba(249, 115, 22, 0.45) !important;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1) !important;
+}
+
+.search-field input {
+  background: transparent !important;
+  border-radius: 10px !important;
+  color: var(--navet-storybook-text) !important;
+  box-shadow: none !important;
+}
+
+.search-field input::placeholder {
+  color: var(--navet-storybook-muted) !important;
+}
+
+.search-field svg,
+.search-field path {
+  color: var(--navet-storybook-muted) !important;
+  fill: var(--navet-storybook-muted) !important;
+}
+
+#storybook-explorer-tree [role="treeitem"] {
+  position: relative;
+  margin: 1px 8px !important;
+  border: 1px solid transparent;
+  border-radius: 9px !important;
+  color: var(--navet-storybook-secondary) !important;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+#storybook-explorer-tree [role="treeitem"]:hover {
+  background: rgba(255, 255, 255, 0.045) !important;
+  color: var(--navet-storybook-text) !important;
+}
+
+#storybook-explorer-tree [aria-current="page"],
+#storybook-explorer-tree [data-selected="true"],
+#storybook-explorer-tree [aria-selected="true"] {
+  background: var(--navet-storybook-accent-soft) !important;
+  border-color: rgba(249, 115, 22, 0.13) !important;
+  border-radius: 9px !important;
+  color: var(--navet-storybook-text) !important;
+  box-shadow: inset 2px 0 0 var(--navet-storybook-accent) !important;
+}
+
+#storybook-explorer-tree [aria-current="page"] svg,
+#storybook-explorer-tree [data-selected="true"] svg,
+#storybook-explorer-tree [aria-selected="true"] svg {
+  color: var(--navet-storybook-accent) !important;
+}
+
+.sidebar-subheading,
+#storybook-explorer-tree [role="heading"] {
+  color: var(--navet-storybook-muted) !important;
+  font-size: 11px !important;
+  font-weight: 650 !important;
+  letter-spacing: 0.015em;
+  text-transform: none;
+}
+
+.top-bar,
+[role="toolbar"] {
+  background: rgba(10, 15, 24, 0.96) !important;
+  border-bottom: 1px solid var(--navet-storybook-border) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(14px);
+}
+
+[role="toolbar"] button,
+[role="toolbar"] a {
+  border-radius: 9px !important;
+}
+
+button[title*="Theme"],
+button[title*="Accent"],
+button[title*="Card Size"] {
+  border: 1px solid var(--navet-storybook-border) !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+}
+
+#storybook-preview-wrapper {
+  background:
+    radial-gradient(circle at top, rgba(249, 115, 22, 0.18), transparent 24rem),
+    radial-gradient(circle at 82% 12%, rgba(59, 130, 246, 0.12), transparent 20rem),
+    linear-gradient(180deg, #080c13 0%, #06080d 100%) !important;
+  box-shadow: inset 1px 0 0 var(--navet-storybook-border);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--navet-storybook-accent) !important;
+  outline-offset: 2px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #storybook-explorer-tree [role="treeitem"] {
+    transition: none;
+  }
+}

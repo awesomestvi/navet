@@ -23,6 +23,7 @@ import {
   getBaseCardRadiusClassName,
 } from '@navet/app/components/system/tokens';
 import { useTheme } from '@navet/app/hooks';
+import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { getGradientColors } from '@navet/app/utils/color-utils';
 import type { LucideIcon } from 'lucide-react';
 import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, ReactNode } from 'react';
@@ -89,6 +90,7 @@ export interface BaseCardProps extends HTMLAttributes<HTMLDivElement> {
   overlay?: ReactNode;
   disableDefaultSheen?: boolean;
   disableDefaultLightOverlay?: boolean;
+  themeOverride?: ThemeType;
 }
 
 interface BaseCardSurfaceTokens {
@@ -202,10 +204,12 @@ export function BaseCard({
   overlay,
   disableDefaultSheen = false,
   disableDefaultLightOverlay = false,
+  themeOverride,
   style,
   ...props
 }: BaseCardProps) {
-  const { theme, accentColor: themeAccentColor } = useTheme();
+  const { theme: activeTheme, accentColor: themeAccentColor } = useTheme();
+  const theme = themeOverride ?? activeTheme;
   const surface = getThemeSurfaceTokens(theme);
   const shell = getCardShellSurfaceTokens(theme, size);
   const resolvedSurface = getBaseCardSurfaceTokens({ theme, size, surfaceVariant, surface });

@@ -4,7 +4,9 @@ description: Connect a standalone Navet installation to openHAB.
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/OPENHAB.md
 ---
 
-Use this guide when you want Navet to connect to openHAB in standalone mode.
+Use this guide when you want Navet to connect to openHAB as the primary provider in standalone
+mode. The same URL and credential flow can add openHAB from **Settings -> System** in another
+Navet runtime that exposes provider management.
 
 ## Overview
 
@@ -88,6 +90,11 @@ docker compose up -d
 - Navet loads item state from the openHAB REST API and listens for updates over the openHAB
   WebSocket API at `/ws`.
 - The URL is validated as an absolute URL before Navet saves the session.
+- The current openHAB runtime contributes rooms, realtime entities, lighting, switches, and
+  sensors. Climate, media, cameras, energy, calendar, weather, notifications, tasks, history,
+  security, and provider-administration feature services are not registered for openHAB yet.
+- openHAB can stay connected alongside Home Assistant or Homey in standalone Navet; selected
+  providers are combined in shared dashboard collections.
 
 ## API Security Requirements
 

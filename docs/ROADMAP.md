@@ -16,6 +16,7 @@ Navet currently ships:
 - Home Assistant support across custom panel via HACS, add-on, and standalone modes
 - Homey support through the standalone OAuth flow
 - openHAB support through the standalone base-URL and username/password flow
+- simultaneous stored provider sessions and selected-provider aggregation in shared dashboards
 - dedicated `home`, `lights`, `media`, `energy`, `climate`, `security`, `tasks`, and `settings`
   sections
 - dashboard editing with card ordering, sizing, locking, visibility, import/export, undo/redo, and
@@ -27,11 +28,16 @@ Navet currently ships:
   vacuums, and lawn mowers
 - task automation details, dependency summaries, and habit-suggested routine creation for providers
   that expose the automation creation capability
+- custom sidebar extensions with embedded pages and up to five quick actions
 - dashboard profile presets for standard and wall-display setups, including kiosk mode and kiosk
   navigation
 - sensor history sparklines and dedicated energy charts when the connected provider exposes the
   required statistics
 - PWA install support, themes, localization, and public demo and Storybook publishing
+
+Provider capabilities are not equal: Home Assistant currently supplies the advanced climate,
+media, camera, energy, calendar, weather, notification, task, history, security, and administration
+services. Homey and openHAB currently supply rooms, lighting, switches, sensors, and realtime state.
 
 ## Likely Next
 

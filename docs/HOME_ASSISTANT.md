@@ -99,6 +99,14 @@ frontend:
 
 8. Restart Home Assistant after updating `configuration.yaml`.
 
+Optional multi-provider add-on settings:
+
+- `homey_client_id` and `homey_client_secret` enable the Homey OAuth connection flow
+- `homey_redirect_uri` overrides the inferred Homey callback URL when the public Ingress URL
+  differs
+- openHAB needs no add-on secret; connect it from **Settings -> System** with its browser-reachable
+  base URL, username, and password
+
 ### What To Expect
 
 - Navet runs behind Home Assistant Ingress
@@ -170,6 +178,25 @@ conditions, actions, diagnostics, and dependent entity states. In Habits, creati
 routine writes a Home Assistant automation with a `navet_` config key when the rule maps to a safe
 turn-on or turn-off action. Notify-only habit rules are not created as native Home Assistant
 automations yet.
+
+## Home Assistant Feature Scope
+
+Home Assistant is currently Navet's broadest provider runtime. In addition to normalized rooms,
+entities, lighting, switches, sensors, and realtime updates, it registers provider services for:
+
+- climate controls
+- media playback, browse, search, source selection, artwork, and speaker grouping
+- camera snapshots, WebRTC/HLS stream resolution, and camera accessories
+- locks, covers, and alarm panels
+- energy configuration, live energy, statistics, and entity history
+- calendars and weather forecasts
+- persistent notifications, update installation, and restart actions
+- automation details, triggering, dependency summaries, and supported habit-created automations
+- room creation/deletion and entity room/name administration
+
+In standalone mode, a Home Assistant session can remain connected alongside Homey or openHAB.
+Shared dashboard collections can include selected providers together; provider-specific features
+continue to use the provider that owns the entity or the active provider's feature service.
 
 ### Troubleshooting
 

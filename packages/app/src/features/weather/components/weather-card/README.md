@@ -93,7 +93,7 @@ interface WeatherCardProps {
   temperature utilities
 - Persists per-card tint color and shared weather settings through the controller/store layer
 - Includes handcrafted dynamic weather illustration variants for:
-  sunny day, moony/clear night, cloudy, rain, storm, fog, snow day, snow night, windy, and fallback states
+  sunny day, clear night, cloudy, rain, storm, fog, snow day, snow night, windy, and fallback states
 - The overlay atoms are split by weather effect; `weather-card-overlays.tsx` now only composes them
 
 ## Maintenance Notes

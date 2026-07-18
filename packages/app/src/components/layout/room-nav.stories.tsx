@@ -35,20 +35,17 @@ function RoomNavStory({
   const [editMode, setEditMode] = useState(isEditMode);
 
   return (
-    <>
-      <RoomNav
-        rooms={rooms}
-        activeRoom={activeRoom}
-        onRoomChange={setActiveRoom}
-        allViewGrouping="custom"
-        isEditMode={editMode}
-        onAllViewGroupingChange={() => {}}
-        onToggleEditMode={() => setEditMode((value) => !value)}
-        onAddEntity={() => {}}
-        addEntityLabel="Add card"
-      />
-      <p className="text-xs opacity-70">Active room: {activeRoom}</p>
-    </>
+    <RoomNav
+      rooms={rooms}
+      activeRoom={activeRoom}
+      onRoomChange={setActiveRoom}
+      allViewGrouping="custom"
+      isEditMode={editMode}
+      onAllViewGroupingChange={() => {}}
+      onToggleEditMode={() => setEditMode((value) => !value)}
+      onAddEntity={() => {}}
+      addEntityLabel="Add card"
+    />
   );
 }
 

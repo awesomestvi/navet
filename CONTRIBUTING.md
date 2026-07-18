@@ -61,6 +61,10 @@ pnpm test:tier3
 pnpm storybook
 pnpm website:dev
 pnpm website:build
+pnpm docs:dev
+pnpm docs:build
+pnpm demo:dev
+pnpm build:demo
 pnpm storybook:build
 pnpm check:stories
 pnpm check:ui-kit

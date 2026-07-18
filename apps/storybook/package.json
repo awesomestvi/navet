@@ -4,6 +4,6 @@
   "type": "module",
   "scripts": {
     "storybook": "storybook dev --ci --port 6006 -c ./.storybook",
-    "build": "storybook build -c ./.storybook -o ./dist && node ../../scripts/write-pages-surface-headers.mjs storybook"
+    "build": "storybook build -c ./.storybook -o ./dist && node ../../scripts/write-pages-surface-headers.mjs storybook && node ../../scripts/inject-cloudflare-web-analytics.mjs storybook"
   }
 }
