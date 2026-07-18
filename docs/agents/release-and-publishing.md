@@ -74,6 +74,33 @@ Preferred source:
 3. Group them into user-facing outcomes.
 4. Do not include Linear issue IDs in `CHANGELOG.md`.
 
+Writing style:
+
+- Use plain, direct language. Write for people using Navet, not contributors reading the diff.
+- Use only headings that have entries: `New features`, `Improvements and bug fixes`, and
+  `Security`.
+- Keep each bullet to one outcome, one short sentence, and aim for 20 words or fewer.
+- Prefer three to five bullets. Add more only when combining them would hide distinct user changes.
+- Start with a clear verb such as `Added`, `Improved`, or `Fixed`, or state what Navet now does.
+- Say what changed and why it matters. Omit implementation details, internal architecture, file
+  names, test coverage, and commit-by-commit narration.
+- Combine related work into one bullet. Do not create a bullet for every issue or commit.
+- Avoid vague qualifiers such as `more reliably`, `more consistently`, or `clearer` unless the
+  bullet says what is now reliable, consistent, or clear.
+- Do not add boilerplate such as `Updated Navet to X`; the release heading already provides the
+  version.
+- If a release has no user-facing changes, write `No user-facing changes in this release.`
+- Keep the add-on changelog limited to changes that affect add-on users.
+
+Example:
+
+```markdown
+## Improvements and bug fixes
+
+- Navet now adjusts visual effects to match each device, with manual controls in Settings.
+- Fixed docs navigation on mobile.
+```
+
 Helper command:
 
 ```bash

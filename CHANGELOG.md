@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.10.1 - 2026-07-18
+
+## Improvements and bug fixes
+
+- Navet now adjusts visual effects and card loading to match each device, with manual controls in Settings.
+- Added new translations across all supported languages, which now load only when needed.
+- Improved the Music dashboard with search, clearer library categories, better track details, and smoother touch scrolling.
+- Fixed unwanted transitions across cards, controls, and mobile navigation, and improved reduced-motion support.
+- Improved the website and docs with clearer setup guides, resources, navigation, and a working mobile menu.
+
 ## 0.10.0 - 2026-07-15
 
 ## New

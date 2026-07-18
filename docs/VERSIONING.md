@@ -7,7 +7,7 @@ Navet currently uses pre-`1.0` semantic versioning.
 
 ## Current Line
 
-- current version: `0.10.0`
+- current version: `0.10.1`
 - current phase: public beta
 - shared release line: standalone app, custom panel, and add-on ship from the same tagged version
 - release channels: `edge` and `dev` from Navet Dev publishes, versioned dev tags as `0.x.y-dev.YYYYMMDDHHMMSS`, `beta` from prerelease tags, `latest` from stable tags
@@ -46,3 +46,7 @@ Navet currently uses pre-`1.0` semantic versioning.
 
 Keep historical changelog entries intact. When release framing changes, update the top-level current
 version references rather than rewriting older release notes.
+
+Write new entries using the concise, user-focused rules in
+[`docs/agents/release-and-publishing.md`](agents/release-and-publishing.md). Prefer short outcomes
+over implementation details or commit summaries.
