@@ -98,7 +98,10 @@ export function MarketingCurrentSupportSection({ className }: { className?: stri
               </MarketingHeadline>
               <MarketingSupportText
                 compactMobile
-                className={cn('max-w-[22ch] sm:max-w-[18ch]', surface.textSecondary)}
+                className={cn(
+                  'max-w-[22ch] sm:max-w-[36ch] xl:max-w-[46ch]',
+                  surface.textSecondary
+                )}
               >
                 {MARKETING_CURRENT_SUPPORT.subtitle}
               </MarketingSupportText>

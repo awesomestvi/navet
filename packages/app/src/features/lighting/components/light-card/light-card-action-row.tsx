@@ -76,12 +76,6 @@ export const LightCardActionRow = memo(function LightCardActionRow({
     (supportsEffects && effectOptions.length > 0) ||
     supportsBrightness;
   const shouldShowSettingsButton = showSettingsButton && hasLeftControls;
-  const isColorTriggerActive =
-    isColorMode ||
-    (isOn &&
-      supportsColorControl &&
-      typeof currentColor === 'string' &&
-      /^#[0-9a-fA-F]{6}$/.test(currentColor));
 
   if (!hasLeftControls && !shouldShowSettingsButton) {
     return null;
@@ -91,6 +85,7 @@ export const LightCardActionRow = memo(function LightCardActionRow({
     <div className={`flex min-w-0 items-center ${gapClass}`}>
       {supportsColorTemperature && (
         <KelvinColorTrigger
+          size={size}
           isOn={isOn}
           currentTempColor={currentTempColor}
           isActive={isKelvinMode}
@@ -100,9 +95,10 @@ export const LightCardActionRow = memo(function LightCardActionRow({
 
       {supportsColorControl && (
         <CustomColorTrigger
+          size={size}
           isOn={isOn}
           currentColor={colorSwatchColor || currentColor}
-          isActive={isColorTriggerActive}
+          isActive={isColorMode}
           onActivate={onColorActivate}
           onColorChange={onColorChange}
         />
@@ -112,6 +108,7 @@ export const LightCardActionRow = memo(function LightCardActionRow({
         <LightEffectPicker
           currentEffect={currentEffect}
           isOn={isOn}
+          activeColor={activeColor}
           onSelect={onEffectSelect}
           options={effectOptions}
           size={size}

@@ -1,4 +1,5 @@
 import { RoundControlButton } from '@navet/app/components/primitives/round-control-button';
+import { getCardActionControlSizes } from '@navet/app/components/shared/card-action-control-sizes';
 import { DialogSectionRow } from '@navet/app/components/shared/device-editor';
 import { getThemeDropdownSurfaceClasses } from '@navet/app/components/shared/theme/dropdown-surface-tokens';
 import {
@@ -12,13 +13,14 @@ import {
 import { cn } from '@navet/app/components/ui/utils';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import { Sparkles } from 'lucide-react';
-import { memo } from 'react';
+import { type CSSProperties, memo, useState } from 'react';
 import { getSelectedLightEffectOptionValue } from './light-card-effect-utils';
 import type { LightEffectOption } from './light-card-types';
 
 interface LightEffectPickerProps {
   currentEffect: string | null;
   isOn: boolean;
+  activeColor?: string | null;
   onSelect: (effectValue: string) => void;
   options: LightEffectOption[];
   size?: 'small' | 'medium';
@@ -28,6 +30,7 @@ interface LightEffectPickerProps {
 export const LightEffectPicker = memo(function LightEffectPicker({
   currentEffect,
   isOn,
+  activeColor,
   onSelect,
   options,
   size = 'medium',
@@ -35,11 +38,14 @@ export const LightEffectPicker = memo(function LightEffectPicker({
 }: LightEffectPickerProps) {
   const { theme } = useTheme();
   const { t } = useI18n();
+  const [isOpen, setIsOpen] = useState(false);
   const effectiveTheme = theme === 'light' && isOn ? 'dark' : theme;
   const selectedValue = getSelectedLightEffectOptionValue(currentEffect);
   const currentLabel =
     options.find((option) => option.value === selectedValue)?.label ?? t('lighting.noEffect');
-  const compactIconClassName = size === 'small' ? 'h-3.5 w-3.5' : 'h-4 w-4';
+  const controlSizes = getCardActionControlSizes(size);
+  const hasActiveEffect = currentEffect !== null;
+  const isSelected = isOpen || hasActiveEffect;
 
   if (variant === 'dialog') {
     return (
@@ -91,7 +97,7 @@ export const LightEffectPicker = memo(function LightEffectPicker({
   }
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <RoundControlButton
           theme={effectiveTheme}
@@ -99,12 +105,24 @@ export const LightEffectPicker = memo(function LightEffectPicker({
           variant="soft"
           disabled={!isOn}
           aria-label={t('lighting.effectPicker')}
+          aria-pressed={isSelected}
           title={t('lighting.effect.current', { effect: currentLabel })}
-          className={!isOn ? 'opacity-50' : undefined}
+          className={cn(
+            !isOn && 'opacity-50',
+            hasActiveEffect && 'navet-light-effect-beam overflow-hidden'
+          )}
+          style={
+            hasActiveEffect
+              ? ({
+                  '--navet-light-effect-accent': activeColor ?? '#f59e0b',
+                } as CSSProperties)
+              : undefined
+          }
           iconClassName={!isOn ? 'text-current/60' : ''}
+          iconStyle={isSelected && isOn ? { color: activeColor ?? '#f59e0b' } : undefined}
           onClick={(event) => event.stopPropagation()}
         >
-          <Sparkles className={compactIconClassName} />
+          <Sparkles className={controlSizes.icon} />
         </RoundControlButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent

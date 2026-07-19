@@ -1,11 +1,11 @@
 import { dispatchEntityCommand } from '@navet/app/commands';
-import { BaseCard, Button, InteractivePill } from '@navet/app/components/primitives';
+import { BaseCard, Button } from '@navet/app/components/primitives';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { RoundControlButton } from '@navet/app/components/primitives/round-control-button';
 import { CardEditActionButton } from '@navet/app/components/shared/card-edit-action-button';
-import { BrightnessSlider } from '@navet/app/components/shared/device-editor';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit-dashboard-grid';
+import { getThemeFocusRingClassName } from '@navet/app/components/system/tokens';
+import { cn } from '@navet/app/components/ui/utils';
 import { LightCard } from '@navet/app/features/lighting/components/light-card';
 import type { HomeStatusSummaryItem } from '@navet/app/features/sensors/components/home-status-summary-model';
 import {
@@ -13,10 +13,10 @@ import {
   SummaryBarStack,
 } from '@navet/app/features/sensors/components/info-badge-strip';
 import type { QuickActionRoutine } from '@navet/app/features/tasks/types';
-import { useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
-import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
+import { useI18n, useTheme } from '@navet/app/hooks';
 import { useProviderEntityModels } from '@navet/app/hooks/use-provider-device';
 import type { DeviceWithType } from '@navet/app/types/device.types';
+import { darkenColor } from '@navet/app/utils/color-utils';
 import { UNKNOWN_ROOM_LABEL } from '@navet/app/utils/device-location';
 import {
   ChevronDown,
@@ -30,23 +30,9 @@ import {
   SunMedium,
   X,
 } from 'lucide-react';
-import {
-  type CSSProperties,
-  memo,
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import {
-  type LightBatchActionResult,
-  setLightsBrightness,
-  setLightsPower,
-} from './light-dashboard-actions';
+import { type LightBatchActionResult, setLightsPower } from './light-dashboard-actions';
 import {
   buildLightDashboardModel,
   type LightDashboardItem,
@@ -63,74 +49,19 @@ interface LightsDashboardProps {
   onRemoveEntity?: (entityId: string) => void;
 }
 
-function describeBatchResult(result: LightBatchActionResult, t: ReturnType<typeof useI18n>['t']) {
-  if (result.failed > 0 || result.skippedUnavailable > 0) {
-    return t('lighting.dashboard.actionPartial', {
-      succeeded: result.succeeded,
-      failed: result.failed,
-      unavailable: result.skippedUnavailable,
-    });
-  }
-  return t('lighting.dashboard.actionComplete', { count: result.succeeded });
+function showBatchIssue(result: LightBatchActionResult, t: ReturnType<typeof useI18n>['t']) {
+  if (result.failed === 0 && result.skippedUnavailable === 0) return;
+
+  const message = t('lighting.dashboard.actionPartial', {
+    succeeded: result.succeeded,
+    failed: result.failed,
+    unavailable: result.skippedUnavailable,
+  });
+  if (result.failed > 0) toast.error(message);
+  else toast.warning(message);
 }
 
 const keepCompactLightCardSize = () => {};
-const LIGHTS_BENTO_ROW_HEIGHT_PX = 4;
-
-function LightsBentoItem({ children }: { children: ReactNode }) {
-  const itemRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [rowSpan, setRowSpan] = useState(1);
-
-  useLayoutEffect(() => {
-    const item = itemRef.current;
-    const content = contentRef.current;
-
-    if (!item || !content) return;
-
-    const updateRowSpan = () => {
-      const grid = item.parentElement;
-      if (!grid) return;
-
-      const gridStyles = window.getComputedStyle(grid);
-      const rowHeight = Number.parseFloat(gridStyles.gridAutoRows) || LIGHTS_BENTO_ROW_HEIGHT_PX;
-      const cardGap = Number.parseFloat(gridStyles.columnGap) || 0;
-      const contentHeight = content.getBoundingClientRect().height;
-      const nextRowSpan = Math.max(1, Math.ceil((contentHeight + cardGap) / rowHeight));
-
-      setRowSpan((current) => (current === nextRowSpan ? current : nextRowSpan));
-    };
-
-    updateRowSpan();
-
-    if (typeof ResizeObserver === 'undefined') {
-      window.addEventListener('resize', updateRowSpan);
-      return () => window.removeEventListener('resize', updateRowSpan);
-    }
-
-    const resizeObserver = new ResizeObserver(updateRowSpan);
-    resizeObserver.observe(content);
-    window.addEventListener('resize', updateRowSpan);
-
-    return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener('resize', updateRowSpan);
-    };
-  }, []);
-
-  return (
-    <div
-      ref={itemRef}
-      className="col-span-4 min-h-0 min-w-0 self-start"
-      style={{ gridRowEnd: `span ${rowSpan}` }}
-    >
-      <div ref={contentRef} className="min-w-0">
-        {children}
-      </div>
-    </div>
-  );
-}
-
 const RoomLightCard = memo(function RoomLightCard({
   light,
   isEditMode,
@@ -146,7 +77,9 @@ const RoomLightCard = memo(function RoomLightCard({
 
   return (
     <div
-      className={`relative min-h-[52px] min-w-0 border-b last:border-b-0 ${surface.border}`}
+      className={`relative min-w-0 border-b last:border-b-0 ${surface.border} ${
+        isEditMode ? 'pr-10' : ''
+      }`}
       data-light-state={light.available ? (light.isOn ? 'on' : 'off') : 'unavailable'}
     >
       {light.available ? (
@@ -165,21 +98,15 @@ const RoomLightCard = memo(function RoomLightCard({
           presentation="table-row"
         />
       ) : (
-        <div
-          className={`flex min-h-[52px] items-center gap-2.5 px-2 py-1.5 ${
-            theme === 'light' ? 'bg-red-50/90' : 'bg-red-500/10'
-          }`}
-        >
-          <EntityCardHeaderIcon
-            IconComponent={CircleAlert}
-            isActive={false}
-            size="tiny"
-            tone="red"
-            badgeClassName="h-9 w-9"
-            glyphClassName="h-[18px] w-[18px]"
-          />
+        <div className="flex min-h-12 items-center gap-3 py-1">
+          <div className="-ml-[5px] flex h-11 w-11 shrink-0 items-center justify-center">
+            <CircleAlert
+              className={`h-4 w-4 ${theme === 'light' ? 'text-red-600' : 'text-red-300'}`}
+              aria-hidden="true"
+            />
+          </div>
           <span
-            className={`min-w-0 flex-1 truncate text-sm font-medium ${
+            className={`-ml-[3px] min-w-0 flex-1 truncate text-sm font-medium ${
               theme === 'light' ? 'text-red-700' : 'text-red-200'
             }`}
           >
@@ -213,14 +140,12 @@ const RoomLightCard = memo(function RoomLightCard({
 
 const LightsRoomSection = memo(function LightsRoomSection({
   room,
-  narrow,
   manualExpanded,
   onExpandedChange,
   isEditMode,
   onRemoveEntity,
 }: {
   room: LightRoomSummary;
-  narrow: boolean;
   manualExpanded?: boolean;
   onExpandedChange: (room: string, expanded: boolean) => void;
   isEditMode: boolean;
@@ -229,41 +154,19 @@ const LightsRoomSection = memo(function LightsRoomSection({
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const expanded = manualExpanded ?? (!narrow || room.activeCount > 0);
-  const [brightness, setBrightness] = useState(room.averageBrightness ?? 50);
+  const expanded = manualExpanded ?? isEditMode;
   const [pendingPower, setPendingPower] = useState(false);
-  const [pendingBrightness, setPendingBrightness] = useState(false);
   const displayName =
     room.room === UNKNOWN_ROOM_LABEL ? t('lighting.dashboard.otherLights') : room.room;
   const availableCount = room.totalCount - room.unavailableCount;
   const allUnavailable = availableCount === 0;
 
-  useEffect(() => {
-    if (typeof room.averageBrightness === 'number') setBrightness(room.averageBrightness);
-  }, [room.averageBrightness]);
-
-  const showResult = (result: LightBatchActionResult) => {
-    const message = describeBatchResult(result, t);
-    if (result.failed > 0) toast.error(message);
-    else if (result.skippedUnavailable > 0) toast.warning(message);
-    else toast.success(message);
-  };
-
   const handlePower = async () => {
     setPendingPower(true);
     try {
-      showResult(await setLightsPower(room.lights, room.activeCount > 0 ? 'off' : 'on'));
+      showBatchIssue(await setLightsPower(room.lights, room.activeCount > 0 ? 'off' : 'on'), t);
     } finally {
       setPendingPower(false);
-    }
-  };
-
-  const handleBrightnessCommit = async (value: number) => {
-    setPendingBrightness(true);
-    try {
-      showResult(await setLightsBrightness(room.lights, value));
-    } finally {
-      setPendingBrightness(false);
     }
   };
 
@@ -340,37 +243,8 @@ const LightsRoomSection = memo(function LightsRoomSection({
       >
         {expanded ? (
           <div className="flex h-full min-h-0 flex-col">
-            {room.dimmableCount > 0 && !allUnavailable ? (
-              <div className="mt-2 w-full">
-                <div className="flex items-center justify-between gap-3 text-xs">
-                  <span className={surface.textSecondary}>
-                    {t('lighting.dashboard.roomBrightnessScope', {
-                      supported: room.dimmableCount,
-                      total: room.totalCount,
-                    })}
-                  </span>
-                  <span className={`tabular-nums ${surface.textPrimary}`}>
-                    {brightness}%{pendingBrightness ? '…' : ''}
-                  </span>
-                </div>
-                <div className="pt-1.5 pb-2">
-                  <BrightnessSlider
-                    value={brightness}
-                    onChange={setBrightness}
-                    onCommit={(value) => void handleBrightnessCommit(value)}
-                    isOn={room.activeCount > 0}
-                    disabled={isEditMode || pendingBrightness}
-                    showLabel={false}
-                    size="medium"
-                    activeColor={accentColor}
-                    inverseSurface={false}
-                  />
-                </div>
-              </div>
-            ) : null}
-
             <div
-              className={`mt-4 overflow-hidden rounded-2xl border ${surface.border} ${surface.subtleBg}`}
+              className={`mt-3 border-t ${surface.border}`}
               data-testid={`lights-room-grid-${room.room}`}
             >
               {room.lights.map((light) => (
@@ -398,8 +272,15 @@ export const LightsDashboard = memo(function LightsDashboard({
   onRemoveEntity,
 }: LightsDashboardProps) {
   const { t } = useI18n();
-  const { theme } = useTheme();
+  const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const sceneChipClassName =
+    theme === 'light'
+      ? 'border-slate-200/70 bg-white/55 text-slate-900 shadow-[0_12px_28px_-24px_rgba(15,23,42,0.28)] hover:bg-white/75'
+      : theme === 'black'
+        ? 'border-white/10 bg-white/[0.035] text-white/88 hover:bg-white/[0.065]'
+        : 'border-white/10 bg-white/[0.055] text-white/88 backdrop-blur-xl hover:bg-white/[0.085]';
+  const sceneIconColor = theme === 'light' ? darkenColor(accentColor, 68) : accentColor;
   const lightEntityIds = useMemo(
     () =>
       Array.from(deviceMap.values())
@@ -408,10 +289,6 @@ export const LightsDashboard = memo(function LightsDashboard({
     [deviceMap]
   );
   const entities = useProviderEntityModels(lightEntityIds);
-  const narrow = useMediaQuery('(max-width: 767px)');
-  const breakpointCols = useBreakpointCols();
-  const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
-    useFitDashboardGrid(breakpointCols);
   const modelRef = useRef<LightDashboardModel | undefined>(undefined);
   const model = useMemo(() => {
     const next = buildLightDashboardModel({
@@ -487,8 +364,8 @@ export const LightsDashboard = memo(function LightsDashboard({
   const allRoomsCollapsed = useMemo(
     () =>
       model.rooms.length > 0 &&
-      model.rooms.every((room) => !(expandedRooms[room.room] ?? (!narrow || room.activeCount > 0))),
-    [expandedRooms, model.rooms, narrow]
+      model.rooms.every((room) => !(expandedRooms[room.room] ?? isEditMode)),
+    [expandedRooms, isEditMode, model.rooms]
   );
   const toggleAllRooms = useCallback(() => {
     setExpandedRooms(Object.fromEntries(model.rooms.map((room) => [room.room, allRoomsCollapsed])));
@@ -498,10 +375,7 @@ export const LightsDashboard = memo(function LightsDashboard({
     setAllPowerPending(true);
     try {
       const result = await setLightsPower(allLights, model.activeCount > 0 ? 'off' : 'on');
-      const message = describeBatchResult(result, t);
-      if (result.failed > 0) toast.error(message);
-      else if (result.skippedUnavailable > 0) toast.warning(message);
-      else toast.success(message);
+      showBatchIssue(result, t);
     } finally {
       setAllPowerPending(false);
     }
@@ -528,96 +402,91 @@ export const LightsDashboard = memo(function LightsDashboard({
           rooms: model.activeRoomCount,
           total: model.totalCount,
         })}
-        leadingContent={
-          <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
-            <Button
-              variant={model.activeCount > 0 ? 'primary' : 'secondary'}
-              size="compact"
-              leading={<Power className="h-4 w-4" aria-hidden="true" />}
-              loading={allPowerPending}
-              disabled={model.totalCount === model.unavailableCount || isEditMode}
-              onClick={() => void handleWholeHomePower()}
-              className="h-[34px] shrink-0 md:h-[42px]"
-            >
-              {model.activeCount > 0
-                ? t('lighting.dashboard.turnOffAllLights')
-                : t('lighting.dashboard.turnOnAllLights')}
-            </Button>
-            <Button
-              variant="secondary"
-              size="compact"
-              leading={
-                allRoomsCollapsed ? (
-                  <ChevronsDown className="h-4 w-4" aria-hidden="true" />
-                ) : (
-                  <ChevronsUp className="h-4 w-4" aria-hidden="true" />
-                )
-              }
-              disabled={model.rooms.length === 0}
-              onClick={toggleAllRooms}
-              className="h-[34px] shrink-0 md:h-[42px]"
-            >
-              {allRoomsCollapsed
-                ? t('lighting.dashboard.expandAll')
-                : t('lighting.dashboard.collapseAll')}
-            </Button>
-            <span className={`h-6 shrink-0 border-l ${surface.border}`} aria-hidden="true" />
-          </div>
-        }
         trailingContent={
-          scenes.length > 0 ? (
-            <div className="flex shrink-0 items-center gap-1.5">
-              {scenes.map((scene) => (
-                <InteractivePill
-                  key={scene.id}
-                  intent="action"
-                  variant="ghost"
-                  size="compact"
-                  icon={Sparkles}
-                  disabled={runningSceneId !== null}
-                  onClick={() => void runScene(scene)}
-                >
-                  {scene.name}
-                  {runningSceneId === scene.id ? '…' : ''}
-                </InteractivePill>
-              ))}
+          <>
+            {scenes.length > 0 ? (
+              <div className="flex shrink-0 items-center gap-1.5">
+                {scenes.map((scene) => (
+                  <button
+                    key={scene.id}
+                    type="button"
+                    disabled={runningSceneId !== null}
+                    onClick={() => void runScene(scene)}
+                    className={cn(
+                      'group inline-grid h-8 shrink-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-1 rounded-full border px-1.5 py-1 pr-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 md:h-10 md:gap-1.5 md:px-2 md:py-1.5 md:pr-3',
+                      sceneChipClassName,
+                      getThemeFocusRingClassName(theme)
+                    )}
+                  >
+                    <span
+                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-current/10 bg-current/[0.08] transition-transform group-hover:scale-[1.03] md:h-6 md:w-6"
+                      style={{ color: sceneIconColor }}
+                      aria-hidden="true"
+                    >
+                      <Sparkles className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                    </span>
+                    <span className="max-w-[8rem] truncate text-[10px] font-semibold leading-3 tracking-normal md:max-w-[10rem] md:text-[11px] md:leading-3.5">
+                      {scene.name}
+                      {runningSceneId === scene.id ? '…' : ''}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            <div className="ml-auto flex shrink-0 items-center gap-1.5 md:gap-2">
+              {summaryItems.length > 2 ? (
+                <span
+                  className={`mr-0.5 h-6 shrink-0 border-l ${surface.border}`}
+                  aria-hidden="true"
+                />
+              ) : null}
+              <Button
+                variant="secondary"
+                size="compact"
+                leading={
+                  allRoomsCollapsed ? (
+                    <ChevronsDown className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <ChevronsUp className="h-4 w-4" aria-hidden="true" />
+                  )
+                }
+                disabled={model.rooms.length === 0}
+                onClick={toggleAllRooms}
+                className="h-9 shrink-0"
+              >
+                {allRoomsCollapsed
+                  ? t('lighting.dashboard.expandAll')
+                  : t('lighting.dashboard.collapseAll')}
+              </Button>
+              <Button
+                variant="secondary"
+                size="compact"
+                leading={<Power className="h-4 w-4" aria-hidden="true" />}
+                loading={allPowerPending}
+                disabled={model.totalCount === model.unavailableCount || isEditMode}
+                onClick={() => void handleWholeHomePower()}
+                className="h-9 shrink-0"
+              >
+                {model.activeCount > 0
+                  ? t('lighting.dashboard.turnOffAllLights')
+                  : t('lighting.dashboard.turnOnAllLights')}
+              </Button>
             </div>
-          ) : undefined
+          </>
         }
       />
 
-      <div ref={outerRef} className="relative w-full" style={outerContainerStyle}>
-        <div
-          ref={innerRef}
-          className={`w-full${isAutoScaled ? ' absolute left-0 top-0 origin-top-left' : ''}`}
-          style={innerContainerStyle}
-        >
-          <div
-            className="grid w-full grid-flow-row-dense gap-3 lg:gap-4"
-            style={{
-              ...(gridStyle as CSSProperties),
-              gridAutoRows: `${LIGHTS_BENTO_ROW_HEIGHT_PX}px`,
-              rowGap: 0,
-            }}
-          >
-            {model.rooms.map((room) => {
-              const expanded = expandedRooms[room.room] ?? (!narrow || room.activeCount > 0);
-
-              return (
-                <LightsBentoItem key={room.room}>
-                  <LightsRoomSection
-                    room={room}
-                    narrow={narrow}
-                    manualExpanded={expanded}
-                    onExpandedChange={handleExpandedChange}
-                    isEditMode={isEditMode}
-                    onRemoveEntity={onRemoveEntity}
-                  />
-                </LightsBentoItem>
-              );
-            })}
-          </div>
-        </div>
+      <div className="grid w-full grid-cols-1 items-start gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 lg:gap-4">
+        {model.rooms.map((room) => (
+          <LightsRoomSection
+            key={room.room}
+            room={room}
+            manualExpanded={expandedRooms[room.room]}
+            onExpandedChange={handleExpandedChange}
+            isEditMode={isEditMode}
+            onRemoveEntity={onRemoveEntity}
+          />
+        ))}
       </div>
     </SummaryBarStack>
   );

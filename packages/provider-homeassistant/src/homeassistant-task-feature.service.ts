@@ -42,6 +42,7 @@ let cachedSnapshot: {
   areas: HomeAssistantStoreState['areas'];
   deviceRegistry: HomeAssistantStoreState['deviceRegistry'];
   entityRegistry: HomeAssistantStoreState['entityRegistry'];
+  automationCategories: HomeAssistantStoreState['automationCategories'];
   snapshot: PlatformTaskRuntimeSnapshot;
 } | null = null;
 
@@ -52,16 +53,22 @@ function createHomeAssistantTaskRuntimeSnapshot(
   const areas = state.areas;
   const deviceRegistry = state.deviceRegistry;
   const entityRegistry = state.entityRegistry;
+  const automationCategories = state.automationCategories;
 
   if (
     cachedSnapshot &&
     cachedSnapshot.entities === entities &&
     cachedSnapshot.areas === areas &&
     cachedSnapshot.deviceRegistry === deviceRegistry &&
-    cachedSnapshot.entityRegistry === entityRegistry
+    cachedSnapshot.entityRegistry === entityRegistry &&
+    cachedSnapshot.automationCategories === automationCategories
   ) {
     return cachedSnapshot.snapshot;
   }
+
+  const automationCategoryNames = new Map(
+    automationCategories?.map((category) => [category.category_id, category.name]) ?? []
+  );
 
   const snapshot: PlatformTaskRuntimeSnapshot = {
     entities: mapTaskEntities(state),
@@ -71,6 +78,9 @@ function createHomeAssistantTaskRuntimeSnapshot(
       entityId: entity.entity_id,
       roomId: entity.area_id,
       deviceId: entity.device_id,
+      category: entity.categories?.automation
+        ? automationCategoryNames.get(entity.categories.automation)
+        : undefined,
     })),
   };
 
@@ -79,6 +89,7 @@ function createHomeAssistantTaskRuntimeSnapshot(
     areas,
     deviceRegistry,
     entityRegistry,
+    automationCategories,
     snapshot,
   };
 

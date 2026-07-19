@@ -39,7 +39,7 @@ describe('useLightEffectSync', () => {
     ]);
   });
 
-  it('maps the synthetic no-effect option to EFFECT_OFF and reverts on failure', async () => {
+  it('maps the synthetic no-effect option to off and reverts on failure', async () => {
     const syncLight = vi.fn().mockRejectedValue(new Error('boom'));
     const setIsOn = vi.fn();
 
@@ -57,12 +57,43 @@ describe('useLightEffectSync', () => {
       result.current.onEffectSelect(LIGHT_EFFECT_NONE);
     });
 
-    expect(syncLight).toHaveBeenCalledWith({ state: 'on', effect: 'EFFECT_OFF' });
+    expect(syncLight).toHaveBeenCalledWith({ state: 'on', effect: 'off' });
 
     await act(async () => {
       await Promise.resolve();
     });
 
     expect(result.current.currentEffect).toBe('Rainbow');
+  });
+
+  it('clears the active effect immediately when off or a manual light control takes over', () => {
+    const syncLight = vi.fn().mockResolvedValue(undefined);
+    const setIsOn = vi.fn();
+
+    const { result } = renderHookWithProviders(() =>
+      useLightEffectSync({
+        supportsAdvancedLightControls: true,
+        isOn: true,
+        liveEntity: makeEntity(['Rainbow', 'off'], 'Rainbow'),
+        setIsOn,
+        syncLight,
+      })
+    );
+
+    act(() => {
+      result.current.onEffectSelect(LIGHT_EFFECT_NONE);
+    });
+    expect(result.current.currentEffect).toBeNull();
+    expect(syncLight).toHaveBeenCalledWith({ state: 'on', effect: 'off' });
+
+    act(() => {
+      result.current.onEffectSelect('Rainbow');
+    });
+    expect(result.current.currentEffect).toBe('Rainbow');
+
+    act(() => {
+      result.current.clearCurrentEffect();
+    });
+    expect(result.current.currentEffect).toBeNull();
   });
 });

@@ -10,6 +10,7 @@ export interface AutomationTask {
   isRecentlyTriggered: boolean;
   needsAttention: boolean;
   attentionReason?: 'unavailable' | 'unknown' | 'error';
+  category?: string;
   description?: string;
   mode?: string;
   currentRuns?: number;

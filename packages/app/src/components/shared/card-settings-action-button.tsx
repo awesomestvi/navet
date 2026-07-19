@@ -1,4 +1,5 @@
 import { RoundControlButton } from '@navet/app/components/primitives/round-control-button';
+import { getCardActionControlSizes } from '@navet/app/components/shared/card-action-control-sizes';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import {
   normalizeCustomCardTint,
@@ -73,6 +74,7 @@ export function CardSettingsActionButton({
 }: CardSettingsActionButtonProps) {
   const { t } = useI18n();
   const accentStyle = getSettingsActionAccentStyle(theme, accentColor, disableHoverEffects);
+  const controlSizes = getCardActionControlSizes(size);
 
   return (
     <RoundControlButton
@@ -95,17 +97,7 @@ export function CardSettingsActionButton({
       }}
       {...props}
     >
-      <Settings2
-        className={
-          size === 'large'
-            ? 'h-3.5 w-3.5'
-            : size === 'tiny'
-              ? 'h-2.5 w-2.5'
-              : size === 'extra-small'
-                ? 'h-3 w-3'
-                : 'h-3.5 w-3.5'
-        }
-      />
+      <Settings2 className={controlSizes.icon} />
     </RoundControlButton>
   );
 }

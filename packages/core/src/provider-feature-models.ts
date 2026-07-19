@@ -142,6 +142,7 @@ export interface PlatformTaskEntityReference {
   entityId: string;
   roomId?: string | null;
   deviceId?: string | null;
+  category?: string;
 }
 
 export interface PlatformTaskRuntimeSnapshot {

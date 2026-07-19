@@ -16,8 +16,36 @@ describe('HARegistryService', () => {
       if (message.type === 'config/entity_registry/list') {
         return Promise.resolve([]);
       }
+      if (message.type === 'config/category_registry/list') {
+        return Promise.resolve([]);
+      }
 
       return Promise.resolve({});
+    });
+  });
+
+  it('loads automation categories from the scoped Home Assistant category registry', async () => {
+    sendMessagePromise.mockImplementation((message: { type: string; scope?: string }) => {
+      if (message.type === 'config/category_registry/list' && message.scope === 'automation') {
+        return Promise.resolve([{ category_id: 'morning-id', name: 'Morning' }]);
+      }
+      return Promise.resolve([]);
+    });
+    const service = new HARegistryService(
+      () =>
+        ({
+          sendMessagePromise,
+        }) as never
+    );
+
+    await service.loadRegistries();
+
+    expect(service.getAutomationCategories()).toEqual([
+      { category_id: 'morning-id', name: 'Morning' },
+    ]);
+    expect(sendMessagePromise).toHaveBeenCalledWith({
+      type: 'config/category_registry/list',
+      scope: 'automation',
     });
   });
 

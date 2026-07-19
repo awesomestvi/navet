@@ -7,7 +7,7 @@ import { useCardSettingsDialog } from '@navet/app/hooks/use-card-settings-dialog
 import { useIntegrationStore } from '@navet/app/hooks/use-integration-store';
 import { hasIntegrationLightFeatureService } from '@navet/app/services/integration-light-feature.service';
 import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { buildLightCardControllerState } from './build-light-card-controller-state';
 import type { LightCardController, LightCardControllerParams } from './light-card-controller.types';
 import { useLightCardDisplay } from './use-light-card-display';
@@ -123,13 +123,42 @@ export function useLightCardController({
     pendingOnStateRef,
     pendingOnStateTimeoutRef,
   });
-  const { currentEffect, effectOptions, onEffectSelect, supportsEffects } = useLightEffectSync({
-    supportsAdvancedLightControls,
-    isOn,
-    liveEntity,
-    setIsOn,
-    syncLight,
-  });
+  const { clearCurrentEffect, currentEffect, effectOptions, onEffectSelect, supportsEffects } =
+    useLightEffectSync({
+      supportsAdvancedLightControls,
+      isOn,
+      liveEntity,
+      setIsOn,
+      syncLight,
+    });
+  const handleColorChange = useCallback(
+    (color: string) => {
+      clearCurrentEffect();
+      onColorChange(color);
+    },
+    [clearCurrentEffect, onColorChange]
+  );
+  const handleCustomColorChange = useCallback(
+    (color: string) => {
+      clearCurrentEffect();
+      onCustomColorChange(color);
+    },
+    [clearCurrentEffect, onCustomColorChange]
+  );
+  const handleTempChange = useCallback(
+    (temperature: number) => {
+      clearCurrentEffect();
+      onTempChange(temperature);
+    },
+    [clearCurrentEffect, onTempChange]
+  );
+  const handleTempCommit = useCallback(
+    (temperature: number) => {
+      clearCurrentEffect();
+      onTempCommit(temperature);
+    },
+    [clearCurrentEffect, onTempCommit]
+  );
 
   const { cardInteraction, showPresetOverflow, showSettingsButton } = useLightCardInteraction({
     name,
@@ -161,13 +190,13 @@ export function useLightCardController({
     onBrightnessCommit,
     onBrightnessPresetOrderChange,
     onBrightnessPresetValueChange,
-    onColorChange,
-    onCustomColorChange,
+    onColorChange: handleColorChange,
+    onCustomColorChange: handleCustomColorChange,
     onEffectSelect,
     onIconChange: (icon) => setSelectedIcon(icon.trim()),
     onOpenChange: isOpen ? onClose : onOpen,
-    onTempChange,
-    onTempCommit,
+    onTempChange: handleTempChange,
+    onTempCommit: handleTempCommit,
     onTintColorChange: setTintColor,
     padding,
     tintColor,

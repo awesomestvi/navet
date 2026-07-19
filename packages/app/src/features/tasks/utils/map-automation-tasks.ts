@@ -40,6 +40,34 @@ function getOptionalStringAttribute(
   return undefined;
 }
 
+function getAutomationCategory(
+  attributes: Record<string, unknown>,
+  entityReference?: PlatformTaskEntityReference
+): string | undefined {
+  if (entityReference?.category) {
+    return entityReference.category;
+  }
+
+  const explicitCategory = getOptionalStringAttribute(attributes, ['category', 'group']);
+  if (explicitCategory) {
+    return explicitCategory;
+  }
+
+  for (const key of ['labels', 'tags']) {
+    const values = attributes[key];
+    if (Array.isArray(values)) {
+      const category = values.find(
+        (value): value is string => typeof value === 'string' && Boolean(value.trim())
+      );
+      if (category) {
+        return category.trim();
+      }
+    }
+  }
+
+  return undefined;
+}
+
 function parseDateAttribute(value: unknown): Date | undefined {
   if (typeof value !== 'string' || !value.trim()) {
     return undefined;
@@ -115,6 +143,7 @@ export function mapAutomationTasks({
         isRecentlyTriggered,
         needsAttention,
         attentionReason,
+        category: getAutomationCategory(entity.attributes, entityReferenceMap.get(entityId)),
         nextRunLabel: getOptionalStringAttribute(entity.attributes, NEXT_RUN_ATTRIBUTE_KEYS),
         description:
           typeof entity.attributes?.description === 'string' && entity.attributes.description.trim()

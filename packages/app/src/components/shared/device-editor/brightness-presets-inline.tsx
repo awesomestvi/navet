@@ -55,6 +55,8 @@ export const BrightnessPresetsInline = memo(function BrightnessPresetsInline({
   );
   const buttonSize = controlSizes.button;
   const iconSize = controlSizes.icon;
+  const foregroundTextSize =
+    size === 'large' ? 'text-[12px]' : isCompact ? 'text-[10px]' : 'text-[11px]';
   const roundControl = getRoundControlStyles(useInverseActiveLightSurface ? 'dark' : theme);
   const gap = size === 'large' ? 'gap-2' : 'gap-1.5';
   const visiblePresets = maxVisible !== undefined ? presets.slice(0, maxVisible) : presets;
@@ -109,7 +111,7 @@ export const BrightnessPresetsInline = memo(function BrightnessPresetsInline({
                   : getBrightnessPresetSelectedStyle(theme, activeColor, isOn)
                 : undefined
             }
-            className={`${buttonSize} rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-300 flex items-center justify-center ${
+            className={`${buttonSize} relative isolate overflow-hidden rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-300 flex items-center justify-center ${
               !isOn
                 ? isSelected
                   ? disabledSelectedClasses
@@ -119,7 +121,17 @@ export const BrightnessPresetsInline = memo(function BrightnessPresetsInline({
                   : `${unselectedClasses} cursor-pointer hover:scale-105 active:scale-95`
             }`}
           >
-            <IconComponent className={iconSize} aria-hidden="true" />
+            <span
+              aria-hidden="true"
+              className="relative flex h-full w-full items-center justify-center"
+            >
+              <IconComponent className={`${iconSize} absolute z-0 opacity-[0.42]`} />
+              <span
+                className={`relative z-10 ${foregroundTextSize} font-bold leading-none tracking-[-0.04em] drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] tabular-nums`}
+              >
+                {preset.brightness}
+              </span>
+            </span>
           </button>
         );
       })}
@@ -132,6 +144,7 @@ export const BrightnessPresetsInline = memo(function BrightnessPresetsInline({
           activeColor={activeColorOverride}
           buttonSize={buttonSize}
           iconSize={iconSize}
+          foregroundTextSize={foregroundTextSize}
           buttonVariant={buttonVariant}
         />
       )}
@@ -147,6 +160,7 @@ interface BrightnessOverflowMenuProps {
   activeColor?: string | null;
   buttonSize: string;
   iconSize: string;
+  foregroundTextSize: string;
   buttonVariant: 'neutral' | 'soft';
 }
 
@@ -158,6 +172,7 @@ const BrightnessOverflowMenu = memo(function BrightnessOverflowMenu({
   activeColor: activeColorOverride,
   buttonSize,
   iconSize,
+  foregroundTextSize,
   buttonVariant,
 }: BrightnessOverflowMenuProps) {
   const { theme, primaryColor } = useTheme();
@@ -235,11 +250,21 @@ const BrightnessOverflowMenu = memo(function BrightnessOverflowMenu({
                         : getBrightnessPresetSelectedStyle(theme, activeColor, true)
                       : undefined
                   }
-                  className={`${buttonSize} rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-300 flex items-center justify-center ${
+                  className={`${buttonSize} relative isolate overflow-hidden rounded-full transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-300 flex items-center justify-center ${
                     isSelected ? selectedClasses : unselectedClasses
                   } cursor-pointer hover:scale-105 active:scale-95`}
                 >
-                  <IconComponent className={iconSize} aria-hidden="true" />
+                  <span
+                    aria-hidden="true"
+                    className="relative flex h-full w-full items-center justify-center"
+                  >
+                    <IconComponent className={`${iconSize} absolute z-0 opacity-[0.42]`} />
+                    <span
+                      className={`relative z-10 ${foregroundTextSize} font-bold leading-none tracking-[-0.04em] drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] tabular-nums`}
+                    >
+                      {preset.brightness}
+                    </span>
+                  </span>
                 </button>
               );
             })}

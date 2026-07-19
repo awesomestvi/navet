@@ -56,6 +56,31 @@ const baseLights = [
   device('light.hall', 'Hallway', 'Hall', false, 100),
 ];
 
+const largeHomeRoomLights = {
+  Kitchen: ['Island lights', 'Plant light', 'Window lamp', 'Dining table lamp'],
+  Bathroom: ['Ceiling lights', 'Mirror light'],
+  Hallway: ['Backside ceiling lights', 'Front ceiling light', 'Cloakroom lights'],
+  Bedroom: ['Ceiling lights', 'Left reading lamp', 'Right reading lamp', 'Accent lights'],
+  'Guest room': ['Accent light'],
+  Office: ['Neon lights', 'Desk lamp', 'Shelf light'],
+  Toilet: ['Ceiling light'],
+  'Maya’s room': ['Ceiling lights', 'Bedside lamp', 'Galaxy projector'],
+  'Living room': ['Corner lamp', 'Antique corner lamp'],
+  Outside: ['Porch light'],
+} as const;
+
+const largeHomeLights = Object.entries(largeHomeRoomLights).flatMap(([room, names], roomIndex) =>
+  names.map((name, lightIndex) =>
+    device(
+      `light.${room.toLowerCase().replaceAll(/[^a-z0-9]+/g, '_')}_${lightIndex}`,
+      name,
+      room,
+      (roomIndex + lightIndex) % 4 === 0,
+      10 + ((roomIndex * 13 + lightIndex * 17) % 80)
+    )
+  )
+);
+
 function LightDashboardFixture({
   lights = baseLights,
   unavailableIds = [],
@@ -220,6 +245,15 @@ export const ManyRooms: Story = {
     ),
     rooms: Array.from({ length: 14 }, (_, index) => `Room ${index + 1}`),
     cardOrders: {},
+  },
+};
+
+export const LargeHome: Story = {
+  args: {
+    deviceMap: new Map(largeHomeLights.map((light) => [light.id, light])),
+    rooms: Object.keys(largeHomeRoomLights),
+    cardOrders: {},
+    unavailableIds: ['light.kitchen_1', 'light.living_room_1'],
   },
 };
 

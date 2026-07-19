@@ -99,16 +99,24 @@ function resolveFanCardSize(size: CardSize): CardSize {
   return size === 'large' || size === 'extra-large' || size === 'medium-vertical' ? 'medium' : size;
 }
 
-function getFanSpeedIconClass(speed: FanSpeed, isSmall: boolean): string {
-  if (speed === 'low') {
-    return isSmall ? 'h-2.5 w-2.5 opacity-75' : 'h-3 w-3 opacity-75';
-  }
+function FanSpeedPresetContent({ speed, isSmall }: { speed: FanSpeed; isSmall: boolean }) {
+  const iconSize = getCardActionControlSizes(isSmall ? 'small' : 'medium').icon;
 
-  if (speed === 'medium') {
-    return isSmall ? 'h-3.5 w-3.5 opacity-90' : 'h-4 w-4 opacity-90';
-  }
-
-  return isSmall ? 'h-4 w-4' : 'h-5 w-5';
+  return (
+    <span
+      aria-hidden="true"
+      className="relative isolate flex h-full w-full items-center justify-center overflow-hidden rounded-full"
+    >
+      <Fan className={`${iconSize} absolute z-0 opacity-[0.42]`} />
+      <span
+        className={`relative z-10 ${
+          isSmall ? 'text-[10px]' : 'text-[11px]'
+        } font-bold leading-none tracking-[-0.04em] drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)] tabular-nums`}
+      >
+        {FAN_SPEED_PERCENTAGES[speed]}
+      </span>
+    </span>
+  );
 }
 
 function readFanDirection(value: unknown): string | undefined {
@@ -194,7 +202,7 @@ const FanPresetOverflowButton = memo(function FanPresetOverflowButton({
                       : `${roundControl.softButton} cursor-pointer hover:scale-105 active:scale-95`
                   }`}
                 >
-                  <Fan className={getFanSpeedIconClass(speed, isSmall)} />
+                  <FanSpeedPresetContent speed={speed} isSmall={isSmall} />
                 </button>
               );
             })}
@@ -667,7 +675,7 @@ export const FanCard = memo(function FanCard({
                                           : `${roundControl.softButton} cursor-pointer hover:scale-105 active:scale-95`
                                     }`}
                                   >
-                                    <Fan className={getFanSpeedIconClass(speed, isSmall)} />
+                                    <FanSpeedPresetContent speed={speed} isSmall={isSmall} />
                                   </button>
                                 );
                               })

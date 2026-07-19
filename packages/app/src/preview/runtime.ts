@@ -179,6 +179,7 @@ function createTaskRuntimeSnapshot(): PlatformTaskRuntimeSnapshot {
         attributes: {
           description:
             'Raises bedroom lights, starts the kitchen speaker, and sets downstairs heat.',
+          category: 'Morning',
           last_triggered: '2026-05-16T06:45:00.000Z',
           mode: 'single',
           current: 0,
@@ -190,6 +191,7 @@ function createTaskRuntimeSnapshot(): PlatformTaskRuntimeSnapshot {
         name: 'Night check',
         attributes: {
           description: 'Locks doors, arms home mode, and turns off common-area lights after 22:30.',
+          category: 'Security',
           last_triggered: '2026-05-15T22:32:00.000Z',
           mode: 'queued',
           current: 0,
@@ -201,6 +203,7 @@ function createTaskRuntimeSnapshot(): PlatformTaskRuntimeSnapshot {
         name: 'Away presence',
         attributes: {
           description: 'Runs presence lighting and camera notifications when nobody is home.',
+          category: 'Presence',
           last_triggered: '2026-05-14T18:10:00.000Z',
           mode: 'restart',
           current: 0,
@@ -241,6 +244,81 @@ function createTaskRuntimeSnapshot(): PlatformTaskRuntimeSnapshot {
   };
 }
 
+function createPreviewMediaEntity({
+  album,
+  artist = '',
+  deviceClass,
+  externalId,
+  groupMembers = [],
+  name,
+  room,
+  source,
+  sourceList,
+  state,
+  title,
+  volume,
+}: {
+  album?: string;
+  artist?: string;
+  deviceClass: 'player' | 'receiver' | 'speaker' | 'streaming_box' | 'tv';
+  externalId: string;
+  groupMembers?: string[];
+  name: string;
+  room: string;
+  source: string;
+  sourceList: string[];
+  state: 'idle' | 'playing';
+  title: string;
+  volume: number;
+}) {
+  return createPreviewEntity(
+    'media_player',
+    externalId,
+    name,
+    state,
+    {
+      value: state,
+      friendly_name: name,
+      title,
+      artist,
+      album,
+      entityType:
+        deviceClass === 'speaker'
+          ? 'Speaker'
+          : deviceClass === 'tv'
+            ? 'TV'
+            : deviceClass === 'streaming_box'
+              ? 'Streaming box'
+              : deviceClass === 'player'
+                ? 'Media player'
+                : 'Cast receiver',
+      deviceClass,
+      device_class: deviceClass,
+      source,
+      sourceList,
+      source_list: sourceList,
+      volume,
+      volume_level: volume / 100,
+      isMuted: false,
+      is_volume_muted: false,
+      elapsedSeconds: state === 'playing' ? 35 : 0,
+      media_position: state === 'playing' ? 35 : 0,
+      durationSeconds: state === 'playing' ? 248 : 0,
+      media_duration: state === 'playing' ? 248 : 0,
+      media_title: title,
+      media_artist: artist,
+      media_album_name: album,
+      supportsGrouping: deviceClass === 'speaker' || deviceClass === 'receiver',
+      groupMembers,
+      group_members: groupMembers,
+      supported_features: 969_279,
+      room,
+      deviceId: `device-${externalId.replaceAll('.', '-')}`,
+    },
+    { room }
+  );
+}
+
 function createPreviewScenario(): PreviewRuntimeScenario {
   const entities: NavetEntity[] = [
     createPreviewEntity(
@@ -274,6 +352,21 @@ function createPreviewScenario(): PreviewRuntimeScenario {
         colorMode: 'color_temp',
         room: 'Kitchen',
         deviceId: 'device-kitchen-light',
+      },
+      { room: 'Kitchen' }
+    ),
+    createPreviewEntity(
+      'light',
+      'light.kitchen_island',
+      'Kitchen island',
+      'on',
+      {
+        value: 'on',
+        brightnessPct: 72,
+        supportedColorModes: ['brightness'],
+        colorMode: 'brightness',
+        room: 'Kitchen',
+        deviceId: 'device-kitchen-island-light',
       },
       { room: 'Kitchen' }
     ),
@@ -335,6 +428,7 @@ function createPreviewScenario(): PreviewRuntimeScenario {
       'playing',
       {
         value: 'playing',
+        friendly_name: 'Living Room Speaker',
         title: 'Morning Mix',
         artist: 'Navet Radio',
         entityType: 'Speaker',
@@ -352,6 +446,141 @@ function createPreviewScenario(): PreviewRuntimeScenario {
       },
       { room: 'Living Room' }
     ),
+    createPreviewMediaEntity({
+      externalId: 'media_player.demo_spotify',
+      name: 'Spotify',
+      room: 'Whole home',
+      title: 'Olalla',
+      artist: 'Blanco White',
+      album: 'On the Other Side',
+      deviceClass: 'receiver',
+      source: 'Kitchen',
+      sourceList: ['Bathroom', 'Kitchen', 'Living room', 'Bedroom'],
+      state: 'playing',
+      volume: 36,
+    }),
+    createPreviewMediaEntity({
+      externalId: 'media_player.demo_kitchen',
+      name: 'Kitchen',
+      room: 'Kitchen',
+      title: 'Olalla',
+      artist: 'Blanco White',
+      album: 'On the Other Side',
+      deviceClass: 'speaker',
+      source: 'Spotify',
+      sourceList: ['Spotify', 'AirPlay', 'Radio'],
+      state: 'playing',
+      volume: 36,
+      groupMembers: [
+        'media_player.demo_kitchen',
+        'media_player.demo_living_room',
+        'media_player.demo_bedroom',
+      ],
+    }),
+    createPreviewMediaEntity({
+      externalId: 'media_player.demo_living_room',
+      name: 'Living room',
+      room: 'Living Room',
+      title: 'Olalla',
+      artist: 'Blanco White',
+      album: 'On the Other Side',
+      deviceClass: 'speaker',
+      source: 'Spotify',
+      sourceList: ['Spotify', 'AirPlay', 'Radio'],
+      state: 'playing',
+      volume: 31,
+      groupMembers: [
+        'media_player.demo_kitchen',
+        'media_player.demo_living_room',
+        'media_player.demo_bedroom',
+      ],
+    }),
+    createPreviewMediaEntity({
+      externalId: 'media_player.demo_bedroom',
+      name: 'Bedroom',
+      room: 'Bedroom',
+      title: 'Olalla',
+      artist: 'Blanco White',
+      album: 'On the Other Side',
+      deviceClass: 'speaker',
+      source: 'Spotify',
+      sourceList: ['Spotify', 'AirPlay', 'Radio'],
+      state: 'playing',
+      volume: 24,
+      groupMembers: [
+        'media_player.demo_kitchen',
+        'media_player.demo_living_room',
+        'media_player.demo_bedroom',
+      ],
+    }),
+    createPreviewMediaEntity({
+      externalId: 'media_player.demo_bathroom',
+      name: 'Bathroom',
+      room: 'Bathroom',
+      title: 'Bathroom',
+      deviceClass: 'speaker',
+      source: 'AirPlay',
+      sourceList: ['Spotify', 'AirPlay', 'Radio'],
+      state: 'idle',
+      volume: 20,
+    }),
+    createPreviewMediaEntity({
+      externalId: 'media_player.demo_kitchen_display',
+      name: 'Kitchen display',
+      room: 'Kitchen',
+      title: 'Kitchen display',
+      deviceClass: 'receiver',
+      source: 'Google Cast',
+      sourceList: ['Google Cast', 'Spotify', 'YouTube'],
+      state: 'idle',
+      volume: 28,
+    }),
+    createPreviewMediaEntity({
+      externalId: 'media_player.demo_office_cast',
+      name: 'Office Cast',
+      room: 'Office',
+      title: 'Office Cast',
+      deviceClass: 'receiver',
+      source: 'Google Cast',
+      sourceList: ['Google Cast', 'Spotify', 'YouTube Music'],
+      state: 'idle',
+      volume: 18,
+    }),
+    createPreviewMediaEntity({
+      externalId: 'media_player.demo_apple_tv',
+      name: 'Apple TV 4K',
+      room: 'Living Room',
+      title: 'Apple TV 4K',
+      deviceClass: 'streaming_box',
+      source: 'Apple TV',
+      sourceList: ['Apple TV', 'AirPlay', 'Disney+', 'Netflix'],
+      state: 'idle',
+      volume: 24,
+    }),
+    createPreviewMediaEntity({
+      externalId: 'media_player.demo_playstation_5',
+      name: 'PlayStation 5',
+      room: 'Living Room',
+      title: "Astro's Playroom",
+      artist: 'PlayStation 5',
+      deviceClass: 'player',
+      source: 'PlayStation 5',
+      sourceList: ['PlayStation 5', 'Blu-ray', 'Media'],
+      state: 'playing',
+      volume: 30,
+    }),
+    createPreviewMediaEntity({
+      externalId: 'media_player.demo_living_room_tv',
+      name: 'Living room TV',
+      room: 'Living Room',
+      title: 'Samsung TV Plus',
+      artist: 'Live',
+      deviceClass: 'tv',
+      source: 'HDMI 1',
+      sourceList: ['HDMI 1', 'Apple TV', 'TV'],
+      state: 'idle',
+      volume: 18,
+    }),
     createPreviewEntity(
       'weather',
       'weather.home',
@@ -767,7 +996,11 @@ function createPreviewScenario(): PreviewRuntimeScenario {
       'cover.living_room_blind',
       'scene.movie_mode',
     ]),
-    createPreviewRoom('Kitchen', ['light.kitchen', 'sensor.kitchen_remote_battery']),
+    createPreviewRoom('Kitchen', [
+      'light.kitchen',
+      'light.kitchen_island',
+      'sensor.kitchen_remote_battery',
+    ]),
     createPreviewRoom('Bedroom', ['fan.bedroom_ceiling', 'humidifier.bedroom']),
     createPreviewRoom('Hallway', ['climate.main_floor', 'input_boolean.guest_mode']),
     createPreviewRoom('Outside', ['camera.front_door', 'weather.home']),
@@ -800,6 +1033,11 @@ function createPreviewScenario(): PreviewRuntimeScenario {
     [
       { id: 'device-ups', area_id: 'server-room', name: 'Rack UPS' },
       { id: 'device-kitchen-light', area_id: 'kitchen', name: 'Kitchen Light' },
+      {
+        id: 'device-kitchen-island-light',
+        area_id: 'kitchen',
+        name: 'Kitchen Island Light',
+      },
       { id: 'device-living-room-light', area_id: 'living-room', name: 'Living Room Light' },
       { id: 'device-hallway', area_id: 'hallway', name: 'Hallway Controls' },
     ],
@@ -983,6 +1221,46 @@ const PREVIEW_MEDIA_LIBRARY: PlatformMediaBrowseResult = {
   mediaClass: 'directory',
   children: [
     {
+      title: 'Playlists',
+      mediaClass: 'directory',
+      mediaContentId: 'preview:playlists',
+      mediaContentType: 'playlist',
+      canExpand: true,
+      canPlay: false,
+    },
+    {
+      title: 'Artists',
+      mediaClass: 'directory',
+      mediaContentId: 'preview:artists',
+      mediaContentType: 'artist',
+      canExpand: true,
+      canPlay: false,
+    },
+    {
+      title: 'Albums',
+      mediaClass: 'directory',
+      mediaContentId: 'preview:albums',
+      mediaContentType: 'album',
+      canExpand: true,
+      canPlay: false,
+    },
+    {
+      title: 'Liked songs',
+      mediaClass: 'directory',
+      mediaContentId: 'preview:liked-songs',
+      mediaContentType: 'track',
+      canExpand: true,
+      canPlay: false,
+    },
+    {
+      title: 'Podcasts',
+      mediaClass: 'directory',
+      mediaContentId: 'preview:podcasts',
+      mediaContentType: 'podcast',
+      canExpand: true,
+      canPlay: false,
+    },
+    {
       title: 'Recently played',
       mediaClass: 'directory',
       mediaContentId: 'preview:recently-played',
@@ -991,59 +1269,130 @@ const PREVIEW_MEDIA_LIBRARY: PlatformMediaBrowseResult = {
       canPlay: false,
     },
     {
-      title: 'Made for the morning',
-      mediaClass: 'playlist',
-      mediaContentId: 'preview:playlist:morning',
-      mediaContentType: 'playlist',
-      canExpand: false,
-      canPlay: true,
+      title: 'Top artists',
+      mediaClass: 'directory',
+      mediaContentId: 'preview:top-artists',
+      mediaContentType: 'artist',
+      canExpand: true,
+      canPlay: false,
+    },
+    {
+      title: 'Top tracks',
+      mediaClass: 'directory',
+      mediaContentId: 'preview:top-tracks',
+      mediaContentType: 'track',
+      canExpand: true,
+      canPlay: false,
     },
   ],
 };
+
+function createPreviewMediaItems({
+  count,
+  mediaClass,
+  prefix,
+}: {
+  count: number;
+  mediaClass: string;
+  prefix: string;
+}) {
+  return Array.from({ length: count }, (_, index) => ({
+    title: `${prefix} ${index + 1}`,
+    mediaClass,
+    mediaContentId: `preview:${mediaClass}:${prefix.toLowerCase().replaceAll(' ', '-')}:${index + 1}`,
+    mediaContentType: mediaClass,
+    canExpand: false,
+    canPlay: true,
+  }));
+}
+
+const PREVIEW_RECENT_TRACKS = [
+  {
+    title: 'Olalla',
+    artist: 'Blanco White',
+    album: 'On the Other Side',
+    mediaClass: 'track',
+    mediaContentId: 'preview:track:olalla',
+    mediaContentType: 'track',
+    canExpand: false,
+    canPlay: true,
+  },
+  {
+    title: 'Above the Clouds of Pompeii',
+    artist: "Bear's Den",
+    album: 'Islands',
+    mediaClass: 'track',
+    mediaContentId: 'preview:track:pompeii',
+    mediaContentType: 'track',
+    canExpand: false,
+    canPlay: true,
+  },
+  {
+    title: 'Bed Head',
+    artist: 'Manchester Orchestra',
+    album: 'The Million Masks of God',
+    mediaClass: 'track',
+    mediaContentId: 'preview:track:bed-head',
+    mediaContentType: 'track',
+    canExpand: false,
+    canPlay: true,
+  },
+  ...createPreviewMediaItems({ count: 45, mediaClass: 'track', prefix: 'Recently played' }),
+];
 
 const PREVIEW_RECENT_MEDIA: PlatformMediaBrowseResult = {
   title: 'Recently played',
   mediaClass: 'directory',
   mediaContentId: 'preview:recently-played',
   mediaContentType: 'track',
-  children: [
-    {
-      title: 'Olalla',
-      artist: 'Blanco White',
-      album: 'On the Other Side',
-      mediaClass: 'track',
-      mediaContentId: 'preview:track:olalla',
-      mediaContentType: 'track',
-      canExpand: false,
-      canPlay: true,
-    },
-    {
-      title: 'Above the Clouds of Pompeii',
-      artist: "Bear's Den",
-      album: 'Islands',
-      mediaClass: 'track',
-      mediaContentId: 'preview:track:pompeii',
-      mediaContentType: 'track',
-      canExpand: false,
-      canPlay: true,
-    },
-    {
-      title: 'Bed Head',
-      artist: 'Manchester Orchestra',
-      album: 'The Million Masks of God',
-      mediaClass: 'track',
-      mediaContentId: 'preview:track:bed-head',
-      mediaContentType: 'track',
-      canExpand: false,
-      canPlay: true,
-    },
-  ],
+  children: PREVIEW_RECENT_TRACKS,
 };
 
-function getPreviewMediaBrowseResult(mediaContentId?: string) {
-  return mediaContentId === PREVIEW_RECENT_MEDIA.mediaContentId
-    ? PREVIEW_RECENT_MEDIA
-    : PREVIEW_MEDIA_LIBRARY;
+const PREVIEW_MEDIA_BROWSE_RESULTS: Record<string, PlatformMediaBrowseResult> = {
+  'preview:playlists': {
+    title: 'Playlists',
+    mediaClass: 'directory',
+    children: [],
+  },
+  'preview:artists': {
+    title: 'Artists',
+    mediaClass: 'directory',
+    children: createPreviewMediaItems({ count: 3, mediaClass: 'artist', prefix: 'Artist' }),
+  },
+  'preview:albums': {
+    title: 'Albums',
+    mediaClass: 'directory',
+    children: [],
+  },
+  'preview:liked-songs': {
+    title: 'Liked songs',
+    mediaClass: 'directory',
+    children: PREVIEW_RECENT_TRACKS.slice(0, 1),
+  },
+  'preview:podcasts': {
+    title: 'Podcasts',
+    mediaClass: 'directory',
+    children: [],
+  },
+  'preview:recently-played': PREVIEW_RECENT_MEDIA,
+  'preview:top-artists': {
+    title: 'Top artists',
+    mediaClass: 'directory',
+    children: createPreviewMediaItems({ count: 2, mediaClass: 'artist', prefix: 'Top artist' }),
+  },
+  'preview:top-tracks': {
+    title: 'Top tracks',
+    mediaClass: 'directory',
+    children: PREVIEW_RECENT_TRACKS,
+  },
+};
+
+function getPreviewMediaBrowseResult(mediaContentId?: string): PlatformMediaBrowseResult {
+  if (!mediaContentId) {
+    return PREVIEW_MEDIA_LIBRARY;
+  }
+
+  return PREVIEW_MEDIA_BROWSE_RESULTS[mediaContentId] ?? PREVIEW_MEDIA_LIBRARY;
 }
 
 const previewMediaFeatureService: ProviderMediaFeatureService = {

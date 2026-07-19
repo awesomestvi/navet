@@ -9,12 +9,14 @@ import { useI18n, useTheme } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { LucideIcon } from 'lucide-react';
 import { type ButtonHTMLAttributes, memo } from 'react';
+import { formatLightEffectLabel } from './light-card-effect-utils';
 
 interface LightCardHeaderProps {
   name: string;
   isOn: boolean;
   IconComponent?: LucideIcon | null;
   iconText?: string | null;
+  currentEffect?: string | null;
   size: CardSize;
   onIconClick?: ButtonHTMLAttributes<HTMLButtonElement>['onClick'];
   onIconPointerDown?: ButtonHTMLAttributes<HTMLButtonElement>['onPointerDown'];
@@ -28,6 +30,7 @@ export const LightCardHeader = memo(function LightCardHeader({
   isOn,
   IconComponent,
   iconText,
+  currentEffect,
   size,
   onIconClick,
   onIconPointerDown,
@@ -42,6 +45,10 @@ export const LightCardHeader = memo(function LightCardHeader({
   const stateSurface = getCardStateSurfaceTokens(theme, isOn);
   const useInverseForeground = theme === 'light' && isOn;
   const isExtraSmall = isExtraSmallCardSize(size);
+  const cardType = t('lighting.type.light');
+  const subtitle = currentEffect
+    ? `${cardType} · ${formatLightEffectLabel(currentEffect)}`
+    : cardType;
   const headerIcon = (
     <EntityCardHeaderIcon
       IconComponent={IconComponent}
@@ -62,7 +69,7 @@ export const LightCardHeader = memo(function LightCardHeader({
     return (
       <EntityCardHeader
         title={name}
-        subtitle={t('lighting.type.light')}
+        subtitle={subtitle}
         compact
         layout="eyebrow-first"
         size={size}
@@ -80,7 +87,7 @@ export const LightCardHeader = memo(function LightCardHeader({
   return (
     <EntityCardHeader
       title={name}
-      subtitle={t('lighting.type.light')}
+      subtitle={subtitle}
       layout="eyebrow-first"
       size={size}
       tone={isOn ? 'primary' : 'neutral'}

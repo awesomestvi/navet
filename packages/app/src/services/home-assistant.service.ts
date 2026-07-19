@@ -31,11 +31,18 @@ export interface HomeAssistantEntityRegistryEntry {
   entity_id: string;
   area_id?: string | null;
   device_id?: string | null;
+  categories?: Record<string, string>;
   name?: string | null;
   original_name?: string | null;
   platform?: string | null;
   entity_category?: 'config' | 'diagnostic' | null;
   options?: Record<string, Record<string, unknown>>;
+}
+
+export interface HomeAssistantCategoryRegistryEntry {
+  category_id: string;
+  name: string;
+  icon?: string | null;
 }
 
 export interface HomeAssistantMediaSourceItem {
@@ -127,6 +134,7 @@ export interface HAServiceEventMap {
     areas: HomeAssistantAreaRegistryEntry[];
     devices: HomeAssistantDeviceRegistryEntry[];
     entities: HomeAssistantEntityRegistryEntry[];
+    automationCategories: HomeAssistantCategoryRegistryEntry[];
   };
   connection: { connected: boolean; connection: Connection | null; reconnecting: boolean };
   error: { message: string };
@@ -328,8 +336,9 @@ class HomeAssistantService {
 
   async loadRegistries(): Promise<void> {
     if (this.panelAdapter) {
-      const { areas, devices, entities } = await this.panelAdapter.loadRegistries();
-      this.registryService.replaceRegistries(areas, devices, entities);
+      const { areas, devices, entities, automationCategories } =
+        await this.panelAdapter.loadRegistries();
+      this.registryService.replaceRegistries(areas, devices, entities, automationCategories);
       this.emitRegistries();
       return;
     }
@@ -357,6 +366,10 @@ class HomeAssistantService {
    */
   getEntityRegistry(): HomeAssistantEntityRegistryEntry[] {
     return this.registryService.getEntityRegistry();
+  }
+
+  getAutomationCategories(): HomeAssistantCategoryRegistryEntry[] {
+    return this.registryService.getAutomationCategories();
   }
 
   /**
@@ -731,6 +744,7 @@ class HomeAssistantService {
       areas: this.registryService.getAreas(),
       devices: this.registryService.getDeviceRegistry(),
       entities: this.registryService.getEntityRegistry(),
+      automationCategories: this.registryService.getAutomationCategories(),
     };
 
     for (const listener of this.registryListeners) {

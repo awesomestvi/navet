@@ -1,20 +1,10 @@
 import { dispatchEntityCommand } from '@navet/app/commands';
-import { Button, IconButton, Panel, Tag } from '@navet/app/components/primitives';
-import { EntityCardHeader } from '@navet/app/components/primitives/entity-card-header';
-import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
+import { Button, IconButton, Tag } from '@navet/app/components/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useAccentColor, useI18n, useServiceActionHandler, useThemeMode } from '@navet/app/hooks';
 import type { PlatformTaskEntityMap } from '@navet/app/platform/provider-feature-models';
 import { integrationTaskService } from '@navet/app/services/integration-task.service';
-import {
-  AlertTriangle,
-  CalendarClock,
-  ChevronDown,
-  ChevronUp,
-  Play,
-  Power,
-  PowerOff,
-} from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronUp, Play, Power, PowerOff } from 'lucide-react';
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import type { AutomationRoutine } from '../types';
 import { buildAutomationConfigSections } from '../utils/automation-config-details';
@@ -26,6 +16,7 @@ import {
 interface AutomationTaskRowProps {
   automation: AutomationRoutine;
   shouldReduceMotion: boolean;
+  striped?: boolean;
 }
 
 interface DetailSectionProps {
@@ -36,6 +27,8 @@ interface DetailSectionProps {
   emptyLabel: string;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
   accentColor: string;
+  step: number;
+  isLast?: boolean;
 }
 
 function DetailSection({
@@ -46,48 +39,65 @@ function DetailSection({
   emptyLabel,
   surface,
   accentColor,
+  step,
+  isLast = false,
 }: DetailSectionProps) {
   return (
-    <Panel muted padded={false} className="grid gap-3 p-4">
-      <div className="text-xs font-semibold leading-4" style={{ color: accentColor }}>
-        {title}
+    <section className="grid grid-cols-[1.75rem_minmax(0,1fr)] gap-3">
+      <div className="relative flex justify-center" aria-hidden="true">
+        <span
+          className="relative z-10 flex h-6 w-6 items-center justify-center rounded-full border text-[11px] font-semibold"
+          style={{
+            borderColor: `${accentColor}66`,
+            backgroundColor: `${accentColor}14`,
+            color: accentColor,
+          }}
+        >
+          {step}
+        </span>
+        {!isLast ? (
+          <span
+            className="absolute top-6 bottom-[-1.25rem] w-px"
+            style={{ backgroundColor: `${accentColor}2e` }}
+          />
+        ) : null}
       </div>
-      {loading ? (
-        <p className={`text-sm ${surface.textSecondary}`}>{emptyLabel}</p>
-      ) : error ? (
-        <p className={`text-sm ${surface.textSecondary}`}>{error}</p>
-      ) : items.length > 0 ? (
-        <ol className={`space-y-2 text-sm leading-6 ${surface.textPrimary}`}>
-          {items.map((item, index) => (
-            <li key={`${title}-${index}`} className="flex gap-3">
-              <span className="mt-0.5 text-xs font-semibold" style={{ color: accentColor }}>
-                {index + 1}
-              </span>
-              <span>{item}</span>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <p className={`text-sm ${surface.textSecondary}`}>{emptyLabel}</p>
-      )}
-    </Panel>
+      <div className={isLast ? '' : 'pb-5'}>
+        <h4 className="mb-1 text-xs font-semibold leading-5" style={{ color: accentColor }}>
+          {title}
+        </h4>
+        {loading ? (
+          <p className={`text-sm leading-6 ${surface.textMuted}`}>{emptyLabel}</p>
+        ) : error ? (
+          <p className={`text-sm leading-6 ${surface.textSecondary}`}>{error}</p>
+        ) : items.length > 0 ? (
+          <ol className={`grid gap-1.5 text-sm leading-6 ${surface.textPrimary}`}>
+            {items.map((item, index) => (
+              <li
+                key={`${title}-${index}`}
+                className="grid grid-cols-[0.75rem_minmax(0,1fr)] gap-2"
+              >
+                <span className="pt-0.5 text-xs" style={{ color: `${accentColor}b3` }}>
+                  •
+                </span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className={`text-sm leading-6 ${surface.textMuted}`}>{emptyLabel}</p>
+        )}
+      </div>
+    </section>
   );
 }
 
-function parseTimeLabel(
-  value: string,
-  formatDateTime: ReturnType<typeof useI18n>['formatDateTime']
-) {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
-
-  return formatDateTime(parsed, { dateStyle: 'medium', timeStyle: 'short' });
-}
-
-export function AutomationTaskRow({ automation, shouldReduceMotion }: AutomationTaskRowProps) {
-  const { formatDateTime, t } = useI18n();
+export function AutomationTaskRow({
+  automation,
+  shouldReduceMotion,
+  striped = false,
+}: AutomationTaskRowProps) {
+  const { t } = useI18n();
   const theme = useThemeMode();
   const accentColor = useAccentColor();
   const surface = getThemeSurfaceTokens(theme);
@@ -203,119 +213,71 @@ export function AutomationTaskRow({ automation, shouldReduceMotion }: Automation
       : automation.attentionReason === 'unknown'
         ? t('tasks.automation.attention.unknown')
         : t('tasks.automation.attention.error');
-  const statusIcon = automation.needsAttention
-    ? AlertTriangle
-    : automation.enabled
-      ? Power
-      : PowerOff;
-  const stateBorderColor = automation.needsAttention
-    ? 'rgba(245, 158, 11, 0.54)'
-    : automation.enabled
-      ? `${accentColor}26`
-      : undefined;
-  const nextRunLabel = automation.nextRunLabel
-    ? parseTimeLabel(automation.nextRunLabel, formatDateTime)
-    : undefined;
-  const lastRunLabel = automation.lastTriggeredDate
-    ? formatDateTime(automation.lastTriggeredDate, { dateStyle: 'medium', timeStyle: 'short' })
-    : undefined;
-  const lastRunHeaderLabel = lastRunLabel
-    ? t('tasks.automation.lastTriggered', { time: lastRunLabel })
-    : undefined;
   const cardDescription = isDetailsOpen ? configSections.overview : automation.description;
   const hasDescription = Boolean(cardDescription);
-  const showRoom = automation.room !== 'Unassigned';
-  const headerSubtitle = [showRoom ? automation.room : undefined, lastRunHeaderLabel]
-    .filter(Boolean)
-    .join(' - ');
-  const currentRuns = automation.currentRuns;
-  const showCurrentRuns = currentRuns !== undefined && currentRuns > 0;
-  const hasMetadata = Boolean(nextRunLabel) || showCurrentRuns;
-  const hasBodyContent = hasDescription || automation.needsAttention || hasMetadata;
+  const statusLabel = automation.needsAttention
+    ? t('tasks.automation.needsAttention')
+    : automation.enabled
+      ? t('tasks.automation.enabled')
+      : t('tasks.automation.disabled');
+  const statusTone = automation.needsAttention
+    ? 'warning'
+    : automation.enabled
+      ? 'success'
+      : 'neutral';
 
   return (
-    <Panel
-      as="article"
-      muted
-      padded={false}
-      className={`grid gap-4 p-4 md:p-5 ${shouldReduceMotion ? '' : 'transition-shadow duration-200'} ${
-        automation.status === 'disabled' ? 'md:brightness-[0.96]' : ''
-      }`}
-      style={{
-        borderColor: stateBorderColor,
-        boxShadow: automation.needsAttention
-          ? '0 18px 50px -40px rgba(245, 158, 11, 0.8)'
-          : undefined,
-      }}
+    <article
+      className={`${striped ? surface.subtleBg : ''} ${
+        shouldReduceMotion ? '' : 'transition-colors duration-200'
+      } ${automation.status === 'disabled' ? 'md:brightness-[0.96]' : ''}`}
     >
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
-        <div className="min-w-0">
-          <EntityCardHeader
-            title={automation.name}
-            subtitle={headerSubtitle}
-            size="medium"
-            layout="eyebrow-first"
-            leading={
-              <EntityCardHeaderIcon
-                IconComponent={statusIcon}
-                isActive={automation.enabled || automation.needsAttention}
-                size="medium"
-                tone={
-                  automation.needsAttention ? 'amber' : automation.enabled ? 'primary' : 'neutral'
-                }
-                baseColor={automation.needsAttention ? '#f59e0b' : accentColor}
-              />
-            }
-            trailing={
-              automation.needsAttention ? (
-                <Tag tone="warning" size="small" className="gap-1">
-                  <AlertTriangle className="h-3 w-3" aria-hidden="true" />
-                  {t('tasks.automation.needsAttention')}
-                </Tag>
-              ) : null
-            }
-            titleClassName="text-base leading-6"
-            subtitleClassName="text-xs"
-            marginBottomClassName={hasBodyContent ? 'mb-3' : 'mb-0'}
-          />
-
+      <div className="grid gap-3 px-4 py-3 text-sm sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] @2xl/automation-table:grid-cols-[minmax(0,1fr)_10rem_7rem_15rem] @2xl/automation-table:items-center">
+        <div className="min-w-0 sm:col-span-2 @2xl/automation-table:col-span-1">
+          <div className={`truncate font-medium ${surface.textPrimary}`}>{automation.name}</div>
           {hasDescription ? (
-            <p className={`line-clamp-2 text-sm leading-6 ${surface.textSecondary}`}>
+            <p
+              className={`whitespace-normal break-words text-xs font-normal leading-5 ${surface.textSecondary}`}
+            >
               {cardDescription}
             </p>
           ) : null}
-
           {automation.needsAttention ? (
             <div
-              className={`${hasDescription ? 'mt-3' : ''} rounded-2xl border px-3 py-2 text-sm leading-5`}
+              className="mt-2 text-xs leading-5"
               style={{
-                backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                borderColor: 'rgba(245, 158, 11, 0.26)',
                 color: theme === 'light' ? '#92400e' : '#fbbf24',
               }}
             >
               {attentionLabel}
             </div>
           ) : null}
-
-          {hasMetadata ? (
-            <div
-              className={`${hasDescription || automation.needsAttention ? 'mt-3' : ''} flex flex-wrap gap-x-4 gap-y-2 text-sm ${surface.textSecondary}`}
-            >
-              {nextRunLabel ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
-                  {t('tasks.automation.nextRun', { time: nextRunLabel })}
-                </span>
-              ) : null}
-              {showCurrentRuns ? (
-                <Tag tone="accent">{t('tasks.automation.currentRuns', { count: currentRuns })}</Tag>
-              ) : null}
-            </div>
-          ) : null}
         </div>
 
-        <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
+        <div className="flex min-w-0 items-center justify-between gap-3 lg:block">
+          <div className={`text-xs font-medium @2xl/automation-table:hidden ${surface.textMuted}`}>
+            {t('tasks.automation.category')}
+          </div>
+          <div
+            className={`truncate ${automation.category ? surface.textSecondary : surface.textMuted}`}
+          >
+            {automation.category ?? '—'}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 lg:block">
+          <div className={`text-xs font-medium @2xl/automation-table:hidden ${surface.textMuted}`}>
+            {t('dashboard.zones.status')}
+          </div>
+          <Tag tone={statusTone} size="small" className="gap-1">
+            {automation.needsAttention ? (
+              <AlertTriangle className="h-3 w-3" aria-hidden="true" />
+            ) : null}
+            {statusLabel}
+          </Tag>
+        </div>
+
+        <div className="flex w-full flex-wrap items-center gap-2 sm:col-span-2 lg:justify-end @2xl/automation-table:col-span-1">
           <Button
             variant="secondary"
             size="small"
@@ -333,7 +295,7 @@ export function AutomationTaskRow({ automation, shouldReduceMotion }: Automation
                 ? t('tasks.automation.disableAutomation', { name: automation.name })
                 : t('tasks.automation.enableAutomation', { name: automation.name })
             }
-            className="min-w-24 flex-1 sm:flex-none"
+            className="min-w-20 flex-1 sm:flex-none"
           >
             {automation.enabled ? t('tasks.automation.disable') : t('tasks.automation.enable')}
           </Button>
@@ -344,7 +306,7 @@ export function AutomationTaskRow({ automation, shouldReduceMotion }: Automation
             loading={isTriggering}
             onClick={handleTrigger}
             aria-label={t('tasks.automation.runAutomation', { name: automation.name })}
-            className="min-w-24 flex-1 sm:flex-none"
+            className="min-w-20 flex-1 sm:flex-none"
           >
             {isTriggering ? t('tasks.automation.running') : t('tasks.automation.run')}
           </Button>
@@ -368,79 +330,98 @@ export function AutomationTaskRow({ automation, shouldReduceMotion }: Automation
       </div>
 
       {isDetailsOpen ? (
-        <div
-          className="grid gap-3 border-t pt-4 md:grid-cols-2"
-          style={{ borderColor: `${accentColor}26` }}
-        >
-          <DetailSection
-            title={t('tasks.automation.details.when')}
-            items={configSections.triggers}
-            loading={isLoadingDetails}
-            error={detailsError}
-            emptyLabel={t('tasks.automation.details.none')}
-            surface={surface}
-            accentColor={accentColor}
-          />
-          <DetailSection
-            title={t('tasks.automation.details.if')}
-            items={configSections.conditions}
-            loading={isLoadingDetails}
-            error={detailsError}
-            emptyLabel={t('tasks.automation.details.none')}
-            surface={surface}
-            accentColor={accentColor}
-          />
-          <DetailSection
-            title={t('tasks.automation.details.then')}
-            items={configSections.actions}
-            loading={isLoadingDetails}
-            error={detailsError}
-            emptyLabel={t('tasks.automation.details.none')}
-            surface={surface}
-            accentColor={accentColor}
-          />
-          <Panel muted padded={false} className="grid gap-2 p-4">
-            <div className="text-xs font-semibold leading-4" style={{ color: accentColor }}>
-              {t('tasks.automation.details.diagnostics')}
+        <div className="border-t" style={{ borderColor: `${accentColor}26` }}>
+          <div className="px-5 py-5 md:px-6 md:py-6">
+            <div className="max-w-4xl">
+              <DetailSection
+                title={t('tasks.automation.details.when')}
+                items={configSections.triggers}
+                loading={isLoadingDetails}
+                error={detailsError}
+                emptyLabel={t('tasks.automation.details.none')}
+                surface={surface}
+                accentColor={accentColor}
+                step={1}
+              />
+              <DetailSection
+                title={t('tasks.automation.details.if')}
+                items={configSections.conditions}
+                loading={isLoadingDetails}
+                error={detailsError}
+                emptyLabel={t('tasks.automation.details.none')}
+                surface={surface}
+                accentColor={accentColor}
+                step={2}
+              />
+              <DetailSection
+                title={t('tasks.automation.details.then')}
+                items={configSections.actions}
+                loading={isLoadingDetails}
+                error={detailsError}
+                emptyLabel={t('tasks.automation.details.none')}
+                surface={surface}
+                accentColor={accentColor}
+                step={3}
+                isLast
+              />
             </div>
-            <dl className={`grid gap-2 text-sm ${surface.textSecondary}`}>
-              <div className="flex justify-between gap-4">
-                <dt>{t('tasks.automation.details.entityId')}</dt>
-                <dd className={`break-all text-right font-mono text-xs ${surface.textMuted}`}>
-                  {automation.id}
-                </dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt>{t('tasks.automation.details.state')}</dt>
-                <dd>{automation.state}</dd>
-              </div>
-              {automation.currentRuns !== undefined ? (
-                <div className="flex justify-between gap-4">
-                  <dt>{t('tasks.automation.details.currentRuns')}</dt>
-                  <dd>{automation.currentRuns}</dd>
+          </div>
+
+          <div
+            className="grid gap-4 border-t px-5 py-4 md:grid-cols-[6rem_minmax(0,1fr)] md:px-6"
+            style={{ borderColor: `${accentColor}1f` }}
+          >
+            <h4 className={`text-xs font-semibold leading-5 ${surface.textMuted}`}>
+              {t('tasks.automation.details.diagnostics')}
+            </h4>
+            <div className="min-w-0">
+              <dl
+                className={`grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[minmax(0,1fr)_auto_auto] ${surface.textSecondary}`}
+              >
+                <div className="min-w-0">
+                  <dt className={`mb-0.5 text-xs ${surface.textMuted}`}>
+                    {t('tasks.automation.details.entityId')}
+                  </dt>
+                  <dd className="truncate font-mono text-xs">{automation.id}</dd>
+                </div>
+                <div>
+                  <dt className={`mb-0.5 text-xs ${surface.textMuted}`}>
+                    {t('tasks.automation.details.state')}
+                  </dt>
+                  <dd>{automation.state}</dd>
+                </div>
+                {automation.currentRuns !== undefined ? (
+                  <div>
+                    <dt className={`mb-0.5 text-xs ${surface.textMuted}`}>
+                      {t('tasks.automation.details.currentRuns')}
+                    </dt>
+                    <dd>{automation.currentRuns}</dd>
+                  </div>
+                ) : null}
+              </dl>
+              {dependencySummaries.length > 0 ? (
+                <div className="mt-4 border-t pt-3" style={{ borderColor: `${accentColor}1f` }}>
+                  <div className={`text-xs font-semibold leading-4 ${surface.textMuted}`}>
+                    {t('tasks.automation.details.dependencies')}
+                  </div>
+                  <ul
+                    className={`mt-2 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2 ${surface.textSecondary}`}
+                  >
+                    {dependencySummaries.map((dependency) => (
+                      <li key={dependency.entityId} className="flex justify-between gap-4">
+                        <span className="min-w-0 truncate">{dependency.label}</span>
+                        <span className={`shrink-0 font-mono text-xs ${surface.textMuted}`}>
+                          {dependency.state}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               ) : null}
-            </dl>
-            {dependencySummaries.length > 0 ? (
-              <div className="mt-3 border-t pt-3" style={{ borderColor: `${accentColor}1f` }}>
-                <div className={`text-xs font-semibold leading-4 ${surface.textMuted}`}>
-                  {t('tasks.automation.details.dependencies')}
-                </div>
-                <ul className={`mt-2 grid gap-2 text-sm ${surface.textSecondary}`}>
-                  {dependencySummaries.map((dependency) => (
-                    <li key={dependency.entityId} className="flex justify-between gap-4">
-                      <span className="min-w-0 truncate">{dependency.label}</span>
-                      <span className={`shrink-0 font-mono text-xs ${surface.textMuted}`}>
-                        {dependency.state}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </Panel>
+            </div>
+          </div>
         </div>
       ) : null}
-    </Panel>
+    </article>
   );
 }

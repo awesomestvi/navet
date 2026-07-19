@@ -31,5 +31,15 @@ describe('demo preview runtime', () => {
         name: 'Guest mode',
       })
     );
+    expect(homeAssistantEntities?.['home_assistant:light.kitchen_island']).toEqual(
+      expect.objectContaining({
+        type: 'light',
+        name: 'Kitchen island',
+        attributes: expect.objectContaining({
+          brightnessPct: 72,
+          supportedColorModes: ['brightness'],
+        }),
+      })
+    );
   });
 });

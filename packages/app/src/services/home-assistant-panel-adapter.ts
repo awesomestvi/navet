@@ -8,6 +8,7 @@ import type {
 
 import type {
   HomeAssistantAreaRegistryEntry,
+  HomeAssistantCategoryRegistryEntry,
   HomeAssistantDeviceRegistryEntry,
   HomeAssistantEntityRegistryEntry,
 } from './home-assistant.service';
@@ -152,13 +153,18 @@ export class HomeAssistantPanelAdapter {
     areas: HomeAssistantAreaRegistryEntry[];
     devices: HomeAssistantDeviceRegistryEntry[];
     entities: HomeAssistantEntityRegistryEntry[];
+    automationCategories: HomeAssistantCategoryRegistryEntry[];
   }> {
-    const [areas, devices, entities] = await Promise.all([
+    const [areas, devices, entities, automationCategories] = await Promise.all([
       this.hass.callWS<HomeAssistantAreaRegistryEntry[]>({ type: 'config/area_registry/list' }),
       this.hass.callWS<HomeAssistantDeviceRegistryEntry[]>({ type: 'config/device_registry/list' }),
       this.hass.callWS<HomeAssistantEntityRegistryEntry[]>({ type: 'config/entity_registry/list' }),
+      this.hass.callWS<HomeAssistantCategoryRegistryEntry[]>({
+        type: 'config/category_registry/list',
+        scope: 'automation',
+      }),
     ]);
 
-    return { areas, devices, entities };
+    return { areas, devices, entities, automationCategories };
   }
 }

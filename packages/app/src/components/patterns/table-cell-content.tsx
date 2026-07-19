@@ -10,7 +10,8 @@ export interface TableCellContentProps {
 }
 
 // Status: proposed. Text-only table cell pattern for future list/table work.
-// TODO: Keep sortable headers, selection checkboxes, and action cells out of this pattern until real table surfaces exist.
+// Pair with SortableTableHeader when the owning table supports sorting.
+// Keep selection checkboxes and action cells out of this pattern until shared compositions exist.
 export function TableCellContent({
   primary,
   secondary,

@@ -2,6 +2,7 @@ import type {
   HAServiceEventMap,
   HAServiceEventType,
   HomeAssistantAreaRegistryEntry,
+  HomeAssistantCategoryRegistryEntry,
   HomeAssistantConfiguration,
   HomeAssistantDeviceRegistryEntry,
   HomeAssistantEntityRegistryEntry,
@@ -29,6 +30,7 @@ export function createHomeAssistantServiceStub() {
   let areas: HomeAssistantAreaRegistryEntry[] = [];
   let deviceRegistry: HomeAssistantDeviceRegistryEntry[] = [];
   let entityRegistry: HomeAssistantEntityRegistryEntry[] = [];
+  let automationCategories: HomeAssistantCategoryRegistryEntry[] = [];
 
   const authenticate = vi.fn(async (nextConfig: HomeAssistantConfiguration) => {
     connected = true;
@@ -59,6 +61,7 @@ export function createHomeAssistantServiceStub() {
     getAreas: vi.fn(() => areas),
     getDeviceRegistry: vi.fn(() => deviceRegistry),
     getEntityRegistry: vi.fn(() => entityRegistry),
+    getAutomationCategories: vi.fn(() => automationCategories),
     getConnection: vi.fn(() => connection),
     emit<K extends HAServiceEventType>(type: K, payload: HAServiceEventMap[K]) {
       if (type === 'entities') {
@@ -74,6 +77,7 @@ export function createHomeAssistantServiceStub() {
         areas = registriesPayload.areas;
         deviceRegistry = registriesPayload.devices;
         entityRegistry = registriesPayload.entities;
+        automationCategories = registriesPayload.automationCategories;
       }
       listeners[type].forEach((listener) => {
         listener(payload);
@@ -88,6 +92,7 @@ export function createHomeAssistantServiceStub() {
       areas?: HomeAssistantAreaRegistryEntry[];
       deviceRegistry?: HomeAssistantDeviceRegistryEntry[];
       entityRegistry?: HomeAssistantEntityRegistryEntry[];
+      automationCategories?: HomeAssistantCategoryRegistryEntry[];
     }) {
       connected = next.connected ?? connected;
       config = next.config ?? config;
@@ -97,6 +102,7 @@ export function createHomeAssistantServiceStub() {
       areas = next.areas ?? areas;
       deviceRegistry = next.deviceRegistry ?? deviceRegistry;
       entityRegistry = next.entityRegistry ?? entityRegistry;
+      automationCategories = next.automationCategories ?? automationCategories;
     },
   };
 }

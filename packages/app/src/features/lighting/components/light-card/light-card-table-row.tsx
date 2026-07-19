@@ -1,8 +1,9 @@
-import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { BrightnessSlider } from '@navet/app/components/shared/device-editor';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { getThemeFocusRingClassName } from '@navet/app/components/system/tokens';
+import { cn } from '@navet/app/components/ui/utils';
 import { useI18n, useTheme } from '@navet/app/hooks';
-import { ChevronRight, type LucideIcon } from 'lucide-react';
+import { Lightbulb, type LucideIcon } from 'lucide-react';
 import { memo } from 'react';
 import type { LightCardController } from './light-card-controller.types';
 import type { HeaderIconButtonProps } from './light-card-types';
@@ -37,32 +38,39 @@ export const LightCardTableRow = memo(function LightCardTableRow({
   isEditMode,
 }: LightCardTableRowProps) {
   const { t } = useI18n();
-  const { theme } = useTheme();
+  const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const ToggleIcon = IconComponent ?? Lightbulb;
 
   return (
     <div
       {...cardInteraction.cardProps}
-      className={`flex min-h-[52px] w-full min-w-0 items-center gap-2.5 px-2 py-1.5 text-left transition-colors motion-reduce:transition-none ${
-        isEditMode ? '' : surface.hoverBg
+      className={`flex min-h-12 w-full min-w-0 items-center gap-3 py-1 text-left transition-colors motion-reduce:transition-none ${
+        isEditMode ? '' : `cursor-pointer ${surface.hoverBg}`
       }`}
     >
-      <EntityCardHeaderIcon
-        IconComponent={IconComponent}
-        iconText={iconText}
-        isActive={isOn}
-        size="tiny"
-        tone={isOn ? 'primary' : 'neutral'}
-        baseColor={activeColor}
-        badgeClassName="h-9 w-9"
-        glyphClassName="h-[18px] w-[18px]"
-        ariaLabel={iconButtonProps['aria-label']}
+      <button
+        type="button"
+        aria-label={iconButtonProps['aria-label']}
+        aria-pressed={isOn}
         onClick={iconButtonProps.onClick}
         onPointerDown={iconButtonProps.onPointerDown}
-      />
+        className={cn(
+          '-ml-[5px] flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-opacity hover:opacity-75',
+          getThemeFocusRingClassName(theme),
+          isOn ? '' : surface.textMuted
+        )}
+        style={isOn ? { color: activeColor ?? accentColor } : undefined}
+      >
+        {iconText ? (
+          <span className="text-xs font-semibold">{iconText}</span>
+        ) : (
+          <ToggleIcon className="h-4 w-4" aria-hidden="true" />
+        )}
+      </button>
 
       <span
-        className={`min-w-0 flex-1 truncate text-sm font-medium ${
+        className={`-ml-[3px] min-w-0 flex-1 truncate text-sm font-medium ${
           isOn ? surface.textPrimary : surface.textSecondary
         }`}
       >
@@ -70,7 +78,7 @@ export const LightCardTableRow = memo(function LightCardTableRow({
       </span>
 
       {isOn && supportsBrightness ? (
-        <div className="w-20 min-w-16 sm:w-28">
+        <div className="w-20 min-w-16 sm:w-24">
           <BrightnessSlider
             value={brightness}
             onChange={onBrightnessChange}
@@ -84,11 +92,9 @@ export const LightCardTableRow = memo(function LightCardTableRow({
         </div>
       ) : null}
 
-      <span className={`w-10 shrink-0 text-right text-xs tabular-nums ${surface.textSecondary}`}>
+      <span className={`w-8 shrink-0 text-right text-xs tabular-nums ${surface.textSecondary}`}>
         {isOn && supportsBrightness ? `${brightness}%` : isOn ? t('common.on') : t('common.off')}
       </span>
-
-      <ChevronRight className={`h-4 w-4 shrink-0 ${surface.textMuted}`} aria-hidden="true" />
     </div>
   );
 });

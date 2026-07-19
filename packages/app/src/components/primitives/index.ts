@@ -57,6 +57,11 @@ export {
 } from './sheet-surface';
 export { SlideAction, type SlideActionProps } from './slide-action';
 export { Slider } from './slider';
+export {
+  SortableTableHeader,
+  type SortableTableHeaderProps,
+  type TableSortDirection,
+} from './sortable-table-header';
 export { Stepper, type StepperItem, type StepperProps } from './stepper';
 export { SurfacePanel, type SurfacePanelProps } from './surface-panel';
 export { Switch, type SwitchProps } from './switch';

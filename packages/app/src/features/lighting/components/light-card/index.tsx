@@ -7,6 +7,7 @@ import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { resolveEffectsQuality } from '@navet/app/utils/effects-quality';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { isColorCyclingLightEffect } from './light-card-effect-utils';
 import { LightCardMedium } from './light-card-medium';
 import { LightCardSmall } from './light-card-small';
 import { getLightCardSurfaceTokens } from './light-card-surface-tokens';
@@ -98,13 +99,13 @@ export const LightCard = memo(function LightCard({
     lightColors: colors.light,
     accentColor,
   });
+  const hasColorCyclingEffect = isColorCyclingLightEffect(controller.currentEffect);
 
   const handleKelvinToggle = useCallback(() => {
     if (!controller.isOn) return;
     setIsKelvinMode((prev) => {
       const next = !prev;
       if (next) {
-        setIsColorMode(false);
         scheduleKelvinReset();
       } else if (kelvinResetTimerRef.current) {
         clearTimeout(kelvinResetTimerRef.current);
@@ -124,8 +125,39 @@ export const LightCard = memo(function LightCard({
     setIsColorMode(true);
   }, [controller.isOn]);
 
+  const handleDialogColorChange = useCallback(
+    (color: string) => {
+      handleColorActivate();
+      controller.onColorChange(color);
+    },
+    [controller.onColorChange, handleColorActivate]
+  );
+
+  const handleDialogCustomColorChange = useCallback(
+    (color: string) => {
+      handleColorActivate();
+      controller.onCustomColorChange(color);
+    },
+    [controller.onCustomColorChange, handleColorActivate]
+  );
+
+  const handleEffectSelect = useCallback(
+    (effectValue: string) => {
+      setIsKelvinMode(false);
+      setIsColorMode(false);
+      if (kelvinResetTimerRef.current) {
+        clearTimeout(kelvinResetTimerRef.current);
+        kelvinResetTimerRef.current = null;
+      }
+      controller.onEffectSelect(effectValue);
+    },
+    [controller.onEffectSelect]
+  );
+
   const handleTempChange = useCallback(
     (temp: number) => {
+      setIsColorMode(false);
+      setIsKelvinMode(true);
       controller.onTempChange(temp);
       scheduleKelvinReset();
     },
@@ -134,19 +166,21 @@ export const LightCard = memo(function LightCard({
 
   const handleTempCommit = useCallback(
     (temp: number) => {
+      setIsColorMode(false);
+      setIsKelvinMode(true);
       controller.onTempCommit(temp);
       scheduleKelvinReset();
     },
     [controller.onTempCommit, scheduleKelvinReset]
   );
 
-  // Reset temporary color control selection when clicking outside the card.
+  // Kelvin is a temporary adjustment mode. A committed manual color remains active until
+  // temperature or an effect explicitly takes over.
   useEffect(() => {
-    if (!isKelvinMode && !isColorMode) return;
+    if (!isKelvinMode) return;
     const handlePointerDown = (e: PointerEvent) => {
       if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
         setIsKelvinMode(false);
-        setIsColorMode(false);
         if (kelvinResetTimerRef.current) {
           clearTimeout(kelvinResetTimerRef.current);
           kelvinResetTimerRef.current = null;
@@ -155,7 +189,7 @@ export const LightCard = memo(function LightCard({
     };
     document.addEventListener('pointerdown', handlePointerDown);
     return () => document.removeEventListener('pointerdown', handlePointerDown);
-  }, [isKelvinMode, isColorMode]);
+  }, [isKelvinMode]);
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -225,6 +259,13 @@ export const LightCard = memo(function LightCard({
                 {surfaceTokens.shineOverlayClassName ? (
                   <div className={surfaceTokens.shineOverlayClassName} />
                 ) : null}
+                {hasColorCyclingEffect ? (
+                  <div
+                    aria-hidden="true"
+                    data-light-color-cycle-effect="true"
+                    className="navet-light-card-color-cycle-effect absolute inset-0"
+                  />
+                ) : null}
               </>
             }
             contentClassName="h-full"
@@ -263,7 +304,7 @@ export const LightCard = memo(function LightCard({
                   onBrightnessChange={controller.onBrightnessChange}
                   onBrightnessCommit={controller.onBrightnessCommit}
                   onColorChange={controller.onColorChange}
-                  onEffectSelect={controller.onEffectSelect}
+                  onEffectSelect={handleEffectSelect}
                   onTempChange={handleTempChange}
                   onTempCommit={handleTempCommit}
                 />
@@ -299,7 +340,7 @@ export const LightCard = memo(function LightCard({
                   onBrightnessChange={controller.onBrightnessChange}
                   onBrightnessCommit={controller.onBrightnessCommit}
                   onColorChange={controller.onColorChange}
-                  onEffectSelect={controller.onEffectSelect}
+                  onEffectSelect={handleEffectSelect}
                   onTempChange={handleTempChange}
                   onTempCommit={handleTempCommit}
                 />
@@ -330,11 +371,11 @@ export const LightCard = memo(function LightCard({
           brightness={controller.brightness}
           selectedIcon={controller.selectedIcon}
           tempOptions={controller.tempOptions}
-          onTempChange={controller.onTempChange}
-          onTempCommit={controller.onTempCommit}
-          onColorChange={controller.onColorChange}
-          onCustomColorChange={controller.onCustomColorChange}
-          onEffectSelect={controller.onEffectSelect}
+          onTempChange={handleTempChange}
+          onTempCommit={handleTempCommit}
+          onColorChange={handleDialogColorChange}
+          onCustomColorChange={handleDialogCustomColorChange}
+          onEffectSelect={handleEffectSelect}
           onBrightnessChange={controller.onBrightnessChange}
           onBrightnessCommit={controller.onBrightnessCommit}
           applyBrightnessPresetsToAll={controller.applyBrightnessPresetsToAll}

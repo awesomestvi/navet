@@ -89,6 +89,7 @@ export const LightCardMedium = memo(function LightCardMedium({
         isOn={isOn}
         IconComponent={IconComponent}
         iconText={iconText}
+        currentEffect={currentEffect}
         size="medium"
         activeColor={activeColor}
         iconAriaLabel={iconButtonProps['aria-label']}

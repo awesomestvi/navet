@@ -1,11 +1,17 @@
 import type { PlatformEntitySnapshot } from '@navet/app/platform/provider-feature-models';
 import type { LightEffectOption } from './light-card-types';
 
-export const LIGHT_EFFECT_OFF = 'EFFECT_OFF';
+export const LIGHT_EFFECT_OFF = 'off';
 export const LIGHT_EFFECT_NONE = '__navet_no_effect__';
+const COLOR_CYCLING_EFFECT_PATTERN = /(?:prism|rainbow|colou?r[\s_-]*loop|spectrum|aurora)/i;
 
 function normalizeEffectLabel(value: string): string {
   return value.trim();
+}
+
+export function formatLightEffectLabel(value: string): string {
+  const normalized = normalizeEffectLabel(value);
+  return normalized ? `${normalized.charAt(0).toUpperCase()}${normalized.slice(1)}` : normalized;
 }
 
 export function normalizeCurrentLightEffect(value: unknown): string | null {
@@ -14,11 +20,20 @@ export function normalizeCurrentLightEffect(value: unknown): string | null {
   }
 
   const trimmed = value.trim();
-  if (!trimmed || trimmed === LIGHT_EFFECT_OFF) {
+  if (
+    !trimmed ||
+    trimmed === LIGHT_EFFECT_NONE ||
+    trimmed.toLowerCase() === LIGHT_EFFECT_OFF ||
+    trimmed === 'EFFECT_OFF'
+  ) {
     return null;
   }
 
   return trimmed;
+}
+
+export function isColorCyclingLightEffect(value: string | null): boolean {
+  return typeof value === 'string' && COLOR_CYCLING_EFFECT_PATTERN.test(value);
 }
 
 export function getLightEffectList(entity?: PlatformEntitySnapshot): string[] {
@@ -65,7 +80,7 @@ export function buildLightEffectOptions(
     seenEffects.add(normalized);
     options.push({
       isOff: false,
-      label: normalized,
+      label: formatLightEffectLabel(normalized),
       value: normalized,
     });
   }
@@ -73,7 +88,7 @@ export function buildLightEffectOptions(
   if (currentEffect && !seenEffects.has(currentEffect)) {
     options.push({
       isOff: false,
-      label: currentEffect,
+      label: formatLightEffectLabel(currentEffect),
       value: currentEffect,
     });
   }

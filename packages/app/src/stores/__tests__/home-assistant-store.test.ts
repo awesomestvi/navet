@@ -25,6 +25,7 @@ type StubHomeAssistantService = {
   areas: Array<{ area_id: string; name: string }>;
   deviceRegistry: Array<{ id: string; area_id?: string | null }>;
   entityRegistry: Array<{ entity_id: string; area_id?: string | null }>;
+  automationCategories: Array<{ category_id: string; name: string }>;
 };
 
 const panelConfig = {
@@ -105,6 +106,7 @@ const { homeAssistantServiceStub } = vi.hoisted(() => ({
           areas: Array<{ area_id: string; name: string }>;
           devices: Array<{ id: string; area_id?: string | null }>;
           entities: Array<{ entity_id: string; area_id?: string | null }>;
+          automationCategories: Array<{ category_id: string; name: string }>;
         }) => void
       >(),
       connection: new Set<
@@ -120,6 +122,7 @@ const { homeAssistantServiceStub } = vi.hoisted(() => ({
     areas: [] as Array<{ area_id: string; name: string }>,
     deviceRegistry: [] as Array<{ id: string; area_id?: string | null }>,
     entityRegistry: [] as Array<{ entity_id: string; area_id?: string | null }>,
+    automationCategories: [] as Array<{ category_id: string; name: string }>,
     addListener: vi.fn(function (
       this: StubHomeAssistantService,
       type: keyof StubListenerMap,
@@ -161,6 +164,9 @@ const { homeAssistantServiceStub } = vi.hoisted(() => ({
     getEntityRegistry: vi.fn(function (this: StubHomeAssistantService) {
       return this.entityRegistry;
     }),
+    getAutomationCategories: vi.fn(function (this: StubHomeAssistantService) {
+      return this.automationCategories;
+    }),
     getConnection: vi.fn(function (this: StubHomeAssistantService) {
       return this.connection;
     }),
@@ -185,6 +191,7 @@ const { homeAssistantServiceStub } = vi.hoisted(() => ({
           areas: this.areas,
           devices: this.deviceRegistry,
           entities: this.entityRegistry,
+          automationCategories: this.automationCategories,
         });
       });
     }),
@@ -210,6 +217,7 @@ describe('homeAssistantStore', () => {
     homeAssistantServiceStub.areas = [{ area_id: 'kitchen', name: 'Kitchen' }];
     homeAssistantServiceStub.deviceRegistry = [{ id: 'device-1', area_id: 'kitchen' }];
     homeAssistantServiceStub.entityRegistry = [{ entity_id: 'light.kitchen', area_id: 'kitchen' }];
+    homeAssistantServiceStub.automationCategories = [];
     Object.values(homeAssistantServiceStub.listeners).forEach((listeners) => {
       listeners.clear();
     });
@@ -261,11 +269,15 @@ describe('homeAssistantStore', () => {
         areas: [{ area_id: 'office', name: 'Office' }],
         devices: [{ id: 'device-2', area_id: 'office' }],
         entities: [{ entity_id: 'light.office', area_id: 'office' }],
+        automationCategories: [{ category_id: 'work', name: 'Work' }],
       });
     });
 
     expect(homeAssistantStore.getState().registriesHydrated).toBe(true);
     expect(homeAssistantStore.getState().areas).toEqual([{ area_id: 'office', name: 'Office' }]);
+    expect(homeAssistantStore.getState().automationCategories).toEqual([
+      { category_id: 'work', name: 'Work' },
+    ]);
   });
 
   it('debounces entity updates from the service', async () => {

@@ -90,7 +90,7 @@ export function MarketingHeroSection() {
           alt="Warm modern living space used as the background for the Navet marketing hero"
           pictureClassName="marketing-hero-background-shell absolute inset-0"
           className="marketing-hero-background-image absolute inset-0 h-full w-full object-cover object-center"
-          fetchPriority="high"
+          fetchPriority="low"
           sizes="100vw"
         />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(6,8,13,0.9)_0%,rgba(6,8,13,0.68)_24%,rgba(6,8,13,0.34)_52%,rgba(6,8,13,0.14)_100%)] sm:bg-[linear-gradient(90deg,rgba(6,8,13,0.88)_0%,rgba(6,8,13,0.58)_28%,rgba(6,8,13,0.18)_56%,rgba(6,8,13,0.06)_100%)]" />

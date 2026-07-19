@@ -2,6 +2,7 @@ import type { Connection } from 'home-assistant-js-websocket';
 
 import type {
   HomeAssistantAreaRegistryEntry,
+  HomeAssistantCategoryRegistryEntry,
   HomeAssistantDeviceRegistryEntry,
   HomeAssistantEntityRegistryEntry,
 } from './home-assistant.service';
@@ -14,6 +15,7 @@ class HARegistryService {
   private areas: HomeAssistantAreaRegistryEntry[] = [];
   private deviceRegistry: HomeAssistantDeviceRegistryEntry[] = [];
   private entityRegistry: HomeAssistantEntityRegistryEntry[] = [];
+  private automationCategories: HomeAssistantCategoryRegistryEntry[] = [];
   private registryLoadInProgress = false;
   private pendingRegistryLoad = false;
 
@@ -37,7 +39,7 @@ class HARegistryService {
     this.pendingRegistryLoad = false;
 
     try {
-      const [areas, devices, entities] = await Promise.all([
+      const [areas, devices, entities, automationCategories] = await Promise.all([
         conn.sendMessagePromise({
           type: 'config/area_registry/list',
         }) as Promise<HomeAssistantAreaRegistryEntry[]>,
@@ -47,16 +49,22 @@ class HARegistryService {
         conn.sendMessagePromise({
           type: 'config/entity_registry/list',
         }) as Promise<HomeAssistantEntityRegistryEntry[]>,
+        conn.sendMessagePromise({
+          type: 'config/category_registry/list',
+          scope: 'automation',
+        }) as Promise<HomeAssistantCategoryRegistryEntry[]>,
       ]);
 
       this.areas = areas;
       this.deviceRegistry = devices;
       this.entityRegistry = entities;
+      this.automationCategories = automationCategories;
     } catch (error) {
       console.error('[HARegistryService] Failed to load registries:', error);
       this.areas = [];
       this.deviceRegistry = [];
       this.entityRegistry = [];
+      this.automationCategories = [];
     } finally {
       this.registryLoadInProgress = false;
       if (this.pendingRegistryLoad) {
@@ -77,14 +85,20 @@ class HARegistryService {
     return this.entityRegistry;
   }
 
+  getAutomationCategories(): HomeAssistantCategoryRegistryEntry[] {
+    return this.automationCategories;
+  }
+
   replaceRegistries(
     areas: HomeAssistantAreaRegistryEntry[],
     devices: HomeAssistantDeviceRegistryEntry[],
-    entities: HomeAssistantEntityRegistryEntry[]
+    entities: HomeAssistantEntityRegistryEntry[],
+    automationCategories: HomeAssistantCategoryRegistryEntry[]
   ): void {
     this.areas = areas;
     this.deviceRegistry = devices;
     this.entityRegistry = entities;
+    this.automationCategories = automationCategories;
   }
 
   /**

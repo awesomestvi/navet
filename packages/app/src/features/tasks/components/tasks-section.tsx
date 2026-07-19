@@ -12,8 +12,15 @@ import { useI18n, useTheme } from '@navet/app/hooks';
 import { AlertTriangle, Bot, ClipboardList, Power, PowerOff, Sparkles } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAutomationDashboardController } from '../hooks/use-automation-dashboard-controller';
+import {
+  type AutomationSortKey,
+  sortAutomationTasks,
+  type TableSortState,
+  toggleTableSort,
+} from '../utils/task-table-sorting';
 import { AutomationTaskRow } from './automation-task-row';
 import { QuickActionGrid } from './quick-action-grid';
+import { SortableTableHeader } from './sortable-table-header';
 
 type AutomationVisibilityFilter = 'all' | 'active' | 'disabled' | 'recent' | 'attention';
 type RoutineView = 'automations' | 'scripts';
@@ -49,7 +56,7 @@ function TasksLoadingState() {
 }
 
 export function TasksSection() {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const { theme, accentColor } = useTheme();
   const [habitsVisible] = useLocalHabitsFeature();
   const surface = getThemeSurfaceTokens(theme);
@@ -57,6 +64,9 @@ export function TasksSection() {
   const [routineView, setRoutineView] = useState<RoutineView>('automations');
   const [automationFilter, setAutomationFilter] = useState<AutomationVisibilityFilter>('all');
   const [automationRoomFilter, setAutomationRoomFilter] = useState<string>('all');
+  const [automationSort, setAutomationSort] = useState<TableSortState<AutomationSortKey> | null>(
+    null
+  );
   const totalTasks = controller.automations.length + controller.quickActions.length;
   const visibleAutomations = useMemo(() => {
     const filteredByState =
@@ -70,19 +80,22 @@ export function TasksSection() {
               ? controller.attentionAutomations
               : controller.automations;
 
-    if (automationRoomFilter !== 'all') {
-      return filteredByState.filter((automation) => automation.room === automationRoomFilter);
-    }
+    const filteredByRoom =
+      automationRoomFilter === 'all'
+        ? filteredByState
+        : filteredByState.filter((automation) => automation.room === automationRoomFilter);
 
-    return filteredByState;
+    return sortAutomationTasks(filteredByRoom, automationSort, locale);
   }, [
     automationFilter,
     automationRoomFilter,
+    automationSort,
     controller.attentionAutomations,
     controller.automations,
     controller.disabledAutomations,
     controller.enabledAutomations,
     controller.recentlyTriggeredAutomations,
+    locale,
   ]);
   const showRoomFilters = controller.automationRooms.length >= 2;
   const summaryItems = useMemo<HomeStatusSummaryItem[]>(
@@ -164,7 +177,7 @@ export function TasksSection() {
 
         <SummaryBar items={summaryItems} ariaLabel={t('tasks.summary.title')} />
 
-        <div className={`grid items-start gap-4 md:gap-5 ${habitsVisible ? 'xl:grid-cols-2' : ''}`}>
+        <div className="grid items-start gap-4 md:gap-5 xl:grid-cols-2">
           <SectionCard
             title={t('sections.tasks.title')}
             description={t('sections.tasks.description')}
@@ -298,12 +311,49 @@ export function TasksSection() {
                   ) : null}
 
                   {visibleAutomations.length > 0 ? (
-                    <div className="grid gap-3">
-                      {visibleAutomations.map((automation) => (
+                    <div
+                      className={`@container/automation-table overflow-hidden rounded-[22px] border ${surface.border} ${surface.panelMuted}`}
+                    >
+                      <div
+                        className={`hidden grid-cols-[minmax(0,1fr)_10rem_7rem_15rem] items-center gap-3 px-4 pt-3 pb-2 text-xs font-medium @2xl/automation-table:grid ${surface.textMuted}`}
+                      >
+                        <SortableTableHeader
+                          label={t('sections.tasks.automations.title')}
+                          direction={
+                            automationSort?.key === 'name' ? automationSort.direction : undefined
+                          }
+                          onToggle={() =>
+                            setAutomationSort((current) => toggleTableSort(current, 'name'))
+                          }
+                        />
+                        <SortableTableHeader
+                          label={t('tasks.automation.category')}
+                          direction={
+                            automationSort?.key === 'category'
+                              ? automationSort.direction
+                              : undefined
+                          }
+                          onToggle={() =>
+                            setAutomationSort((current) => toggleTableSort(current, 'category'))
+                          }
+                        />
+                        <SortableTableHeader
+                          label={t('dashboard.zones.status')}
+                          direction={
+                            automationSort?.key === 'status' ? automationSort.direction : undefined
+                          }
+                          onToggle={() =>
+                            setAutomationSort((current) => toggleTableSort(current, 'status'))
+                          }
+                        />
+                        <div aria-hidden="true" />
+                      </div>
+                      {visibleAutomations.map((automation, index) => (
                         <AutomationTaskRow
                           key={automation.id}
                           automation={automation}
                           shouldReduceMotion={controller.shouldReduceMotion}
+                          striped={index % 2 === 0}
                         />
                       ))}
                     </div>

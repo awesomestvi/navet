@@ -124,19 +124,37 @@ describe('HomeAssistantPanelAdapter', () => {
     const callWS = createCallWS([
       [{ area_id: 'kitchen', name: 'Kitchen' }],
       [{ id: 'device-1', area_id: 'kitchen' }],
-      [{ entity_id: 'light.kitchen', device_id: 'device-1' }],
+      [
+        {
+          entity_id: 'automation.morning',
+          device_id: 'device-1',
+          categories: { automation: 'morning-id' },
+        },
+      ],
+      [{ category_id: 'morning-id', name: 'Morning' }],
     ]);
     const adapter = new HomeAssistantPanelAdapter(createPanelHass({ callWS }));
 
     await expect(adapter.loadRegistries()).resolves.toEqual({
       areas: [{ area_id: 'kitchen', name: 'Kitchen' }],
       devices: [{ id: 'device-1', area_id: 'kitchen' }],
-      entities: [{ entity_id: 'light.kitchen', device_id: 'device-1' }],
+      entities: [
+        {
+          entity_id: 'automation.morning',
+          device_id: 'device-1',
+          categories: { automation: 'morning-id' },
+        },
+      ],
+      automationCategories: [{ category_id: 'morning-id', name: 'Morning' }],
     });
 
     expect(callWS).toHaveBeenNthCalledWith(1, { type: 'config/area_registry/list' });
     expect(callWS).toHaveBeenNthCalledWith(2, { type: 'config/device_registry/list' });
     expect(callWS).toHaveBeenNthCalledWith(3, { type: 'config/entity_registry/list' });
+    expect(callWS).toHaveBeenNthCalledWith(4, {
+      type: 'config/category_registry/list',
+      scope: 'automation',
+    });
   });
 
   it('returns a connection-compatible websocket command bridge', async () => {

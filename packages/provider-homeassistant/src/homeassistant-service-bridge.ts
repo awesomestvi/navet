@@ -29,11 +29,18 @@ export interface HomeAssistantEntityRegistryEntry {
   entity_id: string;
   area_id?: string | null;
   device_id?: string | null;
+  categories?: Record<string, string>;
   name?: string | null;
   original_name?: string | null;
   platform?: string | null;
   entity_category?: 'config' | 'diagnostic' | null;
   options?: Record<string, Record<string, unknown>>;
+}
+
+export interface HomeAssistantCategoryRegistryEntry {
+  category_id: string;
+  name: string;
+  icon?: string | null;
 }
 
 export interface HomeAssistantStoreState {
@@ -43,6 +50,7 @@ export interface HomeAssistantStoreState {
   areas: HomeAssistantAreaRegistryEntry[];
   deviceRegistry: HomeAssistantDeviceRegistryEntry[];
   entityRegistry: HomeAssistantEntityRegistryEntry[];
+  automationCategories?: HomeAssistantCategoryRegistryEntry[];
   connect(session: unknown): Promise<void>;
   disconnect(): Promise<void>;
   syncPanelHass(bridge: unknown): void;

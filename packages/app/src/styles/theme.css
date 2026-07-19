@@ -749,4 +749,103 @@
       transform: translateX(-50%);
     }
   }
+
+  @keyframes navet-light-effect-border-beam {
+    to {
+      transform: rotate(1turn);
+    }
+  }
+
+  @keyframes navet-light-card-color-cycle {
+    to {
+      transform: rotate(1turn);
+    }
+  }
+
+  .navet-light-effect-beam {
+    position: relative;
+    isolation: isolate;
+    border-color: color-mix(
+      in srgb,
+      var(--navet-light-effect-accent, #f59e0b) 38%,
+      transparent
+    );
+  }
+
+  .navet-light-effect-beam::before {
+    position: absolute;
+    inset: -1px;
+    padding: 1.5px;
+    border-radius: inherit;
+    background: conic-gradient(
+      transparent 0deg 268deg,
+      color-mix(in srgb, var(--navet-light-effect-accent, #f59e0b) 24%, transparent) 286deg,
+      var(--navet-light-effect-accent, #f59e0b) 316deg,
+      color-mix(in srgb, var(--navet-light-effect-accent, #f59e0b) 58%, white) 334deg,
+      transparent 360deg
+    );
+    opacity: 0;
+    content: '';
+    pointer-events: none;
+    transform-origin: center;
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  html[data-effects-quality='high'] .navet-light-effect-beam::before {
+    animation: navet-light-effect-border-beam 4.2s linear infinite;
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .navet-light-effect-beam::before {
+      opacity: 0;
+    }
+  }
+
+  .navet-light-card-color-cycle-effect {
+    overflow: hidden;
+    opacity: 0.42;
+    mix-blend-mode: color;
+    pointer-events: none;
+  }
+
+  .navet-light-card-color-cycle-effect::before {
+    position: absolute;
+    inset: -65%;
+    background: conic-gradient(
+      from 20deg,
+      #38bdf8,
+      #818cf8,
+      #e879f9,
+      #f87171,
+      #facc15,
+      #4ade80,
+      #38bdf8
+    );
+    content: '';
+    transform: rotate(0deg);
+    transform-origin: center;
+  }
+
+  html[data-effects-quality='high'] .navet-light-card-color-cycle-effect::before {
+    animation: navet-light-card-color-cycle 14s linear infinite;
+  }
+
+  html[data-effects-quality='medium'] .navet-light-card-color-cycle-effect {
+    opacity: 0.3;
+  }
+
+  html[data-effects-quality='low'] .navet-light-card-color-cycle-effect {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .navet-light-card-color-cycle-effect::before {
+      animation: none;
+    }
+  }
 }

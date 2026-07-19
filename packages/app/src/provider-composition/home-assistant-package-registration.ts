@@ -2,6 +2,7 @@ import type { NavetProviderSessionInput } from '@navet/core/provider-contract';
 import { createHomeAssistantProviderPackageRegistration } from '@navet/provider-homeassistant';
 import type {
   HomeAssistantAreaRegistryEntry,
+  HomeAssistantCategoryRegistryEntry,
   HomeAssistantDeviceRegistryEntry,
   HomeAssistantEntityRegistryEntry,
 } from '../services/home-assistant.service';
@@ -132,6 +133,8 @@ export function createHomeAssistantAppProviderPackageRegistration({
             areas: state.areas as HomeAssistantAreaRegistryEntry[],
             deviceRegistry: state.deviceRegistry as HomeAssistantDeviceRegistryEntry[],
             entityRegistry: state.entityRegistry as HomeAssistantEntityRegistryEntry[],
+            automationCategories:
+              state.automationCategories as HomeAssistantCategoryRegistryEntry[],
             connect: async (session) => {
               await state.connect(session as never);
             },

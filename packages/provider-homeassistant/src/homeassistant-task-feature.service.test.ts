@@ -10,6 +10,7 @@ const bridgeMocks = vi.hoisted(() => ({
     areas: [],
     deviceRegistry: [],
     entityRegistry: [],
+    automationCategories: [],
   })),
   saveAutomationConfigMock: vi.fn(async () => undefined),
   subscribeStoreMock: vi.fn(() => () => undefined),
@@ -53,6 +54,39 @@ function createHabitRule(overrides: Partial<HabitRule> = {}) {
 describe('homeAssistantTaskFeatureService', () => {
   beforeEach(() => {
     bridgeMocks.saveAutomationConfigMock.mockClear();
+  });
+
+  it('resolves automation category names from Home Assistant registries', () => {
+    bridgeMocks.getStoreStateMock.mockReturnValueOnce({
+      connected: true,
+      entities: {
+        'automation.morning': {
+          entity_id: 'automation.morning',
+          state: 'on',
+          attributes: { friendly_name: 'Morning routine' },
+          last_changed: '2026-01-01T00:00:00.000Z',
+          last_reported: '2026-01-01T00:00:00.000Z',
+          last_updated: '2026-01-01T00:00:00.000Z',
+          context: { id: 'context-id', parent_id: null, user_id: null },
+        },
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [
+        {
+          entity_id: 'automation.morning',
+          categories: { automation: 'morning-id' },
+        },
+      ],
+      automationCategories: [{ category_id: 'morning-id', name: 'Morning' }],
+    } as never);
+
+    expect(homeAssistantTaskFeatureService.getTaskRuntimeSnapshot().entityReferences).toEqual([
+      expect.objectContaining({
+        entityId: 'automation.morning',
+        category: 'Morning',
+      }),
+    ]);
   });
 
   it('creates a Home Assistant automation config from a suggested habit rule', async () => {

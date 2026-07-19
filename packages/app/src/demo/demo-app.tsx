@@ -1,8 +1,9 @@
-import artworksOriginal from '@assets/reference/media/artworks-original.jpg';
+import artworksOriginal from '@assets/reference/media/artworks-original.avif';
 import cameraSampleImageAvif from '@assets/reference/media/camera-sample.avif';
 import cameraSampleImageWebp from '@assets/reference/media/camera-sample.webp';
 import { RUNTIME_SAMPLE_SCREENSHOTS } from '@navet/app/assets/runtime-sample-images';
 import { AuthProvider } from '@navet/app/auth/AuthProvider';
+import { buildMediaSections } from '@navet/app/components/layout/media-section';
 import { RoomNav } from '@navet/app/components/layout/room-nav';
 import {
   type CardSize,
@@ -12,6 +13,10 @@ import {
   getDashboardGridColumnCount,
 } from '@navet/app/components/shared/card-size-selector';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import {
+  getMediaPlayerCapabilities,
+  MEDIA_PLAYER_FEATURES,
+} from '@navet/app/constants/media-player-features';
 import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
 import { CalendarCard } from '@navet/app/features/calendar/components/calendar-card';
 import { ClimateCard } from '@navet/app/features/climate/components/climate-card';
@@ -26,7 +31,9 @@ import {
 import { FanCard } from '@navet/app/features/lighting/components/fan-card';
 import { LightCard } from '@navet/app/features/lighting/components/light-card';
 import { SwitchCard } from '@navet/app/features/lighting/components/switch-card';
+import { LightsDashboard } from '@navet/app/features/lighting/dashboard/lights-dashboard';
 import { MediaCard } from '@navet/app/features/media/components/media-card';
+import { MediaDashboard } from '@navet/app/features/media/components/media-dashboard/media-dashboard';
 import { PersonCard } from '@navet/app/features/person/components/person-card';
 import { SceneCard } from '@navet/app/features/scenes/components/scene-card';
 import { AlarmPanelCard } from '@navet/app/features/security/components/alarm-panel-card';
@@ -60,7 +67,13 @@ import type { NavetAlarmEntity } from '@navet/core/alarm-types';
 import { Fan, Lightbulb, ShieldCheck, Speaker, Zap } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
-import type { CameraDevice, LockDevice, SensorDevice } from '../types/device.types';
+import type {
+  CameraDevice,
+  DeviceWithType,
+  LockDevice,
+  MediaDevice,
+  SensorDevice,
+} from '../types/device.types';
 import { PHOTO_FRAME_DEMO_IMAGES } from './photo-frame-demo-images';
 
 type DemoSection = Section;
@@ -112,6 +125,343 @@ const {
   securityTablet: demoSecurityImage,
 } = RUNTIME_SAMPLE_SCREENSHOTS;
 const demoEntityTimestamp = '2026-05-16T08:00:00+00:00';
+const demoLightDevices = [
+  {
+    id: 'light.kitchen_island',
+    name: 'Kitchen island',
+    room: 'Kitchen',
+    state: true,
+    brightness: 72,
+    temp: 3200,
+    size: 'small',
+    type: 'lights',
+  },
+  {
+    id: 'light.kitchen_window',
+    name: 'Window lamp',
+    room: 'Kitchen',
+    state: false,
+    brightness: 35,
+    temp: 2700,
+    size: 'small',
+    type: 'lights',
+  },
+  {
+    id: 'light.kitchen_plants',
+    name: 'Plant light',
+    room: 'Kitchen',
+    state: true,
+    brightness: 48,
+    temp: 4100,
+    size: 'small',
+    type: 'lights',
+  },
+  {
+    id: 'light.living_ceiling',
+    name: 'Living room ceiling',
+    room: 'Living room',
+    state: false,
+    brightness: 55,
+    temp: 3000,
+    size: 'small',
+    type: 'lights',
+  },
+  {
+    id: 'light.reading',
+    name: 'Reading corner',
+    room: 'Living room',
+    state: true,
+    brightness: 24,
+    temp: 2600,
+    size: 'small',
+    type: 'lights',
+  },
+  {
+    id: 'light.hall',
+    name: 'Hallway',
+    room: 'Hallway',
+    state: false,
+    brightness: 100,
+    temp: 3400,
+    size: 'small',
+    type: 'lights',
+  },
+] satisfies DeviceWithType[];
+const demoLightDeviceMap = new Map<string, DeviceWithType>(
+  demoLightDevices.map((device) => [device.id, device])
+);
+const demoLightScenes = [
+  { id: 'scene.evening', type: 'scene', name: 'Evening', room: 'Unassigned', state: 'off' },
+  { id: 'scene.movie', type: 'scene', name: 'Movie', room: 'Living room', state: 'off' },
+] as const;
+const demoMediaCapabilities = getMediaPlayerCapabilities(
+  MEDIA_PLAYER_FEATURES.PAUSE |
+    MEDIA_PLAYER_FEATURES.SEEK |
+    MEDIA_PLAYER_FEATURES.VOLUME_SET |
+    MEDIA_PLAYER_FEATURES.VOLUME_MUTE |
+    MEDIA_PLAYER_FEATURES.PREVIOUS_TRACK |
+    MEDIA_PLAYER_FEATURES.NEXT_TRACK |
+    MEDIA_PLAYER_FEATURES.PLAY_MEDIA |
+    MEDIA_PLAYER_FEATURES.SELECT_SOURCE |
+    MEDIA_PLAYER_FEATURES.PLAY |
+    MEDIA_PLAYER_FEATURES.SHUFFLE_SET |
+    MEDIA_PLAYER_FEATURES.BROWSE_MEDIA |
+    MEDIA_PLAYER_FEATURES.REPEAT_SET |
+    MEDIA_PLAYER_FEATURES.GROUPING
+);
+const demoMediaDevices = [
+  {
+    id: 'media_player.demo_spotify',
+    name: 'Spotify',
+    room: 'Whole home',
+    title: 'Olalla',
+    artist: 'Blanco White',
+    album: 'On the Other Side',
+    entityType: 'Media Player',
+    source: 'Bathroom',
+    sourceList: ['Bathroom', 'Kitchen', 'Living room', 'Bedroom'],
+    entityPicture: sampleArtworkImage,
+    state: 'playing',
+    volume: 36,
+    isMuted: false,
+    elapsedSeconds: 35,
+    durationSeconds: 248,
+    mediaCapabilities: demoMediaCapabilities,
+    supportsGrouping: false,
+    supportsPreviousTrack: true,
+    supportsNextTrack: true,
+    groupMembers: [],
+    size: 'medium',
+    type: 'media',
+  },
+  {
+    id: 'media_player.demo_kitchen',
+    name: 'Kitchen',
+    room: 'Kitchen',
+    title: 'Olalla',
+    artist: 'Blanco White',
+    album: 'On the Other Side',
+    entityType: 'Speaker',
+    deviceClass: 'speaker',
+    source: 'Spotify',
+    sourceList: ['Spotify', 'AirPlay', 'Radio'],
+    entityPicture: sampleArtworkImage,
+    state: 'playing',
+    volume: 36,
+    isMuted: false,
+    elapsedSeconds: 35,
+    durationSeconds: 248,
+    mediaCapabilities: demoMediaCapabilities,
+    supportsGrouping: true,
+    supportsPreviousTrack: true,
+    supportsNextTrack: true,
+    groupMembers: [
+      'media_player.demo_kitchen',
+      'media_player.demo_living_room',
+      'media_player.demo_bedroom',
+    ],
+    size: 'medium',
+    type: 'media',
+  },
+  {
+    id: 'media_player.demo_living_room',
+    name: 'Living room',
+    room: 'Living room',
+    title: 'Olalla',
+    artist: 'Blanco White',
+    album: 'On the Other Side',
+    entityType: 'Speaker',
+    deviceClass: 'speaker',
+    source: 'Spotify',
+    sourceList: ['Spotify', 'AirPlay', 'Radio'],
+    entityPicture: sampleArtworkImage,
+    state: 'playing',
+    volume: 31,
+    isMuted: false,
+    elapsedSeconds: 35,
+    durationSeconds: 248,
+    mediaCapabilities: demoMediaCapabilities,
+    supportsGrouping: true,
+    supportsPreviousTrack: true,
+    supportsNextTrack: true,
+    groupMembers: [
+      'media_player.demo_kitchen',
+      'media_player.demo_living_room',
+      'media_player.demo_bedroom',
+    ],
+    size: 'medium',
+    type: 'media',
+  },
+  {
+    id: 'media_player.demo_bedroom',
+    name: 'Bedroom',
+    room: 'Bedroom',
+    title: 'Olalla',
+    artist: 'Blanco White',
+    album: 'On the Other Side',
+    entityType: 'Speaker',
+    deviceClass: 'speaker',
+    source: 'Spotify',
+    sourceList: ['Spotify', 'AirPlay', 'Radio'],
+    entityPicture: sampleArtworkImage,
+    state: 'playing',
+    volume: 24,
+    isMuted: false,
+    elapsedSeconds: 35,
+    durationSeconds: 248,
+    mediaCapabilities: demoMediaCapabilities,
+    supportsGrouping: true,
+    supportsPreviousTrack: true,
+    supportsNextTrack: true,
+    groupMembers: [
+      'media_player.demo_kitchen',
+      'media_player.demo_living_room',
+      'media_player.demo_bedroom',
+    ],
+    size: 'medium',
+    type: 'media',
+  },
+  {
+    id: 'media_player.demo_bathroom',
+    name: 'Bathroom',
+    room: 'Bathroom',
+    title: 'Bathroom',
+    artist: '',
+    entityType: 'Speaker',
+    deviceClass: 'speaker',
+    source: 'AirPlay',
+    sourceList: ['Spotify', 'AirPlay', 'Radio'],
+    state: 'idle',
+    volume: 20,
+    isMuted: false,
+    mediaCapabilities: demoMediaCapabilities,
+    supportsGrouping: true,
+    supportsPreviousTrack: true,
+    supportsNextTrack: true,
+    groupMembers: [],
+    size: 'medium',
+    type: 'media',
+  },
+  {
+    id: 'media_player.demo_kitchen_display',
+    name: 'Kitchen display',
+    room: 'Kitchen',
+    title: 'Kitchen display',
+    artist: '',
+    entityType: 'Cast display',
+    deviceClass: 'receiver',
+    source: 'Google Cast',
+    sourceList: ['Google Cast', 'Spotify', 'YouTube'],
+    state: 'idle',
+    volume: 28,
+    isMuted: false,
+    mediaCapabilities: demoMediaCapabilities,
+    supportsGrouping: true,
+    supportsPreviousTrack: true,
+    supportsNextTrack: true,
+    groupMembers: [],
+    size: 'medium',
+    type: 'media',
+  },
+  {
+    id: 'media_player.demo_office_cast',
+    name: 'Office Cast',
+    room: 'Office',
+    title: 'Office Cast',
+    artist: '',
+    entityType: 'Cast receiver',
+    deviceClass: 'receiver',
+    source: 'Google Cast',
+    sourceList: ['Google Cast', 'Spotify', 'YouTube Music'],
+    state: 'idle',
+    volume: 18,
+    isMuted: false,
+    mediaCapabilities: demoMediaCapabilities,
+    supportsGrouping: true,
+    supportsPreviousTrack: true,
+    supportsNextTrack: true,
+    groupMembers: [],
+    size: 'medium',
+    type: 'media',
+  },
+  {
+    id: 'media_player.demo_apple_tv',
+    name: 'Apple TV 4K',
+    room: 'Living room',
+    title: 'Apple TV 4K',
+    artist: '',
+    entityType: 'Streaming box',
+    deviceClass: 'streaming_box',
+    source: 'Apple TV',
+    sourceList: ['Apple TV', 'AirPlay', 'Disney+', 'Netflix'],
+    state: 'idle',
+    volume: 24,
+    isMuted: false,
+    mediaCapabilities: demoMediaCapabilities,
+    supportsGrouping: false,
+    supportsPreviousTrack: true,
+    supportsNextTrack: true,
+    groupMembers: [],
+    size: 'medium',
+    type: 'media',
+  },
+  {
+    id: 'media_player.demo_playstation_5',
+    name: 'PlayStation 5',
+    room: 'Living room',
+    title: "Astro's Playroom",
+    artist: 'PlayStation 5',
+    entityType: 'Media player',
+    deviceClass: 'player',
+    source: 'PlayStation 5',
+    sourceList: ['PlayStation 5', 'Blu-ray', 'Media'],
+    state: 'playing',
+    volume: 30,
+    isMuted: false,
+    elapsedSeconds: 1280,
+    durationSeconds: 0,
+    mediaCapabilities: demoMediaCapabilities,
+    supportsGrouping: false,
+    supportsPreviousTrack: false,
+    supportsNextTrack: false,
+    groupMembers: [],
+    size: 'medium',
+    type: 'media',
+  },
+  {
+    id: 'media_player.demo_living_room_tv',
+    name: 'Living room TV',
+    room: 'Living room',
+    title: 'Samsung TV Plus',
+    artist: 'Live',
+    entityType: 'TV',
+    deviceClass: 'tv',
+    source: 'HDMI 1',
+    sourceList: ['HDMI 1', 'Apple TV', 'TV'],
+    state: 'idle',
+    volume: 18,
+    isMuted: false,
+    mediaCapabilities: demoMediaCapabilities,
+    supportsGrouping: false,
+    supportsPreviousTrack: true,
+    supportsNextTrack: true,
+    groupMembers: [],
+    size: 'medium',
+    type: 'media',
+  },
+] satisfies Array<MediaDevice & { type: 'media' }>;
+const demoMediaCatalogDeviceIds = [
+  'media_player.demo_bathroom',
+  'media_player.demo_living_room_tv',
+  'media_player.demo_kitchen_display',
+  'media_player.demo_office_cast',
+  'media_player.demo_apple_tv',
+  'media_player.demo_playstation_5',
+];
+const demoMediaCatalogDevices = demoMediaCatalogDeviceIds.flatMap((entityId) => {
+  const device = demoMediaDevices.find((candidate) => candidate.id === entityId);
+  return device ? [device] : [];
+});
 
 const demoSummaryItems: HomeStatusSummaryItem[] = [
   {
@@ -526,6 +876,8 @@ const groupedSensors = [
 ];
 
 function useDemoDisplayDefaults() {
+  const [runtimeReady, setRuntimeReady] = useState(false);
+
   useEffect(() => {
     useEditModeStore.getState().setEditMode(false);
     useThemeStore.getState().setTheme('dark');
@@ -550,11 +902,14 @@ function useDemoDisplayDefaults() {
     document.documentElement.dataset.lowPower = 'false';
     document.documentElement.dataset.noAnimation = 'false';
     installPreviewRuntime(getPreviewRuntimeScenario('demo'));
+    setRuntimeReady(true);
 
     return () => {
       resetPreviewRuntime();
     };
   }, []);
+
+  return runtimeReady;
 }
 
 function CardSlot({ size, children }: { size: CardSize; children: ReactNode }) {
@@ -1018,77 +1373,17 @@ function SecurityShot() {
 
 function LightsShot() {
   return (
-    <div className="space-y-6">
-      <SectionBlock title="Common areas">
-        <DashboardGrid>
-          <CardSlot size="small">
-            <LightCard
-              id="light.living_room"
-              name="Living Room"
-              room="Living Room"
-              initialState
-              initialBrightness={68}
-              initialTemp={3200}
-              size="small"
-              onSizeChange={noopCardSizeChange}
-              isEditMode={false}
-            />
-          </CardSlot>
-          <CardSlot size="small">
-            <LightCard
-              id="light.kitchen"
-              name="Kitchen"
-              room="Kitchen"
-              initialState
-              initialBrightness={84}
-              initialTemp={4100}
-              size="small"
-              onSizeChange={noopCardSizeChange}
-              isEditMode={false}
-            />
-          </CardSlot>
-          <CardSlot size="small">
-            <SwitchCard
-              id="switch.patio_lights"
-              name="Patio lights"
-              initialState
-              size="small"
-              isEditMode={false}
-            />
-          </CardSlot>
-        </DashboardGrid>
-      </SectionBlock>
-      <SectionBlock title="Evening lighting">
-        <DashboardGrid>
-          <CardSlot size="small">
-            <LightCard
-              id="light.bedroom"
-              name="Bedroom"
-              room="Bedroom"
-              initialState={false}
-              initialBrightness={35}
-              initialTemp={2700}
-              size="small"
-              onSizeChange={noopCardSizeChange}
-              isEditMode={false}
-            />
-          </CardSlot>
-          <CardSlot size="small">
-            <LightCard
-              id="light.hallway"
-              name="Hallway"
-              room="Hallway"
-              initialState
-              initialBrightness={42}
-              initialTemp={3000}
-              size="small"
-              onSizeChange={noopCardSizeChange}
-              isEditMode={false}
-            />
-          </CardSlot>
-        </DashboardGrid>
-      </SectionBlock>
-    </div>
+    <LightsDashboard
+      deviceMap={demoLightDeviceMap}
+      rooms={['Kitchen', 'Living room', 'Hallway']}
+      cardOrders={{
+        Kitchen: ['light.kitchen_island', 'light.kitchen_plants', 'light.kitchen_window'],
+        'Living room': ['light.reading', 'light.living_ceiling'],
+        Hallway: ['light.hall'],
+      }}
+      scenes={[...demoLightScenes]}
+      isEditMode={false}
+    />
   );
 }
 
@@ -1098,113 +1393,65 @@ function SettingsShot() {
 
 function MediaShot() {
   const { t } = useI18n();
+  const mediaSections = buildMediaSections(demoMediaCatalogDevices, {
+    audioTitle: t('sections.media.audio.title'),
+    audioSingular: t('sections.media.audio.singular'),
+    audioPlural: t('sections.media.audio.plural'),
+    tvTitle: t('sections.media.tv.title'),
+    tvSingular: t('sections.media.tv.singular'),
+    tvPlural: t('sections.media.tv.plural'),
+    typeLabels: {
+      'media.type.player': t('media.type.player'),
+      'media.type.tv': t('media.type.tv'),
+      'media.type.speaker': t('media.type.speaker'),
+      'media.type.receiver': t('media.type.receiver'),
+      'media.type.setTopBox': t('media.type.setTopBox'),
+      'media.type.streamingBox': t('media.type.streamingBox'),
+      'media.type.soundbar': t('media.type.soundbar'),
+    },
+  });
 
   return (
-    <div className="space-y-6">
-      <SectionBlock title={t('sections.media.tv.title')}>
-        <DashboardGrid>
-          <CardSlot size="medium">
-            <MediaCard
-              id="media_player.living_room_tv"
-              name="Living Room TV"
-              room="Living Room"
-              title="Aerial"
-              artist="Apple TV"
-              entityType="TV"
-              deviceClass="tv"
-              source="Apple TV"
-              sourceList={['Apple TV', 'HDMI 1', 'Chromecast', 'PlayStation 5']}
-              state="playing"
-              volume={42}
-              isMuted={false}
-              elapsedSeconds={86}
-              durationSeconds={243}
-              positionUpdatedAt={new Date('2026-05-16T12:00:00.000Z').toISOString()}
-              supportsGrouping
-              groupMembers={['Kitchen Speaker']}
-              size="medium"
-              onSizeChange={noopCardSizeChange}
-              isEditMode={false}
-              simulateTvRemote
-            />
-          </CardSlot>
-        </DashboardGrid>
-      </SectionBlock>
+    <div className="space-y-8">
+      <MediaDashboard devices={demoMediaDevices} initialDeviceId="media_player.demo_spotify" />
 
-      <SectionBlock title={t('sections.media.audio.title')}>
-        <DashboardGrid>
-          <CardSlot size="medium">
-            <MediaCard
-              id="media_player.kitchen_speaker"
-              name="Kitchen Speaker"
-              room="Kitchen"
-              title="Morning Mix"
-              artist="Navet Radio"
-              entityPicture={sampleArtworkImage}
-              entityType="Speaker"
-              source="Spotify"
-              sourceList={['Spotify', 'AirPlay', 'Radio']}
-              state="playing"
-              volume={34}
-              isMuted={false}
-              elapsedSeconds={104}
-              durationSeconds={218}
-              positionUpdatedAt={new Date('2026-05-16T12:00:00.000Z').toISOString()}
-              supportsGrouping
-              groupMembers={['Living Room TV', 'Bedroom Speaker']}
-              size="medium"
-              onSizeChange={noopCardSizeChange}
-              isEditMode={false}
-            />
-          </CardSlot>
-          <CardSlot size="medium">
-            <MediaCard
-              id="media_player.bedroom_speaker"
-              name="Bedroom Speaker"
-              room="Bedroom"
-              title="Deep Focus"
-              artist="Navet Radio"
-              entityPicture={sampleArtworkImage}
-              entityType="Speaker"
-              source="AirPlay"
-              sourceList={['Spotify', 'AirPlay', 'Radio']}
-              state="paused"
-              volume={18}
-              isMuted={false}
-              elapsedSeconds={42}
-              durationSeconds={195}
-              positionUpdatedAt={new Date('2026-05-16T12:00:00.000Z').toISOString()}
-              supportsGrouping
-              size="medium"
-              onSizeChange={noopCardSizeChange}
-              isEditMode={false}
-            />
-          </CardSlot>
-        </DashboardGrid>
-      </SectionBlock>
-
-      <SectionBlock title={t('media.type.streamingBox')}>
-        <DashboardGrid>
-          <CardSlot size="medium">
-            <MediaCard
-              id="media_player.office_display"
-              name="Office Display"
-              room="Office"
-              title="Standby"
-              artist="Google Cast"
-              entityType="Streaming Box"
-              source="Chromecast"
-              sourceList={['Chromecast', 'YouTube', 'Spotify']}
-              state="idle"
-              volume={24}
-              isMuted={false}
-              size="medium"
-              onSizeChange={noopCardSizeChange}
-              isEditMode={false}
-            />
-          </CardSlot>
-        </DashboardGrid>
-      </SectionBlock>
+      {mediaSections.map((section) => (
+        <SectionBlock key={section.key} title={section.title}>
+          <DashboardGrid>
+            {section.devices.map((device) => (
+              <CardSlot key={device.id} size="medium">
+                <MediaCard
+                  id={device.id}
+                  name={device.name}
+                  room={device.room}
+                  title={device.title}
+                  artist={device.artist}
+                  album={device.album}
+                  entityType={device.entityType}
+                  deviceClass={device.deviceClass}
+                  source={device.source}
+                  sourceList={device.sourceList}
+                  entityPicture={device.entityPicture}
+                  state={device.state}
+                  volume={device.volume}
+                  isMuted={device.isMuted}
+                  elapsedSeconds={device.elapsedSeconds}
+                  durationSeconds={device.durationSeconds}
+                  mediaCapabilities={device.mediaCapabilities}
+                  supportsGrouping={device.supportsGrouping}
+                  supportsPreviousTrack={device.supportsPreviousTrack}
+                  supportsNextTrack={device.supportsNextTrack}
+                  groupMembers={device.groupMembers}
+                  size="medium"
+                  onSizeChange={noopCardSizeChange}
+                  isEditMode={false}
+                  simulateTvRemote={device.deviceClass === 'tv'}
+                />
+              </CardSlot>
+            ))}
+          </DashboardGrid>
+        </SectionBlock>
+      ))}
     </div>
   );
 }
@@ -1539,13 +1786,17 @@ function sanitizeDemoSection(value: unknown): DemoSection {
 }
 
 function DemoContent() {
-  useDemoDisplayDefaults();
+  const runtimeReady = useDemoDisplayDefaults();
   const [activeRoom, setActiveRoom] = useState<string>(ALL_ROOMS_ID);
   const isEditMode = useEditModeStore((state) => state.isEditMode);
   const toggleEditMode = useEditModeStore((state) => state.toggleEditMode);
   const activeSection = useNavigationStore((state) => state.activeSection);
   const demoSection = getDemoSectionFromPath();
   const section = sanitizeDemoSection(activeSection ?? demoSection ?? 'home');
+
+  if (!runtimeReady) {
+    return null;
+  }
 
   return (
     <DashboardLayout

@@ -135,7 +135,14 @@ function setRoutineEntities() {
     connected: true,
     areas: [{ area_id: 'kitchen', name: 'Kitchen' }],
     deviceRegistry: [{ id: 'device-1', area_id: 'kitchen' }],
-    entityRegistry: [{ entity_id: 'automation.coffee', device_id: 'device-1' }],
+    entityRegistry: [
+      {
+        entity_id: 'automation.coffee',
+        device_id: 'device-1',
+        categories: { automation: 'morning-id' },
+      },
+    ],
+    automationCategories: [{ category_id: 'morning-id', name: 'Morning' }],
     entities: {
       [automationCoffee.entity_id]: automationCoffee,
       [automationNight.entity_id]: automationNight,
@@ -186,7 +193,7 @@ describe('TasksSection', () => {
     expect(screen.getAllByText('Laundry done').length).toBeGreaterThan(0);
     expect(screen.getByText('Night mode')).toBeInTheDocument();
     expect(screen.getByText('Garden lights')).toBeInTheDocument();
-    expect(screen.getByText((text) => text.startsWith('Kitchen'))).toBeInTheDocument();
+    expect(screen.getByText('Morning')).toBeInTheDocument();
     expect(screen.getAllByText('Needs attention').length).toBeGreaterThan(0);
     expect(
       screen.getByText('This automation is unavailable from the provider.')
@@ -229,8 +236,8 @@ describe('TasksSection', () => {
     expect(screen.getByLabelText('Automation summary')).toBeInTheDocument();
     expect(screen.getByText('Total')).toBeInTheDocument();
     expect(screen.getAllByText('Active').length).toBeGreaterThan(0);
-    expect(screen.getByText('Disabled')).toBeInTheDocument();
-    expect(screen.getByText('Recent')).toBeInTheDocument();
+    expect(screen.getAllByText('Disabled').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Recent').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Needs attention').length).toBeGreaterThan(0);
   });
 
@@ -285,6 +292,50 @@ describe('TasksSection', () => {
     expect(screen.getByRole('button', { name: 'Run Brew coffee' })).toBeInTheDocument();
     expect(screen.getByText('Night mode')).toBeInTheDocument();
     expect(screen.getByText('Garden lights')).toBeInTheDocument();
+  });
+
+  it('sorts every headed Tasks table in both directions', () => {
+    setRoutineEntities();
+
+    renderWithProviders(<TasksSection />);
+
+    const automationSortButton = screen.getByRole('button', { name: 'Sort by Automations' });
+    expect(automationSortButton).toHaveAttribute('data-sort-direction', 'none');
+
+    fireEvent.click(automationSortButton);
+    expect(automationSortButton).toHaveAttribute('data-sort-direction', 'asc');
+    expect(
+      screen
+        .getAllByRole('button', { name: /^Run / })
+        .map((button) => button.getAttribute('aria-label'))
+    ).toEqual(['Run Brew coffee', 'Run Garden lights', 'Run Laundry done', 'Run Night mode']);
+
+    fireEvent.click(automationSortButton);
+    expect(automationSortButton).toHaveAttribute('data-sort-direction', 'desc');
+    expect(
+      screen
+        .getAllByRole('button', { name: /^Run / })
+        .map((button) => button.getAttribute('aria-label'))
+    ).toEqual(['Run Night mode', 'Run Laundry done', 'Run Garden lights', 'Run Brew coffee']);
+
+    fireEvent.click(screen.getByRole('button', { name: /Scripts/ }));
+    const scriptsSortButton = screen.getByRole('button', { name: 'Sort by Scripts' });
+
+    fireEvent.click(scriptsSortButton);
+    expect(scriptsSortButton).toHaveAttribute('data-sort-direction', 'asc');
+    expect(
+      screen
+        .getAllByRole('button', { name: /^Run / })
+        .map((button) => button.getAttribute('aria-label'))
+    ).toEqual(['Run Good night', 'Run Movie time']);
+
+    fireEvent.click(scriptsSortButton);
+    expect(scriptsSortButton).toHaveAttribute('data-sort-direction', 'desc');
+    expect(
+      screen
+        .getAllByRole('button', { name: /^Run / })
+        .map((button) => button.getAttribute('aria-label'))
+    ).toEqual(['Run Movie time', 'Run Good night']);
   });
 
   it('shows a reconnect warning while preserving runnable Home Assistant routines', () => {

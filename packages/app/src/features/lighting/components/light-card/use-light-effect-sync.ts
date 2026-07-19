@@ -30,13 +30,14 @@ export function useLightEffectSync({
     normalizeCurrentLightEffect(liveEntity?.attributes?.effect)
   );
   const pendingEffectRef = useRef<string | null>(null);
+  const hasPendingEffectRef = useRef(false);
   const pendingEffectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const nextEffect = normalizeCurrentLightEffect(liveEntity?.attributes?.effect);
     const pendingEffect = pendingEffectRef.current;
 
-    if (pendingEffect !== null && nextEffect !== pendingEffect) {
+    if (hasPendingEffectRef.current && nextEffect !== pendingEffect) {
       return;
     }
 
@@ -45,6 +46,7 @@ export function useLightEffectSync({
       pendingEffectTimeoutRef.current = null;
     }
 
+    hasPendingEffectRef.current = false;
     pendingEffectRef.current = null;
     setCurrentEffect(nextEffect);
   }, [liveEntity]);
@@ -57,6 +59,19 @@ export function useLightEffectSync({
     },
     []
   );
+
+  const clearCurrentEffect = useCallback(() => {
+    if (pendingEffectTimeoutRef.current) {
+      clearTimeout(pendingEffectTimeoutRef.current);
+    }
+    hasPendingEffectRef.current = true;
+    pendingEffectRef.current = null;
+    pendingEffectTimeoutRef.current = setTimeout(() => {
+      hasPendingEffectRef.current = false;
+      pendingEffectTimeoutRef.current = null;
+    }, 2500);
+    setCurrentEffect(null);
+  }, []);
 
   const effectOptions = useMemo(
     () => buildLightEffectOptions(liveEntity, noEffectLabel, currentEffect),
@@ -74,12 +89,14 @@ export function useLightEffectSync({
       const nextEffect = normalizeCurrentLightEffect(effectValue);
       const nextHaEffect = toHomeAssistantLightEffectValue(effectValue);
 
+      hasPendingEffectRef.current = true;
       pendingEffectRef.current = nextEffect;
       setCurrentEffect(nextEffect);
       if (pendingEffectTimeoutRef.current) {
         clearTimeout(pendingEffectTimeoutRef.current);
       }
       pendingEffectTimeoutRef.current = setTimeout(() => {
+        hasPendingEffectRef.current = false;
         pendingEffectRef.current = null;
         pendingEffectTimeoutRef.current = null;
       }, 2500);
@@ -93,6 +110,7 @@ export function useLightEffectSync({
           clearTimeout(pendingEffectTimeoutRef.current);
           pendingEffectTimeoutRef.current = null;
         }
+        hasPendingEffectRef.current = false;
         pendingEffectRef.current = null;
         setCurrentEffect(previousEffect);
         if (!isOn) {
@@ -104,6 +122,7 @@ export function useLightEffectSync({
   );
 
   return {
+    clearCurrentEffect,
     currentEffect,
     effectOptions,
     onEffectSelect,

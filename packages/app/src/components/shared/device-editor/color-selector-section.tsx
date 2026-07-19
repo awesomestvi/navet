@@ -45,10 +45,7 @@ export const ColorSelectorSection = memo(function ColorSelectorSection({
           selected={selectedColor === customColor}
           ringColor={activeColor}
           className={!isOn ? editorSurface.disabledCircleClassName : ''}
-          onChange={(value) => {
-            onCustomColorChange(value);
-            onColorChange(value);
-          }}
+          onChange={onCustomColorChange}
         />
         {colors.map((color) => (
           <button

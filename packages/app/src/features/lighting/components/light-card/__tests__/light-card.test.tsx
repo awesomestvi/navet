@@ -91,8 +91,26 @@ function createEffectLightEntity(effect?: string) {
     friendly_name: 'Desk Lamp',
     brightness: 166,
     supported_color_modes: ['brightness'],
-    effect_list: ['Rainbow', 'Fire'],
+    effect_list: ['Rainbow', 'Fire', 'Prism'],
     effect,
+  });
+  entity.entity_id = 'light.desk_lamp';
+  entity.state = 'on';
+  return entity;
+}
+
+function createColorLightEntity() {
+  const entity = lightEntityFactory({
+    friendly_name: 'Desk Lamp',
+    brightness: 166,
+    supported_color_modes: ['rgb', 'color_temp'],
+    color_mode: 'rgb',
+    rgb_color: [24, 96, 255],
+    color_temp_kelvin: 3000,
+    min_color_temp_kelvin: 2000,
+    max_color_temp_kelvin: 6500,
+    effect_list: undefined,
+    effect: undefined,
   });
   entity.entity_id = 'light.desk_lamp';
   entity.state = 'on';
@@ -191,6 +209,44 @@ describe('LightCard', () => {
     expect(screen.getByText('Controls')).toBeInTheDocument();
   });
 
+  it('keeps room-list controls compact while exposing brightness for active lights', () => {
+    homeAssistantStore.setState({
+      connected: true,
+      connection: {} as never,
+      entities: {
+        'light.desk_lamp': createLightEntity('on'),
+      },
+    });
+
+    renderWithProviders(
+      <LightCard
+        id="light.desk_lamp"
+        name="Desk Lamp"
+        room="Office"
+        initialState
+        initialBrightness={65}
+        initialTemp={3000}
+        size="extra-small"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+        cardTapAction="controls"
+        presentation="table-row"
+      />
+    );
+
+    expect(screen.getByText('Desk Lamp')).toBeInTheDocument();
+    expect(screen.getByText('65%')).toBeInTheDocument();
+    expect(screen.getByRole('slider')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Toggle Desk Lamp' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Desk Lamp' }));
+
+    expect(screen.getByText('Controls')).toBeInTheDocument();
+  });
+
   it('shows the effect picker on medium cards and sends effect selections to Home Assistant', async () => {
     homeAssistantStore.setState({
       connected: true,
@@ -221,6 +277,175 @@ describe('LightCard', () => {
       state: 'on',
       effect: 'Fire',
     });
+  });
+
+  it('shows a dynamic card surface for a color-cycling effect', () => {
+    homeAssistantStore.setState({
+      connected: true,
+      connection: {} as never,
+      entities: {
+        'light.desk_lamp': createEffectLightEntity('prism'),
+      },
+    });
+
+    const { container } = renderWithProviders(
+      <LightCard
+        id="light.desk_lamp"
+        name="Desk Lamp"
+        room="Office"
+        initialState
+        initialBrightness={65}
+        initialTemp={3000}
+        size="medium"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(container.querySelector('[data-light-color-cycle-effect="true"]')).not.toBeNull();
+    expect(screen.getByText('Light · Prism')).toBeInTheDocument();
+  });
+
+  it('removes effect indicators and the effect name when the reported effect is off', () => {
+    homeAssistantStore.setState({
+      connected: true,
+      connection: {} as never,
+      entities: {
+        'light.desk_lamp': createEffectLightEntity('off'),
+      },
+    });
+
+    const { container } = renderWithProviders(
+      <LightCard
+        id="light.desk_lamp"
+        name="Desk Lamp"
+        room="Office"
+        initialState
+        initialBrightness={65}
+        initialTemp={3000}
+        size="medium"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.getByText('Light')).toBeInTheDocument();
+    expect(screen.queryByText(/Light ·/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Choose light effect' })).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    );
+    expect(container.querySelector('[data-light-color-cycle-effect="true"]')).toBeNull();
+  });
+
+  it('keeps the rainbow color button active after a manual color is committed', () => {
+    homeAssistantStore.setState({
+      connected: true,
+      connection: {} as never,
+      entities: {
+        'light.desk_lamp': createColorLightEntity(),
+      },
+    });
+
+    const { container } = renderWithProviders(
+      <LightCard
+        id="light.desk_lamp"
+        name="Desk Lamp"
+        room="Office"
+        initialState
+        initialBrightness={65}
+        initialTemp={3000}
+        size="medium"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    const colorButton = screen.getByRole('button', { name: 'Choose custom color' });
+    const colorInput = container.querySelector('input[type="color"]');
+    expect(colorInput).not.toBeNull();
+
+    fireEvent.click(colorButton);
+    fireEvent.change(colorInput as HTMLInputElement, { target: { value: '#00ff00' } });
+    fireEvent.pointerDown(document.body);
+
+    expect(colorButton).toHaveAttribute('aria-pressed', 'true');
+    expect(colorButton.style.background).toContain('conic-gradient');
+  });
+
+  it('restores the rainbow color state when temperature controls close without a change', () => {
+    homeAssistantStore.setState({
+      connected: true,
+      connection: {} as never,
+      entities: {
+        'light.desk_lamp': createColorLightEntity(),
+      },
+    });
+
+    const { container } = renderWithProviders(
+      <LightCard
+        id="light.desk_lamp"
+        name="Desk Lamp"
+        room="Office"
+        initialState
+        initialBrightness={65}
+        initialTemp={3000}
+        size="medium"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    const colorButton = screen.getByRole('button', { name: 'Choose custom color' });
+    const colorInput = container.querySelector('input[type="color"]');
+    expect(colorInput).not.toBeNull();
+    fireEvent.change(colorInput as HTMLInputElement, { target: { value: '#00ff00' } });
+
+    const temperatureButton = screen.getByRole('button', { name: /color temperature/i });
+    fireEvent.click(temperatureButton);
+    expect(temperatureButton).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.pointerDown(document.body);
+
+    expect(temperatureButton).toHaveAttribute('aria-pressed', 'false');
+    expect(colorButton).toHaveAttribute('aria-pressed', 'true');
+    expect(colorButton.style.background).toContain('conic-gradient');
+  });
+
+  it('activates the rainbow color button when a color is committed from settings', () => {
+    homeAssistantStore.setState({
+      connected: true,
+      connection: {} as never,
+      entities: {
+        'light.desk_lamp': createColorLightEntity(),
+      },
+    });
+
+    renderWithProviders(
+      <LightCard
+        id="light.desk_lamp"
+        name="Desk Lamp"
+        room="Office"
+        initialState
+        initialBrightness={65}
+        initialTemp={3000}
+        size="medium"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    const colorButton = screen.getByRole('button', { name: 'Choose custom color' });
+    fireEvent.click(screen.getByRole('button', { name: 'Open settings for Desk Lamp' }));
+
+    const settingsColorInput = document.querySelector(
+      'input[type="color"][aria-label="Custom color picker"]'
+    );
+    expect(settingsColorInput).not.toBeNull();
+    fireEvent.change(settingsColorInput as HTMLInputElement, { target: { value: '#00ff00' } });
+
+    expect(colorButton).toHaveAttribute('aria-pressed', 'true');
+    expect(colorButton.style.background).toContain('conic-gradient');
   });
 
   it('keeps effect selection out of the extra-small quick actions', () => {

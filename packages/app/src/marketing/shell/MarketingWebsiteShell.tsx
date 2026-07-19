@@ -401,7 +401,7 @@ export function MarketingWebsiteShell({
           className={cn(
             'pb-12 md:pb-16',
             isHomePage
-              ? 'space-y-14 pt-0 sm:space-y-16 md:space-y-20 lg:space-y-24'
+              ? 'marketing-home-section-rhythm pt-0'
               : 'space-y-24 pt-28 md:space-y-28 lg:space-y-32 lg:pt-36'
           )}
         >

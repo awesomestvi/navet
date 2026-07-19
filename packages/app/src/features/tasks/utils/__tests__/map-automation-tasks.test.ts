@@ -96,6 +96,47 @@ describe('mapAutomationTasks', () => {
     ]);
   });
 
+  it('maps category and group metadata into a provider-neutral category', () => {
+    const categorized = automationEntityFactory({
+      friendly_name: 'Morning routine',
+      category: 'Morning',
+    });
+    categorized.entity_id = 'automation.morning';
+    const grouped = automationEntityFactory({
+      friendly_name: 'Secure home',
+      group: 'Security',
+    });
+    grouped.entity_id = 'automation.secure_home';
+    const registryCategorized = automationEntityFactory({
+      friendly_name: 'Leaving home',
+      category: 'Attribute fallback',
+    });
+    registryCategorized.entity_id = 'automation.leaving_home';
+
+    const tasks = mapAutomationTasks({
+      entities: {
+        [categorized.entity_id]: makeTaskEntity(categorized),
+        [grouped.entity_id]: makeTaskEntity(grouped),
+        [registryCategorized.entity_id]: makeTaskEntity(registryCategorized),
+      },
+      rooms: [],
+      devices: [],
+      entityReferences: [
+        {
+          entityId: registryCategorized.entity_id,
+          category: 'Presence',
+        },
+      ],
+      locale: 'en-US',
+    });
+
+    expect(tasks).toEqual([
+      expect.objectContaining({ id: 'automation.leaving_home', category: 'Presence' }),
+      expect.objectContaining({ id: 'automation.morning', category: 'Morning' }),
+      expect.objectContaining({ id: 'automation.secure_home', category: 'Security' }),
+    ]);
+  });
+
   it('sorts enabled automations first and then alphabetically', () => {
     const alpha = automationEntityFactory({ friendly_name: 'Alpha' });
     alpha.entity_id = 'automation.alpha';
@@ -187,6 +228,7 @@ describe('mapAutomationTasks', () => {
       state: 'unavailable',
       needsAttention: true,
       attentionReason: 'unavailable',
+      category: undefined,
       description: 'Turns on hallway lights after sunset.',
       mode: 'single',
       currentRuns: 1,

@@ -2,6 +2,7 @@ import type { Connection, HassConfig, HassEntities } from 'home-assistant-js-web
 import { createStore } from 'zustand/vanilla';
 import {
   type HomeAssistantAreaRegistryEntry,
+  type HomeAssistantCategoryRegistryEntry,
   type HomeAssistantConfiguration,
   type HomeAssistantDeviceRegistryEntry,
   type HomeAssistantEntityRegistryEntry,
@@ -19,6 +20,7 @@ interface HomeAssistantState {
   areas: HomeAssistantAreaRegistryEntry[];
   deviceRegistry: HomeAssistantDeviceRegistryEntry[];
   entityRegistry: HomeAssistantEntityRegistryEntry[];
+  automationCategories: HomeAssistantCategoryRegistryEntry[];
   registriesHydrated: boolean;
   connection: Connection | null;
   error: string | null;
@@ -44,6 +46,7 @@ const initialState: HomeAssistantState = {
   areas: [],
   deviceRegistry: [],
   entityRegistry: [],
+  automationCategories: [],
   registriesHydrated: false,
   connection: null,
   error: null,
@@ -168,7 +171,7 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, get) =
           }),
           homeAssistantService.addListener(
             'registries',
-            ({ areas, devices, entities: entityRegistry }) => {
+            ({ areas, devices, entities: entityRegistry, automationCategories }) => {
               if (attemptId !== connectAttemptId) {
                 return;
               }
@@ -177,11 +180,18 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, get) =
                 current.areas === areas &&
                 current.deviceRegistry === devices &&
                 current.entityRegistry === entityRegistry &&
+                current.automationCategories === automationCategories &&
                 current.registriesHydrated
               ) {
                 return;
               }
-              set({ areas, deviceRegistry: devices, entityRegistry, registriesHydrated: true });
+              set({
+                areas,
+                deviceRegistry: devices,
+                entityRegistry,
+                automationCategories,
+                registriesHydrated: true,
+              });
             }
           ),
           homeAssistantService.addListener(
@@ -253,6 +263,7 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, get) =
           areas: homeAssistantService.getAreas(),
           deviceRegistry: homeAssistantService.getDeviceRegistry(),
           entityRegistry: homeAssistantService.getEntityRegistry(),
+          automationCategories: homeAssistantService.getAutomationCategories(),
           registriesHydrated: true,
           connection: homeAssistantService.getConnection(),
           connecting: false,
@@ -309,11 +320,12 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, get) =
       useErrorStore.getState().clearError();
       activeServiceUnsubscribe = homeAssistantService.addListener(
         'registries',
-        ({ areas, devices, entities }) => {
+        ({ areas, devices, entities, automationCategories }) => {
           set({
             areas,
             deviceRegistry: devices,
             entityRegistry: entities,
+            automationCategories,
             registriesHydrated: true,
           });
         }
@@ -343,6 +355,7 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, get) =
             areas: homeAssistantService.getAreas(),
             deviceRegistry: homeAssistantService.getDeviceRegistry(),
             entityRegistry: homeAssistantService.getEntityRegistry(),
+            automationCategories: homeAssistantService.getAutomationCategories(),
             registriesHydrated: true,
           });
         })
