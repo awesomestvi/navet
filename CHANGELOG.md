@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.10.2 - 2026-07-20
+
+## Improvements and bug fixes
+
+- Improved the Lights dashboard with cleaner room lists, quicker scene access, and compact controls for active lights.
+- Light color and effect controls now stay in sync when switching modes or closing menus.
+- Tasks tables can now be sorted by name, category, type, or status, with clearer responsive rows.
+- Expanded the demo with complete Lights and Media dashboards and richer music browsing.
+
 ## 0.10.1 - 2026-07-18
 
 ## Improvements and bug fixes

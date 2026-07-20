@@ -29,13 +29,20 @@ pnpm marketing:capture -- --base-url=http://127.0.0.1:5173
 NAVET_CAPTURE_BASE_URL=https://demo.navet.app pnpm marketing:capture
 ```
 
+To refresh one screenshot without replacing the rest of the set:
+
+```bash
+pnpm marketing:capture:screenshots -- --scenario=navet-ipad-landscape-home
+```
+
 Do not point the script at a real household dashboard. Marketing media must contain demo data only.
 
 ## Screenshot set
 
 The canonical scenarios live in `scripts/capture-marketing-media.mjs`:
 
-- Home: 1536x1024 landscape, 1024x1366 portrait tablet, and 430x932 phone
+- Home: 1448x1012 framed iPad landscape, 1024x1366 portrait tablet, and a 390x766
+  safe-area-aware phone viewport exported at 2x
 - Energy: 1536x1024 landscape
 - Security: 1536x1024 landscape
 - Lights: 430x932 phone

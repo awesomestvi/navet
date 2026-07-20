@@ -1,67 +1,178 @@
-import type { ComponentProps, HTMLAttributes } from 'react';
+import { useLayoutEffect, useRef, useState, type HTMLAttributes } from 'react';
 import { cn } from '@navet/ui/utils';
-import { MarketingResponsiveImage, type MarketingResponsiveImageSource } from '@navet/app/marketing/components/MarketingResponsiveImage';
+import {
+  MarketingResponsiveImage,
+  type MarketingResponsiveImageSource,
+} from '@navet/app/marketing/components/MarketingResponsiveImage';
+import 'devices.css/dist/devices.min.css';
 
-interface DeviceImageProps
-  extends Omit<ComponentProps<typeof MarketingResponsiveImage>, 'src' | 'alt' | 'sources'> {
+const IPAD_LANDSCAPE_WIDTH = 778;
+const IPAD_LANDSCAPE_HEIGHT = 560;
+const IPHONE_WIDTH = 428;
+const IPHONE_HEIGHT = 868;
+const IPHONE_SAFE_AREA_TOP = 46;
+const IPHONE_SAFE_AREA_BOTTOM = 18;
+
+interface DeviceFrameProps extends HTMLAttributes<HTMLDivElement> {
   src: string;
   alt: string;
   sources?: readonly MarketingResponsiveImageSource[];
 }
 
-function DeviceImage({ src, alt, sources, className, ...props }: DeviceImageProps) {
+interface ResponsiveDeviceProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
+  baseWidth: number;
+  baseHeight: number;
+  children: (scale: number) => React.ReactNode;
+}
+
+function ResponsiveDevice({
+  baseWidth,
+  baseHeight,
+  children,
+  className,
+  style,
+  ...props
+}: ResponsiveDeviceProps) {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState<number>();
+
+  useLayoutEffect(() => {
+    const frame = frameRef.current;
+
+    if (!frame) return;
+
+    const updateScale = () => setScale(frame.clientWidth / baseWidth);
+    const observer = new ResizeObserver(updateScale);
+
+    updateScale();
+    observer.observe(frame);
+
+    return () => observer.disconnect();
+  }, [baseWidth]);
+
   return (
-    <MarketingResponsiveImage
-      src={src}
-      sources={sources}
-      alt={alt}
-      className={cn('h-full w-full object-cover', className)}
-      loading="lazy"
+    <div
+      ref={frameRef}
+      className={cn('relative w-full', className)}
+      style={{ aspectRatio: `${baseWidth} / ${baseHeight}`, ...style }}
       {...props}
-    />
-  );
-}
-
-export interface IpadFrameProps extends HTMLAttributes<HTMLDivElement> {
-  src: string;
-  alt: string;
-  sources?: readonly MarketingResponsiveImageSource[];
-}
-
-export function IpadFrame({ className, src, alt, sources, ...props }: IpadFrameProps) {
-  return (
-    <div className={cn('relative aspect-[1.37/1] w-full', className)} {...props}>
-      <div className="absolute inset-0 rounded-[2.5rem] bg-[linear-gradient(180deg,#15161d,#07080c)] shadow-[0_40px_110px_-56px_rgba(0,0,0,0.85)] ring-1 ring-white/12" />
-      <div className="absolute inset-[10px] rounded-[2.1rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] ring-1 ring-white/8" />
-      <div className="absolute inset-[18px] overflow-hidden rounded-[1.7rem] bg-black">
-        <DeviceImage src={src} sources={sources} alt={alt} />
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),transparent_18%,transparent_82%,rgba(0,0,0,0.18))]" />
-      </div>
-      <div className="absolute left-[10px] top-1/2 h-10 w-[5px] -translate-y-1/2 rounded-full bg-white/12" />
-      <div className="absolute right-[10px] top-1/2 h-16 w-[5px] -translate-y-1/2 rounded-full bg-white/12" />
-      <div className="absolute left-1/2 top-[10px] h-[9px] w-[9px] -translate-x-1/2 rounded-full bg-zinc-900 shadow-[0_0_0_2px_rgba(255,255,255,0.04)]" />
+    >
+      {scale === undefined ? null : children(scale)}
     </div>
   );
 }
 
-export interface AndroidPhoneFrameProps extends HTMLAttributes<HTMLDivElement> {
-  src: string;
-  alt: string;
-  sources?: readonly MarketingResponsiveImageSource[];
+function DeviceDetails() {
+  return (
+    <>
+      <div className="device-stripe" aria-hidden="true" />
+      <div className="device-header" aria-hidden="true" />
+      <div className="device-sensors" aria-hidden="true" />
+      <div className="device-btns" aria-hidden="true" />
+      <div className="device-power" aria-hidden="true" />
+      <div className="device-home" aria-hidden="true" />
+    </>
+  );
 }
 
-export function AndroidPhoneFrame({ className, src, alt, sources, ...props }: AndroidPhoneFrameProps) {
+export function IpadFrame({ className, src, alt, sources, ...props }: DeviceFrameProps) {
   return (
-    <div className={cn('relative aspect-[412/870] w-full', className)} {...props}>
-      <div className="absolute inset-0 rounded-[2.2rem] bg-[linear-gradient(180deg,#1a1b22,#090a0e)] shadow-[0_34px_90px_-46px_rgba(0,0,0,0.82)] ring-1 ring-white/10" />
-      <div className="absolute inset-[8px] rounded-[1.85rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] ring-1 ring-white/7" />
-      <div className="absolute inset-[15px] overflow-hidden rounded-[1.55rem] bg-black">
-        <DeviceImage src={src} sources={sources} alt={alt} />
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),transparent_18%,transparent_84%,rgba(0,0,0,0.15))]" />
-      </div>
-      <div className="absolute left-1/2 top-[13px] z-[2] h-3 w-3 -translate-x-1/2 rounded-full bg-zinc-900 shadow-[0_0_0_2px_rgba(255,255,255,0.04)]" />
-      <div className="absolute right-[7px] top-[132px] h-14 w-[4px] rounded-full bg-white/10" />
-      <div className="absolute left-[7px] top-[118px] h-10 w-[4px] rounded-full bg-white/10" />
-    </div>
+    <ResponsiveDevice
+      baseWidth={IPAD_LANDSCAPE_WIDTH}
+      baseHeight={IPAD_LANDSCAPE_HEIGHT}
+      className={className}
+      {...props}
+    >
+      {(scale) => (
+        <div
+          className="device device-ipad-pro device-spacegray"
+          style={{
+            left: 0,
+            position: 'absolute',
+            top: 0,
+            transform: `scale(${scale}) translateX(${IPAD_LANDSCAPE_WIDTH}px) rotate(90deg)`,
+            transformOrigin: 'top left',
+          }}
+        >
+          <div className="device-frame">
+            <div className="device-screen overflow-hidden" style={{ border: 0 }}>
+              <MarketingResponsiveImage
+                src={src}
+                sources={sources}
+                alt={alt}
+                className="absolute top-1/2 left-1/2 object-contain"
+                loading="lazy"
+                style={{
+                  height: 506,
+                  maxWidth: 'none',
+                  objectFit: 'contain',
+                  transform: 'translate(-50%, -50%) rotate(-90deg)',
+                  width: 724,
+                }}
+              />
+            </div>
+          </div>
+          <DeviceDetails />
+        </div>
+      )}
+    </ResponsiveDevice>
+  );
+}
+
+export function IphoneFrame({ className, src, alt, sources, ...props }: DeviceFrameProps) {
+  const safeAreaBackgroundSrc =
+    sources?.find(({ type }) => type === 'image/avif')?.srcSet ?? sources?.[0]?.srcSet ?? src;
+
+  return (
+    <ResponsiveDevice
+      baseWidth={IPHONE_WIDTH}
+      baseHeight={IPHONE_HEIGHT}
+      className={className}
+      {...props}
+    >
+      {(scale) => (
+        <div
+          className="device device-iphone-14-pro device-black"
+          style={{
+            left: 0,
+            position: 'absolute',
+            top: 0,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+          }}
+        >
+          <div className="device-frame">
+            <div className="device-screen overflow-hidden">
+              <div className="relative h-full w-full overflow-hidden bg-[#08090c]">
+                <div
+                  aria-hidden="true"
+                  className="absolute -inset-6 scale-110 bg-cover bg-center opacity-55 blur-2xl saturate-75"
+                  style={{ backgroundImage: `url(${safeAreaBackgroundSrc})` }}
+                />
+                <div aria-hidden="true" className="absolute inset-0 bg-black/35" />
+                <div
+                  className="relative h-full w-full"
+                  style={{
+                    paddingBottom: IPHONE_SAFE_AREA_BOTTOM,
+                    paddingTop: IPHONE_SAFE_AREA_TOP,
+                  }}
+                >
+                  <MarketingResponsiveImage
+                    src={src}
+                    sources={sources}
+                    alt={alt}
+                    className="h-full w-full object-contain"
+                    loading="lazy"
+                    pictureClassName="h-full w-full"
+                    style={{ objectFit: 'contain' }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <DeviceDetails />
+        </div>
+      )}
+    </ResponsiveDevice>
   );
 }

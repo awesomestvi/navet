@@ -21,7 +21,7 @@ const SCREENSHOT_SCENARIOS = [
   {
     name: 'navet-ipad-landscape-home',
     pathname: '/demo/home',
-    viewport: { width: 1536, height: 1024 },
+    viewport: { width: 1448, height: 1012 },
   },
   {
     name: 'navet-tablet-portrait-home',
@@ -31,7 +31,9 @@ const SCREENSHOT_SCENARIOS = [
   {
     name: 'navet-mobile-pwa-home',
     pathname: '/demo/home',
-    viewport: { width: 430, height: 932 },
+    viewport: { width: 390, height: 766 },
+    deviceScaleFactor: 2,
+    screenshotScale: 'device',
   },
   {
     name: 'navet-ipad-landscape-energy',
@@ -86,6 +88,22 @@ function getCaptureMode() {
   }
 
   throw new Error(`Unsupported capture mode "${requestedMode}". Use all, screenshots, or videos.`);
+}
+
+function getScreenshotScenarios() {
+  const requestedScenario = getArgumentValue('scenario');
+  if (!requestedScenario) {
+    return SCREENSHOT_SCENARIOS;
+  }
+
+  const scenario = SCREENSHOT_SCENARIOS.find(({ name }) => name === requestedScenario);
+  if (!scenario) {
+    throw new Error(
+      `Unsupported screenshot scenario "${requestedScenario}". Use one of: ${SCREENSHOT_SCENARIOS.map(({ name }) => name).join(', ')}.`
+    );
+  }
+
+  return [scenario];
 }
 
 function getBaseUrl() {
@@ -221,9 +239,10 @@ async function captureScreenshots(browser, baseUrl) {
   await mkdir(SCREENSHOT_TEMP_DIR, { recursive: true });
   await mkdir(assetPaths.marketingScreenshots, { recursive: true });
 
-  for (const scenario of SCREENSHOT_SCENARIOS) {
+  for (const scenario of getScreenshotScenarios()) {
     const context = await browser.newContext({
       viewport: scenario.viewport,
+      deviceScaleFactor: scenario.deviceScaleFactor ?? 1,
       colorScheme: 'dark',
       reducedMotion: 'reduce',
       serviceWorkers: 'block',
@@ -237,7 +256,7 @@ async function captureScreenshots(browser, baseUrl) {
       path: pngPath,
       animations: 'disabled',
       fullPage: false,
-      scale: 'css',
+      scale: scenario.screenshotScale ?? 'css',
     });
     await context.close();
     await writeScreenshotVariants(pngPath, outputBasePath);

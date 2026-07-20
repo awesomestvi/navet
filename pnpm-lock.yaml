@@ -194,6 +194,9 @@ importers:
 
   apps/website:
     dependencies:
+      devices.css:
+        specifier: 0.2.0
+        version: 0.2.0
       react:
         specifier: ^19.2.1
         version: 19.2.6
@@ -3515,6 +3518,9 @@ packages:
 
   devalue@5.8.1:
     resolution: {integrity: sha512-4CXDYRBGqN+57wVJkuXBYmpAVUSg3L6JAQa/DFqm238G73E1wuyc/JhGQJzN7vUf/CMphYau2zXbfWzDR5aTEw==}
+
+  devices.css@0.2.0:
+    resolution: {integrity: sha512-CE59M+4PuH87+A4clpC1xA/lkfCSGFWfeFx5sNadDdy1kXUqJ28SdTp+tBlwkHfI7G+h/Wf4Ddt9QGPLLlky3Q==}
 
   devlop@1.1.0:
     resolution: {integrity: sha512-RWmIqhcFf1lRYBvNmr7qTNuyCt/7/ns2jbpp1+PalgE/rDQcBT0fioSMUpJ93irlUhC5hrg4cYqe6U+0ImW0rA==}
@@ -8914,6 +8920,8 @@ snapshots:
   detect-node-es@1.1.0: {}
 
   devalue@5.8.1: {}
+
+  devices.css@0.2.0: {}
 
   devlop@1.1.0:
     dependencies:

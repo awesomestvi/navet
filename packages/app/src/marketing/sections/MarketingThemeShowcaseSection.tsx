@@ -1,7 +1,7 @@
 import { Text } from '@navet/app/components/primitives';
 import { MARKETING_SCREENSHOTS } from '@navet/app/marketing/data/marketingDemoData';
 import { MarketingSectionShell } from '@navet/app/marketing/shell/MarketingSectionShell';
-import { AndroidPhoneFrame, IpadFrame } from '@website/components/devices/device-frames';
+import { IpadFrame, IphoneFrame } from '@website/components/devices/device-frames';
 
 export function MarketingThemeShowcaseSection({ className }: { className?: string }) {
   const wallPanelScreenshot = MARKETING_SCREENSHOTS[0];
@@ -31,7 +31,7 @@ export function MarketingThemeShowcaseSection({ className }: { className?: strin
 
           <div className="min-w-0 space-y-2.5 sm:space-y-3">
             <Text className="text-xs font-medium text-white/62 sm:text-sm">Phone</Text>
-            <AndroidPhoneFrame
+            <IphoneFrame
               src={phoneScreenshot.src}
               sources={phoneScreenshot.sources}
               alt={phoneScreenshot.alt}
