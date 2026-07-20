@@ -10,28 +10,20 @@ import { APP_VERSION } from '@navet/app/constants/app-version';
 import { useTheme } from '@navet/app/hooks';
 import { MarketingResponsiveImage } from '@navet/app/marketing/components/MarketingResponsiveImage';
 import { MARKETING_URLS } from '@navet/app/marketing/constants/marketingLinks';
+import {
+  MARKETING_RELEASE_HIGHLIGHTS,
+  type MarketingReleaseHighlight,
+} from '@navet/app/marketing/constants/marketingReleaseHighlights';
 import { MarketingSectionShell } from '@navet/app/marketing/shell/MarketingSectionShell';
 import { ArrowUpRight, BookOpen, Boxes, History, Lightbulb, type LucideIcon } from 'lucide-react';
 
 const RELEASE_URL = `${MARKETING_URLS.github}/releases/tag/v${APP_VERSION}`;
-
-const RELEASE_HIGHLIGHTS = [
-  {
-    type: 'New',
-    description: 'A room-based Lights dashboard with brightness, power, and scene controls.',
-    markerClassName: 'bg-emerald-400',
-  },
-  {
-    type: 'Improved',
-    description: 'Clearer, denser layouts across Energy, Media, Security, Tasks, and Settings.',
-    markerClassName: 'bg-sky-400',
-  },
-  {
-    type: 'Fixed',
-    description: 'More reliable recovery when provider data, visibility, or availability changes.',
-    markerClassName: 'bg-orange-400',
-  },
-] as const;
+const RELEASE_MARKER_CLASS_NAMES: Record<MarketingReleaseHighlight['type'], string> = {
+  Fixed: 'bg-orange-400',
+  Improved: 'bg-sky-400',
+  New: 'bg-emerald-400',
+  Security: 'bg-red-400',
+};
 
 type GuideLink = {
   label: string;
@@ -138,10 +130,16 @@ export function MarketingReleaseResourcesSection({ className }: { className?: st
                 Release highlights
               </Text>
               <ul className="mt-4 space-y-4">
-                {RELEASE_HIGHLIGHTS.map((highlight) => (
-                  <li key={highlight.type} className="grid grid-cols-[auto_1fr] gap-3">
+                {MARKETING_RELEASE_HIGHLIGHTS.map((highlight) => (
+                  <li
+                    key={`${highlight.type}-${highlight.description}`}
+                    className="grid grid-cols-[auto_1fr] gap-3"
+                  >
                     <span
-                      className={cn('mt-[0.45rem] h-2 w-2 rounded-full', highlight.markerClassName)}
+                      className={cn(
+                        'mt-[0.45rem] h-2 w-2 rounded-full',
+                        RELEASE_MARKER_CLASS_NAMES[highlight.type]
+                      )}
                       aria-hidden="true"
                     />
                     <div className="space-y-0.5">

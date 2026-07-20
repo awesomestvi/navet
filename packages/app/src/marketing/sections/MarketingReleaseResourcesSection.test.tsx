@@ -1,3 +1,5 @@
+import { APP_VERSION } from '@navet/app/constants/app-version';
+import { MARKETING_RELEASE_HIGHLIGHTS } from '@navet/app/marketing/constants/marketingReleaseHighlights';
 import { renderWithProviders } from '@navet/app/test/render';
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
@@ -7,18 +9,18 @@ describe('MarketingReleaseResourcesSection', () => {
   it('links the current release and relevant setup guides', () => {
     renderWithProviders(<MarketingReleaseResourcesSection />);
 
-    expect(screen.getByText('Navet v0.10.0')).toBeInTheDocument();
+    expect(screen.getByText(`Navet v${APP_VERSION}`)).toBeInTheDocument();
     expect(screen.getByText('Release highlights')).toBeInTheDocument();
-    expect(screen.getByText(/room-based Lights dashboard/)).toBeInTheDocument();
-    expect(screen.getByText(/Clearer, denser layouts/)).toBeInTheDocument();
-    expect(screen.getByText(/More reliable recovery/)).toBeInTheDocument();
+    for (const highlight of MARKETING_RELEASE_HIGHLIGHTS) {
+      expect(screen.getByText(highlight.description)).toBeInTheDocument();
+    }
     expect(screen.getByRole('link', { name: 'Read the changelog' })).toHaveAttribute(
       'href',
       'https://docs.navet.app/changelog/'
     );
-    expect(screen.getByRole('link', { name: /View v0.10.0 on GitHub/ })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: `View v${APP_VERSION} on GitHub` })).toHaveAttribute(
       'href',
-      'https://github.com/awesomestvi/navet/releases/tag/v0.10.0'
+      `https://github.com/awesomestvi/navet/releases/tag/v${APP_VERSION}`
     );
     expect(screen.getByRole('link', { name: /Home Assistant setup/ })).toHaveAttribute(
       'href',

@@ -6,6 +6,7 @@ import {
   appVersionPath,
   assertMainRepositoryMetadata,
   assertValidVersion,
+  changelogPath,
   fail,
   getPackageVersion,
   hasChangelogVersion,
@@ -15,6 +16,7 @@ import {
   readJson,
   readVersioningCurrentVersion,
 } from './release-surfaces.mjs';
+import { getMarketingReleaseHighlights } from './marketing-release-highlights.mjs';
 
 const args = process.argv.slice(2);
 const tagArgIndex = args.findIndex((arg) => arg === '--tag');
@@ -56,6 +58,8 @@ try {
       `platform/home-assistant/addons/navet/CHANGELOG.md does not contain a section for ${packageVersion}.`
     );
   }
+
+  getMarketingReleaseHighlights(fs.readFileSync(changelogPath, 'utf8'), packageVersion);
 
   const source = fs.readFileSync(appVersionPath, 'utf8');
   if (!source.includes('__APP_VERSION__')) {

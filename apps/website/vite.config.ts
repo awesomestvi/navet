@@ -4,16 +4,22 @@ import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { defineConfig } from 'vite';
+import { getMarketingReleaseHighlights } from '../../scripts/marketing-release-highlights.mjs';
 
 const repoRoot = path.resolve(__dirname, '../..');
 const packageJson = JSON.parse(
   readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8')
 ) as { version?: string };
+const appVersion = packageJson.version ?? '0.0.0';
+const releaseHighlights = getMarketingReleaseHighlights(
+  readFileSync(path.resolve(repoRoot, 'CHANGELOG.md'), 'utf8'),
+  appVersion
+);
 const buildMetadata = {
   gitSha: (process.env.NAVET_GIT_SHA ?? process.env.GITHUB_SHA ?? 'local').trim(),
   buildDate: (process.env.NAVET_BUILD_DATE ?? new Date().toISOString()).trim(),
   releaseChannel: (process.env.NAVET_RELEASE_CHANNEL ?? 'development').trim(),
-  buildVersion: (process.env.NAVET_BUILD_VERSION ?? packageJson.version ?? '0.0.0').trim(),
+  buildVersion: (process.env.NAVET_BUILD_VERSION ?? appVersion).trim(),
 };
 const REACT_COMPILER_INCLUDE = [
   /[\\/]src[\\/]/,
@@ -32,11 +38,12 @@ export default defineConfig({
   base: '/',
   envPrefix: ['VITE_'],
   define: {
-    __APP_VERSION__: JSON.stringify(packageJson.version ?? '0.0.0'),
+    __APP_VERSION__: JSON.stringify(appVersion),
     __APP_GIT_SHA__: JSON.stringify(buildMetadata.gitSha),
     __APP_BUILD_DATE__: JSON.stringify(buildMetadata.buildDate),
     __APP_RELEASE_CHANNEL__: JSON.stringify(buildMetadata.releaseChannel),
     __APP_BUILD_VERSION__: JSON.stringify(buildMetadata.buildVersion),
+    __MARKETING_RELEASE_HIGHLIGHTS__: JSON.stringify(releaseHighlights),
     __NAVET_ENABLE_DEMO__: JSON.stringify(false),
   },
   resolve: {
@@ -63,7 +70,7 @@ export default defineConfig({
       name: 'navet-version-html',
       enforce: 'pre',
       transformIndexHtml(html) {
-        return html.replaceAll('%NAVET_VERSION%', packageJson.version ?? '0.0.0');
+        return html.replaceAll('%NAVET_VERSION%', appVersion);
       },
     },
     react(),
