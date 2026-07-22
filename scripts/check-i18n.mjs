@@ -6,7 +6,7 @@ const require = createRequire(import.meta.url);
 const ts = require('typescript');
 const root = process.cwd();
 const messagesDirectory = path.join(root, 'packages/app/src/i18n/messages');
-const languages = ['en', 'sv', 'de', 'fr', 'es', 'it', 'pt', 'zh'];
+const languages = ['en', 'sv', 'de', 'fr', 'es', 'it', 'nl', 'pt', 'zh'];
 const failures = [];
 
 function parseMessages(language) {
@@ -88,7 +88,7 @@ const allowedIdenticalValuesByLanguage = {
     'Suggestions', 'Version', 'Photo', 'Widgets', 'Volume', 'Source', 'Mode', 'Zones',
     'Notifications', 'Important', 'Sections', 'Routines', 'Scripts', 'scripts', 'Total',
     'Sources', 'Radio', 'Conditions', 'Widget', 'Photos', 'pagination', 'Modes', 'charge',
-    'Usage', 'source', 'Menu', 'Destination', 'Attention', 'Album', 'Orange',
+    'Usage', 'source', 'Menu', 'Destination', 'Attention', 'Album', 'Orange', 'Type',
   ]),
   es: new Set([
     'Experimental', 'Auto', 'Manual', 'Celsius', 'Fahrenheit', 'Error', 'Total', 'Radio',
@@ -97,6 +97,14 @@ const allowedIdenticalValuesByLanguage = {
   it: new Set([
     'Auto', 'Standard', 'Fahrenheit', 'Routine', 'Volume', 'Media', 'Radio', 'Menu',
     'Eco', 'Album', 'Comfort', 'Relax', 'Gas',
+  ]),
+  nl: new Set([
+    'Week {week}', 'Dashboard', 'Project', 'Celsius', 'Fahrenheit', 'Status', 'Widgets',
+    'Details', 'Wind', 'Volume', 'Media', 'Soundbar', 'Sensor', 'Water', 'Zones', 'Max',
+    'Later', 'Updates', 'camera', 'Routines', 'Scripts', 'scripts', 'Recent', 'Fans',
+    'Radio', 'Script', 'Helper', 'Camera', 'Triggers', 'Stop', 'Open {name}', 'Widget',
+    'Info', 'Week', 'Eco', '{count} live', 'Album', 'Alarm', 'Comfort', 'Feeds', 'Gas',
+    'kW import',
   ]),
   pt: new Set([
     'Experimental', 'Auto', 'Manual', 'Celsius', 'Fahrenheit', 'Status', 'Widgets',

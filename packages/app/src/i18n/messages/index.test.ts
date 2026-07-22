@@ -8,4 +8,11 @@ describe('locale message loading', () => {
     expect(messages['common.cancel']).toBe('Avbryt');
     expect(getLoadedMessages('sv')).toBe(messages);
   });
+
+  it('loads the Dutch dictionary on demand', async () => {
+    const messages = await loadMessages('nl');
+
+    expect(messages['common.cancel']).toBe('Annuleer');
+    expect(getLoadedMessages('nl')).toBe(messages);
+  });
 });
