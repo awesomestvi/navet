@@ -217,7 +217,7 @@
     {
       "id": "template-readme-banner",
       "source": "assets/brand/templates/readme-banner.svg",
-      "sourceSha256": "c8725999c087b9af3ba6beefabf55467f33126bceaeffbd02ccf80ca8c00388b",
+      "sourceSha256": "0c8915917ea1c107a8b26343ee0201595b251077fe66f36fe7c5337ca6bba8ef",
       "outputs": [
         {
           "path": "assets/brand/templates/readme-banner.svg",

@@ -27,8 +27,9 @@ Each SVG includes a hidden `safe-area-guide` group. Change its `display="none"` 
    descriptive IDs such as `editable-headline`, `editable-support`, and `editable-meta`.
 3. Keep the headline to the existing number of lines. Shorten the message before reducing its
    size. Use sentence case and one concrete user outcome.
-4. Replace the `replace-product-proof` group with a current Navet screenshot or product crop. Clip
-   the image to the existing rounded rectangle. Do not reconstruct or embellish the dashboard.
+4. Replace the image inside the `product-proof` group with a current Navet screenshot or product
+   crop. Keep the existing crop, rounded frame, and border. Do not reconstruct or embellish the
+   dashboard.
 5. Update the root `<title>` and `<desc>` so the exported SVG has an accurate accessible name.
 
 The sample copy demonstrates hierarchy only. Verify feature, provider, privacy, release, and
@@ -59,9 +60,10 @@ JPG before distribution so relative image paths cannot break.
 
 ## Logo and type
 
-- The inline lockup uses the exact established hub geometry and locked orange gradient. Do not
-  edit the symbol contents. The repository's asset manifest checksums each approved template so
-  an inline lockup cannot drift silently; change it only through explicit brand review.
+- Templates use either a locked inline lockup or an embedded byte-for-byte copy of
+  `assets/public/logo-horizontal-light.svg`. Do not edit the mark contents. The repository's asset
+  manifest checksums each approved template so a lockup cannot drift silently; change it only
+  through explicit brand review.
 - Keep clear space around the lockup equal to at least 10% of its height.
 - Do not reduce the square mark below 32 px in a final digital asset.
 - Keep the system stack: `ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`.

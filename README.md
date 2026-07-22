@@ -1,22 +1,17 @@
+<h1 align="center">
+  <img src="assets/brand/templates/readme-banner.svg" alt="Navet — A smart home dashboard for every screen" width="1600">
+</h1>
+
 <div align="center">
-  <h1>
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="assets/public/logo-horizontal-light.svg">
-      <img src="assets/public/logo-horizontal.svg" alt="Navet" width="220">
-    </picture>
-  </h1>
-
-  <p><strong>A smart home dashboard for every screen.</strong></p>
-
   <p>
-    Use Home Assistant, Homey, or openHAB through one polished, room-first interface<br>
-    built for wall panels, tablets, desktops, and phones.
+    Navet turns Home Assistant, Homey, or openHAB into a calmer, room-first interface<br>
+    for everyday control across wall panels, tablets, desktops, and phones.
   </p>
 
   <p>
     <a href="https://demo.navet.app/"><strong>Explore the demo</strong></a>
     ·
-    <a href="https://docs.navet.app/install/"><strong>Choose an installation</strong></a>
+    <a href="https://docs.navet.app/install/">Choose an installation</a>
     ·
     <a href="https://docs.navet.app/">Read the docs</a>
   </p>
@@ -28,18 +23,16 @@
   </p>
 </div>
 
-![Navet dashboard running on an iPad](assets/reference/marketing/use-cases/navet-ipad-frame-dashboard.jpg)
+## Everyday control without admin-screen clutter
 
-## Your home, without the admin-screen clutter
-
-Navet turns the smart-home platform you already use into a calmer daily control surface. Rooms,
-lights, climate, media, energy, security, and routines stay easy to reach without making every
-household member navigate a configuration interface.
+Navet keeps live state and common actions close at hand while your connected platform remains the
+source of truth. Rooms, lights, climate, media, energy, security, and routines stay easy to reach
+without making every household member navigate a configuration interface.
 
 - **Room-first control.** See what matters where it happens, then act without digging through
   entity lists.
-- **One interface across screens.** Use the same dashboard on a wall panel, tablet, desktop, or
-  phone.
+- **Familiar across screens.** Wall panels, tablets, desktops, and phones keep the same interaction
+  model while the layout adapts to each screen.
 - **Local by default.** Provider data, dashboard state, and credentials stay on your device or
   server—not on Navet servers.
 - **Open source.** Run it yourself, inspect the code, and help shape what comes next.
@@ -54,34 +47,29 @@ household member navigate a configuration interface.
   <a href="https://demo.navet.app/"><strong>Open the live demo →</strong></a>
 </div>
 
-## Built for everyday control
+## Focused controls when you need them
 
-Navet includes focused sections for **Home**, **Lights**, **Media**, **Energy**, **Climate**,
-**Security**, **Tasks**, and **Settings**. Depending on your provider, you can control and monitor:
+Open focused controls for lighting, climate, media, energy, security, and tasks when your connected
+platform supports them.
 
-- lights, switches, fans, covers, locks, alarm panels, scenes, vacuums, and lawn mowers
-- climate systems, humidifiers, weather, people, calendars, and sensors
-- cameras, media players, energy flows, task automations, and household notifications
-- Navet widgets for notes, photos, RSS, batteries, UPS status, maps, actions, and generic entities
-
-Home layouts are editable, dashboard profiles cover standard and wall-display use, and the PWA
-includes four theme families, wallpapers, adaptive visual effects, and localization.
+Shape the Home view around your household with editable layouts, dashboard profiles, widgets,
+themes, wallpapers, adaptive visual effects, and localization.
 
 ## Works with the platform you already use
 
-| Provider | Available today | Ways to run Navet |
+| Provider | Current support | Ways to run Navet |
 |---|---|---|
 | **Home Assistant** | Navet's broadest integration, including advanced climate, media, camera, energy, weather, calendar, notification, task, history, security, and administration services | Custom panel via HACS, Home Assistant add-on, or standalone |
 | **Homey** | Rooms, realtime entities, lights, switches, and sensors | Standalone; optional additional provider when OAuth is configured |
 | **openHAB** | Rooms, realtime entities, lights, switches, and sensors | Standalone; optional additional provider from Settings |
 
-A supported standalone installation can retain multiple provider sessions and combine selected
+Standalone Navet can retain connections to multiple supported providers and combine selected
 providers in shared dashboard collections. Capabilities are not identical: Home Assistant is the
 most mature integration today. Check the
 [provider capability matrix](https://docs.navet.app/integrations/) before choosing a setup for
 media, cameras, energy, weather, calendars, notifications, or tasks.
 
-Hubitat and SmartThings are planned, not supported runtimes. Follow the
+Hubitat and SmartThings are planned and are not supported today. Follow the
 [public roadmap](https://docs.navet.app/roadmap/) for progress.
 
 ## Choose your installation
@@ -95,12 +83,13 @@ Hubitat and SmartThings are planned, not supported runtimes. Follow the
 
 Not sure which route fits? [Compare every installation option](https://docs.navet.app/install/).
 
-## Private by design
+## Local by default
 
-Navet is made for self-hosted smart homes. It does not require a Navet cloud account, and it does
-not send your provider data to Navet servers. Treat any public deployment as a sensitive control
-surface: use HTTPS, least-privilege provider accounts, and the guidance in the
-[security policy](https://docs.navet.app/security/).
+Navet is built for self-hosted smart homes. It does not require a Navet cloud account. Provider
+data, dashboard state, and credentials stay on your device or server rather than Navet servers.
+
+A public deployment is still a sensitive control surface. Use HTTPS, least-privilege provider
+accounts, and the guidance in the [security policy](https://docs.navet.app/security/).
 
 Please report vulnerabilities privately to `security@navet.app` rather than opening a public issue.
 
