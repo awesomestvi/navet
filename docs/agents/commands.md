@@ -36,12 +36,14 @@ pnpm website:preview
 pnpm docs:dev
 pnpm docs:build
 pnpm docs:preview
+pnpm brand:generate
 pnpm check:stories
 pnpm check:ui-kit
 pnpm check:provider-boundaries
 pnpm check:bundle-budget
 pnpm check:docker
 pnpm check:lockfile
+pnpm check:brand
 pnpm validate
 pnpm report:bundle
 pnpm report:ui-kit
@@ -71,11 +73,13 @@ pnpm wallpapers:check
 - Storybook or UI-kit work: `pnpm check:stories` and `pnpm test:storybook`
 - website or marketing work: `pnpm website:build`
 - public documentation work: `pnpm docs:build`
+- brand guidance or asset work: `pnpm check:brand`
 - bundle investigation: `pnpm check:bundle-budget` and `pnpm report:bundle`
 - release file validation: `pnpm release:check`
 
 Routeable validation:
 
+- use `pnpm validate -- --scope brand` for brand guidance, master artwork, and generated assets
 - use `pnpm validate -- --scope ui` for shared UI, token, and Storybook structure changes
 - use `pnpm validate -- --scope dashboard` for dashboard layout, card, and dashboard hook changes
 - use `pnpm validate -- --scope provider` for provider contract, runtime, state, and adapter changes

@@ -1,0 +1,91 @@
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Navet video title card template</title>
+  <desc id="desc">A dark Navet video title card with editable tutorial text and a large rounded product image area.</desc>
+  <defs>
+    <linearGradient id="canvas" x1="186" y1="0" x2="1748" y2="1080" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0A0E15"/><stop offset="1" stop-color="#06080D"/>
+    </linearGradient>
+    <linearGradient id="navet-logo-gradient" x1="4" y1="4" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F97316"/><stop offset="1" stop-color="#EA580C"/>
+    </linearGradient>
+    <radialGradient id="orange-atmosphere" cx="0" cy="0" r="1" gradientTransform="translate(300 126) rotate(35) scale(640 460)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F97316" stop-opacity="0.20"/><stop offset="1" stop-color="#F97316" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blue-atmosphere" cx="0" cy="0" r="1" gradientTransform="translate(1710 870) rotate(-145) scale(700 520)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3B82F6" stop-opacity="0.15"/><stop offset="1" stop-color="#3B82F6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="proof-surface" x1="1040" y1="140" x2="1780" y2="940" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#151B25"/><stop offset="1" stop-color="#0A0E15"/>
+    </linearGradient>
+    <filter id="panel-shadow" x="930" y="44" width="960" height="1004" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="40" stdDeviation="46" flood-color="#000000" flood-opacity="0.48"/>
+    </filter>
+    <clipPath id="product-proof-clip"><rect x="1040" y="140" width="740" height="800" rx="30"/></clipPath>
+    <symbol id="navet-lockup" viewBox="0 0 200 60">
+      <circle cx="30" cy="30" r="26" fill="url(#navet-logo-gradient)"/>
+      <circle cx="30" cy="30" r="3.5" fill="white" opacity="0.95"/>
+      <g stroke="white" stroke-width="1.8" stroke-linecap="round" opacity="0.9">
+        <line x1="30" y1="30" x2="30" y2="12"/><line x1="30" y1="30" x2="42.73" y2="17.27"/>
+        <line x1="30" y1="30" x2="48" y2="30"/><line x1="30" y1="30" x2="42.73" y2="42.73"/>
+        <line x1="30" y1="30" x2="30" y2="48"/><line x1="30" y1="30" x2="17.27" y2="42.73"/>
+        <line x1="30" y1="30" x2="12" y2="30"/><line x1="30" y1="30" x2="17.27" y2="17.27"/>
+      </g>
+      <g fill="white" opacity="0.95">
+        <circle cx="30" cy="12" r="2.5"/><circle cx="42.73" cy="17.27" r="2.5"/>
+        <circle cx="48" cy="30" r="2.5"/><circle cx="42.73" cy="42.73" r="2.5"/>
+        <circle cx="30" cy="48" r="2.5"/><circle cx="17.27" cy="42.73" r="2.5"/>
+        <circle cx="12" cy="30" r="2.5"/><circle cx="17.27" cy="17.27" r="2.5"/>
+      </g>
+      <text x="70" y="40" fill="white" font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="28" font-weight="600" letter-spacing="-0.5">Navet</text>
+    </symbol>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#canvas)"/>
+  <rect width="1920" height="1080" fill="url(#orange-atmosphere)"/>
+  <rect width="1920" height="1080" fill="url(#blue-atmosphere)"/>
+
+  <use href="#navet-lockup" x="120" y="92" width="200" height="60"/>
+
+  <g id="editable-content" font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+    <g id="editable-eyebrow">
+      <rect x="120" y="260" width="252" height="48" rx="24" fill="white" fill-opacity="0.06" stroke="white" stroke-opacity="0.1"/>
+      <circle cx="148" cy="284" r="6" fill="#F97316"/>
+      <text x="168" y="292" fill="white" fill-opacity="0.74" font-size="20" font-weight="620">Tutorial · Chapter 01</text>
+    </g>
+    <text id="editable-headline" x="120" y="416" fill="white" font-size="82" font-weight="730" letter-spacing="-4.1">
+      <tspan x="120" dy="0">Control your home</tspan>
+      <tspan x="120" dy="88">in one clear view.</tspan>
+    </text>
+    <rect x="120" y="568" width="92" height="5" rx="2.5" fill="#F97316"/>
+    <text id="editable-support" x="120" y="630" fill="white" fill-opacity="0.7" font-size="27" font-weight="450">
+      <tspan x="120" dy="0">A concise explanation of what the viewer</tspan>
+      <tspan x="120" dy="39">will understand or do after this video.</tspan>
+    </text>
+    <g id="editable-meta">
+      <text x="120" y="929" fill="white" fill-opacity="0.5" font-size="20" font-weight="550">navet.app</text>
+      <line x1="120" y1="958" x2="880" y2="958" stroke="white" stroke-opacity="0.10"/>
+      <rect x="120" y="980" width="300" height="5" rx="2.5" fill="#F97316"/>
+      <rect x="420" y="980" width="460" height="5" rx="2.5" fill="white" fill-opacity="0.12"/>
+    </g>
+  </g>
+
+  <g id="replace-product-proof" filter="url(#panel-shadow)">
+    <rect x="1040" y="140" width="740" height="800" rx="30" fill="url(#proof-surface)" stroke="white" stroke-opacity="0.11"/>
+    <g clip-path="url(#product-proof-clip)">
+      <circle cx="1096" cy="194" r="300" fill="#F97316" fill-opacity="0.07"/>
+      <circle cx="1738" cy="900" r="330" fill="#3B82F6" fill-opacity="0.08"/>
+      <rect x="1100" y="248" width="620" height="522" rx="26" fill="none" stroke="white" stroke-opacity="0.11" stroke-width="2" stroke-dasharray="10 12"/>
+      <g font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" text-anchor="middle">
+        <text x="1410" y="496" fill="white" fill-opacity="0.78" font-size="28" font-weight="650">Current product image</text>
+        <text x="1410" y="540" fill="white" fill-opacity="0.48" font-size="20">Replace this group with a public-safe capture</text>
+      </g>
+      <rect x="1100" y="816" width="222" height="46" rx="23" fill="white" fill-opacity="0.07" stroke="white" stroke-opacity="0.1"/>
+      <circle cx="1128" cy="839" r="6" fill="#F97316"/>
+      <text x="1148" y="846" fill="white" fill-opacity="0.7" font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="600">Live product proof</text>
+    </g>
+  </g>
+
+  <g id="safe-area-guide" display="none" pointer-events="none">
+    <rect x="120" y="120" width="1680" height="840" rx="8" fill="none" stroke="#F97316" stroke-width="3" stroke-dasharray="14 14"/>
+  </g>
+</svg>

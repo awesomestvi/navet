@@ -1,0 +1,96 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Navet announcement template</title>
+  <desc id="desc">A dark Navet announcement card with an editable headline and a rounded product image area.</desc>
+  <defs>
+    <linearGradient id="canvas" x1="132" y1="0" x2="1072" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0A0E15"/>
+      <stop offset="1" stop-color="#06080D"/>
+    </linearGradient>
+    <linearGradient id="navet-logo-gradient" x1="4" y1="4" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F97316"/>
+      <stop offset="1" stop-color="#EA580C"/>
+    </linearGradient>
+    <radialGradient id="orange-atmosphere" cx="0" cy="0" r="1" gradientTransform="translate(178 84) rotate(35) scale(420 320)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F97316" stop-opacity="0.20"/>
+      <stop offset="1" stop-color="#F97316" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blue-atmosphere" cx="0" cy="0" r="1" gradientTransform="translate(1062 540) rotate(-140) scale(430 330)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3B82F6" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#3B82F6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="proof-surface" x1="650" y1="92" x2="1118" y2="548" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#151B25"/>
+      <stop offset="1" stop-color="#0B0F16"/>
+    </linearGradient>
+    <filter id="panel-shadow" x="582" y="48" width="604" height="580" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="28" stdDeviation="32" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+    <clipPath id="product-proof-clip">
+      <rect x="650" y="92" width="468" height="456" rx="28"/>
+    </clipPath>
+    <symbol id="navet-lockup" viewBox="0 0 200 60">
+      <circle cx="30" cy="30" r="26" fill="url(#navet-logo-gradient)"/>
+      <circle cx="30" cy="30" r="3.5" fill="white" opacity="0.95"/>
+      <g stroke="white" stroke-width="1.8" stroke-linecap="round" opacity="0.9">
+        <line x1="30" y1="30" x2="30" y2="12"/><line x1="30" y1="30" x2="42.73" y2="17.27"/>
+        <line x1="30" y1="30" x2="48" y2="30"/><line x1="30" y1="30" x2="42.73" y2="42.73"/>
+        <line x1="30" y1="30" x2="30" y2="48"/><line x1="30" y1="30" x2="17.27" y2="42.73"/>
+        <line x1="30" y1="30" x2="12" y2="30"/><line x1="30" y1="30" x2="17.27" y2="17.27"/>
+      </g>
+      <g fill="white" opacity="0.95">
+        <circle cx="30" cy="12" r="2.5"/><circle cx="42.73" cy="17.27" r="2.5"/>
+        <circle cx="48" cy="30" r="2.5"/><circle cx="42.73" cy="42.73" r="2.5"/>
+        <circle cx="30" cy="48" r="2.5"/><circle cx="17.27" cy="42.73" r="2.5"/>
+        <circle cx="12" cy="30" r="2.5"/><circle cx="17.27" cy="17.27" r="2.5"/>
+      </g>
+      <text x="70" y="40" fill="white" font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="28" font-weight="600" letter-spacing="-0.5">Navet</text>
+    </symbol>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#canvas)"/>
+  <rect width="1200" height="630" fill="url(#orange-atmosphere)"/>
+  <rect width="1200" height="630" fill="url(#blue-atmosphere)"/>
+
+  <g id="brand-anchor">
+    <use href="#navet-lockup" x="72" y="54" width="160" height="48"/>
+  </g>
+
+  <g id="editable-content" font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+    <g id="editable-eyebrow">
+      <circle cx="80" cy="190" r="5" fill="#F97316"/>
+      <text x="96" y="197" fill="white" fill-opacity="0.68" font-size="18" font-weight="600">Release · vX.Y.Z</text>
+    </g>
+    <text id="editable-headline" x="72" y="272" fill="white" font-size="57" font-weight="720" letter-spacing="-2.7">
+      <tspan x="72" dy="0">A clear outcome</tspan>
+      <tspan x="72" dy="60">from this release.</tspan>
+    </text>
+    <rect x="72" y="374" width="72" height="4" rx="2" fill="#F97316"/>
+    <text id="editable-support" x="72" y="423" fill="white" fill-opacity="0.72" font-size="21" font-weight="450">
+      <tspan x="72" dy="0">One short sentence about what changed</tspan>
+      <tspan x="72" dy="30">for people at home.</tspan>
+    </text>
+    <text id="editable-meta" x="72" y="550" fill="white" fill-opacity="0.52" font-size="17" font-weight="500">navet.app · Month DD, YYYY</text>
+  </g>
+
+  <g id="replace-product-proof" filter="url(#panel-shadow)">
+    <rect x="650" y="92" width="468" height="456" rx="28" fill="url(#proof-surface)" stroke="white" stroke-opacity="0.11"/>
+    <g clip-path="url(#product-proof-clip)">
+      <circle cx="690" cy="122" r="190" fill="#F97316" fill-opacity="0.08"/>
+      <circle cx="1098" cy="526" r="210" fill="#3B82F6" fill-opacity="0.08"/>
+      <g fill="none" stroke="white" stroke-opacity="0.11" stroke-width="2">
+        <rect x="684" y="176" width="400" height="260" rx="24" stroke-dasharray="8 10"/>
+      </g>
+      <g font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" text-anchor="middle">
+        <text x="884" y="294" fill="white" fill-opacity="0.78" font-size="21" font-weight="650">Current product image</text>
+        <text x="884" y="327" fill="white" fill-opacity="0.48" font-size="16">Replace this group with a public-safe capture</text>
+      </g>
+      <rect x="684" y="462" width="150" height="38" rx="19" fill="white" fill-opacity="0.07" stroke="white" stroke-opacity="0.1"/>
+      <circle cx="705" cy="481" r="5" fill="#F97316"/>
+      <text x="720" y="487" fill="white" fill-opacity="0.7" font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="600">Product proof</text>
+    </g>
+  </g>
+
+  <g id="safe-area-guide" display="none" pointer-events="none">
+    <rect x="72" y="72" width="1056" height="486" rx="8" fill="none" stroke="#F97316" stroke-width="2" stroke-dasharray="10 10"/>
+  </g>
+</svg>

@@ -62,6 +62,26 @@ const packageJson = JSON.parse(
 ) as {
   version?: string
 }
+const publicWebManifest = JSON.parse(
+  readFileSync(path.resolve(repoRoot, 'assets/public/site.webmanifest'), 'utf8')
+) as {
+  name: string
+  short_name: string
+  description: string
+  start_url: string
+  scope: string
+  display: 'standalone'
+  background_color: string
+  theme_color: string
+  orientation: 'portrait-primary'
+  icons: Array<{
+    src: string
+    sizes: string
+    type: string
+    purpose: 'any' | 'maskable'
+  }>
+  categories: string[]
+}
 const SPOTIFY_TRACK_ID_PATTERN = /^[a-zA-Z0-9]{22}$/
 
 function resolveFallbackGitSha() {
@@ -1982,38 +2002,17 @@ export default defineConfig(({ mode }) => {
             'logo-horizontal-light.svg',
             'pwa-192.png',
             'pwa-512.png',
+            'pwa-maskable-192.png',
+            'pwa-maskable-512.png',
           ],
           manifest: {
-            name: 'Navet',
-            short_name: 'Navet',
-            description: 'A smart home dashboard built for calm, app-like control surfaces.',
+            ...publicWebManifest,
             start_url: './',
             scope: './',
-            display: 'standalone',
-            orientation: 'portrait-primary',
-            background_color: '#0a0a0a',
-            theme_color: '#0a0a0a',
-            categories: ['productivity', 'utilities', 'lifestyle'],
-            icons: [
-              {
-                src: './pwa-192.png',
-                sizes: '192x192',
-                type: 'image/png',
-                purpose: 'any maskable',
-              },
-              {
-                src: './pwa-512.png',
-                sizes: '512x512',
-                type: 'image/png',
-                purpose: 'any maskable',
-              },
-              {
-                src: './favicon.svg',
-                sizes: 'any',
-                type: 'image/svg+xml',
-                purpose: 'any',
-              },
-            ],
+            icons: publicWebManifest.icons.map((icon) => ({
+              ...icon,
+              src: `./${icon.src.replace(/^\/+/, '')}`,
+            })),
           },
           workbox: {
             // The app shell is still a single large startup chunk under current Rolldown splitting.

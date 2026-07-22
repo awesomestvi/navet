@@ -1,102 +1,44 @@
-# Navet - Branding Guide
+# Navet brand quick reference
 
-## Name & Meaning
+The canonical brand system starts in [README.md](README.md). This page keeps the former brand-guide
+path useful for contributors and external links.
 
-**Navet** (pronounced "NAH-vet") is Swedish for "the hub" – the definite form of *nav*, which means:
+## Established identity
 
-1. **The hub** - The center of a wheel
-2. **The pivot point** - The central axis around which things rotate
-3. **The center of activity** - A central hub in a system (figurative use)
+- **Name:** Navet, pronounced **NAH-vet**, Swedish for **the hub**
+- **Category:** self-hosted smart-home dashboard
+- **Public descriptor:** **A smart home dashboard for every screen.**
+- **Mark:** the existing central hub with eight connected nodes
+- **Logo gradient:** `#f97316` to `#ea580c`
+- **Typography:** the established system UI stack
+- **Product signature:** calm, rounded, state-led cards with compact household language and direct
+  controls
 
-### Why Navet?
+These are preservation rules, not prompts for new slogans, logo variants, fonts, or palettes.
 
-The name perfectly captures what this application does: it serves as the **central hub** for your smart home, bringing all your devices, automations, and controls into one unified interface. Just as a wheel's hub connects all the spokes, Navet connects all your smart home systems.
+## Use the complete system
 
-## Brand Identity
+- [Brand foundations](BRAND_FOUNDATIONS.md) — purpose, promise, positioning, audiences, and proof
+- [Voice and messaging](VOICE_AND_MESSAGING.md) — message hierarchy, tone, terminology, and claims
+- [Visual identity](VISUAL_IDENTITY.md) — logo, color authority, typography, imagery, motion, and
+  accessibility
+- [Product card grammar](CARD_GRAMMAR.md) — the demo and Home cards as Navet's operational language
+- [Brand asset system](ASSET_SYSTEM.md) — approved files, generation, platform exports, and checks
+- [Brand governance](GOVERNANCE.md) — ownership, review gates, maintenance, and deprecation
+- [Brand and trademark policy](TRADEMARK_POLICY.md) — permitted use of the name and marks
 
-### Core Values
-- **Centralization** - One place for everything
-- **Simplicity** - Clean, intuitive design
-- **Deliberateness** - A distinctive, premium dashboard rather than generic smart-home chrome
-- **Privacy** - Local-first, no tracking
-- **Openness** - Open source, community-driven
+## Core application rule
 
-### Visual Identity
-- **Design Language**: Glanceable, room-first dashboard surfaces with adaptive visual effects
-- **Logo**: Hub network node design (center with radiating connections)
-- **Primary Color**: Orange (#f97316) with gradient to #ea580c
-- **Color System**: 8 built-in accent colors plus a custom accent option
-- **Theme Modes**: Liquid Glass (`glass`), Dark, Light, Black
-- **Typography**: System UI fonts for native feel
+Navet orange identifies Navet, selections, and intentional brand moments. It is not a universal
+product state color. In the product, user accent, semantic status, device state, provider state,
+content color, and neutral surfaces keep their own meanings.
 
-## Voice & Tone
+Use [demo.navet.app](https://demo.navet.app/) and the Home cards for product expression,
+[navet.app](https://navet.app/) for public storytelling, and
+[docs.navet.app](https://docs.navet.app/) for editorial expression.
 
-### Writing Style
-- Clear and concise
-- Friendly but professional
-- Avoid technical jargon where possible
-- Focus on what users can accomplish
+## Claims rule
 
-### Key Messages
-- "The hub for your smart home"
-- "Everything in one place"
-- "Beautiful, private, and open source"
-- "Your home, your way"
-
-## Logo Usage
-
-### Logo Files
-
-Located in `/assets/public/`:
-- **logo.svg** - Square logo (120x120) - Use for app icons, social media
-- **logo-horizontal.svg** - Horizontal with text - Use for headers, light backgrounds
-- **logo-horizontal-light.svg** - Horizontal white text - Use for dark backgrounds
-- **favicon.svg** - 32x32 favicon - Browser tab icon
-
-### Logo Concept
-
-The logo represents **"the hub"** concept with:
-- **Center node** - Your smart home (Navet)
-- **8 radiating connections** - Your connected devices
-- **Network pattern** - Interconnected system
-- **Orange gradient** - Warm, welcoming, energetic
-
-### Logo Guidelines
-
-**Do's ✅**
-- Use the orange gradient versions on neutral backgrounds
-- Maintain minimum size of 32px for favicon, 60px for full logo
-- Keep clear space around logo (minimum 10% of logo size)
-- Use SVG format when possible for crisp rendering
-
-**Don'ts ❌**
-- Don't change the logo colors or gradient
-- Don't rotate, distort, or alter the logo proportions
-- Don't add effects, shadows, or outlines
-- Don't place logo on busy backgrounds that reduce clarity
-
-## Usage Guidelines
-
-### Do's ✅
-- Refer to the app as "Navet" (capitalized)
-- Use "smart home" for the product category and name supported providers when the distinction helps
-- Emphasize the hub/centralization concept
-- Highlight privacy and local-first features
-
-### Don'ts ❌
-- Don't write "navet" in lowercase (except in code/URLs)
-- Don't use "Home Assistant Dashboard" anymore
-- Don't over-explain the Swedish origin (mention it once if relevant)
-- Don't frame Navet as a Home Assistant-only product or imply equal capabilities across providers
-
-## Legal
-
-**Name**: Navet  
-**Copyright**: © 2026 Navet Contributors  
-**Code License**: AGPL-3.0-only  
-**Brand Policy**: See [TRADEMARK_POLICY.md](TRADEMARK_POLICY.md)  
-**Repository**: https://github.com/awesomestvi/navet
-
----
-
-*Last Updated: July 16, 2026*
+Verify provider support, privacy, security, performance, roadmap, counts, comparisons, and customer
+claims against current evidence. Navet is local-first for provider data and credentials; do not
+turn that scoped truth into an unsupported blanket claim such as "no tracking."

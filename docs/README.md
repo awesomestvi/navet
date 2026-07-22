@@ -116,8 +116,10 @@ Shared UI reality check:
 - [../CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md)
 - [../SECURITY.md](../SECURITY.md)
 - [design-system/FEATURES.md](design-system/FEATURES.md)
-- [branding/BRANDING.md](branding/BRANDING.md)
+- [branding/README.md](branding/README.md)
+  Canonical brand foundations, voice, visual identity, product card grammar, assets, and governance.
 - [branding/BRANDING_ASSETS.md](branding/BRANDING_ASSETS.md)
+  Quick asset-path reference.
 - [branding/TRADEMARK_POLICY.md](branding/TRADEMARK_POLICY.md)
 - [TERMS_OF_USE.md](TERMS_OF_USE.md)
 - [ATTRIBUTIONS.md](ATTRIBUTIONS.md)

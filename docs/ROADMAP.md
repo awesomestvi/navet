@@ -1,6 +1,6 @@
 ---
 title: Product roadmap
-description: Current Navet product direction and planned provider expansion.
+description: Current Navet product direction, planned Music Engine, and provider expansion.
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/ROADMAP.md
 ---
 
@@ -66,6 +66,14 @@ services. Homey and openHAB currently supply rooms, lighting, switches, sensors,
 - [ ] Dedicated template-sensor cards
 - [ ] More provider-backed automation creation targets
 
+### Music And Media
+
+- [ ] Navet Music Engine for provider-neutral music browsing, queue management, and playback to
+  supported household speakers
+- [ ] Capability-aware music-service connections and playback targets, beginning with a focused
+  supported set
+- [ ] Shared queue and now-playing continuity across Navet's Media dashboard and card dialogs
+
 ### Multi-user
 
 - [ ] Per-user dashboards
@@ -81,5 +89,7 @@ services. Homey and openHAB currently supply rooms, lighting, switches, sensors,
 - Home Assistant is still the most mature provider experience.
 - Homey and openHAB are supported paths today, but not at the same maturity level as Home
   Assistant.
+- Navet Music Engine is planned work and is not included in current releases. Supported music
+  services and playback targets will be documented as they are confirmed.
 - Hubitat and SmartThings have planned provider contracts and registration entries, but full runtime
   support is not implemented yet.

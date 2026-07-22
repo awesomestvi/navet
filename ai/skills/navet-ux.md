@@ -2,7 +2,10 @@
 
 Read this file before changing dashboard layout, card behavior, section composition, settings,
 dialogs, navigation, or visual hierarchy. Also read the compact
-[`AI-DESIGN-CONTEXT.md`](../../docs/design-system/AI-DESIGN-CONTEXT.md) packet.
+[`AI-DESIGN-CONTEXT.md`](../../docs/design-system/AI-DESIGN-CONTEXT.md) packet. When the work changes
+how Navet communicates visually or through cards, also use the canonical
+[brand system](../../docs/branding/README.md) and
+[product card grammar](../../docs/branding/CARD_GRAMMAR.md).
 
 ## Design From Evidence
 

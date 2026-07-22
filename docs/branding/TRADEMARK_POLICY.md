@@ -1,4 +1,8 @@
-# Navet Brand & Trademark Policy
+---
+title: Brand and trademark policy
+description: Permitted use of the Navet name, logo, wordmark, and other brand identifiers.
+editUrl: https://github.com/awesomestvi/navet/edit/main/docs/branding/TRADEMARK_POLICY.md
+---
 
 This policy covers the **Navet** name, logo, wordmark, iconography, and other brand identifiers in this repository (the "Marks").
 
@@ -57,8 +61,9 @@ Official brand assets remain subject to this policy even when they are stored in
 
 See also:
 
-- [BRANDING.md](BRANDING.md)
-- [../../assets/public/README.md](../../assets/public/README.md)
+- [Brand system](https://docs.navet.app/brand/)
+- [Brand asset system](https://docs.navet.app/brand/assets/)
+- [Public asset source reference](https://github.com/awesomestvi/navet/blob/main/assets/public/README.md)
 
 ## Questions
 

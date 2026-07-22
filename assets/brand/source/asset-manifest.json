@@ -1,0 +1,372 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "logo-mark",
+      "source": "assets/public/logo.svg",
+      "sourceSha256": "d52ce9df84d1a14bad59b40d5c3be63a487ce90e94552afbe7e248ec4067aa08",
+      "outputs": [
+        {
+          "path": "assets/public/logo.svg",
+          "format": "svg",
+          "width": 120,
+          "height": 120
+        }
+      ]
+    },
+    {
+      "id": "wordmark-dark-text",
+      "source": "assets/public/logo-horizontal.svg",
+      "sourceSha256": "a203f88528d393d5b24cd01f2b5dbe310dff7d6cf8cff474ed53524f233d3e9c",
+      "outputs": [
+        {
+          "path": "assets/public/logo-horizontal.svg",
+          "format": "svg",
+          "width": 200,
+          "height": 60
+        }
+      ]
+    },
+    {
+      "id": "wordmark-light-text",
+      "source": "assets/public/logo-horizontal-light.svg",
+      "sourceSha256": "0d9b44b5864ce8b48edc843804815cb726746d2f339096bbd7a88a538abcd9d4",
+      "outputs": [
+        {
+          "path": "assets/public/logo-horizontal-light.svg",
+          "format": "svg",
+          "width": 200,
+          "height": 60
+        }
+      ]
+    },
+    {
+      "id": "favicon-primary",
+      "source": "assets/public/favicon.svg",
+      "sourceSha256": "4b245badecd1ec897045e2b2d72822b45f6aa782308afc394cc386c2fff9790f",
+      "outputs": [
+        {
+          "path": "assets/public/favicon.svg",
+          "format": "svg",
+          "width": 32,
+          "height": 32
+        },
+        {
+          "path": "assets/public/favicon-32x32.svg",
+          "format": "svg",
+          "width": 32,
+          "height": 32
+        }
+      ]
+    },
+    {
+      "id": "apple-touch-icon-vector",
+      "source": "assets/public/apple-touch-icon.svg",
+      "sourceSha256": "b2a582e1e567bdb2fc9304aa901db473032e7f09cb3f09bdd0a81f789ee4244f",
+      "outputs": [
+        {
+          "path": "assets/public/apple-touch-icon.svg",
+          "format": "svg",
+          "width": 180,
+          "height": 180
+        }
+      ]
+    },
+    {
+      "id": "apple-touch-icon",
+      "source": "assets/brand/source/app-icon-maskable.svg",
+      "sourceSha256": "47eb04d3ddcde10e12888c9b99a7c4f080d51f433954c8acf1ce8cd231a2a080",
+      "outputs": [
+        {
+          "path": "assets/public/apple-touch-icon.png",
+          "format": "png",
+          "width": 180,
+          "height": 180,
+          "sha256": "26768dfc44f5b8d4702c9733e3bd321d81675fc13fbc2a6abb09f2e4c8290f9e"
+        }
+      ]
+    },
+    {
+      "id": "pwa-install-icons",
+      "source": "assets/public/logo.svg",
+      "outputs": [
+        {
+          "path": "assets/public/pwa-192.png",
+          "format": "png",
+          "width": 192,
+          "height": 192,
+          "sha256": "a1b3d960670acb19f58aac4ae93274f38217ebf44cf47bbdec788c7bfd86e227"
+        },
+        {
+          "path": "assets/public/pwa-512.png",
+          "format": "png",
+          "width": 512,
+          "height": 512,
+          "sha256": "1ed7e03685b5ee771c62739029b699942b188fed3cf1b1689507bc1b674df6c1"
+        }
+      ]
+    },
+    {
+      "id": "pwa-maskable-icons",
+      "source": "assets/brand/source/app-icon-maskable.svg",
+      "outputs": [
+        {
+          "path": "assets/public/pwa-maskable-192.png",
+          "format": "png",
+          "width": 192,
+          "height": 192,
+          "sha256": "76103f914fab92c28f9f1e90b100fcd49f08e3a0bee47200f34ebc7ec1a7d311"
+        },
+        {
+          "path": "assets/public/pwa-maskable-512.png",
+          "format": "png",
+          "width": 512,
+          "height": 512,
+          "sha256": "10586a95b99eee2b0d8243d79fb1bb0fc03d5b9943e5287a587168ce58bcaee1"
+        }
+      ]
+    },
+    {
+      "id": "pwa-manifest",
+      "source": "assets/public/site.webmanifest",
+      "outputs": [
+        {
+          "path": "assets/public/site.webmanifest",
+          "format": "webmanifest"
+        }
+      ]
+    },
+    {
+      "id": "reference-logo-system",
+      "source": "docs/branding/media/logo-system.svg",
+      "sourceSha256": "c94bd50ba94f1111dbb2e2038af745097ff9f6e5e0102e751d322dc018be6597",
+      "outputs": [
+        {
+          "path": "docs/branding/media/logo-system.svg",
+          "format": "svg",
+          "width": 1200,
+          "height": 620
+        }
+      ]
+    },
+    {
+      "id": "reference-color-architecture",
+      "source": "docs/branding/media/color-architecture.svg",
+      "sourceSha256": "726c338f503383e3565228a1017e10017e031bc7ce6e34a9370db367cf2f8dd1",
+      "outputs": [
+        {
+          "path": "docs/branding/media/color-architecture.svg",
+          "format": "svg",
+          "width": 1200,
+          "height": 700
+        }
+      ]
+    },
+    {
+      "id": "reference-card-anatomy",
+      "source": "docs/branding/media/card-anatomy.svg",
+      "sourceSha256": "df1878bc657c2f5cec345f59589c1cfacfb7376ba3e0f1e8fe8079923ac38f23",
+      "outputs": [
+        {
+          "path": "docs/branding/media/card-anatomy.svg",
+          "format": "svg",
+          "width": 1200,
+          "height": 720
+        }
+      ]
+    },
+    {
+      "id": "template-social-announcement",
+      "source": "assets/brand/templates/social-announcement.svg",
+      "sourceSha256": "46fb68f26b2427039fcb8f0784f4bb4519ea5c797e583b5d0f9d19e7ccff5900",
+      "outputs": [
+        {
+          "path": "assets/brand/templates/social-announcement.svg",
+          "format": "svg",
+          "width": 1200,
+          "height": 630
+        }
+      ]
+    },
+    {
+      "id": "template-video-title-card",
+      "source": "assets/brand/templates/video-title-card.svg",
+      "sourceSha256": "b6502ffea850a0d0c526ca143ae77b74f6aee4f811d218e9fa79cd08e9458340",
+      "outputs": [
+        {
+          "path": "assets/brand/templates/video-title-card.svg",
+          "format": "svg",
+          "width": 1920,
+          "height": 1080
+        }
+      ]
+    },
+    {
+      "id": "template-presentation-title-slide",
+      "source": "assets/brand/templates/presentation-title-slide.svg",
+      "sourceSha256": "f7334c363d51d19f888bcbd6dedf75eed0578a4397d72f667a8ec8945efae4e2",
+      "outputs": [
+        {
+          "path": "assets/brand/templates/presentation-title-slide.svg",
+          "format": "svg",
+          "width": 1920,
+          "height": 1080
+        }
+      ]
+    },
+    {
+      "id": "template-readme-banner",
+      "source": "assets/brand/templates/readme-banner.svg",
+      "sourceSha256": "c8725999c087b9af3ba6beefabf55467f33126bceaeffbd02ccf80ca8c00388b",
+      "outputs": [
+        {
+          "path": "assets/brand/templates/readme-banner.svg",
+          "format": "svg",
+          "width": 1600,
+          "height": 500
+        }
+      ]
+    },
+    {
+      "id": "social-preview",
+      "source": "apps/website/scripts/generate-social-card.mjs",
+      "outputs": [
+        {
+          "path": "assets/public/navet-social-card.jpg",
+          "format": "jpg",
+          "width": 1200,
+          "height": 630,
+          "sha256": "415aea405bc0bcab3e50a822dec2ec2dc7d703fdff4e6a5571cdfcd5f856440f"
+        }
+      ],
+      "generator": "node apps/website/scripts/generate-social-card.mjs"
+    },
+    {
+      "id": "home-assistant-addon-icon",
+      "source": "assets/public/apple-touch-icon.svg",
+      "outputs": [
+        {
+          "path": "platform/home-assistant/addons/navet/icon.png",
+          "format": "png",
+          "width": 128,
+          "height": 128,
+          "sha256": "0d60e5859e3b56ccd7c08141f6475a085da093a6bd897f1a3e79acfb78ef8223"
+        },
+        {
+          "path": "platform/home-assistant/addons/navet-dev/icon.png",
+          "format": "png",
+          "width": 128,
+          "height": 128,
+          "sha256": "0d60e5859e3b56ccd7c08141f6475a085da093a6bd897f1a3e79acfb78ef8223"
+        }
+      ]
+    },
+    {
+      "id": "home-assistant-addon-logo",
+      "source": "assets/public/logo-horizontal.svg",
+      "outputs": [
+        {
+          "path": "platform/home-assistant/addons/navet/logo.png",
+          "format": "png",
+          "width": 250,
+          "height": 75,
+          "sha256": "333415f9c6ca8c4a0e944d028f7b0dbc68c634bc3dc9d3c718ccff7c0dbe93df"
+        },
+        {
+          "path": "platform/home-assistant/addons/navet-dev/logo.png",
+          "format": "png",
+          "width": 250,
+          "height": 75,
+          "sha256": "333415f9c6ca8c4a0e944d028f7b0dbc68c634bc3dc9d3c718ccff7c0dbe93df"
+        }
+      ]
+    },
+    {
+      "id": "home-assistant-integration-icon",
+      "source": "assets/public/logo.svg",
+      "outputs": [
+        {
+          "path": "platform/home-assistant/custom_components/navet/brand/icon.png",
+          "format": "png",
+          "width": 256,
+          "height": 256,
+          "sha256": "eb1e12710defa07e16617d83553729b94b253d3078137cda1f55102d4637ffee"
+        },
+        {
+          "path": "platform/home-assistant/custom_components/navet/brand/icon@2x.png",
+          "format": "png",
+          "width": 512,
+          "height": 512,
+          "sha256": "1ed7e03685b5ee771c62739029b699942b188fed3cf1b1689507bc1b674df6c1"
+        }
+      ]
+    },
+    {
+      "id": "home-assistant-integration-logo",
+      "source": "assets/public/logo-horizontal.svg",
+      "outputs": [
+        {
+          "path": "platform/home-assistant/custom_components/navet/brand/logo.png",
+          "format": "png",
+          "width": 853,
+          "height": 256,
+          "sha256": "d3ad51a2c6f4f1360f8056cf82ab19c51eebf2d7dd1c3dd0141ed322ff6b1a5c"
+        },
+        {
+          "path": "platform/home-assistant/custom_components/navet/brand/logo@2x.png",
+          "format": "png",
+          "width": 1707,
+          "height": 512,
+          "sha256": "f9dfb186238e993822de6be43a5ec080626145bfa9e1e602e3979bb93bc779ae"
+        }
+      ]
+    },
+    {
+      "id": "home-assistant-integration-logo-dark",
+      "source": "assets/public/logo-horizontal-light.svg",
+      "outputs": [
+        {
+          "path": "platform/home-assistant/custom_components/navet/brand/dark_logo.png",
+          "format": "png",
+          "width": 853,
+          "height": 256,
+          "sha256": "41f08bdc95643e78f052e4317352eb620d5c0ffaa421c5b8339f7189e8d84fa8"
+        },
+        {
+          "path": "platform/home-assistant/custom_components/navet/brand/dark_logo@2x.png",
+          "format": "png",
+          "width": 1707,
+          "height": 512,
+          "sha256": "3bbb4d5c792761fca06db25686db309b4e287b9a1ecdbf54dc9a4cb23d109a47"
+        }
+      ]
+    }
+  ],
+  "mirrors": [
+    {
+      "source": "assets/public/logo.svg",
+      "targets": [
+        "platform/home-assistant/custom_components/navet/frontend/logo.svg"
+      ],
+      "mode": "file"
+    },
+    {
+      "source": "assets/public",
+      "targets": [
+        "apps/standalone/dist",
+        "apps/demo/dist",
+        "apps/website/dist",
+        "apps/docs/dist",
+        "apps/storybook/dist"
+      ],
+      "mode": "build"
+    },
+    {
+      "source": "platform/home-assistant/custom_components/navet",
+      "targets": [
+        "../navet-hacs/custom_components/navet"
+      ],
+      "mode": "export"
+    }
+  ]
+}

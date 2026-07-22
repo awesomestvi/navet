@@ -95,6 +95,7 @@ export const MARKETING_ROADMAP = {
   next: [
     'Multiple dashboards, views, and more flexible panel and stack layouts',
     'Standalone history, statistics, conditional, filter, floor-plan, logbook, gauge, timer, and list cards',
+    'Navet Music Engine for provider-neutral music browsing, queues, and supported speaker playback',
     'Per-user dashboards and profile editing',
   ],
   later: [

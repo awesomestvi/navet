@@ -2,6 +2,10 @@
 
 This document describes the current visual and interaction rules for Navet's shared UI.
 
+The [Navet brand system](../branding/README.md) owns durable identity. The
+[product card grammar](../branding/CARD_GRAMMAR.md) defines how the demo and product cards express
+that identity; this guide owns their implementation rules.
+
 Architecture note:
 
 - `@navet/ui` is the target provider-neutral shared UI package boundary.

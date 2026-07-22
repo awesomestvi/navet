@@ -1,6 +1,6 @@
 # Product Marketing Context
 
-*Last updated: July 16, 2026*
+*Last updated: July 22, 2026*
 
 ## Product Overview
 
@@ -16,9 +16,9 @@
 
 ## Target Audience
 
-**Primary audience:** Home Assistant users, smart-home enthusiasts, self-hosters, and households that use wall panels, tablets, kiosks, desktop browsers, or phones for daily control.
+**Primary audience:** People who operate self-hosted smart homes and want a calmer interface across wall panels, tablets, kiosks, desktop browsers, or phones for daily control.
 
-**Secondary audience:** Homey and openHAB users, contributors, integration maintainers, and developers building provider-neutral smart-home UI.
+**Secondary audience:** Contributors, integration maintainers, and developers building provider-neutral smart-home UI. Home Assistant, Homey, and openHAB users can all belong to the primary audience; provider choice does not define audience priority.
 
 **Primary use case:** Replace an admin-first or fragmented smart-home interface with a calmer room-first dashboard that works across household screens.
 
@@ -74,7 +74,7 @@
 
 **Why that is better:** Users get a consistent surface without pretending every provider offers the same advanced services.
 
-**Why users choose Navet:** They want a polished, private dashboard that works on the screens already in their home and does not lock the experience to a single provider architecture.
+**Intended reason to choose Navet:** Navet is designed for people who want a polished, local-first dashboard that works on the screens already in their home and does not lock the experience to a single provider architecture. Treat this as a positioning hypothesis until customer research verifies the language.
 
 ## Objections
 
@@ -86,7 +86,9 @@
 
 **Anti-persona:** Users who want a fully managed cloud service, require identical advanced features across every provider today, or do not want to operate a self-hosted application.
 
-## Switching Dynamics
+## Switching Dynamics Hypotheses
+
+These are strategy hypotheses to validate in future customer research, not repository-verified customer statements.
 
 **Push:** Admin-heavy daily workflows, inconsistent dashboards across screens, and recurring maintenance for custom panels.
 
@@ -118,15 +120,18 @@
 
 ## Brand Voice
 
+The canonical execution guide is [`docs/branding/VOICE_AND_MESSAGING.md`](../docs/branding/VOICE_AND_MESSAGING.md),
+with the complete identity system in [`docs/branding/README.md`](../docs/branding/README.md).
+
 **Tone:** Calm, confident, friendly, and honest.
 
 **Style:** Clear, concise, user-focused, and specific. Lead with what people can accomplish, then explain technical detail when it helps them choose or contribute.
 
-**Personality:** Deliberate, private, open, polished, and practical.
+**Personality:** Calm, deliberate, warm, clear, open, and practical.
 
 ## Proof Points
 
-**Metrics:** Three implemented providers; eight focused dashboard sections; nineteen documented entity-card families; ten addable widget types; four theme families.
+**Product inventory:** Provider, section, card, widget, language, and theme counts are release-dependent facts, not standing brand metrics. Verify them against the current implementation, integration matrix, and user documentation before external use, and record the source and date.
 
 **Customers:** No customer or organization logos are documented.
 

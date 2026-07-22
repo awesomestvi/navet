@@ -2,9 +2,13 @@
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 
-const SCOPES = new Set(['dashboard', 'provider', 'ui', 'workflow', 'release']);
+const SCOPES = new Set(['brand', 'dashboard', 'provider', 'ui', 'workflow', 'release']);
 
 const SCOPE_COMMANDS = {
+  brand: [
+    ['pnpm', ['check:brand']],
+    ['pnpm', ['docs:build']],
+  ],
   dashboard: [
     ['pnpm', ['check:ui-kit']],
     ['pnpm', ['check:stories']],
@@ -118,6 +122,36 @@ function inferScopes(files) {
 
   for (const rawFile of files) {
     const file = normalizePath(rawFile);
+
+    if (
+      file.startsWith('assets/brand/') ||
+      file === '.agents/product-marketing.md' ||
+      file === 'apps/docs/astro.config.mjs' ||
+      file === 'apps/docs/src/content.config.ts' ||
+      file === 'apps/demo/index.html' ||
+      file === 'apps/standalone/index.html' ||
+      file === 'apps/standalone/vite.config.ts' ||
+      file === 'apps/website/index.html' ||
+      file === 'packages/app/src/marketing/data/marketingContent.ts' ||
+      file === 'packages/app/src/marketing/seo/marketingMetadata.ts' ||
+      file === 'assets/public/README.md' ||
+      file.startsWith('assets/public/logo') ||
+      file.startsWith('assets/public/favicon') ||
+      file.startsWith('assets/public/apple-touch-icon') ||
+      file.startsWith('assets/public/pwa-') ||
+      file === 'assets/public/navet-social-card.jpg' ||
+      file === 'assets/public/site.webmanifest' ||
+      file.startsWith('docs/branding/') ||
+      file.startsWith('platform/home-assistant/addons/navet/') ||
+      file.startsWith('platform/home-assistant/addons/navet-dev/') ||
+      file.startsWith('platform/home-assistant/custom_components/navet/brand/') ||
+      file === 'platform/home-assistant/custom_components/navet/frontend/logo.svg' ||
+      file === 'scripts/brand-assets.mjs' ||
+      file === 'scripts/generate-brand-reference-visuals.mjs' ||
+      file === 'apps/website/scripts/generate-social-card.mjs'
+    ) {
+      scopes.add('brand');
+    }
 
     if (
       file.startsWith('packages/provider-') ||

@@ -1,0 +1,79 @@
+<svg width="1600" height="500" viewBox="0 0 1600 500" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Navet README banner template</title>
+  <desc id="desc">A wide dark Navet banner with the established logo, an editable product description, and a rounded product image area.</desc>
+  <defs>
+    <linearGradient id="canvas" x1="120" y1="0" x2="1470" y2="500" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0A0E15"/><stop offset="1" stop-color="#06080D"/>
+    </linearGradient>
+    <linearGradient id="navet-logo-gradient" x1="4" y1="4" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F97316"/><stop offset="1" stop-color="#EA580C"/>
+    </linearGradient>
+    <radialGradient id="orange-atmosphere" cx="0" cy="0" r="1" gradientTransform="translate(170 70) rotate(30) scale(460 320)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F97316" stop-opacity="0.19"/><stop offset="1" stop-color="#F97316" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blue-atmosphere" cx="0" cy="0" r="1" gradientTransform="translate(1450 424) rotate(-150) scale(460 330)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3B82F6" stop-opacity="0.14"/><stop offset="1" stop-color="#3B82F6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="proof-surface" x1="1050" y1="58" x2="1544" y2="442" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#151B25"/><stop offset="1" stop-color="#0B0F16"/>
+    </linearGradient>
+    <clipPath id="product-proof-clip"><rect x="1048" y="58" width="496" height="384" rx="26"/></clipPath>
+    <filter id="panel-shadow" x="976" y="6" width="640" height="532" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="24" stdDeviation="30" flood-color="#000000" flood-opacity="0.46"/>
+    </filter>
+    <symbol id="navet-lockup" viewBox="0 0 200 60">
+      <circle cx="30" cy="30" r="26" fill="url(#navet-logo-gradient)"/>
+      <circle cx="30" cy="30" r="3.5" fill="white" opacity="0.95"/>
+      <g stroke="white" stroke-width="1.8" stroke-linecap="round" opacity="0.9">
+        <line x1="30" y1="30" x2="30" y2="12"/><line x1="30" y1="30" x2="42.73" y2="17.27"/>
+        <line x1="30" y1="30" x2="48" y2="30"/><line x1="30" y1="30" x2="42.73" y2="42.73"/>
+        <line x1="30" y1="30" x2="30" y2="48"/><line x1="30" y1="30" x2="17.27" y2="42.73"/>
+        <line x1="30" y1="30" x2="12" y2="30"/><line x1="30" y1="30" x2="17.27" y2="17.27"/>
+      </g>
+      <g fill="white" opacity="0.95">
+        <circle cx="30" cy="12" r="2.5"/><circle cx="42.73" cy="17.27" r="2.5"/>
+        <circle cx="48" cy="30" r="2.5"/><circle cx="42.73" cy="42.73" r="2.5"/>
+        <circle cx="30" cy="48" r="2.5"/><circle cx="17.27" cy="42.73" r="2.5"/>
+        <circle cx="12" cy="30" r="2.5"/><circle cx="17.27" cy="17.27" r="2.5"/>
+      </g>
+      <text x="70" y="40" fill="white" font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="28" font-weight="600" letter-spacing="-0.5">Navet</text>
+    </symbol>
+  </defs>
+
+  <rect width="1600" height="500" rx="28" fill="url(#canvas)"/>
+  <rect width="1600" height="500" rx="28" fill="url(#orange-atmosphere)"/>
+  <rect width="1600" height="500" rx="28" fill="url(#blue-atmosphere)"/>
+  <rect x="0.5" y="0.5" width="1599" height="499" rx="27.5" stroke="white" stroke-opacity="0.10"/>
+
+  <use href="#navet-lockup" x="64" y="52" width="170" height="51"/>
+
+  <g id="editable-content" font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+    <text id="editable-headline" x="64" y="202" fill="white" font-size="60" font-weight="730" letter-spacing="-3">
+      <tspan x="64" dy="0">A smart home dashboard</tspan>
+      <tspan x="64" dy="64">for every screen.</tspan>
+    </text>
+    <rect x="64" y="307" width="74" height="4" rx="2" fill="#F97316"/>
+    <text id="editable-support" x="64" y="353" fill="white" fill-opacity="0.68" font-size="22" font-weight="450">One familiar place for rooms, devices, media, energy, and more.</text>
+    <text id="editable-meta" x="64" y="416" fill="white" fill-opacity="0.48" font-size="17" font-weight="560">Open source · Local-first · navet.app</text>
+  </g>
+
+  <g id="replace-product-proof" filter="url(#panel-shadow)">
+    <rect x="1048" y="58" width="496" height="384" rx="26" fill="url(#proof-surface)" stroke="white" stroke-opacity="0.11"/>
+    <g clip-path="url(#product-proof-clip)">
+      <circle cx="1084" cy="96" r="170" fill="#F97316" fill-opacity="0.07"/>
+      <circle cx="1518" cy="420" r="190" fill="#3B82F6" fill-opacity="0.08"/>
+      <rect x="1080" y="104" width="432" height="272" rx="22" fill="none" stroke="white" stroke-opacity="0.12" stroke-width="2" stroke-dasharray="8 10"/>
+      <g font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" text-anchor="middle">
+        <text x="1296" y="234" fill="white" fill-opacity="0.78" font-size="21" font-weight="650">Current product image</text>
+        <text x="1296" y="267" fill="white" fill-opacity="0.48" font-size="16">Replace with a readable dashboard crop</text>
+      </g>
+      <rect x="1080" y="394" width="154" height="32" rx="16" fill="white" fill-opacity="0.07" stroke="white" stroke-opacity="0.1"/>
+      <circle cx="1101" cy="410" r="5" fill="#F97316"/>
+      <text x="1117" y="416" fill="white" fill-opacity="0.7" font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="600">Product proof</text>
+    </g>
+  </g>
+
+  <g id="safe-area-guide" display="none" pointer-events="none">
+    <rect x="56" y="56" width="1488" height="388" rx="8" fill="none" stroke="#F97316" stroke-width="2" stroke-dasharray="10 10"/>
+  </g>
+</svg>

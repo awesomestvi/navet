@@ -16,10 +16,11 @@ small runtime bootstrap/fallback files. Brand guidance applies to the logo and s
 
 - **favicon.svg** (32x32) - Modern SVG favicon for web browsers
 - **favicon-32x32.svg** (32x32) - Alternative 32px favicon
-- **apple-touch-icon.svg** (180x180) - Source artwork for iOS home screen icon
-- **apple-touch-icon.png** (360x360) - Rasterized iOS home screen icon
+- **apple-touch-icon.svg** (180x180) - Rounded compatibility preview of the install icon
+- **apple-touch-icon.png** (180x180) - Rasterized iOS home screen icon
 - **pwa-192.png** - PWA install icon referenced by the web manifest as 192x192
 - **pwa-512.png** - Large PWA install icon referenced by the web manifest as 512x512
+- **pwa-maskable-192.png** / **pwa-maskable-512.png** - Full-bleed maskable install icons
 
 ### Social Preview
 
@@ -32,7 +33,7 @@ small runtime bootstrap/fallback files. Brand guidance applies to the logo and s
 - **boot-i18n.d.ts** and **boot-i18n.test.ts** - type surface and regression coverage for the boot
   catalog
 - **offline.html** - PWA offline fallback
-- **site.webmanifest** - install metadata and icon references
+- **site.webmanifest** - canonical install metadata consumed by the standalone PWA build
 
 ## Logo Concept
 
@@ -70,7 +71,9 @@ The Navet logo represents **"the hub"** - a central node with 8 radiating connec
 - Bookmark icons
 
 **apple-touch-icon.svg**
-- Source artwork for iOS home screen assets
+- Rounded compatibility preview and Home Assistant add-on icon source
+- Do not use it to regenerate the opaque Apple PNG; that output comes from the full-bleed source
+  declared in the brand asset manifest
 
 **apple-touch-icon.png**
 - iOS home screen icon
@@ -80,6 +83,10 @@ The Navet logo represents **"the hub"** - a central node with 8 radiating connec
 - Android install prompt
 - PWA manifest icons
 - Desktop install surfaces
+
+**pwa-maskable-192.png / pwa-maskable-512.png**
+- Cropped Android and PWA install surfaces
+- Use only with the manifest `maskable` purpose
 
 ### Design Principles
 
@@ -105,6 +112,17 @@ The Navet logo represents **"the hub"** - a central node with 8 radiating connec
 - White: `#ffffff` (logo elements)
 - Transparent backgrounds supported
 
+## Generation and validation
+
+Do not edit raster outputs by hand. From the repository root:
+
+```bash
+pnpm brand:generate
+pnpm check:brand
+```
+
+The source/output contract is in [`../brand/source/asset-manifest.json`](../brand/source/asset-manifest.json).
+
 ## Technical Specs
 
 - **Format:** SVG for vector logos and PNG for raster install icons
@@ -118,9 +136,10 @@ These logo files are **not** covered by the repository code license.
 
 They are governed by Navet brand usage rules:
 
-- [../../docs/branding/BRANDING.md](../../docs/branding/BRANDING.md)
+- [../../docs/branding/README.md](../../docs/branding/README.md)
+- [../../docs/branding/ASSET_SYSTEM.md](../../docs/branding/ASSET_SYSTEM.md)
 - [../../docs/branding/TRADEMARK_POLICY.md](../../docs/branding/TRADEMARK_POLICY.md)
 
 ---
 
-**Last Updated:** July 16, 2026
+**Last Updated:** July 22, 2026

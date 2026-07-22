@@ -73,6 +73,19 @@ export default defineConfig({
           ],
         },
         {
+          label: "Brand",
+          items: [
+            { label: "Brand overview", link: "/brand/" },
+            { label: "Foundations", link: "/brand/foundations/" },
+            { label: "Voice and messaging", link: "/brand/voice/" },
+            { label: "Visual identity", link: "/brand/visual/" },
+            { label: "Product card grammar", link: "/brand/cards/" },
+            { label: "Assets", link: "/brand/assets/" },
+            { label: "Governance", link: "/brand/governance/" },
+            { label: "Trademark policy", link: "/brand/trademark/" },
+          ],
+        },
+        {
           label: "Support",
           items: [
             { label: "Help and safety", link: "/help/" },

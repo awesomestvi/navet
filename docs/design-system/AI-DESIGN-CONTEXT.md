@@ -7,6 +7,8 @@ The full source of truth remains:
 
 - [UI-GUIDELINES.md](UI-GUIDELINES.md)
 - [README.md](README.md)
+- [Navet brand system](../branding/README.md) for durable identity and
+  [product card grammar](../branding/CARD_GRAMMAR.md) for how cards communicate
 - Storybook under `packages/app/src/ui-kit/`, `packages/app/src/components/primitives/`,
   `packages/app/src/components/patterns/`, and feature card stories
 

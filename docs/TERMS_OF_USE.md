@@ -22,7 +22,7 @@ The code license does **not** grant rights to use the **Navet** name, logo, or o
 Brand usage is governed separately by:
 
 - [branding/TRADEMARK_POLICY.md](branding/TRADEMARK_POLICY.md)
-- [branding/BRANDING.md](branding/BRANDING.md)
+- [branding/README.md](branding/README.md)
 
 ## Forks and Redistributed Builds
 

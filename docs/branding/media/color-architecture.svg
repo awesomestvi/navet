@@ -1,0 +1,150 @@
+<svg width="1200" height="700" viewBox="0 0 1200 700" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Navet color authority architecture</title>
+  <desc id="desc">Five levels separate safety semantics, device provider and content color, user accent, Navet corporate orange, and neutral surfaces.</desc>
+  <metadata>Illustrative symbols are server-rendered Lucide React icons. The Navet and Home Assistant marks are embedded from their checked-in SVG masters.</metadata>
+  <defs>
+    <clipPath id="canvasClip"><rect width="1200" height="700"/></clipPath>
+    <linearGradient id="darkCanvas" x1="0" y1="0" x2="1200" y2="700" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0b0f17"/>
+      <stop offset="1" stop-color="#06080d"/>
+    </linearGradient>
+    <linearGradient id="lightCanvas" x1="0" y1="0" x2="1200" y2="700" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fafaf9"/>
+      <stop offset="1" stop-color="#f2f1ee"/>
+    </linearGradient>
+    <linearGradient id="navetOrange" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#f97316"/>
+      <stop offset="1" stop-color="#ea580c"/>
+    </linearGradient>
+    <filter id="softShadow" x="-15%" y="-20%" width="130%" height="150%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="12" stdDeviation="20" flood-color="#000000" flood-opacity="0.24"/>
+    </filter>
+    <style>
+      text { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .eyebrow { font-size: 11px; font-weight: 720; letter-spacing: 0.9px; }
+      .label { font-size: 15px; font-weight: 680; }
+      .detail { font-size: 12px; font-weight: 470; }
+      .micro { font-size: 10px; font-weight: 680; letter-spacing: 0.45px; }
+    </style>
+  </defs>
+  <g clip-path="url(#canvasClip)">
+    <rect width="1200" height="700" fill="url(#darkCanvas)"/>
+    <circle cx="1085" cy="12" r="230" fill="#f97316" fill-opacity="0.07"/>
+    <circle cx="72" cy="690" r="280" fill="#2563eb" fill-opacity="0.07"/>
+    <text x="64" y="58" fill="#ffffff" font-size="30" font-weight="680" letter-spacing="-0.8">Color architecture</text>
+    <text x="64" y="86" fill="#a1a1aa" font-size="15">Use the highest-authority color that truthfully describes the situation.</text>
+    <text x="64" y="119" class="eyebrow" fill="#71717a">HIGHER AUTHORITY</text>
+
+    <g>
+    <rect x="64" y="132" width="770" height="84" rx="20" fill="#11151d" stroke="#30343d"/>
+    <circle cx="103" cy="174" r="18" fill="#292524" stroke="#fbbf24"/>
+    <text x="103" y="178" class="eyebrow" fill="#fde68a" text-anchor="middle">1</text>
+    <text x="139" y="168" class="label" fill="#ffffff">Safety and semantics</text>
+    <text x="139" y="191" class="detail" fill="#a1a1aa">Meaning wins; pair color with a label, icon, or structure.</text>
+    <g transform="translate(632 0)">
+      <g transform="translate(0 155)">
+    <rect width="38" height="38" rx="12" fill="#0369a1"/>
+    <g transform="translate(9 9)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e0f2fe" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg></g>
+  </g>
+      <g transform="translate(46 155)">
+    <rect width="38" height="38" rx="12" fill="#047857"/>
+    <g transform="translate(9 9)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d1fae5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg></g>
+  </g>
+      <g transform="translate(92 155)">
+    <rect width="38" height="38" rx="12" fill="#b45309"/>
+    <g transform="translate(9 9)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fef3c7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-triangle-alert" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg></g>
+  </g>
+      <g transform="translate(138 155)">
+    <rect width="38" height="38" rx="12" fill="#b91c1c"/>
+    <g transform="translate(9 9)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fee2e2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-x" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg></g>
+  </g>
+    </g>
+  </g>
+    <g>
+    <rect x="64" y="226" width="770" height="84" rx="20" fill="#11151d" stroke="#30343d"/>
+    <circle cx="103" cy="268" r="18" fill="#172554" stroke="#60a5fa"/>
+    <text x="103" y="272" class="eyebrow" fill="#bfdbfe" text-anchor="middle">2</text>
+    <text x="139" y="262" class="label" fill="#ffffff">Device, provider, and content</text>
+    <text x="139" y="285" class="detail" fill="#a1a1aa">Real state or source color stays local to the object it describes.</text>
+    <g transform="translate(638 247)">
+      <rect width="42" height="42" rx="13" fill="#7c2d12"/>
+      <g transform="translate(10 10)"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fed7aa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path><path d="M9 18h6"></path><path d="M10 22h4"></path></svg></g>
+      <rect x="52" width="42" height="42" rx="13" fill="#4c1d95"/>
+      <g transform="translate(62 10)"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ede9fe" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-disc3 lucide-disc-3" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M6 12c0-1.7.7-3.2 1.8-4.2"></path><circle cx="12" cy="12" r="2"></circle><path d="M18 12c0 1.7-.7 3.2-1.8 4.2"></path></svg></g>
+      <rect x="104" width="42" height="42" rx="13" fill="#f8fafc"/>
+      <image href="data:image/svg+xml;base64,PHN2ZyBmaWxsPSIjMThCQ0YyIiByb2xlPSJpbWciIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGl0bGU+SG9tZSBBc3Npc3RhbnQ8L3RpdGxlPjxwYXRoIGQ9Ik0yMi45MzkgMTAuNjI3IDEzLjA2MS43NDlhMS41MDUgMS41MDUgMCAwIDAtMi4xMjEgMGwtOS44NzkgOS44NzhDLjQ3OCAxMS4yMSAwIDEyLjM2MyAwIDEzLjE4N3Y5YzAgLjgyNi42NzUgMS41IDEuNSAxLjVoOS4yMjdsLTQuMDYzLTQuMDYyYTIuMDM0IDIuMDM0IDAgMCAxLS42NjQuMTEzYy0xLjEzIDAtMi4wNS0uOTItMi4wNS0yLjA1cy45Mi0yLjA1IDIuMDUtMi4wNSAyLjA1LjkyIDIuMDUgMi4wNWMwIC4yMzMtLjA0MS40NTYtLjExMy42NjVsMy4xNjMgMy4xNjNWOS45MjhhMi4wNSAyLjA1IDAgMCAxLTEuMTUtMS44NGMwLTEuMTMuOTItMi4wNSAyLjA1LTIuMDVzMi4wNS45MiAyLjA1IDIuMDVhMi4wNSAyLjA1IDAgMCAxLTEuMTUgMS44NHY4LjEyN2wzLjE0Ni0zLjE0NkEyLjA1MSAyLjA1MSAwIDAgMSAxOCAxMi4yMzljMS4xMyAwIDIuMDUuOTIgMi4wNSAyLjA1cy0uOTIgMi4wNS0yLjA1IDIuMDVjLS4yNSAwLS40ODgtLjA0Ny0uNzA5LS4xM0wxMi45IDIwLjYwMnYzLjA4OGg5LjZjLjgyNSAwIDEuNS0uNjc1IDEuNS0xLjV2LTljMC0uODI1LS40NzctMS45NzctMS4wNjEtMi41NjF6Ii8+PC9zdmc+" x="111" y="7" width="28" height="28" preserveAspectRatio="xMidYMid meet" />
+    </g>
+  </g>
+    <g>
+    <rect x="64" y="320" width="770" height="84" rx="20" fill="#11151d" stroke="#30343d"/>
+    <circle cx="103" cy="362" r="18" fill="#1e293b" stroke="#94a3b8"/>
+    <text x="103" y="366" class="eyebrow" fill="#e2e8f0" text-anchor="middle">3</text>
+    <text x="139" y="356" class="label" fill="#ffffff">User-selected accent</text>
+    <text x="139" y="379" class="detail" fill="#a1a1aa">Preference colors active UI when no stronger signal exists.</text>
+    <g transform="translate(645 352)">
+      <circle cx="10" cy="10" r="10" fill="#f97316"/>
+      <circle cx="38" cy="10" r="10" fill="#3b82f6"/>
+      <circle cx="66" cy="10" r="10" fill="#22c55e"/>
+      <circle cx="94" cy="10" r="10" fill="#a855f7"/>
+      <circle cx="122" cy="10" r="10" fill="#ec4899"/>
+      <circle cx="150" cy="10" r="10" fill="#14b8a6"/>
+    </g>
+  </g>
+    <g>
+    <rect x="64" y="414" width="770" height="84" rx="20" fill="#11151d" stroke="#30343d"/>
+    <circle cx="103" cy="456" r="18" fill="#431407" stroke="#fb923c"/>
+    <text x="103" y="460" class="eyebrow" fill="#fed7aa" text-anchor="middle">4</text>
+    <text x="139" y="450" class="label" fill="#ffffff">Corporate orange</text>
+    <text x="139" y="473" class="detail" fill="#a1a1aa">Navet identity and public-brand emphasis—not universal status.</text>
+    <g>
+      <rect x="650" y="442" width="112" height="28" rx="14" fill="url(#navetOrange)"/>
+      <text x="706" y="460" class="micro" fill="#ffffff" text-anchor="middle">NAVET ORANGE</text>
+      <image href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDEyMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPCEtLSBCYWNrZ3JvdW5kIENpcmNsZSB3aXRoIEdyYWRpZW50IC0tPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJsb2dvR3JhZGllbnQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZjk3MzE2O3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNlYTU4MGM7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGZpbHRlciBpZD0iZ2xvdyI+CiAgICAgIDxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249IjIiIHJlc3VsdD0iY29sb3JlZEJsdXIiLz4KICAgICAgPGZlTWVyZ2U+CiAgICAgICAgPGZlTWVyZ2VOb2RlIGluPSJjb2xvcmVkQmx1ciIvPgogICAgICAgIDxmZU1lcmdlTm9kZSBpbj0iU291cmNlR3JhcGhpYyIvPgogICAgICA8L2ZlTWVyZ2U+CiAgICA8L2ZpbHRlcj4KICA8L2RlZnM+CiAgCiAgPCEtLSBNYWluIENpcmNsZSBCYWNrZ3JvdW5kIC0tPgogIDxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjU2IiBmaWxsPSJ1cmwoI2xvZ29HcmFkaWVudCkiIGZpbHRlcj0idXJsKCNnbG93KSIvPgogIAogIDwhLS0gSHViIE5vZGUgRGVzaWduIC0gQ2VudGVyIENpcmNsZSAtLT4KICA8Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSI4IiBmaWxsPSJ3aGl0ZSIgb3BhY2l0eT0iMC45NSIvPgogIAogIDwhLS0gQ29ubmVjdGlvbiBMaW5lcyAocmVwcmVzZW50aW5nICJ0aGUgaHViIikgLS0+CiAgPGcgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiIG9wYWNpdHk9IjAuOSI+CiAgICA8IS0tIFRvcCAtLT4KICAgIDxsaW5lIHgxPSI2MCIgeTE9IjYwIiB4Mj0iNjAiIHkyPSIyOCIvPgogICAgPCEtLSBUb3AgUmlnaHQgLS0+CiAgICA8bGluZSB4MT0iNjAiIHkxPSI2MCIgeDI9IjgyLjYiIHkyPSIzOC42Ii8+CiAgICA8IS0tIFJpZ2h0IC0tPgogICAgPGxpbmUgeDE9IjYwIiB5MT0iNjAiIHgyPSI5MiIgeTI9IjYwIi8+CiAgICA8IS0tIEJvdHRvbSBSaWdodCAtLT4KICAgIDxsaW5lIHgxPSI2MCIgeTE9IjYwIiB4Mj0iODIuNiIgeTI9IjgxLjQiLz4KICAgIDwhLS0gQm90dG9tIC0tPgogICAgPGxpbmUgeDE9IjYwIiB5MT0iNjAiIHgyPSI2MCIgeTI9IjkyIi8+CiAgICA8IS0tIEJvdHRvbSBMZWZ0IC0tPgogICAgPGxpbmUgeDE9IjYwIiB5MT0iNjAiIHgyPSIzNy40IiB5Mj0iODEuNCIvPgogICAgPCEtLSBMZWZ0IC0tPgogICAgPGxpbmUgeDE9IjYwIiB5MT0iNjAiIHgyPSIyOCIgeTI9IjYwIi8+CiAgICA8IS0tIFRvcCBMZWZ0IC0tPgogICAgPGxpbmUgeDE9IjYwIiB5MT0iNjAiIHgyPSIzNy40IiB5Mj0iMzguNiIvPgogIDwvZz4KICAKICA8IS0tIE91dGVyIE5vZGVzIC0tPgogIDxnIGZpbGw9IndoaXRlIiBvcGFjaXR5PSIwLjk1Ij4KICAgIDxjaXJjbGUgY3g9IjYwIiBjeT0iMjgiIHI9IjUiLz4KICAgIDxjaXJjbGUgY3g9IjgyLjYiIGN5PSIzOC42IiByPSI1Ii8+CiAgICA8Y2lyY2xlIGN4PSI5MiIgY3k9IjYwIiByPSI1Ii8+CiAgICA8Y2lyY2xlIGN4PSI4Mi42IiBjeT0iODEuNCIgcj0iNSIvPgogICAgPGNpcmNsZSBjeD0iNjAiIGN5PSI5MiIgcj0iNSIvPgogICAgPGNpcmNsZSBjeD0iMzcuNCIgY3k9IjgxLjQiIHI9IjUiLz4KICAgIDxjaXJjbGUgY3g9IjI4IiBjeT0iNjAiIHI9IjUiLz4KICAgIDxjaXJjbGUgY3g9IjM3LjQiIGN5PSIzOC42IiByPSI1Ii8+CiAgPC9nPgo8L3N2Zz4K" x="776" y="435" width="42" height="42" preserveAspectRatio="xMidYMid meet" />
+    </g>
+  </g>
+    <g>
+    <rect x="64" y="508" width="770" height="84" rx="20" fill="#11151d" stroke="#30343d"/>
+    <circle cx="103" cy="550" r="18" fill="#18181b" stroke="#52525b"/>
+    <text x="103" y="554" class="eyebrow" fill="#d4d4d8" text-anchor="middle">5</text>
+    <text x="139" y="544" class="label" fill="#ffffff">Neutral surfaces</text>
+    <text x="139" y="567" class="detail" fill="#a1a1aa">Theme architecture, readable structure, and inactive state.</text>
+    <g transform="translate(636 531)">
+      <rect width="38" height="38" rx="11" fill="#fafaf9" stroke="#d6d3d1"/>
+      <rect x="48" width="38" height="38" rx="11" fill="#52525b" stroke="#71717a"/>
+      <rect x="96" width="38" height="38" rx="11" fill="#27272a" stroke="#52525b"/>
+      <rect x="144" width="38" height="38" rx="11" fill="#09090b" stroke="#3f3f46"/>
+    </g>
+  </g>
+
+    <g transform="translate(862 132)">
+      <rect width="274" height="460" rx="24" fill="#0f1219" stroke="#2b3039"/>
+      <text x="28" y="38" class="eyebrow" fill="#fdba74">RESOLVE IN ORDER</text>
+      <g transform="translate(218 24)"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fdba74" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-down" aria-hidden="true"><path d="M12 5v14"></path><path d="m19 12-7 7-7-7"></path></svg></g>
+
+      <circle cx="35" cy="91" r="5" fill="#fbbf24"/>
+      <text x="56" y="86" class="label" fill="#ffffff">Meaning first</text>
+      <text x="56" y="108" class="detail" fill="#a1a1aa">Warnings and success states</text>
+      <text x="56" y="126" class="detail" fill="#a1a1aa">must stay truthful and legible.</text>
+
+      <line x1="28" y1="156" x2="246" y2="156" stroke="#27272a"/>
+      <circle cx="35" cy="195" r="5" fill="#60a5fa"/>
+      <text x="56" y="190" class="label" fill="#ffffff">Scope stays local</text>
+      <text x="56" y="212" class="detail" fill="#a1a1aa">Device and source color belongs</text>
+      <text x="56" y="230" class="detail" fill="#a1a1aa">to the object it describes.</text>
+
+      <line x1="28" y1="260" x2="246" y2="260" stroke="#27272a"/>
+      <circle cx="35" cy="299" r="5" fill="#71717a"/>
+      <text x="56" y="294" class="label" fill="#ffffff">Neutrals carry area</text>
+      <text x="56" y="316" class="detail" fill="#a1a1aa">The interface foundation stays</text>
+      <text x="56" y="334" class="detail" fill="#a1a1aa">quiet so signals remain clear.</text>
+
+      <rect x="28" y="354" width="218" height="88" rx="18" fill="#111827" stroke="#334155"/>
+      <text x="48" y="381" class="eyebrow" fill="#60a5fa">AUTHORITY ≠ AREA</text>
+      <text x="48" y="407" class="detail" fill="#cbd5e1">Even a small warning can</text>
+      <text x="48" y="425" class="detail" fill="#cbd5e1">outrank a larger card tint.</text>
+    </g>
+
+    <text x="64" y="620" class="eyebrow" fill="#71717a">LOWER AUTHORITY</text>
+    <text x="64" y="672" class="detail" fill="#71717a">Do not recolor the Navet mark to match a user accent, device, provider, campaign, or theme.</text>
+  </g>
+</svg>

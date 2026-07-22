@@ -1,0 +1,85 @@
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Navet presentation title slide template</title>
+  <desc id="desc">A calm dark Navet presentation cover with editable title, topic, presenter, and date.</desc>
+  <defs>
+    <linearGradient id="canvas" x1="204" y1="54" x2="1700" y2="1036" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0A0E15"/><stop offset="1" stop-color="#06080D"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="96" y1="72" x2="1824" y2="1008" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#111720" stop-opacity="0.90"/><stop offset="1" stop-color="#090C12" stop-opacity="0.94"/>
+    </linearGradient>
+    <linearGradient id="navet-logo-gradient" x1="4" y1="4" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F97316"/><stop offset="1" stop-color="#EA580C"/>
+    </linearGradient>
+    <radialGradient id="orange-atmosphere" cx="0" cy="0" r="1" gradientTransform="translate(278 180) rotate(34) scale(670 500)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F97316" stop-opacity="0.17"/><stop offset="1" stop-color="#F97316" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blue-atmosphere" cx="0" cy="0" r="1" gradientTransform="translate(1710 866) rotate(-145) scale(760 580)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3B82F6" stop-opacity="0.13"/><stop offset="1" stop-color="#3B82F6" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="panel-shadow" x="18" y="6" width="1884" height="1092" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="30" stdDeviation="38" flood-color="#000000" flood-opacity="0.42"/>
+    </filter>
+    <symbol id="navet-lockup" viewBox="0 0 200 60">
+      <circle cx="30" cy="30" r="26" fill="url(#navet-logo-gradient)"/>
+      <circle cx="30" cy="30" r="3.5" fill="white" opacity="0.95"/>
+      <g stroke="white" stroke-width="1.8" stroke-linecap="round" opacity="0.9">
+        <line x1="30" y1="30" x2="30" y2="12"/><line x1="30" y1="30" x2="42.73" y2="17.27"/>
+        <line x1="30" y1="30" x2="48" y2="30"/><line x1="30" y1="30" x2="42.73" y2="42.73"/>
+        <line x1="30" y1="30" x2="30" y2="48"/><line x1="30" y1="30" x2="17.27" y2="42.73"/>
+        <line x1="30" y1="30" x2="12" y2="30"/><line x1="30" y1="30" x2="17.27" y2="17.27"/>
+      </g>
+      <g fill="white" opacity="0.95">
+        <circle cx="30" cy="12" r="2.5"/><circle cx="42.73" cy="17.27" r="2.5"/>
+        <circle cx="48" cy="30" r="2.5"/><circle cx="42.73" cy="42.73" r="2.5"/>
+        <circle cx="30" cy="48" r="2.5"/><circle cx="17.27" cy="42.73" r="2.5"/>
+        <circle cx="12" cy="30" r="2.5"/><circle cx="17.27" cy="17.27" r="2.5"/>
+      </g>
+      <text x="70" y="40" fill="white" font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="28" font-weight="600" letter-spacing="-0.5">Navet</text>
+    </symbol>
+  </defs>
+
+  <rect width="1920" height="1080" fill="#06080D"/>
+  <g filter="url(#panel-shadow)">
+    <rect x="96" y="72" width="1728" height="936" rx="32" fill="url(#canvas)"/>
+    <rect x="96" y="72" width="1728" height="936" rx="32" fill="url(#orange-atmosphere)"/>
+    <rect x="96" y="72" width="1728" height="936" rx="32" fill="url(#blue-atmosphere)"/>
+    <rect x="96.5" y="72.5" width="1727" height="935" rx="31.5" stroke="white" stroke-opacity="0.10"/>
+  </g>
+
+  <use href="#navet-lockup" x="160" y="132" width="200" height="60"/>
+
+  <g id="editable-content" font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+    <g id="editable-topic">
+      <rect x="160" y="294" width="248" height="50" rx="25" fill="white" fill-opacity="0.06" stroke="white" stroke-opacity="0.10"/>
+      <circle cx="190" cy="319" r="6" fill="#F97316"/>
+      <text x="212" y="327" fill="white" fill-opacity="0.74" font-size="21" font-weight="620">Presentation topic</text>
+    </g>
+    <text id="editable-headline" x="160" y="478" fill="white" font-size="96" font-weight="730" letter-spacing="-4.8">
+      <tspan x="160" dy="0">A specific outcome</tspan>
+      <tspan x="160" dy="102">for the connected home.</tspan>
+    </text>
+    <rect x="160" y="648" width="104" height="5" rx="2.5" fill="#F97316"/>
+    <text id="editable-support" x="160" y="714" fill="white" fill-opacity="0.68" font-size="28" font-weight="450">One line that frames what this presentation will help people understand.</text>
+    <g id="editable-presenter">
+      <line x1="160" y1="856" x2="1760" y2="856" stroke="white" stroke-opacity="0.10"/>
+      <text x="160" y="914" fill="white" fill-opacity="0.76" font-size="22" font-weight="620">Presenter name · Role</text>
+      <text x="1760" y="914" fill="white" fill-opacity="0.5" font-size="22" font-weight="520" text-anchor="end">Month DD, YYYY</text>
+    </g>
+  </g>
+
+  <g id="brand-detail" opacity="0.9">
+    <circle cx="1700" cy="188" r="46" fill="white" fill-opacity="0.035" stroke="white" stroke-opacity="0.08"/>
+    <circle cx="1700" cy="188" r="5.4" fill="white" opacity="0.9"/>
+    <g stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.34">
+      <line x1="1700" y1="188" x2="1700" y2="164"/><line x1="1700" y1="188" x2="1717" y2="171"/>
+      <line x1="1700" y1="188" x2="1724" y2="188"/><line x1="1700" y1="188" x2="1717" y2="205"/>
+      <line x1="1700" y1="188" x2="1700" y2="212"/><line x1="1700" y1="188" x2="1683" y2="205"/>
+      <line x1="1700" y1="188" x2="1676" y2="188"/><line x1="1700" y1="188" x2="1683" y2="171"/>
+    </g>
+  </g>
+
+  <g id="safe-area-guide" display="none" pointer-events="none">
+    <rect x="96" y="96" width="1728" height="888" rx="8" fill="none" stroke="#F97316" stroke-width="3" stroke-dasharray="14 14"/>
+  </g>
+</svg>

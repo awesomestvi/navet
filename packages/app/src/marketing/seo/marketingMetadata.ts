@@ -92,7 +92,7 @@ export function applyMarketingWebsiteMetadata(route: MarketingWebsiteRoute) {
   });
   upsertMeta('meta[property="og:image:alt"]', {
     property: 'og:image:alt',
-    content: 'Navet dashboard shown across smart-home screens',
+    content: 'Navet smart-home dashboard shown on a tablet in a warm living room',
   });
   upsertMeta('meta[name="twitter:card"]', {
     name: 'twitter:card',
@@ -109,6 +109,6 @@ export function applyMarketingWebsiteMetadata(route: MarketingWebsiteRoute) {
   });
   upsertMeta('meta[name="twitter:image:alt"]', {
     name: 'twitter:image:alt',
-    content: 'Navet dashboard shown across smart-home screens',
+    content: 'Navet smart-home dashboard shown on a tablet in a warm living room',
   });
 }

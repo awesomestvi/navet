@@ -1,126 +1,38 @@
-# 🎨 Navet Branding Assets - Quick Reference
+# Navet asset quick reference
 
-A quick visual reference for all Navet brand assets.
+For generation, platform requirements, and review rules, use the canonical
+[brand asset system](ASSET_SYSTEM.md). The machine-readable contract is
+[`asset-manifest.json`](../../assets/brand/source/asset-manifest.json).
 
----
+## Core files
 
-## 🔷 Logo Variations
+| Asset | Path | Intended use |
+| --- | --- | --- |
+| Hub mark | `assets/public/logo.svg` | Product identity, square placements, avatars |
+| Dark-text lockup | `assets/public/logo-horizontal.svg` | Light neutral backgrounds |
+| Light-text lockup | `assets/public/logo-horizontal-light.svg` | Dark neutral backgrounds |
+| Favicon | `assets/public/favicon.svg` | Browser tabs and bookmarks |
+| Install-icon source | `assets/brand/source/app-icon-maskable.svg` | iOS and maskable PWA exports |
+| PWA install icons | `assets/public/pwa-192.png`, `pwa-512.png` | Ordinary install surfaces |
+| PWA maskable icons | `assets/public/pwa-maskable-192.png`, `pwa-maskable-512.png` | Cropped install surfaces |
+| Social preview | `assets/public/navet-social-card.jpg` | Open Graph and social previews |
 
-### 1. Square Logo (Primary)
-**File:** `/assets/public/logo.svg` | **Size:** 120×120px
+The orange gradient, hub construction, proportions, and lockup relationship are locked. Do not
+recolor, stretch, rotate, shadow, redraw, or place the mark on a background that obscures it.
 
-<img src="../../assets/public/logo.svg" width="120" alt="Navet Square Logo" />
+## Reusable templates
 
-**Best for:** App icons • Social media • Square placements
+Editable announcement, video, presentation, and README layouts live in
+[`assets/brand/templates/`](../../assets/brand/templates/). They preserve the established website,
+docs, and product-card language and include safe-area and export guidance.
 
----
+## Generate and check
 
-### 2. Horizontal Logo (Dark Text)
-**File:** `/assets/public/logo-horizontal.svg` | **Size:** 200×60px
+From the repository root:
 
-<img src="../../assets/public/logo-horizontal.svg" width="200" alt="Navet Horizontal Logo" />
-
-**Best for:** Light backgrounds • Website headers • Documentation
-
----
-
-### 3. Horizontal Logo (Light Text)
-**File:** `/assets/public/logo-horizontal-light.svg` | **Size:** 200×60px
-
-<img src="../../assets/public/logo-horizontal-light.svg" width="200" alt="Navet Horizontal Logo Light" style="background: #1a1a1a; padding: 10px;" />
-
-**Best for:** Dark backgrounds • Dark mode • Night theme
-
----
-
-## 🔸 Favicons & Icons
-
-### 4. Browser Favicon
-**File:** `/assets/public/favicon.svg` | **Size:** 32×32px
-
-<img src="../../assets/public/favicon.svg" width="32" alt="Navet Favicon" />
-
-**Best for:** Browser tabs • Bookmarks • PWA icons
-
----
-
-### 5. Apple Touch Icon
-**File:** `/assets/public/apple-touch-icon.svg` | **Size:** 180×180px
-
-<img src="../../assets/public/apple-touch-icon.svg" width="120" alt="Navet Apple Touch Icon" />
-
-**Best for:** iOS home screen • Safari tabs • iOS shortcuts
-
-### 6. Raster Install Icons
-**Files:** `/assets/public/apple-touch-icon.png`, `/assets/public/pwa-192.png`, `/assets/public/pwa-512.png`
-
-**Best for:** iOS home screen installs • Android PWA prompts • Desktop PWA installs
-
-### 7. Social Preview Card
-**File:** `/assets/public/navet-social-card.jpg`
-
-**Best for:** Open Graph and social-link previews. Regenerate it through the website asset workflow
-rather than editing the raster output by hand.
-
----
-
-## 🎨 Color Palette
-
-### Primary Gradient
-```
-Start: #f97316 (Tailwind orange-500)
-End:   #ea580c (Tailwind orange-600)
+```bash
+pnpm brand:generate
+pnpm check:brand
 ```
 
-### Visual Sample
-<div style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); width: 200px; height: 60px; border-radius: 8px;"></div>
-
----
-
-## 📋 Quick Reference Table
-
-| Asset | File | Size | Use Case |
-|-------|------|------|----------|
-| Square Logo | `logo.svg` | 120×120 | App icons, social media |
-| Horizontal (Dark) | `logo-horizontal.svg` | 200×60 | Light backgrounds |
-| Horizontal (Light) | `logo-horizontal-light.svg` | 200×60 | Dark backgrounds |
-| Favicon | `favicon.svg` | 32×32 | Browser tabs |
-| Apple Icon | `apple-touch-icon.svg` | 180×180 | iOS home screen |
-| Raster Install Icons | `apple-touch-icon.png`, `pwa-192.png`, `pwa-512.png` | manifest/install assets | PWA installs |
-| Social Preview | `navet-social-card.jpg` | social metadata asset | Open Graph and link previews |
-
----
-
-## 🔗 Related Documentation
-
-- **[BRANDING.md](BRANDING.md)** - Complete brand guidelines
-- **[assets/public/README.md](../../assets/public/README.md)** - Technical specifications
-
----
-
-## ⚡ Quick Copy-Paste
-
-### HTML
-```html
-<!-- Favicon -->
-<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-<link rel="apple-touch-icon" href="/apple-touch-icon.svg" />
-<meta name="theme-color" content="#f97316" />
-```
-
-### React/JSX
-```jsx
-import logo from '/logo.svg';
-<img src={logo} alt="Navet" width="60" height="60" />
-```
-
-### Markdown
-```markdown
-![Navet Logo](../../assets/public/logo.svg)
-```
-
----
-
-**All assets are located in `/assets/public/` directory**
-
-*Last Updated: July 16, 2026*
+Commit approved sources and generated outputs together. Do not hand-edit the raster exports.

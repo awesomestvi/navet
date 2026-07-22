@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "colors": {
+    "brand": {
+      "orangeStart": "#f97316",
+      "orangeEnd": "#ea580c"
+    },
+    "canvas": {
+      "dark": "#06080d",
+      "light": "#fafaf9"
+    },
+    "atmosphere": {
+      "warmStart": "#ffb14f",
+      "warmEnd": "#ffd18a",
+      "blue": "#3b82f6"
+    }
+  },
+  "typography": {
+    "family": "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif"
+  },
+  "shape": {
+    "cardRadiusPx": 24,
+    "controlRadiusPx": 20,
+    "pillRadius": 9999
+  },
+  "motion": {
+    "fastMs": 120,
+    "normalMs": 200,
+    "slowMs": 300
+  }
+}

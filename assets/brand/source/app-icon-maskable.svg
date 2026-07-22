@@ -1,0 +1,43 @@
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="maskableGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f97316;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ea580c;stop-opacity:1" />
+    </linearGradient>
+    <filter id="maskableGlow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Full-bleed background required by maskable PWA icon surfaces. -->
+  <rect width="180" height="180" fill="url(#maskableGradient)"/>
+
+  <!-- Established Navet hub geometry, kept inside the maskable safe zone. -->
+  <circle cx="90" cy="90" r="10" fill="white" opacity="0.95" filter="url(#maskableGlow)"/>
+
+  <g stroke="white" stroke-width="4" stroke-linecap="round" opacity="0.9" filter="url(#maskableGlow)">
+    <line x1="90" y1="90" x2="90" y2="42"/>
+    <line x1="90" y1="90" x2="123.9" y2="57.9"/>
+    <line x1="90" y1="90" x2="138" y2="90"/>
+    <line x1="90" y1="90" x2="123.9" y2="122.1"/>
+    <line x1="90" y1="90" x2="90" y2="138"/>
+    <line x1="90" y1="90" x2="56.1" y2="122.1"/>
+    <line x1="90" y1="90" x2="42" y2="90"/>
+    <line x1="90" y1="90" x2="56.1" y2="57.9"/>
+  </g>
+
+  <g fill="white" opacity="0.95" filter="url(#maskableGlow)">
+    <circle cx="90" cy="42" r="7"/>
+    <circle cx="123.9" cy="57.9" r="7"/>
+    <circle cx="138" cy="90" r="7"/>
+    <circle cx="123.9" cy="122.1" r="7"/>
+    <circle cx="90" cy="138" r="7"/>
+    <circle cx="56.1" cy="122.1" r="7"/>
+    <circle cx="42" cy="90" r="7"/>
+    <circle cx="56.1" cy="57.9" r="7"/>
+  </g>
+</svg>
