@@ -7,16 +7,18 @@ import {
 } from '@navet/app/components/system/tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import { Loader2 } from 'lucide-react';
-import { memo } from 'react';
+import { memo, type ReactNode } from 'react';
 
 export interface LoadingSpinnerProps {
   message?: string;
   fullScreen?: boolean;
+  action?: ReactNode;
 }
 
 export const LoadingSpinner = memo(function LoadingSpinner({
   message,
   fullScreen = false,
+  action,
 }: LoadingSpinnerProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
@@ -37,6 +39,7 @@ export const LoadingSpinner = memo(function LoadingSpinner({
         <p className={`${navetTypographyTokens.body} ${surface.textSecondary}`}>
           {resolvedMessage}
         </p>
+        {action}
       </div>
     </div>
   );

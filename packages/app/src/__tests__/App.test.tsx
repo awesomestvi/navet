@@ -369,6 +369,7 @@ describe('App Home Assistant connection recovery', () => {
     });
 
     expect(screen.getByText('Starting your dashboard...')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Back to login' })).toBeInTheDocument();
     expect(screen.queryByText('login')).not.toBeInTheDocument();
     expect(homeAssistantServiceStub.authenticate).not.toHaveBeenCalled();
 

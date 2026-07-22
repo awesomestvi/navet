@@ -746,10 +746,12 @@ describe('MediaDashboard', () => {
         return {
           title: 'Albums',
           children: Array.from({ length: 20 }, (_, index) => ({
-            title: `Album ${index + 1}`,
+            title:
+              index === 0 ? 'Colly Strings - Union Chapel, London, England' : `Album ${index + 1}`,
             mediaContentId: `spotify:album:${index + 1}`,
             mediaContentType: 'album',
             mediaClass: 'album',
+            artist: index === 0 ? 'Manchester Orchestra' : undefined,
             canPlay: true,
           })),
         };
@@ -780,15 +782,65 @@ describe('MediaDashboard', () => {
     });
     expect(screen.getByTestId('media-now-playing-card')).toHaveStyle({ height: '368px' });
     const directoryGrid = await screen.findByTestId('media-browser-directory-grid');
-    expect(directoryGrid).toHaveClass('grid-cols-[repeat(auto-fill,8rem)]');
+    expect(directoryGrid).toHaveClass('grid-cols-[repeat(auto-fill,100px)]');
     const albumDirectory = screen.getByRole('button', { name: /^Albums/ });
-    expect(albumDirectory).toHaveClass('w-32');
-    expect(albumDirectory.querySelector('.aspect-square')).toBeInTheDocument();
+    expect(albumDirectory).toHaveClass('w-[100px]');
+    expect(albumDirectory.querySelector('span')).toHaveClass(
+      'h-[100px]',
+      'max-h-[100px]',
+      'w-[100px]',
+      'max-w-[100px]'
+    );
+    expect(screen.getByText('Albums')).toHaveClass('line-clamp-2');
     fireEvent.click(await screen.findByText('Albums'));
     expect(await screen.findByRole('heading', { name: 'Albums' })).toBeInTheDocument();
     const albumGrid = screen.getByTestId('media-browser-compact-grid');
-    expect(albumGrid).toHaveStyle({ height: '368px' });
-    expect(albumGrid.children).toHaveLength(16);
+    expect(albumGrid).not.toHaveAttribute('style');
+    expect(albumGrid.children).toHaveLength(20);
+    expect(screen.getByText('Colly Strings - Union Chapel, London, England')).toHaveClass(
+      'line-clamp-2'
+    );
+    expect(screen.getByText('Manchester Orchestra')).toHaveClass(
+      'w-full',
+      'whitespace-normal',
+      'break-words'
+    );
+    expect(screen.getByText('Manchester Orchestra')).not.toHaveClass('truncate');
+  });
+
+  it('shows large directory collections in the virtual table automatically', async () => {
+    await browseMediaPlayerMock.withImplementation(
+      async (_entityId, media) => {
+        if (media?.mediaContentId) {
+          return { title: media.mediaContentId, children: [] };
+        }
+
+        return {
+          title: 'Radio browser',
+          children: Array.from({ length: 245 }, (_, index) => ({
+            title: `Radio folder ${index + 1}`,
+            mediaContentId: `radio:folder:${index + 1}`,
+            mediaContentType: 'directory',
+            mediaClass: 'directory',
+            canExpand: true,
+            canPlay: false,
+          })),
+        };
+      },
+      async () => {
+        renderWithProviders(<MediaDashboard devices={[createMediaDevice()]} />);
+
+        expect(screen.queryByTestId('media-browser-directory-grid')).not.toBeInTheDocument();
+        expect(await screen.findByTestId('media-browser-virtual-table-shell')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Show all' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Show less' })).not.toBeInTheDocument();
+
+        fireEvent.change(screen.getByRole('searchbox', { name: 'Search' }), {
+          target: { value: 'Radio folder 245' },
+        });
+        expect(await screen.findByText('Radio folder 245')).toBeInTheDocument();
+      }
+    );
   });
 
   it('uses a compact single-row media rail below 900px', async () => {
@@ -820,10 +872,10 @@ describe('MediaDashboard', () => {
     renderWithProviders(<MediaDashboard devices={[createMediaDevice()]} />);
 
     const mobileGrid = await screen.findByTestId('media-browser-compact-grid');
-    expect(mobileGrid).toHaveStyle({ height: '170px' });
+    expect(mobileGrid).not.toHaveAttribute('style');
     expect(mobileGrid).toHaveClass('overflow-x-auto');
-    expect(mobileGrid.children).toHaveLength(8);
-    expect(screen.getByRole('button', { name: 'Show all' })).toBeInTheDocument();
+    expect(mobileGrid.children).toHaveLength(10);
+    expect(screen.queryByRole('button', { name: 'Show all' })).not.toBeInTheDocument();
   });
 
   it('persists a media folder as the default view and opens it on the next visit', async () => {
@@ -889,7 +941,7 @@ describe('MediaDashboard', () => {
     expect(screen.getByRole('button', { name: 'Remove default view' })).toBeInTheDocument();
   });
 
-  it('preserves the expanded media view after the dashboard is remounted', async () => {
+  it('keeps collections with 29 items in the tile layout', async () => {
     localStorage.setItem(
       STORAGE_KEYS.mediaDefaultViews,
       JSON.stringify({
@@ -905,7 +957,7 @@ describe('MediaDashboard', () => {
     );
     browseMediaPlayerMock.mockResolvedValue({
       title: 'Recently played',
-      children: Array.from({ length: 20 }, (_, index) => ({
+      children: Array.from({ length: 29 }, (_, index) => ({
         title: `Track ${index + 1}`,
         mediaContentId: `spotify:track:${index + 1}`,
         mediaContentType: 'track',
@@ -914,32 +966,12 @@ describe('MediaDashboard', () => {
       })),
     });
 
-    const firstVisit = renderWithProviders(<MediaDashboard devices={[createMediaDevice()]} />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Show all' }));
-
-    await waitFor(() =>
-      expect(localStorage.getItem(STORAGE_KEYS.mediaBrowserExpandedViews)).toContain('true')
-    );
-    firstVisit.unmount();
-
     renderWithProviders(<MediaDashboard devices={[createMediaDevice()]} />);
 
-    expect(await screen.findByRole('button', { name: 'Show less' })).toBeInTheDocument();
-    expect(screen.getByTestId('media-browser-virtual-table-shell')).toBeInTheDocument();
-    expect(screen.getByTestId('media-browser-virtual-table')).toHaveClass(
-      'touch-pan-y',
-      'overscroll-contain',
-      '[-webkit-overflow-scrolling:touch]'
-    );
-    expect(screen.getByTestId('media-browser-virtual-table')).toHaveAttribute(
-      'data-card-nodrag',
-      'true'
-    );
-
-    const trackSearch = screen.getByRole('searchbox', { name: 'Search' });
-    fireEvent.change(trackSearch, { target: { value: 'Track 20' } });
-    expect(await screen.findByText('Track 20')).toBeInTheDocument();
-    expect(screen.queryByText('Track 1')).not.toBeInTheDocument();
+    const tileGrid = await screen.findByTestId('media-browser-compact-grid');
+    expect(tileGrid.children).toHaveLength(29);
+    expect(screen.queryByTestId('media-browser-virtual-table-shell')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Show all' })).not.toBeInTheDocument();
   });
 
   it('removes duplicate entries from recently played while preserving their order', async () => {
@@ -1035,7 +1067,7 @@ describe('MediaDashboard', () => {
   });
 
   it('shows the browser empty state when browsing fails', async () => {
-    browseMediaPlayerMock.mockRejectedValueOnce(new Error('Browse failed'));
+    browseMediaPlayerMock.mockRejectedValue(new Error('Browse failed'));
 
     renderWithProviders(<MediaDashboard devices={[createMediaDevice()]} />);
 
@@ -1484,7 +1516,7 @@ describe('MediaDashboard', () => {
           artist: 'Deer',
           canPlay: true,
         },
-        ...Array.from({ length: 20 }, (_, index) => ({
+        ...Array.from({ length: 29 }, (_, index) => ({
           title: `Track ${index + 2}`,
           mediaContentId: `provider:track:${index + 2}`,
           mediaContentType: 'track',
@@ -1517,7 +1549,6 @@ describe('MediaDashboard', () => {
       'https://i.scdn.co/image/ab67616d00001e02bedheadart'
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Show all' }));
     const trackSearch = await screen.findByRole('searchbox', { name: 'Search' });
     fireEvent.change(trackSearch, { target: { value: 'Manchester Orchestra' } });
 

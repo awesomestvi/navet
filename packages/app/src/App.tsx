@@ -10,6 +10,7 @@ import type { IntegrationProviderId } from '@navet/app/types/provider';
 import type { NavetProviderSession } from '@navet/core/provider-contract';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { Button } from './components/primitives/button';
 import { LoadingSpinner } from './components/primitives/loading-spinner';
 import { ErrorDisplay } from './components/shared/error-display';
 import { NetworkStatusBanner } from './components/shared/network-status-banner';
@@ -28,7 +29,7 @@ import {
 import { useKeepDeviceAwake } from './hooks/use-keep-device-awake';
 import { useMediaQuery } from './hooks/use-media-query';
 import { useViewportResize } from './hooks/use-viewport-resize';
-import { I18nProvider } from './i18n';
+import { I18nProvider, useI18n } from './i18n';
 import { resolveParentHomeAssistantBridge } from './infrastructure/home-assistant/runtime/parent-hass-bridge';
 import { INVALID_HOME_ASSISTANT_AUTH_MESSAGE } from './services/ha-connection.service';
 import {
@@ -59,6 +60,7 @@ function createIngressProxyRecoverySession(
 
 function AppContent() {
   const { provider, runtime, session, sessions, ready, logout, replaceSession } = useAuthSession();
+  const { t } = useI18n();
   const isAuthenticated = Boolean(session);
   const needsHomeySelection =
     session?.providerId === 'homey' && Boolean(session.needsHomeySelection);
@@ -148,6 +150,14 @@ function AppContent() {
     clearAppError();
     logout();
   }, [clearAppError, logout, session?.providerId]);
+
+  const cancelStandaloneStartup = useCallback(() => {
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.delete('auth_callback');
+    nextUrl.searchParams.delete('code');
+    nextUrl.searchParams.delete('state');
+    window.location.replace(`${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+  }, []);
 
   useEffect(() => {
     if (session?.providerId) {
@@ -461,7 +471,17 @@ function AppContent() {
       ) : null}
       <Toaster />
       {!ready ? (
-        <LoadingSpinner message="Starting your dashboard..." fullScreen />
+        <LoadingSpinner
+          message="Starting your dashboard..."
+          fullScreen
+          action={
+            runtime === 'standalone-oauth' ? (
+              <Button variant="secondary" onClick={cancelStandaloneStartup}>
+                {t('errorDisplay.backToLogin')}
+              </Button>
+            ) : undefined
+          }
+        />
       ) : !isAuthenticated ? (
         <LoginPage />
       ) : needsHomeySelection ? (

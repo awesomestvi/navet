@@ -13,6 +13,7 @@ import {
 
 const AUTH_SESSION_LOAD_TIMEOUT_MS = 3_000;
 const STORED_SESSION_RESTORE_TIMEOUT_MS = 3_000;
+const OAUTH_CALLBACK_RESTORE_TIMEOUT_MS = 10_000;
 
 const { getAuthMock, refreshAccessTokenMock, revokeMock } = vi.hoisted(() => ({
   getAuthMock: vi.fn(),
@@ -330,6 +331,30 @@ describe('auth adapters', () => {
       `${window.location.origin}/__navet_auth__/session`,
       expect.objectContaining({ method: 'DELETE' })
     );
+    expect(window.location.search).toBe('');
+  });
+
+  it('stops waiting for a stalled OAuth callback and returns to a clean login URL', async () => {
+    vi.useFakeTimers();
+    setOAuthCallbackUrl('https://wrong.example.com');
+    const fetchMock = vi
+      .spyOn(window, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    getAuthMock.mockReturnValueOnce(new Promise(() => {}));
+
+    const sessionPromise = standaloneOAuthAuth.init();
+    const timeoutExpectation = expect(sessionPromise).rejects.toThrow(
+      'Timed out restoring Home Assistant session'
+    );
+
+    await vi.advanceTimersByTimeAsync(OAUTH_CALLBACK_RESTORE_TIMEOUT_MS);
+
+    await timeoutExpectation;
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `${window.location.origin}/__navet_auth__/session`,
+      expect.objectContaining({ method: 'DELETE' })
+    );
+    expect(window.location.search).toBe('');
   });
 
   it('refreshes standalone OAuth access tokens through the auth handle', async () => {

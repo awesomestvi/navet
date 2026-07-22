@@ -8,6 +8,7 @@ const AUTH_CALLBACK_PARAM = 'auth_callback';
 const OAUTH_CALLBACK_PARAMS = [AUTH_CALLBACK_PARAM, 'code', 'state'];
 const AUTH_SESSION_LOAD_TIMEOUT_MS = 3_000;
 const STORED_SESSION_RESTORE_TIMEOUT_MS = 3_000;
+const OAUTH_CALLBACK_RESTORE_TIMEOUT_MS = 10_000;
 
 function getAuthSessionEndpoint() {
   return resolveAddonLocalEndpointUrl(AUTH_SESSION_ENDPOINT);
@@ -127,11 +128,15 @@ export const standaloneOAuthAuth: AuthAdapter = {
   kind: 'standalone-oauth',
   async init() {
     if (hasOAuthCallback()) {
-      const auth = await getAuth({
-        loadTokens,
-        saveTokens,
-      }).catch(async (error: unknown) => {
-        await invalidateStandaloneOAuthSession();
+      const auth = await withTimeout(
+        getAuth({
+          loadTokens,
+          saveTokens,
+        }),
+        OAUTH_CALLBACK_RESTORE_TIMEOUT_MS
+      ).catch((error: unknown) => {
+        clearOAuthCallbackUrl();
+        void invalidateStandaloneOAuthSession().catch(() => undefined);
         throw error;
       });
 

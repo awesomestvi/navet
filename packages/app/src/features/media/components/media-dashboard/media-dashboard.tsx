@@ -104,8 +104,7 @@ const SPOTIFY_METADATA_ENDPOINT = '/__navet_spotify_metadata__';
 const SPOTIFY_OEMBED_URL = 'https://open.spotify.com/oembed';
 const SPOTIFY_IMAGE_ID_PATTERN = /(?:^|\/)image\/(ab[a-zA-Z0-9]{20,})(?:[/?#].*)?$/;
 const SPOTIFY_TRACK_ID_PATTERN = /^[a-zA-Z0-9]{22}$/;
-const BROWSE_COLLAPSED_ITEM_LIMIT = 8;
-const COMPACT_FOLDER_ITEM_LIMIT = 16;
+const MEDIA_BROWSER_TABLE_ITEM_THRESHOLD = 30;
 const DIRECTORY_COUNT_FETCH_CONCURRENCY = 3;
 const MEDIA_BROWSER_TABLE_HEADER_HEIGHT = 50;
 const MEDIA_BROWSER_TABLE_ROW_HEIGHT = 64;
@@ -116,7 +115,6 @@ const MEDIA_BROWSER_METADATA_CACHE_MAX_ENTRIES = 128;
 const EMPTY_OPEN_MEDIA_ARTWORK_RESULT: OpenMediaArtworkResult = { artworkUrls: [] };
 const EMPTY_SPOTIFY_TRACK_METADATA: SpotifyTrackMetadata = { artworkUrls: [] };
 const EMPTY_MEDIA_DEFAULT_BROWSE_VIEWS: Record<string, MediaDefaultBrowseView> = {};
-const EMPTY_MEDIA_BROWSER_EXPANDED_VIEWS: Record<string, boolean> = {};
 const EMPTY_REMEMBERED_MEDIA_SESSION: RememberedMediaSession | null = null;
 const openMediaArtworkCache = new LruCache<string, OpenMediaArtworkResult>(
   MEDIA_BROWSER_METADATA_CACHE_MAX_ENTRIES
@@ -504,12 +502,6 @@ function deduplicateMediaItems(items: PlatformMediaItem[]) {
 
 function getDirectoryItemCountKey(entityId: string, item: PlatformMediaItem) {
   return `${entityId}:${getMediaItemKey(item)}`;
-}
-
-function getMediaBrowserViewKey(entityId: string, item?: PlatformMediaItem) {
-  const mediaContentId = item?.mediaContentId?.trim() || 'root';
-  const mediaContentType = item?.mediaContentType?.trim() || 'root';
-  return `${entityId}:${mediaContentType}:${mediaContentId}`;
 }
 
 function isMediaDirectoryItem(item: PlatformMediaItem) {
@@ -1255,12 +1247,14 @@ function MediaBrowserTile({
         <span className="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-black/42 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
       </span>
       <span
-        className={`${compact ? 'mt-1.5 block truncate' : 'mt-2 overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]'} text-sm font-semibold leading-tight ${surface.textPrimary}`}
+        className={`${compact ? 'mt-1.5' : 'mt-2'} line-clamp-2 text-sm font-semibold leading-tight ${surface.textPrimary}`}
       >
         {itemTitle}
       </span>
       {itemSubtitle || statusLabel ? (
-        <span className={`mt-0.5 block truncate text-xs ${surface.textSecondary}`}>
+        <span
+          className={`mt-0.5 block w-full whitespace-normal break-words text-xs leading-tight ${surface.textSecondary}`}
+        >
           {itemSubtitle}
           {itemSubtitle && statusLabel ? ' · ' : null}
           {statusLabel ? (
@@ -1296,6 +1290,7 @@ function MediaBrowserTableRow({
   const spotifyMetadata = useSpotifyTrackMetadata(item);
   const itemTitle = spotifyMetadata.title ?? item.title ?? item.mediaContentId;
   const itemSubtitle = getResolvedMediaBrowserArtist(item, openArtwork, spotifyMetadata);
+  const FallbackIcon = isMediaDirectoryItem(item) ? getMediaLibraryDirectoryIcon(item) : ListMusic;
   const [failedArtworkUrls, setFailedArtworkUrls] = useState<Set<string>>(() => new Set());
   const artworkUrl =
     [providerThumbnailUrl, ...spotifyMetadata.artworkUrls, ...openArtwork.artworkUrls].find(
@@ -1351,7 +1346,7 @@ function MediaBrowserTableRow({
             />
           ) : (
             <span className="absolute inset-0 flex items-center justify-center">
-              <ListMusic className={`h-4 w-4 ${surface.textMuted}`} />
+              <FallbackIcon className={`h-4 w-4 ${surface.textMuted}`} />
             </span>
           )}
         </span>
@@ -1633,11 +1628,6 @@ export function MediaDashboard({
     [isMusicAssistantPlaybackDevice, resolvedDevices]
   );
   const isSingleRowMediaLayout = useMediaQuery('(max-width: 899px)');
-  const isVeryNarrowMediaDesktopLayout = useMediaQuery('(max-width: 999px)');
-  const isNarrowMediaDesktopLayout = useMediaQuery('(max-width: 1099px)');
-  const isMediumNarrowMediaDesktopLayout = useMediaQuery('(max-width: 1279px)');
-  const isCompactDesktopMediaLayout = useMediaQuery('(max-width: 1399px)');
-  const isMediumDesktopMediaLayout = useMediaQuery('(max-width: 1659px)');
   const breakpointCols = useBreakpointCols();
   const {
     gridStyle: dashboardGridStyle,
@@ -1768,9 +1758,6 @@ export function MediaDashboard({
   const [defaultBrowseViews, setDefaultBrowseViews] = usePersistedState<
     Record<string, MediaDefaultBrowseView>
   >(STORAGE_KEYS.mediaDefaultViews, EMPTY_MEDIA_DEFAULT_BROWSE_VIEWS);
-  const [expandedBrowserViews, setExpandedBrowserViews] = usePersistedState<
-    Record<string, boolean>
-  >(STORAGE_KEYS.mediaBrowserExpandedViews, EMPTY_MEDIA_BROWSER_EXPANDED_VIEWS);
   const defaultBrowseViewsRef = useRef(defaultBrowseViews);
   defaultBrowseViewsRef.current = defaultBrowseViews;
   const [directoryItemCounts, setDirectoryItemCounts] = useState<Record<string, number>>({});
@@ -1962,12 +1949,6 @@ export function MediaDashboard({
     (item) => item.mediaContentId || item.canExpand
   );
   const currentBrowseItem = browseHistory.at(-1);
-  const currentBrowserViewKey = mediaLibraryEntityId
-    ? getMediaBrowserViewKey(mediaLibraryEntityId, currentBrowseItem)
-    : '';
-  const showAllBrowserItems = Boolean(
-    currentBrowserViewKey && expandedBrowserViews[currentBrowserViewKey]
-  );
   const isRecentlyPlayedView =
     currentBrowseItem?.mediaContentId?.toLowerCase().includes('recently-played') ||
     currentBrowseItem?.title.toLowerCase() === 'recently played' ||
@@ -1975,6 +1956,7 @@ export function MediaDashboard({
   const playableItems = isRecentlyPlayedView
     ? deduplicateMediaItems(unfilteredPlayableItems)
     : unfilteredPlayableItems;
+  const useMediaBrowserTable = playableItems.length >= MEDIA_BROWSER_TABLE_ITEM_THRESHOLD;
   const { directories: browseDirectoryItems, tiles: browseTileItems } = partitionMediaBrowserItems(
     playableItems,
     browseHistory.length >= 2
@@ -2134,8 +2116,12 @@ export function MediaDashboard({
   useEffect(() => {
     if (!mediaLibraryEntityId || !browseResult?.children) return;
 
-    const pendingDirectories = browseResult.children.filter((item) => {
-      if (!isMediaDirectoryItem(item) || !item.mediaContentId) return false;
+    const pendingDirectories = (
+      browseResult.children.length < MEDIA_BROWSER_TABLE_ITEM_THRESHOLD
+        ? browseResult.children.filter(isMediaDirectoryItem)
+        : []
+    ).filter((item) => {
+      if (!item.mediaContentId) return false;
       const key = getDirectoryItemCountKey(mediaLibraryEntityId, item);
       return (
         directoryItemCountsRef.current[key] === undefined &&
@@ -2255,49 +2241,10 @@ export function MediaDashboard({
       return next;
     });
   };
-  const toggleBrowserItemsExpanded = () => {
-    if (!currentBrowserViewKey) return;
-
-    setExpandedBrowserViews((current) => {
-      const next = { ...current };
-      if (current[currentBrowserViewKey]) {
-        delete next[currentBrowserViewKey];
-      } else {
-        next[currentBrowserViewKey] = true;
-      }
-      return next;
-    });
-  };
   const useCompactFolderGrid = browseHistory.length > 0;
-  const compactFolderItemLimit = isSingleRowMediaLayout
-    ? BROWSE_COLLAPSED_ITEM_LIMIT
-    : isVeryNarrowMediaDesktopLayout
-      ? 6
-      : isNarrowMediaDesktopLayout
-        ? 8
-        : isMediumNarrowMediaDesktopLayout
-          ? 8
-          : isCompactDesktopMediaLayout
-            ? 10
-            : isMediumDesktopMediaLayout
-              ? 12
-              : COMPACT_FOLDER_ITEM_LIMIT;
   const compactBrowserHeight = isSingleRowMediaLayout
     ? COMPACT_MOBILE_BROWSER_HEIGHT
     : largeCardFootprint.heightPx;
-  const browserTileLimit = useCompactFolderGrid
-    ? compactFolderItemLimit
-    : BROWSE_COLLAPSED_ITEM_LIMIT;
-  const visibleBrowseDirectoryItems = showAllBrowserItems
-    ? browseDirectoryItems
-    : browseDirectoryItems.slice(0, BROWSE_COLLAPSED_ITEM_LIMIT);
-  const visibleBrowseTileItems = showAllBrowserItems
-    ? browseTileItems
-    : browseTileItems.slice(0, browserTileLimit);
-  const hasHiddenBrowserItems =
-    browseDirectoryItems.length > visibleBrowseDirectoryItems.length ||
-    browseTileItems.length > visibleBrowseTileItems.length ||
-    (showAllBrowserItems && playableItems.length > browserTileLimit);
   const handleCardSizeChange = useCallback(() => undefined, []);
   const quietPanelClassName = `rounded-xl border p-4 ${surface.border} ${
     theme === 'light'
@@ -2313,7 +2260,7 @@ export function MediaDashboard({
       ? 'focus-visible:ring-slate-400 focus-visible:ring-offset-white'
       : 'focus-visible:ring-white/40 focus-visible:ring-offset-zinc-950'
   }`;
-  const mediaTileArtworkClassName = `relative block aspect-square w-full overflow-hidden rounded-[1.375rem] border shadow-sm ${surface.border} ${
+  const mediaTileArtworkClassName = `relative block h-[100px] max-h-[100px] w-[100px] max-w-[100px] overflow-hidden rounded-[1.375rem] border shadow-sm ${surface.border} ${
     theme === 'light'
       ? 'bg-linear-to-br from-slate-100 via-white to-slate-200 group-hover:border-slate-300'
       : theme === 'glass'
@@ -2324,14 +2271,10 @@ export function MediaDashboard({
   }`;
   const compactMediaTileGridClassName = isSingleRowMediaLayout
     ? 'flex items-start gap-3 overflow-x-auto overflow-y-hidden pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
-    : isNarrowMediaDesktopLayout
-      ? 'grid grid-cols-[repeat(auto-fill,6.5rem)] auto-rows-[9.25rem] content-start items-start justify-between gap-x-3 gap-y-3 overflow-hidden'
-      : 'grid grid-cols-[repeat(auto-fill,8rem)] auto-rows-[10.625rem] content-start items-start justify-between gap-x-4 gap-y-3 overflow-hidden';
+    : 'grid grid-cols-[repeat(auto-fill,100px)] content-start items-start gap-x-3 gap-y-3 lg:gap-x-4';
   const compactMediaTileWidthClassName = isSingleRowMediaLayout
-    ? 'w-[6.5rem] shrink-0'
-    : isNarrowMediaDesktopLayout
-      ? 'w-[6.5rem]'
-      : 'w-32';
+    ? 'w-[100px] shrink-0'
+    : 'w-[100px]';
   const selectBrowserItem = (item: PlatformMediaItem) => {
     const isDirectory = item.canExpand && !item.canPlay;
     if (isDirectory) {
@@ -2429,87 +2372,72 @@ export function MediaDashboard({
             ) : null}
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
-            {hasHiddenBrowserItems ? (
-              <button
-                type="button"
-                className={`inline-flex h-9 shrink-0 items-center rounded-full px-3 text-xs font-semibold transition-colors ${
-                  theme === 'light'
-                    ? 'bg-white/72 text-slate-700 hover:bg-slate-100'
-                    : 'bg-white/[0.06] text-white/82 hover:bg-white/[0.1]'
-                }`}
-                onClick={toggleBrowserItemsExpanded}
-              >
-                {showAllBrowserItems ? 'Show less' : 'Show all'}
-              </button>
-            ) : null}
-          </div>
+          <div className="flex shrink-0 items-center gap-2" />
         </div>
       ) : null}
 
       {canBrowseMedia ? (
         playableItems.length > 0 ? (
-          <div className="space-y-4">
-            {browseDirectoryItems.length > 0 ? (
-              <div
-                data-testid="media-browser-directory-grid"
-                className={compactMediaTileGridClassName}
-              >
-                {visibleBrowseDirectoryItems.map((item) => {
-                  const directoryCount = mediaLibraryEntityId
-                    ? directoryItemCounts[getDirectoryItemCountKey(mediaLibraryEntityId, item)]
-                    : undefined;
-                  const showSpotifyIcon =
-                    browseHistory.length === 0 && isSpotifyProviderDirectory(item);
-                  const statusLabel =
-                    directoryCount === undefined
-                      ? undefined
-                      : `${directoryCount} ${directoryCount === 1 ? 'item' : 'items'}`;
+          useMediaBrowserTable ? (
+            <MediaBrowserVirtualTable
+              height={compactBrowserHeight}
+              items={playableItems}
+              onSelect={selectBrowserItem}
+              providerId={selectedDevice.providerId}
+              resetKey={currentBrowseTitle}
+              surface={surface}
+              theme={theme}
+            />
+          ) : (
+            <div className="space-y-4">
+              {browseDirectoryItems.length > 0 ? (
+                <div
+                  data-testid="media-browser-directory-grid"
+                  className={compactMediaTileGridClassName}
+                >
+                  {browseDirectoryItems.map((item) => {
+                    const directoryCount = mediaLibraryEntityId
+                      ? directoryItemCounts[getDirectoryItemCountKey(mediaLibraryEntityId, item)]
+                      : undefined;
+                    const showSpotifyIcon =
+                      browseHistory.length === 0 && isSpotifyProviderDirectory(item);
+                    const statusLabel =
+                      directoryCount === undefined
+                        ? undefined
+                        : `${directoryCount} ${directoryCount === 1 ? 'item' : 'items'}`;
 
-                  return (
-                    <MediaBrowserTile
-                      key={getMediaItemKey(item)}
-                      accentColor={accentColor}
-                      artworkIcon={getMediaLibraryDirectoryIcon(item)}
-                      compact
-                      item={item}
-                      mediaTileArtworkClassName={mediaTileArtworkClassName}
-                      mediaTileClassName={`${mediaTileClassName} ${compactMediaTileWidthClassName}`}
-                      onSelect={selectBrowserItem}
-                      preferIconArtwork
-                      providerId={selectedDevice.providerId}
-                      showSpotifyIcon={showSpotifyIcon}
-                      statusLabel={statusLabel}
-                      surface={surface}
-                      theme={theme}
-                    />
-                  );
-                })}
-              </div>
-            ) : null}
+                    return (
+                      <MediaBrowserTile
+                        key={getMediaItemKey(item)}
+                        accentColor={accentColor}
+                        artworkIcon={getMediaLibraryDirectoryIcon(item)}
+                        compact
+                        item={item}
+                        mediaTileArtworkClassName={mediaTileArtworkClassName}
+                        mediaTileClassName={`${mediaTileClassName} ${compactMediaTileWidthClassName}`}
+                        onSelect={selectBrowserItem}
+                        preferIconArtwork
+                        providerId={selectedDevice.providerId}
+                        showSpotifyIcon={showSpotifyIcon}
+                        statusLabel={statusLabel}
+                        surface={surface}
+                        theme={theme}
+                      />
+                    );
+                  })}
+                </div>
+              ) : null}
 
-            {browseTileItems.length > 0 ? (
-              showAllBrowserItems ? (
-                <MediaBrowserVirtualTable
-                  height={compactBrowserHeight}
-                  items={browseTileItems}
-                  onSelect={selectBrowserItem}
-                  providerId={selectedDevice.providerId}
-                  resetKey={currentBrowseTitle}
-                  surface={surface}
-                  theme={theme}
-                />
-              ) : (
+              {browseTileItems.length > 0 ? (
                 <div
                   data-testid={useCompactFolderGrid ? 'media-browser-compact-grid' : undefined}
-                  style={useCompactFolderGrid ? { height: `${compactBrowserHeight}px` } : undefined}
                   className={
                     useCompactFolderGrid
                       ? compactMediaTileGridClassName
-                      : 'grid grid-cols-2 items-start gap-4 sm:grid-cols-[repeat(auto-fill,minmax(7.75rem,9rem))]'
+                      : 'grid grid-cols-[repeat(auto-fill,100px)] items-start gap-3 lg:gap-4'
                   }
                 >
-                  {visibleBrowseTileItems.map((item, index) => (
+                  {browseTileItems.map((item, index) => (
                     <MediaBrowserTile
                       key={`${index}:${getMediaItemKey(item)}`}
                       accentColor={accentColor}
@@ -2517,7 +2445,7 @@ export function MediaDashboard({
                       item={item}
                       mediaTileArtworkClassName={mediaTileArtworkClassName}
                       mediaTileClassName={`${mediaTileClassName} ${
-                        useCompactFolderGrid ? compactMediaTileWidthClassName : 'w-full'
+                        useCompactFolderGrid ? compactMediaTileWidthClassName : 'w-[100px]'
                       }`}
                       onSelect={selectBrowserItem}
                       providerId={selectedDevice.providerId}
@@ -2526,9 +2454,9 @@ export function MediaDashboard({
                     />
                   ))}
                 </div>
-              )
-            ) : null}
-          </div>
+              ) : null}
+            </div>
+          )
         ) : (
           <div
             className={`${quietPanelClassName} flex min-h-40 items-center justify-center text-center`}
