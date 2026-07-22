@@ -98,7 +98,7 @@ export function getAppChunkName(id: string) {
   }
 
   const localeMessageMatch = moduleId.match(
-    /\/packages\/app\/src\/i18n\/messages\/(de|es|fr|it|pt|sv|zh)\.[cm]?[jt]sx?$/
+    /\/packages\/app\/src\/i18n\/messages\/(de|es|fr|it|nl|pt|sv|zh)\.[cm]?[jt]sx?$/
   )
   if (localeMessageMatch?.[1]) {
     return `locale-${localeMessageMatch[1]}`
