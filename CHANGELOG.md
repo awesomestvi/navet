@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.10.3 - 2026-07-22
+
+## New features
+
+- Added Dutch translations across the dashboard.
+
+## Improvements and bug fixes
+
+- Refreshed Navet's app icons and installation branding across web, PWA, and Home Assistant.
+- Media folders now show every item, with compact artwork and responsive tables for larger libraries.
+- Standalone sign-in now offers a return to login when startup stalls and clears invalid callbacks automatically.
+
 ## 0.10.2 - 2026-07-20
 
 ## Improvements and bug fixes

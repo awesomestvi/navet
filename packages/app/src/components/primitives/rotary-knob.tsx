@@ -154,6 +154,7 @@ export const RotaryKnob = memo(function RotaryKnob({
   const knobTurns = (value - min) / safeStep;
   const tickRotation = normalizeAngle(knobTurns * 14);
   const isSoftFace = faceTreatment === 'soft';
+  const interactionDiameterRem = tickOffsetRem * 2 + 2;
 
   const resetDragState = useCallback(() => {
     activePointerIdRef.current = null;
@@ -465,6 +466,17 @@ export const RotaryKnob = memo(function RotaryKnob({
           onWheel={handleWheel}
           onKeyDown={handleKeyDown}
         >
+          <div
+            aria-hidden="true"
+            className="pointer-events-auto absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 touch-none select-none rounded-full"
+            data-rotary-knob-hit-surface="true"
+            style={{
+              height: `${interactionDiameterRem}rem`,
+              minHeight: '100%',
+              minWidth: '100%',
+              width: `${interactionDiameterRem}rem`,
+            }}
+          />
           {knobVisual}
         </div>
       ) : (

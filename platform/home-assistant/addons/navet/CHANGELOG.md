@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.10.3
+
+## New features
+
+- Added Dutch translations across the dashboard.
+
+## Improvements and bug fixes
+
+- Refreshed Navet's add-on and custom panel icons.
+- Media folders now show every item, with compact artwork and responsive tables for larger libraries.
+
 ## 0.10.2
 
 ## Improvements and bug fixes

@@ -1,8 +1,13 @@
-<h1 align="center">
-  <img src="assets/brand/templates/readme-banner.svg" alt="Navet — A smart home dashboard for every screen" width="1600">
-</h1>
-
 <div align="center">
+  <h1>
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/awesomestvi/navet/main/assets/public/logo-horizontal-light.svg">
+      <img src="https://raw.githubusercontent.com/awesomestvi/navet/main/assets/public/logo-horizontal.svg" alt="Navet" width="220">
+    </picture>
+  </h1>
+
+  <p><strong>A smart home dashboard for every screen.</strong></p>
+
   <p>
     Navet turns Home Assistant, Homey, or openHAB into a calmer, room-first interface<br>
     for everyday control across wall panels, tablets, desktops, and phones.
@@ -23,6 +28,8 @@
   </p>
 </div>
 
+![Navet dashboard running on an iPad](https://raw.githubusercontent.com/awesomestvi/navet/main/assets/reference/marketing/use-cases/navet-ipad-frame-dashboard.jpg)
+
 ## Everyday control without admin-screen clutter
 
 Navet keeps live state and common actions close at hand while your connected platform remains the
@@ -41,7 +48,7 @@ without making every household member navigate a configuration interface.
 
 | Home at a glance | Focused energy view | Security without the noise |
 |---|---|---|
-| ![Navet home dashboard on an iPad](assets/reference/marketing/screenshots/navet-ipad-landscape-home.jpg) | ![Navet energy dashboard on an iPad](assets/reference/marketing/screenshots/navet-ipad-landscape-energy.jpg) | ![Navet security dashboard on an iPad](assets/reference/marketing/screenshots/navet-ipad-landscape-security.jpg) |
+| ![Navet home dashboard on an iPad](https://raw.githubusercontent.com/awesomestvi/navet/main/assets/reference/marketing/screenshots/navet-ipad-landscape-home.jpg) | ![Navet energy dashboard on an iPad](https://raw.githubusercontent.com/awesomestvi/navet/main/assets/reference/marketing/screenshots/navet-ipad-landscape-energy.jpg) | ![Navet security dashboard on an iPad](https://raw.githubusercontent.com/awesomestvi/navet/main/assets/reference/marketing/screenshots/navet-ipad-landscape-security.jpg) |
 
 <div align="center">
   <a href="https://demo.navet.app/"><strong>Open the live demo →</strong></a>
