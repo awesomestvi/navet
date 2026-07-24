@@ -15,4 +15,11 @@ describe('locale message loading', () => {
     expect(messages['common.cancel']).toBe('Annuleer');
     expect(getLoadedMessages('nl')).toBe(messages);
   });
+
+  it('loads the Polish dictionary on demand', async () => {
+    const messages = await loadMessages('pl');
+
+    expect(messages['common.cancel']).toBe('Anuluj');
+    expect(getLoadedMessages('pl')).toBe(messages);
+  });
 });
