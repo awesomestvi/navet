@@ -6,7 +6,7 @@ const require = createRequire(import.meta.url);
 const ts = require('typescript');
 const root = process.cwd();
 const messagesDirectory = path.join(root, 'packages/app/src/i18n/messages');
-const languages = ['en', 'sv', 'de', 'fr', 'es', 'it', 'nl', 'pt', 'zh'];
+const languages = ['en', 'sv', 'de', 'fr', 'es', 'it', 'nl', 'pl', 'pt', 'zh'];
 const failures = [];
 
 function parseMessages(language) {
@@ -105,6 +105,17 @@ const allowedIdenticalValuesByLanguage = {
     'Radio', 'Script', 'Helper', 'Camera', 'Triggers', 'Stop', 'Open {name}', 'Widget',
     'Info', 'Week', 'Eco', '{count} live', 'Album', 'Alarm', 'Comfort', 'Feeds', 'Gas',
     'kW import',
+  ]),
+  pl: new Set([
+    'System',
+    'Media',
+    'Soundbar',
+    'Radio',
+    'Administrator',
+    'Menu',
+    'Link',
+    'Album',
+    'Liquid Glass',
   ]),
   pt: new Set([
     'Experimental', 'Auto', 'Manual', 'Celsius', 'Fahrenheit', 'Status', 'Widgets',
