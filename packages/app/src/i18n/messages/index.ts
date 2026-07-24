@@ -15,6 +15,9 @@ const MESSAGE_LOADERS: Record<Exclude<AppLanguage, 'en'>, () => Promise<MessageD
   nl: () => import('./nl').then(({ nlMessages }) => nlMessages),
   pl: () => import('./pl').then(({ plMessages }) => plMessages),
   pt: () => import('./pt').then(({ ptMessages }) => ptMessages),
+  no: () => import('./no').then(({ noMessages }) => noMessages),
+  da: () => import('./da').then(({ daMessages }) => daMessages),
+  fi: () => import('./fi').then(({ fiMessages }) => fiMessages),
   zh: () => import('./zh').then(({ zhMessages }) => zhMessages),
 };
 

@@ -6,7 +6,7 @@ const require = createRequire(import.meta.url);
 const ts = require('typescript');
 const root = process.cwd();
 const messagesDirectory = path.join(root, 'packages/app/src/i18n/messages');
-const languages = ['en', 'sv', 'de', 'fr', 'es', 'it', 'nl', 'pl', 'pt', 'zh'];
+const languages = ['en', 'sv', 'de', 'fr', 'es', 'it', 'nl', 'pl', 'pt', 'no', 'da', 'fi', 'zh'];
 const failures = [];
 
 function parseMessages(language) {
@@ -120,6 +120,26 @@ const allowedIdenticalValuesByLanguage = {
   pt: new Set([
     'Experimental', 'Auto', 'Manual', 'Celsius', 'Fahrenheit', 'Status', 'Widgets',
     'Volume', 'Sensor', 'Total', 'Radio', 'Widget', 'Link', 'Menu', 'Normal', 'Solar',
+  ]),
+  no: new Set([
+    'System', 'Auto', 'Standard', 'Celsius', 'Fahrenheit', 'Type', 'Status', 'Analytics',
+    'Widgets', 'Media', 'Soundbar', 'Sensor', 'Live', 'tv', 'Radio', 'Administrator',
+    'Scene', 'Person', 'Widget', 'Home Assistant Media', 'Home Assistant media', 'Info',
+    'Fit', 'info', 'Normal', 'Album', 'Alarm', 'Dim', '{value} kW import', '{count} live',
+    'kW live', 'kW import',
+  ]),
+  da: new Set([
+    'Dashboard', 'System', 'Auto', 'Standard', 'Celsius', 'Fahrenheit', 'Medium', 'Type',
+    'Status', 'Analytics', 'Widgets', 'Soundbar', 'Sensor', 'Stop {order}', 'Live',
+    'Scripts', 'script', 'scripts', 'tv', 'Radio', 'Administrator', 'Scene', 'Person',
+    'Script', 'Stop', 'Widget', 'Home Assistant Media', 'Runtime', 'Info', 'Snapshot',
+    'Live stream', 'Stream', 'Snapshot fallback', 'info', 'Menu', 'Link', 'Peak', 'Normal',
+    'Snapshots', 'Album', 'Alarm', 'Feeds', 'Orange', 'Neutral', 'Dim', 'Solar', 'Gas',
+    '{value} kW import', '{count} live', '{count} normal', 'kW live', 'kW import',
+  ]),
+  fi: new Set([
+    'Auto', 'Celsius', 'Fahrenheit', 'Media', 'Soundbar', 'Max', 'tv', 'Radio', 'Widget',
+    'Eco',
   ]),
   zh: new Set([]),
 };

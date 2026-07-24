@@ -1,13 +1,16 @@
 export const SUPPORTED_LANGUAGES = [
   'en',
-  'sv',
   'de',
   'fr',
+  'nl',
   'es',
   'it',
-  'nl',
-  'pl',
   'pt',
+  'pl',
+  'sv',
+  'no',
+  'da',
+  'fi',
   'zh',
 ] as const;
 
@@ -20,14 +23,17 @@ export type AppLanguageOption = {
 
 export const LANGUAGE_OPTIONS: AppLanguageOption[] = [
   { value: 'en', label: 'English' },
-  { value: 'sv', label: 'Svenska' },
   { value: 'de', label: 'Deutsch' },
   { value: 'fr', label: 'Français' },
+  { value: 'nl', label: 'Nederlands' },
   { value: 'es', label: 'Español' },
   { value: 'it', label: 'Italiano' },
-  { value: 'nl', label: 'Nederlands' },
-  { value: 'pl', label: 'Polski' },
   { value: 'pt', label: 'Português' },
+  { value: 'pl', label: 'Polski' },
+  { value: 'sv', label: 'Svenska' },
+  { value: 'no', label: 'Norsk' },
+  { value: 'da', label: 'Dansk' },
+  { value: 'fi', label: 'Suomi' },
   { value: 'zh', label: '简体中文' },
 ];
 
@@ -41,6 +47,9 @@ const LOCALE_BY_LANGUAGE: Record<AppLanguage, string> = {
   nl: 'nl-NL',
   pl: 'pl-PL',
   pt: 'pt-BR',
+  no: 'nb-NO',
+  da: 'da-DK',
+  fi: 'fi-FI',
   zh: 'zh-CN',
 };
 
@@ -59,6 +68,9 @@ function resolveSupportedLanguage(value: string | null | undefined): AppLanguage
   }
 
   const languageCode = normalized.split(/[-_]/)[0];
+  if (languageCode === 'nb') {
+    return 'no';
+  }
   return isSupportedLanguage(languageCode) ? languageCode : null;
 }
 
