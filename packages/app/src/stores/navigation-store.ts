@@ -52,13 +52,25 @@ function sanitizeRecentSections(value: unknown): Section[] {
 
 interface NavigationState {
   currentRoom: string;
+  currentRoomId: string | null;
   lastExplicitRoom: string;
+  lastExplicitRoomId: string | null;
   activeSection: Section;
   activeCustomSidebarActionId: string | null;
   recentSections: Section[];
   lastNonHomeSection: Section | null;
-  applyNavigationState: (state: { currentRoom: string; activeSection: Section }) => void;
-  setCurrentRoom: (room: string, options?: { explicit?: boolean }) => void;
+  applyNavigationState: (state: {
+    currentRoom: string;
+    currentRoomId?: string | null;
+    activeSection: Section;
+  }) => void;
+  setCurrentRoom: (room: string, options?: { explicit?: boolean; roomId?: string | null }) => void;
+  syncResolvedRoomState: (state: {
+    currentRoom: string;
+    currentRoomId: string | null;
+    lastExplicitRoom: string;
+    lastExplicitRoomId: string | null;
+  }) => void;
   setActiveSection: (section: Section) => void;
   setActiveCustomSidebarAction: (actionId: string) => void;
   syncActiveSectionFromLocation: (section: Section) => void;
@@ -87,16 +99,20 @@ export const useNavigationStore = create<NavigationState>()(
   persist(
     (set) => ({
       currentRoom: ALL_ROOMS_ID,
+      currentRoomId: null,
       lastExplicitRoom: ALL_ROOMS_ID,
+      lastExplicitRoomId: null,
       activeSection: initialDestination.activeSection,
       activeCustomSidebarActionId: initialDestination.activeCustomSidebarActionId,
       recentSections: [],
       lastNonHomeSection: null,
-      applyNavigationState: ({ currentRoom, activeSection }) =>
+      applyNavigationState: ({ currentRoom, currentRoomId = null, activeSection }) =>
         set((state) => {
           if (
             state.currentRoom === currentRoom &&
+            state.currentRoomId === currentRoomId &&
             state.lastExplicitRoom === currentRoom &&
+            state.lastExplicitRoomId === currentRoomId &&
             state.activeSection === activeSection &&
             state.activeCustomSidebarActionId === null
           ) {
@@ -105,27 +121,49 @@ export const useNavigationStore = create<NavigationState>()(
 
           return {
             currentRoom,
+            currentRoomId,
             lastExplicitRoom: currentRoom,
+            lastExplicitRoomId: currentRoomId,
             activeSection,
             activeCustomSidebarActionId: null,
           };
         }),
       setCurrentRoom: (currentRoom, options) =>
         set((state) => {
+          const currentRoomId = options?.roomId ?? null;
           const nextLastExplicitRoom =
             options?.explicit === false ? state.lastExplicitRoom : currentRoom;
+          const nextLastExplicitRoomId =
+            options?.explicit === false ? state.lastExplicitRoomId : currentRoomId;
 
           if (
             state.currentRoom === currentRoom &&
-            state.lastExplicitRoom === nextLastExplicitRoom
+            state.currentRoomId === currentRoomId &&
+            state.lastExplicitRoom === nextLastExplicitRoom &&
+            state.lastExplicitRoomId === nextLastExplicitRoomId
           ) {
             return state;
           }
 
           return {
             currentRoom,
+            currentRoomId,
             lastExplicitRoom: nextLastExplicitRoom,
+            lastExplicitRoomId: nextLastExplicitRoomId,
           };
+        }),
+      syncResolvedRoomState: (resolvedState) =>
+        set((state) => {
+          if (
+            state.currentRoom === resolvedState.currentRoom &&
+            state.currentRoomId === resolvedState.currentRoomId &&
+            state.lastExplicitRoom === resolvedState.lastExplicitRoom &&
+            state.lastExplicitRoomId === resolvedState.lastExplicitRoomId
+          ) {
+            return state;
+          }
+
+          return resolvedState;
         }),
       setActiveSection: (activeSection) => {
         history.pushState({}, '', sectionToPath(activeSection));
@@ -171,7 +209,9 @@ export const useNavigationStore = create<NavigationState>()(
       // activeSection is derived from the URL; mobile recents stay persisted.
       partialize: (state) => ({
         currentRoom: state.currentRoom,
+        currentRoomId: state.currentRoomId,
         lastExplicitRoom: state.lastExplicitRoom,
+        lastExplicitRoomId: state.lastExplicitRoomId,
         recentSections: state.recentSections,
         lastNonHomeSection: state.lastNonHomeSection,
       }),
@@ -183,12 +223,20 @@ export const useNavigationStore = create<NavigationState>()(
             typeof p.currentRoom === 'string' && p.currentRoom.length > 0
               ? p.currentRoom
               : ALL_ROOMS_ID,
+          currentRoomId:
+            typeof p.currentRoomId === 'string' && p.currentRoomId.length > 0
+              ? p.currentRoomId
+              : null,
           lastExplicitRoom:
             typeof p.lastExplicitRoom === 'string' && p.lastExplicitRoom.length > 0
               ? p.lastExplicitRoom
               : typeof p.currentRoom === 'string' && p.currentRoom.length > 0
                 ? p.currentRoom
                 : ALL_ROOMS_ID,
+          lastExplicitRoomId:
+            typeof p.lastExplicitRoomId === 'string' && p.lastExplicitRoomId.length > 0
+              ? p.lastExplicitRoomId
+              : null,
           recentSections: sanitizeRecentSections(p.recentSections),
           lastNonHomeSection:
             p.lastNonHomeSection &&

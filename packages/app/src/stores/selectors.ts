@@ -80,6 +80,9 @@ export const editModeSelectors = {
  */
 export const navigationSelectors = {
   currentRoom: (state: NavigationState) => state.currentRoom,
+  currentRoomId: (state: NavigationState) => state.currentRoomId,
+  lastExplicitRoom: (state: NavigationState) => state.lastExplicitRoom,
+  lastExplicitRoomId: (state: NavigationState) => state.lastExplicitRoomId,
   setCurrentRoom: (state: NavigationState) => state.setCurrentRoom,
   activeSection: (state: NavigationState) => state.activeSection,
   activeCustomSidebarActionId: (state: NavigationState) => state.activeCustomSidebarActionId,

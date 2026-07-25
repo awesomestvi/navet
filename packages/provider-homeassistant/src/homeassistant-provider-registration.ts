@@ -150,6 +150,7 @@ export interface HomeAssistantProviderDependencies {
     subscribeCameraWebRtcOffer: HomeAssistantServiceBridge['subscribeCameraWebRtcOffer'];
     addCameraWebRtcCandidate: HomeAssistantServiceBridge['addCameraWebRtcCandidate'];
     createArea: HomeAssistantServiceBridge['createArea'];
+    updateAreaName: HomeAssistantServiceBridge['updateAreaName'];
     updateEntityArea: HomeAssistantServiceBridge['updateEntityArea'];
     updateEntityName: HomeAssistantServiceBridge['updateEntityName'];
     deleteArea: HomeAssistantServiceBridge['deleteArea'];
@@ -251,6 +252,8 @@ function createHomeAssistantServiceBridgeFromDependencies(
     addCameraWebRtcCandidate: (entityId, sessionId, candidate) =>
       dependencies.homeAssistantService.addCameraWebRtcCandidate(entityId, sessionId, candidate),
     createArea: (name) => dependencies.homeAssistantService.createArea(name),
+    updateAreaName: (areaId, name) =>
+      dependencies.homeAssistantService.updateAreaName(areaId, name),
     updateEntityArea: (entityId, areaId) =>
       dependencies.homeAssistantService.updateEntityArea(entityId, areaId),
     updateEntityName: (entityId, name) =>

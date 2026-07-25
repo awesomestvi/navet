@@ -117,8 +117,9 @@ export function createHomeAssistantAppProviderPackageRegistration({
         addCameraWebRtcCandidate: (entityId, sessionId, candidate) =>
           homeAssistantService.addCameraWebRtcCandidate(entityId, sessionId, candidate),
         createArea: (name) => homeAssistantService.createArea(name),
+        updateAreaName: (areaId, name) => homeAssistantService.updateAreaName(areaId, name),
         updateEntityArea: (entityId, areaId) =>
-          homeAssistantService.updateEntityArea(entityId, areaId ?? ''),
+          homeAssistantService.updateEntityArea(entityId, areaId),
         updateEntityName: (entityId, name) =>
           homeAssistantService.updateEntityName(entityId, name ?? ''),
         deleteArea: (areaId) => homeAssistantService.deleteArea(areaId),

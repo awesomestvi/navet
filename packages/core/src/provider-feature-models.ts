@@ -1,3 +1,4 @@
+import type { IntegrationProviderId } from './integration-providers';
 import type { ResolvedPlatformResource } from './provider-contract';
 
 export interface PlatformMediaItem {
@@ -172,13 +173,104 @@ export interface PlatformNotificationRequestOptions extends PlatformFeatureReque
 export interface PlatformRoomReference {
   id: string;
   name: string;
-  providerId?: string;
+  providerId: IntegrationProviderId;
 }
+
+export interface ProviderRoomManagementCapabilities {
+  providerId: IntegrationProviderId;
+  discover: boolean;
+  create: boolean;
+  rename: boolean;
+  assign: boolean;
+  unassign: boolean;
+  delete: boolean;
+}
+
+export type ProviderRoomManagementCapability = Exclude<
+  keyof ProviderRoomManagementCapabilities,
+  'providerId'
+>;
 
 export interface PlatformManageableRoomReference extends PlatformRoomReference {
   canAssign: boolean;
   canDelete: boolean;
   canOrder: boolean;
+  roomManagementCapabilities?: ProviderRoomManagementCapabilities;
+}
+
+export type PlatformRoomMutationOperation = Exclude<ProviderRoomManagementCapability, 'discover'>;
+
+interface PlatformRoomMutationStepBase {
+  stepId: string;
+  dependsOn?: string[];
+}
+
+export interface PlatformCreateRoomMutationStep extends PlatformRoomMutationStepBase {
+  operation: 'create';
+  name: string;
+}
+
+export interface PlatformRenameRoomMutationStep extends PlatformRoomMutationStepBase {
+  operation: 'rename';
+  roomId: string;
+  name: string;
+}
+
+export interface PlatformAssignRoomMutationStep extends PlatformRoomMutationStepBase {
+  operation: 'assign';
+  entityId: string;
+  roomId: string;
+}
+
+export interface PlatformUnassignRoomMutationStep extends PlatformRoomMutationStepBase {
+  operation: 'unassign';
+  entityId: string;
+}
+
+export interface PlatformDeleteRoomMutationStep extends PlatformRoomMutationStepBase {
+  operation: 'delete';
+  roomId: string;
+}
+
+export type PlatformRoomMutationStep =
+  | PlatformCreateRoomMutationStep
+  | PlatformRenameRoomMutationStep
+  | PlatformAssignRoomMutationStep
+  | PlatformUnassignRoomMutationStep
+  | PlatformDeleteRoomMutationStep;
+
+export interface PlatformRoomMutationPlan {
+  providerId: IntegrationProviderId;
+  steps: PlatformRoomMutationStep[];
+}
+
+export type PlatformRoomMutationFailureReason =
+  | 'unsupported'
+  | 'invalid_reference'
+  | 'provider_unavailable'
+  | 'provider_rejected'
+  | 'dependency_failed';
+
+export interface PlatformRoomMutationStepSuccess {
+  stepId: string;
+  operation: PlatformRoomMutationOperation;
+  room?: PlatformRoomReference;
+}
+
+export interface PlatformRoomMutationStepFailure {
+  stepId: string;
+  operation: PlatformRoomMutationOperation;
+  reason: PlatformRoomMutationFailureReason;
+  entityId?: string;
+  roomId?: string;
+  failedDependencyStepIds?: string[];
+}
+
+export interface PlatformRoomMutationResult {
+  providerId: IntegrationProviderId;
+  status: 'succeeded' | 'partially_succeeded' | 'failed';
+  successes: PlatformRoomMutationStepSuccess[];
+  failures: PlatformRoomMutationStepFailure[];
 }
 
 export interface PlatformPersistentNotification {

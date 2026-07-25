@@ -37,6 +37,7 @@ const SYNC_RELEVANT_PERSISTED_KEYS = new Set<string>([
   STORAGE_KEYS.cardSizes,
   STORAGE_KEYS.cardOrders,
   STORAGE_KEYS.roomOrder,
+  STORAGE_KEYS.roomWorkspace,
 ]);
 
 interface DashboardProfileSyncMetadata {

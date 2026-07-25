@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { IntegrationProviderId } from './integration-providers';
+import type { ProviderRoomManagementCapabilities } from './provider-feature-models';
 import type {
   IntegrationProviderFeature,
   IntegrationProviderRuntimeRegistration,
@@ -13,6 +14,7 @@ interface ProviderPackageTestOptions {
   expectedStatus: IntegrationProviderRuntimeRegistration['implementationStatus'];
   supportedFeatures?: IntegrationProviderFeature[];
   unsupportedFeatures?: IntegrationProviderFeature[];
+  expectedRoomManagementCapabilities?: Omit<ProviderRoomManagementCapabilities, 'providerId'>;
 }
 
 export function runProviderPackageRegistrationTests(options: ProviderPackageTestOptions) {
@@ -29,7 +31,8 @@ export function runProviderPackageRegistrationTests(options: ProviderPackageTest
     });
 
     it('declares the expected provider feature posture', () => {
-      const matrix = options.createRegistration().runtimeRegistration.featureMatrix;
+      const runtimeRegistration = options.createRegistration().runtimeRegistration;
+      const matrix = runtimeRegistration.featureMatrix;
 
       for (const feature of options.supportedFeatures ?? []) {
         expect(matrix[feature]).toBe(true);
@@ -37,6 +40,19 @@ export function runProviderPackageRegistrationTests(options: ProviderPackageTest
 
       for (const feature of options.unsupportedFeatures ?? []) {
         expect(matrix[feature]).toBe(false);
+      }
+
+      if (options.expectedRoomManagementCapabilities) {
+        expect(runtimeRegistration.roomManagementCapabilities).toEqual({
+          providerId: options.providerId,
+          ...options.expectedRoomManagementCapabilities,
+        });
+        expect(matrix.rooms).toBe(options.expectedRoomManagementCapabilities.discover);
+
+        const supportsRoomMutation = (
+          ['create', 'rename', 'assign', 'unassign', 'delete'] as const
+        ).some((capability) => options.expectedRoomManagementCapabilities?.[capability]);
+        expect(Boolean(runtimeRegistration.adminFeatureService)).toBe(supportsRoomMutation);
       }
     });
   });

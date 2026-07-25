@@ -78,7 +78,9 @@ describe('useNavigationStore', () => {
       JSON.stringify({
         state: {
           currentRoom: 'Kitchen',
+          currentRoomId: 'room_kitchen1',
           lastExplicitRoom: 'Office',
+          lastExplicitRoomId: 'room_office01',
           activeSection: 'lights',
           recentSections: ['tasks', 'lights', 'invalid'],
           lastNonHomeSection: 'tasks',
@@ -90,7 +92,9 @@ describe('useNavigationStore', () => {
     await useNavigationStore.persist.rehydrate();
 
     expect(useNavigationStore.getState().currentRoom).toBe('Kitchen');
+    expect(useNavigationStore.getState().currentRoomId).toBe('room_kitchen1');
     expect(useNavigationStore.getState().lastExplicitRoom).toBe('Office');
+    expect(useNavigationStore.getState().lastExplicitRoomId).toBe('room_office01');
     expect(useNavigationStore.getState().activeSection).toBe('home');
     expect(useNavigationStore.getState().recentSections).toEqual(['tasks', 'lights']);
     expect(useNavigationStore.getState().lastNonHomeSection).toBe('tasks');
@@ -206,11 +210,45 @@ describe('useNavigationStore', () => {
   it('keeps the last explicit room when fallback room changes internally', () => {
     const store = useNavigationStore.getState();
 
-    store.setCurrentRoom('Kitchen');
-    store.setCurrentRoom('Living Room', { explicit: false });
+    store.setCurrentRoom('Kitchen', { roomId: 'room_kitchen1' });
+    store.setCurrentRoom('Living Room', {
+      explicit: false,
+      roomId: 'room_living01',
+    });
 
     expect(useNavigationStore.getState().currentRoom).toBe('Living Room');
+    expect(useNavigationStore.getState().currentRoomId).toBe('room_living01');
     expect(useNavigationStore.getState().lastExplicitRoom).toBe('Kitchen');
+    expect(useNavigationStore.getState().lastExplicitRoomId).toBe('room_kitchen1');
+  });
+
+  it('applies stable identity to both active and explicit room state', () => {
+    useNavigationStore.getState().applyNavigationState({
+      currentRoom: 'Kitchen',
+      currentRoomId: 'room_kitchen1',
+      activeSection: 'lights',
+    });
+
+    expect(useNavigationStore.getState()).toMatchObject({
+      currentRoom: 'Kitchen',
+      currentRoomId: 'room_kitchen1',
+      lastExplicitRoom: 'Kitchen',
+      lastExplicitRoomId: 'room_kitchen1',
+    });
+  });
+
+  it('clears stale stable identity for backward-compatible name-only selections', () => {
+    const store = useNavigationStore.getState();
+    store.setCurrentRoom('Kitchen', { roomId: 'room_kitchen1' });
+
+    store.setCurrentRoom('Office');
+
+    expect(useNavigationStore.getState()).toMatchObject({
+      currentRoom: 'Office',
+      currentRoomId: null,
+      lastExplicitRoom: 'Office',
+      lastExplicitRoomId: null,
+    });
   });
 
   it('does not emit updates when the requested room state is unchanged', () => {

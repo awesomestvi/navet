@@ -1,8 +1,16 @@
+import { createProviderRoomManagementCapabilities } from '@navet/core/provider-room-management';
 import type {
   IntegrationProviderRuntimeRegistration,
   ProviderContractRegistration,
 } from '@navet/core/provider-runtime-types';
 import { openhabEntityRuntimeService } from './openhab-entity-runtime.service';
+
+export const openHABRoomManagementCapabilities = createProviderRoomManagementCapabilities(
+  'openhab',
+  {
+    discover: true,
+  }
+);
 
 export function createOpenHABRuntimeRegistration(
   registration: ProviderContractRegistration
@@ -31,6 +39,7 @@ export function createOpenHABRuntimeRegistration(
       notifications: false,
       tasks: false,
     },
+    roomManagementCapabilities: openHABRoomManagementCapabilities,
     entityRuntimeService: openhabEntityRuntimeService,
   };
 }

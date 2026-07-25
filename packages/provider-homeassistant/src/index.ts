@@ -46,6 +46,7 @@ export {
   type HomeAssistantStoreState,
   isHomeAssistantConnected,
   playHomeAssistantMedia,
+  renameHomeAssistantArea,
   resolveHomeAssistantArtwork,
   resolveHomeAssistantMediaSource,
   resolveHomeAssistantProxyUrl,

@@ -151,11 +151,20 @@ export interface ProviderClimateFeatureService {
   ) => Promise<void>;
 }
 
-export interface ProviderAdminFeatureService {
+export interface ProviderRoomAdminFeatureService {
   createRoom: (name: string) => Promise<PlatformRoomReference>;
+  renameRoom: (roomId: string, name: string) => Promise<PlatformRoomReference>;
+  assignEntityToRoom: (entityId: string, roomId: string) => Promise<void>;
+  unassignEntityFromRoom: (entityId: string) => Promise<void>;
+  deleteRoom: (roomId: string) => Promise<void>;
+}
+
+export interface ProviderAdminFeatureService extends ProviderRoomAdminFeatureService {
+  /**
+   * Compatibility seam for callers that still model assign and unassign as one nullable update.
+   */
   updateEntityRoom: (entityId: string, roomId: string | null) => Promise<void>;
   updateEntityName: (entityId: string, name: string) => Promise<void>;
-  deleteRoom: (roomId: string) => Promise<void>;
 }
 
 export interface ProviderHistoryFeatureService {

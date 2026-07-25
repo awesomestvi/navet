@@ -237,6 +237,35 @@ class HARegistryService {
   }
 
   /**
+   * Update an area's user-facing name.
+   */
+  async updateAreaName(areaId: string, name: string): Promise<HomeAssistantAreaRegistryEntry> {
+    const conn = this.connection();
+    if (!conn) {
+      throw new Error('Home Assistant is not connected');
+    }
+
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      throw new Error('Room name is required');
+    }
+
+    let updatedArea: HomeAssistantAreaRegistryEntry;
+    try {
+      updatedArea = (await conn.sendMessagePromise({
+        type: 'config/area_registry/update',
+        area_id: areaId,
+        name: trimmedName,
+      })) as HomeAssistantAreaRegistryEntry;
+    } catch (error) {
+      throw new Error(`area registry update failed: ${this.getUnknownErrorMessage(error)}`);
+    }
+
+    await this.loadRegistries();
+    return updatedArea;
+  }
+
+  /**
    * Delete an area
    */
   async deleteArea(areaId: string): Promise<void> {

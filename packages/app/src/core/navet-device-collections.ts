@@ -62,6 +62,7 @@ function toBaseDevice(entity: NavetEntity, state: EntityStateRecord) {
     id: entity.canonicalId,
     name: entity.name,
     room: entity.room ?? 'Unknown',
+    roomId: entity.roomId,
     size: readString(state.size, 'small') as
       | 'small'
       | 'medium'

@@ -18,4 +18,12 @@ runProviderPackageRegistrationTests({
     'weather',
     'notifications',
   ],
+  expectedRoomManagementCapabilities: {
+    discover: false,
+    create: false,
+    rename: false,
+    assign: false,
+    unassign: false,
+    delete: false,
+  },
 });

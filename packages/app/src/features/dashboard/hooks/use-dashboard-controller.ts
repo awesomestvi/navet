@@ -51,8 +51,10 @@ import {
   DASHBOARD_PACKS,
   type DashboardPackId,
 } from '../packs/dashboard-packs';
+import { useRoomWorkspaceStore } from '../rooms/room-workspace-store';
 import { useCustomCardsStore } from '../stores/custom-cards-store';
 import { useHomeDashboardLayoutStore } from '../stores/home-dashboard-layout-store';
+import { resolveDashboardRoomPreferences } from './dashboard-room-preferences';
 import { useAvailableRooms } from './use-available-rooms';
 import { useCardOrdering } from './use-card-ordering';
 import { useCardZones } from './use-card-zones';
@@ -148,6 +150,7 @@ export function useDashboardController(): DashboardController {
     STORAGE_KEYS.hiddenRooms,
     []
   );
+  const roomWorkspace = useRoomWorkspaceStore((state) => state.workspace);
 
   const { hiddenEntityIds, shownSensorEntityIds, hideAutoEntity, showAutoEntity } =
     useDashboardEntityVisibility();
@@ -200,13 +203,27 @@ export function useDashboardController(): DashboardController {
   );
 
   const { availableRooms } = useAvailableRooms(aggregatedRooms);
-  const rooms = usePersistedRoomOrder(availableRooms, roomOrder);
+  const roomPreferences = useMemo(
+    () =>
+      resolveDashboardRoomPreferences({
+        availableRooms,
+        hiddenRoomNames,
+        roomOrder,
+        workspace: roomWorkspace,
+      }),
+    [availableRooms, hiddenRoomNames, roomOrder, roomWorkspace]
+  );
+  const rooms = roomPreferences.rooms;
+  const effectiveHiddenRoomNames = roomPreferences.hiddenRoomNames;
   const visibleRooms = useMemo(() => {
-    const hiddenRooms = new Set(hiddenRoomNames);
+    const hiddenRooms = new Set(effectiveHiddenRoomNames);
     return rooms.filter((room) => !hiddenRooms.has(room));
-  }, [hiddenRoomNames, rooms]);
+  }, [effectiveHiddenRoomNames, rooms]);
 
-  const { activeRoom, preferredRoom, changeRoom, fallbackRoom } = useRoomNavigation(ALL_ROOMS_ID);
+  const { activeRoom, preferredRoom, changeRoom, fallbackRoom } = useRoomNavigation(
+    ALL_ROOMS_ID,
+    roomWorkspace
+  );
   const standaloneMode = isStandaloneMode();
 
   useDashboardRoomNavigation(
@@ -483,7 +500,7 @@ export function useDashboardController(): DashboardController {
     handleRemoveEntity,
     handleUpdateCard,
     hiddenEntityIds,
-    hiddenRoomNames,
+    hiddenRoomNames: effectiveHiddenRoomNames,
     homeLayout: homeLayoutController.layout,
     canRedoHomeLayout: homeLayoutController.canRedo,
     canUndoHomeLayout: homeLayoutController.canUndo,
@@ -720,14 +737,6 @@ const EMPTY_DEVICE_COLLECTION: DeviceCollection = {
   'grouped-sensors': [],
 };
 const EMPTY_AGGREGATED_ROOMS = buildAggregatedRooms(EMPTY_DEVICE_COLLECTION);
-
-function usePersistedRoomOrder(availableRooms: string[], roomOrder: string[]) {
-  return useMemo(() => {
-    const preserved = roomOrder.filter((room) => availableRooms.includes(room));
-    const additions = availableRooms.filter((room) => !preserved.includes(room));
-    return [...preserved, ...additions];
-  }, [availableRooms, roomOrder]);
-}
 
 function useHomeLayoutValidIds(
   availableDeviceMap: Map<string, DeviceWithType>,

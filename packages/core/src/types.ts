@@ -48,6 +48,13 @@ export interface NavetEntity {
   type: NavetEntityType;
   name: string;
   room?: string;
+  /**
+   * Stable provider-scoped room identity.
+   *
+   * `room` remains the human-readable compatibility label while app-owned room
+   * organization migrates to canonical IDs.
+   */
+  roomId?: string;
   primaryState: NavetEntityPrimaryState;
   availability: NavetEntityAvailability;
   attributes: Record<string, unknown>;

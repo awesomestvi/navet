@@ -34,41 +34,12 @@ function normalizeRoomName(name: string) {
   return name.trim().toLocaleLowerCase();
 }
 
-function buildProviderRoomMap(entities: NavetEntity[]): NavetProviderRoom[] {
-  const roomMap = new Map<string, NavetProviderRoom>();
-
-  for (const entity of entities) {
-    const roomName = entity.room ?? UNKNOWN_ROOM_LABEL;
-    const normalizedName = normalizeRoomName(roomName);
-    const canonicalId = createProviderScopedId('openhab', normalizedName);
-    const existing = roomMap.get(canonicalId);
-
-    if (existing) {
-      if (!existing.memberIds.includes(entity.canonicalId)) {
-        existing.memberIds.push(entity.canonicalId);
-      }
-      continue;
-    }
-
-    roomMap.set(canonicalId, {
-      id: canonicalId,
-      canonicalId,
-      providerId: 'openhab',
-      externalId: normalizedName,
-      name: roomName,
-      normalizedName,
-      memberIds: [entity.canonicalId],
-    });
-  }
-
-  return Array.from(roomMap.values()).sort((left, right) => left.name.localeCompare(right.name));
-}
-
 function createNavetEntity(
   nativeId: string,
   type: NavetEntity['type'],
   name: string,
   room: string,
+  roomId: string | undefined,
   capabilities: NavetEntity['capabilities'],
   state: Record<string, unknown>
 ): NavetEntity {
@@ -82,6 +53,7 @@ function createNavetEntity(
     type,
     name,
     room,
+    roomId,
     primaryState:
       typeof state.value === 'string' ||
       typeof state.value === 'number' ||
@@ -147,12 +119,18 @@ function isLockItem(item: OpenHABItem): boolean {
   return tags.has('Lock') || category.includes('lock');
 }
 
-function resolveItemRoom(item: OpenHABItem, items: Record<string, OpenHABItem>): string {
+function resolveItemRoom(
+  item: OpenHABItem,
+  items: Record<string, OpenHABItem>
+): { name: string; roomId?: string } {
   const explicitLocation = getSemanticsConfig(item)?.hasLocation;
   if (explicitLocation) {
     const locationItem = items[explicitLocation];
     if (locationItem) {
-      return locationItem.label?.trim() || locationItem.name;
+      return {
+        name: locationItem.label?.trim() || locationItem.name,
+        roomId: createProviderScopedId('openhab', locationItem.name),
+      };
     }
   }
 
@@ -172,13 +150,16 @@ function resolveItemRoom(item: OpenHABItem, items: Record<string, OpenHABItem>):
     }
 
     if (isSemanticLocation(group)) {
-      return resolveItemName(group, items);
+      return {
+        name: resolveItemName(group, items),
+        roomId: createProviderScopedId('openhab', group.name),
+      };
     }
 
     queue.push(...(group.groupNames ?? []));
   }
 
-  return UNKNOWN_ROOM_LABEL;
+  return { name: UNKNOWN_ROOM_LABEL };
 }
 
 function parseNumberishState(state: string | undefined): number | undefined {
@@ -326,12 +307,16 @@ export function mapOpenHABSnapshotToNavetEntities(snapshot: OpenHABSnapshot): Na
     const name = resolveItemName(item, snapshot.items);
 
     if (isLockItem(item)) {
-      entities.push(createNavetEntity(item.name, 'lock', name, room, ['lock'], state));
+      entities.push(
+        createNavetEntity(item.name, 'lock', name, room.name, room.roomId, ['lock'], state)
+      );
       continue;
     }
 
     if (item.type === 'Rollershutter') {
-      entities.push(createNavetEntity(item.name, 'cover', name, room, capabilities, state));
+      entities.push(
+        createNavetEntity(item.name, 'cover', name, room.name, room.roomId, capabilities, state)
+      );
       continue;
     }
 
@@ -341,7 +326,8 @@ export function mapOpenHABSnapshotToNavetEntities(snapshot: OpenHABSnapshot): Na
           item.name,
           isLightItem(item, snapshot.items) ? 'light' : 'switch',
           name,
-          room,
+          room.name,
+          room.roomId,
           capabilities,
           state
         )
@@ -353,7 +339,9 @@ export function mapOpenHABSnapshotToNavetEntities(snapshot: OpenHABSnapshot): Na
       item.type === 'Contact' ||
       (typeof item.type === 'string' && item.type.startsWith('Number'))
     ) {
-      entities.push(createNavetEntity(item.name, 'sensor', name, room, capabilities, state));
+      entities.push(
+        createNavetEntity(item.name, 'sensor', name, room.name, room.roomId, capabilities, state)
+      );
     }
   }
 
@@ -361,5 +349,26 @@ export function mapOpenHABSnapshotToNavetEntities(snapshot: OpenHABSnapshot): Na
 }
 
 export function buildOpenHABProviderRooms(snapshot: OpenHABSnapshot): NavetProviderRoom[] {
-  return buildProviderRoomMap(mapOpenHABSnapshotToNavetEntities(snapshot));
+  const roomsById = new Map<string, NavetProviderRoom>();
+  for (const entity of mapOpenHABSnapshotToNavetEntities(snapshot)) {
+    if (!entity.roomId || !entity.room || entity.room === UNKNOWN_ROOM_LABEL) {
+      continue;
+    }
+    const existing = roomsById.get(entity.roomId);
+    if (existing) {
+      existing.memberIds.push(entity.canonicalId);
+      continue;
+    }
+    roomsById.set(entity.roomId, {
+      id: entity.roomId,
+      canonicalId: entity.roomId,
+      providerId: 'openhab',
+      externalId: entity.roomId.slice('openhab:'.length),
+      name: entity.room,
+      normalizedName: normalizeRoomName(entity.room),
+      memberIds: [entity.canonicalId],
+    });
+  }
+
+  return Array.from(roomsById.values()).sort((left, right) => left.name.localeCompare(right.name));
 }

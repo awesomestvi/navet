@@ -11,6 +11,7 @@ import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { useThemeStore } from '@navet/app/stores/theme-store';
 import { renderHookWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
+import { PERSISTED_STATE_EVENT } from '@navet/app/utils/persisted-state-events';
 import { act } from '@testing-library/react';
 import { isValidElement, type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -300,6 +301,42 @@ describe('useDashboardProfileSync', () => {
 
     await advanceTime(10_000);
     expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
+  });
+
+  it('saves Room Workspace V2 changes as dashboard profile changes', async () => {
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    const roomWorkspace = {
+      version: 2,
+      groups: [],
+      reviewIssues: [],
+      rooms: [],
+    };
+    currentProfile = buildProfile({
+      exportedAt: '2024-01-01T00:00:01.000Z',
+      roomWorkspace,
+    });
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent(PERSISTED_STATE_EVENT, {
+          detail: {
+            key: STORAGE_KEYS.roomWorkspace,
+            value: roomWorkspace,
+          },
+        })
+      );
+    });
+
+    await advanceTime(2_000);
+
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
+    expect(saveDashboardProfile).toHaveBeenCalledWith(currentProfile, {
+      etag: '"initial"',
+      keepalive: undefined,
+      lastModified: 'Mon, 01 Jan 2024 00:00:00 GMT',
+    });
   });
 
   it('keeps local-first sync when the server generation matches and the remote profile is empty', async () => {

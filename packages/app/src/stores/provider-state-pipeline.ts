@@ -10,12 +10,16 @@ import { INTEGRATION_PROVIDER_IDS } from '@navet/app/types/provider';
 import { createProviderScopedId } from '@navet/app/utils/provider-ids';
 import { areDataEqual } from '@navet/app/utils/structural-equality';
 import type { PlatformManageableRoomReference } from '@navet/core/provider-feature-models';
+import { createProviderRoomManagementCapabilities } from '@navet/core/provider-room-management';
 import type {
   NavetEntity,
   NavetEntityEvent,
   NavetProviderRoom,
   NavetProviderState,
 } from '@navet/core/types';
+import { homeAssistantRoomManagementCapabilities } from '@navet/provider-homeassistant';
+import { homeyRoomManagementCapabilities } from '@navet/provider-homey';
+import { openHABRoomManagementCapabilities } from '@navet/provider-openhab';
 import {
   createDashboardEntityView,
   type DashboardEntityView,
@@ -402,10 +406,22 @@ export function buildRoomDescriptors({
 export function buildManageableRoomsByProviderId(
   roomDescriptors: IntegrationRoomDescriptor[]
 ): Record<IntegrationProviderId, PlatformManageableRoomReference[]> {
+  const capabilitiesByProviderId = {
+    home_assistant: homeAssistantRoomManagementCapabilities,
+    homey: homeyRoomManagementCapabilities,
+    openhab: openHABRoomManagementCapabilities,
+    hubitat: createProviderRoomManagementCapabilities('hubitat'),
+    smartthings: createProviderRoomManagementCapabilities('smartthings'),
+  };
+
   return Object.fromEntries(
     INTEGRATION_PROVIDER_IDS.map((providerId) => [
       providerId,
-      buildManageableRoomReferences(roomDescriptors, providerId),
+      buildManageableRoomReferences(
+        roomDescriptors,
+        providerId,
+        capabilitiesByProviderId[providerId]
+      ),
     ])
   ) as Record<IntegrationProviderId, PlatformManageableRoomReference[]>;
 }

@@ -133,6 +133,7 @@ export interface HomeAssistantServiceBridge {
     candidate: RTCIceCandidateInit
   ): Promise<void>;
   createArea(name: string): Promise<{ area_id: string; name: string }>;
+  updateAreaName(areaId: string, name: string): Promise<{ area_id: string; name: string }>;
   updateEntityArea(entityId: string, areaId: string | null): Promise<void>;
   updateEntityName(entityId: string, name: string | null): Promise<void>;
   deleteArea(areaId: string): Promise<void>;
@@ -338,6 +339,10 @@ export function addHomeAssistantCameraWebRtcCandidate(
 
 export function createHomeAssistantArea(name: string) {
   return getBridge().createArea(name);
+}
+
+export function renameHomeAssistantArea(areaId: string, name: string) {
+  return getBridge().updateAreaName(areaId, name);
 }
 
 export function updateHomeAssistantEntityArea(entityId: string, areaId: string | null) {

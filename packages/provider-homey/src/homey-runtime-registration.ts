@@ -1,9 +1,14 @@
+import { createProviderRoomManagementCapabilities } from '@navet/core/provider-room-management';
 import type {
   IntegrationProviderRuntimeRegistration,
   ProviderContractRegistration,
 } from '@navet/core/provider-runtime-types';
 import { getHomeyEntityRuntimeService } from './homey-bridge';
 import { homeyNativeActionFeatureService } from './homey-native-action-feature.service';
+
+export const homeyRoomManagementCapabilities = createProviderRoomManagementCapabilities('homey', {
+  discover: true,
+});
 
 export function createHomeyRuntimeRegistration(
   registration: ProviderContractRegistration
@@ -32,6 +37,7 @@ export function createHomeyRuntimeRegistration(
       notifications: false,
       tasks: false,
     },
+    roomManagementCapabilities: homeyRoomManagementCapabilities,
     entityRuntimeService: getHomeyEntityRuntimeService(),
     nativeActionFeatureService: homeyNativeActionFeatureService,
   };

@@ -10,6 +10,7 @@ import {
   normalizeTemperatureUnit,
   normalizeVacuumStatus,
   resolveEntityRoom,
+  resolveEntityRoomId,
   UNKNOWN_ROOM_LABEL,
 } from './homeassistant-mapper-support';
 import {
@@ -72,36 +73,6 @@ function resolveVacuumLikeStatusSource(entity: HassEntity): unknown {
 
 function normalizeRoomName(name: string) {
   return name.trim().toLocaleLowerCase();
-}
-
-function buildProviderRoomMap(entities: NavetEntity[]): NavetProviderRoom[] {
-  const roomMap = new Map<string, NavetProviderRoom>();
-
-  for (const entity of entities) {
-    const roomName = entity.room ?? UNKNOWN_ROOM_LABEL;
-    const normalizedName = normalizeRoomName(roomName);
-    const canonicalId = createProviderScopedId('home_assistant', normalizedName);
-    const existing = roomMap.get(canonicalId);
-
-    if (existing) {
-      if (!existing.memberIds.includes(entity.canonicalId)) {
-        existing.memberIds.push(entity.canonicalId);
-      }
-      continue;
-    }
-
-    roomMap.set(canonicalId, {
-      id: canonicalId,
-      canonicalId,
-      providerId: 'home_assistant',
-      externalId: normalizedName,
-      name: roomName,
-      normalizedName,
-      memberIds: [entity.canonicalId],
-    });
-  }
-
-  return Array.from(roomMap.values()).sort((left, right) => left.name.localeCompare(right.name));
 }
 
 function getDomain(entityId: string): string {
@@ -288,7 +259,8 @@ function createNavetEntity(
   room: string,
   capabilities: NavetEntity['capabilities'],
   state: Record<string, unknown>,
-  resources?: NavetEntity['resources']
+  resources?: NavetEntity['resources'],
+  roomId?: string
 ): NavetEntity {
   const canonicalId = createProviderScopedId('home_assistant', nativeId);
 
@@ -300,6 +272,7 @@ function createNavetEntity(
     type,
     name,
     room,
+    roomId,
     primaryState:
       typeof state.value === 'string' ||
       typeof state.value === 'number' ||
@@ -1375,6 +1348,7 @@ export function mapHomeAssistantEntitiesToNavetEntities(
     const deviceEntry = deviceId ? deviceRegistryMap.get(deviceId) : undefined;
     const securityKind = classifySecurityEntity(entity);
     const room = resolveEntityRoom(entityId, entity, areaMap, entityRegistryMap, deviceRegistryMap);
+    const roomId = resolveEntityRoomId(entityId, entityRegistryMap, deviceRegistryMap);
     const name = resolveSecurityEntityName(entity, entityEntry, deviceEntry, securityKind);
     const capabilities = inferHomeAssistantCapabilities(entityId, entity);
     const type =
@@ -1443,7 +1417,8 @@ export function mapHomeAssistantEntitiesToNavetEntities(
         room || UNKNOWN_ROOM_LABEL,
         capabilities,
         createHomeAssistantState(entityId, entity, entityEntry, areaMap, switchMetricsByDeviceId),
-        resources
+        resources,
+        roomId
       )
     );
   }
@@ -1455,5 +1430,51 @@ export function buildHomeAssistantProviderRooms(
   input: HomeAssistantNavetMappingInput,
   mappedEntities: NavetEntity[] = mapHomeAssistantEntitiesToNavetEntities(input)
 ): NavetProviderRoom[] {
-  return buildProviderRoomMap(mappedEntities);
+  const memberIdsByRoomId = new Map<string, string[]>();
+  for (const entity of mappedEntities) {
+    if (!entity.roomId) {
+      continue;
+    }
+    const members = memberIdsByRoomId.get(entity.roomId);
+    if (members) {
+      members.push(entity.canonicalId);
+    } else {
+      memberIdsByRoomId.set(entity.roomId, [entity.canonicalId]);
+    }
+  }
+
+  const roomsById = new Map<string, NavetProviderRoom>();
+  for (const area of input.areas) {
+    const canonicalId = createProviderScopedId('home_assistant', area.area_id);
+    roomsById.set(canonicalId, {
+      id: canonicalId,
+      canonicalId,
+      providerId: 'home_assistant',
+      externalId: area.area_id,
+      name: area.name,
+      normalizedName: normalizeRoomName(area.name),
+      memberIds: memberIdsByRoomId.get(canonicalId) ?? [],
+    });
+  }
+
+  for (const entity of mappedEntities) {
+    if (!entity.roomId || roomsById.has(entity.roomId)) {
+      continue;
+    }
+    const name = entity.room?.trim();
+    if (!name || name === UNKNOWN_ROOM_LABEL) {
+      continue;
+    }
+    roomsById.set(entity.roomId, {
+      id: entity.roomId,
+      canonicalId: entity.roomId,
+      providerId: 'home_assistant',
+      externalId: entity.roomId.slice('home_assistant:'.length),
+      name,
+      normalizedName: normalizeRoomName(name),
+      memberIds: memberIdsByRoomId.get(entity.roomId) ?? [],
+    });
+  }
+
+  return Array.from(roomsById.values()).sort((left, right) => left.name.localeCompare(right.name));
 }

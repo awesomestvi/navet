@@ -1,3 +1,4 @@
+import { createProviderScopedId } from '@navet/core/ids';
 import type {
   HomeAssistantAreaRegistryEntry,
   HomeAssistantDeviceRegistryEntry,
@@ -135,6 +136,28 @@ export function resolveEntityRoom(
     (typeof entity.attributes?.zone === 'string' ? entity.attributes.zone : null) ||
     UNKNOWN_ROOM_LABEL
   );
+}
+
+export function resolveEntityRoomId(
+  entityId: string,
+  entityRegistryMap: Map<
+    string,
+    {
+      area_id?: string | null;
+      device_id?: string | null;
+      areaId?: string | null;
+      deviceId?: string | null;
+    }
+  >,
+  deviceRegistryMap: Map<string, { area_id?: string | null; areaId?: string | null }>
+): string | undefined {
+  const entityEntry = entityRegistryMap.get(entityId);
+  const deviceId = entityEntry?.device_id ?? entityEntry?.deviceId;
+  const deviceEntry = deviceId ? deviceRegistryMap.get(deviceId) : undefined;
+  const areaId =
+    entityEntry?.area_id ?? entityEntry?.areaId ?? deviceEntry?.area_id ?? deviceEntry?.areaId;
+
+  return areaId ? createProviderScopedId('home_assistant', areaId) : undefined;
 }
 
 export function normalizeTemperatureUnit(value: unknown): 'celsius' | 'fahrenheit' | undefined {

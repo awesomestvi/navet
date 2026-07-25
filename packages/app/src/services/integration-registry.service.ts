@@ -3,7 +3,10 @@ import {
   getRegisteredProviderContract,
   getRegisteredSmartHomeProviderAdapter,
 } from '@navet/app/provider-contract-registry';
-import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
+import {
+  getProviderRoomManagementCapabilities,
+  getProviderRuntimeRegistration,
+} from '@navet/app/provider-runtime-registry';
 import type {
   IntegrationProviderCapability,
   IntegrationProviderFeature,
@@ -11,6 +14,10 @@ import type {
   IntegrationProviderRuntimeRegistration,
 } from '@navet/app/provider-runtime-types';
 import type { SmartHomeProviderAdapter } from '@navet/core/provider-contract';
+import type {
+  ProviderRoomManagementCapabilities,
+  ProviderRoomManagementCapability,
+} from '@navet/core/provider-feature-models';
 import type { IntegrationProviderDefinition, IntegrationProviderId } from '../types/provider';
 import { INTEGRATION_PROVIDERS } from '../types/provider';
 
@@ -135,6 +142,19 @@ export function getIntegrationProviderFeatureMatrix(
   providerId: IntegrationProviderId
 ): IntegrationProviderFeatureMatrix {
   return getIntegrationProviderAdapter(providerId).featureMatrix;
+}
+
+export function getIntegrationProviderRoomManagementCapabilities(
+  providerId: IntegrationProviderId
+): ProviderRoomManagementCapabilities {
+  return getProviderRoomManagementCapabilities(providerId);
+}
+
+export function hasIntegrationProviderRoomManagementCapability(
+  providerId: IntegrationProviderId,
+  capability: ProviderRoomManagementCapability
+): boolean {
+  return getProviderRoomManagementCapabilities(providerId)[capability];
 }
 
 export function listAvailableIntegrationProviders(): IntegrationProviderDefinition[] {

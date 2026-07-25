@@ -1,4 +1,5 @@
 import {
+  createProviderRoomManagementCapabilities,
   INTEGRATION_PROVIDERS,
   type IntegrationProviderId,
   type IntegrationProviderRuntimeRegistration,
@@ -74,5 +75,8 @@ export function createPlannedProviderRuntimeRegistration(
       notifications: false,
       tasks: false,
     },
+    roomManagementCapabilities: createProviderRoomManagementCapabilities(
+      registration.contract.providerId
+    ),
   };
 }

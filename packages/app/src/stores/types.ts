@@ -47,11 +47,17 @@ export interface EditModeState {
 
 export interface NavigationState {
   currentRoom: string;
+  currentRoomId: string | null;
   lastExplicitRoom: string;
+  lastExplicitRoomId: string | null;
   activeSection: Section;
   activeCustomSidebarActionId: string | null;
-  applyNavigationState: (state: { currentRoom: string; activeSection: Section }) => void;
-  setCurrentRoom: (room: string, options?: { explicit?: boolean }) => void;
+  applyNavigationState: (state: {
+    currentRoom: string;
+    currentRoomId?: string | null;
+    activeSection: Section;
+  }) => void;
+  setCurrentRoom: (room: string, options?: { explicit?: boolean; roomId?: string | null }) => void;
   setActiveSection: (section: Section) => void;
   setActiveCustomSidebarAction: (actionId: string) => void;
 }
