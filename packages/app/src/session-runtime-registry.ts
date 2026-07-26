@@ -1,7 +1,7 @@
 import { authSessionManager } from '@navet/app/infrastructure/home-assistant/auth/auth-session-manager';
 import { toLegacyAuthRuntime } from '@navet/app/infrastructure/home-assistant/runtime/runtime-context';
 import { getRuntimeContext } from '@navet/app/infrastructure/home-assistant/runtime/runtime-detector';
-import { createHomeAssistantSessionRegistration } from '@navet/provider-homeassistant/homeassistant-session-registration';
+import { createHomeAssistantSessionRegistration } from '@navet/provider-homeassistant';
 import { fromProviderSessionInput, toAuthCompatibleSession } from './auth/types';
 import type { IntegrationSessionRuntimeRegistration } from './session-runtime-types';
 
