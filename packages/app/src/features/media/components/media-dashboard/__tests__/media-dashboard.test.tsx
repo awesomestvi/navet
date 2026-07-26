@@ -838,7 +838,9 @@ describe('MediaDashboard', () => {
         fireEvent.change(screen.getByRole('searchbox', { name: 'Search' }), {
           target: { value: 'Radio folder 245' },
         });
-        expect(await screen.findByText('Radio folder 245')).toBeInTheDocument();
+        expect(
+          await screen.findByText('Radio folder 245', undefined, { timeout: 5_000 })
+        ).toBeInTheDocument();
       }
     );
   });

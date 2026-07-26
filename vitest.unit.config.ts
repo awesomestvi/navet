@@ -27,6 +27,11 @@ export default defineConfig({
     name: 'unit',
     environment: 'jsdom',
     globals: true,
+    include: [
+      'packages/**/*.{test,spec}.{ts,tsx}',
+      'apps/**/*.{test,spec}.{ts,tsx}',
+      'assets/**/*.{test,spec}.{ts,tsx}',
+    ],
     setupFiles: [path.resolve(__dirname, './packages/app/src/setupTests.ts')],
     coverage: {
       provider: 'v8',

@@ -67,6 +67,10 @@ vi.mock('@navet/app/stores/settings-store', async () => {
         cameraStreamPreference: 'auto';
         cameraWebRtcStreamSources: Record<string, 'provider'>;
         cameraDirectStreamUrls: Record<string, string>;
+        cameraFitModes: Record<string, 'cover'>;
+        cameraFitMode: 'cover';
+        updateCameraStreamPreference: () => void;
+        updateCameraFitMode: () => void;
       }) => unknown
     ) =>
       selector({
@@ -74,6 +78,10 @@ vi.mock('@navet/app/stores/settings-store', async () => {
         cameraStreamPreference: 'auto',
         cameraWebRtcStreamSources: {},
         cameraDirectStreamUrls: {},
+        cameraFitModes: {},
+        cameraFitMode: 'cover',
+        updateCameraStreamPreference: vi.fn(),
+        updateCameraFitMode: vi.fn(),
       }),
   };
 });

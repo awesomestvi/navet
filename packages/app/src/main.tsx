@@ -1,6 +1,5 @@
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
-import { registerPwaServiceWorker } from './pwa/pwa-update-store';
 import { initializeInputModality } from './utils/input-modality';
 import './styles/index.css';
 
@@ -8,7 +7,9 @@ const isDemoRoute = window.location.pathname.split('/').filter(Boolean).includes
 const shouldRenderDemoApp = __NAVET_ENABLE_DEMO__ && isDemoRoute;
 
 if (!shouldRenderDemoApp) {
-  registerPwaServiceWorker();
+  void import('./pwa/pwa-update-store').then(({ registerPwaServiceWorker }) => {
+    registerPwaServiceWorker();
+  });
 }
 
 initializeInputModality();

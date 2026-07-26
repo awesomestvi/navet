@@ -46,11 +46,7 @@ import {
   isValidOpenHABSessionData,
   toOpenHABBasicAuthHeader,
 } from '../../scripts/vite-openhab-session-store'
-import {
-  getAppChunkName,
-  getVendorChunkName,
-  isLazyHtmlPreload,
-} from '../../scripts/vite-chunking'
+import { getVendorChunkName, isLazyHtmlPreload } from '../../scripts/vite-chunking'
 import {
   isAllowedRSSContentType,
   isBlockedRSSHostname,
@@ -1699,11 +1695,6 @@ export default defineConfig(({ mode }) => {
     rollupOptions: {
       output: {
         manualChunks(id: string) {
-          const appChunkName = getAppChunkName(id)
-          if (appChunkName) {
-            return appChunkName
-          }
-
           return getVendorChunkName(id)
         },
       },

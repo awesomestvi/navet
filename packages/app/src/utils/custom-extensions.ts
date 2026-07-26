@@ -1,20 +1,5 @@
-import { normalizeLightIconName, resolveLightIconComponent } from '@navet/app/constants/icon-map';
 import type { Section } from '@navet/app/navigation/sections';
 import { sanitizeExternalUrl } from '@navet/app/utils/url-security';
-import {
-  Bell,
-  Clipboard,
-  Fan,
-  Home,
-  Lightbulb,
-  Link2,
-  type LucideIcon,
-  Settings,
-  Shield,
-  Sparkles,
-  Speaker,
-  Zap,
-} from 'lucide-react';
 
 export const ADVANCED_CUSTOM_SIDEBAR_ACTION_LIMIT = 5;
 export const ADVANCED_CUSTOM_SUMMARY_PILL_LIMIT = 3;
@@ -77,20 +62,6 @@ const sectionIds: Section[] = [
   'settings',
 ];
 
-const customExtensionIcons: Record<CustomExtensionIconId, LucideIcon> = {
-  home: Home,
-  energy: Zap,
-  climate: Fan,
-  security: Shield,
-  lights: Lightbulb,
-  media: Speaker,
-  tasks: Clipboard,
-  settings: Settings,
-  link: Link2,
-  sparkles: Sparkles,
-  bell: Bell,
-};
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -110,8 +81,7 @@ function normalizeSidebarActionIcon(value: unknown): CustomSidebarActionIcon {
     return 'Link2';
   }
 
-  const normalizedIcon = normalizeLightIconName(value);
-  return normalizedIcon || 'Link2';
+  return value.trim().slice(0, 80) || 'Link2';
 }
 
 function isSidebarVisibility(value: unknown): value is CustomSidebarActionVisibility {
@@ -306,16 +276,6 @@ export function normalizeCustomSummaryPills(value: unknown): CustomSummaryPill[]
       },
     ];
   });
-}
-
-export function getCustomExtensionIcon(
-  icon: CustomSidebarActionIcon | CustomExtensionIconId
-): LucideIcon {
-  if (isCustomExtensionIconId(icon)) {
-    return customExtensionIcons[icon];
-  }
-
-  return resolveLightIconComponent(icon) ?? Link2;
 }
 
 export function createCustomExtensionId(prefix: 'sidebar' | 'summary'): string {

@@ -15,9 +15,9 @@ import { getDashboardRoomLabel, isAllRooms } from '@navet/app/constants/rooms';
 import { useHomeAssistantPanelShell, useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
 import { useEditModeStore, useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { settingsSelectors } from '@navet/app/stores/selectors';
+import { getCustomExtensionIcon } from '@navet/app/utils/custom-extension-icons';
 import {
   ADVANCED_CUSTOM_SIDEBAR_ACTION_LIMIT,
-  getCustomExtensionIcon,
   isSidebarActionVisible,
   openCustomExtensionUrl,
 } from '@navet/app/utils/custom-extensions';
