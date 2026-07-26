@@ -7,8 +7,8 @@ import { getSecurityAlertCount } from '@navet/app/features/security/utils/securi
 import { defaultTranslate, type TranslateFn } from '@navet/app/i18n';
 import type { Section } from '@navet/app/navigation/sections';
 import type { DeviceWithType } from '@navet/app/types/device.types';
+import { getCustomExtensionIcon } from '@navet/app/utils/custom-extension-icons';
 import type { CustomSummaryPill } from '@navet/app/utils/custom-extensions';
-import { getCustomExtensionIcon } from '@navet/app/utils/custom-extensions';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
 import {
   convertTemperatureUnitValue,

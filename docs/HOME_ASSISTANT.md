@@ -114,13 +114,14 @@ Optional multi-provider add-on settings:
 - Navet does not open its own Home Assistant websocket while running inside Ingress
 - If `navet-ha-shell.js` is loaded through `frontend.extra_module_url`, Navet can hide the Home Assistant header and sidebar while the add-on is open
 - That shell module is served by the Navet HACS integration, not by the add-on ingress app
-- the direct host port is off by default
-- if you expose the app outside Ingress, Navet falls back to the standalone-style OAuth flow
+- the add-on is Ingress-only and does not publish a direct host port
+- trusted Home Assistant user headers are accepted only on this Ingress-only deployment path
+- use standalone Docker when you need direct browser access and per-browser Home Assistant OAuth
 
 ### Troubleshooting
 
-- If the add-on opens outside Ingress, expect standalone-style OAuth behavior instead of the
-  parent-session bridge.
+- Do not expose the add-on's internal port through a separate host proxy. That would bypass the
+  Ingress-only trust boundary. Install standalone Docker instead when direct access is required.
 - The add-on cannot inject host-shell code into Home Assistant by itself. Native Home Assistant chrome hiding in add-on mode requires both the global `frontend.extra_module_url` entry above and the Navet HACS integration that serves `/api/navet/static/navet-ha-shell.js`.
 
 ## Standalone Docker
@@ -133,7 +134,9 @@ Assistant.
 ### Prerequisites
 
 - Docker
-- a Home Assistant instance reachable from the browser that will open Navet
+- a Home Assistant instance reachable from both the browser and the Navet container; OAuth token
+  exchange and authenticated proxy requests now run through Navet's server-side session
+- for HTTPS Home Assistant URLs, a certificate chain trusted by the Navet container
 
 ### Setup Steps
 
@@ -166,7 +169,37 @@ Then open `http://localhost:8080`.
 
 - Home Assistant login uses OAuth
 - dashboard and profile state are stored through same-origin runtime endpoints under `/data`
+- every browser profile gets an independent Home Assistant OAuth session, even when several
+  panels use the same Navet container and Home Assistant instance
+- an opaque `HttpOnly`, `SameSite=Lax` cookie selects that browser's server-side session; HTTPS
+  deployments also mark it `Secure`
+- OAuth state and callback processing are bound to the browser that started the login
+- the Home Assistant proxy discards caller-supplied authorization and injects only the token from
+  that browser's session
+- signing out removes only the current browser's OAuth session
 - if the stored OAuth session becomes invalid during token refresh, Navet clears it and returns to login
+
+OAuth credentials and dashboard profile data have different scopes. The OAuth files under
+`/data/navet-auth-sessions` belong to individual browser sessions; they are not copied between
+phones or wall panels. Shared dashboard configuration can still synchronize through Navet's
+profile store without causing one panel to inherit another panel's Home Assistant account.
+
+Navet's public session-status response contains only sanitized metadata such as the Home Assistant
+URL, expiry, and a non-secret public session ID. Access and refresh tokens are never returned by
+that `GET` response. Home Assistant's WebSocket protocol does require an access token in its
+opening authentication message, so Navet performs a separate same-session, binding-checked
+credentials handoff for the connected app.
+
+Home Assistant exposes its current-user identity through WebSocket rather than a server-verifiable
+REST endpoint. The standalone Nginx runtime therefore leaves `userId` and `userName` unset and does
+not accept browser-supplied identity. Account-scoped preferences remain local in standalone mode
+for now, while the shared dashboard profile still synchronizes across authenticated browsers.
+Add-on Ingress can synchronize account preferences because Supervisor supplies verified
+`X-Remote-User-*` headers on its Ingress-only route.
+
+When upgrading from a version that stored one global `navet-auth-session.json`, Navet deliberately
+discards that ambiguous session instead of assigning its credentials to whichever device connects
+first. Sign in once on each browser profile after the upgrade.
 
 ## Automation And Habit Insights
 
@@ -202,4 +235,12 @@ continue to use the provider that owns the entity or the active provider's featu
 
 - If Navet repeatedly returns to login, verify that the saved Home Assistant URL still matches your current instance URL.
 - If you recently changed reverse-proxy, TLS, hostname, or port settings for Home Assistant, sign in again so Navet can obtain a fresh OAuth session.
+- If OAuth reaches Home Assistant but fails after returning to Navet, verify the Home Assistant URL
+  from inside the Navet container. Browser-only `.local` names and private certificates that the
+  container cannot resolve or trust will prevent the server-side token exchange.
 - If the Home Assistant authorization was revoked or the refresh token became invalid, sign in again to recreate the stored session under `/data`.
+- If OAuth returns to a different browser or fails after a reverse-proxy change, verify that the
+  proxy preserves the public `Host` and `X-Forwarded-Proto` values. The callback must return to the
+  same browser cookie jar that started login.
+- Browser profiles, private-browsing windows, and separate installed PWAs intentionally have
+  separate OAuth sessions. Logging in on one does not log in the others.

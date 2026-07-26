@@ -33,7 +33,7 @@ window.__NAVET_CONFIG__ = {
 };
 EOF
 
-PROXY_AUTH_DIRECTIVE=""
+PROXY_AUTH_DIRECTIVE='    proxy_set_header Authorization "";'
 if [[ -n "${SUPERVISOR_TOKEN:-}" ]]; then
   PROXY_AUTH_DIRECTIVE='    proxy_set_header Authorization "Bearer '"${SUPERVISOR_TOKEN}"'";'
 fi
@@ -47,10 +47,9 @@ server {
   index index.html;
 
   include /etc/nginx/snippets/navet-security-headers.conf;
-  include /etc/nginx/snippets/navet-auth-store.conf;
   include /etc/nginx/snippets/navet-homey-store.conf;
   include /etc/nginx/snippets/navet-openhab-store.conf;
-  include /etc/nginx/snippets/navet-profile-store.conf;
+  include /etc/nginx/snippets/navet-profile-store-ingress.conf;
 
   location /__navet_ha_proxy__/ {
     if (\$uri ~ "\.\.") {
@@ -64,6 +63,7 @@ server {
     proxy_set_header X-Forwarded-Host "";
     proxy_set_header X-Forwarded-Proto "";
     proxy_set_header X-Real-IP "";
+    proxy_set_header Cookie "";
     proxy_set_header Upgrade \$http_upgrade;
     proxy_set_header Connection "upgrade";
     proxy_read_timeout 3600s;

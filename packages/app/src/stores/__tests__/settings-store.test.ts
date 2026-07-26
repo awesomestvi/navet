@@ -1,6 +1,7 @@
 import { STORE_STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { settingsSelectors } from '../selectors';
 import { defaultSettings, useSettingsStore } from '../settings-store';
 
 describe('useSettingsStore', () => {
@@ -98,34 +99,43 @@ describe('useSettingsStore', () => {
     useSettingsStore.getState().updateCameraViewMode('camera.garage', 'auto');
 
     expect(useSettingsStore.getState().cameraViewModes).toEqual({
-      'camera.front_door': 'snapshot',
-      'camera.garage': 'auto',
+      'home_assistant:camera.front_door': 'snapshot',
+      'home_assistant:camera.garage': 'auto',
     });
   });
 
   it('stores camera stream preference per entity', () => {
     useSettingsStore.getState().updateCameraStreamPreference('camera.front_door', 'hls');
-    useSettingsStore.getState().updateCameraStreamPreference('camera.garage', 'web_rtc');
+    useSettingsStore.getState().updateCameraStreamPreference('camera.garage', 'mse');
 
     expect(useSettingsStore.getState().cameraStreamPreferences).toEqual({
-      'camera.front_door': 'hls',
-      'camera.garage': 'web_rtc',
+      'home_assistant:camera.front_door': 'hls',
+      'home_assistant:camera.garage': 'mse',
     });
   });
 
-  it('stores and clears WebRTC stream source per entity', () => {
+  it('stores and clears the camera stream source per entity', () => {
     useSettingsStore.getState().updateCameraWebRtcStreamSource('camera.front_door', 'direct');
     useSettingsStore.getState().updateCameraWebRtcStreamSource('camera.garage', 'direct');
 
     expect(useSettingsStore.getState().cameraWebRtcStreamSources).toEqual({
-      'camera.front_door': 'direct',
-      'camera.garage': 'direct',
+      'home_assistant:camera.front_door': 'direct',
+      'home_assistant:camera.garage': 'direct',
     });
 
+    useSettingsStore
+      .getState()
+      .updateCameraDirectStreamUrl(
+        'camera.garage',
+        'http://go2rtc.local:1984/stream.html?src=garage'
+      );
     useSettingsStore.getState().updateCameraWebRtcStreamSource('camera.garage', 'provider');
 
     expect(useSettingsStore.getState().cameraWebRtcStreamSources).toEqual({
-      'camera.front_door': 'direct',
+      'home_assistant:camera.front_door': 'direct',
+    });
+    expect(useSettingsStore.getState().cameraDirectStreamUrls).toEqual({
+      'home_assistant:camera.garage': 'http://go2rtc.local:1984/stream.html?src=garage',
     });
   });
 
@@ -141,14 +151,22 @@ describe('useSettingsStore', () => {
       .updateCameraDirectStreamUrl('camera.garage', 'http://192.168.68.72:1984/stream.html');
 
     expect(useSettingsStore.getState().cameraDirectStreamUrls).toEqual({
-      'camera.front_door': 'http://192.168.68.71:1984/stream.html?src=camera_front',
-      'camera.garage': 'http://192.168.68.72:1984/stream.html',
+      'home_assistant:camera.front_door': 'http://192.168.68.71:1984/stream.html?src=camera_front',
+      'home_assistant:camera.garage': 'http://192.168.68.72:1984/stream.html',
     });
+    expect(localStorage.getItem(STORE_STORAGE_KEYS.settings)).toContain(
+      'home_assistant:camera.front_door'
+    );
+    expect(
+      settingsSelectors.cameraDirectStreamUrlForEntity('camera.front_door')(
+        useSettingsStore.getState()
+      )
+    ).toBe('http://192.168.68.71:1984/stream.html?src=camera_front');
 
     useSettingsStore.getState().updateCameraDirectStreamUrl('camera.garage', '');
 
     expect(useSettingsStore.getState().cameraDirectStreamUrls).toEqual({
-      'camera.front_door': 'http://192.168.68.71:1984/stream.html?src=camera_front',
+      'home_assistant:camera.front_door': 'http://192.168.68.71:1984/stream.html?src=camera_front',
     });
   });
 
@@ -157,8 +175,8 @@ describe('useSettingsStore', () => {
     useSettingsStore.getState().updateCameraFitMode('camera.garage', 'cover');
 
     expect(useSettingsStore.getState().cameraFitModes).toEqual({
-      'camera.front_door': 'contain',
-      'camera.garage': 'cover',
+      'home_assistant:camera.front_door': 'contain',
+      'home_assistant:camera.garage': 'cover',
     });
   });
 
@@ -414,8 +432,8 @@ describe('useSettingsStore', () => {
     await useSettingsStore.persist.rehydrate();
 
     expect(useSettingsStore.getState().cameraViewModes).toEqual({
-      'camera.front_door': 'snapshot',
-      'camera.garage': 'auto',
+      'home_assistant:camera.front_door': 'snapshot',
+      'home_assistant:camera.garage': 'auto',
     });
   });
 
@@ -428,7 +446,7 @@ describe('useSettingsStore', () => {
           cameraStreamPreference: 'web_rtc',
           cameraStreamPreferences: {
             'camera.front_door': 'hls',
-            'camera.garage': 'mjpeg',
+            'camera.garage': 'mse',
             'camera.invalid': 'rtsp',
           },
         },
@@ -440,8 +458,37 @@ describe('useSettingsStore', () => {
 
     expect(useSettingsStore.getState().cameraStreamPreference).toBe('web_rtc');
     expect(useSettingsStore.getState().cameraStreamPreferences).toEqual({
-      'camera.front_door': 'hls',
-      'camera.garage': 'mjpeg',
+      'home_assistant:camera.front_door': 'hls',
+      'home_assistant:camera.garage': 'mse',
+    });
+  });
+
+  it('rehydrates local direct stream settings under canonical camera ids', async () => {
+    localStorage.removeItem(STORE_STORAGE_KEYS.settings);
+    localStorage.setItem(
+      'ha-dashboard-settings',
+      JSON.stringify({
+        state: {
+          cameraWebRtcStreamSources: {
+            'camera.front_door': 'direct',
+            'home_assistant:camera.front_door': 'direct_mse',
+          },
+          cameraDirectStreamUrls: {
+            'camera.front_door': 'http://legacy.local/stream.html?src=front',
+            'home_assistant:camera.front_door': 'http://go2rtc.local:1984/stream.html?src=front',
+          },
+        },
+        version: 0,
+      })
+    );
+
+    await useSettingsStore.persist.rehydrate();
+
+    expect(useSettingsStore.getState().cameraWebRtcStreamSources).toEqual({
+      'home_assistant:camera.front_door': 'direct',
+    });
+    expect(useSettingsStore.getState().cameraDirectStreamUrls).toEqual({
+      'home_assistant:camera.front_door': 'http://go2rtc.local:1984/stream.html?src=front',
     });
   });
 
@@ -466,8 +513,8 @@ describe('useSettingsStore', () => {
 
     expect(useSettingsStore.getState().cameraFitMode).toBe('contain');
     expect(useSettingsStore.getState().cameraFitModes).toEqual({
-      'camera.front_door': 'contain',
-      'camera.garage': 'cover',
+      'home_assistant:camera.front_door': 'contain',
+      'home_assistant:camera.garage': 'cover',
     });
   });
 

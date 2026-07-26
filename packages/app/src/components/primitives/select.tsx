@@ -5,8 +5,7 @@ import {
   navetTypographyTokens,
 } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
-import { useTheme } from '@navet/app/hooks';
-import { ChevronDown } from 'lucide-react';
+import { useTheme } from '@navet/app/hooks/use-theme';
 import { forwardRef, type ReactNode, type SelectHTMLAttributes, useState } from 'react';
 
 type SelectSize = 'default' | 'small';
@@ -106,7 +105,18 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
           indicatorClassName
         )}
       >
-        <ChevronDown className={`${navetIconSizeTokens.sm} text-current/60`} />
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`${navetIconSizeTokens.sm} text-current/60`}
+          aria-hidden="true"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
       </div>
     </div>
   );

@@ -1,12 +1,25 @@
 declare module '@docker/njs/profile-store.js' {
+  interface NjsProfileRequest {
+    method: string;
+    uri?: string;
+    headersIn?: Record<string, string | undefined>;
+    headersOut: Record<string, string>;
+    requestText?: string;
+    return: (status: number, body?: string) => void;
+  }
+
   interface ProfileStoreModule {
     buildProfileMetadata(
-      content: string,
-      stat: { mtimeMs: number; mtime: Date }
+      workspace: { workspaceId: string; createdAt: string },
+      state: {
+        revision: number;
+        metadata: { updatedAt: string } | null;
+      }
     ): {
       etag: string;
       lastModified: string;
     };
+    createProfileGeneration(): string;
     isProfileFresh(
       request: {
         headersIn?: Record<string, string | undefined>;
@@ -16,33 +29,35 @@ declare module '@docker/njs/profile-store.js' {
         lastModified: string;
       }
     ): boolean;
-    readProfile(request: {
-      headersIn?: Record<string, string | undefined>;
-      headersOut: Record<string, string>;
-      return: (status: number, body?: string) => void;
-    }): void;
-    writeProfile(request: {
-      requestText?: string;
-      headersOut: Record<string, string>;
-      return: (status: number, body?: string) => void;
-    }): void;
-    deleteProfile(request: {
-      headersOut: Record<string, string>;
-      return: (status: number, body?: string) => void;
-    }): void;
-    handle(request: {
-      method: string;
-      headersIn?: Record<string, string | undefined>;
-      headersOut: Record<string, string>;
-      requestText?: string;
-      return: (status: number, body?: string) => void;
-    }): void;
+    handle(request: NjsProfileRequest): void;
+    handleIngress(request: NjsProfileRequest): void;
+    routeRequest(
+      request: NjsProfileRequest,
+      principal: {
+        providerId: string;
+        sessionId: string;
+        userId: string | null;
+        userName: string | null;
+      }
+    ): void;
     setProfileStoreFsForTests(mockFs: {
       statSync: (path: string) => { size?: number; mtimeMs: number; mtime: Date };
       readFileSync: (path: string, encoding: string) => string;
       writeFileSync: (path: string, content: string, encoding: string) => void;
+      renameSync: (sourcePath: string, destinationPath: string) => void;
       unlinkSync: (path: string) => void;
     }): void;
+    setProfileStorePrincipalResolverForTests(
+      resolver: (
+        request: NjsProfileRequest,
+        options: { trustIngressHeaders: boolean }
+      ) => {
+        providerId: string;
+        sessionId: string;
+        userId: string | null;
+        userName: string | null;
+      } | null
+    ): void;
     resetProfileStoreFsForTests(): void;
   }
 

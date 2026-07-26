@@ -3,8 +3,11 @@ import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
 import { integrationCameraFeatureService } from '@navet/app/services/integration-camera-feature.service';
 import { resolveCameraStreamResource } from '@navet/app/services/integration-camera-runtime.service';
 import { subscribeVisibilityAwareTask } from '@navet/app/utils/visibility-aware-scheduler';
-import { memo, type RefObject, useEffect, useRef, useState } from 'react';
+import { memo, type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { CameraStreamLoadingIndicator } from './camera-stream-loading-indicator';
 import type { CameraImageSourceKind } from './camera-view-mode';
+import { DirectGo2RtcCameraPlayer } from './direct-go2rtc-camera-player';
+import { getGo2RtcViewerPresentation } from './go2rtc-viewer-presentation';
 
 interface CameraStreamPlayerProps {
   entityId: string;
@@ -18,15 +21,16 @@ interface CameraStreamPlayerProps {
   webRtcTitle?: string;
 }
 
-const CAMERA_STREAM_LOAD_TIMEOUT_MS = 10_000;
 const CAMERA_WEBRTC_STREAM_LOAD_TIMEOUT_MS = 15_000;
 const CAMERA_HLS_STREAM_LOAD_TIMEOUT_MS = 20_000;
 const CAMERA_STREAM_STALL_CHECK_INTERVAL_MS = 2_000;
 const CAMERA_STREAM_STALL_THRESHOLD_MS = 6_000;
 const MJPEG_STREAM_RECONNECT_INTERVAL_MS = 30_000;
+const CAMERA_MJPEG_ERROR_RETRY_LIMIT = 1;
 const CAMERA_HLS_MEDIA_ERROR_RECOVERY_LIMIT = 1;
 const CAMERA_HLS_NETWORK_ERROR_RECOVERY_LIMIT = 1;
 const CAMERA_HLS_FRESH_URL_RETRY_LIMIT = 1;
+const CAMERA_WEBRTC_DISCONNECTED_GRACE_MS = 3_000;
 
 const videoFitClassNames = {
   contain: 'object-contain',
@@ -37,20 +41,6 @@ const CAMERA_MEDIA_SURFACE_CLASS_NAME = 'h-full w-full';
 
 interface CameraStreamErrorOptions {
   retryable?: boolean;
-}
-
-function CameraStreamLoadingIndicator({ label }: { label: string }) {
-  return (
-    <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/24">
-      <div
-        role="status"
-        aria-label={label}
-        className="flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-black/55 backdrop-blur-md"
-      >
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/28 border-t-white" />
-      </div>
-    </div>
-  );
 }
 
 function isHomeAssistantCameraStreamUnsupportedError(error: unknown) {
@@ -98,19 +88,6 @@ function clearStreamLoadTimeout(timeoutRef: React.MutableRefObject<number | null
 
 function hasCurrentMediaData(video: HTMLVideoElement | null) {
   return Boolean(video && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA);
-}
-
-function scheduleStreamLoadTimeout(
-  timeoutRef: React.MutableRefObject<number | null>,
-  kind: CameraImageSourceKind,
-  onError: CameraStreamPlayerProps['onError'],
-  delayMs = CAMERA_STREAM_LOAD_TIMEOUT_MS
-) {
-  clearStreamLoadTimeout(timeoutRef);
-  timeoutRef.current = window.setTimeout(() => {
-    timeoutRef.current = null;
-    onError(kind);
-  }, delayMs);
 }
 
 function clearStreamStallWatchdog(
@@ -166,12 +143,203 @@ function scheduleStreamStallWatchdog(
   }, CAMERA_STREAM_STALL_CHECK_INTERVAL_MS);
 }
 
+function getDecodedVideoFrameCount(video: HTMLVideoElement) {
+  const playbackQuality = video.getVideoPlaybackQuality?.();
+  const playbackQualityFrameCount =
+    playbackQuality &&
+    Number.isFinite(playbackQuality.totalVideoFrames) &&
+    playbackQuality.totalVideoFrames >= 0
+      ? playbackQuality.totalVideoFrames
+      : null;
+  const legacyFrameCount = (
+    video as HTMLVideoElement & {
+      webkitDecodedFrameCount?: number;
+    }
+  ).webkitDecodedFrameCount;
+  const normalizedLegacyFrameCount =
+    typeof legacyFrameCount === 'number' &&
+    Number.isFinite(legacyFrameCount) &&
+    legacyFrameCount >= 0
+      ? legacyFrameCount
+      : null;
+
+  if (playbackQualityFrameCount === null) {
+    return normalizedLegacyFrameCount;
+  }
+  if (normalizedLegacyFrameCount === null) {
+    return playbackQualityFrameCount;
+  }
+  return Math.max(playbackQualityFrameCount, normalizedLegacyFrameCount);
+}
+
+function hasDecodedVideoDimensions(video: HTMLVideoElement, metadata?: VideoFrameCallbackMetadata) {
+  const width = metadata?.width ?? video.videoWidth;
+  const height = metadata?.height ?? video.videoHeight;
+  return width > 0 && height > 0;
+}
+
+function subscribeDecodedVideoFrameMonitor(options: {
+  video: HTMLVideoElement;
+  isActive: () => boolean;
+  ownsVideoElement: () => boolean;
+  hasVideoSource: () => boolean;
+  onReady: () => void;
+  onError: () => void;
+}) {
+  const { video, isActive, ownsVideoElement, hasVideoSource, onReady, onError } = options;
+  let cleaned = false;
+  let decodedFrameProgress = 0;
+  let fallbackListenersAttached = false;
+  let frameCallbackId: number | null = null;
+  let hasDecodedFrame = false;
+  let lastObservedFrameProgress: number | null = null;
+  let stagnantDuration = 0;
+  let useVideoFrameCallback = typeof video.requestVideoFrameCallback === 'function';
+  const isMonitorActive = () => !cleaned && isActive();
+
+  const reportFailure = () => {
+    if (!isMonitorActive()) {
+      return;
+    }
+    onError();
+  };
+  const reportMediaFailure = () => {
+    if (!isMonitorActive() || !ownsVideoElement() || !hasVideoSource()) {
+      return;
+    }
+    reportFailure();
+  };
+
+  const markDecodedFrameReady = (metadata?: VideoFrameCallbackMetadata) => {
+    if (
+      hasDecodedFrame ||
+      !isMonitorActive() ||
+      !ownsVideoElement() ||
+      !hasVideoSource() ||
+      !hasDecodedVideoDimensions(video, metadata)
+    ) {
+      return;
+    }
+    hasDecodedFrame = true;
+    onReady();
+  };
+
+  const observeDecodedFrameCounter = () => {
+    if (
+      !isMonitorActive() ||
+      !ownsVideoElement() ||
+      !hasVideoSource() ||
+      !hasDecodedVideoDimensions(video)
+    ) {
+      return;
+    }
+    const decodedFrameCount = getDecodedVideoFrameCount(video);
+    if (decodedFrameCount !== null) {
+      if (decodedFrameCount <= 0) {
+        return;
+      }
+      decodedFrameProgress = decodedFrameCount;
+    }
+    markDecodedFrameReady();
+  };
+
+  const attachFallbackListeners = () => {
+    if (fallbackListenersAttached) {
+      return;
+    }
+    fallbackListenersAttached = true;
+    video.addEventListener('canplay', observeDecodedFrameCounter);
+    video.addEventListener('loadeddata', observeDecodedFrameCounter);
+    video.addEventListener('playing', observeDecodedFrameCounter);
+  };
+
+  const scheduleDecodedFrameCallback = () => {
+    if (!useVideoFrameCallback || !isMonitorActive() || frameCallbackId !== null) {
+      return;
+    }
+    try {
+      frameCallbackId = video.requestVideoFrameCallback((_now, metadata) => {
+        frameCallbackId = null;
+        if (!isMonitorActive()) {
+          return;
+        }
+        if (ownsVideoElement() && hasVideoSource() && hasDecodedVideoDimensions(video, metadata)) {
+          decodedFrameProgress += 1;
+          markDecodedFrameReady(metadata);
+        }
+        scheduleDecodedFrameCallback();
+      });
+    } catch {
+      useVideoFrameCallback = false;
+      attachFallbackListeners();
+    }
+  };
+
+  if (useVideoFrameCallback) {
+    scheduleDecodedFrameCallback();
+  } else {
+    attachFallbackListeners();
+  }
+  video.addEventListener('error', reportMediaFailure);
+
+  const stallCleanup = subscribeVisibilityAwareTask(() => {
+    if (document.hidden || !isMonitorActive() || !ownsVideoElement() || !hasVideoSource()) {
+      lastObservedFrameProgress = null;
+      stagnantDuration = 0;
+      return;
+    }
+
+    if (!useVideoFrameCallback) {
+      observeDecodedFrameCounter();
+    }
+    if (!hasDecodedFrame) {
+      lastObservedFrameProgress = null;
+      stagnantDuration = 0;
+      return;
+    }
+
+    const currentFrameProgress = useVideoFrameCallback
+      ? decodedFrameProgress
+      : getDecodedVideoFrameCount(video);
+    if (currentFrameProgress === null) {
+      lastObservedFrameProgress = null;
+      stagnantDuration = 0;
+      return;
+    }
+    if (lastObservedFrameProgress === null || currentFrameProgress > lastObservedFrameProgress) {
+      lastObservedFrameProgress = currentFrameProgress;
+      stagnantDuration = 0;
+      return;
+    }
+
+    stagnantDuration += CAMERA_STREAM_STALL_CHECK_INTERVAL_MS;
+    if (stagnantDuration >= CAMERA_STREAM_STALL_THRESHOLD_MS) {
+      reportFailure();
+    }
+  }, CAMERA_STREAM_STALL_CHECK_INTERVAL_MS);
+
+  return () => {
+    cleaned = true;
+    stallCleanup();
+    video.removeEventListener('error', reportMediaFailure);
+    if (frameCallbackId !== null && typeof video.cancelVideoFrameCallback === 'function') {
+      video.cancelVideoFrameCallback(frameCallbackId);
+    }
+    frameCallbackId = null;
+    if (fallbackListenersAttached) {
+      video.removeEventListener('canplay', observeDecodedFrameCounter);
+      video.removeEventListener('loadeddata', observeDecodedFrameCounter);
+      video.removeEventListener('playing', observeDecodedFrameCounter);
+    }
+  };
+}
+
 function getStreamResourceKey(resource: ResolvedPlatformResource | null | undefined) {
   if (!resource) {
     return '';
   }
 
-  return `${resource.kind}:${resource.url ?? ''}:${resource.cacheKey}`;
+  return `${resource.kind}:${resource.url ?? ''}:${resource.cacheKey}:${resource.metadata?.mode ?? ''}`;
 }
 
 function appendReloadToken(url: string, reloadKey: number) {
@@ -183,17 +351,30 @@ function appendReloadToken(url: string, reloadKey: number) {
   return `${url}${separator}_mjpeg_t=${reloadKey}`;
 }
 
+function normalizeRemoteIceCandidate(candidate: RTCIceCandidateInit): RTCIceCandidateInit {
+  if (candidate.sdpMid == null && candidate.sdpMLineIndex == null) {
+    return {
+      ...candidate,
+      sdpMid: '0',
+    };
+  }
+
+  return candidate;
+}
+
 function MjpegCameraPlayer({
-  posterUrl: _posterUrl,
+  posterUrl,
   streamResource,
   fitMode,
   onLoad,
+  onError,
   loadingLabel = defaultTranslate('camera.loadingFeed'),
 }: Omit<CameraStreamPlayerProps, 'entityId' | 'kind'>) {
   const streamResourceUrl =
     streamResource?.kind === 'mjpeg_stream' ? streamResource.url : undefined;
   const [hasLoadedFrame, setHasLoadedFrame] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const consecutiveErrorCountRef = useRef(0);
 
   useEffect(() => {
     if (!streamResourceUrl) {
@@ -207,6 +388,7 @@ function MjpegCameraPlayer({
 
   useEffect(() => {
     setHasLoadedFrame(false);
+    consecutiveErrorCountRef.current = 0;
   }, [streamResourceUrl]);
 
   const reloadingStreamUrl =
@@ -216,9 +398,6 @@ function MjpegCameraPlayer({
 
   return (
     <div className="relative h-full w-full">
-      {reloadingStreamUrl && !hasLoadedFrame && reloadKey === 0 ? (
-        <CameraStreamLoadingIndicator label={loadingLabel} />
-      ) : null}
       {reloadingStreamUrl ? (
         <img
           key={reloadKey}
@@ -227,12 +406,29 @@ function MjpegCameraPlayer({
           aria-hidden="true"
           className={`${CAMERA_MEDIA_SURFACE_CLASS_NAME} ${videoFitClassNames[fitMode]}`}
           onLoad={() => {
+            consecutiveErrorCountRef.current = 0;
             setHasLoadedFrame(true);
             onLoad?.();
           }}
           onError={() => {
-            setReloadKey((current) => current + 1);
+            setHasLoadedFrame(false);
+            if (consecutiveErrorCountRef.current < CAMERA_MJPEG_ERROR_RETRY_LIMIT) {
+              consecutiveErrorCountRef.current += 1;
+              setReloadKey((current) => current + 1);
+              return;
+            }
+            if (consecutiveErrorCountRef.current === CAMERA_MJPEG_ERROR_RETRY_LIMIT) {
+              consecutiveErrorCountRef.current += 1;
+              onError('mjpeg');
+            }
           }}
+        />
+      ) : null}
+      {reloadingStreamUrl && !hasLoadedFrame ? (
+        <CameraStreamLoadingIndicator
+          label={loadingLabel}
+          posterUrl={posterUrl}
+          fitMode={fitMode}
         />
       ) : null}
     </div>
@@ -240,6 +436,7 @@ function MjpegCameraPlayer({
 }
 
 function HlsCameraPlayer({
+  kind,
   entityId,
   posterUrl,
   streamResource,
@@ -247,7 +444,7 @@ function HlsCameraPlayer({
   onLoad,
   onError,
   loadingLabel = defaultTranslate('camera.loadingFeed'),
-}: Omit<CameraStreamPlayerProps, 'kind'>) {
+}: CameraStreamPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const loadTimeoutRef = useRef<number | null>(null);
   const stallWatchdogCleanupRef = useRef<(() => void) | null>(null);
@@ -257,6 +454,7 @@ function HlsCameraPlayer({
   const [hasLoadedFrame, setHasLoadedFrame] = useState(false);
   const streamResourceUrl = streamResource?.kind === 'hls_stream' ? streamResource.url : undefined;
   const freshUrlRetryCountRef = useRef(0);
+  const playbackKind = kind === 'mse' ? 'mse' : 'hls';
 
   const markStreamReady = () => {
     if (hasLoadedFrameRef.current) {
@@ -271,7 +469,7 @@ function HlsCameraPlayer({
     scheduleStreamStallWatchdog(
       stallWatchdogCleanupRef,
       videoRef,
-      'hls',
+      playbackKind,
       hasLoadedFrameRef,
       stagnantDurationRef,
       lastObservedTimeRef,
@@ -295,8 +493,10 @@ function HlsCameraPlayer({
     let mediaErrorRecoveryAttempts = 0;
     let networkErrorRecoveryAttempts = 0;
     let activeStreamUrl = streamResourceUrl;
+    let playbackGeneration = 0;
 
     const cleanUp = () => {
+      playbackGeneration += 1;
       cleanupHls?.();
       cleanupHls = undefined;
       const video = videoRef.current;
@@ -350,7 +550,7 @@ function HlsCameraPlayer({
         } catch (error) {
           if (!cancelled) {
             clearStreamLoadTimeout(loadTimeoutRef);
-            onError('hls', {
+            onError(playbackKind, {
               retryable: retryable && !isHomeAssistantCameraStreamUnsupportedError(error),
             });
           }
@@ -361,9 +561,9 @@ function HlsCameraPlayer({
       if (!cancelled) {
         clearStreamLoadTimeout(loadTimeoutRef);
         if (retryable) {
-          onError('hls');
+          onError(playbackKind);
         } else {
-          onError('hls', { retryable: false });
+          onError(playbackKind, { retryable: false });
         }
       }
     };
@@ -388,6 +588,9 @@ function HlsCameraPlayer({
       if (document.hidden) {
         return;
       }
+      const activeGeneration = playbackGeneration;
+      const isInactive = () =>
+        cancelled || document.hidden || activeGeneration !== playbackGeneration;
 
       const video = videoRef.current;
       if (!video) {
@@ -406,26 +609,26 @@ function HlsCameraPlayer({
       try {
         const playableStreamUrl = await loadStreamUrl(preferFreshUrl);
 
-        if (!playableStreamUrl || cancelled) {
+        if (!playableStreamUrl || isInactive()) {
           return;
         }
 
-        if (shouldUseNativeHlsPlayback(video)) {
+        if (playbackKind !== 'mse' && shouldUseNativeHlsPlayback(video)) {
           video.src = playableStreamUrl;
           await video.play().catch(() => undefined);
-          if (hasCurrentMediaData(video)) {
+          if (!isInactive() && hasCurrentMediaData(video)) {
             markStreamReady();
           }
           return;
         }
 
         const Hls = (await import('hls.js')).default;
-        if (cancelled) {
+        if (isInactive()) {
           return;
         }
 
         if (!Hls.isSupported()) {
-          onError('hls', { retryable: false });
+          onError(playbackKind, { retryable: false });
           return;
         }
 
@@ -489,17 +692,36 @@ function HlsCameraPlayer({
       }
     };
 
-    void start();
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        cleanUp();
+        setHasLoadedFrame(false);
+        return;
+      }
+      void start();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    if (!document.hidden) {
+      void start();
+    }
 
     return () => {
       cancelled = true;
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       cleanUp();
     };
-  }, [entityId, onError, streamResourceUrl]);
+  }, [entityId, onError, playbackKind, streamResourceUrl]);
 
   return (
     <div className="relative h-full w-full">
-      {!hasLoadedFrame ? <CameraStreamLoadingIndicator label={loadingLabel} /> : null}
+      {!hasLoadedFrame ? (
+        <CameraStreamLoadingIndicator
+          label={loadingLabel}
+          posterUrl={posterUrl}
+          fitMode={fitMode}
+        />
+      ) : null}
       <video
         ref={videoRef}
         autoPlay
@@ -507,11 +729,54 @@ function HlsCameraPlayer({
         muted
         onCanPlay={markStreamReady}
         onLoadedData={markStreamReady}
-        onError={() => onError('hls')}
+        onError={() => onError(playbackKind)}
         onPlaying={markStreamReady}
         playsInline
         style={{ opacity: hasLoadedFrame ? 1 : 0 }}
       />
+    </div>
+  );
+}
+
+function OpaqueGo2RtcCameraPlayer({
+  url,
+  posterUrl,
+  fitMode,
+  loadingLabel,
+  title,
+  onError,
+}: {
+  url: string;
+  posterUrl: string | undefined;
+  fitMode: CameraStreamPlayerProps['fitMode'];
+  loadingLabel: string;
+  title: string;
+  onError: () => void;
+}) {
+  const [hasLoadedViewer, setHasLoadedViewer] = useState(false);
+
+  useEffect(() => {
+    setHasLoadedViewer(false);
+  }, [url]);
+
+  return (
+    <div className="relative h-full w-full overflow-hidden">
+      <iframe
+        title={title}
+        src={url}
+        className={`${CAMERA_MEDIA_SURFACE_CLASS_NAME} border-0`}
+        allow="autoplay; fullscreen; camera; microphone"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock"
+        onError={onError}
+        onLoad={() => setHasLoadedViewer(true)}
+      />
+      {!hasLoadedViewer ? (
+        <CameraStreamLoadingIndicator
+          label={loadingLabel}
+          posterUrl={posterUrl}
+          fitMode={fitMode}
+        />
+      ) : null}
     </div>
   );
 }
@@ -526,28 +791,19 @@ function WebRtcCameraPlayer({
   loadingLabel = defaultTranslate('camera.loadingFeed'),
   webRtcTitle = defaultTranslate('camera.webRtcStreamTitle'),
 }: Omit<CameraStreamPlayerProps, 'kind'>) {
-  const streamResourceUrl =
-    streamResource?.kind === 'webrtc_stream' ? streamResource.url : undefined;
+  const directStreamResource =
+    streamResource?.kind === 'webrtc_stream' && streamResource.url ? streamResource : null;
+  const streamResourceUrl = directStreamResource?.url;
+  const directStreamPresentation = streamResourceUrl
+    ? getGo2RtcViewerPresentation(streamResourceUrl, window.location.href)
+    : null;
   const videoRef = useRef<HTMLVideoElement>(null);
   const loadTimeoutRef = useRef<number | null>(null);
-  const stallWatchdogCleanupRef = useRef<(() => void) | null>(null);
-  const stagnantDurationRef = useRef(0);
-  const lastObservedTimeRef = useRef<number | null>(null);
   const hasLoadedFrameRef = useRef(false);
+  const onLoadRef = useRef(onLoad);
   const [hasLoadedFrame, setHasLoadedFrame] = useState(false);
-
-  const markStreamReady = () => {
-    if (hasLoadedFrameRef.current) {
-      return;
-    }
-
-    hasLoadedFrameRef.current = true;
-    stagnantDurationRef.current = 0;
-    lastObservedTimeRef.current = videoRef.current?.currentTime ?? null;
-    setHasLoadedFrame(true);
-    clearStreamLoadTimeout(loadTimeoutRef);
-    onLoad?.();
-  };
+  const handleDirectStreamError = useCallback(() => onError('web_rtc'), [onError]);
+  onLoadRef.current = onLoad;
 
   useEffect(() => {
     if (streamResourceUrl) {
@@ -569,12 +825,7 @@ function WebRtcCameraPlayer({
 
     setHasLoadedFrame(false);
     hasLoadedFrameRef.current = false;
-    scheduleStreamLoadTimeout(
-      loadTimeoutRef,
-      'web_rtc',
-      onError,
-      CAMERA_WEBRTC_STREAM_LOAD_TIMEOUT_MS
-    );
+    clearStreamLoadTimeout(loadTimeoutRef);
 
     return () => {
       clearStreamLoadTimeout(loadTimeoutRef);
@@ -587,6 +838,7 @@ function WebRtcCameraPlayer({
     }
 
     let cancelled = false;
+    let decodedFrameMonitorCleanup: (() => void) | undefined;
     let peerConnection: RTCPeerConnection | undefined;
     let remoteStream: MediaStream | undefined;
     let unsubscribePromise: Promise<() => void> | undefined;
@@ -594,15 +846,37 @@ function WebRtcCameraPlayer({
     const pendingCandidates: RTCIceCandidate[] = [];
     const pendingRemoteCandidates: RTCIceCandidateInit[] = [];
     let remoteDescriptionReady = false;
+    let webRtcSignalingErrorReported = false;
+    let disconnectedTimeout: number | null = null;
+    let playbackGeneration = 0;
+
+    const reportWebRtcSignalingError = (expectedGeneration = playbackGeneration) => {
+      if (cancelled || expectedGeneration !== playbackGeneration || webRtcSignalingErrorReported) {
+        return;
+      }
+
+      webRtcSignalingErrorReported = true;
+      clearStreamLoadTimeout(loadTimeoutRef);
+      decodedFrameMonitorCleanup?.();
+      decodedFrameMonitorCleanup = undefined;
+      onError('web_rtc');
+    };
 
     const cleanUp = () => {
+      playbackGeneration += 1;
+      decodedFrameMonitorCleanup?.();
+      decodedFrameMonitorCleanup = undefined;
+      if (disconnectedTimeout !== null) {
+        window.clearTimeout(disconnectedTimeout);
+        disconnectedTimeout = null;
+      }
       remoteStream?.getTracks().forEach((track) => {
         track.stop();
       });
       remoteStream = undefined;
       peerConnection?.close();
       peerConnection = undefined;
-      void unsubscribePromise?.then((unsubscribe) => unsubscribe());
+      void unsubscribePromise?.then((unsubscribe) => unsubscribe()).catch(() => undefined);
       unsubscribePromise = undefined;
       const closeSession = integrationCameraFeatureService.closeCameraWebRtcSession;
       if (closeSession && sessionId) {
@@ -620,45 +894,58 @@ function WebRtcCameraPlayer({
         video.load();
       }
       clearStreamLoadTimeout(loadTimeoutRef);
-      clearStreamStallWatchdog(stallWatchdogCleanupRef, stagnantDurationRef, lastObservedTimeRef);
       hasLoadedFrameRef.current = false;
     };
 
-    const sendPendingCandidates = () => {
+    const sendLocalCandidate = (
+      candidate: RTCIceCandidate,
+      expectedGeneration: number,
+      activeSessionId: string
+    ) => {
+      void integrationCameraFeatureService
+        .addCameraWebRtcCandidate(entityId, activeSessionId, candidate.toJSON())
+        .catch(() => reportWebRtcSignalingError(expectedGeneration));
+    };
+
+    const sendPendingCandidates = (expectedGeneration: number) => {
       if (!sessionId) {
         return;
       }
 
+      const activeSessionId = sessionId;
       for (const candidate of pendingCandidates.splice(0)) {
-        void integrationCameraFeatureService.addCameraWebRtcCandidate(
-          entityId,
-          sessionId,
-          candidate.toJSON()
-        );
+        sendLocalCandidate(candidate, expectedGeneration, activeSessionId);
       }
     };
 
-    const flushPendingRemoteCandidates = async () => {
-      if (!peerConnection || !remoteDescriptionReady) {
+    const flushPendingRemoteCandidates = async (
+      connection: RTCPeerConnection,
+      expectedGeneration: number
+    ) => {
+      if (expectedGeneration !== playbackGeneration || !remoteDescriptionReady) {
         return;
       }
 
       for (const candidate of pendingRemoteCandidates.splice(0)) {
-        await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        if (expectedGeneration !== playbackGeneration) {
+          return;
+        }
+        await connection.addIceCandidate(
+          new RTCIceCandidate(normalizeRemoteIceCandidate(candidate))
+        );
       }
     };
 
-    const refreshStartupTimeout = () => {
+    const refreshStartupTimeout = (expectedGeneration: number) => {
       if (hasLoadedFrameRef.current) {
         return;
       }
 
-      scheduleStreamLoadTimeout(
-        loadTimeoutRef,
-        'web_rtc',
-        onError,
-        CAMERA_WEBRTC_STREAM_LOAD_TIMEOUT_MS
-      );
+      clearStreamLoadTimeout(loadTimeoutRef);
+      loadTimeoutRef.current = window.setTimeout(() => {
+        loadTimeoutRef.current = null;
+        reportWebRtcSignalingError(expectedGeneration);
+      }, CAMERA_WEBRTC_STREAM_LOAD_TIMEOUT_MS);
     };
 
     const start = async () => {
@@ -666,10 +953,14 @@ function WebRtcCameraPlayer({
       if (document.hidden) {
         return;
       }
+      const activeGeneration = playbackGeneration;
+      const isInactive = () =>
+        cancelled || document.hidden || activeGeneration !== playbackGeneration;
 
       const video = videoRef.current;
+      webRtcSignalingErrorReported = false;
       if (!video || typeof RTCPeerConnection === 'undefined') {
-        onError('web_rtc');
+        reportWebRtcSignalingError(activeGeneration);
         return;
       }
 
@@ -678,97 +969,131 @@ function WebRtcCameraPlayer({
       video.muted = true;
       video.autoplay = true;
       video.playsInline = true;
-      refreshStartupTimeout();
+      refreshStartupTimeout(activeGeneration);
 
       try {
         const clientConfig =
           await integrationCameraFeatureService.getWebRtcClientConfiguration(entityId);
-        if (cancelled) {
+        if (isInactive()) {
           return;
         }
-        refreshStartupTimeout();
+        refreshStartupTimeout(activeGeneration);
 
-        peerConnection = new RTCPeerConnection(clientConfig.configuration);
+        const connection = new RTCPeerConnection(clientConfig.configuration);
+        peerConnection = connection;
         if (clientConfig.dataChannel) {
-          peerConnection.createDataChannel(clientConfig.dataChannel);
+          connection.createDataChannel(clientConfig.dataChannel);
         }
 
-        remoteStream = new MediaStream();
-        peerConnection.ontrack = (event) => {
-          if (!remoteStream || !videoRef.current) {
+        const activeRemoteStream = new MediaStream();
+        let hasRemoteVideoTrack = false;
+        remoteStream = activeRemoteStream;
+        decodedFrameMonitorCleanup = subscribeDecodedVideoFrameMonitor({
+          video,
+          isActive: () => !isInactive(),
+          ownsVideoElement: () => video.srcObject === activeRemoteStream,
+          hasVideoSource: () => hasRemoteVideoTrack,
+          onReady: () => {
+            if (isInactive() || hasLoadedFrameRef.current) {
+              return;
+            }
+            hasLoadedFrameRef.current = true;
+            setHasLoadedFrame(true);
+            clearStreamLoadTimeout(loadTimeoutRef);
+            onLoadRef.current?.();
+          },
+          onError: () => reportWebRtcSignalingError(activeGeneration),
+        });
+        connection.ontrack = (event) => {
+          if (isInactive() || !videoRef.current) {
             return;
           }
-          refreshStartupTimeout();
-          remoteStream.addTrack(event.track);
-          videoRef.current.srcObject = remoteStream;
+          refreshStartupTimeout(activeGeneration);
+          activeRemoteStream.addTrack(event.track);
+          if (event.track.kind === 'video') {
+            hasRemoteVideoTrack = true;
+            event.track.addEventListener?.(
+              'ended',
+              () => reportWebRtcSignalingError(activeGeneration),
+              { once: true }
+            );
+          }
+          videoRef.current.srcObject = activeRemoteStream;
           void videoRef.current.play().catch(() => undefined);
         };
-        peerConnection.onicecandidate = (event) => {
-          if (!event.candidate?.candidate) {
+        connection.onicecandidate = (event) => {
+          if (isInactive() || !event.candidate?.candidate) {
             return;
           }
           if (!sessionId) {
             pendingCandidates.push(event.candidate);
             return;
           }
-          void integrationCameraFeatureService.addCameraWebRtcCandidate(
-            entityId,
-            sessionId,
-            event.candidate.toJSON()
-          );
+          sendLocalCandidate(event.candidate, activeGeneration, sessionId);
         };
-        peerConnection.oniceconnectionstatechange = () => {
-          if (
-            peerConnection?.iceConnectionState === 'checking' ||
-            peerConnection?.iceConnectionState === 'connected' ||
-            peerConnection?.iceConnectionState === 'completed'
-          ) {
-            refreshStartupTimeout();
+        connection.oniceconnectionstatechange = () => {
+          if (isInactive()) {
+            return;
           }
-          if (peerConnection?.iceConnectionState === 'failed') {
-            peerConnection.restartIce();
+          const iceState = connection.iceConnectionState;
+          if (iceState !== 'disconnected' && disconnectedTimeout !== null) {
+            window.clearTimeout(disconnectedTimeout);
+            disconnectedTimeout = null;
+          }
+          if (iceState === 'checking' || iceState === 'connected' || iceState === 'completed') {
+            refreshStartupTimeout(activeGeneration);
+          }
+          if (iceState === 'disconnected' && disconnectedTimeout === null) {
+            disconnectedTimeout = window.setTimeout(() => {
+              disconnectedTimeout = null;
+              reportWebRtcSignalingError(activeGeneration);
+            }, CAMERA_WEBRTC_DISCONNECTED_GRACE_MS);
+          }
+          if (iceState === 'failed' || iceState === 'closed') {
+            reportWebRtcSignalingError(activeGeneration);
           }
         };
 
-        peerConnection.addTransceiver('audio', { direction: 'recvonly' });
-        peerConnection.addTransceiver('video', { direction: 'recvonly' });
+        connection.addTransceiver('audio', { direction: 'recvonly' });
+        connection.addTransceiver('video', { direction: 'recvonly' });
 
-        const offer = await peerConnection.createOffer({
+        const offer = await connection.createOffer({
           offerToReceiveAudio: true,
           offerToReceiveVideo: true,
         });
-        await peerConnection.setLocalDescription(offer);
-        refreshStartupTimeout();
-        if (!offer.sdp || cancelled) {
+        await connection.setLocalDescription(offer);
+        if (!offer.sdp || isInactive()) {
           return;
         }
+        refreshStartupTimeout(activeGeneration);
 
         unsubscribePromise = integrationCameraFeatureService.subscribeCameraWebRtcOffer(
           entityId,
           offer.sdp,
           (event) => {
-            if (cancelled || !peerConnection) {
+            if (isInactive() || !peerConnection) {
               return;
             }
             if (event.type === 'session') {
               sessionId = event.session_id;
-              refreshStartupTimeout();
-              sendPendingCandidates();
+              refreshStartupTimeout(activeGeneration);
+              sendPendingCandidates(activeGeneration);
               return;
             }
             if (event.type === 'answer') {
-              void peerConnection
+              void connection
                 .setRemoteDescription(
                   new RTCSessionDescription({ type: 'answer', sdp: event.answer })
                 )
                 .then(async () => {
+                  if (isInactive()) {
+                    return;
+                  }
                   remoteDescriptionReady = true;
-                  refreshStartupTimeout();
-                  await flushPendingRemoteCandidates();
+                  refreshStartupTimeout(activeGeneration);
+                  await flushPendingRemoteCandidates(connection, activeGeneration);
                 })
-                .catch(() => {
-                  onError('web_rtc');
-                });
+                .catch(() => reportWebRtcSignalingError(activeGeneration));
               return;
             }
             if (event.type === 'candidate') {
@@ -776,57 +1101,83 @@ function WebRtcCameraPlayer({
                 pendingRemoteCandidates.push(event.candidate);
                 return;
               }
-              refreshStartupTimeout();
-              void peerConnection.addIceCandidate(new RTCIceCandidate(event.candidate));
+              refreshStartupTimeout(activeGeneration);
+              void connection
+                .addIceCandidate(new RTCIceCandidate(normalizeRemoteIceCandidate(event.candidate)))
+                .catch(() => reportWebRtcSignalingError(activeGeneration));
               return;
             }
-            onError('web_rtc');
+            reportWebRtcSignalingError(activeGeneration);
           }
         );
+        void unsubscribePromise.catch(() => reportWebRtcSignalingError(activeGeneration));
       } catch {
-        if (!cancelled) {
-          clearStreamLoadTimeout(loadTimeoutRef);
-          onError('web_rtc');
-        }
+        reportWebRtcSignalingError(activeGeneration);
       }
     };
 
-    void start();
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        cleanUp();
+        setHasLoadedFrame(false);
+        return;
+      }
+      void start();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    if (!document.hidden) {
+      void start();
+    }
 
     return () => {
       cancelled = true;
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       cleanUp();
     };
   }, [entityId, onError, streamResourceUrl]);
 
+  if (streamResourceUrl && directStreamResource && directStreamPresentation === 'native') {
+    return (
+      <DirectGo2RtcCameraPlayer
+        posterUrl={posterUrl}
+        streamResource={directStreamResource}
+        fitMode={fitMode}
+        loadingLabel={loadingLabel}
+        title={webRtcTitle}
+        onLoad={onLoad}
+        onError={handleDirectStreamError}
+      />
+    );
+  }
+
   if (streamResourceUrl) {
     return (
-      <div className="relative h-full w-full overflow-hidden">
-        {!hasLoadedFrame ? <CameraStreamLoadingIndicator label={loadingLabel} /> : null}
-        <iframe
-          title={webRtcTitle}
-          src={streamResourceUrl}
-          className={`${CAMERA_MEDIA_SURFACE_CLASS_NAME} border-0`}
-          allow="autoplay; fullscreen; camera; microphone"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock"
-          onLoad={markStreamReady}
-        />
-      </div>
+      <OpaqueGo2RtcCameraPlayer
+        url={streamResourceUrl}
+        posterUrl={posterUrl}
+        fitMode={fitMode}
+        loadingLabel={loadingLabel}
+        title={webRtcTitle}
+        onError={handleDirectStreamError}
+      />
     );
   }
 
   return (
     <div className="relative h-full w-full">
-      {!hasLoadedFrame ? <CameraStreamLoadingIndicator label={loadingLabel} /> : null}
+      {!hasLoadedFrame ? (
+        <CameraStreamLoadingIndicator
+          label={loadingLabel}
+          posterUrl={posterUrl}
+          fitMode={fitMode}
+        />
+      ) : null}
       <video
         ref={videoRef}
         autoPlay
         className={`${CAMERA_MEDIA_SURFACE_CLASS_NAME} ${videoFitClassNames[fitMode]}`}
         muted
-        onCanPlay={markStreamReady}
-        onError={() => onError('web_rtc')}
-        onLoadedData={markStreamReady}
-        onPlaying={markStreamReady}
         playsInline
         style={{ opacity: hasLoadedFrame ? 1 : 0 }}
       />
@@ -835,7 +1186,7 @@ function WebRtcCameraPlayer({
 }
 
 export const CameraStreamPlayer = memo(function CameraStreamPlayer(props: CameraStreamPlayerProps) {
-  if (props.kind === 'hls') {
+  if (props.kind === 'hls' || props.kind === 'mse') {
     return <HlsCameraPlayer {...props} />;
   }
 
@@ -859,6 +1210,6 @@ function areCameraStreamPlayerPropsEqual(
     previous.loadingLabel === next.loadingLabel &&
     previous.webRtcTitle === next.webRtcTitle &&
     getStreamResourceKey(previous.streamResource) === getStreamResourceKey(next.streamResource) &&
-    (previous.kind === 'web_rtc' || previous.posterUrl === next.posterUrl)
+    previous.posterUrl === next.posterUrl
   );
 }

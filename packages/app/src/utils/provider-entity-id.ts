@@ -62,10 +62,13 @@ export function normalizePersistedEntityRecord<T>(
   value: Record<string, T>,
   legacyDefaultProviderId: IntegrationProviderId = LEGACY_HOME_ASSISTANT_PROVIDER_ID
 ): Record<string, T> {
-  return Object.fromEntries(
-    Object.entries(value).map(([id, entry]) => [
-      ensureCanonicalEntityId(id, legacyDefaultProviderId),
-      entry,
-    ])
-  );
+  const normalized: Record<string, T> = {};
+  for (const [id, entry] of Object.entries(value)) {
+    const canonicalId = ensureCanonicalEntityId(id, legacyDefaultProviderId);
+    if (canonicalId !== id && Object.hasOwn(value, canonicalId)) {
+      continue;
+    }
+    normalized[canonicalId] = entry;
+  }
+  return normalized;
 }

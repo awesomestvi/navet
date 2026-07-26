@@ -9,6 +9,7 @@ import { openhabUrlSessionAuth } from '../adapters/openhabUrlSessionAuth';
 import {
   invalidateStandaloneOAuthSession,
   standaloneOAuthAuth,
+  standaloneOAuthNavigation,
 } from '../adapters/standaloneOAuthAuth';
 
 const AUTH_SESSION_LOAD_TIMEOUT_MS = 3_000;
@@ -43,14 +44,46 @@ function createAuth(hassUrl = 'https://ha.example.com'): Auth {
   };
 }
 
-function setOAuthCallbackUrl(hassUrl = 'https://ha.example.com') {
-  const clientId = `${window.location.origin}/`;
-  const state = window.btoa(JSON.stringify({ hassUrl, clientId }));
-  window.history.replaceState({}, '', `/?auth_callback=1&code=oauth-code&state=${state}`);
-  return { clientId, hassUrl };
+function setOAuthCallbackUrl() {
+  window.history.replaceState({}, '', '/?navet_oauth_callback=1');
 }
 
-function createStoredTokenResponse(hassUrl = oauthSessionFixture.haBaseUrl) {
+function setLegacyOAuthCallbackUrl() {
+  window.history.replaceState(
+    {},
+    '',
+    '/?auth_callback=1&code=already-exchanged&state=not-library-state'
+  );
+}
+
+const STANDALONE_SESSION_ID = `nas_${'a'.repeat(32)}`;
+
+function createSessionMetadataResponse(options?: {
+  authenticated?: boolean;
+  hassUrl?: string;
+  userId?: string | null;
+}) {
+  const authenticated = options?.authenticated ?? true;
+  return new Response(
+    JSON.stringify({
+      authenticated,
+      providerId: 'home_assistant',
+      sessionId: STANDALONE_SESSION_ID,
+      hassUrl: authenticated ? (options?.hassUrl ?? oauthSessionFixture.haBaseUrl) : null,
+      clientId: authenticated ? `${window.location.origin}/` : null,
+      expiresAt: authenticated ? Date.now() + 3_600_000 : null,
+      expiresIn: authenticated ? 3600 : null,
+      userId: options?.userId ?? null,
+      userName: null,
+    }),
+    {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }
+  );
+}
+
+function createCredentialsResponse(hassUrl = oauthSessionFixture.haBaseUrl) {
   return new Response(
     JSON.stringify({
       ...oauthSessionFixture.tokenPayload,
@@ -61,6 +94,39 @@ function createStoredTokenResponse(hassUrl = oauthSessionFixture.haBaseUrl) {
       headers: { 'Content-Type': 'application/json' },
     }
   );
+}
+
+function mockStandaloneSessionFetch(options?: {
+  authenticated?: boolean;
+  hassUrl?: string;
+  userId?: string | null;
+}) {
+  return vi.spyOn(window, 'fetch').mockImplementation(async (input, init) => {
+    const url = String(input);
+    if (url.endsWith('/__navet_auth__/session/credentials')) {
+      return createCredentialsResponse(options?.hassUrl);
+    }
+    if (url.endsWith('/__navet_auth__/authorize')) {
+      return new Response(
+        JSON.stringify({
+          authorizeUrl: `${
+            options?.hassUrl ?? 'https://ha.example.com'
+          }/auth/authorize?state=server-state`,
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+    if (url.endsWith('/__navet_auth__/session') && !init?.method) {
+      return createSessionMetadataResponse(options);
+    }
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  });
 }
 
 describe('auth adapters', () => {
@@ -123,12 +189,9 @@ describe('auth adapters', () => {
     });
   });
 
-  it('restores persisted standalone OAuth session from the same-origin auth endpoint', async () => {
+  it('restores a standalone OAuth session through sanitized metadata and bound credentials', async () => {
     const auth = createAuth(oauthSessionFixture.haBaseUrl);
-    const fetchMock = vi
-      .spyOn(window, 'fetch')
-      .mockResolvedValueOnce(createStoredTokenResponse())
-      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    const fetchMock = mockStandaloneSessionFetch({ userId: 'ha-user-1' });
     getAuthMock.mockResolvedValueOnce(auth);
 
     const session = await standaloneOAuthAuth.init();
@@ -139,8 +202,18 @@ describe('auth adapters', () => {
       haBaseUrl: oauthSessionFixture.haBaseUrl,
       hassUrl: oauthSessionFixture.hassUrl,
       auth,
+      userId: 'ha-user-1',
     });
-    expect(fetchMock).toHaveBeenLastCalledWith(
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${window.location.origin}/__navet_auth__/session/credentials`,
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          'X-Navet-OAuth-Binding': STANDALONE_SESSION_ID,
+        }),
+      })
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
       `${window.location.origin}/__navet_auth__/session`,
       expect.objectContaining({
         method: 'PUT',
@@ -153,11 +226,8 @@ describe('auth adapters', () => {
     vi.useFakeTimers();
     try {
       vi.spyOn(window, 'fetch').mockReturnValue(new Promise(() => {}));
-
       const sessionPromise = standaloneOAuthAuth.init();
-
       await vi.advanceTimersByTimeAsync(AUTH_SESSION_LOAD_TIMEOUT_MS);
-
       await expect(sessionPromise).resolves.toBeNull();
       expect(getAuthMock).not.toHaveBeenCalled();
     } finally {
@@ -165,29 +235,31 @@ describe('auth adapters', () => {
     }
   });
 
-  it('clears stored standalone OAuth tokens when refresh fails during session restore', async () => {
+  it('clears only the browser-bound standalone session when refresh fails on restore', async () => {
     const auth = createAuth(oauthSessionFixture.haBaseUrl);
     Object.defineProperty(auth, 'expired', {
       configurable: true,
       get: () => true,
     });
     refreshAccessTokenMock.mockRejectedValueOnce(new Error('refresh failed'));
-    const fetchMock = vi
-      .spyOn(window, 'fetch')
-      .mockResolvedValueOnce(createStoredTokenResponse())
-      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    const fetchMock = mockStandaloneSessionFetch();
     getAuthMock.mockResolvedValueOnce(auth);
 
     await expect(standaloneOAuthAuth.init()).resolves.toBeNull();
 
     expect(refreshAccessTokenMock).toHaveBeenCalled();
-    expect(fetchMock).toHaveBeenLastCalledWith(
+    expect(fetchMock).toHaveBeenCalledWith(
       `${window.location.origin}/__navet_auth__/session`,
-      expect.objectContaining({ method: 'DELETE' })
+      expect.objectContaining({
+        method: 'DELETE',
+        headers: expect.objectContaining({
+          'X-Navet-OAuth-Binding': STANDALONE_SESSION_ID,
+        }),
+      })
     );
   });
 
-  it('clears stored standalone OAuth tokens when session refresh stalls during restore', async () => {
+  it('stops waiting for a stalled refresh during stored-session restore', async () => {
     vi.useFakeTimers();
     try {
       const auth = createAuth(oauthSessionFixture.haBaseUrl);
@@ -196,17 +268,14 @@ describe('auth adapters', () => {
         get: () => true,
       });
       refreshAccessTokenMock.mockReturnValueOnce(new Promise(() => {}));
-      const fetchMock = vi
-        .spyOn(window, 'fetch')
-        .mockResolvedValueOnce(createStoredTokenResponse())
-        .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+      const fetchMock = mockStandaloneSessionFetch();
       getAuthMock.mockResolvedValueOnce(auth);
 
       const sessionPromise = standaloneOAuthAuth.init();
       await vi.advanceTimersByTimeAsync(STORED_SESSION_RESTORE_TIMEOUT_MS);
 
       await expect(sessionPromise).resolves.toBeNull();
-      expect(fetchMock).toHaveBeenLastCalledWith(
+      expect(fetchMock).toHaveBeenCalledWith(
         `${window.location.origin}/__navet_auth__/session`,
         expect.objectContaining({ method: 'DELETE' })
       );
@@ -215,154 +284,131 @@ describe('auth adapters', () => {
     }
   });
 
-  it('exchanges a standalone OAuth callback without requiring the URL form again', async () => {
-    const auth = createAuth();
-    const { hassUrl } = setOAuthCallbackUrl();
-    const fetchMock = vi
-      .spyOn(window, 'fetch')
-      .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
-    getAuthMock.mockResolvedValueOnce(auth);
+  it('restores a server-exchanged OAuth callback and removes callback parameters', async () => {
+    const auth = createAuth(oauthSessionFixture.haBaseUrl);
+    setOAuthCallbackUrl();
+    const fetchMock = mockStandaloneSessionFetch();
+    getAuthMock.mockImplementationOnce(async () => {
+      expect(window.location.search).toBe('');
+      return auth;
+    });
 
     const session = await standaloneOAuthAuth.init();
 
     expect(getAuthMock).toHaveBeenCalledWith({
+      hassUrl: auth.data.hassUrl,
       loadTokens: expect.any(Function),
       saveTokens: expect.any(Function),
+      limitHassInstance: true,
     });
     expect(session).toMatchObject({
       runtime: 'standalone-oauth',
       authMode: 'oauth',
-      haBaseUrl: hassUrl,
-      hassUrl,
+      haBaseUrl: auth.data.hassUrl,
       auth,
     });
-    expect(fetchMock).toHaveBeenLastCalledWith(
-      `${window.location.origin}/__navet_auth__/session`,
-      expect.objectContaining({
-        method: 'PUT',
-        body: JSON.stringify(auth.data),
-      })
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${window.location.origin}/__navet_auth__/session/credentials`,
+      expect.objectContaining({ method: 'POST' })
     );
     expect(window.location.search).toBe('');
   });
 
-  it('prefers a fresh standalone OAuth callback over stale persisted tokens', async () => {
-    const auth = createAuth('https://ha-new.example.com');
-    setOAuthCallbackUrl('https://ha-new.example.com');
-    const fetchMock = vi.spyOn(window, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    );
-    getAuthMock.mockResolvedValueOnce(auth);
-
-    const session = await standaloneOAuthAuth.init();
-
-    expect(getAuthMock).toHaveBeenCalledWith({
-      loadTokens: expect.any(Function),
-      saveTokens: expect.any(Function),
+  it('restores a legacy server callback after removing the library-owned marker', async () => {
+    const auth = createAuth(oauthSessionFixture.haBaseUrl);
+    setLegacyOAuthCallbackUrl();
+    const fetchMock = mockStandaloneSessionFetch();
+    getAuthMock.mockImplementationOnce(async () => {
+      expect(window.location.search).toBe('');
+      return auth;
     });
-    expect(session).toMatchObject({
+
+    await expect(standaloneOAuthAuth.init()).resolves.toMatchObject({
       runtime: 'standalone-oauth',
       authMode: 'oauth',
-      haBaseUrl: 'https://ha-new.example.com',
-      hassUrl: 'https://ha-new.example.com',
       auth,
     });
-    expect(fetchMock).not.toHaveBeenCalledWith(
-      `${window.location.origin}/__navet_auth__/session`,
-      expect.objectContaining({ method: 'GET' })
-    );
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
+    expect(window.location.search).toBe('');
   });
 
-  it('starts standalone OAuth login without reading the optional token store first', async () => {
-    const auth = createAuth('http://homeassistant.local:8123');
-    const fetchMock = vi
-      .spyOn(window, 'fetch')
-      .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
-    getAuthMock.mockResolvedValueOnce(auth);
+  it('starts OAuth through the server-bound authorize endpoint without browser token exchange', async () => {
+    const fetchMock = mockStandaloneSessionFetch({
+      authenticated: false,
+      hassUrl: 'http://homeassistant.local:8123',
+    });
+    const navigationMock = vi
+      .spyOn(standaloneOAuthNavigation, 'assign')
+      .mockImplementation(() => undefined);
 
-    const session = await standaloneOAuthAuth.login?.({
+    void standaloneOAuthAuth.login?.({
       hassUrl: 'http://homeassistant.local:8123/',
     });
 
-    expect(getAuthMock).toHaveBeenCalledWith({
-      hassUrl: 'http://homeassistant.local:8123',
-      redirectUrl: window.location.origin + window.location.pathname,
-      saveTokens: expect.any(Function),
-      loadTokens: expect.any(Function),
-      limitHassInstance: true,
+    await vi.waitFor(() => {
+      expect(navigationMock).toHaveBeenCalledWith(
+        'http://homeassistant.local:8123/auth/authorize?state=server-state'
+      );
     });
-    const loadTokens = getAuthMock.mock.calls[0]?.[0]?.loadTokens as () => Promise<unknown>;
-    await expect(loadTokens()).resolves.toBeNull();
-    expect(session).toMatchObject({
-      runtime: 'standalone-oauth',
-      authMode: 'oauth',
-      haBaseUrl: 'http://homeassistant.local:8123',
-      hassUrl: 'http://homeassistant.local:8123',
-      auth,
-    });
-    expect(fetchMock).toHaveBeenLastCalledWith(
-      `${window.location.origin}/__navet_auth__/session`,
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${window.location.origin}/__navet_auth__/authorize`,
       expect.objectContaining({
-        method: 'PUT',
-        body: JSON.stringify(auth.data),
+        method: 'POST',
+        headers: expect.objectContaining({
+          'X-Navet-OAuth-Binding': STANDALONE_SESSION_ID,
+        }),
+        body: JSON.stringify({
+          hassUrl: 'http://homeassistant.local:8123',
+          returnTo: '/',
+        }),
       })
     );
+    expect(getAuthMock).not.toHaveBeenCalled();
   });
 
-  it('rejects malformed standalone OAuth callbacks and clears server-side session data', async () => {
-    window.history.replaceState({}, '', '/?auth_callback=1&code=oauth-code&state=not-base64');
-    const fetchMock = vi
-      .spyOn(window, 'fetch')
-      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
-    getAuthMock.mockRejectedValueOnce(new Error('Invalid Home Assistant OAuth callback'));
+  it('rejects a callback marker without a server-created browser session', async () => {
+    setOAuthCallbackUrl();
+    const fetchMock = mockStandaloneSessionFetch({ authenticated: false });
 
     await expect(standaloneOAuthAuth.init()).rejects.toThrow(
-      'Invalid Home Assistant OAuth callback'
+      'Home Assistant OAuth callback did not create a session'
     );
 
-    expect(getAuthMock).toHaveBeenCalledWith({
-      loadTokens: expect.any(Function),
-      saveTokens: expect.any(Function),
-    });
-    expect(fetchMock).toHaveBeenLastCalledWith(
+    expect(fetchMock).toHaveBeenCalledWith(
       `${window.location.origin}/__navet_auth__/session`,
       expect.objectContaining({ method: 'DELETE' })
     );
     expect(window.location.search).toBe('');
   });
 
-  it('stops waiting for a stalled OAuth callback and returns to a clean login URL', async () => {
+  it('stops waiting for a stalled callback restore and returns to a clean URL', async () => {
     vi.useFakeTimers();
-    setOAuthCallbackUrl('https://wrong.example.com');
-    const fetchMock = vi
-      .spyOn(window, 'fetch')
-      .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
-    getAuthMock.mockReturnValueOnce(new Promise(() => {}));
+    try {
+      setOAuthCallbackUrl();
+      const fetchMock = mockStandaloneSessionFetch();
+      getAuthMock.mockReturnValueOnce(new Promise(() => {}));
 
-    const sessionPromise = standaloneOAuthAuth.init();
-    const timeoutExpectation = expect(sessionPromise).rejects.toThrow(
-      'Timed out restoring Home Assistant session'
-    );
+      const sessionPromise = standaloneOAuthAuth.init();
+      const timeoutExpectation = expect(sessionPromise).rejects.toThrow(
+        'Timed out restoring Home Assistant session'
+      );
+      await vi.advanceTimersByTimeAsync(OAUTH_CALLBACK_RESTORE_TIMEOUT_MS);
 
-    await vi.advanceTimersByTimeAsync(OAUTH_CALLBACK_RESTORE_TIMEOUT_MS);
-
-    await timeoutExpectation;
-    expect(fetchMock).toHaveBeenLastCalledWith(
-      `${window.location.origin}/__navet_auth__/session`,
-      expect.objectContaining({ method: 'DELETE' })
-    );
-    expect(window.location.search).toBe('');
+      await timeoutExpectation;
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${window.location.origin}/__navet_auth__/session`,
+        expect.objectContaining({ method: 'DELETE' })
+      );
+      expect(window.location.search).toBe('');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
-  it('refreshes standalone OAuth access tokens through the auth handle', async () => {
+  it('refreshes standalone OAuth access tokens and persists them with the binding', async () => {
     const auth = createAuth();
     auth.data.expires = Date.now() - 1;
-    const fetchMock = vi
-      .spyOn(window, 'fetch')
-      .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    const fetchMock = mockStandaloneSessionFetch();
 
     const refreshed = await standaloneOAuthAuth.refresh?.({
       providerId: 'home_assistant',
@@ -376,41 +422,44 @@ describe('auth adapters', () => {
 
     expect(refreshAccessTokenMock).toHaveBeenCalled();
     expect(refreshed?.expiresAt).toBe(auth.data.expires);
-    expect(fetchMock).toHaveBeenLastCalledWith(
+    expect(fetchMock).toHaveBeenCalledWith(
       `${window.location.origin}/__navet_auth__/session`,
       expect.objectContaining({
         method: 'PUT',
+        headers: expect.objectContaining({
+          'X-Navet-OAuth-Binding': STANDALONE_SESSION_ID,
+        }),
         body: JSON.stringify(auth.data),
       })
     );
   });
 
-  it('invalidates the persisted standalone OAuth session with the same-origin auth store', async () => {
-    const fetchMock = vi
-      .spyOn(window, 'fetch')
-      .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+  it('invalidates only the same-origin browser session', async () => {
+    const fetchMock = mockStandaloneSessionFetch();
 
     await invalidateStandaloneOAuthSession();
 
     expect(fetchMock).toHaveBeenCalledWith(
       `${window.location.origin}/__navet_auth__/session`,
-      expect.objectContaining({ method: 'DELETE' })
+      expect.objectContaining({
+        method: 'DELETE',
+        headers: expect.objectContaining({
+          'X-Navet-OAuth-Binding': STANDALONE_SESSION_ID,
+        }),
+      })
     );
     expect(revokeMock).not.toHaveBeenCalled();
   });
 
-  it('clears server-side OAuth tokens on logout', async () => {
+  it('revokes and clears only the current browser OAuth session on logout', async () => {
     const auth = createAuth();
-    const fetchMock = vi
-      .spyOn(window, 'fetch')
-      .mockResolvedValueOnce(createStoredTokenResponse(auth.data.hassUrl))
-      .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    const fetchMock = mockStandaloneSessionFetch();
     getAuthMock.mockResolvedValueOnce(auth);
 
     await standaloneOAuthAuth.logout?.();
 
     expect(revokeMock).toHaveBeenCalled();
-    expect(fetchMock).toHaveBeenLastCalledWith(
+    expect(fetchMock).toHaveBeenCalledWith(
       `${window.location.origin}/__navet_auth__/session`,
       expect.objectContaining({ method: 'DELETE' })
     );

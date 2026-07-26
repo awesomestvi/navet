@@ -23,14 +23,16 @@ import {
 } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import {
+  createViteAuthRequestHandler,
   createViteAuthSessionStore,
   type HomeAssistantAuthData,
-  isValidAuthData,
+  resolveViteAuthenticatedPrincipal,
+  resolveViteAuthSession,
+  type ViteAuthenticatedPrincipal,
 } from '../../scripts/vite-auth-session-store'
 import {
-  buildDashboardProfileMetadata,
-  createViteDashboardProfileStore,
-  isValidDashboardProfileData,
+  createViteDashboardProfileRequestHandler,
+  type ViteDashboardProfilePrincipal,
 } from '../../scripts/vite-dashboard-profile-store'
 import { normalizeViteProxyTargetPath } from '../../scripts/vite-proxy-path'
 import {
@@ -44,17 +46,13 @@ import {
   isValidOpenHABSessionData,
   toOpenHABBasicAuthHeader,
 } from '../../scripts/vite-openhab-session-store'
-import {
-  getAppChunkName,
-  getVendorChunkName,
-  isLazyHtmlPreload,
-} from '../../scripts/vite-chunking'
+import { getVendorChunkName, isLazyHtmlPreload } from '../../scripts/vite-chunking'
 import {
   isAllowedRSSContentType,
   isBlockedRSSHostname,
   isPrivateIpAddress,
 } from '../../packages/app/src/utils/rss-proxy-security'
-import { copyProxyRequestHeaders } from '../../scripts/vite-proxy-request-headers'
+import { buildHomeAssistantProxyRequestHeaders } from '../../scripts/vite-proxy-request-headers'
 
 const repoRoot = path.resolve(__dirname, '../..')
 const packageJson = JSON.parse(
@@ -126,10 +124,8 @@ const buildMetadata = {
 
 const RSS_PROXY_MAX_BYTES = 1024 * 1024
 const RSS_PROXY_TIMEOUT_MS = 10000
-const AUTH_SESSION_MAX_BYTES = 16 * 1024
 const HOMEY_SESSION_MAX_BYTES = 8 * 1024
 const OPENHAB_SESSION_MAX_BYTES = 8 * 1024
-const DASHBOARD_PROFILE_MAX_BYTES = 1024 * 1024
 const REACT_COMPILER_INCLUDE = [
   /[\\/]src[\\/]/,
   /[\\/]packages[\\/][^\\/]+[\\/]src[\\/]/,
@@ -471,7 +467,9 @@ function spotifyMetadataPlugin() {
   }
 }
 
-function homeAssistantProxyPlugin(getAuthSession: () => HomeAssistantAuthData | null) {
+function homeAssistantProxyPlugin(
+  getAuthSession: (req: IncomingMessage) => HomeAssistantAuthData | null
+) {
   const proxyBasePath = '/__navet_ha_proxy__'
   const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     if (!req.url) {
@@ -496,15 +494,15 @@ function homeAssistantProxyPlugin(getAuthSession: () => HomeAssistantAuthData | 
         return
       }
 
-      const authSession = getAuthSession()
-      const upstreamBaseUrl = authSession?.hassUrl ?? null
-      if (!upstreamBaseUrl) {
+      const authSession = getAuthSession(req)
+      if (!authSession?.hassUrl) {
         res.statusCode = 502
         res.setHeader('Content-Type', 'application/json')
         res.end(JSON.stringify({ error: 'Home Assistant OAuth session is required' }))
         return
       }
 
+      const upstreamBaseUrl = authSession.hassUrl
       const upstreamOrigin = new URL(upstreamBaseUrl)
       const targetPath = normalizeViteProxyTargetPath(proxyBasePath, req.url)
       const targetUrl = new URL(targetPath, upstreamOrigin)
@@ -514,11 +512,10 @@ function homeAssistantProxyPlugin(getAuthSession: () => HomeAssistantAuthData | 
         return
       }
 
-      const headers = copyProxyRequestHeaders(req.headers)
-
-      if (authSession?.access_token) {
-        headers.set('Authorization', `Bearer ${authSession.access_token}`)
-      }
+      const headers = buildHomeAssistantProxyRequestHeaders(
+        req.headers,
+        authSession.access_token
+      )
 
       const abortController = new AbortController()
       const isRawCameraStream = targetPath.startsWith('/api/camera_proxy_stream/')
@@ -945,87 +942,10 @@ function openhabProxyPlugin(getOpenHABSession: () => OpenHABSessionData | null) 
 
 function authSessionStorePlugin() {
   const authSessionStore = createViteAuthSessionStore()
-
-  const setNoStoreHeaders = (res: ServerResponse) => {
-    res.setHeader('Cache-Control', 'no-store')
-  }
-
-  const sendJson = (res: ServerResponse, statusCode: number, payload: Record<string, unknown>) => {
-    res.statusCode = statusCode
-    setNoStoreHeaders(res)
-    res.setHeader('Content-Type', 'application/json; charset=utf-8')
-    res.end(JSON.stringify(payload))
-  }
-
-  const sendNoContent = (res: ServerResponse) => {
-    res.statusCode = 204
-    setNoStoreHeaders(res)
-    res.end()
-  }
-
-  const readRequestBody = async (req: IncomingMessage) => {
-    const chunks: Buffer[] = []
-    let size = 0
-
-    for await (const chunk of req) {
-      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
-      size += buffer.byteLength
-      if (size > AUTH_SESSION_MAX_BYTES) {
-        throw new Error('Auth session is too large')
-      }
-      chunks.push(buffer)
-    }
-
-    return Buffer.concat(chunks).toString('utf8')
-  }
-
-  const handleRequest = async (
-    req: IncomingMessage,
-    res: ServerResponse
-  ) => {
-    if (req.method === 'GET') {
-      const authSession = authSessionStore.getSerializedSession()
-      if (!authSession) {
-        sendNoContent(res)
-        return
-      }
-
-      res.statusCode = 200
-      setNoStoreHeaders(res)
-      res.setHeader('Content-Type', 'application/json; charset=utf-8')
-      res.end(authSession)
-      return
-    }
-
-    if (req.method === 'PUT') {
-      try {
-        const body = await readRequestBody(req)
-        const parsed = JSON.parse(body)
-        if (!isValidAuthData(parsed)) {
-          sendJson(res, 400, { error: 'Unsupported auth session' })
-          return
-        }
-
-        authSessionStore.saveAuthSession(parsed)
-        sendJson(res, 200, { ok: true })
-      } catch {
-        sendJson(res, 400, { error: 'Unable to save auth session' })
-      }
-      return
-    }
-
-    if (req.method === 'DELETE') {
-      authSessionStore.clearAuthSession()
-      sendJson(res, 200, { ok: true })
-      return
-    }
-
-    res.setHeader('Allow', 'GET, PUT, DELETE')
-    sendJson(res, 405, { error: 'Method not allowed' })
-  }
+  const handleRequest = createViteAuthRequestHandler(authSessionStore)
 
   const registerMiddleware = (server: ViteDevServer | PreviewServer) => {
-    server.middlewares.use('/__navet_auth__/session', async (req, res) => {
+    server.middlewares.use('/__navet_auth__', async (req, res) => {
       await handleRequest(req, res)
     })
   }
@@ -1033,8 +953,14 @@ function authSessionStorePlugin() {
   return {
     name: 'navet-auth-session-store',
     api: {
-      getAuthSession(): HomeAssistantAuthData | null {
-        return authSessionStore.getAuthSession()
+      getAuthSession(req: IncomingMessage): HomeAssistantAuthData | null {
+        return resolveViteAuthSession(req, authSessionStore)?.auth ?? null
+      },
+      resolveAuthenticatedPrincipal(
+        req: IncomingMessage,
+        options?: { trustIngressHeaders?: boolean }
+      ): ViteAuthenticatedPrincipal | null {
+        return resolveViteAuthenticatedPrincipal(req, authSessionStore, options)
       },
     },
     configureServer: registerMiddleware,
@@ -1042,176 +968,14 @@ function authSessionStorePlugin() {
   }
 }
 
-function dashboardProfileStorePlugin() {
-  const dashboardProfileStore = createViteDashboardProfileStore()
-  const profileGenerationHeader = 'X-Navet-Profile-Generation'
-
-  const setNoStoreHeaders = (res: ServerResponse) => {
-    res.setHeader('Cache-Control', 'no-store')
-  }
-
-  const sendJson = (res: ServerResponse, statusCode: number, payload: Record<string, unknown>) => {
-    res.statusCode = statusCode
-    setNoStoreHeaders(res)
-    res.setHeader('Content-Type', 'application/json; charset=utf-8')
-    res.end(JSON.stringify(payload))
-  }
-
-  const sendNoContent = (res: ServerResponse) => {
-    res.statusCode = 204
-    setNoStoreHeaders(res)
-    res.end()
-  }
-
-  const applyMetadataHeaders = (
-    res: ServerResponse,
-    metadata: { etag: string; lastModified: string }
-  ) => {
-    res.setHeader('ETag', metadata.etag)
-    res.setHeader('Last-Modified', metadata.lastModified)
-  }
-
-  const applyGenerationHeader = (res: ServerResponse) => {
-    res.setHeader(profileGenerationHeader, dashboardProfileStore.getGeneration())
-  }
-
-  const readRequestBody = async (req: IncomingMessage) => {
-    const chunks: Buffer[] = []
-    let size = 0
-
-    for await (const chunk of req) {
-      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
-      size += buffer.byteLength
-      if (size > DASHBOARD_PROFILE_MAX_BYTES) {
-        throw new Error('Dashboard profile is too large')
-      }
-      chunks.push(buffer)
-    }
-
-    return Buffer.concat(chunks).toString('utf8')
-  }
-
-  const isFreshRequest = (
-    req: IncomingMessage,
-    metadata: { etag: string; lastModified: string }
-  ) => {
-    const ifNoneMatch = req.headers['if-none-match']
-    if (typeof ifNoneMatch === 'string' && ifNoneMatch === metadata.etag) {
-      return true
-    }
-
-    const ifModifiedSince = req.headers['if-modified-since']
-    return typeof ifModifiedSince === 'string' && ifModifiedSince === metadata.lastModified
-  }
-
-  const isWritePreconditionSatisfied = (
-    req: IncomingMessage,
-    metadata: { etag: string; lastModified: string } | null
-  ) => {
-    const ifMatch = req.headers['if-match']
-    if (typeof ifMatch === 'string') {
-      return metadata !== null && ifMatch === metadata.etag
-    }
-
-    const ifUnmodifiedSince = req.headers['if-unmodified-since']
-    if (typeof ifUnmodifiedSince === 'string') {
-      return metadata !== null && ifUnmodifiedSince === metadata.lastModified
-    }
-
-    return true
-  }
-
-  const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
-    if (req.method === 'GET') {
-      applyGenerationHeader(res)
-      const serializedProfile = dashboardProfileStore.getSerializedProfile()
-      if (!serializedProfile) {
-        sendNoContent(res)
-        return
-      }
-
-      const metadata =
-        dashboardProfileStore.getProfileMetadata() ??
-        buildDashboardProfileMetadata(serializedProfile, {
-          mtimeMs: Date.now(),
-          mtime: new Date(),
-        })
-
-      if (isFreshRequest(req, metadata)) {
-        res.statusCode = 304
-        setNoStoreHeaders(res)
-        applyMetadataHeaders(res, metadata)
-        res.end()
-        return
-      }
-
-      res.statusCode = 200
-      setNoStoreHeaders(res)
-      res.setHeader('Content-Type', 'application/json; charset=utf-8')
-      applyMetadataHeaders(res, metadata)
-      res.end(serializedProfile)
-      return
-    }
-
-    if (req.method === 'PUT') {
-      try {
-        applyGenerationHeader(res)
-        const currentMetadata = dashboardProfileStore.getProfileMetadata()
-        if (!isWritePreconditionSatisfied(req, currentMetadata)) {
-          if (currentMetadata) {
-            applyMetadataHeaders(res, currentMetadata)
-          }
-          sendJson(res, 412, { error: 'Dashboard profile changed before save' })
-          return
-        }
-
-        const body = await readRequestBody(req)
-        if (!body) {
-          sendJson(res, 400, { error: 'Missing dashboard profile body' })
-          return
-        }
-
-        const parsed = JSON.parse(body)
-        if (!isValidDashboardProfileData(parsed)) {
-          sendJson(res, 400, { error: 'Unsupported dashboard profile' })
-          return
-        }
-
-        dashboardProfileStore.saveProfile(parsed)
-        const metadata = dashboardProfileStore.getProfileMetadata()
-
-        res.statusCode = 200
-        setNoStoreHeaders(res)
-        res.setHeader('Content-Type', 'application/json; charset=utf-8')
-        if (metadata) {
-          applyMetadataHeaders(res, metadata)
-        }
-        res.end(JSON.stringify({ ok: true, updatedAt: parsed.exportedAt ?? null }))
-      } catch (error) {
-        const message = error instanceof Error ? error.message : ''
-        if (message === 'Dashboard profile is too large') {
-          sendJson(res, 413, { error: message })
-          return
-        }
-
-        sendJson(res, 400, { error: 'Unable to save dashboard profile' })
-      }
-      return
-    }
-
-    if (req.method === 'DELETE') {
-      dashboardProfileStore.resetProfile()
-      applyGenerationHeader(res)
-      sendNoContent(res)
-      return
-    }
-
-    res.setHeader('Allow', 'GET, PUT, DELETE')
-    sendJson(res, 405, { error: 'Method not allowed' })
-  }
-
+function dashboardProfileStorePlugin(
+  resolvePrincipal: (
+    req: IncomingMessage
+  ) => ViteDashboardProfilePrincipal | null | Promise<ViteDashboardProfilePrincipal | null>
+) {
+  const handleRequest = createViteDashboardProfileRequestHandler({ resolvePrincipal })
   const registerMiddleware = (server: ViteDevServer | PreviewServer) => {
-    server.middlewares.use('/__navet_profile__/default', async (req, res) => {
+    server.middlewares.use('/__navet_profile__', async (req, res) => {
       await handleRequest(req, res)
     })
   }
@@ -1930,13 +1694,19 @@ export default defineConfig(({ mode }) => {
     chunkSizeWarningLimit: 500,
     rollupOptions: {
       output: {
-        manualChunks(id: string) {
-          const appChunkName = getAppChunkName(id)
-          if (appChunkName) {
-            return appChunkName
-          }
-
-          return getVendorChunkName(id)
+        codeSplitting: {
+          groups: [
+            {
+              name(id: string) {
+                return getVendorChunkName(id) ?? 'vendor'
+              },
+              test(id: string) {
+                return getVendorChunkName(id) !== undefined
+              },
+              entriesAware: true,
+              includeDependenciesRecursively: false,
+            },
+          ],
         },
       },
     },
@@ -1944,7 +1714,19 @@ export default defineConfig(({ mode }) => {
 
   function createAppPlugins() {
     const authSessionPlugin = authSessionStorePlugin()
-    const dashboardProfilePlugin = dashboardProfileStorePlugin()
+    const dashboardProfilePlugin = dashboardProfileStorePlugin(
+      (req) =>
+        (
+          authSessionPlugin as PluginOption & {
+            api?: {
+              resolveAuthenticatedPrincipal?: (
+                req: IncomingMessage,
+                options?: { trustIngressHeaders?: boolean }
+              ) => ViteAuthenticatedPrincipal | null
+            }
+          }
+        ).api?.resolveAuthenticatedPrincipal?.(req, { trustIngressHeaders: false }) ?? null
+    )
     const homeySessionPlugin = homeySessionStorePlugin()
     const openhabSessionPlugin = openhabSessionStorePlugin()
     const appPlugins: PluginOption[] = [
@@ -1962,12 +1744,14 @@ export default defineConfig(({ mode }) => {
       homeySessionPlugin,
       openhabSessionPlugin,
       homeAssistantProxyPlugin(
-        () =>
+        (req) =>
           (
             authSessionPlugin as PluginOption & {
-              api?: { getAuthSession?: () => HomeAssistantAuthData | null }
+              api?: {
+                getAuthSession?: (req: IncomingMessage) => HomeAssistantAuthData | null
+              }
             }
-          ).api?.getAuthSession?.() ?? null
+          ).api?.getAuthSession?.(req) ?? null
       ),
       homeyProxyPlugin(
         () =>
@@ -2021,6 +1805,7 @@ export default defineConfig(({ mode }) => {
             navigateFallback: './index.html',
             navigateFallbackDenylist: [
               /^\/__navet_auth__\//,
+              /^\/__navet_profile__\//,
               /^\/__navet_homey__\//,
               /^\/__navet_openhab__\//,
               /^\/__navet_ha_proxy__\//,

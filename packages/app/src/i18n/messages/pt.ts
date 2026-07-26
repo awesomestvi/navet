@@ -196,7 +196,7 @@ export const ptMessages = {
   'settings.dashboard.backup.description':
     'Exporte um snapshot reutilizável do layout do dashboard e restaure-o em outro dispositivo depois.',
   'settings.dashboard.backup.body':
-    'Inclui tema, layout, ordem dos cômodos, ordem dos cards, estado de entidades ocultas, widgets personalizados e predefinições de luz. Exportação e importação usam YAML. URL de conexão e token são deixados de fora propositalmente.',
+    'Inclui tema, layout, ordem dos cômodos, estado de entidades ocultas, widgets personalizados e predefinições de luz. Exportação e importação usam YAML. URL de conexão e token são deixados de fora propositalmente.',
   'settings.dashboard.backup.export': 'Exportar configuração',
   'settings.dashboard.backup.import': 'Importar configuração',
   'settings.experimental.sectionTitle': 'Experimental',
@@ -246,6 +246,59 @@ export const ptMessages = {
   'settings.system.providers.status.signed-in': 'Sessão iniciada',
   'settings.system.providers.status.disconnected': 'Desconectado',
   'settings.system.providers.status.planned': 'Planejado',
+  'settings.system.clients.title': 'Dispositivos ligados',
+  'settings.system.clients.description':
+    'Veja que dispositivos utilizam esta instalação do Navet, o respetivo estado de sincronização e a origem da alteração mais recente.',
+  'settings.system.clients.thisDashboard': 'Este dispositivo',
+  'settings.system.clients.name': 'Nome do dispositivo',
+  'settings.system.clients.rename': 'Alterar nome',
+  'settings.system.clients.saveName': 'Guardar nome',
+  'settings.system.clients.otherDashboards': 'Outros dispositivos',
+  'settings.system.clients.noOtherDashboards':
+    'Nenhum outro dispositivo se ligou ainda a esta instalação do Navet.',
+  'settings.system.clients.signedInAs': 'Sessão iniciada como {name}',
+  'settings.system.clients.identityUnknown': 'Identidade do utilizador indisponível',
+  'settings.system.clients.revision': 'Revisão {revision}',
+  'settings.system.clients.lastSynced': 'Última sincronização {time}',
+  'settings.system.clients.updatedBy': 'Painel atualizado a partir de {client}',
+  'settings.system.clients.changedPaths':
+    '{count} definições alteradas na revisão {revision}, {time}.',
+  'settings.system.clients.status.disabled': 'Apenas local',
+  'settings.system.clients.status.error': 'A sincronização precisa de atenção',
+  'settings.system.clients.status.idle': 'Pronto',
+  'settings.system.clients.status.loading': 'A carregar',
+  'settings.system.clients.status.offline': 'Sem ligação',
+  'settings.system.clients.status.saving': 'A guardar',
+  'settings.system.clients.status.synced': 'Sincronizado',
+  'settings.system.clients.showHistory': 'Histórico de revisões',
+  'settings.system.clients.hideHistory': 'Ocultar histórico de revisões',
+  'settings.system.clients.historyLoading': 'A carregar o histórico de revisões...',
+  'settings.system.clients.historyEmpty': 'Não há revisões anteriores do painel disponíveis.',
+  'settings.system.clients.historyLoadFailed': 'Não foi possível carregar o histórico de revisões.',
+  'settings.system.clients.historyRetry': 'Tentar novamente',
+  'settings.system.clients.historyCurrent': 'Atual',
+  'settings.system.clients.historyUpdatedBy': 'Atualizado por {client}, {time}.',
+  'settings.system.clients.historyRestoredFrom': 'Restaurado a partir da revisão {revision}.',
+  'settings.system.clients.historySnapshotUnavailable':
+    'Esta revisão não contém uma cópia do painel.',
+  'settings.system.clients.restore': 'Restaurar',
+  'settings.system.clients.restoring': 'A restaurar...',
+  'settings.system.clients.restoreConfirm': 'Restaurar a revisão {revision}?',
+  'settings.system.clients.restoreDescription':
+    'Isto torna atuais as definições do painel desta revisão e regista o restauro como uma nova revisão.',
+  'settings.system.clients.restoreSuccess':
+    'A revisão {revision} foi restaurada e guardada como uma nova revisão.',
+  'settings.system.clients.restoreFailed': 'Não foi possível restaurar a revisão.',
+  'settings.system.clients.restoreStale':
+    'O painel mudou antes de o restauro terminar. Atualize o histórico e tente novamente.',
+  'settings.system.clients.forget': 'Esquecer',
+  'settings.system.clients.forgetting': 'A esquecer...',
+  'settings.system.clients.forgetConfirm': 'Esquecer {client}?',
+  'settings.system.clients.forgetDescription':
+    'Isto remove as definições guardadas do dispositivo, o nome do painel e os dados da última atividade. O histórico de revisões permanece. Não termina a sessão do painel nem revoga o respetivo acesso OAuth.',
+  'settings.system.clients.forgetSuccess':
+    '{client} foi removido da lista de painéis ligados. O respetivo início de sessão não foi alterado.',
+  'settings.system.clients.forgetFailed': 'Não foi possível esquecer o registo do painel.',
   'settings.system.logout.description': 'Encerrar esta sessão do Navet neste dispositivo.',
   'settings.project.sectionTitle': 'Projeto',
   'settings.project.sectionDescription':
@@ -1263,9 +1316,21 @@ export const ptMessages = {
   'pwa.later': 'Mais tarde',
   'dashboard.profileSync.conflictTitle': 'Alterações no painel detectadas em outro dispositivo',
   'dashboard.profileSync.conflictDescription':
-    'Este tablet possui edições não salvas no painel. Mantenha sua versão local ou carregue o painel compartilhado mais recente.',
+    'Este painel tem alterações nas mesmas definições modificadas noutro local. Mantenha a sua versão ou carregue o painel partilhado mais recente.',
   'dashboard.profileSync.keepMine': 'Mantenha o meu',
   'dashboard.profileSync.loadRemote': 'Carregar versão remota',
+  'dashboard.profileSync.updatedTitle': 'Painel atualizado',
+  'dashboard.profileSync.updatedDescription': '{client} atualizou o painel partilhado.',
+  'dashboard.profileSync.resetPreserved':
+    'O painel partilhado foi reposto. As definições locais deste painel foram preservadas; pode restaurar uma revisão anterior nas Definições.',
+  'dashboard.profileSync.missingPreserved':
+    'O painel partilhado precisa de recuperação. As definições locais deste painel foram preservadas.',
+  'dashboard.profileSync.unavailable':
+    'A sincronização do painel partilhado está indisponível. As definições locais são preservadas.',
+  'dashboard.profileSync.unauthorized':
+    'Inicie sessão novamente para continuar a sincronizar o painel partilhado. As definições locais são preservadas.',
+  'dashboard.profileSync.saveFailed':
+    'Não foi possível sincronizar o painel. As alterações locais são preservadas e o Navet tentará novamente.',
   'entityRoomSelector.movedTo': 'Card movido para {room}',
   'entityRoomSelector.updateFailed': 'Não foi possível atualizar o cômodo',
   'entityRoomSelector.createAction': 'Criar cômodo...',
@@ -1820,6 +1885,7 @@ export const ptMessages = {
   'camera.settings.streamPreference': 'Transmissão ao vivo',
   'camera.settings.streamPreference.auto': 'Auto',
   'camera.settings.streamPreference.web_rtc': 'WebRTC',
+  'camera.settings.streamPreference.mse': 'MSE',
   'camera.settings.streamPreference.direct_stream': 'WebRTC direto',
   'camera.settings.webRtcStreamSource.provider': 'Fluxo do provedor',
   'camera.settings.webRtcStreamSource.direct': 'Transmissão direta',
@@ -1830,6 +1896,7 @@ export const ptMessages = {
   'camera.settings.directStreamUrl': 'URL de transmissão direta',
   'camera.settings.directStreamUrl.description':
     'Opcional. Use uma página de fluxo reproduzível no navegador, como go2rtc, quando o Home Assistant expõe apenas o HLS. Limpe o campo para usar fluxos do Home Assistant.',
+  'camera.settings.directStreamUrl.localOnly': 'Armazenado apenas neste dispositivo.',
   'camera.settings.directStreamUrl.error':
     'Falha ao carregar o stream direto. Verifique o URL e tente novamente.',
   'camera.settings.fitMode': 'Ajuste da imagem',

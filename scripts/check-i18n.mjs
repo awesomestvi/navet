@@ -65,6 +65,7 @@ const universallyAllowedIdenticalValues = new Set([
   'Spotify Connect',
   'TV',
   'WebRTC',
+  'MSE',
   'HLS',
   'MJPEG',
   'URL',

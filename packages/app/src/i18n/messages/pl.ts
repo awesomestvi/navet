@@ -198,7 +198,7 @@ export const plMessages = {
   'settings.dashboard.backup.description':
     'Wyeksportuj kopię układu panelu i przywróć ją później na innym urządzeniu.',
   'settings.dashboard.backup.body':
-    'Obejmuje motyw, układ, kolejność pomieszczeń i kart, ukryte encje, własne widżety oraz ustawienia presetów oświetlenia. Eksport i import używają YAML. Adres URL połączenia i token są celowo pomijane.',
+    'Obejmuje motyw, układ, kolejność pomieszczeń, ukryte encje, własne widżety oraz ustawienia presetów oświetlenia. Eksport i import używają YAML. Adres URL połączenia i token są celowo pomijane.',
   'settings.dashboard.backup.export': 'Eksportuj konfigurację',
   'settings.dashboard.backup.import': 'Importuj konfigurację',
   'habits.status.on': 'Włączone',
@@ -341,6 +341,57 @@ export const plMessages = {
   'settings.system.providers.status.signed-in': 'Zalogowano',
   'settings.system.providers.status.disconnected': 'Rozłączono',
   'settings.system.providers.status.planned': 'Planowana',
+  'settings.system.clients.title': 'Połączone urządzenia',
+  'settings.system.clients.description':
+    'Zobacz, które urządzenia korzystają z tej instalacji Navet, ich stan synchronizacji i źródło ostatniej zmiany.',
+  'settings.system.clients.thisDashboard': 'To urządzenie',
+  'settings.system.clients.name': 'Nazwa urządzenia',
+  'settings.system.clients.rename': 'Zmień nazwę',
+  'settings.system.clients.saveName': 'Zapisz nazwę',
+  'settings.system.clients.otherDashboards': 'Inne urządzenia',
+  'settings.system.clients.noOtherDashboards':
+    'Żadne inne urządzenie nie połączyło się jeszcze z tą instalacją Navet.',
+  'settings.system.clients.signedInAs': 'Zalogowano jako {name}',
+  'settings.system.clients.identityUnknown': 'Tożsamość użytkownika niedostępna',
+  'settings.system.clients.revision': 'Wersja {revision}',
+  'settings.system.clients.lastSynced': 'Ostatnia synchronizacja {time}',
+  'settings.system.clients.updatedBy': 'Pulpit zaktualizowany z {client}',
+  'settings.system.clients.changedPaths': 'Zmieniono {count} ustawień w wersji {revision}, {time}.',
+  'settings.system.clients.status.disabled': 'Tylko lokalnie',
+  'settings.system.clients.status.error': 'Synchronizacja wymaga uwagi',
+  'settings.system.clients.status.idle': 'Gotowe',
+  'settings.system.clients.status.loading': 'Wczytywanie',
+  'settings.system.clients.status.offline': 'Brak połączenia',
+  'settings.system.clients.status.saving': 'Zapisywanie',
+  'settings.system.clients.status.synced': 'Zsynchronizowano',
+  'settings.system.clients.showHistory': 'Historia wersji',
+  'settings.system.clients.hideHistory': 'Ukryj historię wersji',
+  'settings.system.clients.historyLoading': 'Wczytywanie historii wersji...',
+  'settings.system.clients.historyEmpty': 'Brak wcześniejszych wersji dashboardu.',
+  'settings.system.clients.historyLoadFailed': 'Nie udało się wczytać historii wersji.',
+  'settings.system.clients.historyRetry': 'Spróbuj ponownie',
+  'settings.system.clients.historyCurrent': 'Bieżąca',
+  'settings.system.clients.historyUpdatedBy': 'Zaktualizowano przez {client}, {time}.',
+  'settings.system.clients.historyRestoredFrom': 'Przywrócono z wersji {revision}.',
+  'settings.system.clients.historySnapshotUnavailable': 'Ta wersja nie zawiera migawki dashboardu.',
+  'settings.system.clients.restore': 'Przywróć',
+  'settings.system.clients.restoring': 'Przywracanie...',
+  'settings.system.clients.restoreConfirm': 'Przywrócić wersję {revision}?',
+  'settings.system.clients.restoreDescription':
+    'Ustawienia dashboardu z tej wersji staną się bieżące, a przywrócenie zostanie zapisane jako nowa wersja.',
+  'settings.system.clients.restoreSuccess':
+    'Wersja {revision} została przywrócona i zapisana jako nowa wersja.',
+  'settings.system.clients.restoreFailed': 'Nie udało się przywrócić wersji.',
+  'settings.system.clients.restoreStale':
+    'Dashboard zmienił się przed zakończeniem przywracania. Odśwież historię i spróbuj ponownie.',
+  'settings.system.clients.forget': 'Zapomnij',
+  'settings.system.clients.forgetting': 'Usuwanie...',
+  'settings.system.clients.forgetConfirm': 'Zapomnieć {client}?',
+  'settings.system.clients.forgetDescription':
+    'Usuwa to zapisane ustawienia urządzenia, nazwę dashboardu i informacje o ostatniej aktywności. Historia wersji pozostaje. Nie wylogowuje dashboardu ani nie unieważnia jego logowania OAuth.',
+  'settings.system.clients.forgetSuccess':
+    'Usunięto {client} z listy połączonych dashboardów. Dane logowania nie zostały zmienione.',
+  'settings.system.clients.forgetFailed': 'Nie udało się usunąć wpisu dashboardu.',
   'settings.system.logout.description': 'Zakończ tę sesję Navet na tym urządzeniu.',
   'settings.project.sectionTitle': 'Projekt',
   'settings.project.sectionDescription':
@@ -1357,9 +1408,21 @@ export const plMessages = {
   'pwa.later': 'Później',
   'dashboard.profileSync.conflictTitle': 'Wykryto zmiany w panelu na innym urządzeniu',
   'dashboard.profileSync.conflictDescription':
-    'Ten tablet ma niezapisane zmiany panelu. Zachowaj wersję lokalną albo wczytaj nowszy panel udostępniony.',
+    'Ten panel ma zmiany tych samych ustawień, które zmieniono gdzie indziej. Zachowaj swoją wersję albo wczytaj nowszy panel udostępniony.',
   'dashboard.profileSync.keepMine': 'Zachowaj lokalne zmiany',
   'dashboard.profileSync.loadRemote': 'Wczytaj udostępniony',
+  'dashboard.profileSync.updatedTitle': 'Panel został zaktualizowany',
+  'dashboard.profileSync.updatedDescription': '{client} zaktualizował(a) udostępniony panel.',
+  'dashboard.profileSync.resetPreserved':
+    'Udostępniony panel został zresetowany. Lokalne ustawienia tego panelu zachowano; wcześniejszą wersję można przywrócić w Ustawieniach.',
+  'dashboard.profileSync.missingPreserved':
+    'Udostępniony panel wymaga odzyskania. Lokalne ustawienia tego panelu zachowano.',
+  'dashboard.profileSync.unavailable':
+    'Synchronizacja udostępnionego panelu jest niedostępna. Lokalne ustawienia zostają zachowane.',
+  'dashboard.profileSync.unauthorized':
+    'Zaloguj się ponownie, aby kontynuować synchronizację udostępnionego panelu. Lokalne ustawienia zostają zachowane.',
+  'dashboard.profileSync.saveFailed':
+    'Nie udało się zsynchronizować panelu. Lokalne zmiany zostają zachowane, a Navet spróbuje ponownie.',
   'entityRoomSelector.movedTo': 'Karta została przeniesiona do pomieszczenia „{room}”',
   'entityRoomSelector.updateFailed': 'Nie udało się zmienić przypisanego pomieszczenia',
   'entityRoomSelector.createAction': 'Utwórz pomieszczenie...',
@@ -1917,6 +1980,7 @@ export const plMessages = {
   'camera.settings.streamPreference': 'Transmisja na żywo',
   'camera.settings.streamPreference.auto': 'Automatycznie',
   'camera.settings.streamPreference.web_rtc': 'WebRTC',
+  'camera.settings.streamPreference.mse': 'MSE',
   'camera.settings.streamPreference.direct_stream': 'Bezpośrednie WebRTC',
   'camera.settings.webRtcStreamSource.provider': 'Strumień integracji',
   'camera.settings.webRtcStreamSource.direct': 'Bezpośredni strumień',
@@ -1927,6 +1991,7 @@ export const plMessages = {
   'camera.settings.directStreamUrl': 'Adres URL bezpośredniego strumienia',
   'camera.settings.directStreamUrl.description':
     'Opcjonalnie. Gdy Home Assistant udostępnia tylko HLS, użyj strony strumienia obsługiwanej przez przeglądarkę, na przykład go2rtc. Wyczyść pole, aby korzystać ze strumieni Home Assistant.',
+  'camera.settings.directStreamUrl.localOnly': 'Przechowywane wyłącznie na tym urządzeniu.',
   'camera.settings.directStreamUrl.error':
     'Nie udało się wczytać strumienia bezpośredniego. Sprawdź adres URL i spróbuj ponownie.',
   'camera.settings.fitMode': 'Dopasowanie obrazu',

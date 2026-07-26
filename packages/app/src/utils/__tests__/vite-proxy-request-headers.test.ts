@@ -1,5 +1,8 @@
 import type { IncomingMessage } from 'node:http';
-import { copyProxyRequestHeaders } from '@scripts/vite-proxy-request-headers';
+import {
+  buildHomeAssistantProxyRequestHeaders,
+  copyProxyRequestHeaders,
+} from '@scripts/vite-proxy-request-headers';
 import { describe, expect, it } from 'vitest';
 
 describe('copyProxyRequestHeaders', () => {
@@ -37,5 +40,20 @@ describe('copyProxyRequestHeaders', () => {
 
     expect(headers.get('accept')).toBe('application/json, text/plain');
     expect(headers.get('range')).toBe('bytes=0-99, bytes=100-199');
+  });
+
+  it('replaces attacker authorization with the cookie-bound Home Assistant token', () => {
+    const headers = buildHomeAssistantProxyRequestHeaders(
+      {
+        authorization: 'Bearer attacker-token',
+        cookie: 'navet_auth_session=private-cookie-id',
+        accept: 'application/json',
+      },
+      'session-access-token'
+    );
+
+    expect(headers.get('authorization')).toBe('Bearer session-access-token');
+    expect(headers.get('cookie')).toBeNull();
+    expect(headers.get('accept')).toBe('application/json');
   });
 });

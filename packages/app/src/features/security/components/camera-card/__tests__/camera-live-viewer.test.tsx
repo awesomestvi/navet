@@ -1,26 +1,44 @@
+import type { PlatformCameraPlaybackModel } from '@navet/app/platform/provider-feature-models';
 import { cameraEntityFixtures } from '@navet/app/test/fixtures/home-assistant/entities/camera';
 import { renderWithProviders } from '@navet/app/test/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CameraLiveViewer } from '../camera-live-viewer';
 
-const { getCameraPlaybackPlanMock } = vi.hoisted(() => ({
+const { autoLoadStreamPlayerMock, getCameraPlaybackPlanMock } = vi.hoisted(() => ({
+  autoLoadStreamPlayerMock: { current: false },
   getCameraPlaybackPlanMock: vi.fn(),
 }));
 
-vi.mock('../camera-stream-player', () => ({
-  CameraStreamPlayer: ({
-    entityId,
-    kind,
-    fitMode,
-  }: {
-    entityId: string;
-    kind: string;
-    fitMode: string;
-  }) => (
-    <div data-testid="camera-stream-player" data-fit-mode={fitMode}>{`${entityId}:${kind}`}</div>
-  ),
-}));
+vi.mock('../camera-stream-player', async () => {
+  const { useEffect } = await vi.importActual<typeof import('react')>('react');
+
+  return {
+    CameraStreamPlayer: ({
+      entityId,
+      kind,
+      fitMode,
+      onLoad,
+    }: {
+      entityId: string;
+      kind: string;
+      fitMode: string;
+      onLoad: () => void;
+    }) => {
+      useEffect(() => {
+        if (autoLoadStreamPlayerMock.current) {
+          onLoad();
+        }
+      }, [kind]);
+
+      return (
+        <div data-testid="camera-stream-player" data-fit-mode={fitMode}>
+          {`${entityId}:${kind}`}
+        </div>
+      );
+    },
+  };
+});
 
 vi.mock('@navet/app/services/integration-camera-runtime.service', () => ({
   getCameraPlaybackPlan: getCameraPlaybackPlanMock,
@@ -42,7 +60,13 @@ const defaultProps = {
   onRefresh: vi.fn(),
   onOpenSettings: vi.fn(),
   onCameraViewModeChange: vi.fn(),
+  onPreferredTransportChange: vi.fn(),
+  onCameraFitModeChange: vi.fn(),
 };
+
+beforeEach(() => {
+  autoLoadStreamPlayerMock.current = false;
+});
 
 describe('CameraLiveViewer', () => {
   it('lets the viewer switch camera view modes', async () => {
@@ -72,13 +96,14 @@ describe('CameraLiveViewer', () => {
       <CameraLiveViewer {...defaultProps} onCameraViewModeChange={onCameraViewModeChange} />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Snapshot' }));
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Camera view: Auto' }));
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Snapshot' }));
 
     expect(onCameraViewModeChange).toHaveBeenCalledWith('snapshot');
     await waitFor(() => expect(getCameraPlaybackPlanMock).toHaveBeenCalled());
   });
 
-  it('keeps the live mode pill visible while snapshot mode is selected on stream-capable cameras', async () => {
+  it('keeps every supported view mode in the fullscreen dropdown', async () => {
     getCameraPlaybackPlanMock.mockResolvedValue({
       cameraState: 'streaming',
       snapshotResource: {
@@ -102,9 +127,49 @@ describe('CameraLiveViewer', () => {
 
     renderWithProviders(<CameraLiveViewer {...defaultProps} cameraViewMode="snapshot" />);
 
-    expect(await screen.findByRole('button', { name: 'Live' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Auto' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Snapshot' })).toBeInTheDocument();
+    const viewModeTrigger = await screen.findByRole('button', {
+      name: 'Camera view: Snapshot',
+    });
+    fireEvent.pointerDown(viewModeTrigger);
+
+    expect(screen.getByRole('menuitemradio', { name: 'Auto' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitemradio', { name: 'Live' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitemradio', { name: 'Snapshot' })).toBeInTheDocument();
+  });
+
+  it('lets the viewer change among provider-supported stream transports', async () => {
+    const onPreferredTransportChange = vi.fn();
+    getCameraPlaybackPlanMock.mockResolvedValue({
+      cameraState: 'streaming',
+      snapshotResource: null,
+      supportsSnapshot: false,
+      supportedTransports: ['web_rtc', 'mse', 'hls'],
+      liveTransports: ['web_rtc', 'mse', 'hls'],
+      fallbackTransports: [],
+      selectedTransport: 'web_rtc',
+      selectedStreamResource: null,
+      supportsStreaming: true,
+      isSnapshotFallback: false,
+      shouldStartWithSnapshot: false,
+      motionDetectionEnabled: true,
+      refreshPolicy: { retryDelaysMs: [1_000, 3_000, 7_000] },
+    });
+
+    renderWithProviders(
+      <CameraLiveViewer {...defaultProps} onPreferredTransportChange={onPreferredTransportChange} />
+    );
+
+    const streamTrigger = await screen.findByRole('button', { name: 'Live stream: Auto' });
+    fireEvent.pointerDown(streamTrigger);
+
+    expect(screen.getByRole('menuitemradio', { name: 'Auto' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitemradio', { name: 'WebRTC' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitemradio', { name: 'MSE' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitemradio', { name: 'HLS' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitemradio', { name: 'MJPEG' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'MSE' }));
+    expect(onPreferredTransportChange).toHaveBeenCalledWith('mse');
   });
 
   it('renders an unavailable fallback when the camera is unavailable', async () => {
@@ -153,17 +218,21 @@ describe('CameraLiveViewer', () => {
       refreshPolicy: { snapshotRefreshMs: 30_000, retryDelaysMs: [1_000, 3_000, 7_000] },
     });
 
-    renderWithProviders(<CameraLiveViewer {...defaultProps} cameraViewMode="live" />);
+    const onRefresh = vi.fn();
+    renderWithProviders(
+      <CameraLiveViewer {...defaultProps} cameraViewMode="live" onRefresh={onRefresh} />
+    );
 
     expect(await screen.findAllByText('Snapshot fallback')).toHaveLength(2);
     expect(screen.getByRole('img', { name: 'Front Door' })).toHaveAttribute(
       'src',
       String(cameraEntityFixtures.relativeUrl.attributes.entity_picture)
     );
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh camera snapshot' }));
+    expect(onRefresh).toHaveBeenCalledTimes(1);
   });
 
   it('renders the live stream player for Home Assistant native playback and wires viewer actions', async () => {
-    const onRefresh = vi.fn();
     const onOpenSettings = vi.fn();
     const onOpenChange = vi.fn();
 
@@ -204,7 +273,6 @@ describe('CameraLiveViewer', () => {
           authStrategy: 'bearer',
           url: '/api/hls/camera.front_door/master.m3u8',
         }}
-        onRefresh={onRefresh}
         onOpenSettings={onOpenSettings}
         onOpenChange={onOpenChange}
       />
@@ -215,12 +283,13 @@ describe('CameraLiveViewer', () => {
     );
     expect(screen.getByTestId('camera-stream-player')).toHaveAttribute('data-fit-mode', 'contain');
     expect(screen.getByText('HLS')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Refresh camera snapshot' })
+    ).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh camera snapshot' }));
     fireEvent.click(screen.getByRole('button', { name: 'Camera settings' }));
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
 
-    expect(onRefresh).toHaveBeenCalledTimes(1);
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
@@ -252,8 +321,40 @@ describe('CameraLiveViewer', () => {
     expect(await screen.findByTestId('camera-stream-player')).toHaveTextContent(
       'home_assistant:camera.front_door:web_rtc'
     );
-    expect(screen.getAllByText('Live').length).toBeGreaterThan(0);
+    expect(screen.getByText('Loading camera feed')).toBeInTheDocument();
     expect(screen.queryByText('On')).not.toBeInTheDocument();
+  });
+
+  it('does not overwrite readiness reported while a selected stream mounts', async () => {
+    autoLoadStreamPlayerMock.current = true;
+    getCameraPlaybackPlanMock.mockResolvedValue({
+      cameraState: 'streaming',
+      snapshotResource: null,
+      supportsSnapshot: false,
+      supportedTransports: ['web_rtc'],
+      liveTransports: ['web_rtc'],
+      fallbackTransports: [],
+      selectedTransport: 'web_rtc',
+      selectedStreamResource: {
+        id: 'camera.front_door:web_rtc',
+        kind: 'webrtc_stream',
+        cacheKey: 'camera.front_door:web_rtc',
+        authStrategy: 'same_origin',
+        url: '/api/camera_stream',
+      },
+      supportsStreaming: true,
+      isSnapshotFallback: false,
+      shouldStartWithSnapshot: false,
+      motionDetectionEnabled: true,
+      refreshPolicy: { retryDelaysMs: [1_000, 3_000, 7_000] },
+    });
+
+    renderWithProviders(
+      <CameraLiveViewer {...defaultProps} cameraViewMode="live" preferredTransport="web_rtc" />
+    );
+
+    expect(await screen.findByText('Live')).toBeInTheDocument();
+    expect(screen.queryByText('Loading camera feed')).not.toBeInTheDocument();
   });
 
   it('passes the selected feed sizing mode to the fullscreen stream player', async () => {
@@ -290,5 +391,136 @@ describe('CameraLiveViewer', () => {
       'data-fit-mode',
       'cover'
     );
+  });
+
+  it('lets the viewer change feed sizing from the fullscreen dropdown', async () => {
+    const onCameraFitModeChange = vi.fn();
+    getCameraPlaybackPlanMock.mockResolvedValue({
+      cameraState: 'streaming',
+      snapshotResource: {
+        id: 'camera.front_door:snapshot',
+        kind: 'image',
+        cacheKey: 'camera.front_door:snapshot',
+        authStrategy: 'none',
+        url: String(cameraEntityFixtures.relativeUrl.attributes.entity_picture),
+      },
+      supportsSnapshot: true,
+      liveTransports: ['web_rtc'],
+      fallbackTransports: [],
+      selectedTransport: 'web_rtc',
+      selectedStreamResource: null,
+      supportsStreaming: true,
+      isSnapshotFallback: false,
+      shouldStartWithSnapshot: false,
+      motionDetectionEnabled: true,
+      refreshPolicy: { retryDelaysMs: [1_000, 3_000, 7_000] },
+    });
+
+    renderWithProviders(
+      <CameraLiveViewer
+        {...defaultProps}
+        cameraFitMode="contain"
+        onCameraFitModeChange={onCameraFitModeChange}
+      />
+    );
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Feed sizing: Fit' }));
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Cover' }));
+
+    expect(onCameraFitModeChange).toHaveBeenCalledWith('cover');
+  });
+
+  it('uses neutral readiness copy for a cross-origin direct iframe', async () => {
+    getCameraPlaybackPlanMock.mockResolvedValue({
+      cameraState: 'streaming',
+      snapshotResource: {
+        id: 'camera.front_door:snapshot',
+        kind: 'image',
+        cacheKey: 'camera.front_door:snapshot',
+        authStrategy: 'bearer',
+        url: String(cameraEntityFixtures.relativeUrl.attributes.entity_picture),
+      },
+      supportsSnapshot: true,
+      liveTransports: ['web_rtc'],
+      fallbackTransports: [],
+      selectedTransport: 'web_rtc',
+      selectedStreamResource: {
+        id: 'camera.front_door:direct',
+        kind: 'webrtc_stream',
+        cacheKey: 'camera.front_door:direct',
+        authStrategy: 'none',
+        url: 'http://192.168.68.71:1984/stream.html?src=camera_bedroom',
+        metadata: {
+          source: 'direct_stream_url',
+        },
+      },
+      supportsStreaming: true,
+      isSnapshotFallback: false,
+      shouldStartWithSnapshot: false,
+      motionDetectionEnabled: true,
+      refreshPolicy: { retryDelaysMs: [1_000, 3_000, 7_000] },
+    });
+
+    renderWithProviders(
+      <CameraLiveViewer
+        {...defaultProps}
+        cameraViewMode="live"
+        webRtcStreamSource="direct"
+        directStreamUrl="http://192.168.68.71:1984/stream.html?src=camera_bedroom"
+      />
+    );
+
+    expect(await screen.findAllByText('Direct stream')).toHaveLength(2);
+    expect(screen.queryByText('Loading camera feed')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Live')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Camera view: Live' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Live stream: Auto' })).not.toBeInTheDocument();
+  });
+
+  it('renders the provider fallback from one plan when a saved transport is unsupported', async () => {
+    getCameraPlaybackPlanMock.mockClear();
+    const hlsPlan: PlatformCameraPlaybackModel = {
+      cameraState: 'streaming',
+      snapshotResource: {
+        id: 'camera.front_door:snapshot',
+        kind: 'image',
+        cacheKey: 'camera.front_door:snapshot',
+        authStrategy: 'same_origin',
+        url: String(cameraEntityFixtures.relativeUrl.attributes.entity_picture),
+      },
+      supportsSnapshot: true,
+      supportedTransports: ['hls'],
+      liveTransports: ['hls'],
+      fallbackTransports: [],
+      selectedTransport: 'hls',
+      selectedStreamResource: {
+        id: 'camera.front_door:hls',
+        kind: 'hls_stream',
+        cacheKey: 'camera.front_door:hls',
+        authStrategy: 'same_origin',
+        url: '/api/hls/camera.front_door/master.m3u8',
+      },
+      supportsStreaming: true,
+      isSnapshotFallback: false,
+      shouldStartWithSnapshot: false,
+      motionDetectionEnabled: true,
+      refreshPolicy: { retryDelaysMs: [1_000, 3_000, 7_000] },
+    };
+    getCameraPlaybackPlanMock.mockResolvedValue(hlsPlan);
+
+    renderWithProviders(
+      <CameraLiveViewer {...defaultProps} preferredTransport="web_rtc" cameraViewMode="live" />
+    );
+
+    expect(await screen.findByTestId('camera-stream-player')).toHaveTextContent(
+      'home_assistant:camera.front_door:hls'
+    );
+    expect(getCameraPlaybackPlanMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        preferredTransport: 'web_rtc',
+        webRtcStreamSource: 'provider',
+      })
+    );
+    expect(getCameraPlaybackPlanMock).toHaveBeenCalledTimes(1);
   });
 });

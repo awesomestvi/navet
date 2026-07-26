@@ -91,4 +91,5 @@ sensors. Keep that distinction visible in product and contributor documentation.
 - [../architecture/package-boundaries.md](../architecture/package-boundaries.md)
 - [../architecture/provider-contract.md](../architecture/provider-contract.md)
 - [../architecture/provider-neutral-ui.md](../architecture/provider-neutral-ui.md)
+- [../architecture/dashboard-profile-ownership.md](../architecture/dashboard-profile-ownership.md)
 - [../testing/provider-testing-strategy.md](../testing/provider-testing-strategy.md)

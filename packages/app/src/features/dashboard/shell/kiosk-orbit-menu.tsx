@@ -11,9 +11,9 @@ import { useI18n, useTheme } from '@navet/app/hooks';
 import type { TranslationKey } from '@navet/app/i18n';
 import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { settingsSelectors } from '@navet/app/stores/selectors';
+import { getCustomExtensionIcon } from '@navet/app/utils/custom-extension-icons';
 import {
   ADVANCED_CUSTOM_SIDEBAR_ACTION_LIMIT,
-  getCustomExtensionIcon,
   isSidebarActionVisible,
   openCustomExtensionUrl,
 } from '@navet/app/utils/custom-extensions';

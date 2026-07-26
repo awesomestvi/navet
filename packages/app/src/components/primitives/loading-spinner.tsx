@@ -5,8 +5,8 @@ import {
   navetSpacingTokens,
   navetTypographyTokens,
 } from '@navet/app/components/system/tokens';
-import { useI18n, useTheme } from '@navet/app/hooks';
-import { Loader2 } from 'lucide-react';
+import { useTheme } from '@navet/app/hooks/use-theme';
+import { useI18n } from '@navet/app/i18n';
 import { memo, type ReactNode } from 'react';
 
 export interface LoadingSpinnerProps {
@@ -32,10 +32,19 @@ export const LoadingSpinner = memo(function LoadingSpinner({
   return (
     <div className={containerClasses}>
       <div className={`flex flex-col items-center ${navetSpacingTokens.stack.lg}`}>
-        <Loader2
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
           className={`${navetIconSizeTokens.xl} animate-spin`}
           style={{ color: getThemeColorValue(primaryColor) }}
-        />
+          aria-hidden="true"
+        >
+          <path d="M21 12a9 9 0 1 1-6.2-8.56" />
+        </svg>
         <p className={`${navetTypographyTokens.body} ${surface.textSecondary}`}>
           {resolvedMessage}
         </p>

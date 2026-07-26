@@ -13,10 +13,6 @@ ingress: true
 ingress_port: 8099
 homeassistant_api: true
 stage: experimental
-ports:
-  8099/tcp: null
-ports_description:
-  8099/tcp: Optional direct Navet dashboard access
 panel_icon: mdi:hub
 panel_title: Navet Dev
 map:

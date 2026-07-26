@@ -3,10 +3,7 @@ import type {
   PlatformCameraTransport,
 } from '@navet/app/platform/provider-feature-models';
 import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
-import type {
-  CameraStreamPreference,
-  CameraWebRtcStreamSource,
-} from '@navet/app/stores/settings-store';
+import type { CameraStreamPreference } from '@navet/app/stores/settings-store';
 import {
   getCurrentHomeAssistantPanelHass,
   getHomeAssistantCameraPlaybackPlan,
@@ -15,7 +12,7 @@ import {
 
 interface CameraPlaybackPlanRequest {
   entityId: string;
-  webRtcStreamSource?: CameraWebRtcStreamSource;
+  webRtcStreamSource?: 'provider' | 'direct';
   directStreamUrl?: string;
   cameraState: 'unavailable' | 'off' | 'idle' | 'streaming' | 'recording';
   preferredMode: 'auto' | 'live' | 'snapshot';

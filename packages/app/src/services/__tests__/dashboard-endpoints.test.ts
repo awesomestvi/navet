@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   deleteDashboardProfile,
+  loadDashboardPreferences,
   loadDashboardProfile,
+  saveDashboardPreferences,
   saveDashboardProfile,
 } from '../dashboard-profile.service';
 
@@ -59,7 +61,7 @@ describe('dashboard add-on endpoints', () => {
       })
     );
 
-    await expect(loadDashboardProfile({ etag: '"etag-1"' })).resolves.toEqual({
+    await expect(loadDashboardProfile({ etag: '"etag-1"' })).resolves.toMatchObject({
       available: true,
       profile: null,
       notModified: true,
@@ -105,7 +107,7 @@ describe('dashboard add-on endpoints', () => {
           activeSection: 'home',
         },
       })
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       saved: false,
       permanentFailure: true,
       preconditionFailed: false,
@@ -152,7 +154,7 @@ describe('dashboard add-on endpoints', () => {
         },
         { etag: '"etag-3"', lastModified: 'Tue, 02 Jan 2024 12:00:00 GMT' }
       )
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       saved: true,
       permanentFailure: false,
       preconditionFailed: false,
@@ -192,7 +194,7 @@ describe('dashboard add-on endpoints', () => {
         },
         { etag: '"etag-stale"' }
       )
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       saved: false,
       permanentFailure: false,
       preconditionFailed: true,
@@ -224,7 +226,7 @@ describe('dashboard add-on endpoints', () => {
           activeSection: 'home',
         },
       })
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       saved: false,
       permanentFailure: true,
       preconditionFailed: false,
@@ -242,10 +244,180 @@ describe('dashboard add-on endpoints', () => {
       })
     );
 
-    await expect(deleteDashboardProfile()).resolves.toEqual({
+    await expect(deleteDashboardProfile()).resolves.toMatchObject({
       reset: true,
       permanentFailure: false,
       generation: 'generation-2',
+    });
+  });
+
+  it('sends revision, changed-path, and client attribution headers', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: {
+          ETag: '"navet-workspace-8"',
+          'X-Navet-Profile-Revision': '8',
+          'X-Navet-Profile-Recovery': 'active',
+        },
+      })
+    );
+
+    await saveDashboardProfile(
+      {
+        version: 3,
+        app: 'navet',
+        exportedAt: new Date().toISOString(),
+        theme: { theme: 'glass', primaryColor: 'blue' },
+        settings: {},
+        navigation: { currentRoom: 'all', activeSection: 'home' },
+      },
+      {
+        author: {
+          id: 'client-panel-01',
+          name: 'Kitchen panel',
+          kind: 'wall_panel',
+        },
+        baseRevision: 7,
+        changedPaths: ['/dashboard/rooms'],
+      }
+    );
+
+    const headers = getRequestHeaders(fetchMock.mock.calls[0]?.[1] as RequestInit | undefined);
+    expect(headers.get('X-Navet-Base-Revision')).toBe('7');
+    expect(headers.get('X-Navet-Client-Id')).toBe('client-panel-01');
+    expect(decodeURIComponent(headers.get('X-Navet-Client-Name') ?? '')).toBe('Kitchen panel');
+    expect(headers.get('X-Navet-Client-Kind')).toBe('wall_panel');
+    expect(JSON.parse(decodeURIComponent(headers.get('X-Navet-Changed-Paths') ?? '[]'))).toEqual([
+      '/dashboard/rooms',
+    ]);
+  });
+
+  it('does not treat authentication failures as missing or empty shared profiles', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ error: 'Authentication required' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
+
+    await expect(loadDashboardProfile()).resolves.toMatchObject({
+      available: false,
+      unauthorized: true,
+      profile: null,
+    });
+  });
+
+  it('parses workspace, revision, author, changed paths, and recovery metadata', async () => {
+    const author = {
+      id: 'client-phone-01',
+      name: 'Vishal phone',
+      kind: 'phone',
+      providerId: 'home_assistant',
+      userId: 'ha-user-1',
+      userName: 'Vishal',
+    };
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          version: 3,
+          app: 'navet',
+          exportedAt: '2026-07-25T09:00:00.000Z',
+        }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Navet-Installation-Id': 'nvi_installation',
+            'X-Navet-Workspace-Id': 'nvw_workspace',
+            'X-Navet-Workspace-Created-At': '2026-07-25T08:00:00.000Z',
+            'X-Navet-Profile-Generation': 'nvg_generation',
+            'X-Navet-Profile-Revision': '12',
+            'X-Navet-Profile-Recovery': 'active',
+            'X-Navet-Profile-Author': encodeURIComponent(JSON.stringify(author)),
+            'X-Navet-Changed-Paths': encodeURIComponent(JSON.stringify(['/dashboard/cards/0'])),
+            'X-Navet-Profile-Change-Kind': 'patch',
+            'X-Navet-Profile-Updated-At': '2026-07-25T09:00:00.000Z',
+          },
+        }
+      )
+    );
+
+    await expect(loadDashboardProfile()).resolves.toMatchObject({
+      available: true,
+      revision: 12,
+      workspace: {
+        installationId: 'nvi_installation',
+        workspaceId: 'nvw_workspace',
+      },
+      metadata: {
+        revision: 12,
+        kind: 'patch',
+        author,
+        changedPaths: ['/dashboard/cards/0'],
+      },
+      recovery: { status: 'active' },
+    });
+  });
+
+  it('uses independently revisioned account and client preference endpoints', async () => {
+    const preferenceDocument = {
+      contractVersion: 1,
+      schemaVersion: 2,
+      scope: 'client',
+      revision: 4,
+      updatedAt: '2026-07-25T09:00:00.000Z',
+      values: { keepAwake: true },
+      principal: {
+        providerId: 'home_assistant',
+        userId: 'ha-user-1',
+        userName: 'Vishal',
+      },
+      clientId: 'client-panel-01',
+    };
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(preferenceDocument), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(preferenceDocument), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+    const author = {
+      id: 'client-panel-01',
+      name: 'Kitchen panel',
+      kind: 'wall_panel' as const,
+    };
+
+    await expect(loadDashboardPreferences('client', { author })).resolves.toMatchObject({
+      available: true,
+      document: preferenceDocument,
+    });
+    await expect(
+      saveDashboardPreferences('client', { keepAwake: true }, 3, {
+        author,
+        schemaVersion: 2,
+      })
+    ).resolves.toMatchObject({
+      saved: true,
+      document: preferenceDocument,
+    });
+
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      `${window.location.origin}/__navet_profile__/preferences/client`
+    );
+    const saveHeaders = getRequestHeaders(fetchMock.mock.calls[1]?.[1] as RequestInit | undefined);
+    expect(saveHeaders.get('X-Navet-Base-Revision')).toBe('3');
+    expect(saveHeaders.get('X-Navet-Client-Id')).toBe('client-panel-01');
+    expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toEqual({
+      schemaVersion: 2,
+      values: { keepAwake: true },
     });
   });
 });

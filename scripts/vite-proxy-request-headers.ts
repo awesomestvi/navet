@@ -27,3 +27,12 @@ export function copyProxyRequestHeaders(sourceHeaders: IncomingMessage['headers'
 
   return headers
 }
+
+export function buildHomeAssistantProxyRequestHeaders(
+  sourceHeaders: IncomingMessage['headers'],
+  sessionAccessToken: string
+) {
+  const headers = copyProxyRequestHeaders(sourceHeaders)
+  headers.set('Authorization', `Bearer ${sessionAccessToken}`)
+  return headers
+}

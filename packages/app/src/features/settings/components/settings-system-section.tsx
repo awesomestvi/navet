@@ -1,5 +1,5 @@
 import homeAssistantLogo from '@navet/app/assets/providers/home-assistant.svg';
-import homeyLogo from '@navet/app/assets/providers/homey.png';
+import homeyLogo from '@navet/app/assets/providers/homey.svg';
 import openhabLogo from '@navet/app/assets/providers/openhab.svg';
 import { Badge, Button, Input, ModalSurface } from '@navet/app/components/primitives';
 import {
@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
+import { SettingsDashboardClients } from './settings-dashboard-clients';
 import { SettingsItem, SettingsSectionShell } from './settings-section-shell';
 
 interface SettingsSystemSectionProps {
@@ -572,6 +573,14 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
           </form>
         </ModalSurface>
       ) : null}
+
+      <SettingsItem
+        title={t('settings.system.clients.title')}
+        description={t('settings.system.clients.description')}
+        styles={styles}
+      >
+        <SettingsDashboardClients styles={styles} />
+      </SettingsItem>
 
       <SettingsItem
         title={t('settings.project.localData.title')}

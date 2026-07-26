@@ -6,163 +6,138 @@ import {
   useDashboardEntitiesStore,
   useHomeDashboardLayoutStore,
 } from '@navet/app/features/dashboard';
+import {
+  DASHBOARD_CLIENT_IDENTITY_EVENT,
+  type DashboardClientIdentity,
+  getDashboardClientIdentity,
+} from '@navet/app/features/dashboard/clients/dashboard-client-identity';
+import {
+  readDashboardProfileBase,
+  writeDashboardProfileBase,
+} from '@navet/app/features/dashboard/clients/dashboard-profile-base-cache';
+import {
+  getDashboardProfileChangedPaths,
+  rebaseLocalDashboardProfile,
+} from '@navet/app/features/dashboard/clients/dashboard-profile-diff';
+import { reconcileDashboardProfiles } from '@navet/app/features/dashboard/clients/dashboard-profile-reconciliation';
+import {
+  type DashboardProfileActivity,
+  useDashboardProfileRuntimeStore,
+} from '@navet/app/features/dashboard/clients/dashboard-profile-runtime-store';
+import { useDashboardPreferenceSync } from '@navet/app/features/dashboard/hooks/use-dashboard-preference-sync';
 import { useLightPresetStore } from '@navet/app/features/lighting/stores/light-preset-store';
 import { useI18n } from '@navet/app/hooks';
 import { isHomeAssistantPanelMode } from '@navet/app/runtime/app-mode';
 import {
+  DASHBOARD_PROFILE_ID,
+  type DashboardProfileRevisionMetadata,
+} from '@navet/app/services/dashboard-profile.contract';
+import {
   type DashboardProfileLoadOptions,
+  type DashboardProfileLoadResult,
+  type DashboardProfileWriteResult,
   loadDashboardProfile,
+  loadDashboardProfileClients,
   saveDashboardProfile,
+  touchDashboardClient,
 } from '@navet/app/services/dashboard-profile.service';
+import { useEntityRoomOverridesStore } from '@navet/app/stores/entity-room-overrides-store';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { useThemeStore } from '@navet/app/stores/theme-store';
 import {
   type DashboardConfigPayload,
   exportDashboardConfig,
   importDashboardConfig,
-  resetDashboardProfileState,
 } from '@navet/app/utils/dashboard-config';
 import { PERSISTED_STATE_EVENT } from '@navet/app/utils/persisted-state-events';
-import { storage } from '@navet/app/utils/storage';
-import { createElement, useCallback, useEffect, useRef, useState } from 'react';
+import { createElement, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 
-const PROFILE_SAVE_DEBOUNCE_MS = 2000;
+const PROFILE_SAVE_DEBOUNCE_MS = 2_000;
 const PROFILE_REMOTE_POLL_INTERVAL_MS = 60_000;
 const PROFILE_REMOTE_POLL_BACKOFF_MS = [60_000, 120_000, 300_000] as const;
-const PROFILE_REMOTE_RELOAD_GUARD_KEY = 'navet-dashboard-profile-reload-guard';
+
+export const DASHBOARD_PROFILE_REFRESH_EVENT = 'navet:dashboard-profile-refresh';
 
 const SYNC_RELEVANT_PERSISTED_KEYS = new Set<string>([
   STORAGE_KEYS.cardSizes,
-  STORAGE_KEYS.cardOrders,
   STORAGE_KEYS.roomOrder,
   STORAGE_KEYS.roomWorkspace,
 ]);
 
-interface DashboardProfileSyncMetadata {
-  lastAppliedAt?: string;
-  lastSavedSignature?: string;
-  lastRemoteVersion?: string;
-  lastRemoteEtag?: string;
-  lastRemoteLastModified?: string;
-  serverGeneration?: string;
-}
-
-interface RemoteProfileSnapshot {
-  profile: DashboardConfigPayload;
-  etag: string | null;
-  lastModified: string | null;
-  generation: string | null;
-  conflictKey: string;
-}
-
-interface LocalProfileSnapshot {
-  profile: DashboardConfigPayload;
-  signature: string;
-}
-
-function getProfileTimestamp(profile: DashboardConfigPayload) {
-  const time = Date.parse(profile.exportedAt);
-  return Number.isFinite(time) ? time : 0;
-}
-
-function getProfileSignature(profile: DashboardConfigPayload) {
-  return JSON.stringify({
-    ...profile,
-    exportedAt: undefined,
-    navigation: undefined,
-  });
-}
-
-function isRemoteProfileAlreadyActive(
-  profileSignature: string,
-  currentSignature: string | null,
-  metadata: DashboardProfileSyncMetadata
-) {
-  if (profileSignature !== currentSignature) {
-    return false;
-  }
-
-  return profileSignature === metadata.lastSavedSignature || currentSignature !== null;
+interface PendingConflict {
+  base: DashboardConfigPayload | null;
+  local: DashboardConfigPayload;
+  remote: DashboardProfileLoadResult;
 }
 
 function getProfileForSync(): DashboardConfigPayload {
   const profile = exportDashboardConfig();
-  return {
+  const transportProfile = {
     ...profile,
     navigation: {
       currentRoom: ALL_ROOMS_ID,
       activeSection: 'home',
     },
   };
-}
-
-function readSyncMetadata(): DashboardProfileSyncMetadata {
-  return storage.get<DashboardProfileSyncMetadata>(STORAGE_KEYS.dashboardProfileSync, {});
-}
-
-function writeSyncMetadata(metadata: DashboardProfileSyncMetadata) {
-  storage.set(STORAGE_KEYS.dashboardProfileSync, metadata);
+  return JSON.parse(JSON.stringify(transportProfile)) as DashboardConfigPayload;
 }
 
 function getDocumentVisibility() {
   return typeof document === 'undefined' ? 'visible' : document.visibilityState;
 }
 
-function getConflictKey(
-  profile: DashboardConfigPayload,
-  etag: string | null,
-  lastModified: string | null
-) {
-  return etag ?? profile.exportedAt ?? lastModified ?? getProfileSignature(profile);
-}
-
-function readReloadGuard() {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  return sessionStorage.getItem(PROFILE_REMOTE_RELOAD_GUARD_KEY);
-}
-
-function writeReloadGuard(conflictKey: string) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  sessionStorage.setItem(PROFILE_REMOTE_RELOAD_GUARD_KEY, conflictKey);
-}
-
-function clearReloadGuard() {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  sessionStorage.removeItem(PROFILE_REMOTE_RELOAD_GUARD_KEY);
-}
-
 function getNextPollDelay(failureCount: number) {
   if (failureCount <= 1) {
-    return PROFILE_REMOTE_POLL_INTERVAL_MS;
+    return PROFILE_REMOTE_POLL_BACKOFF_MS[0];
   }
-
   if (failureCount === 2) {
     return PROFILE_REMOTE_POLL_BACKOFF_MS[1];
   }
-
   return PROFILE_REMOTE_POLL_BACKOFF_MS[2];
 }
 
-function isServerGenerationAuthoritative(
-  generation: string | null,
-  metadata: DashboardProfileSyncMetadata
-) {
-  return (
-    typeof generation === 'string' &&
-    generation.length > 0 &&
-    metadata.serverGeneration !== generation
-  );
+function toActivity(
+  metadata: DashboardProfileRevisionMetadata | null
+): DashboardProfileActivity | null {
+  if (!metadata) {
+    return null;
+  }
+
+  return {
+    id: `${metadata.workspaceId}:${metadata.revision}`,
+    revision: metadata.revision,
+    changedAt: metadata.updatedAt,
+    changedPaths: metadata.changedPaths,
+    actor: {
+      clientId: metadata.author.id,
+      clientName: metadata.author.name,
+      clientKind: metadata.author.kind,
+      ...(metadata.author.userId ? { userId: metadata.author.userId } : {}),
+      ...(metadata.author.userName ? { userName: metadata.author.userName } : {}),
+    },
+  };
+}
+
+function remoteFromWrite(
+  profile: DashboardConfigPayload,
+  result: DashboardProfileWriteResult,
+  previous: DashboardProfileLoadResult
+): DashboardProfileLoadResult {
+  return {
+    available: true,
+    unauthorized: false,
+    profile,
+    notModified: false,
+    etag: result.etag,
+    lastModified: result.lastModified,
+    generation: result.generation,
+    revision: result.revision,
+    workspace: result.workspace ?? previous.workspace,
+    metadata: result.metadata,
+    recovery: result.recovery,
+  };
 }
 
 export function useDashboardProfileSync() {
@@ -173,283 +148,229 @@ export function useDashboardProfileSync() {
     }))
   );
   const [profileLoadCompleted, setProfileLoadCompleted] = useState(false);
-  const [isOnline, setIsOnline] = useState(() =>
-    typeof navigator === 'undefined' ? true : navigator.onLine
-  );
-  const [isVisible, setIsVisible] = useState(() => getDocumentVisibility() === 'visible');
-  const loadCompletedRef = useRef(false);
-  const profileSyncAvailableRef = useRef(true);
-  const savingRef = useRef(false);
-  const applyingRemoteProfileRef = useRef(false);
-  const hasPendingLocalChangesRef = useRef(false);
+  const tRef = useRef(t);
   const onboardingCompletedRef = useRef(onboardingCompleted);
-  const isOnlineRef = useRef(isOnline);
-  const isVisibleRef = useRef(isVisible);
-  const previousOnlineRef = useRef(isOnline);
-  const previousVisibleRef = useRef(isVisible);
-  const currentSignatureRef = useRef<string | null>(null);
-  const lastRemoteVersionRef = useRef<string | null>(null);
-  const lastRemoteEtagRef = useRef<string | null>(null);
-  const lastRemoteLastModifiedRef = useRef<string | null>(null);
-  const failureCountRef = useRef(0);
-  const saveTimeoutRef = useRef<number | null>(null);
-  const pollTimeoutRef = useRef<number | null>(null);
-  const conflictToastIdRef = useRef<string | number | null>(null);
-  const activeConflictKeyRef = useRef<string | null>(null);
-  const pendingConflictRef = useRef<RemoteProfileSnapshot | null>(null);
-  const pendingLocalConflictRef = useRef<LocalProfileSnapshot | null>(null);
-
-  const panelMode = isHomeAssistantPanelMode();
-
-  const clearConflictToast = useCallback(() => {
-    if (conflictToastIdRef.current !== null) {
-      toast.dismiss(conflictToastIdRef.current);
-      conflictToastIdRef.current = null;
-    }
-
-    activeConflictKeyRef.current = null;
-    pendingConflictRef.current = null;
-    pendingLocalConflictRef.current = null;
-  }, []);
-
-  const clearSaveTimeout = useCallback(() => {
-    if (saveTimeoutRef.current !== null) {
-      window.clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = null;
-    }
-  }, []);
-
-  const clearPollTimeout = useCallback(() => {
-    if (pollTimeoutRef.current !== null) {
-      window.clearTimeout(pollTimeoutRef.current);
-      pollTimeoutRef.current = null;
-    }
-  }, []);
-
-  const updateRemoteMetadata = useCallback(
-    ({
-      clearMissingValidators = false,
-      etag,
-      generation,
-      lastModified,
-      profile,
-      signature,
-    }: {
-      clearMissingValidators?: boolean;
-      etag: string | null;
-      generation?: string | null;
-      lastModified: string | null;
-      profile?: DashboardConfigPayload | null;
-      signature?: string | null;
-    }) => {
-      if (etag !== null || clearMissingValidators) {
-        lastRemoteEtagRef.current = etag;
-      }
-
-      if (lastModified !== null || clearMissingValidators) {
-        lastRemoteLastModifiedRef.current = lastModified;
-      }
-
-      if (profile) {
-        lastRemoteVersionRef.current = profile.exportedAt;
-      }
-
-      const metadata = readSyncMetadata();
-      writeSyncMetadata({
-        ...metadata,
-        serverGeneration:
-          generation !== undefined
-            ? (generation ?? metadata.serverGeneration)
-            : metadata.serverGeneration,
-        lastRemoteVersion: profile?.exportedAt ?? metadata.lastRemoteVersion,
-        lastRemoteEtag:
-          etag !== null ? etag : clearMissingValidators ? undefined : metadata.lastRemoteEtag,
-        lastRemoteLastModified:
-          lastModified !== null
-            ? lastModified
-            : clearMissingValidators
-              ? undefined
-              : metadata.lastRemoteLastModified,
-        lastSavedSignature: signature ?? metadata.lastSavedSignature,
-      });
-    },
-    []
-  );
-
-  const shouldRunRemoteChecks = useCallback(() => {
-    return (
-      !panelMode &&
-      loadCompletedRef.current &&
-      profileLoadCompleted &&
-      onboardingCompletedRef.current &&
-      profileSyncAvailableRef.current &&
-      isOnlineRef.current &&
-      isVisibleRef.current &&
-      !savingRef.current
-    );
-  }, [panelMode, profileLoadCompleted]);
-
-  const getCurrentProfileSnapshot = useCallback(() => {
-    const profile = getProfileForSync();
-    const signature = getProfileSignature(profile);
-    currentSignatureRef.current = signature;
-    return { profile, signature };
-  }, []);
-
-  const flushPendingSaveRef = useRef<
-    (options?: { keepalive?: boolean; dismissConflict?: boolean }) => Promise<boolean>
-  >(async () => false);
-  const schedulePollRef = useRef<(delay?: number) => void>(() => undefined);
   const syncCurrentLocalStateRef = useRef<() => void>(() => undefined);
-  const resetToAuthoritativeEmptyRemoteRef = useRef<
-    (metadata: {
-      etag: string | null;
-      generation: string | null;
-      lastModified: string | null;
-    }) => void
-  >(() => undefined);
+  const panelMode = isHomeAssistantPanelMode();
+  const preferenceClient = useDashboardProfileRuntimeStore((state) => state.client);
 
-  const resetToAuthoritativeEmptyRemote = useCallback(
-    (metadata: { etag: string | null; generation: string | null; lastModified: string | null }) => {
-      const currentMetadata = readSyncMetadata();
+  tRef.current = t;
+  onboardingCompletedRef.current = onboardingCompleted;
 
-      applyingRemoteProfileRef.current = true;
-      hasPendingLocalChangesRef.current = false;
-      currentSignatureRef.current = null;
-      clearConflictToast();
-      clearReloadGuard();
-      resetDashboardProfileState();
-      applyingRemoteProfileRef.current = false;
+  useDashboardPreferenceSync({
+    client: preferenceClient,
+    enabled: !panelMode && profileLoadCompleted,
+  });
 
-      lastRemoteVersionRef.current = null;
-      updateRemoteMetadata({
-        clearMissingValidators: true,
-        etag: metadata.etag,
-        generation: metadata.generation,
-        lastModified: metadata.lastModified,
-      });
-      writeSyncMetadata({
-        serverGeneration: metadata.generation ?? currentMetadata.serverGeneration,
-        lastRemoteEtag: metadata.etag ?? undefined,
-        lastRemoteLastModified: metadata.lastModified ?? undefined,
-      });
-    },
-    [clearConflictToast, updateRemoteMetadata]
-  );
-  resetToAuthoritativeEmptyRemoteRef.current = resetToAuthoritativeEmptyRemote;
+  useEffect(() => {
+    if (profileLoadCompleted && onboardingCompleted) {
+      syncCurrentLocalStateRef.current();
+    }
+  }, [onboardingCompleted, profileLoadCompleted]);
 
-  const applyRemoteProfile = useCallback(
-    (
+  useEffect(() => {
+    const runtime = useDashboardProfileRuntimeStore.getState();
+    if (panelMode) {
+      runtime.markDisabled();
+      setProfileLoadCompleted(true);
+      return;
+    }
+
+    let cancelled = false;
+    let loaded = false;
+    let applyingRemote = false;
+    let saving = false;
+    let loadingRemote = false;
+    let pendingLocalChanges = false;
+    let writesBlocked = false;
+    let isOnline = typeof navigator === 'undefined' ? true : navigator.onLine;
+    let isVisible = getDocumentVisibility() === 'visible';
+    let failureCount = 0;
+    let remoteResult: DashboardProfileLoadResult | null = null;
+    let saveTimeout: number | null = null;
+    let pollTimeout: number | null = null;
+    let conflictToastId: string | number | null = null;
+    let pendingConflict: PendingConflict | null = null;
+    let client = getDashboardClientIdentity({
+      profileMode: useSettingsStore.getState().dashboardProfileMode,
+    });
+
+    runtime.setClient(client);
+    runtime.markLoading();
+
+    function clearSaveTimeout() {
+      if (saveTimeout !== null) {
+        window.clearTimeout(saveTimeout);
+        saveTimeout = null;
+      }
+    }
+
+    function clearPollTimeout() {
+      if (pollTimeout !== null) {
+        window.clearTimeout(pollTimeout);
+        pollTimeout = null;
+      }
+    }
+
+    function clearConflict() {
+      if (conflictToastId !== null) {
+        toast.dismiss(conflictToastId);
+        conflictToastId = null;
+      }
+      pendingConflict = null;
+      runtime.clearConflict();
+    }
+
+    function readCompatibleBase(result = remoteResult) {
+      const base = readDashboardProfileBase();
+      if (
+        !base ||
+        !result?.workspace ||
+        base.workspaceId !== result.workspace.workspaceId ||
+        base.profileId !== DASHBOARD_PROFILE_ID
+      ) {
+        return null;
+      }
+      return base;
+    }
+
+    function rememberCommonBase(
       profile: DashboardConfigPayload,
-      metadata: { etag: string | null; generation: string | null; lastModified: string | null },
-      options: { force?: boolean } = {}
-    ) => {
-      const profileSignature = getProfileSignature(profile);
-      const currentMetadata = readSyncMetadata();
-      const currentSignature = currentSignatureRef.current ?? getCurrentProfileSnapshot().signature;
-      const conflictKey = getConflictKey(profile, metadata.etag, metadata.lastModified);
-      const remoteTimestamp = getProfileTimestamp(profile);
-      const localTimestamp = Date.parse(currentMetadata.lastAppliedAt ?? '');
-      const generationAuthoritative = isServerGenerationAuthoritative(
-        metadata.generation,
-        currentMetadata
-      );
-
-      if (isRemoteProfileAlreadyActive(profileSignature, currentSignature, currentMetadata)) {
-        hasPendingLocalChangesRef.current = false;
-        currentSignatureRef.current = profileSignature;
-        clearConflictToast();
-        clearReloadGuard();
-        writeSyncMetadata({
-          ...currentMetadata,
-          lastAppliedAt: profile.exportedAt,
-          lastSavedSignature: profileSignature,
-          serverGeneration: metadata.generation ?? currentMetadata.serverGeneration,
-          lastRemoteVersion: profile.exportedAt,
-          lastRemoteEtag: metadata.etag ?? undefined,
-          lastRemoteLastModified: metadata.lastModified ?? undefined,
-        });
-        return false;
-      }
-
-      if (readReloadGuard() === conflictKey) {
-        hasPendingLocalChangesRef.current = false;
-        currentSignatureRef.current = profileSignature;
-        clearConflictToast();
-        writeSyncMetadata({
-          ...currentMetadata,
-          lastAppliedAt: profile.exportedAt,
-          lastSavedSignature: profileSignature,
-          serverGeneration: metadata.generation ?? currentMetadata.serverGeneration,
-          lastRemoteVersion: profile.exportedAt,
-          lastRemoteEtag: metadata.etag ?? undefined,
-          lastRemoteLastModified: metadata.lastModified ?? undefined,
-        });
-        return false;
-      }
-
-      const shouldApply =
-        options.force ||
-        generationAuthoritative ||
-        !onboardingCompletedRef.current ||
-        !Number.isFinite(localTimestamp) ||
-        remoteTimestamp > localTimestamp;
-
-      updateRemoteMetadata({
-        clearMissingValidators: true,
-        etag: metadata.etag,
-        generation: metadata.generation,
-        lastModified: metadata.lastModified,
-        profile,
-        signature: profileSignature,
-      });
-
-      if (!shouldApply) {
-        hasPendingLocalChangesRef.current = false;
-        currentSignatureRef.current = profileSignature;
-        clearConflictToast();
-        return false;
-      }
-
-      applyingRemoteProfileRef.current = true;
-      hasPendingLocalChangesRef.current = false;
-      currentSignatureRef.current = profileSignature;
-      clearConflictToast();
-      writeReloadGuard(conflictKey);
-      writeSyncMetadata({
-        ...currentMetadata,
-        lastAppliedAt: profile.exportedAt,
-        lastSavedSignature: profileSignature,
-        serverGeneration: metadata.generation ?? currentMetadata.serverGeneration,
-        lastRemoteVersion: profile.exportedAt,
-        lastRemoteEtag: metadata.etag ?? undefined,
-        lastRemoteLastModified: metadata.lastModified ?? undefined,
-      });
-      importDashboardConfig(profile, { applyNavigation: false });
-      applyingRemoteProfileRef.current = false;
-      return true;
-    },
-    [clearConflictToast, getCurrentProfileSnapshot, updateRemoteMetadata]
-  );
-
-  const showConflictToast = useCallback(
-    (remoteProfile: RemoteProfileSnapshot) => {
-      if (activeConflictKeyRef.current === remoteProfile.conflictKey) {
+      result: DashboardProfileLoadResult
+    ) {
+      if (!result.workspace || result.revision === null) {
         return;
       }
 
-      clearConflictToast();
-      pendingConflictRef.current = remoteProfile;
-      pendingLocalConflictRef.current = getCurrentProfileSnapshot();
-      activeConflictKeyRef.current = remoteProfile.conflictKey;
-      conflictToastIdRef.current = toast(t('dashboard.profileSync.conflictTitle'), {
+      writeDashboardProfileBase({
+        profile,
+        profileId: DASHBOARD_PROFILE_ID,
+        revision: result.revision,
+        savedAt: new Date().toISOString(),
+        workspaceId: result.workspace.workspaceId,
+      });
+    }
+
+    function markRemoteSynced(result: DashboardProfileLoadResult) {
+      runtime.markSynced({
+        activity: toActivity(result.metadata),
+        profileId: DASHBOARD_PROFILE_ID,
+        revision: result.revision,
+        workspaceId: result.workspace?.workspaceId ?? null,
+      });
+    }
+
+    function notifyRemoteUpdate(result: DashboardProfileLoadResult) {
+      const author = result.metadata?.author;
+      if (!author || author.id === client.id) {
+        return;
+      }
+
+      toast(tRef.current('dashboard.profileSync.updatedTitle'), {
+        description: tRef.current('dashboard.profileSync.updatedDescription', {
+          client: author.name,
+        }),
+        duration: 6_000,
+      });
+    }
+
+    function applyRemoteProfile(result: DashboardProfileLoadResult, notify: boolean) {
+      if (!result.profile) {
+        return;
+      }
+
+      applyingRemote = true;
+      try {
+        importDashboardConfig(result.profile, { applyNavigation: false });
+      } finally {
+        applyingRemote = false;
+      }
+
+      remoteResult = result;
+      pendingLocalChanges = false;
+      writesBlocked = false;
+      clearSaveTimeout();
+      clearConflict();
+      rememberCommonBase(result.profile, result);
+      markRemoteSynced(result);
+      if (notify) {
+        notifyRemoteUpdate(result);
+      }
+    }
+
+    function setRegisteredClients(
+      response: Awaited<ReturnType<typeof loadDashboardProfileClients>>
+    ) {
+      if (!response) {
+        return;
+      }
+
+      runtime.setClients(
+        response.clients.map((registeredClient) => ({
+          id: registeredClient.id,
+          name: registeredClient.name,
+          kind: registeredClient.kind,
+          firstSeenAt: registeredClient.firstSeenAt,
+          lastSeenAt: registeredClient.lastSeenAt,
+          lastRevision: registeredClient.lastRevision,
+          ...(registeredClient.principal.userName
+            ? { userName: registeredClient.principal.userName }
+            : {}),
+        }))
+      );
+    }
+
+    async function refreshRegisteredClients(touch = false) {
+      const response = touch
+        ? await touchDashboardClient(client)
+        : await loadDashboardProfileClients(client);
+      if (!cancelled) {
+        setRegisteredClients(response);
+      }
+    }
+
+    function refreshClientIdentity() {
+      const nextClient = getDashboardClientIdentity({
+        profileMode: useSettingsStore.getState().dashboardProfileMode,
+      });
+      if (
+        nextClient.id === client.id &&
+        nextClient.name === client.name &&
+        nextClient.kind === client.kind
+      ) {
+        return;
+      }
+
+      client = nextClient;
+      runtime.setClient(nextClient);
+      void refreshRegisteredClients(true);
+    }
+
+    function showConflict(conflict: PendingConflict, overlappingPaths: string[]) {
+      clearSaveTimeout();
+      const existingRevision = pendingConflict?.remote.revision;
+      if (existingRevision === conflict.remote.revision && conflictToastId !== null) {
+        pendingConflict = conflict;
+        return;
+      }
+
+      clearConflict();
+      pendingConflict = conflict;
+      runtime.setConflict({
+        baseRevision: readCompatibleBase(conflict.remote)?.revision ?? null,
+        remoteRevision: conflict.remote.revision ?? 0,
+        overlappingPaths,
+        remoteActivity: toActivity(conflict.remote.metadata),
+      });
+
+      conflictToastId = toast(tRef.current('dashboard.profileSync.conflictTitle'), {
         description: createElement(
           'div',
           { className: 'space-y-4' },
           createElement(
             'p',
             { className: 'max-w-none whitespace-normal text-sm leading-6 text-white/82' },
-            t('dashboard.profileSync.conflictDescription')
+            tRef.current('dashboard.profileSync.conflictDescription')
           ),
           createElement(
             'div',
@@ -459,39 +380,52 @@ export function useDashboardProfileSync() {
               {
                 type: 'button',
                 className:
-                  'inline-flex min-h-9 items-center justify-center rounded-[16px] border border-white/10 bg-white/16 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/22',
+                  'inline-flex min-h-11 items-center justify-center rounded-[16px] border border-white/10 bg-white/16 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/22',
                 onClick: () => {
-                  void flushPendingSaveRef.current({
-                    dismissConflict: true,
-                  });
+                  const currentConflict = pendingConflict;
+                  if (!currentConflict?.remote.profile) {
+                    return;
+                  }
+
+                  const rebased = currentConflict.base
+                    ? rebaseLocalDashboardProfile(
+                        currentConflict.base,
+                        currentConflict.local,
+                        currentConflict.remote.profile
+                      )
+                    : currentConflict.local;
+                  clearConflict();
+                  remoteResult = currentConflict.remote;
+                  rememberCommonBase(currentConflict.remote.profile, currentConflict.remote);
+                  applyingRemote = true;
+                  try {
+                    importDashboardConfig(
+                      { ...rebased, exportedAt: new Date().toISOString() },
+                      { applyNavigation: false }
+                    );
+                  } finally {
+                    applyingRemote = false;
+                  }
+                  pendingLocalChanges = true;
+                  void saveProfile(getProfileForSync());
                 },
               },
-              t('dashboard.profileSync.keepMine')
+              tRef.current('dashboard.profileSync.keepMine')
             ),
             createElement(
               'button',
               {
                 type: 'button',
                 className:
-                  'inline-flex min-h-9 items-center justify-center rounded-[16px] border border-white/10 bg-white/[0.03] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/[0.08]',
+                  'inline-flex min-h-11 items-center justify-center rounded-[16px] border border-white/10 bg-white/[0.03] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/[0.08]',
                 onClick: () => {
-                  const pendingConflict = pendingConflictRef.current;
-                  if (!pendingConflict) {
-                    return;
+                  const currentConflict = pendingConflict;
+                  if (currentConflict) {
+                    applyRemoteProfile(currentConflict.remote, false);
                   }
-
-                  applyRemoteProfile(
-                    pendingConflict.profile,
-                    {
-                      etag: pendingConflict.etag,
-                      generation: pendingConflict.generation,
-                      lastModified: pendingConflict.lastModified,
-                    },
-                    { force: true }
-                  );
                 },
               },
-              t('dashboard.profileSync.loadRemote')
+              tRef.current('dashboard.profileSync.loadRemote')
             )
           )
         ),
@@ -504,480 +438,422 @@ export function useDashboardProfileSync() {
           description: 'max-w-none whitespace-normal text-sm leading-6',
         },
       });
-    },
-    [applyRemoteProfile, clearConflictToast, getCurrentProfileSnapshot, t]
-  );
+    }
 
-  const pollRemoteProfile = useCallback(
-    async (options: { immediate?: boolean } = {}) => {
-      if (!options.immediate && !shouldRunRemoteChecks()) {
+    function shouldPoll() {
+      return loaded && isOnline && isVisible && !saving && !cancelled;
+    }
+
+    function schedulePoll(delay = PROFILE_REMOTE_POLL_INTERVAL_MS) {
+      clearPollTimeout();
+      if (!shouldPoll()) {
         return;
       }
 
-      if (savingRef.current) {
-        schedulePollRef.current(PROFILE_REMOTE_POLL_INTERVAL_MS);
-        return;
+      pollTimeout = window.setTimeout(() => {
+        pollTimeout = null;
+        void refreshRemote();
+      }, delay);
+    }
+
+    async function saveProfile(
+      profile: DashboardConfigPayload,
+      options: { keepalive?: boolean } = {}
+    ) {
+      if (cancelled || writesBlocked || !remoteResult || pendingConflict) {
+        return false;
+      }
+      if (saving) {
+        pendingLocalChanges = true;
+        return false;
       }
 
-      const requestMetadata: DashboardProfileLoadOptions = {
-        etag: lastRemoteEtagRef.current ?? undefined,
-        lastModified: lastRemoteLastModifiedRef.current ?? undefined,
-      };
-      const result = await loadDashboardProfile(requestMetadata);
-
-      if (!result.available) {
-        failureCountRef.current += 1;
-        schedulePollRef.current(getNextPollDelay(failureCountRef.current));
-        return;
+      const changedPaths = remoteResult.profile
+        ? getDashboardProfileChangedPaths(remoteResult.profile, profile)
+        : ['/'];
+      if (changedPaths.length === 0) {
+        pendingLocalChanges = false;
+        clearSaveTimeout();
+        markRemoteSynced(remoteResult);
+        return false;
       }
 
-      const currentMetadata = readSyncMetadata();
-      const generationAuthoritative = isServerGenerationAuthoritative(
-        result.generation,
-        currentMetadata
-      );
-
-      profileSyncAvailableRef.current = true;
-      failureCountRef.current = 0;
-      updateRemoteMetadata({
-        clearMissingValidators: !result.notModified,
-        etag: result.etag,
-        generation: result.generation,
-        lastModified: result.lastModified,
+      clearSaveTimeout();
+      saving = true;
+      runtime.markSaving();
+      const result = await saveDashboardProfile(profile, {
+        author: client,
+        baseRevision: remoteResult.revision ?? 0,
+        changedPaths,
+        etag: remoteResult.etag ?? undefined,
+        keepalive: options.keepalive,
+        lastModified: remoteResult.etag ? undefined : (remoteResult.lastModified ?? undefined),
       });
+      saving = false;
+      if (cancelled) {
+        return false;
+      }
 
-      if (result.notModified) {
-        clearReloadGuard();
-        schedulePollRef.current(PROFILE_REMOTE_POLL_INTERVAL_MS);
+      if (result.saved) {
+        const savedRemote = remoteFromWrite(profile, result, remoteResult);
+        remoteResult = savedRemote;
+        pendingLocalChanges = false;
+        failureCount = 0;
+        rememberCommonBase(profile, savedRemote);
+        markRemoteSynced(savedRemote);
+        void refreshRegisteredClients();
+        syncCurrentLocalState();
+        schedulePoll();
+        return true;
+      }
+
+      pendingLocalChanges = true;
+      if (!options.keepalive && (result.preconditionFailed || result.preconditionRequired)) {
+        await refreshRemote({ forceFull: true, notify: true });
+        return false;
+      }
+
+      runtime.markError(
+        tRef.current(
+          result.unauthorized
+            ? 'dashboard.profileSync.unauthorized'
+            : 'dashboard.profileSync.saveFailed'
+        )
+      );
+      schedulePoll(getNextPollDelay(++failureCount));
+      return false;
+    }
+
+    async function handleRemoteResult(
+      result: DashboardProfileLoadResult,
+      options: { initial?: boolean; notify?: boolean } = {}
+    ) {
+      const resultWorkspaceId = result.workspace?.workspaceId;
+      const currentWorkspaceId = remoteResult?.workspace?.workspaceId;
+      if (
+        resultWorkspaceId &&
+        resultWorkspaceId === currentWorkspaceId &&
+        result.revision !== null &&
+        remoteResult?.revision !== null &&
+        remoteResult?.revision !== undefined &&
+        result.revision < remoteResult.revision
+      ) {
         return;
       }
+      if (result.notModified) {
+        failureCount = 0;
+        return;
+      }
+
+      remoteResult = result;
+      failureCount = 0;
 
       if (!result.profile) {
-        if (generationAuthoritative) {
-          resetToAuthoritativeEmptyRemoteRef.current({
-            etag: result.etag,
-            generation: result.generation,
-            lastModified: result.lastModified,
-          });
+        clearConflict();
+        if (result.recovery.status === 'uninitialized') {
+          writesBlocked = false;
+          markRemoteSynced(result);
+          return;
         }
-        clearReloadGuard();
-        schedulePollRef.current(PROFILE_REMOTE_POLL_INTERVAL_MS);
+
+        writesBlocked = true;
+        runtime.markError(
+          tRef.current(
+            result.recovery.status === 'reset'
+              ? 'dashboard.profileSync.resetPreserved'
+              : 'dashboard.profileSync.missingPreserved'
+          )
+        );
         return;
       }
 
-      const remoteProfile = {
-        profile: result.profile,
-        etag: result.etag,
-        generation: result.generation,
-        lastModified: result.lastModified,
-        conflictKey: getConflictKey(result.profile, result.etag, result.lastModified),
-      };
-      const remoteSignature = getProfileSignature(result.profile);
-      const currentSignature = currentSignatureRef.current ?? getCurrentProfileSnapshot().signature;
-
-      if (isRemoteProfileAlreadyActive(remoteSignature, currentSignature, currentMetadata)) {
-        hasPendingLocalChangesRef.current = false;
-        currentSignatureRef.current = remoteSignature;
-        clearConflictToast();
-        clearReloadGuard();
-        writeSyncMetadata({
-          ...currentMetadata,
-          lastAppliedAt: result.profile.exportedAt,
-          lastSavedSignature: remoteSignature,
-          serverGeneration: result.generation ?? currentMetadata.serverGeneration,
-          lastRemoteVersion: result.profile.exportedAt,
-          lastRemoteEtag: result.etag ?? undefined,
-          lastRemoteLastModified: result.lastModified ?? undefined,
-        });
-        schedulePollRef.current(PROFILE_REMOTE_POLL_INTERVAL_MS);
-        return;
-      }
-
-      if (hasPendingLocalChangesRef.current) {
-        showConflictToast(remoteProfile);
-        schedulePollRef.current(PROFILE_REMOTE_POLL_INTERVAL_MS);
-        return;
-      }
-
-      applyRemoteProfile(result.profile, {
-        etag: result.etag,
-        generation: result.generation,
-        lastModified: result.lastModified,
+      writesBlocked = false;
+      const base = readCompatibleBase(result);
+      const local = getProfileForSync();
+      const hasPendingLocalChanges =
+        pendingLocalChanges ||
+        Boolean(base && getDashboardProfileChangedPaths(base.profile, local).length > 0);
+      const reconciliation = reconcileDashboardProfiles({
+        base: base?.profile ?? null,
+        hasPendingLocalChanges: options.initial && !base ? false : hasPendingLocalChanges,
+        local,
+        remote: result.profile,
       });
-    },
-    [
-      applyRemoteProfile,
-      clearConflictToast,
-      getCurrentProfileSnapshot,
-      shouldRunRemoteChecks,
-      showConflictToast,
-      updateRemoteMetadata,
-    ]
-  );
 
-  const schedulePoll = useCallback(
-    (delay = PROFILE_REMOTE_POLL_INTERVAL_MS) => {
-      clearPollTimeout();
-      if (!shouldRunRemoteChecks()) {
+      if (reconciliation.kind === 'already-current') {
+        pendingLocalChanges = false;
+        clearSaveTimeout();
+        clearConflict();
+        rememberCommonBase(result.profile, result);
+        markRemoteSynced(result);
+        if (options.notify) {
+          notifyRemoteUpdate(result);
+        }
         return;
       }
 
-      pollTimeoutRef.current = window.setTimeout(() => {
-        pollTimeoutRef.current = null;
-        void pollRemoteProfile();
-      }, delay);
-    },
-    [clearPollTimeout, pollRemoteProfile, shouldRunRemoteChecks]
-  );
-  schedulePollRef.current = schedulePoll;
-
-  const flushPendingSave = useCallback(
-    async (options: { keepalive?: boolean; dismissConflict?: boolean } = {}) => {
-      if (panelMode || !onboardingCompletedRef.current || savingRef.current) {
-        return false;
+      if (reconciliation.kind === 'apply-remote') {
+        applyRemoteProfile(result, options.notify === true);
+        return;
       }
 
-      const conflictSnapshot = options.dismissConflict ? pendingLocalConflictRef.current : null;
-      const { profile, signature } = conflictSnapshot ?? getCurrentProfileSnapshot();
-      const metadata = readSyncMetadata();
-
-      if (options.dismissConflict) {
-        clearConflictToast();
+      if (reconciliation.kind === 'save-merged') {
+        rememberCommonBase(result.profile, result);
+        applyingRemote = true;
+        try {
+          importDashboardConfig(
+            { ...reconciliation.profile, exportedAt: new Date().toISOString() },
+            { applyNavigation: false }
+          );
+        } finally {
+          applyingRemote = false;
+        }
+        pendingLocalChanges = true;
+        markRemoteSynced(result);
+        if (options.notify) {
+          notifyRemoteUpdate(result);
+        }
+        await saveProfile(getProfileForSync());
+        return;
       }
 
-      if (!options.dismissConflict && metadata.lastSavedSignature === signature) {
-        hasPendingLocalChangesRef.current = false;
-        clearSaveTimeout();
-        return false;
+      showConflict(
+        {
+          base: base?.profile ?? null,
+          local,
+          remote: result,
+        },
+        reconciliation.overlappingPaths
+      );
+    }
+
+    async function refreshRemote(options: { forceFull?: boolean; notify?: boolean } = {}) {
+      if (cancelled || loadingRemote || (!options.forceFull && !shouldPoll())) {
+        return;
+      }
+      if (saving) {
+        schedulePoll();
+        return;
       }
 
-      clearSaveTimeout();
-
-      if (!options.keepalive && !options.dismissConflict && isOnlineRef.current) {
-        const result = await loadDashboardProfile({
-          etag: lastRemoteEtagRef.current ?? undefined,
-          lastModified: lastRemoteLastModifiedRef.current ?? undefined,
-        });
+      loadingRemote = true;
+      try {
+        const requestOptions: DashboardProfileLoadOptions = options.forceFull
+          ? {}
+          : {
+              etag: remoteResult?.etag ?? undefined,
+              lastModified: remoteResult?.etag
+                ? undefined
+                : (remoteResult?.lastModified ?? undefined),
+            };
+        const result = await loadDashboardProfile(requestOptions);
+        if (cancelled) {
+          return;
+        }
 
         if (!result.available) {
-          failureCountRef.current += 1;
-          schedulePoll();
-          return false;
+          runtime.markError(
+            tRef.current(
+              result.unauthorized
+                ? 'dashboard.profileSync.unauthorized'
+                : 'dashboard.profileSync.unavailable'
+            )
+          );
+          schedulePoll(getNextPollDelay(++failureCount));
+          return;
         }
 
-        failureCountRef.current = 0;
-        updateRemoteMetadata({
-          clearMissingValidators: !result.notModified,
-          etag: result.etag,
-          generation: result.generation,
-          lastModified: result.lastModified,
-          profile: result.profile,
+        await handleRemoteResult(result, {
+          notify: options.notify ?? true,
         });
-      }
-
-      savingRef.current = true;
-
-      let result = await saveDashboardProfile(profile, {
-        etag: lastRemoteEtagRef.current ?? undefined,
-        keepalive: options.keepalive,
-        lastModified: lastRemoteLastModifiedRef.current ?? undefined,
-      });
-
-      if (
-        !result.saved &&
-        !options.keepalive &&
-        !result.permanentFailure &&
-        (result.etag !== null || result.lastModified !== null)
-      ) {
-        result = await saveDashboardProfile(profile, {
-          etag: result.etag ?? undefined,
-          keepalive: options.keepalive,
-          lastModified: result.lastModified ?? undefined,
-        });
-      }
-
-      if (!result.saved && !options.keepalive && result.preconditionFailed) {
-        const refreshed = await loadDashboardProfile();
-
-        if (refreshed.available) {
-          failureCountRef.current = 0;
-          updateRemoteMetadata({
-            clearMissingValidators: !refreshed.notModified,
-            etag: refreshed.etag,
-            generation: refreshed.generation,
-            lastModified: refreshed.lastModified,
-            profile: refreshed.profile,
-          });
-
-          result = await saveDashboardProfile(profile, {
-            etag: refreshed.etag ?? undefined,
-            keepalive: options.keepalive,
-            lastModified: refreshed.lastModified ?? undefined,
-          });
-        } else {
-          failureCountRef.current += 1;
-        }
-      }
-
-      savingRef.current = false;
-
-      if (!result.saved) {
-        if (result.permanentFailure) {
-          profileSyncAvailableRef.current = false;
+      } catch (error) {
+        console.warn('[DashboardProfile] Unable to reconcile the shared dashboard:', error);
+        runtime.markError(tRef.current('dashboard.profileSync.unavailable'));
+        schedulePoll(getNextPollDelay(++failureCount));
+      } finally {
+        loadingRemote = false;
+        if (pendingLocalChanges && !pendingConflict) {
+          syncCurrentLocalState();
         }
         schedulePoll();
-        return false;
       }
-
-      hasPendingLocalChangesRef.current = false;
-      profileSyncAvailableRef.current = true;
-      clearReloadGuard();
-      updateRemoteMetadata({
-        clearMissingValidators: true,
-        etag: result.etag,
-        generation: result.generation,
-        lastModified: result.lastModified,
-        profile,
-        signature,
-      });
-      writeSyncMetadata({
-        ...metadata,
-        lastAppliedAt: profile.exportedAt,
-        lastSavedSignature: signature,
-        serverGeneration: result.generation ?? metadata.serverGeneration,
-        lastRemoteVersion: profile.exportedAt,
-        lastRemoteEtag: result.etag ?? undefined,
-        lastRemoteLastModified: result.lastModified ?? undefined,
-      });
-
-      schedulePoll();
-      return true;
-    },
-    [
-      clearConflictToast,
-      clearSaveTimeout,
-      getCurrentProfileSnapshot,
-      panelMode,
-      schedulePoll,
-      showConflictToast,
-      updateRemoteMetadata,
-    ]
-  );
-  flushPendingSaveRef.current = flushPendingSave;
-
-  const syncCurrentLocalState = useCallback(() => {
-    if (
-      panelMode ||
-      applyingRemoteProfileRef.current ||
-      !loadCompletedRef.current ||
-      !onboardingCompletedRef.current
-    ) {
-      return;
     }
 
-    const { signature } = getCurrentProfileSnapshot();
-    const metadata = readSyncMetadata();
+    function syncCurrentLocalState() {
+      if (
+        cancelled ||
+        !loaded ||
+        !onboardingCompletedRef.current ||
+        applyingRemote ||
+        writesBlocked ||
+        !remoteResult ||
+        pendingConflict
+      ) {
+        return;
+      }
+      if (saving) {
+        pendingLocalChanges = true;
+        return;
+      }
 
-    if (metadata.lastSavedSignature === signature) {
-      hasPendingLocalChangesRef.current = false;
+      refreshClientIdentity();
+      const profile = getProfileForSync();
+      const changedPaths = remoteResult.profile
+        ? getDashboardProfileChangedPaths(remoteResult.profile, profile)
+        : ['/'];
+      if (changedPaths.length === 0) {
+        pendingLocalChanges = false;
+        clearSaveTimeout();
+        return;
+      }
+
+      pendingLocalChanges = true;
       clearSaveTimeout();
-      return;
+      saveTimeout = window.setTimeout(() => {
+        saveTimeout = null;
+        void saveProfile(getProfileForSync());
+      }, PROFILE_SAVE_DEBOUNCE_MS);
     }
-
-    hasPendingLocalChangesRef.current = true;
-    clearSaveTimeout();
-    saveTimeoutRef.current = window.setTimeout(() => {
-      saveTimeoutRef.current = null;
-      void flushPendingSaveRef.current();
-    }, PROFILE_SAVE_DEBOUNCE_MS);
-  }, [clearSaveTimeout, getCurrentProfileSnapshot, panelMode]);
-  syncCurrentLocalStateRef.current = syncCurrentLocalState;
-
-  useEffect(() => {
-    onboardingCompletedRef.current = onboardingCompleted;
-    if (profileLoadCompleted && onboardingCompleted) {
-      syncCurrentLocalStateRef.current();
-      schedulePollRef.current();
-    }
-  }, [onboardingCompleted, profileLoadCompleted]);
-
-  useEffect(() => {
-    isOnlineRef.current = isOnline;
-    const wasOnline = previousOnlineRef.current;
-    previousOnlineRef.current = isOnline;
-    if (!isOnline) {
-      clearPollTimeout();
-      return;
-    }
-
-    if (profileLoadCompleted && !wasOnline) {
-      syncCurrentLocalStateRef.current();
-      void pollRemoteProfile({ immediate: true });
-    }
-  }, [clearPollTimeout, isOnline, pollRemoteProfile, profileLoadCompleted]);
-
-  useEffect(() => {
-    isVisibleRef.current = isVisible;
-    const wasVisible = previousVisibleRef.current;
-    previousVisibleRef.current = isVisible;
-    if (!isVisible) {
-      clearPollTimeout();
-      if (hasPendingLocalChangesRef.current) {
-        void flushPendingSaveRef.current({ keepalive: true });
-      }
-      return;
-    }
-
-    if (profileLoadCompleted && !wasVisible) {
-      syncCurrentLocalStateRef.current();
-      void pollRemoteProfile({ immediate: true });
-    }
-  }, [clearPollTimeout, isVisible, pollRemoteProfile, profileLoadCompleted]);
-
-  useEffect(() => {
-    if (panelMode || loadCompletedRef.current) {
-      return;
-    }
-
-    let cancelled = false;
-
-    async function loadSharedProfile() {
-      if (!isOnlineRef.current) {
-        loadCompletedRef.current = true;
-        profileSyncAvailableRef.current = true;
-        setProfileLoadCompleted(true);
-        return;
-      }
-
-      const metadata = readSyncMetadata();
-      lastRemoteVersionRef.current = metadata.lastRemoteVersion ?? null;
-      lastRemoteEtagRef.current = metadata.lastRemoteEtag ?? null;
-      lastRemoteLastModifiedRef.current = metadata.lastRemoteLastModified ?? null;
-
-      const result = await loadDashboardProfile({
-        etag: metadata.lastRemoteEtag,
-        lastModified: metadata.lastRemoteLastModified,
-      });
-      if (cancelled) {
-        return;
-      }
-
-      loadCompletedRef.current = true;
-      setProfileLoadCompleted(true);
-      profileSyncAvailableRef.current = result.available || profileSyncAvailableRef.current;
-      if (result.available) {
-        updateRemoteMetadata({
-          clearMissingValidators: !result.notModified,
-          etag: result.etag,
-          generation: result.generation,
-          lastModified: result.lastModified,
-          profile: result.profile,
-        });
-      }
-
-      const generationAuthoritative = isServerGenerationAuthoritative(result.generation, metadata);
-
-      if (!result.profile || result.notModified) {
-        if (!result.notModified && generationAuthoritative) {
-          resetToAuthoritativeEmptyRemoteRef.current({
-            etag: result.etag,
-            generation: result.generation,
-            lastModified: result.lastModified,
-          });
-        }
-        syncCurrentLocalStateRef.current();
-        schedulePollRef.current();
-        return;
-      }
-
-      applyRemoteProfile(result.profile, {
-        etag: result.etag,
-        generation: result.generation,
-        lastModified: result.lastModified,
-      });
-    }
-
-    void loadSharedProfile();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [applyRemoteProfile, panelMode, updateRemoteMetadata]);
-
-  useEffect(() => {
-    if (panelMode) {
-      return;
-    }
+    syncCurrentLocalStateRef.current = syncCurrentLocalState;
 
     const subscriptions = [
-      useThemeStore.subscribe(() => syncCurrentLocalStateRef.current()),
-      useSettingsStore.subscribe(() => syncCurrentLocalStateRef.current()),
-      useCustomCardsStore.subscribe(() => syncCurrentLocalStateRef.current()),
-      useDashboardEntitiesStore.subscribe(() => syncCurrentLocalStateRef.current()),
-      useCardZonesStore.subscribe(() => syncCurrentLocalStateRef.current()),
-      useHomeDashboardLayoutStore.subscribe(() => syncCurrentLocalStateRef.current()),
-      useLightPresetStore.subscribe(() => syncCurrentLocalStateRef.current()),
+      useThemeStore.subscribe(syncCurrentLocalState),
+      useSettingsStore.subscribe(syncCurrentLocalState),
+      useCustomCardsStore.subscribe(syncCurrentLocalState),
+      useDashboardEntitiesStore.subscribe(syncCurrentLocalState),
+      useEntityRoomOverridesStore.subscribe(syncCurrentLocalState),
+      useCardZonesStore.subscribe(syncCurrentLocalState),
+      useHomeDashboardLayoutStore.subscribe(syncCurrentLocalState),
+      useLightPresetStore.subscribe(syncCurrentLocalState),
     ];
 
     const handlePersistedState = (event: Event) => {
-      const customEvent = event as CustomEvent<{ key?: string; value?: unknown }>;
-      if (!SYNC_RELEVANT_PERSISTED_KEYS.has(customEvent.detail?.key ?? '')) {
-        return;
+      const customEvent = event as CustomEvent<{ key?: string }>;
+      if (SYNC_RELEVANT_PERSISTED_KEYS.has(customEvent.detail?.key ?? '')) {
+        syncCurrentLocalState();
       }
-
-      syncCurrentLocalStateRef.current();
     };
-
     const handleStorage = (event: StorageEvent) => {
-      if (!event.key || !SYNC_RELEVANT_PERSISTED_KEYS.has(event.key)) {
+      if (event.key && SYNC_RELEVANT_PERSISTED_KEYS.has(event.key)) {
+        syncCurrentLocalState();
+      }
+    };
+    const handleOnline = () => {
+      isOnline = true;
+      syncCurrentLocalState();
+      void refreshRemote({ notify: true });
+    };
+    const handleOffline = () => {
+      isOnline = false;
+      clearPollTimeout();
+      runtime.markOffline();
+    };
+    const handleVisibilityChange = () => {
+      isVisible = getDocumentVisibility() === 'visible';
+      if (!isVisible) {
+        clearPollTimeout();
+        if (pendingLocalChanges) {
+          void saveProfile(getProfileForSync(), { keepalive: true });
+        }
         return;
       }
 
-      syncCurrentLocalStateRef.current();
+      syncCurrentLocalState();
+      void refreshRemote({ notify: true });
+    };
+    const handlePageHide = () => {
+      if (pendingLocalChanges) {
+        void saveProfile(getProfileForSync(), { keepalive: true });
+      }
+    };
+    const handleIdentityChange = (event: Event) => {
+      const nextClient = (event as CustomEvent<DashboardClientIdentity>).detail;
+      if (!nextClient) {
+        return;
+      }
+      client = nextClient;
+      runtime.setClient(nextClient);
+      void refreshRegisteredClients(true);
+    };
+    const handleRefreshRequest = () => {
+      void refreshRemote({ forceFull: true, notify: true });
     };
 
     window.addEventListener(PERSISTED_STATE_EVENT, handlePersistedState as EventListener);
     window.addEventListener('storage', handleStorage);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener(DASHBOARD_CLIENT_IDENTITY_EVENT, handleIdentityChange as EventListener);
+    window.addEventListener(DASHBOARD_PROFILE_REFRESH_EVENT, handleRefreshRequest);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    async function initialize() {
+      try {
+        if (!isOnline) {
+          runtime.markOffline();
+          loaded = true;
+          setProfileLoadCompleted(true);
+          return;
+        }
+
+        const [result, registeredClients] = await Promise.all([
+          loadDashboardProfile(),
+          touchDashboardClient(client),
+        ]);
+        if (cancelled) {
+          return;
+        }
+
+        setRegisteredClients(registeredClients);
+        if (result.available) {
+          await handleRemoteResult(result, { initial: true, notify: false });
+        } else {
+          runtime.markError(
+            tRef.current(
+              result.unauthorized
+                ? 'dashboard.profileSync.unauthorized'
+                : 'dashboard.profileSync.unavailable'
+            )
+          );
+        }
+      } catch (error) {
+        console.warn('[DashboardProfile] Unable to initialize shared dashboard sync:', error);
+        runtime.markError(tRef.current('dashboard.profileSync.unavailable'));
+      } finally {
+        if (!cancelled) {
+          loaded = true;
+          setProfileLoadCompleted(true);
+          syncCurrentLocalState();
+          schedulePoll();
+        }
+      }
+    }
+
+    void initialize();
 
     return () => {
+      cancelled = true;
+      syncCurrentLocalStateRef.current = () => undefined;
+      clearSaveTimeout();
+      clearPollTimeout();
+      clearConflict();
       subscriptions.forEach((unsubscribe) => {
         unsubscribe();
       });
       window.removeEventListener(PERSISTED_STATE_EVENT, handlePersistedState as EventListener);
       window.removeEventListener('storage', handleStorage);
-    };
-  }, [panelMode]);
-
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    const handleVisibilityChange = () => setIsVisible(getDocumentVisibility() === 'visible');
-    const handlePageHide = () => {
-      if (hasPendingLocalChangesRef.current) {
-        void flushPendingSaveRef.current({ keepalive: true });
-      }
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('pagehide', handlePageHide);
-
-    return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener(
+        DASHBOARD_CLIENT_IDENTITY_EVENT,
+        handleIdentityChange as EventListener
+      );
+      window.removeEventListener(DASHBOARD_PROFILE_REFRESH_EVENT, handleRefreshRequest);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      clearSaveTimeout();
-      clearPollTimeout();
-      clearConflictToast();
-    };
-  }, [clearConflictToast, clearPollTimeout, clearSaveTimeout]);
+  }, [panelMode]);
 
   return {
     profileLoadCompleted: panelMode || profileLoadCompleted,

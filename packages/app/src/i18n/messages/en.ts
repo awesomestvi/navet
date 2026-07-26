@@ -195,7 +195,7 @@ export const enMessages = {
   'settings.dashboard.backup.description':
     'Export a reusable snapshot of your dashboard layout and restore it on another device later.',
   'settings.dashboard.backup.body':
-    'Includes theme, layout, room order, card order, hidden entity state, custom widgets, and light preset settings. Export and import both use YAML. Connection URL and token are intentionally left out.',
+    'Includes theme, layout, room order, hidden entity state, custom widgets, and light preset settings. Export and import both use YAML. Connection URL and token are intentionally left out.',
   'settings.dashboard.backup.export': 'Export config',
   'settings.dashboard.backup.import': 'Import config',
   'habits.status.on': 'On',
@@ -337,6 +337,59 @@ export const enMessages = {
   'settings.system.providers.status.signed-in': 'Signed in',
   'settings.system.providers.status.disconnected': 'Disconnected',
   'settings.system.providers.status.planned': 'Planned',
+  'settings.system.clients.title': 'Connected devices',
+  'settings.system.clients.description':
+    'See which devices use this Navet installation, their sync state, and where the latest change came from.',
+  'settings.system.clients.thisDashboard': 'This device',
+  'settings.system.clients.name': 'Device name',
+  'settings.system.clients.rename': 'Rename',
+  'settings.system.clients.saveName': 'Save name',
+  'settings.system.clients.otherDashboards': 'Other devices',
+  'settings.system.clients.noOtherDashboards':
+    'No other device has connected to this Navet installation yet.',
+  'settings.system.clients.signedInAs': 'Signed in as {name}',
+  'settings.system.clients.identityUnknown': 'User identity unavailable',
+  'settings.system.clients.revision': 'Revision {revision}',
+  'settings.system.clients.lastSynced': 'Last synced {time}',
+  'settings.system.clients.updatedBy': 'Dashboard updated from {client}',
+  'settings.system.clients.changedPaths':
+    '{count} settings changed in revision {revision}, {time}.',
+  'settings.system.clients.status.disabled': 'Local only',
+  'settings.system.clients.status.error': 'Sync needs attention',
+  'settings.system.clients.status.idle': 'Ready',
+  'settings.system.clients.status.loading': 'Loading',
+  'settings.system.clients.status.offline': 'Offline',
+  'settings.system.clients.status.saving': 'Saving',
+  'settings.system.clients.status.synced': 'Synced',
+  'settings.system.clients.showHistory': 'Revision history',
+  'settings.system.clients.hideHistory': 'Hide revision history',
+  'settings.system.clients.historyLoading': 'Loading revision history...',
+  'settings.system.clients.historyEmpty': 'No previous dashboard revisions are available.',
+  'settings.system.clients.historyLoadFailed': 'Revision history could not be loaded.',
+  'settings.system.clients.historyRetry': 'Try again',
+  'settings.system.clients.historyCurrent': 'Current',
+  'settings.system.clients.historyUpdatedBy': 'Updated by {client}, {time}.',
+  'settings.system.clients.historyRestoredFrom': 'Restored from revision {revision}.',
+  'settings.system.clients.historySnapshotUnavailable':
+    'This revision does not contain a dashboard snapshot.',
+  'settings.system.clients.restore': 'Restore',
+  'settings.system.clients.restoring': 'Restoring...',
+  'settings.system.clients.restoreConfirm': 'Restore revision {revision}?',
+  'settings.system.clients.restoreDescription':
+    'This makes its dashboard settings current and records the restore as a new revision.',
+  'settings.system.clients.restoreSuccess':
+    'Revision {revision} was restored and saved as a new revision.',
+  'settings.system.clients.restoreFailed': 'The revision could not be restored.',
+  'settings.system.clients.restoreStale':
+    'The dashboard changed before the restore finished. Refresh the history and try again.',
+  'settings.system.clients.forget': 'Forget',
+  'settings.system.clients.forgetting': 'Forgetting...',
+  'settings.system.clients.forgetConfirm': 'Forget {client}?',
+  'settings.system.clients.forgetDescription':
+    'This removes its saved device settings, dashboard name, and last-seen details. Revision history remains. It does not sign that dashboard out or revoke its OAuth login.',
+  'settings.system.clients.forgetSuccess':
+    '{client} was removed from the connected dashboard list. Its login was not changed.',
+  'settings.system.clients.forgetFailed': 'The dashboard record could not be forgotten.',
   'settings.system.logout.description': 'End this Navet session on this device.',
   'settings.project.sectionTitle': 'Project',
   'settings.project.sectionDescription':
@@ -1341,9 +1394,21 @@ export const enMessages = {
   'pwa.later': 'Later',
   'dashboard.profileSync.conflictTitle': 'Dashboard changes detected on another device',
   'dashboard.profileSync.conflictDescription':
-    'This tablet has unsaved dashboard edits. Keep your local version or load the newer shared dashboard.',
+    'This dashboard has edits to the same settings changed elsewhere. Keep your version or load the newer shared dashboard.',
   'dashboard.profileSync.keepMine': 'Keep mine',
   'dashboard.profileSync.loadRemote': 'Load remote',
+  'dashboard.profileSync.updatedTitle': 'Dashboard updated',
+  'dashboard.profileSync.updatedDescription': '{client} updated the shared dashboard.',
+  'dashboard.profileSync.resetPreserved':
+    'The shared dashboard was reset. This dashboard’s local settings were preserved; you can restore an earlier revision in Settings.',
+  'dashboard.profileSync.missingPreserved':
+    'The shared dashboard needs recovery. This dashboard’s local settings were preserved.',
+  'dashboard.profileSync.unavailable':
+    'Shared dashboard sync is unavailable. Local settings are preserved.',
+  'dashboard.profileSync.unauthorized':
+    'Sign in again to continue syncing the shared dashboard. Local settings are preserved.',
+  'dashboard.profileSync.saveFailed':
+    'The dashboard could not be synced. Your local changes are preserved and Navet will retry.',
   'entityRoomSelector.movedTo': 'Card moved to {room}',
   'entityRoomSelector.updateFailed': 'Unable to update room',
   'entityRoomSelector.createAction': 'Create room...',
@@ -1887,6 +1952,7 @@ export const enMessages = {
   'camera.settings.streamPreference': 'Live stream',
   'camera.settings.streamPreference.auto': 'Auto',
   'camera.settings.streamPreference.web_rtc': 'WebRTC',
+  'camera.settings.streamPreference.mse': 'MSE',
   'camera.settings.streamPreference.direct_stream': 'Direct WebRTC',
   'camera.settings.webRtcStreamSource.provider': 'Provider stream',
   'camera.settings.webRtcStreamSource.direct': 'Direct stream',
@@ -1896,9 +1962,10 @@ export const enMessages = {
     'Auto tries the full stream fallback chain. Choosing a specific live stream type starts from that stream and continues through the remaining fallbacks before snapshot.',
   'camera.settings.directStreamUrl': 'Direct stream URL',
   'camera.settings.directStreamUrl.description':
-    'Optional. Use a browser-playable stream page such as go2rtc when Home Assistant only exposes HLS. Clear the field to use Home Assistant streams.',
+    'Use a go2rtc stream page with one src value. Navet uses this exact URL while Direct stream is selected. Keep the go2rtc API on a trusted network.',
+  'camera.settings.directStreamUrl.localOnly': 'Stored only on this device.',
   'camera.settings.directStreamUrl.error':
-    'Direct stream failed to load. Check the URL and try again.',
+    'Direct stream could not be used. Check the URL, HTTPS, and whether go2rtc allows this dashboard to connect.',
   'camera.settings.fitMode': 'Feed sizing',
   'camera.settings.fitMode.contain': 'Fit',
   'camera.settings.fitMode.cover': 'Cover',

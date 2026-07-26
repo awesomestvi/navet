@@ -8,7 +8,7 @@ import {
   navetTypographyTokens,
 } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
-import { useTheme } from '@navet/app/hooks';
+import { useTheme } from '@navet/app/hooks/use-theme';
 import { forwardRef, type InputHTMLAttributes, type ReactNode, useState } from 'react';
 
 export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {

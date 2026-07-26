@@ -196,7 +196,7 @@ export const fiMessages = {
   'settings.dashboard.backup.description':
     'Vie uudelleen käytettävä tilannekuva kojelaudan asettelusta ja palauta se myöhemmin toiselle laitteelle.',
   'settings.dashboard.backup.body':
-    'Sisältää teeman, asettelun, huonejärjestyksen, korttijärjestyksen, piilotetun kokonaisuuden tilan, mukautetut widgetit ja valon esiasetukset. Sekä vienti että tuonti käyttävät YAML:ia. Yhteyden URL-osoite ja tunnus on tarkoituksella jätetty pois.',
+    'Sisältää teeman, asettelun, huonejärjestyksen, piilotetun kokonaisuuden tilan, mukautetut widgetit ja valon esiasetukset. Sekä vienti että tuonti käyttävät YAML:ia. Yhteyden URL-osoite ja tunnus on tarkoituksella jätetty pois.',
   'settings.dashboard.backup.export': 'Vie konfiguraatio',
   'settings.dashboard.backup.import': 'Tuo konfiguraatio',
   'habits.status.on': 'Päällä',
@@ -340,6 +340,59 @@ export const fiMessages = {
   'settings.system.providers.status.signed-in': 'Kirjautunut sisään',
   'settings.system.providers.status.disconnected': 'Yhteys katkaistu',
   'settings.system.providers.status.planned': 'Suunniteltu',
+  'settings.system.clients.title': 'Yhdistetyt laitteet',
+  'settings.system.clients.description':
+    'Näe, mitkä laitteet käyttävät tätä Navet-asennusta, niiden synkronointitila ja viimeisimmän muutoksen lähde.',
+  'settings.system.clients.thisDashboard': 'Tämä laite',
+  'settings.system.clients.name': 'Laitteen nimi',
+  'settings.system.clients.rename': 'Nimeä uudelleen',
+  'settings.system.clients.saveName': 'Tallenna nimi',
+  'settings.system.clients.otherDashboards': 'Muut laitteet',
+  'settings.system.clients.noOtherDashboards':
+    'Mikään muu laite ei ole vielä muodostanut yhteyttä tähän Navet-asennukseen.',
+  'settings.system.clients.signedInAs': 'Kirjautunut käyttäjänä {name}',
+  'settings.system.clients.identityUnknown': 'Käyttäjätunnus ei ole saatavilla',
+  'settings.system.clients.revision': 'Versio {revision}',
+  'settings.system.clients.lastSynced': 'Synkronoitu viimeksi {time}',
+  'settings.system.clients.updatedBy': 'Hallintapaneeli päivitetty laitteesta {client}',
+  'settings.system.clients.changedPaths':
+    '{count} asetusta muutettiin versiossa {revision}, {time}.',
+  'settings.system.clients.status.disabled': 'Vain paikallinen',
+  'settings.system.clients.status.error': 'Synkronointi vaatii huomiota',
+  'settings.system.clients.status.idle': 'Valmis',
+  'settings.system.clients.status.loading': 'Ladataan',
+  'settings.system.clients.status.offline': 'Ei yhteyttä',
+  'settings.system.clients.status.saving': 'Tallennetaan',
+  'settings.system.clients.status.synced': 'Synkronoitu',
+  'settings.system.clients.showHistory': 'Versiohistoria',
+  'settings.system.clients.hideHistory': 'Piilota versiohistoria',
+  'settings.system.clients.historyLoading': 'Ladataan versiohistoriaa...',
+  'settings.system.clients.historyEmpty': 'Aiempiä hallintapaneelin versioita ei ole saatavilla.',
+  'settings.system.clients.historyLoadFailed': 'Versiohistoriaa ei voitu ladata.',
+  'settings.system.clients.historyRetry': 'Yritä uudelleen',
+  'settings.system.clients.historyCurrent': 'Nykyinen',
+  'settings.system.clients.historyUpdatedBy': 'Päivittänyt {client}, {time}.',
+  'settings.system.clients.historyRestoredFrom': 'Palautettu versiosta {revision}.',
+  'settings.system.clients.historySnapshotUnavailable':
+    'Tämä versio ei sisällä hallintapaneelin tilannevedosta.',
+  'settings.system.clients.restore': 'Palauta',
+  'settings.system.clients.restoring': 'Palautetaan...',
+  'settings.system.clients.restoreConfirm': 'Palautetaanko versio {revision}?',
+  'settings.system.clients.restoreDescription':
+    'Tämä ottaa kyseisen hallintapaneelin asetukset käyttöön ja tallentaa palautuksen uutena versiona.',
+  'settings.system.clients.restoreSuccess':
+    'Versio {revision} palautettiin ja tallennettiin uutena versiona.',
+  'settings.system.clients.restoreFailed': 'Versiota ei voitu palauttaa.',
+  'settings.system.clients.restoreStale':
+    'Hallintapaneeli muuttui ennen palautuksen valmistumista. Päivitä historia ja yritä uudelleen.',
+  'settings.system.clients.forget': 'Unohda',
+  'settings.system.clients.forgetting': 'Unohdetaan...',
+  'settings.system.clients.forgetConfirm': 'Unohdetaanko {client}?',
+  'settings.system.clients.forgetDescription':
+    'Tämä poistaa tallennetut laiteasetukset, hallintapaneelin nimen ja viimeisimmän toiminnan tiedot. Versiohistoria säilyy. Se ei kirjaa hallintapaneelia ulos eikä peruuta sen OAuth-kirjautumista.',
+  'settings.system.clients.forgetSuccess':
+    '{client} poistettiin yhdistettyjen hallintapaneelien luettelosta. Sen kirjautumista ei muutettu.',
+  'settings.system.clients.forgetFailed': 'Hallintapaneelin tietuetta ei voitu unohtaa.',
   'settings.system.logout.description': 'Lopeta tämä Navet-istunto tällä laitteella.',
   'settings.project.sectionTitle': 'Projekti',
   'settings.project.sectionDescription':
@@ -1357,9 +1410,21 @@ export const fiMessages = {
   'pwa.later': 'Myöhemmin',
   'dashboard.profileSync.conflictTitle': 'Hallintapaneelin muutokset havaittu toisessa laitteessa',
   'dashboard.profileSync.conflictDescription':
-    'Tässä tabletissa on tallentamattomia hallintapaneelin muokkauksia. Säilytä paikallinen versio tai lataa uudempi jaettu hallintapaneeli.',
+    'Tässä hallintapaneelissa on muutoksia samoihin asetuksiin, joita muutettiin muualla. Säilytä oma versiosi tai lataa uudempi jaettu hallintapaneeli.',
   'dashboard.profileSync.keepMine': 'Pidä minun',
   'dashboard.profileSync.loadRemote': 'Lataa kaukosäädin',
+  'dashboard.profileSync.updatedTitle': 'Hallintapaneeli päivitettiin',
+  'dashboard.profileSync.updatedDescription': '{client} päivitti jaetun hallintapaneelin.',
+  'dashboard.profileSync.resetPreserved':
+    'Jaettu hallintapaneeli nollattiin. Tämän hallintapaneelin paikalliset asetukset säilytettiin; voit palauttaa aiemman version Asetuksissa.',
+  'dashboard.profileSync.missingPreserved':
+    'Jaettu hallintapaneeli on palautettava. Tämän hallintapaneelin paikalliset asetukset säilytettiin.',
+  'dashboard.profileSync.unavailable':
+    'Jaetun hallintapaneelin synkronointi ei ole käytettävissä. Paikalliset asetukset säilytetään.',
+  'dashboard.profileSync.unauthorized':
+    'Kirjaudu uudelleen sisään jatkaaksesi jaetun hallintapaneelin synkronointia. Paikalliset asetukset säilytetään.',
+  'dashboard.profileSync.saveFailed':
+    'Hallintapaneelia ei voitu synkronoida. Paikalliset muutokset säilytetään ja Navet yrittää uudelleen.',
   'entityRoomSelector.movedTo': 'Kortti siirretty huoneeseen {room}',
   'entityRoomSelector.updateFailed': 'Huonetta ei voi päivittää',
   'entityRoomSelector.createAction': 'Luo huone...',
@@ -1914,6 +1979,7 @@ export const fiMessages = {
   'camera.settings.streamPreference': 'Suora lähetys',
   'camera.settings.streamPreference.auto': 'Auto',
   'camera.settings.streamPreference.web_rtc': 'WebRTC',
+  'camera.settings.streamPreference.mse': 'MSE',
   'camera.settings.streamPreference.direct_stream': 'Suora WebRTC',
   'camera.settings.webRtcStreamSource.provider': 'Palveluntarjoajan suoratoisto',
   'camera.settings.webRtcStreamSource.direct': 'Suora stream',
@@ -1924,6 +1990,7 @@ export const fiMessages = {
   'camera.settings.directStreamUrl': 'Suoran streamin URL-osoite',
   'camera.settings.directStreamUrl.description':
     'Valinnainen. Käytä selaimella toistettavaa suoratoistosivua, kuten go2rtc, kun Home Assistant paljastaa vain HLS:n. Tyhjennä kenttä käyttääksesi Home Assistantin striimejä.',
+  'camera.settings.directStreamUrl.localOnly': 'Tallennetaan vain tälle laitteelle.',
   'camera.settings.directStreamUrl.error':
     'Suoran streamin lataaminen epäonnistui. Tarkista URL-osoite ja yritä uudelleen.',
   'camera.settings.fitMode': 'Syötteen mitoitus',

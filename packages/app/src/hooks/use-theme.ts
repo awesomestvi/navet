@@ -4,13 +4,33 @@
  */
 
 import { resolvePrimaryColorValue } from '@navet/app/components/shared/theme/theme-colors';
-import { themeSelectors } from '@navet/app/stores/selectors';
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { PrimaryColor, ThemeMode as ThemeType } from '../stores/theme-store';
 import { useThemeStore } from '../stores/theme-store';
 import { useMediaQuery } from './use-media-query';
 import { generateThemeColors, type ThemeColors } from './use-theme-colors';
+
+const themeSelectors = {
+  primaryColor: (state: ReturnType<typeof useThemeStore.getState>) => state.primaryColor,
+  customPrimaryColor: (state: ReturnType<typeof useThemeStore.getState>) =>
+    state.customPrimaryColor,
+  wallpaper: (state: ReturnType<typeof useThemeStore.getState>) => state.wallpaper,
+  allValues: (state: ReturnType<typeof useThemeStore.getState>) => ({
+    theme: state.theme,
+    followSystemTheme: state.followSystemTheme,
+    primaryColor: state.primaryColor,
+    customPrimaryColor: state.customPrimaryColor,
+    wallpaper: state.wallpaper,
+  }),
+  allActions: (state: ReturnType<typeof useThemeStore.getState>) => ({
+    setTheme: state.setTheme,
+    setFollowSystemTheme: state.setFollowSystemTheme,
+    setPrimaryColor: state.setPrimaryColor,
+    setCustomPrimaryColor: state.setCustomPrimaryColor,
+    setWallpaper: state.setWallpaper,
+  }),
+};
 
 export type { PrimaryColor, ThemeColors, ThemeType };
 
