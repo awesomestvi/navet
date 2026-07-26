@@ -1647,6 +1647,7 @@ export const svMessages = {
   'camera.settings.streamPreference': 'Liveström',
   'camera.settings.streamPreference.auto': 'Auto',
   'camera.settings.streamPreference.web_rtc': 'WebRTC',
+  'camera.settings.streamPreference.mse': 'MSE',
   'camera.settings.streamPreference.direct_stream': 'Direkt WebRTC',
   'camera.settings.webRtcStreamSource.provider': 'Leverantörsström',
   'camera.settings.webRtcStreamSource.direct': 'Direktström',
@@ -1657,6 +1658,7 @@ export const svMessages = {
   'camera.settings.directStreamUrl': 'URL för direktström',
   'camera.settings.directStreamUrl.description':
     'Valfritt. Använd en strömsida som kan spelas i webbläsaren, till exempel go2rtc, när Home Assistant bara exponerar HLS. Rensa fältet för att använda Home Assistant-strömmar.',
+  'camera.settings.directStreamUrl.localOnly': 'Lagrad endast på den här enheten.',
   'camera.settings.directStreamUrl.error':
     'Direktströmmen kunde inte läsas in. Kontrollera URL:en och försök igen.',
   'camera.settings.fitMode': 'Flödesstorlek',

@@ -1,6 +1,6 @@
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { renderWithProviders } from '@navet/app/test/render';
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CameraCardContainer } from '../container';
 
@@ -11,6 +11,8 @@ const {
   useCameraPlaybackPlanMock,
   readNavetCameraStateMock,
   cameraStreamPlayerRenderMock,
+  cameraLiveViewerRenderMock,
+  cameraSettingsDialogRenderMock,
 } = vi.hoisted(() => ({
   useProviderEntityModelMock: vi.fn(),
   useProviderCameraTopologyMock: vi.fn(),
@@ -18,6 +20,8 @@ const {
   useCameraPlaybackPlanMock: vi.fn(),
   readNavetCameraStateMock: vi.fn(),
   cameraStreamPlayerRenderMock: vi.fn(),
+  cameraLiveViewerRenderMock: vi.fn(),
+  cameraSettingsDialogRenderMock: vi.fn(),
 }));
 
 vi.mock('@navet/app/components/shared/edit-mode-settings-request', () => ({
@@ -29,6 +33,7 @@ vi.mock('@navet/app/core/navet-device-state', () => ({
 }));
 
 vi.mock('@navet/app/features/security/hooks/use-camera-playback-plan', () => ({
+  normalizeCameraDirectStreamUrl: (value: string | undefined) => value ?? null,
   useCameraPlaybackPlan: useCameraPlaybackPlanMock,
 }));
 
@@ -57,11 +62,20 @@ vi.mock('@navet/app/services/integration-resource.service', () => ({
 }));
 
 vi.mock('../camera-live-viewer', () => ({
-  CameraLiveViewer: () => null,
+  CameraLiveViewer: (props: { preferredTransport: string }) => {
+    cameraLiveViewerRenderMock(props);
+    return <div data-testid="camera-live-viewer" />;
+  },
 }));
 
 vi.mock('../camera-settings-dialog', () => ({
-  CameraSettingsDialog: () => null,
+  CameraSettingsDialog: (props: {
+    cameraStreamPreference: string;
+    supportedStreamPreferences: string[];
+  }) => {
+    cameraSettingsDialogRenderMock(props);
+    return <div data-testid="camera-settings-dialog" />;
+  },
 }));
 
 vi.mock('../camera-stream-player', () => ({
@@ -98,6 +112,11 @@ describe('CameraCardContainer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
+    useSettingsStore.setState({
+      cameraStreamPreferences: {},
+      cameraWebRtcStreamSources: {},
+      cameraDirectStreamUrls: {},
+    });
 
     useProviderEntityModelMock.mockReturnValue({
       providerId: 'home_assistant',
@@ -135,6 +154,7 @@ describe('CameraCardContainer', () => {
         url: '/api/camera_proxy/camera.front',
       },
       supportsSnapshot: true,
+      supportedTransports: ['web_rtc'],
       liveTransports: ['web_rtc'],
       fallbackTransports: [],
       selectedTransport: 'web_rtc',
@@ -251,47 +271,27 @@ describe('CameraCardContainer', () => {
     useSettingsStore
       .getState()
       .updateCameraStreamPreference('home_assistant:camera.front', 'web_rtc');
-    useCameraPlaybackPlanMock
-      .mockReturnValueOnce({
-        cameraState: 'streaming',
-        snapshotResource: {
-          id: 'camera.front:snapshot',
-          kind: 'image',
-          cacheKey: 'camera.front:snapshot',
-          authStrategy: 'same_origin',
-          url: '/api/camera_proxy/camera.front',
-        },
-        supportsSnapshot: true,
-        liveTransports: ['mjpeg'],
-        fallbackTransports: [],
-        selectedTransport: 'mjpeg',
-        selectedStreamResource: null,
-        supportsStreaming: true,
-        isSnapshotFallback: false,
-        shouldStartWithSnapshot: false,
-        motionDetectionEnabled: null,
-        refreshPolicy: { retryDelaysMs: [1_000, 3_000, 7_000] },
-      })
-      .mockReturnValueOnce({
-        cameraState: 'streaming',
-        snapshotResource: {
-          id: 'camera.front:snapshot',
-          kind: 'image',
-          cacheKey: 'camera.front:snapshot',
-          authStrategy: 'same_origin',
-          url: '/api/camera_proxy/camera.front',
-        },
-        supportsSnapshot: true,
-        liveTransports: ['mjpeg'],
-        fallbackTransports: [],
-        selectedTransport: 'mjpeg',
-        selectedStreamResource: null,
-        supportsStreaming: true,
-        isSnapshotFallback: false,
-        shouldStartWithSnapshot: false,
-        motionDetectionEnabled: null,
-        refreshPolicy: { retryDelaysMs: [1_000, 3_000, 7_000] },
-      });
+    useCameraPlaybackPlanMock.mockReturnValue({
+      cameraState: 'streaming',
+      snapshotResource: {
+        id: 'camera.front:snapshot',
+        kind: 'image',
+        cacheKey: 'camera.front:snapshot',
+        authStrategy: 'same_origin',
+        url: '/api/camera_proxy/camera.front',
+      },
+      supportsSnapshot: true,
+      supportedTransports: ['mjpeg'],
+      liveTransports: ['mjpeg'],
+      fallbackTransports: [],
+      selectedTransport: 'mjpeg',
+      selectedStreamResource: null,
+      supportsStreaming: true,
+      isSnapshotFallback: false,
+      shouldStartWithSnapshot: false,
+      motionDetectionEnabled: null,
+      refreshPolicy: { retryDelaysMs: [1_000, 3_000, 7_000] },
+    });
 
     renderWithProviders(
       <CameraCardContainer
@@ -308,9 +308,66 @@ describe('CameraCardContainer', () => {
 
     expect(useCameraPlaybackPlanMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        preferredTransport: 'web_rtc',
+      })
+    );
+    expect(useCameraPlaybackPlanMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({
         preferredTransport: 'auto',
       })
     );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Camera settings' }));
+
+    expect(screen.getByTestId('camera-settings-dialog')).toBeInTheDocument();
+    expect(cameraSettingsDialogRenderMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        cameraStreamPreference: 'auto',
+        supportedStreamPreferences: ['mjpeg'],
+      })
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open camera viewer: Front Door' }));
+
+    expect(screen.getByTestId('camera-live-viewer')).toBeInTheDocument();
+    expect(cameraLiveViewerRenderMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        preferredTransport: 'auto',
+      })
+    );
+  });
+
+  it('uses one direct-source playback plan instead of mounting a provider options plan', () => {
+    useSettingsStore
+      .getState()
+      .updateCameraWebRtcStreamSource('home_assistant:camera.front', 'direct');
+    useSettingsStore
+      .getState()
+      .updateCameraDirectStreamUrl(
+        'home_assistant:camera.front',
+        'http://go2rtc.local:1984/stream.html?src=front'
+      );
+    useCameraPlaybackPlanMock.mockClear();
+
+    renderWithProviders(
+      <CameraCardContainer
+        id="home_assistant:camera.front"
+        name="Front Door"
+        room="Entrance"
+        entityPicture="/api/camera_proxy/camera.front"
+        isStreamCapable
+        size="large"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(useCameraPlaybackPlanMock).toHaveBeenCalled();
+    expect(
+      useCameraPlaybackPlanMock.mock.calls.every(
+        ([request]) => request.webRtcStreamSource === 'direct'
+      )
+    ).toBe(true);
   });
 
   it('keeps live playback planning exempt from performance-profile effect downgrades', () => {

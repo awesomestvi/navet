@@ -9,7 +9,10 @@ import type {
   CameraStreamPreference,
   CameraWebRtcStreamSource,
 } from '@navet/app/stores/settings-store';
+import { isDirectCameraStreamSource } from '@navet/app/stores/settings-store';
 import { useEffect, useMemo, useState } from 'react';
+
+const CAMERA_CAPABILITIES_REFRESH_LIMIT = 3;
 
 interface UseCameraPlaybackPlanOptions {
   entityId: string;
@@ -22,9 +25,13 @@ interface UseCameraPlaybackPlanOptions {
   isStreamCapable: boolean;
   motionDetectionEnabled: boolean | null;
   failedTransports?: ReadonlySet<PlatformCameraTransport>;
+  directStreamFailed?: boolean;
 }
 
-function normalizeDirectStreamUrl(value: string | undefined) {
+export function normalizeCameraDirectStreamUrl(
+  value: string | undefined,
+  pageProtocol = window.location.protocol
+) {
   if (!value) {
     return null;
   }
@@ -36,15 +43,27 @@ function normalizeDirectStreamUrl(value: string | undefined) {
 
   try {
     const streamUrl = new URL(trimmed, window.location.href);
-    return streamUrl.protocol === 'http:' || streamUrl.protocol === 'https:'
-      ? streamUrl.toString()
-      : null;
+    if (streamUrl.protocol !== 'http:' && streamUrl.protocol !== 'https:') {
+      return null;
+    }
+    if (pageProtocol === 'https:' && streamUrl.protocol === 'http:') {
+      return null;
+    }
+    const streamSources = streamUrl.searchParams
+      .getAll('src')
+      .map((source) => source.trim())
+      .filter(Boolean);
+    if (streamSources.length !== 1) {
+      return null;
+    }
+
+    return trimmed;
   } catch {
     return null;
   }
 }
 
-function createDirectWebRtcResource(entityId: string, streamUrl: string): ResolvedPlatformResource {
+function createDirectStreamResource(entityId: string, streamUrl: string): ResolvedPlatformResource {
   return {
     id: `${entityId}:direct:${streamUrl}`,
     kind: 'webrtc_stream',
@@ -55,39 +74,47 @@ function createDirectWebRtcResource(entityId: string, streamUrl: string): Resolv
   };
 }
 
-function applyDirectWebRtcOverride(
+function applyCameraStreamSource(
   plan: PlatformCameraPlaybackModel,
   options: UseCameraPlaybackPlanOptions
 ): PlatformCameraPlaybackModel {
-  if (options.preferredTransport !== 'web_rtc' || options.webRtcStreamSource !== 'direct') {
+  const directSource = options.webRtcStreamSource ?? 'provider';
+  if (!isDirectCameraStreamSource(directSource)) {
     return plan;
   }
 
-  if (options.failedTransports?.has('web_rtc')) {
-    return plan;
-  }
+  const directStreamUrl = normalizeCameraDirectStreamUrl(options.directStreamUrl);
+  const providerSupportedTransports = plan.supportedTransports ?? plan.liveTransports;
+  const shouldUseDirectStream =
+    directStreamUrl !== null &&
+    !options.directStreamFailed &&
+    options.preferredMode !== 'snapshot' &&
+    options.cameraState !== 'unavailable' &&
+    options.cameraState !== 'off';
 
-  const directStreamUrl = normalizeDirectStreamUrl(options.directStreamUrl);
-  if (!directStreamUrl) {
+  if (!shouldUseDirectStream) {
+    const hasSnapshotFallback =
+      options.preferredMode !== 'snapshot' && plan.snapshotResource !== null;
     return {
       ...plan,
-      liveTransports: [],
+      supportedTransports: providerSupportedTransports,
+      liveTransports: directStreamUrl ? ['web_rtc'] : [],
       fallbackTransports: [],
       selectedTransport: null,
       selectedStreamResource: null,
-      supportsStreaming: false,
-      isSnapshotFallback: plan.supportsSnapshot,
-      shouldStartWithSnapshot: plan.supportsSnapshot,
+      supportsStreaming: directStreamUrl !== null,
+      isSnapshotFallback: hasSnapshotFallback,
+      shouldStartWithSnapshot: plan.snapshotResource !== null,
     };
   }
 
-  const remainingTransports = plan.liveTransports.filter((transport) => transport !== 'web_rtc');
   return {
     ...plan,
-    liveTransports: ['web_rtc', ...remainingTransports],
-    fallbackTransports: remainingTransports,
+    supportedTransports: providerSupportedTransports,
+    liveTransports: ['web_rtc'],
+    fallbackTransports: [],
     selectedTransport: 'web_rtc',
-    selectedStreamResource: createDirectWebRtcResource(options.entityId, directStreamUrl),
+    selectedStreamResource: createDirectStreamResource(options.entityId, directStreamUrl),
     supportsStreaming: true,
     isSnapshotFallback: false,
     shouldStartWithSnapshot: false,
@@ -108,6 +135,7 @@ export function useCameraPlaybackPlan(options: UseCameraPlaybackPlanOptions) {
       snapshotUrl: options.snapshotUrl,
       isStreamCapable: options.isStreamCapable,
       motionDetectionEnabled: options.motionDetectionEnabled,
+      directStreamFailed: options.directStreamFailed,
       failedTransports: new Set(
         failedTransportKey.length > 0
           ? (failedTransportKey.split(',') as PlatformCameraTransport[])
@@ -124,27 +152,52 @@ export function useCameraPlaybackPlan(options: UseCameraPlaybackPlanOptions) {
       options.snapshotUrl,
       options.isStreamCapable,
       options.motionDetectionEnabled,
+      options.directStreamFailed,
       failedTransportKey,
     ]
   );
 
   useEffect(() => {
     let cancelled = false;
+    let capabilitiesRefreshTimeout: number | null = null;
 
-    void getCameraPlaybackPlan(stableOptions)
-      .then((nextPlan) => {
-        if (!cancelled) {
-          setPlan(applyDirectWebRtcOverride(nextPlan, stableOptions));
-        }
+    const loadPlan = (capabilitiesRefreshCount = 0) => {
+      void getCameraPlaybackPlan({
+        ...stableOptions,
+        webRtcStreamSource: 'provider',
+        directStreamUrl: undefined,
       })
-      .catch(() => {
-        if (!cancelled) {
-          setPlan(null);
-        }
-      });
+        .then((nextPlan) => {
+          if (cancelled) {
+            return;
+          }
+
+          setPlan(applyCameraStreamSource(nextPlan, stableOptions));
+          const refreshDelay = nextPlan.refreshPolicy.capabilitiesRefreshMs;
+          if (
+            refreshDelay !== undefined &&
+            capabilitiesRefreshCount < CAMERA_CAPABILITIES_REFRESH_LIMIT
+          ) {
+            capabilitiesRefreshTimeout = window.setTimeout(
+              () => loadPlan(capabilitiesRefreshCount + 1),
+              refreshDelay
+            );
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setPlan(null);
+          }
+        });
+    };
+
+    loadPlan();
 
     return () => {
       cancelled = true;
+      if (capabilitiesRefreshTimeout !== null) {
+        window.clearTimeout(capabilitiesRefreshTimeout);
+      }
     };
   }, [stableOptions]);
 

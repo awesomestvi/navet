@@ -27,6 +27,7 @@ const CAMERA_RETRY_DELAYS_MS = [1_000, 3_000, 7_000];
 const CAMERA_SNAPSHOT_REFRESH_MS = 10_000;
 const CAMERA_FALLBACK_REFRESH_MS = 30_000;
 const CAMERA_CAPABILITIES_TIMEOUT_MS = 750;
+const CAMERA_CAPABILITIES_REFRESH_MS = 1_000;
 const CAMERA_CAPABILITIES_CACHE_MAX_ENTRIES = 64;
 
 function canAttemptLivePlayback(
@@ -34,6 +35,10 @@ function canAttemptLivePlayback(
   preferredMode: 'auto' | 'live' | 'snapshot'
 ) {
   return preferredMode !== 'snapshot' && cameraState !== 'unavailable' && cameraState !== 'off';
+}
+
+function cameraStateCanExposeStreamPreferences(cameraState: PlatformCameraState) {
+  return cameraState !== 'unavailable' && cameraState !== 'off';
 }
 
 function normalizeDirectStreamUrl(value: string | undefined) {
@@ -79,6 +84,13 @@ export class CameraMediaService {
   private cachedStreamTypes = new LruCache<string, PlatformCameraTransport[]>(
     CAMERA_CAPABILITIES_CACHE_MAX_ENTRIES
   );
+  private pendingStreamTypes = new Map<
+    string,
+    Promise<{
+      streamTypes: PlatformCameraTransport[];
+      shouldRetry: boolean;
+    }>
+  >();
 
   constructor(
     private resolver: HomeAssistantResourceResolver,
@@ -103,10 +115,52 @@ export class CameraMediaService {
 
     const supportsSnapshot = Boolean(snapshotResource?.url);
     const canPlayLive = canAttemptLivePlayback(input.cameraState, input.preferredMode);
+    const supportedTransports: PlatformCameraTransport[] = [];
     const liveTransports: PlatformCameraTransport[] = [];
     const fallbackTransports: PlatformCameraTransport[] = [];
     let selectedTransport: PlatformCameraTransport | null = null;
     let selectedStreamResource: ResolvedPlatformResource | null = null;
+    let capabilitiesRefreshMs: number | undefined;
+    let orderedStreamTypes: PlatformCameraTransport[] = [];
+    let hlsStreamResourcePromise: Promise<ResolvedPlatformResource> | undefined;
+    const resolveProviderHlsStream = () => {
+      hlsStreamResourcePromise ??= (async () => {
+        let hlsPath: string | undefined;
+        try {
+          const stream = await this.getCameraStream(nativeEntityId, 'hls');
+          hlsPath = stream.url;
+        } catch {
+          const streamPaths = await this.getCameraStreamPaths(nativeEntityId);
+          hlsPath = streamPaths.hls;
+          if (!hlsPath) {
+            throw new Error('No HLS stream path available');
+          }
+        }
+
+        return await this.resolver.resolve({
+          kind: 'camera_stream',
+          entityId: input.entityId,
+          stream: 'hls',
+          rawPath: hlsPath,
+        });
+      })();
+      return hlsStreamResourcePromise;
+    };
+
+    if (
+      cameraStateCanExposeStreamPreferences(input.cameraState) &&
+      (canPlayLive || input.isStreamCapable)
+    ) {
+      const streamTypeResult = await this.readOrderedStreamTypes(
+        nativeEntityId,
+        input.isStreamCapable
+      );
+      orderedStreamTypes = streamTypeResult.streamTypes;
+      supportedTransports.push(...this.addMsePreference(orderedStreamTypes));
+      capabilitiesRefreshMs = streamTypeResult.capabilitiesPending
+        ? CAMERA_CAPABILITIES_REFRESH_MS
+        : undefined;
+    }
 
     if (canPlayLive) {
       const directWebRtcSelected =
@@ -117,10 +171,6 @@ export class CameraMediaService {
             directStreamUrl: input.directStreamUrl,
           })
         : null;
-      const orderedStreamTypes = await this.readOrderedStreamTypes(
-        nativeEntityId,
-        input.isStreamCapable
-      );
       const candidateStreamTypes: PlatformCameraTransport[] =
         directWebRtcSelected && !directStreamResource
           ? []
@@ -168,35 +218,24 @@ export class CameraMediaService {
             continue;
           }
 
-          let hlsPath: string | undefined;
-          try {
-            const stream = await this.getCameraStream(nativeEntityId, 'hls');
-            hlsPath = stream.url;
-          } catch {
-            const streamPaths = await this.getCameraStreamPaths(nativeEntityId);
-            hlsPath = streamPaths.hls;
-            if (!hlsPath) {
-              throw new Error('No HLS stream path available');
-            }
-          }
-
-          const resolvedStream = await this.resolver.resolve({
-            kind: 'camera_stream',
-            entityId: input.entityId,
-            stream: 'hls',
-            rawPath: hlsPath,
-          });
-          liveTransports.push('hls');
+          const resolvedStream = await resolveProviderHlsStream();
+          liveTransports.push(transport);
           if (!selectedStreamResource) {
             selectedStreamResource = {
               ...resolvedStream,
               kind: 'hls_stream',
+              metadata:
+                transport === 'mse'
+                  ? {
+                      ...resolvedStream.metadata,
+                      source: 'provider_hls',
+                      mode: 'mse',
+                    }
+                  : resolvedStream.metadata,
             };
           }
         } catch {
-          if (selectedTransport === null) {
-            selectedStreamResource = null;
-          }
+          // Continue through the advertised fallback chain.
         }
       }
 
@@ -210,6 +249,7 @@ export class CameraMediaService {
       selectedStreamResource = null;
     } else if (
       selectedTransport !== 'web_rtc' &&
+      selectedTransport !== 'mse' &&
       selectedTransport !== 'hls' &&
       selectedTransport !== 'mjpeg'
     ) {
@@ -228,6 +268,7 @@ export class CameraMediaService {
       cameraState: input.cameraState,
       snapshotResource,
       supportsSnapshot,
+      supportedTransports,
       liveTransports,
       fallbackTransports,
       selectedTransport,
@@ -237,6 +278,7 @@ export class CameraMediaService {
       shouldStartWithSnapshot,
       motionDetectionEnabled: input.motionDetectionEnabled,
       refreshPolicy: {
+        capabilitiesRefreshMs,
         snapshotRefreshMs:
           selectedTransport === null && supportsSnapshot
             ? input.preferredMode === 'snapshot'
@@ -251,33 +293,109 @@ export class CameraMediaService {
   private async readOrderedStreamTypes(
     entityId: string,
     isStreamCapable: boolean
-  ): Promise<PlatformCameraTransport[]> {
-    try {
-      const capabilities = await Promise.race([
-        this.getCameraCapabilities(entityId),
-        new Promise<PlatformCameraCapabilities>((resolve) => {
-          window.setTimeout(() => resolve({ streamTypes: [] }), CAMERA_CAPABILITIES_TIMEOUT_MS);
-        }),
-      ]);
-      const orderedTypes = capabilities.streamTypes.filter(
-        (type): type is PlatformCameraTransport =>
-          type === 'web_rtc' || type === 'hls' || type === 'mjpeg'
-      );
-      if (orderedTypes.length > 0) {
-        const prioritizedTypes = this.prioritizeHomeAssistantCameraTransports(orderedTypes);
-        this.cachedStreamTypes.set(entityId, prioritizedTypes);
-        return prioritizedTypes;
-      }
-    } catch {
-      // Capability lookup is advisory; fall through to explicit adapter defaults.
-    }
-
+  ): Promise<{
+    streamTypes: PlatformCameraTransport[];
+    capabilitiesPending: boolean;
+  }> {
     const cachedTypes = this.cachedStreamTypes.get(entityId);
     if (cachedTypes && cachedTypes.length > 0) {
-      return cachedTypes;
+      return {
+        streamTypes: this.addMjpegFallback(cachedTypes, isStreamCapable),
+        capabilitiesPending: false,
+      };
     }
 
-    return isStreamCapable ? ['web_rtc', 'hls', 'mjpeg'] : [];
+    let capabilityTypesPromise = this.pendingStreamTypes.get(entityId);
+    if (!capabilityTypesPromise) {
+      capabilityTypesPromise = this.getCameraCapabilities(entityId)
+        .then((capabilities) => {
+          const orderedTypes: PlatformCameraTransport[] = capabilities.streamTypes.filter(
+            (type) => type === 'web_rtc' || type === 'hls' || type === 'mjpeg'
+          );
+          if (orderedTypes.length === 0) {
+            return {
+              streamTypes: [],
+              shouldRetry: false,
+            };
+          }
+
+          const prioritizedTypes = this.prioritizeHomeAssistantCameraTransports(orderedTypes);
+          this.cachedStreamTypes.set(entityId, prioritizedTypes);
+          return {
+            streamTypes: prioritizedTypes,
+            shouldRetry: false,
+          };
+        })
+        .catch(() => ({
+          streamTypes: [] as PlatformCameraTransport[],
+          shouldRetry: true,
+        }));
+      this.pendingStreamTypes.set(entityId, capabilityTypesPromise);
+      void capabilityTypesPromise.finally(() => {
+        if (this.pendingStreamTypes.get(entityId) === capabilityTypesPromise) {
+          this.pendingStreamTypes.delete(entityId);
+        }
+      });
+    }
+    const activeCapabilityTypesPromise = capabilityTypesPromise;
+    let capabilityTimeout: number | null = null;
+    const capabilityResult = await Promise.race([
+      activeCapabilityTypesPromise.then(({ streamTypes, shouldRetry }) => ({
+        streamTypes,
+        capabilitiesPending: shouldRetry,
+      })),
+      new Promise<{
+        streamTypes: PlatformCameraTransport[];
+        capabilitiesPending: boolean;
+      }>((resolve) => {
+        capabilityTimeout = window.setTimeout(() => {
+          if (this.pendingStreamTypes.get(entityId) === activeCapabilityTypesPromise) {
+            this.pendingStreamTypes.delete(entityId);
+          }
+          resolve({ streamTypes: [], capabilitiesPending: true });
+        }, CAMERA_CAPABILITIES_TIMEOUT_MS);
+      }),
+    ]);
+    if (capabilityTimeout !== null) {
+      window.clearTimeout(capabilityTimeout);
+    }
+    if (capabilityResult.streamTypes.length > 0) {
+      return {
+        streamTypes: this.addMjpegFallback(capabilityResult.streamTypes, isStreamCapable),
+        capabilitiesPending: false,
+      };
+    }
+
+    // STREAM only means that the entity can stream; it does not advertise WebRTC.
+    // A late successful capability response is cached and the mounted plan requests a refresh.
+    return {
+      streamTypes: isStreamCapable ? ['hls', 'mjpeg'] : [],
+      capabilitiesPending: capabilityResult.capabilitiesPending,
+    };
+  }
+
+  private addMjpegFallback(
+    streamTypes: readonly PlatformCameraTransport[],
+    isStreamCapable: boolean
+  ): PlatformCameraTransport[] {
+    const types = [...streamTypes];
+    if (isStreamCapable && !types.includes('mjpeg')) {
+      types.push('mjpeg');
+    }
+    return types;
+  }
+
+  private addMsePreference(
+    streamTypes: readonly PlatformCameraTransport[]
+  ): PlatformCameraTransport[] {
+    const preferences: PlatformCameraTransport[] = [];
+    for (const streamType of streamTypes) {
+      if (streamType === 'hls') {
+        preferences.push('mse');
+      }
+      preferences.push(streamType);
+    }
+    return preferences;
   }
 
   private prioritizeHomeAssistantCameraTransports(
@@ -307,9 +425,14 @@ export class CameraMediaService {
       return [...streamTypes];
     }
 
+    if (preferredTransport === 'mse') {
+      const hlsIndex = streamTypes.indexOf('hls');
+      return hlsIndex === -1 ? [...streamTypes] : ['mse', ...streamTypes.slice(hlsIndex)];
+    }
+
     const preferredIndex = streamTypes.indexOf(preferredTransport);
     if (preferredIndex === -1) {
-      return [];
+      return [...streamTypes];
     }
 
     return streamTypes.slice(preferredIndex);

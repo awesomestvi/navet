@@ -118,7 +118,7 @@ vi.mock('../services/home-assistant.service', () => ({
   homeAssistantService: homeAssistantServiceStub,
 }));
 
-vi.mock('../features/dashboard', async () => {
+vi.mock('../features/dashboard/page', async () => {
   const { useLogout } =
     await vi.importActual<typeof import('../hooks/use-logout')>('../hooks/use-logout');
   const { useStoreWithEqualityFn } =
@@ -221,21 +221,24 @@ describe('App Home Assistant connection recovery', () => {
   });
 
   it('starts a connection attempt for a saved authenticated session', async () => {
+    vi.useRealTimers();
     setAuthenticatedSession();
 
     await act(async () => {
       render(<App />);
     });
 
-    expect(homeAssistantServiceStub.authenticate).toHaveBeenCalledWith({
-      providerId: 'home_assistant',
-      runtime: 'standalone-oauth',
-      authMode: 'oauth',
-      haBaseUrl: 'http://192.168.68.71:8123',
-      hassUrl: 'http://192.168.68.71:8123',
-      auth: expect.any(Object),
-      expiresAt: expect.any(Number),
-    });
+    await waitFor(() =>
+      expect(homeAssistantServiceStub.authenticate).toHaveBeenCalledWith({
+        providerId: 'home_assistant',
+        runtime: 'standalone-oauth',
+        authMode: 'oauth',
+        haBaseUrl: 'http://192.168.68.71:8123',
+        hassUrl: 'http://192.168.68.71:8123',
+        auth: expect.any(Object),
+        expiresAt: expect.any(Number),
+      })
+    );
   });
 
   it('hydrates a saved Homey session without opening a Home Assistant connection', async () => {
@@ -484,7 +487,7 @@ describe('App Home Assistant connection recovery', () => {
 
     await waitFor(() => expect(screen.getByText('login')).toBeInTheDocument());
     expect(screen.queryByText(/Invalid Home Assistant authentication/i)).not.toBeInTheDocument();
-    expect(homeAssistantServiceStub.disconnect).toHaveBeenCalled();
+    await waitFor(() => expect(homeAssistantServiceStub.disconnect).toHaveBeenCalled());
   });
 
   it('clears the persisted standalone OAuth session when scheduled token refresh fails', async () => {
@@ -855,7 +858,7 @@ describe('App Home Assistant connection recovery', () => {
       render(<App />);
     });
 
-    expect(screen.getByText('Choose a Homey')).toBeInTheDocument();
+    expect(await screen.findByText('Choose a Homey')).toBeInTheDocument();
     expect(homeAssistantServiceStub.authenticate).not.toHaveBeenCalled();
   });
 
@@ -883,7 +886,7 @@ describe('App Home Assistant connection recovery', () => {
       render(<App />);
     });
 
-    expect(screen.getByText('Choose a Homey')).toBeInTheDocument();
+    expect(await screen.findByText('Choose a Homey')).toBeInTheDocument();
     expect(homeAssistantServiceStub.authenticate).not.toHaveBeenCalled();
   });
 });

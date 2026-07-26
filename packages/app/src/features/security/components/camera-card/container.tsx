@@ -1,7 +1,10 @@
 import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import { readNavetCameraState } from '@navet/app/core/navet-device-state';
 import { resolveDashboardPerformanceProfile } from '@navet/app/features/dashboard/hooks/use-dashboard-performance-mode';
-import { useCameraPlaybackPlan } from '@navet/app/features/security/hooks/use-camera-playback-plan';
+import {
+  normalizeCameraDirectStreamUrl,
+  useCameraPlaybackPlan,
+} from '@navet/app/features/security/hooks/use-camera-playback-plan';
 import { useI18n, useProviderCameraTopology } from '@navet/app/hooks';
 import { useProviderEntityModel } from '@navet/app/hooks/use-provider-device';
 import type {
@@ -14,6 +17,8 @@ import { settingsSelectors } from '@navet/app/stores/selectors';
 import {
   type CameraStreamPreference,
   type CameraViewMode,
+  type CameraWebRtcStreamSource,
+  isDirectCameraStreamSource,
   useSettingsStore,
 } from '@navet/app/stores/settings-store';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
@@ -36,6 +41,7 @@ import {
   resolveDashboardCameraViewMode,
   resolveViewerInitialCameraViewMode,
 } from './camera-view-mode';
+import { isOpaqueGo2RtcStreamResource } from './go2rtc-viewer-presentation';
 import type { CameraCardProps } from './types';
 import { useProviderCameraLiveData } from './use-provider-camera-live-data';
 import { CameraCardView } from './view';
@@ -159,6 +165,9 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const cameraDirectStreamUrl = useSettingsStore(
     settingsSelectors.cameraDirectStreamUrlForEntity(id)
   );
+  const hasConfiguredDirectStream =
+    isDirectCameraStreamSource(cameraWebRtcStreamSource) &&
+    normalizeCameraDirectStreamUrl(cameraDirectStreamUrl) !== null;
   const cameraFitMode = useSettingsStore(settingsSelectors.cameraFitModeForEntity(id));
   const updateCameraViewMode = useSettingsStore(settingsSelectors.updateCameraViewMode);
   const updateCameraStreamPreference = useSettingsStore(
@@ -179,6 +188,8 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [viewerCameraViewMode, setViewerCameraViewMode] = useState<CameraViewMode>('live');
   const [failedStreamTypes, setFailedStreamTypes] = useState<PlatformCameraTransport[]>([]);
+  const [directStreamFailed, setDirectStreamFailed] = useState(false);
+  const [isStreamReady, setIsStreamReady] = useState(false);
   const streamRetryTimeoutRef = useRef<number | null>(null);
   const { cardRef, isVisible } = useCameraCardVisibility();
   const now = useCameraClock(isVisible || isViewerOpen);
@@ -222,39 +233,33 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     effectsQuality,
     hasSnapshot,
   });
-  const playbackOptionsModel = useCameraPlaybackPlan({
-    entityId: id,
-    webRtcStreamSource: 'provider',
-    directStreamUrl: cameraDirectStreamUrl,
-    cameraState,
-    preferredMode: 'live',
-    preferredTransport: 'auto',
-    snapshotUrl,
-    isStreamCapable,
-    motionDetectionEnabled: liveState.motionDetectionEnabled,
-    failedTransports: new Set(),
-  });
-  const isProviderFallbackTransportPreference =
-    cameraStreamPreference === 'hls' || cameraStreamPreference === 'mjpeg';
-  const effectiveCameraStreamPreference =
-    cameraStreamPreference === 'auto' ||
-    cameraStreamPreference === 'web_rtc' ||
-    (isProviderFallbackTransportPreference &&
-      (playbackOptionsModel?.liveTransports ?? []).includes(cameraStreamPreference))
-      ? cameraStreamPreference
-      : 'auto';
   const playbackModel = useCameraPlaybackPlan({
     entityId: id,
     webRtcStreamSource: cameraWebRtcStreamSource,
     directStreamUrl: cameraDirectStreamUrl,
     cameraState,
     preferredMode: effectiveDashboardCameraViewMode,
-    preferredTransport: effectiveCameraStreamPreference,
+    preferredTransport: cameraStreamPreference,
     snapshotUrl,
     isStreamCapable,
     motionDetectionEnabled: liveState.motionDetectionEnabled,
     failedTransports: new Set(failedStreamTypes),
+    directStreamFailed,
   });
+  const supportedProviderTransports =
+    playbackModel?.supportedTransports ?? playbackModel?.liveTransports ?? [];
+  const effectiveCameraStreamPreference =
+    cameraStreamPreference === 'auto' ||
+    supportedProviderTransports.includes(cameraStreamPreference)
+      ? cameraStreamPreference
+      : 'auto';
+  const isDirectStreamResource =
+    playbackModel?.selectedStreamResource?.kind === 'webrtc_stream' &&
+    playbackModel.selectedStreamResource.metadata?.source === 'direct_stream_url';
+  const isStreamReadinessOpaque = isOpaqueGo2RtcStreamResource(
+    playbackModel?.selectedStreamResource,
+    window.location.href
+  );
 
   useEditModeSettingsRequest(id, () => setIsSettingsOpen(true), isEditMode);
 
@@ -265,11 +270,11 @@ export const CameraCardContainer = memo(function CameraCardContainer({
 
     setViewerCameraViewMode(
       resolveViewerInitialCameraViewMode({
-        isStreamCapable,
+        isStreamCapable: isStreamCapable || hasConfiguredDirectStream,
         hasSnapshot,
       })
     );
-  }, [hasSnapshot, isStreamCapable, isViewerOpen]);
+  }, [hasConfiguredDirectStream, hasSnapshot, isStreamCapable, isViewerOpen]);
 
   useEffect(() => {
     return () => {
@@ -292,6 +297,8 @@ export const CameraCardContainer = memo(function CameraCardContainer({
 
   useEffect(() => {
     setFailedStreamTypes([]);
+    setDirectStreamFailed(false);
+    setIsStreamReady(false);
   }, [
     cameraDirectStreamUrl,
     cameraWebRtcStreamSource,
@@ -299,6 +306,10 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     effectiveDashboardCameraViewMode,
     id,
   ]);
+
+  useEffect(() => {
+    setIsStreamReady(false);
+  }, [playbackModel?.selectedStreamResource?.cacheKey, playbackModel?.selectedTransport]);
 
   useEffect(() => {
     const refreshIntervalMs = playbackModel?.refreshPolicy.snapshotRefreshMs ?? null;
@@ -352,6 +363,8 @@ export const CameraCardContainer = memo(function CameraCardContainer({
 
   const handleRefresh = useCallback(() => {
     setFailedStreamTypes([]);
+    setDirectStreamFailed(false);
+    setIsStreamReady(false);
     setRefreshKey((key) => key + 1);
 
     void integrationCameraFeatureService
@@ -366,6 +379,8 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     (mode: CameraViewMode) => {
       updateCameraViewMode(id, mode);
       setFailedStreamTypes([]);
+      setDirectStreamFailed(false);
+      setIsStreamReady(false);
       setRefreshKey((key) => key + 1);
     },
     [id, updateCameraViewMode]
@@ -375,15 +390,19 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     (preference: CameraStreamPreference) => {
       updateCameraStreamPreference(id, preference);
       setFailedStreamTypes([]);
+      setDirectStreamFailed(false);
+      setIsStreamReady(false);
       setRefreshKey((key) => key + 1);
     },
     [id, updateCameraStreamPreference]
   );
 
   const handleCameraWebRtcStreamSourceChange = useCallback(
-    (source: 'provider' | 'direct') => {
+    (source: CameraWebRtcStreamSource) => {
       updateCameraWebRtcStreamSource(id, source);
       setFailedStreamTypes([]);
+      setDirectStreamFailed(false);
+      setIsStreamReady(false);
       setRefreshKey((key) => key + 1);
     },
     [id, updateCameraWebRtcStreamSource]
@@ -393,6 +412,8 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     (url: string) => {
       updateCameraDirectStreamUrl(id, url);
       setFailedStreamTypes([]);
+      setDirectStreamFailed(false);
+      setIsStreamReady(false);
       setRefreshKey((key) => key + 1);
     },
     [id, updateCameraDirectStreamUrl]
@@ -406,12 +427,17 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   );
 
   const handleStreamError = useCallback(
-    (kind: 'hls' | 'web_rtc' | 'mjpeg' | 'snapshot', options?: { retryable?: boolean }) => {
+    (kind: PlatformCameraTransport | 'snapshot', options?: { retryable?: boolean }) => {
       if (kind === 'snapshot') {
         return;
       }
 
-      setFailedStreamTypes((current) => (current.includes(kind) ? current : [...current, kind]));
+      setIsStreamReady(false);
+      if (kind === 'web_rtc' && isDirectStreamResource) {
+        setDirectStreamFailed(true);
+      } else {
+        setFailedStreamTypes((current) => (current.includes(kind) ? current : [...current, kind]));
+      }
 
       if (options?.retryable === false || hasSnapshot) {
         return;
@@ -428,10 +454,11 @@ export const CameraCardContainer = memo(function CameraCardContainer({
       streamRetryTimeoutRef.current = window.setTimeout(() => {
         streamRetryTimeoutRef.current = null;
         setFailedStreamTypes([]);
+        setDirectStreamFailed(false);
         setRefreshKey((key) => key + 1);
       }, CAMERA_STREAM_RETRY_DELAY_MS);
     },
-    [hasSnapshot, isVisible]
+    [hasSnapshot, isDirectStreamResource, isVisible]
   );
 
   const handleToggleMotionDetection = useCallback(() => {
@@ -448,16 +475,20 @@ export const CameraCardContainer = memo(function CameraCardContainer({
 
   const imageUrl = playbackModel?.snapshotResource?.url ?? snapshotUrl;
   const streamKind = playbackModel?.selectedTransport ?? 'snapshot';
-  const hideStreamLabel =
-    playbackModel?.selectedStreamResource?.kind === 'webrtc_stream' &&
-    playbackModel.selectedStreamResource.metadata?.source === 'direct_stream_url';
+  const streamLabelOverride = isStreamReadinessOpaque
+    ? t('camera.settings.webRtcStreamSource.direct')
+    : isDirectStreamResource
+      ? t('camera.settings.webRtcStreamSource.direct')
+      : undefined;
   const hasDirectStreamUrlError =
-    effectiveCameraStreamPreference === 'web_rtc' &&
-    cameraWebRtcStreamSource === 'direct' &&
+    isDirectCameraStreamSource(cameraWebRtcStreamSource) &&
     cameraDirectStreamUrl.trim().length > 0 &&
-    failedStreamTypes.includes('web_rtc');
+    (directStreamFailed || normalizeCameraDirectStreamUrl(cameraDirectStreamUrl) === null);
   // Keep live streams mounted on the card even if intersection callbacks flap during layout churn.
   const shouldRenderLiveStream = playbackModel?.selectedTransport ?? null;
+  const loadingLabel = t('camera.loadingFeed');
+  const webRtcTitle = t('camera.webRtcStreamTitle');
+  const handleStreamLoad = useCallback(() => setIsStreamReady(true), []);
   const streamElement = useMemo(() => {
     if (!shouldRenderLiveStream) {
       return undefined;
@@ -470,19 +501,22 @@ export const CameraCardContainer = memo(function CameraCardContainer({
         posterUrl={imageUrl}
         streamResource={playbackModel?.selectedStreamResource ?? null}
         fitMode={cameraFitMode}
-        loadingLabel={t('camera.loadingFeed')}
-        webRtcTitle={t('camera.webRtcStreamTitle')}
+        loadingLabel={loadingLabel}
+        webRtcTitle={webRtcTitle}
+        onLoad={handleStreamLoad}
         onError={handleStreamError}
       />
     );
   }, [
     cameraFitMode,
     handleStreamError,
+    handleStreamLoad,
     id,
     imageUrl,
+    loadingLabel,
     playbackModel?.selectedStreamResource,
-    t,
     shouldRenderLiveStream,
+    webRtcTitle,
   ]);
 
   return (
@@ -510,8 +544,9 @@ export const CameraCardContainer = memo(function CameraCardContainer({
         isStreamCapable={playbackModel?.supportsStreaming ?? isStreamCapable}
         frontendStreamTypes={playbackModel?.liveTransports ?? []}
         streamKind={streamKind}
-        hideStreamLabel={hideStreamLabel}
-        hideStreamStatus={hideStreamLabel}
+        streamLabelOverride={streamLabelOverride}
+        isStreamReady={isStreamReady}
+        isStreamReadinessOpaque={isStreamReadinessOpaque}
         isStreamFallback={playbackModel?.isSnapshotFallback ?? false}
         onRefresh={handleRefresh}
         onImageError={() => undefined}
@@ -531,7 +566,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
           snapshotUrl={snapshotUrl}
           snapshotSources={imageSources}
           cameraViewMode={viewerCameraViewMode}
-          preferredTransport={cameraStreamPreference}
+          preferredTransport={effectiveCameraStreamPreference}
           webRtcStreamSource={cameraWebRtcStreamSource}
           directStreamUrl={cameraDirectStreamUrl}
           cameraFitMode={cameraFitMode}
@@ -543,6 +578,8 @@ export const CameraCardContainer = memo(function CameraCardContainer({
           onRefresh={handleRefresh}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onCameraViewModeChange={setViewerCameraViewMode}
+          onPreferredTransportChange={handleCameraStreamPreferenceChange}
+          onCameraFitModeChange={handleCameraFitModeChange}
         />
       )}
 
@@ -558,7 +595,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
           cameraWebRtcStreamSource={cameraWebRtcStreamSource}
           cameraDirectStreamUrl={cameraDirectStreamUrl}
           cameraDirectStreamUrlError={hasDirectStreamUrlError}
-          supportedStreamPreferences={playbackOptionsModel?.liveTransports ?? []}
+          supportedStreamPreferences={supportedProviderTransports}
           supportsStreaming={isStreamCapable}
           hasSnapshot={hasSnapshot}
           lowPowerMode={lowPowerMode}

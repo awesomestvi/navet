@@ -2,6 +2,7 @@ import { integrationStore } from '@navet/app/stores/integration-store';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { renderHookWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
+import { act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { useProviderResourceMock } = vi.hoisted(() => ({
@@ -153,39 +154,44 @@ describe('useHeaderController', () => {
       })
     );
 
-    integrationStore.setState({
-      ...integrationStore.getState(),
-      providerEntitiesByProviderId: {
-        ...integrationStore.getState().providerEntitiesByProviderId,
-        home_assistant: {
-          ...(integrationStore.getState().providerEntitiesByProviderId.home_assistant ?? {}),
-          'home_assistant:light.kitchen': {
-            id: 'home_assistant:light.kitchen',
-            canonicalId: 'home_assistant:light.kitchen',
-            providerId: 'home_assistant',
-            externalId: 'light.kitchen',
-            type: 'light',
-            name: 'Kitchen Light',
-            room: 'Kitchen',
-            primaryState: 'on',
-            availability: 'available',
-            capabilities: [],
-            attributes: {},
+    const renderCountBeforeProviderUpdate = renderCount;
+    const resourceCallCountBeforeProviderUpdate = useProviderResourceMock.mock.calls.length;
+
+    act(() => {
+      integrationStore.setState({
+        ...integrationStore.getState(),
+        providerEntitiesByProviderId: {
+          ...integrationStore.getState().providerEntitiesByProviderId,
+          home_assistant: {
+            ...(integrationStore.getState().providerEntitiesByProviderId.home_assistant ?? {}),
+            'home_assistant:light.kitchen': {
+              id: 'home_assistant:light.kitchen',
+              canonicalId: 'home_assistant:light.kitchen',
+              providerId: 'home_assistant',
+              externalId: 'light.kitchen',
+              type: 'light',
+              name: 'Kitchen Light',
+              room: 'Kitchen',
+              primaryState: 'on',
+              availability: 'available',
+              capabilities: [],
+              attributes: {},
+            },
           },
         },
-      },
-      providerEntityLookupByProviderId: {
-        ...integrationStore.getState().providerEntityLookupByProviderId,
-        home_assistant: {
-          ...(integrationStore.getState().providerEntityLookupByProviderId.home_assistant ?? {}),
-          'light.kitchen': 'home_assistant:light.kitchen',
-          'home_assistant:light.kitchen': 'home_assistant:light.kitchen',
+        providerEntityLookupByProviderId: {
+          ...integrationStore.getState().providerEntityLookupByProviderId,
+          home_assistant: {
+            ...(integrationStore.getState().providerEntityLookupByProviderId.home_assistant ?? {}),
+            'light.kitchen': 'home_assistant:light.kitchen',
+            'home_assistant:light.kitchen': 'home_assistant:light.kitchen',
+          },
         },
-      },
+      });
     });
 
-    expect(renderCount).toBe(1);
-    expect(useProviderResourceMock).toHaveBeenCalledTimes(1);
+    expect(renderCount).toBe(renderCountBeforeProviderUpdate);
+    expect(useProviderResourceMock).toHaveBeenCalledTimes(resourceCallCountBeforeProviderUpdate);
     expect(result.current.avatarUrl).toBe('resolved:home_assistant:person.jane_doe');
   });
 

@@ -5,6 +5,9 @@ import { appPaths, repoRoot } from './repo-paths.mjs';
 
 const MAX_INITIAL_CODE_GZIP_BYTES = 650 * 1024;
 const MAX_STYLESHEET_GZIP_BYTES = 65 * 1024;
+const ALLOWED_THIRD_PARTY_SCRIPT_SOURCES = new Set([
+  'https://static.cloudflareinsights.com/beacon.min.js',
+]);
 
 function fail(message) {
   throw new Error(`[website-audit] ${message}`);
@@ -31,8 +34,17 @@ const initialAssetNames = Array.from(
 );
 
 if (initialAssetNames.length === 0) fail('no initial JavaScript or stylesheet assets were found');
-if (/\<script[^>]+src=["']https?:\/\//i.test(indexHtml)) {
-  fail('the initial document contains a third-party script');
+const thirdPartyScriptSources = Array.from(
+  indexHtml.matchAll(/<script[^>]+src=["'](https?:\/\/[^"']+)["']/gi),
+  (match) => match[1]
+);
+const unexpectedThirdPartyScriptSources = thirdPartyScriptSources.filter(
+  (source) => !ALLOWED_THIRD_PARTY_SCRIPT_SOURCES.has(source)
+);
+if (unexpectedThirdPartyScriptSources.length > 0) {
+  fail(
+    `the initial document contains an unexpected third-party script: ${unexpectedThirdPartyScriptSources.join(', ')}`
+  );
 }
 
 for (const requiredSeoMarkup of [
@@ -72,7 +84,7 @@ for (const requiredHeader of [
   'Content-Security-Policy:',
   'Strict-Transport-Security:',
   'Permissions-Policy:',
-  'Referrer-Policy: no-referrer',
+  'Referrer-Policy: strict-origin-when-cross-origin',
   'X-Content-Type-Options: nosniff',
   'X-Frame-Options: SAMEORIGIN',
 ]) {
@@ -105,8 +117,8 @@ requireFile(join(distDir, 'robots.txt'), 'robots.txt');
 requireFile(join(distDir, 'sitemap.xml'), 'sitemap.xml');
 requireFile(join(distDir, 'navet-social-card.jpg'), 'social preview image');
 requireFile(
-  join(process.cwd(), 'functions', 'api', 'music', 'apple', 'developer-token.ts'),
-  'root Pages Function entry'
+  join(repoRoot, 'apps', 'website', 'functions', 'api', 'music', 'apple', 'developer-token.ts'),
+  'website Pages Function entry'
 );
 
 console.log(

@@ -5,6 +5,7 @@ import {
   normalizeCustomSummaryPills,
 } from '@navet/app/utils/custom-extensions';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
+import { normalizePersistedEntityRecord } from '@navet/app/utils/provider-entity-id';
 
 export const SETTINGS_PROFILE_SCHEMA_VERSION = 1 as const;
 
@@ -43,7 +44,7 @@ export const SETTINGS_PROFILE_CLASSIFICATION = {
   cameraViewModes: 'device',
   cameraStreamPreference: 'device',
   cameraStreamPreferences: 'device',
-  cameraWebRtcStreamSources: 'device',
+  cameraWebRtcStreamSources: 'secret',
   cameraDirectStreamUrls: 'secret',
   cameraFitMode: 'device',
   cameraFitModes: 'device',
@@ -81,8 +82,8 @@ const DASHBOARD_SPACE_MODES = new Set(['default', 'more_space']);
 const EFFECTS_QUALITY_VALUES = new Set(['high', 'medium', 'low']);
 const ENTITY_INTERACTION_MODES = new Set(['control-first', 'toggle-first']);
 const CAMERA_VIEW_MODES = new Set(['live', 'auto', 'snapshot']);
-const CAMERA_STREAM_PREFERENCES = new Set(['auto', 'web_rtc', 'hls', 'mjpeg']);
-const CAMERA_WEBRTC_SOURCES = new Set(['provider', 'direct']);
+const CAMERA_STREAM_PREFERENCES = new Set(['auto', 'web_rtc', 'mse', 'hls', 'mjpeg']);
+const CAMERA_WEBRTC_SOURCES = new Set(['provider', 'direct', 'direct_web_rtc', 'direct_mse']);
 const CAMERA_FIT_MODES = new Set(['cover', 'contain']);
 const WEATHER_FORECAST_MODES = new Set(['weekly', 'hourly']);
 const WEATHER_METRIC_IDS = new Set([
@@ -186,26 +187,33 @@ function sanitizeSettingValue(key: keyof UserSettings, value: unknown): unknown 
     );
   }
   if (key === 'cameraViewModes') {
-    return sanitizeRecordValues(value, CAMERA_VIEW_MODES) ?? undefined;
+    const sanitized = sanitizeRecordValues(value, CAMERA_VIEW_MODES);
+    return sanitized ? normalizePersistedEntityRecord(sanitized) : undefined;
   }
   if (key === 'cameraStreamPreferences') {
-    return sanitizeRecordValues(value, CAMERA_STREAM_PREFERENCES) ?? undefined;
+    const sanitized = sanitizeRecordValues(value, CAMERA_STREAM_PREFERENCES);
+    return sanitized ? normalizePersistedEntityRecord(sanitized) : undefined;
   }
   if (key === 'cameraWebRtcStreamSources') {
-    return sanitizeRecordValues(value, CAMERA_WEBRTC_SOURCES) ?? undefined;
+    const sanitized = sanitizeRecordValues(value, CAMERA_WEBRTC_SOURCES);
+    return sanitized ? normalizePersistedEntityRecord(sanitized) : undefined;
   }
   if (key === 'cameraFitModes') {
-    return sanitizeRecordValues(value, CAMERA_FIT_MODES) ?? undefined;
+    const sanitized = sanitizeRecordValues(value, CAMERA_FIT_MODES);
+    return sanitized ? normalizePersistedEntityRecord(sanitized) : undefined;
   }
   if (key === 'cameraDirectStreamUrls') {
-    return isRecord(value)
-      ? Object.fromEntries(
-          Object.entries(value).filter(
-            (entry): entry is [string, string] =>
-              typeof entry[1] === 'string' && entry[1].trim().length > 0
-          )
+    if (!isRecord(value)) {
+      return undefined;
+    }
+    return normalizePersistedEntityRecord(
+      Object.fromEntries(
+        Object.entries(value).filter(
+          (entry): entry is [string, string] =>
+            typeof entry[1] === 'string' && entry[1].trim().length > 0
         )
-      : undefined;
+      )
+    );
   }
   if (
     key === 'username' ||

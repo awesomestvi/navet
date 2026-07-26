@@ -1757,6 +1757,7 @@ export const fiMessages = {
   'camera.settings.streamPreference': 'Suora lähetys',
   'camera.settings.streamPreference.auto': 'Auto',
   'camera.settings.streamPreference.web_rtc': 'WebRTC',
+  'camera.settings.streamPreference.mse': 'MSE',
   'camera.settings.streamPreference.direct_stream': 'Suora WebRTC',
   'camera.settings.webRtcStreamSource.provider': 'Palveluntarjoajan suoratoisto',
   'camera.settings.webRtcStreamSource.direct': 'Suora stream',
@@ -1767,6 +1768,7 @@ export const fiMessages = {
   'camera.settings.directStreamUrl': 'Suoran streamin URL-osoite',
   'camera.settings.directStreamUrl.description':
     'Valinnainen. Käytä selaimella toistettavaa suoratoistosivua, kuten go2rtc, kun Home Assistant paljastaa vain HLS:n. Tyhjennä kenttä käyttääksesi Home Assistantin striimejä.',
+  'camera.settings.directStreamUrl.localOnly': 'Tallennetaan vain tälle laitteelle.',
   'camera.settings.directStreamUrl.error':
     'Suoran streamin lataaminen epäonnistui. Tarkista URL-osoite ja yritä uudelleen.',
   'camera.settings.fitMode': 'Syötteen mitoitus',

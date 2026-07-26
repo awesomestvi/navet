@@ -356,7 +356,7 @@ describe('dashboard-config import hardening', () => {
       email: 'vishal@example.com',
       language: 'sv',
       cameraDirectStreamUrls: {
-        'camera.front': 'https://user:secret@example.com/live?token=private',
+        'home_assistant:camera.front': 'https://user:secret@example.com/live?token=private',
       },
     });
 
@@ -386,7 +386,7 @@ describe('dashboard-config import hardening', () => {
       email: 'vishal@example.com',
       language: 'sv',
       cameraDirectStreamUrls: {
-        'camera.front': 'https://user:secret@example.com/live?token=private',
+        'home_assistant:camera.front': 'https://user:secret@example.com/live?token=private',
       },
     });
   });

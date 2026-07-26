@@ -27,6 +27,7 @@ describe('settings profile scope', () => {
       disableAnimations: 'device',
       lowPowerMode: 'device',
       cameraDirectStreamUrls: 'secret',
+      cameraWebRtcStreamSources: 'secret',
       cameraViewMode: 'legacy',
     });
   });
@@ -41,6 +42,9 @@ describe('settings profile scope', () => {
       keepDeviceAwake: true,
       cameraDirectStreamUrls: {
         'camera.front': 'https://user:secret@example.com/live?token=private',
+      },
+      cameraWebRtcStreamSources: {
+        'camera.front': 'direct' as const,
       },
       customSidebarActions: [
         {
@@ -64,6 +68,7 @@ describe('settings profile scope', () => {
       expect(projection.settings).not.toHaveProperty('username');
       expect(projection.settings).not.toHaveProperty('email');
       expect(projection.settings).not.toHaveProperty('cameraDirectStreamUrls');
+      expect(projection.settings).not.toHaveProperty('cameraWebRtcStreamSources');
       expect(JSON.stringify(projection)).not.toContain('private');
     }
     expect(shared.settings.customSidebarActions).toEqual([]);
@@ -111,10 +116,7 @@ describe('settings profile scope', () => {
       settings: expect.objectContaining({
         cameraDashboardViewMode: 'snapshot',
         cameraStreamPreferences: {
-          'camera.front': 'web_rtc',
-        },
-        cameraWebRtcStreamSources: {
-          'camera.front': 'direct',
+          'home_assistant:camera.front': 'web_rtc',
         },
         effectsQuality: 'low',
         effectsQualityUserOverride: true,

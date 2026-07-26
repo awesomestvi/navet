@@ -3,6 +3,7 @@
  * Use these to prevent unnecessary re-renders
  */
 
+import { ensureCanonicalEntityId } from '@navet/app/utils/provider-entity-id';
 import { getProviderNativeId } from '@navet/app/utils/provider-ids';
 import type { ErrorStoreState } from './error-store';
 import type { HomeAssistantStore } from './home-assistant-store';
@@ -18,6 +19,11 @@ import type {
 
 function hasOwnKey(record: object, key: PropertyKey) {
   return typeof key === 'string' && Object.keys(record).includes(key);
+}
+
+function getEntitySetting<T>(record: Record<string, T>, entityId: string): T | undefined {
+  const canonicalEntityId = ensureCanonicalEntityId(entityId);
+  return record[canonicalEntityId] ?? record[entityId];
 }
 
 /**
@@ -128,21 +134,22 @@ export const settingsSelectors = {
   cameraDashboardViewMode: (state: SettingsState) => state.cameraDashboardViewMode,
   cameraViewMode: (state: SettingsState) => state.cameraDashboardViewMode,
   cameraDashboardViewModeForEntity: (entityId: string) => (state: SettingsState) =>
-    state.cameraViewModes[entityId] ?? state.cameraDashboardViewMode,
+    getEntitySetting(state.cameraViewModes, entityId) ?? state.cameraDashboardViewMode,
   hasCameraViewModeOverrideForEntity: (entityId: string) => (state: SettingsState) =>
+    hasOwnKey(state.cameraViewModes, ensureCanonicalEntityId(entityId)) ||
     hasOwnKey(state.cameraViewModes, entityId),
   cameraViewModeForEntity: (entityId: string) => (state: SettingsState) =>
-    state.cameraViewModes[entityId] ?? state.cameraDashboardViewMode,
+    getEntitySetting(state.cameraViewModes, entityId) ?? state.cameraDashboardViewMode,
   cameraStreamPreference: (state: SettingsState) => state.cameraStreamPreference,
   cameraStreamPreferenceForEntity: (entityId: string) => (state: SettingsState) =>
-    state.cameraStreamPreferences[entityId] ?? state.cameraStreamPreference,
+    getEntitySetting(state.cameraStreamPreferences, entityId) ?? state.cameraStreamPreference,
   cameraWebRtcStreamSourceForEntity: (entityId: string) => (state: SettingsState) =>
-    state.cameraWebRtcStreamSources[entityId] ?? 'provider',
+    getEntitySetting(state.cameraWebRtcStreamSources, entityId) ?? 'provider',
   cameraDirectStreamUrlForEntity: (entityId: string) => (state: SettingsState) =>
-    state.cameraDirectStreamUrls[entityId] ?? '',
+    getEntitySetting(state.cameraDirectStreamUrls, entityId) ?? '',
   cameraFitMode: (state: SettingsState) => state.cameraFitMode,
   cameraFitModeForEntity: (entityId: string) => (state: SettingsState) =>
-    state.cameraFitModes[entityId] ?? state.cameraFitMode,
+    getEntitySetting(state.cameraFitModes, entityId) ?? state.cameraFitMode,
   ambientLightBleed: (state: SettingsState) => state.ambientLightBleed,
   weatherForecastMode: (state: SettingsState) => state.weatherForecastMode,
   weatherMetricIds: (state: SettingsState) => state.weatherMetricIds,

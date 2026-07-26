@@ -58,17 +58,23 @@ export function usePlatformCameraPresentation(
             sourceKind: 'hls' as const,
             isFallback: false,
           }
-        : playbackPlan.selectedTransport === 'mjpeg'
+        : playbackPlan.selectedTransport === 'mse'
           ? {
               sourceUrl: undefined,
-              sourceKind: 'mjpeg' as const,
+              sourceKind: 'mse' as const,
               isFallback: false,
             }
-          : {
-              sourceUrl: playbackPlan.snapshotResource?.url,
-              sourceKind: 'snapshot' as const,
-              isFallback: playbackPlan.isSnapshotFallback,
-            };
+          : playbackPlan.selectedTransport === 'mjpeg'
+            ? {
+                sourceUrl: undefined,
+                sourceKind: 'mjpeg' as const,
+                isFallback: false,
+              }
+            : {
+                sourceUrl: playbackPlan.snapshotResource?.url,
+                sourceKind: 'snapshot' as const,
+                isFallback: playbackPlan.isSnapshotFallback,
+              };
 
   return {
     sourceUrl: resolved.sourceUrl,
@@ -76,6 +82,7 @@ export function usePlatformCameraPresentation(
     isFallback: resolved.isFallback,
     videoStreamKind:
       resolved.sourceKind === 'hls' ||
+      resolved.sourceKind === 'mse' ||
       resolved.sourceKind === 'web_rtc' ||
       resolved.sourceKind === 'mjpeg'
         ? resolved.sourceKind

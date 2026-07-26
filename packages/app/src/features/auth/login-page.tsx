@@ -1,30 +1,100 @@
 import homeAssistantLogo from '@navet/app/assets/providers/home-assistant.svg';
-import homeyLogoAvif from '@navet/app/assets/providers/homey.avif';
-import homeyLogo from '@navet/app/assets/providers/homey.png';
-import homeyLogoWebp from '@navet/app/assets/providers/homey.webp';
+import homeyLogo from '@navet/app/assets/providers/homey.svg';
 import openhabLogo from '@navet/app/assets/providers/openhab.svg';
 import { useAuthSession } from '@navet/app/auth/AuthProvider';
 import {
   chooseDiscoveredHomeAssistantUrl,
   fetchHomeAssistantDiscovery,
 } from '@navet/app/auth/homeAssistantDiscovery';
-import { FieldBlock } from '@navet/app/components/patterns';
-import { Button, Input, Select } from '@navet/app/components/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { navetTypographyTokens } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
 import { getRuntimeConfig } from '@navet/app/config/runtime-config';
-import { useI18n, useTheme } from '@navet/app/hooks';
-import type { TranslationKey } from '@navet/app/i18n';
-import { useSettingsStore } from '@navet/app/stores';
+import { type TranslationKey, useI18n } from '@navet/app/i18n';
+import { useSettingsStore } from '@navet/app/stores/settings-store';
+import { useThemeStore } from '@navet/app/stores/theme-store';
 import {
   INTEGRATION_PROVIDER_IDS,
   INTEGRATION_PROVIDERS,
   type IntegrationProviderId,
 } from '@navet/app/types/provider';
 import { getPublicAssetUrl } from '@navet/app/utils/public-assets';
-import { AlertCircle, ArrowRight, CheckCircle2, Home, Languages, Loader2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { type SVGProps, useEffect, useRef, useState } from 'react';
+
+type LoginIconProps = SVGProps<SVGSVGElement>;
+
+const loginIconProps = {
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 2,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+  'aria-hidden': true,
+} as const;
+
+function AlertCircle(props: LoginIconProps) {
+  return (
+    <svg {...loginIconProps} {...props}>
+      <title>Alert</title>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 8v4" />
+      <path d="M12 16h.01" />
+    </svg>
+  );
+}
+
+function ArrowRight(props: LoginIconProps) {
+  return (
+    <svg {...loginIconProps} {...props}>
+      <title>Continue</title>
+      <path d="M5 12h14" />
+      <path d="m13 6 6 6-6 6" />
+    </svg>
+  );
+}
+
+function CheckCircle2(props: LoginIconProps) {
+  return (
+    <svg {...loginIconProps} {...props}>
+      <title>Selected</title>
+      <circle cx="12" cy="12" r="10" />
+      <path d="m8 12 2.5 2.5L16 9" />
+    </svg>
+  );
+}
+
+function Home(props: LoginIconProps) {
+  return (
+    <svg {...loginIconProps} {...props}>
+      <title>Home</title>
+      <path d="m3 11 9-8 9 8" />
+      <path d="M5 10v10h14V10" />
+      <path d="M9 20v-6h6v6" />
+    </svg>
+  );
+}
+
+function Languages(props: LoginIconProps) {
+  return (
+    <svg {...loginIconProps} {...props}>
+      <title>Language</title>
+      <path d="m5 8 6 6" />
+      <path d="m4 14 6-6 2-3" />
+      <path d="M2 5h12" />
+      <path d="m14 19 4-9 4 9" />
+      <path d="M16 15h4" />
+    </svg>
+  );
+}
+
+function Loader2(props: LoginIconProps) {
+  return (
+    <svg {...loginIconProps} {...props}>
+      <title>Loading</title>
+      <path d="M21 12a9 9 0 1 1-6.2-8.56" />
+    </svg>
+  );
+}
 
 const PROVIDER_OPTION_CONTENT: Record<
   IntegrationProviderId,
@@ -44,10 +114,6 @@ const PROVIDER_OPTION_CONTENT: Record<
   homey: {
     detailKey: 'login.providers.homey.detail',
     logoSrc: homeyLogo,
-    logoSources: [
-      { srcSet: homeyLogoAvif, type: 'image/avif' },
-      { srcSet: homeyLogoWebp, type: 'image/webp' },
-    ],
   },
   openhab: {
     detailKey: 'login.providers.openhab.detail',
@@ -76,8 +142,15 @@ export function LoginPage() {
   const [providerId, setProviderId] = useState<IntegrationProviderId | null>(null);
   const [openhabUsername, setOpenhabUsername] = useState('');
   const [openhabPassword, setOpenhabPassword] = useState('');
+  const [systemPrefersDark, setSystemPrefersDark] = useState(() =>
+    typeof window === 'undefined'
+      ? true
+      : window.matchMedia?.('(prefers-color-scheme: dark)').matches !== false
+  );
   const { login } = useAuthSession();
-  const { theme } = useTheme();
+  const configuredTheme = useThemeStore((state) => state.theme);
+  const followSystemTheme = useThemeStore((state) => state.followSystemTheme);
+  const theme = followSystemTheme ? (systemPrefersDark ? 'dark' : 'light') : configuredTheme;
   const { language, languageOptions, t } = useI18n();
   const updateSettings = useSettingsStore((state) => state.updateSettings);
   const provider = providerId ? INTEGRATION_PROVIDERS[providerId] : null;
@@ -88,6 +161,19 @@ export function LoginPage() {
   const hasSelectedProvider = provider !== null;
   const surface = getThemeSurfaceTokens(theme);
   const logoSrc = getPublicAssetUrl('logo.svg');
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia?.('(prefers-color-scheme: dark)');
+    if (!mediaQuery) {
+      return;
+    }
+
+    const handleThemeChange = (event: MediaQueryListEvent) => {
+      setSystemPrefersDark(event.matches);
+    };
+    mediaQuery.addEventListener('change', handleThemeChange);
+    return () => mediaQuery.removeEventListener('change', handleThemeChange);
+  }, []);
 
   useEffect(() => {
     if (!provider) {
@@ -357,52 +443,65 @@ export function LoginPage() {
                 <div className="space-y-5 pt-5">
                   {requiresUrl ? (
                     <>
-                      <FieldBlock label={urlFieldLabel} htmlFor="url">
-                        <Input
-                          ref={urlInputRef}
-                          id="url"
-                          type="text"
-                          defaultValue={initialUrl.current}
-                          placeholder={urlPlaceholder}
-                          leading={<Home className={`h-5 w-5 ${mutedColor}`} />}
-                          inputClassName={fieldInputClassName}
-                          disabled={isLoading}
-                        />
-                      </FieldBlock>
+                      <div className="space-y-2">
+                        <label htmlFor="url" className={`block text-sm font-medium ${textColor}`}>
+                          {urlFieldLabel}
+                        </label>
+                        <div className="relative">
+                          <Home
+                            className={`pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 ${mutedColor}`}
+                          />
+                          <input
+                            ref={urlInputRef}
+                            id="url"
+                            type="text"
+                            defaultValue={initialUrl.current}
+                            placeholder={urlPlaceholder}
+                            className={`min-h-11 w-full rounded-xl border py-2.5 pl-10 pr-3 text-sm outline-none transition-[border-color,box-shadow] focus-visible:border-orange-400/50 focus-visible:ring-2 focus-visible:ring-orange-400/25 ${fieldInputClassName}`}
+                            disabled={isLoading}
+                          />
+                        </div>
+                      </div>
 
                       {requiresCredentials ? (
                         <>
-                          <FieldBlock
-                            label={`openHAB ${t('login.username')}`}
-                            htmlFor="openhab-username"
-                          >
-                            <Input
+                          <div className="space-y-2">
+                            <label
+                              htmlFor="openhab-username"
+                              className={`block text-sm font-medium ${textColor}`}
+                            >
+                              openHAB {t('login.username')}
+                            </label>
+                            <input
                               id="openhab-username"
                               type="text"
                               value={openhabUsername}
                               onChange={(event) => setOpenhabUsername(event.target.value)}
                               autoComplete="username"
                               placeholder={t('login.username')}
-                              inputClassName={fieldInputClassName}
+                              className={`min-h-11 w-full rounded-xl border px-3 py-2.5 text-sm outline-none transition-[border-color,box-shadow] focus-visible:border-orange-400/50 focus-visible:ring-2 focus-visible:ring-orange-400/25 ${fieldInputClassName}`}
                               disabled={isLoading}
                             />
-                          </FieldBlock>
+                          </div>
 
-                          <FieldBlock
-                            label={`openHAB ${t('login.password')}`}
-                            htmlFor="openhab-password"
-                          >
-                            <Input
+                          <div className="space-y-2">
+                            <label
+                              htmlFor="openhab-password"
+                              className={`block text-sm font-medium ${textColor}`}
+                            >
+                              openHAB {t('login.password')}
+                            </label>
+                            <input
                               id="openhab-password"
                               type="password"
                               value={openhabPassword}
                               onChange={(event) => setOpenhabPassword(event.target.value)}
                               autoComplete="current-password"
                               placeholder={t('login.password')}
-                              inputClassName={fieldInputClassName}
+                              className={`min-h-11 w-full rounded-xl border px-3 py-2.5 text-sm outline-none transition-[border-color,box-shadow] focus-visible:border-orange-400/50 focus-visible:ring-2 focus-visible:ring-orange-400/25 ${fieldInputClassName}`}
                               disabled={isLoading}
                             />
-                          </FieldBlock>
+                          </div>
                         </>
                       ) : null}
                     </>
@@ -417,11 +516,10 @@ export function LoginPage() {
 
                   <div className="space-y-2">
                     <div className="h-px bg-white/8" />
-                    <Button
-                      variant="secondary"
+                    <button
                       type="submit"
                       disabled={isLoading}
-                      className="mt-4 min-h-12 w-full rounded-full border-orange-300/20 bg-[linear-gradient(180deg,#fb923c,#f97316)] px-4 py-3 text-white shadow-[0_18px_42px_-24px_rgba(249,115,22,0.88)] transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                      className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-full border border-orange-300/20 bg-[linear-gradient(180deg,#fb923c,#f97316)] px-4 py-3 text-white shadow-[0_18px_42px_-24px_rgba(249,115,22,0.88)] transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isLoading ? (
                         <span className="flex items-center justify-center gap-2">
@@ -431,22 +529,21 @@ export function LoginPage() {
                       ) : (
                         t('login.actions.continue')
                       )}
-                    </Button>
+                    </button>
 
-                    <Button
+                    <button
                       type="button"
-                      variant="secondary"
                       onClick={() => {
                         setProviderId(null);
                         setError('');
                       }}
-                      className="min-h-11 w-full rounded-full"
+                      className="min-h-11 w-full rounded-full border border-white/12 bg-white/6 px-4 text-sm font-medium text-white transition-colors hover:bg-white/10"
                     >
                       {t('login.actions.back')}
-                    </Button>
+                    </button>
                   </div>
 
-                  <p className={`${navetTypographyTokens.helper} text-center ${mutedColor}`}>
+                  <p className={`text-center text-xs leading-5 ${mutedColor}`}>
                     {!requiresUrl
                       ? t('login.hint.cloudOauth', {
                           provider: provider.label,
@@ -471,30 +568,40 @@ export function LoginPage() {
 
           <div className="mx-auto mt-4 flex w-full max-w-md items-center justify-center gap-2 text-white/60">
             <Languages className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <Select
-              value={language}
-              onChange={(event) => {
-                const nextLanguage = languageOptions.find(
-                  (option) => option.value === event.currentTarget.value
-                )?.value;
+            <div className="relative min-w-[7rem]">
+              <select
+                value={language}
+                onChange={(event) => {
+                  const nextLanguage = languageOptions.find(
+                    (option) => option.value === event.currentTarget.value
+                  )?.value;
 
-                if (nextLanguage) {
-                  updateSettings({ language: nextLanguage });
-                }
-              }}
-              aria-label={t('settings.localization.language.title')}
-              size="small"
-              variant="ghost"
-              containerClassName="w-auto min-w-[7rem]"
-              selectClassName="h-8 rounded-full px-2.5 pr-7 text-sm text-white/72 backdrop-blur-sm"
-              indicatorClassName="text-white/55"
-            >
-              {languageOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
+                  if (nextLanguage) {
+                    updateSettings({ language: nextLanguage });
+                  }
+                }}
+                aria-label={t('settings.localization.language.title')}
+                className="h-8 w-full appearance-none rounded-full border border-transparent bg-transparent px-2.5 pr-7 text-sm text-white/72 outline-none backdrop-blur-sm focus-visible:border-orange-400/45 focus-visible:ring-2 focus-visible:ring-orange-400/25"
+              >
+                {languageOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-white/55"
+                aria-hidden="true"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </div>
           </div>
         </div>
       </section>

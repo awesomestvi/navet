@@ -1683,6 +1683,7 @@ export const frMessages = {
   'camera.settings.streamPreference': 'Diffusion en direct',
   'camera.settings.streamPreference.auto': 'Auto',
   'camera.settings.streamPreference.web_rtc': 'WebRTC',
+  'camera.settings.streamPreference.mse': 'MSE',
   'camera.settings.streamPreference.direct_stream': 'WebRTC direct',
   'camera.settings.webRtcStreamSource.provider': 'Flux de fournisseurs',
   'camera.settings.webRtcStreamSource.direct': 'Flux direct',
@@ -1693,6 +1694,7 @@ export const frMessages = {
   'camera.settings.directStreamUrl': 'URL de flux direct',
   'camera.settings.directStreamUrl.description':
     'Facultatif. Utilisez une page de flux lisible par navigateur telle que go2rtc lorsque Home Assistant expose uniquement HLS. Effacez le champ pour utiliser les flux Home Assistant.',
+  'camera.settings.directStreamUrl.localOnly': 'Stocké uniquement sur cet appareil.',
   'camera.settings.directStreamUrl.error':
     "Échec du chargement du flux direct. Vérifiez l'URL et réessayez.",
   'camera.settings.fitMode': "Ajustement de l'image",

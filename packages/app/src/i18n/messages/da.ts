@@ -1744,6 +1744,7 @@ export const daMessages = {
   'camera.settings.streamPreference': 'Live stream',
   'camera.settings.streamPreference.auto': 'Auto',
   'camera.settings.streamPreference.web_rtc': 'WebRTC',
+  'camera.settings.streamPreference.mse': 'MSE',
   'camera.settings.streamPreference.direct_stream': 'Direkte WebRTC',
   'camera.settings.webRtcStreamSource.provider': 'Udbyder stream',
   'camera.settings.webRtcStreamSource.direct': 'Direkte stream',
@@ -1754,6 +1755,7 @@ export const daMessages = {
   'camera.settings.directStreamUrl': 'Direkte stream-URL',
   'camera.settings.directStreamUrl.description':
     'Valgfrit. Brug en browser-spillbar stream-side såsom go2rtc, når Home Assistant kun afslører HLS. Ryd feltet for at bruge Home Assistant-streams.',
+  'camera.settings.directStreamUrl.localOnly': 'Gemt kun på denne enhed.',
   'camera.settings.directStreamUrl.error':
     "Direkte stream kunne ikke indlæses. Tjek URL'en, og prøv igen.",
   'camera.settings.fitMode': 'Foderstørrelse',

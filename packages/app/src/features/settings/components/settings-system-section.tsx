@@ -1,5 +1,5 @@
 import homeAssistantLogo from '@navet/app/assets/providers/home-assistant.svg';
-import homeyLogo from '@navet/app/assets/providers/homey.png';
+import homeyLogo from '@navet/app/assets/providers/homey.svg';
 import openhabLogo from '@navet/app/assets/providers/openhab.svg';
 import { Badge, Button, Input, ModalSurface } from '@navet/app/components/primitives';
 import {

@@ -76,7 +76,7 @@ const meta = {
     cameraDirectStreamUrl: '',
     cameraDirectStreamUrlError: false,
     cameraFitMode: 'cover',
-    supportedStreamPreferences: ['web_rtc', 'hls', 'mjpeg'],
+    supportedStreamPreferences: ['web_rtc', 'mse', 'hls', 'mjpeg'],
     supportsStreaming: true,
     hasSnapshot: true,
     lowPowerMode: false,
@@ -105,3 +105,27 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+export const ProviderMse: Story = {
+  args: {
+    cameraWebRtcStreamSource: 'provider',
+    cameraStreamPreference: 'mse',
+  },
+};
+
+export const DirectStream: Story = {
+  args: {
+    cameraWebRtcStreamSource: 'direct',
+    cameraDirectStreamUrl: 'http://homeassistant.local:1984/stream.html?src=front_door',
+  },
+};
+
+export const SnapshotOnlyWithDirectStream: Story = {
+  args: {
+    cameraViewMode: 'snapshot',
+    supportedStreamPreferences: [],
+    supportsStreaming: false,
+    cameraWebRtcStreamSource: 'direct',
+    cameraDirectStreamUrl: 'http://homeassistant.local:1984/stream.html?src=garage',
+  },
+};
