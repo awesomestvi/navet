@@ -25,6 +25,7 @@ export interface ResolvedPlatformResource {
     width?: number;
     height?: number;
     source?: string;
+    mode?: 'auto' | 'web_rtc' | 'mse';
   };
 }
 

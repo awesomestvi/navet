@@ -17,26 +17,28 @@ function toHomeAssistantCameraEntityId(entityId: string) {
   return getProviderNativeId(entityId);
 }
 
-function isDirectStreamFormat(
-  format: PlatformCameraStreamType | undefined
-): format is Extract<PlatformCameraStreamType, 'hls' | 'web_rtc'> {
-  return format === 'hls' || format === 'web_rtc' || format === undefined;
+function isAdvertisedHomeAssistantStreamType(
+  streamType: unknown
+): streamType is Extract<PlatformCameraStreamType, 'hls' | 'web_rtc'> {
+  return streamType === 'hls' || streamType === 'web_rtc';
 }
 
 export const homeAssistantCameraFeatureService: ProviderCameraFeatureService = {
   getCameraCapabilities: async (entityId) => {
     const nativeEntityId = toHomeAssistantCameraEntityId(entityId);
     const capabilities = await getHomeAssistantCameraCapabilities(nativeEntityId);
-    const streamPaths: Partial<Record<PlatformCameraStreamType, string>> =
-      await getHomeAssistantCameraStreamPaths(nativeEntityId).catch(
-        () => ({}) as Partial<Record<PlatformCameraStreamType, string>>
-      );
-    const streamTypes = [
-      ...((capabilities.frontend_stream_types ?? []) as Array<'hls' | 'web_rtc'>),
-      ...(streamPaths.mjpeg ? (['mjpeg'] as const) : []),
-    ];
+    const streamTypes = new Set<PlatformCameraStreamType>();
+
+    if (Array.isArray(capabilities.frontend_stream_types)) {
+      for (const streamType of capabilities.frontend_stream_types) {
+        if (isAdvertisedHomeAssistantStreamType(streamType)) {
+          streamTypes.add(streamType);
+        }
+      }
+    }
+
     return {
-      streamTypes,
+      streamTypes: [...streamTypes],
     };
   },
   refreshCameraSnapshot: async (entityId) => {
@@ -50,7 +52,7 @@ export const homeAssistantCameraFeatureService: ProviderCameraFeatureService = {
     );
   },
   getCameraStreamUrl: async (entityId, format) => {
-    if (!isDirectStreamFormat(format)) {
+    if (format !== undefined && format !== 'hls') {
       throw new Error(`Home Assistant does not expose a direct ${format} stream URL`);
     }
 
@@ -81,10 +83,11 @@ export const homeAssistantCameraFeatureService: ProviderCameraFeatureService = {
       toHomeAssistantCameraEntityId(entityId),
       offer,
       (event) => {
+        if ('session_id' in event && typeof event.session_id === 'string') {
+          callback({ type: 'session', session_id: event.session_id });
+        }
         if ('answer' in event && typeof event.answer === 'string') {
           callback({ type: 'answer', answer: event.answer });
-        } else if ('session_id' in event && typeof event.session_id === 'string') {
-          callback({ type: 'session', session_id: event.session_id });
         } else if ('candidate' in event && typeof event.candidate === 'object' && event.candidate) {
           callback({ type: 'candidate', candidate: event.candidate });
         } else if (

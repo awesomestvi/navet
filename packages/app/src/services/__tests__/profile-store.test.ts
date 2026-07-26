@@ -473,6 +473,9 @@ describe('revisioned NJS dashboard profile store', () => {
           cameraDirectStreamUrls: {
             'camera.front': 'https://example.com/live?token=private',
           },
+          cameraWebRtcStreamSources: {
+            'camera.front': 'direct_mse',
+          },
         },
       }),
     });
@@ -496,6 +499,9 @@ describe('revisioned NJS dashboard profile store', () => {
           cameraDirectStreamUrls: {
             'camera.front': 'https://example.com/live?token=private',
           },
+          cameraWebRtcStreamSources: {
+            'camera.front': 'direct_mse',
+          },
         },
       }),
     });
@@ -511,6 +517,8 @@ describe('revisioned NJS dashboard profile store', () => {
     expect(mockFs.getFile(CLIENT_PREFERENCES_PATH)).not.toContain('"language"');
     expect(mockFs.getFile(ACCOUNT_PREFERENCES_PATH)).not.toContain('cameraDirectStreamUrls');
     expect(mockFs.getFile(CLIENT_PREFERENCES_PATH)).not.toContain('cameraDirectStreamUrls');
+    expect(mockFs.getFile(ACCOUNT_PREFERENCES_PATH)).not.toContain('cameraWebRtcStreamSources');
+    expect(mockFs.getFile(CLIENT_PREFERENCES_PATH)).not.toContain('cameraWebRtcStreamSources');
     expect(mockFs.getFile(ACCOUNT_PREFERENCES_PATH)).not.toContain('private');
     expect(mockFs.getFile(CLIENT_PREFERENCES_PATH)).not.toContain('private');
 

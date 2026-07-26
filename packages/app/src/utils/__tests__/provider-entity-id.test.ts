@@ -38,6 +38,26 @@ describe('provider-entity-id', () => {
     });
   });
 
+  it('lets an explicit provider-scoped value win over its legacy alias', () => {
+    expect(
+      normalizePersistedEntityRecord({
+        'home_assistant:camera.front': 'scoped',
+        'camera.front': 'legacy',
+      })
+    ).toEqual({
+      'home_assistant:camera.front': 'scoped',
+    });
+
+    expect(
+      normalizePersistedEntityRecord({
+        'camera.front': 'legacy',
+        'home_assistant:camera.front': 'scoped',
+      })
+    ).toEqual({
+      'home_assistant:camera.front': 'scoped',
+    });
+  });
+
   it('resolves Home Assistant native ids only for Home Assistant entities', () => {
     expect(resolveHomeAssistantEntityId('home_assistant:light.kitchen')).toBe('light.kitchen');
     expect(resolveHomeAssistantEntityId('light.kitchen')).toBe('light.kitchen');

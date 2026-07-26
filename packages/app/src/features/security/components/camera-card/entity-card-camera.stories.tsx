@@ -140,6 +140,15 @@ export const Unavailable: Story = {
   },
 };
 
+export const LongCameraName: Story = {
+  args: {
+    id: 'camera.south_driveway',
+    name: 'South Driveway and Package Drop Camera',
+    room: 'Front garden',
+    cameraViewMode: 'snapshot',
+  },
+};
+
 export const Docs: Story = {
   parameters: {
     docsOnly: true,

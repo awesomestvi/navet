@@ -13,7 +13,7 @@ import { DashboardCardItem, DashboardEditActions } from '@navet/app/features/das
 import { DashboardResizeTrigger } from '@navet/app/features/dashboard/components/dashboard-edit-actions';
 import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit-dashboard-grid';
 import { useProgressiveBatching } from '@navet/app/features/dashboard/hooks/use-progressive-batching';
-import { useCameraPlaybackPlan } from '@navet/app/features/security/hooks/use-camera-playback-plan';
+import { normalizeCameraDirectStreamUrl } from '@navet/app/features/security/hooks/use-camera-playback-plan';
 import { useProviderCameraTopology } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { usePersistedState } from '@navet/app/hooks/use-persisted-state';
@@ -23,12 +23,26 @@ import { type TranslateFn, useI18n } from '@navet/app/i18n';
 import { integrationCameraFeatureService } from '@navet/app/services/integration-camera-feature.service';
 import { normalizeResourceUrl } from '@navet/app/services/integration-resource.service';
 import { settingsSelectors } from '@navet/app/stores/selectors';
-import { type CameraViewMode, useSettingsStore } from '@navet/app/stores/settings-store';
+import {
+  type CameraFitMode,
+  type CameraStreamPreference,
+  type CameraViewMode,
+  isDirectCameraStreamSource,
+  useSettingsStore,
+} from '@navet/app/stores/settings-store';
 import type { CameraDevice, DeviceWithType, SecuritySeverity } from '@navet/app/types/device.types';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import type { NavetAlarmEntity } from '@navet/core/alarm-types';
 import { ChevronDown } from 'lucide-react';
-import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type CSSProperties,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { resolveDashboardPerformanceProfile } from '../../dashboard/hooks/use-dashboard-performance-mode';
 import type {
@@ -801,12 +815,20 @@ function SummaryCameraViewer({
   const preferredTransport = useSettingsStore(
     settingsSelectors.cameraStreamPreferenceForEntity(camera.id)
   );
+  const updateCameraStreamPreference = useSettingsStore(
+    settingsSelectors.updateCameraStreamPreference
+  );
   const webRtcStreamSource = useSettingsStore(
     settingsSelectors.cameraWebRtcStreamSourceForEntity(camera.id)
   );
   const directStreamUrl = useSettingsStore(
     settingsSelectors.cameraDirectStreamUrlForEntity(camera.id)
   );
+  const cameraFitMode = useSettingsStore(settingsSelectors.cameraFitModeForEntity(camera.id));
+  const updateCameraFitMode = useSettingsStore(settingsSelectors.updateCameraFitMode);
+  const hasConfiguredDirectStream =
+    isDirectCameraStreamSource(webRtcStreamSource) &&
+    normalizeCameraDirectStreamUrl(directStreamUrl) !== null;
   const [refreshKey, setRefreshKey] = useState(0);
   const [cameraViewMode, setCameraViewMode] = useState<CameraViewMode>('live');
 
@@ -828,31 +850,36 @@ function SummaryCameraViewer({
     liveState.isStreamCapable ||
     providerState?.isStreamCapable === true ||
     (camera.isStreamCapable ?? false);
-  const playbackModel = useCameraPlaybackPlan({
-    entityId: camera.id,
-    webRtcStreamSource,
-    directStreamUrl,
-    cameraState,
-    preferredMode: 'live',
-    preferredTransport,
-    snapshotUrl,
-    isStreamCapable,
-    motionDetectionEnabled: liveState.motionDetectionEnabled,
-    failedTransports: new Set(),
-  });
-
   useEffect(() => {
     if (!isOpen) {
       return;
     }
 
-    setCameraViewMode(resolveViewerInitialCameraViewMode({ isStreamCapable, hasSnapshot }));
-  }, [hasSnapshot, isOpen, isStreamCapable]);
+    setCameraViewMode(
+      resolveViewerInitialCameraViewMode({
+        isStreamCapable: isStreamCapable || hasConfiguredDirectStream,
+        hasSnapshot,
+      })
+    );
+  }, [hasConfiguredDirectStream, hasSnapshot, isOpen, isStreamCapable]);
 
   const handleRefresh = () => {
     setRefreshKey((key) => key + 1);
     void integrationCameraFeatureService.refreshCameraSnapshot?.(camera.id).catch(() => undefined);
   };
+  const handlePreferredTransportChange = useCallback(
+    (transport: CameraStreamPreference) => {
+      updateCameraStreamPreference(camera.id, transport);
+      setRefreshKey((key) => key + 1);
+    },
+    [camera.id, updateCameraStreamPreference]
+  );
+  const handleCameraFitModeChange = useCallback(
+    (mode: CameraFitMode) => {
+      updateCameraFitMode(camera.id, mode);
+    },
+    [camera.id, updateCameraFitMode]
+  );
 
   return (
     <CameraLiveViewer
@@ -867,12 +894,14 @@ function SummaryCameraViewer({
       preferredTransport={preferredTransport}
       webRtcStreamSource={webRtcStreamSource}
       directStreamUrl={directStreamUrl}
+      cameraFitMode={cameraFitMode}
       isStreamCapable={isStreamCapable}
       motionDetectionEnabled={liveState.motionDetectionEnabled}
-      initialStreamResource={playbackModel?.selectedStreamResource ?? null}
+      initialStreamResource={null}
       onRefresh={handleRefresh}
-      onOpenSettings={() => undefined}
       onCameraViewModeChange={setCameraViewMode}
+      onPreferredTransportChange={handlePreferredTransportChange}
+      onCameraFitModeChange={handleCameraFitModeChange}
     />
   );
 }

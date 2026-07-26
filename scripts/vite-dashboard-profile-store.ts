@@ -115,7 +115,6 @@ const CLIENT_SETTING_KEYS = [
   'cameraViewModes',
   'cameraStreamPreference',
   'cameraStreamPreferences',
-  'cameraWebRtcStreamSources',
   'cameraFitMode',
   'cameraFitModes',
   'ambientLightBleed',

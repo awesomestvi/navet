@@ -53,7 +53,12 @@ describe('camera-view-mode', () => {
   });
 
   it('reads only documented HA-native stream types', () => {
-    expect(readCameraStreamTypes(['hls', 'web_rtc', 'mjpeg'])).toEqual(['hls', 'web_rtc', 'mjpeg']);
+    expect(readCameraStreamTypes(['hls', 'mse', 'web_rtc', 'mjpeg'])).toEqual([
+      'hls',
+      'mse',
+      'web_rtc',
+      'mjpeg',
+    ]);
   });
 
   it('refreshes live snapshot fallbacks more slowly than explicit snapshot mode', () => {

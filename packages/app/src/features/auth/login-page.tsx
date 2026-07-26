@@ -1,7 +1,5 @@
 import homeAssistantLogo from '@navet/app/assets/providers/home-assistant.svg';
-import homeyLogoAvif from '@navet/app/assets/providers/homey.avif';
-import homeyLogo from '@navet/app/assets/providers/homey.png';
-import homeyLogoWebp from '@navet/app/assets/providers/homey.webp';
+import homeyLogo from '@navet/app/assets/providers/homey.svg';
 import openhabLogo from '@navet/app/assets/providers/openhab.svg';
 import { useAuthSession } from '@navet/app/auth/AuthProvider';
 import {
@@ -44,10 +42,6 @@ const PROVIDER_OPTION_CONTENT: Record<
   homey: {
     detailKey: 'login.providers.homey.detail',
     logoSrc: homeyLogo,
-    logoSources: [
-      { srcSet: homeyLogoAvif, type: 'image/avif' },
-      { srcSet: homeyLogoWebp, type: 'image/webp' },
-    ],
   },
   openhab: {
     detailKey: 'login.providers.openhab.detail',

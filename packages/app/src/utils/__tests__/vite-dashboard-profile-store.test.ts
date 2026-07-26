@@ -335,6 +335,9 @@ describe('createViteDashboardProfileStore', () => {
       cameraDirectStreamUrls: {
         'camera.front': 'https://example.com/live?token=private',
       },
+      cameraWebRtcStreamSources: {
+        'camera.front': 'direct_mse',
+      },
     });
     store.savePreference(
       'client',
@@ -345,6 +348,9 @@ describe('createViteDashboardProfileStore', () => {
         language: 'sv',
         cameraDirectStreamUrls: {
           'camera.front': 'https://example.com/live?token=private',
+        },
+        cameraWebRtcStreamSources: {
+          'camera.front': 'direct_mse',
         },
       },
       AUTHOR
@@ -363,6 +369,12 @@ describe('createViteDashboardProfileStore', () => {
     expect(JSON.stringify(store.getPreference('account', PRINCIPAL))).not.toContain('private');
     expect(JSON.stringify(store.getPreference('client', PRINCIPAL, AUTHOR))).not.toContain(
       'private'
+    );
+    expect(JSON.stringify(store.getPreference('account', PRINCIPAL))).not.toContain(
+      'cameraWebRtcStreamSources'
+    );
+    expect(JSON.stringify(store.getPreference('client', PRINCIPAL, AUTHOR))).not.toContain(
+      'cameraWebRtcStreamSources'
     );
 
     const nextSession = {

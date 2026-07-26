@@ -14,6 +14,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildSecurityCameraDashboardModel } from '../../utils/security-camera-dashboard-model';
 import { SecurityCameraDashboard } from '../security-camera-dashboard';
 
+const cameraLiveViewerRenderMock = vi.hoisted(() => vi.fn());
+
 vi.mock('@navet/app/features/dashboard', () => ({
   DashboardCardItem: ({ device }: { device: { id: string; name: string } }) => (
     <div data-testid={`detail-card:${device.id}`}>{device.name}</div>
@@ -26,8 +28,10 @@ vi.mock('@navet/app/hooks/use-breakpoint-cols', () => ({
 }));
 
 vi.mock('../camera-card/camera-live-viewer', () => ({
-  CameraLiveViewer: ({ isOpen, name }: { isOpen: boolean; name: string }) =>
-    isOpen ? <div>Viewer:{name}</div> : null,
+  CameraLiveViewer: (props: { initialStreamResource: unknown; isOpen: boolean; name: string }) => {
+    cameraLiveViewerRenderMock(props);
+    return props.isOpen ? <div>Viewer:{props.name}</div> : null;
+  },
 }));
 
 vi.mock('@navet/app/hooks', async () => {
@@ -40,12 +44,6 @@ vi.mock('@navet/app/hooks', async () => {
 
 vi.mock('@navet/app/hooks/use-provider-device', () => ({
   useProviderEntityModel: () => null,
-}));
-
-vi.mock('../../hooks/use-camera-playback-plan', () => ({
-  useCameraPlaybackPlan: () => ({
-    selectedStreamResource: null,
-  }),
 }));
 
 vi.mock('../camera-card/use-provider-camera-live-data', () => ({
@@ -222,6 +220,7 @@ function renderDashboardModelWithAlerts() {
 describe('SecurityCameraDashboard', () => {
   beforeEach(() => {
     localStorage.clear();
+    cameraLiveViewerRenderMock.mockClear();
   });
 
   it('renders the summary and top-priority sections before details', () => {
@@ -1069,6 +1068,11 @@ describe('SecurityCameraDashboard', () => {
     fireEvent.click(screen.getByRole('button', { name: /Driveway Camera/i }));
 
     expect(screen.getByText('Viewer:Driveway Camera')).toBeInTheDocument();
+    expect(cameraLiveViewerRenderMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        initialStreamResource: null,
+      })
+    );
   });
 
   it('shows device status instead of generic active label in the live lane', () => {

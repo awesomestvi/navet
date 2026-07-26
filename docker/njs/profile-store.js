@@ -42,7 +42,6 @@ const CLIENT_SETTING_KEYS = {
   cameraViewModes: true,
   cameraStreamPreference: true,
   cameraStreamPreferences: true,
-  cameraWebRtcStreamSources: true,
   cameraFitMode: true,
   cameraFitModes: true,
   ambientLightBleed: true,

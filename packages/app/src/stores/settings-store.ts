@@ -13,6 +13,10 @@ import {
   removeLocalStorageWithMigration,
   writeLocalStorageWithMigration,
 } from '@navet/app/utils/local-storage-migration';
+import {
+  ensureCanonicalEntityId,
+  normalizePersistedEntityRecord,
+} from '@navet/app/utils/provider-entity-id';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
@@ -136,15 +140,33 @@ function isEffectsQuality(value: unknown): value is EffectsQuality {
 }
 
 function isCameraStreamPreference(value: unknown): value is CameraStreamPreference {
-  return value === 'auto' || value === 'web_rtc' || value === 'hls' || value === 'mjpeg';
+  return (
+    value === 'auto' ||
+    value === 'web_rtc' ||
+    value === 'mse' ||
+    value === 'hls' ||
+    value === 'mjpeg'
+  );
 }
 
 function isLegacyDirectStreamPreference(value: unknown) {
   return value === 'direct_stream';
 }
 
-function isCameraWebRtcStreamSource(value: unknown): value is CameraWebRtcStreamSource {
-  return value === 'provider' || value === 'direct';
+function normalizeCameraWebRtcStreamSource(value: unknown): CameraWebRtcStreamSource | null {
+  if (value === 'provider' || value === 'direct') {
+    return value;
+  }
+
+  if (value === 'direct_web_rtc' || value === 'direct_mse') {
+    return 'direct';
+  }
+
+  return null;
+}
+
+export function isDirectCameraStreamSource(source: CameraWebRtcStreamSource) {
+  return source === 'direct';
 }
 
 function isCameraFitMode(value: unknown): value is CameraFitMode {
@@ -193,9 +215,11 @@ function normalizeCameraViewModes(value: unknown): Record<string, CameraViewMode
     return {};
   }
 
-  return Object.fromEntries(
-    Object.entries(value).filter((entry): entry is [string, CameraViewMode] =>
-      isCameraViewMode(entry[1])
+  return normalizePersistedEntityRecord(
+    Object.fromEntries(
+      Object.entries(value).filter((entry): entry is [string, CameraViewMode] =>
+        isCameraViewMode(entry[1])
+      )
     )
   );
 }
@@ -205,15 +229,17 @@ function normalizeCameraStreamPreferences(value: unknown): Record<string, Camera
     return {};
   }
 
-  return Object.fromEntries(
-    Object.entries(value)
-      .map(([entityId, preference]) => [
-        entityId,
-        isLegacyDirectStreamPreference(preference) ? 'web_rtc' : preference,
-      ])
-      .filter((entry): entry is [string, CameraStreamPreference] =>
-        isCameraStreamPreference(entry[1])
-      )
+  return normalizePersistedEntityRecord(
+    Object.fromEntries(
+      Object.entries(value)
+        .map(([entityId, preference]) => [
+          entityId,
+          isLegacyDirectStreamPreference(preference) ? 'web_rtc' : preference,
+        ])
+        .filter((entry): entry is [string, CameraStreamPreference] =>
+          isCameraStreamPreference(entry[1])
+        )
+    )
   );
 }
 
@@ -224,9 +250,10 @@ function normalizeCameraWebRtcStreamSources(
   const normalizedSources =
     value && typeof value === 'object' && !Array.isArray(value)
       ? Object.fromEntries(
-          Object.entries(value).filter((entry): entry is [string, CameraWebRtcStreamSource] =>
-            isCameraWebRtcStreamSource(entry[1])
-          )
+          Object.entries(value).flatMap(([entityId, source]) => {
+            const normalizedSource = normalizeCameraWebRtcStreamSource(source);
+            return normalizedSource ? ([[entityId, normalizedSource]] as const) : [];
+          })
         )
       : {};
 
@@ -235,7 +262,7 @@ function normalizeCameraWebRtcStreamSources(
     typeof legacyPreferences !== 'object' ||
     Array.isArray(legacyPreferences)
   ) {
-    return normalizedSources;
+    return normalizePersistedEntityRecord(normalizedSources);
   }
 
   const legacyDirectSources = Object.fromEntries(
@@ -244,7 +271,7 @@ function normalizeCameraWebRtcStreamSources(
       .map(([entityId]) => [entityId, 'direct' as const])
   );
 
-  return { ...legacyDirectSources, ...normalizedSources };
+  return normalizePersistedEntityRecord({ ...legacyDirectSources, ...normalizedSources });
 }
 
 function normalizeCameraDirectStreamUrls(value: unknown): Record<string, string> {
@@ -252,10 +279,12 @@ function normalizeCameraDirectStreamUrls(value: unknown): Record<string, string>
     return {};
   }
 
-  return Object.fromEntries(
-    Object.entries(value)
-      .map(([entityId, url]) => [entityId, typeof url === 'string' ? url.trim() : ''] as const)
-      .filter((entry): entry is [string, string] => entry[1].length > 0)
+  return normalizePersistedEntityRecord(
+    Object.fromEntries(
+      Object.entries(value)
+        .map(([entityId, url]) => [entityId, typeof url === 'string' ? url.trim() : ''] as const)
+        .filter((entry): entry is [string, string] => entry[1].length > 0)
+    )
   );
 }
 
@@ -264,9 +293,11 @@ function normalizeCameraFitModes(value: unknown): Record<string, CameraFitMode> 
     return {};
   }
 
-  return Object.fromEntries(
-    Object.entries(value).filter((entry): entry is [string, CameraFitMode] =>
-      isCameraFitMode(entry[1])
+  return normalizePersistedEntityRecord(
+    Object.fromEntries(
+      Object.entries(value).filter((entry): entry is [string, CameraFitMode] =>
+        isCameraFitMode(entry[1])
+      )
     )
   );
 }
@@ -332,14 +363,30 @@ export const useSettingsStore = create<SettingsState>()(
             isCameraStreamPreference(newSettings.cameraStreamPreference)
               ? newSettings.cameraStreamPreference
               : state.cameraStreamPreference,
+          cameraViewModes:
+            newSettings.cameraViewModes !== undefined
+              ? normalizeCameraViewModes(newSettings.cameraViewModes)
+              : state.cameraViewModes,
+          cameraStreamPreferences:
+            newSettings.cameraStreamPreferences !== undefined
+              ? normalizeCameraStreamPreferences(newSettings.cameraStreamPreferences)
+              : state.cameraStreamPreferences,
           cameraWebRtcStreamSources:
             newSettings.cameraWebRtcStreamSources !== undefined
               ? normalizeCameraWebRtcStreamSources(newSettings.cameraWebRtcStreamSources)
               : state.cameraWebRtcStreamSources,
+          cameraDirectStreamUrls:
+            newSettings.cameraDirectStreamUrls !== undefined
+              ? normalizeCameraDirectStreamUrls(newSettings.cameraDirectStreamUrls)
+              : state.cameraDirectStreamUrls,
           cameraFitMode:
             newSettings.cameraFitMode !== undefined && isCameraFitMode(newSettings.cameraFitMode)
               ? newSettings.cameraFitMode
               : state.cameraFitMode,
+          cameraFitModes:
+            newSettings.cameraFitModes !== undefined
+              ? normalizeCameraFitModes(newSettings.cameraFitModes)
+              : state.cameraFitModes,
           customSidebarActions:
             newSettings.customSidebarActions !== undefined
               ? normalizeCustomSidebarActions(newSettings.customSidebarActions)
@@ -353,34 +400,36 @@ export const useSettingsStore = create<SettingsState>()(
         set((state) => ({
           cameraViewModes: {
             ...state.cameraViewModes,
-            [entityId]: mode,
+            [ensureCanonicalEntityId(entityId)]: mode,
           },
         })),
       updateCameraStreamPreference: (entityId, preference) =>
         set((state) => ({
           cameraStreamPreferences: {
             ...state.cameraStreamPreferences,
-            [entityId]: preference,
+            [ensureCanonicalEntityId(entityId)]: preference,
           },
         })),
       updateCameraWebRtcStreamSource: (entityId, source) =>
         set((state) => {
+          const canonicalEntityId = ensureCanonicalEntityId(entityId);
           const nextSources = { ...state.cameraWebRtcStreamSources };
           if (source === 'provider') {
-            delete nextSources[entityId];
+            delete nextSources[canonicalEntityId];
           } else {
-            nextSources[entityId] = source;
+            nextSources[canonicalEntityId] = source;
           }
           return { cameraWebRtcStreamSources: nextSources };
         }),
       updateCameraDirectStreamUrl: (entityId, url) =>
         set((state) => {
+          const canonicalEntityId = ensureCanonicalEntityId(entityId);
           const nextUrls = { ...state.cameraDirectStreamUrls };
           const normalizedUrl = url.trim();
           if (normalizedUrl) {
-            nextUrls[entityId] = normalizedUrl;
+            nextUrls[canonicalEntityId] = normalizedUrl;
           } else {
-            delete nextUrls[entityId];
+            delete nextUrls[canonicalEntityId];
           }
           return { cameraDirectStreamUrls: nextUrls };
         }),
@@ -388,7 +437,7 @@ export const useSettingsStore = create<SettingsState>()(
         set((state) => ({
           cameraFitModes: {
             ...state.cameraFitModes,
-            [entityId]: mode,
+            [ensureCanonicalEntityId(entityId)]: mode,
           },
         })),
       applyImportedSettings: (importedSettings) => {

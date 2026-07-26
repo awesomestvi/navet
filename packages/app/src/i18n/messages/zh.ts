@@ -1516,6 +1516,7 @@ export const zhMessages = {
   'camera.settings.streamPreference': '直播',
   'camera.settings.streamPreference.auto': '自动',
   'camera.settings.streamPreference.web_rtc': 'WebRTC',
+  'camera.settings.streamPreference.mse': 'MSE',
   'camera.settings.streamPreference.direct_stream': '直接 WebRTC',
   'camera.settings.webRtcStreamSource.provider': '提供商流',
   'camera.settings.webRtcStreamSource.direct': '直接串流',
@@ -1526,6 +1527,7 @@ export const zhMessages = {
   'camera.settings.directStreamUrl': '直播网址',
   'camera.settings.directStreamUrl.description':
     '可选。当 Home Assistant 仅提供 HLS 时，可填写浏览器能够播放的串流页面，例如 go2rtc。清空此字段即可使用 Home Assistant 串流。',
+  'camera.settings.directStreamUrl.localOnly': '仅存储在此设备上。',
   'camera.settings.directStreamUrl.error': '直接流加载失败。检查 URL 并重试。',
   'camera.settings.fitMode': '画面适配',
   'camera.settings.fitMode.contain': '完整显示',

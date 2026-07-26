@@ -38,7 +38,7 @@ const defaultProps = {
   cameraDirectStreamUrl: '',
   cameraDirectStreamUrlError: false,
   cameraFitMode: 'cover' as const,
-  supportedStreamPreferences: ['web_rtc', 'hls', 'mjpeg'] as const,
+  supportedStreamPreferences: ['web_rtc', 'mse', 'hls', 'mjpeg'] as const,
   supportsStreaming: true,
   hasSnapshot: true,
   lowPowerMode: false,
@@ -108,6 +108,22 @@ describe('CameraSettingsDialog', () => {
     expect(onCameraStreamPreferenceChange).toHaveBeenCalledWith('hls');
   });
 
+  it('offers MSE as a provider stream preference', () => {
+    const onCameraStreamPreferenceChange = vi.fn();
+
+    renderWithProviders(
+      <CameraSettingsDialog
+        {...defaultProps}
+        cameraStreamPreference="auto"
+        onCameraStreamPreferenceChange={onCameraStreamPreferenceChange}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'MSE' }));
+
+    expect(onCameraStreamPreferenceChange).toHaveBeenCalledWith('mse');
+  });
+
   it('shows camera setting help in title info popovers instead of inline helper text', () => {
     renderWithProviders(<CameraSettingsDialog {...defaultProps} />);
 
@@ -135,7 +151,7 @@ describe('CameraSettingsDialog', () => {
       />
     );
 
-    const streamSection = screen.getByText('Live stream').closest('.mb-6');
+    const streamSection = screen.getByRole('button', { name: 'MJPEG' }).closest('.mb-6');
     expect(streamSection).toBeTruthy();
     expect(
       within(streamSection as HTMLElement).getByRole('button', { name: 'Auto' })
@@ -144,14 +160,14 @@ describe('CameraSettingsDialog', () => {
       within(streamSection as HTMLElement).getByRole('button', { name: 'MJPEG' })
     ).toBeInTheDocument();
     expect(
-      within(streamSection as HTMLElement).getByRole('button', { name: 'WebRTC' })
-    ).toBeInTheDocument();
+      within(streamSection as HTMLElement).queryByRole('button', { name: 'WebRTC' })
+    ).not.toBeInTheDocument();
     expect(
       within(streamSection as HTMLElement).queryByRole('button', { name: 'HLS' })
     ).not.toBeInTheDocument();
   });
 
-  it('lets users select a direct WebRTC stream source and set a direct stream URL', () => {
+  it('uses one exclusive stream source toggle and reveals the direct URL conditionally', () => {
     const onCameraDirectStreamUrlChange = vi.fn();
     const onCameraWebRtcStreamSourceChange = vi.fn();
 
@@ -169,39 +185,78 @@ describe('CameraSettingsDialog', () => {
       'aria-pressed',
       'true'
     );
+    expect(screen.getByRole('button', { name: 'Direct stream' })).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    );
+    const liveStreamSection = screen.getByRole('group', { name: 'Live stream' });
+    expect(within(liveStreamSection).getByRole('button', { name: 'MSE' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Direct stream URL')).not.toBeInTheDocument();
+
     fireEvent.click(screen.getByRole('button', { name: 'Direct stream' }));
+    expect(onCameraWebRtcStreamSourceChange).toHaveBeenCalledWith('direct');
 
     rerender(
       <CameraSettingsDialog
         {...defaultProps}
-        cameraStreamPreference="web_rtc"
         cameraWebRtcStreamSource="direct"
         onCameraWebRtcStreamSourceChange={onCameraWebRtcStreamSourceChange}
         onCameraDirectStreamUrlChange={onCameraDirectStreamUrlChange}
       />
     );
 
+    const directLiveStreamSection = screen.getByRole('group', { name: 'Live stream' });
+    expect(within(directLiveStreamSection).getByLabelText('Direct stream URL')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Direct stream URL'), {
       target: { value: 'http://192.168.68.71:1984/stream.html?src=camera_bedroom' },
     });
-    fireEvent.blur(screen.getByLabelText('Direct stream URL'));
 
     expect(onCameraDirectStreamUrlChange).toHaveBeenCalledWith(
       'http://192.168.68.71:1984/stream.html?src=camera_bedroom'
     );
-    expect(onCameraWebRtcStreamSourceChange).toHaveBeenCalledWith('direct');
   });
 
-  it('hides the direct stream URL field until the direct WebRTC source is selected', () => {
-    renderWithProviders(
+  it('retains a saved direct URL while provider playback is selected', () => {
+    const { rerender } = renderWithProviders(
       <CameraSettingsDialog
         {...defaultProps}
         cameraStreamPreference="web_rtc"
         cameraWebRtcStreamSource="provider"
+        cameraDirectStreamUrl="http://192.168.68.71:1984/stream.html?src=camera_bedroom"
       />
     );
 
     expect(screen.queryByLabelText('Direct stream URL')).not.toBeInTheDocument();
+
+    rerender(
+      <CameraSettingsDialog
+        {...defaultProps}
+        cameraStreamPreference="web_rtc"
+        cameraWebRtcStreamSource="direct"
+        cameraDirectStreamUrl="http://192.168.68.71:1984/stream.html?src=camera_bedroom"
+      />
+    );
+
+    expect(screen.getByLabelText('Direct stream URL')).toHaveValue(
+      'http://192.168.68.71:1984/stream.html?src=camera_bedroom'
+    );
+    expect(screen.getByText('Stored only on this device.')).toBeInTheDocument();
+  });
+
+  it('does not show provider transport choices for a direct stream', () => {
+    renderWithProviders(
+      <CameraSettingsDialog
+        {...defaultProps}
+        cameraWebRtcStreamSource="direct"
+        cameraDirectStreamUrl="http://192.168.68.71:1984/stream.html?src=camera_bedroom"
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'WebRTC' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'HLS' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'MJPEG' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'MSE' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Auto' })).toHaveLength(1);
   });
 
   it('shows a direct stream URL error when the direct WebRTC URL fails', () => {
@@ -216,7 +271,9 @@ describe('CameraSettingsDialog', () => {
     );
 
     const input = screen.getByLabelText('Direct stream URL');
-    const error = screen.getByText('Direct stream failed to load. Check the URL and try again.');
+    const error = screen.getByText(
+      'Direct stream could not be used. Check the URL, HTTPS, and whether go2rtc allows this dashboard to connect.'
+    );
 
     expect(input).toHaveAttribute('aria-invalid', 'true');
     expect(input).toHaveAccessibleDescription(error.textContent ?? '');
@@ -238,18 +295,34 @@ describe('CameraSettingsDialog', () => {
     expect(onCameraFitModeChange).toHaveBeenCalledWith('contain');
   });
 
-  it('hides feed sizing for direct WebRTC streams', () => {
+  it('hides feed sizing for cross-origin direct iframe streams', () => {
     renderWithProviders(
       <CameraSettingsDialog
         {...defaultProps}
         cameraStreamPreference="web_rtc"
         cameraWebRtcStreamSource="direct"
+        cameraDirectStreamUrl="http://192.168.68.71:1984/stream.html?src=camera_bedroom"
       />
     );
 
     expect(screen.queryByText('Feed sizing')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Fit' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Cover' })).not.toBeInTheDocument();
+  });
+
+  it('keeps feed sizing available for same-origin native direct streams', () => {
+    renderWithProviders(
+      <CameraSettingsDialog
+        {...defaultProps}
+        cameraStreamPreference="web_rtc"
+        cameraWebRtcStreamSource="direct"
+        cameraDirectStreamUrl={`${window.location.origin}/stream.html?src=camera_bedroom`}
+      />
+    );
+
+    expect(screen.getByText('Feed sizing')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Fit' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cover' })).toBeInTheDocument();
   });
 
   it('routes sibling switch and select controls through the camera provider service', async () => {

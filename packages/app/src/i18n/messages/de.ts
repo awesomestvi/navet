@@ -1682,6 +1682,7 @@ export const deMessages = {
   'camera.settings.streamPreference': 'Live-Stream',
   'camera.settings.streamPreference.auto': 'Auto',
   'camera.settings.streamPreference.web_rtc': 'WebRTC',
+  'camera.settings.streamPreference.mse': 'MSE',
   'camera.settings.streamPreference.direct_stream': 'Direktes WebRTC',
   'camera.settings.webRtcStreamSource.provider': 'Anbieter-Stream',
   'camera.settings.webRtcStreamSource.direct': 'Direkter Stream',
@@ -1692,6 +1693,7 @@ export const deMessages = {
   'camera.settings.directStreamUrl': 'Direkte Stream-URL',
   'camera.settings.directStreamUrl.description':
     'Optional. Verwenden Sie eine im Browser abspielbare Stream-Seite wie go2rtc, wenn Home Assistant nur HLS verfügbar macht. Löschen Sie das Feld, um Home Assistant-Streams zu verwenden.',
+  'camera.settings.directStreamUrl.localOnly': 'Nur auf diesem Gerät gespeichert.',
   'camera.settings.directStreamUrl.error':
     'Der direkte Stream konnte nicht geladen werden. Überprüfen Sie die URL und versuchen Sie es erneut.',
   'camera.settings.fitMode': 'Bildanpassung',

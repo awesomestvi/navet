@@ -249,15 +249,15 @@ export interface PlatformNotification {
   detailsUrl?: string | null;
 }
 
-export type PlatformCameraSourceKind = 'snapshot' | 'hls' | 'web_rtc' | 'mjpeg';
-export type PlatformCameraTransport = 'hls' | 'web_rtc' | 'mjpeg';
+export type PlatformCameraSourceKind = 'snapshot' | 'hls' | 'mse' | 'web_rtc' | 'mjpeg';
+export type PlatformCameraTransport = 'hls' | 'mse' | 'web_rtc' | 'mjpeg';
 export type PlatformCameraState = 'unavailable' | 'off' | 'idle' | 'streaming' | 'recording';
 
 export interface PlatformCameraPresentation {
   sourceUrl?: string;
   sourceKind: PlatformCameraSourceKind;
   isFallback: boolean;
-  videoStreamKind: Extract<PlatformCameraSourceKind, 'hls' | 'web_rtc' | 'mjpeg'> | null;
+  videoStreamKind: Extract<PlatformCameraSourceKind, 'hls' | 'mse' | 'web_rtc' | 'mjpeg'> | null;
   supportsStreaming: boolean;
   availableStreamTypes: string[];
 }
@@ -275,6 +275,8 @@ export interface PlatformCameraPlaybackModel {
   cameraState: PlatformCameraState;
   snapshotResource: ResolvedPlatformResource | null;
   supportsSnapshot: boolean;
+  /** Provider transports available before user preference and runtime failure filtering. */
+  supportedTransports?: PlatformCameraTransport[];
   liveTransports: PlatformCameraTransport[];
   fallbackTransports: PlatformCameraTransport[];
   selectedTransport: PlatformCameraTransport | null;
@@ -285,6 +287,7 @@ export interface PlatformCameraPlaybackModel {
   motionDetectionEnabled: boolean | null;
   refreshPolicy: {
     snapshotRefreshMs?: number;
+    capabilitiesRefreshMs?: number;
     retryDelaysMs: number[];
   };
 }

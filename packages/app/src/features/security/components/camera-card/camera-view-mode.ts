@@ -4,7 +4,7 @@ import { resolveEffectsQuality } from '@navet/app/utils/effects-quality';
 export const CAMERA_AUTO_REFRESH_INTERVAL_MS = 10_000;
 export const CAMERA_LIVE_FALLBACK_REFRESH_INTERVAL_MS = 30_000;
 export const CAMERA_REDUCED_REFRESH_INTERVAL_MS = 45_000;
-export const CAMERA_STREAM_TYPES = ['web_rtc', 'hls', 'mjpeg'] as const;
+export const CAMERA_STREAM_TYPES = ['web_rtc', 'mse', 'hls', 'mjpeg'] as const;
 
 export type CameraStreamType = (typeof CAMERA_STREAM_TYPES)[number];
 export type CameraImageSourceKind = CameraStreamType | 'snapshot';

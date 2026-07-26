@@ -1769,6 +1769,7 @@ export const nlMessages = {
   'camera.settings.streamPreference': 'Livestream',
   'camera.settings.streamPreference.auto': 'Automatisch',
   'camera.settings.streamPreference.web_rtc': 'WebRTC',
+  'camera.settings.streamPreference.mse': 'MSE',
   'camera.settings.streamPreference.direct_stream': 'Directe WebRTC',
   'camera.settings.webRtcStreamSource.provider': 'Provider-stream',
   'camera.settings.webRtcStreamSource.direct': 'Directe stroom',
@@ -1779,6 +1780,7 @@ export const nlMessages = {
   'camera.settings.directStreamUrl': 'Directe stream-URL',
   'camera.settings.directStreamUrl.description':
     'Optioneel. Gebruik een door een browser afspeelbare streampagina zoals go2rtc wanneer Home Assistant alleen HLS weergeeft. Maak het veld leeg om Home Assistant-streams te gebruiken.',
+  'camera.settings.directStreamUrl.localOnly': 'Alleen opgeslagen op dit apparaat.',
   'camera.settings.directStreamUrl.error':
     'Directe stream kan niet worden geladen. Controleer de URL en probeer het opnieuw.',
   'camera.settings.fitMode': 'Voergrootte',

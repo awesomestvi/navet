@@ -34,8 +34,9 @@ interface CameraCardViewProps {
   isStreamCapable: boolean;
   frontendStreamTypes: readonly CameraStreamType[];
   streamKind: CameraImageSourceKind;
-  hideStreamLabel?: boolean;
-  hideStreamStatus?: boolean;
+  streamLabelOverride?: string;
+  isStreamReady?: boolean;
+  isStreamReadinessOpaque?: boolean;
   isStreamFallback: boolean;
   onRefresh: () => void;
   onImageError: () => void;
@@ -70,10 +71,15 @@ function formatElapsedCompact(now: number, since: number | null) {
 function getCameraStatusLabel(
   t: (key: TranslationKey) => string,
   cameraState: PlatformCameraState,
-  isFeedRunning: boolean
+  isFeedRunning: boolean,
+  isStreamPending: boolean
 ) {
-  if (isFeedRunning || cameraState === 'streaming' || cameraState === 'recording') {
-    return null;
+  if (isFeedRunning) {
+    return t('camera.status.live');
+  }
+
+  if (isStreamPending) {
+    return t('camera.loadingFeed');
   }
 
   if (cameraState === 'off') {
@@ -104,8 +110,9 @@ export function CameraCardView({
   isStreamCapable,
   frontendStreamTypes,
   streamKind,
-  hideStreamLabel = false,
-  hideStreamStatus = false,
+  streamLabelOverride,
+  isStreamReady = false,
+  isStreamReadinessOpaque = false,
   isStreamFallback,
   onRefresh,
   onImageError,
@@ -133,8 +140,6 @@ export function CameraCardView({
     !isEditMode &&
     (cameraViewMode === 'snapshot' || isStreamFallback || !isStreamCapable);
   const hasLiveStream = Boolean(streamElement) && !isUnavailable;
-  const isFeedRunning = hasLiveStream && streamKind !== 'snapshot';
-  const statusLabel = getCameraStatusLabel(t, cameraState, isFeedRunning);
   const motionLabel = motionDetected ? t('camera.motion.detected') : null;
   const statusElapsed = formatElapsedCompact(now, statusChangedAt);
   const motionElapsed = formatElapsedCompact(now, motionChangedAt);
@@ -148,14 +153,25 @@ export function CameraCardView({
   }
   if (streamKind === 'hls') {
     streamLabel = 'HLS';
+  } else if (streamKind === 'mse') {
+    streamLabel = 'MSE';
   } else if (streamKind === 'web_rtc') {
     streamLabel = 'RTC';
   }
-  const resolvedStreamLabel = isStreamFallback ? t('camera.viewer.snapshotFallback') : streamLabel;
+  const resolvedStreamLabel = isStreamFallback
+    ? t('camera.viewer.snapshotFallback')
+    : (streamLabelOverride ?? streamLabel);
+  const isFeedRunning =
+    hasLiveStream && streamKind !== 'snapshot' && !isStreamReadinessOpaque && isStreamReady;
+  const isStreamPending =
+    hasLiveStream && streamKind !== 'snapshot' && !isStreamReadinessOpaque && !isStreamReady;
+  const statusLabel = isStreamReadinessOpaque
+    ? resolvedStreamLabel
+    : getCameraStatusLabel(t, cameraState, isFeedRunning, isStreamPending);
   const showStreamLabel = Boolean(
-    !hideStreamLabel &&
+    !isStreamReadinessOpaque &&
       resolvedStreamLabel &&
-      (!isCompact || streamKind === 'snapshot' || isStreamFallback)
+      (!isCompact || streamKind === 'snapshot' || isStreamFallback || streamLabelOverride)
   );
   const snapshotFitClassName = fitMode === 'contain' ? 'object-contain' : 'object-cover';
   const overlayButtonClassName = isLightTheme
@@ -205,6 +221,9 @@ export function CameraCardView({
         onKeyDown={
           !isEditMode
             ? (event: KeyboardEvent<HTMLDivElement>) => {
+                if (event.target !== event.currentTarget) {
+                  return;
+                }
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
                   onOpenViewer();
@@ -212,7 +231,7 @@ export function CameraCardView({
               }
             : undefined
         }
-        aria-label={!isEditMode ? t('camera.actions.openViewer') : undefined}
+        aria-label={!isEditMode ? `${t('camera.actions.openViewer')}: ${name}` : undefined}
         overlay={
           <div className="absolute inset-0 z-0 overflow-hidden">
             {effectiveImageUrl && !hasLiveStream ? (
@@ -242,6 +261,19 @@ export function CameraCardView({
         }
         contentClassName="relative z-10 h-full"
       >
+        {hasVisualBackground ? (
+          <>
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 z-10 h-20 bg-gradient-to-b from-black/55 via-black/20 to-transparent"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-24 bg-gradient-to-t from-black/75 via-black/40 to-transparent"
+            />
+          </>
+        ) : null}
+
         {showRefreshButton && (
           <button
             type="button"
@@ -250,7 +282,7 @@ export function CameraCardView({
               onRefresh();
             }}
             aria-label={t('camera.actions.refreshSnapshot')}
-            className={`absolute top-3 left-3 z-30 flex h-8 w-8 items-center justify-center rounded-full ${overlayButtonClassName}`}
+            className={`absolute top-3 left-3 z-30 flex h-11 w-11 items-center justify-center rounded-full ${overlayButtonClassName}`}
           >
             <RefreshCw className="h-4 w-4" />
           </button>
@@ -261,25 +293,19 @@ export function CameraCardView({
             !isLightTheme && usesLightOverlayText ? '[text-shadow:0_1px_2px_rgba(0,0,0,0.98)]' : ''
           } ${statusTextClassName}`}
         >
-          {!hideStreamStatus ? (
-            <>
-              <div className="inline-flex items-center gap-1.5">
-                <span
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    isFeedRunning || cameraState === 'streaming' || cameraState === 'recording'
-                      ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.72)]'
-                      : !isLightTheme && usesLightOverlayText
-                        ? 'bg-white/45'
-                        : 'bg-slate-400'
-                  }`}
-                />
-                {statusLabel ? <span>{statusLabel}</span> : null}
-              </div>
-              {statusElapsed ? (
-                <span className={statusMutedTextClassName}>{statusElapsed}</span>
-              ) : null}
-            </>
-          ) : null}
+          <div className="inline-flex items-center gap-1.5">
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                isFeedRunning
+                  ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.72)]'
+                  : !isLightTheme && usesLightOverlayText
+                    ? 'bg-white/45'
+                    : 'bg-slate-400'
+              }`}
+            />
+            {statusLabel ? <span>{statusLabel}</span> : null}
+          </div>
+          {statusElapsed ? <span className={statusMutedTextClassName}>{statusElapsed}</span> : null}
           {motionLabel ? (
             <>
               <span className={statusSubtleTextClassName}>/</span>
@@ -328,9 +354,9 @@ export function CameraCardView({
                         ? t('camera.actions.disableMotionDetection')
                         : t('camera.actions.enableMotionDetection')
                     }
-                    className={`flex h-7 w-7 items-center justify-center rounded-full backdrop-blur-sm transition-colors ${motionButtonClassName}`}
+                    className={`flex h-11 w-11 items-center justify-center rounded-full backdrop-blur-sm transition-colors ${motionButtonClassName}`}
                   >
-                    <Eye className="h-3.5 w-3.5" />
+                    <Eye className="h-4 w-4" />
                   </button>
                 ) : null}
                 <button

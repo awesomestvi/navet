@@ -74,6 +74,49 @@ describe('usePlatformCameraPresentation', () => {
     });
   });
 
+  it('maps provider MSE playback models to an MSE viewer presentation', () => {
+    useCameraPlaybackPlanMock.mockReturnValue({
+      cameraState: 'streaming',
+      snapshotResource: null,
+      supportsSnapshot: false,
+      liveTransports: ['mse', 'hls'],
+      fallbackTransports: ['hls'],
+      selectedTransport: 'mse',
+      selectedStreamResource: {
+        id: 'camera.front:mse',
+        kind: 'hls_stream',
+        cacheKey: 'camera.front:mse',
+        authStrategy: 'same_origin',
+        url: '/api/hls/camera.front/master.m3u8',
+      },
+      supportsStreaming: true,
+      isSnapshotFallback: false,
+      shouldStartWithSnapshot: false,
+      motionDetectionEnabled: true,
+      refreshPolicy: { retryDelaysMs: [1_000, 3_000, 7_000] },
+    });
+
+    const { result } = renderHook(() =>
+      usePlatformCameraPresentation({
+        entityId: 'home_assistant:camera.front',
+        cameraState: 'streaming',
+        preferredMode: 'live',
+        isStreamCapable: true,
+        motionDetectionEnabled: true,
+        failedTransports: new Set(),
+      })
+    );
+
+    expect(result.current).toEqual({
+      sourceUrl: undefined,
+      sourceKind: 'mse',
+      isFallback: false,
+      videoStreamKind: 'mse',
+      supportsStreaming: true,
+      availableStreamTypes: ['mse', 'hls'],
+    });
+  });
+
   it('maps snapshot fallback playback models to a snapshot presentation', () => {
     useCameraPlaybackPlanMock.mockReturnValue({
       cameraState: 'streaming',

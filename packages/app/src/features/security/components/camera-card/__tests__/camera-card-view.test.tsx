@@ -37,7 +37,7 @@ describe('CameraCardView', () => {
 
     renderWithProviders(<CameraCardView {...defaultProps} onOpenViewer={onOpenViewer} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Open camera viewer' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open camera viewer: Front Door' }));
 
     expect(onOpenViewer).toHaveBeenCalledTimes(1);
   });
@@ -55,13 +55,15 @@ describe('CameraCardView', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh camera snapshot' }));
+    const refreshButton = screen.getByRole('button', { name: 'Refresh camera snapshot' });
+    fireEvent.click(refreshButton);
+    fireEvent.keyDown(refreshButton, { key: 'Enter' });
 
     expect(onRefresh).toHaveBeenCalledTimes(1);
     expect(onOpenViewer).not.toHaveBeenCalled();
   });
 
-  it('does not show a live text label in the status row', () => {
+  it('does not claim decoded live playback from provider state alone', () => {
     renderWithProviders(
       <CameraCardView
         {...defaultProps}
@@ -99,20 +101,55 @@ describe('CameraCardView', () => {
     expect(screen.queryByText('WEB_RTC')).not.toBeInTheDocument();
   });
 
-  it('can hide the stream label for direct WebRTC dashboard playback', () => {
+  it('labels direct MSE playback as loading until a frame is verified', () => {
     renderWithProviders(
       <CameraCardView
         {...defaultProps}
         streamKind="web_rtc"
         frontendStreamTypes={['web_rtc']}
-        hideStreamLabel
-        hideStreamStatus
+        streamLabelOverride="MSE"
+        streamElement={<div data-testid="direct-mse-stream" />}
         statusChangedAt={baseNow - 55 * 60_000}
       />
     );
 
-    expect(screen.queryByText('RTC')).not.toBeInTheDocument();
-    expect(screen.queryByText('55m')).not.toBeInTheDocument();
+    expect(screen.getByText('MSE')).toBeInTheDocument();
+    expect(screen.queryByText('Live')).not.toBeInTheDocument();
+    expect(screen.getByText('Loading camera feed')).toBeInTheDocument();
+    expect(screen.getByText('55m')).toBeInTheDocument();
+  });
+
+  it('marks direct MSE playback live after a decoded frame is verified', () => {
+    renderWithProviders(
+      <CameraCardView
+        {...defaultProps}
+        streamKind="web_rtc"
+        frontendStreamTypes={['web_rtc']}
+        streamLabelOverride="MSE"
+        streamElement={<div data-testid="direct-mse-stream" />}
+        isStreamReady
+      />
+    );
+
+    expect(screen.getByText('MSE')).toBeInTheDocument();
+    expect(screen.getByText('Live')).toBeInTheDocument();
+  });
+
+  it('shows a neutral transport label when iframe playback readiness is opaque', () => {
+    renderWithProviders(
+      <CameraCardView
+        {...defaultProps}
+        streamKind="web_rtc"
+        frontendStreamTypes={['web_rtc']}
+        streamLabelOverride="Direct stream"
+        streamElement={<div data-testid="opaque-direct-stream" />}
+        isStreamReadinessOpaque
+      />
+    );
+
+    expect(screen.getByText('Direct stream')).toBeInTheDocument();
+    expect(screen.queryByText('Loading camera feed')).not.toBeInTheDocument();
+    expect(screen.queryByText('Live')).not.toBeInTheDocument();
   });
 
   it('does not show the generic on label when the camera is merely idle', () => {
@@ -121,7 +158,7 @@ describe('CameraCardView', () => {
     expect(screen.queryByText('On')).not.toBeInTheDocument();
   });
 
-  it('keeps mounted live streams free of a redundant live text label', () => {
+  it('keeps mounted live streams visibly identified as live', () => {
     renderWithProviders(
       <CameraCardView
         {...defaultProps}
@@ -130,10 +167,11 @@ describe('CameraCardView', () => {
         streamKind="web_rtc"
         frontendStreamTypes={['web_rtc']}
         streamElement={<div data-testid="camera-stream-player">live stream</div>}
+        isStreamReady
       />
     );
 
-    expect(screen.queryByText('Live')).not.toBeInTheDocument();
+    expect(screen.getByText('Live')).toBeInTheDocument();
     expect(screen.getByText('13h')).toBeInTheDocument();
   });
 
@@ -177,9 +215,9 @@ describe('CameraCardView', () => {
     expect(screen.getByText('Snapshot')).toBeInTheDocument();
   });
 
-  it('does not render the bottom camera vignette', () => {
+  it('renders a bottom contrast scrim over camera imagery', () => {
     const { container } = renderWithProviders(<CameraCardView {...defaultProps} />);
 
-    expect(container.querySelector('.bg-gradient-to-t')).toBeNull();
+    expect(container.querySelector('.bg-gradient-to-t')).toBeInTheDocument();
   });
 });

@@ -1748,6 +1748,7 @@ export const noMessages = {
   'camera.settings.streamPreference': 'Direktesending',
   'camera.settings.streamPreference.auto': 'Auto',
   'camera.settings.streamPreference.web_rtc': 'WebRTC',
+  'camera.settings.streamPreference.mse': 'MSE',
   'camera.settings.streamPreference.direct_stream': 'Direkte WebRTC',
   'camera.settings.webRtcStreamSource.provider': 'Leverandørstrøm',
   'camera.settings.webRtcStreamSource.direct': 'Direkte stream',
@@ -1758,6 +1759,7 @@ export const noMessages = {
   'camera.settings.directStreamUrl': 'Direktestrøm-URL',
   'camera.settings.directStreamUrl.description':
     'Valgfritt. Bruk en nettleser-spillbar strømside som go2rtc når Home Assistant bare eksponerer HLS. Tøm feltet for å bruke Home Assistant-strømmer.',
+  'camera.settings.directStreamUrl.localOnly': 'Lagret kun på denne enheten.',
   'camera.settings.directStreamUrl.error':
     'Direktestrøm kunne ikke lastes inn. Sjekk URL-en og prøv igjen.',
   'camera.settings.fitMode': 'Dimensjonering av fôr',

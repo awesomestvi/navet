@@ -190,7 +190,7 @@ describe('useDashboardPreferenceSync', () => {
       kioskMode: true,
       headerTitleMode: 'clock',
       cameraDirectStreamUrls: {
-        'camera.front': 'https://local.example.com/live?token=private',
+        'home_assistant:camera.front': 'https://local.example.com/live?token=private',
       },
     });
     expect(saveDashboardPreferences).not.toHaveBeenCalled();
