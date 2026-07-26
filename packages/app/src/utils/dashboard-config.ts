@@ -16,43 +16,25 @@ import {
   sanitizeButtonEntityId,
 } from '@navet/app/features/dashboard/utils/button-widget-security';
 import { useLightPresetStore } from '@navet/app/features/lighting/stores/light-preset-store';
-import { resolveAppLanguage } from '@navet/app/i18n/config';
 import { isSection } from '@navet/app/navigation/sections';
 import { useEntityRoomOverridesStore } from '@navet/app/stores/entity-room-overrides-store';
 import { useNavigationStore } from '@navet/app/stores/navigation-store';
-import {
-  type CameraDashboardViewMode,
-  type CameraFitMode,
-  type CameraStreamPreference,
-  type CameraViewMode,
-  type CameraWebRtcStreamSource,
-  defaultSettings,
-  normalizeHeaderCustomText,
-  useSettingsStore,
-  type WeatherMetricId,
-} from '@navet/app/stores/settings-store';
+import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { useThemeStore } from '@navet/app/stores/theme-store';
-import {
-  normalizeCustomSidebarActions,
-  normalizeCustomSummaryPills,
-} from '@navet/app/utils/custom-extensions';
 import {
   parseDashboardConfigYaml,
   stringifyDashboardConfigYaml,
 } from '@navet/app/utils/dashboard-config-yaml';
-import {
-  getLegacyReducedEffectsFlags,
-  resolveEffectsQuality,
-} from '@navet/app/utils/effects-quality';
 import { removeLocalStorageWithMigration } from '@navet/app/utils/local-storage-migration';
 import { notifyPersistedStateChanged } from '@navet/app/utils/persisted-state-events';
 import { storage } from '@navet/app/utils/storage';
 import { sanitizeExternalUrl, sanitizeImageUrl } from '@navet/app/utils/url-security';
 import {
-  getSettingsProfileSharedValue,
-  type ScopedUserSettingKey,
-  setSettingsProfileSharedValues,
-  shouldSyncSettingToProfile,
+  applySettingsPreferenceLayerToStore,
+  isCredentialBearingSettingsUrl,
+  isCredentialFieldName,
+  projectSettingsPreferenceLayer,
+  type SettingsPreferenceValues,
 } from './settings-profile-scope';
 
 export interface DashboardConfigPayload {
@@ -65,12 +47,7 @@ export interface DashboardConfigPayload {
     customPrimaryColor?: ReturnType<typeof useThemeStore.getState>['customPrimaryColor'];
     wallpaper?: ReturnType<typeof useThemeStore.getState>['wallpaper'];
   };
-  settings: Partial<
-    Omit<
-      ReturnType<typeof useSettingsStore.getState>,
-      'updateSettings' | 'updateCameraViewMode' | 'applyImportedSettings' | 'resetSettings'
-    >
-  >;
+  settings: SettingsPreferenceValues<'shared'>;
   navigation: Pick<ReturnType<typeof useNavigationStore.getState>, 'currentRoom' | 'activeSection'>;
   customCards?: ReturnType<typeof useCustomCardsStore.getState>['cards'];
   dashboardEntities?: Pick<
@@ -85,6 +62,7 @@ export interface DashboardConfigPayload {
     'globalBrightnessPresetValues' | 'globalBrightnessPresetOrder' | 'lightPresetConfigs'
   >;
   cardSizes?: Record<string, string>;
+  /** Legacy import-only cache. Runtime card ordering is derived locally and is never shared. */
   cardOrders?: Record<string, string[]>;
   cardZones?: Record<string, string>;
   homeDashboardLayout?: unknown;
@@ -163,303 +141,12 @@ const pruneEmptyRecord = <T extends Record<string, unknown>>(value: T): T | unde
 
 const pruneEmptyArray = <T>(value: T[]): T[] | undefined => (value.length > 0 ? value : undefined);
 
-const weatherMetricIds = new Set<WeatherMetricId>([
-  'precipitation',
-  'humidity',
-  'wind',
-  'feelsLike',
-  'windGust',
-  'pressure',
-  'uvIndex',
-  'cloudCover',
-]);
-const cameraViewModes = new Set<CameraViewMode>(['live', 'auto', 'snapshot']);
-const cameraStreamPreferences = new Set<CameraStreamPreference>([
-  'auto',
-  'web_rtc',
-  'hls',
-  'mjpeg',
-]);
-const cameraWebRtcStreamSources = new Set<CameraWebRtcStreamSource>(['provider', 'direct']);
-const cameraFitModes = new Set<CameraFitMode>(['cover', 'contain']);
-
-function isWeatherMetricId(value: unknown): value is WeatherMetricId {
-  return typeof value === 'string' && weatherMetricIds.has(value as WeatherMetricId);
-}
-
-function resolveWeatherMetricIds(value: unknown): WeatherMetricId[] {
-  return Array.isArray(value) ? value.filter(isWeatherMetricId) : defaultSettings.weatherMetricIds;
-}
-
-function resolveCameraViewMode(value: unknown): CameraViewMode {
-  return typeof value === 'string' && cameraViewModes.has(value as CameraViewMode)
-    ? (value as CameraViewMode)
-    : defaultSettings.cameraViewMode;
-}
-
-function resolveCameraDashboardViewMode(
-  value: unknown,
-  legacyValue: unknown = undefined
-): CameraDashboardViewMode {
-  return typeof value === 'string' && cameraViewModes.has(value as CameraViewMode)
-    ? (value as CameraDashboardViewMode)
-    : resolveCameraViewMode(legacyValue);
-}
-
-function resolveCameraViewModes(value: unknown): Record<string, CameraViewMode> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return {};
-  }
-
-  return Object.fromEntries(
-    Object.entries(value).filter((entry): entry is [string, CameraViewMode] =>
-      cameraViewModes.has(entry[1] as CameraViewMode)
-    )
-  );
-}
-
-function resolveCameraStreamPreference(value: unknown): CameraStreamPreference {
-  if (value === 'direct_stream') {
-    return 'web_rtc';
-  }
-
-  return typeof value === 'string' && cameraStreamPreferences.has(value as CameraStreamPreference)
-    ? (value as CameraStreamPreference)
-    : defaultSettings.cameraStreamPreference;
-}
-
-function resolveCameraStreamPreferences(value: unknown): Record<string, CameraStreamPreference> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return {};
-  }
-
-  return Object.fromEntries(
-    Object.entries(value)
-      .map(([entityId, preference]) => [
-        entityId,
-        preference === 'direct_stream' ? 'web_rtc' : preference,
-      ])
-      .filter((entry): entry is [string, CameraStreamPreference] =>
-        cameraStreamPreferences.has(entry[1] as CameraStreamPreference)
-      )
-  );
-}
-
-function resolveCameraWebRtcStreamSources(
-  value: unknown,
-  legacyPreferences: unknown = undefined
-): Record<string, CameraWebRtcStreamSource> {
-  const sources =
-    value && typeof value === 'object' && !Array.isArray(value)
-      ? Object.fromEntries(
-          Object.entries(value).filter((entry): entry is [string, CameraWebRtcStreamSource] =>
-            cameraWebRtcStreamSources.has(entry[1] as CameraWebRtcStreamSource)
-          )
-        )
-      : {};
-
-  if (
-    !legacyPreferences ||
-    typeof legacyPreferences !== 'object' ||
-    Array.isArray(legacyPreferences)
-  ) {
-    return sources;
-  }
-
-  const legacyDirectSources = Object.fromEntries(
-    Object.entries(legacyPreferences)
-      .filter(([, preference]) => preference === 'direct_stream')
-      .map(([entityId]) => [entityId, 'direct' as const])
-  );
-
-  return { ...legacyDirectSources, ...sources };
-}
-
-function resolveCameraDirectStreamUrls(value: unknown): Record<string, string> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return {};
-  }
-
-  return Object.fromEntries(
-    Object.entries(value)
-      .map(([entityId, url]) => [entityId, typeof url === 'string' ? url.trim() : ''] as const)
-      .filter((entry): entry is [string, string] => entry[1].length > 0)
-  );
-}
-
-function resolveCameraFitMode(value: unknown): CameraFitMode {
-  return typeof value === 'string' && cameraFitModes.has(value as CameraFitMode)
-    ? (value as CameraFitMode)
-    : defaultSettings.cameraFitMode;
-}
-
-function resolveCameraFitModes(value: unknown): Record<string, CameraFitMode> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return {};
-  }
-
-  return Object.fromEntries(
-    Object.entries(value).filter((entry): entry is [string, CameraFitMode] =>
-      cameraFitModes.has(entry[1] as CameraFitMode)
-    )
-  );
-}
-
-function areArraysEqual<T>(left: T[], right: T[]) {
-  return left.length === right.length && left.every((item, index) => item === right[index]);
-}
-
-function getProfileScopedSettingValue<K extends ScopedUserSettingKey>(
-  key: K,
-  currentValue: ReturnType<typeof useSettingsStore.getState>[K]
-) {
-  if (shouldSyncSettingToProfile(key)) {
-    return currentValue;
-  }
-
-  return getSettingsProfileSharedValue(key) as
-    | ReturnType<typeof useSettingsStore.getState>[K]
-    | undefined;
-}
-
 const buildExportedSettings = (
   settingsState: Omit<
     ReturnType<typeof useSettingsStore.getState>,
     'updateSettings' | 'updateCameraViewMode' | 'applyImportedSettings' | 'resetSettings'
   >
-) => {
-  const effectiveEffectsQuality = resolveEffectsQuality(
-    settingsState.effectsQuality,
-    settingsState.disableAnimations || settingsState.lowPowerMode
-  );
-  const effectsQuality = getProfileScopedSettingValue('effectsQuality', effectiveEffectsQuality);
-  const headerTitleMode = getProfileScopedSettingValue(
-    'headerTitleMode',
-    settingsState.headerTitleMode
-  );
-  const headerCustomText = getProfileScopedSettingValue(
-    'headerCustomText',
-    settingsState.headerCustomText
-  );
-  const showHomeSummaryBar = getProfileScopedSettingValue(
-    'showHomeSummaryBar',
-    settingsState.showHomeSummaryBar
-  );
-  const keepDeviceAwake = getProfileScopedSettingValue(
-    'keepDeviceAwake',
-    settingsState.keepDeviceAwake
-  );
-  const kioskMode = getProfileScopedSettingValue('kioskMode', settingsState.kioskMode);
-  const dashboardSpaceMode = getProfileScopedSettingValue(
-    'dashboardSpaceMode',
-    settingsState.dashboardSpaceMode
-  );
-
-  return omitUndefinedEntries({
-    username:
-      settingsState.username !== defaultSettings.username ? settingsState.username : undefined,
-    email: settingsState.email || undefined,
-    language:
-      settingsState.language !== defaultSettings.language ? settingsState.language : undefined,
-    headerTitleMode:
-      headerTitleMode !== undefined && headerTitleMode !== defaultSettings.headerTitleMode
-        ? headerTitleMode
-        : undefined,
-    headerCustomText:
-      headerCustomText !== undefined && headerCustomText !== defaultSettings.headerCustomText
-        ? normalizeHeaderCustomText(headerCustomText) || undefined
-        : undefined,
-    showNotifications:
-      settingsState.showNotifications !== defaultSettings.showNotifications
-        ? settingsState.showNotifications
-        : undefined,
-    showWeatherInHeader:
-      settingsState.showWeatherInHeader !== defaultSettings.showWeatherInHeader
-        ? settingsState.showWeatherInHeader
-        : undefined,
-    showHomeSummaryBar:
-      showHomeSummaryBar !== undefined && showHomeSummaryBar !== defaultSettings.showHomeSummaryBar
-        ? showHomeSummaryBar
-        : undefined,
-    keepDeviceAwake:
-      keepDeviceAwake !== undefined && keepDeviceAwake !== defaultSettings.keepDeviceAwake
-        ? keepDeviceAwake
-        : undefined,
-    use24HourTime:
-      settingsState.use24HourTime !== defaultSettings.use24HourTime
-        ? settingsState.use24HourTime
-        : undefined,
-    temperatureUnit:
-      settingsState.temperatureUnit !== defaultSettings.temperatureUnit
-        ? settingsState.temperatureUnit
-        : undefined,
-    defaultView:
-      settingsState.defaultView !== defaultSettings.defaultView
-        ? settingsState.defaultView
-        : undefined,
-    compactMode:
-      settingsState.compactMode !== defaultSettings.compactMode
-        ? settingsState.compactMode
-        : undefined,
-    kioskMode:
-      kioskMode !== undefined && kioskMode !== defaultSettings.kioskMode ? kioskMode : undefined,
-    dashboardSpaceMode:
-      dashboardSpaceMode !== undefined && dashboardSpaceMode !== defaultSettings.dashboardSpaceMode
-        ? dashboardSpaceMode
-        : undefined,
-    disableAnimations: undefined,
-    lowPowerMode: undefined,
-    effectsQuality:
-      effectsQuality !== undefined && effectsQuality !== defaultSettings.effectsQuality
-        ? effectsQuality
-        : undefined,
-    entityInteractionMode:
-      settingsState.entityInteractionMode !== defaultSettings.entityInteractionMode
-        ? settingsState.entityInteractionMode
-        : undefined,
-    cameraDashboardViewMode:
-      settingsState.cameraDashboardViewMode !== defaultSettings.cameraDashboardViewMode
-        ? settingsState.cameraDashboardViewMode
-        : undefined,
-    cameraStreamPreference:
-      settingsState.cameraStreamPreference !== defaultSettings.cameraStreamPreference
-        ? settingsState.cameraStreamPreference
-        : undefined,
-    cameraViewModes: pruneEmptyRecord(settingsState.cameraViewModes),
-    cameraStreamPreferences: pruneEmptyRecord(settingsState.cameraStreamPreferences),
-    cameraWebRtcStreamSources: pruneEmptyRecord(settingsState.cameraWebRtcStreamSources),
-    cameraDirectStreamUrls: pruneEmptyRecord(settingsState.cameraDirectStreamUrls),
-    cameraFitMode:
-      settingsState.cameraFitMode !== defaultSettings.cameraFitMode
-        ? settingsState.cameraFitMode
-        : undefined,
-    cameraFitModes: pruneEmptyRecord(settingsState.cameraFitModes),
-    weatherMetricIds: !areArraysEqual(
-      settingsState.weatherMetricIds,
-      defaultSettings.weatherMetricIds
-    )
-      ? settingsState.weatherMetricIds
-      : undefined,
-    weatherForecastMode:
-      settingsState.weatherForecastMode !== defaultSettings.weatherForecastMode
-        ? settingsState.weatherForecastMode
-        : undefined,
-    advancedCustomizationEnabled:
-      settingsState.advancedCustomizationEnabled !== defaultSettings.advancedCustomizationEnabled
-        ? settingsState.advancedCustomizationEnabled
-        : undefined,
-    customSidebarActions: pruneEmptyArray(
-      normalizeCustomSidebarActions(settingsState.customSidebarActions)
-    ),
-    customSummaryPills: pruneEmptyArray(
-      normalizeCustomSummaryPills(settingsState.customSummaryPills)
-    ),
-    ambientLightBleed:
-      settingsState.ambientLightBleed !== defaultSettings.ambientLightBleed
-        ? settingsState.ambientLightBleed
-        : undefined,
-  });
-};
+) => projectSettingsPreferenceLayer(settingsState, 'shared').settings;
 
 export const exportDashboardConfig = (): DashboardConfigPayload => {
   const themeState = useThemeStore.getState();
@@ -468,6 +155,7 @@ export const exportDashboardConfig = (): DashboardConfigPayload => {
   const customCardsState = useCustomCardsStore.getState();
   const dashboardEntitiesState = useDashboardEntitiesStore.getState();
   const entityRoomOverridesState = useEntityRoomOverridesStore.getState();
+  const cardZonesState = useCardZonesStore.getState();
   const homeDashboardLayoutState = useHomeDashboardLayoutStore.getState();
   const lightPresetState = useLightPresetStore.getState();
 
@@ -481,14 +169,21 @@ export const exportDashboardConfig = (): DashboardConfigPayload => {
       ...(themeState.customPrimaryColor
         ? { customPrimaryColor: themeState.customPrimaryColor }
         : {}),
-      ...(themeState.wallpaper ? { wallpaper: themeState.wallpaper } : {}),
+      ...(themeState.wallpaper && !isCredentialBearingSettingsUrl(themeState.wallpaper)
+        ? { wallpaper: themeState.wallpaper }
+        : {}),
     },
     settings: buildExportedSettings(settingsState),
     navigation: {
       currentRoom: navigationState.currentRoom,
       activeSection: navigationState.activeSection,
     },
-    customCards: pruneEmptyArray(customCardsState.cards),
+    customCards: pruneEmptyArray(
+      customCardsState.cards.map((card) => ({
+        ...card,
+        data: sanitizeCustomCardData(card.type, card.data),
+      }))
+    ),
     dashboardEntities:
       dashboardEntitiesState.hiddenEntityIds.length > 0 ||
       dashboardEntitiesState.lockedCardIds.length > 0 ||
@@ -511,12 +206,7 @@ export const exportDashboardConfig = (): DashboardConfigPayload => {
     cardSizes: pruneEmptyRecord(
       parseStoredJson<Record<string, string>>(STORAGE_KEYS.cardSizes, {})
     ),
-    cardOrders: pruneEmptyRecord(
-      parseStoredJson<Record<string, string[]>>(STORAGE_KEYS.cardOrders, {})
-    ),
-    cardZones: pruneEmptyRecord(
-      parseStoredJson<Record<string, string>>(STORAGE_KEYS.cardZones, {})
-    ),
+    cardZones: pruneEmptyRecord(cardZonesState.cardZones),
     homeDashboardLayout: {
       mode: homeDashboardLayoutState.mode,
       showHero: homeDashboardLayoutState.showHero,
@@ -549,7 +239,11 @@ const MAX_IMPORTED_CARDS = 200;
 const MAX_IMPORTED_RECORD_KEYS = 500;
 
 const sanitizeRSSFeedUrl = (value: unknown) => {
-  const safeUrl = sanitizeExternalUrl(stringValue(value, 2000));
+  const rawUrl = stringValue(value, 2000);
+  if (!rawUrl || isCredentialBearingSettingsUrl(rawUrl)) {
+    return null;
+  }
+  const safeUrl = sanitizeExternalUrl(rawUrl);
   return safeUrl?.startsWith('https://') ? safeUrl : null;
 };
 
@@ -587,16 +281,27 @@ function sanitizeJsonRecord(value: unknown, depth = 0): Record<string, unknown> 
     .slice(0, 50)
     .flatMap<SanitizedJsonEntry>(([key, entry]) => {
       const safeKey = stringValue(key, 80);
-      if (!safeKey) {
+      if (!safeKey || isCredentialFieldName(safeKey)) {
         return [];
       }
 
       if (isSanitizedJsonPrimitive(entry)) {
+        if (typeof entry === 'string' && isCredentialBearingSettingsUrl(entry)) {
+          return [];
+        }
         return [[safeKey, entry] as const];
       }
 
       if (Array.isArray(entry)) {
-        return [[safeKey, entry.slice(0, 50).filter(isSanitizedJsonPrimitive)] as const];
+        return [
+          [
+            safeKey,
+            entry
+              .slice(0, 50)
+              .filter(isSanitizedJsonPrimitive)
+              .filter((item) => typeof item !== 'string' || !isCredentialBearingSettingsUrl(item)),
+          ] as const,
+        ];
       }
 
       const nested = sanitizeJsonRecord(entry, depth + 1);
@@ -691,7 +396,11 @@ function sanitizeCustomCardData(
     const baseUrl = typeof window !== 'undefined' ? window.location.href : undefined;
     const photoUrls = Array.isArray(data.photoUrls)
       ? data.photoUrls.slice(0, 48).flatMap((url) => {
-          const safeUrl = sanitizeImageUrl(stringValue(url, 2000), baseUrl, {
+          const rawUrl = stringValue(url, 2000);
+          if (!rawUrl || isCredentialBearingSettingsUrl(rawUrl)) {
+            return [];
+          }
+          const safeUrl = sanitizeImageUrl(rawUrl, baseUrl, {
             allowDataImage: true,
           });
           return safeUrl ? [safeUrl] : [];
@@ -703,7 +412,11 @@ function sanitizeCustomCardData(
             return [];
           }
 
-          const src = sanitizeImageUrl(stringValue(photo.src, 2000), baseUrl, {
+          const rawSrc = stringValue(photo.src, 2000);
+          if (!rawSrc || isCredentialBearingSettingsUrl(rawSrc)) {
+            return [];
+          }
+          const src = sanitizeImageUrl(rawSrc, baseUrl, {
             allowDataImage: true,
           });
           if (!src) {
@@ -716,7 +429,11 @@ function sanitizeCustomCardData(
                   return [];
                 }
 
-                const srcSet = sanitizeImageUrl(stringValue(source.srcSet, 2000), baseUrl, {
+                const rawSrcSet = stringValue(source.srcSet, 2000);
+                if (!rawSrcSet || isCredentialBearingSettingsUrl(rawSrcSet)) {
+                  return [];
+                }
+                const srcSet = sanitizeImageUrl(rawSrcSet, baseUrl, {
                   allowDataImage: true,
                 });
                 const type = stringValue(source.type, 40);
@@ -883,50 +600,7 @@ export const importDashboardConfig = (
   }
 
   const currentThemeState = useThemeStore.getState();
-  const currentSettingsState = useSettingsStore.getState();
   const currentLightPresetState = useLightPresetStore.getState();
-  const reducedEffectsEnabled =
-    typeof settings.lowPowerMode === 'boolean'
-      ? settings.lowPowerMode
-      : typeof settings.disableAnimations === 'boolean'
-        ? settings.disableAnimations
-        : defaultSettings.lowPowerMode;
-  const effectsQuality = resolveEffectsQuality(
-    settings.effectsQuality === 'high' ||
-      settings.effectsQuality === 'medium' ||
-      settings.effectsQuality === 'low'
-      ? settings.effectsQuality
-      : undefined,
-    reducedEffectsEnabled
-  );
-  const importedHeaderTitleMode =
-    settings.headerTitleMode === 'auto_greeting' ||
-    settings.headerTitleMode === 'custom_text' ||
-    settings.headerTitleMode === 'clock'
-      ? settings.headerTitleMode
-      : defaultSettings.headerTitleMode;
-  const importedHeaderCustomText = normalizeHeaderCustomText(settings.headerCustomText);
-  const importedShowHomeSummaryBar =
-    typeof settings.showHomeSummaryBar === 'boolean'
-      ? settings.showHomeSummaryBar
-      : defaultSettings.showHomeSummaryBar;
-  const importedKeepDeviceAwake =
-    typeof settings.keepDeviceAwake === 'boolean'
-      ? settings.keepDeviceAwake
-      : defaultSettings.keepDeviceAwake;
-  const importedKioskMode =
-    typeof settings.kioskMode === 'boolean' ? settings.kioskMode : defaultSettings.kioskMode;
-  const importedDashboardSpaceMode =
-    settings.dashboardSpaceMode === 'default' || settings.dashboardSpaceMode === 'more_space'
-      ? settings.dashboardSpaceMode
-      : defaultSettings.dashboardSpaceMode;
-  const importedDashboardProfileMode =
-    settings.dashboardProfileMode === 'standard' ||
-    settings.dashboardProfileMode === 'wall_display' ||
-    settings.dashboardProfileMode === 'bedside' ||
-    settings.dashboardProfileMode === 'custom'
-      ? settings.dashboardProfileMode
-      : defaultSettings.dashboardProfileMode;
 
   useThemeStore.getState().applyImportedTheme({
     theme:
@@ -943,113 +617,14 @@ export const importDashboardConfig = (
     wallpaper:
       theme.wallpaper === undefined
         ? currentThemeState.wallpaper
-        : (theme.wallpaper as string | null),
+        : theme.wallpaper === null
+          ? null
+          : typeof theme.wallpaper === 'string' && !isCredentialBearingSettingsUrl(theme.wallpaper)
+            ? theme.wallpaper
+            : currentThemeState.wallpaper,
   });
 
-  setSettingsProfileSharedValues({
-    dashboardProfileMode: importedDashboardProfileMode,
-    dashboardSpaceMode: importedDashboardSpaceMode,
-    effectsQuality,
-    headerCustomText: importedHeaderCustomText,
-    headerTitleMode: importedHeaderTitleMode,
-    keepDeviceAwake: importedKeepDeviceAwake,
-    kioskMode: importedKioskMode,
-    showHomeSummaryBar: importedShowHomeSummaryBar,
-  });
-
-  useSettingsStore.getState().applyImportedSettings({
-    username: (settings.username as string | undefined) ?? defaultSettings.username,
-    email: (settings.email as string | undefined) ?? defaultSettings.email,
-    language: resolveAppLanguage(
-      typeof settings.language === 'string' ? settings.language : defaultSettings.language
-    ),
-    headerTitleMode: shouldSyncSettingToProfile('headerTitleMode')
-      ? importedHeaderTitleMode
-      : currentSettingsState.headerTitleMode,
-    headerCustomText: shouldSyncSettingToProfile('headerCustomText')
-      ? importedHeaderCustomText
-      : currentSettingsState.headerCustomText,
-    showNotifications:
-      typeof settings.showNotifications === 'boolean'
-        ? settings.showNotifications
-        : defaultSettings.showNotifications,
-    showWeatherInHeader:
-      typeof settings.showWeatherInHeader === 'boolean'
-        ? settings.showWeatherInHeader
-        : defaultSettings.showWeatherInHeader,
-    showHomeSummaryBar: shouldSyncSettingToProfile('showHomeSummaryBar')
-      ? importedShowHomeSummaryBar
-      : currentSettingsState.showHomeSummaryBar,
-    keepDeviceAwake: shouldSyncSettingToProfile('keepDeviceAwake')
-      ? importedKeepDeviceAwake
-      : currentSettingsState.keepDeviceAwake,
-    use24HourTime:
-      typeof settings.use24HourTime === 'boolean'
-        ? settings.use24HourTime
-        : defaultSettings.use24HourTime,
-    temperatureUnit:
-      settings.temperatureUnit === 'celsius' || settings.temperatureUnit === 'fahrenheit'
-        ? settings.temperatureUnit
-        : defaultSettings.temperatureUnit,
-    defaultView: (settings.defaultView as string | undefined) ?? 'all',
-    compactMode:
-      typeof settings.compactMode === 'boolean'
-        ? settings.compactMode
-        : defaultSettings.compactMode,
-    kioskMode: shouldSyncSettingToProfile('kioskMode')
-      ? importedKioskMode
-      : currentSettingsState.kioskMode,
-    dashboardProfileMode: shouldSyncSettingToProfile('dashboardProfileMode')
-      ? importedDashboardProfileMode
-      : currentSettingsState.dashboardProfileMode,
-    dashboardSpaceMode: shouldSyncSettingToProfile('dashboardSpaceMode')
-      ? importedDashboardSpaceMode
-      : currentSettingsState.dashboardSpaceMode,
-    ...getLegacyReducedEffectsFlags(
-      shouldSyncSettingToProfile('effectsQuality')
-        ? effectsQuality
-        : currentSettingsState.effectsQuality
-    ),
-    effectsQuality: shouldSyncSettingToProfile('effectsQuality')
-      ? effectsQuality
-      : currentSettingsState.effectsQuality,
-    effectsQualityUserOverride: true,
-    entityInteractionMode:
-      settings.entityInteractionMode === 'control-first' ||
-      settings.entityInteractionMode === 'toggle-first'
-        ? settings.entityInteractionMode
-        : defaultSettings.entityInteractionMode,
-    cameraDashboardViewMode: resolveCameraDashboardViewMode(
-      settings.cameraDashboardViewMode,
-      settings.cameraViewMode
-    ),
-    cameraStreamPreference: resolveCameraStreamPreference(settings.cameraStreamPreference),
-    cameraViewMode: resolveCameraViewMode(settings.cameraViewMode),
-    cameraViewModes: resolveCameraViewModes(settings.cameraViewModes),
-    cameraStreamPreferences: resolveCameraStreamPreferences(settings.cameraStreamPreferences),
-    cameraWebRtcStreamSources: resolveCameraWebRtcStreamSources(
-      settings.cameraWebRtcStreamSources,
-      settings.cameraStreamPreferences
-    ),
-    cameraDirectStreamUrls: resolveCameraDirectStreamUrls(settings.cameraDirectStreamUrls),
-    cameraFitMode: resolveCameraFitMode(settings.cameraFitMode),
-    cameraFitModes: resolveCameraFitModes(settings.cameraFitModes),
-    weatherForecastMode:
-      settings.weatherForecastMode === 'hourly' || settings.weatherForecastMode === 'weekly'
-        ? settings.weatherForecastMode
-        : defaultSettings.weatherForecastMode,
-    weatherMetricIds: resolveWeatherMetricIds(settings.weatherMetricIds),
-    advancedCustomizationEnabled:
-      typeof settings.advancedCustomizationEnabled === 'boolean'
-        ? settings.advancedCustomizationEnabled
-        : defaultSettings.advancedCustomizationEnabled,
-    customSidebarActions: normalizeCustomSidebarActions(settings.customSidebarActions),
-    customSummaryPills: normalizeCustomSummaryPills(settings.customSummaryPills),
-    ambientLightBleed:
-      typeof settings.ambientLightBleed === 'boolean'
-        ? settings.ambientLightBleed
-        : defaultSettings.ambientLightBleed,
-  });
+  applySettingsPreferenceLayerToStore(settings, 'shared');
 
   if (applyNavigation) {
     useNavigationStore.getState().applyNavigationState({
@@ -1088,15 +663,17 @@ export const importDashboardConfig = (
   });
 
   const cardSizes = sanitizeStringRecord(value.cardSizes);
-  const cardOrders = sanitizeStringArrayRecord(value.cardOrders);
   const cardZones = sanitizeStringRecord(value.cardZones);
   const homeDashboardLayout = sanitizeHomeDashboardLayout(value.homeDashboardLayout);
   const roomOrder = sanitizeStringArray(value.roomOrder);
 
   storage.set(STORAGE_KEYS.cardSizes, cardSizes);
   notifyPersistedStateChanged(STORAGE_KEYS.cardSizes, cardSizes);
-  storage.set(STORAGE_KEYS.cardOrders, cardOrders);
-  notifyPersistedStateChanged(STORAGE_KEYS.cardOrders, cardOrders);
+  if (value.cardOrders !== undefined) {
+    const legacyCardOrders = sanitizeStringArrayRecord(value.cardOrders);
+    storage.set(STORAGE_KEYS.cardOrders, legacyCardOrders);
+    notifyPersistedStateChanged(STORAGE_KEYS.cardOrders, legacyCardOrders);
+  }
   useCardZonesStore.getState().replaceCardZones(cardZones);
   useHomeDashboardLayoutStore.getState().replaceLayout(homeDashboardLayout);
   storage.set(STORAGE_KEYS.roomOrder, roomOrder);

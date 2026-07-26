@@ -55,6 +55,7 @@ COPY docker/njs/homey-store.js /etc/nginx/njs/homey-store.js
 COPY docker/njs/homey-proxy.js /etc/nginx/njs/homey-proxy.js
 COPY docker/snippets/navet-rss-proxy.conf /etc/nginx/snippets/navet-rss-proxy.conf
 COPY docker/snippets/navet-profile-store.conf /etc/nginx/snippets/navet-profile-store.conf
+COPY docker/snippets/navet-profile-store-ingress.conf /etc/nginx/snippets/navet-profile-store-ingress.conf
 COPY docker/snippets/navet-auth-store.conf /etc/nginx/snippets/navet-auth-store.conf
 COPY docker/snippets/navet-openhab-store.conf /etc/nginx/snippets/navet-openhab-store.conf
 COPY docker/snippets/navet-homey-store.conf /etc/nginx/snippets/navet-homey-store.conf

@@ -198,7 +198,7 @@ export const nlMessages = {
   'settings.dashboard.backup.description':
     'Exporteer een herbruikbare momentopname van uw dashboardindeling en herstel deze later op een ander apparaat.',
   'settings.dashboard.backup.body':
-    'Inclusief thema, lay-out, kamervolgorde, kaartvolgorde, status van verborgen entiteit, aangepaste widgets en vooraf ingestelde lichtinstellingen. Exporteren en importeren gebruiken beide YAML. Verbindings-URL en token zijn opzettelijk weggelaten.',
+    'Inclusief thema, lay-out, kamervolgorde, status van verborgen entiteit, aangepaste widgets en vooraf ingestelde lichtinstellingen. Exporteren en importeren gebruiken beide YAML. Verbindings-URL en token zijn opzettelijk weggelaten.',
   'settings.dashboard.backup.export': 'Configuratie exporteren',
   'settings.dashboard.backup.import': 'Configuratie importeren',
   'habits.status.on': 'Aan',
@@ -341,6 +341,59 @@ export const nlMessages = {
   'settings.system.providers.status.signed-in': 'Ingelogd',
   'settings.system.providers.status.disconnected': 'Verbinding verbroken',
   'settings.system.providers.status.planned': 'Gepland',
+  'settings.system.clients.title': 'Verbonden apparaten',
+  'settings.system.clients.description':
+    'Bekijk welke apparaten deze Navet-installatie gebruiken, hun synchronisatiestatus en waar de laatste wijziging vandaan kwam.',
+  'settings.system.clients.thisDashboard': 'Dit apparaat',
+  'settings.system.clients.name': 'Apparaatnaam',
+  'settings.system.clients.rename': 'Naam wijzigen',
+  'settings.system.clients.saveName': 'Naam opslaan',
+  'settings.system.clients.otherDashboards': 'Andere apparaten',
+  'settings.system.clients.noOtherDashboards':
+    'Er is nog geen ander apparaat verbonden met deze Navet-installatie.',
+  'settings.system.clients.signedInAs': 'Aangemeld als {name}',
+  'settings.system.clients.identityUnknown': 'Gebruikersidentiteit niet beschikbaar',
+  'settings.system.clients.revision': 'Revisie {revision}',
+  'settings.system.clients.lastSynced': 'Laatst gesynchroniseerd {time}',
+  'settings.system.clients.updatedBy': 'Dashboard bijgewerkt vanaf {client}',
+  'settings.system.clients.changedPaths':
+    '{count} instellingen gewijzigd in revisie {revision}, {time}.',
+  'settings.system.clients.status.disabled': 'Alleen lokaal',
+  'settings.system.clients.status.error': 'Synchronisatie vereist aandacht',
+  'settings.system.clients.status.idle': 'Gereed',
+  'settings.system.clients.status.loading': 'Laden',
+  'settings.system.clients.status.offline': 'Niet verbonden',
+  'settings.system.clients.status.saving': 'Opslaan',
+  'settings.system.clients.status.synced': 'Gesynchroniseerd',
+  'settings.system.clients.showHistory': 'Revisiegeschiedenis',
+  'settings.system.clients.hideHistory': 'Revisiegeschiedenis verbergen',
+  'settings.system.clients.historyLoading': 'Revisiegeschiedenis laden...',
+  'settings.system.clients.historyEmpty': 'Er zijn geen eerdere dashboardrevisies beschikbaar.',
+  'settings.system.clients.historyLoadFailed': 'De revisiegeschiedenis kon niet worden geladen.',
+  'settings.system.clients.historyRetry': 'Opnieuw proberen',
+  'settings.system.clients.historyCurrent': 'Huidig',
+  'settings.system.clients.historyUpdatedBy': 'Bijgewerkt door {client}, {time}.',
+  'settings.system.clients.historyRestoredFrom': 'Hersteld vanaf revisie {revision}.',
+  'settings.system.clients.historySnapshotUnavailable':
+    'Deze revisie bevat geen momentopname van het dashboard.',
+  'settings.system.clients.restore': 'Herstellen',
+  'settings.system.clients.restoring': 'Herstellen...',
+  'settings.system.clients.restoreConfirm': 'Revisie {revision} herstellen?',
+  'settings.system.clients.restoreDescription':
+    'Hiermee worden de dashboardinstellingen van deze revisie actief en wordt het herstel als een nieuwe revisie opgeslagen.',
+  'settings.system.clients.restoreSuccess':
+    'Revisie {revision} is hersteld en als een nieuwe revisie opgeslagen.',
+  'settings.system.clients.restoreFailed': 'De revisie kon niet worden hersteld.',
+  'settings.system.clients.restoreStale':
+    'Het dashboard is gewijzigd voordat het herstel klaar was. Vernieuw de geschiedenis en probeer het opnieuw.',
+  'settings.system.clients.forget': 'Vergeten',
+  'settings.system.clients.forgetting': 'Vergeten...',
+  'settings.system.clients.forgetConfirm': '{client} vergeten?',
+  'settings.system.clients.forgetDescription':
+    'Hiermee worden de opgeslagen apparaatinstellingen, dashboardnaam en gegevens over de laatste activiteit verwijderd. De revisiegeschiedenis blijft behouden. Het dashboard wordt niet afgemeld en de OAuth-login wordt niet ingetrokken.',
+  'settings.system.clients.forgetSuccess':
+    '{client} is uit de lijst met verbonden dashboards verwijderd. De login is niet gewijzigd.',
+  'settings.system.clients.forgetFailed': 'Het dashboardrecord kon niet worden vergeten.',
   'settings.system.logout.description': 'Beëindig deze Navet-sessie op dit apparaat.',
   'settings.project.sectionTitle': 'Project',
   'settings.project.sectionDescription':
@@ -1140,9 +1193,21 @@ export const nlMessages = {
   'pwa.later': 'Later',
   'dashboard.profileSync.conflictTitle': 'Dashboardwijzigingen gedetecteerd op een ander apparaat',
   'dashboard.profileSync.conflictDescription':
-    'Deze tablet bevat niet-opgeslagen dashboardbewerkingen. Behoud uw lokale versie of laad het nieuwere gedeelde dashboard.',
+    'Dit dashboard bevat wijzigingen aan dezelfde instellingen die elders zijn aangepast. Behoud uw versie of laad het nieuwere gedeelde dashboard.',
   'dashboard.profileSync.keepMine': 'Bewaar de mijne',
   'dashboard.profileSync.loadRemote': 'Laad op afstand',
+  'dashboard.profileSync.updatedTitle': 'Dashboard bijgewerkt',
+  'dashboard.profileSync.updatedDescription': '{client} heeft het gedeelde dashboard bijgewerkt.',
+  'dashboard.profileSync.resetPreserved':
+    'Het gedeelde dashboard is gereset. De lokale instellingen van dit dashboard zijn behouden; u kunt een eerdere revisie herstellen in Instellingen.',
+  'dashboard.profileSync.missingPreserved':
+    'Het gedeelde dashboard moet worden hersteld. De lokale instellingen van dit dashboard zijn behouden.',
+  'dashboard.profileSync.unavailable':
+    'Synchronisatie van het gedeelde dashboard is niet beschikbaar. Lokale instellingen blijven behouden.',
+  'dashboard.profileSync.unauthorized':
+    'Meld u opnieuw aan om het gedeelde dashboard te blijven synchroniseren. Lokale instellingen blijven behouden.',
+  'dashboard.profileSync.saveFailed':
+    'Het dashboard kon niet worden gesynchroniseerd. Uw lokale wijzigingen blijven behouden en Navet probeert het opnieuw.',
   'entityRoomSelector.movedTo': 'Kaart verplaatst naar {room}',
   'entityRoomSelector.updateFailed': 'Kan kamer niet updaten',
   'entityRoomSelector.createAction': 'Ruimte creëren...',

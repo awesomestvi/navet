@@ -5,14 +5,15 @@ import {
   useDashboardEntitiesStore,
   useHomeDashboardLayoutStore,
 } from '@navet/app/features/dashboard';
+import { getDashboardProfileChangedPaths } from '@navet/app/features/dashboard/clients/dashboard-profile-diff';
 import { useNavigationStore } from '@navet/app/stores/navigation-store';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
+import { useThemeStore } from '@navet/app/stores/theme-store';
 import {
   exportDashboardConfig,
   importDashboardConfig,
   importDashboardConfigFromUrl,
 } from '@navet/app/utils/dashboard-config';
-import { setSettingsProfileScope } from '@navet/app/utils/settings-profile-scope';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const baseConfig = {
@@ -38,6 +39,7 @@ describe('dashboard-config import hardening', () => {
     useHomeDashboardLayoutStore.setState(useHomeDashboardLayoutStore.getInitialState(), true);
     useNavigationStore.setState(useNavigationStore.getInitialState(), true);
     useSettingsStore.setState(useSettingsStore.getInitialState(), true);
+    useThemeStore.setState(useThemeStore.getInitialState(), true);
   });
 
   it('drops unsafe custom card URLs and service calls', () => {
@@ -161,6 +163,40 @@ describe('dashboard-config import hardening', () => {
     });
   });
 
+  it('keeps derived card orders local while card zones round-trip through JSON transport', () => {
+    useDashboardEntitiesStore.getState().markOnboardingCompleted();
+    const localCardOrders = {
+      Kitchen: ['home_assistant:light.kitchen'],
+      'Living Room': ['custom-media-stack'],
+    };
+    localStorage.setItem(STORAGE_KEYS.cardOrders, JSON.stringify(localCardOrders));
+    useCardZonesStore.getState().replaceCardZones({
+      'light.kitchen': 'actions',
+    });
+
+    const transported = JSON.parse(JSON.stringify(exportDashboardConfig())) as ReturnType<
+      typeof exportDashboardConfig
+    >;
+
+    expect(transported).not.toHaveProperty('cardOrders');
+    expect(transported.cardZones).toEqual({
+      'home_assistant:light.kitchen': 'actions',
+    });
+    expect(transported.cardZones).not.toHaveProperty('state');
+    expect(transported.cardZones).not.toHaveProperty('version');
+
+    importDashboardConfig(transported);
+
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEYS.cardOrders) ?? '{}')).toEqual(
+      localCardOrders
+    );
+    const roundTripped = JSON.parse(JSON.stringify(exportDashboardConfig())) as ReturnType<
+      typeof exportDashboardConfig
+    >;
+
+    expect(getDashboardProfileChangedPaths(transported, roundTripped)).toEqual([]);
+  });
+
   it('imports home dashboard layout from legacy persisted storage wrappers', () => {
     importDashboardConfig({
       ...baseConfig,
@@ -276,7 +312,7 @@ describe('dashboard-config import hardening', () => {
     expect(useSettingsStore.getState().showHomeSummaryBar).toBe(false);
   });
 
-  it('round-trips dashboard behavior settings', () => {
+  it('exports shared settings while preserving fixed device settings', () => {
     useSettingsStore.getState().updateSettings({
       dashboardSpaceMode: 'more_space',
       keepDeviceAwake: true,
@@ -286,9 +322,9 @@ describe('dashboard-config import hardening', () => {
 
     const exported = exportDashboardConfig();
 
-    expect(exported.settings.dashboardSpaceMode).toBe('more_space');
-    expect(exported.settings.keepDeviceAwake).toBe(true);
-    expect(exported.settings.kioskMode).toBe(true);
+    expect(exported.settings).not.toHaveProperty('dashboardSpaceMode');
+    expect(exported.settings).not.toHaveProperty('keepDeviceAwake');
+    expect(exported.settings).not.toHaveProperty('kioskMode');
     expect(exported.settings.weatherForecastMode).toBe('hourly');
 
     useSettingsStore.getState().updateSettings({
@@ -308,70 +344,112 @@ describe('dashboard-config import hardening', () => {
       },
     });
 
-    expect(useSettingsStore.getState().kioskMode).toBe(true);
-    expect(useSettingsStore.getState().keepDeviceAwake).toBe(true);
-    expect(useSettingsStore.getState().dashboardSpaceMode).toBe('more_space');
+    expect(useSettingsStore.getState().kioskMode).toBe(false);
+    expect(useSettingsStore.getState().keepDeviceAwake).toBe(false);
+    expect(useSettingsStore.getState().dashboardSpaceMode).toBe('default');
     expect(useSettingsStore.getState().weatherForecastMode).toBe('hourly');
   });
 
-  it('keeps this-device scoped dashboard behavior settings out of shared profiles', () => {
+  it('never exports or imports credential and account fields through the shared profile', () => {
     useSettingsStore.getState().updateSettings({
-      dashboardSpaceMode: 'more_space',
-      effectsQuality: 'medium',
-      keepDeviceAwake: true,
-      kioskMode: true,
+      username: 'Vishal',
+      email: 'vishal@example.com',
+      language: 'sv',
+      cameraDirectStreamUrls: {
+        'camera.front': 'https://user:secret@example.com/live?token=private',
+      },
     });
-    setSettingsProfileScope(
-      ['dashboardSpaceMode', 'effectsQuality', 'keepDeviceAwake', 'kioskMode'],
-      'device'
-    );
 
     const exported = exportDashboardConfig();
 
-    expect(exported.settings).not.toHaveProperty('dashboardSpaceMode');
-    expect(exported.settings).not.toHaveProperty('effectsQuality');
-    expect(exported.settings).not.toHaveProperty('keepDeviceAwake');
-    expect(exported.settings).not.toHaveProperty('kioskMode');
+    expect(exported.settings).not.toHaveProperty('username');
+    expect(exported.settings).not.toHaveProperty('email');
+    expect(exported.settings).not.toHaveProperty('language');
+    expect(exported.settings).not.toHaveProperty('cameraDirectStreamUrls');
+    expect(JSON.stringify(exported)).not.toContain('private');
+    expect(JSON.stringify(exported)).not.toContain('secret');
 
     importDashboardConfig({
       ...baseConfig,
       settings: {
-        dashboardSpaceMode: 'default',
-        effectsQuality: 'low',
-        keepDeviceAwake: false,
-        kioskMode: false,
+        username: 'Attacker',
+        email: 'attacker@example.com',
+        language: 'de',
+        cameraDirectStreamUrls: {
+          'camera.front': 'https://attacker.example.com/live?token=stolen',
+        },
       },
     });
 
-    expect(useSettingsStore.getState().dashboardSpaceMode).toBe('more_space');
-    expect(useSettingsStore.getState().effectsQuality).toBe('medium');
-    expect(useSettingsStore.getState().keepDeviceAwake).toBe(true);
-    expect(useSettingsStore.getState().kioskMode).toBe(true);
+    expect(useSettingsStore.getState()).toMatchObject({
+      username: 'Vishal',
+      email: 'vishal@example.com',
+      language: 'sv',
+      cameraDirectStreamUrls: {
+        'camera.front': 'https://user:secret@example.com/live?token=private',
+      },
+    });
   });
 
-  it('preserves remembered all-device visual quality while exporting this-device overrides', () => {
-    useSettingsStore.getState().updateSettings({ effectsQuality: 'medium' });
-    setSettingsProfileScope(['effectsQuality'], 'device', useSettingsStore.getState());
-    useSettingsStore.getState().updateSettings({ effectsQuality: 'low' });
+  it('removes signed URLs and nested credentials from every shared profile surface', () => {
+    useThemeStore
+      .getState()
+      .setWallpaper('/api/camera_proxy/camera.front?authSig=wallpaper-private');
+    useCustomCardsStore.setState({
+      cards: [
+        {
+          id: 'photo-card',
+          type: 'photo',
+          size: 'medium',
+          room: 'all',
+          createdAt: 1,
+          data: {
+            photoUrls: [
+              'https://example.com/photo.jpg',
+              '/api/camera_proxy/camera.front?authSig=photo-private',
+              '/photo.jpg#access_token=fragment-private',
+            ],
+          },
+        },
+        {
+          id: 'button-card',
+          type: 'button',
+          size: 'small',
+          room: 'all',
+          createdAt: 2,
+          data: {
+            service: 'light.turn_on',
+            serviceData: {
+              access_token: 'service-private',
+              code: 'alarm-private',
+              jwt: 'jwt-private',
+              'X-API-Key': 'header-private',
+              brightness_pct: 50,
+              nested: {
+                callback: '/api/callback?api_key=callback-private',
+                transition: 2,
+              },
+            },
+          },
+        },
+      ],
+    });
 
     const exported = exportDashboardConfig();
+    const serialized = JSON.stringify(exported);
 
-    expect(useSettingsStore.getState().effectsQuality).toBe('low');
-    expect(exported.settings.effectsQuality).toBe('medium');
+    expect(exported.theme).not.toHaveProperty('wallpaper');
+    expect(exported.customCards?.[0]?.data?.photoUrls).toEqual(['https://example.com/photo.jpg']);
+    expect(exported.customCards?.[1]?.data?.serviceData).toEqual({
+      brightness_pct: 50,
+      nested: { transition: 2 },
+    });
+    expect(serialized).not.toContain('private');
+    expect(serialized).not.toContain('access_token');
+    expect(serialized).not.toContain('authSig');
   });
 
-  it('preserves remembered all-device values while exporting this-device overrides', () => {
-    useSettingsStore.getState().updateSettings({ kioskMode: true });
-    setSettingsProfileScope(['kioskMode'], 'device', useSettingsStore.getState());
-    useSettingsStore.getState().updateSettings({ kioskMode: false });
-
-    const exported = exportDashboardConfig();
-
-    expect(useSettingsStore.getState().kioskMode).toBe(false);
-    expect(exported.settings.kioskMode).toBe(true);
-  });
-
-  it('round-trips header title settings', () => {
+  it('keeps header presentation on the current dashboard client', () => {
     useSettingsStore.getState().updateSettings({
       headerTitleMode: 'custom_text',
       headerCustomText: 'Movie night',
@@ -379,13 +457,8 @@ describe('dashboard-config import hardening', () => {
 
     const exported = exportDashboardConfig();
 
-    expect(exported.settings.headerTitleMode).toBe('custom_text');
-    expect(exported.settings.headerCustomText).toBe('Movie night');
-
-    useSettingsStore.getState().updateSettings({
-      headerTitleMode: 'auto_greeting',
-      headerCustomText: '',
-    });
+    expect(exported.settings).not.toHaveProperty('headerTitleMode');
+    expect(exported.settings).not.toHaveProperty('headerCustomText');
 
     importDashboardConfig({
       ...baseConfig,
@@ -396,35 +469,15 @@ describe('dashboard-config import hardening', () => {
     });
 
     expect(useSettingsStore.getState().headerTitleMode).toBe('custom_text');
-    expect(useSettingsStore.getState().headerCustomText).toBe('Wind down');
+    expect(useSettingsStore.getState().headerCustomText).toBe('Movie night');
   });
 
-  it('falls back to defaults for invalid imported header title settings', () => {
-    useSettingsStore.getState().updateSettings({
-      headerTitleMode: 'custom_text',
-      headerCustomText: 'Keep me',
-    });
-
-    importDashboardConfig({
-      ...baseConfig,
-      settings: {
-        headerTitleMode: 'ticker',
-        headerCustomText: 45,
-      },
-    });
-
-    expect(useSettingsStore.getState().headerTitleMode).toBe('auto_greeting');
-    expect(useSettingsStore.getState().headerCustomText).toBe('');
-  });
-
-  it('round-trips the camera dashboard preview default', () => {
+  it('keeps camera transport and preview settings on the current dashboard client', () => {
     useSettingsStore.getState().updateSettings({ cameraDashboardViewMode: 'auto' });
 
     const exported = exportDashboardConfig();
 
-    expect(exported.settings.cameraDashboardViewMode).toBe('auto');
-
-    useSettingsStore.getState().updateSettings({ cameraDashboardViewMode: 'snapshot' });
+    expect(exported.settings).not.toHaveProperty('cameraDashboardViewMode');
 
     importDashboardConfig({
       ...baseConfig,

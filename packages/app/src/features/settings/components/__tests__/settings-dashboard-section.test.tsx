@@ -18,16 +18,7 @@ vi.mock('@navet/app/hooks/use-keep-device-awake', () => ({
 
 function TestSection() {
   const controller = useSettingsSectionController();
-  return (
-    <>
-      <SettingsDashboardSection controller={controller} />
-      {controller.pendingScopedSettingsChange ? (
-        <button type="button" onClick={() => controller.confirmScopedSettingsChange('all')}>
-          All devices
-        </button>
-      ) : null}
-    </>
-  );
+  return <SettingsDashboardSection controller={controller} />;
 }
 
 describe('SettingsDashboardSection', () => {
@@ -46,7 +37,6 @@ describe('SettingsDashboardSection', () => {
 
     const keepAwakeGroup = screen.getByRole('group', { name: 'Keep device awake' });
     fireEvent.click(within(keepAwakeGroup).getByRole('button', { name: 'On' }));
-    fireEvent.click(screen.getByRole('button', { name: 'All devices' }));
 
     expect(useSettingsStore.getState().keepDeviceAwake).toBe(true);
   });
@@ -72,7 +62,6 @@ describe('SettingsDashboardSection', () => {
     expect(screen.queryByPlaceholderText('Welcome home')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Custom text' }));
-    fireEvent.click(screen.getByRole('button', { name: 'All devices' }));
 
     const input = screen.getByPlaceholderText('Welcome home');
     expect(input).toBeInTheDocument();
@@ -83,7 +72,6 @@ describe('SettingsDashboardSection', () => {
     expect(useSettingsStore.getState().headerCustomText).toBe('Dinner soon');
 
     fireEvent.click(screen.getByRole('button', { name: 'Date & Time' }));
-    fireEvent.click(screen.getByRole('button', { name: 'All devices' }));
 
     expect(useSettingsStore.getState().headerTitleMode).toBe('clock');
     expect(screen.queryByPlaceholderText('Welcome home')).not.toBeInTheDocument();
@@ -95,7 +83,6 @@ describe('SettingsDashboardSection', () => {
     const profileGroup = screen.getByRole('group', { name: 'Dashboard profile' });
     expect(within(profileGroup).queryByRole('button', { name: 'Bedside' })).not.toBeInTheDocument();
     fireEvent.click(within(profileGroup).getByRole('button', { name: 'Wall display' }));
-    fireEvent.click(screen.getByRole('button', { name: 'All devices' }));
 
     expect(useSettingsStore.getState()).toEqual(
       expect.objectContaining({

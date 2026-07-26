@@ -197,7 +197,7 @@ export const deMessages = {
   'settings.dashboard.backup.description':
     'Exportiere eine wiederverwendbare Momentaufnahme deines Dashboard-Layouts und stelle sie später auf einem anderen Gerät wieder her.',
   'settings.dashboard.backup.body':
-    'Enthält Thema, Layout, Raumreihenfolge, Kartenreihenfolge, ausgeblendete Geräte, benutzerdefinierte Widgets und Licht-Presets. Export und Import verwenden YAML. Verbindungs-URL und Token werden absichtlich ausgelassen.',
+    'Enthält Thema, Layout, Raumreihenfolge, ausgeblendete Geräte, benutzerdefinierte Widgets und Licht-Presets. Export und Import verwenden YAML. Verbindungs-URL und Token werden absichtlich ausgelassen.',
   'settings.dashboard.backup.export': 'Konfiguration exportieren',
   'settings.dashboard.backup.import': 'Konfiguration importieren',
   'settings.experimental.sectionTitle': 'Experimentell',
@@ -248,6 +248,59 @@ export const deMessages = {
   'settings.system.providers.status.signed-in': 'Angemeldet',
   'settings.system.providers.status.disconnected': 'Getrennt',
   'settings.system.providers.status.planned': 'Geplant',
+  'settings.system.clients.title': 'Verbundene Geräte',
+  'settings.system.clients.description':
+    'Zeigt die Geräte, die diese Navet-Installation verwenden, ihren Synchronisierungsstatus und die Quelle der letzten Änderung.',
+  'settings.system.clients.thisDashboard': 'Dieses Gerät',
+  'settings.system.clients.name': 'Gerätename',
+  'settings.system.clients.rename': 'Umbenennen',
+  'settings.system.clients.saveName': 'Namen speichern',
+  'settings.system.clients.otherDashboards': 'Andere Geräte',
+  'settings.system.clients.noOtherDashboards':
+    'Noch kein anderes Gerät ist mit dieser Navet-Installation verbunden.',
+  'settings.system.clients.signedInAs': 'Angemeldet als {name}',
+  'settings.system.clients.identityUnknown': 'Benutzeridentität nicht verfügbar',
+  'settings.system.clients.revision': 'Version {revision}',
+  'settings.system.clients.lastSynced': 'Zuletzt synchronisiert {time}',
+  'settings.system.clients.updatedBy': 'Dashboard von {client} aktualisiert',
+  'settings.system.clients.changedPaths':
+    '{count} Einstellungen in Revision {revision} geändert, {time}.',
+  'settings.system.clients.status.disabled': 'Nur lokal',
+  'settings.system.clients.status.error': 'Synchronisierung prüfen',
+  'settings.system.clients.status.idle': 'Bereit',
+  'settings.system.clients.status.loading': 'Wird geladen',
+  'settings.system.clients.status.offline': 'Nicht verbunden',
+  'settings.system.clients.status.saving': 'Wird gespeichert',
+  'settings.system.clients.status.synced': 'Synchronisiert',
+  'settings.system.clients.showHistory': 'Versionsverlauf',
+  'settings.system.clients.hideHistory': 'Versionsverlauf ausblenden',
+  'settings.system.clients.historyLoading': 'Versionsverlauf wird geladen...',
+  'settings.system.clients.historyEmpty': 'Es sind keine früheren Dashboard-Versionen verfügbar.',
+  'settings.system.clients.historyLoadFailed': 'Der Versionsverlauf konnte nicht geladen werden.',
+  'settings.system.clients.historyRetry': 'Erneut versuchen',
+  'settings.system.clients.historyCurrent': 'Aktuell',
+  'settings.system.clients.historyUpdatedBy': 'Aktualisiert von {client}, {time}.',
+  'settings.system.clients.historyRestoredFrom': 'Aus Version {revision} wiederhergestellt.',
+  'settings.system.clients.historySnapshotUnavailable':
+    'Diese Version enthält keinen Dashboard-Schnappschuss.',
+  'settings.system.clients.restore': 'Wiederherstellen',
+  'settings.system.clients.restoring': 'Wird wiederhergestellt...',
+  'settings.system.clients.restoreConfirm': 'Version {revision} wiederherstellen?',
+  'settings.system.clients.restoreDescription':
+    'Dadurch werden diese Dashboard-Einstellungen aktuell und die Wiederherstellung als neue Version gespeichert.',
+  'settings.system.clients.restoreSuccess':
+    'Version {revision} wurde wiederhergestellt und als neue Version gespeichert.',
+  'settings.system.clients.restoreFailed': 'Die Version konnte nicht wiederhergestellt werden.',
+  'settings.system.clients.restoreStale':
+    'Das Dashboard wurde vor Abschluss der Wiederherstellung geändert. Aktualisiere den Verlauf und versuche es erneut.',
+  'settings.system.clients.forget': 'Vergessen',
+  'settings.system.clients.forgetting': 'Wird vergessen...',
+  'settings.system.clients.forgetConfirm': '{client} vergessen?',
+  'settings.system.clients.forgetDescription':
+    'Dadurch werden gespeicherte Geräteeinstellungen, der Dashboard-Name und die Angaben zur letzten Aktivität entfernt. Der Versionsverlauf bleibt erhalten. Das Dashboard wird nicht abgemeldet und sein OAuth-Login wird nicht widerrufen.',
+  'settings.system.clients.forgetSuccess':
+    '{client} wurde aus der Liste der verbundenen Dashboards entfernt. Die Anmeldung wurde nicht geändert.',
+  'settings.system.clients.forgetFailed': 'Der Dashboard-Eintrag konnte nicht vergessen werden.',
   'settings.system.logout.description': 'Diese Navet-Sitzung auf diesem Gerät beenden.',
   'settings.project.sectionTitle': 'Projekt',
   'settings.project.sectionDescription':
@@ -1048,9 +1101,21 @@ export const deMessages = {
   'dashboard.profileSync.conflictTitle':
     'Dashboard-Änderungen wurden auf einem anderen Gerät erkannt',
   'dashboard.profileSync.conflictDescription':
-    'Dieses Tablet verfügt über nicht gespeicherte Dashboard-Änderungen. Behalten Sie Ihre lokale Version oder laden Sie das neuere freigegebene Dashboard.',
+    'Dieses Dashboard enthält Änderungen an denselben Einstellungen, die anderswo geändert wurden. Behalten Sie Ihre Version oder laden Sie das neuere gemeinsame Dashboard.',
   'dashboard.profileSync.keepMine': 'Behalte meins',
   'dashboard.profileSync.loadRemote': 'Serverversion laden',
+  'dashboard.profileSync.updatedTitle': 'Dashboard aktualisiert',
+  'dashboard.profileSync.updatedDescription': '{client} hat das gemeinsame Dashboard aktualisiert.',
+  'dashboard.profileSync.resetPreserved':
+    'Das gemeinsame Dashboard wurde zurückgesetzt. Die lokalen Einstellungen dieses Dashboards wurden beibehalten; unter Einstellungen kann eine frühere Version wiederhergestellt werden.',
+  'dashboard.profileSync.missingPreserved':
+    'Das gemeinsame Dashboard muss wiederhergestellt werden. Die lokalen Einstellungen dieses Dashboards wurden beibehalten.',
+  'dashboard.profileSync.unavailable':
+    'Die Synchronisierung des gemeinsamen Dashboards ist nicht verfügbar. Lokale Einstellungen bleiben erhalten.',
+  'dashboard.profileSync.unauthorized':
+    'Melden Sie sich erneut an, um das gemeinsame Dashboard weiter zu synchronisieren. Lokale Einstellungen bleiben erhalten.',
+  'dashboard.profileSync.saveFailed':
+    'Das Dashboard konnte nicht synchronisiert werden. Ihre lokalen Änderungen bleiben erhalten und Navet versucht es erneut.',
   'entityRoomSelector.movedTo': 'Karte nach {room} verschoben',
   'entityRoomSelector.updateFailed': 'Raum konnte nicht aktualisiert werden',
   'entityRoomSelector.createAction': 'Raum erstellen...',

@@ -203,7 +203,7 @@ export const itMessages = {
   'settings.dashboard.backup.description':
     'Esporta uno snapshot riutilizzabile del layout della dashboard e ripristinalo più tardi su un altro dispositivo.',
   'settings.dashboard.backup.body':
-    'Include tema, layout, ordine stanze, ordine schede, stato entità nascoste, widget personalizzati e impostazioni preset luci. Esportazione e importazione usano YAML. URL di connessione e token sono esclusi intenzionalmente.',
+    'Include tema, layout, ordine stanze, stato entità nascoste, widget personalizzati e impostazioni preset luci. Esportazione e importazione usano YAML. URL di connessione e token sono esclusi intenzionalmente.',
   'settings.dashboard.backup.export': 'Esporta configurazione',
   'settings.dashboard.backup.import': 'Importa configurazione',
   'settings.experimental.sectionTitle': 'Sperimentale',
@@ -254,6 +254,61 @@ export const itMessages = {
   'settings.system.providers.status.signed-in': 'Accesso effettuato',
   'settings.system.providers.status.disconnected': 'Disconnesso',
   'settings.system.providers.status.planned': 'Pianificato',
+  'settings.system.clients.title': 'Dispositivi connessi',
+  'settings.system.clients.description':
+    'Vedi quali dispositivi usano questa installazione di Navet, il loro stato di sincronizzazione e da dove proviene l’ultima modifica.',
+  'settings.system.clients.thisDashboard': 'Questo dispositivo',
+  'settings.system.clients.name': 'Nome dispositivo',
+  'settings.system.clients.rename': 'Rinomina',
+  'settings.system.clients.saveName': 'Salva nome',
+  'settings.system.clients.otherDashboards': 'Altri dispositivi',
+  'settings.system.clients.noOtherDashboards':
+    'Nessun altro dispositivo si è ancora connesso a questa installazione di Navet.',
+  'settings.system.clients.signedInAs': 'Accesso effettuato come {name}',
+  'settings.system.clients.identityUnknown': 'Identità utente non disponibile',
+  'settings.system.clients.revision': 'Revisione {revision}',
+  'settings.system.clients.lastSynced': 'Ultima sincronizzazione {time}',
+  'settings.system.clients.updatedBy': 'Dashboard aggiornata da {client}',
+  'settings.system.clients.changedPaths':
+    '{count} impostazioni modificate nella revisione {revision}, {time}.',
+  'settings.system.clients.status.disabled': 'Solo locale',
+  'settings.system.clients.status.error': 'Sincronizzazione da controllare',
+  'settings.system.clients.status.idle': 'Pronto',
+  'settings.system.clients.status.loading': 'Caricamento',
+  'settings.system.clients.status.offline': 'Non in linea',
+  'settings.system.clients.status.saving': 'Salvataggio',
+  'settings.system.clients.status.synced': 'Sincronizzata',
+  'settings.system.clients.showHistory': 'Cronologia delle revisioni',
+  'settings.system.clients.hideHistory': 'Nascondi cronologia delle revisioni',
+  'settings.system.clients.historyLoading': 'Caricamento cronologia delle revisioni...',
+  'settings.system.clients.historyEmpty':
+    'Non sono disponibili revisioni precedenti della dashboard.',
+  'settings.system.clients.historyLoadFailed':
+    'Impossibile caricare la cronologia delle revisioni.',
+  'settings.system.clients.historyRetry': 'Riprova',
+  'settings.system.clients.historyCurrent': 'Attuale',
+  'settings.system.clients.historyUpdatedBy': 'Aggiornata da {client}, {time}.',
+  'settings.system.clients.historyRestoredFrom': 'Ripristinata dalla revisione {revision}.',
+  'settings.system.clients.historySnapshotUnavailable':
+    'Questa revisione non contiene un’istantanea della dashboard.',
+  'settings.system.clients.restore': 'Ripristina',
+  'settings.system.clients.restoring': 'Ripristino...',
+  'settings.system.clients.restoreConfirm': 'Ripristinare la revisione {revision}?',
+  'settings.system.clients.restoreDescription':
+    'Le sue impostazioni diventano quelle correnti della dashboard e il ripristino viene registrato come una nuova revisione.',
+  'settings.system.clients.restoreSuccess':
+    'La revisione {revision} è stata ripristinata e salvata come nuova revisione.',
+  'settings.system.clients.restoreFailed': 'Impossibile ripristinare la revisione.',
+  'settings.system.clients.restoreStale':
+    'La dashboard è cambiata prima del termine del ripristino. Aggiorna la cronologia e riprova.',
+  'settings.system.clients.forget': 'Dimentica',
+  'settings.system.clients.forgetting': 'Rimozione...',
+  'settings.system.clients.forgetConfirm': 'Dimenticare {client}?',
+  'settings.system.clients.forgetDescription':
+    'Rimuove le impostazioni del dispositivo salvate, il nome della dashboard e i dati dell’ultima attività. La cronologia delle revisioni viene conservata. Non disconnette la dashboard né revoca il suo accesso OAuth.',
+  'settings.system.clients.forgetSuccess':
+    '{client} è stata rimossa dall’elenco delle dashboard connesse. Il suo accesso non è cambiato.',
+  'settings.system.clients.forgetFailed': 'Impossibile dimenticare il record della dashboard.',
   'settings.system.logout.description': 'Termina questa sessione Navet su questo dispositivo.',
   'settings.project.sectionTitle': 'Progetto',
   'settings.project.sectionDescription':
@@ -1325,9 +1380,21 @@ export const itMessages = {
   'dashboard.profileSync.conflictTitle':
     'Modifiche alla dashboard rilevate su un altro dispositivo',
   'dashboard.profileSync.conflictDescription':
-    'Questo tablet presenta modifiche alla dashboard non salvate. Mantieni la versione locale o carica la dashboard condivisa più recente.',
+    'Questa dashboard contiene modifiche alle stesse impostazioni cambiate altrove. Mantieni la tua versione o carica la dashboard condivisa più recente.',
   'dashboard.profileSync.keepMine': 'Tieni il mio',
   'dashboard.profileSync.loadRemote': 'Carica versione remota',
+  'dashboard.profileSync.updatedTitle': 'Dashboard aggiornata',
+  'dashboard.profileSync.updatedDescription': '{client} ha aggiornato la dashboard condivisa.',
+  'dashboard.profileSync.resetPreserved':
+    'La dashboard condivisa è stata reimpostata. Le impostazioni locali di questa dashboard sono state conservate; puoi ripristinare una revisione precedente in Impostazioni.',
+  'dashboard.profileSync.missingPreserved':
+    'La dashboard condivisa deve essere ripristinata. Le impostazioni locali di questa dashboard sono state conservate.',
+  'dashboard.profileSync.unavailable':
+    'La sincronizzazione della dashboard condivisa non è disponibile. Le impostazioni locali vengono conservate.',
+  'dashboard.profileSync.unauthorized':
+    'Accedi di nuovo per continuare a sincronizzare la dashboard condivisa. Le impostazioni locali vengono conservate.',
+  'dashboard.profileSync.saveFailed':
+    'Non è stato possibile sincronizzare la dashboard. Le modifiche locali vengono conservate e Navet riproverà.',
   'entityRoomSelector.movedTo': 'Spostata in {room}',
   'entityRoomSelector.updateFailed': 'Impossibile aggiornare la stanza',
   'entityRoomSelector.createAction': 'Crea stanza',

@@ -1,14 +1,4 @@
 import { TabList, TabPanel, Tabs, TabTrigger } from '@navet/app/components/primitives';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@navet/app/components/ui/alert-dialog';
 import { useLocalHabitsFeature } from '@navet/app/features/habits';
 import { useI18n, usePersistedState } from '@navet/app/hooks';
 import {
@@ -140,41 +130,6 @@ export function SettingsSection({ hiddenTabs = [] }: SettingsSectionProps) {
             <SettingsProjectSection controller={controller} />
           </TabPanel>
         </Tabs>
-
-        <AlertDialog
-          open={Boolean(controller.pendingScopedSettingsChange)}
-          onOpenChange={(open) => {
-            if (!open) {
-              controller.cancelScopedSettingsChange();
-            }
-          }}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t('settings.scopeDialog.title')}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {t('settings.scopeDialog.description')}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  controller.confirmScopedSettingsChange('device');
-                }}
-              >
-                {t('settings.scopeDialog.thisDevice')}
-              </AlertDialogAction>
-              <AlertDialogAction
-                onClick={() => {
-                  controller.confirmScopedSettingsChange('all');
-                }}
-              >
-                {t('settings.scopeDialog.allDevices')}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
     </div>
   );

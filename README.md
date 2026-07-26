@@ -95,6 +95,15 @@ Not sure which route fits? [Compare every installation option](https://docs.nave
 Navet is built for self-hosted smart homes. It does not require a Navet cloud account. Provider
 data, dashboard state, and credentials stay on your device or server rather than Navet servers.
 
+Standalone Home Assistant logins are isolated per browser profile. Navet keeps each OAuth session
+under `/data`, identifies the browser with an opaque `HttpOnly` cookie, and never reuses one wall
+panel's Home Assistant login for another phone or panel. Signing out removes only that browser's
+session; shared dashboard settings remain a separate concern from provider credentials.
+
+The Home Assistant add-on is Ingress-only so its trusted Home Assistant user headers are never
+accepted from a directly exposed add-on port. Use standalone Docker for direct browser access and
+per-browser OAuth sessions.
+
 A public deployment is still a sensitive control surface. Use HTTPS, least-privilege provider
 accounts, and the guidance in the [security policy](https://docs.navet.app/security/).
 

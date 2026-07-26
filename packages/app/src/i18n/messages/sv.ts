@@ -195,7 +195,7 @@ export const svMessages = {
   'settings.dashboard.backup.description':
     'Exportera en återanvändbar ögonblicksbild av dashboardlayouten och återställ den på en annan enhet senare.',
   'settings.dashboard.backup.body':
-    'Inkluderar tema, layout, rumsordning, kortordning, dold enhetsstatus, egna widgets och ljusförval. Både export och import använder YAML. Anslutnings-URL och token utelämnas avsiktligt.',
+    'Inkluderar tema, layout, rumsordning, dold enhetsstatus, egna widgets och ljusförval. Både export och import använder YAML. Anslutnings-URL och token utelämnas avsiktligt.',
   'settings.dashboard.backup.export': 'Exportera konfiguration',
   'settings.dashboard.backup.import': 'Importera konfiguration',
   'settings.experimental.sectionTitle': 'Experimentellt',
@@ -245,6 +245,59 @@ export const svMessages = {
   'settings.system.providers.status.signed-in': 'Inloggad',
   'settings.system.providers.status.disconnected': 'Frånkopplad',
   'settings.system.providers.status.planned': 'Planerad',
+  'settings.system.clients.title': 'Anslutna enheter',
+  'settings.system.clients.description':
+    'Se vilka enheter som använder den här Navet-installationen, deras synkstatus och varifrån den senaste ändringen kom.',
+  'settings.system.clients.thisDashboard': 'Den här enheten',
+  'settings.system.clients.name': 'Enhetsnamn',
+  'settings.system.clients.rename': 'Byt namn',
+  'settings.system.clients.saveName': 'Spara namn',
+  'settings.system.clients.otherDashboards': 'Andra enheter',
+  'settings.system.clients.noOtherDashboards':
+    'Ingen annan enhet har anslutit till den här Navet-installationen ännu.',
+  'settings.system.clients.signedInAs': 'Inloggad som {name}',
+  'settings.system.clients.identityUnknown': 'Användaridentitet saknas',
+  'settings.system.clients.revision': 'Version {revision}',
+  'settings.system.clients.lastSynced': 'Senast synkroniserad {time}',
+  'settings.system.clients.updatedBy': 'Instrumentpanelen uppdaterades från {client}',
+  'settings.system.clients.changedPaths':
+    '{count} inställningar ändrades i revision {revision}, {time}.',
+  'settings.system.clients.status.disabled': 'Endast lokalt',
+  'settings.system.clients.status.error': 'Synkronisering kräver åtgärd',
+  'settings.system.clients.status.idle': 'Redo',
+  'settings.system.clients.status.loading': 'Läser in',
+  'settings.system.clients.status.offline': 'Frånkopplad',
+  'settings.system.clients.status.saving': 'Sparar',
+  'settings.system.clients.status.synced': 'Synkroniserad',
+  'settings.system.clients.showHistory': 'Versionshistorik',
+  'settings.system.clients.hideHistory': 'Dölj versionshistorik',
+  'settings.system.clients.historyLoading': 'Läser in versionshistorik...',
+  'settings.system.clients.historyEmpty': 'Det finns inga tidigare dashboardversioner.',
+  'settings.system.clients.historyLoadFailed': 'Det gick inte att läsa in versionshistoriken.',
+  'settings.system.clients.historyRetry': 'Försök igen',
+  'settings.system.clients.historyCurrent': 'Aktuell',
+  'settings.system.clients.historyUpdatedBy': 'Uppdaterad av {client}, {time}.',
+  'settings.system.clients.historyRestoredFrom': 'Återställd från version {revision}.',
+  'settings.system.clients.historySnapshotUnavailable':
+    'Den här versionen innehåller ingen ögonblicksbild av dashboarden.',
+  'settings.system.clients.restore': 'Återställ',
+  'settings.system.clients.restoring': 'Återställer...',
+  'settings.system.clients.restoreConfirm': 'Återställ version {revision}?',
+  'settings.system.clients.restoreDescription':
+    'Detta gör versionens dashboardinställningar aktuella och sparar återställningen som en ny version.',
+  'settings.system.clients.restoreSuccess':
+    'Version {revision} återställdes och sparades som en ny version.',
+  'settings.system.clients.restoreFailed': 'Det gick inte att återställa versionen.',
+  'settings.system.clients.restoreStale':
+    'Dashboarden ändrades innan återställningen var klar. Uppdatera historiken och försök igen.',
+  'settings.system.clients.forget': 'Glöm',
+  'settings.system.clients.forgetting': 'Tar bort...',
+  'settings.system.clients.forgetConfirm': 'Glöm {client}?',
+  'settings.system.clients.forgetDescription':
+    'Detta tar bort sparade enhetsinställningar, dashboardnamnet och information om när den senast sågs. Versionshistoriken finns kvar. Dashboarden loggas inte ut och dess OAuth-inloggning återkallas inte.',
+  'settings.system.clients.forgetSuccess':
+    '{client} togs bort från listan över anslutna dashboards. Inloggningen ändrades inte.',
+  'settings.system.clients.forgetFailed': 'Det gick inte att glömma dashboardposten.',
   'settings.system.logout.description': 'Avsluta Navet-sessionen på den här enheten.',
   'settings.project.sectionTitle': 'Projekt',
   'settings.project.sectionDescription':
@@ -1034,9 +1087,21 @@ export const svMessages = {
   'pwa.later': 'Senare',
   'dashboard.profileSync.conflictTitle': 'Dashboardändringar upptäcktes på en annan enhet',
   'dashboard.profileSync.conflictDescription':
-    'Den här surfplattan har osparade dashboardändringar. Behåll din lokala version eller läs in den nyare delade dashboarden.',
+    'Den här dashboarden har ändringar i samma inställningar som ändrats på en annan enhet. Behåll din version eller läs in den nyare delade dashboarden.',
   'dashboard.profileSync.keepMine': 'Behåll min',
   'dashboard.profileSync.loadRemote': 'Läs in delad version',
+  'dashboard.profileSync.updatedTitle': 'Dashboarden uppdaterades',
+  'dashboard.profileSync.updatedDescription': '{client} uppdaterade den delade dashboarden.',
+  'dashboard.profileSync.resetPreserved':
+    'Den delade dashboarden återställdes. Den här dashboardens lokala inställningar bevarades; du kan återställa en tidigare version i Inställningar.',
+  'dashboard.profileSync.missingPreserved':
+    'Den delade dashboarden behöver återställas. Den här dashboardens lokala inställningar bevarades.',
+  'dashboard.profileSync.unavailable':
+    'Synkronisering av den delade dashboarden är inte tillgänglig. Lokala inställningar bevaras.',
+  'dashboard.profileSync.unauthorized':
+    'Logga in igen för att fortsätta synkronisera den delade dashboarden. Lokala inställningar bevaras.',
+  'dashboard.profileSync.saveFailed':
+    'Dashboarden kunde inte synkroniseras. Dina lokala ändringar bevaras och Navet försöker igen.',
   'entityRoomSelector.movedTo': 'Kort flyttat till {room}',
   'entityRoomSelector.updateFailed': 'Det gick inte att uppdatera rummet',
   'entityRoomSelector.createAction': 'Skapa rum...',

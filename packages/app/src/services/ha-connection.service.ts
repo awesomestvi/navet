@@ -149,7 +149,10 @@ class HAConnectionService {
       });
 
       // Clear auth query string if present
-      if (location.search.includes('auth_callback=1')) {
+      if (
+        location.search.includes('navet_oauth_callback=1') ||
+        location.search.includes('auth_callback=1')
+      ) {
         history.replaceState(null, '', location.pathname);
       }
     } catch (error) {

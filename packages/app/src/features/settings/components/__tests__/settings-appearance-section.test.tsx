@@ -8,16 +8,7 @@ import { SettingsAppearanceSection } from '../settings-appearance-section';
 
 function TestSection() {
   const controller = useSettingsSectionController();
-  return (
-    <>
-      <SettingsAppearanceSection controller={controller} />
-      {controller.pendingScopedSettingsChange ? (
-        <button type="button" onClick={() => controller.confirmScopedSettingsChange('all')}>
-          All devices
-        </button>
-      ) : null}
-    </>
-  );
+  return <SettingsAppearanceSection controller={controller} />;
 }
 
 describe('SettingsAppearanceSection', () => {
@@ -33,28 +24,22 @@ describe('SettingsAppearanceSection', () => {
     ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'More space' }));
-    fireEvent.click(screen.getByRole('button', { name: 'All devices' }));
     expect(useSettingsStore.getState().dashboardSpaceMode).toBe('more_space');
     expect(
       screen.getByText('Denser layout. Some touch controls may be harder to use.')
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Default' }));
-    fireEvent.click(screen.getByRole('button', { name: 'All devices' }));
     expect(useSettingsStore.getState().dashboardSpaceMode).toBe('default');
     expect(
       screen.queryByText('Denser layout. Some touch controls may be harder to use.')
     ).not.toBeInTheDocument();
   });
 
-  it('confirms visual quality through the scoped settings dialog', () => {
+  it('updates visual quality using its fixed device scope', () => {
     renderWithProviders(<TestSection />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Medium' }));
-
-    expect(useSettingsStore.getState().effectsQuality).toBe('high');
-
-    fireEvent.click(screen.getByRole('button', { name: 'All devices' }));
 
     expect(useSettingsStore.getState().effectsQuality).toBe('medium');
     expect(useSettingsStore.getState().effectsQualityUserOverride).toBe(true);
@@ -74,7 +59,6 @@ describe('SettingsAppearanceSection', () => {
       throw new Error('Expected the automatic effects-quality control');
     }
     fireEvent.click(qualityAutoButton);
-    fireEvent.click(screen.getByRole('button', { name: 'All devices' }));
 
     expect(useSettingsStore.getState().effectsQualityUserOverride).toBe(false);
   });

@@ -197,7 +197,7 @@ export const frMessages = {
   'settings.dashboard.backup.description':
     'Exportez un instantané réutilisable de la mise en page du tableau et restaurez-le plus tard sur un autre appareil.',
   'settings.dashboard.backup.body':
-    'Inclut le thème, la mise en page, l’ordre des pièces, l’ordre des cartes, les entités masquées, les widgets personnalisés et les préréglages lumineux. Export et import utilisent YAML. L’URL de connexion et le token sont volontairement exclus.',
+    'Inclut le thème, la mise en page, l’ordre des pièces, les entités masquées, les widgets personnalisés et les préréglages lumineux. Export et import utilisent YAML. L’URL de connexion et le token sont volontairement exclus.',
   'settings.dashboard.backup.export': 'Exporter la config',
   'settings.dashboard.backup.import': 'Importer la config',
   'settings.experimental.sectionTitle': 'Expérimental',
@@ -247,6 +247,61 @@ export const frMessages = {
   'settings.system.providers.status.signed-in': 'Connecté au compte',
   'settings.system.providers.status.disconnected': 'Déconnecté',
   'settings.system.providers.status.planned': 'Prévu',
+  'settings.system.clients.title': 'Appareils connectés',
+  'settings.system.clients.description':
+    'Consultez les appareils qui utilisent cette installation Navet, leur état de synchronisation et la source de la dernière modification.',
+  'settings.system.clients.thisDashboard': 'Cet appareil',
+  'settings.system.clients.name': 'Nom de l’appareil',
+  'settings.system.clients.rename': 'Renommer',
+  'settings.system.clients.saveName': 'Enregistrer le nom',
+  'settings.system.clients.otherDashboards': 'Autres appareils',
+  'settings.system.clients.noOtherDashboards':
+    'Aucun autre appareil ne s’est encore connecté à cette installation Navet.',
+  'settings.system.clients.signedInAs': 'Connecté en tant que {name}',
+  'settings.system.clients.identityUnknown': 'Identité utilisateur indisponible',
+  'settings.system.clients.revision': 'Révision {revision}',
+  'settings.system.clients.lastSynced': 'Dernière synchronisation {time}',
+  'settings.system.clients.updatedBy': 'Tableau de bord mis à jour depuis {client}',
+  'settings.system.clients.changedPaths':
+    '{count} paramètres modifiés dans la révision {revision}, {time}.',
+  'settings.system.clients.status.disabled': 'Local uniquement',
+  'settings.system.clients.status.error': 'Synchronisation à vérifier',
+  'settings.system.clients.status.idle': 'Prêt',
+  'settings.system.clients.status.loading': 'Chargement',
+  'settings.system.clients.status.offline': 'Hors ligne',
+  'settings.system.clients.status.saving': 'Enregistrement',
+  'settings.system.clients.status.synced': 'Synchronisé',
+  'settings.system.clients.showHistory': 'Historique des révisions',
+  'settings.system.clients.hideHistory': 'Masquer l’historique des révisions',
+  'settings.system.clients.historyLoading': 'Chargement de l’historique des révisions...',
+  'settings.system.clients.historyEmpty':
+    'Aucune révision précédente du tableau de bord n’est disponible.',
+  'settings.system.clients.historyLoadFailed': 'Impossible de charger l’historique des révisions.',
+  'settings.system.clients.historyRetry': 'Réessayer',
+  'settings.system.clients.historyCurrent': 'Actuelle',
+  'settings.system.clients.historyUpdatedBy': 'Mise à jour par {client}, {time}.',
+  'settings.system.clients.historyRestoredFrom': 'Restaurée depuis la révision {revision}.',
+  'settings.system.clients.historySnapshotUnavailable':
+    'Cette révision ne contient aucun instantané du tableau de bord.',
+  'settings.system.clients.restore': 'Restaurer',
+  'settings.system.clients.restoring': 'Restauration...',
+  'settings.system.clients.restoreConfirm': 'Restaurer la révision {revision} ?',
+  'settings.system.clients.restoreDescription':
+    'Ses réglages deviennent ceux du tableau de bord actuel et la restauration est enregistrée comme une nouvelle révision.',
+  'settings.system.clients.restoreSuccess':
+    'La révision {revision} a été restaurée et enregistrée comme une nouvelle révision.',
+  'settings.system.clients.restoreFailed': 'Impossible de restaurer la révision.',
+  'settings.system.clients.restoreStale':
+    'Le tableau de bord a changé avant la fin de la restauration. Actualisez l’historique et réessayez.',
+  'settings.system.clients.forget': 'Oublier',
+  'settings.system.clients.forgetting': 'Suppression...',
+  'settings.system.clients.forgetConfirm': 'Oublier {client} ?',
+  'settings.system.clients.forgetDescription':
+    'Cela supprime les réglages d’appareil enregistrés, le nom du tableau de bord et ses informations de dernière activité. L’historique des révisions est conservé. Le tableau de bord reste connecté et son accès OAuth n’est pas révoqué.',
+  'settings.system.clients.forgetSuccess':
+    '{client} a été retiré de la liste des tableaux de bord connectés. Sa connexion n’a pas été modifiée.',
+  'settings.system.clients.forgetFailed':
+    'Impossible d’oublier l’enregistrement du tableau de bord.',
   'settings.system.logout.description': 'Mettre fin à cette session Navet sur cet appareil.',
   'settings.project.sectionTitle': 'Projet',
   'settings.project.sectionDescription':
@@ -1048,9 +1103,21 @@ export const frMessages = {
   'dashboard.profileSync.conflictTitle':
     'Modifications du tableau de bord détectées sur un autre appareil',
   'dashboard.profileSync.conflictDescription':
-    'Cette tablette comporte des modifications du tableau de bord non enregistrées. Conservez votre version locale ou chargez le tableau de bord partagé le plus récent.',
+    'Ce tableau de bord contient des modifications portant sur les mêmes réglages modifiés ailleurs. Conservez votre version ou chargez le tableau de bord partagé le plus récent.',
   'dashboard.profileSync.keepMine': 'Garde le mien',
   'dashboard.profileSync.loadRemote': 'Charger la version distante',
+  'dashboard.profileSync.updatedTitle': 'Tableau de bord mis à jour',
+  'dashboard.profileSync.updatedDescription': '{client} a mis à jour le tableau de bord partagé.',
+  'dashboard.profileSync.resetPreserved':
+    'Le tableau de bord partagé a été réinitialisé. Les réglages locaux de ce tableau de bord ont été conservés ; vous pouvez restaurer une version antérieure dans Réglages.',
+  'dashboard.profileSync.missingPreserved':
+    'Le tableau de bord partagé doit être restauré. Les réglages locaux de ce tableau de bord ont été conservés.',
+  'dashboard.profileSync.unavailable':
+    'La synchronisation du tableau de bord partagé est indisponible. Les réglages locaux sont conservés.',
+  'dashboard.profileSync.unauthorized':
+    'Reconnectez-vous pour continuer à synchroniser le tableau de bord partagé. Les réglages locaux sont conservés.',
+  'dashboard.profileSync.saveFailed':
+    'Le tableau de bord n’a pas pu être synchronisé. Vos modifications locales sont conservées et Navet réessaiera.',
   'entityRoomSelector.movedTo': 'Carte deplacee vers {room}',
   'entityRoomSelector.updateFailed': 'Impossible de mettre à jour la pièce',
   'entityRoomSelector.createAction': 'Créer une pièce...',

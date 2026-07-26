@@ -196,7 +196,7 @@ export const esMessages = {
   'settings.dashboard.backup.description':
     'Exporta una captura reutilizable del diseño del panel y restáurala después en otro dispositivo.',
   'settings.dashboard.backup.body':
-    'Incluye tema, diseño, orden de habitaciones, orden de tarjetas, estado de entidades ocultas, widgets personalizados y ajustes predefinidos de luces. La exportación y la importación usan YAML. La URL de conexión y el token se excluyen intencionalmente.',
+    'Incluye tema, diseño, orden de habitaciones, estado de entidades ocultas, widgets personalizados y ajustes predefinidos de luces. La exportación y la importación usan YAML. La URL de conexión y el token se excluyen intencionalmente.',
   'settings.dashboard.backup.export': 'Exportar configuración',
   'settings.dashboard.backup.import': 'Importar configuración',
   'settings.experimental.sectionTitle': 'Experimental',
@@ -247,6 +247,59 @@ export const esMessages = {
   'settings.system.providers.status.signed-in': 'Sesión iniciada',
   'settings.system.providers.status.disconnected': 'Desconectado',
   'settings.system.providers.status.planned': 'Planificado',
+  'settings.system.clients.title': 'Dispositivos conectados',
+  'settings.system.clients.description':
+    'Consulta qué dispositivos usan esta instalación de Navet, su estado de sincronización y el origen del último cambio.',
+  'settings.system.clients.thisDashboard': 'Este dispositivo',
+  'settings.system.clients.name': 'Nombre del dispositivo',
+  'settings.system.clients.rename': 'Cambiar nombre',
+  'settings.system.clients.saveName': 'Guardar nombre',
+  'settings.system.clients.otherDashboards': 'Otros dispositivos',
+  'settings.system.clients.noOtherDashboards':
+    'Todavía no se ha conectado ningún otro dispositivo a esta instalación de Navet.',
+  'settings.system.clients.signedInAs': 'Sesión iniciada como {name}',
+  'settings.system.clients.identityUnknown': 'Identidad de usuario no disponible',
+  'settings.system.clients.revision': 'Revisión {revision}',
+  'settings.system.clients.lastSynced': 'Última sincronización {time}',
+  'settings.system.clients.updatedBy': 'Panel actualizado desde {client}',
+  'settings.system.clients.changedPaths':
+    '{count} ajustes cambiaron en la revisión {revision}, {time}.',
+  'settings.system.clients.status.disabled': 'Solo local',
+  'settings.system.clients.status.error': 'La sincronización requiere atención',
+  'settings.system.clients.status.idle': 'Listo',
+  'settings.system.clients.status.loading': 'Cargando',
+  'settings.system.clients.status.offline': 'Sin conexión',
+  'settings.system.clients.status.saving': 'Guardando',
+  'settings.system.clients.status.synced': 'Sincronizado',
+  'settings.system.clients.showHistory': 'Historial de revisiones',
+  'settings.system.clients.hideHistory': 'Ocultar historial de revisiones',
+  'settings.system.clients.historyLoading': 'Cargando historial de revisiones...',
+  'settings.system.clients.historyEmpty': 'No hay revisiones anteriores del panel disponibles.',
+  'settings.system.clients.historyLoadFailed': 'No se pudo cargar el historial de revisiones.',
+  'settings.system.clients.historyRetry': 'Intentar de nuevo',
+  'settings.system.clients.historyCurrent': 'Actual',
+  'settings.system.clients.historyUpdatedBy': 'Actualizado por {client}, {time}.',
+  'settings.system.clients.historyRestoredFrom': 'Restaurado desde la revisión {revision}.',
+  'settings.system.clients.historySnapshotUnavailable':
+    'Esta revisión no contiene una copia del panel.',
+  'settings.system.clients.restore': 'Restaurar',
+  'settings.system.clients.restoring': 'Restaurando...',
+  'settings.system.clients.restoreConfirm': '¿Restaurar la revisión {revision}?',
+  'settings.system.clients.restoreDescription':
+    'Esto convierte sus ajustes del panel en los actuales y registra la restauración como una nueva revisión.',
+  'settings.system.clients.restoreSuccess':
+    'La revisión {revision} se restauró y se guardó como una nueva revisión.',
+  'settings.system.clients.restoreFailed': 'No se pudo restaurar la revisión.',
+  'settings.system.clients.restoreStale':
+    'El panel cambió antes de terminar la restauración. Actualiza el historial e inténtalo de nuevo.',
+  'settings.system.clients.forget': 'Olvidar',
+  'settings.system.clients.forgetting': 'Olvidando...',
+  'settings.system.clients.forgetConfirm': '¿Olvidar {client}?',
+  'settings.system.clients.forgetDescription':
+    'Esto elimina los ajustes guardados del dispositivo, el nombre del panel y los datos de última actividad. El historial de revisiones se conserva. No cierra la sesión del panel ni revoca su acceso OAuth.',
+  'settings.system.clients.forgetSuccess':
+    '{client} se eliminó de la lista de paneles conectados. Su inicio de sesión no cambió.',
+  'settings.system.clients.forgetFailed': 'No se pudo olvidar el registro del panel.',
   'settings.system.logout.description': 'Finaliza esta sesión de Navet en este dispositivo.',
   'settings.project.sectionTitle': 'Proyecto',
   'settings.project.sectionDescription':
@@ -1044,9 +1097,21 @@ export const esMessages = {
   'pwa.later': 'Más tarde',
   'dashboard.profileSync.conflictTitle': 'Cambios en el panel detectados en otro dispositivo',
   'dashboard.profileSync.conflictDescription':
-    'Esta tableta tiene ediciones del panel no guardadas. Mantenga su versión local o cargue el panel compartido más nuevo.',
+    'Este panel tiene cambios en los mismos ajustes que se modificaron en otro lugar. Conserva tu versión o carga el panel compartido más reciente.',
   'dashboard.profileSync.keepMine': 'Mantén el mío',
   'dashboard.profileSync.loadRemote': 'Cargar versión remota',
+  'dashboard.profileSync.updatedTitle': 'Panel actualizado',
+  'dashboard.profileSync.updatedDescription': '{client} actualizó el panel compartido.',
+  'dashboard.profileSync.resetPreserved':
+    'El panel compartido se restableció. Los ajustes locales de este panel se conservaron; puedes restaurar una revisión anterior en Ajustes.',
+  'dashboard.profileSync.missingPreserved':
+    'El panel compartido necesita recuperación. Los ajustes locales de este panel se conservaron.',
+  'dashboard.profileSync.unavailable':
+    'La sincronización del panel compartido no está disponible. Los ajustes locales se conservan.',
+  'dashboard.profileSync.unauthorized':
+    'Inicia sesión de nuevo para seguir sincronizando el panel compartido. Los ajustes locales se conservan.',
+  'dashboard.profileSync.saveFailed':
+    'No se pudo sincronizar el panel. Tus cambios locales se conservan y Navet volverá a intentarlo.',
   'entityRoomSelector.movedTo': 'Tarjeta movida a {room}',
   'entityRoomSelector.updateFailed': 'No se pudo actualizar la habitación',
   'entityRoomSelector.createAction': 'Crear habitación...',

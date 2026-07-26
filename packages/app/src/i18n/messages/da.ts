@@ -195,7 +195,7 @@ export const daMessages = {
   'settings.dashboard.backup.description':
     'Eksporter et genanvendeligt øjebliksbillede af dit dashboard-layout, og gendan det på en anden enhed senere.',
   'settings.dashboard.backup.body':
-    'Inkluderer tema, layout, værelsesrækkefølge, kortrækkefølge, skjult enhedstilstand, brugerdefinerede widgets og forudindstillede lysindstillinger. Både eksport og import bruger YAML. Forbindelses-URL og token er bevidst udeladt.',
+    'Inkluderer tema, layout, værelsesrækkefølge, skjult enhedstilstand, brugerdefinerede widgets og forudindstillede lysindstillinger. Både eksport og import bruger YAML. Forbindelses-URL og token er bevidst udeladt.',
   'settings.dashboard.backup.export': 'Eksporter konfiguration',
   'settings.dashboard.backup.import': 'Importer konfiguration',
   'habits.status.on': 'På',
@@ -338,6 +338,59 @@ export const daMessages = {
   'settings.system.providers.status.signed-in': 'Logget ind',
   'settings.system.providers.status.disconnected': 'Afbrudt',
   'settings.system.providers.status.planned': 'Planlagt',
+  'settings.system.clients.title': 'Forbundne enheder',
+  'settings.system.clients.description':
+    'Se, hvilke enheder der bruger denne Navet-installation, deres synkroniseringsstatus, og hvor den seneste ændring kom fra.',
+  'settings.system.clients.thisDashboard': 'Denne enhed',
+  'settings.system.clients.name': 'Enhedsnavn',
+  'settings.system.clients.rename': 'Omdøb',
+  'settings.system.clients.saveName': 'Gem navn',
+  'settings.system.clients.otherDashboards': 'Andre enheder',
+  'settings.system.clients.noOtherDashboards':
+    'Ingen andre enheder har endnu oprettet forbindelse til denne Navet-installation.',
+  'settings.system.clients.signedInAs': 'Logget ind som {name}',
+  'settings.system.clients.identityUnknown': 'Brugeridentitet er ikke tilgængelig',
+  'settings.system.clients.revision': 'Version {revision}',
+  'settings.system.clients.lastSynced': 'Senest synkroniseret {time}',
+  'settings.system.clients.updatedBy': 'Dashboard opdateret fra {client}',
+  'settings.system.clients.changedPaths':
+    '{count} indstillinger ændret i revision {revision}, {time}.',
+  'settings.system.clients.status.disabled': 'Kun lokalt',
+  'settings.system.clients.status.error': 'Synkronisering kræver opmærksomhed',
+  'settings.system.clients.status.idle': 'Klar',
+  'settings.system.clients.status.loading': 'Indlæser',
+  'settings.system.clients.status.offline': 'Ikke tilsluttet',
+  'settings.system.clients.status.saving': 'Gemmer',
+  'settings.system.clients.status.synced': 'Synkroniseret',
+  'settings.system.clients.showHistory': 'Revisionshistorik',
+  'settings.system.clients.hideHistory': 'Skjul revisionshistorik',
+  'settings.system.clients.historyLoading': 'Indlæser revisionshistorik...',
+  'settings.system.clients.historyEmpty': 'Der er ingen tidligere dashboardrevisioner.',
+  'settings.system.clients.historyLoadFailed': 'Revisionshistorikken kunne ikke indlæses.',
+  'settings.system.clients.historyRetry': 'Prøv igen',
+  'settings.system.clients.historyCurrent': 'Aktuel',
+  'settings.system.clients.historyUpdatedBy': 'Opdateret af {client}, {time}.',
+  'settings.system.clients.historyRestoredFrom': 'Gendannet fra revision {revision}.',
+  'settings.system.clients.historySnapshotUnavailable':
+    'Denne revision indeholder ikke et dashboardøjebliksbillede.',
+  'settings.system.clients.restore': 'Gendan',
+  'settings.system.clients.restoring': 'Gendanner...',
+  'settings.system.clients.restoreConfirm': 'Gendan revision {revision}?',
+  'settings.system.clients.restoreDescription':
+    'Dette gør dashboardindstillingerne aktuelle og registrerer gendannelsen som en ny revision.',
+  'settings.system.clients.restoreSuccess':
+    'Revision {revision} blev gendannet og gemt som en ny revision.',
+  'settings.system.clients.restoreFailed': 'Revisionen kunne ikke gendannes.',
+  'settings.system.clients.restoreStale':
+    'Dashboardet blev ændret, før gendannelsen var færdig. Opdater historikken, og prøv igen.',
+  'settings.system.clients.forget': 'Glem',
+  'settings.system.clients.forgetting': 'Glemmer...',
+  'settings.system.clients.forgetConfirm': 'Glem {client}?',
+  'settings.system.clients.forgetDescription':
+    'Dette fjerner gemte enhedsindstillinger, dashboardnavnet og oplysninger om seneste aktivitet. Versionshistorikken bevares. Det logger ikke dashboardet ud og tilbagekalder ikke dets OAuth-login.',
+  'settings.system.clients.forgetSuccess':
+    '{client} blev fjernet fra listen over tilsluttede dashboards. Dets login blev ikke ændret.',
+  'settings.system.clients.forgetFailed': 'Dashboardposten kunne ikke glemmes.',
   'settings.system.logout.description': 'Afslut denne Navet-session på denne enhed.',
   'settings.project.sectionTitle': 'Projekt',
   'settings.project.sectionDescription':
@@ -1129,9 +1182,21 @@ export const daMessages = {
   'pwa.later': 'Senere',
   'dashboard.profileSync.conflictTitle': 'Dashboardændringer registreret på en anden enhed',
   'dashboard.profileSync.conflictDescription':
-    'Denne tablet har ikke-gemte betjeningspanelredigeringer. Behold din lokale version, eller indlæs det nyere delte dashboard.',
+    'Dette dashboard har ændringer i de samme indstillinger, som blev ændret et andet sted. Behold din version, eller indlæs det nyere delte dashboard.',
   'dashboard.profileSync.keepMine': 'Behold min',
   'dashboard.profileSync.loadRemote': 'Indlæs fjernbetjening',
+  'dashboard.profileSync.updatedTitle': 'Dashboardet blev opdateret',
+  'dashboard.profileSync.updatedDescription': '{client} opdaterede det delte dashboard.',
+  'dashboard.profileSync.resetPreserved':
+    'Det delte dashboard blev nulstillet. De lokale indstillinger på dette dashboard blev bevaret; du kan gendanne en tidligere revision i Indstillinger.',
+  'dashboard.profileSync.missingPreserved':
+    'Det delte dashboard skal gendannes. De lokale indstillinger på dette dashboard blev bevaret.',
+  'dashboard.profileSync.unavailable':
+    'Synkronisering af det delte dashboard er ikke tilgængelig. Lokale indstillinger bevares.',
+  'dashboard.profileSync.unauthorized':
+    'Log ind igen for at fortsætte synkroniseringen af det delte dashboard. Lokale indstillinger bevares.',
+  'dashboard.profileSync.saveFailed':
+    'Dashboardet kunne ikke synkroniseres. Dine lokale ændringer bevares, og Navet prøver igen.',
   'entityRoomSelector.movedTo': 'Kort flyttet til {room}',
   'entityRoomSelector.updateFailed': 'Rummet kunne ikke opdateres',
   'entityRoomSelector.createAction': 'Skab rum...',

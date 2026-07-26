@@ -46,8 +46,8 @@ This is the recommended development installation for Home Assistant OS and Super
 The add-on runs through Home Assistant Ingress and reuses the authenticated parent Home Assistant
 session. It does not need a Home Assistant URL or long-lived access token in normal Ingress use.
 
-The optional direct port is disabled by default. Opening the add-on outside Ingress changes it to
-the standalone-style OAuth flow.
+The add-on is Ingress-only so its trusted Home Assistant user headers are never exposed on a
+directly reachable port. Use the standalone Docker app when testing the direct-access OAuth flow.
 
 To test Homey as an additional provider, set the add-on's `homey_client_id`,
 `homey_client_secret`, and optional `homey_redirect_uri` options, restart it, then connect Homey in

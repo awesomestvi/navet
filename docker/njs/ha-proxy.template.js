@@ -1,98 +1,60 @@
-import fs from 'fs';
+import authStore from './auth-store.js';
 
-const AUTH_PATH = '/data/navet-auth-session.json';
 const PROXY_PREFIX = '/__navet_ha_proxy__';
-
-function isValidAuthData(value) {
-  return (
-    value &&
-    typeof value.hassUrl === 'string' &&
-    /^https?:\/\//.test(value.hassUrl) &&
-    typeof value.access_token === 'string' &&
-    value.access_token.length > 0
-  );
-}
-
-function normalizeBaseUrl(value) {
-  if (typeof value !== 'string' || !/^https?:\/\//.test(value)) {
-    return '';
-  }
-
-  return value.replace(/\/+$/, '');
-}
-
-function readStoredAuth() {
-  try {
-    const content = fs.readFileSync(AUTH_PATH, 'utf8');
-    const parsed = JSON.parse(content);
-    return isValidAuthData(parsed) ? parsed : null;
-  } catch (error) {
-    return null;
-  }
-}
-
-function resolveBaseUrl() {
-  const auth = readStoredAuth();
-  if (auth && typeof auth.hassUrl === 'string') {
-    return normalizeBaseUrl(auth.hassUrl);
-  }
-
-  return '';
-}
-
-function resolveAccessToken() {
-  const auth = readStoredAuth();
-  if (auth && typeof auth.access_token === 'string') {
-    return auth.access_token;
-  }
-
-  return '';
-}
 
 function stripProxyPrefix(requestUri) {
   const parts = String(requestUri || '').split('?');
   const path = parts.length > 0 ? parts[0] : '';
-  const query = parts.length > 1 && parts[1] ? '?' + parts[1] : '';
-  const hasPrefix = path.indexOf(PROXY_PREFIX) === 0;
+  const query = parts.length > 1 && parts[1] ? '?' + parts.slice(1).join('?') : '';
+  const hasPrefix =
+    path === PROXY_PREFIX || path.indexOf(PROXY_PREFIX + '/') === 0;
   const proxiedPath = hasPrefix ? path.slice(PROXY_PREFIX.length) || '/' : path;
   return proxiedPath + query;
 }
 
-function upstream_url(r) {
-  const baseUrl = resolveBaseUrl();
-  if (!baseUrl) {
-    return '';
+function createHomeAssistantProxy(sessionStore) {
+  function resolveAuth(r) {
+    const context = sessionStore.resolveStandaloneAuthSession(r);
+    return context && context.session ? context.session.auth : null;
   }
 
-  return baseUrl + stripProxyPrefix(r.variables.request_uri);
-}
+  function upstream_url(r) {
+    const auth = resolveAuth(r);
+    if (!auth || typeof auth.hassUrl !== 'string') {
+      return '';
+    }
 
-function websocket_url(_r) {
-  const baseUrl = resolveBaseUrl();
-  if (!baseUrl) {
-    return '';
+    return auth.hassUrl.replace(/\/+$/, '') + stripProxyPrefix(r.variables.request_uri);
   }
 
-  return baseUrl + '/api/websocket';
-}
+  function websocket_url(r) {
+    const auth = resolveAuth(r);
+    if (!auth || typeof auth.hassUrl !== 'string') {
+      return '';
+    }
 
-function authorization_header(r) {
-  const requestAuthorization =
-    r &&
-    r.headersIn &&
-    typeof r.headersIn.Authorization === 'string'
-      ? r.headersIn.Authorization.trim()
+    return auth.hassUrl.replace(/\/+$/, '') + '/api/websocket';
+  }
+
+  function authorization_header(r) {
+    const auth = resolveAuth(r);
+    return auth && typeof auth.access_token === 'string' && auth.access_token
+      ? 'Bearer ' + auth.access_token
       : '';
-  if (requestAuthorization) {
-    return requestAuthorization;
   }
 
-  const accessToken = resolveAccessToken();
-  return accessToken ? 'Bearer ' + accessToken : '';
+  return {
+    authorization_header: authorization_header,
+    upstream_url: upstream_url,
+    websocket_url: websocket_url,
+  };
 }
+
+const homeAssistantProxy = createHomeAssistantProxy(authStore);
 
 export default {
-  authorization_header,
-  upstream_url,
-  websocket_url,
+  authorization_header: homeAssistantProxy.authorization_header,
+  createHomeAssistantProxy: createHomeAssistantProxy,
+  upstream_url: homeAssistantProxy.upstream_url,
+  websocket_url: homeAssistantProxy.websocket_url,
 };

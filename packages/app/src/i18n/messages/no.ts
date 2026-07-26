@@ -196,7 +196,7 @@ export const noMessages = {
   'settings.dashboard.backup.description':
     'Eksporter et gjenbrukbart øyeblikksbilde av dashbordoppsettet ditt og gjenopprett det på en annen enhet senere.',
   'settings.dashboard.backup.body':
-    'Inkluderer tema, layout, romrekkefølge, kortrekkefølge, skjult enhetstilstand, egendefinerte widgets og forhåndsinnstilte lysinnstillinger. Eksporter og importer begge bruker YAML. Tilkoblings-URL og token er med vilje utelatt.',
+    'Inkluderer tema, layout, romrekkefølge, skjult enhetstilstand, egendefinerte widgets og forhåndsinnstilte lysinnstillinger. Eksporter og importer begge bruker YAML. Tilkoblings-URL og token er med vilje utelatt.',
   'settings.dashboard.backup.export': 'Eksporter konfig',
   'settings.dashboard.backup.import': 'Importer konfig',
   'habits.status.on': 'På',
@@ -339,6 +339,59 @@ export const noMessages = {
   'settings.system.providers.status.signed-in': 'Logget på',
   'settings.system.providers.status.disconnected': 'Koblet fra',
   'settings.system.providers.status.planned': 'Planlagt',
+  'settings.system.clients.title': 'Tilkoblede enheter',
+  'settings.system.clients.description':
+    'Se hvilke enheter som bruker denne Navet-installasjonen, synkroniseringsstatusen deres og hvor den siste endringen kom fra.',
+  'settings.system.clients.thisDashboard': 'Denne enheten',
+  'settings.system.clients.name': 'Enhetsnavn',
+  'settings.system.clients.rename': 'Gi nytt navn',
+  'settings.system.clients.saveName': 'Lagre navn',
+  'settings.system.clients.otherDashboards': 'Andre enheter',
+  'settings.system.clients.noOtherDashboards':
+    'Ingen andre enheter har koblet seg til denne Navet-installasjonen ennå.',
+  'settings.system.clients.signedInAs': 'Logget inn som {name}',
+  'settings.system.clients.identityUnknown': 'Brukeridentitet er ikke tilgjengelig',
+  'settings.system.clients.revision': 'Revisjon {revision}',
+  'settings.system.clients.lastSynced': 'Sist synkronisert {time}',
+  'settings.system.clients.updatedBy': 'Dashbord oppdatert fra {client}',
+  'settings.system.clients.changedPaths':
+    '{count} innstillinger endret i revisjon {revision}, {time}.',
+  'settings.system.clients.status.disabled': 'Bare lokalt',
+  'settings.system.clients.status.error': 'Synkronisering krever oppmerksomhet',
+  'settings.system.clients.status.idle': 'Klar',
+  'settings.system.clients.status.loading': 'Laster',
+  'settings.system.clients.status.offline': 'Frakoblet',
+  'settings.system.clients.status.saving': 'Lagrer',
+  'settings.system.clients.status.synced': 'Synkronisert',
+  'settings.system.clients.showHistory': 'Revisjonshistorikk',
+  'settings.system.clients.hideHistory': 'Skjul revisjonshistorikk',
+  'settings.system.clients.historyLoading': 'Laster revisjonshistorikk...',
+  'settings.system.clients.historyEmpty': 'Ingen tidligere dashboardrevisjoner er tilgjengelige.',
+  'settings.system.clients.historyLoadFailed': 'Revisjonshistorikken kunne ikke lastes.',
+  'settings.system.clients.historyRetry': 'Prøv igjen',
+  'settings.system.clients.historyCurrent': 'Gjeldende',
+  'settings.system.clients.historyUpdatedBy': 'Oppdatert av {client}, {time}.',
+  'settings.system.clients.historyRestoredFrom': 'Gjenopprettet fra revisjon {revision}.',
+  'settings.system.clients.historySnapshotUnavailable':
+    'Denne revisjonen inneholder ikke et øyeblikksbilde av dashboardet.',
+  'settings.system.clients.restore': 'Gjenopprett',
+  'settings.system.clients.restoring': 'Gjenoppretter...',
+  'settings.system.clients.restoreConfirm': 'Gjenopprette revisjon {revision}?',
+  'settings.system.clients.restoreDescription':
+    'Dette gjør dashboardinnstillingene gjeldende og registrerer gjenopprettingen som en ny revisjon.',
+  'settings.system.clients.restoreSuccess':
+    'Revisjon {revision} ble gjenopprettet og lagret som en ny revisjon.',
+  'settings.system.clients.restoreFailed': 'Revisjonen kunne ikke gjenopprettes.',
+  'settings.system.clients.restoreStale':
+    'Dashboardet ble endret før gjenopprettingen var ferdig. Oppdater historikken og prøv igjen.',
+  'settings.system.clients.forget': 'Glem',
+  'settings.system.clients.forgetting': 'Glemmer...',
+  'settings.system.clients.forgetConfirm': 'Glem {client}?',
+  'settings.system.clients.forgetDescription':
+    'Dette fjerner lagrede enhetsinnstillinger, dashboardnavnet og informasjon om siste aktivitet. Revisjonshistorikken beholdes. Det logger ikke dashboardet ut og tilbakekaller ikke OAuth-innloggingen.',
+  'settings.system.clients.forgetSuccess':
+    '{client} ble fjernet fra listen over tilkoblede dashboards. Innloggingen ble ikke endret.',
+  'settings.system.clients.forgetFailed': 'Dashboardoppføringen kunne ikke glemmes.',
   'settings.system.logout.description': 'Avslutt denne Navet-økten på denne enheten.',
   'settings.project.sectionTitle': 'Prosjekt',
   'settings.project.sectionDescription':
@@ -1131,9 +1184,21 @@ export const noMessages = {
   'pwa.later': 'Senere',
   'dashboard.profileSync.conflictTitle': 'Dashboardendringer oppdaget på en annen enhet',
   'dashboard.profileSync.conflictDescription':
-    'Dette nettbrettet har ulagrede dashbordredigeringer. Behold din lokale versjon eller last inn det nyere delte dashbordet.',
+    'Dette dashbordet har endringer i de samme innstillingene som ble endret et annet sted. Behold din versjon eller last inn det nyere delte dashbordet.',
   'dashboard.profileSync.keepMine': 'Behold min',
   'dashboard.profileSync.loadRemote': 'Last inn fjernkontrollen',
+  'dashboard.profileSync.updatedTitle': 'Dashbordet ble oppdatert',
+  'dashboard.profileSync.updatedDescription': '{client} oppdaterte det delte dashbordet.',
+  'dashboard.profileSync.resetPreserved':
+    'Det delte dashbordet ble tilbakestilt. De lokale innstillingene på dette dashbordet ble bevart; du kan gjenopprette en tidligere revisjon i Innstillinger.',
+  'dashboard.profileSync.missingPreserved':
+    'Det delte dashbordet må gjenopprettes. De lokale innstillingene på dette dashbordet ble bevart.',
+  'dashboard.profileSync.unavailable':
+    'Synkronisering av det delte dashbordet er utilgjengelig. Lokale innstillinger bevares.',
+  'dashboard.profileSync.unauthorized':
+    'Logg inn på nytt for å fortsette synkroniseringen av det delte dashbordet. Lokale innstillinger bevares.',
+  'dashboard.profileSync.saveFailed':
+    'Dashbordet kunne ikke synkroniseres. De lokale endringene bevares, og Navet prøver igjen.',
   'entityRoomSelector.movedTo': 'Kort flyttet til {room}',
   'entityRoomSelector.updateFailed': 'Kan ikke oppdatere rommet',
   'entityRoomSelector.createAction': 'Lag rom...',

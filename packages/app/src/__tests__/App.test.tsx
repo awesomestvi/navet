@@ -383,10 +383,8 @@ describe('App Home Assistant connection recovery', () => {
 
   it('completes OAuth callback startup without returning to the URL login form', async () => {
     vi.useRealTimers();
-    setNoStoredSession();
-    const clientId = `${window.location.origin}/`;
-    const state = window.btoa(JSON.stringify({ hassUrl: 'http://192.168.68.71:8123', clientId }));
-    window.history.replaceState({}, '', `/?auth_callback=1&code=oauth-code&state=${state}`);
+    setAuthenticatedSession();
+    window.history.replaceState({}, '', '/?navet_oauth_callback=1');
 
     await act(async () => {
       render(<App />);
@@ -395,8 +393,10 @@ describe('App Home Assistant connection recovery', () => {
     await waitFor(() => expect(screen.queryByText('login')).not.toBeInTheDocument());
     expect(screen.getByText('dashboard')).toBeInTheDocument();
     expect(getAuthAppMock).toHaveBeenCalledWith({
+      hassUrl: 'http://192.168.68.71:8123',
       loadTokens: expect.any(Function),
       saveTokens: expect.any(Function),
+      limitHassInstance: true,
     });
     expect(window.location.search).toBe('');
   });
@@ -404,24 +404,15 @@ describe('App Home Assistant connection recovery', () => {
   it('keeps OAuth callback startup ahead of a stale persisted standalone session', async () => {
     vi.useRealTimers();
     const clientId = `${window.location.origin}/`;
-    const state = window.btoa(JSON.stringify({ hassUrl: 'http://192.168.68.71:8123', clientId }));
-    window.history.replaceState({}, '', `/?auth_callback=1&code=oauth-code&state=${state}`);
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          hassUrl: 'http://192.168.68.55:8123',
-          clientId,
-          expires: Date.now() + 3_600_000,
-          refresh_token: 'stale-refresh-token',
-          access_token: 'stale-access-token',
-          expires_in: 3600,
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      )
-    );
+    window.history.replaceState({}, '', '/?navet_oauth_callback=1');
+    setAuthenticatedSession({
+      hassUrl: 'http://192.168.68.99:8123',
+      clientId,
+      expires: Date.now() + 3_600_000,
+      refresh_token: 'fresh-refresh-token',
+      access_token: 'fresh-access-token',
+      expires_in: 3600,
+    });
     getAuthAppMock.mockResolvedValueOnce({
       data: {
         hassUrl: 'http://192.168.68.99:8123',
@@ -445,8 +436,10 @@ describe('App Home Assistant connection recovery', () => {
     await waitFor(() => expect(screen.queryByText('login')).not.toBeInTheDocument());
     expect(screen.getByText('dashboard')).toBeInTheDocument();
     expect(getAuthAppMock).toHaveBeenCalledWith({
+      hassUrl: 'http://192.168.68.99:8123',
       loadTokens: expect.any(Function),
       saveTokens: expect.any(Function),
+      limitHassInstance: true,
     });
     expect(homeAssistantServiceStub.authenticate).toHaveBeenCalledWith({
       providerId: 'home_assistant',
@@ -495,7 +488,16 @@ describe('App Home Assistant connection recovery', () => {
   });
 
   it('clears the persisted standalone OAuth session when scheduled token refresh fails', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (_input, init) => {
+    const authData = {
+      hassUrl: 'http://192.168.68.71:8123',
+      clientId: 'http://localhost/',
+      expires: Date.now() + 30_000,
+      refresh_token: 'refresh-token',
+      access_token: 'access-token',
+      expires_in: 3600,
+    };
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
       if (init?.method === 'DELETE') {
         return new Response(JSON.stringify({ ok: true }), {
           status: 200,
@@ -503,17 +505,13 @@ describe('App Home Assistant connection recovery', () => {
         });
       }
 
-      return new Response(
-        JSON.stringify({
-          hassUrl: 'http://192.168.68.71:8123',
-          clientId: 'http://localhost/',
-          expires: Date.now() + 30_000,
-          refresh_token: 'refresh-token',
-          access_token: 'access-token',
-          expires_in: 3600,
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      );
+      if (url.includes('/__navet_auth__/session/credentials')) {
+        return authCredentialsResponse(authData);
+      }
+      if (url.includes('/__navet_auth__/session')) {
+        return init?.method ? okJsonResponse() : authMetadataResponse(true, authData);
+      }
+      return new Response(null, { status: 204 });
     });
     getAuthAppMock.mockResolvedValueOnce({
       data: {
@@ -890,31 +888,75 @@ describe('App Home Assistant connection recovery', () => {
   });
 });
 
-function setAuthenticatedSession() {
-  vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-    new Response(
-      JSON.stringify({
-        hassUrl: 'http://192.168.68.71:8123',
-        clientId: 'http://localhost/',
-        expires: Date.now() + 3_600_000,
-        refresh_token: 'refresh-token',
-        access_token: 'access-token',
-        expires_in: 3600,
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    )
+const APP_AUTH_SESSION_ID = `nas_${'b'.repeat(32)}`;
+const DEFAULT_APP_AUTH_DATA = {
+  hassUrl: 'http://192.168.68.71:8123',
+  clientId: 'http://localhost/',
+  expires: Date.now() + 3_600_000,
+  refresh_token: 'refresh-token',
+  access_token: 'access-token',
+  expires_in: 3600,
+};
+
+function okJsonResponse() {
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+function authMetadataResponse(authenticated: boolean, authData = DEFAULT_APP_AUTH_DATA) {
+  return new Response(
+    JSON.stringify({
+      authenticated,
+      providerId: 'home_assistant',
+      sessionId: APP_AUTH_SESSION_ID,
+      hassUrl: authenticated ? authData.hassUrl : null,
+      clientId: authenticated ? authData.clientId : null,
+      expiresAt: authenticated ? authData.expires : null,
+      expiresIn: authenticated ? authData.expires_in : null,
+      userId: null,
+      userName: null,
+    }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } }
   );
 }
 
+function authCredentialsResponse(authData = DEFAULT_APP_AUTH_DATA) {
+  return new Response(JSON.stringify(authData), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+function setAuthenticatedSession(authData = DEFAULT_APP_AUTH_DATA) {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+    const url = String(input);
+    if (url.includes('/__navet_auth__/session/credentials')) {
+      return authCredentialsResponse(authData);
+    }
+    if (url.includes('/__navet_auth__/session')) {
+      return init?.method ? okJsonResponse() : authMetadataResponse(true, authData);
+    }
+    return new Response(null, { status: 204 });
+  });
+}
+
 function setNoStoredSession() {
-  vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 204 }));
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    const url = String(input);
+    if (url.includes('/__navet_auth__/session')) {
+      return authMetadataResponse(false);
+    }
+    return new Response(null, { status: 204 });
+  });
 }
 
 function setStoredHomeySession() {
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
     const url = String(input);
     if (url.includes('/__navet_auth__/session')) {
-      return new Response(null, { status: 204 });
+      return authMetadataResponse(false);
     }
 
     return new Response(
@@ -934,7 +976,7 @@ function setStoredOpenHABSession() {
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
     const url = String(input);
     if (url.includes('/__navet_auth__/session')) {
-      return new Response(null, { status: 204 });
+      return authMetadataResponse(false);
     }
 
     if (url.includes('/__navet_openhab__/session')) {
@@ -970,20 +1012,13 @@ function setStoredOpenHABSession() {
 }
 
 function setStoredMultiProviderSessions() {
-  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     const url = String(input);
+    if (url.includes('/__navet_auth__/session/credentials')) {
+      return authCredentialsResponse();
+    }
     if (url.includes('/__navet_auth__/session')) {
-      return new Response(
-        JSON.stringify({
-          hassUrl: 'http://192.168.68.71:8123',
-          clientId: 'http://localhost/',
-          expires: Date.now() + 3_600_000,
-          refresh_token: 'refresh-token',
-          access_token: 'access-token',
-          expires_in: 3600,
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      );
+      return init?.method ? okJsonResponse() : authMetadataResponse(true);
     }
 
     return new Response(

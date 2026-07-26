@@ -153,6 +153,7 @@ function AppContent() {
 
   const cancelStandaloneStartup = useCallback(() => {
     const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.delete('navet_oauth_callback');
     nextUrl.searchParams.delete('auth_callback');
     nextUrl.searchParams.delete('code');
     nextUrl.searchParams.delete('state');

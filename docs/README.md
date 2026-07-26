@@ -46,6 +46,8 @@ Use this page as the map for the documentation set.
   Shared provider contract and responsibilities.
 - [architecture/provider-neutral-ui.md](architecture/provider-neutral-ui.md)
   Shared UI boundary rules.
+- [architecture/dashboard-profile-ownership.md](architecture/dashboard-profile-ownership.md)
+  Multi-dashboard settings ownership, revision sync, recovery, and credential-session boundaries.
 - [architecture/media-dashboard-provider-limitations.md](architecture/media-dashboard-provider-limitations.md)
   Media dashboard contract, Home Assistant behavior, artwork handling, and current limits.
 - [architecture/marketing-website.md](architecture/marketing-website.md)
