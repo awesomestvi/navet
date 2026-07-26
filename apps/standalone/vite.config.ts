@@ -1694,8 +1694,19 @@ export default defineConfig(({ mode }) => {
     chunkSizeWarningLimit: 500,
     rollupOptions: {
       output: {
-        manualChunks(id: string) {
-          return getVendorChunkName(id)
+        codeSplitting: {
+          groups: [
+            {
+              name(id: string) {
+                return getVendorChunkName(id) ?? 'vendor'
+              },
+              test(id: string) {
+                return getVendorChunkName(id) !== undefined
+              },
+              entriesAware: true,
+              includeDependenciesRecursively: false,
+            },
+          ],
         },
       },
     },
