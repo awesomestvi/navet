@@ -174,54 +174,137 @@ function parseJson(value) {
   }
 }
 
+function hasUnsafeUrlCharacters(value) {
+  return /[\u0000-\u0020\u007f\\]/.test(value);
+}
+
+function isValidPort(value) {
+  if (!value) {
+    return true;
+  }
+
+  if (!/^[0-9]+$/.test(value)) {
+    return false;
+  }
+
+  const port = Number(value);
+  return Number.isFinite(port) && port >= 0 && port <= 65535;
+}
+
+function isValidHttpAuthority(value) {
+  if (!value || value.includes('@') || hasUnsafeUrlCharacters(value)) {
+    return false;
+  }
+
+  if (value.startsWith('[')) {
+    const closingBracket = value.indexOf(']');
+    if (closingBracket <= 1) {
+      return false;
+    }
+
+    const address = value.slice(1, closingBracket);
+    const remainder = value.slice(closingBracket + 1);
+    return (
+      address.includes(':') &&
+      /^[0-9A-Fa-f:.]+$/.test(address) &&
+      (!remainder ||
+        (remainder.startsWith(':') &&
+          remainder.length > 1 &&
+          isValidPort(remainder.slice(1))))
+    );
+  }
+
+  const colonIndex = value.lastIndexOf(':');
+  const hostname = colonIndex === -1 ? value : value.slice(0, colonIndex);
+  const port = colonIndex === -1 ? '' : value.slice(colonIndex + 1);
+  return (
+    Boolean(hostname) &&
+    !hostname.includes(':') &&
+    /^[A-Za-z0-9._-]+$/.test(hostname) &&
+    (colonIndex === -1 || (Boolean(port) && isValidPort(port)))
+  );
+}
+
 function normalizeHassUrl(value) {
   if (typeof value !== 'string') {
     return '';
   }
 
-  try {
-    const parsed = new URL(value.trim());
-    if (
-      (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') ||
-      parsed.username ||
-      parsed.password
-    ) {
-      return '';
-    }
-
-    parsed.hash = '';
-    parsed.search = '';
-    return parsed.toString().replace(/\/+$/, '');
-  } catch (_error) {
+  const candidate = value.trim();
+  if (!candidate || hasUnsafeUrlCharacters(candidate)) {
     return '';
   }
+
+  const match = /^(https?):\/\/([^/?#]+)([^?#]*)(?:\?[^#]*)?(?:#.*)?$/i.exec(candidate);
+  if (!match || !match[1] || !match[2] || !isValidHttpAuthority(match[2])) {
+    return '';
+  }
+
+  const path = match[3] || '';
+  if (path && !path.startsWith('/')) {
+    return '';
+  }
+
+  return match[1].toLowerCase() + '://' + match[2] + path.replace(/\/+$/, '');
+}
+
+function getDecodedQueryKey(value) {
+  const separator = value.indexOf('=');
+  const key = separator === -1 ? value : value.slice(0, separator);
+  try {
+    return decodeURIComponent(key.replace(/\+/g, ' '));
+  } catch (_error) {
+    return key;
+  }
+}
+
+function removeOAuthQueryParams(query) {
+  const blockedKeys = {};
+  blockedKeys[NAVET_OAUTH_CALLBACK_PARAM] = true;
+  blockedKeys[LEGACY_OAUTH_CALLBACK_PARAM] = true;
+  blockedKeys.code = true;
+  blockedKeys.state = true;
+  const retained = [];
+  const entries = String(query || '').split('&');
+
+  for (let index = 0; index < entries.length; index += 1) {
+    const entry = entries[index];
+    if (entry && !blockedKeys[getDecodedQueryKey(entry)]) {
+      retained.push(entry);
+    }
+  }
+
+  return retained.join('&');
 }
 
 function normalizeReturnTo(value, fallback) {
   const candidate = typeof value === 'string' ? value.trim() : '';
-  if (!candidate || !candidate.startsWith('/') || candidate.startsWith('//')) {
+  if (
+    !candidate ||
+    !candidate.startsWith('/') ||
+    candidate.startsWith('//') ||
+    hasUnsafeUrlCharacters(candidate)
+  ) {
     return fallback;
   }
 
-  try {
-    const parsed = new URL(candidate, 'http://navet.local');
-    if (parsed.origin !== 'http://navet.local') {
-      return fallback;
-    }
-    parsed.searchParams.delete(NAVET_OAUTH_CALLBACK_PARAM);
-    parsed.searchParams.delete(LEGACY_OAUTH_CALLBACK_PARAM);
-    parsed.searchParams.delete('code');
-    parsed.searchParams.delete('state');
-    return parsed.pathname + parsed.search + parsed.hash;
-  } catch (_error) {
-    return fallback;
-  }
+  const hashIndex = candidate.indexOf('#');
+  const hash = hashIndex === -1 ? '' : candidate.slice(hashIndex);
+  const pathAndQuery = hashIndex === -1 ? candidate : candidate.slice(0, hashIndex);
+  const queryIndex = pathAndQuery.indexOf('?');
+  const pathname = queryIndex === -1 ? pathAndQuery : pathAndQuery.slice(0, queryIndex);
+  const query = queryIndex === -1 ? '' : pathAndQuery.slice(queryIndex + 1);
+  const retainedQuery = removeOAuthQueryParams(query);
+  return pathname + (retainedQuery ? '?' + retainedQuery : '') + hash;
 }
 
 function appendOAuthCallbackMarker(returnTo) {
-  const parsed = new URL(returnTo, 'http://navet.local');
-  parsed.searchParams.set(NAVET_OAUTH_CALLBACK_PARAM, '1');
-  return parsed.pathname + parsed.search + parsed.hash;
+  const normalized = normalizeReturnTo(returnTo, '/');
+  const hashIndex = normalized.indexOf('#');
+  const hash = hashIndex === -1 ? '' : normalized.slice(hashIndex);
+  const pathAndQuery = hashIndex === -1 ? normalized : normalized.slice(0, hashIndex);
+  const separator = pathAndQuery.includes('?') ? '&' : '?';
+  return pathAndQuery + separator + NAVET_OAUTH_CALLBACK_PARAM + '=1' + hash;
 }
 
 function isValidAuthData(value) {

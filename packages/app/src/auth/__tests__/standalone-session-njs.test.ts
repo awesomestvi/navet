@@ -67,6 +67,24 @@ function cookieHeader(setCookie: string) {
   return setCookie.split(';', 1)[0] ?? '';
 }
 
+async function withoutGlobalUrl<T>(callback: () => Promise<T>): Promise<T> {
+  const standardUrl = globalThis.URL;
+  Object.defineProperty(globalThis, 'URL', {
+    configurable: true,
+    value: undefined,
+    writable: true,
+  });
+  try {
+    return await callback();
+  } finally {
+    Object.defineProperty(globalThis, 'URL', {
+      configurable: true,
+      value: standardUrl,
+      writable: true,
+    });
+  }
+}
+
 function createStore(fetchImpl = vi.fn()) {
   const directory = mkdtempSync(join(tmpdir(), 'navet-njs-auth-'));
   const sessionsDirectory = join(directory, 'sessions');
@@ -239,6 +257,7 @@ describe('production njs standalone OAuth sessions', () => {
   });
 
   it('binds OAuth state and callback to the browser that started login', async () => {
+    const standardUrl = globalThis.URL;
     const fetchImpl = vi.fn(async (url: string) => {
       if (url.endsWith('/auth/token')) {
         return new Response(
@@ -272,8 +291,8 @@ describe('production njs standalone OAuth sessions', () => {
           '/wall-panel?view=home&auth_callback=1&navet_oauth_callback=1&code=old&state=old#lights',
       }),
     });
-    await store.handle(authorize.request);
-    const authorizeUrl = new URL(JSON.parse(authorize.result.body).authorizeUrl);
+    await withoutGlobalUrl(() => store.handle(authorize.request));
+    const authorizeUrl = new standardUrl(JSON.parse(authorize.result.body).authorizeUrl);
     expect(authorizeUrl.pathname).toBe('/home-assistant/auth/authorize');
     const state = authorizeUrl.searchParams.get('state');
     expect(state).toMatch(/^[a-f0-9]{64}$/);
@@ -286,7 +305,7 @@ describe('production njs standalone OAuth sessions', () => {
       cookie: browserB.cookie,
       args: { code: 'code-a', state },
     });
-    await store.handle(wrongBrowserCallback.request);
+    await withoutGlobalUrl(() => store.handle(wrongBrowserCallback.request));
     expect(wrongBrowserCallback.result.status).toBe(400);
 
     const correctCallback = createRequest({
@@ -294,7 +313,7 @@ describe('production njs standalone OAuth sessions', () => {
       cookie: browserA.cookie,
       args: { code: 'code-a', state },
     });
-    await store.handle(correctCallback.request);
+    await withoutGlobalUrl(() => store.handle(correctCallback.request));
     expect(correctCallback.result.status).toBe(302);
     expect(correctCallback.request.headersOut.Location).toBe(
       '/wall-panel?view=home&navet_oauth_callback=1#lights'
@@ -315,6 +334,36 @@ describe('production njs standalone OAuth sessions', () => {
       userId: null,
       userName: null,
     });
+  });
+
+  it('rejects unsafe Home Assistant targets without relying on the URL global', async () => {
+    const { store } = createStore();
+    const browser = await createBrowserSession(store);
+    const targets = [
+      'ftp://homeassistant.local',
+      'http://user:password@homeassistant.local:8123',
+      'http://homeassistant.local:70000',
+      'http://homeassistant.local:',
+      'http://homeassistant.local\\@attacker.example',
+    ];
+
+    for (const hassUrl of targets) {
+      const authorize = createRequest({
+        method: 'POST',
+        uri: '/__navet_auth__/authorize',
+        cookie: browser.cookie,
+        headers: {
+          [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+          Origin: 'http://navet.example',
+        },
+        body: JSON.stringify({ hassUrl, returnTo: '/' }),
+      });
+      await store.handle(authorize.request);
+      expect(authorize.result.status).toBe(400);
+      expect(JSON.parse(authorize.result.body)).toEqual({
+        error: 'A valid Home Assistant URL is required',
+      });
+    }
   });
 
   it('deletes only the caller session and never migrates the old global credentials', async () => {

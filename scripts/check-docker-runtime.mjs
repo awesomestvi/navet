@@ -66,7 +66,7 @@ function readAuthMetadata(containerName) {
       'exec',
       containerName,
       'wget',
-      '-qO-',
+      '-SO-',
       'http://127.0.0.1/__navet_auth__/session',
     ],
     {
@@ -88,10 +88,14 @@ function readAuthMetadata(containerName) {
 
   try {
     const metadata = JSON.parse(result.stdout);
+    const cookie = result.stderr.match(
+      /Set-Cookie:\s*(navet_auth_session=[a-f0-9]{64})(?:;|$)/i
+    )?.[1];
     if (
       metadata?.authenticated !== false ||
       metadata?.providerId !== 'home_assistant' ||
       !/^nas_[a-f0-9]{32}$/.test(metadata?.sessionId) ||
+      !cookie ||
       Object.hasOwn(metadata, 'access_token') ||
       Object.hasOwn(metadata, 'refresh_token')
     ) {
@@ -101,7 +105,7 @@ function readAuthMetadata(containerName) {
       };
     }
 
-    return { error: null, metadata };
+    return { cookie, error: null, metadata };
   } catch {
     return {
       error: `Auth endpoint returned invalid JSON: ${result.stdout.trim()}`,
@@ -110,12 +114,85 @@ function readAuthMetadata(containerName) {
   }
 }
 
+function startHomeAssistantOAuth(containerName, browserSession) {
+  const result = spawnSync(
+    'docker',
+    [
+      'exec',
+      containerName,
+      'wget',
+      '-qO-',
+      '--header',
+      `Cookie: ${browserSession.cookie}`,
+      '--header',
+      'Origin: http://127.0.0.1',
+      '--header',
+      'Content-Type: application/json',
+      '--header',
+      `X-Navet-OAuth-Binding: ${browserSession.metadata.sessionId}`,
+      '--post-data',
+      JSON.stringify({
+        hassUrl: 'http://homeassistant.local:8123',
+        returnTo: '/wall-panel?view=home&code=stale&state=stale#lights',
+      }),
+      'http://127.0.0.1/__navet_auth__/authorize',
+    ],
+    {
+      stdio: 'pipe',
+      encoding: 'utf8',
+    }
+  );
+
+  if (result.error || result.status !== 0) {
+    throw new Error(
+      result.error?.message ||
+        result.stderr?.trim() ||
+        result.stdout?.trim() ||
+        'Docker NJS OAuth authorize endpoint failed'
+    );
+  }
+
+  const payload = JSON.parse(result.stdout);
+  const authorizeUrl = new URL(payload.authorizeUrl);
+  const cookieId = browserSession.cookie.slice('navet_auth_session='.length);
+  const pendingResult = spawnSync(
+    'docker',
+    [
+      'exec',
+      containerName,
+      'cat',
+      `/data/navet-auth-sessions/${cookieId}.json`,
+    ],
+    {
+      stdio: 'pipe',
+      encoding: 'utf8',
+    }
+  );
+  const pendingSession =
+    !pendingResult.error && pendingResult.status === 0
+      ? JSON.parse(pendingResult.stdout)
+      : null;
+  if (
+    authorizeUrl.origin !== 'http://homeassistant.local:8123' ||
+    authorizeUrl.pathname !== '/auth/authorize' ||
+    authorizeUrl.searchParams.get('response_type') !== 'code' ||
+    authorizeUrl.searchParams.get('client_id') !== 'http://127.0.0.1/' ||
+    authorizeUrl.searchParams.get('redirect_uri') !==
+      'http://127.0.0.1/__navet_auth__/callback' ||
+    !/^[a-f0-9]{64}$/.test(authorizeUrl.searchParams.get('state') ?? '') ||
+    pendingSession?.pending?.state !== authorizeUrl.searchParams.get('state') ||
+    pendingSession?.pending?.returnTo !== '/wall-panel?view=home#lights'
+  ) {
+    throw new Error(`Unexpected Docker NJS OAuth authorize response: ${result.stdout.trim()}`);
+  }
+}
+
 async function waitForAuthMetadata(containerName) {
   let lastError = 'Auth endpoint is not ready';
   for (let attempt = 0; attempt < 60; attempt += 1) {
     const result = readAuthMetadata(containerName);
     if (result.metadata) {
-      return result.metadata;
+      return result;
     }
     lastError = result.error;
     await delay(250);
@@ -159,14 +236,15 @@ try {
     imageTag,
   ]);
 
-  const firstSession = await waitForAuthMetadata(containerName);
-  const secondSession = await waitForAuthMetadata(containerName);
-  if (firstSession.sessionId === secondSession.sessionId) {
+  const firstBrowser = await waitForAuthMetadata(containerName);
+  const secondBrowser = await waitForAuthMetadata(containerName);
+  if (firstBrowser.metadata.sessionId === secondBrowser.metadata.sessionId) {
     throw new Error('Separate cookie-less requests received the same auth session ID');
   }
+  startHomeAssistantOAuth(containerName, firstBrowser);
 
   console.log(
-    `Docker NJS auth smoke check passed with isolated sessions ${firstSession.sessionId} and ${secondSession.sessionId}.`
+    `Docker NJS auth smoke check passed with OAuth start and isolated sessions ${firstBrowser.metadata.sessionId} and ${secondBrowser.metadata.sessionId}.`
   );
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
