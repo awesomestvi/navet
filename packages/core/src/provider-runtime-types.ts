@@ -1,5 +1,9 @@
 import type { NavetProviderContract, SmartHomeProviderAdapter } from './provider-contract';
-import type { PlatformCameraStream, PlatformCameraStreamType } from './provider-feature-models';
+import type {
+  PlatformCameraStream,
+  PlatformCameraStreamType,
+  ProviderRoomManagementCapabilities,
+} from './provider-feature-models';
 import type {
   ProviderAdminFeatureService,
   ProviderCalendarFeatureService,
@@ -60,6 +64,7 @@ export interface IntegrationProviderRuntimeRegistration {
   implementationStatus: IntegrationProviderImplementationStatus;
   capabilities: IntegrationProviderCapabilities;
   featureMatrix: IntegrationProviderFeatureMatrix;
+  roomManagementCapabilities?: ProviderRoomManagementCapabilities;
   signPath?: (path: string, expiresSeconds?: number) => Promise<string>;
   getCameraStream?: (
     entityId: string,

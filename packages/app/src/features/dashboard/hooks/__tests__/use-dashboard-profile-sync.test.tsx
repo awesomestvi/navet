@@ -460,6 +460,46 @@ describe('useDashboardProfileSync', () => {
     expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
   });
 
+  it('saves Room Workspace V2 changes as dashboard profile changes', async () => {
+    const base = buildProfile();
+    loadDashboardProfile.mockResolvedValueOnce(activeResult(base));
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    const roomWorkspace = {
+      version: 2 as const,
+      groups: [],
+      reviewIssues: [],
+      rooms: [],
+    };
+    currentProfile = buildProfile({
+      roomWorkspace,
+    });
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent(PERSISTED_STATE_EVENT, {
+          detail: {
+            key: STORAGE_KEYS.roomWorkspace,
+            value: roomWorkspace,
+          },
+        })
+      );
+    });
+
+    await advanceTime(2_000);
+
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
+    expect(saveDashboardProfile).toHaveBeenCalledWith(
+      currentProfile,
+      expect.objectContaining({
+        baseRevision: 1,
+        changedPaths: ['/roomWorkspace'],
+        etag: '"revision-1"',
+      })
+    );
+  });
+
   it('creates one shared revision for one card resize despite card-order hydration events', async () => {
     const base = buildProfile({
       cardSizes: {

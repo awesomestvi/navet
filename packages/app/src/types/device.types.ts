@@ -57,6 +57,7 @@ export interface BaseDevice {
   providerId?: IntegrationProviderId;
   nativeId?: string;
   canonicalId?: string;
+  roomId?: string;
   underlyingDeviceId?: string;
   resources?: Partial<
     Record<'primaryImage' | 'artwork' | 'snapshot' | 'stream', PlatformResourceDescriptor>

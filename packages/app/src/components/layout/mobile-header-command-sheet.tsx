@@ -132,6 +132,8 @@ export const MobileHeaderCommandSheet = memo(function MobileHeaderCommandSheet({
           manageableRooms={availability.reorderRooms.manageableRooms}
           roomHiddenItemCounts={availability.reorderRooms.roomHiddenItemCounts}
           roomEntityCounts={availability.reorderRooms.roomItemCounts}
+          dashboardEntityIds={availability.reorderRooms.dashboardEntityIds}
+          dashboardVisibleEntityIds={availability.reorderRooms.dashboardVisibleEntityIds}
           onRoomOrderChange={availability.reorderRooms.onRoomOrderChange}
           onHiddenRoomsChange={availability.reorderRooms.onHiddenRoomsChange}
         />

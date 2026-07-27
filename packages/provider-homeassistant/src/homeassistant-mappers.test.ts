@@ -16,7 +16,7 @@ function makeEntity(entity_id: string, state: string, attributes: Record<string,
 }
 
 describe('homeassistant-mappers', () => {
-  it('builds rooms from an already normalized entity array', () => {
+  it('keeps unassigned entities out of the provider room collection', () => {
     const mappedEntities = mapHomeAssistantEntitiesToNavetEntities({
       entities: {
         'light.kitchen': makeEntity('light.kitchen', 'on', {
@@ -32,9 +32,40 @@ describe('homeassistant-mappers', () => {
       mappedEntities
     );
 
+    expect(mappedEntities[0]).toEqual(
+      expect.objectContaining({
+        room: 'Unassigned',
+        roomId: undefined,
+      })
+    );
+    expect(rooms).toEqual([]);
+  });
+
+  it('uses stable area IDs for entity membership when an area is renamed', () => {
+    const input = {
+      entities: {
+        'light.kitchen': makeEntity('light.kitchen', 'on', {
+          friendly_name: 'Kitchen Light',
+        }),
+      },
+      areas: [{ area_id: 'area-kitchen', name: 'Cooking space' }],
+      deviceRegistry: [],
+      entityRegistry: [{ entity_id: 'light.kitchen', area_id: 'area-kitchen' }],
+    };
+    const mappedEntities = mapHomeAssistantEntitiesToNavetEntities(input);
+    const rooms = buildHomeAssistantProviderRooms(input, mappedEntities);
+
+    expect(mappedEntities[0]).toEqual(
+      expect.objectContaining({
+        room: 'Cooking space',
+        roomId: 'home_assistant:area-kitchen',
+      })
+    );
     expect(rooms).toEqual([
       expect.objectContaining({
-        name: 'Unassigned',
+        canonicalId: 'home_assistant:area-kitchen',
+        externalId: 'area-kitchen',
+        name: 'Cooking space',
         memberIds: ['home_assistant:light.kitchen'],
       }),
     ]);

@@ -7,6 +7,7 @@ import {
 import {
   createHomeAssistantArea,
   deleteHomeAssistantArea,
+  renameHomeAssistantArea,
   updateHomeAssistantEntityArea,
   updateHomeAssistantEntityName,
 } from './homeassistant-service-bridge';
@@ -16,16 +17,33 @@ export const homeAssistantAdminFeatureService: ProviderAdminFeatureService = {
     const area = await createHomeAssistantArea(name);
     return createPlatformRoomReference('home_assistant', area.area_id, area.name);
   },
-  updateEntityRoom: async (entityId, roomId) => {
-    const parsedRoom = roomId ? parsePlatformRoomReference(roomId) : null;
-    if (roomId && parsedRoom?.providerId !== 'home_assistant') {
+  renameRoom: async (roomId, name) => {
+    const parsedRoom = parsePlatformRoomReference(roomId);
+    if (parsedRoom?.providerId !== 'home_assistant') {
       throw new Error(`Room ${roomId} does not belong to provider Home Assistant`);
     }
 
-    await updateHomeAssistantEntityArea(
-      getProviderNativeId(entityId),
-      parsedRoom?.nativeId ?? null
-    );
+    const area = await renameHomeAssistantArea(parsedRoom.nativeId, name);
+    return createPlatformRoomReference('home_assistant', area.area_id, area.name);
+  },
+  assignEntityToRoom: async (entityId, roomId) => {
+    const parsedRoom = parsePlatformRoomReference(roomId);
+    if (parsedRoom?.providerId !== 'home_assistant') {
+      throw new Error(`Room ${roomId} does not belong to provider Home Assistant`);
+    }
+
+    await updateHomeAssistantEntityArea(getProviderNativeId(entityId), parsedRoom.nativeId);
+  },
+  unassignEntityFromRoom: async (entityId) => {
+    await updateHomeAssistantEntityArea(getProviderNativeId(entityId), null);
+  },
+  updateEntityRoom: async (entityId, roomId) => {
+    if (roomId) {
+      await homeAssistantAdminFeatureService.assignEntityToRoom(entityId, roomId);
+      return;
+    }
+
+    await homeAssistantAdminFeatureService.unassignEntityFromRoom(entityId);
   },
   updateEntityName: async (entityId, name) => {
     await updateHomeAssistantEntityName(getProviderNativeId(entityId), name);

@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Settings2, Trash2 } from 'lucide-react';
 import { Button } from './button';
-import { InteractivePill } from './interactive-pill';
 
 const meta = {
   title: 'Components/Primitives/Button',
@@ -81,16 +80,20 @@ export const DestructiveButton: Story = {
       <Button variant="soft" size="small">
         Save changes
       </Button>
-      <InteractivePill size="small" icon={Trash2} active accentColor="#e11d48">
+      <Button
+        variant="destructive"
+        size="small"
+        leading={<Trash2 className="h-4 w-4" aria-hidden="true" />}
+      >
         Delete
-      </InteractivePill>
+      </Button>
     </div>
   ),
   parameters: {
     docs: {
       description: {
         story:
-          'Destructive action treatment used when a footer action should feel like Navet’s interactive pill tabs instead of a standard button. This is the delete treatment used in the custom sidebar edit flow.',
+          'Canonical destructive button treatment for irreversible or removal actions. It preserves the standard Button geometry, focus behavior, loading state, and disabled semantics.',
       },
     },
   },

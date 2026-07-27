@@ -23,6 +23,7 @@ function createEntity({
     type,
     name,
     room: 'Kitchen',
+    roomId: 'home_assistant:area-kitchen',
     primaryState: attributes.value as string | number | boolean | null,
     availability: 'available',
     attributes,
@@ -31,6 +32,27 @@ function createEntity({
 }
 
 describe('mapNavetEntitiesToDeviceCollection', () => {
+  it('preserves the stable provider room identity on mapped devices', () => {
+    const devices = mapNavetEntitiesToDeviceCollection([
+      createEntity({
+        canonicalId: 'home_assistant:light.kitchen',
+        externalId: 'light.kitchen',
+        type: 'light',
+        name: 'Kitchen light',
+        attributes: {
+          value: 'on',
+        },
+      }),
+    ]);
+
+    expect(devices.lights[0]).toEqual(
+      expect.objectContaining({
+        room: 'Kitchen',
+        roomId: 'home_assistant:area-kitchen',
+      })
+    );
+  });
+
   it('suppresses helper and sensor cards when a device already has a primary switch card', () => {
     const devices = mapNavetEntitiesToDeviceCollection([
       createEntity({

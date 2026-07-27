@@ -12,6 +12,15 @@ import {
   useHomeDashboardLayoutStore,
 } from '@navet/app/features/dashboard';
 import {
+  type LegacyRoomOrganization,
+  parseRoomWorkspaceV2,
+  type RoomWorkspaceV2,
+  readRoomWorkspaceV2,
+  removeRoomWorkspaceV2,
+  sanitizeLegacyRoomOrganization,
+  writeRoomWorkspaceV2,
+} from '@navet/app/features/dashboard/rooms';
+import {
   parseButtonServiceCall,
   sanitizeButtonEntityId,
 } from '@navet/app/features/dashboard/utils/button-widget-security';
@@ -66,7 +75,10 @@ export interface DashboardConfigPayload {
   cardOrders?: Record<string, string[]>;
   cardZones?: Record<string, string>;
   homeDashboardLayout?: unknown;
+  roomWorkspace?: RoomWorkspaceV2;
   roomOrder?: string[];
+  hiddenRoomNames?: string[];
+  roomOrganization?: LegacyRoomOrganization;
 }
 
 interface ImportDashboardConfigOptions {
@@ -98,6 +110,9 @@ export function resetDashboardProfileState() {
     STORAGE_KEYS.cardZones,
     STORAGE_KEYS.homeDashboardLayout,
     STORAGE_KEYS.roomOrder,
+    STORAGE_KEYS.hiddenRooms,
+    STORAGE_KEYS.roomOrganization,
+    STORAGE_KEYS.roomWorkspace,
     STORAGE_KEYS.dashboardProfileSync,
     STORAGE_KEYS.settingsProfileScopes,
     STORE_STORAGE_KEYS.theme,
@@ -129,6 +144,12 @@ export function resetDashboardProfileState() {
   notifyPersistedStateChanged(STORAGE_KEYS.mediaDefaultViews, {});
   notifyPersistedStateChanged(STORAGE_KEYS.cardOrders, {});
   notifyPersistedStateChanged(STORAGE_KEYS.roomOrder, []);
+  notifyPersistedStateChanged(STORAGE_KEYS.hiddenRooms, []);
+  notifyPersistedStateChanged(STORAGE_KEYS.roomOrganization, {
+    groups: [],
+    groupIdByRoomKey: {},
+  });
+  notifyPersistedStateChanged(STORAGE_KEYS.roomWorkspace, null);
 }
 
 const omitUndefinedEntries = <T extends Record<string, unknown>>(value: T): Partial<T> =>
@@ -158,6 +179,13 @@ export const exportDashboardConfig = (): DashboardConfigPayload => {
   const cardZonesState = useCardZonesStore.getState();
   const homeDashboardLayoutState = useHomeDashboardLayoutStore.getState();
   const lightPresetState = useLightPresetStore.getState();
+  const roomWorkspace = readRoomWorkspaceV2();
+  const legacyRoomOrganization = sanitizeLegacyRoomOrganization(
+    parseStoredJson<unknown>(STORAGE_KEYS.roomOrganization, null)
+  );
+  const hasLegacyRoomOrganization =
+    legacyRoomOrganization.groups.length > 0 ||
+    Object.keys(legacyRoomOrganization.groupIdByRoomKey).length > 0;
 
   return {
     version: DASHBOARD_CONFIG_VERSION,
@@ -214,7 +242,13 @@ export const exportDashboardConfig = (): DashboardConfigPayload => {
       sections: homeDashboardLayoutState.sections,
       cardSectionAssignments: homeDashboardLayoutState.cardSectionAssignments,
     },
+    roomWorkspace: roomWorkspace ?? undefined,
     roomOrder: pruneEmptyArray(parseStoredJson<string[]>(STORAGE_KEYS.roomOrder, [])),
+    hiddenRoomNames: roomWorkspace
+      ? undefined
+      : pruneEmptyArray(parseStoredJson<string[]>(STORAGE_KEYS.hiddenRooms, [])),
+    roomOrganization:
+      !roomWorkspace && hasLegacyRoomOrganization ? legacyRoomOrganization : undefined,
   };
 };
 
@@ -665,7 +699,10 @@ export const importDashboardConfig = (
   const cardSizes = sanitizeStringRecord(value.cardSizes);
   const cardZones = sanitizeStringRecord(value.cardZones);
   const homeDashboardLayout = sanitizeHomeDashboardLayout(value.homeDashboardLayout);
+  const roomWorkspace = parseRoomWorkspaceV2(value.roomWorkspace);
   const roomOrder = sanitizeStringArray(value.roomOrder);
+  const hiddenRoomNames = sanitizeStringArray(value.hiddenRoomNames);
+  const roomOrganization = sanitizeLegacyRoomOrganization(value.roomOrganization);
 
   storage.set(STORAGE_KEYS.cardSizes, cardSizes);
   notifyPersistedStateChanged(STORAGE_KEYS.cardSizes, cardSizes);
@@ -676,8 +713,17 @@ export const importDashboardConfig = (
   }
   useCardZonesStore.getState().replaceCardZones(cardZones);
   useHomeDashboardLayoutStore.getState().replaceLayout(homeDashboardLayout);
+  if (roomWorkspace) {
+    writeRoomWorkspaceV2(roomWorkspace);
+  } else {
+    removeRoomWorkspaceV2();
+  }
   storage.set(STORAGE_KEYS.roomOrder, roomOrder);
   notifyPersistedStateChanged(STORAGE_KEYS.roomOrder, roomOrder);
+  storage.set(STORAGE_KEYS.hiddenRooms, hiddenRoomNames);
+  notifyPersistedStateChanged(STORAGE_KEYS.hiddenRooms, hiddenRoomNames);
+  storage.set(STORAGE_KEYS.roomOrganization, roomOrganization);
+  notifyPersistedStateChanged(STORAGE_KEYS.roomOrganization, roomOrganization);
 };
 
 export const downloadDashboardConfig = async (): Promise<'shared' | 'downloaded'> => {

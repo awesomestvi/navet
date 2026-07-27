@@ -1,3 +1,4 @@
+import { useRoomWorkspaceStore } from '@navet/app/features/dashboard/rooms/room-workspace-store';
 import { useHabitStore } from '@navet/app/features/habits/habit-store';
 import { authSessionManager } from '@navet/app/infrastructure/home-assistant/auth/auth-session-manager';
 import { homeyService } from '@navet/app/services/homey.service';
@@ -31,6 +32,7 @@ export async function resetAppStores() {
   resetStore(useErrorStore);
   resetStore(useHabitStore);
   resetStore(useEntityRoomOverridesStore);
+  resetStore(useRoomWorkspaceStore);
   homeAssistantStore.getState().disconnect();
   resetStore(homeAssistantStore);
   resetHomeAssistantStoreDiagnostics();

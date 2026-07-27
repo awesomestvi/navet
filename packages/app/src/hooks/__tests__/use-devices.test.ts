@@ -1,4 +1,10 @@
 import { createEmptyDeviceCollection } from '@navet/app/core/navet-device-collections';
+import { useRoomWorkspaceStore } from '@navet/app/features/dashboard/rooms/room-workspace-store';
+import {
+  migrateLegacyRoomWorkspaceV2,
+  type RoomWorkspaceRoomId,
+  renameRoomWorkspaceRoomV2,
+} from '@navet/app/features/dashboard/rooms/room-workspace-v2';
 import { homeyService } from '@navet/app/services/homey.service';
 import { useEntityRoomOverridesStore } from '@navet/app/stores/entity-room-overrides-store';
 import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
@@ -543,6 +549,7 @@ describe('useDevices', () => {
     const { result } = renderHookWithProviders(() => useAggregatedDevices());
 
     expect(result.current.media[0]?.room).toBe('Office');
+    expect(result.current.media[0]?.roomId).toBe('home_assistant:office');
   });
 
   it('applies Navet-local room overrides when collection ids differ from override ids', async () => {
@@ -603,5 +610,75 @@ describe('useDevices', () => {
     const { result } = renderHookWithProviders(() => useAggregatedDevices());
 
     expect(result.current.media[0]?.room).toBe('Office');
+    expect(result.current.media[0]?.roomId).toBe('home_assistant:office');
+  });
+
+  it('projects provider rooms through stable workspace identity and renamed labels', async () => {
+    await resetAppStores();
+
+    integrationStore.setState({
+      selectedProviderIds: ['home_assistant'],
+      normalizedRoomsByCanonicalId: {
+        'home_assistant:office': {
+          id: 'home_assistant:office',
+          canonicalId: 'home_assistant:office',
+          providerId: 'home_assistant',
+          externalId: 'office',
+          name: 'Office',
+          normalizedName: 'office',
+          memberIds: ['home_assistant:media_player.desk'],
+        },
+      },
+      providerDeviceCollectionsByProviderId: {
+        home_assistant: {
+          ...createEmptyDeviceCollection(),
+          media: [
+            {
+              id: 'home_assistant:media_player.desk',
+              canonicalId: 'home_assistant:media_player.desk',
+              providerId: 'home_assistant',
+              nativeId: 'media_player.desk',
+              name: 'Desk speaker',
+              room: 'Office',
+              roomId: 'home_assistant:office',
+              size: 'medium',
+              title: '',
+              artist: '',
+              state: 'idle',
+              volume: 30,
+              isMuted: false,
+            },
+          ],
+        },
+      },
+    });
+
+    const migratedWorkspace = migrateLegacyRoomWorkspaceV2({
+      discoveredRooms: [
+        {
+          displayName: 'Office',
+          sourceRef: {
+            providerId: 'home_assistant',
+            canonicalId: 'home_assistant:office',
+            sourceType: 'provider_managed',
+          },
+        },
+      ],
+      idFactory: () => 'room_stable_office' as RoomWorkspaceRoomId,
+    });
+    const roomId = migratedWorkspace.rooms[0]?.id;
+    if (!roomId) {
+      throw new Error('Expected the migrated room to exist');
+    }
+    useRoomWorkspaceStore.setState({
+      workspace: renameRoomWorkspaceRoomV2(migratedWorkspace, roomId, 'Studio'),
+    });
+
+    const { result } = renderHookWithProviders(() => useAggregatedDevices());
+
+    expect(result.current.media[0]).toMatchObject({
+      room: 'Studio',
+      roomId: 'room_stable_office',
+    });
   });
 });

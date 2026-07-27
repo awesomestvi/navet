@@ -21,6 +21,7 @@ These tests protect release-critical behavior and should stay blocking.
 - `packages/app/src/features/media/components/media-card/__tests__/use-media-artwork-resolution.test.tsx`
 - `packages/app/src/features/security/components/camera-card/__tests__/camera-stream-player.test.tsx`
 - `packages/app/src/features/rss/components/rss-feed-card/__tests__/use-rss-feed-items.test.tsx`
+- `packages/app/src/provider-package-registry.initialization.test.ts`
 - `packages/provider-homeassistant/src/homeassistant-contract.test.ts`
 - `packages/provider-homey/src/homey-contract.test.ts`
 - `packages/provider-openhab/src/openhab-contract.test.ts`

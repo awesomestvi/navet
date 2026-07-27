@@ -63,6 +63,7 @@ export const DASHBOARD_PROFILE_REFRESH_EVENT = 'navet:dashboard-profile-refresh'
 const SYNC_RELEVANT_PERSISTED_KEYS = new Set<string>([
   STORAGE_KEYS.cardSizes,
   STORAGE_KEYS.roomOrder,
+  STORAGE_KEYS.roomWorkspace,
 ]);
 
 interface PendingConflict {

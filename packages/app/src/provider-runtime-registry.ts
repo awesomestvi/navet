@@ -1,3 +1,8 @@
+import type {
+  ProviderRoomManagementCapabilities,
+  ProviderRoomManagementCapability,
+} from '@navet/core/provider-feature-models';
+import { createProviderRoomManagementCapabilities } from '@navet/core/provider-room-management';
 import { getProviderRuntimeRegistrationEntry } from './provider-package-registry';
 import type {
   IntegrationProviderCapabilities,
@@ -70,4 +75,23 @@ export function getProviderCapabilities(
   providerId: IntegrationProviderId
 ): IntegrationProviderCapabilities {
   return getProviderRuntimeRegistration(providerId).capabilities;
+}
+
+export function getProviderRoomManagementCapabilities(
+  providerId: IntegrationProviderId
+): ProviderRoomManagementCapabilities {
+  const registration = getProviderRuntimeRegistration(providerId);
+  return (
+    registration.roomManagementCapabilities ??
+    createProviderRoomManagementCapabilities(providerId, {
+      discover: registration.featureMatrix.rooms,
+    })
+  );
+}
+
+export function hasProviderRoomManagementCapability(
+  providerId: IntegrationProviderId,
+  capability: ProviderRoomManagementCapability
+): boolean {
+  return getProviderRoomManagementCapabilities(providerId)[capability];
 }

@@ -2,6 +2,7 @@ import { RoomNav } from '@navet/app/components/layout/room-nav';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const originalGetBoundingClientRect = HTMLElement.prototype.getBoundingClientRect;
@@ -144,6 +145,67 @@ describe('RoomNav', () => {
     expect(screen.getByRole('button', { name: 'Kitchen' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Bedroom' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Rooms' })).not.toBeInTheDocument();
+  });
+
+  it('navigates from a grouped room label and always opens the group from its chevron', async () => {
+    mockRoomLayout({
+      containerWidth: 600,
+      roomWidths: {
+        Home: 72,
+        'Living Room': 112,
+        Office: 86,
+        Kitchen: 88,
+      },
+    });
+
+    function GroupedRoomNav() {
+      const [activeRoom, setActiveRoom] = useState('Living Room');
+
+      return (
+        <RoomNav
+          rooms={['Living Room', 'Kitchen', 'Guest Room', 'Office']}
+          roomGroups={[
+            {
+              id: 'upstairs',
+              name: 'Upstairs',
+              rooms: ['Living Room', 'Guest Room', 'Office'],
+            },
+          ]}
+          activeRoom={activeRoom}
+          onRoomChange={setActiveRoom}
+          isEditMode={false}
+          onToggleEditMode={() => undefined}
+        />
+      );
+    }
+
+    renderWithProviders(<GroupedRoomNav />);
+
+    const livingRoom = await screen.findByRole('button', { name: 'Living Room' });
+    expect(livingRoom).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('button', { name: 'Guest Room' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Office' })).not.toBeInTheDocument();
+
+    fireEvent.pointerDown(livingRoom);
+    await waitFor(() => expect(screen.getByRole('menu')).toBeInTheDocument());
+    fireEvent.click(within(screen.getByRole('menu')).getByRole('menuitem', { name: 'Office' }));
+
+    const office = await screen.findByRole('button', { name: 'Office' });
+    expect(office).toHaveAttribute('aria-current', 'page');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Kitchen' }));
+    expect(office).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('button', { name: 'Kitchen' })).toHaveAttribute('aria-current', 'page');
+
+    fireEvent.click(office);
+    expect(office).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Kitchen' }));
+    const chevron = office.querySelector('[data-room-group-chevron]');
+    expect(chevron).not.toBeNull();
+    fireEvent.pointerDown(chevron as Element);
+    await waitFor(() => expect(screen.getByRole('menu')).toBeInTheDocument());
   });
 
   it('collapses overflow rooms into a dropdown when width runs out', async () => {

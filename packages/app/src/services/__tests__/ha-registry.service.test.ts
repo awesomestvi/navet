@@ -79,4 +79,44 @@ describe('HARegistryService', () => {
     );
     expect(sendMessagePromise).not.toHaveBeenCalled();
   });
+
+  it('renames an area through Home Assistant area registry update', async () => {
+    sendMessagePromise.mockImplementation((message: { type: string }) => {
+      if (message.type === 'config/area_registry/update') {
+        return Promise.resolve({
+          area_id: 'kitchen',
+          name: 'Kitchen and dining',
+        });
+      }
+      return Promise.resolve([]);
+    });
+    const service = new HARegistryService(
+      () =>
+        ({
+          sendMessagePromise,
+        }) as never
+    );
+
+    await expect(service.updateAreaName('kitchen', ' Kitchen and dining ')).resolves.toEqual({
+      area_id: 'kitchen',
+      name: 'Kitchen and dining',
+    });
+    expect(sendMessagePromise).toHaveBeenCalledWith({
+      type: 'config/area_registry/update',
+      area_id: 'kitchen',
+      name: 'Kitchen and dining',
+    });
+  });
+
+  it('rejects empty room names before calling Home Assistant', async () => {
+    const service = new HARegistryService(
+      () =>
+        ({
+          sendMessagePromise,
+        }) as never
+    );
+
+    await expect(service.updateAreaName('kitchen', '   ')).rejects.toThrow('Room name is required');
+    expect(sendMessagePromise).not.toHaveBeenCalled();
+  });
 });

@@ -1,3 +1,4 @@
+import { createProviderRoomManagementCapabilities } from '@navet/core/provider-room-management';
 import type {
   IntegrationProviderRuntimeRegistration,
   ProviderContractRegistration,
@@ -20,6 +21,18 @@ import {
 } from './homeassistant-service-bridge';
 import { homeAssistantTaskFeatureService } from './homeassistant-task-feature.service';
 import { homeAssistantWeatherFeatureService } from './homeassistant-weather-feature.service';
+
+export const homeAssistantRoomManagementCapabilities = createProviderRoomManagementCapabilities(
+  'home_assistant',
+  {
+    discover: true,
+    create: true,
+    rename: true,
+    assign: true,
+    unassign: true,
+    delete: true,
+  }
+);
 
 export function createHomeAssistantRuntimeRegistration(
   registration: ProviderContractRegistration
@@ -48,6 +61,7 @@ export function createHomeAssistantRuntimeRegistration(
       notifications: true,
       tasks: true,
     },
+    roomManagementCapabilities: homeAssistantRoomManagementCapabilities,
     signPath: async (path, expiresSeconds) => {
       const signed = await signHomeAssistantPath(path, expiresSeconds);
       return signed.path;

@@ -25,6 +25,7 @@ export interface PlatformIdentity {
 export interface PlatformEntity extends PlatformIdentity {
   name: string;
   room: string;
+  roomId?: string;
   size: CardSize;
   capabilities: PlatformCapability[];
 }

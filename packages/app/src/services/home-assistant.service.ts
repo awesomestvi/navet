@@ -419,6 +419,15 @@ class HomeAssistantService {
   }
 
   /**
+   * Update an area's display name.
+   */
+  async updateAreaName(areaId: string, name: string): Promise<HomeAssistantAreaRegistryEntry> {
+    const area = await this.registryService.updateAreaName(areaId, name);
+    this.emitRegistries();
+    return area;
+  }
+
+  /**
    * Delete an area
    */
   async deleteArea(areaId: string): Promise<void> {

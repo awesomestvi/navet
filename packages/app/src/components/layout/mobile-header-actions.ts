@@ -7,6 +7,8 @@ export interface MobileHeaderRoomReorderConfig {
   manageableRooms: PlatformManageableRoomReference[];
   roomHiddenItemCounts: Map<string, number>;
   roomItemCounts: Map<string, number>;
+  dashboardEntityIds?: readonly string[];
+  dashboardVisibleEntityIds?: readonly string[];
   onRoomOrderChange?: (rooms: string[]) => void;
   onHiddenRoomsChange?: (rooms: string[]) => void;
 }

@@ -1,28 +1,22 @@
 import {
-  DndContext,
-  type DragEndEvent,
-  KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
+  RoomAppearanceDialog,
+  RoomDeleteImpactDialog,
+  RoomDeviceSelectionSheet,
+  RoomNameDialog,
+  type RoomSymbolChoice,
+  RoomsWorkspaceDialog,
+  RoomTargetDialog,
+  type RoomTargetDialogCandidate,
+  type RoomWorkspaceLabels,
+} from '@navet/app/features/dashboard/rooms/components';
+import { ROOM_SYMBOL_ICON_CHOICES } from '@navet/app/features/dashboard/rooms/components/room-symbol-icon';
 import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { BaseCardDialog, Button, InteractivePill } from '@navet/app/components/primitives';
-import { getDndTransformStyle } from '@navet/app/components/shared/dnd-transform-style';
-import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { useI18n, useTheme } from '@navet/app/hooks';
-import { integrationAdminService } from '@navet/app/services/integration-admin.service';
+  type RoomWorkspacePendingOperation,
+  useRoomWorkspaceController,
+} from '@navet/app/features/dashboard/rooms/use-room-workspace-controller';
+import { useI18n } from '@navet/app/hooks';
 import type { PlatformManageableRoomReference } from '@navet/core/provider-feature-models';
-import * as Dialog from '@radix-ui/react-dialog';
-import { ArrowDown, ArrowUp, Eye, EyeOff, GripVertical, Trash2, X } from 'lucide-react';
-import { memo, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 interface RoomOrderDialogProps {
@@ -33,476 +27,638 @@ interface RoomOrderDialogProps {
   manageableRooms: PlatformManageableRoomReference[];
   roomHiddenItemCounts: Map<string, number>;
   roomEntityCounts: Map<string, number>;
+  dashboardEntityIds?: readonly string[];
+  dashboardVisibleEntityIds?: readonly string[];
   onRoomOrderChange?: (rooms: string[]) => void;
   onHiddenRoomsChange?: (rooms: string[]) => void;
 }
 
-type ReorderMode = 'drag' | 'buttons';
+function getProviderLabel(providerId: PlatformManageableRoomReference['providerId']): string {
+  switch (providerId) {
+    case 'home_assistant':
+      return 'Home Assistant';
+    case 'homey':
+      return 'Homey';
+    case 'openhab':
+      return 'openHAB';
+    case 'hubitat':
+      return 'Hubitat';
+    case 'smartthings':
+      return 'SmartThings';
+  }
+}
 
-export const RoomOrderDialog = memo(function RoomOrderDialog({
+function buildRoomWorkspaceLabels(t: ReturnType<typeof useI18n>['t']): RoomWorkspaceLabels {
+  return {
+    title: t('dashboard.roomsWorkspace.title'),
+    description: t('dashboard.roomsWorkspace.description'),
+    browseMode: t('dashboard.roomsWorkspace.browseMode'),
+    manageMode: t('dashboard.roomsWorkspace.manageMode'),
+    searchLabel: t('dashboard.roomsWorkspace.searchLabel'),
+    searchPlaceholder: t('dashboard.roomsWorkspace.searchPlaceholder'),
+    clearSearch: t('dashboard.roomsWorkspace.clearSearch'),
+    roomsRegion: t('dashboard.roomsWorkspace.roomsRegion'),
+    workspaceRegion: t('dashboard.roomsWorkspace.workspaceRegion'),
+    contextRegion: t('dashboard.roomsWorkspace.contextRegion'),
+    roomDetailsTitle: t('dashboard.roomsWorkspace.roomDetailsTitle'),
+    roomDetailsDescription: t('dashboard.roomsWorkspace.roomDetailsDescription'),
+    devicesTitle: t('dashboard.roomsWorkspace.devicesTitle'),
+    devicesDescription: t('dashboard.roomsWorkspace.devicesDescription'),
+    dashboardDevices: t('dashboard.roomsWorkspace.dashboardDevices'),
+    hiddenDevices: t('dashboard.roomsWorkspace.hiddenDevices'),
+    impactTitle: t('dashboard.roomsWorkspace.impactTitle'),
+    impactDescription: t('dashboard.roomsWorkspace.impactDescription'),
+    addRoom: t('dashboard.roomsWorkspace.addRoom'),
+    addRoomToGroup: t('dashboard.roomsWorkspace.addRoomToGroup'),
+    addGroup: t('dashboard.roomsWorkspace.addGroup'),
+    moreActions: t('dashboard.roomsWorkspace.moreActions'),
+    renameGroup: t('dashboard.roomsWorkspace.renameGroup'),
+    deleteGroup: t('dashboard.roomsWorkspace.deleteGroup'),
+    mergeRoom: t('dashboard.roomsWorkspace.mergeRoom'),
+    mergeRoomDescription: t('dashboard.roomsWorkspace.mergeRoomDescription'),
+    splitRoom: t('dashboard.roomsWorkspace.splitRoom'),
+    splitRoomDescription: t('dashboard.roomsWorkspace.splitRoomDescription'),
+    manageDevices: t('dashboard.roomsWorkspace.manageDevices'),
+    addDevice: t('dashboard.roomsWorkspace.addDevice'),
+    deviceActions: t('dashboard.roomsWorkspace.deviceActions'),
+    hideDevice: t('dashboard.roomsWorkspace.hideDevice'),
+    showDevice: t('dashboard.roomsWorkspace.showDevice'),
+    moveDevice: t('dashboard.roomsWorkspace.moveDevice'),
+    removeDevice: t('dashboard.roomsWorkspace.removeDevice'),
+    notInRoom: t('dashboard.roomsWorkspace.notInRoom'),
+    deviceSearchPlaceholder: t('dashboard.roomsWorkspace.deviceSearchPlaceholder'),
+    saveChanges: t('dashboard.roomsWorkspace.saveChanges'),
+    discardChanges: t('dashboard.roomsWorkspace.cancel'),
+    back: t('dashboard.roomsWorkspace.back'),
+    retry: t('dashboard.roomsWorkspace.retry'),
+    roomNameLabel: t('dashboard.roomsWorkspace.roomNameLabel'),
+    roomNamePlaceholder: t('dashboard.roomsWorkspace.roomNamePlaceholder'),
+    groupLabel: t('dashboard.roomsWorkspace.createRoom.groupLabel'),
+    ungroupedGroup: t('dashboard.roomsWorkspace.createRoom.ungrouped'),
+    visibilityLabel: t('dashboard.roomsWorkspace.visibilityLabel'),
+    visibilityDescription: t('dashboard.roomsWorkspace.visibilityDescription'),
+    favoriteLabel: t('dashboard.roomsWorkspace.favoriteLabel'),
+    favoriteDescription: t('dashboard.roomsWorkspace.favoriteDescription'),
+    appearanceLabel: t('dashboard.roomsWorkspace.appearanceLabel'),
+    appearanceDescription: t('dashboard.roomsWorkspace.appearanceDescription'),
+    chooseAppearance: t('dashboard.roomsWorkspace.chooseAppearance'),
+    deleteRoom: t('dashboard.roomsWorkspace.deleteRoom'),
+    deleteRoomDescription: t('dashboard.roomsWorkspace.deleteRoomDescription'),
+    dragRoom: (roomName) =>
+      t('dashboard.roomNav.reorderDialog.dragRoom', {
+        room: roomName,
+      }),
+    moveEarlier: t('dashboard.roomsWorkspace.moveEarlier'),
+    moveLater: t('dashboard.roomsWorkspace.moveLater'),
+    selectRoom: t('dashboard.roomsWorkspace.selectRoom'),
+    collapseGroup: t('dashboard.roomsWorkspace.collapseGroup'),
+    expandGroup: t('dashboard.roomsWorkspace.expandGroup'),
+    noRoomsFoundTitle: t('dashboard.roomsWorkspace.noRoomsFoundTitle'),
+    noRoomsFoundDescription: t('dashboard.roomsWorkspace.noRoomsFoundDescription'),
+    selectRoomTitle: t('dashboard.roomsWorkspace.selectRoomTitle'),
+    selectRoomDescription: t('dashboard.roomsWorkspace.selectRoomDescription'),
+    noDevicesTitle: t('dashboard.roomsWorkspace.noDevicesTitle'),
+    noDevicesDescription: t('dashboard.roomsWorkspace.noDevicesDescription'),
+    noDashboardDevicesTitle: t('dashboard.roomsWorkspace.noDashboardDevicesTitle'),
+    noDashboardDevicesDescription: t('dashboard.roomsWorkspace.noDashboardDevicesDescription'),
+    noHiddenDevicesTitle: t('dashboard.roomsWorkspace.noHiddenDevicesTitle'),
+    noHiddenDevicesDescription: t('dashboard.roomsWorkspace.noHiddenDevicesDescription'),
+    noChangesTitle: t('dashboard.roomsWorkspace.noChangesTitle'),
+    noChangesDescription: t('dashboard.roomsWorkspace.noChangesDescription'),
+    currentRoomTitle: t('dashboard.roomsWorkspace.currentRoomTitle'),
+    roomActionsTitle: t('dashboard.roomsWorkspace.roomActionsTitle'),
+    pendingChangesTitle: t('dashboard.roomsWorkspace.pendingChangesTitle'),
+    unsavedChanges: (count) => t('dashboard.roomsWorkspace.unsavedChanges', { count }),
+    allChangesSaved: t('dashboard.roomsWorkspace.allChangesSaved'),
+    closeSheet: t('dashboard.roomsWorkspace.closeSheet'),
+  };
+}
+
+function resolveNameDialogCopy(
+  operation: RoomWorkspacePendingOperation,
+  t: ReturnType<typeof useI18n>['t']
+) {
+  switch (operation.kind) {
+    case 'create-room':
+      return {
+        title: t('dashboard.roomsWorkspace.createRoom.title'),
+        description: t('dashboard.roomsWorkspace.createRoom.description'),
+        label: t('dashboard.roomsWorkspace.createRoom.nameLabel'),
+        placeholder: t('dashboard.roomsWorkspace.createRoom.namePlaceholder'),
+        confirm: t('dashboard.roomsWorkspace.createRoom.action'),
+      };
+    case 'create-group':
+      return {
+        title: t('dashboard.roomsWorkspace.createGroup.title'),
+        description: t('dashboard.roomsWorkspace.createGroup.description'),
+        label: t('dashboard.roomsWorkspace.createGroup.nameLabel'),
+        placeholder: t('dashboard.roomsWorkspace.createGroup.namePlaceholder'),
+        confirm: t('dashboard.roomsWorkspace.createGroup.action'),
+      };
+    case 'rename-group':
+      return {
+        title: t('dashboard.roomsWorkspace.renameGroup.title'),
+        description: t('dashboard.roomsWorkspace.renameGroup.description'),
+        label: t('dashboard.roomsWorkspace.renameGroup.nameLabel'),
+        placeholder: t('dashboard.roomsWorkspace.createGroup.namePlaceholder'),
+        confirm: t('dashboard.roomsWorkspace.renameGroup.action'),
+      };
+    case 'split-room':
+      return {
+        title: t('dashboard.roomsWorkspace.split.title'),
+        description: t('dashboard.roomsWorkspace.split.description'),
+        label: t('dashboard.roomsWorkspace.split.nameLabel'),
+        placeholder: t('dashboard.roomsWorkspace.split.namePlaceholder'),
+        confirm: t('dashboard.roomsWorkspace.split.action'),
+      };
+    default:
+      return null;
+  }
+}
+
+function getOperationRoomId(operation: RoomWorkspacePendingOperation | null): string | null {
+  if (!operation) {
+    return null;
+  }
+  switch (operation.kind) {
+    case 'appearance':
+    case 'delete-room':
+      return operation.roomId;
+    case 'merge-room':
+    case 'move-device':
+    case 'split-room':
+      return operation.sourceRoomId;
+    default:
+      return null;
+  }
+}
+
+export function RoomOrderDialog({
   isOpen,
   onOpenChange,
-  rooms,
-  hiddenRoomNames = [],
   manageableRooms,
   roomHiddenItemCounts,
   roomEntityCounts,
+  dashboardEntityIds,
+  dashboardVisibleEntityIds,
   onRoomOrderChange,
   onHiddenRoomsChange,
 }: RoomOrderDialogProps) {
   const { t } = useI18n();
-  const { theme } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
-  const [draftRooms, setDraftRooms] = useState(rooms);
-  const [pendingDeleteRoom, setPendingDeleteRoom] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [reorderMode, setReorderMode] = useState<ReorderMode>('drag');
-  const isDeleteDialogOpen = pendingDeleteRoom !== null;
-  const hiddenRoomSet = useMemo(() => new Set(hiddenRoomNames), [hiddenRoomNames]);
+  const controller = useRoomWorkspaceController({
+    isOpen,
+    manageableRooms,
+    roomHiddenItemCounts,
+    roomEntityCounts,
+    dashboardEntityIds,
+    dashboardVisibleEntityIds,
+    onRoomOrderChange,
+    onHiddenRoomsChange,
+  });
+  const labels = useMemo(() => buildRoomWorkspaceLabels(t), [t]);
+  const roomSymbolChoices = useMemo<readonly RoomSymbolChoice[]>(
+    () =>
+      ROOM_SYMBOL_ICON_CHOICES.map((choice, index) => ({
+        value: choice.value,
+        icon: choice.icon,
+        label: `${t('dashboard.roomsWorkspace.appearance.iconLabel')} ${index + 1}`,
+      })),
+    [t]
+  );
+  const [operationName, setOperationName] = useState('');
+  const [targetQuery, setTargetQuery] = useState('');
+  const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
+  const [selectedDeleteDestinationId, setSelectedDeleteDestinationId] = useState<string | null>(
+    null
+  );
+  const [appearanceSymbol, setAppearanceSymbol] = useState<string | null>(null);
+  const [appearanceImage, setAppearanceImage] = useState<
+    NonNullable<typeof controller.draftWorkspace>['rooms'][number]['metadata']['image'] | null
+  >(null);
+  const operation = controller.pendingOperation;
+  const operationRoomId = getOperationRoomId(operation);
+  const operationRoom = controller.draftWorkspace?.rooms.find(
+    (room) => room.id === operationRoomId
+  );
+  const operationGroup =
+    operation?.kind === 'rename-group' ||
+    operation?.kind === 'appearance-group' ||
+    operation?.kind === 'delete-group'
+      ? controller.draftWorkspace?.groups.find((group) => group.id === operation.groupId)
+      : null;
 
   useEffect(() => {
-    if (isOpen) {
-      setDraftRooms(rooms);
-      setPendingDeleteRoom(null);
-      setIsSaving(false);
-      setReorderMode('drag');
-    }
-  }, [isOpen, rooms]);
-
-  const deletableRoomIdByName = useMemo(() => {
-    const roomsByName = new Map<string, string>();
-
-    for (const room of manageableRooms) {
-      if (room.canDelete) {
-        roomsByName.set(room.name, room.id);
-      }
-    }
-
-    return roomsByName;
-  }, [manageableRooms]);
-  const deletableRoomNames = useMemo(
-    () => new Set(deletableRoomIdByName.keys()),
-    [deletableRoomIdByName]
-  );
-
-  const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: {
-        distance: 6,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 180,
-        tolerance: 10,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  const handleDragEnd = ({ active, over }: DragEndEvent) => {
-    if (!over || active.id === over.id) {
+    if (!operation) {
+      setOperationName('');
+      setTargetQuery('');
+      setSelectedTargetId(null);
+      setSelectedDeleteDestinationId(null);
       return;
     }
 
-    setDraftRooms((current) => {
-      const oldIndex = current.indexOf(String(active.id));
-      const newIndex = current.indexOf(String(over.id));
-      if (oldIndex === -1 || newIndex === -1) {
-        return current;
-      }
-
-      return arrayMove(current, oldIndex, newIndex);
-    });
-  };
-
-  const handleDeleteRoom = async () => {
-    if (!pendingDeleteRoom) {
-      return;
-    }
-
-    const roomId = deletableRoomIdByName.get(pendingDeleteRoom);
-    if (!roomId) {
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      await integrationAdminService.deleteRoom(roomId);
-      const nextRooms = draftRooms.filter((room) => room !== pendingDeleteRoom);
-      setDraftRooms(nextRooms);
-      onRoomOrderChange?.(nextRooms);
-      if (hiddenRoomSet.has(pendingDeleteRoom)) {
-        onHiddenRoomsChange?.(hiddenRoomNames.filter((room) => room !== pendingDeleteRoom));
-      }
-      toast.success(
-        t('dashboard.roomNav.reorderDialog.deleteSuccess', { room: pendingDeleteRoom })
+    if (operation.kind === 'rename-group') {
+      setOperationName(operationGroup?.displayName ?? '');
+    } else if (operation.kind === 'split-room') {
+      setOperationName(
+        operationRoom
+          ? `${operationRoom.displayName} 2`
+          : t('dashboard.roomsWorkspace.split.namePlaceholder')
       );
-      setPendingDeleteRoom(null);
-    } catch (error) {
-      console.error('[RoomOrderDialog] Failed to delete room:', error);
-      toast.error(t('dashboard.roomNav.reorderDialog.deleteFailed', { room: pendingDeleteRoom }));
-    } finally {
-      setIsSaving(false);
+    } else {
+      setOperationName('');
     }
-  };
 
-  const handleDone = () => {
-    onRoomOrderChange?.(draftRooms);
-    onOpenChange(false);
-  };
+    if (operation.kind === 'appearance' || operation.kind === 'appearance-group') {
+      setAppearanceSymbol(
+        operation.kind === 'appearance'
+          ? (operationRoom?.metadata.symbol ?? null)
+          : (operationGroup?.symbol ?? null)
+      );
+      setAppearanceImage(
+        operation.kind === 'appearance' ? (operationRoom?.metadata.image ?? null) : null
+      );
+    }
+    setTargetQuery('');
+    setSelectedTargetId(null);
+    setSelectedDeleteDestinationId(null);
+  }, [operation, operationGroup?.displayName, operationGroup?.symbol, operationRoom, t]);
 
-  const handleDismiss = () => {
-    setDraftRooms(rooms);
-    setPendingDeleteRoom(null);
-    setIsSaving(false);
-    onOpenChange(false);
-  };
+  useEffect(() => {
+    switch (controller.saveOutcome.kind) {
+      case 'saved':
+        toast.success(t('dashboard.roomsWorkspace.save.success'));
+        break;
+      case 'partial':
+        toast.warning(t('dashboard.roomsWorkspace.save.partial'));
+        break;
+      case 'error':
+        toast.error(t('dashboard.roomsWorkspace.save.failure'));
+        break;
+      default:
+        break;
+    }
+  }, [controller.saveOutcome, t]);
 
-  const toggleRoomHidden = (room: string) => {
-    if (hiddenRoomSet.has(room)) {
-      onHiddenRoomsChange?.(hiddenRoomNames.filter((hiddenRoom) => hiddenRoom !== room));
+  useEffect(() => {
+    if (!isOpen || !controller.viewModel.hasUnsavedChanges) {
       return;
     }
 
-    onHiddenRoomsChange?.([...hiddenRoomNames, room]);
-  };
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warnBeforeUnload);
+    return () => window.removeEventListener('beforeunload', warnBeforeUnload);
+  }, [controller.viewModel.hasUnsavedChanges, isOpen]);
 
-  const moveRoomByStep = (room: string, direction: -1 | 1) => {
-    setDraftRooms((current) => {
-      const index = current.indexOf(room);
-      if (index === -1) {
-        return current;
-      }
+  const roomNames = useMemo(
+    () =>
+      new Set(
+        (controller.draftWorkspace?.rooms ?? []).map((room) =>
+          room.displayName.trim().toLocaleLowerCase()
+        )
+      ),
+    [controller.draftWorkspace]
+  );
+  const groupNames = useMemo(
+    () =>
+      new Set(
+        (controller.draftWorkspace?.groups ?? [])
+          .filter((group) => group.id !== operationGroup?.id)
+          .map((group) => group.displayName.trim().toLocaleLowerCase())
+      ),
+    [controller.draftWorkspace, operationGroup?.id]
+  );
+  const normalizedOperationName = operationName.trim().toLocaleLowerCase();
+  const nameValidationMessage = !normalizedOperationName
+    ? t('dashboard.roomsWorkspace.validation.nameRequired')
+    : operation?.kind === 'create-group' || operation?.kind === 'rename-group'
+      ? groupNames.has(normalizedOperationName)
+        ? t('dashboard.roomsWorkspace.validation.duplicateGroup')
+        : undefined
+      : roomNames.has(normalizedOperationName)
+        ? t('dashboard.roomsWorkspace.validation.duplicateRoom')
+        : undefined;
+  const nameDialogCopy = operation ? resolveNameDialogCopy(operation, t) : null;
+  const targetCandidates = useMemo<RoomTargetDialogCandidate[]>(
+    () =>
+      (controller.draftWorkspace?.rooms ?? [])
+        .filter((room) => room.id !== operationRoomId)
+        .sort((left, right) => left.metadata.order - right.metadata.order)
+        .map((room) => ({
+          id: room.id,
+          name: room.displayName,
+          groupName: controller.draftWorkspace?.groups.find(
+            (group) => group.id === room.metadata.groupId
+          )?.displayName,
+          summary:
+            controller.viewModel.rooms.find((viewRoom) => viewRoom.id === room.id)?.deviceSummary ??
+            '',
+        })),
+    [controller.draftWorkspace, controller.viewModel.rooms, operationRoomId]
+  );
+  const affectedDeviceCount = operationRoomId
+    ? (controller.roomDeviceCounts.get(operationRoomId) ?? 0)
+    : 0;
+  const affectedDeviceCountLabel = t(
+    affectedDeviceCount === 1
+      ? 'dashboard.roomsWorkspace.counts.devices.one'
+      : 'dashboard.roomsWorkspace.counts.devices.other',
+    { count: affectedDeviceCount }
+  );
+  const deleteDestinations = useMemo(
+    () =>
+      (controller.draftWorkspace?.rooms ?? [])
+        .filter((room) => room.id !== operationRoomId)
+        .sort((left, right) => left.metadata.order - right.metadata.order)
+        .map((room) => ({ id: room.id, name: room.displayName })),
+    [controller.draftWorkspace, operationRoomId]
+  );
+  const selectedDeleteDestination = deleteDestinations.find(
+    (room) => room.id === selectedDeleteDestinationId
+  );
+  const providerDeletionSource =
+    operation?.kind === 'delete-room' && operationRoom?.sourceRefs.length === 1
+      ? operationRoom.sourceRefs[0]
+      : null;
+  const providerDeletionRoom = providerDeletionSource
+    ? manageableRooms.find(
+        (room) => room.id === providerDeletionSource.canonicalId && room.canDelete
+      )
+    : null;
+  const providerDeletionLabel = providerDeletionSource
+    ? getProviderLabel(providerDeletionSource.providerId)
+    : '';
+  const deleteDeviceAccessibleSummary = selectedDeleteDestination
+    ? t('dashboard.roomsWorkspace.deleteConfirmation.deviceMoveSummary', {
+        count: affectedDeviceCountLabel,
+        room: selectedDeleteDestination.name,
+      })
+    : providerDeletionRoom
+      ? t('dashboard.roomsWorkspace.deleteConfirmation.deviceUnassignSummary', {
+          count: affectedDeviceCountLabel,
+          provider: providerDeletionLabel,
+        })
+      : t('dashboard.roomsWorkspace.deleteConfirmation.deviceRestoreSummary', {
+          count: affectedDeviceCountLabel,
+        });
+  const deleteDeviceSummary = deleteDeviceAccessibleSummary
+    .replace(affectedDeviceCountLabel, '')
+    .trim();
 
-      const nextIndex = index + direction;
-      if (nextIndex < 0 || nextIndex >= current.length) {
-        return current;
-      }
-
-      return arrayMove(current, index, nextIndex);
-    });
+  const handleWorkspaceOpenChange = (open: boolean) => {
+    if (!open && controller.viewModel.hasUnsavedChanges) {
+      controller.actions.onModeChange('manage');
+      controller.actions.onStageChange('impact-review');
+      return;
+    }
+    onOpenChange(open);
   };
 
   return (
-    <BaseCardDialog
-      variant="modal"
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      title={t('dashboard.roomNav.reorderDialog.title')}
-      description={t('dashboard.roomNav.reorderDialog.description')}
-      theme={theme}
-      maxWidth="sm"
-      height="capped"
-      bodyPadding={false}
-    >
-      <div className="flex max-h-[min(85vh,46rem)] min-h-0 flex-col p-6">
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <div>
-            <Dialog.Title className={`text-xl font-semibold ${surface.textPrimary}`}>
-              {t('dashboard.roomNav.reorderDialog.title')}
-            </Dialog.Title>
-            <Dialog.Description className={`mt-1 text-sm ${surface.textSecondary}`}>
-              {t('dashboard.roomNav.reorderDialog.description')}
-            </Dialog.Description>
-          </div>
-          <Dialog.Close asChild>
-            <button
-              type="button"
-              aria-label={t('common.close')}
-              onClick={handleDismiss}
-              className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full border transition-colors ${surface.subtleBg} ${surface.hoverBg} ${surface.textSecondary} ${surface.borderStrong}`}
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </Dialog.Close>
-        </div>
-
-        <div className="mb-4 flex items-center gap-2">
-          <InteractivePill
-            size="compact"
-            intent="action"
-            active={reorderMode === 'drag'}
-            onClick={() => setReorderMode('drag')}
-          >
-            {t('dashboard.roomNav.reorderDialog.mode.drag')}
-          </InteractivePill>
-          <InteractivePill
-            size="compact"
-            intent="action"
-            active={reorderMode === 'buttons'}
-            onClick={() => setReorderMode('buttons')}
-          >
-            {t('dashboard.roomNav.reorderDialog.mode.buttons')}
-          </InteractivePill>
-        </div>
-
-        <div className="min-h-0 flex-1">
-          {reorderMode === 'drag' ? (
-            <div className="min-h-0 max-h-[26rem] overflow-y-auto pr-1">
-              <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-                <SortableContext items={draftRooms} strategy={verticalListSortingStrategy}>
-                  <div className={`overflow-hidden rounded-2xl border ${surface.border}`}>
-                    {draftRooms.map((room, index) => (
-                      <RoomOrderDialogRow
-                        key={room}
-                        room={room}
-                        mode="drag"
-                        isFirst={index === 0}
-                        isLast={index === draftRooms.length - 1}
-                        surface={surface}
-                        entityCount={roomEntityCounts.get(room) ?? 0}
-                        hiddenCount={roomHiddenItemCounts.get(room) ?? 0}
-                        isHidden={hiddenRoomSet.has(room)}
-                        onMoveUp={() => moveRoomByStep(room, -1)}
-                        onMoveDown={() => moveRoomByStep(room, 1)}
-                        onToggleHidden={() => toggleRoomHidden(room)}
-                        onDelete={() => setPendingDeleteRoom(room)}
-                        deleteDisabled={isSaving || !deletableRoomNames.has(room)}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            </div>
-          ) : (
-            <div className="min-h-0 max-h-[26rem] overflow-y-auto pr-1">
-              <div className={`overflow-hidden rounded-2xl border ${surface.border}`}>
-                {draftRooms.map((room, index) => (
-                  <RoomOrderDialogRow
-                    key={room}
-                    room={room}
-                    mode="buttons"
-                    isFirst={index === 0}
-                    isLast={index === draftRooms.length - 1}
-                    surface={surface}
-                    entityCount={roomEntityCounts.get(room) ?? 0}
-                    hiddenCount={roomHiddenItemCounts.get(room) ?? 0}
-                    isHidden={hiddenRoomSet.has(room)}
-                    onMoveUp={() => moveRoomByStep(room, -1)}
-                    onMoveDown={() => moveRoomByStep(room, 1)}
-                    onToggleHidden={() => toggleRoomHidden(room)}
-                    onDelete={() => setPendingDeleteRoom(room)}
-                    deleteDisabled={isSaving || !deletableRoomNames.has(room)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="mt-6 flex justify-end gap-2">
-          <Button variant="soft" size="small" onClick={handleDone} disabled={isSaving}>
-            {t('common.done')}
-          </Button>
-        </div>
-      </div>
-
-      <DeleteRoomDialog
-        isOpen={isDeleteDialogOpen}
-        isSaving={isSaving}
-        room={pendingDeleteRoom}
-        surface={surface}
-        onClose={() => setPendingDeleteRoom(null)}
-        onConfirm={() => void handleDeleteRoom()}
+    <>
+      <RoomsWorkspaceDialog
+        isOpen={isOpen}
+        onOpenChange={handleWorkspaceOpenChange}
+        viewModel={controller.viewModel}
+        labels={labels}
+        actions={controller.actions}
       />
-    </BaseCardDialog>
-  );
-});
 
-interface DeleteRoomDialogProps {
-  isOpen: boolean;
-  isSaving: boolean;
-  room: string | null;
-  surface: ReturnType<typeof getThemeSurfaceTokens>;
-  onClose: () => void;
-  onConfirm: () => void;
-}
+      <RoomDeviceSelectionSheet
+        isOpen={isOpen && controller.viewModel.stage === 'device-selection'}
+        onOpenChange={(open) => {
+          if (!open) {
+            controller.actions.onDeviceQueryChange('');
+            controller.actions.onStageChange('room-details');
+          }
+        }}
+        viewModel={controller.viewModel}
+        labels={labels}
+        actions={controller.actions}
+      />
 
-const DeleteRoomDialog = memo(function DeleteRoomDialog({
-  isOpen,
-  isSaving,
-  room,
-  surface,
-  onClose,
-  onConfirm,
-}: DeleteRoomDialogProps) {
-  const { t } = useI18n();
-  const { theme } = useTheme();
+      {operation && nameDialogCopy ? (
+        <RoomNameDialog
+          isOpen
+          onOpenChange={(open) => {
+            if (!open) {
+              controller.dismissOperation();
+            }
+          }}
+          title={nameDialogCopy.title}
+          description={nameDialogCopy.description}
+          nameLabel={nameDialogCopy.label}
+          namePlaceholder={nameDialogCopy.placeholder}
+          value={operationName}
+          onValueChange={setOperationName}
+          validationMessage={nameValidationMessage}
+          cancelLabel={t('common.cancel')}
+          confirmLabel={nameDialogCopy.confirm}
+          onConfirm={() => controller.confirmNameOperation(operationName)}
+        />
+      ) : null}
 
-  return (
-    <BaseCardDialog
-      variant="modal"
-      isOpen={isOpen}
-      onOpenChange={(open) => {
-        if (!open) {
-          onClose();
+      <RoomTargetDialog
+        isOpen={operation?.kind === 'merge-room' || operation?.kind === 'move-device'}
+        onOpenChange={(open) => {
+          if (!open) {
+            controller.dismissOperation();
+          }
+        }}
+        title={t(
+          operation?.kind === 'move-device'
+            ? 'dashboard.roomsWorkspace.moveDeviceDialog.title'
+            : 'dashboard.roomsWorkspace.merge.title'
+        )}
+        description={t(
+          operation?.kind === 'move-device'
+            ? 'dashboard.roomsWorkspace.moveDeviceDialog.description'
+            : 'dashboard.roomsWorkspace.merge.description'
+        )}
+        searchLabel={t(
+          operation?.kind === 'move-device'
+            ? 'dashboard.roomsWorkspace.moveDeviceDialog.searchLabel'
+            : 'dashboard.roomsWorkspace.merge.searchLabel'
+        )}
+        searchPlaceholder={t(
+          operation?.kind === 'move-device'
+            ? 'dashboard.roomsWorkspace.moveDeviceDialog.searchPlaceholder'
+            : 'dashboard.roomsWorkspace.merge.searchPlaceholder'
+        )}
+        targetLabel={t(
+          operation?.kind === 'move-device'
+            ? 'dashboard.roomsWorkspace.moveDeviceDialog.targetLabel'
+            : 'dashboard.roomsWorkspace.merge.targetLabel'
+        )}
+        resultSummary={t(
+          targetCandidates.length === 1
+            ? 'dashboard.roomsWorkspace.counts.rooms.one'
+            : 'dashboard.roomsWorkspace.counts.rooms.other',
+          { count: targetCandidates.length }
+        )}
+        emptyTitle={t(
+          operation?.kind === 'move-device'
+            ? 'dashboard.roomsWorkspace.moveDeviceDialog.emptyTitle'
+            : 'dashboard.roomsWorkspace.merge.emptyTitle'
+        )}
+        emptyDescription={t(
+          operation?.kind === 'move-device'
+            ? 'dashboard.roomsWorkspace.moveDeviceDialog.emptyDescription'
+            : 'dashboard.roomsWorkspace.merge.emptyDescription'
+        )}
+        candidates={targetCandidates}
+        query={targetQuery}
+        onQueryChange={setTargetQuery}
+        selectedTargetId={selectedTargetId}
+        onTargetChange={setSelectedTargetId}
+        cancelLabel={t('common.cancel')}
+        confirmLabel={t(
+          operation?.kind === 'move-device'
+            ? 'dashboard.roomsWorkspace.moveDeviceDialog.action'
+            : 'dashboard.roomsWorkspace.merge.action'
+        )}
+        onConfirm={() => {
+          if (selectedTargetId) {
+            if (operation?.kind === 'move-device') {
+              controller.confirmDeviceMove(selectedTargetId);
+            } else {
+              controller.confirmMerge(selectedTargetId);
+            }
+          }
+        }}
+      />
+
+      <RoomAppearanceDialog
+        isOpen={operation?.kind === 'appearance' || operation?.kind === 'appearance-group'}
+        onOpenChange={(open) => {
+          if (!open) {
+            controller.dismissOperation();
+          }
+        }}
+        title={t('dashboard.roomsWorkspace.appearance.title')}
+        description={t('dashboard.roomsWorkspace.appearance.description')}
+        symbolLabel={t('dashboard.roomsWorkspace.appearance.iconLabel')}
+        symbolDescription={t('dashboard.roomsWorkspace.appearance.iconDescription')}
+        symbolInputPlaceholder={t('lighting.iconInputPlaceholder')}
+        symbolInputHelp={t('lighting.iconInputHelp')}
+        lucideLibraryLabel={t('lighting.lucideIconLibrary')}
+        wallpaperLabel={t('dashboard.roomsWorkspace.appearance.wallpaperLabel')}
+        wallpaperDescription={t('dashboard.roomsWorkspace.appearance.wallpaperDescription')}
+        imagePreviewAlt={t('dashboard.roomsWorkspace.appearance.previewAlt')}
+        wallpaperOptionLabel={(wallpaperId) =>
+          t('dashboard.roomsWorkspace.appearance.wallpaperOptionAria', {
+            id: wallpaperId,
+          })
         }
-      }}
-      title={t('dashboard.roomNav.reorderDialog.deleteTitle')}
-      description={t('dashboard.roomNav.reorderDialog.deleteDescription', {
-        room: room ?? '',
-      })}
-      theme={theme}
-      overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
-      maxWidth="sm"
-      bodyPadding={false}
-    >
-      <div className="p-6">
-        <div className="space-y-2">
-          <Dialog.Title className={`text-lg font-semibold ${surface.textPrimary}`}>
-            {t('dashboard.roomNav.reorderDialog.deleteTitle')}
-          </Dialog.Title>
-          <Dialog.Description className={`text-sm ${surface.textSecondary}`}>
-            {t('dashboard.roomNav.reorderDialog.deleteDescription', {
-              room: room ?? '',
-            })}
-          </Dialog.Description>
-        </div>
+        urlLabel={t('dashboard.roomsWorkspace.appearance.urlLabel')}
+        urlPlaceholder={t('dashboard.roomsWorkspace.appearance.urlPlaceholder')}
+        invalidUrlMessage={t('dashboard.roomsWorkspace.validation.invalidImageUrl')}
+        removeImageLabel={t('dashboard.roomsWorkspace.appearance.remove')}
+        resetLabel={t('common.reset')}
+        cancelLabel={t('common.cancel')}
+        confirmLabel={t('dashboard.roomsWorkspace.appearance.apply')}
+        symbolChoices={roomSymbolChoices}
+        symbol={appearanceSymbol}
+        onSymbolChange={setAppearanceSymbol}
+        image={appearanceImage ?? null}
+        onImageChange={setAppearanceImage}
+        onReset={() => {
+          setAppearanceSymbol(null);
+          setAppearanceImage(null);
+        }}
+        onConfirm={() =>
+          controller.confirmAppearance({
+            symbol: appearanceSymbol,
+            image: appearanceImage ?? null,
+          })
+        }
+        showWallpaper={operation?.kind !== 'appearance-group'}
+      />
 
-        <div className="mt-6 flex justify-end gap-2">
-          <Button variant="ghost" size="small" onClick={onClose} disabled={isSaving}>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            variant="soft"
-            size="small"
-            onClick={onConfirm}
-            loading={isSaving}
-            className="text-red-500"
-          >
-            {t('dashboard.roomNav.reorderDialog.deleteAction')}
-          </Button>
-        </div>
-      </div>
-    </BaseCardDialog>
+      <RoomDeleteImpactDialog
+        isOpen={operation?.kind === 'delete-room' || operation?.kind === 'delete-group'}
+        onOpenChange={(open) => {
+          if (!open) {
+            controller.dismissOperation();
+          }
+        }}
+        title={
+          operation?.kind === 'delete-group'
+            ? t('dashboard.roomsWorkspace.deleteGroup.title')
+            : t('dashboard.roomsWorkspace.deleteConfirmation.title')
+        }
+        description={
+          operation?.kind === 'delete-group'
+            ? t('dashboard.roomsWorkspace.deleteGroup.description')
+            : t('dashboard.roomsWorkspace.deleteConfirmation.description')
+        }
+        roomLabel={t('dashboard.roomsWorkspace.deleteConfirmation.roomLabel')}
+        roomName={operationGroup?.displayName ?? operationRoom?.displayName ?? ''}
+        affectedDevicesLabel={
+          operation?.kind === 'delete-group'
+            ? t('dashboard.roomsWorkspace.roomsRegion')
+            : t('dashboard.roomsWorkspace.deleteConfirmation.devicesLabel')
+        }
+        affectedDeviceCount={
+          operation?.kind === 'delete-group'
+            ? (controller.draftWorkspace?.rooms.filter(
+                (room) => room.metadata.groupId === operation.groupId
+              ).length ?? 0)
+            : affectedDeviceCount
+        }
+        affectedDeviceSummary={
+          operation?.kind === 'delete-group'
+            ? t('dashboard.roomsWorkspace.deleteGroup.description')
+            : deleteDeviceSummary
+        }
+        affectedDeviceAccessibleSummary={
+          operation?.kind === 'delete-room' ? deleteDeviceAccessibleSummary : undefined
+        }
+        destinationLabel={
+          operation?.kind === 'delete-room'
+            ? t('dashboard.roomsWorkspace.deleteConfirmation.destinationLabel')
+            : undefined
+        }
+        destinationRoomId={selectedDeleteDestinationId}
+        destinationFallbackLabel={
+          providerDeletionRoom
+            ? t('dashboard.roomsWorkspace.deleteConfirmation.destinationUnassigned')
+            : t('dashboard.roomsWorkspace.deleteConfirmation.destinationConnected')
+        }
+        destinations={deleteDestinations}
+        onDestinationChange={setSelectedDeleteDestinationId}
+        providerSourcesLabel={t('dashboard.roomsWorkspace.deleteConfirmation.providersLabel')}
+        noProviderSourcesLabel={t('dashboard.roomsWorkspace.deleteConfirmation.noProviders')}
+        providerSources={(operationRoom?.sourceRefs ?? []).map((sourceRef) => ({
+          id: sourceRef.canonicalId,
+          name: getProviderLabel(sourceRef.providerId),
+          summary: providerDeletionRoom
+            ? t('dashboard.roomsWorkspace.deleteConfirmation.providerDeleteSummary', {
+                room: providerDeletionRoom.name,
+                provider: providerDeletionLabel,
+              })
+            : t('dashboard.roomsWorkspace.impact.providerDescription'),
+        }))}
+        warningMessage={
+          operation?.kind === 'delete-group'
+            ? undefined
+            : providerDeletionRoom
+              ? t('dashboard.roomsWorkspace.deleteConfirmation.providerDeleteWarning', {
+                  room: providerDeletionRoom.name,
+                  provider: providerDeletionLabel,
+                })
+              : undefined
+        }
+        cancelLabel={t('common.cancel')}
+        confirmLabel={
+          operation?.kind === 'delete-group'
+            ? t('dashboard.roomsWorkspace.deleteGroup.action')
+            : t('dashboard.roomsWorkspace.deleteConfirmation.action')
+        }
+        onConfirm={() => controller.confirmDelete(selectedDeleteDestinationId)}
+      />
+    </>
   );
-});
-
-interface RoomOrderDialogRowProps {
-  room: string;
-  mode: ReorderMode;
-  isFirst: boolean;
-  isLast: boolean;
-  surface: ReturnType<typeof getThemeSurfaceTokens>;
-  entityCount: number;
-  hiddenCount: number;
-  isHidden: boolean;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
-  onToggleHidden: () => void;
-  onDelete: () => void;
-  deleteDisabled: boolean;
 }
-
-const RoomOrderDialogRow = memo(function RoomOrderDialogRow({
-  room,
-  mode,
-  isFirst,
-  isLast,
-  surface,
-  entityCount,
-  hiddenCount,
-  isHidden,
-  onMoveUp,
-  onMoveDown,
-  onToggleHidden,
-  onDelete,
-  deleteDisabled,
-}: RoomOrderDialogRowProps) {
-  const { t } = useI18n();
-  const visibleCount = Math.max(0, entityCount - hiddenCount);
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
-    id: room,
-    disabled: mode !== 'drag',
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={getDndTransformStyle(transform, transition)}
-      className={`flex items-center gap-2 px-3 py-2.5 ${surface.panel} ${
-        isLast ? '' : `border-b ${surface.border}`
-      }`}
-    >
-      {mode === 'drag' ? (
-        <button
-          type="button"
-          aria-label={t('dashboard.roomNav.reorderDialog.dragRoom', { room })}
-          className={`flex h-8 w-8 cursor-grab touch-none items-center justify-center rounded-full transition-colors active:cursor-grabbing ${surface.textSecondary} ${surface.hoverBg}`}
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-4 w-4" aria-hidden="true" />
-        </button>
-      ) : (
-        <div className="flex items-center gap-1">
-          <Button
-            iconOnly
-            size="compact"
-            variant="secondary"
-            onClick={onMoveUp}
-            disabled={isFirst}
-            label={t('dashboard.roomNav.reorderDialog.moveUpRoom', { room })}
-          >
-            <ArrowUp className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            iconOnly
-            size="compact"
-            variant="secondary"
-            onClick={onMoveDown}
-            disabled={isLast}
-            label={t('dashboard.roomNav.reorderDialog.moveDownRoom', { room })}
-          >
-            <ArrowDown className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      )}
-      <div className="min-w-0 flex-1">
-        <div className={`truncate text-sm font-medium ${surface.textPrimary}`}>{room}</div>
-        <div className={`truncate text-xs ${surface.textMuted}`}>
-          {t(
-            visibleCount <= 1
-              ? 'dashboard.roomNav.reorderDialog.itemCount.one'
-              : 'dashboard.roomNav.reorderDialog.itemCount.other',
-            { count: visibleCount }
-          )}
-          {hiddenCount > 0
-            ? ` · ${t('dashboard.roomNav.reorderDialog.hiddenCount', { count: hiddenCount })}`
-            : ''}
-          {isHidden ? ` · ${t('dashboard.roomNav.reorderDialog.roomHidden')}` : ''}
-        </div>
-      </div>
-      <div className="flex items-center gap-1">
-        <Button
-          iconOnly
-          size="compact"
-          variant="secondary"
-          onClick={onToggleHidden}
-          label={t(
-            isHidden
-              ? 'dashboard.roomNav.reorderDialog.showRoom'
-              : 'dashboard.roomNav.reorderDialog.hideRoom',
-            { room }
-          )}
-        >
-          {isHidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-        </Button>
-        <Button
-          iconOnly
-          size="compact"
-          variant="soft"
-          onClick={onDelete}
-          disabled={deleteDisabled}
-          label={t('dashboard.roomNav.reorderDialog.deleteRoom', { room })}
-          className="ml-1.5 border-red-500/20 bg-red-500/8 text-red-500 hover:bg-red-500/12"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
-      </div>
-    </div>
-  );
-});

@@ -82,6 +82,10 @@ runProviderPackageRegistrationTests({
         subscribeCameraWebRtcOffer: vi.fn(async () => () => {}),
         addCameraWebRtcCandidate: vi.fn(async () => undefined),
         createArea: vi.fn(async (name: string) => ({ area_id: name, name })),
+        updateAreaName: vi.fn(async (areaId: string, name: string) => ({
+          area_id: areaId,
+          name,
+        })),
         updateEntityArea: vi.fn(async () => undefined),
         updateEntityName: vi.fn(async () => undefined),
         deleteArea: vi.fn(async () => undefined),
@@ -115,4 +119,12 @@ runProviderPackageRegistrationTests({
     }),
   expectedStatus: 'implemented',
   supportedFeatures: ['rooms', 'lighting', 'mediaControls', 'cameraStreams', 'notifications'],
+  expectedRoomManagementCapabilities: {
+    discover: true,
+    create: true,
+    rename: true,
+    assign: true,
+    unassign: true,
+    delete: true,
+  },
 });

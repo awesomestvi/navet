@@ -79,6 +79,10 @@ describe('homeAssistantEntityRuntimeService', () => {
       subscribeCameraWebRtcOffer: vi.fn(async () => () => {}),
       addCameraWebRtcCandidate: vi.fn(async () => undefined),
       createArea: vi.fn(async () => ({ area_id: 'kitchen', name: 'Kitchen' })),
+      updateAreaName: vi.fn(async (areaId: string, name: string) => ({
+        area_id: areaId,
+        name,
+      })),
       updateEntityArea: vi.fn(async () => undefined),
       updateEntityName: vi.fn(async () => undefined),
       deleteArea: vi.fn(async () => undefined),

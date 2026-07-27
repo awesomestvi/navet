@@ -1,3 +1,4 @@
+import { createProviderRoomManagementCapabilities } from '@navet/core';
 import { describe, expect, it } from 'vitest';
 import { buildManageableRoomReferences } from '../provider-room-management';
 
@@ -31,7 +32,15 @@ describe('provider-room-management', () => {
             ],
           },
         ],
-        'home_assistant'
+        'home_assistant',
+        createProviderRoomManagementCapabilities('home_assistant', {
+          discover: true,
+          create: true,
+          rename: true,
+          assign: true,
+          unassign: true,
+          delete: true,
+        })
       )
     ).toEqual([
       {
@@ -41,6 +50,15 @@ describe('provider-room-management', () => {
         canAssign: true,
         canDelete: true,
         canOrder: true,
+        roomManagementCapabilities: {
+          providerId: 'home_assistant',
+          discover: true,
+          create: true,
+          rename: true,
+          assign: true,
+          unassign: true,
+          delete: true,
+        },
       },
     ]);
   });
@@ -67,8 +85,56 @@ describe('provider-room-management', () => {
             ],
           },
         ],
-        'homey'
+        'homey',
+        createProviderRoomManagementCapabilities('homey', {
+          discover: true,
+        })
       )
     ).toEqual([]);
+  });
+
+  it('does not claim unsupported provider administration actions', () => {
+    expect(
+      buildManageableRoomReferences(
+        [
+          {
+            id: 'kitchen',
+            canonicalId: 'kitchen',
+            name: 'Kitchen',
+            normalizedName: 'kitchen',
+            providerIds: ['homey'],
+            memberIds: [],
+            sources: [
+              {
+                providerId: 'homey',
+                nativeId: 'zone-1',
+                sourceType: 'provider_managed',
+                supportsOrdering: true,
+                supportsDeletion: false,
+              },
+            ],
+          },
+        ],
+        'homey',
+        createProviderRoomManagementCapabilities('homey', {
+          discover: true,
+        })
+      )
+    ).toEqual([
+      expect.objectContaining({
+        providerId: 'homey',
+        canAssign: false,
+        canDelete: false,
+        roomManagementCapabilities: expect.objectContaining({
+          providerId: 'homey',
+          discover: true,
+          create: false,
+          rename: false,
+          assign: false,
+          unassign: false,
+          delete: false,
+        }),
+      }),
+    ]);
   });
 });

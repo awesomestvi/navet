@@ -25,6 +25,7 @@ export const TEST_TIERS = {
       'packages/app/src/features/media/components/media-card/__tests__/use-media-artwork-resolution.test.tsx',
       'packages/app/src/features/security/components/camera-card/__tests__/camera-stream-player.test.tsx',
       'packages/app/src/features/rss/components/rss-feed-card/__tests__/use-rss-feed-items.test.tsx',
+      'packages/app/src/provider-package-registry.initialization.test.ts',
       'packages/app/src/stores/__tests__/integration-store.test.ts',
       'packages/app/src/services/__tests__/integration-runtime.service.test.ts',
       'packages/app/src/services/__tests__/integration-registry.service.test.ts',

@@ -129,11 +129,11 @@ describe('integrationStore', () => {
     ).toBe('openhab:LivingRoomLamp');
     expect(
       integrationStore.getState().providerNormalizedRoomsByProviderId.openhab?.[
-        'openhab:living room'
+        'openhab:LivingRoom'
       ]
     ).toMatchObject({
-      canonicalId: 'openhab:living room',
-      externalId: 'living room',
+      canonicalId: 'openhab:LivingRoom',
+      externalId: 'LivingRoom',
       providerId: 'openhab',
       memberIds: ['openhab:LivingRoomLamp'],
     });
@@ -483,8 +483,9 @@ describe('integrationStore', () => {
     expect(Object.values(integrationStore.getState().roomsByCanonicalId)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          canonicalId: 'home_assistant:unassigned',
+          canonicalId: 'home_assistant:kitchen',
           providerId: 'home_assistant',
+          memberIds: [],
         }),
         expect.objectContaining({
           canonicalId: 'homey:kitchen',
@@ -515,18 +516,11 @@ describe('integrationStore', () => {
             }),
           ]),
         }),
-        expect.objectContaining({
-          name: 'Unassigned',
-          sources: expect.arrayContaining([
-            expect.objectContaining({
-              providerId: 'home_assistant',
-              sourceType: 'derived',
-              supportsOrdering: false,
-            }),
-          ]),
-        }),
       ])
     );
+    expect(
+      integrationStore.getState().roomDescriptors.some((room) => room.name === 'Unassigned')
+    ).toBe(false);
     expect(integrationStore.getState().providerRuntime.home_assistant).toMatchObject({
       entitiesHydrated: true,
       registriesHydrated: false,
