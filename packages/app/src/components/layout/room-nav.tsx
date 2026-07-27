@@ -11,12 +11,14 @@ import {
 import { cn } from '@navet/app/components/ui/utils';
 import { getDashboardRoomLabel, isAllRooms } from '@navet/app/constants/rooms';
 import type { AllViewGrouping } from '@navet/app/features/dashboard';
+import { RoomSymbolIcon } from '@navet/app/features/dashboard/rooms/components/room-symbol-icon';
 import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
 import { integrationSelectors } from '@navet/app/stores/selectors';
 import {
   Check,
   ChevronDown,
   Edit3,
+  Layers3,
   LayoutGrid,
   type Lightbulb,
   Plus,
@@ -33,7 +35,7 @@ import {
   useState,
 } from 'react';
 import { getManageableRoomOrder } from './mobile-layout-helpers';
-import { getVisibleRoomNavRooms } from './room-nav.utils';
+import { getVisibleRoomNavRooms, type RoomNavigationGroup } from './room-nav.utils';
 import { RoomOrderDialog } from './room-order-dialog';
 
 const ROOM_NAV_GAP_PX = 8;
@@ -44,6 +46,9 @@ interface RoomNavProps {
   hiddenRoomNames?: string[];
   roomHiddenItemCounts?: Map<string, number>;
   roomItemCounts?: Map<string, number>;
+  dashboardEntityIds?: readonly string[];
+  dashboardVisibleEntityIds?: readonly string[];
+  roomGroups?: readonly RoomNavigationGroup[];
   activeRoom: string;
   onRoomChange: (room: string) => void;
   allViewGrouping?: AllViewGrouping;
@@ -79,6 +84,20 @@ interface RoomLayoutState {
   overflowRooms: string[];
 }
 
+type RoomNavEntry =
+  | {
+      id: string;
+      kind: 'room';
+      label: string;
+      room: string;
+    }
+  | {
+      id: string;
+      kind: 'group';
+      label: string;
+      group: RoomNavigationGroup;
+    };
+
 function areRoomListsEqual(left: string[], right: string[]) {
   return left.length === right.length && left.every((value, index) => value === right[index]);
 }
@@ -89,6 +108,74 @@ function getInlineWidth(widths: number[]) {
   }
 
   return widths.reduce((total, width) => total + width, 0) + ROOM_NAV_GAP_PX * (widths.length - 1);
+}
+
+function buildRoomNavEntries(
+  rooms: readonly string[],
+  groups: readonly RoomNavigationGroup[]
+): RoomNavEntry[] {
+  const availableRooms = new Set(rooms);
+  const groupByRoom = new Map<string, RoomNavigationGroup>();
+  const visibleGroups = groups
+    .map((group) => ({
+      ...group,
+      rooms: group.rooms.filter((room) => availableRooms.has(room)),
+    }))
+    .filter((group) => group.rooms.length > 0);
+
+  for (const group of visibleGroups) {
+    for (const room of group.rooms) {
+      if (!groupByRoom.has(room)) {
+        groupByRoom.set(room, group);
+      }
+    }
+  }
+
+  const emittedGroupIds = new Set<string>();
+  const emittedRoomIds = new Set<string>();
+  const entries: RoomNavEntry[] = [];
+  for (const room of rooms) {
+    const group = groupByRoom.get(room);
+    if (group) {
+      if (!emittedGroupIds.has(group.id)) {
+        emittedGroupIds.add(group.id);
+        entries.push({
+          id: `group:${group.id}`,
+          kind: 'group',
+          label: group.name,
+          group,
+        });
+      }
+      continue;
+    }
+    const roomEntryId = `room:${room}`;
+    if (emittedRoomIds.has(roomEntryId)) {
+      continue;
+    }
+    emittedRoomIds.add(roomEntryId);
+    entries.push({
+      id: roomEntryId,
+      kind: 'room',
+      label: room,
+      room,
+    });
+  }
+
+  return entries;
+}
+
+function getRoomGroupTriggerLabel(
+  group: RoomNavigationGroup,
+  activeRoom: string,
+  rememberedRoom: string | undefined
+) {
+  if (group.rooms.includes(activeRoom)) {
+    return activeRoom;
+  }
+  if (rememberedRoom && group.rooms.includes(rememberedRoom)) {
+    return rememberedRoom;
+  }
+  return group.rooms[0] ?? group.name;
 }
 
 function resolveRoomLayout({
@@ -174,6 +261,9 @@ export const RoomNav = memo(function RoomNav({
   hiddenRoomNames = [],
   roomHiddenItemCounts = new Map(),
   roomItemCounts = new Map(),
+  dashboardEntityIds,
+  dashboardVisibleEntityIds,
+  roomGroups = [],
   activeRoom,
   onRoomChange,
   allViewGrouping = 'custom',
@@ -198,6 +288,9 @@ export const RoomNav = memo(function RoomNav({
     visibleRooms: [],
     overflowRooms: [],
   });
+  const [lastSelectedRoomByGroupId, setLastSelectedRoomByGroupId] = useState<
+    Record<string, string>
+  >({});
   const roomListRef = useRef<HTMLDivElement>(null);
   const overflowMeasureRef = useRef<HTMLButtonElement>(null);
   const roomMeasureRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -214,6 +307,37 @@ export const RoomNav = memo(function RoomNav({
     () => getVisibleRoomNavRooms(rooms.filter((room) => !hiddenRoomNames.includes(room))),
     [hiddenRoomNames, rooms]
   );
+  const roomNavEntries = useMemo(
+    () => buildRoomNavEntries(availableRooms, roomGroups),
+    [availableRooms, roomGroups]
+  );
+  const roomNavEntryById = useMemo(
+    () => new Map(roomNavEntries.map((entry) => [entry.id, entry] as const)),
+    [roomNavEntries]
+  );
+  const roomGroupTriggerLabelById = useMemo(
+    () =>
+      new Map(
+        roomNavEntries.flatMap((entry) =>
+          entry.kind === 'group'
+            ? [
+                [
+                  entry.group.id,
+                  getRoomGroupTriggerLabel(
+                    entry.group,
+                    activeRoom,
+                    lastSelectedRoomByGroupId[entry.group.id]
+                  ),
+                ] as const,
+              ]
+            : []
+        )
+      ),
+    [activeRoom, lastSelectedRoomByGroupId, roomNavEntries]
+  );
+  const activeRoomNavEntryId =
+    roomNavEntries.find((entry) => entry.kind === 'group' && entry.group.rooms.includes(activeRoom))
+      ?.id ?? `room:${activeRoom}`;
   const textSecondary = surface.textSecondary;
   const inactiveBg = surface.subtleBg;
   const hoverBg = surface.hoverBg;
@@ -249,13 +373,17 @@ export const RoomNav = memo(function RoomNav({
     { label: t('dashboard.roomNav.grouping.type'), value: 'type' },
     { label: t('dashboard.roomNav.grouping.none'), value: 'none' },
   ];
-  const overflowRooms = roomLayout.overflowRooms;
-  const useOverflowMegamenu = overflowRooms.length > ROOM_NAV_MEGAMENU_THRESHOLD;
+  const overflowEntries = roomLayout.overflowRooms
+    .map((entryId) => roomNavEntryById.get(entryId))
+    .filter((entry): entry is RoomNavEntry => entry !== undefined);
+  const overflowRoomCount = overflowEntries.reduce(
+    (count, entry) => count + (entry.kind === 'group' ? entry.group.rooms.length : 1),
+    0
+  );
+  const useOverflowMegamenu = overflowRoomCount > ROOM_NAV_MEGAMENU_THRESHOLD;
   const overflowLabel = t(
-    overflowRooms.length === 1
-      ? 'dashboard.roomNav.overflow.one'
-      : 'dashboard.roomNav.overflow.other',
-    { count: overflowRooms.length }
+    overflowRoomCount === 1 ? 'dashboard.roomNav.overflow.one' : 'dashboard.roomNav.overflow.other',
+    { count: overflowRoomCount }
   );
 
   const updateRoomLayout = useCallback(() => {
@@ -263,16 +391,16 @@ export const RoomNav = memo(function RoomNav({
     const overflowWidth = overflowMeasureRef.current?.getBoundingClientRect().width ?? 0;
     const roomWidths = new Map<string, number>();
 
-    for (const room of availableRooms) {
-      const width = roomMeasureRefs.current[room]?.getBoundingClientRect().width ?? 0;
-      roomWidths.set(room, width);
+    for (const entry of roomNavEntries) {
+      const width = roomMeasureRefs.current[entry.id]?.getBoundingClientRect().width ?? 0;
+      roomWidths.set(entry.id, width);
     }
 
     const nextLayout = resolveRoomLayout({
-      activeRoom,
+      activeRoom: activeRoomNavEntryId,
       availableWidth: containerWidth,
       overflowWidth,
-      rooms: availableRooms,
+      rooms: roomNavEntries.map((entry) => entry.id),
       roomWidths,
     });
 
@@ -282,7 +410,21 @@ export const RoomNav = memo(function RoomNav({
         ? currentLayout
         : nextLayout
     );
-  }, [activeRoom, availableRooms]);
+  }, [activeRoomNavEntryId, roomGroupTriggerLabelById, roomNavEntries]);
+
+  useEffect(() => {
+    const activeGroupEntry = roomNavEntries.find(
+      (entry) => entry.kind === 'group' && entry.group.rooms.includes(activeRoom)
+    );
+    if (activeGroupEntry?.kind !== 'group') {
+      return;
+    }
+    setLastSelectedRoomByGroupId((current) =>
+      current[activeGroupEntry.group.id] === activeRoom
+        ? current
+        : { ...current, [activeGroupEntry.group.id]: activeRoom }
+    );
+  }, [activeRoom, roomNavEntries]);
 
   useEffect(() => {
     const frameId = window.requestAnimationFrame(updateRoomLayout);
@@ -304,18 +446,35 @@ export const RoomNav = memo(function RoomNav({
         <div className="flex items-center gap-1.5 md:gap-2">
           <div ref={roomListRef} className="min-w-0 flex-1 overflow-hidden">
             <div className="flex items-center gap-1 overflow-hidden">
-              {roomLayout.visibleRooms.map((room) => (
-                <RoomNavItem
-                  key={room}
-                  room={room}
-                  activeRoom={activeRoom}
-                  allLabel={allLabel}
-                  activeClassName={activeRoomItemClassName}
-                  inactiveClassName={inactiveRoomItemClassName}
-                  onRoomChange={onRoomChange}
-                />
-              ))}
-              {overflowRooms.length > 0 ? (
+              {roomLayout.visibleRooms.map((entryId) => {
+                const entry = roomNavEntryById.get(entryId);
+                if (!entry) {
+                  return null;
+                }
+                return entry.kind === 'group' ? (
+                  <RoomNavGroupItem
+                    key={entry.id}
+                    group={entry.group}
+                    triggerLabel={roomGroupTriggerLabelById.get(entry.group.id) ?? entry.group.name}
+                    activeRoom={activeRoom}
+                    activeClassName={activeRoomItemClassName}
+                    inactiveClassName={inactiveRoomItemClassName}
+                    dropdownItemClassName={dropdownItemClassName}
+                    onRoomChange={onRoomChange}
+                  />
+                ) : (
+                  <RoomNavItem
+                    key={entry.id}
+                    room={entry.room}
+                    activeRoom={activeRoom}
+                    allLabel={allLabel}
+                    activeClassName={activeRoomItemClassName}
+                    inactiveClassName={inactiveRoomItemClassName}
+                    onRoomChange={onRoomChange}
+                  />
+                );
+              })}
+              {overflowEntries.length > 0 ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <InteractivePill
@@ -354,20 +513,58 @@ export const RoomNav = memo(function RoomNav({
                           'grid min-h-0 grid-cols-2 gap-1 overflow-y-auto overscroll-contain pr-1 md:grid-cols-3 min-[1025px]:grid-cols-4'
                       )}
                     >
-                      {overflowRooms.map((room) => (
-                        <DropdownMenuItem
-                          key={room}
-                          className={dropdownItemClassName}
-                          onClick={() => onRoomChange(room)}
-                        >
-                          <span className="flex min-w-0 flex-1 items-center gap-2">
-                            <span className="truncate">
-                              {getDashboardRoomLabel(room, allLabel)}
+                      {overflowEntries.map((entry) =>
+                        entry.kind === 'group' ? (
+                          <div key={entry.id} className="col-span-full">
+                            <DropdownMenuLabel className="flex items-center gap-2 pb-1 pt-2 text-xs font-semibold">
+                              {entry.group.symbol ? (
+                                <span aria-hidden="true">
+                                  <RoomSymbolIcon
+                                    value={entry.group.symbol}
+                                    className="h-3.5 w-3.5"
+                                  />
+                                </span>
+                              ) : (
+                                <Layers3 className="h-3.5 w-3.5" aria-hidden="true" />
+                              )}
+                              <span className="truncate">{entry.group.name}</span>
+                            </DropdownMenuLabel>
+                            <div
+                              className={cn(
+                                useOverflowMegamenu
+                                  ? 'grid grid-cols-2 gap-1 md:grid-cols-3 min-[1025px]:grid-cols-4'
+                                  : 'space-y-1'
+                              )}
+                            >
+                              {entry.group.rooms.map((room) => (
+                                <DropdownMenuItem
+                                  key={room}
+                                  className={dropdownItemClassName}
+                                  onClick={() => onRoomChange(room)}
+                                >
+                                  <span className="min-w-0 flex-1 truncate">
+                                    {getDashboardRoomLabel(room, allLabel)}
+                                  </span>
+                                  {activeRoom === room ? <Check className="h-4 w-4" /> : null}
+                                </DropdownMenuItem>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <DropdownMenuItem
+                            key={entry.id}
+                            className={dropdownItemClassName}
+                            onClick={() => onRoomChange(entry.room)}
+                          >
+                            <span className="flex min-w-0 flex-1 items-center gap-2">
+                              <span className="truncate">
+                                {getDashboardRoomLabel(entry.room, allLabel)}
+                              </span>
                             </span>
-                          </span>
-                          {activeRoom === room ? <Check className="h-4 w-4" /> : null}
-                        </DropdownMenuItem>
-                      ))}
+                            {activeRoom === entry.room ? <Check className="h-4 w-4" /> : null}
+                          </DropdownMenuItem>
+                        )
+                      )}
                     </div>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -487,21 +684,46 @@ export const RoomNav = memo(function RoomNav({
 
       <div aria-hidden="true" className="pointer-events-none absolute -left-[10000px] top-0 -z-10">
         <div className="flex items-center gap-1.5 md:gap-2 whitespace-nowrap">
-          {availableRooms.map((room) => (
-            <RoomNavItem
-              key={`measure-${room}`}
-              ref={(node) => {
-                roomMeasureRefs.current[room] = node;
-              }}
-              room={room}
-              activeRoom="__measure__"
-              allLabel={allLabel}
-              activeClassName={activeRoomItemClassName}
-              inactiveClassName={inactiveRoomItemClassName}
-              tabIndex={-1}
-              onRoomChange={() => undefined}
-            />
-          ))}
+          {roomNavEntries.map((entry) =>
+            entry.kind === 'group' ? (
+              <InteractivePill
+                key={`measure-${entry.id}`}
+                ref={(node) => {
+                  roomMeasureRefs.current[entry.id] = node;
+                }}
+                size="small"
+                variant="ghost"
+                className={`room-nav-item shrink-0 whitespace-nowrap rounded-[22px] transition-colors ${inactiveRoomItemClassName}`}
+                tabIndex={-1}
+              >
+                {entry.group.symbol ? (
+                  <span aria-hidden="true">
+                    <RoomSymbolIcon value={entry.group.symbol} className="h-3.5 w-3.5" />
+                  </span>
+                ) : (
+                  <Layers3 className="h-3.5 w-3.5 opacity-70" aria-hidden="true" />
+                )}
+                <span>{roomGroupTriggerLabelById.get(entry.group.id) ?? entry.label}</span>
+                <span className="-mr-1 inline-flex px-1">
+                  <ChevronDown className="h-3.5 w-3.5 opacity-70" aria-hidden="true" />
+                </span>
+              </InteractivePill>
+            ) : (
+              <RoomNavItem
+                key={`measure-${entry.id}`}
+                ref={(node) => {
+                  roomMeasureRefs.current[entry.id] = node;
+                }}
+                room={entry.room}
+                activeRoom="__measure__"
+                allLabel={allLabel}
+                activeClassName={activeRoomItemClassName}
+                inactiveClassName={inactiveRoomItemClassName}
+                tabIndex={-1}
+                onRoomChange={() => undefined}
+              />
+            )
+          )}
           <InteractivePill
             ref={overflowMeasureRef}
             size="small"
@@ -524,6 +746,8 @@ export const RoomNav = memo(function RoomNav({
           manageableRooms={manageableRooms}
           roomHiddenItemCounts={roomHiddenItemCounts}
           roomEntityCounts={roomItemCounts}
+          dashboardEntityIds={dashboardEntityIds}
+          dashboardVisibleEntityIds={dashboardVisibleEntityIds}
           onRoomOrderChange={onRoomOrderChange}
           onHiddenRoomsChange={onHiddenRoomsChange}
         />
@@ -546,6 +770,97 @@ const RoomNavMenuButton = memo(
   )
 );
 
+const RoomNavGroupItem = memo(function RoomNavGroupItem({
+  group,
+  triggerLabel,
+  activeRoom,
+  activeClassName,
+  inactiveClassName,
+  dropdownItemClassName,
+  onRoomChange,
+}: {
+  group: RoomNavigationGroup;
+  triggerLabel: string;
+  activeRoom: string;
+  activeClassName: string;
+  inactiveClassName: string;
+  dropdownItemClassName: string;
+  onRoomChange: (room: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const isActive = group.rooms.includes(activeRoom);
+  const itemClassName = isActive ? activeClassName : inactiveClassName;
+
+  return (
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+      <DropdownMenuTrigger asChild>
+        <InteractivePill
+          active={isActive}
+          aria-current={isActive ? 'page' : undefined}
+          onClick={(event) => {
+            if (isRoomGroupChevronTarget(event.target) || activeRoom === triggerLabel) {
+              return;
+            }
+            onRoomChange(triggerLabel);
+          }}
+          onKeyDown={(event) => {
+            if (activeRoom !== triggerLabel && (event.key === 'Enter' || event.key === ' ')) {
+              event.preventDefault();
+              onRoomChange(triggerLabel);
+            }
+          }}
+          onPointerDown={(event) => {
+            if (!isRoomGroupChevronTarget(event.target) && activeRoom !== triggerLabel) {
+              event.preventDefault();
+            }
+          }}
+          size="small"
+          variant="ghost"
+          className={`room-nav-item shrink-0 whitespace-nowrap rounded-[22px] transition-colors ${itemClassName}`}
+        >
+          {group.symbol ? (
+            <span aria-hidden="true">
+              <RoomSymbolIcon value={group.symbol} className="h-3.5 w-3.5" />
+            </span>
+          ) : (
+            <Layers3 className="h-3.5 w-3.5 opacity-70" aria-hidden="true" />
+          )}
+          <span>{triggerLabel}</span>
+          <span data-room-group-chevron className="-mr-1 inline-flex px-1" aria-hidden="true">
+            <ChevronDown className="h-3.5 w-3.5 opacity-70" aria-hidden="true" />
+          </span>
+        </InteractivePill>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" sideOffset={8} className="w-60 overflow-visible p-1">
+        <DropdownMenuLabel className="flex items-center gap-2 pb-1 text-xs font-semibold">
+          {group.symbol ? (
+            <span aria-hidden="true">
+              <RoomSymbolIcon value={group.symbol} className="h-3.5 w-3.5" />
+            </span>
+          ) : (
+            <Layers3 className="h-3.5 w-3.5" aria-hidden="true" />
+          )}
+          <span className="truncate">{group.name}</span>
+        </DropdownMenuLabel>
+        {group.rooms.map((room) => (
+          <DropdownMenuItem
+            key={room}
+            className={dropdownItemClassName}
+            onClick={() => onRoomChange(room)}
+          >
+            <span className="min-w-0 flex-1 truncate">{room}</span>
+            {activeRoom === room ? <Check className="h-4 w-4" /> : null}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+});
+
+function isRoomGroupChevronTarget(target: EventTarget | null) {
+  return target instanceof Element && target.closest('[data-room-group-chevron]') !== null;
+}
+
 const RoomNavItem = memo(
   forwardRef<HTMLButtonElement, RoomNavItemProps>(function RoomNavItem(
     { room, activeRoom, allLabel, activeClassName, inactiveClassName, onRoomChange, ...props },
@@ -557,6 +872,7 @@ const RoomNavItem = memo(
       <InteractivePill
         ref={ref}
         active={isActive}
+        aria-current={isActive ? 'page' : undefined}
         onClick={() => onRoomChange?.(room)}
         size="small"
         variant="ghost"

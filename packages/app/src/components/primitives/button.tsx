@@ -12,7 +12,7 @@ import { useTheme } from '@navet/app/hooks/use-theme';
 import { type ButtonHTMLAttributes, forwardRef, type ReactNode } from 'react';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'subtle' | 'soft';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'subtle' | 'soft' | 'destructive';
   size?: 'default' | 'small' | 'compact';
   loading?: boolean;
   leading?: ReactNode;
@@ -62,39 +62,51 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   const variantClassName =
     variant === 'primary'
       ? 'border-transparent text-white'
-      : variant === 'secondary' || variant === 'subtle'
+      : variant === 'destructive'
         ? theme === 'light'
-          ? 'border-gray-200 bg-gray-100 text-gray-900 hover:bg-gray-200'
+          ? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
           : theme === 'black'
-            ? 'border-white/16 bg-black text-white hover:bg-zinc-900'
+            ? 'border-red-400/30 bg-red-500/12 text-red-200 hover:bg-red-500/20'
             : theme === 'glass'
-              ? 'border-white/16 bg-white/8 text-white hover:bg-white/12'
-              : 'border-zinc-800 bg-zinc-900 text-white hover:bg-zinc-800'
-        : variant === 'soft'
-          ? softVariantClassName
-          : theme === 'light'
-            ? 'border-transparent bg-transparent text-gray-900 hover:bg-gray-100'
+              ? 'border-red-400/30 bg-red-500/12 text-red-100 hover:bg-red-500/20'
+              : 'border-red-500/30 bg-red-500/10 text-red-200 hover:bg-red-500/16'
+        : variant === 'secondary' || variant === 'subtle'
+          ? theme === 'light'
+            ? 'border-gray-200 bg-gray-100 text-gray-900 hover:bg-gray-200'
             : theme === 'black'
-              ? 'border-transparent bg-transparent text-white hover:bg-zinc-900'
+              ? 'border-white/16 bg-black text-white hover:bg-zinc-900'
               : theme === 'glass'
-                ? 'border-transparent bg-transparent text-white hover:bg-white/10'
-                : 'border-transparent bg-transparent text-white hover:bg-zinc-800';
+                ? 'border-white/16 bg-white/8 text-white hover:bg-white/12'
+                : 'border-zinc-800 bg-zinc-900 text-white hover:bg-zinc-800'
+          : variant === 'soft'
+            ? softVariantClassName
+            : theme === 'light'
+              ? 'border-transparent bg-transparent text-gray-900 hover:bg-gray-100'
+              : theme === 'black'
+                ? 'border-transparent bg-transparent text-white hover:bg-zinc-900'
+                : theme === 'glass'
+                  ? 'border-transparent bg-transparent text-white hover:bg-white/10'
+                  : 'border-transparent bg-transparent text-white hover:bg-zinc-800';
   const disabledVariantClassName =
     variant === 'primary'
       ? theme === 'light'
         ? 'disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500'
         : 'disabled:border-white/12 disabled:bg-white/10 disabled:text-white/50'
-      : variant === 'ghost'
+      : variant === 'destructive'
         ? theme === 'light'
-          ? 'disabled:border-transparent disabled:bg-transparent disabled:text-slate-400'
-          : 'disabled:border-transparent disabled:bg-transparent disabled:text-white/35'
-        : theme === 'light'
-          ? 'disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500'
-          : theme === 'black'
-            ? 'disabled:border-white/12 disabled:bg-white/6 disabled:text-white/45'
-            : theme === 'glass'
+          ? 'disabled:border-red-100 disabled:bg-red-50/60 disabled:text-red-300'
+          : 'disabled:border-red-500/15 disabled:bg-red-500/5 disabled:text-red-200/35'
+        : variant === 'ghost'
+          ? theme === 'light'
+            ? 'disabled:border-transparent disabled:bg-transparent disabled:text-slate-400'
+            : 'disabled:border-transparent disabled:bg-transparent disabled:text-white/35'
+          : theme === 'light'
+            ? 'disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500'
+            : theme === 'black'
               ? 'disabled:border-white/12 disabled:bg-white/6 disabled:text-white/45'
-              : 'disabled:border-zinc-800 disabled:bg-zinc-900/80 disabled:text-zinc-500';
+              : theme === 'glass'
+                ? 'disabled:border-white/12 disabled:bg-white/6 disabled:text-white/45'
+                : 'disabled:border-zinc-800 disabled:bg-zinc-900/80 disabled:text-zinc-500';
 
   return (
     <button

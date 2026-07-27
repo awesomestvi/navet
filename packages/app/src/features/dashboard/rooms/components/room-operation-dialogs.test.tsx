@@ -92,12 +92,14 @@ describe('room workspace operation dialogs', () => {
 
   it('blocks an unsafe appearance URL and exposes wallpaper choices', () => {
     const onImageChange = vi.fn();
+    const onSymbolChange = vi.fn();
     renderWithProviders(
       <RoomAppearanceDialog
         isOpen
         onOpenChange={vi.fn()}
         title="Room appearance"
         symbolLabel="Room symbol"
+        symbolInputPlaceholder="Enter an icon name or emoji"
         wallpaperLabel="Room image"
         imagePreviewAlt="Room image preview"
         wallpaperOptionLabel={(id) => `Wallpaper ${id}`}
@@ -109,7 +111,7 @@ describe('room workspace operation dialogs', () => {
         confirmLabel="Apply appearance"
         symbolChoices={[{ value: 'K', label: 'Kitchen', glyph: 'K' }]}
         symbol="K"
-        onSymbolChange={vi.fn()}
+        onSymbolChange={onSymbolChange}
         image={{ kind: 'url', value: 'javascript:alert(1)' }}
         onImageChange={onImageChange}
         onReset={vi.fn()}
@@ -126,6 +128,11 @@ describe('room workspace operation dialogs', () => {
       kind: 'asset',
       value: 'builtin:aurora-haze-01',
     });
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Enter an icon name or emoji' }), {
+      target: { value: 'Smile' },
+    });
+    expect(onSymbolChange).toHaveBeenCalledWith('Smile');
   });
 
   it('shows deletion impact before invoking the destructive action', () => {

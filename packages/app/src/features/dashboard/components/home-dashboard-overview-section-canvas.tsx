@@ -77,18 +77,14 @@ export const SectionCanvas = memo(function SectionCanvas({
   return (
     <section
       ref={setDraggableNodeRef}
-      className={`relative rounded-3xl border p-4 transition-[border-color,box-shadow,background-color] ${
-        isActive
-          ? `${surface.borderStrong} ${surface.panel}`
-          : `${surface.border} ${surface.panelMuted}`
-      } ${isPreviewHidden ? 'opacity-0' : isDragging ? 'opacity-60' : ''}`}
+      className={`relative transition-opacity ${
+        isPreviewHidden ? 'opacity-0' : isDragging ? 'opacity-60' : ''
+      }`}
       style={{
         ...(isDragging ? undefined : getDndTransformStyle(transform, undefined)),
-        boxShadow: isActive
-          ? `0 0 0 2px ${accentColor}55, 0 22px 52px -34px ${accentColor}aa`
-          : undefined,
       }}
       onPointerDownCapture={() => onSelectSection(sectionId)}
+      data-dashboard-section-canvas="flat"
     >
       <div
         ref={setDroppableNodeRef}
@@ -98,10 +94,17 @@ export const SectionCanvas = memo(function SectionCanvas({
       <button
         type="button"
         aria-label={t('dashboard.edit.selectSection', { section: title })}
-        className="absolute inset-0 rounded-3xl"
+        className="absolute inset-0"
         onClick={() => onSelectSection(sectionId)}
       />
-      <div className="relative z-10 mb-4 flex items-center gap-3">
+      {isActive ? (
+        <span
+          aria-hidden="true"
+          className="absolute -left-2 top-1 h-7 w-0.5 rounded-full"
+          style={{ backgroundColor: accentColor }}
+        />
+      ) : null}
+      <div className="relative z-10 mb-3 flex items-center gap-3 px-1">
         <button
           type="button"
           aria-label={t('dashboard.edit.moveSection', { section: title })}

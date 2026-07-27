@@ -76,12 +76,35 @@ const SENSOR_DEVICE_CLASS_ICONS: Record<string, LucideIcon> = {
   window: PanelTop,
 };
 
+const NORMALIZED_ENTITY_TYPE_TO_DEVICE_TYPE: Record<string, string> = {
+  binary_sensor: 'sensors',
+  calendar: 'calendars',
+  camera: 'cameras',
+  cover: 'covers',
+  fan: 'fans',
+  grouped_sensor: 'grouped-sensors',
+  helper: 'helpers',
+  light: 'lights',
+  lock: 'locks',
+  media_player: 'media',
+  person: 'persons',
+  scene: 'scenes',
+  sensor: 'sensors',
+  switch: 'switches',
+  vacuum: 'vacuums',
+};
+
 export function getDeviceTypeIcon(type: string, deviceClass?: string): LucideIcon {
-  if (type === 'media' && deviceClass) {
+  const resolvedType = NORMALIZED_ENTITY_TYPE_TO_DEVICE_TYPE[type] ?? type;
+
+  if (resolvedType === 'media' && deviceClass) {
     return MEDIA_DEVICE_CLASS_ICONS[deviceClass.toLowerCase()] ?? Tv;
   }
-  if (type === 'sensors' && deviceClass) {
+  if (resolvedType === 'sensors' && deviceClass) {
     return SENSOR_DEVICE_CLASS_ICONS[deviceClass.toLowerCase()] ?? Gauge;
   }
-  return DEVICE_TYPE_ICONS[type] ?? Home;
+  if (resolvedType === 'energy') {
+    return Zap;
+  }
+  return DEVICE_TYPE_ICONS[resolvedType] ?? Home;
 }

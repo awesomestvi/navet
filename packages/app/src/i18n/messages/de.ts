@@ -462,8 +462,8 @@ export const deMessages = {
   'dashboard.roomsWorkspace.title': 'Räume',
   'dashboard.roomsWorkspace.description':
     'Organisiere Räume, Gruppen und Geräte, ohne die tägliche Navigation auszubremsen.',
-  'dashboard.roomsWorkspace.browseMode': 'Übersicht',
-  'dashboard.roomsWorkspace.manageMode': 'Verwalten',
+  'dashboard.roomsWorkspace.browseMode': 'Bearbeitung beenden',
+  'dashboard.roomsWorkspace.manageMode': 'Räume bearbeiten',
   'dashboard.roomsWorkspace.searchLabel': 'Räume suchen',
   'dashboard.roomsWorkspace.searchPlaceholder': 'Räume oder Gruppen suchen',
   'dashboard.roomsWorkspace.clearSearch': 'Suche löschen',
@@ -476,9 +476,11 @@ export const deMessages = {
   'dashboard.roomsWorkspace.roomDetailsTitle': 'Raumdetails',
   'dashboard.roomsWorkspace.roomDetailsDescription':
     'Ändere Name, Sichtbarkeit, Favoritenstatus und Erscheinungsbild des Raums.',
-  'dashboard.roomsWorkspace.devicesTitle': 'Geräte',
+  'dashboard.roomsWorkspace.devicesTitle': 'Geräte in diesem Raum',
   'dashboard.roomsWorkspace.devicesDescription':
-    'Wähle die Geräte aus, die zu diesem Raum gehören.',
+    'Prüfe zugewiesene Geräte oder füge ein weiteres Gerät hinzu.',
+  'dashboard.roomsWorkspace.dashboardDevices': 'Auf dem Dashboard',
+  'dashboard.roomsWorkspace.hiddenDevices': 'Ausgeblendet',
   'dashboard.roomsWorkspace.impactTitle': 'Änderungen prüfen',
   'dashboard.roomsWorkspace.impactDescription':
     'Prüfe vor dem Speichern, was sich in Navet und verbundenen Systemen ändert.',
@@ -495,10 +497,18 @@ export const deMessages = {
   'dashboard.roomsWorkspace.splitRoom': 'Raum aufteilen',
   'dashboard.roomsWorkspace.splitRoomDescription':
     'Verschiebe ausgewählte Geräte in einen neuen Raum.',
-  'dashboard.roomsWorkspace.manageDevices': 'Geräte verwalten',
+  'dashboard.roomsWorkspace.manageDevices': 'Geräte hinzufügen',
+  'dashboard.roomsWorkspace.addDevice': 'Hinzufügen',
+  'dashboard.roomsWorkspace.deviceActions': 'Aktionen',
+  'dashboard.roomsWorkspace.hideDevice': 'Ausblenden',
+  'dashboard.roomsWorkspace.showDevice': 'Anzeigen',
+  'dashboard.roomsWorkspace.moveDevice': 'Verschieben',
+  'dashboard.roomsWorkspace.removeDevice': 'Entfernen',
+  'dashboard.roomsWorkspace.notInRoom': 'Keinem Raum zugeordnet',
+  'dashboard.roomsWorkspace.deviceSearchPlaceholder': 'Geräte suchen',
   'dashboard.roomsWorkspace.reviewChanges': 'Änderungen prüfen',
   'dashboard.roomsWorkspace.saveChanges': 'Änderungen speichern',
-  'dashboard.roomsWorkspace.cancel': 'Abbrechen',
+  'dashboard.roomsWorkspace.cancel': 'Änderungen verwerfen',
   'dashboard.roomsWorkspace.back': 'Zurück',
   'dashboard.roomsWorkspace.retry': 'Erneut versuchen',
   'dashboard.roomsWorkspace.roomNameLabel': 'Raumname',
@@ -534,6 +544,12 @@ export const deMessages = {
   'dashboard.roomsWorkspace.noDevicesTitle': 'Noch keine Geräte vorhanden',
   'dashboard.roomsWorkspace.noDevicesDescription':
     'Füge Geräte hinzu, damit dieser Raum im Dashboard nützlich wird.',
+  'dashboard.roomsWorkspace.noDashboardDevicesTitle': 'Keine Geräte auf dem Dashboard',
+  'dashboard.roomsWorkspace.noDashboardDevicesDescription':
+    'Die diesem Raum zugewiesenen Geräte werden nicht auf dem Dashboard angezeigt.',
+  'dashboard.roomsWorkspace.noHiddenDevicesTitle': 'Keine ausgeblendeten Geräte',
+  'dashboard.roomsWorkspace.noHiddenDevicesDescription':
+    'Alle Geräte in diesem Raum werden auf dem Dashboard angezeigt.',
   'dashboard.roomsWorkspace.noChangesTitle': 'Nichts zu prüfen',
   'dashboard.roomsWorkspace.noChangesDescription':
     'Ändere zuerst einen Raum, eine Gruppe oder ein Gerät.',
@@ -541,7 +557,7 @@ export const deMessages = {
   'dashboard.roomsWorkspace.roomActivityTitle': 'Raumaktivität',
   'dashboard.roomsWorkspace.roomActionsTitle': 'Raumaktionen',
   'dashboard.roomsWorkspace.pendingChangesTitle': 'Ausstehende Änderungen',
-  'dashboard.roomsWorkspace.unsavedChanges': 'Nicht gespeicherte Änderungen',
+  'dashboard.roomsWorkspace.unsavedChanges': '{count} nicht gespeicherte Änderungen',
   'dashboard.roomsWorkspace.allChangesSaved': 'Alle Änderungen gespeichert',
   'dashboard.roomsWorkspace.closeSheet': 'Räume schließen',
   'dashboard.roomsWorkspace.status.loading': 'Räume werden geladen…',
@@ -602,6 +618,16 @@ export const deMessages = {
   'dashboard.roomsWorkspace.merge.action': 'Räume zusammenführen',
   'dashboard.roomsWorkspace.merge.success': 'Räume zusammengeführt',
   'dashboard.roomsWorkspace.merge.failure': 'Räume konnten nicht zusammengeführt werden',
+  'dashboard.roomsWorkspace.moveDeviceDialog.title': 'Gerät verschieben',
+  'dashboard.roomsWorkspace.moveDeviceDialog.description':
+    'Wähle einen anderen Raum für dieses Gerät. Die Änderung wird beim Speichern übernommen.',
+  'dashboard.roomsWorkspace.moveDeviceDialog.targetLabel': 'Zielraum',
+  'dashboard.roomsWorkspace.moveDeviceDialog.searchLabel': 'Räume durchsuchen',
+  'dashboard.roomsWorkspace.moveDeviceDialog.searchPlaceholder': 'Räume durchsuchen',
+  'dashboard.roomsWorkspace.moveDeviceDialog.emptyTitle': 'Keine anderen Räume',
+  'dashboard.roomsWorkspace.moveDeviceDialog.emptyDescription':
+    'Füge einen weiteren Raum hinzu, bevor du dieses Gerät verschiebst.',
+  'dashboard.roomsWorkspace.moveDeviceDialog.action': 'Gerät verschieben',
   'dashboard.roomsWorkspace.split.title': 'Raum aufteilen',
   'dashboard.roomsWorkspace.split.description':
     'Benenne den neuen Raum und wähle die Geräte aus, die dorthin verschoben werden.',

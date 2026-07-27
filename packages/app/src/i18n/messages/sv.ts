@@ -456,8 +456,8 @@ export const svMessages = {
   'dashboard.roomsWorkspace.title': 'Rum',
   'dashboard.roomsWorkspace.description':
     'Ordna rum, grupper och enheter utan att göra den dagliga navigeringen långsammare.',
-  'dashboard.roomsWorkspace.browseMode': 'Bläddra',
-  'dashboard.roomsWorkspace.manageMode': 'Hantera',
+  'dashboard.roomsWorkspace.browseMode': 'Avsluta redigering',
+  'dashboard.roomsWorkspace.manageMode': 'Redigera rum',
   'dashboard.roomsWorkspace.searchLabel': 'Sök rum',
   'dashboard.roomsWorkspace.searchPlaceholder': 'Sök efter rum eller grupper',
   'dashboard.roomsWorkspace.clearSearch': 'Rensa sökning',
@@ -470,8 +470,11 @@ export const svMessages = {
   'dashboard.roomsWorkspace.roomDetailsTitle': 'Rumsdetaljer',
   'dashboard.roomsWorkspace.roomDetailsDescription':
     'Uppdatera rummets namn, synlighet, favoritstatus och utseende.',
-  'dashboard.roomsWorkspace.devicesTitle': 'Enheter',
-  'dashboard.roomsWorkspace.devicesDescription': 'Välj vilka enheter som hör till det här rummet.',
+  'dashboard.roomsWorkspace.devicesTitle': 'Enheter i det här rummet',
+  'dashboard.roomsWorkspace.devicesDescription':
+    'Granska tilldelade enheter eller lägg till en annan enhet.',
+  'dashboard.roomsWorkspace.dashboardDevices': 'På dashboarden',
+  'dashboard.roomsWorkspace.hiddenDevices': 'Dolda',
   'dashboard.roomsWorkspace.impactTitle': 'Granska ändringar',
   'dashboard.roomsWorkspace.impactDescription':
     'Kontrollera vad som ändras i Navet och anslutna system innan du sparar.',
@@ -487,10 +490,18 @@ export const svMessages = {
     'Slå ihop det här rummet med ett annat och håll enheterna samlade.',
   'dashboard.roomsWorkspace.splitRoom': 'Dela rum',
   'dashboard.roomsWorkspace.splitRoomDescription': 'Flytta valda enheter till ett nytt rum.',
-  'dashboard.roomsWorkspace.manageDevices': 'Hantera enheter',
+  'dashboard.roomsWorkspace.manageDevices': 'Lägg till enheter',
+  'dashboard.roomsWorkspace.addDevice': 'Lägg till',
+  'dashboard.roomsWorkspace.deviceActions': 'Åtgärder',
+  'dashboard.roomsWorkspace.hideDevice': 'Dölj',
+  'dashboard.roomsWorkspace.showDevice': 'Visa',
+  'dashboard.roomsWorkspace.moveDevice': 'Flytta',
+  'dashboard.roomsWorkspace.removeDevice': 'Ta bort',
+  'dashboard.roomsWorkspace.notInRoom': 'Inte i ett rum',
+  'dashboard.roomsWorkspace.deviceSearchPlaceholder': 'Sök efter enheter',
   'dashboard.roomsWorkspace.reviewChanges': 'Granska ändringar',
   'dashboard.roomsWorkspace.saveChanges': 'Spara ändringar',
-  'dashboard.roomsWorkspace.cancel': 'Avbryt',
+  'dashboard.roomsWorkspace.cancel': 'Kasta ändringar',
   'dashboard.roomsWorkspace.back': 'Tillbaka',
   'dashboard.roomsWorkspace.retry': 'Försök igen',
   'dashboard.roomsWorkspace.roomNameLabel': 'Rummets namn',
@@ -525,6 +536,12 @@ export const svMessages = {
   'dashboard.roomsWorkspace.noDevicesTitle': 'Inga enheter här ännu',
   'dashboard.roomsWorkspace.noDevicesDescription':
     'Lägg till enheter för att göra rummet användbart i dashboarden.',
+  'dashboard.roomsWorkspace.noDashboardDevicesTitle': 'Inga enheter på dashboarden',
+  'dashboard.roomsWorkspace.noDashboardDevicesDescription':
+    'Enheter som är tilldelade det här rummet visas inte på dashboarden.',
+  'dashboard.roomsWorkspace.noHiddenDevicesTitle': 'Inga dolda enheter',
+  'dashboard.roomsWorkspace.noHiddenDevicesDescription':
+    'Alla enheter i det här rummet visas på dashboarden.',
   'dashboard.roomsWorkspace.noChangesTitle': 'Inget att granska',
   'dashboard.roomsWorkspace.noChangesDescription':
     'Gör först en ändring i ett rum, en grupp eller en enhet.',
@@ -532,7 +549,7 @@ export const svMessages = {
   'dashboard.roomsWorkspace.roomActivityTitle': 'Aktivitet i rummet',
   'dashboard.roomsWorkspace.roomActionsTitle': 'Rumsåtgärder',
   'dashboard.roomsWorkspace.pendingChangesTitle': 'Väntande ändringar',
-  'dashboard.roomsWorkspace.unsavedChanges': 'Osparade ändringar',
+  'dashboard.roomsWorkspace.unsavedChanges': '{count} osparade ändringar',
   'dashboard.roomsWorkspace.allChangesSaved': 'Alla ändringar har sparats',
   'dashboard.roomsWorkspace.closeSheet': 'Stäng rum',
   'dashboard.roomsWorkspace.status.loading': 'Läser in rum…',
@@ -592,6 +609,16 @@ export const svMessages = {
   'dashboard.roomsWorkspace.merge.action': 'Slå ihop rum',
   'dashboard.roomsWorkspace.merge.success': 'Rummen slogs ihop',
   'dashboard.roomsWorkspace.merge.failure': 'Rummen kunde inte slås ihop',
+  'dashboard.roomsWorkspace.moveDeviceDialog.title': 'Flytta enhet',
+  'dashboard.roomsWorkspace.moveDeviceDialog.description':
+    'Välj ett annat rum för enheten. Flytten genomförs när du sparar ändringarna.',
+  'dashboard.roomsWorkspace.moveDeviceDialog.targetLabel': 'Målrum',
+  'dashboard.roomsWorkspace.moveDeviceDialog.searchLabel': 'Sök rum',
+  'dashboard.roomsWorkspace.moveDeviceDialog.searchPlaceholder': 'Sök rum',
+  'dashboard.roomsWorkspace.moveDeviceDialog.emptyTitle': 'Inga andra rum',
+  'dashboard.roomsWorkspace.moveDeviceDialog.emptyDescription':
+    'Lägg till ett annat rum innan du flyttar enheten.',
+  'dashboard.roomsWorkspace.moveDeviceDialog.action': 'Flytta enhet',
   'dashboard.roomsWorkspace.split.title': 'Dela rum',
   'dashboard.roomsWorkspace.split.description':
     'Namnge det nya rummet och välj vilka enheter som ska flyttas dit.',

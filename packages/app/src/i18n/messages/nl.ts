@@ -554,8 +554,8 @@ export const nlMessages = {
   'dashboard.roomsWorkspace.title': 'Kamers',
   'dashboard.roomsWorkspace.description':
     'Orden kamers, groepen en apparaten zonder de dagelijkse navigatie te vertragen.',
-  'dashboard.roomsWorkspace.browseMode': 'Bekijken',
-  'dashboard.roomsWorkspace.manageMode': 'Beheren',
+  'dashboard.roomsWorkspace.browseMode': 'Klaar met bewerken',
+  'dashboard.roomsWorkspace.manageMode': 'Kamers bewerken',
   'dashboard.roomsWorkspace.searchLabel': 'Kamers zoeken',
   'dashboard.roomsWorkspace.searchPlaceholder': 'Kamers of groepen zoeken',
   'dashboard.roomsWorkspace.clearSearch': 'Zoekopdracht wissen',
@@ -568,8 +568,11 @@ export const nlMessages = {
   'dashboard.roomsWorkspace.roomDetailsTitle': 'Kamerdetails',
   'dashboard.roomsWorkspace.roomDetailsDescription':
     'Werk de naam, zichtbaarheid, favorietstatus en uitstraling van de kamer bij.',
-  'dashboard.roomsWorkspace.devicesTitle': 'Apparaten',
-  'dashboard.roomsWorkspace.devicesDescription': 'Kies de apparaten die bij deze kamer horen.',
+  'dashboard.roomsWorkspace.devicesTitle': 'Apparaten in deze kamer',
+  'dashboard.roomsWorkspace.devicesDescription':
+    'Bekijk toegewezen apparaten of voeg een ander apparaat toe.',
+  'dashboard.roomsWorkspace.dashboardDevices': 'Op het dashboard',
+  'dashboard.roomsWorkspace.hiddenDevices': 'Verborgen',
   'dashboard.roomsWorkspace.impactTitle': 'Wijzigingen controleren',
   'dashboard.roomsWorkspace.impactDescription':
     'Controleer wat er in Navet en verbonden systemen verandert voordat je opslaat.',
@@ -586,10 +589,18 @@ export const nlMessages = {
   'dashboard.roomsWorkspace.splitRoom': 'Kamer splitsen',
   'dashboard.roomsWorkspace.splitRoomDescription':
     'Verplaats geselecteerde apparaten naar een nieuwe kamer.',
-  'dashboard.roomsWorkspace.manageDevices': 'Apparaten beheren',
+  'dashboard.roomsWorkspace.manageDevices': 'Apparaten toevoegen',
+  'dashboard.roomsWorkspace.addDevice': 'Toevoegen',
+  'dashboard.roomsWorkspace.deviceActions': 'Acties',
+  'dashboard.roomsWorkspace.hideDevice': 'Verbergen',
+  'dashboard.roomsWorkspace.showDevice': 'Tonen',
+  'dashboard.roomsWorkspace.moveDevice': 'Verplaatsen',
+  'dashboard.roomsWorkspace.removeDevice': 'Verwijderen',
+  'dashboard.roomsWorkspace.notInRoom': 'Niet in een kamer',
+  'dashboard.roomsWorkspace.deviceSearchPlaceholder': 'Apparaten zoeken',
   'dashboard.roomsWorkspace.reviewChanges': 'Wijzigingen controleren',
   'dashboard.roomsWorkspace.saveChanges': 'Wijzigingen opslaan',
-  'dashboard.roomsWorkspace.cancel': 'Annuleren',
+  'dashboard.roomsWorkspace.cancel': 'Wijzigingen negeren',
   'dashboard.roomsWorkspace.back': 'Terug',
   'dashboard.roomsWorkspace.retry': 'Opnieuw proberen',
   'dashboard.roomsWorkspace.roomNameLabel': 'Kamernaam',
@@ -625,13 +636,19 @@ export const nlMessages = {
   'dashboard.roomsWorkspace.noDevicesTitle': 'Hier zijn nog geen apparaten',
   'dashboard.roomsWorkspace.noDevicesDescription':
     'Voeg apparaten toe om deze kamer nuttig te maken in het dashboard.',
+  'dashboard.roomsWorkspace.noDashboardDevicesTitle': 'Geen apparaten op het dashboard',
+  'dashboard.roomsWorkspace.noDashboardDevicesDescription':
+    'Apparaten die aan deze kamer zijn toegewezen, worden niet op het dashboard getoond.',
+  'dashboard.roomsWorkspace.noHiddenDevicesTitle': 'Geen verborgen apparaten',
+  'dashboard.roomsWorkspace.noHiddenDevicesDescription':
+    'Alle apparaten in deze kamer worden op het dashboard getoond.',
   'dashboard.roomsWorkspace.noChangesTitle': 'Niets om te controleren',
   'dashboard.roomsWorkspace.noChangesDescription': 'Wijzig eerst een kamer, groep of apparaat.',
   'dashboard.roomsWorkspace.currentRoomTitle': 'Huidige kamer',
   'dashboard.roomsWorkspace.roomActivityTitle': 'Kameractiviteit',
   'dashboard.roomsWorkspace.roomActionsTitle': 'Kameracties',
   'dashboard.roomsWorkspace.pendingChangesTitle': 'Openstaande wijzigingen',
-  'dashboard.roomsWorkspace.unsavedChanges': 'Niet-opgeslagen wijzigingen',
+  'dashboard.roomsWorkspace.unsavedChanges': '{count} niet-opgeslagen wijzigingen',
   'dashboard.roomsWorkspace.allChangesSaved': 'Alle wijzigingen zijn opgeslagen',
   'dashboard.roomsWorkspace.closeSheet': 'Kamers sluiten',
   'dashboard.roomsWorkspace.status.loading': 'Kamers laden…',
@@ -691,6 +708,16 @@ export const nlMessages = {
   'dashboard.roomsWorkspace.merge.action': 'Kamers samenvoegen',
   'dashboard.roomsWorkspace.merge.success': 'Kamers samengevoegd',
   'dashboard.roomsWorkspace.merge.failure': 'Kamers konden niet worden samengevoegd',
+  'dashboard.roomsWorkspace.moveDeviceDialog.title': 'Apparaat verplaatsen',
+  'dashboard.roomsWorkspace.moveDeviceDialog.description':
+    'Kies een andere kamer. De verplaatsing wordt toegepast wanneer je opslaat.',
+  'dashboard.roomsWorkspace.moveDeviceDialog.targetLabel': 'Doelkamer',
+  'dashboard.roomsWorkspace.moveDeviceDialog.searchLabel': 'Kamers zoeken',
+  'dashboard.roomsWorkspace.moveDeviceDialog.searchPlaceholder': 'Kamers zoeken',
+  'dashboard.roomsWorkspace.moveDeviceDialog.emptyTitle': 'Geen andere kamers',
+  'dashboard.roomsWorkspace.moveDeviceDialog.emptyDescription':
+    'Voeg een andere kamer toe voordat je dit apparaat verplaatst.',
+  'dashboard.roomsWorkspace.moveDeviceDialog.action': 'Apparaat verplaatsen',
   'dashboard.roomsWorkspace.split.title': 'Kamer splitsen',
   'dashboard.roomsWorkspace.split.description':
     'Geef de nieuwe kamer een naam en kies de apparaten die je wilt verplaatsen.',

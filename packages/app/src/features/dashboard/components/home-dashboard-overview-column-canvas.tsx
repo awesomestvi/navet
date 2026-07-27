@@ -71,12 +71,11 @@ export function ColumnCanvas({
         </div>
       </div>
       <div
-        className={`space-y-4 rounded-[30px] px-0 py-0 md:py-1 transition-[border-color,box-shadow,background-color] ${
-          isOver && isColumnDrag ? surface.panel : surface.panelMuted
-        }`}
+        className="space-y-4 transition-shadow"
         style={{
           boxShadow: isOver && isColumnDrag ? `0 0 0 1px ${accentColor}44` : undefined,
         }}
+        data-dashboard-column-canvas="flat"
       >
         {children}
       </div>

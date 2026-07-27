@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { RoomAppearanceDialog } from './room-appearance-dialog';
 import { RoomDeleteImpactDialog } from './room-delete-impact-dialog';
 import { RoomNameDialog } from './room-name-dialog';
+import { ROOM_SYMBOL_ICON_CHOICES } from './room-symbol-icon';
 import { RoomTargetDialog } from './room-target-dialog';
 
 const meta = {
@@ -105,7 +106,7 @@ function MergeTargetStory() {
 
 function AppearanceStory() {
   const [isOpen, setIsOpen] = useState(true);
-  const [symbol, setSymbol] = useState<string | null>('K');
+  const [symbol, setSymbol] = useState<string | null>('CookingPot');
   const [image, setImage] = useState<RoomWorkspaceImageReferenceV2 | null>({
     kind: 'asset',
     value: 'builtin:aurora-haze-01',
@@ -119,6 +120,9 @@ function AppearanceStory() {
       description="Use a symbol and image that make this room recognizable at a glance."
       symbolLabel="Room symbol"
       symbolDescription="Choose a clear symbol for navigation and compact views."
+      symbolInputPlaceholder="Enter an icon name or emoji"
+      symbolInputHelp="Enter a Lucide icon name or paste an emoji."
+      lucideLibraryLabel="Browse Lucide icons"
       wallpaperLabel="Room image"
       wallpaperDescription="The image stays contained so room details remain easy to read."
       imagePreviewAlt="Kitchen room image"
@@ -130,16 +134,10 @@ function AppearanceStory() {
       resetLabel="Reset"
       cancelLabel="Cancel"
       confirmLabel="Apply appearance"
-      symbolChoices={[
-        { value: 'K', label: 'Kitchen', glyph: 'K' },
-        { value: '⌂', label: 'Home', glyph: '⌂' },
-        { value: '☕', label: 'Coffee', glyph: '☕' },
-        { value: '◇', label: 'Dining', glyph: '◇' },
-        { value: '○', label: 'Calm', glyph: '○' },
-        { value: '✦', label: 'Favorite', glyph: '✦' },
-        { value: '▦', label: 'Utility', glyph: '▦' },
-        { value: '△', label: 'Loft', glyph: '△' },
-      ]}
+      symbolChoices={ROOM_SYMBOL_ICON_CHOICES.slice(0, 8).map((choice) => ({
+        ...choice,
+        label: choice.value,
+      }))}
       symbol={symbol}
       onSymbolChange={setSymbol}
       image={image}

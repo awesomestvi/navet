@@ -458,8 +458,8 @@ export const ptMessages = {
   'dashboard.roomsWorkspace.title': 'Cômodos',
   'dashboard.roomsWorkspace.description':
     'Organize cômodos, grupos e dispositivos sem deixar a navegação diária mais lenta.',
-  'dashboard.roomsWorkspace.browseMode': 'Explorar',
-  'dashboard.roomsWorkspace.manageMode': 'Gerenciar',
+  'dashboard.roomsWorkspace.browseMode': 'Concluir edição',
+  'dashboard.roomsWorkspace.manageMode': 'Editar cômodos',
   'dashboard.roomsWorkspace.searchLabel': 'Buscar cômodos',
   'dashboard.roomsWorkspace.searchPlaceholder': 'Buscar cômodos ou grupos',
   'dashboard.roomsWorkspace.clearSearch': 'Limpar busca',
@@ -472,9 +472,11 @@ export const ptMessages = {
   'dashboard.roomsWorkspace.roomDetailsTitle': 'Detalhes do cômodo',
   'dashboard.roomsWorkspace.roomDetailsDescription':
     'Atualize nome, visibilidade, status de favorito e aparência do cômodo.',
-  'dashboard.roomsWorkspace.devicesTitle': 'Dispositivos',
+  'dashboard.roomsWorkspace.devicesTitle': 'Dispositivos neste cômodo',
   'dashboard.roomsWorkspace.devicesDescription':
-    'Escolha os dispositivos que pertencem a este cômodo.',
+    'Revise os dispositivos atribuídos ou adicione outro dispositivo.',
+  'dashboard.roomsWorkspace.dashboardDevices': 'No painel',
+  'dashboard.roomsWorkspace.hiddenDevices': 'Ocultos',
   'dashboard.roomsWorkspace.impactTitle': 'Revisar alterações',
   'dashboard.roomsWorkspace.impactDescription':
     'Confira o que mudará no Navet e nos sistemas conectados antes de salvar.',
@@ -491,10 +493,18 @@ export const ptMessages = {
   'dashboard.roomsWorkspace.splitRoom': 'Dividir cômodo',
   'dashboard.roomsWorkspace.splitRoomDescription':
     'Mova os dispositivos selecionados para um novo cômodo.',
-  'dashboard.roomsWorkspace.manageDevices': 'Gerenciar dispositivos',
+  'dashboard.roomsWorkspace.manageDevices': 'Adicionar dispositivos',
+  'dashboard.roomsWorkspace.addDevice': 'Adicionar',
+  'dashboard.roomsWorkspace.deviceActions': 'Ações',
+  'dashboard.roomsWorkspace.hideDevice': 'Ocultar',
+  'dashboard.roomsWorkspace.showDevice': 'Mostrar',
+  'dashboard.roomsWorkspace.moveDevice': 'Mover',
+  'dashboard.roomsWorkspace.removeDevice': 'Remover',
+  'dashboard.roomsWorkspace.notInRoom': 'Sem cômodo',
+  'dashboard.roomsWorkspace.deviceSearchPlaceholder': 'Buscar dispositivos',
   'dashboard.roomsWorkspace.reviewChanges': 'Revisar alterações',
   'dashboard.roomsWorkspace.saveChanges': 'Salvar alterações',
-  'dashboard.roomsWorkspace.cancel': 'Cancelar',
+  'dashboard.roomsWorkspace.cancel': 'Descartar alterações',
   'dashboard.roomsWorkspace.back': 'Voltar',
   'dashboard.roomsWorkspace.retry': 'Tentar novamente',
   'dashboard.roomsWorkspace.roomNameLabel': 'Nome do cômodo',
@@ -530,6 +540,12 @@ export const ptMessages = {
   'dashboard.roomsWorkspace.noDevicesTitle': 'Ainda não há dispositivos aqui',
   'dashboard.roomsWorkspace.noDevicesDescription':
     'Adicione dispositivos para tornar este cômodo útil no painel.',
+  'dashboard.roomsWorkspace.noDashboardDevicesTitle': 'Nenhum dispositivo no painel',
+  'dashboard.roomsWorkspace.noDashboardDevicesDescription':
+    'Os dispositivos atribuídos a este cômodo não são exibidos no painel.',
+  'dashboard.roomsWorkspace.noHiddenDevicesTitle': 'Nenhum dispositivo oculto',
+  'dashboard.roomsWorkspace.noHiddenDevicesDescription':
+    'Todos os dispositivos deste cômodo são exibidos no painel.',
   'dashboard.roomsWorkspace.noChangesTitle': 'Nada para revisar',
   'dashboard.roomsWorkspace.noChangesDescription':
     'Faça primeiro uma alteração em um cômodo, grupo ou dispositivo.',
@@ -537,7 +553,7 @@ export const ptMessages = {
   'dashboard.roomsWorkspace.roomActivityTitle': 'Atividade do cômodo',
   'dashboard.roomsWorkspace.roomActionsTitle': 'Ações do cômodo',
   'dashboard.roomsWorkspace.pendingChangesTitle': 'Alterações pendentes',
-  'dashboard.roomsWorkspace.unsavedChanges': 'Alterações não salvas',
+  'dashboard.roomsWorkspace.unsavedChanges': '{count} alterações não salvas',
   'dashboard.roomsWorkspace.allChangesSaved': 'Todas as alterações foram salvas',
   'dashboard.roomsWorkspace.closeSheet': 'Fechar cômodos',
   'dashboard.roomsWorkspace.status.loading': 'Carregando cômodos…',
@@ -596,6 +612,16 @@ export const ptMessages = {
   'dashboard.roomsWorkspace.merge.action': 'Mesclar cômodos',
   'dashboard.roomsWorkspace.merge.success': 'Cômodos mesclados',
   'dashboard.roomsWorkspace.merge.failure': 'Não foi possível mesclar os cômodos',
+  'dashboard.roomsWorkspace.moveDeviceDialog.title': 'Mover dispositivo',
+  'dashboard.roomsWorkspace.moveDeviceDialog.description':
+    'Escolha outro cômodo. A mudança será aplicada quando você salvar.',
+  'dashboard.roomsWorkspace.moveDeviceDialog.targetLabel': 'Cômodo de destino',
+  'dashboard.roomsWorkspace.moveDeviceDialog.searchLabel': 'Buscar cômodos',
+  'dashboard.roomsWorkspace.moveDeviceDialog.searchPlaceholder': 'Buscar cômodos',
+  'dashboard.roomsWorkspace.moveDeviceDialog.emptyTitle': 'Nenhum outro cômodo',
+  'dashboard.roomsWorkspace.moveDeviceDialog.emptyDescription':
+    'Adicione outro cômodo antes de mover este dispositivo.',
+  'dashboard.roomsWorkspace.moveDeviceDialog.action': 'Mover dispositivo',
   'dashboard.roomsWorkspace.split.title': 'Dividir cômodo',
   'dashboard.roomsWorkspace.split.description':
     'Dê um nome ao novo cômodo e escolha os dispositivos que serão movidos.',

@@ -462,8 +462,8 @@ export const frMessages = {
   'dashboard.roomsWorkspace.title': 'Pièces',
   'dashboard.roomsWorkspace.description':
     'Organisez les pièces, les groupes et les appareils sans ralentir la navigation quotidienne.',
-  'dashboard.roomsWorkspace.browseMode': 'Parcourir',
-  'dashboard.roomsWorkspace.manageMode': 'Gérer',
+  'dashboard.roomsWorkspace.browseMode': 'Terminer la modification',
+  'dashboard.roomsWorkspace.manageMode': 'Modifier les pièces',
   'dashboard.roomsWorkspace.searchLabel': 'Rechercher des pièces',
   'dashboard.roomsWorkspace.searchPlaceholder': 'Rechercher des pièces ou des groupes',
   'dashboard.roomsWorkspace.clearSearch': 'Effacer la recherche',
@@ -476,9 +476,11 @@ export const frMessages = {
   'dashboard.roomsWorkspace.roomDetailsTitle': 'Détails de la pièce',
   'dashboard.roomsWorkspace.roomDetailsDescription':
     'Modifiez le nom, la visibilité, le statut de favori et l’apparence de la pièce.',
-  'dashboard.roomsWorkspace.devicesTitle': 'Appareils',
+  'dashboard.roomsWorkspace.devicesTitle': 'Appareils de cette pièce',
   'dashboard.roomsWorkspace.devicesDescription':
-    'Choisissez les appareils qui appartiennent à cette pièce.',
+    'Vérifiez les appareils attribués ou ajoutez un autre appareil.',
+  'dashboard.roomsWorkspace.dashboardDevices': 'Sur le tableau de bord',
+  'dashboard.roomsWorkspace.hiddenDevices': 'Masqués',
   'dashboard.roomsWorkspace.impactTitle': 'Vérifier les modifications',
   'dashboard.roomsWorkspace.impactDescription':
     'Vérifiez les effets dans Navet et les systèmes connectés avant d’enregistrer.',
@@ -495,10 +497,18 @@ export const frMessages = {
   'dashboard.roomsWorkspace.splitRoom': 'Diviser la pièce',
   'dashboard.roomsWorkspace.splitRoomDescription':
     'Déplacez les appareils sélectionnés vers une nouvelle pièce.',
-  'dashboard.roomsWorkspace.manageDevices': 'Gérer les appareils',
+  'dashboard.roomsWorkspace.manageDevices': 'Ajouter des appareils',
+  'dashboard.roomsWorkspace.addDevice': 'Ajouter',
+  'dashboard.roomsWorkspace.deviceActions': 'Actions',
+  'dashboard.roomsWorkspace.hideDevice': 'Masquer',
+  'dashboard.roomsWorkspace.showDevice': 'Afficher',
+  'dashboard.roomsWorkspace.moveDevice': 'Déplacer',
+  'dashboard.roomsWorkspace.removeDevice': 'Retirer',
+  'dashboard.roomsWorkspace.notInRoom': 'Dans aucune pièce',
+  'dashboard.roomsWorkspace.deviceSearchPlaceholder': 'Rechercher des appareils',
   'dashboard.roomsWorkspace.reviewChanges': 'Vérifier les modifications',
   'dashboard.roomsWorkspace.saveChanges': 'Enregistrer les modifications',
-  'dashboard.roomsWorkspace.cancel': 'Annuler',
+  'dashboard.roomsWorkspace.cancel': 'Ignorer les modifications',
   'dashboard.roomsWorkspace.back': 'Retour',
   'dashboard.roomsWorkspace.retry': 'Réessayer',
   'dashboard.roomsWorkspace.roomNameLabel': 'Nom de la pièce',
@@ -534,6 +544,12 @@ export const frMessages = {
   'dashboard.roomsWorkspace.noDevicesTitle': 'Aucun appareil pour le moment',
   'dashboard.roomsWorkspace.noDevicesDescription':
     'Ajoutez des appareils pour rendre cette pièce utile dans le tableau de bord.',
+  'dashboard.roomsWorkspace.noDashboardDevicesTitle': 'Aucun appareil sur le tableau de bord',
+  'dashboard.roomsWorkspace.noDashboardDevicesDescription':
+    'Les appareils attribués à cette pièce ne sont pas affichés sur le tableau de bord.',
+  'dashboard.roomsWorkspace.noHiddenDevicesTitle': 'Aucun appareil masqué',
+  'dashboard.roomsWorkspace.noHiddenDevicesDescription':
+    'Tous les appareils de cette pièce sont affichés sur le tableau de bord.',
   'dashboard.roomsWorkspace.noChangesTitle': 'Rien à vérifier',
   'dashboard.roomsWorkspace.noChangesDescription':
     'Modifiez d’abord une pièce, un groupe ou un appareil.',
@@ -541,7 +557,7 @@ export const frMessages = {
   'dashboard.roomsWorkspace.roomActivityTitle': 'Activité de la pièce',
   'dashboard.roomsWorkspace.roomActionsTitle': 'Actions de la pièce',
   'dashboard.roomsWorkspace.pendingChangesTitle': 'Modifications en attente',
-  'dashboard.roomsWorkspace.unsavedChanges': 'Modifications non enregistrées',
+  'dashboard.roomsWorkspace.unsavedChanges': '{count} modifications non enregistrées',
   'dashboard.roomsWorkspace.allChangesSaved': 'Toutes les modifications sont enregistrées',
   'dashboard.roomsWorkspace.closeSheet': 'Fermer les pièces',
   'dashboard.roomsWorkspace.status.loading': 'Chargement des pièces…',
@@ -600,6 +616,16 @@ export const frMessages = {
   'dashboard.roomsWorkspace.merge.action': 'Fusionner les pièces',
   'dashboard.roomsWorkspace.merge.success': 'Pièces fusionnées',
   'dashboard.roomsWorkspace.merge.failure': 'Impossible de fusionner les pièces',
+  'dashboard.roomsWorkspace.moveDeviceDialog.title': 'Déplacer l’appareil',
+  'dashboard.roomsWorkspace.moveDeviceDialog.description':
+    'Choisissez une autre pièce. Le déplacement sera appliqué lorsque vous enregistrerez.',
+  'dashboard.roomsWorkspace.moveDeviceDialog.targetLabel': 'Pièce de destination',
+  'dashboard.roomsWorkspace.moveDeviceDialog.searchLabel': 'Rechercher des pièces',
+  'dashboard.roomsWorkspace.moveDeviceDialog.searchPlaceholder': 'Rechercher des pièces',
+  'dashboard.roomsWorkspace.moveDeviceDialog.emptyTitle': 'Aucune autre pièce',
+  'dashboard.roomsWorkspace.moveDeviceDialog.emptyDescription':
+    'Ajoutez une autre pièce avant de déplacer cet appareil.',
+  'dashboard.roomsWorkspace.moveDeviceDialog.action': 'Déplacer l’appareil',
   'dashboard.roomsWorkspace.split.title': 'Diviser la pièce',
   'dashboard.roomsWorkspace.split.description':
     'Nommez la nouvelle pièce et choisissez les appareils à y déplacer.',

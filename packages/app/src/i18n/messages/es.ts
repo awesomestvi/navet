@@ -459,8 +459,8 @@ export const esMessages = {
   'dashboard.roomsWorkspace.title': 'Habitaciones',
   'dashboard.roomsWorkspace.description':
     'Organiza habitaciones, grupos y dispositivos sin ralentizar la navegación diaria.',
-  'dashboard.roomsWorkspace.browseMode': 'Explorar',
-  'dashboard.roomsWorkspace.manageMode': 'Gestionar',
+  'dashboard.roomsWorkspace.browseMode': 'Terminar edición',
+  'dashboard.roomsWorkspace.manageMode': 'Editar habitaciones',
   'dashboard.roomsWorkspace.searchLabel': 'Buscar habitaciones',
   'dashboard.roomsWorkspace.searchPlaceholder': 'Buscar habitaciones o grupos',
   'dashboard.roomsWorkspace.clearSearch': 'Borrar búsqueda',
@@ -473,9 +473,11 @@ export const esMessages = {
   'dashboard.roomsWorkspace.roomDetailsTitle': 'Detalles de la habitación',
   'dashboard.roomsWorkspace.roomDetailsDescription':
     'Actualiza el nombre, la visibilidad, el estado de favorito y la apariencia.',
-  'dashboard.roomsWorkspace.devicesTitle': 'Dispositivos',
+  'dashboard.roomsWorkspace.devicesTitle': 'Dispositivos de esta habitación',
   'dashboard.roomsWorkspace.devicesDescription':
-    'Elige los dispositivos que pertenecen a esta habitación.',
+    'Revisa los dispositivos asignados o añade otro dispositivo.',
+  'dashboard.roomsWorkspace.dashboardDevices': 'En el panel',
+  'dashboard.roomsWorkspace.hiddenDevices': 'Ocultos',
   'dashboard.roomsWorkspace.impactTitle': 'Revisar cambios',
   'dashboard.roomsWorkspace.impactDescription':
     'Comprueba qué cambiará en Navet y en los sistemas conectados antes de guardar.',
@@ -492,10 +494,18 @@ export const esMessages = {
   'dashboard.roomsWorkspace.splitRoom': 'Dividir habitación',
   'dashboard.roomsWorkspace.splitRoomDescription':
     'Mueve los dispositivos seleccionados a una habitación nueva.',
-  'dashboard.roomsWorkspace.manageDevices': 'Gestionar dispositivos',
+  'dashboard.roomsWorkspace.manageDevices': 'Añadir dispositivos',
+  'dashboard.roomsWorkspace.addDevice': 'Añadir',
+  'dashboard.roomsWorkspace.deviceActions': 'Acciones',
+  'dashboard.roomsWorkspace.hideDevice': 'Ocultar',
+  'dashboard.roomsWorkspace.showDevice': 'Mostrar',
+  'dashboard.roomsWorkspace.moveDevice': 'Mover',
+  'dashboard.roomsWorkspace.removeDevice': 'Quitar',
+  'dashboard.roomsWorkspace.notInRoom': 'Sin habitación',
+  'dashboard.roomsWorkspace.deviceSearchPlaceholder': 'Buscar dispositivos',
   'dashboard.roomsWorkspace.reviewChanges': 'Revisar cambios',
   'dashboard.roomsWorkspace.saveChanges': 'Guardar cambios',
-  'dashboard.roomsWorkspace.cancel': 'Cancelar',
+  'dashboard.roomsWorkspace.cancel': 'Descartar cambios',
   'dashboard.roomsWorkspace.back': 'Atrás',
   'dashboard.roomsWorkspace.retry': 'Intentar de nuevo',
   'dashboard.roomsWorkspace.roomNameLabel': 'Nombre de la habitación',
@@ -531,6 +541,12 @@ export const esMessages = {
   'dashboard.roomsWorkspace.noDevicesTitle': 'Aún no hay dispositivos aquí',
   'dashboard.roomsWorkspace.noDevicesDescription':
     'Añade dispositivos para que esta habitación sea útil en el panel.',
+  'dashboard.roomsWorkspace.noDashboardDevicesTitle': 'No hay dispositivos en el panel',
+  'dashboard.roomsWorkspace.noDashboardDevicesDescription':
+    'Los dispositivos asignados a esta habitación no se muestran en el panel.',
+  'dashboard.roomsWorkspace.noHiddenDevicesTitle': 'No hay dispositivos ocultos',
+  'dashboard.roomsWorkspace.noHiddenDevicesDescription':
+    'Todos los dispositivos de esta habitación se muestran en el panel.',
   'dashboard.roomsWorkspace.noChangesTitle': 'Nada que revisar',
   'dashboard.roomsWorkspace.noChangesDescription':
     'Haz primero un cambio en una habitación, grupo o dispositivo.',
@@ -538,7 +554,7 @@ export const esMessages = {
   'dashboard.roomsWorkspace.roomActivityTitle': 'Actividad de la habitación',
   'dashboard.roomsWorkspace.roomActionsTitle': 'Acciones de la habitación',
   'dashboard.roomsWorkspace.pendingChangesTitle': 'Cambios pendientes',
-  'dashboard.roomsWorkspace.unsavedChanges': 'Cambios sin guardar',
+  'dashboard.roomsWorkspace.unsavedChanges': '{count} cambios sin guardar',
   'dashboard.roomsWorkspace.allChangesSaved': 'Todos los cambios están guardados',
   'dashboard.roomsWorkspace.closeSheet': 'Cerrar habitaciones',
   'dashboard.roomsWorkspace.status.loading': 'Cargando habitaciones…',
@@ -597,6 +613,16 @@ export const esMessages = {
   'dashboard.roomsWorkspace.merge.action': 'Combinar habitaciones',
   'dashboard.roomsWorkspace.merge.success': 'Habitaciones combinadas',
   'dashboard.roomsWorkspace.merge.failure': 'No se pudieron combinar las habitaciones',
+  'dashboard.roomsWorkspace.moveDeviceDialog.title': 'Mover dispositivo',
+  'dashboard.roomsWorkspace.moveDeviceDialog.description':
+    'Elige otra habitación para este dispositivo. El cambio se aplicará al guardar.',
+  'dashboard.roomsWorkspace.moveDeviceDialog.targetLabel': 'Habitación de destino',
+  'dashboard.roomsWorkspace.moveDeviceDialog.searchLabel': 'Buscar habitaciones',
+  'dashboard.roomsWorkspace.moveDeviceDialog.searchPlaceholder': 'Buscar habitaciones',
+  'dashboard.roomsWorkspace.moveDeviceDialog.emptyTitle': 'No hay otras habitaciones',
+  'dashboard.roomsWorkspace.moveDeviceDialog.emptyDescription':
+    'Añade otra habitación antes de mover este dispositivo.',
+  'dashboard.roomsWorkspace.moveDeviceDialog.action': 'Mover dispositivo',
   'dashboard.roomsWorkspace.split.title': 'Dividir habitación',
   'dashboard.roomsWorkspace.split.description':
     'Nombra la nueva habitación y elige los dispositivos que quieres mover.',

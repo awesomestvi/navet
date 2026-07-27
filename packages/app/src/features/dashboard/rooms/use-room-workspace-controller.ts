@@ -1,4 +1,5 @@
 import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
+import { useDashboardEntitiesStore } from '@navet/app/features/dashboard/stores/dashboard-entities-store';
 import { useI18n, useIntegrationStore } from '@navet/app/hooks';
 import { getProviderRoomManagementCapabilities } from '@navet/app/provider-runtime-registry';
 import { executeIntegrationRoomMutationPlan } from '@navet/app/services/integration-admin.service';
@@ -57,6 +58,8 @@ export interface RoomWorkspaceControllerInput {
   manageableRooms: PlatformManageableRoomReference[];
   roomHiddenItemCounts: Map<string, number>;
   roomEntityCounts: Map<string, number>;
+  dashboardEntityIds?: readonly string[];
+  dashboardVisibleEntityIds?: readonly string[];
   onRoomOrderChange?: (rooms: string[]) => void;
   onHiddenRoomsChange?: (rooms: string[]) => void;
 }
@@ -64,10 +67,14 @@ export interface RoomWorkspaceControllerInput {
 export type RoomWorkspacePendingOperation =
   | { kind: 'create-room'; groupId?: RoomWorkspaceGroupId }
   | { kind: 'create-group' }
-  | { kind: 'rename-room'; roomId: RoomWorkspaceRoomId }
   | { kind: 'rename-group'; groupId: RoomWorkspaceGroupId }
   | { kind: 'appearance-group'; groupId: RoomWorkspaceGroupId }
   | { kind: 'merge-room'; sourceRoomId: RoomWorkspaceRoomId }
+  | {
+      kind: 'move-device';
+      deviceId: string;
+      sourceRoomId: RoomWorkspaceRoomId;
+    }
   | { kind: 'split-room'; sourceRoomId: RoomWorkspaceRoomId }
   | { kind: 'appearance'; roomId: RoomWorkspaceRoomId }
   | { kind: 'delete-room'; roomId: RoomWorkspaceRoomId }
@@ -82,6 +89,30 @@ interface PendingProviderRoomDeletion {
 const EMPTY_PROVIDER_ROOMS: Record<string, NavetProviderRoom> = {};
 const EMPTY_PROVIDER_ENTITIES: Record<string, NavetEntity> = {};
 const EMPTY_ROOM_OVERRIDES: Record<string, string> = {};
+
+function isEntityShownOnDashboard(
+  entity: NavetEntity,
+  hiddenEntityIds: ReadonlySet<string>,
+  shownSensorEntityIds: ReadonlySet<string>
+): boolean {
+  if (hiddenEntityIds.has(entity.canonicalId)) {
+    return false;
+  }
+
+  if (entity.type === 'sensor' || entity.type === 'binary_sensor') {
+    return shownSensorEntityIds.has(entity.canonicalId);
+  }
+
+  return true;
+}
+
+function setContainsEntityId(entity: NavetEntity, entityIds: ReadonlySet<string>): boolean {
+  return (
+    entityIds.has(entity.canonicalId) ||
+    entityIds.has(entity.id) ||
+    entityIds.has(entity.externalId)
+  );
+}
 
 export interface RoomWorkspaceSaveOutcome {
   kind: 'idle' | 'saved' | 'partial' | 'error';
@@ -98,6 +129,7 @@ export interface RoomWorkspaceController {
   dismissOperation: () => void;
   confirmNameOperation: (name: string) => void;
   confirmMerge: (targetRoomId: string) => void;
+  confirmDeviceMove: (targetRoomId: string) => void;
   confirmAppearance: (input: {
     symbol: string | null;
     image: RoomWorkspaceImageReferenceV2 | null;
@@ -204,6 +236,8 @@ function areWorkspacesEqual(left: RoomWorkspaceV2 | null, right: RoomWorkspaceV2
 function buildWorkspaceChanges({
   committedWorkspace,
   draftWorkspace,
+  entitiesByCanonicalId,
+  committedRoomIdByEntityId,
   pendingPlacements,
   pendingProviderDeletions,
   saveOutcome,
@@ -211,6 +245,8 @@ function buildWorkspaceChanges({
 }: {
   committedWorkspace: RoomWorkspaceV2 | null;
   draftWorkspace: RoomWorkspaceV2 | null;
+  entitiesByCanonicalId: Record<string, NavetEntity>;
+  committedRoomIdByEntityId: ReadonlyMap<string, RoomWorkspaceRoomId | null>;
   pendingPlacements: Record<string, RoomWorkspaceRoomId | null>;
   pendingProviderDeletions: PendingProviderRoomDeletion[];
   saveOutcome: RoomWorkspaceSaveOutcome;
@@ -248,6 +284,47 @@ function buildWorkspaceChanges({
   const localChangeCount = createdCount + editedCount + removedCount + (groupChanged ? 1 : 0);
   const providerChangeCount =
     providerRenameCount + placementCount + pendingProviderDeletions.length;
+  const providerChangeDetails: string[] = [];
+
+  for (const room of draftWorkspace.rooms) {
+    const previous = committedRooms.get(room.id);
+    const sourceRef = room.sourceRefs.length === 1 ? room.sourceRefs[0] : null;
+    if (
+      previous !== undefined &&
+      previous.displayName !== room.displayName &&
+      sourceRef !== null &&
+      getProviderRoomManagementCapabilities(sourceRef.providerId).rename
+    ) {
+      providerChangeDetails.push(
+        `${providerLabel(sourceRef.providerId)} · ${previous.displayName} → ${room.displayName}`
+      );
+    }
+  }
+
+  for (const [entityId, targetRoomId] of Object.entries(pendingPlacements)) {
+    const entity = entitiesByCanonicalId[entityId];
+    if (!entity) {
+      continue;
+    }
+    const previousRoomId = committedRoomIdByEntityId.get(entityId) ?? null;
+    const previousRoomName = previousRoomId
+      ? (committedRooms.get(previousRoomId)?.displayName ?? previousRoomId)
+      : t('dashboard.roomsWorkspace.notInRoom');
+    const targetRoomName = targetRoomId
+      ? (draftRooms.get(targetRoomId)?.displayName ?? targetRoomId)
+      : t('dashboard.roomsWorkspace.notInRoom');
+    providerChangeDetails.push(
+      `${providerLabel(entity.providerId)} · ${entity.name}: ${previousRoomName} → ${targetRoomName}`
+    );
+  }
+
+  for (const deletion of pendingProviderDeletions) {
+    providerChangeDetails.push(
+      `${providerLabel(deletion.sourceRef.providerId)} · ${deletion.room.displayName}: ${t(
+        'dashboard.roomsWorkspace.deleteRoom'
+      )}`
+    );
+  }
 
   if (localChangeCount > 0) {
     changes.push({
@@ -272,6 +349,7 @@ function buildWorkspaceChanges({
           : 'dashboard.roomsWorkspace.counts.providerChanges.other',
         { count: providerChangeCount }
       ),
+      details: providerChangeDetails,
       tone: pendingProviderDeletions.length > 0 ? 'critical' : 'neutral',
     });
   }
@@ -290,6 +368,48 @@ function buildWorkspaceChanges({
   return changes;
 }
 
+function countWorkspaceChanges({
+  committedWorkspace,
+  draftWorkspace,
+  pendingPlacements,
+  pendingProviderDeletions,
+}: {
+  committedWorkspace: RoomWorkspaceV2 | null;
+  draftWorkspace: RoomWorkspaceV2 | null;
+  pendingPlacements: Record<string, RoomWorkspaceRoomId | null>;
+  pendingProviderDeletions: PendingProviderRoomDeletion[];
+}): number {
+  if (!draftWorkspace) {
+    return 0;
+  }
+
+  const committedRooms = new Map(
+    (committedWorkspace?.rooms ?? []).map((room) => [room.id, room] as const)
+  );
+  const draftRoomIds = new Set(draftWorkspace.rooms.map((room) => room.id));
+  const createdCount = draftWorkspace.rooms.filter((room) => !committedRooms.has(room.id)).length;
+  const removedCount = (committedWorkspace?.rooms ?? []).filter(
+    (room) => !draftRoomIds.has(room.id)
+  ).length;
+  const editedCount = draftWorkspace.rooms.filter((room) => {
+    const previous = committedRooms.get(room.id);
+    return previous && JSON.stringify(previous) !== JSON.stringify(room);
+  }).length;
+  const groupChangeCount =
+    JSON.stringify(committedWorkspace?.groups ?? []) === JSON.stringify(draftWorkspace.groups)
+      ? 0
+      : 1;
+
+  return (
+    createdCount +
+    removedCount +
+    editedCount +
+    groupChangeCount +
+    Object.keys(pendingPlacements).length +
+    pendingProviderDeletions.length
+  );
+}
+
 function appendProviderStep(
   stepsByProvider: Map<IntegrationProviderId, PlatformRoomMutationStep[]>,
   providerId: IntegrationProviderId,
@@ -303,8 +423,9 @@ function appendProviderStep(
 export function useRoomWorkspaceController({
   isOpen,
   manageableRooms,
-  roomHiddenItemCounts,
   roomEntityCounts,
+  dashboardEntityIds,
+  dashboardVisibleEntityIds,
   onRoomOrderChange,
   onHiddenRoomsChange,
 }: RoomWorkspaceControllerInput): RoomWorkspaceController {
@@ -318,6 +439,10 @@ export function useRoomWorkspaceController({
   const roomIdsByEntityId = useEntityRoomOverridesStore((state) =>
     isOpen ? state.roomIdsByEntityId : EMPTY_ROOM_OVERRIDES
   );
+  const hiddenDashboardEntityIds = useDashboardEntitiesStore((state) => state.hiddenEntityIds);
+  const shownSensorEntityIds = useDashboardEntitiesStore((state) => state.shownSensorEntityIds);
+  const hideDashboardEntity = useDashboardEntitiesStore((state) => state.hideEntity);
+  const showDashboardEntity = useDashboardEntitiesStore((state) => state.showEntity);
   const setRoomOverride = useEntityRoomOverridesStore((state) => state.setRoomOverride);
   const clearRoomOverride = useEntityRoomOverridesStore((state) => state.clearRoomOverride);
   const initializeWorkspace = useRoomWorkspaceStore((state) => state.initialize);
@@ -345,6 +470,9 @@ export function useRoomWorkspaceController({
   );
   const [pendingPlacements, setPendingPlacements] = useState<
     Record<string, RoomWorkspaceRoomId | null>
+  >({});
+  const [roomNameDrafts, setRoomNameDrafts] = useState<
+    Partial<Record<RoomWorkspaceRoomId, string>>
   >({});
   const [pendingProviderDeletions, setPendingProviderDeletions] = useState<
     PendingProviderRoomDeletion[]
@@ -379,6 +507,7 @@ export function useRoomWorkspaceController({
     setDraftWorkspace(workspace);
     setSelectedRoomId(firstRoom?.id ?? null);
     setPendingPlacements({});
+    setRoomNameDrafts({});
     setPendingProviderDeletions([]);
     setPendingOperation(null);
     setSaveOutcome({ kind: 'idle' });
@@ -395,6 +524,10 @@ export function useRoomWorkspaceController({
   const draftIndex = useMemo(
     () => (draftWorkspace ? buildRoomWorkspaceIndexV2(draftWorkspace) : null),
     [draftWorkspace]
+  );
+  const committedIndex = useMemo(
+    () => (committedWorkspace ? buildRoomWorkspaceIndexV2(committedWorkspace) : null),
+    [committedWorkspace]
   );
   const entities = useMemo(
     () =>
@@ -423,6 +556,19 @@ export function useRoomWorkspaceController({
     }
     return roomIds;
   }, [draftIndex, entities, pendingPlacements, roomIdsByEntityId]);
+  const committedRoomIdByEntityId = useMemo(() => {
+    const roomIds = new Map<string, RoomWorkspaceRoomId | null>();
+    if (!committedIndex) {
+      return roomIds;
+    }
+    for (const entity of entities) {
+      roomIds.set(
+        entity.canonicalId,
+        resolveEntityWorkspaceRoomId(entity, committedIndex, roomIdsByEntityId)
+      );
+    }
+    return roomIds;
+  }, [committedIndex, entities, roomIdsByEntityId]);
 
   const deviceCountByRoomId = useMemo(() => {
     const counts = new Map<RoomWorkspaceRoomId, number>();
@@ -473,15 +619,17 @@ export function useRoomWorkspaceController({
     }
 
     return filteredRooms.map((room) => {
-      const count = deviceCountByRoomId.get(room.id) ?? roomEntityCounts.get(room.displayName) ?? 0;
-      const hiddenCount = roomHiddenItemCounts.get(room.displayName) ?? 0;
+      const count = roomEntityCounts.get(room.displayName) ?? deviceCountByRoomId.get(room.id) ?? 0;
       const hasDuplicateName =
         (roomNameCounts.get(normalizeSearchValue(room.displayName)) ?? 0) > 1;
-      const nameValidationMessage = hasDuplicateName
-        ? t('dashboard.roomsWorkspace.validation.duplicateRoom', {
-            name: room.displayName,
-          })
-        : undefined;
+      const nameValidationMessage =
+        roomNameDrafts[room.id] !== undefined && !roomNameDrafts[room.id]?.trim()
+          ? t('dashboard.roomsWorkspace.validation.nameRequired')
+          : hasDuplicateName
+            ? t('dashboard.roomsWorkspace.validation.duplicateRoom', {
+                name: room.displayName,
+              })
+            : undefined;
       const reviewIssue = draftWorkspace.reviewIssues.find(
         (issue) => issue.placeholderRoomId === room.id || issue.candidateRoomIds.includes(room.id)
       );
@@ -492,6 +640,7 @@ export function useRoomWorkspaceController({
       return {
         id: room.id,
         name: room.displayName,
+        nameDraft: roomNameDrafts[room.id] ?? room.displayName,
         groupId: room.metadata.groupId ?? null,
         symbol: room.metadata.symbol,
         image: room.metadata.image?.value,
@@ -508,9 +657,7 @@ export function useRoomWorkspaceController({
           ? t('dashboard.roomsWorkspace.reviewChanges')
           : nameValidationMessage
             ? nameValidationMessage
-            : hiddenCount > 0
-              ? t('dashboard.roomNav.reorderDialog.hiddenCount', { count: hiddenCount })
-              : undefined,
+            : undefined,
         statusLabel:
           room.metadata.visibility === 'hidden'
             ? t('dashboard.roomNav.reorderDialog.roomHidden')
@@ -530,9 +677,18 @@ export function useRoomWorkspaceController({
     filteredRooms,
     manageableRoomById,
     roomEntityCounts,
-    roomHiddenItemCounts,
+    roomNameDrafts,
     t,
   ]);
+  const hasValidationErrors = useMemo(() => {
+    if (Object.values(roomNameDrafts).some((name) => !name?.trim())) {
+      return true;
+    }
+    const names = (draftWorkspace?.rooms ?? []).map((room) =>
+      normalizeSearchValue(room.displayName)
+    );
+    return names.some((name) => !name) || new Set(names).size !== names.length;
+  }, [draftWorkspace, roomNameDrafts]);
 
   const groupViewModels = useMemo<RoomWorkspaceGroupViewModel[]>(() => {
     if (!draftWorkspace) {
@@ -560,6 +716,22 @@ export function useRoomWorkspaceController({
   }, [collapsedGroupIds, draftWorkspace, filteredRooms, orderedRooms, queryValue, t]);
 
   const deviceQueryValue = normalizeSearchValue(deviceQuery);
+  const hiddenDashboardEntityIdSet = useMemo(
+    () => new Set(hiddenDashboardEntityIds),
+    [hiddenDashboardEntityIds]
+  );
+  const shownSensorEntityIdSet = useMemo(
+    () => new Set(shownSensorEntityIds),
+    [shownSensorEntityIds]
+  );
+  const dashboardEntityIdSet = useMemo(
+    () => (dashboardEntityIds ? new Set(dashboardEntityIds) : null),
+    [dashboardEntityIds]
+  );
+  const dashboardVisibleEntityIdSet = useMemo(
+    () => (dashboardVisibleEntityIds ? new Set(dashboardVisibleEntityIds) : null),
+    [dashboardVisibleEntityIds]
+  );
   const deviceViewModels = useMemo<RoomWorkspaceDeviceViewModel[]>(
     () =>
       entities
@@ -573,15 +745,45 @@ export function useRoomWorkspaceController({
             normalizeSearchValue(providerLabel(entity.providerId)).includes(deviceQueryValue)
           );
         })
-        .map((entity) => ({
-          id: entity.canonicalId,
-          name: entity.name,
-          description: providerLabel(entity.providerId),
-          stateLabel: entity.primaryState === null ? undefined : String(entity.primaryState),
-          roomId: resolvedRoomIdByEntityId.get(entity.canonicalId) ?? null,
-          isUnavailable: entity.availability === 'unavailable',
-        })),
-    [deviceQueryValue, entities, resolvedRoomIdByEntityId]
+        .map((entity) => {
+          const roomId = resolvedRoomIdByEntityId.get(entity.canonicalId) ?? null;
+          const isDashboardDevice =
+            dashboardEntityIdSet === null || setContainsEntityId(entity, dashboardEntityIdSet);
+          return {
+            id: entity.canonicalId,
+            name: entity.name,
+            entityType: entity.type,
+            deviceClass:
+              typeof entity.attributes.device_class === 'string'
+                ? entity.attributes.device_class
+                : undefined,
+            description: providerLabel(entity.providerId),
+            stateLabel: entity.primaryState === null ? undefined : String(entity.primaryState),
+            roomId,
+            roomName: roomId ? draftIndex?.roomById.get(roomId)?.displayName : undefined,
+            isUnavailable: entity.availability === 'unavailable',
+            isDashboardDevice,
+            isShownOnDashboard:
+              isDashboardDevice &&
+              (dashboardVisibleEntityIdSet
+                ? setContainsEntityId(entity, dashboardVisibleEntityIdSet)
+                : isEntityShownOnDashboard(
+                    entity,
+                    hiddenDashboardEntityIdSet,
+                    shownSensorEntityIdSet
+                  )),
+          };
+        }),
+    [
+      dashboardEntityIdSet,
+      dashboardVisibleEntityIdSet,
+      deviceQueryValue,
+      draftIndex,
+      entities,
+      hiddenDashboardEntityIdSet,
+      resolvedRoomIdByEntityId,
+      shownSensorEntityIdSet,
+    ]
   );
 
   const selectedDeviceIds = useMemo(
@@ -598,6 +800,8 @@ export function useRoomWorkspaceController({
       buildWorkspaceChanges({
         committedWorkspace,
         draftWorkspace,
+        entitiesByCanonicalId,
+        committedRoomIdByEntityId,
         pendingPlacements,
         pendingProviderDeletions,
         saveOutcome,
@@ -605,7 +809,9 @@ export function useRoomWorkspaceController({
       }),
     [
       committedWorkspace,
+      committedRoomIdByEntityId,
       draftWorkspace,
+      entitiesByCanonicalId,
       pendingPlacements,
       pendingProviderDeletions,
       saveOutcome,
@@ -615,7 +821,24 @@ export function useRoomWorkspaceController({
   const hasUnsavedChanges =
     !areWorkspacesEqual(committedWorkspace, draftWorkspace) ||
     Object.keys(pendingPlacements).length > 0 ||
+    Object.keys(roomNameDrafts).length > 0 ||
     pendingProviderDeletions.length > 0;
+  const unsavedChangeCount = useMemo(
+    () =>
+      countWorkspaceChanges({
+        committedWorkspace,
+        draftWorkspace,
+        pendingPlacements,
+        pendingProviderDeletions,
+      }) + Object.keys(roomNameDrafts).length,
+    [
+      committedWorkspace,
+      draftWorkspace,
+      pendingPlacements,
+      pendingProviderDeletions,
+      roomNameDrafts,
+    ]
+  );
 
   const dismissOperation = useCallback(() => setPendingOperation(null), []);
 
@@ -666,12 +889,6 @@ export function useRoomWorkspaceController({
         case 'rename-group': {
           setDraftWorkspace(
             renameRoomWorkspaceGroupV2(draftWorkspace, pendingOperation.groupId, name)
-          );
-          break;
-        }
-        case 'rename-room': {
-          setDraftWorkspace(
-            renameRoomWorkspaceRoomV2(draftWorkspace, pendingOperation.roomId, name)
           );
           break;
         }
@@ -728,6 +945,34 @@ export function useRoomWorkspaceController({
       setSaveOutcome({ kind: 'idle' });
     },
     [draftIndex, draftWorkspace, entities, pendingOperation, roomIdsByEntityId]
+  );
+
+  const confirmDeviceMove = useCallback(
+    (targetRoomIdValue: string) => {
+      if (!draftWorkspace || pendingOperation?.kind !== 'move-device') {
+        return;
+      }
+      const targetRoomId = targetRoomIdValue as RoomWorkspaceRoomId;
+      if (
+        !draftIndex?.roomById.has(targetRoomId) ||
+        targetRoomId === pendingOperation.sourceRoomId
+      ) {
+        return;
+      }
+
+      setPendingPlacements((current) => {
+        const next = { ...current };
+        if ((committedRoomIdByEntityId.get(pendingOperation.deviceId) ?? null) === targetRoomId) {
+          delete next[pendingOperation.deviceId];
+        } else {
+          next[pendingOperation.deviceId] = targetRoomId;
+        }
+        return next;
+      });
+      setPendingOperation(null);
+      setSaveOutcome({ kind: 'idle' });
+    },
+    [committedRoomIdByEntityId, draftIndex, draftWorkspace, pendingOperation]
   );
 
   const confirmAppearance = useCallback(
@@ -850,7 +1095,7 @@ export function useRoomWorkspaceController({
   );
 
   const handleSave = useCallback(async () => {
-    if (!draftWorkspace || isSaving) {
+    if (!draftWorkspace || isSaving || hasValidationErrors) {
       return;
     }
     const normalizedRoomNames = draftWorkspace.rooms.map((room) =>
@@ -1031,14 +1276,17 @@ export function useRoomWorkspaceController({
     setCommittedWorkspace(savedWorkspace);
     setDraftWorkspace(savedWorkspace);
     setPendingPlacements({});
+    setRoomNameDrafts({});
     setPendingProviderDeletions([]);
     setSaveOutcome({ kind: 'saved' });
+    setStage('room-details');
     setIsSaving(false);
   }, [
     clearRoomOverride,
     committedWorkspace,
     draftWorkspace,
     entitiesByCanonicalId,
+    hasValidationErrors,
     isSaving,
     onHiddenRoomsChange,
     onRoomOrderChange,
@@ -1049,19 +1297,31 @@ export function useRoomWorkspaceController({
     setRoomOverride,
   ]);
 
-  const handleCancel = useCallback(() => {
+  const handleDiscard = useCallback(() => {
+    const committedRooms = committedWorkspace
+      ? getRoomWorkspaceRoomsInDisplayOrderV2(committedWorkspace)
+      : [];
+    const nextSelectedRoomId =
+      committedRooms.find((room) => room.id === selectedRoomId)?.id ??
+      committedRooms[0]?.id ??
+      null;
     setDraftWorkspace(committedWorkspace);
+    setSelectedRoomId(nextSelectedRoomId);
     setPendingPlacements({});
+    setRoomNameDrafts({});
     setPendingProviderDeletions([]);
     setPendingOperation(null);
     setSaveOutcome({ kind: 'idle' });
-    setMode('browse');
-    setStage('structure');
-  }, [committedWorkspace]);
+    setStage(nextSelectedRoomId ? 'room-details' : 'structure');
+  }, [committedWorkspace, selectedRoomId]);
 
   const actions = useMemo<RoomWorkspaceActions>(
     () => ({
       onModeChange: (nextMode) => {
+        if (nextMode === 'browse' && hasUnsavedChanges) {
+          setStage('impact-review');
+          return;
+        }
         setMode(nextMode);
         if (nextMode === 'manage') {
           setStage('structure');
@@ -1114,11 +1374,23 @@ export function useRoomWorkspaceController({
           kind: 'delete-group',
           groupId: groupId as RoomWorkspaceGroupId,
         }),
-      onRequestRoomRename: (roomId) =>
-        setPendingOperation({
-          kind: 'rename-room',
-          roomId: roomId as RoomWorkspaceRoomId,
-        }),
+      onRoomNameChange: (roomId, name) => {
+        const roomIdV2 = roomId as RoomWorkspaceRoomId;
+        if (!name.trim()) {
+          setRoomNameDrafts((current) => ({ ...current, [roomIdV2]: name }));
+          setSaveOutcome({ kind: 'idle' });
+          return;
+        }
+        setRoomNameDrafts((current) => {
+          const next = { ...current };
+          delete next[roomIdV2];
+          return next;
+        });
+        setDraftWorkspace((current) =>
+          current ? renameRoomWorkspaceRoomV2(current, roomIdV2, name) : current
+        );
+        setSaveOutcome({ kind: 'idle' });
+      },
       onRoomGroupChange: (roomId, groupId) => {
         setDraftWorkspace((current) =>
           current
@@ -1203,24 +1475,6 @@ export function useRoomWorkspaceController({
         });
         setSaveOutcome({ kind: 'idle' });
       },
-      onMoveRoom: (roomId, direction) => {
-        setDraftWorkspace((current) => {
-          if (!current) {
-            return current;
-          }
-          const orderedIds = getRoomWorkspaceRoomsInDisplayOrderV2(current).map((room) => room.id);
-          const currentIndex = orderedIds.indexOf(roomId as RoomWorkspaceRoomId);
-          const nextIndex = currentIndex + (direction === 'earlier' ? -1 : 1);
-          if (currentIndex < 0 || nextIndex < 0 || nextIndex >= orderedIds.length) {
-            return current;
-          }
-          const nextIds = [...orderedIds];
-          const [movedId] = nextIds.splice(currentIndex, 1);
-          nextIds.splice(nextIndex, 0, movedId);
-          return reorderRoomWorkspaceRoomsV2(current, nextIds);
-        });
-        setSaveOutcome({ kind: 'idle' });
-      },
       onToggleGroup: (groupId, collapsed) => {
         setCollapsedGroupIds((current) => {
           const next = new Set(current);
@@ -1232,29 +1486,40 @@ export function useRoomWorkspaceController({
           return next;
         });
       },
+      onDeviceVisibilityChange: (deviceId, visible) => {
+        if (visible) {
+          showDashboardEntity(deviceId);
+        } else {
+          hideDashboardEntity(deviceId);
+        }
+      },
+      onRequestDeviceMove: (deviceId) => {
+        if (!selectedRoomId || !selectedDeviceIds.includes(deviceId)) {
+          return;
+        }
+        setPendingOperation({
+          kind: 'move-device',
+          deviceId,
+          sourceRoomId: selectedRoomId,
+        });
+      },
       onDeviceSelectionChange: (deviceId, selected) => {
         if (!selectedRoomId) {
           return;
         }
-        setPendingPlacements((current) => ({
-          ...current,
-          [deviceId]: selected ? selectedRoomId : null,
-        }));
+        const nextRoomId = selected ? selectedRoomId : null;
+        setPendingPlacements((current) => {
+          const next = { ...current };
+          if ((committedRoomIdByEntityId.get(deviceId) ?? null) === nextRoomId) {
+            delete next[deviceId];
+          } else {
+            next[deviceId] = nextRoomId;
+          }
+          return next;
+        });
         setSaveOutcome({ kind: 'idle' });
       },
-      onVisibleDeviceSelectionChange: (deviceIds, selected) => {
-        if (!selectedRoomId) {
-          return;
-        }
-        setPendingPlacements((current) => ({
-          ...current,
-          ...Object.fromEntries(
-            deviceIds.map((deviceId) => [deviceId, selected ? selectedRoomId : null])
-          ),
-        }));
-        setSaveOutcome({ kind: 'idle' });
-      },
-      onCancel: handleCancel,
+      onDiscard: handleDiscard,
       onSave: () => {
         void handleSave();
       },
@@ -1262,7 +1527,17 @@ export function useRoomWorkspaceController({
         void handleSave();
       },
     }),
-    [handleCancel, handleSave, orderedRooms, selectedRoomId]
+    [
+      committedRoomIdByEntityId,
+      handleDiscard,
+      handleSave,
+      hasUnsavedChanges,
+      hideDashboardEntity,
+      orderedRooms,
+      selectedDeviceIds,
+      selectedRoomId,
+      showDashboardEntity,
+    ]
   );
 
   const status: RoomWorkspaceViewModel['status'] =
@@ -1289,7 +1564,9 @@ export function useRoomWorkspaceController({
     devices: deviceViewModels,
     selectedDeviceIds,
     changes,
+    unsavedChangeCount,
     hasUnsavedChanges,
+    hasValidationErrors,
     isSaving,
   };
 
@@ -1303,6 +1580,7 @@ export function useRoomWorkspaceController({
     dismissOperation,
     confirmNameOperation,
     confirmMerge,
+    confirmDeviceMove,
     confirmAppearance,
     confirmDelete,
   };

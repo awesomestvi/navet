@@ -53,29 +53,29 @@ describe('standalone OAuth with the real Home Assistant auth library', () => {
     window.history.replaceState({}, '', '/');
   });
 
-  it.each([
-    'navet_oauth_callback',
-    'auth_callback',
-  ])('cleans %s before restoring the server-exchanged session', async (callbackParam) => {
-    window.history.replaceState(
-      {},
-      '',
-      `/?${callbackParam}=1&code=already-exchanged&state=not-library-state`
-    );
-    const fetchMock = createAuthenticatedSessionFetch();
+  it.each(['navet_oauth_callback', 'auth_callback'])(
+    'cleans %s before restoring the server-exchanged session',
+    async (callbackParam) => {
+      window.history.replaceState(
+        {},
+        '',
+        `/?${callbackParam}=1&code=already-exchanged&state=not-library-state`
+      );
+      const fetchMock = createAuthenticatedSessionFetch();
 
-    const session = await standaloneOAuthAuth.init();
+      const session = await standaloneOAuthAuth.init();
 
-    expect(session).toMatchObject({
-      runtime: 'standalone-oauth',
-      authMode: 'oauth',
-      hassUrl: HASS_URL,
-    });
-    expect(session?.auth?.accessToken).toBe('access-token');
-    expect(window.location.search).toBe('');
-    expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/auth/token'))).toBe(
-      false
-    );
-    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
-  });
+      expect(session).toMatchObject({
+        runtime: 'standalone-oauth',
+        authMode: 'oauth',
+        hassUrl: HASS_URL,
+      });
+      expect(session?.auth?.accessToken).toBe('access-token');
+      expect(window.location.search).toBe('');
+      expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/auth/token'))).toBe(
+        false
+      );
+      expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
+    }
+  );
 });

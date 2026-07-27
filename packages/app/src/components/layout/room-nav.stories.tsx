@@ -1,10 +1,17 @@
 import { RoomNav } from '@navet/app/components/layout/room-nav';
+import type { RoomNavigationGroup } from '@navet/app/components/layout/room-nav.utils';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { expect, userEvent, within } from 'storybook/test';
 
 const DEFAULT_ROOMS = ['Living Room', 'Kitchen', 'Bedroom', 'Office'];
+const UPSTAIRS_GROUP: RoomNavigationGroup = {
+  id: 'upstairs',
+  name: 'Upstairs',
+  symbol: 'Layers3',
+  rooms: ['Living Room', 'Guest Room', 'Office'],
+};
 const MANY_ROOMS = [
   'Living Room',
   'Kitchen',
@@ -25,10 +32,12 @@ const MANY_ROOMS = [
 function RoomNavStory({
   isEditMode = false,
   rooms = DEFAULT_ROOMS,
+  groups = [],
   initialActiveRoom = 'All',
 }: {
   isEditMode?: boolean;
   rooms?: string[];
+  groups?: RoomNavigationGroup[];
   initialActiveRoom?: string;
 }) {
   const [activeRoom, setActiveRoom] = useState(initialActiveRoom);
@@ -37,6 +46,7 @@ function RoomNavStory({
   return (
     <RoomNav
       rooms={rooms}
+      roomGroups={groups}
       activeRoom={activeRoom}
       onRoomChange={setActiveRoom}
       allViewGrouping="custom"
@@ -77,6 +87,47 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
+export const GroupedRooms: Story = {
+  args: {
+    rooms: ['Living Room', 'Kitchen', 'Guest Room', 'Office'],
+    groups: [UPSTAIRS_GROUP],
+    initialActiveRoom: 'Living Room',
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    const upstairs = await canvas.findByRole('button', { name: 'Living Room' });
+
+    await expect(upstairs).toHaveAttribute('aria-current', 'page');
+    await expect(canvas.queryByRole('button', { name: 'Guest Room' })).toBeNull();
+    await expect(canvas.queryByRole('button', { name: 'Office' })).toBeNull();
+
+    await userEvent.click(upstairs);
+    const menu = await page.findByRole('menu');
+    await expect(within(menu).getByRole('menuitem', { name: 'Living Room' })).toBeVisible();
+    await expect(within(menu).getByRole('menuitem', { name: 'Guest Room' })).toBeVisible();
+    await userEvent.click(within(menu).getByRole('menuitem', { name: 'Office' }));
+    const officeDropdown = await canvas.findByRole('button', { name: 'Office' });
+    await expect(officeDropdown).toHaveAttribute('aria-current', 'page');
+    await userEvent.click(canvas.getByRole('button', { name: 'Kitchen' }));
+    await expect(officeDropdown).not.toHaveAttribute('aria-current');
+    await expect(canvas.getByRole('button', { name: 'Kitchen' })).toHaveAttribute(
+      'aria-current',
+      'page'
+    );
+
+    await userEvent.click(officeDropdown);
+    await expect(officeDropdown).toHaveAttribute('aria-current', 'page');
+    await expect(page.queryByRole('menu')).toBeNull();
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Kitchen' }));
+    const chevron = officeDropdown.querySelector('[data-room-group-chevron]');
+    await expect(chevron).not.toBeNull();
+    await userEvent.click(chevron as Element);
+    await expect(await page.findByRole('menu')).toBeVisible();
+  },
+};
+
 export const EditMode: Story = {
   args: {
     isEditMode: true,
@@ -100,10 +151,11 @@ export const ManyRoomsOverflowMenu: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
 
-    const overflowButton = await canvas.findByText(/\+\d+ rooms/i);
+    const overflowButton = await canvas.findByRole('button', { name: 'Rooms' });
     await userEvent.click(overflowButton);
 
-    await expect(canvas.getByRole('menu')).toBeInTheDocument();
+    await expect(await page.findByRole('menu')).toBeInTheDocument();
   },
 };

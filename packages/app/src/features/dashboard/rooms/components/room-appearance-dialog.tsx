@@ -12,15 +12,18 @@ import {
   type BuiltInWallpaperDescriptor,
 } from '@navet/app/constants/built-in-wallpapers';
 import { useTheme } from '@navet/app/hooks';
+import type { LucideIcon } from 'lucide-react';
 import { useId } from 'react';
 import type { RoomWorkspaceImageReferenceV2 } from '../room-workspace-v2';
 import { RoomOperationDialogFrame } from './room-operation-dialog-frame';
+import { RoomSymbolIcon } from './room-symbol-icon';
 import { RoomWallpaperPreviewImage } from './room-wallpaper-preview-image';
 
 export interface RoomSymbolChoice {
   value: string;
   label: string;
   glyph?: string;
+  icon?: LucideIcon;
 }
 
 export interface RoomAppearanceDialogProps {
@@ -30,6 +33,9 @@ export interface RoomAppearanceDialogProps {
   description?: string;
   symbolLabel: string;
   symbolDescription?: string;
+  symbolInputPlaceholder?: string;
+  symbolInputHelp?: string;
+  lucideLibraryLabel?: string;
   wallpaperLabel: string;
   wallpaperDescription?: string;
   imagePreviewAlt: string;
@@ -75,6 +81,9 @@ export function RoomAppearanceDialog({
   description,
   symbolLabel,
   symbolDescription,
+  symbolInputPlaceholder,
+  symbolInputHelp,
+  lucideLibraryLabel,
   wallpaperLabel,
   wallpaperDescription,
   imagePreviewAlt,
@@ -158,6 +167,7 @@ export function RoomAppearanceDialog({
             {symbolChoices.map((choice, index) => {
               const isSelected = symbol === choice.value;
               const radioId = `${symbolGroupName}-${index}`;
+              const ChoiceIcon = choice.icon;
               return (
                 <label
                   key={choice.value}
@@ -187,17 +197,66 @@ export function RoomAppearanceDialog({
                     checked={isSelected}
                     onChange={() => onSymbolChange(choice.value)}
                   />
-                  <span
-                    aria-hidden="true"
-                    className={cn('text-lg font-semibold', surface.textPrimary)}
-                  >
-                    {choice.glyph ?? choice.value}
-                  </span>
+                  {ChoiceIcon ? (
+                    <ChoiceIcon aria-hidden="true" className={cn('h-5 w-5', surface.textPrimary)} />
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className={cn('text-lg font-semibold', surface.textPrimary)}
+                    >
+                      {choice.glyph ?? choice.value}
+                    </span>
+                  )}
                   <span className="sr-only">{choice.label}</span>
                 </label>
               );
             })}
           </div>
+          <div className="mt-4 flex items-center gap-3">
+            <div
+              className={cn(
+                'flex h-11 w-11 shrink-0 items-center justify-center rounded-full border',
+                surface.iconBg,
+                surface.borderStrong,
+                surface.textPrimary
+              )}
+              aria-hidden="true"
+            >
+              {symbol ? (
+                <RoomSymbolIcon value={symbol} className="h-5 w-5" />
+              ) : (
+                <span className="text-sm leading-none">•</span>
+              )}
+            </div>
+            <Input
+              type="text"
+              value={symbol ?? ''}
+              onChange={(event) => onSymbolChange(event.currentTarget.value || null)}
+              aria-label={symbolInputPlaceholder ?? symbolLabel}
+              placeholder={symbolInputPlaceholder}
+              maxLength={32}
+              containerClassName="min-w-0 flex-1"
+              inputClassName="min-h-11"
+            />
+          </div>
+          {symbolInputHelp ? (
+            <p className={cn('mt-2', navetTypographyTokens.helper, surface.textSecondary)}>
+              {symbolInputHelp}
+            </p>
+          ) : null}
+          {lucideLibraryLabel ? (
+            <a
+              href="https://lucide.dev/icons/"
+              target="_blank"
+              rel="noreferrer"
+              className={cn(
+                'mt-2 inline-flex text-xs font-medium underline underline-offset-4',
+                surface.textSecondary
+              )}
+            >
+              {lucideLibraryLabel}
+            </a>
+          ) : null}
         </fieldset>
 
         {showWallpaper ? (

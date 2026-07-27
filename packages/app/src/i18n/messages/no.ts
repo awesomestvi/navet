@@ -551,8 +551,8 @@ export const noMessages = {
   'dashboard.roomsWorkspace.title': 'Rom',
   'dashboard.roomsWorkspace.description':
     'Organiser rom, grupper og enheter uten å gjøre den daglige navigasjonen tregere.',
-  'dashboard.roomsWorkspace.browseMode': 'Bla gjennom',
-  'dashboard.roomsWorkspace.manageMode': 'Administrer',
+  'dashboard.roomsWorkspace.browseMode': 'Avslutt redigering',
+  'dashboard.roomsWorkspace.manageMode': 'Rediger rom',
   'dashboard.roomsWorkspace.searchLabel': 'Søk etter rom',
   'dashboard.roomsWorkspace.searchPlaceholder': 'Søk etter rom eller grupper',
   'dashboard.roomsWorkspace.clearSearch': 'Tøm søket',
@@ -565,8 +565,11 @@ export const noMessages = {
   'dashboard.roomsWorkspace.roomDetailsTitle': 'Romdetaljer',
   'dashboard.roomsWorkspace.roomDetailsDescription':
     'Oppdater navn, synlighet, favorittstatus og utseende for rommet.',
-  'dashboard.roomsWorkspace.devicesTitle': 'Enheter',
-  'dashboard.roomsWorkspace.devicesDescription': 'Velg enhetene som hører til i dette rommet.',
+  'dashboard.roomsWorkspace.devicesTitle': 'Enheter i dette rommet',
+  'dashboard.roomsWorkspace.devicesDescription':
+    'Se gjennom tilordnede enheter, eller legg til en annen enhet.',
+  'dashboard.roomsWorkspace.dashboardDevices': 'På dashboardet',
+  'dashboard.roomsWorkspace.hiddenDevices': 'Skjulte',
   'dashboard.roomsWorkspace.impactTitle': 'Se gjennom endringer',
   'dashboard.roomsWorkspace.impactDescription':
     'Kontroller hva som endres i Navet og tilkoblede systemer før du lagrer.',
@@ -582,10 +585,18 @@ export const noMessages = {
     'Slå dette rommet sammen med et annet, og behold enhetene samlet.',
   'dashboard.roomsWorkspace.splitRoom': 'Del rom',
   'dashboard.roomsWorkspace.splitRoomDescription': 'Flytt valgte enheter til et nytt rom.',
-  'dashboard.roomsWorkspace.manageDevices': 'Administrer enheter',
+  'dashboard.roomsWorkspace.manageDevices': 'Legg til enheter',
+  'dashboard.roomsWorkspace.addDevice': 'Legg til',
+  'dashboard.roomsWorkspace.deviceActions': 'Handlinger',
+  'dashboard.roomsWorkspace.hideDevice': 'Skjul',
+  'dashboard.roomsWorkspace.showDevice': 'Vis',
+  'dashboard.roomsWorkspace.moveDevice': 'Flytt',
+  'dashboard.roomsWorkspace.removeDevice': 'Fjern',
+  'dashboard.roomsWorkspace.notInRoom': 'Ikke i et rom',
+  'dashboard.roomsWorkspace.deviceSearchPlaceholder': 'Søk etter enheter',
   'dashboard.roomsWorkspace.reviewChanges': 'Se gjennom endringer',
   'dashboard.roomsWorkspace.saveChanges': 'Lagre endringer',
-  'dashboard.roomsWorkspace.cancel': 'Avbryt',
+  'dashboard.roomsWorkspace.cancel': 'Forkast endringer',
   'dashboard.roomsWorkspace.back': 'Tilbake',
   'dashboard.roomsWorkspace.retry': 'Prøv igjen',
   'dashboard.roomsWorkspace.roomNameLabel': 'Romnavn',
@@ -620,6 +631,12 @@ export const noMessages = {
   'dashboard.roomsWorkspace.noDevicesTitle': 'Ingen enheter her ennå',
   'dashboard.roomsWorkspace.noDevicesDescription':
     'Legg til enheter for å gjøre rommet nyttig i dashboardet.',
+  'dashboard.roomsWorkspace.noDashboardDevicesTitle': 'Ingen enheter på dashboardet',
+  'dashboard.roomsWorkspace.noDashboardDevicesDescription':
+    'Enheter som er tilordnet dette rommet, vises ikke på dashboardet.',
+  'dashboard.roomsWorkspace.noHiddenDevicesTitle': 'Ingen skjulte enheter',
+  'dashboard.roomsWorkspace.noHiddenDevicesDescription':
+    'Alle enheter i dette rommet vises på dashboardet.',
   'dashboard.roomsWorkspace.noChangesTitle': 'Ingenting å se gjennom',
   'dashboard.roomsWorkspace.noChangesDescription':
     'Gjør først en endring i et rom, en gruppe eller en enhet.',
@@ -627,7 +644,7 @@ export const noMessages = {
   'dashboard.roomsWorkspace.roomActivityTitle': 'Aktivitet i rommet',
   'dashboard.roomsWorkspace.roomActionsTitle': 'Romhandlinger',
   'dashboard.roomsWorkspace.pendingChangesTitle': 'Ventende endringer',
-  'dashboard.roomsWorkspace.unsavedChanges': 'Endringer som ikke er lagret',
+  'dashboard.roomsWorkspace.unsavedChanges': '{count} ulagrede endringer',
   'dashboard.roomsWorkspace.allChangesSaved': 'Alle endringer er lagret',
   'dashboard.roomsWorkspace.closeSheet': 'Lukk rom',
   'dashboard.roomsWorkspace.status.loading': 'Laster inn rom…',
@@ -688,6 +705,16 @@ export const noMessages = {
   'dashboard.roomsWorkspace.merge.action': 'Slå sammen rom',
   'dashboard.roomsWorkspace.merge.success': 'Rommene ble slått sammen',
   'dashboard.roomsWorkspace.merge.failure': 'Rommene kunne ikke slås sammen',
+  'dashboard.roomsWorkspace.moveDeviceDialog.title': 'Flytt enhet',
+  'dashboard.roomsWorkspace.moveDeviceDialog.description':
+    'Velg et annet rom for enheten. Flyttingen utføres når du lagrer endringene.',
+  'dashboard.roomsWorkspace.moveDeviceDialog.targetLabel': 'Målrom',
+  'dashboard.roomsWorkspace.moveDeviceDialog.searchLabel': 'Søk i rom',
+  'dashboard.roomsWorkspace.moveDeviceDialog.searchPlaceholder': 'Søk i rom',
+  'dashboard.roomsWorkspace.moveDeviceDialog.emptyTitle': 'Ingen andre rom',
+  'dashboard.roomsWorkspace.moveDeviceDialog.emptyDescription':
+    'Legg til et annet rom før du flytter enheten.',
+  'dashboard.roomsWorkspace.moveDeviceDialog.action': 'Flytt enhet',
   'dashboard.roomsWorkspace.split.title': 'Del rom',
   'dashboard.roomsWorkspace.split.description':
     'Gi det nye rommet et navn, og velg enhetene som skal flyttes.',

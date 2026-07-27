@@ -55,7 +55,6 @@ export {
   RoomDeviceSelectionPanel,
   RoomImpactReviewPanel,
   RoomOutline,
-  RoomStructurePanel,
   RoomWorkspaceActivePanel,
   RoomWorkspaceContextPanel,
   RoomWorkspaceHeader,

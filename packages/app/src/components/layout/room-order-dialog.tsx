@@ -1,6 +1,7 @@
 import {
   RoomAppearanceDialog,
   RoomDeleteImpactDialog,
+  RoomDeviceSelectionSheet,
   RoomNameDialog,
   type RoomSymbolChoice,
   RoomsWorkspaceDialog,
@@ -8,6 +9,7 @@ import {
   type RoomTargetDialogCandidate,
   type RoomWorkspaceLabels,
 } from '@navet/app/features/dashboard/rooms/components';
+import { ROOM_SYMBOL_ICON_CHOICES } from '@navet/app/features/dashboard/rooms/components/room-symbol-icon';
 import {
   type RoomWorkspacePendingOperation,
   useRoomWorkspaceController,
@@ -25,11 +27,11 @@ interface RoomOrderDialogProps {
   manageableRooms: PlatformManageableRoomReference[];
   roomHiddenItemCounts: Map<string, number>;
   roomEntityCounts: Map<string, number>;
+  dashboardEntityIds?: readonly string[];
+  dashboardVisibleEntityIds?: readonly string[];
   onRoomOrderChange?: (rooms: string[]) => void;
   onHiddenRoomsChange?: (rooms: string[]) => void;
 }
-
-const ROOM_SYMBOLS = ['⌂', '◫', '⌁', '☾', '◌', '◇', '✦', '▱', '△', '○', '≈', '□'] as const;
 
 function getProviderLabel(providerId: PlatformManageableRoomReference['providerId']): string {
   switch (providerId) {
@@ -58,12 +60,12 @@ function buildRoomWorkspaceLabels(t: ReturnType<typeof useI18n>['t']): RoomWorks
     roomsRegion: t('dashboard.roomsWorkspace.roomsRegion'),
     workspaceRegion: t('dashboard.roomsWorkspace.workspaceRegion'),
     contextRegion: t('dashboard.roomsWorkspace.contextRegion'),
-    structureTitle: t('dashboard.roomsWorkspace.structureTitle'),
-    structureDescription: t('dashboard.roomsWorkspace.structureDescription'),
     roomDetailsTitle: t('dashboard.roomsWorkspace.roomDetailsTitle'),
     roomDetailsDescription: t('dashboard.roomsWorkspace.roomDetailsDescription'),
     devicesTitle: t('dashboard.roomsWorkspace.devicesTitle'),
     devicesDescription: t('dashboard.roomsWorkspace.devicesDescription'),
+    dashboardDevices: t('dashboard.roomsWorkspace.dashboardDevices'),
+    hiddenDevices: t('dashboard.roomsWorkspace.hiddenDevices'),
     impactTitle: t('dashboard.roomsWorkspace.impactTitle'),
     impactDescription: t('dashboard.roomsWorkspace.impactDescription'),
     addRoom: t('dashboard.roomsWorkspace.addRoom'),
@@ -72,15 +74,21 @@ function buildRoomWorkspaceLabels(t: ReturnType<typeof useI18n>['t']): RoomWorks
     moreActions: t('dashboard.roomsWorkspace.moreActions'),
     renameGroup: t('dashboard.roomsWorkspace.renameGroup'),
     deleteGroup: t('dashboard.roomsWorkspace.deleteGroup'),
-    editRoom: t('dashboard.roomsWorkspace.editRoom'),
     mergeRoom: t('dashboard.roomsWorkspace.mergeRoom'),
     mergeRoomDescription: t('dashboard.roomsWorkspace.mergeRoomDescription'),
     splitRoom: t('dashboard.roomsWorkspace.splitRoom'),
     splitRoomDescription: t('dashboard.roomsWorkspace.splitRoomDescription'),
     manageDevices: t('dashboard.roomsWorkspace.manageDevices'),
-    reviewChanges: t('dashboard.roomsWorkspace.reviewChanges'),
+    addDevice: t('dashboard.roomsWorkspace.addDevice'),
+    deviceActions: t('dashboard.roomsWorkspace.deviceActions'),
+    hideDevice: t('dashboard.roomsWorkspace.hideDevice'),
+    showDevice: t('dashboard.roomsWorkspace.showDevice'),
+    moveDevice: t('dashboard.roomsWorkspace.moveDevice'),
+    removeDevice: t('dashboard.roomsWorkspace.removeDevice'),
+    notInRoom: t('dashboard.roomsWorkspace.notInRoom'),
+    deviceSearchPlaceholder: t('dashboard.roomsWorkspace.deviceSearchPlaceholder'),
     saveChanges: t('dashboard.roomsWorkspace.saveChanges'),
-    cancel: t('dashboard.roomsWorkspace.cancel'),
+    discardChanges: t('dashboard.roomsWorkspace.cancel'),
     back: t('dashboard.roomsWorkspace.back'),
     retry: t('dashboard.roomsWorkspace.retry'),
     roomNameLabel: t('dashboard.roomsWorkspace.roomNameLabel'),
@@ -105,23 +113,22 @@ function buildRoomWorkspaceLabels(t: ReturnType<typeof useI18n>['t']): RoomWorks
     selectRoom: t('dashboard.roomsWorkspace.selectRoom'),
     collapseGroup: t('dashboard.roomsWorkspace.collapseGroup'),
     expandGroup: t('dashboard.roomsWorkspace.expandGroup'),
-    selectAll: t('dashboard.roomsWorkspace.selectAll'),
-    clearSelection: t('dashboard.roomsWorkspace.clearSelection'),
-    selected: t('dashboard.roomsWorkspace.selected'),
-    unavailable: t('dashboard.roomsWorkspace.unavailable'),
     noRoomsFoundTitle: t('dashboard.roomsWorkspace.noRoomsFoundTitle'),
     noRoomsFoundDescription: t('dashboard.roomsWorkspace.noRoomsFoundDescription'),
     selectRoomTitle: t('dashboard.roomsWorkspace.selectRoomTitle'),
     selectRoomDescription: t('dashboard.roomsWorkspace.selectRoomDescription'),
     noDevicesTitle: t('dashboard.roomsWorkspace.noDevicesTitle'),
     noDevicesDescription: t('dashboard.roomsWorkspace.noDevicesDescription'),
+    noDashboardDevicesTitle: t('dashboard.roomsWorkspace.noDashboardDevicesTitle'),
+    noDashboardDevicesDescription: t('dashboard.roomsWorkspace.noDashboardDevicesDescription'),
+    noHiddenDevicesTitle: t('dashboard.roomsWorkspace.noHiddenDevicesTitle'),
+    noHiddenDevicesDescription: t('dashboard.roomsWorkspace.noHiddenDevicesDescription'),
     noChangesTitle: t('dashboard.roomsWorkspace.noChangesTitle'),
     noChangesDescription: t('dashboard.roomsWorkspace.noChangesDescription'),
     currentRoomTitle: t('dashboard.roomsWorkspace.currentRoomTitle'),
-    roomActivityTitle: t('dashboard.roomsWorkspace.roomActivityTitle'),
     roomActionsTitle: t('dashboard.roomsWorkspace.roomActionsTitle'),
     pendingChangesTitle: t('dashboard.roomsWorkspace.pendingChangesTitle'),
-    unsavedChanges: t('dashboard.roomsWorkspace.unsavedChanges'),
+    unsavedChanges: (count) => t('dashboard.roomsWorkspace.unsavedChanges', { count }),
     allChangesSaved: t('dashboard.roomsWorkspace.allChangesSaved'),
     closeSheet: t('dashboard.roomsWorkspace.closeSheet'),
   };
@@ -156,14 +163,6 @@ function resolveNameDialogCopy(
         placeholder: t('dashboard.roomsWorkspace.createGroup.namePlaceholder'),
         confirm: t('dashboard.roomsWorkspace.renameGroup.action'),
       };
-    case 'rename-room':
-      return {
-        title: t('dashboard.roomsWorkspace.editRoom'),
-        description: t('dashboard.roomsWorkspace.roomDetailsDescription'),
-        label: t('dashboard.roomsWorkspace.roomNameLabel'),
-        placeholder: t('dashboard.roomsWorkspace.roomNamePlaceholder'),
-        confirm: t('dashboard.roomsWorkspace.editRoom'),
-      };
     case 'split-room':
       return {
         title: t('dashboard.roomsWorkspace.split.title'),
@@ -184,9 +183,9 @@ function getOperationRoomId(operation: RoomWorkspacePendingOperation | null): st
   switch (operation.kind) {
     case 'appearance':
     case 'delete-room':
-    case 'rename-room':
       return operation.roomId;
     case 'merge-room':
+    case 'move-device':
     case 'split-room':
       return operation.sourceRoomId;
     default:
@@ -200,6 +199,8 @@ export function RoomOrderDialog({
   manageableRooms,
   roomHiddenItemCounts,
   roomEntityCounts,
+  dashboardEntityIds,
+  dashboardVisibleEntityIds,
   onRoomOrderChange,
   onHiddenRoomsChange,
 }: RoomOrderDialogProps) {
@@ -209,15 +210,17 @@ export function RoomOrderDialog({
     manageableRooms,
     roomHiddenItemCounts,
     roomEntityCounts,
+    dashboardEntityIds,
+    dashboardVisibleEntityIds,
     onRoomOrderChange,
     onHiddenRoomsChange,
   });
   const labels = useMemo(() => buildRoomWorkspaceLabels(t), [t]);
   const roomSymbolChoices = useMemo<readonly RoomSymbolChoice[]>(
     () =>
-      ROOM_SYMBOLS.map((symbol, index) => ({
-        value: symbol,
-        glyph: symbol,
+      ROOM_SYMBOL_ICON_CHOICES.map((choice, index) => ({
+        value: choice.value,
+        icon: choice.icon,
         label: `${t('dashboard.roomsWorkspace.appearance.iconLabel')} ${index + 1}`,
       })),
     [t]
@@ -255,8 +258,6 @@ export function RoomOrderDialog({
 
     if (operation.kind === 'rename-group') {
       setOperationName(operationGroup?.displayName ?? '');
-    } else if (operation.kind === 'rename-room') {
-      setOperationName(operationRoom?.displayName ?? '');
     } else if (operation.kind === 'split-room') {
       setOperationName(
         operationRoom
@@ -314,11 +315,11 @@ export function RoomOrderDialog({
   const roomNames = useMemo(
     () =>
       new Set(
-        (controller.draftWorkspace?.rooms ?? [])
-          .filter((room) => operation?.kind !== 'rename-room' || room.id !== operation.roomId)
-          .map((room) => room.displayName.trim().toLocaleLowerCase())
+        (controller.draftWorkspace?.rooms ?? []).map((room) =>
+          room.displayName.trim().toLocaleLowerCase()
+        )
       ),
-    [controller.draftWorkspace, operation]
+    [controller.draftWorkspace]
   );
   const groupNames = useMemo(
     () =>
@@ -340,7 +341,7 @@ export function RoomOrderDialog({
         ? t('dashboard.roomsWorkspace.validation.duplicateRoom')
         : undefined;
   const nameDialogCopy = operation ? resolveNameDialogCopy(operation, t) : null;
-  const mergeCandidates = useMemo<RoomTargetDialogCandidate[]>(
+  const targetCandidates = useMemo<RoomTargetDialogCandidate[]>(
     () =>
       (controller.draftWorkspace?.rooms ?? [])
         .filter((room) => room.id !== operationRoomId)
@@ -425,6 +426,19 @@ export function RoomOrderDialog({
         actions={controller.actions}
       />
 
+      <RoomDeviceSelectionSheet
+        isOpen={isOpen && controller.viewModel.stage === 'device-selection'}
+        onOpenChange={(open) => {
+          if (!open) {
+            controller.actions.onDeviceQueryChange('');
+            controller.actions.onStageChange('room-details');
+          }
+        }}
+        viewModel={controller.viewModel}
+        labels={labels}
+        actions={controller.actions}
+      />
+
       {operation && nameDialogCopy ? (
         <RoomNameDialog
           isOpen
@@ -447,35 +461,71 @@ export function RoomOrderDialog({
       ) : null}
 
       <RoomTargetDialog
-        isOpen={operation?.kind === 'merge-room'}
+        isOpen={operation?.kind === 'merge-room' || operation?.kind === 'move-device'}
         onOpenChange={(open) => {
           if (!open) {
             controller.dismissOperation();
           }
         }}
-        title={t('dashboard.roomsWorkspace.merge.title')}
-        description={t('dashboard.roomsWorkspace.merge.description')}
-        searchLabel={t('dashboard.roomsWorkspace.merge.searchLabel')}
-        searchPlaceholder={t('dashboard.roomsWorkspace.merge.searchPlaceholder')}
-        targetLabel={t('dashboard.roomsWorkspace.merge.targetLabel')}
+        title={t(
+          operation?.kind === 'move-device'
+            ? 'dashboard.roomsWorkspace.moveDeviceDialog.title'
+            : 'dashboard.roomsWorkspace.merge.title'
+        )}
+        description={t(
+          operation?.kind === 'move-device'
+            ? 'dashboard.roomsWorkspace.moveDeviceDialog.description'
+            : 'dashboard.roomsWorkspace.merge.description'
+        )}
+        searchLabel={t(
+          operation?.kind === 'move-device'
+            ? 'dashboard.roomsWorkspace.moveDeviceDialog.searchLabel'
+            : 'dashboard.roomsWorkspace.merge.searchLabel'
+        )}
+        searchPlaceholder={t(
+          operation?.kind === 'move-device'
+            ? 'dashboard.roomsWorkspace.moveDeviceDialog.searchPlaceholder'
+            : 'dashboard.roomsWorkspace.merge.searchPlaceholder'
+        )}
+        targetLabel={t(
+          operation?.kind === 'move-device'
+            ? 'dashboard.roomsWorkspace.moveDeviceDialog.targetLabel'
+            : 'dashboard.roomsWorkspace.merge.targetLabel'
+        )}
         resultSummary={t(
-          mergeCandidates.length === 1
+          targetCandidates.length === 1
             ? 'dashboard.roomsWorkspace.counts.rooms.one'
             : 'dashboard.roomsWorkspace.counts.rooms.other',
-          { count: mergeCandidates.length }
+          { count: targetCandidates.length }
         )}
-        emptyTitle={t('dashboard.roomsWorkspace.merge.emptyTitle')}
-        emptyDescription={t('dashboard.roomsWorkspace.merge.emptyDescription')}
-        candidates={mergeCandidates}
+        emptyTitle={t(
+          operation?.kind === 'move-device'
+            ? 'dashboard.roomsWorkspace.moveDeviceDialog.emptyTitle'
+            : 'dashboard.roomsWorkspace.merge.emptyTitle'
+        )}
+        emptyDescription={t(
+          operation?.kind === 'move-device'
+            ? 'dashboard.roomsWorkspace.moveDeviceDialog.emptyDescription'
+            : 'dashboard.roomsWorkspace.merge.emptyDescription'
+        )}
+        candidates={targetCandidates}
         query={targetQuery}
         onQueryChange={setTargetQuery}
         selectedTargetId={selectedTargetId}
         onTargetChange={setSelectedTargetId}
         cancelLabel={t('common.cancel')}
-        confirmLabel={t('dashboard.roomsWorkspace.merge.action')}
+        confirmLabel={t(
+          operation?.kind === 'move-device'
+            ? 'dashboard.roomsWorkspace.moveDeviceDialog.action'
+            : 'dashboard.roomsWorkspace.merge.action'
+        )}
         onConfirm={() => {
           if (selectedTargetId) {
-            controller.confirmMerge(selectedTargetId);
+            if (operation?.kind === 'move-device') {
+              controller.confirmDeviceMove(selectedTargetId);
+            } else {
+              controller.confirmMerge(selectedTargetId);
+            }
           }
         }}
       />
@@ -491,6 +541,9 @@ export function RoomOrderDialog({
         description={t('dashboard.roomsWorkspace.appearance.description')}
         symbolLabel={t('dashboard.roomsWorkspace.appearance.iconLabel')}
         symbolDescription={t('dashboard.roomsWorkspace.appearance.iconDescription')}
+        symbolInputPlaceholder={t('lighting.iconInputPlaceholder')}
+        symbolInputHelp={t('lighting.iconInputHelp')}
+        lucideLibraryLabel={t('lighting.lucideIconLibrary')}
         wallpaperLabel={t('dashboard.roomsWorkspace.appearance.wallpaperLabel')}
         wallpaperDescription={t('dashboard.roomsWorkspace.appearance.wallpaperDescription')}
         imagePreviewAlt={t('dashboard.roomsWorkspace.appearance.previewAlt')}

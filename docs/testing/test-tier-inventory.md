@@ -21,6 +21,7 @@ These suites block release-oriented workflows and should stay intentionally smal
 | `packages/app/src/features/media/components/media-card/__tests__/use-media-artwork-resolution.test.tsx` | Authenticated artwork resolution and runtime-specific fallbacks | Keep |
 | `packages/app/src/features/security/components/camera-card/__tests__/camera-stream-player.test.tsx` | Camera stream runtime behavior across supported modes | Keep |
 | `packages/app/src/features/rss/components/rss-feed-card/__tests__/use-rss-feed-items.test.tsx` | Ingress-aware RSS proxy behavior and feed ordering | Keep |
+| `packages/app/src/provider-package-registry.initialization.test.ts` | Provider package startup with existing sessions and cycle-safe registry initialization | Keep |
 | `packages/app/src/stores/__tests__/integration-store.test.ts` | Core provider-to-app state wiring | Keep |
 | `packages/app/src/services/__tests__/integration-runtime.service.test.ts`, `integration-registry.service.test.ts`, `integration-action.service.test.ts` | Runtime wiring, provider registration, and shared command dispatch | Keep |
 

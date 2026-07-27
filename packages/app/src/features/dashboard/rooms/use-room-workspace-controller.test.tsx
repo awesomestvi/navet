@@ -1,3 +1,4 @@
+import { useDashboardEntitiesStore } from '@navet/app/features/dashboard/stores/dashboard-entities-store';
 import { useEntityRoomOverridesStore } from '@navet/app/stores/entity-room-overrides-store';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { renderHookWithProviders } from '@navet/app/test/render';
@@ -44,7 +45,8 @@ function createEntity(
   providerId: NavetEntity['providerId'],
   externalId: string,
   name: string,
-  roomId?: string
+  roomId?: string,
+  type: NavetEntity['type'] = 'light'
 ): NavetEntity {
   const canonicalId = `${providerId}:${externalId}`;
   return {
@@ -52,7 +54,7 @@ function createEntity(
     canonicalId,
     providerId,
     externalId,
-    type: 'light',
+    type,
     name,
     room: roomId?.split(':').at(-1),
     roomId,
@@ -63,13 +65,19 @@ function createEntity(
   };
 }
 
-function renderController(manageableRooms: PlatformManageableRoomReference[] = []) {
+function renderController(
+  manageableRooms: PlatformManageableRoomReference[] = [],
+  dashboardEntityIds?: readonly string[],
+  dashboardVisibleEntityIds?: readonly string[]
+) {
   return renderHookWithProviders(() =>
     useRoomWorkspaceController({
       isOpen: true,
       manageableRooms,
       roomHiddenItemCounts: new Map(),
       roomEntityCounts: new Map(),
+      dashboardEntityIds,
+      dashboardVisibleEntityIds,
     })
   );
 }
@@ -91,6 +99,134 @@ describe('useRoomWorkspaceController', () => {
     await resetAppStores();
     executeRoomMutationPlanMock.mockReset();
     executeRoomMutationPlanMock.mockImplementation(async (plan) => succeedPlan(plan));
+  });
+
+  it('separates dashboard devices from hidden and not-shown sensors', async () => {
+    const livingRoom = createRoom('home_assistant', 'living-room', 'Living Room');
+    const visibleLight = createEntity(
+      'home_assistant',
+      'light.visible',
+      'Visible light',
+      livingRoom.canonicalId
+    );
+    const hiddenLight = createEntity(
+      'home_assistant',
+      'light.hidden',
+      'Hidden light',
+      livingRoom.canonicalId
+    );
+    const shownSensor = createEntity(
+      'home_assistant',
+      'sensor.shown',
+      'Shown sensor',
+      livingRoom.canonicalId,
+      'sensor'
+    );
+    shownSensor.attributes = { device_class: 'temperature' };
+    const hiddenSensor = createEntity(
+      'home_assistant',
+      'sensor.hidden',
+      'Hidden sensor',
+      livingRoom.canonicalId,
+      'sensor'
+    );
+    const absorbedChild = createEntity(
+      'home_assistant',
+      'sensor.absorbed',
+      'Absorbed child',
+      livingRoom.canonicalId,
+      'sensor'
+    );
+
+    integrationStore.setState({
+      normalizedRoomsByCanonicalId: { [livingRoom.canonicalId]: livingRoom },
+      providerEntitiesByCanonicalId: {
+        [visibleLight.canonicalId]: visibleLight,
+        [hiddenLight.canonicalId]: hiddenLight,
+        [shownSensor.canonicalId]: shownSensor,
+        [hiddenSensor.canonicalId]: hiddenSensor,
+        [absorbedChild.canonicalId]: absorbedChild,
+      },
+    });
+    useDashboardEntitiesStore.setState({
+      hiddenEntityIds: [hiddenLight.canonicalId],
+      shownSensorEntityIds: [shownSensor.canonicalId],
+    });
+
+    const { result } = renderController(
+      [],
+      [
+        visibleLight.canonicalId,
+        hiddenLight.canonicalId,
+        shownSensor.canonicalId,
+        hiddenSensor.canonicalId,
+      ],
+      [visibleLight.canonicalId, shownSensor.canonicalId]
+    );
+    await waitFor(() => expect(result.current.viewModel.devices).toHaveLength(5));
+
+    const dashboardDevices = new Map(
+      result.current.viewModel.devices.map((device) => [
+        device.id,
+        {
+          isDashboardDevice: device.isDashboardDevice,
+          isShownOnDashboard: device.isShownOnDashboard,
+        },
+      ])
+    );
+    expect(dashboardDevices.get(visibleLight.canonicalId)).toEqual({
+      isDashboardDevice: true,
+      isShownOnDashboard: true,
+    });
+    expect(dashboardDevices.get(hiddenLight.canonicalId)).toEqual({
+      isDashboardDevice: true,
+      isShownOnDashboard: false,
+    });
+    expect(dashboardDevices.get(shownSensor.canonicalId)).toEqual({
+      isDashboardDevice: true,
+      isShownOnDashboard: true,
+    });
+    expect(dashboardDevices.get(hiddenSensor.canonicalId)).toEqual({
+      isDashboardDevice: true,
+      isShownOnDashboard: false,
+    });
+    expect(dashboardDevices.get(absorbedChild.canonicalId)).toEqual({
+      isDashboardDevice: false,
+      isShownOnDashboard: false,
+    });
+    expect(
+      result.current.viewModel.devices.find((device) => device.id === shownSensor.canonicalId)
+    ).toMatchObject({
+      entityType: 'sensor',
+      deviceClass: 'temperature',
+    });
+  });
+
+  it('hides and shows a dashboard device from the room editor', async () => {
+    const kitchen = createRoom('home_assistant', 'kitchen', 'Kitchen');
+    const lamp = createEntity(
+      'home_assistant',
+      'light.kitchen',
+      'Kitchen light',
+      kitchen.canonicalId
+    );
+    integrationStore.setState({
+      normalizedRoomsByCanonicalId: { [kitchen.canonicalId]: kitchen },
+      providerEntitiesByCanonicalId: { [lamp.canonicalId]: lamp },
+    });
+
+    const { result } = renderController([], [lamp.canonicalId], [lamp.canonicalId]);
+    await waitFor(() => expect(result.current.viewModel.devices).toHaveLength(1));
+
+    act(() => {
+      result.current.actions.onDeviceVisibilityChange?.(lamp.canonicalId, false);
+    });
+    expect(useDashboardEntitiesStore.getState().hiddenEntityIds).toContain(lamp.canonicalId);
+
+    act(() => {
+      result.current.actions.onDeviceVisibilityChange?.(lamp.canonicalId, true);
+    });
+    expect(useDashboardEntitiesStore.getState().hiddenEntityIds).not.toContain(lamp.canonicalId);
   });
 
   it('keeps provider room identity stable while editing organization and appearance', async () => {
@@ -118,13 +254,7 @@ describe('useRoomWorkspaceController', () => {
     expect(groupId).toBeDefined();
 
     act(() => {
-      result.current.actions.onRequestRoomRename?.(roomId as string);
-    });
-    await waitFor(() =>
-      expect(result.current.pendingOperation).toMatchObject({ kind: 'rename-room', roomId })
-    );
-    act(() => {
-      result.current.confirmNameOperation('Cooking');
+      result.current.actions.onRoomNameChange?.(roomId as string, 'Cooking');
     });
     act(() => {
       result.current.actions.onRoomGroupChange?.(roomId as string, groupId as string);
@@ -157,6 +287,45 @@ describe('useRoomWorkspaceController', () => {
         image: { kind: 'url', value: 'https://example.com/kitchen.jpg' },
       },
     });
+  });
+
+  it('drafts an inline room rename and sends it to the provider only when saved', async () => {
+    const kitchen = createRoom('home_assistant', 'kitchen', 'Kitchen');
+    integrationStore.setState({
+      normalizedRoomsByCanonicalId: { [kitchen.canonicalId]: kitchen },
+    });
+
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.draftWorkspace?.rooms).toHaveLength(1));
+    const roomId = result.current.draftWorkspace?.rooms[0]?.id as string;
+
+    act(() => {
+      result.current.actions.onRoomNameChange?.(roomId, '');
+    });
+    expect(result.current.viewModel.rooms[0]?.nameDraft).toBe('');
+    expect(result.current.viewModel.hasValidationErrors).toBe(true);
+    expect(result.current.draftWorkspace?.rooms[0]?.displayName).toBe('Kitchen');
+
+    act(() => {
+      result.current.actions.onRoomNameChange?.(roomId, 'Cooking');
+    });
+    expect(result.current.viewModel.hasValidationErrors).toBe(false);
+    expect(result.current.draftWorkspace?.rooms[0]?.displayName).toBe('Cooking');
+    expect(executeRoomMutationPlanMock).not.toHaveBeenCalled();
+
+    act(() => {
+      result.current.actions.onSave();
+    });
+
+    await waitFor(() => expect(result.current.saveOutcome.kind).toBe('saved'));
+    expect(executeRoomMutationPlanMock).toHaveBeenCalledTimes(1);
+    expect(executeRoomMutationPlanMock.mock.calls[0]?.[0].steps).toContainEqual(
+      expect.objectContaining({
+        operation: 'rename',
+        roomId: kitchen.canonicalId,
+        name: 'Cooking',
+      })
+    );
   });
 
   it('moves a dropped room into the target room group and preserves the dropped order', async () => {
@@ -298,6 +467,50 @@ describe('useRoomWorkspaceController', () => {
     );
   });
 
+  it('stages a device move through the room target flow', async () => {
+    const lounge = createRoom('homey', 'lounge', 'Lounge', ['homey:lamp']);
+    const office = createRoom('homey', 'office', 'Office');
+    const lamp = createEntity('homey', 'lamp', 'Lamp', lounge.canonicalId);
+    integrationStore.setState({
+      normalizedRoomsByCanonicalId: {
+        [lounge.canonicalId]: lounge,
+        [office.canonicalId]: office,
+      },
+      providerEntitiesByCanonicalId: { [lamp.canonicalId]: lamp },
+    });
+
+    const { result } = renderController([], [lamp.canonicalId], [lamp.canonicalId]);
+    await waitFor(() => expect(result.current.draftWorkspace?.rooms).toHaveLength(2));
+    const loungeRoomId = result.current.draftWorkspace?.rooms.find(
+      (room) => room.displayName === 'Lounge'
+    )?.id;
+    const officeRoomId = result.current.draftWorkspace?.rooms.find(
+      (room) => room.displayName === 'Office'
+    )?.id;
+
+    act(() => {
+      result.current.actions.onSelectRoom(loungeRoomId as string);
+    });
+    act(() => {
+      result.current.actions.onRequestDeviceMove?.(lamp.canonicalId);
+    });
+    expect(result.current.pendingOperation).toMatchObject({
+      kind: 'move-device',
+      deviceId: lamp.canonicalId,
+      sourceRoomId: loungeRoomId,
+    });
+
+    act(() => {
+      result.current.confirmDeviceMove(officeRoomId as string);
+    });
+
+    expect(
+      result.current.viewModel.devices.find((device) => device.id === lamp.canonicalId)
+    ).toMatchObject({ roomId: officeRoomId, roomName: 'Office' });
+    expect(result.current.viewModel.hasUnsavedChanges).toBe(true);
+    expect(result.current.pendingOperation).toBeNull();
+  });
+
   it('creates a split room in the same group and enters device selection', async () => {
     const kitchen = createRoom('home_assistant', 'kitchen', 'Kitchen');
     integrationStore.setState({
@@ -343,6 +556,89 @@ describe('useRoomWorkspaceController', () => {
       stage: 'device-selection',
       selectedRoomId: splitRoom?.id,
     });
+  });
+
+  it('stages one room move and clears it when the device returns to its saved room', async () => {
+    const lounge = createRoom('homey', 'lounge', 'Lounge', ['homey:lamp']);
+    const office = createRoom('homey', 'office', 'Office');
+    const lamp = createEntity('homey', 'lamp', 'Lamp', lounge.canonicalId);
+    integrationStore.setState({
+      normalizedRoomsByCanonicalId: {
+        [lounge.canonicalId]: lounge,
+        [office.canonicalId]: office,
+      },
+      providerEntitiesByCanonicalId: { [lamp.canonicalId]: lamp },
+    });
+
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.draftWorkspace?.rooms).toHaveLength(2));
+    const loungeRoomId = result.current.draftWorkspace?.rooms.find(
+      (room) => room.displayName === 'Lounge'
+    )?.id;
+    const officeRoomId = result.current.draftWorkspace?.rooms.find(
+      (room) => room.displayName === 'Office'
+    )?.id;
+
+    act(() => {
+      result.current.actions.onSelectRoom(officeRoomId as string);
+    });
+    act(() => {
+      result.current.actions.onDeviceSelectionChange?.(lamp.canonicalId, true);
+    });
+
+    await waitFor(() => {
+      expect(result.current.viewModel.hasUnsavedChanges).toBe(true);
+      expect(result.current.viewModel.unsavedChangeCount).toBe(1);
+      expect(
+        result.current.viewModel.devices.find((device) => device.id === lamp.canonicalId)
+      ).toMatchObject({ roomId: officeRoomId, roomName: 'Office' });
+    });
+
+    act(() => {
+      result.current.actions.onSelectRoom(loungeRoomId as string);
+    });
+    act(() => {
+      result.current.actions.onDeviceSelectionChange?.(lamp.canonicalId, true);
+    });
+
+    await waitFor(() => {
+      expect(result.current.viewModel.hasUnsavedChanges).toBe(false);
+      expect(result.current.viewModel.unsavedChangeCount).toBe(0);
+    });
+  });
+
+  it('discards a newly selected room without leaving the editor on a missing room', async () => {
+    const lounge = createRoom('homey', 'lounge', 'Lounge');
+    integrationStore.setState({
+      normalizedRoomsByCanonicalId: { [lounge.canonicalId]: lounge },
+    });
+
+    const { result } = renderController();
+    await waitFor(() => expect(result.current.draftWorkspace?.rooms).toHaveLength(1));
+    act(() => {
+      result.current.actions.onAddRoom?.();
+    });
+    await waitFor(() =>
+      expect(result.current.pendingOperation).toMatchObject({ kind: 'create-room' })
+    );
+    act(() => {
+      result.current.confirmNameOperation('Reading nook');
+    });
+
+    act(() => {
+      result.current.actions.onDiscard();
+    });
+
+    expect(result.current.viewModel).toMatchObject({
+      stage: 'room-details',
+      hasUnsavedChanges: false,
+      unsavedChangeCount: 0,
+    });
+    expect(
+      result.current.draftWorkspace?.rooms.some(
+        (room) => room.id === result.current.viewModel.selectedRoomId
+      )
+    ).toBe(true);
   });
 
   it('saves and later clears a local placement without requiring unsupported provider mutations', async () => {
@@ -639,16 +935,7 @@ describe('useRoomWorkspaceController', () => {
       room.sourceRefs.some((source) => source.canonicalId === office.canonicalId)
     )?.id;
     act(() => {
-      result.current.actions.onRequestRoomRename?.(kitchenRoomId as string);
-    });
-    await waitFor(() =>
-      expect(result.current.pendingOperation).toMatchObject({
-        kind: 'rename-room',
-        roomId: kitchenRoomId,
-      })
-    );
-    act(() => {
-      result.current.confirmNameOperation('Kitchen & dining');
+      result.current.actions.onRoomNameChange?.(kitchenRoomId as string, 'Kitchen & dining');
     });
     act(() => {
       result.current.actions.onSelectRoom(officeRoomId as string);
@@ -659,6 +946,12 @@ describe('useRoomWorkspaceController', () => {
     await waitFor(() =>
       expect(result.current.viewModel.selectedDeviceIds).toContain(light.canonicalId)
     );
+    expect(
+      result.current.viewModel.changes.find((change) => change.id === 'provider-changes')?.details
+    ).toEqual([
+      'Home Assistant · Kitchen → Kitchen & dining',
+      'Home Assistant · Ceiling light: Kitchen → Office',
+    ]);
     act(() => {
       result.current.actions.onSave();
     });
@@ -703,16 +996,7 @@ describe('useRoomWorkspaceController', () => {
     )?.id;
 
     act(() => {
-      result.current.actions.onRequestRoomRename?.(kitchenRoomId as string);
-    });
-    await waitFor(() =>
-      expect(result.current.pendingOperation).toMatchObject({
-        kind: 'rename-room',
-        roomId: kitchenRoomId,
-      })
-    );
-    act(() => {
-      result.current.confirmNameOperation('Kitchen & dining');
+      result.current.actions.onRoomNameChange?.(kitchenRoomId as string, 'Kitchen & dining');
     });
     act(() => {
       result.current.actions.onSelectRoom(officeRoomId as string);

@@ -1,4 +1,4 @@
-import { homeAssistantResourceResolver } from '@navet/app/infrastructure/home-assistant/home-assistant-infrastructure';
+import { homeAssistantResourceResolver } from '@navet/app/infrastructure/home-assistant/home-assistant-resource-infrastructure';
 
 const HOME_ASSISTANT_PROXY_PATH = '/__navet_ha_proxy__';
 

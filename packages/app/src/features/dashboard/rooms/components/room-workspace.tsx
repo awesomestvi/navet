@@ -12,7 +12,6 @@ import type { RoomWorkspaceComponentProps, RoomWorkspaceLayout } from './room-wo
 import {
   RoomOutline,
   RoomWorkspaceActivePanel,
-  RoomWorkspaceContextPanel,
   RoomWorkspaceHeader,
   RoomWorkspaceStatusPanel,
 } from './room-workspace-panels';
@@ -87,7 +86,7 @@ export function RoomsWorkspaceDesktop(props: RoomsWorkspaceProps) {
     return <WorkspaceStatus {...props} headerTrailing={headerTrailing} />;
   }
 
-  const panelProps = { ...props, surface, accentColor };
+  const panelProps = { ...props, surface, accentColor, showInlineSaveBar: true };
 
   return (
     <section
@@ -103,12 +102,11 @@ export function RoomsWorkspaceDesktop(props: RoomsWorkspaceProps) {
       data-room-workspace-layout="desktop"
     >
       <RoomWorkspaceHeader {...panelProps} trailingAction={headerTrailing} />
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(16rem,0.72fr)_minmax(24rem,1.36fr)_minmax(17rem,0.78fr)]">
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(16rem,0.64fr)_minmax(0,1.36fr)]">
         <RoomOutline {...panelProps} />
-        <main className={cn('min-h-0 border-x', surface.border)}>
+        <main className={cn('min-h-0 border-l', surface.border)}>
           <RoomWorkspaceActivePanel {...panelProps} />
         </main>
-        <RoomWorkspaceContextPanel {...panelProps} />
       </div>
     </section>
   );
@@ -122,7 +120,7 @@ export function RoomsWorkspaceTablet(props: RoomsWorkspaceProps) {
     return <WorkspaceStatus {...props} headerTrailing={headerTrailing} />;
   }
 
-  const panelProps = { ...props, surface, accentColor };
+  const panelProps = { ...props, surface, accentColor, showInlineSaveBar: true };
 
   return (
     <section
@@ -138,7 +136,7 @@ export function RoomsWorkspaceTablet(props: RoomsWorkspaceProps) {
       data-room-workspace-layout="tablet"
     >
       <RoomWorkspaceHeader {...panelProps} trailingAction={headerTrailing} />
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(15rem,0.72fr)_minmax(0,1.28fr)]">
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(15rem,0.64fr)_minmax(0,1.36fr)]">
         <RoomOutline {...panelProps} />
         <main className={cn('min-h-0 border-l', surface.border)}>
           <RoomWorkspaceActivePanel {...panelProps} />
@@ -156,9 +154,14 @@ export function RoomsWorkspacePhone(props: RoomsWorkspaceProps) {
     return <WorkspaceStatus {...props} headerTrailing={headerTrailing} />;
   }
 
-  const panelProps = { ...props, surface, accentColor };
+  const panelProps = { ...props, surface, accentColor, showInlineSaveBar: true };
   const showBrowseOutline = viewModel.mode === 'browse' && viewModel.selectedRoomId === null;
   const showBrowseBack = viewModel.mode === 'browse' && viewModel.selectedRoomId !== null;
+  const showManageOutline = viewModel.mode === 'manage' && viewModel.stage === 'structure';
+  const showManageBack =
+    viewModel.mode === 'manage' &&
+    viewModel.stage !== 'structure' &&
+    viewModel.stage !== 'impact-review';
 
   return (
     <section
@@ -174,11 +177,17 @@ export function RoomsWorkspacePhone(props: RoomsWorkspaceProps) {
       data-room-workspace-layout="phone"
     >
       <RoomWorkspaceHeader {...panelProps} trailingAction={headerTrailing} />
-      {showBrowseBack ? (
+      {showBrowseBack || showManageBack ? (
         <div className={cn('border-b px-3 py-2', surface.border)}>
           <Button
             variant="ghost"
-            onClick={() => actions.onSelectRoom(null)}
+            onClick={() => {
+              if (showManageBack) {
+                actions.onStageChange('structure');
+              } else {
+                actions.onSelectRoom(null);
+              }
+            }}
             leading={<ArrowLeft className={navetIconSizeTokens.sm} />}
             className="min-h-11 motion-reduce:transition-none"
           >
@@ -187,7 +196,7 @@ export function RoomsWorkspacePhone(props: RoomsWorkspaceProps) {
         </div>
       ) : null}
       <main className="min-h-0 flex-1">
-        {showBrowseOutline ? (
+        {showBrowseOutline || showManageOutline ? (
           <RoomOutline {...panelProps} />
         ) : (
           <RoomWorkspaceActivePanel {...panelProps} />

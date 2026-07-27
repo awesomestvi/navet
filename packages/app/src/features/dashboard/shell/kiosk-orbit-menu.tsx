@@ -325,6 +325,8 @@ export const KioskOrbitMenu = memo(function KioskOrbitMenu({
           manageableRooms={editActions.reorderRooms.manageableRooms}
           roomHiddenItemCounts={editActions.reorderRooms.roomHiddenItemCounts}
           roomEntityCounts={editActions.reorderRooms.roomItemCounts}
+          dashboardEntityIds={editActions.reorderRooms.dashboardEntityIds}
+          dashboardVisibleEntityIds={editActions.reorderRooms.dashboardVisibleEntityIds}
           onRoomOrderChange={editActions.reorderRooms.onRoomOrderChange}
           onHiddenRoomsChange={editActions.reorderRooms.onHiddenRoomsChange}
         />

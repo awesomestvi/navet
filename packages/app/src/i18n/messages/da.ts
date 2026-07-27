@@ -551,8 +551,8 @@ export const daMessages = {
   'dashboard.roomsWorkspace.title': 'Værelser',
   'dashboard.roomsWorkspace.description':
     'Organiser værelser, grupper og enheder uden at gøre den daglige navigation langsommere.',
-  'dashboard.roomsWorkspace.browseMode': 'Gennemse',
-  'dashboard.roomsWorkspace.manageMode': 'Administrer',
+  'dashboard.roomsWorkspace.browseMode': 'Afslut redigering',
+  'dashboard.roomsWorkspace.manageMode': 'Rediger værelser',
   'dashboard.roomsWorkspace.searchLabel': 'Søg efter værelser',
   'dashboard.roomsWorkspace.searchPlaceholder': 'Søg efter værelser eller grupper',
   'dashboard.roomsWorkspace.clearSearch': 'Ryd søgning',
@@ -565,8 +565,11 @@ export const daMessages = {
   'dashboard.roomsWorkspace.roomDetailsTitle': 'Værelsesdetaljer',
   'dashboard.roomsWorkspace.roomDetailsDescription':
     'Opdater navn, synlighed, favoritstatus og udseende for værelset.',
-  'dashboard.roomsWorkspace.devicesTitle': 'Enheder',
-  'dashboard.roomsWorkspace.devicesDescription': 'Vælg de enheder, der hører til i dette værelse.',
+  'dashboard.roomsWorkspace.devicesTitle': 'Enheder i dette værelse',
+  'dashboard.roomsWorkspace.devicesDescription':
+    'Gennemgå tildelte enheder, eller tilføj en anden enhed.',
+  'dashboard.roomsWorkspace.dashboardDevices': 'På dashboardet',
+  'dashboard.roomsWorkspace.hiddenDevices': 'Skjulte',
   'dashboard.roomsWorkspace.impactTitle': 'Gennemse ændringer',
   'dashboard.roomsWorkspace.impactDescription':
     'Kontrollér, hvad der ændres i Navet og tilsluttede systemer, før du gemmer.',
@@ -582,10 +585,18 @@ export const daMessages = {
     'Flet dette værelse med et andet, og hold enhederne samlet.',
   'dashboard.roomsWorkspace.splitRoom': 'Opdel værelse',
   'dashboard.roomsWorkspace.splitRoomDescription': 'Flyt valgte enheder til et nyt værelse.',
-  'dashboard.roomsWorkspace.manageDevices': 'Administrer enheder',
+  'dashboard.roomsWorkspace.manageDevices': 'Tilføj enheder',
+  'dashboard.roomsWorkspace.addDevice': 'Tilføj',
+  'dashboard.roomsWorkspace.deviceActions': 'Handlinger',
+  'dashboard.roomsWorkspace.hideDevice': 'Skjul',
+  'dashboard.roomsWorkspace.showDevice': 'Vis',
+  'dashboard.roomsWorkspace.moveDevice': 'Flyt',
+  'dashboard.roomsWorkspace.removeDevice': 'Fjern',
+  'dashboard.roomsWorkspace.notInRoom': 'Ikke i et værelse',
+  'dashboard.roomsWorkspace.deviceSearchPlaceholder': 'Søg efter enheder',
   'dashboard.roomsWorkspace.reviewChanges': 'Gennemse ændringer',
   'dashboard.roomsWorkspace.saveChanges': 'Gem ændringer',
-  'dashboard.roomsWorkspace.cancel': 'Annuller',
+  'dashboard.roomsWorkspace.cancel': 'Kassér ændringer',
   'dashboard.roomsWorkspace.back': 'Tilbage',
   'dashboard.roomsWorkspace.retry': 'Prøv igen',
   'dashboard.roomsWorkspace.roomNameLabel': 'Værelsesnavn',
@@ -621,6 +632,12 @@ export const daMessages = {
   'dashboard.roomsWorkspace.noDevicesTitle': 'Ingen enheder her endnu',
   'dashboard.roomsWorkspace.noDevicesDescription':
     'Tilføj enheder for at gøre værelset nyttigt på dashboardet.',
+  'dashboard.roomsWorkspace.noDashboardDevicesTitle': 'Ingen enheder på dashboardet',
+  'dashboard.roomsWorkspace.noDashboardDevicesDescription':
+    'Enheder, der er tildelt dette værelse, vises ikke på dashboardet.',
+  'dashboard.roomsWorkspace.noHiddenDevicesTitle': 'Ingen skjulte enheder',
+  'dashboard.roomsWorkspace.noHiddenDevicesDescription':
+    'Alle enheder i dette værelse vises på dashboardet.',
   'dashboard.roomsWorkspace.noChangesTitle': 'Intet at gennemse',
   'dashboard.roomsWorkspace.noChangesDescription':
     'Foretag først en ændring i et værelse, en gruppe eller en enhed.',
@@ -628,7 +645,7 @@ export const daMessages = {
   'dashboard.roomsWorkspace.roomActivityTitle': 'Aktivitet i værelset',
   'dashboard.roomsWorkspace.roomActionsTitle': 'Værelseshandlinger',
   'dashboard.roomsWorkspace.pendingChangesTitle': 'Ventende ændringer',
-  'dashboard.roomsWorkspace.unsavedChanges': 'Ikke-gemte ændringer',
+  'dashboard.roomsWorkspace.unsavedChanges': '{count} ikke-gemte ændringer',
   'dashboard.roomsWorkspace.allChangesSaved': 'Alle ændringer er gemt',
   'dashboard.roomsWorkspace.closeSheet': 'Luk værelser',
   'dashboard.roomsWorkspace.status.loading': 'Indlæser værelser…',
@@ -689,6 +706,16 @@ export const daMessages = {
   'dashboard.roomsWorkspace.merge.action': 'Flet værelser',
   'dashboard.roomsWorkspace.merge.success': 'Værelserne blev flettet',
   'dashboard.roomsWorkspace.merge.failure': 'Værelserne kunne ikke flettes',
+  'dashboard.roomsWorkspace.moveDeviceDialog.title': 'Flyt enhed',
+  'dashboard.roomsWorkspace.moveDeviceDialog.description':
+    'Vælg et andet værelse til enheden. Flytningen udføres, når du gemmer ændringerne.',
+  'dashboard.roomsWorkspace.moveDeviceDialog.targetLabel': 'Målværelse',
+  'dashboard.roomsWorkspace.moveDeviceDialog.searchLabel': 'Søg i værelser',
+  'dashboard.roomsWorkspace.moveDeviceDialog.searchPlaceholder': 'Søg i værelser',
+  'dashboard.roomsWorkspace.moveDeviceDialog.emptyTitle': 'Ingen andre værelser',
+  'dashboard.roomsWorkspace.moveDeviceDialog.emptyDescription':
+    'Tilføj et andet værelse, før du flytter enheden.',
+  'dashboard.roomsWorkspace.moveDeviceDialog.action': 'Flyt enhed',
   'dashboard.roomsWorkspace.split.title': 'Opdel værelse',
   'dashboard.roomsWorkspace.split.description':
     'Navngiv det nye værelse, og vælg de enheder, der skal flyttes.',

@@ -184,7 +184,7 @@ export function useDashboardController(): DashboardController {
   );
   const devices = dashboardVisibility.visibleDevices;
   const availableDevices = dashboardVisibility.availableDevices;
-  const countableDevices = useMemo(() => devices, [devices]);
+  const countableDevices = useMemo(() => availableDevices, [availableDevices]);
   const aggregatedRooms = useAggregatedRooms();
   const shouldPrepareRoomCounts = sectionDeviceKeys === DEVICE_COLLECTION_KEYS;
   const countableRooms = useMemo(

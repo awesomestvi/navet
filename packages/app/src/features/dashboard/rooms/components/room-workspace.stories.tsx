@@ -1,5 +1,8 @@
+import { IconButton } from '@navet/app/components/primitives';
+import { navetIconSizeTokens } from '@navet/app/components/system/tokens';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import type { Meta, StoryObj } from '@storybook/react';
+import { X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { expect, userEvent, within } from 'storybook/test';
 import { RoomsWorkspace } from './room-workspace';
@@ -9,24 +12,25 @@ import type {
   RoomWorkspaceLayout,
   RoomWorkspaceViewModel,
 } from './room-workspace.types';
+import { RoomDeviceSelectionSheet } from './room-workspace-overlays';
 
 export const roomWorkspaceEnglishLabels: RoomWorkspaceLabels = {
   title: 'Rooms',
   description: 'Browse your home or make deliberate changes without losing context.',
-  browseMode: 'Browse',
-  manageMode: 'Manage',
-  searchLabel: 'Search rooms and devices',
-  searchPlaceholder: 'Search rooms and devices',
+  browseMode: 'Done editing',
+  manageMode: 'Edit rooms',
+  searchLabel: 'Search rooms or groups',
+  searchPlaceholder: 'Search rooms or groups',
   clearSearch: 'Clear search',
-  roomsRegion: 'Home outline',
+  roomsRegion: 'Rooms and groups',
   workspaceRegion: 'Room workspace',
   contextRegion: 'Room context',
-  structureTitle: 'Home structure',
-  structureDescription: 'Set the order people see while moving through the home.',
-  roomDetailsTitle: 'Room details',
+  roomDetailsTitle: 'Room settings',
   roomDetailsDescription: 'Keep identity and everyday visibility easy to understand.',
   devicesTitle: 'Devices',
-  devicesDescription: 'Choose what belongs in this room. Unavailable devices stay identifiable.',
+  devicesDescription: 'Review assigned devices or add another device.',
+  dashboardDevices: 'On dashboard',
+  hiddenDevices: 'Hidden',
   impactTitle: 'Review impact',
   impactDescription: 'Check every pending move and removal before it changes the home.',
   addRoom: 'Add room',
@@ -35,15 +39,21 @@ export const roomWorkspaceEnglishLabels: RoomWorkspaceLabels = {
   moreActions: 'More actions',
   renameGroup: 'Rename group',
   deleteGroup: 'Delete group',
-  editRoom: 'Edit room',
   mergeRoom: 'Merge room',
   mergeRoomDescription: 'Choose another room and combine their devices and dashboard content.',
   splitRoom: 'Split room',
   splitRoomDescription: 'Create a new room from a selected set of devices.',
-  manageDevices: 'Manage devices',
-  reviewChanges: 'Review changes',
+  manageDevices: 'Add devices',
+  addDevice: 'Add',
+  deviceActions: 'Actions',
+  hideDevice: 'Hide',
+  showDevice: 'Show',
+  moveDevice: 'Move',
+  removeDevice: 'Remove',
+  notInRoom: 'Not in a room',
+  deviceSearchPlaceholder: 'Search devices',
   saveChanges: 'Save changes',
-  cancel: 'Cancel',
+  discardChanges: 'Discard changes',
   back: 'Back',
   retry: 'Try again',
   roomNameLabel: 'Room name',
@@ -65,23 +75,22 @@ export const roomWorkspaceEnglishLabels: RoomWorkspaceLabels = {
   selectRoom: 'Open room',
   collapseGroup: 'Collapse group',
   expandGroup: 'Expand group',
-  selectAll: 'Select all',
-  clearSelection: 'Clear selection',
-  selected: 'selected',
-  unavailable: 'Unavailable',
   noRoomsFoundTitle: 'No rooms found',
   noRoomsFoundDescription: 'Try another search or clear the current filter.',
   selectRoomTitle: 'Choose a room',
   selectRoomDescription: 'Select a room from the home outline to see its devices and status.',
   noDevicesTitle: 'No devices found',
   noDevicesDescription: 'Try another search or leave this room ready for devices later.',
+  noDashboardDevicesTitle: 'No dashboard devices',
+  noDashboardDevicesDescription: 'Devices assigned to this room are not shown on the dashboard.',
+  noHiddenDevicesTitle: 'No hidden devices',
+  noHiddenDevicesDescription: 'Every device in this room is shown on the dashboard.',
   noChangesTitle: 'Everything is settled',
   noChangesDescription: 'There are no pending room changes to review.',
   currentRoomTitle: 'Current room',
-  roomActivityTitle: 'Attention',
   roomActionsTitle: 'Room actions',
   pendingChangesTitle: 'Pending changes',
-  unsavedChanges: 'Changes stay local until you save.',
+  unsavedChanges: (count) => `${count} unsaved ${count === 1 ? 'change' : 'changes'}`,
   allChangesSaved: 'All room changes are saved.',
   closeSheet: 'Close room management',
 };
@@ -93,7 +102,7 @@ const rooms: RoomWorkspaceViewModel['rooms'] = [
     groupId: 'ground-floor',
     symbol: '⌂',
     image: 'builtin:aurora-haze-01',
-    description: 'The shared center of the home.',
+    description: 'Home Assistant',
     deviceSummary: '14 devices',
     attentionSummary: '2 devices need attention',
     statusLabel: 'Active',
@@ -205,45 +214,83 @@ const devices: RoomWorkspaceViewModel['devices'] = [
   {
     id: 'living-lights',
     name: 'Ceiling lights',
+    entityType: 'light',
     description: 'Lighting · Living Room',
     stateLabel: 'On · 42%',
     roomId: 'living-room',
+    roomName: 'Living Room',
+    isDashboardDevice: true,
+    isShownOnDashboard: true,
   },
   {
     id: 'living-speaker',
     name: 'Living room speaker',
+    entityType: 'media_player',
+    deviceClass: 'speaker',
     description: 'Media · Living Room',
     stateLabel: 'Playing',
     roomId: 'living-room',
+    roomName: 'Living Room',
+    isDashboardDevice: true,
+    isShownOnDashboard: true,
   },
   {
     id: 'living-climate',
     name: 'Main thermostat',
+    entityType: 'climate',
     description: 'Climate · Living Room',
     stateLabel: '21.4°',
     roomId: 'living-room',
+    roomName: 'Living Room',
+    isDashboardDevice: true,
+    isShownOnDashboard: true,
   },
   {
     id: 'window-sensor',
     name: 'West window sensor',
+    entityType: 'binary_sensor',
+    deviceClass: 'window',
     description: 'Security · Living Room',
     stateLabel: 'Unavailable',
     roomId: 'living-room',
+    roomName: 'Living Room',
     isUnavailable: true,
+    isDashboardDevice: true,
+    isShownOnDashboard: false,
+  },
+  {
+    id: 'living-raw-child',
+    name: 'Raw provider child',
+    entityType: 'sensor',
+    description: 'Sensor · Living Room',
+    stateLabel: 'Idle',
+    roomId: 'living-room',
+    roomName: 'Living Room',
+    isDashboardDevice: false,
+    isShownOnDashboard: false,
   },
   {
     id: 'kitchen-pendants',
     name: 'Kitchen pendants',
+    entityType: 'light',
     description: 'Lighting · Kitchen',
     stateLabel: 'Off',
     roomId: 'kitchen',
+    roomName: 'Kitchen',
+    isDashboardDevice: true,
+    isShownOnDashboard: true,
   },
   {
     id: 'office-speakers',
     name: 'Studio monitors',
+    entityType: 'media_player',
+    deviceClass: 'speaker',
     description: 'Media · Office and Music Studio',
     stateLabel: 'Idle',
     roomId: 'office',
+    roomName: 'Office and Music Studio',
+    isDashboardDevice: true,
+    isShownOnDashboard: true,
   },
 ] as const;
 
@@ -261,6 +308,7 @@ export const roomWorkspaceBaseViewModel: RoomWorkspaceViewModel = {
   selectedDeviceIds: ['living-lights', 'living-speaker', 'living-climate'],
   selectionSummary: '3 devices selected',
   changes: [],
+  unsavedChangeCount: 0,
   hasUnsavedChanges: false,
   isSaving: false,
 };
@@ -370,17 +418,20 @@ function WorkspaceStory({ layout, initialViewModel, phoneFrame = false }: Worksp
           hasUnsavedChanges: true,
           stage: 'impact-review',
         })),
-      onRequestRoomRename: (roomId) =>
+      onRoomNameChange: (roomId, name) =>
         setModel((current) => ({
           ...current,
           changes: [
-            ...current.changes,
+            ...current.changes.filter((change) => change.id !== `rename-${roomId}`),
             {
               id: `rename-${roomId}`,
-              title: 'Room rename requested',
-              description: 'The production surface opens the controlled rename dialog.',
+              title: 'Room name changes when saved',
+              description: `The room will be renamed to ${name}.`,
             },
           ],
+          rooms: current.rooms.map((room) =>
+            room.id === roomId ? { ...room, name, nameDraft: name } : room
+          ),
           hasUnsavedChanges: true,
         })),
       onRoomGroupChange: (roomId, groupId) =>
@@ -490,23 +541,32 @@ function WorkspaceStory({ layout, initialViewModel, phoneFrame = false }: Worksp
             hasUnsavedChanges: true,
           };
         }),
-      onMoveRoom: (roomId, direction) =>
-        setModel((current) => {
-          const nextRooms = [...current.rooms];
-          const index = nextRooms.findIndex((room) => room.id === roomId);
-          const target = direction === 'earlier' ? index - 1 : index + 1;
-          if (index < 0 || target < 0 || target >= nextRooms.length) {
-            return current;
-          }
-          [nextRooms[index], nextRooms[target]] = [nextRooms[target], nextRooms[index]];
-          return { ...current, rooms: nextRooms, hasUnsavedChanges: true };
-        }),
       onToggleGroup: (groupId, isCollapsed) =>
         setModel((current) => ({
           ...current,
           groups: current.groups.map((group) =>
             group.id === groupId ? { ...group, isCollapsed } : group
           ),
+        })),
+      onDeviceVisibilityChange: (deviceId, visible) =>
+        setModel((current) => ({
+          ...current,
+          devices: current.devices.map((device) =>
+            device.id === deviceId ? { ...device, isShownOnDashboard: visible } : device
+          ),
+        })),
+      onRequestDeviceMove: (deviceId) =>
+        setModel((current) => ({
+          ...current,
+          changes: [
+            ...current.changes,
+            {
+              id: `move-${deviceId}`,
+              title: 'Device will move',
+              description: 'The selected device will move to another room.',
+            },
+          ],
+          hasUnsavedChanges: true,
         })),
       onDeviceSelectionChange: (deviceId, selected) =>
         setModel((current) => ({
@@ -519,14 +579,7 @@ function WorkspaceStory({ layout, initialViewModel, phoneFrame = false }: Worksp
             : 'Device removed from selection',
           hasUnsavedChanges: true,
         })),
-      onVisibleDeviceSelectionChange: (deviceIds, selected) =>
-        setModel((current) => ({
-          ...current,
-          selectedDeviceIds: selected ? [...deviceIds] : [],
-          selectionSummary: selected ? 'All visible devices selected' : 'Selection cleared',
-          hasUnsavedChanges: true,
-        })),
-      onCancel: () => setModel(initialViewModel),
+      onDiscard: () => setModel(initialViewModel),
       onSave: () =>
         setModel((current) => ({
           ...current,
@@ -543,20 +596,45 @@ function WorkspaceStory({ layout, initialViewModel, phoneFrame = false }: Worksp
     ...model,
     rooms: visibleRooms,
     groups: visibleGroups,
+    unsavedChangeCount: model.hasUnsavedChanges
+      ? Math.max(model.unsavedChangeCount, model.changes.length, 1)
+      : 0,
     resultSummary: normalizedQuery
       ? `${visibleRooms.length} matching room${visibleRooms.length === 1 ? '' : 's'}`
       : undefined,
   };
 
   return (
-    <div className={phoneFrame ? 'mx-auto w-full max-w-[430px]' : 'w-full'}>
-      <RoomsWorkspace
+    <>
+      <div className={phoneFrame ? 'mx-auto w-full max-w-[430px]' : 'w-full'}>
+        <RoomsWorkspace
+          viewModel={filteredModel}
+          labels={roomWorkspaceEnglishLabels}
+          actions={actions}
+          layout={layout}
+          headerTrailing={
+            <IconButton
+              variant="ghost"
+              label={roomWorkspaceEnglishLabels.closeSheet}
+              icon={<X className={navetIconSizeTokens.sm} aria-hidden="true" />}
+              onClick={() => undefined}
+              className="min-h-11 min-w-11 motion-reduce:transition-none"
+            />
+          }
+        />
+      </div>
+      <RoomDeviceSelectionSheet
+        isOpen={model.stage === 'device-selection'}
+        onOpenChange={(open) => {
+          if (!open) {
+            setModel((current) => ({ ...current, deviceQuery: '', stage: 'room-details' }));
+          }
+        }}
         viewModel={filteredModel}
         labels={roomWorkspaceEnglishLabels}
         actions={actions}
-        layout={layout}
       />
-    </div>
+    </>
   );
 }
 
@@ -593,9 +671,75 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const BrowseDesktop: Story = {};
+export const BrowseDesktop: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.queryByText('Current room')).toBeNull();
+    await expect(
+      canvas.queryByRole('complementary', { name: 'Room context' })
+    ).not.toBeInTheDocument();
+    await expect(
+      canvas
+        .getByRole('searchbox', { name: 'Search rooms or groups' })
+        .closest('[data-room-workspace-outline-content]')
+    ).not.toBeNull();
+    await expect(canvas.queryByRole('heading', { name: 'Devices' })).toBeNull();
+    await expect(canvas.queryByText('Review assigned devices or add another device.')).toBeNull();
+    await expect(canvas.getByRole('button', { name: 'On dashboard 3' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    await expect(
+      canvas
+        .getByRole('button', { name: 'On dashboard 3' })
+        .closest('[data-room-workspace-panel-content="browse"]')
+    ).not.toBeNull();
+    await expect(canvas.getByText('Ceiling lights')).toBeVisible();
+    await expect(canvas.queryByText('West window sensor')).toBeNull();
+    await expect(canvas.queryByText('Raw provider child')).toBeNull();
 
-export const ManageStructure: Story = {
+    const deviceSearch = canvas.getByRole('searchbox', { name: 'Search devices' });
+    await userEvent.type(deviceSearch, 'speaker');
+    await expect(canvas.getByText('Living room speaker')).toBeVisible();
+    await expect(canvas.queryByText('Ceiling lights')).toBeNull();
+    await userEvent.clear(deviceSearch);
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Hide: Ceiling lights' }));
+    await expect(canvas.queryByText('Ceiling lights')).toBeNull();
+    await userEvent.click(canvas.getByRole('button', { name: 'Hidden 2' }));
+    await expect(canvas.getByText('West window sensor')).toBeVisible();
+    await expect(canvas.getByText('Ceiling lights')).toBeVisible();
+    await expect(canvas.queryByText('Raw provider child')).toBeNull();
+    await userEvent.click(canvas.getByRole('button', { name: 'Show: Ceiling lights' }));
+    await expect(canvas.queryByText('Ceiling lights')).toBeNull();
+  },
+};
+
+export const UngroupedRooms: Story = {
+  args: {
+    initialViewModel: {
+      ...roomWorkspaceBaseViewModel,
+      rooms: roomWorkspaceBaseViewModel.rooms.map((room) =>
+        room.id === 'garden' ? { ...room, groupId: null } : room
+      ),
+      groups: roomWorkspaceBaseViewModel.groups.map((group) =>
+        group.id === 'outside' ? { ...group, roomIds: [], summary: '0 rooms' } : group
+      ),
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const noGroupDisclosure = canvas.getByRole('button', { name: 'No group' });
+
+    await expect(noGroupDisclosure).toHaveAttribute('aria-expanded', 'true');
+    await expect(canvas.getByText('Garden')).toBeVisible();
+    await userEvent.click(noGroupDisclosure);
+    await expect(noGroupDisclosure).toHaveAttribute('aria-expanded', 'false');
+    await expect(canvas.queryByText('Garden')).toBeNull();
+  },
+};
+
+export const ManageRoomEditor: Story = {
   args: {
     initialViewModel: {
       ...roomWorkspaceBaseViewModel,
@@ -605,13 +749,16 @@ export const ManageStructure: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole('heading', { name: 'Home structure' })).toBeInTheDocument();
+    await expect(canvas.getByRole('heading', { name: 'Living Room' })).toBeInTheDocument();
+    await expect(
+      canvas.queryByRole('complementary', { name: 'Room context' })
+    ).not.toBeInTheDocument();
+    await expect(canvas.getByText('All room changes are saved.')).toBeVisible();
     await expect(canvas.getAllByRole('button', { name: 'Add room' })[0]).toHaveClass('min-h-11');
     const dragHandle = canvas.getByRole('button', { name: 'Reorder room Living Room' });
     dragHandle.focus();
     await userEvent.keyboard('[Space][ArrowDown][Space]');
-    const workspace = within(canvas.getByRole('region', { name: 'Room workspace' }));
-    await expect(workspace.getByRole('button', { name: 'Review changes' })).toBeEnabled();
+    await expect(canvas.getByRole('button', { name: 'Save changes' })).toBeEnabled();
   },
 };
 
@@ -627,7 +774,6 @@ export const ReorderDisabledDuringSearch: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole('button', { name: 'Reorder room Living Room' })).toBeDisabled();
-    await expect(canvas.getByRole('button', { name: 'Move later: Living Room' })).toBeDisabled();
   },
 };
 
@@ -641,10 +787,36 @@ export const RoomDetails: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    await expect(canvas.getByRole('button', { name: 'Devices' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    await expect(
+      canvas
+        .getByRole('button', { name: 'Devices' })
+        .closest('[data-room-workspace-panel-content="manage"]')
+    ).not.toBeNull();
+    await expect(canvas.getByRole('button', { name: 'Add devices' })).toBeVisible();
+    await expect(canvas.queryByRole('heading', { name: 'Devices' })).toBeNull();
+    await expect(canvas.queryByText('Review assigned devices or add another device.')).toBeNull();
+    await userEvent.click(canvas.getByRole('button', { name: 'Actions: Ceiling lights' }));
+    await expect(page.getByRole('menuitem', { name: 'Hide' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Move' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Remove' })).toBeVisible();
+    await userEvent.click(page.getByRole('menuitem', { name: 'Hide' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Actions: Ceiling lights' }));
+    await expect(page.getByRole('menuitem', { name: 'Show' })).toBeVisible();
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(canvas.getByRole('button', { name: 'Room settings' }));
+    await expect(canvas.queryByRole('button', { name: 'Add devices' })).toBeNull();
+    await expect(canvas.queryByRole('button', { name: 'More actions' })).toBeNull();
+    await expect(canvas.getByRole('button', { name: /^Merge room/ })).toBeVisible();
+    await expect(canvas.getByRole('button', { name: /^Split room/ })).toBeVisible();
+    await expect(canvas.getByRole('button', { name: /^Delete room/ })).toBeVisible();
     await userEvent.selectOptions(canvas.getByRole('combobox', { name: 'Group' }), 'upper-floor');
     await expect(canvas.getByRole('combobox', { name: 'Group' })).toHaveValue('upper-floor');
-    const roomDetails = within(canvas.getByRole('region', { name: 'Room details' }));
-    await expect(roomDetails.getByRole('button', { name: 'Review changes' })).toBeEnabled();
+    await expect(canvas.getByRole('button', { name: 'Save changes' })).toBeEnabled();
   },
 };
 
@@ -653,13 +825,33 @@ export const DeviceSelection: Story = {
     initialViewModel: {
       ...roomWorkspaceBaseViewModel,
       mode: 'manage',
-      stage: 'device-selection',
+      stage: 'room-details',
     },
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('checkbox', { name: /Kitchen pendants/ }));
-    await expect(canvas.getByText('Device added to selection')).toBeInTheDocument();
+    const page = within(canvasElement.ownerDocument.body);
+
+    await expect(canvas.getByRole('button', { name: 'Devices' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    await expect(canvas.queryByRole('combobox', { name: 'Group' })).toBeNull();
+    await userEvent.click(canvas.getByRole('button', { name: 'Add devices' }));
+    await expect(await page.findByRole('dialog', { name: 'Add devices' })).toBeInTheDocument();
+    await expect(page.getByRole('searchbox', { name: 'Search devices' })).toBeInTheDocument();
+    await expect(page.queryByRole('button', { name: 'Add: West window sensor' })).toBeNull();
+
+    await userEvent.click(page.getByRole('button', { name: 'Add: Kitchen pendants' }));
+    await expect(page.queryByRole('button', { name: 'Add: Kitchen pendants' })).toBeNull();
+
+    await userEvent.click(page.getByRole('button', { name: 'Close room management' }));
+    await expect(page.queryByRole('dialog', { name: 'Add devices' })).toBeNull();
+    await expect(canvas.getByRole('button', { name: 'Devices' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    await expect(canvas.getByRole('button', { name: 'Save changes' })).toBeEnabled();
   },
 };
 
@@ -684,6 +876,36 @@ export const ImpactReview: Story = {
         },
       ],
     },
+  },
+};
+
+export const PendingProviderChanges: Story = {
+  args: {
+    initialViewModel: {
+      ...roomWorkspaceBaseViewModel,
+      mode: 'manage',
+      stage: 'impact-review',
+      hasUnsavedChanges: true,
+      unsavedChangeCount: 2,
+      changes: [
+        {
+          id: 'provider-changes',
+          title: 'In connected systems',
+          description: '2 provider changes',
+          details: [
+            'Home Assistant · Kitchen → Kitchen & dining',
+            'Home Assistant · Ceiling light: Kitchen → Office',
+          ],
+        },
+      ],
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText('Home Assistant · Kitchen → Kitchen & dining')).toBeVisible();
+    await expect(
+      canvas.getByText('Home Assistant · Ceiling light: Kitchen → Office')
+    ).toBeVisible();
   },
 };
 
@@ -724,7 +946,7 @@ export const PhoneFullScreen: Story = {
   },
 };
 
-export const PhoneManageStructure: Story = {
+export const PhoneRoomEditor: Story = {
   args: {
     layout: 'phone',
     phoneFrame: true,
@@ -739,13 +961,23 @@ export const PhoneManageStructure: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const workspace = within(canvas.getByRole('region', { name: 'Room workspace' }));
+    const workspace = within(canvas.getByRole('navigation', { name: 'Rooms and groups' }));
     await expect(workspace.getByRole('button', { name: 'Reorder room Living Room' })).toHaveClass(
-      'min-h-11',
-      'min-w-11'
+      'h-10',
+      'w-10'
     );
-    await expect(workspace.getByRole('button', { name: 'Cancel' })).toBeVisible();
-    await expect(workspace.getByRole('button', { name: 'Review changes' })).toBeDisabled();
+    await userEvent.click(workspace.getByRole('button', { name: 'Open room: Living Room' }));
+    await expect(canvas.getByRole('heading', { name: 'Living Room' })).toBeVisible();
+    await expect(canvas.getByRole('button', { name: 'Back' })).toBeVisible();
+    await expect(canvas.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    await userEvent.click(canvas.getByRole('button', { name: 'Room settings' }));
+    const roomNameInput = canvas.getByRole('textbox', { name: 'Room name' });
+    await expect(roomNameInput).toHaveValue('Living Room');
+    await userEvent.clear(roomNameInput);
+    await userEvent.type(roomNameInput, 'Lounge');
+    await expect(roomNameInput).toHaveValue('Lounge');
+    await expect(canvas.queryByRole('dialog', { name: 'Edit room' })).not.toBeInTheDocument();
+    await expect(canvas.getByRole('button', { name: 'Save changes' })).toBeEnabled();
   },
 };
 

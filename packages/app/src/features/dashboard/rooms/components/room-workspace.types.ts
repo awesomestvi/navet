@@ -1,3 +1,5 @@
+import type { NavetEntityType } from '@navet/core/types';
+
 export type RoomWorkspaceMode = 'browse' | 'manage';
 
 export type RoomWorkspaceStage =
@@ -37,6 +39,7 @@ export interface RoomWorkspaceGroupViewModel {
 export interface RoomWorkspaceRoomViewModel {
   id: string;
   name: string;
+  nameDraft?: string;
   groupId?: string | null;
   symbol?: string;
   image?: string;
@@ -56,16 +59,22 @@ export interface RoomWorkspaceRoomViewModel {
 export interface RoomWorkspaceDeviceViewModel {
   id: string;
   name: string;
+  entityType: NavetEntityType;
+  deviceClass?: string;
   description?: string;
   stateLabel?: string;
   roomId?: string | null;
+  roomName?: string;
   isUnavailable?: boolean;
+  isDashboardDevice: boolean;
+  isShownOnDashboard: boolean;
 }
 
 export interface RoomWorkspaceChangeViewModel {
   id: string;
   title: string;
   description: string;
+  details?: string[];
   tone?: 'neutral' | 'warning' | 'critical';
 }
 
@@ -84,7 +93,9 @@ export interface RoomWorkspaceViewModel {
   devices: readonly RoomWorkspaceDeviceViewModel[];
   selectedDeviceIds: readonly string[];
   changes: readonly RoomWorkspaceChangeViewModel[];
+  unsavedChangeCount: number;
   hasUnsavedChanges: boolean;
+  hasValidationErrors?: boolean;
   isSaving?: boolean;
 }
 
@@ -99,12 +110,12 @@ export interface RoomWorkspaceLabels {
   roomsRegion: string;
   workspaceRegion: string;
   contextRegion: string;
-  structureTitle: string;
-  structureDescription: string;
   roomDetailsTitle: string;
   roomDetailsDescription: string;
   devicesTitle: string;
   devicesDescription: string;
+  dashboardDevices: string;
+  hiddenDevices: string;
   impactTitle: string;
   impactDescription: string;
   addRoom: string;
@@ -113,15 +124,21 @@ export interface RoomWorkspaceLabels {
   moreActions: string;
   renameGroup: string;
   deleteGroup: string;
-  editRoom: string;
   mergeRoom: string;
   mergeRoomDescription: string;
   splitRoom: string;
   splitRoomDescription: string;
   manageDevices: string;
-  reviewChanges: string;
+  addDevice: string;
+  deviceActions: string;
+  hideDevice: string;
+  showDevice: string;
+  moveDevice: string;
+  removeDevice: string;
+  notInRoom: string;
+  deviceSearchPlaceholder: string;
   saveChanges: string;
-  cancel: string;
+  discardChanges: string;
   back: string;
   retry: string;
   roomNameLabel: string;
@@ -143,23 +160,22 @@ export interface RoomWorkspaceLabels {
   selectRoom: string;
   collapseGroup: string;
   expandGroup: string;
-  selectAll: string;
-  clearSelection: string;
-  selected: string;
-  unavailable: string;
   noRoomsFoundTitle: string;
   noRoomsFoundDescription: string;
   selectRoomTitle: string;
   selectRoomDescription: string;
   noDevicesTitle: string;
   noDevicesDescription: string;
+  noDashboardDevicesTitle: string;
+  noDashboardDevicesDescription: string;
+  noHiddenDevicesTitle: string;
+  noHiddenDevicesDescription: string;
   noChangesTitle: string;
   noChangesDescription: string;
   currentRoomTitle: string;
-  roomActivityTitle: string;
   roomActionsTitle: string;
   pendingChangesTitle: string;
-  unsavedChanges: string;
+  unsavedChanges: (count: number) => string;
   allChangesSaved: string;
   closeSheet: string;
 }
@@ -176,7 +192,7 @@ export interface RoomWorkspaceActions {
   onRenameGroup?: (groupId: string) => void;
   onChooseGroupAppearance?: (groupId: string) => void;
   onRequestGroupDeletion?: (groupId: string) => void;
-  onRequestRoomRename?: (roomId: string) => void;
+  onRoomNameChange?: (roomId: string, name: string) => void;
   onRoomGroupChange?: (roomId: string, groupId: string | null) => void;
   onRoomVisibilityChange?: (roomId: string, visible: boolean) => void;
   onRoomFavoriteChange?: (roomId: string, favorite: boolean) => void;
@@ -185,11 +201,11 @@ export interface RoomWorkspaceActions {
   onRequestRoomSplit?: (roomId: string) => void;
   onRequestRoomDeletion?: (roomId: string) => void;
   onDropRoom?: (roomId: string, targetRoomId: string) => void;
-  onMoveRoom?: (roomId: string, direction: 'earlier' | 'later') => void;
   onToggleGroup?: (groupId: string, collapsed: boolean) => void;
+  onDeviceVisibilityChange?: (deviceId: string, visible: boolean) => void;
+  onRequestDeviceMove?: (deviceId: string) => void;
   onDeviceSelectionChange?: (deviceId: string, selected: boolean) => void;
-  onVisibleDeviceSelectionChange?: (deviceIds: readonly string[], selected: boolean) => void;
-  onCancel: () => void;
+  onDiscard: () => void;
   onSave: () => void;
   onRetry?: () => void;
 }

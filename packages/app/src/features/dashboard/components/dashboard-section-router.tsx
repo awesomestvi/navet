@@ -1,5 +1,6 @@
 import { getManageableRoomOrder } from '@navet/app/components/layout/mobile-layout-helpers';
 import { RoomNav } from '@navet/app/components/layout/room-nav';
+import type { RoomNavigationGroup } from '@navet/app/components/layout/room-nav.utils';
 import { RoomOrderDialog } from '@navet/app/components/layout/room-order-dialog';
 import { SectionCustomizeShell } from '@navet/app/components/layout/section-customize-shell';
 import { DashboardEmptyState } from '@navet/app/components/patterns';
@@ -8,6 +9,8 @@ import { RenderProfiler } from '@navet/app/components/shared/render-profiler';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
 import { getClimateDashboardGroup } from '@navet/app/features/climate/utils/climate-dashboard-group';
+import { useRoomWorkspaceStore } from '@navet/app/features/dashboard/rooms/room-workspace-store';
+import { getRoomWorkspaceSectionsV2 } from '@navet/app/features/dashboard/rooms/room-workspace-v2';
 import { buildRoomStatusSummaryItems } from '@navet/app/features/sensors/components/home-status-summary-model';
 import {
   SummaryBar,
@@ -92,6 +95,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   );
   const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
   const showSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
+  const roomWorkspace = useRoomWorkspaceStore((state) => state.workspace);
   const activeCustomSidebarActionId = useNavigationStore(
     (state) => state.activeCustomSidebarActionId
   );
@@ -135,6 +139,34 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     [manageableRoomsByProviderId]
   );
   const manageableRooms = getManageableRoomOrder(rooms, manageableRoomReferences);
+  const dashboardEntityIds = useMemo(
+    () => Array.from(availableDeviceMap.keys()),
+    [availableDeviceMap]
+  );
+  const dashboardVisibleEntityIds = useMemo(() => Array.from(deviceMap.keys()), [deviceMap]);
+  const roomNavigationGroups = useMemo<RoomNavigationGroup[]>(() => {
+    const availableRoomNames = new Set(rooms);
+
+    return getRoomWorkspaceSectionsV2(roomWorkspace).flatMap((section) => {
+      if (!section.group) {
+        return [];
+      }
+      const groupedRoomNames = section.rooms
+        .map((room) => room.displayName)
+        .filter((roomName) => availableRoomNames.has(roomName));
+
+      return groupedRoomNames.length > 0
+        ? [
+            {
+              id: section.group.id,
+              name: section.group.displayName,
+              rooms: groupedRoomNames,
+              symbol: section.group.symbol,
+            },
+          ]
+        : [];
+    });
+  }, [roomWorkspace, rooms]);
   const roomManagement =
     activeSection === 'home' && manageableRooms.length > 0
       ? {
@@ -143,6 +175,8 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
           manageableRooms: manageableRoomReferences,
           roomHiddenItemCounts: controller.roomHiddenItemCounts,
           roomItemCounts: controller.roomItemCounts,
+          dashboardEntityIds,
+          dashboardVisibleEntityIds,
           onRoomOrderChange: controller.onSetRoomOrder,
           onHiddenRoomsChange: controller.onSetHiddenRoomNames,
         }
@@ -490,6 +524,9 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
             hiddenRoomNames={controller.hiddenRoomNames}
             roomHiddenItemCounts={controller.roomHiddenItemCounts}
             roomItemCounts={controller.roomItemCounts}
+            dashboardEntityIds={dashboardEntityIds}
+            dashboardVisibleEntityIds={dashboardVisibleEntityIds}
+            roomGroups={roomNavigationGroups}
             activeRoom={activeRoom}
             onRoomChange={changeRoom}
             isEditMode={isEditMode}
@@ -596,6 +633,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
         onRoomChange: changeRoom,
         rooms,
         hiddenRoomNames: controller.hiddenRoomNames,
+        groups: roomNavigationGroups,
       }}
     >
       {isEditMode ? (
@@ -632,6 +670,8 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
               manageableRooms={roomManagement.manageableRooms}
               roomHiddenItemCounts={roomManagement.roomHiddenItemCounts}
               roomEntityCounts={roomManagement.roomItemCounts}
+              dashboardEntityIds={roomManagement.dashboardEntityIds}
+              dashboardVisibleEntityIds={roomManagement.dashboardVisibleEntityIds}
               onRoomOrderChange={roomManagement.onRoomOrderChange}
               onHiddenRoomsChange={roomManagement.onHiddenRoomsChange}
             />

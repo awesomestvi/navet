@@ -467,7 +467,7 @@ describe('useDashboardProfileSync', () => {
     await flushEffects();
 
     const roomWorkspace = {
-      version: 2,
+      version: 2 as const,
       groups: [],
       reviewIssues: [],
       rooms: [],
