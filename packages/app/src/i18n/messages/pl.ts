@@ -346,7 +346,7 @@ export const plMessages = {
     'Zobacz, które urządzenia korzystają z tej instalacji Navet, ich stan synchronizacji i źródło ostatniej zmiany.',
   'settings.system.clients.thisDashboard': 'To urządzenie',
   'settings.system.clients.name': 'Nazwa urządzenia',
-  'settings.system.clients.rename': 'Zmień nazwę',
+  'settings.system.clients.rename': 'Zmień nazwę urządzenia',
   'settings.system.clients.saveName': 'Zapisz nazwę',
   'settings.system.clients.otherDashboards': 'Inne urządzenia',
   'settings.system.clients.noOtherDashboards':
@@ -384,14 +384,14 @@ export const plMessages = {
   'settings.system.clients.restoreFailed': 'Nie udało się przywrócić wersji.',
   'settings.system.clients.restoreStale':
     'Dashboard zmienił się przed zakończeniem przywracania. Odśwież historię i spróbuj ponownie.',
-  'settings.system.clients.forget': 'Zapomnij',
+  'settings.system.clients.forget': 'Usuń urządzenie',
   'settings.system.clients.forgetting': 'Usuwanie...',
-  'settings.system.clients.forgetConfirm': 'Zapomnieć {client}?',
+  'settings.system.clients.forgetConfirm': 'Usunąć {client}?',
   'settings.system.clients.forgetDescription':
     'Usuwa to zapisane ustawienia urządzenia, nazwę dashboardu i informacje o ostatniej aktywności. Historia wersji pozostaje. Nie wylogowuje dashboardu ani nie unieważnia jego logowania OAuth.',
   'settings.system.clients.forgetSuccess':
     'Usunięto {client} z listy połączonych dashboardów. Dane logowania nie zostały zmienione.',
-  'settings.system.clients.forgetFailed': 'Nie udało się usunąć wpisu dashboardu.',
+  'settings.system.clients.forgetFailed': 'Nie udało się usunąć wpisu urządzenia.',
   'settings.system.logout.description': 'Zakończ tę sesję Navet na tym urządzeniu.',
   'settings.project.sectionTitle': 'Projekt',
   'settings.project.sectionDescription':

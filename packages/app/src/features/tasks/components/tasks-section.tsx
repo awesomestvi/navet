@@ -315,7 +315,7 @@ export function TasksSection() {
                       className={`@container/automation-table overflow-hidden rounded-[22px] border ${surface.border} ${surface.panelMuted}`}
                     >
                       <div
-                        className={`hidden grid-cols-[minmax(0,1fr)_10rem_7rem_15rem] items-center gap-3 px-4 pt-3 pb-2 text-xs font-medium @2xl/automation-table:grid ${surface.textMuted}`}
+                        className={`hidden grid-cols-[minmax(0,1fr)_10rem_7rem_15rem] items-center gap-3 px-4 pt-3 pb-2 text-xs font-medium @4xl/automation-table:grid ${surface.textMuted}`}
                       >
                         <SortableTableHeader
                           label={t('sections.tasks.automations.title')}

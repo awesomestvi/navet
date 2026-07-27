@@ -314,7 +314,7 @@ function ProviderCardView({
           {provider.canDisconnect ? (
             <Button
               type="button"
-              variant="secondary"
+              variant="destructive"
               size="small"
               leading={<Unplug className="h-4 w-4" />}
               className="w-full rounded-full"

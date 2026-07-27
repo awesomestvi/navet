@@ -251,7 +251,7 @@ export const ptMessages = {
     'Veja que dispositivos utilizam esta instalação do Navet, o respetivo estado de sincronização e a origem da alteração mais recente.',
   'settings.system.clients.thisDashboard': 'Este dispositivo',
   'settings.system.clients.name': 'Nome do dispositivo',
-  'settings.system.clients.rename': 'Alterar nome',
+  'settings.system.clients.rename': 'Alterar nome do dispositivo',
   'settings.system.clients.saveName': 'Guardar nome',
   'settings.system.clients.otherDashboards': 'Outros dispositivos',
   'settings.system.clients.noOtherDashboards':
@@ -291,14 +291,14 @@ export const ptMessages = {
   'settings.system.clients.restoreFailed': 'Não foi possível restaurar a revisão.',
   'settings.system.clients.restoreStale':
     'O painel mudou antes de o restauro terminar. Atualize o histórico e tente novamente.',
-  'settings.system.clients.forget': 'Esquecer',
-  'settings.system.clients.forgetting': 'A esquecer...',
-  'settings.system.clients.forgetConfirm': 'Esquecer {client}?',
+  'settings.system.clients.forget': 'Remover dispositivo',
+  'settings.system.clients.forgetting': 'A remover...',
+  'settings.system.clients.forgetConfirm': 'Remover {client}?',
   'settings.system.clients.forgetDescription':
     'Isto remove as definições guardadas do dispositivo, o nome do painel e os dados da última atividade. O histórico de revisões permanece. Não termina a sessão do painel nem revoga o respetivo acesso OAuth.',
   'settings.system.clients.forgetSuccess':
     '{client} foi removido da lista de painéis ligados. O respetivo início de sessão não foi alterado.',
-  'settings.system.clients.forgetFailed': 'Não foi possível esquecer o registo do painel.',
+  'settings.system.clients.forgetFailed': 'Não foi possível remover o registo do dispositivo.',
   'settings.system.logout.description': 'Encerrar esta sessão do Navet neste dispositivo.',
   'settings.project.sectionTitle': 'Projeto',
   'settings.project.sectionDescription':

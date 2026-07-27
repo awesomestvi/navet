@@ -259,7 +259,7 @@ export const itMessages = {
     'Vedi quali dispositivi usano questa installazione di Navet, il loro stato di sincronizzazione e da dove proviene l’ultima modifica.',
   'settings.system.clients.thisDashboard': 'Questo dispositivo',
   'settings.system.clients.name': 'Nome dispositivo',
-  'settings.system.clients.rename': 'Rinomina',
+  'settings.system.clients.rename': 'Rinomina dispositivo',
   'settings.system.clients.saveName': 'Salva nome',
   'settings.system.clients.otherDashboards': 'Altri dispositivi',
   'settings.system.clients.noOtherDashboards':
@@ -301,14 +301,14 @@ export const itMessages = {
   'settings.system.clients.restoreFailed': 'Impossibile ripristinare la revisione.',
   'settings.system.clients.restoreStale':
     'La dashboard è cambiata prima del termine del ripristino. Aggiorna la cronologia e riprova.',
-  'settings.system.clients.forget': 'Dimentica',
+  'settings.system.clients.forget': 'Rimuovi dispositivo',
   'settings.system.clients.forgetting': 'Rimozione...',
-  'settings.system.clients.forgetConfirm': 'Dimenticare {client}?',
+  'settings.system.clients.forgetConfirm': 'Rimuovere {client}?',
   'settings.system.clients.forgetDescription':
     'Rimuove le impostazioni del dispositivo salvate, il nome della dashboard e i dati dell’ultima attività. La cronologia delle revisioni viene conservata. Non disconnette la dashboard né revoca il suo accesso OAuth.',
   'settings.system.clients.forgetSuccess':
     '{client} è stata rimossa dall’elenco delle dashboard connesse. Il suo accesso non è cambiato.',
-  'settings.system.clients.forgetFailed': 'Impossibile dimenticare il record della dashboard.',
+  'settings.system.clients.forgetFailed': 'Impossibile rimuovere il record del dispositivo.',
   'settings.system.logout.description': 'Termina questa sessione Navet su questo dispositivo.',
   'settings.project.sectionTitle': 'Progetto',
   'settings.project.sectionDescription':

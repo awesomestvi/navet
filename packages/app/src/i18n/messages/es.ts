@@ -252,7 +252,7 @@ export const esMessages = {
     'Consulta qué dispositivos usan esta instalación de Navet, su estado de sincronización y el origen del último cambio.',
   'settings.system.clients.thisDashboard': 'Este dispositivo',
   'settings.system.clients.name': 'Nombre del dispositivo',
-  'settings.system.clients.rename': 'Cambiar nombre',
+  'settings.system.clients.rename': 'Cambiar nombre del dispositivo',
   'settings.system.clients.saveName': 'Guardar nombre',
   'settings.system.clients.otherDashboards': 'Otros dispositivos',
   'settings.system.clients.noOtherDashboards':
@@ -292,14 +292,14 @@ export const esMessages = {
   'settings.system.clients.restoreFailed': 'No se pudo restaurar la revisión.',
   'settings.system.clients.restoreStale':
     'El panel cambió antes de terminar la restauración. Actualiza el historial e inténtalo de nuevo.',
-  'settings.system.clients.forget': 'Olvidar',
-  'settings.system.clients.forgetting': 'Olvidando...',
-  'settings.system.clients.forgetConfirm': '¿Olvidar {client}?',
+  'settings.system.clients.forget': 'Eliminar dispositivo',
+  'settings.system.clients.forgetting': 'Eliminando...',
+  'settings.system.clients.forgetConfirm': '¿Eliminar {client}?',
   'settings.system.clients.forgetDescription':
     'Esto elimina los ajustes guardados del dispositivo, el nombre del panel y los datos de última actividad. El historial de revisiones se conserva. No cierra la sesión del panel ni revoca su acceso OAuth.',
   'settings.system.clients.forgetSuccess':
     '{client} se eliminó de la lista de paneles conectados. Su inicio de sesión no cambió.',
-  'settings.system.clients.forgetFailed': 'No se pudo olvidar el registro del panel.',
+  'settings.system.clients.forgetFailed': 'No se pudo eliminar el registro del dispositivo.',
   'settings.system.logout.description': 'Finaliza esta sesión de Navet en este dispositivo.',
   'settings.project.sectionTitle': 'Proyecto',
   'settings.project.sectionDescription':

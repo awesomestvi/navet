@@ -1,4 +1,4 @@
-import { Badge, Input } from '@navet/app/components/primitives';
+import { Badge, Button, Input } from '@navet/app/components/primitives';
 import {
   type DashboardClientKind,
   getDashboardClientIdentity,
@@ -279,241 +279,274 @@ export function SettingsDashboardClients({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="py-1">
-        <div className="flex min-w-0 items-start gap-3">
-          <DashboardClientIcon
-            kind={resolvedClient.kind}
-            className={`mt-1 h-4.5 w-4.5 shrink-0 ${styles.mutedColor}`}
-          />
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className={`truncate text-sm font-medium ${styles.textColor}`}>
-                {resolvedClient.name}
-              </p>
-              <Badge
-                tone={status === 'error' ? 'danger' : status === 'synced' ? 'success' : 'neutral'}
-                className="text-[10px]"
+    <div className="space-y-3">
+      <div
+        className={`overflow-hidden rounded-[22px] border ${styles.insetBorderColor} ${styles.insetBg}`}
+      >
+        <div className="p-4 md:p-5">
+          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex min-w-0 flex-1 items-start gap-3">
+              <div
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${styles.borderColor} ${styles.softBg}`}
               >
-                {t(getStatusTranslationKey(status))}
-              </Badge>
+                <DashboardClientIcon
+                  kind={resolvedClient.kind}
+                  className={`h-4.5 w-4.5 ${styles.mutedColor}`}
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className={`truncate text-sm font-medium ${styles.textColor}`}>
+                    {resolvedClient.name}
+                  </p>
+                  <Badge
+                    tone={
+                      status === 'error' ? 'danger' : status === 'synced' ? 'success' : 'neutral'
+                    }
+                    className="text-[10px]"
+                  >
+                    {t(getStatusTranslationKey(status))}
+                  </Badge>
+                </div>
+                <p className={`mt-1 text-xs ${styles.subtleColor}`}>
+                  {t('settings.system.clients.thisDashboard')}
+                </p>
+                <div
+                  className={`mt-1 flex flex-wrap items-center gap-2 text-xs ${styles.subtleColor}`}
+                >
+                  {currentRuntimeRevision !== null ? (
+                    <>
+                      <span>
+                        {t('settings.system.clients.revision', {
+                          revision: currentRuntimeRevision,
+                        })}
+                      </span>
+                      {lastSyncedAt ? (
+                        <span
+                          aria-hidden="true"
+                          className={`h-1 w-1 rounded-full ${styles.isLightTheme ? 'bg-slate-400' : 'bg-white/28'}`}
+                        />
+                      ) : null}
+                    </>
+                  ) : null}
+                  {lastSyncedAt ? (
+                    <span>
+                      {t('settings.system.clients.lastSynced', {
+                        time: formatLastSeen(lastSyncedAt),
+                      })}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
             </div>
-            <div
-              className={`mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs ${styles.subtleColor}`}
-            >
-              <span>{t('settings.system.clients.thisDashboard')}</span>
-              {currentRuntimeRevision !== null ? (
-                <span>
-                  {t('settings.system.clients.revision', {
-                    revision: currentRuntimeRevision,
-                  })}
-                </span>
-              ) : null}
-              {lastSyncedAt ? (
-                <span>
-                  {t('settings.system.clients.lastSynced', {
-                    time: formatLastSeen(lastSyncedAt),
-                  })}
-                </span>
-              ) : null}
-            </div>
+            {!editingClientName ? (
+              <button
+                type="button"
+                aria-controls="dashboard-client-name-editor"
+                aria-expanded={false}
+                onClick={() => {
+                  setClientName(resolvedClient.name);
+                  setEditingClientName(true);
+                }}
+                className={`relative ml-12 inline-flex h-9 shrink-0 items-center justify-center self-start rounded-full border px-3.5 text-sm font-medium transition-colors after:absolute after:-inset-y-1 after:inset-x-0 after:content-[''] sm:ml-0 sm:self-center ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
+              >
+                {t('settings.system.clients.rename')}
+              </button>
+            ) : null}
           </div>
-          {!editingClientName ? (
-            <button
-              type="button"
-              aria-controls="dashboard-client-name-editor"
-              aria-expanded={false}
-              onClick={() => {
-                setClientName(resolvedClient.name);
-                setEditingClientName(true);
+
+          {editingClientName ? (
+            <form
+              id="dashboard-client-name-editor"
+              className={`ml-12 mt-3 border-l-2 pl-4 ${styles.dividerColor}`}
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (hasNameChange && clientName.trim()) {
+                  saveClientName();
+                }
               }}
-              className={`relative inline-flex h-9 shrink-0 items-center justify-center rounded-full border px-3 text-xs font-medium transition-colors after:absolute after:-inset-y-1 after:inset-x-0 after:content-[''] ${styles.borderColor} ${styles.hoverBg} ${styles.mutedColor}`}
             >
-              {t('settings.system.clients.rename')}
-            </button>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  autoFocus
+                  aria-label={t('settings.system.clients.name')}
+                  value={clientName}
+                  maxLength={64}
+                  onChange={(event) => setClientName(event.currentTarget.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') {
+                      event.preventDefault();
+                      cancelClientNameEdit();
+                    }
+                  }}
+                  containerClassName="min-w-0 flex-1"
+                  inputClassName={styles.textColor}
+                />
+                <div className="flex gap-2 sm:contents">
+                  <button
+                    type="submit"
+                    disabled={!hasNameChange || !clientName.trim()}
+                    className={`inline-flex h-11 flex-1 shrink-0 items-center justify-center rounded-full border px-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45 sm:flex-none ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
+                  >
+                    {t('settings.system.clients.saveName')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelClientNameEdit}
+                    className={`inline-flex h-11 flex-1 shrink-0 items-center justify-center rounded-full px-3.5 text-sm font-medium transition-colors sm:flex-none ${styles.hoverBg} ${styles.mutedColor}`}
+                  >
+                    {t('common.cancel')}
+                  </button>
+                </div>
+              </div>
+            </form>
+          ) : null}
+
+          {error ? (
+            <div className="ml-12 mt-3 flex items-start gap-2 text-sm leading-6 text-red-400">
+              <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
           ) : null}
         </div>
 
-        {editingClientName ? (
-          <form
-            id="dashboard-client-name-editor"
-            className={`ml-7 mt-3 border-l-2 pl-4 ${styles.dividerColor}`}
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (hasNameChange && clientName.trim()) {
-                saveClientName();
-              }
-            }}
-          >
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Input
-                autoFocus
-                aria-label={t('settings.system.clients.name')}
-                value={clientName}
-                maxLength={64}
-                onChange={(event) => setClientName(event.currentTarget.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Escape') {
-                    event.preventDefault();
-                    cancelClientNameEdit();
-                  }
-                }}
-                containerClassName="min-w-0 flex-1"
-                inputClassName={styles.textColor}
-              />
-              <div className="flex gap-2 sm:contents">
-                <button
-                  type="submit"
-                  disabled={!hasNameChange || !clientName.trim()}
-                  className={`inline-flex h-11 flex-1 shrink-0 items-center justify-center rounded-full border px-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45 sm:flex-none ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
-                >
-                  {t('settings.system.clients.saveName')}
-                </button>
-                <button
-                  type="button"
-                  onClick={cancelClientNameEdit}
-                  className={`inline-flex h-11 flex-1 shrink-0 items-center justify-center rounded-full px-3.5 text-sm font-medium transition-colors sm:flex-none ${styles.hoverBg} ${styles.mutedColor}`}
-                >
-                  {t('common.cancel')}
-                </button>
-              </div>
-            </div>
-          </form>
+        {lastActivity && lastActivity.actor.clientId !== resolvedClient.id ? (
+          <div className={`border-t px-4 py-3 md:px-5 ${styles.dividerColor}`}>
+            <p className={`text-sm font-medium ${styles.textColor}`}>
+              {t('settings.system.clients.updatedBy', {
+                client: lastActivity.actor.clientName,
+              })}
+            </p>
+            <p className={`mt-1 text-sm leading-6 ${styles.subtleColor}`}>
+              {t('settings.system.clients.changedPaths', {
+                count: lastActivity.changedPaths.length,
+                revision: lastActivity.revision,
+                time: formatLastSeen(lastActivity.changedAt),
+              })}
+            </p>
+          </div>
         ) : null}
 
-        {error ? (
-          <div className="ml-7 mt-3 flex items-start gap-2 text-sm leading-6 text-red-400">
-            <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>{error}</span>
+        {otherClients.length > 0 ? (
+          <div className={`border-t ${styles.dividerColor}`}>
+            <p className={`px-4 pt-4 text-sm font-medium md:px-5 ${styles.textColor}`}>
+              {t('settings.system.clients.otherDashboards')}
+            </p>
+            <div className={`mt-2 divide-y ${styles.dividerColor}`}>
+              {otherClients.map((registeredClient) => {
+                const confirmingForget = forgetConfirmation === registeredClient.id;
+                const forgetting = forgettingClientId === registeredClient.id;
+
+                return (
+                  <div key={registeredClient.id} className="px-4 py-3 md:px-5">
+                    <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+                      <div className="flex min-w-0 flex-1 items-center gap-3">
+                        <div
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${styles.borderColor} ${styles.softBg}`}
+                        >
+                          <DashboardClientIcon
+                            kind={registeredClient.kind}
+                            className={`h-4.5 w-4.5 ${styles.mutedColor}`}
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className={`truncate text-sm font-medium ${styles.textColor}`}>
+                            {registeredClient.name}
+                          </p>
+                          <p className={`mt-0.5 truncate text-xs ${styles.subtleColor}`}>
+                            {registeredClient.userName
+                              ? t('settings.system.clients.signedInAs', {
+                                  name: registeredClient.userName,
+                                })
+                              : t('settings.system.clients.identityUnknown')}
+                          </p>
+                          <div
+                            className={`mt-1 flex flex-wrap items-center gap-2 text-xs ${styles.subtleColor}`}
+                          >
+                            <span>{formatLastSeen(registeredClient.lastSeenAt)}</span>
+                            {registeredClient.lastRevision !== null ? (
+                              <>
+                                <span
+                                  aria-hidden="true"
+                                  className={`h-1 w-1 rounded-full ${styles.isLightTheme ? 'bg-slate-400' : 'bg-white/28'}`}
+                                />
+                                <span>
+                                  {t('settings.system.clients.revision', {
+                                    revision: registeredClient.lastRevision,
+                                  })}
+                                </span>
+                              </>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex pl-12 sm:justify-end sm:pl-0">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="small"
+                          disabled={forgettingClientId !== null}
+                          onClick={() => {
+                            setForgetConfirmation(registeredClient.id);
+                            setRestoreConfirmation(null);
+                            setActionError(null);
+                            setActionMessage(null);
+                          }}
+                          className="relative shrink-0 rounded-full after:absolute after:-inset-y-1 after:inset-x-0 after:content-['']"
+                        >
+                          {t('settings.system.clients.forget')}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {confirmingForget ? (
+                      <fieldset
+                        className={`ml-12 mt-3 min-w-0 border-0 border-l-2 pl-4 ${styles.dividerColor}`}
+                        aria-label={t('settings.system.clients.forgetConfirm', {
+                          client: registeredClient.name,
+                        })}
+                      >
+                        <p className={`text-sm font-medium ${styles.textColor}`}>
+                          {t('settings.system.clients.forgetConfirm', {
+                            client: registeredClient.name,
+                          })}
+                        </p>
+                        <p className={`mt-1 text-sm leading-6 ${styles.subtleColor}`}>
+                          {t('settings.system.clients.forgetDescription')}
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            disabled={forgetting}
+                            onClick={() => setForgetConfirmation(null)}
+                            className={`inline-flex h-11 items-center justify-center rounded-full border px-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
+                          >
+                            {t('common.cancel')}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={forgetting}
+                            onClick={() => void forgetClient(registeredClient.id)}
+                            className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-red-500/20 bg-red-500/8 px-4 text-sm font-medium text-red-500 transition-colors hover:bg-red-500/12 disabled:cursor-not-allowed disabled:opacity-45"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            {forgetting
+                              ? t('settings.system.clients.forgetting')
+                              : t('settings.system.clients.forget')}
+                          </button>
+                        </div>
+                      </fieldset>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ) : null}
       </div>
 
-      {lastActivity && lastActivity.actor.clientId !== resolvedClient.id ? (
-        <div className={`border-l-2 pl-4 ${styles.dividerColor}`}>
-          <p className={`text-sm font-medium ${styles.textColor}`}>
-            {t('settings.system.clients.updatedBy', {
-              client: lastActivity.actor.clientName,
-            })}
-          </p>
-          <p className={`mt-1 text-sm leading-6 ${styles.subtleColor}`}>
-            {t('settings.system.clients.changedPaths', {
-              count: lastActivity.changedPaths.length,
-              revision: lastActivity.revision,
-              time: formatLastSeen(lastActivity.changedAt),
-            })}
-          </p>
-        </div>
-      ) : null}
-
-      {otherClients.length > 0 ? (
-        <div className={`border-t pt-4 ${styles.dividerColor}`}>
-          <p className={`text-sm font-medium ${styles.textColor}`}>
-            {t('settings.system.clients.otherDashboards')}
-          </p>
-          <div className={`mt-2 divide-y ${styles.dividerColor}`}>
-            {otherClients.map((registeredClient) => {
-              const confirmingForget = forgetConfirmation === registeredClient.id;
-              const forgetting = forgettingClientId === registeredClient.id;
-
-              return (
-                <div key={registeredClient.id} className="py-3 first:pt-1 last:pb-1">
-                  <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <DashboardClientIcon
-                        kind={registeredClient.kind}
-                        className={`h-4.5 w-4.5 shrink-0 ${styles.mutedColor}`}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className={`truncate text-sm font-medium ${styles.textColor}`}>
-                          {registeredClient.name}
-                        </p>
-                        <p className={`mt-0.5 truncate text-xs ${styles.subtleColor}`}>
-                          {registeredClient.userName
-                            ? t('settings.system.clients.signedInAs', {
-                                name: registeredClient.userName,
-                              })
-                            : t('settings.system.clients.identityUnknown')}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between gap-3 pl-7 sm:justify-end sm:pl-0">
-                      <div
-                        className={`shrink-0 text-left text-xs sm:text-right ${styles.subtleColor}`}
-                      >
-                        <p>{formatLastSeen(registeredClient.lastSeenAt)}</p>
-                        {registeredClient.lastRevision !== null ? (
-                          <p className="mt-0.5">
-                            {t('settings.system.clients.revision', {
-                              revision: registeredClient.lastRevision,
-                            })}
-                          </p>
-                        ) : null}
-                      </div>
-                      <button
-                        type="button"
-                        disabled={forgettingClientId !== null}
-                        onClick={() => {
-                          setForgetConfirmation(registeredClient.id);
-                          setRestoreConfirmation(null);
-                          setActionError(null);
-                          setActionMessage(null);
-                        }}
-                        className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full border border-red-500/20 bg-red-500/8 px-3.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-500/12 disabled:cursor-not-allowed disabled:opacity-45"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        {t('settings.system.clients.forget')}
-                      </button>
-                    </div>
-                  </div>
-
-                  {confirmingForget ? (
-                    <fieldset
-                      className={`ml-7 mt-3 min-w-0 border-0 border-l-2 pl-4 ${styles.dividerColor}`}
-                      aria-label={t('settings.system.clients.forgetConfirm', {
-                        client: registeredClient.name,
-                      })}
-                    >
-                      <p className={`text-sm font-medium ${styles.textColor}`}>
-                        {t('settings.system.clients.forgetConfirm', {
-                          client: registeredClient.name,
-                        })}
-                      </p>
-                      <p className={`mt-1 text-sm leading-6 ${styles.subtleColor}`}>
-                        {t('settings.system.clients.forgetDescription')}
-                      </p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          disabled={forgetting}
-                          onClick={() => setForgetConfirmation(null)}
-                          className={`inline-flex h-11 items-center justify-center rounded-full border px-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
-                        >
-                          {t('common.cancel')}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={forgetting}
-                          onClick={() => void forgetClient(registeredClient.id)}
-                          className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-red-500/20 bg-red-500/8 px-4 text-sm font-medium text-red-500 transition-colors hover:bg-red-500/12 disabled:cursor-not-allowed disabled:opacity-45"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          {forgetting
-                            ? t('settings.system.clients.forgetting')
-                            : t('settings.system.clients.forget')}
-                        </button>
-                      </div>
-                    </fieldset>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
-
       {status !== 'disabled' ? (
-        <div className={`border-t pt-4 ${styles.dividerColor}`}>
+        <div>
           <button
             type="button"
             aria-expanded={historyOpen}

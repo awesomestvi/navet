@@ -252,7 +252,7 @@ export const frMessages = {
     'Consultez les appareils qui utilisent cette installation Navet, leur état de synchronisation et la source de la dernière modification.',
   'settings.system.clients.thisDashboard': 'Cet appareil',
   'settings.system.clients.name': 'Nom de l’appareil',
-  'settings.system.clients.rename': 'Renommer',
+  'settings.system.clients.rename': 'Renommer l’appareil',
   'settings.system.clients.saveName': 'Enregistrer le nom',
   'settings.system.clients.otherDashboards': 'Autres appareils',
   'settings.system.clients.noOtherDashboards':
@@ -293,15 +293,14 @@ export const frMessages = {
   'settings.system.clients.restoreFailed': 'Impossible de restaurer la révision.',
   'settings.system.clients.restoreStale':
     'Le tableau de bord a changé avant la fin de la restauration. Actualisez l’historique et réessayez.',
-  'settings.system.clients.forget': 'Oublier',
+  'settings.system.clients.forget': 'Supprimer l’appareil',
   'settings.system.clients.forgetting': 'Suppression...',
-  'settings.system.clients.forgetConfirm': 'Oublier {client} ?',
+  'settings.system.clients.forgetConfirm': 'Supprimer {client} ?',
   'settings.system.clients.forgetDescription':
     'Cela supprime les réglages d’appareil enregistrés, le nom du tableau de bord et ses informations de dernière activité. L’historique des révisions est conservé. Le tableau de bord reste connecté et son accès OAuth n’est pas révoqué.',
   'settings.system.clients.forgetSuccess':
     '{client} a été retiré de la liste des tableaux de bord connectés. Sa connexion n’a pas été modifiée.',
-  'settings.system.clients.forgetFailed':
-    'Impossible d’oublier l’enregistrement du tableau de bord.',
+  'settings.system.clients.forgetFailed': 'Impossible de supprimer l’enregistrement de l’appareil.',
   'settings.system.logout.description': 'Mettre fin à cette session Navet sur cet appareil.',
   'settings.project.sectionTitle': 'Projet',
   'settings.project.sectionDescription':

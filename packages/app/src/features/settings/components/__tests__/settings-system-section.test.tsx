@@ -472,7 +472,7 @@ describe('SettingsSystemSection', () => {
     expect(screen.getByText('Signed in as Vishal')).toBeInTheDocument();
 
     expect(screen.queryByRole('textbox', { name: 'Device name' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Rename' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Rename device' }));
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Device name' }), {
       target: { value: 'Vishal’s phone' },
@@ -504,7 +504,7 @@ describe('SettingsSystemSection', () => {
     expect(
       screen.queryByText('No other device has connected to this Navet installation yet.')
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Rename' })).toHaveClass('h-9', 'text-xs');
+    expect(screen.getByRole('button', { name: 'Rename device' })).toBeInTheDocument();
   });
 
   it('loads revision history on demand and restores an older snapshot as a new revision', async () => {
@@ -785,16 +785,16 @@ describe('SettingsSystemSection', () => {
 
     renderWithProviders(<SettingsSystemSection controller={controller} />);
 
-    expect(screen.getAllByRole('button', { name: 'Forget' })).toHaveLength(1);
-    fireEvent.click(screen.getByRole('button', { name: 'Forget' }));
+    expect(screen.getAllByRole('button', { name: 'Remove device' })).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Remove device' }));
 
-    const confirmation = screen.getByRole('group', { name: 'Forget Kitchen panel?' });
+    const confirmation = screen.getByRole('group', { name: 'Remove Kitchen panel?' });
     expect(
       within(confirmation).getByText(/does not sign that dashboard out or revoke its OAuth login/)
     ).toBeInTheDocument();
     expect(dashboardProfileServiceMocks.forgetDashboardProfileClient).not.toHaveBeenCalled();
 
-    fireEvent.click(within(confirmation).getByRole('button', { name: 'Forget' }));
+    fireEvent.click(within(confirmation).getByRole('button', { name: 'Remove device' }));
 
     await waitFor(() => {
       expect(dashboardProfileServiceMocks.forgetDashboardProfileClient).toHaveBeenCalledWith(

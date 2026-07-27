@@ -344,7 +344,7 @@ export const noMessages = {
     'Se hvilke enheter som bruker denne Navet-installasjonen, synkroniseringsstatusen deres og hvor den siste endringen kom fra.',
   'settings.system.clients.thisDashboard': 'Denne enheten',
   'settings.system.clients.name': 'Enhetsnavn',
-  'settings.system.clients.rename': 'Gi nytt navn',
+  'settings.system.clients.rename': 'Gi enheten nytt navn',
   'settings.system.clients.saveName': 'Lagre navn',
   'settings.system.clients.otherDashboards': 'Andre enheter',
   'settings.system.clients.noOtherDashboards':
@@ -384,14 +384,14 @@ export const noMessages = {
   'settings.system.clients.restoreFailed': 'Revisjonen kunne ikke gjenopprettes.',
   'settings.system.clients.restoreStale':
     'Dashboardet ble endret før gjenopprettingen var ferdig. Oppdater historikken og prøv igjen.',
-  'settings.system.clients.forget': 'Glem',
-  'settings.system.clients.forgetting': 'Glemmer...',
-  'settings.system.clients.forgetConfirm': 'Glem {client}?',
+  'settings.system.clients.forget': 'Fjern enhet',
+  'settings.system.clients.forgetting': 'Fjerner...',
+  'settings.system.clients.forgetConfirm': 'Fjern {client}?',
   'settings.system.clients.forgetDescription':
     'Dette fjerner lagrede enhetsinnstillinger, dashboardnavnet og informasjon om siste aktivitet. Revisjonshistorikken beholdes. Det logger ikke dashboardet ut og tilbakekaller ikke OAuth-innloggingen.',
   'settings.system.clients.forgetSuccess':
     '{client} ble fjernet fra listen over tilkoblede dashboards. Innloggingen ble ikke endret.',
-  'settings.system.clients.forgetFailed': 'Dashboardoppføringen kunne ikke glemmes.',
+  'settings.system.clients.forgetFailed': 'Enhetsoppføringen kunne ikke fjernes.',
   'settings.system.logout.description': 'Avslutt denne Navet-økten på denne enheten.',
   'settings.project.sectionTitle': 'Prosjekt',
   'settings.project.sectionDescription':

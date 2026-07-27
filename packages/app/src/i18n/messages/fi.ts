@@ -345,7 +345,7 @@ export const fiMessages = {
     'Näe, mitkä laitteet käyttävät tätä Navet-asennusta, niiden synkronointitila ja viimeisimmän muutoksen lähde.',
   'settings.system.clients.thisDashboard': 'Tämä laite',
   'settings.system.clients.name': 'Laitteen nimi',
-  'settings.system.clients.rename': 'Nimeä uudelleen',
+  'settings.system.clients.rename': 'Nimeä laite uudelleen',
   'settings.system.clients.saveName': 'Tallenna nimi',
   'settings.system.clients.otherDashboards': 'Muut laitteet',
   'settings.system.clients.noOtherDashboards':
@@ -385,14 +385,14 @@ export const fiMessages = {
   'settings.system.clients.restoreFailed': 'Versiota ei voitu palauttaa.',
   'settings.system.clients.restoreStale':
     'Hallintapaneeli muuttui ennen palautuksen valmistumista. Päivitä historia ja yritä uudelleen.',
-  'settings.system.clients.forget': 'Unohda',
-  'settings.system.clients.forgetting': 'Unohdetaan...',
-  'settings.system.clients.forgetConfirm': 'Unohdetaanko {client}?',
+  'settings.system.clients.forget': 'Poista laite',
+  'settings.system.clients.forgetting': 'Poistetaan...',
+  'settings.system.clients.forgetConfirm': 'Poistetaanko {client}?',
   'settings.system.clients.forgetDescription':
     'Tämä poistaa tallennetut laiteasetukset, hallintapaneelin nimen ja viimeisimmän toiminnan tiedot. Versiohistoria säilyy. Se ei kirjaa hallintapaneelia ulos eikä peruuta sen OAuth-kirjautumista.',
   'settings.system.clients.forgetSuccess':
     '{client} poistettiin yhdistettyjen hallintapaneelien luettelosta. Sen kirjautumista ei muutettu.',
-  'settings.system.clients.forgetFailed': 'Hallintapaneelin tietuetta ei voitu unohtaa.',
+  'settings.system.clients.forgetFailed': 'Laitetietuetta ei voitu poistaa.',
   'settings.system.logout.description': 'Lopeta tämä Navet-istunto tällä laitteella.',
   'settings.project.sectionTitle': 'Projekti',
   'settings.project.sectionDescription':

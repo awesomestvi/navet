@@ -253,7 +253,7 @@ export const deMessages = {
     'Zeigt die Geräte, die diese Navet-Installation verwenden, ihren Synchronisierungsstatus und die Quelle der letzten Änderung.',
   'settings.system.clients.thisDashboard': 'Dieses Gerät',
   'settings.system.clients.name': 'Gerätename',
-  'settings.system.clients.rename': 'Umbenennen',
+  'settings.system.clients.rename': 'Gerät umbenennen',
   'settings.system.clients.saveName': 'Namen speichern',
   'settings.system.clients.otherDashboards': 'Andere Geräte',
   'settings.system.clients.noOtherDashboards':
@@ -293,14 +293,14 @@ export const deMessages = {
   'settings.system.clients.restoreFailed': 'Die Version konnte nicht wiederhergestellt werden.',
   'settings.system.clients.restoreStale':
     'Das Dashboard wurde vor Abschluss der Wiederherstellung geändert. Aktualisiere den Verlauf und versuche es erneut.',
-  'settings.system.clients.forget': 'Vergessen',
-  'settings.system.clients.forgetting': 'Wird vergessen...',
-  'settings.system.clients.forgetConfirm': '{client} vergessen?',
+  'settings.system.clients.forget': 'Gerät entfernen',
+  'settings.system.clients.forgetting': 'Wird entfernt...',
+  'settings.system.clients.forgetConfirm': '{client} entfernen?',
   'settings.system.clients.forgetDescription':
     'Dadurch werden gespeicherte Geräteeinstellungen, der Dashboard-Name und die Angaben zur letzten Aktivität entfernt. Der Versionsverlauf bleibt erhalten. Das Dashboard wird nicht abgemeldet und sein OAuth-Login wird nicht widerrufen.',
   'settings.system.clients.forgetSuccess':
     '{client} wurde aus der Liste der verbundenen Dashboards entfernt. Die Anmeldung wurde nicht geändert.',
-  'settings.system.clients.forgetFailed': 'Der Dashboard-Eintrag konnte nicht vergessen werden.',
+  'settings.system.clients.forgetFailed': 'Der Geräteeintrag konnte nicht entfernt werden.',
   'settings.system.logout.description': 'Diese Navet-Sitzung auf diesem Gerät beenden.',
   'settings.project.sectionTitle': 'Projekt',
   'settings.project.sectionDescription':

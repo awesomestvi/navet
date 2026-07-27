@@ -232,8 +232,8 @@ export function AutomationTaskRow({
         shouldReduceMotion ? '' : 'transition-colors duration-200'
       } ${automation.status === 'disabled' ? 'md:brightness-[0.96]' : ''}`}
     >
-      <div className="grid gap-3 px-4 py-3 text-sm sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] @2xl/automation-table:grid-cols-[minmax(0,1fr)_10rem_7rem_15rem] @2xl/automation-table:items-center">
-        <div className="min-w-0 sm:col-span-2 @2xl/automation-table:col-span-1">
+      <div className="grid gap-3 px-4 py-3 text-sm sm:grid-cols-[minmax(0,1fr)_auto] @4xl/automation-table:grid-cols-[minmax(0,1fr)_10rem_7rem_15rem] @4xl/automation-table:items-center">
+        <div className="min-w-0 @4xl/automation-table:col-start-1 @4xl/automation-table:row-start-1">
           <div className={`truncate font-medium ${surface.textPrimary}`}>{automation.name}</div>
           {hasDescription ? (
             <p
@@ -254,19 +254,10 @@ export function AutomationTaskRow({
           ) : null}
         </div>
 
-        <div className="flex min-w-0 items-center justify-between gap-3 lg:block">
-          <div className={`text-xs font-medium @2xl/automation-table:hidden ${surface.textMuted}`}>
-            {t('tasks.automation.category')}
-          </div>
+        <div className="flex items-center justify-between gap-3 sm:col-start-2 sm:row-start-1 sm:justify-self-end @4xl/automation-table:col-start-3 @4xl/automation-table:justify-self-auto">
           <div
-            className={`truncate ${automation.category ? surface.textSecondary : surface.textMuted}`}
+            className={`text-xs font-medium sm:hidden @4xl/automation-table:hidden ${surface.textMuted}`}
           >
-            {automation.category ?? '—'}
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between gap-3 lg:block">
-          <div className={`text-xs font-medium @2xl/automation-table:hidden ${surface.textMuted}`}>
             {t('dashboard.zones.status')}
           </div>
           <Tag tone={statusTone} size="small" className="gap-1">
@@ -277,7 +268,18 @@ export function AutomationTaskRow({
           </Tag>
         </div>
 
-        <div className="flex w-full flex-wrap items-center gap-2 sm:col-span-2 lg:justify-end @2xl/automation-table:col-span-1">
+        <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-baseline gap-2 sm:col-span-2 @4xl/automation-table:col-span-1 @4xl/automation-table:col-start-2 @4xl/automation-table:row-start-1 @4xl/automation-table:block">
+          <div className={`text-xs font-medium @4xl/automation-table:hidden ${surface.textMuted}`}>
+            {t('tasks.automation.category')}
+          </div>
+          <div
+            className={`truncate ${automation.category ? surface.textSecondary : surface.textMuted}`}
+          >
+            {automation.category ?? '—'}
+          </div>
+        </div>
+
+        <div className="flex w-full flex-wrap items-center gap-2 sm:col-span-2 lg:justify-end @4xl/automation-table:col-span-1 @4xl/automation-table:col-start-4 @4xl/automation-table:row-start-1 @4xl/automation-table:justify-end">
           <Button
             variant="secondary"
             size="small"

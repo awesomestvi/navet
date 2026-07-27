@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.11.0
+
+## New features
+
+- Added a room workspace for creating, organizing, styling, moving, and removing rooms across supported providers.
+- Dashboard layouts now sync safely across devices, with connected-device management and conflict recovery in Settings.
+- Added Norwegian, Danish, Finnish, and Polish translations across the dashboard.
+
+## Improvements and bug fixes
+
+- Improved camera playback with direct go2rtc streams, MSE fallback, persistent stream settings, and clearer controls and errors.
+- Improved automation rows and connected-device controls across mobile, tablet, and wide layouts.
+
 ## 0.10.3
 
 ## New features

@@ -342,7 +342,7 @@ export const enMessages = {
     'See which devices use this Navet installation, their sync state, and where the latest change came from.',
   'settings.system.clients.thisDashboard': 'This device',
   'settings.system.clients.name': 'Device name',
-  'settings.system.clients.rename': 'Rename',
+  'settings.system.clients.rename': 'Rename device',
   'settings.system.clients.saveName': 'Save name',
   'settings.system.clients.otherDashboards': 'Other devices',
   'settings.system.clients.noOtherDashboards':
@@ -382,14 +382,14 @@ export const enMessages = {
   'settings.system.clients.restoreFailed': 'The revision could not be restored.',
   'settings.system.clients.restoreStale':
     'The dashboard changed before the restore finished. Refresh the history and try again.',
-  'settings.system.clients.forget': 'Forget',
-  'settings.system.clients.forgetting': 'Forgetting...',
-  'settings.system.clients.forgetConfirm': 'Forget {client}?',
+  'settings.system.clients.forget': 'Remove device',
+  'settings.system.clients.forgetting': 'Removing...',
+  'settings.system.clients.forgetConfirm': 'Remove {client}?',
   'settings.system.clients.forgetDescription':
     'This removes its saved device settings, dashboard name, and last-seen details. Revision history remains. It does not sign that dashboard out or revoke its OAuth login.',
   'settings.system.clients.forgetSuccess':
     '{client} was removed from the connected dashboard list. Its login was not changed.',
-  'settings.system.clients.forgetFailed': 'The dashboard record could not be forgotten.',
+  'settings.system.clients.forgetFailed': 'The device record could not be removed.',
   'settings.system.logout.description': 'End this Navet session on this device.',
   'settings.project.sectionTitle': 'Project',
   'settings.project.sectionDescription':

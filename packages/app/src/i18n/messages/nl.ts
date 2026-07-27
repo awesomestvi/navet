@@ -346,7 +346,7 @@ export const nlMessages = {
     'Bekijk welke apparaten deze Navet-installatie gebruiken, hun synchronisatiestatus en waar de laatste wijziging vandaan kwam.',
   'settings.system.clients.thisDashboard': 'Dit apparaat',
   'settings.system.clients.name': 'Apparaatnaam',
-  'settings.system.clients.rename': 'Naam wijzigen',
+  'settings.system.clients.rename': 'Naam apparaat wijzigen',
   'settings.system.clients.saveName': 'Naam opslaan',
   'settings.system.clients.otherDashboards': 'Andere apparaten',
   'settings.system.clients.noOtherDashboards':
@@ -386,14 +386,14 @@ export const nlMessages = {
   'settings.system.clients.restoreFailed': 'De revisie kon niet worden hersteld.',
   'settings.system.clients.restoreStale':
     'Het dashboard is gewijzigd voordat het herstel klaar was. Vernieuw de geschiedenis en probeer het opnieuw.',
-  'settings.system.clients.forget': 'Vergeten',
-  'settings.system.clients.forgetting': 'Vergeten...',
-  'settings.system.clients.forgetConfirm': '{client} vergeten?',
+  'settings.system.clients.forget': 'Apparaat verwijderen',
+  'settings.system.clients.forgetting': 'Verwijderen...',
+  'settings.system.clients.forgetConfirm': '{client} verwijderen?',
   'settings.system.clients.forgetDescription':
     'Hiermee worden de opgeslagen apparaatinstellingen, dashboardnaam en gegevens over de laatste activiteit verwijderd. De revisiegeschiedenis blijft behouden. Het dashboard wordt niet afgemeld en de OAuth-login wordt niet ingetrokken.',
   'settings.system.clients.forgetSuccess':
     '{client} is uit de lijst met verbonden dashboards verwijderd. De login is niet gewijzigd.',
-  'settings.system.clients.forgetFailed': 'Het dashboardrecord kon niet worden vergeten.',
+  'settings.system.clients.forgetFailed': 'Het apparaatrecord kon niet worden verwijderd.',
   'settings.system.logout.description': 'Beëindig deze Navet-sessie op dit apparaat.',
   'settings.project.sectionTitle': 'Project',
   'settings.project.sectionDescription':
