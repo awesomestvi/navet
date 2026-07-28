@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.11.1 - 2026-07-28
+
+## Improvements and bug fixes
+
+- Fixed standalone Home Assistant sign-in redirects when Navet runs behind HTTPS proxies or custom ports.
+
+## Security
+
+- Hardened OAuth return paths by rejecting unsafe Home Assistant URLs and removing stale authorization codes and state values.
+
 ## 0.11.0 - 2026-07-27
 
 ## New features
