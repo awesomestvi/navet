@@ -162,8 +162,7 @@ function sendNoContent(r) {
 
 function sendRedirect(r, location) {
   r.headersOut['Cache-Control'] = 'no-store';
-  r.headersOut.Location = location;
-  r.return(302);
+  r.return(302, location);
 }
 
 function parseJson(value) {

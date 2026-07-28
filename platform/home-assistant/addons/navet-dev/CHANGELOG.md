@@ -2,6 +2,5 @@
 
 ## In Progress
 
-- Current Navet Dev scope since `v0.11.0`.
-- No committed changes have landed after `v0.11.0` yet.
-- Current staged work includes Dev release tooling.
+- Current Navet Dev scope since `navet-dev-0.11.0-dev.20260728010113`.
+- No committed changes have landed after `navet-dev-0.11.0-dev.20260728010113` yet.

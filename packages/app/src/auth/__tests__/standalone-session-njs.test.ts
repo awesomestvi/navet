@@ -27,6 +27,7 @@ const AUTH_B = {
 interface NjsResult {
   status: number | null;
   body: string;
+  redirectLocation: string | null;
 }
 
 function createRequest(options: {
@@ -38,7 +39,7 @@ function createRequest(options: {
   headers?: Record<string, string>;
   args?: Record<string, string>;
 }) {
-  const result: NjsResult = { status: null, body: '' };
+  const result: NjsResult = { status: null, body: '', redirectLocation: null };
   const headersIn: Record<string, string> = {
     Host: 'navet.example',
     ...(options.cookie ? { Cookie: options.cookie } : {}),
@@ -57,7 +58,11 @@ function createRequest(options: {
     },
     return(status: number, body = '') {
       result.status = status;
-      result.body = body;
+      if ([301, 302, 303, 307, 308].includes(status)) {
+        result.redirectLocation = body;
+      } else {
+        result.body = body;
+      }
     },
   };
   return { request, result };
@@ -315,7 +320,7 @@ describe('production njs standalone OAuth sessions', () => {
     });
     await withoutGlobalUrl(() => store.handle(correctCallback.request));
     expect(correctCallback.result.status).toBe(302);
-    expect(correctCallback.request.headersOut.Location).toBe(
+    expect(correctCallback.result.redirectLocation).toBe(
       '/wall-panel?view=home&navet_oauth_callback=1#lights'
     );
 
