@@ -288,7 +288,9 @@ describe('production njs standalone OAuth sessions', () => {
       cookie: browserA.cookie,
       headers: {
         [AUTH_BINDING_HEADER]: browserA.metadata.sessionId,
-        Origin: 'http://navet.example',
+        Host: 'navet.example:8443',
+        Origin: 'https://navet.example:8443',
+        'X-Forwarded-Proto': 'https',
       },
       body: JSON.stringify({
         hassUrl: 'https://ha-a.example.com/home-assistant',
@@ -299,6 +301,9 @@ describe('production njs standalone OAuth sessions', () => {
     await withoutGlobalUrl(() => store.handle(authorize.request));
     const authorizeUrl = new standardUrl(JSON.parse(authorize.result.body).authorizeUrl);
     expect(authorizeUrl.pathname).toBe('/home-assistant/auth/authorize');
+    expect(authorizeUrl.searchParams.get('redirect_uri')).toBe(
+      'https://navet.example:8443/__navet_auth__/callback'
+    );
     const state = authorizeUrl.searchParams.get('state');
     expect(state).toMatch(/^[a-f0-9]{64}$/);
     if (!state) {
@@ -317,11 +322,15 @@ describe('production njs standalone OAuth sessions', () => {
       uri: '/__navet_auth__/callback',
       cookie: browserA.cookie,
       args: { code: 'code-a', state },
+      headers: {
+        Host: 'navet.example:8443',
+        'X-Forwarded-Proto': 'https',
+      },
     });
     await withoutGlobalUrl(() => store.handle(correctCallback.request));
     expect(correctCallback.result.status).toBe(302);
     expect(correctCallback.result.redirectLocation).toBe(
-      '/wall-panel?view=home&navet_oauth_callback=1#lights'
+      'https://navet.example:8443/wall-panel?view=home&navet_oauth_callback=1#lights'
     );
 
     const proxy = createHomeAssistantProxy(store);
