@@ -1,4 +1,5 @@
 import { integrationStore } from '@navet/app/stores/integration-store';
+import { collectProviderEntityEvents } from '@navet/app/stores/provider-state-pipeline';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import type { HabitRule } from '@navet/core/habits';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -23,8 +24,19 @@ type ProviderEntitiesByCanonicalId = ReturnType<
 >['providerEntitiesByCanonicalId'];
 
 function setEntities(state: Record<string, unknown>) {
+  const previousState = integrationStore.getState();
+  const nextEntities = state as ProviderEntitiesByCanonicalId;
+  const providerEvents = collectProviderEntityEvents(
+    'home_assistant',
+    previousState.providerEntitiesByCanonicalId,
+    nextEntities
+  );
   integrationStore.setState({
-    providerEntitiesByCanonicalId: state as ProviderEntitiesByCanonicalId,
+    providerEntitiesByCanonicalId: nextEntities,
+    providerEvents:
+      providerEvents.length > 0
+        ? [...previousState.providerEvents, ...providerEvents].slice(-100)
+        : previousState.providerEvents,
   });
 }
 
@@ -200,6 +212,48 @@ describe('habit engine', () => {
     expect(useHabitStore.getState().events).toHaveLength(1);
     expect(useHabitStore.getState().events[0]?.action).toBe('energy_sampled');
     expect(useHabitStore.getState().events[0]?.currentState).toBe(1800);
+  });
+
+  it('does not duplicate an unchanged high energy sample after an unrelated update', async () => {
+    initializeHabitEngine();
+
+    setEntities({
+      'home_assistant:light.kitchen': makeEntity(),
+      'home_assistant:sensor.energy_now': makePowerSensorEntity({
+        primaryState: 1800,
+      }),
+    });
+    setEntities({
+      'home_assistant:light.kitchen': makeEntity({
+        primaryState: 'on',
+        lastUpdated: '2026-06-01T21:05:00.000Z',
+      }),
+      'home_assistant:sensor.energy_now': makePowerSensorEntity({
+        primaryState: 1800,
+      }),
+    });
+    await flushAsyncWork();
+
+    expect(useHabitStore.getState().events).toHaveLength(1);
+    expect(useHabitStore.getState().events[0]?.action).toBe('turned_on');
+  });
+
+  it('does not collect entity events while local habits are disabled', async () => {
+    initializeHabitEngine();
+    useHabitStore.getState().setEnabled(false);
+
+    setEntities({
+      'home_assistant:light.kitchen': makeEntity(),
+    });
+    setEntities({
+      'home_assistant:light.kitchen': makeEntity({
+        primaryState: 'on',
+        lastUpdated: '2026-06-01T21:05:00.000Z',
+      }),
+    });
+    await flushAsyncWork();
+
+    expect(useHabitStore.getState().events).toHaveLength(0);
   });
 
   it('marks matched recent commands as navet-sourced', async () => {

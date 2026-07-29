@@ -6,6 +6,7 @@ const {
   useProviderEntityModelMock,
   useProviderEntitySnapshotMock,
   handleSetFanSpeedMock,
+  subscribeVisibilityAwareTaskMock,
   useSettingsStoreMock,
 } = vi.hoisted(() => ({
   resolveVacuumGlanceMetricsMock: vi.fn<() => Record<string, unknown>>(() => ({
@@ -20,6 +21,7 @@ const {
   useProviderEntityModelMock: vi.fn<() => unknown>(() => null),
   useProviderEntitySnapshotMock: vi.fn<() => unknown>(() => undefined),
   handleSetFanSpeedMock: vi.fn(),
+  subscribeVisibilityAwareTaskMock: vi.fn(() => vi.fn()),
   useSettingsStoreMock: vi.fn((selector: (state: Record<string, unknown>) => unknown) =>
     selector({
       use24HourTime: true,
@@ -28,6 +30,10 @@ const {
       effectsQuality: 'high',
     })
   ),
+}));
+
+vi.mock('@navet/app/utils/visibility-aware-scheduler', () => ({
+  subscribeVisibilityAwareTask: subscribeVisibilityAwareTaskMock,
 }));
 
 let mockedDisplayFanSpeed: string | undefined;
@@ -238,8 +244,59 @@ describe('VacuumCard', () => {
     useProviderEntityModelMock.mockReset();
     useProviderEntitySnapshotMock.mockReset();
     handleSetFanSpeedMock.mockReset();
+    subscribeVisibilityAwareTaskMock.mockReset();
+    subscribeVisibilityAwareTaskMock.mockReturnValue(vi.fn());
+    useSettingsStoreMock.mockImplementation(
+      (selector: (state: Record<string, unknown>) => unknown) =>
+        selector({
+          use24HourTime: true,
+          disableAnimations: false,
+          lowPowerMode: false,
+          effectsQuality: 'high',
+        })
+    );
     mockedDisplayFanSpeed = undefined;
     mockedCurrentStatus = undefined;
+  });
+
+  it('does not poll animated poses when low-power motion is disabled', () => {
+    useSettingsStoreMock.mockImplementation(
+      (selector: (state: Record<string, unknown>) => unknown) =>
+        selector({
+          use24HourTime: true,
+          disableAnimations: true,
+          lowPowerMode: true,
+          effectsQuality: 'low',
+        })
+    );
+
+    render(
+      <VacuumCard
+        id="vacuum.roborock"
+        name="Robot"
+        status="cleaning"
+        size="medium"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(subscribeVisibilityAwareTaskMock).not.toHaveBeenCalled();
+  });
+
+  it('keeps pose sampling for compact visuals with rich motion enabled', () => {
+    render(
+      <VacuumCard
+        id="vacuum.roborock"
+        name="Robot"
+        status="cleaning"
+        size="medium"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(subscribeVisibilityAwareTaskMock).toHaveBeenCalledTimes(1);
   });
 
   it('renders a fan-speed control only when the vacuum supports multiple fan speeds', () => {

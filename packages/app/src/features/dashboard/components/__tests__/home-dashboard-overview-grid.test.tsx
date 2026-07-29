@@ -244,7 +244,7 @@ describe('home dashboard overview grid layout', () => {
     expect(progressiveBatchingMock).toHaveBeenCalledWith(
       2,
       false,
-      expect.objectContaining({ enabled: true, initialBatch: 6, batchSize: 6 })
+      expect.objectContaining({ enabled: true, initialBatch: 2, batchSize: 2 })
     );
     expect(screen.getByTestId('card-light.kitchen')).toBeInTheDocument();
     expect(screen.queryByTestId('card-light.hall')).not.toBeInTheDocument();

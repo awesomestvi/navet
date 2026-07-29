@@ -1445,6 +1445,8 @@ export const noMessages = {
     'Det delte dashbordet må gjenopprettes. De lokale innstillingene på dette dashbordet ble bevart.',
   'dashboard.profileSync.unavailable':
     'Synkronisering av det delte dashbordet er utilgjengelig. Lokale innstillinger bevares.',
+  'dashboard.profileSync.tenantMismatch':
+    'Dette delte dashbordet tilhører en annen Home Assistant-adresse. Koble til via den samme Home Assistant-adressen som ble brukt til å konfigurere denne Navet-installasjonen. Lokale innstillinger bevares.',
   'dashboard.profileSync.unauthorized':
     'Logg inn på nytt for å fortsette synkroniseringen av det delte dashbordet. Lokale innstillinger bevares.',
   'dashboard.profileSync.saveFailed':

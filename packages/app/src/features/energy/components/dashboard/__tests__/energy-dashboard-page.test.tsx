@@ -5,10 +5,40 @@ import {
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { useThemeStore } from '@navet/app/stores/theme-store';
 import { renderWithProviders } from '@navet/app/test/render';
-import { fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildUntrackedTrend, EnergyDashboardPage } from '../energy-dashboard-page';
+
+let intersectionObserverCallback: IntersectionObserverCallback | null = null;
+let autoIntersectEnergySparklines = true;
+
+class EnergyIntersectionObserver {
+  readonly root = null;
+  readonly rootMargin = '0px';
+  readonly thresholds = [0];
+
+  constructor(callback: IntersectionObserverCallback) {
+    intersectionObserverCallback = callback;
+  }
+
+  disconnect() {}
+
+  observe() {
+    if (autoIntersectEnergySparklines) {
+      intersectionObserverCallback?.(
+        [{ isIntersecting: true } as IntersectionObserverEntry],
+        this as unknown as IntersectionObserver
+      );
+    }
+  }
+
+  takeRecords() {
+    return [];
+  }
+
+  unobserve() {}
+}
 
 vi.mock('@navet/app/features/dashboard/components/dashboard-card-item', () => ({
   DashboardCardItem: ({
@@ -54,6 +84,12 @@ function renderDashboardPage(
 
 describe('EnergyDashboardPage', () => {
   beforeEach(() => {
+    autoIntersectEnergySparklines = true;
+    intersectionObserverCallback = null;
+    Object.defineProperty(globalThis, 'IntersectionObserver', {
+      configurable: true,
+      value: EnergyIntersectionObserver,
+    });
     useSettingsStore.getState().resetSettings();
     useThemeStore.setState({
       ...useThemeStore.getState(),
@@ -72,6 +108,42 @@ describe('EnergyDashboardPage', () => {
     expect(dots.length).toBeGreaterThan(0);
     expect(dots[0]).toHaveAttribute('data-ring', '0');
     expect(dots.at(-1)).toHaveAttribute('data-ring', '4');
+  });
+
+  it('collapses the low-power orb to one static ring', () => {
+    useSettingsStore.getState().updateSettings({
+      disableAnimations: true,
+      effectsQuality: 'low',
+      lowPowerMode: true,
+    });
+
+    renderDashboardPage('default');
+
+    const dots = screen.getAllByTestId('load-orb-dot');
+    expect(dots).toHaveLength(26);
+    expect(dots.every((dot) => dot.dataset.ring === '0')).toBe(true);
+    expect(dots.every((dot) => dot.style.animationName === '')).toBe(true);
+    expect(dots[0]?.style.transform).toContain('translate');
+  });
+
+  it('defers the full sparkline tree until it approaches the viewport', () => {
+    autoIntersectEnergySparklines = false;
+
+    const { container } = renderDashboardPage('default');
+    const sparklineLane = container.querySelector('[data-energy-sparklines-ready]');
+
+    expect(sparklineLane).toHaveAttribute('data-energy-sparklines-ready', 'false');
+    expect(screen.queryAllByTestId('energy-now-chart-layer')).toHaveLength(0);
+
+    act(() => {
+      intersectionObserverCallback?.(
+        [{ isIntersecting: true } as IntersectionObserverEntry],
+        {} as IntersectionObserver
+      );
+    });
+
+    expect(sparklineLane).toHaveAttribute('data-energy-sparklines-ready', 'true');
+    expect(screen.getAllByTestId('energy-now-chart-layer')).toHaveLength(3);
   });
 
   it('shows total tracked consumption without imported or generated energy', () => {
@@ -146,7 +218,7 @@ describe('EnergyDashboardPage', () => {
     expect(orbColors).not.toContain('rgb(244, 63, 94)');
   });
 
-  it('shows untracked consumption in gray when no device has tracked consumption', () => {
+  it('shows untracked consumption in gray when no device has tracked consumption', async () => {
     const scenario = getEnergyDashboardScenario('default');
     const dashboard = {
       ...scenario.dashboard,
@@ -167,7 +239,9 @@ describe('EnergyDashboardPage', () => {
     expect(screen.getAllByText('Untracked')).toHaveLength(3);
     expect(screen.getByText('Not assigned to a tracked device')).toBeInTheDocument();
     expect(screen.getByTestId('load-orb-consumption')).toHaveTextContent('22.6 kWh today');
-    expect(screen.getAllByTestId('energy-now-chart-layer')).toHaveLength(7);
+    await waitFor(() => {
+      expect(screen.getAllByTestId('energy-now-chart-layer')).toHaveLength(7);
+    });
   });
 
   it('subtracts tracked devices from whole-home consumption to calculate untracked energy', () => {
@@ -283,6 +357,58 @@ describe('EnergyDashboardPage', () => {
     });
 
     expect(screen.getByText('Energy card custom-energy-card')).toBeInTheDocument();
+  });
+
+  it('progressively mounts many custom energy cards in low-power mode', async () => {
+    useSettingsStore.getState().updateSettings({
+      disableAnimations: true,
+      effectsQuality: 'low',
+      lowPowerMode: true,
+    });
+    let idleCallback:
+      | ((deadline: { didTimeout: boolean; timeRemaining: () => number }) => void)
+      | undefined;
+    Object.defineProperty(window, 'requestIdleCallback', {
+      configurable: true,
+      value: vi.fn(
+        (callback: (deadline: { didTimeout: boolean; timeRemaining: () => number }) => void) => {
+          idleCallback = callback;
+          return 1;
+        }
+      ),
+    });
+    const scenario = getEnergyDashboardScenario('default');
+    const energyCustomCards = Array.from({ length: 6 }, (_, index) => ({
+      id: `custom-energy-card-${index + 1}`,
+      type: 'info' as const,
+      size: 'medium' as const,
+      room: '__energy__',
+      createdAt: index + 1,
+      data: {
+        sensorCategoryFilter: 'energy',
+      },
+    }));
+
+    renderDashboardPage('default', {
+      dashboard: {
+        ...scenario.dashboard,
+        topConsumers: [],
+      },
+      energyCustomCards,
+      energyOrderedCardIds: energyCustomCards.map((card) => card.id),
+    });
+
+    expect(await screen.findByText('Energy card custom-energy-card-1')).toBeInTheDocument();
+    expect(screen.queryByText('Energy card custom-energy-card-2')).not.toBeInTheDocument();
+    expect(screen.queryByText('Energy card custom-energy-card-6')).not.toBeInTheDocument();
+    await waitFor(() => expect(idleCallback).toBeTypeOf('function'));
+
+    act(() => {
+      idleCallback?.({ didTimeout: false, timeRemaining: () => 8 });
+    });
+
+    expect(await screen.findByText('Energy card custom-energy-card-2')).toBeInTheDocument();
+    expect(screen.queryByText('Energy card custom-energy-card-3')).not.toBeInTheDocument();
   });
 
   it('passes custom energy card updates through without nesting the data payload again', () => {

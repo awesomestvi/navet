@@ -82,8 +82,11 @@ function isActiveRoutine(routine: { enabled?: boolean; state: string }) {
   );
 }
 
-export function shouldSubscribeTaskRoutines(activeSection: DashboardController['activeSection']) {
-  return activeSection === 'home' || activeSection === 'tasks' || activeSection === 'lights';
+export function shouldSubscribeTaskRoutines(
+  activeSection: DashboardController['activeSection'],
+  showSummaryBar: boolean
+) {
+  return activeSection === 'lights' || (activeSection === 'home' && showSummaryBar);
 }
 
 function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterProps) {
@@ -103,7 +106,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   const customSidebarActions = useSettingsStore(settingsSelectors.customSidebarActions);
   const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
   const routines = useTaskRoutines({
-    enabled: shouldSubscribeTaskRoutines(controller.activeSection),
+    enabled: shouldSubscribeTaskRoutines(controller.activeSection, showSummaryBar),
   });
   const [isAddLightEntityDialogOpen, setIsAddLightEntityDialogOpen] = useState(false);
   const [isAddClimateEntityDialogOpen, setIsAddClimateEntityDialogOpen] = useState(false);

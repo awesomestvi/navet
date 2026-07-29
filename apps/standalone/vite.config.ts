@@ -21,7 +21,7 @@ import {
   type UserConfig,
   type ViteDevServer,
 } from 'vite'
-import { VitePWA } from 'vite-plugin-pwa'
+import { VitePWA, type VitePWAOptions } from 'vite-plugin-pwa'
 import {
   createViteAuthRequestHandler,
   createViteAuthSessionStore,
@@ -34,19 +34,59 @@ import {
   createViteDashboardProfileRequestHandler,
   type ViteDashboardProfilePrincipal,
 } from '../../scripts/vite-dashboard-profile-store'
+import {
+  createViteInstallationAuthority,
+  type ViteInstallationAuthority,
+} from '../../scripts/vite-installation-authority'
 import { normalizeViteProxyTargetPath } from '../../scripts/vite-proxy-path'
 import {
+  appendHomeyOAuthCallbackMarker,
+  appendHomeyOAuthFailureMarker,
   createViteHomeySessionStore,
+  HOMEY_OAUTH_PENDING_TTL_MS,
+  HOMEY_SESSION_COOKIE_NAME,
+  type HomeyOAuthFailureCode,
   type HomeySessionData,
-  isValidHomeySessionData,
+  isConfirmedInvalidHomeyRefreshError,
+  normalizeHomeyRefreshTokenPayload,
+  type ViteStoredHomeySession,
 } from '../../scripts/vite-homey-session-store'
 import {
   createViteOpenHABSessionStore,
+  OPENHAB_SESSION_COOKIE_NAME,
   type OpenHABSessionData,
-  isValidOpenHABSessionData,
+  normalizeOpenHABBaseUrl,
+  normalizeOpenHABSessionData,
   toOpenHABBasicAuthHeader,
+  type ViteStoredOpenHABSession,
 } from '../../scripts/vite-openhab-session-store'
+import { createViteOpenHABLoginRateLimiter } from '../../scripts/vite-openhab-login-rate-limiter'
+import {
+  clearViteProviderSessionCookie,
+  createViteProviderRequestSession,
+  createViteProviderState,
+  deleteViteProviderRequestSessions,
+  findViteProviderRequestSession,
+  getViteProviderRequestOrigin,
+  getViteProviderRequestSession,
+  isViteProviderSessionCapacityError,
+  isViteProviderSessionRecordTooLargeError,
+  isViteStrictSameOriginMutation,
+  PROVIDER_SESSION_CAPACITY_ERROR_CODE,
+  PROVIDER_SESSION_CAPACITY_STATUS,
+  PROVIDER_SESSION_RECORD_TOO_LARGE_ERROR_CODE,
+  PROVIDER_SESSION_RECORD_TOO_LARGE_STATUS,
+  rotateViteProviderRequestSession,
+  setViteProviderSessionCookie,
+} from '../../scripts/vite-provider-session-store'
 import { getVendorChunkName, isLazyHtmlPreload } from '../../scripts/vite-chunking'
+import {
+  createVitePwaCachePolicy,
+  deferVitePwaGenerationUntilWriteBundle,
+  isNavetRuntimeAssetRequest,
+  NAVET_PWA_INCLUDE_ASSETS,
+} from '../../scripts/vite-pwa-cache'
+import { NAVET_INTERNAL_NAVIGATION_PATH_PATTERN } from '../../scripts/vite-pwa-routing'
 import {
   isAllowedRSSContentType,
   isBlockedRSSHostname,
@@ -55,6 +95,9 @@ import {
 import { buildHomeAssistantProxyRequestHeaders } from '../../scripts/vite-proxy-request-headers'
 
 const repoRoot = path.resolve(__dirname, '../..')
+type VitePwaManifestTransform = NonNullable<
+  VitePWAOptions['workbox']['manifestTransforms']
+>[number]
 const packageJson = JSON.parse(
   readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8')
 ) as {
@@ -81,6 +124,23 @@ const publicWebManifest = JSON.parse(
   categories: string[]
 }
 const SPOTIFY_TRACK_ID_PATTERN = /^[a-zA-Z0-9]{22}$/
+const DISABLED_INSTALLATION_AUTHORITY: ViteInstallationAuthority = {
+  authorizeHomeAssistant: () => ({
+    allowed: false,
+    pairingVerified: false,
+  }),
+  authorizeHomeyStart: () => ({
+    allowed: false,
+    pairingVerified: false,
+  }),
+  authorizeOpenHAB: () => ({
+    allowed: false,
+    pairingVerified: false,
+  }),
+  commitHomeAssistant: () => false,
+  commitHomey: () => false,
+  commitOpenHAB: () => false,
+}
 
 function resolveFallbackGitSha() {
   try {
@@ -206,7 +266,19 @@ async function proxyRawUpstreamStream(options: {
         res.statusCode = upstreamResponse.statusCode ?? 502
         setSecurityHeaders(res)
 
+        const allowedResponseHeaders = new Set([
+          'accept-ranges',
+          'cache-control',
+          'content-length',
+          'content-range',
+          'content-type',
+          'etag',
+          'last-modified',
+        ])
         for (const [headerName, headerValue] of Object.entries(upstreamResponse.headers)) {
+          if (!allowedResponseHeaders.has(headerName.toLowerCase())) {
+            continue
+          }
           if (headerValue == null) {
             continue
           }
@@ -229,6 +301,166 @@ async function proxyRawUpstreamStream(options: {
     req.on('close', () => upstreamRequest.destroy())
     upstreamRequest.end()
   })
+}
+
+const proxyWebSocketResponseHeaderBlocklist = new Set([
+  'access-control-allow-credentials',
+  'access-control-allow-headers',
+  'access-control-allow-methods',
+  'access-control-allow-origin',
+  'access-control-expose-headers',
+  'access-control-max-age',
+  'location',
+  'set-cookie',
+  'www-authenticate',
+  'x-accel-buffering',
+  'x-accel-charset',
+  'x-accel-expires',
+  'x-accel-limit-rate',
+  'x-accel-redirect',
+])
+
+function sendProxyUpgradeError(
+  socket: import('node:net').Socket,
+  statusCode: number,
+  message: string
+) {
+  socket.write(
+    `HTTP/1.1 ${statusCode} ${message}\r\nConnection: close\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: ${Buffer.byteLength(message)}\r\n\r\n${message}`
+  )
+  socket.destroy()
+}
+
+function proxyCredentialedWebSocket(options: {
+  authorization: string
+  head: Buffer
+  label: string
+  req: IncomingMessage
+  socket: import('node:net').Socket
+  targetUrl: URL
+}) {
+  const { authorization, head, label, req, socket, targetUrl } = options
+  const isSecure = targetUrl.protocol === 'https:'
+  if (!isSecure && targetUrl.protocol !== 'http:') {
+    sendProxyUpgradeError(socket, 400, `Invalid ${label} websocket target`)
+    return
+  }
+
+  const hostname = targetUrl.hostname.replace(/^\[|\]$/g, '')
+  const allowInsecureTls = /^(1|true|yes)$/i.test(
+    process.env.NAVET_ALLOW_INSECURE_PROVIDER_TLS ?? ''
+  )
+  const upstreamSocket = isSecure
+    ? connectTls({
+        host: hostname,
+        port: targetUrl.port ? Number(targetUrl.port) : 443,
+        rejectUnauthorized: !allowInsecureTls,
+        ...(isIP(hostname) === 0 ? { servername: hostname } : {}),
+      })
+    : connectNet({
+        host: hostname,
+        port: targetUrl.port ? Number(targetUrl.port) : 80,
+      })
+
+  let responseStarted = false
+  let handshakeBuffer = Buffer.alloc(0)
+  upstreamSocket.on(isSecure ? 'secureConnect' : 'connect', () => {
+    const forwardedHeaders = [
+      `Host: ${targetUrl.host}`,
+      `Authorization: ${authorization}`,
+      'Upgrade: websocket',
+      'Connection: Upgrade',
+    ]
+    for (const headerName of [
+      'sec-websocket-key',
+      'sec-websocket-version',
+      'sec-websocket-protocol',
+      'sec-websocket-extensions',
+    ]) {
+      const value = req.headers[headerName]
+      if (typeof value === 'string' && value) {
+        forwardedHeaders.push(`${headerName}: ${value}`)
+      }
+    }
+    upstreamSocket.write(
+      [
+        `GET ${targetUrl.pathname}${targetUrl.search} HTTP/1.1`,
+        ...forwardedHeaders,
+        '',
+        '',
+      ].join('\r\n')
+    )
+    if (head.byteLength > 0) {
+      upstreamSocket.write(head)
+    }
+  })
+
+  const handleHandshakeData = (chunk: Buffer) => {
+    handshakeBuffer = Buffer.concat([handshakeBuffer, chunk])
+    if (handshakeBuffer.byteLength > 16 * 1024) {
+      upstreamSocket.destroy()
+      sendProxyUpgradeError(socket, 502, `Invalid ${label} websocket response`)
+      return
+    }
+    const separator = handshakeBuffer.indexOf('\r\n\r\n')
+    if (separator === -1) {
+      return
+    }
+
+    upstreamSocket.off('data', handleHandshakeData)
+    const headerLines = handshakeBuffer
+      .subarray(0, separator)
+      .toString('latin1')
+      .split('\r\n')
+    if (!/^HTTP\/1\.[01] 101\b/.test(headerLines[0] ?? '')) {
+      upstreamSocket.destroy()
+      sendProxyUpgradeError(socket, 502, `${label} websocket upgrade failed`)
+      return
+    }
+    const sanitizedHeaders = headerLines.slice(1).filter((line) => {
+      const headerSeparator = line.indexOf(':')
+      return (
+        headerSeparator > 0 &&
+        !proxyWebSocketResponseHeaderBlocklist.has(
+          line.slice(0, headerSeparator).trim().toLowerCase()
+        )
+      )
+    })
+
+    responseStarted = true
+    socket.write([headerLines[0], ...sanitizedHeaders, '', ''].join('\r\n'))
+    const remainder = handshakeBuffer.subarray(separator + 4)
+    if (remainder.byteLength > 0) {
+      socket.write(remainder)
+    }
+    upstreamSocket.pipe(socket)
+    socket.pipe(upstreamSocket)
+  }
+  upstreamSocket.on('data', handleHandshakeData)
+  upstreamSocket.on('error', () => {
+    if (!responseStarted) {
+      sendProxyUpgradeError(socket, 502, `Unable to connect to ${label} websocket`)
+    } else {
+      socket.destroy()
+    }
+  })
+  socket.on('error', () => upstreamSocket.destroy())
+  socket.on('close', () => upstreamSocket.destroy())
+}
+
+function isCredentialProxyRequestAllowed(req: IncomingMessage, websocket = false) {
+  const method = (req.method ?? 'GET').toUpperCase()
+  const upgraded =
+    websocket ||
+    Boolean(String(req.headers.upgrade ?? '').trim()) ||
+    String(req.headers.connection ?? '')
+      .toLowerCase()
+      .split(',')
+      .some((token) => token.trim() === 'upgrade')
+  return (
+    (!upgraded && (method === 'GET' || method === 'HEAD')) ||
+    isViteStrictSameOriginMutation(req)
+  )
 }
 
 async function assertPublicHostname(hostname: string) {
@@ -471,10 +703,71 @@ function homeAssistantProxyPlugin(
   getAuthSession: (req: IncomingMessage) => HomeAssistantAuthData | null
 ) {
   const proxyBasePath = '/__navet_ha_proxy__'
+  const websocketPath = `${proxyBasePath}/api/websocket`
+  const handleUpgrade = (
+    req: IncomingMessage,
+    socket: import('node:net').Socket,
+    head: Buffer
+  ) => {
+    const rawUrl = String(req.url ?? '')
+    const separator = rawUrl.indexOf('?')
+    const pathname = separator === -1 ? rawUrl : rawUrl.slice(0, separator)
+    const query = separator === -1 ? '' : rawUrl.slice(separator + 1)
+    if (!pathname.startsWith(proxyBasePath)) {
+      return
+    }
+    if (
+      pathname !== websocketPath ||
+      query ||
+      req.method !== 'GET' ||
+      String(req.headers.upgrade ?? '').toLowerCase() !== 'websocket' ||
+      !String(req.headers.connection ?? '')
+        .toLowerCase()
+        .split(',')
+        .some((token) => token.trim() === 'upgrade') ||
+      !isCredentialProxyRequestAllowed(req, true)
+    ) {
+      sendProxyUpgradeError(socket, 403, 'Forbidden Home Assistant websocket request')
+      return
+    }
+
+    const authSession = getAuthSession(req)
+    if (!authSession?.hassUrl || !authSession.access_token) {
+      sendProxyUpgradeError(socket, 502, 'Home Assistant OAuth session is required')
+      return
+    }
+    try {
+      const targetUrl = new URL(
+        `${authSession.hassUrl.replace(/\/+$/, '')}/api/websocket`
+      )
+      proxyCredentialedWebSocket({
+        authorization: `Bearer ${authSession.access_token}`,
+        head,
+        label: 'Home Assistant',
+        req,
+        socket,
+        targetUrl,
+      })
+    } catch {
+      sendProxyUpgradeError(socket, 400, 'Invalid Home Assistant websocket target')
+    }
+  }
+
+  const registerUpgradeProxy = (server: ViteDevServer | PreviewServer) => {
+    server.httpServer?.on('upgrade', (req, socket, head) => {
+      handleUpgrade(req, socket, head)
+    })
+  }
+
   const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     if (!req.url) {
       res.statusCode = 400
       res.end('Missing proxy path')
+      return
+    }
+    if (!isCredentialProxyRequestAllowed(req)) {
+      res.statusCode = 403
+      res.end('Forbidden Home Assistant proxy request')
       return
     }
 
@@ -505,7 +798,9 @@ function homeAssistantProxyPlugin(
       const upstreamBaseUrl = authSession.hassUrl
       const upstreamOrigin = new URL(upstreamBaseUrl)
       const targetPath = normalizeViteProxyTargetPath(proxyBasePath, req.url)
-      const targetUrl = new URL(targetPath, upstreamOrigin)
+      const targetUrl = new URL(
+        `${upstreamBaseUrl.replace(/\/+$/, '')}${targetPath}`
+      )
       if (targetUrl.origin !== upstreamOrigin.origin) {
         res.statusCode = 400
         res.end('Invalid proxy target')
@@ -566,11 +861,13 @@ function homeAssistantProxyPlugin(
   return {
     name: 'navet-ha-proxy',
     configureServer(server: ViteDevServer) {
+      registerUpgradeProxy(server)
       server.middlewares.use('/__navet_ha_proxy__', async (req, res) => {
         await handleRequest(req, res)
       })
     },
     configurePreviewServer(server: PreviewServer) {
+      registerUpgradeProxy(server)
       server.middlewares.use('/__navet_ha_proxy__', async (req, res) => {
         await handleRequest(req, res)
       })
@@ -578,12 +875,88 @@ function homeAssistantProxyPlugin(
   }
 }
 
-function homeyProxyPlugin(getHomeySession: () => HomeySessionData | null) {
+function homeyProxyPlugin(
+  getHomeySession: (
+    req: IncomingMessage,
+    res?: ServerResponse
+  ) => HomeySessionData | null
+) {
   const proxyBasePath = '/__navet_homey_proxy__'
+  const handleUpgrade = (
+    req: IncomingMessage,
+    socket: import('node:net').Socket,
+    head: Buffer
+  ) => {
+    if (!req.url?.startsWith(proxyBasePath)) {
+      return
+    }
+    if (
+      req.method !== 'GET' ||
+      String(req.headers.upgrade ?? '').toLowerCase() !== 'websocket' ||
+      !String(req.headers.connection ?? '')
+        .toLowerCase()
+        .split(',')
+        .some((token) => token.trim() === 'upgrade') ||
+      !isCredentialProxyRequestAllowed(req, true)
+    ) {
+      sendProxyUpgradeError(socket, 403, 'Forbidden Homey websocket request')
+      return
+    }
+
+    let decodedUrl = ''
+    try {
+      decodedUrl = decodeURIComponent(req.url)
+    } catch {
+      sendProxyUpgradeError(socket, 400, 'Invalid Homey websocket path')
+      return
+    }
+    if (req.url.includes('..') || decodedUrl.includes('..')) {
+      sendProxyUpgradeError(socket, 400, 'Invalid Homey websocket path')
+      return
+    }
+
+    const session = getHomeySession(req)
+    if (!session?.homeyBaseUrl || !session.homeySessionToken) {
+      sendProxyUpgradeError(socket, 502, 'Homey OAuth session is required')
+      return
+    }
+    try {
+      const upstreamOrigin = new URL(session.homeyBaseUrl)
+      const targetPath = normalizeViteProxyTargetPath(proxyBasePath, req.url)
+      const targetUrl = new URL(
+        `${session.homeyBaseUrl.replace(/\/+$/, '')}${targetPath}`
+      )
+      if (targetUrl.origin !== upstreamOrigin.origin) {
+        throw new Error('Invalid proxy target')
+      }
+      proxyCredentialedWebSocket({
+        authorization: `Bearer ${session.homeySessionToken}`,
+        head,
+        label: 'Homey',
+        req,
+        socket,
+        targetUrl,
+      })
+    } catch {
+      sendProxyUpgradeError(socket, 400, 'Invalid Homey websocket target')
+    }
+  }
+
+  const registerUpgradeProxy = (server: ViteDevServer | PreviewServer) => {
+    server.httpServer?.on('upgrade', (req, socket, head) => {
+      handleUpgrade(req, socket, head)
+    })
+  }
+
   const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     if (!req.url) {
       res.statusCode = 400
       res.end('Missing proxy path')
+      return
+    }
+    if (!isCredentialProxyRequestAllowed(req)) {
+      res.statusCode = 403
+      res.end('Forbidden Homey proxy request')
       return
     }
 
@@ -603,7 +976,7 @@ function homeyProxyPlugin(getHomeySession: () => HomeySessionData | null) {
         return
       }
 
-      const session = getHomeySession()
+      const session = getHomeySession(req, res)
       const upstreamBaseUrl = session?.homeyBaseUrl ?? null
       const sessionToken = session?.homeySessionToken ?? null
       if (!upstreamBaseUrl || !sessionToken) {
@@ -615,7 +988,9 @@ function homeyProxyPlugin(getHomeySession: () => HomeySessionData | null) {
 
       const upstreamOrigin = new URL(upstreamBaseUrl)
       const targetPath = normalizeViteProxyTargetPath(proxyBasePath, req.url)
-      const targetUrl = new URL(targetPath, upstreamOrigin)
+      const targetUrl = new URL(
+        `${upstreamBaseUrl.replace(/\/+$/, '')}${targetPath}`
+      )
       if (targetUrl.origin !== upstreamOrigin.origin) {
         res.statusCode = 400
         res.end('Invalid proxy target')
@@ -672,11 +1047,13 @@ function homeyProxyPlugin(getHomeySession: () => HomeySessionData | null) {
   return {
     name: 'navet-homey-proxy',
     configureServer(server: ViteDevServer) {
+      registerUpgradeProxy(server)
       server.middlewares.use('/__navet_homey_proxy__', async (req, res) => {
         await handleRequest(req, res)
       })
     },
     configurePreviewServer(server: PreviewServer) {
+      registerUpgradeProxy(server)
       server.middlewares.use('/__navet_homey_proxy__', async (req, res) => {
         await handleRequest(req, res)
       })
@@ -684,8 +1061,14 @@ function homeyProxyPlugin(getHomeySession: () => HomeySessionData | null) {
   }
 }
 
-function openhabProxyPlugin(getOpenHABSession: () => OpenHABSessionData | null) {
+function openhabProxyPlugin(
+  getOpenHABSession: (
+    req: IncomingMessage,
+    res?: ServerResponse
+  ) => OpenHABSessionData | null
+) {
   const proxyBasePath = '/__navet_openhab_proxy__'
+  const maxWebSocketHandshakeBytes = 16 * 1024
   const sendUpgradeError = (socket: import('node:net').Socket, statusCode: number, message: string) => {
     socket.write(
       `HTTP/1.1 ${statusCode} ${message}\r\nConnection: close\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: ${Buffer.byteLength(message)}\r\n\r\n${message}`
@@ -693,17 +1076,67 @@ function openhabProxyPlugin(getOpenHABSession: () => OpenHABSessionData | null) 
     socket.destroy()
   }
 
-  const resolveOpenHABTargetUrl = (requestUrlValue: string, session: OpenHABSessionData) => {
-    const upstreamOrigin = new URL(session.hassUrl)
-    const requestUrl = new URL(requestUrlValue, 'http://localhost')
-    const targetPathname = normalizeViteProxyTargetPath(proxyBasePath, requestUrl.pathname)
-    const targetUrl = new URL(upstreamOrigin.toString())
-    targetUrl.pathname = targetPathname
-    targetUrl.search = requestUrl.search
-    if (targetUrl.origin !== upstreamOrigin.origin) {
+  const resolveAllowedSuffix = (req: IncomingMessage, websocket: boolean) => {
+    const requestUrl = String(req.url ?? '')
+    const separator = requestUrl.indexOf('?')
+    const rawPath = separator === -1 ? requestUrl : requestUrl.slice(0, separator)
+    const query = separator === -1 ? '' : requestUrl.slice(separator + 1)
+    if (!rawPath.startsWith(proxyBasePath) || /%25/i.test(rawPath)) {
+      return ''
+    }
+
+    let pathname = ''
+    try {
+      pathname = decodeURIComponent(rawPath)
+    } catch {
+      return ''
+    }
+    if (pathname.includes('..') || pathname.includes('\\')) {
+      return ''
+    }
+
+    const suffix = pathname.slice(proxyBasePath.length) || '/'
+    if (websocket) {
+      return req.method === 'GET' &&
+        suffix === '/ws' &&
+        !query &&
+        isViteStrictSameOriginMutation(req) &&
+        String(req.headers.upgrade ?? '').toLowerCase() === 'websocket' &&
+        String(req.headers.connection ?? '')
+          .toLowerCase()
+          .split(',')
+          .some((token) => token.trim() === 'upgrade')
+        ? '/ws'
+        : ''
+    }
+
+    if (
+      req.method === 'GET' &&
+      suffix === '/rest/items' &&
+      query === 'recursive=false'
+    ) {
+      return '/rest/items?recursive=false'
+    }
+    if (
+      req.method === 'POST' &&
+      /^\/rest\/items\/[A-Za-z0-9_]+$/.test(suffix) &&
+      !query &&
+      isViteStrictSameOriginMutation(req)
+    ) {
+      return suffix
+    }
+    return ''
+  }
+
+  const resolveOpenHABTargetUrl = (
+    suffix: string,
+    session: OpenHABSessionData
+  ) => {
+    const baseUrl = normalizeOpenHABBaseUrl(session.hassUrl)
+    if (!baseUrl || !suffix) {
       throw new Error('Invalid proxy target')
     }
-    return targetUrl
+    return new URL(`${baseUrl}${suffix}`)
   }
 
   const handleUpgrade = (
@@ -715,20 +1148,13 @@ function openhabProxyPlugin(getOpenHABSession: () => OpenHABSessionData | null) 
       return
     }
 
-    let decodedUrl = ''
-    try {
-      decodedUrl = decodeURIComponent(req.url)
-    } catch {
-      sendUpgradeError(socket, 400, 'Invalid proxy path')
+    const suffix = resolveAllowedSuffix(req, true)
+    if (!suffix) {
+      sendUpgradeError(socket, 403, 'Forbidden openHAB websocket request')
       return
     }
 
-    if (req.url.includes('..') || decodedUrl.includes('..')) {
-      sendUpgradeError(socket, 400, 'Invalid proxy path')
-      return
-    }
-
-    const session = getOpenHABSession()
+    const session = getOpenHABSession(req)
     if (!session) {
       sendUpgradeError(socket, 502, 'openHAB session is required')
       return
@@ -736,7 +1162,7 @@ function openhabProxyPlugin(getOpenHABSession: () => OpenHABSessionData | null) 
 
     let targetUrl: URL
     try {
-      targetUrl = resolveOpenHABTargetUrl(req.url, session)
+      targetUrl = resolveOpenHABTargetUrl(suffix, session)
     } catch {
       sendUpgradeError(socket, 400, 'Invalid proxy target')
       return
@@ -745,47 +1171,42 @@ function openhabProxyPlugin(getOpenHABSession: () => OpenHABSessionData | null) 
     targetUrl.protocol = targetUrl.protocol === 'https:' ? 'wss:' : 'ws:'
 
     const isSecureWebSocket = targetUrl.protocol === 'wss:'
+    const upstreamHostname = targetUrl.hostname.replace(/^\[|\]$/g, '')
     const upstreamSocket = isSecureWebSocket
       ? connectTls({
-          host: targetUrl.hostname,
+          host: upstreamHostname,
           port: targetUrl.port ? Number(targetUrl.port) : 443,
-          servername: targetUrl.hostname,
+          rejectUnauthorized: !/^(1|true|yes)$/i.test(
+            process.env.NAVET_ALLOW_INSECURE_PROVIDER_TLS ?? ''
+          ),
+          ...(isIP(upstreamHostname) === 0 ? { servername: upstreamHostname } : {}),
         })
       : connectNet({
-          host: targetUrl.hostname,
+          host: upstreamHostname,
           port: targetUrl.port ? Number(targetUrl.port) : 80,
         })
 
     let responseStarted = false
+    let handshakeBuffer = Buffer.alloc(0)
 
     upstreamSocket.on(isSecureWebSocket ? 'secureConnect' : 'connect', () => {
-      const headerEntries = Object.entries(req.headers)
-      const forwardedHeaders = headerEntries
-        .flatMap(([name, value]) => {
-          if (!value) {
-            return []
-          }
-          const lowerName = name.toLowerCase()
-          if (
-            lowerName === 'host' ||
-            lowerName === 'authorization' ||
-            lowerName === 'content-length' ||
-            lowerName === 'connection' ||
-            lowerName === 'upgrade'
-          ) {
-            return []
-          }
-          if (Array.isArray(value)) {
-            return value.map((entry) => `${name}: ${entry}`)
-          }
-          return [`${name}: ${value}`]
-        })
-        .concat(
-          `Host: ${targetUrl.host}`,
-          `Authorization: ${toOpenHABBasicAuthHeader(session)}`,
-          'Upgrade: websocket',
-          'Connection: Upgrade'
-        )
+      const forwardedHeaders = [
+        `Host: ${targetUrl.host}`,
+        `Authorization: ${toOpenHABBasicAuthHeader(session)}`,
+        'Upgrade: websocket',
+        'Connection: Upgrade',
+      ]
+      for (const headerName of [
+        'sec-websocket-key',
+        'sec-websocket-version',
+        'sec-websocket-protocol',
+        'sec-websocket-extensions',
+      ]) {
+        const value = req.headers[headerName]
+        if (typeof value === 'string' && value) {
+          forwardedHeaders.push(`${headerName}: ${value}`)
+        }
+      }
 
       upstreamSocket.write(
         [`GET ${targetUrl.pathname}${targetUrl.search} HTTP/1.1`, ...forwardedHeaders, '', ''].join(
@@ -798,12 +1219,67 @@ function openhabProxyPlugin(getOpenHABSession: () => OpenHABSessionData | null) 
       }
     })
 
-    upstreamSocket.once('data', (chunk) => {
+    const handleHandshakeData = (chunk: Buffer) => {
+      handshakeBuffer = Buffer.concat([handshakeBuffer, chunk])
+      if (handshakeBuffer.byteLength > maxWebSocketHandshakeBytes) {
+        upstreamSocket.destroy()
+        sendUpgradeError(socket, 502, 'Invalid openHAB websocket response')
+        return
+      }
+
+      const separator = handshakeBuffer.indexOf('\r\n\r\n')
+      if (separator === -1) {
+        return
+      }
+      upstreamSocket.off('data', handleHandshakeData)
+      const headerLines = handshakeBuffer
+        .subarray(0, separator)
+        .toString('latin1')
+        .split('\r\n')
+      if (!/^HTTP\/1\.[01] 101\b/.test(headerLines[0] ?? '')) {
+        upstreamSocket.destroy()
+        sendUpgradeError(socket, 502, 'openHAB websocket upgrade failed')
+        return
+      }
+
+      const blockedResponseHeaders = new Set([
+        'access-control-allow-credentials',
+        'access-control-allow-headers',
+        'access-control-allow-methods',
+        'access-control-allow-origin',
+        'access-control-expose-headers',
+        'access-control-max-age',
+        'location',
+        'set-cookie',
+        'www-authenticate',
+        'x-accel-buffering',
+        'x-accel-charset',
+        'x-accel-expires',
+        'x-accel-limit-rate',
+        'x-accel-redirect',
+      ])
+      const sanitizedHeaders = headerLines.slice(1).filter((line) => {
+        const headerSeparator = line.indexOf(':')
+        return (
+          headerSeparator > 0 &&
+          !blockedResponseHeaders.has(
+            line.slice(0, headerSeparator).trim().toLowerCase()
+          )
+        )
+      })
+
       responseStarted = true
-      socket.write(chunk)
+      socket.write(
+        [headerLines[0], ...sanitizedHeaders, '', ''].join('\r\n')
+      )
+      const remainder = handshakeBuffer.subarray(separator + 4)
+      if (remainder.byteLength > 0) {
+        socket.write(remainder)
+      }
       upstreamSocket.pipe(socket)
       socket.pipe(upstreamSocket)
-    })
+    }
+    upstreamSocket.on('data', handleHandshakeData)
 
     upstreamSocket.on('error', () => {
       if (!responseStarted) {
@@ -830,41 +1306,22 @@ function openhabProxyPlugin(getOpenHABSession: () => OpenHABSessionData | null) 
     }
 
     try {
-      let decodedUrl = ''
-      try {
-        decodedUrl = decodeURIComponent(req.url)
-      } catch {
-        res.statusCode = 400
-        res.end('Invalid proxy path')
+      const suffix = resolveAllowedSuffix(req, false)
+      if (!suffix) {
+        res.statusCode = 403
+        res.end('Forbidden openHAB proxy request')
         return
       }
 
-      if (req.url.includes('..') || decodedUrl.includes('..')) {
-        res.statusCode = 400
-        res.end('Invalid proxy path')
-        return
-      }
-
-      const session = getOpenHABSession()
-      const upstreamBaseUrl = session?.hassUrl ?? null
-      if (!upstreamBaseUrl) {
+      const session = getOpenHABSession(req, res)
+      if (!session) {
         res.statusCode = 502
         res.setHeader('Content-Type', 'application/json')
         res.end(JSON.stringify({ error: 'openHAB session is required' }))
         return
       }
 
-      const upstreamOrigin = new URL(upstreamBaseUrl)
-      const requestUrl = new URL(req.url, 'http://localhost')
-      const targetPathname = normalizeViteProxyTargetPath(proxyBasePath, requestUrl.pathname)
-      const targetUrl = new URL(upstreamOrigin.toString())
-      targetUrl.pathname = targetPathname
-      targetUrl.search = requestUrl.search
-      if (targetUrl.origin !== upstreamOrigin.origin) {
-        res.statusCode = 400
-        res.end('Invalid proxy target')
-        return
-      }
+      const targetUrl = resolveOpenHABTargetUrl(suffix, session)
 
       const headers = new Headers()
       const contentType =
@@ -875,17 +1332,27 @@ function openhabProxyPlugin(getOpenHABSession: () => OpenHABSessionData | null) 
       }
       if (accept) {
         headers.set('Accept', accept)
-      } else if (targetPathname.startsWith('/rest/')) {
+      } else {
         headers.set('Accept', 'application/json')
       }
-      if (session) {
-        headers.set('Authorization', toOpenHABBasicAuthHeader(session))
-      }
+      headers.set('Authorization', toOpenHABBasicAuthHeader(session))
 
-      const body =
-        req.method === 'GET' || req.method === 'HEAD'
-          ? undefined
-          : await new Response(req as never).text()
+      let body: string | undefined
+      if (req.method === 'POST') {
+        const chunks: Buffer[] = []
+        let size = 0
+        for await (const chunk of req) {
+          const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+          size += buffer.byteLength
+          if (size > OPENHAB_SESSION_MAX_BYTES) {
+            res.statusCode = 413
+            res.end('openHAB command is too large')
+            return
+          }
+          chunks.push(buffer)
+        }
+        body = Buffer.concat(chunks).toString('utf8')
+      }
 
       const abortController = new AbortController()
 
@@ -927,22 +1394,36 @@ function openhabProxyPlugin(getOpenHABSession: () => OpenHABSessionData | null) 
     name: 'navet-openhab-proxy',
     configureServer(server: ViteDevServer) {
       registerUpgradeProxy(server)
-      server.middlewares.use('/__navet_openhab_proxy__', async (req, res) => {
+      server.middlewares.use(async (req, res, next) => {
+        if (!req.url?.startsWith(proxyBasePath)) {
+          next()
+          return
+        }
         await handleRequest(req, res)
       })
     },
     configurePreviewServer(server: PreviewServer) {
       registerUpgradeProxy(server)
-      server.middlewares.use('/__navet_openhab_proxy__', async (req, res) => {
+      server.middlewares.use(async (req, res, next) => {
+        if (!req.url?.startsWith(proxyBasePath)) {
+          next()
+          return
+        }
         await handleRequest(req, res)
       })
     },
   }
 }
 
-function authSessionStorePlugin() {
+function authSessionStorePlugin(
+  installationAuthority: ViteInstallationAuthority
+) {
   const authSessionStore = createViteAuthSessionStore()
-  const handleRequest = createViteAuthRequestHandler(authSessionStore)
+  const handleRequest = createViteAuthRequestHandler(
+    authSessionStore,
+    fetch,
+    installationAuthority
+  )
 
   const registerMiddleware = (server: ViteDevServer | PreviewServer) => {
     server.middlewares.use('/__navet_auth__', async (req, res) => {
@@ -987,10 +1468,24 @@ function dashboardProfileStorePlugin(
   }
 }
 
-function homeySessionStorePlugin() {
+function homeySessionStorePlugin(
+  installationAuthority: ViteInstallationAuthority
+) {
   const homeySessionStore = createViteHomeySessionStore()
   const athomApiBaseUrl = 'https://api.athom.com'
   const defaultHomeyCallbackPath = '/__navet_homey__/callback'
+  const sessionTouchIntervalMs = 24 * 60 * 60 * 1000
+
+  class HomeyRefreshError extends Error {
+    readonly confirmedInvalid: boolean
+
+    constructor(message: string, confirmedInvalid: boolean) {
+      super(message)
+      this.confirmedInvalid = confirmedInvalid
+    }
+  }
+
+  class HomeySessionSupersededError extends Error {}
 
   const setNoStoreHeaders = (res: ServerResponse) => {
     res.setHeader('Cache-Control', 'no-store')
@@ -1009,8 +1504,24 @@ function homeySessionStorePlugin() {
     res.end()
   }
 
-  const getRequestOrigin = (req: IncomingMessage) =>
-    new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`).origin
+  const sendSessionStoreError = (res: ServerResponse, error: unknown) => {
+    let code: string
+    let status: number
+    if (isViteProviderSessionRecordTooLargeError(error)) {
+      code = PROVIDER_SESSION_RECORD_TOO_LARGE_ERROR_CODE
+      status = PROVIDER_SESSION_RECORD_TOO_LARGE_STATUS
+    } else if (isViteProviderSessionCapacityError(error)) {
+      code = PROVIDER_SESSION_CAPACITY_ERROR_CODE
+      status = PROVIDER_SESSION_CAPACITY_STATUS
+    } else {
+      return false
+    }
+    sendJson(res, status, {
+      error: error.message,
+      code,
+    })
+    return true
+  }
 
   const getHomeyCallbackPath = (redirectUri: string) => {
     try {
@@ -1026,7 +1537,7 @@ function homeySessionStorePlugin() {
     const clientSecret = process.env.NAVET_HOMEY_CLIENT_SECRET?.trim()
     const redirectUri =
       process.env.NAVET_HOMEY_REDIRECT_URI?.trim() ??
-      `${getRequestOrigin(req)}${defaultHomeyCallbackPath}`
+      `${getViteProviderRequestOrigin(req)}${defaultHomeyCallbackPath}`
     const callbackPath = getHomeyCallbackPath(redirectUri)
 
     return {
@@ -1037,8 +1548,72 @@ function homeySessionStorePlugin() {
     }
   }
 
+  const normalizeHomeyReturnTo = (value: unknown, req: IncomingMessage) => {
+    const rawIngressPath =
+      typeof req.headers['x-ingress-path'] === 'string'
+        ? req.headers['x-ingress-path'].trim()
+        : ''
+    const ingressPath =
+      rawIngressPath && rawIngressPath !== '/'
+        ? `/${rawIngressPath.replace(/^\/+|\/+$/g, '')}`
+        : ''
+    const fallback = ingressPath ? `${ingressPath}/` : '/'
+    if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//')) {
+      return fallback
+    }
+
+    try {
+      const origin = getViteProviderRequestOrigin(req)
+      const parsed = new URL(value, origin)
+      if (
+        parsed.origin !== origin ||
+        (ingressPath &&
+          parsed.pathname !== ingressPath &&
+          !parsed.pathname.startsWith(`${ingressPath}/`))
+      ) {
+        return fallback
+      }
+      for (const parameter of [
+        'homey_oauth_callback',
+        'homey_oauth_error',
+        'code',
+        'state',
+        'error',
+        'error_description',
+        'error_uri',
+      ]) {
+        parsed.searchParams.delete(parameter)
+      }
+      return `${parsed.pathname}${parsed.search}${parsed.hash}`
+    } catch {
+      return fallback
+    }
+  }
+
   const encodeClientCredentials = (clientId: string, clientSecret: string) =>
     Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
+
+  const normalizeHomeyOAuthToken = (value: unknown) => {
+    if (!value || typeof value !== 'object') {
+      return null
+    }
+    const token = value as Record<string, unknown>
+    const accessToken =
+      typeof token.access_token === 'string' ? token.access_token.trim() : ''
+    const refreshToken =
+      typeof token.refresh_token === 'string' ? token.refresh_token.trim() : ''
+    const expiresIn = Number(token.expires_in)
+    return accessToken &&
+      refreshToken &&
+      Number.isFinite(expiresIn) &&
+      expiresIn > 0
+      ? {
+          accessToken,
+          refreshToken,
+          expiresIn,
+        }
+      : null
+  }
 
   const getHomeyBaseUrlCandidates = (homey: HomeySessionData['homeys'][number]) =>
     Array.from(
@@ -1092,7 +1667,8 @@ function homeySessionStorePlugin() {
 
   const refreshHomeyAccessToken = async (
     session: HomeySessionData,
-    req: IncomingMessage
+    req: IncomingMessage,
+    persistSession: (session: HomeySessionData) => void
   ): Promise<HomeySessionData> => {
     if (session.expiresAt > Date.now() + 30_000) {
       return session
@@ -1116,23 +1692,37 @@ function homeySessionStorePlugin() {
     })
 
     if (!response.ok) {
-      throw new Error('Unable to refresh Homey OAuth token')
+      let payload: { error?: unknown } | null = null
+      try {
+        payload = JSON.parse(await response.text()) as { error?: unknown }
+      } catch {
+        payload = null
+      }
+      throw new HomeyRefreshError(
+        'Unable to refresh Homey OAuth token',
+        isConfirmedInvalidHomeyRefreshError(payload)
+      )
     }
 
-    const token = (await response.json()) as {
-      access_token: string
-      refresh_token?: string
-      expires_in: number | string
+    const token = normalizeHomeyRefreshTokenPayload(
+      await response.json(),
+      session.refreshToken
+    )
+    if (!token) {
+      throw new HomeyRefreshError(
+        'Homey OAuth refresh returned an invalid token',
+        false
+      )
     }
 
     const nextSession: HomeySessionData = {
       ...session,
-      accessToken: token.access_token,
-      refreshToken: token.refresh_token ?? session.refreshToken,
-      expiresAt: Date.now() + Number(token.expires_in) * 1000,
+      accessToken: token.accessToken,
+      refreshToken: token.refreshToken,
+      expiresAt: Date.now() + token.expiresIn * 1000,
     }
 
-    homeySessionStore.saveSession(nextSession)
+    persistSession(nextSession)
     return nextSession
   }
 
@@ -1244,15 +1834,111 @@ function homeySessionStorePlugin() {
     return Buffer.concat(chunks).toString('utf8')
   }
 
+  const writeHomeyRecord = (
+    cookieId: string,
+    record: ViteStoredHomeySession,
+    overrides: Partial<Pick<ViteStoredHomeySession, 'auth' | 'pending'>>
+  ) => {
+    const next: ViteStoredHomeySession = {
+      ...record,
+      ...overrides,
+      updatedAt: Date.now(),
+    }
+    homeySessionStore.writeSession(cookieId, next)
+    return next
+  }
+
+  const touchHomeyRecord = (
+    req: IncomingMessage,
+    res: ServerResponse | undefined,
+    context: { cookieId: string; session: ViteStoredHomeySession }
+  ) => {
+    let next = context.session
+    if (next.updatedAt + sessionTouchIntervalMs < Date.now()) {
+      next = writeHomeyRecord(context.cookieId, next, {})
+    }
+    if (res) {
+      setViteProviderSessionCookie(
+        req,
+        res,
+        HOMEY_SESSION_COOKIE_NAME,
+        context.cookieId
+      )
+    }
+    return next
+  }
+
   const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     if (req.method === 'GET') {
-      const storedSession = homeySessionStore.getSession()
-      if (!storedSession) {
+      const context = getViteProviderRequestSession(
+        req,
+        HOMEY_SESSION_COOKIE_NAME,
+        homeySessionStore
+      )
+      if (!context?.session.auth) {
         sendNoContent(res)
         return
       }
 
-      const session = await refreshHomeyAccessToken(storedSession, req).catch(() => storedSession)
+      let record = context.session
+      const sendLatestSessionOrNoContent = () => {
+        const latest = homeySessionStore.readSession(context.cookieId)
+        if (!latest?.auth) {
+          sendNoContent(res)
+          return
+        }
+        setViteProviderSessionCookie(
+          req,
+          res,
+          HOMEY_SESSION_COOKIE_NAME,
+          context.cookieId
+        )
+        sendJson(res, 200, sanitizeHomeySession(latest.auth))
+      }
+      const persistSession = (session: HomeySessionData) => {
+        const current = homeySessionStore.readSession(context.cookieId)
+        if (!current || JSON.stringify(current) !== JSON.stringify(record)) {
+          throw new HomeySessionSupersededError()
+        }
+        record = writeHomeyRecord(context.cookieId, record, { auth: session })
+      }
+      let session: HomeySessionData
+      try {
+        session = await refreshHomeyAccessToken(
+          context.session.auth,
+          req,
+          persistSession
+        )
+      } catch (error) {
+        if (sendSessionStoreError(res, error)) {
+          return
+        }
+        if (error instanceof HomeySessionSupersededError) {
+          sendLatestSessionOrNoContent()
+          return
+        }
+        if (error instanceof HomeyRefreshError && error.confirmedInvalid) {
+          const current = homeySessionStore.readSession(context.cookieId)
+          if (
+            !current ||
+            JSON.stringify(current) !== JSON.stringify(record)
+          ) {
+            sendLatestSessionOrNoContent()
+            return
+          }
+          homeySessionStore.deleteSession(context.cookieId)
+          clearViteProviderSessionCookie(req, res, HOMEY_SESSION_COOKIE_NAME)
+          sendNoContent(res)
+          return
+        }
+        session = context.session.auth
+      }
+      const current = homeySessionStore.readSession(context.cookieId)
+      if (!current || JSON.stringify(current) !== JSON.stringify(record)) {
+        sendLatestSessionOrNoContent()
+        return
+      }
+      touchHomeyRecord(req, res, { cookieId: context.cookieId, session: record })
       res.statusCode = 200
       setNoStoreHeaders(res)
       res.setHeader('Content-Type', 'application/json; charset=utf-8')
@@ -1260,73 +1946,182 @@ function homeySessionStorePlugin() {
       return
     }
 
-    if (req.method === 'PUT') {
-      try {
-        const body = await readRequestBody(req)
-        const parsed = JSON.parse(body)
-        if (!isValidHomeySessionData(parsed)) {
-          sendJson(res, 400, { error: 'Unsupported Homey session' })
-          return
-        }
-
-        homeySessionStore.saveSession(parsed)
-        sendJson(res, 200, sanitizeHomeySession(parsed))
-      } catch {
-        sendJson(res, 400, { error: 'Unable to save Homey session' })
-      }
-      return
-    }
-
     if (req.method === 'DELETE') {
-      homeySessionStore.clearSession()
+      const context = getViteProviderRequestSession(
+        req,
+        HOMEY_SESSION_COOKIE_NAME,
+        homeySessionStore
+      )
+      if (!context) {
+        sendJson(res, 401, { error: 'Bound browser session is required' })
+        return
+      }
+      if (!isViteStrictSameOriginMutation(req)) {
+        sendJson(res, 403, { error: 'Cross-origin session mutation is not allowed' })
+        return
+      }
+
+      deleteViteProviderRequestSessions(
+        req,
+        HOMEY_SESSION_COOKIE_NAME,
+        homeySessionStore
+      )
+      clearViteProviderSessionCookie(req, res, HOMEY_SESSION_COOKIE_NAME)
       sendJson(res, 200, { ok: true })
       return
     }
 
-    res.setHeader('Allow', 'GET, PUT, DELETE')
+    res.setHeader('Allow', 'GET, DELETE')
     sendJson(res, 405, { error: 'Method not allowed' })
   }
 
   const registerMiddleware = (server: ViteDevServer | PreviewServer) => {
     server.middlewares.use('/__navet_homey__/authorize', async (req, res) => {
+      if (req.method !== 'POST') {
+        res.setHeader('Allow', 'POST')
+        sendJson(res, 405, { error: 'Method not allowed' })
+        return
+      }
+      if (!isViteStrictSameOriginMutation(req)) {
+        sendJson(res, 403, { error: 'Cross-origin OAuth start is not allowed' })
+        return
+      }
+      const installationAuthorization =
+        installationAuthority.authorizeHomeyStart(req)
+      if (!installationAuthorization.allowed) {
+        sendJson(res, 403, {
+          error: 'Homey enrollment is not authorized for this installation',
+        })
+        return
+      }
+
       const { clientId, redirectUri } = getHomeyOAuthConfig(req)
       if (!clientId) {
         sendJson(res, 500, { error: 'Homey OAuth client ID is not configured' })
         return
       }
 
+      let body: { returnTo?: unknown }
+      try {
+        body = JSON.parse(await readRequestBody(req)) as { returnTo?: unknown }
+      } catch {
+        sendJson(res, 400, { error: 'Invalid Homey OAuth request' })
+        return
+      }
+      let context: {
+        cookieId: string
+        session: ViteStoredHomeySession
+      }
+      let state: string
+      try {
+        context = createViteProviderRequestSession(
+          req,
+          res,
+          HOMEY_SESSION_COOKIE_NAME,
+          homeySessionStore
+        )
+        state = createViteProviderState()
+        writeHomeyRecord(context.cookieId, context.session, {
+          pending: {
+            state,
+            returnTo: normalizeHomeyReturnTo(body.returnTo, req),
+            expiresAt: Date.now() + HOMEY_OAUTH_PENDING_TTL_MS,
+            installationPairingVerified:
+              installationAuthorization.pairingVerified,
+          },
+        })
+      } catch (error) {
+        if (sendSessionStoreError(res, error)) {
+          return
+        }
+        throw error
+      }
+
       const loginUrl = new URL(`${athomApiBaseUrl}/oauth2/authorise`)
       loginUrl.searchParams.set('response_type', 'code')
       loginUrl.searchParams.set('client_id', clientId)
       loginUrl.searchParams.set('redirect_uri', redirectUri)
-      loginUrl.searchParams.set(
-        'state',
-        Buffer.from(
-          JSON.stringify({
-            returnTo: '/',
-          })
-        ).toString('base64url')
-      )
+      loginUrl.searchParams.set('state', state)
 
-      res.statusCode = 302
-      res.setHeader('Location', loginUrl.toString())
-      res.end()
+      sendJson(res, 200, { authorizeUrl: loginUrl.toString() })
     })
 
     server.middlewares.use(async (req, res, next) => {
       const { callbackPath } = getHomeyOAuthConfig(req)
-      const requestPath = new URL(req.url ?? '/', getRequestOrigin(req)).pathname
+      const requestPath = new URL(req.url ?? '/', getViteProviderRequestOrigin(req)).pathname
       if (requestPath !== callbackPath) {
         next()
         return
       }
 
-      const requestUrl = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`)
-      const code = requestUrl.searchParams.get('code')?.trim()
-      const { clientId, clientSecret, redirectUri } = getHomeyOAuthConfig(req)
+      if (req.method !== 'GET') {
+        res.setHeader('Allow', 'GET')
+        sendJson(res, 405, { error: 'Method not allowed' })
+        return
+      }
 
-      if (!code || !clientId || !clientSecret) {
-        sendJson(res, 400, { error: 'Homey OAuth callback is incomplete' })
+      const requestUrl = new URL(req.url ?? '/', getViteProviderRequestOrigin(req))
+      const code = requestUrl.searchParams.get('code')?.trim() ?? ''
+      const state = requestUrl.searchParams.get('state')?.trim() ?? ''
+      const providerError =
+        requestUrl.searchParams.get('error')?.trim() ?? ''
+      const { clientId, clientSecret, redirectUri } = getHomeyOAuthConfig(req)
+      const context = state
+        ? findViteProviderRequestSession(
+            req,
+            HOMEY_SESSION_COOKIE_NAME,
+            homeySessionStore,
+            (candidate) => candidate.session.pending?.state === state
+          )
+        : null
+      const pending = context?.session.pending
+
+      if (
+        !context ||
+        !pending ||
+        !state ||
+        state !== pending.state ||
+        pending.expiresAt < Date.now()
+      ) {
+        sendJson(res, 400, {
+          error: 'Homey OAuth callback does not match this browser session',
+        })
+        return
+      }
+
+      // Consume the browser-bound state before any upstream request. This makes
+      // parallel callbacks and retries replay-resistant even when exchange fails.
+      const consumed = writeHomeyRecord(context.cookieId, context.session, {
+        pending: {
+          ...pending,
+          state: createViteProviderState(),
+        },
+      })
+
+      const redirectFailure = (failure: HomeyOAuthFailureCode) => {
+        res.statusCode = 302
+        setNoStoreHeaders(res)
+        res.setHeader(
+          'Location',
+          appendHomeyOAuthFailureMarker(pending.returnTo, failure)
+        )
+        res.end()
+      }
+
+      if (providerError) {
+        redirectFailure(
+          providerError === 'access_denied'
+            ? 'access_denied'
+            : 'temporarily_unavailable'
+        )
+        return
+      }
+      if (!code) {
+        redirectFailure('callback_incomplete')
+        return
+      }
+      if (!clientId || !clientSecret) {
+        redirectFailure('temporarily_unavailable')
         return
       }
 
@@ -1345,16 +2140,21 @@ function homeySessionStorePlugin() {
         })
 
         if (!tokenResponse.ok) {
-          sendJson(res, 502, { error: 'Homey OAuth token exchange failed' })
+          redirectFailure('temporarily_unavailable')
           return
         }
 
-        const token = (await tokenResponse.json()) as {
-          access_token: string
-          refresh_token: string
-          expires_in: number | string
+        let token: ReturnType<typeof normalizeHomeyOAuthToken>
+        try {
+          token = normalizeHomeyOAuthToken(await tokenResponse.json())
+        } catch {
+          token = null
         }
-        const user = await loadAuthenticatedUser(token.access_token)
+        if (!token) {
+          redirectFailure('invalid_response')
+          return
+        }
+        const user = await loadAuthenticatedUser(token.accessToken)
         const mappedHomeys =
           user.homeys?.map((homey) =>
             homey._id && homey.name
@@ -1380,11 +2180,28 @@ function homeySessionStorePlugin() {
             remoteUrl: string | null
           } => Boolean(homey)
         )
+        const authorityCurrent = homeySessionStore.readSession(context.cookieId)
+        if (
+          !authorityCurrent ||
+          JSON.stringify(authorityCurrent) !== JSON.stringify(consumed)
+        ) {
+          redirectFailure('session_changed')
+          return
+        }
+        if (
+          !installationAuthority.commitHomey(
+            homeys.map((homey) => homey.id),
+            pending.installationPairingVerified === true
+          )
+        ) {
+          redirectFailure('not_authorized')
+          return
+        }
 
         let session: HomeySessionData = {
-          accessToken: token.access_token,
-          refreshToken: token.refresh_token,
-          expiresAt: Date.now() + Number(token.expires_in) * 1000,
+          accessToken: token.accessToken,
+          refreshToken: token.refreshToken,
+          expiresAt: Date.now() + token.expiresIn * 1000,
           userId: user._id ?? null,
           user: {
             id: user._id ?? null,
@@ -1418,19 +2235,38 @@ function homeySessionStorePlugin() {
           }
         }
 
-        homeySessionStore.saveSession(session)
+        const now = Date.now()
+        const current = homeySessionStore.readSession(context.cookieId)
+        if (
+          !current ||
+          JSON.stringify(current) !== JSON.stringify(consumed)
+        ) {
+          redirectFailure('session_changed')
+          return
+        }
+        rotateViteProviderRequestSession(
+          req,
+          res,
+          HOMEY_SESSION_COOKIE_NAME,
+          homeySessionStore,
+          context.cookieId,
+          {
+            version: 1,
+            createdAt: now,
+            updatedAt: now,
+            auth: session,
+            pending: null,
+          }
+        )
         res.statusCode = 302
-        res.setHeader('Location', '/?homey_oauth_callback=1')
+        setNoStoreHeaders(res)
+        res.setHeader(
+          'Location',
+          appendHomeyOAuthCallbackMarker(pending.returnTo)
+        )
         res.end()
-      } catch (error) {
-        const detail =
-          error instanceof Error && error.message.trim().length > 0
-            ? error.message
-            : 'Unknown error'
-        sendJson(res, 502, {
-          error: 'Unable to complete Homey OAuth callback',
-          details: detail,
-        })
+      } catch {
+        redirectFailure('temporarily_unavailable')
       }
     })
 
@@ -1444,15 +2280,35 @@ function homeySessionStorePlugin() {
         sendJson(res, 405, { error: 'Method not allowed' })
         return
       }
+      if (!isViteStrictSameOriginMutation(req)) {
+        sendJson(res, 403, { error: 'Cross-origin session mutation is not allowed' })
+        return
+      }
+
+      const context = getViteProviderRequestSession(
+        req,
+        HOMEY_SESSION_COOKIE_NAME,
+        homeySessionStore
+      )
+      if (!context?.session.auth) {
+        sendJson(res, 401, { error: 'Bound Homey OAuth session is required' })
+        return
+      }
+      let record = context.session
 
       try {
-        const storedSession = homeySessionStore.getSession()
-        if (!storedSession) {
-          sendJson(res, 404, { error: 'No Homey OAuth session available' })
-          return
+        const persistSession = (session: HomeySessionData) => {
+          const current = homeySessionStore.readSession(context.cookieId)
+          if (!current || JSON.stringify(current) !== JSON.stringify(record)) {
+            throw new HomeySessionSupersededError()
+          }
+          record = writeHomeyRecord(context.cookieId, record, { auth: session })
         }
-
-        const session = await refreshHomeyAccessToken(storedSession, req)
+        const session = await refreshHomeyAccessToken(
+          context.session.auth,
+          req,
+          persistSession
+        )
         const body = JSON.parse(await readRequestBody(req)) as { homeyId?: string }
         const homeyId = body.homeyId?.trim()
         if (!homeyId) {
@@ -1474,10 +2330,41 @@ function homeySessionStorePlugin() {
           homeySessionToken: selection.homeySessionToken,
         }
 
-        homeySessionStore.saveSession(nextSession)
+        persistSession(nextSession)
         sendJson(res, 200, sanitizeHomeySession(nextSession))
-      } catch {
-        sendJson(res, 502, { error: 'Unable to select Homey' })
+      } catch (error) {
+        if (sendSessionStoreError(res, error)) {
+          return
+        }
+        if (error instanceof HomeySessionSupersededError) {
+          sendJson(res, 409, {
+            error: 'Homey session changed before selection completed',
+          })
+          return
+        }
+        if (error instanceof HomeyRefreshError && error.confirmedInvalid) {
+          const current = homeySessionStore.readSession(context.cookieId)
+          if (
+            !current ||
+            JSON.stringify(current) !== JSON.stringify(record)
+          ) {
+            sendJson(res, 409, {
+              error: 'Homey session changed before selection completed',
+            })
+            return
+          }
+          homeySessionStore.deleteSession(context.cookieId)
+          clearViteProviderSessionCookie(req, res, HOMEY_SESSION_COOKIE_NAME)
+          sendJson(res, 401, { error: 'Homey OAuth session has expired' })
+          return
+        }
+        sendJson(res, 502, {
+          error: 'Unable to select Homey',
+          details:
+            error instanceof Error && error.message.trim()
+              ? error.message.trim()
+              : 'Unknown error',
+        })
       }
     })
   }
@@ -1485,8 +2372,20 @@ function homeySessionStorePlugin() {
   return {
     name: 'navet-homey-session-store',
     api: {
-      getHomeySession(): HomeySessionData | null {
-        return homeySessionStore.getSession()
+      getHomeySession(
+        req: IncomingMessage,
+        res?: ServerResponse
+      ): HomeySessionData | null {
+        const context = getViteProviderRequestSession(
+          req,
+          HOMEY_SESSION_COOKIE_NAME,
+          homeySessionStore
+        )
+        if (!context?.session.auth) {
+          return null
+        }
+        touchHomeyRecord(req, res, context)
+        return context.session.auth
       },
     },
     configureServer: registerMiddleware,
@@ -1494,9 +2393,14 @@ function homeySessionStorePlugin() {
   }
 }
 
-function openhabSessionStorePlugin() {
+function openhabSessionStorePlugin(
+  installationAuthority: ViteInstallationAuthority
+) {
   const openhabSessionStore = createViteOpenHABSessionStore()
+  const loginRateLimiter = createViteOpenHABLoginRateLimiter()
   const OPENHAB_VALIDATE_TIMEOUT_MS = 5_000
+  const sessionTouchIntervalMs = 24 * 60 * 60 * 1000
+  const openHABValidationError = 'Unable to verify the openHAB connection'
 
   const setNoStoreHeaders = (res: ServerResponse) => {
     res.setHeader('Cache-Control', 'no-store')
@@ -1513,6 +2417,25 @@ function openhabSessionStorePlugin() {
     res.statusCode = 204
     setNoStoreHeaders(res)
     res.end()
+  }
+
+  const sendSessionStoreError = (res: ServerResponse, error: unknown) => {
+    let code: string
+    let status: number
+    if (isViteProviderSessionRecordTooLargeError(error)) {
+      code = PROVIDER_SESSION_RECORD_TOO_LARGE_ERROR_CODE
+      status = PROVIDER_SESSION_RECORD_TOO_LARGE_STATUS
+    } else if (isViteProviderSessionCapacityError(error)) {
+      code = PROVIDER_SESSION_CAPACITY_ERROR_CODE
+      status = PROVIDER_SESSION_CAPACITY_STATUS
+    } else {
+      return false
+    }
+    sendJson(res, status, {
+      error: error.message,
+      code,
+    })
+    return true
   }
 
   const readRequestBody = async (req: IncomingMessage) => {
@@ -1536,10 +2459,16 @@ function openhabSessionStorePlugin() {
     const timeoutId = setTimeout(() => controller.abort(), OPENHAB_VALIDATE_TIMEOUT_MS)
 
     try {
-      const normalizedBaseUrl = session.hassUrl.replace(/\/+$/, '')
-      const targetUrl = new URL('/rest/items?recursive=false&limit=1', normalizedBaseUrl)
+      const normalizedBaseUrl = normalizeOpenHABBaseUrl(session.hassUrl)
+      if (!normalizedBaseUrl) {
+        throw new Error(openHABValidationError)
+      }
+      const targetUrl = new URL(
+        `${normalizedBaseUrl}/rest/items?recursive=false&limit=1`
+      )
       const response = await fetch(targetUrl, {
         method: 'GET',
+        redirect: 'manual',
         headers: {
           Accept: 'application/json',
           Authorization: toOpenHABBasicAuthHeader(session),
@@ -1547,21 +2476,18 @@ function openhabSessionStorePlugin() {
         signal: controller.signal,
       })
 
-      if (response.status === 401 || response.status === 403) {
-        throw new Error(
-          'openHAB authentication failed. Check your username, password, and API Security settings.'
-        )
-      }
-
       if (!response.ok) {
-        throw new Error(`openHAB connection check failed with status ${response.status}`)
+        throw new Error(openHABValidationError)
+      }
+      const payload: unknown = await response.json()
+      if (!Array.isArray(payload)) {
+        throw new Error(openHABValidationError)
       }
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
-        throw new Error('Timed out while verifying the openHAB connection')
+        throw new Error(openHABValidationError)
       }
-
-      throw error
+      throw new Error(openHABValidationError)
     } finally {
       clearTimeout(timeoutId)
     }
@@ -1569,44 +2495,150 @@ function openhabSessionStorePlugin() {
 
   const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     if (req.method === 'GET') {
-      const session = openhabSessionStore.getSerializedSession()
-      if (!session) {
+      const context = getViteProviderRequestSession(
+        req,
+        OPENHAB_SESSION_COOKIE_NAME,
+        openhabSessionStore
+      )
+      if (!context?.session.auth) {
         sendNoContent(res)
         return
       }
 
-      res.statusCode = 200
-      setNoStoreHeaders(res)
-      res.setHeader('Content-Type', 'application/json; charset=utf-8')
-      res.end(session)
+      if (context.session.updatedAt + sessionTouchIntervalMs < Date.now()) {
+        openhabSessionStore.writeSession(context.cookieId, {
+          ...context.session,
+          updatedAt: Date.now(),
+        })
+      }
+      setViteProviderSessionCookie(
+        req,
+        res,
+        OPENHAB_SESSION_COOKIE_NAME,
+        context.cookieId
+      )
+      sendJson(res, 200, {
+        authenticated: true,
+        hassUrl: context.session.auth.hassUrl,
+      })
       return
     }
 
     if (req.method === 'PUT') {
+      const context = getViteProviderRequestSession(
+        req,
+        OPENHAB_SESSION_COOKIE_NAME,
+        openhabSessionStore
+      )
+      if (!isViteStrictSameOriginMutation(req)) {
+        sendJson(res, 403, { error: 'Cross-origin session mutation is not allowed' })
+        return
+      }
+
       try {
         const body = await readRequestBody(req)
-        const parsed = JSON.parse(body)
-        if (!isValidOpenHABSessionData(parsed)) {
+        const parsed = normalizeOpenHABSessionData(JSON.parse(body))
+        if (!parsed) {
           sendJson(res, 400, { error: 'Unsupported openHAB session' })
+          return
+        }
+        const installationAuthorization =
+          installationAuthority.authorizeOpenHAB(
+            req,
+            parsed.hassUrl,
+            normalizeOpenHABBaseUrl
+          )
+        if (!installationAuthorization.allowed) {
+          sendJson(res, 403, {
+            error: 'openHAB target is not authorized for this installation',
+          })
+          return
+        }
+        const rateLimit = loginRateLimiter.consume(req)
+        if (!rateLimit.allowed) {
+          res.setHeader('Retry-After', String(rateLimit.retryAfterSeconds))
+          sendJson(res, 429, {
+            error: 'Too many openHAB login attempts. Try again later.',
+          })
           return
         }
 
         await validateOpenHABSession(parsed)
-        openhabSessionStore.saveSession(parsed)
-        sendJson(res, 200, { ok: true })
-      } catch (error) {
-        sendJson(res, 400, {
-          error:
-            error instanceof Error && error.message.trim().length > 0
-              ? error.message
-              : 'Unable to save openHAB session',
+        if (context) {
+          const current = openhabSessionStore.readSession(context.cookieId)
+          if (
+            !current ||
+            JSON.stringify(current) !== JSON.stringify(context.session)
+          ) {
+            sendJson(res, 409, {
+              error: 'openHAB session changed before login completed',
+            })
+            return
+          }
+        }
+        if (
+          !installationAuthority.commitOpenHAB(
+            parsed.hassUrl,
+            normalizeOpenHABBaseUrl,
+            installationAuthorization.pairingVerified
+          )
+        ) {
+          sendJson(res, 403, {
+            error: 'openHAB target is not authorized for this installation',
+          })
+          return
+        }
+        const now = Date.now()
+        const next: ViteStoredOpenHABSession = {
+          version: 1,
+          createdAt: now,
+          updatedAt: now,
+          auth: parsed,
+        }
+        rotateViteProviderRequestSession(
+          req,
+          res,
+          OPENHAB_SESSION_COOKIE_NAME,
+          openhabSessionStore,
+          context?.cookieId ?? '',
+          next
+        )
+        loginRateLimiter.reset(req)
+        sendJson(res, 200, {
+          authenticated: true,
+          hassUrl: parsed.hassUrl,
         })
+      } catch (error) {
+        if (sendSessionStoreError(res, error)) {
+          loginRateLimiter.reset(req)
+          return
+        }
+        sendJson(res, 400, { error: openHABValidationError })
       }
       return
     }
 
     if (req.method === 'DELETE') {
-      openhabSessionStore.clearSession()
+      const context = getViteProviderRequestSession(
+        req,
+        OPENHAB_SESSION_COOKIE_NAME,
+        openhabSessionStore
+      )
+      if (!context) {
+        sendJson(res, 401, { error: 'Bound browser session is required' })
+        return
+      }
+      if (!isViteStrictSameOriginMutation(req)) {
+        sendJson(res, 403, { error: 'Cross-origin session mutation is not allowed' })
+        return
+      }
+
+      deleteViteProviderRequestSessions(
+        req,
+        OPENHAB_SESSION_COOKIE_NAME,
+        openhabSessionStore
+      )
+      clearViteProviderSessionCookie(req, res, OPENHAB_SESSION_COOKIE_NAME)
       sendJson(res, 200, { ok: true })
       return
     }
@@ -1624,8 +2656,33 @@ function openhabSessionStorePlugin() {
   return {
     name: 'navet-openhab-session-store',
     api: {
-      getOpenHABSession(): OpenHABSessionData | null {
-        return openhabSessionStore.getSession()
+      getOpenHABSession(
+        req: IncomingMessage,
+        res?: ServerResponse
+      ): OpenHABSessionData | null {
+        const context = getViteProviderRequestSession(
+          req,
+          OPENHAB_SESSION_COOKIE_NAME,
+          openhabSessionStore
+        )
+        if (!context?.session.auth) {
+          return null
+        }
+        if (context.session.updatedAt + sessionTouchIntervalMs < Date.now()) {
+          openhabSessionStore.writeSession(context.cookieId, {
+            ...context.session,
+            updatedAt: Date.now(),
+          })
+        }
+        if (res) {
+          setViteProviderSessionCookie(
+            req,
+            res,
+            OPENHAB_SESSION_COOKIE_NAME,
+            context.cookieId
+          )
+        }
+        return context.session.auth
       },
     },
     configureServer: registerMiddleware,
@@ -1633,7 +2690,7 @@ function openhabSessionStorePlugin() {
   }
 }
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, repoRoot, '')
   if (env.NAVET_HOMEY_CLIENT_ID) {
     process.env.NAVET_HOMEY_CLIENT_ID = env.NAVET_HOMEY_CLIENT_ID
@@ -1713,7 +2770,16 @@ export default defineConfig(({ mode }) => {
   } satisfies NonNullable<UserConfig['build']>
 
   function createAppPlugins() {
-    const authSessionPlugin = authSessionStorePlugin()
+    const pwaCachePolicy = createVitePwaCachePolicy()
+    const installationAuthority =
+      command === 'serve' && mode !== 'test' && !isStorybook
+        ? createViteInstallationAuthority({
+            hassUrlPin: env.NAVET_HASS_URL?.trim(),
+            installationKey: env.NAVET_INSTALLATION_KEY?.trim(),
+            openhabUrlPin: env.NAVET_OPENHAB_URL?.trim(),
+          })
+        : DISABLED_INSTALLATION_AUTHORITY
+    const authSessionPlugin = authSessionStorePlugin(installationAuthority)
     const dashboardProfilePlugin = dashboardProfileStorePlugin(
       (req) =>
         (
@@ -1727,8 +2793,10 @@ export default defineConfig(({ mode }) => {
           }
         ).api?.resolveAuthenticatedPrincipal?.(req, { trustIngressHeaders: false }) ?? null
     )
-    const homeySessionPlugin = homeySessionStorePlugin()
-    const openhabSessionPlugin = openhabSessionStorePlugin()
+    const homeySessionPlugin = homeySessionStorePlugin(installationAuthority)
+    const openhabSessionPlugin = openhabSessionStorePlugin(
+      installationAuthority
+    )
     const appPlugins: PluginOption[] = [
       react(),
       babel({
@@ -1754,69 +2822,90 @@ export default defineConfig(({ mode }) => {
           ).api?.getAuthSession?.(req) ?? null
       ),
       homeyProxyPlugin(
-        () =>
+        (req, res) =>
           (
             homeySessionPlugin as PluginOption & {
-              api?: { getHomeySession?: () => HomeySessionData | null }
+              api?: {
+                getHomeySession?: (
+                  req: IncomingMessage,
+                  res?: ServerResponse
+                ) => HomeySessionData | null
+              }
             }
-          ).api?.getHomeySession?.() ?? null
+          ).api?.getHomeySession?.(req, res) ?? null
       ),
       openhabProxyPlugin(
-        () =>
+        (req, res) =>
           (
             openhabSessionPlugin as PluginOption & {
-              api?: { getOpenHABSession?: () => OpenHABSessionData | null }
+              api?: {
+                getOpenHABSession?: (
+                  req: IncomingMessage,
+                  res?: ServerResponse
+                ) => OpenHABSessionData | null
+              }
             }
-          ).api?.getOpenHABSession?.() ?? null
+          ).api?.getOpenHABSession?.(req, res) ?? null
       ),
     ]
 
     if (!isStorybook) {
-      appPlugins.push(
-        VitePWA({
-          registerType: 'autoUpdate',
-          injectRegister: false,
-          manifestFilename: 'site.webmanifest',
-          includeAssets: [
-            'favicon.svg',
-            'favicon-32x32.svg',
-            'apple-touch-icon.png',
-            'logo.svg',
-            'logo-horizontal.svg',
-            'logo-horizontal-light.svg',
-            'pwa-192.png',
-            'pwa-512.png',
-            'pwa-maskable-192.png',
-            'pwa-maskable-512.png',
+      const pwaPlugins = VitePWA({
+        registerType: 'prompt',
+        injectRegister: false,
+        manifestFilename: 'site.webmanifest',
+        includeAssets: [...NAVET_PWA_INCLUDE_ASSETS],
+        manifest: {
+          ...publicWebManifest,
+          start_url: './',
+          scope: './',
+          icons: publicWebManifest.icons.map((icon) => ({
+            ...icon,
+            src: `./${icon.src.replace(/^\/+/, '')}`,
+          })),
+        },
+        workbox: {
+          cleanupOutdatedCaches: true,
+          maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+          navigateFallback: './index.html',
+          navigateFallbackDenylist: [
+            NAVET_INTERNAL_NAVIGATION_PATH_PATTERN,
           ],
-          manifest: {
-            ...publicWebManifest,
-            start_url: './',
-            scope: './',
-            icons: publicWebManifest.icons.map((icon) => ({
-              ...icon,
-              src: `./${icon.src.replace(/^\/+/, '')}`,
-            })),
-          },
-          workbox: {
-            // The app shell is still a single large startup chunk under current Rolldown splitting.
-            // Keep it precacheable while the chunk layout is refined incrementally.
-            maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
-            navigateFallback: './index.html',
-            navigateFallbackDenylist: [
-              /^\/__navet_auth__\//,
-              /^\/__navet_profile__\//,
-              /^\/__navet_homey__\//,
-              /^\/__navet_openhab__\//,
-              /^\/__navet_ha_proxy__\//,
-              /^\/__navet_homey_proxy__\//,
-              /^\/__navet_openhab_proxy__\//,
-              /^\/__navet_spotify_metadata__\//,
-            ],
-            globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
-            globIgnores: ['config.js'],
-          },
-        })
+          // Precache only the static entry graph referenced by index.html. Preloading every
+          // route, locale, media codec, and card chunk made each install/update download and
+          // write the entire application while a wall panel was in use.
+          globPatterns: [
+            'index.html',
+            'offline.html',
+            'boot-i18n.js',
+            'assets/*.{css,js,svg}',
+          ],
+          manifestTransforms: [
+            pwaCachePolicy.manifestTransform as VitePwaManifestTransform,
+          ],
+          runtimeCaching: [
+            {
+              urlPattern: isNavetRuntimeAssetRequest,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'navet-immutable-assets-v1',
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+                expiration: {
+                  maxAgeSeconds: 30 * 24 * 60 * 60,
+                  maxEntries: 192,
+                  purgeOnQuotaError: true,
+                },
+              },
+            },
+          ],
+        },
+      })
+      appPlugins.push(
+        pwaCachePolicy.capturePlugin,
+        pwaPlugins,
+        deferVitePwaGenerationUntilWriteBundle(pwaPlugins)
       )
     }
 

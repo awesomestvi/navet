@@ -302,7 +302,11 @@ function migrateLegacyPreferenceSource(
     typeof migrated.effectsQuality === 'string' &&
     EFFECTS_QUALITY_VALUES.has(migrated.effectsQuality)
   ) {
-    migrated.effectsQualityUserOverride = true;
+    // Before automatic effects quality existed, every installation persisted the default `high`
+    // value. Treating that legacy default as an explicit override permanently disables device
+    // detection on upgraded wall panels. Low and medium remain explicit because they differ from
+    // the old default.
+    migrated.effectsQualityUserOverride = migrated.effectsQuality !== 'high';
   }
 
   return migrated;

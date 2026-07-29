@@ -36,8 +36,12 @@ export interface HomeyAuthSession extends BaseAuthSession {
 
 export interface OpenHABAuthSession extends BaseAuthSession {
   providerId: 'openhab';
-  username: string;
-  password: string;
+  /**
+   * Direct openHAB sessions may carry credentials. Same-origin proxied sessions intentionally
+   * omit them because the browser is bound to server-side credentials through an HttpOnly cookie.
+   */
+  username?: string;
+  password?: string;
   proxyBaseUrl?: string;
 }
 

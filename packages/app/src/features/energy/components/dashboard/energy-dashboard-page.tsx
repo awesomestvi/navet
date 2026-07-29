@@ -17,6 +17,7 @@ import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { DashboardCardItem } from '@navet/app/features/dashboard/components/dashboard-card-item';
 import { DashboardResizeTrigger } from '@navet/app/features/dashboard/components/dashboard-edit-actions';
 import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit-dashboard-grid';
+import { useProgressiveBatching } from '@navet/app/features/dashboard/hooks/use-progressive-batching';
 import type { CustomCard } from '@navet/app/features/dashboard/stores/custom-cards-store';
 import { useEnergyLoadHistory } from '@navet/app/features/energy/hooks/use-energy-load-history';
 import type {
@@ -85,6 +86,24 @@ const UNTRACKED_CONSUMPTION_COLOR = '#94a3b8';
 const ENERGY_WHOLE_HOME_SPARKLINE_CARD_ID = 'energy:whole-home-sparkline';
 const ENERGY_SPARKLINE_ALLOWED_SIZES: CardSize[] = ['small', 'medium', 'large'];
 const LOAD_ORB_DRIFT_BASE_DURATION_S = 8.5;
+const LOAD_ORB_DENSITY_HIGH = {
+  ringCount: 5,
+  spokeCount: 26,
+  radiusStart: 84,
+  radiusStep: 21,
+} as const;
+const LOAD_ORB_DENSITY_MEDIUM = {
+  ringCount: 3,
+  spokeCount: 20,
+  radiusStart: 96,
+  radiusStep: 32,
+} as const;
+const LOAD_ORB_DENSITY_LOW = {
+  ringCount: 1,
+  spokeCount: 26,
+  radiusStart: 126,
+  radiusStep: 0,
+} as const;
 const LOAD_ORB_RIPPLE_KEYFRAMES = `
   @keyframes navet-load-orb-water-drift {
     0%, 100% {
@@ -280,9 +299,34 @@ function CompactLoadSparklines({
 }) {
   const { t } = useI18n();
   const breakpointCols = useBreakpointCols();
+  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
+  const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
+  const supportsDeferredVisibility = typeof IntersectionObserver !== 'undefined';
   const { ref: viewportRef, isVisible } = useDeferredVisibility<HTMLDivElement>({
+    disabled: isEditMode || !supportsDeferredVisibility,
+    initiallyVisible: isEditMode || !supportsDeferredVisibility,
     rootMargin: '180px 0px',
   });
+  const shouldRenderCards = isEditMode || isVisible;
+  const shouldBatchCustomCards = lowPowerMode || effectsQuality === 'low';
+  const progressiveBatchSize = !supportsDeferredVisibility
+    ? Math.max(1, consumers.length)
+    : lowPowerMode || effectsQuality === 'low'
+      ? 1
+      : effectsQuality === 'medium'
+        ? 2
+        : 3;
+  const progressiveCardCount = consumers.length + (shouldBatchCustomCards ? customCards.length : 0);
+  const visibleProgressiveCardCount = useProgressiveBatching(progressiveCardCount, isEditMode, {
+    enabled: shouldRenderCards,
+    initialBatch: progressiveBatchSize,
+    batchSize: progressiveBatchSize,
+    timeoutFallbackMs: lowPowerMode || effectsQuality === 'low' ? 128 : 96,
+  });
+  const visibleConsumerCount = Math.min(consumers.length, visibleProgressiveCardCount);
+  const visibleCustomCardCount = shouldBatchCustomCards
+    ? Math.max(0, visibleProgressiveCardCount - consumers.length)
+    : customCards.length;
   const [consumerTrends, setConsumerTrends] = useState<Record<string, EnergySeriesPoint[]>>({});
   const handleConsumerTrendChange = useCallback(
     (consumerId: string, points: EnergySeriesPoint[]) => {
@@ -315,7 +359,11 @@ function CompactLoadSparklines({
   });
 
   return (
-    <div ref={viewportRef}>
+    <div
+      ref={viewportRef}
+      className={shouldRenderCards ? undefined : 'min-h-48'}
+      data-energy-sparklines-ready={shouldRenderCards ? 'true' : 'false'}
+    >
       <div ref={outerRef} className="relative w-full" style={outerContainerStyle}>
         <div
           ref={innerRef}
@@ -326,7 +374,7 @@ function CompactLoadSparklines({
             className="grid w-full grid-flow-row-dense gap-3 lg:gap-4"
             style={gridStyle as CSSProperties}
           >
-            {untrackedTodayKWh > 0 ? (
+            {shouldRenderCards && untrackedTodayKWh > 0 ? (
               <SparklineCardFrame
                 accentColor={accentColor}
                 cardSize={wholeHomeCardSize}
@@ -344,7 +392,7 @@ function CompactLoadSparklines({
                 />
               </SparklineCardFrame>
             ) : null}
-            {consumers.map((consumer) => (
+            {consumers.slice(0, visibleConsumerCount).map((consumer) => (
               <DeviceSparklineRow
                 key={consumer.id}
                 accentColor={accentColor}
@@ -360,18 +408,22 @@ function CompactLoadSparklines({
                 theme={theme}
               />
             ))}
-            {customCards.map((card) => (
-              <DashboardCardItem
-                key={card.id}
-                id={card.id}
-                size={card.size}
-                isEditMode={isEditMode}
-                card={card}
-                handleSizeChange={(cardId, size) => onUpdateCard?.(cardId, { size })}
-                onDeleteCard={onDeleteCard}
-                onUpdateCard={onUpdateCard}
-              />
-            ))}
+            {shouldRenderCards
+              ? customCards
+                  .slice(0, visibleCustomCardCount)
+                  .map((card) => (
+                    <DashboardCardItem
+                      key={card.id}
+                      id={card.id}
+                      size={card.size}
+                      isEditMode={isEditMode}
+                      card={card}
+                      handleSizeChange={(cardId, size) => onUpdateCard?.(cardId, { size })}
+                      onDeleteCard={onDeleteCard}
+                      onUpdateCard={onUpdateCard}
+                    />
+                  ))
+              : null}
           </div>
         </div>
       </div>
@@ -614,20 +666,33 @@ function LoadOrb({
   untrackedTodayKWh: number;
 }) {
   const { t } = useI18n();
-  const motionIntensity = getLoadOrbMotionIntensity(loadW);
-  const dots = buildOrbDots(motionIntensity);
-  const orbSegments = getLoadOrbSegments({
-    consumerColors,
-    consumers,
-    untrackedPowerW,
+  const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
+  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
+  const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
+  const density = resolveLoadOrbDensity({
+    disableAnimations,
+    effectsQuality,
+    lowPowerMode,
   });
+  const animateDots = !disableAnimations && !lowPowerMode && effectsQuality !== 'low';
+  const motionIntensity = getLoadOrbMotionIntensity(loadW);
+  const dots = useMemo(() => buildOrbDots(motionIntensity, density), [density, motionIntensity]);
+  const orbSegments = useMemo(
+    () =>
+      getLoadOrbSegments({
+        consumerColors,
+        consumers,
+        untrackedPowerW,
+      }),
+    [consumerColors, consumers, untrackedPowerW]
+  );
   const consumedTodayKWh =
     consumers.reduce((total, consumer) => total + Math.max(0, consumer.energyKWh), 0) +
     untrackedTodayKWh;
 
   return (
     <div className="relative flex min-h-[24rem] min-w-0 items-center justify-center overflow-visible px-2 py-4">
-      <style>{LOAD_ORB_RIPPLE_KEYFRAMES}</style>
+      {animateDots ? <style>{LOAD_ORB_RIPPLE_KEYFRAMES}</style> : null}
       <div className="absolute inset-0" aria-hidden="true">
         {orbSegments.length > 0
           ? dots.map((dot) => (
@@ -640,13 +705,20 @@ function LoadOrb({
                   ['--load-orb-dot-opacity' as string]: String(dot.opacity),
                   ['--load-orb-dot-x' as string]: `${dot.x}px`,
                   ['--load-orb-dot-y' as string]: `${dot.y}px`,
-                  ['--load-orb-drift-x' as string]: `${dot.driftX}px`,
-                  ['--load-orb-drift-y' as string]: `${dot.driftY}px`,
-                  animationDelay: `${dot.delayS}s`,
-                  animationDuration: `${dot.durationS}s`,
-                  animationIterationCount: 'infinite',
-                  animationName: 'navet-load-orb-water-drift',
-                  animationTimingFunction: 'ease-in-out',
+                  ...(animateDots
+                    ? {
+                        ['--load-orb-drift-x' as string]: `${dot.driftX}px`,
+                        ['--load-orb-drift-y' as string]: `${dot.driftY}px`,
+                        animationDelay: `${dot.delayS}s`,
+                        animationDuration: `${dot.durationS}s`,
+                        animationIterationCount: 'infinite',
+                        animationName: 'navet-load-orb-water-drift',
+                        animationTimingFunction: 'ease-in-out',
+                      }
+                    : {
+                        opacity: dot.opacity,
+                        transform: `translate(-50%, -50%) translate(${dot.x}px, ${dot.y}px)`,
+                      }),
                   backgroundColor: getLoadOrbDotColor({
                     angle: dot.angle,
                     segments: orbSegments,
@@ -654,7 +726,7 @@ function LoadOrb({
                   height: dot.size,
                   left: '50%',
                   top: '50%',
-                  transform: 'translate(-50%, -50%)',
+                  ...(animateDots ? { transform: 'translate(-50%, -50%)' } : {}),
                   width: dot.size,
                 }}
               />
@@ -1263,7 +1335,32 @@ function getLoadOrbMotionIntensity(loadW: number) {
   return Math.max(0.7, Math.min(1.9, 0.82 + loadW / 2200));
 }
 
-function buildOrbDots(motionIntensity = 1) {
+type LoadOrbDensity =
+  | typeof LOAD_ORB_DENSITY_HIGH
+  | typeof LOAD_ORB_DENSITY_MEDIUM
+  | typeof LOAD_ORB_DENSITY_LOW;
+
+function resolveLoadOrbDensity({
+  disableAnimations,
+  effectsQuality,
+  lowPowerMode,
+}: {
+  disableAnimations: boolean;
+  effectsQuality: 'high' | 'medium' | 'low';
+  lowPowerMode: boolean;
+}): LoadOrbDensity {
+  if (disableAnimations || lowPowerMode || effectsQuality === 'low') {
+    return LOAD_ORB_DENSITY_LOW;
+  }
+
+  if (effectsQuality === 'medium') {
+    return LOAD_ORB_DENSITY_MEDIUM;
+  }
+
+  return LOAD_ORB_DENSITY_HIGH;
+}
+
+function buildOrbDots(motionIntensity = 1, density: LoadOrbDensity = LOAD_ORB_DENSITY_HIGH) {
   const dots: Array<{
     angle: number;
     delayS: number;
@@ -1277,10 +1374,10 @@ function buildOrbDots(motionIntensity = 1) {
     x: number;
     y: number;
   }> = [];
-  const spokeCount = 26;
+  const { radiusStart, radiusStep, ringCount, spokeCount } = density;
 
-  for (let ring = 0; ring < 5; ring += 1) {
-    const radius = 84 + ring * 21;
+  for (let ring = 0; ring < ringCount; ring += 1) {
+    const radius = radiusStart + ring * radiusStep;
     const driftAmplitude = Math.max(1.4, 2.3 - ring * 0.18) * motionIntensity;
     const durationScale = Math.max(0.62, 1.18 - (motionIntensity - 0.7) * 0.28);
     for (let index = 0; index < spokeCount; index += 1) {
@@ -1295,7 +1392,7 @@ function buildOrbDots(motionIntensity = 1) {
         id: `${ring}:${index}`,
         opacity: 0.92 - ring * 0.08,
         ring,
-        size: 6.2 + (4 - ring) * 0.7,
+        size: 6.2 + (ringCount - 1 - ring) * 0.7,
         x: Math.cos(angle) * radius,
         y: Math.sin(angle) * radius,
       });

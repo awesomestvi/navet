@@ -1,6 +1,5 @@
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import type { DashboardConfigPayload } from '@navet/app/utils/dashboard-config';
-import { storage } from '@navet/app/utils/storage';
 
 export interface DashboardProfileBaseSnapshot {
   profile: DashboardConfigPayload;
@@ -11,6 +10,22 @@ export interface DashboardProfileBaseSnapshot {
 }
 
 const SAFE_ID_PATTERN = /^[a-zA-Z0-9_-]{1,128}$/;
+let observedBase: DashboardProfileBaseSnapshot | null = null;
+
+function clearPersistedBases() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(STORAGE_KEYS.dashboardProfileBase);
+    window.sessionStorage.removeItem(STORAGE_KEYS.dashboardProfileBase);
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.warn('[DashboardProfile] Unable to clear a legacy persisted merge base:', error);
+    }
+  }
+}
 
 function parseDashboardProfileBaseSnapshot(value: unknown): DashboardProfileBaseSnapshot | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -38,9 +53,8 @@ function parseDashboardProfileBaseSnapshot(value: unknown): DashboardProfileBase
 }
 
 export function readDashboardProfileBase(): DashboardProfileBaseSnapshot | null {
-  return parseDashboardProfileBaseSnapshot(
-    storage.get<DashboardProfileBaseSnapshot | null>(STORAGE_KEYS.dashboardProfileBase, null)
-  );
+  clearPersistedBases();
+  return observedBase;
 }
 
 export function writeDashboardProfileBase(snapshot: DashboardProfileBaseSnapshot) {
@@ -48,9 +62,11 @@ export function writeDashboardProfileBase(snapshot: DashboardProfileBaseSnapshot
   if (!validSnapshot) {
     throw new Error('Invalid dashboard profile base snapshot');
   }
-  storage.set(STORAGE_KEYS.dashboardProfileBase, validSnapshot);
+  observedBase = validSnapshot;
+  clearPersistedBases();
 }
 
 export function clearDashboardProfileBase() {
-  storage.remove(STORAGE_KEYS.dashboardProfileBase);
+  observedBase = null;
+  clearPersistedBases();
 }

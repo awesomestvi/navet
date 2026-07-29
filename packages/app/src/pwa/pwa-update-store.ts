@@ -1,5 +1,6 @@
 import { registerSW } from 'virtual:pwa-register';
 import { useSyncExternalStore } from 'react';
+import { isHomeAssistantIngressPwaContext } from './pwa-registration-scheduler';
 
 type PwaUpdateState = {
   offlineReady: boolean;
@@ -14,27 +15,6 @@ const initialState: PwaUpdateState = {
 let state: PwaUpdateState = initialState;
 let updateServiceWorker: ((reloadPage?: boolean) => Promise<void>) | null = null;
 const listeners = new Set<() => void>();
-
-function getBaseHref() {
-  if (typeof document === 'undefined') {
-    return '/';
-  }
-
-  const href = document.querySelector('base')?.getAttribute('href')?.trim();
-  if (!href || href === '/') {
-    return '/';
-  }
-
-  return href.endsWith('/') ? href : `${href}/`;
-}
-
-function isHomeAssistantIngress() {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-
-  return window.location.pathname.includes('/api/hassio_ingress/') || getBaseHref() !== '/';
-}
 
 async function unregisterIngressServiceWorkers() {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
@@ -68,7 +48,7 @@ function setState(nextState: Partial<PwaUpdateState>) {
 }
 
 export function registerPwaServiceWorker() {
-  if (isHomeAssistantIngress()) {
+  if (isHomeAssistantIngressPwaContext()) {
     void unregisterIngressServiceWorkers();
     updateServiceWorker = null;
     return;

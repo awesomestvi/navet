@@ -1365,6 +1365,8 @@ export const deMessages = {
     'Das gemeinsame Dashboard muss wiederhergestellt werden. Die lokalen Einstellungen dieses Dashboards wurden beibehalten.',
   'dashboard.profileSync.unavailable':
     'Die Synchronisierung des gemeinsamen Dashboards ist nicht verfügbar. Lokale Einstellungen bleiben erhalten.',
+  'dashboard.profileSync.tenantMismatch':
+    'Dieses gemeinsame Dashboard gehört zu einer anderen Home Assistant-Adresse. Verbinden Sie sich über dieselbe Home Assistant-Adresse, mit der diese Navet-Installation eingerichtet wurde. Lokale Einstellungen bleiben erhalten.',
   'dashboard.profileSync.unauthorized':
     'Melden Sie sich erneut an, um das gemeinsame Dashboard weiter zu synchronisieren. Lokale Einstellungen bleiben erhalten.',
   'dashboard.profileSync.saveFailed':

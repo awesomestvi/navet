@@ -1,4 +1,4 @@
-import { Badge, Button, Input } from '@navet/app/components/primitives';
+import { Badge, Input } from '@navet/app/components/primitives';
 import {
   type DashboardClientKind,
   getDashboardClientIdentity,
@@ -13,7 +13,6 @@ import type {
 } from '@navet/app/services/dashboard-profile.contract';
 import { DASHBOARD_PROFILE_HISTORY_LIMIT } from '@navet/app/services/dashboard-profile.contract';
 import {
-  forgetDashboardProfileClient,
   loadDashboardProfileHistory,
   restoreDashboardProfileRevision,
 } from '@navet/app/services/dashboard-profile.service';
@@ -28,7 +27,6 @@ import {
   RotateCcw,
   Smartphone,
   Tablet,
-  Trash2,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
@@ -109,7 +107,6 @@ export function SettingsDashboardClients({
     lastSyncedAt,
     revision: currentRuntimeRevision,
     setClient,
-    setClients,
     status,
   } = useDashboardProfileRuntimeStore(
     useShallow((state) => ({
@@ -120,7 +117,6 @@ export function SettingsDashboardClients({
       lastSyncedAt: state.lastSyncedAt,
       revision: state.revision,
       setClient: state.setClient,
-      setClients: state.setClients,
       status: state.status,
     }))
   );
@@ -136,8 +132,6 @@ export function SettingsDashboardClients({
   const [historyLoading, setHistoryLoading] = useState(false);
   const [restoringRevision, setRestoringRevision] = useState<number | null>(null);
   const [restoreConfirmation, setRestoreConfirmation] = useState<number | null>(null);
-  const [forgetConfirmation, setForgetConfirmation] = useState<string | null>(null);
-  const [forgettingClientId, setForgettingClientId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const otherClients = clients.filter(({ id }) => id !== resolvedClient.id);
@@ -238,43 +232,6 @@ export function SettingsDashboardClients({
       setActionError(t('settings.system.clients.restoreFailed'));
     } finally {
       setRestoringRevision(null);
-    }
-  };
-
-  const forgetClient = async (clientId: string) => {
-    if (
-      clientId === resolvedClient.id ||
-      forgettingClientId !== null ||
-      !otherClients.some(({ id }) => id === clientId)
-    ) {
-      return;
-    }
-
-    const clientToForget = otherClients.find(({ id }) => id === clientId);
-    setForgettingClientId(clientId);
-    setActionError(null);
-    setActionMessage(null);
-
-    try {
-      const forgotten = await forgetDashboardProfileClient(clientId);
-      if (!forgotten) {
-        setActionError(t('settings.system.clients.forgetFailed'));
-        return;
-      }
-
-      setClients(
-        useDashboardProfileRuntimeStore.getState().clients.filter(({ id }) => id !== clientId)
-      );
-      setForgetConfirmation(null);
-      setActionMessage(
-        t('settings.system.clients.forgetSuccess', {
-          client: clientToForget?.name ?? '',
-        })
-      );
-    } catch {
-      setActionError(t('settings.system.clients.forgetFailed'));
-    } finally {
-      setForgettingClientId(null);
     }
   };
 
@@ -434,9 +391,6 @@ export function SettingsDashboardClients({
             </p>
             <div className={`mt-2 divide-y ${styles.dividerColor}`}>
               {otherClients.map((registeredClient) => {
-                const confirmingForget = forgetConfirmation === registeredClient.id;
-                const forgetting = forgettingClientId === registeredClient.id;
-
                 return (
                   <div key={registeredClient.id} className="px-4 py-3 md:px-5">
                     <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
@@ -480,63 +434,7 @@ export function SettingsDashboardClients({
                           </div>
                         </div>
                       </div>
-                      <div className="flex pl-12 sm:justify-end sm:pl-0">
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="small"
-                          disabled={forgettingClientId !== null}
-                          onClick={() => {
-                            setForgetConfirmation(registeredClient.id);
-                            setRestoreConfirmation(null);
-                            setActionError(null);
-                            setActionMessage(null);
-                          }}
-                          className="relative shrink-0 rounded-full after:absolute after:-inset-y-1 after:inset-x-0 after:content-['']"
-                        >
-                          {t('settings.system.clients.forget')}
-                        </Button>
-                      </div>
                     </div>
-
-                    {confirmingForget ? (
-                      <fieldset
-                        className={`ml-12 mt-3 min-w-0 border-0 border-l-2 pl-4 ${styles.dividerColor}`}
-                        aria-label={t('settings.system.clients.forgetConfirm', {
-                          client: registeredClient.name,
-                        })}
-                      >
-                        <p className={`text-sm font-medium ${styles.textColor}`}>
-                          {t('settings.system.clients.forgetConfirm', {
-                            client: registeredClient.name,
-                          })}
-                        </p>
-                        <p className={`mt-1 text-sm leading-6 ${styles.subtleColor}`}>
-                          {t('settings.system.clients.forgetDescription')}
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            disabled={forgetting}
-                            onClick={() => setForgetConfirmation(null)}
-                            className={`inline-flex h-11 items-center justify-center rounded-full border px-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
-                          >
-                            {t('common.cancel')}
-                          </button>
-                          <button
-                            type="button"
-                            disabled={forgetting}
-                            onClick={() => void forgetClient(registeredClient.id)}
-                            className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-red-500/20 bg-red-500/8 px-4 text-sm font-medium text-red-500 transition-colors hover:bg-red-500/12 disabled:cursor-not-allowed disabled:opacity-45"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            {forgetting
-                              ? t('settings.system.clients.forgetting')
-                              : t('settings.system.clients.forget')}
-                          </button>
-                        </div>
-                      </fieldset>
-                    ) : null}
                   </div>
                 );
               })}
@@ -636,7 +534,6 @@ export function SettingsDashboardClients({
                                 }
                                 onClick={() => {
                                   setRestoreConfirmation(entry.revision);
-                                  setForgetConfirmation(null);
                                   setActionError(null);
                                   setActionMessage(null);
                                 }}

@@ -1,13 +1,94 @@
-import { getLogicalViewportWidth } from '@navet/app/utils/viewport';
-import { useCallback, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { settingsSelectors } from '../stores/selectors';
 import { useSettingsStore } from '../stores/settings-store';
-import { useViewportResize } from './use-viewport-resize';
 
 const MD_BREAKPOINT = 768;
 const XL_BREAKPOINT = 1280;
 const XXL_BREAKPOINT = 1700;
 const FOUR_XL_BREAKPOINT = 2500;
+
+type BaseBreakpointCols = 2 | 4 | 6 | 8 | 12;
+
+const breakpointListeners = new Set<() => void>();
+let baseBreakpointColsSnapshot: BaseBreakpointCols = 2;
+let viewportFrameId: number | null = null;
+let subscribedVisualViewport: VisualViewport | null = null;
+
+function resolveBaseBreakpointCols(logicalViewportWidth: number): BaseBreakpointCols {
+  if (logicalViewportWidth >= FOUR_XL_BREAKPOINT) return 12;
+  if (logicalViewportWidth >= XXL_BREAKPOINT) return 8;
+  if (logicalViewportWidth >= XL_BREAKPOINT) return 6;
+  if (logicalViewportWidth >= MD_BREAKPOINT) return 4;
+  return 2;
+}
+
+function readBaseBreakpointCols(): BaseBreakpointCols {
+  if (typeof window === 'undefined') {
+    return 2;
+  }
+
+  return resolveBaseBreakpointCols(Math.max(window.innerWidth, window.visualViewport?.width ?? 0));
+}
+
+function syncBaseBreakpointCols() {
+  const nextSnapshot = readBaseBreakpointCols();
+  if (nextSnapshot === baseBreakpointColsSnapshot) {
+    return;
+  }
+
+  baseBreakpointColsSnapshot = nextSnapshot;
+  breakpointListeners.forEach((listener) => {
+    listener();
+  });
+}
+
+function handleViewportResize() {
+  if (viewportFrameId !== null) {
+    return;
+  }
+
+  viewportFrameId = window.requestAnimationFrame(() => {
+    viewportFrameId = null;
+    syncBaseBreakpointCols();
+  });
+}
+
+function subscribeToBreakpointCols(listener: () => void) {
+  breakpointListeners.add(listener);
+
+  if (breakpointListeners.size === 1) {
+    baseBreakpointColsSnapshot = readBaseBreakpointCols();
+    subscribedVisualViewport = window.visualViewport;
+    window.addEventListener('resize', handleViewportResize);
+    subscribedVisualViewport?.addEventListener('resize', handleViewportResize);
+  }
+
+  return () => {
+    breakpointListeners.delete(listener);
+    if (breakpointListeners.size > 0) {
+      return;
+    }
+
+    window.removeEventListener('resize', handleViewportResize);
+    subscribedVisualViewport?.removeEventListener('resize', handleViewportResize);
+    subscribedVisualViewport = null;
+    if (viewportFrameId !== null) {
+      window.cancelAnimationFrame(viewportFrameId);
+      viewportFrameId = null;
+    }
+  };
+}
+
+function getBaseBreakpointColsSnapshot() {
+  if (breakpointListeners.size === 0) {
+    baseBreakpointColsSnapshot = readBaseBreakpointCols();
+  }
+  return baseBreakpointColsSnapshot;
+}
+
+function getServerBreakpointColsSnapshot(): BaseBreakpointCols {
+  return 2;
+}
 
 /**
  * Returns the zone grid column count for the current viewport, matching the
@@ -25,21 +106,13 @@ const FOUR_XL_BREAKPOINT = 2500;
  * non-mobile breakpoint.
  */
 export function useBreakpointCols(): number {
-  const [logicalViewportWidth, setLogicalViewportWidth] = useState(() => getLogicalViewportWidth());
+  const baseBreakpointCols = useSyncExternalStore(
+    subscribeToBreakpointCols,
+    getBaseBreakpointColsSnapshot,
+    getServerBreakpointColsSnapshot
+  );
   const dashboardSpaceMode = useSettingsStore(settingsSelectors.dashboardSpaceMode);
-
-  const syncLogicalViewportWidth = useCallback(() => {
-    const nextWidth = getLogicalViewportWidth();
-    setLogicalViewportWidth((previous) => (previous === nextWidth ? previous : nextWidth));
-  }, []);
-
-  useViewportResize(syncLogicalViewportWidth);
-
   const isMoreSpace = dashboardSpaceMode === 'more_space';
 
-  if (logicalViewportWidth >= FOUR_XL_BREAKPOINT) return isMoreSpace ? 14 : 12;
-  if (logicalViewportWidth >= XXL_BREAKPOINT) return isMoreSpace ? 10 : 8;
-  if (logicalViewportWidth >= XL_BREAKPOINT) return isMoreSpace ? 8 : 6;
-  if (logicalViewportWidth >= MD_BREAKPOINT) return isMoreSpace ? 6 : 4;
-  return 2;
+  return isMoreSpace && baseBreakpointCols > 2 ? baseBreakpointCols + 2 : baseBreakpointCols;
 }

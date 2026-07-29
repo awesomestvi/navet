@@ -49,6 +49,8 @@ COPY platform/home-assistant/addons/navet/rootfs/ /
 COPY docker/njs/rss-proxy.js /etc/nginx/njs/rss-proxy.js
 COPY docker/njs/profile-store.js /etc/nginx/njs/profile-store.js
 COPY docker/njs/auth-store.js /etc/nginx/njs/auth-store.js
+COPY docker/njs/provider-session-store.js /etc/nginx/njs/provider-session-store.js
+COPY docker/njs/installation-authority.js /etc/nginx/njs/installation-authority.js
 COPY docker/njs/openhab-store.js /etc/nginx/njs/openhab-store.js
 COPY docker/njs/openhab-proxy.js /etc/nginx/njs/openhab-proxy.js
 COPY docker/njs/homey-store.js /etc/nginx/njs/homey-store.js

@@ -2,9 +2,11 @@ import { readFileSync, statSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { appPaths } from './repo-paths.mjs';
 
-const MAX_ENTRY_JS_BYTES = 100 * 1024;
-const MAX_EAGER_CHUNK_BYTES = 1_600 * 1024;
-const MAX_TOTAL_EAGER_JS_BYTES = 2_400 * 1024;
+// Keep enough headroom for normal dependency drift without allowing the low-power
+// startup graph to return to multi-megabyte parsing and compilation costs.
+const MAX_ENTRY_JS_BYTES = 48 * 1024;
+const MAX_EAGER_CHUNK_BYTES = 256 * 1024;
+const MAX_TOTAL_EAGER_JS_BYTES = 768 * 1024;
 const MAX_MAIN_CSS_BYTES = 550 * 1024;
 const LAZY_CHUNK_PREFIXES = [
   'dashboard-card-item-draggable-',
@@ -124,9 +126,10 @@ const totalEagerJsSize = Array.from(eagerAssetPaths).reduce(
 );
 assertWithinBudget('Total eager JavaScript', totalEagerJsSize, MAX_TOTAL_EAGER_JS_BYTES);
 
-const eagerLazyImports = staticImportPaths.filter((importPath) =>
-  LAZY_CHUNK_PREFIXES.some((prefix) => importPath.includes(prefix))
-);
+const eagerLazyImports = staticImportPaths.filter((importPath) => {
+  const importFileName = basename(importPath);
+  return LAZY_CHUNK_PREFIXES.some((prefix) => importFileName.startsWith(prefix));
+});
 
 if (eagerLazyImports.length > 0) {
   console.warn(`Warning: entry bundle still eagerly imports lazy chunks: ${eagerLazyImports.join(', ')}`);

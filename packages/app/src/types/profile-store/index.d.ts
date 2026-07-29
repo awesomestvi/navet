@@ -35,6 +35,7 @@ declare module '@docker/njs/profile-store.js' {
       request: NjsProfileRequest,
       principal: {
         providerId: string;
+        tenantId: string;
         sessionId: string;
         userId: string | null;
         userName: string | null;
@@ -53,6 +54,7 @@ declare module '@docker/njs/profile-store.js' {
         options: { trustIngressHeaders: boolean }
       ) => {
         providerId: string;
+        tenantId: string;
         sessionId: string;
         userId: string | null;
         userName: string | null;

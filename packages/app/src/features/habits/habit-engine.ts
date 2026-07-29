@@ -3,13 +3,22 @@ import { integrationStore } from '@navet/app/stores/integration-store';
 import type { HabitRule } from '@navet/core/habits';
 import { resolveSunPosition, supportsHabitSuggestions } from '@navet/core/habits';
 import type { HomeEvent, HomeEventAction, HomeEventSource } from '@navet/core/home-events';
-import type { NavetEntity } from '@navet/core/types';
+import type { NavetEntity, NavetEntityEvent } from '@navet/core/types';
 import { consumeHabitCommandAttribution } from './command-attribution';
 import { useHabitStore } from './habit-store';
 
 let initialized = false;
 let stopRuleRunner: (() => void) | null = null;
 let stopIntegrationSubscription: (() => void) | null = null;
+
+type OccupancyState = NonNullable<HomeEvent['context']['occupancy']>;
+type UserPresenceState = NonNullable<HomeEvent['context']['userPresence']>;
+
+interface HomeContextIndex {
+  luxByRoomId: Map<string, number | null>;
+  occupancyByRoomId: Map<string, OccupancyState>;
+  userPresence: UserPresenceState;
+}
 
 function resolveDomain(entity: NavetEntity) {
   if (entity.externalId.includes('.')) {
@@ -57,13 +66,33 @@ function normalizeOccupancyState(value: unknown): 'occupied' | 'vacant' | 'unkno
   return 'unknown';
 }
 
-function resolveLux(entities: Record<string, NavetEntity>, roomId?: string) {
-  if (!roomId) {
-    return null;
-  }
+function buildHomeContextIndex(entities: Record<string, NavetEntity>): HomeContextIndex {
+  const luxByRoomId = new Map<string, number | null>();
+  const occupancyByRoomId = new Map<string, OccupancyState>();
+  let userPresence: UserPresenceState = 'unknown';
 
   for (const entity of Object.values(entities)) {
-    if (entity.room !== roomId || entity.type !== 'sensor') {
+    if (entity.type === 'person' && userPresence === 'unknown') {
+      const nextPresence = normalizePresenceValue(entity.primaryState);
+      if (nextPresence !== 'unknown') {
+        userPresence = nextPresence;
+      }
+    }
+
+    const roomId = entity.room;
+    if (!roomId) {
+      continue;
+    }
+
+    if (
+      entity.type === 'binary_sensor' &&
+      !occupancyByRoomId.has(roomId) &&
+      /(occup|motion|presence)/i.test(String(entity.name))
+    ) {
+      occupancyByRoomId.set(roomId, normalizeOccupancyState(entity.primaryState));
+    }
+
+    if (entity.type !== 'sensor' || luxByRoomId.has(roomId)) {
       continue;
     }
 
@@ -74,44 +103,23 @@ function resolveLux(entities: Record<string, NavetEntity>, roomId?: string) {
         typeof entity.primaryState === 'number'
           ? entity.primaryState
           : Number(entity.primaryState ?? Number.NaN);
-      return Number.isFinite(numericState) ? numericState : null;
+      luxByRoomId.set(roomId, Number.isFinite(numericState) ? numericState : null);
     }
   }
 
-  return null;
+  return {
+    luxByRoomId,
+    occupancyByRoomId,
+    userPresence,
+  };
 }
 
-function resolveOccupancy(entities: Record<string, NavetEntity>, roomId?: string) {
-  if (!roomId) {
-    return 'unknown';
-  }
-
-  for (const entity of Object.values(entities)) {
-    if (entity.room !== roomId) {
-      continue;
-    }
-
-    if (entity.type === 'binary_sensor' && /(occup|motion|presence)/i.test(String(entity.name))) {
-      return normalizeOccupancyState(entity.primaryState);
-    }
-  }
-
-  return 'unknown';
+function resolveLux(contextIndex: HomeContextIndex, roomId?: string) {
+  return roomId ? (contextIndex.luxByRoomId.get(roomId) ?? null) : null;
 }
 
-function resolveUserPresence(entities: Record<string, NavetEntity>) {
-  for (const entity of Object.values(entities)) {
-    if (entity.type !== 'person') {
-      continue;
-    }
-
-    const presence = normalizePresenceValue(entity.primaryState);
-    if (presence !== 'unknown') {
-      return presence;
-    }
-  }
-
-  return 'unknown';
+function resolveOccupancy(contextIndex: HomeContextIndex, roomId?: string): OccupancyState {
+  return roomId ? (contextIndex.occupancyByRoomId.get(roomId) ?? 'unknown') : 'unknown';
 }
 
 function resolveAction(
@@ -120,6 +128,10 @@ function resolveAction(
 ): HomeEventAction | null {
   const previousState = previousEntity.primaryState;
   const currentState = nextEntity.primaryState;
+
+  if (Object.is(previousState, currentState)) {
+    return null;
+  }
 
   const previousOn = previousState === 'on' || previousState === true;
   const currentOn = currentState === 'on' || currentState === true;
@@ -146,23 +158,27 @@ function resolveAction(
     return 'energy_sampled';
   }
 
-  if (previousState !== currentState) {
-    return 'state_changed';
+  return 'state_changed';
+}
+
+function shouldCollectAction(action: HomeEventAction, entity: NavetEntity) {
+  if (action === 'turned_on' || action === 'turned_off') {
+    return supportsHabitSuggestions(resolveDomain(entity));
   }
 
-  return null;
+  if (action === 'energy_sampled') {
+    return typeof entity.primaryState === 'number' && entity.primaryState >= 1500;
+  }
+
+  return false;
 }
 
 function buildHomeEvent(
   previousEntity: NavetEntity,
   nextEntity: NavetEntity,
-  entities: Record<string, NavetEntity>
-): HomeEvent | null {
-  const action = resolveAction(previousEntity, nextEntity);
-  if (!action) {
-    return null;
-  }
-
+  action: HomeEventAction,
+  contextIndex: HomeContextIndex
+): HomeEvent {
   const timestamp = nextEntity.lastUpdated ?? new Date().toISOString();
   const commandAttribution = consumeHabitCommandAttribution({
     entityId: nextEntity.canonicalId,
@@ -186,10 +202,10 @@ function buildHomeEvent(
     currentState: nextEntity.primaryState,
     context: {
       roomId: nextEntity.room,
-      occupancy: resolveOccupancy(entities, nextEntity.room),
-      lux: resolveLux(entities, nextEntity.room),
+      occupancy: resolveOccupancy(contextIndex, nextEntity.room),
+      lux: resolveLux(contextIndex, nextEntity.room),
       sunPosition: resolveSunPosition(timestamp),
-      userPresence: resolveUserPresence(entities),
+      userPresence: contextIndex.userPresence,
       previousState: previousEntity.primaryState,
       currentState: nextEntity.primaryState,
       metadata: {
@@ -199,28 +215,32 @@ function buildHomeEvent(
   };
 }
 
-function shouldCollectEvent(event: HomeEvent) {
-  if (event.action === 'turned_on' || event.action === 'turned_off') {
-    return supportsHabitSuggestions(event.domain);
+function getNewProviderEntityEvents(
+  events: readonly NavetEntityEvent[],
+  previousEvents: readonly NavetEntityEvent[]
+) {
+  if (events === previousEvents) {
+    return [];
   }
 
-  if (event.action === 'energy_sampled') {
-    return typeof event.currentState === 'number' && event.currentState >= 1500;
-  }
-
-  return false;
+  const previousEventSet = new Set(previousEvents);
+  return events.filter((event) => !previousEventSet.has(event));
 }
 
 function getCurrentEntities() {
   return integrationStore.getState().providerEntitiesByCanonicalId;
 }
 
-function ruleMatchesContext(rule: HabitRule, entities: Record<string, NavetEntity>) {
+function ruleMatchesContext(
+  rule: HabitRule,
+  entities: Record<string, NavetEntity>,
+  contextIndex: HomeContextIndex
+) {
   const firstEntity = rule.action.entityIds[0] ? entities[rule.action.entityIds[0]] : undefined;
   const roomId = rule.trigger.roomId ?? firstEntity?.room;
-  const occupancy = resolveOccupancy(entities, roomId);
-  const lux = resolveLux(entities, roomId);
-  const presence = resolveUserPresence(entities);
+  const occupancy = resolveOccupancy(contextIndex, roomId);
+  const lux = resolveLux(contextIndex, roomId);
+  const presence = contextIndex.userPresence;
 
   if (
     rule.trigger.occupancy &&
@@ -278,13 +298,14 @@ async function runEligibleRules() {
 
   const now = new Date();
   const entities = getCurrentEntities();
+  const contextIndex = buildHomeContextIndex(entities);
 
   for (const rule of store.rules) {
     if (!rule.enabled || rule.action.type === 'notify') {
       continue;
     }
 
-    if (!shouldRunRuleNow(rule, now) || !ruleMatchesContext(rule, entities)) {
+    if (!shouldRunRuleNow(rule, now) || !ruleMatchesContext(rule, entities, contextIndex)) {
       continue;
     }
 
@@ -311,29 +332,37 @@ export function initializeHabitEngine() {
   initialized = true;
   void useHabitStore.getState().initialize();
 
-  let previousEntities = getCurrentEntities();
-  stopIntegrationSubscription = integrationStore.subscribe((state) => {
-    const nextEntities = state.providerEntitiesByCanonicalId;
-    const baselineMissing = Object.keys(previousEntities).length === 0;
-    if (baselineMissing) {
-      previousEntities = nextEntities;
+  stopIntegrationSubscription = integrationStore.subscribe((state, previousState) => {
+    if (!useHabitStore.getState().enabled) {
       return;
     }
 
+    const providerEvents = getNewProviderEntityEvents(
+      state.providerEvents,
+      previousState.providerEvents
+    );
+    if (providerEvents.length === 0) {
+      return;
+    }
+
+    const nextEntities = state.providerEntitiesByCanonicalId;
+    let contextIndex: HomeContextIndex | null = null;
     const nextEvents: HomeEvent[] = [];
-    for (const [canonicalId, nextEntity] of Object.entries(nextEntities)) {
-      const previousEntity = previousEntities[canonicalId];
-      if (!previousEntity) {
+    for (const providerEvent of providerEvents) {
+      if (providerEvent.type !== 'entity_updated' || !providerEvent.entity) {
         continue;
       }
 
-      const event = buildHomeEvent(previousEntity, nextEntity, nextEntities);
-      if (event && shouldCollectEvent(event)) {
-        nextEvents.push(event);
+      const previousEntity = previousState.providerEntitiesByCanonicalId[providerEvent.entityId];
+      const action = previousEntity ? resolveAction(previousEntity, providerEvent.entity) : null;
+      if (!previousEntity || !action || !shouldCollectAction(action, providerEvent.entity)) {
+        continue;
       }
+
+      contextIndex ??= buildHomeContextIndex(nextEntities);
+      nextEvents.push(buildHomeEvent(previousEntity, providerEvent.entity, action, contextIndex));
     }
 
-    previousEntities = nextEntities;
     for (const event of nextEvents) {
       void useHabitStore.getState().appendEvent(event);
     }

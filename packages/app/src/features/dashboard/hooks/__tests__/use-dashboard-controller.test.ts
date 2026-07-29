@@ -9,10 +9,12 @@ describe('resolveShouldIncludeFeatureCollections', () => {
     expect(
       resolveShouldIncludeFeatureCollections({
         activeSection: 'lights',
+        effectsQuality: 'high',
         homeLayoutCardIds: [],
         lowPowerMode: false,
         showAddCardDialog: false,
         showAddEntityDialog: false,
+        showFeatureCollectionSummary: false,
       })
     ).toBe(true);
   });
@@ -21,20 +23,24 @@ describe('resolveShouldIncludeFeatureCollections', () => {
     expect(
       resolveShouldIncludeFeatureCollections({
         activeSection: 'home',
+        effectsQuality: 'high',
         homeLayoutCardIds: [],
         lowPowerMode: true,
         showAddCardDialog: true,
         showAddEntityDialog: false,
+        showFeatureCollectionSummary: false,
       })
     ).toBe(true);
 
     expect(
       resolveShouldIncludeFeatureCollections({
         activeSection: 'home',
+        effectsQuality: 'high',
         homeLayoutCardIds: [],
         lowPowerMode: true,
         showAddCardDialog: false,
         showAddEntityDialog: true,
+        showFeatureCollectionSummary: false,
       })
     ).toBe(true);
   });
@@ -43,20 +49,24 @@ describe('resolveShouldIncludeFeatureCollections', () => {
     expect(
       resolveShouldIncludeFeatureCollections({
         activeSection: 'home',
+        effectsQuality: 'high',
         homeLayoutCardIds: ['home_assistant:weather.home'],
         lowPowerMode: true,
         showAddCardDialog: false,
         showAddEntityDialog: false,
+        showFeatureCollectionSummary: false,
       })
     ).toBe(true);
 
     expect(
       resolveShouldIncludeFeatureCollections({
         activeSection: 'home',
+        effectsQuality: 'high',
         homeLayoutCardIds: ['home_assistant:calendar.navet_overview'],
         lowPowerMode: true,
         showAddCardDialog: false,
         showAddEntityDialog: false,
+        showFeatureCollectionSummary: false,
       })
     ).toBe(true);
   });
@@ -65,22 +75,54 @@ describe('resolveShouldIncludeFeatureCollections', () => {
     expect(
       resolveShouldIncludeFeatureCollections({
         activeSection: 'home',
+        effectsQuality: 'high',
         homeLayoutCardIds: [],
         lowPowerMode: true,
         showAddCardDialog: false,
         showAddEntityDialog: false,
+        showFeatureCollectionSummary: false,
       })
     ).toBe(false);
 
     expect(
       resolveShouldIncludeFeatureCollections({
         activeSection: 'lights',
+        effectsQuality: 'high',
         homeLayoutCardIds: ['home_assistant:weather.home'],
         lowPowerMode: true,
         showAddCardDialog: true,
         showAddEntityDialog: true,
+        showFeatureCollectionSummary: false,
       })
     ).toBe(false);
+  });
+
+  it('treats automatically selected low effects as low-power collection mode', () => {
+    expect(
+      resolveShouldIncludeFeatureCollections({
+        activeSection: 'home',
+        effectsQuality: 'low',
+        homeLayoutCardIds: [],
+        lowPowerMode: false,
+        showAddCardDialog: false,
+        showAddEntityDialog: false,
+        showFeatureCollectionSummary: false,
+      })
+    ).toBe(false);
+  });
+
+  it('keeps feature collections available for a configured home summary pill', () => {
+    expect(
+      resolveShouldIncludeFeatureCollections({
+        activeSection: 'home',
+        effectsQuality: 'low',
+        homeLayoutCardIds: [],
+        lowPowerMode: false,
+        showAddCardDialog: false,
+        showAddEntityDialog: false,
+        showFeatureCollectionSummary: true,
+      })
+    ).toBe(true);
   });
 });
 

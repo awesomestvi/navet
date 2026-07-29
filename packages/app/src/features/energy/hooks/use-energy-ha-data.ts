@@ -8,7 +8,6 @@ import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-regi
 import { getIntegrationHistoryMessageClient } from '@navet/app/services/integration-history.service';
 import { useEffect, useMemo, useState } from 'react';
 import { HEATING_CATEGORIES } from '../data/energy-constants';
-import { getMockEnergyOverview } from '../data/mock-energy-dashboard';
 import type { HaEnergyEntityRegistryEntry } from '../services/energy-ha-service';
 import type {
   EnergyConsumer,
@@ -396,12 +395,11 @@ export function isMissingEnergyPrefsError(error: unknown): boolean {
  * EnergyOverview. When no energy sources are configured yet, it returns an
  * empty overview so the section can render a proper empty state.
  *
- * Trend data uses mock values for configured dashboards — a follow-up will
- * replace this with recorder/statistics_during_period once the setup flow is
- * validated.
+ * Recorder-backed trend data is loaded separately by `useEnergyLoadHistory`;
+ * this live overview deliberately keeps its compatibility trend field empty.
  */
 export function useEnergyHaData(
-  range: EnergyRange,
+  _range: EnergyRange,
   enabled = true
 ): {
   energySourceDiagnostics: EnergySourceDiagnostic[];
@@ -680,7 +678,7 @@ export function useEnergyHaData(
           homeLoadW,
           t
         ),
-        trend: getMockEnergyOverview(range).trend, // replaced by statistics in follow-up
+        trend: [],
         topConsumers: buildConsumers(config.devices, entities, todayKWh, homeLoadW),
         insights: [],
         totals: {
@@ -730,7 +728,7 @@ export function useEnergyHaData(
       },
       currentLoadStatisticId,
     };
-  }, [runtimeSourceConfig, configEntities, isConfigured, range, t, todayKWh]);
+  }, [runtimeSourceConfig, configEntities, isConfigured, t, todayKWh]);
 
   return {
     energySourceDiagnostics,

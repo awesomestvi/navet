@@ -31,7 +31,7 @@ import {
   providerRuntimeSelectors,
   settingsSelectors,
 } from '@navet/app/stores/selectors';
-import { useSettingsStore } from '@navet/app/stores/settings-store';
+import { type EffectsQuality, useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceCollection, DeviceWithType } from '@navet/app/types/device.types';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { logPerformanceDecision } from '@navet/app/utils/performance-diagnostics';
@@ -77,6 +77,9 @@ import { useHomeLayoutHydrated } from './use-home-layout-hydrated';
 import { useOnboardingController } from './use-onboarding-controller';
 
 const DASHBOARD_DEVICE_SECTION_IDS = new Set(['home', 'lights', 'climate']);
+const EMPTY_PROVIDER_ENTITY_VIEWS: ReturnType<
+  typeof integrationSelectors.providerEntityViewsByProviderId
+> = {};
 const SECURITY_SECTION_DEVICE_KEYS = [
   'cameras',
   'covers',
@@ -89,6 +92,7 @@ const MEDIA_SECTION_DEVICE_KEYS = ['media'] as const;
 const CLIMATE_SECTION_DEVICE_KEYS = ['climate', 'hvac', 'fans', 'switches', 'sensors'] as const;
 const LIGHTS_SECTION_DEVICE_KEYS = ['lights'] as const;
 const EMPTY_SECTION_DEVICE_KEYS: readonly DeviceCollectionKey[] = [];
+const FEATURE_COLLECTION_ENTITY_ID_PATTERN = /(?:^|:)(?:calendar|weather)\./;
 const CLIMATE_DASHBOARD_GROUPS: DashboardClimateSectionGroup[] = [
   {
     key: 'climate',
@@ -126,15 +130,35 @@ export function useDashboardController(): DashboardController {
   const { activeSection, setActiveSection } = useNavigation();
   useAdaptiveEffectsQuality(activeSection);
   const { t } = useI18n();
+  const dialogs = useDashboardDialogs();
   const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
+  const showHomeSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
+  const showFeatureCollectionSummary = useSettingsStore(
+    (state) =>
+      state.showHomeSummaryBar &&
+      state.advancedCustomizationEnabled &&
+      state.customSummaryPills.some(
+        (pill) =>
+          pill.valueSourceType === 'entity' &&
+          typeof pill.entityId === 'string' &&
+          FEATURE_COLLECTION_ENTITY_ID_PATTERN.test(pill.entityId)
+      )
+  );
   const currentProviderRuntime = useIntegrationStore(
     providerRuntimeSelectors.currentProviderRuntime
   );
   const selectedProviderIds = useIntegrationStore(integrationSelectors.selectedProviderIds);
+  const shouldTrackManualEntityViews = dialogs.showAddCardDialog;
   const providerEntityViewsByProviderId = useIntegrationStore(
-    integrationSelectors.providerEntityViewsByProviderId
+    useCallback(
+      (state) =>
+        shouldTrackManualEntityViews
+          ? integrationSelectors.providerEntityViewsByProviderId(state)
+          : EMPTY_PROVIDER_ENTITY_VIEWS,
+      [shouldTrackManualEntityViews]
+    )
   );
   const connected = currentProviderRuntime.connected;
   const connecting = currentProviderRuntime.connecting;
@@ -154,7 +178,6 @@ export function useDashboardController(): DashboardController {
 
   const { hiddenEntityIds, shownSensorEntityIds, hideAutoEntity, showAutoEntity } =
     useDashboardEntityVisibility();
-  const dialogs = useDashboardDialogs();
 
   const homeLayoutCardIds = useHomeDashboardLayoutStore((state) => state.cardIds);
   const isDeviceHeavySection =
@@ -162,10 +185,12 @@ export function useDashboardController(): DashboardController {
     !['energy', 'media', 'security', 'settings', 'tasks'].includes(activeSection);
   const shouldIncludeFeatureCollections = resolveShouldIncludeFeatureCollections({
     activeSection,
+    effectsQuality,
     homeLayoutCardIds,
     lowPowerMode,
     showAddCardDialog: dialogs.showAddCardDialog,
     showAddEntityDialog: dialogs.showAddEntityDialog,
+    showFeatureCollectionSummary,
   });
   const sectionDeviceKeys = useMemo(
     () => resolveDashboardSectionDeviceKeys(activeSection),
@@ -396,7 +421,7 @@ export function useDashboardController(): DashboardController {
     });
   }, [activeSection, denseVisibleCardCount, deviceTier, performanceProfile]);
   const securityAlertCount = useMemo(() => {
-    if (!sectionData.isOverviewSection) {
+    if (!showHomeSummaryBar || !sectionData.isOverviewSection) {
       return 0;
     }
 
@@ -423,7 +448,7 @@ export function useDashboardController(): DashboardController {
         (device) => !expandedHiddenSecurityIds.has(device.id) && !absorbedSecurityIds.has(device.id)
       ),
     }).summary.attentionEntityCount;
-  }, [allDevices, hiddenEntityIds, sectionData.isOverviewSection]);
+  }, [allDevices, hiddenEntityIds, sectionData.isOverviewSection, showHomeSummaryBar]);
 
   const resetDashboard = useResetDashboard(homeLayoutController);
   const onboarding = useOnboardingController({ allEntityIds, changeRoom, resetDashboard });
@@ -775,24 +800,29 @@ export function resolveShouldTrackMediaDevices({
 
 export function resolveShouldIncludeFeatureCollections({
   activeSection,
+  effectsQuality,
   homeLayoutCardIds,
   lowPowerMode,
   showAddCardDialog,
   showAddEntityDialog,
+  showFeatureCollectionSummary,
 }: {
   activeSection: Section;
+  effectsQuality: EffectsQuality;
   homeLayoutCardIds: string[];
   lowPowerMode: boolean;
   showAddCardDialog: boolean;
   showAddEntityDialog: boolean;
+  showFeatureCollectionSummary: boolean;
 }) {
-  if (!lowPowerMode) {
+  if (!lowPowerMode && effectsQuality !== 'low') {
     return true;
   }
 
   if (
     activeSection === 'home' &&
-    (showAddCardDialog ||
+    (showFeatureCollectionSummary ||
+      showAddCardDialog ||
       showAddEntityDialog ||
       homeLayoutCardIds.some(
         (cardId) => cardId.includes('calendar.') || cardId.includes('weather.')

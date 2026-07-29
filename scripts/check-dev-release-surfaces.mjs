@@ -1,9 +1,11 @@
 import process from 'node:process';
 import {
+  addonDevConfigPath,
   assertMainRepositoryMetadata,
   fail,
   getPackageVersion,
   isValidDevAddonVersion,
+  readAddonVersion,
 } from './release-surfaces.mjs';
 
 const args = process.argv.slice(2);
@@ -28,6 +30,13 @@ try {
   if (!isValidDevAddonVersion(versionValue, packageVersion)) {
     throw new Error(
       `Navet Dev version ${versionValue} must match ${packageVersion}-dev.YYYYMMDDHHMMSS.`
+    );
+  }
+
+  const addonVersion = readAddonVersion(addonDevConfigPath);
+  if (addonVersion !== versionValue) {
+    throw new Error(
+      `Navet Dev add-on version ${addonVersion} does not match requested version ${versionValue}.`
     );
   }
 

@@ -7,8 +7,12 @@ export function useLogout() {
   const logout = useAuthLogout();
   const { t } = useI18n();
 
-  return useCallback(() => {
-    logout();
-    toast.success(t('settings.feedback.logoutSuccess'));
+  return useCallback(async () => {
+    try {
+      await logout();
+      toast.success(t('settings.feedback.logoutSuccess'));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('errorDisplay.connectionInterrupted'));
+    }
   }, [logout, t]);
 }

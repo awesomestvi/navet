@@ -61,14 +61,16 @@ export function useProgressiveBatching(
   const { enabled, initialBatch, batchSize, idleTimeoutMs, timeoutFallbackMs } =
     normalizeProgressiveBatchingConfig(config);
   const [visibleCount, setVisibleCount] = useState(() => {
-    if (!enabled) return 0;
     if (isEditMode) return Infinity;
     return Math.min(initialBatch, totalCount);
   });
 
   useEffect(() => {
     if (!enabled) {
-      setVisibleCount(0);
+      // Keep the first batch primed while callers render their full collection. If adaptive
+      // quality enables batching on a later render, returning zero here would briefly unmount
+      // every card until this passive effect could seed the initial batch.
+      setVisibleCount(Math.min(initialBatch, totalCount));
       return;
     }
 
@@ -87,47 +89,63 @@ export function useProgressiveBatching(
     let cancelled = false;
     let timeoutId: number | null = null;
     let idleId: IdleCallbackHandle | null = null;
+    let frameId: number | null = null;
     const idleWindow = window as WindowWithIdleCallback;
 
     const scheduleNextBatch = () => {
-      const runBatch = () => {
-        if (cancelled) return;
-        const effectiveBatchSize = isEditMode ? EDIT_MODE_BATCH_SIZE : batchSize;
-        startTransition(() => {
-          setVisibleCount((current) => {
-            if (current >= totalCount) return current;
-            const next = Math.min(current + effectiveBatchSize, totalCount);
-            if (next < totalCount) scheduleNextBatch();
-            return next;
-          });
-        });
-      };
-
-      if (typeof idleWindow.requestIdleCallback === 'function') {
-        idleId = idleWindow.requestIdleCallback(
-          (deadline) => {
-            idleId = null;
-            if (deadline.didTimeout || deadline.timeRemaining() > 4) {
-              runBatch();
-            } else {
-              scheduleNextBatch();
-            }
-          },
-          { timeout: idleTimeoutMs }
-        );
+      if (cancelled || frameId !== null) {
         return;
       }
 
-      timeoutId = window.setTimeout(() => {
-        timeoutId = null;
-        runBatch();
-      }, timeoutFallbackMs);
+      // A passive effect from a discrete interaction can run before the browser paints. Cross a
+      // frame boundary before every idle batch so "progressive" mounting cannot consume the whole
+      // pre-paint idle window and recreate the original long task.
+      frameId = window.requestAnimationFrame(() => {
+        frameId = null;
+        if (cancelled) {
+          return;
+        }
+
+        const runBatch = () => {
+          if (cancelled) return;
+          const effectiveBatchSize = isEditMode ? EDIT_MODE_BATCH_SIZE : batchSize;
+          startTransition(() => {
+            setVisibleCount((current) => {
+              if (current >= totalCount) return current;
+              const next = Math.min(current + effectiveBatchSize, totalCount);
+              if (next < totalCount) scheduleNextBatch();
+              return next;
+            });
+          });
+        };
+
+        if (typeof idleWindow.requestIdleCallback === 'function') {
+          idleId = idleWindow.requestIdleCallback(
+            (deadline) => {
+              idleId = null;
+              if (deadline.didTimeout || deadline.timeRemaining() > 4) {
+                runBatch();
+              } else {
+                scheduleNextBatch();
+              }
+            },
+            { timeout: idleTimeoutMs }
+          );
+          return;
+        }
+
+        timeoutId = window.setTimeout(() => {
+          timeoutId = null;
+          runBatch();
+        }, timeoutFallbackMs);
+      });
     };
 
     scheduleNextBatch();
 
     return () => {
       cancelled = true;
+      if (frameId !== null) window.cancelAnimationFrame(frameId);
       if (timeoutId !== null) window.clearTimeout(timeoutId);
       if (idleId !== null && typeof idleWindow.cancelIdleCallback === 'function') {
         idleWindow.cancelIdleCallback(idleId);
@@ -135,5 +153,5 @@ export function useProgressiveBatching(
     };
   }, [batchSize, enabled, idleTimeoutMs, initialBatch, isEditMode, timeoutFallbackMs, totalCount]);
 
-  return visibleCount;
+  return enabled ? visibleCount : 0;
 }

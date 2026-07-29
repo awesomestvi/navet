@@ -442,20 +442,27 @@ describe('homeAssistantStore', () => {
 
   it('clones panel entities when Home Assistant mutates the same hass object in place', async () => {
     const hass = createPanelHass('disarmed');
+    hass.states['automation.morning'] = {
+      ...createPanelEntity('on'),
+      entity_id: 'automation.morning',
+    };
 
     homeAssistantStore.getState().syncPanelHass(hass);
 
     const firstEntities = homeAssistantStore.getState().entities;
     const firstAlarmEntity = firstEntities?.['light.kitchen'];
+    const firstAutomationEntity = firstEntities?.['automation.morning'];
 
     hass.states['light.kitchen'].state = 'armed_home';
     homeAssistantStore.getState().syncPanelHass(hass);
 
     const secondEntities = homeAssistantStore.getState().entities;
     const secondAlarmEntity = secondEntities?.['light.kitchen'];
+    const secondAutomationEntity = secondEntities?.['automation.morning'];
 
     expect(secondEntities).not.toBe(firstEntities);
     expect(secondAlarmEntity).not.toBe(firstAlarmEntity);
+    expect(secondAutomationEntity).toBe(firstAutomationEntity);
     expect(secondAlarmEntity?.state).toBe('armed_home');
   });
 

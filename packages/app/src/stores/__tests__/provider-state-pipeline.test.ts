@@ -87,6 +87,108 @@ describe('provider-state pipeline', () => {
     expect(next.roomsByCanonicalId).toBe(previous.roomsByCanonicalId);
   });
 
+  it('updates one device incrementally across a large provider snapshot', () => {
+    const rooms: NavetProviderRoom[] = [];
+    const entities = Array.from({ length: 1_024 }, (_, index) =>
+      makeLight({
+        id: `light.fixture_${index}`,
+        canonicalId: `home_assistant:light.fixture_${index}`,
+        externalId: `light.fixture_${index}`,
+        name: `Fixture ${index}`,
+        primaryState: true,
+        attributes: { value: 'on' },
+      })
+    );
+    const firstProviderState = makeProviderState({ entities, rooms });
+    const first = buildProviderScopedState({
+      providerId: 'home_assistant',
+      providerState: firstProviderState,
+    });
+    const changedIndex = 700;
+    const nextEntities = [...entities];
+    nextEntities[changedIndex] = {
+      ...(nextEntities[changedIndex] as NavetEntity),
+      primaryState: false,
+      attributes: { value: 'off' },
+    };
+
+    const second = buildProviderScopedState({
+      providerId: 'home_assistant',
+      providerState: makeProviderState({ entities: nextEntities, rooms }),
+      previousState: first,
+    });
+
+    expect(second.entitiesByCanonicalId).not.toBe(first.entitiesByCanonicalId);
+    expect(second.entityDeltaIds).toEqual(['home_assistant:light.fixture_700']);
+    expect(second.entityLookupByCanonicalId).toBe(first.entityLookupByCanonicalId);
+    expect(second.normalizedRoomsByCanonicalId).toBe(first.normalizedRoomsByCanonicalId);
+    expect(second.deviceCollectionLocationsByCanonicalId).toBe(
+      first.deviceCollectionLocationsByCanonicalId
+    );
+    expect(second.deviceCollection.lights).not.toBe(first.deviceCollection.lights);
+    expect(second.deviceCollection.sensors).toBe(first.deviceCollection.sensors);
+    expect(second.deviceCollection.lights[900]).toBe(first.deviceCollection.lights[900]);
+    expect(second.deviceCollection.lights[changedIndex]).not.toBe(
+      first.deviceCollection.lights[changedIndex]
+    );
+    expect(second.deviceCollection.lights[changedIndex]?.state).toBe(false);
+  });
+
+  it('returns the previous scoped state when the provider snapshot is unchanged', () => {
+    const providerState = makeProviderState();
+    const first = buildProviderScopedState({
+      providerId: 'home_assistant',
+      providerState,
+    });
+
+    expect(
+      buildProviderScopedState({
+        providerId: 'home_assistant',
+        providerState,
+        previousState: first,
+      })
+    ).toBe(first);
+  });
+
+  it('removes stale entity and room records during same-size replacements', () => {
+    const first = buildProviderScopedState({
+      providerId: 'home_assistant',
+      providerState: makeProviderState(),
+    });
+    const hallLight = makeLight({
+      id: 'light.hall',
+      canonicalId: 'home_assistant:light.hall',
+      externalId: 'light.hall',
+      name: 'Hall',
+      room: 'Hall',
+    });
+    const hallRoom = makeRoom({
+      id: 'home_assistant:hall',
+      canonicalId: 'home_assistant:hall',
+      externalId: 'hall',
+      name: 'Hall',
+      normalizedName: 'hall',
+      memberIds: [hallLight.canonicalId],
+    });
+
+    const second = buildProviderScopedState({
+      providerId: 'home_assistant',
+      providerState: makeProviderState({ entities: [hallLight], rooms: [hallRoom] }),
+      previousState: first,
+    });
+
+    expect(second.entitiesByCanonicalId).toEqual({
+      [hallLight.canonicalId]: hallLight,
+    });
+    expect(second.normalizedRoomsByCanonicalId).toEqual({
+      [hallRoom.canonicalId]: hallRoom,
+    });
+    expect(second.roomsByCanonicalId).not.toHaveProperty('home_assistant:kitchen');
+    expect(second.deviceCollection.lights.map((device) => device.id)).toEqual([
+      hallLight.canonicalId,
+    ]);
+  });
+
   it('collects add, update, and remove provider events', () => {
     const previous = {
       'home_assistant:light.kitchen': makeLight(),
@@ -164,6 +266,36 @@ describe('provider-state pipeline', () => {
       [homeySocket.canonicalId]: homeySocket,
     });
     expect(next[homeySocket.canonicalId]).toBe(homeySocket);
+  });
+
+  it('applies a provider delta without enumerating the full provider records', () => {
+    const kitchen = makeLight();
+    const updatedKitchen = makeLight({ primaryState: false });
+    const previousProviderRecord = new Proxy(
+      { [kitchen.canonicalId]: kitchen },
+      {
+        ownKeys: () => {
+          throw new Error('provider record was enumerated');
+        },
+      }
+    );
+    const nextProviderRecord = new Proxy(
+      { [updatedKitchen.canonicalId]: updatedKitchen },
+      {
+        ownKeys: () => {
+          throw new Error('provider record was enumerated');
+        },
+      }
+    );
+
+    const next = replaceFlattenedProviderRecord(
+      { [kitchen.canonicalId]: kitchen },
+      previousProviderRecord,
+      nextProviderRecord,
+      [kitchen.canonicalId]
+    );
+
+    expect(next[kitchen.canonicalId]).toBe(updatedKitchen);
   });
 
   it('merges provider-managed and derived room descriptors', () => {

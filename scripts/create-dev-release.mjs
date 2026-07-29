@@ -67,20 +67,41 @@ function parseArgs(argv) {
   return options;
 }
 
-function ensureMainBranchForPush() {
+function getCurrentBranch() {
   const currentBranch = runGit(['branch', '--show-current']);
-  if (currentBranch !== 'main') {
+  if (!currentBranch) {
+    throw new Error('Navet Dev publish requires a named branch; detached HEAD is not supported.');
+  }
+
+  return currentBranch;
+}
+
+function ensureCleanWorkingTree() {
+  const status = runGit(['status', '--porcelain=v1', '--untracked-files=all']);
+  if (status) {
     throw new Error(
-      `--push requires the current branch to be main. Current branch: ${currentBranch || '(detached HEAD)'}`
+      'Navet Dev publish requires a clean working tree. Commit the intended product changes first.'
     );
   }
 }
 
-function ensureMainBranch() {
-  const currentBranch = runGit(['branch', '--show-current']);
-  if (currentBranch !== 'main') {
+function refreshRemoteReleaseContext(remote) {
+  execFileSync('git', ['fetch', '--tags', remote], {
+    cwd: repoRoot,
+    stdio: 'inherit',
+  });
+}
+
+function ensureBranchContainsRemoteMain(remote) {
+  const remoteMain = `refs/remotes/${remote}/main`;
+
+  if (!gitSucceeds(['rev-parse', '--verify', remoteMain])) {
+    throw new Error(`Unable to resolve ${remote}/main after fetching release context.`);
+  }
+
+  if (!gitSucceeds(['merge-base', '--is-ancestor', remoteMain, 'HEAD'])) {
     throw new Error(
-      `Navet Dev publish must run from the main branch. Current branch: ${currentBranch || '(detached HEAD)'}`
+      `The current branch must contain the latest ${remote}/main before publishing a Navet Dev build.`
     );
   }
 }
@@ -97,7 +118,13 @@ function isStableReleaseTag(tag) {
 }
 
 function resolveChangelogBaseTag() {
-  return listTags().find((tag) => tag.startsWith('navet-dev-') || isStableReleaseTag(tag)) ?? null;
+  return (
+    listTags().find(
+      (tag) =>
+        (tag.startsWith('navet-dev-') || isStableReleaseTag(tag)) &&
+        gitSucceeds(['merge-base', '--is-ancestor', tag, 'HEAD'])
+    ) ?? null
+  );
 }
 
 function normalizeCommitSubject(subject) {
@@ -316,32 +343,81 @@ function stageMetadataCommit(devVersion) {
   );
 }
 
-function createTag(tagName) {
+function createTag(tagName, sourceBranch) {
   if (gitSucceeds(['rev-parse', '-q', '--verify', `refs/tags/${tagName}`])) {
     throw new Error(`Tag already exists: ${tagName}`);
   }
 
-  runGit(['tag', '-a', tagName, '-m', `Navet Dev ${tagName}`]);
+  runGit([
+    'tag',
+    '-a',
+    tagName,
+    '-m',
+    `Navet Dev ${tagName}`,
+    '-m',
+    `Source-Branch: ${sourceBranch}`,
+  ]);
 }
 
-function pushRelease(remote, tagName) {
-  execFileSync('git', ['push', remote, 'HEAD:main'], {
-    cwd: repoRoot,
-    stdio: 'inherit',
-  });
+function pushRelease(remote, tagName, sourceBranch) {
+  execFileSync(
+    'git',
+    [
+      'push',
+      '--atomic',
+      remote,
+      `HEAD:refs/heads/${sourceBranch}`,
+      `refs/tags/${tagName}:refs/tags/${tagName}`,
+    ],
+    {
+      cwd: repoRoot,
+      stdio: 'inherit',
+    }
+  );
+}
 
-  execFileSync('git', ['push', remote, tagName], {
-    cwd: repoRoot,
-    stdio: 'inherit',
-  });
+function buildPublicationSummary({ devVersion, sourceBranch, tagName, remote, pushed }) {
+  const exactStandaloneImage = `ghcr.io/awesomestvi/navet:${devVersion}`;
+  const lines = [
+    `Prepared Navet Dev release ${devVersion}.`,
+    `Source branch: ${sourceBranch}`,
+    'Created a metadata-only release commit.',
+    `Created tag: ${tagName}`,
+  ];
+
+  if (pushed) {
+    lines.push(`Atomically pushed ${sourceBranch} and ${tagName} to ${remote}.`);
+  } else {
+    lines.push(
+      `Next: git push --atomic ${remote} HEAD:refs/heads/${sourceBranch} refs/tags/${tagName}:refs/tags/${tagName}`
+    );
+  }
+
+  if (sourceBranch === 'main') {
+    lines.push(
+      'This main-branch publish advances the dev and edge image aliases and Home Assistant add-on discovery.'
+    );
+  } else {
+    lines.push(
+      'This branch validation publish leaves main, the dev and edge aliases, and Home Assistant add-on discovery unchanged.',
+      'After the workflow succeeds, install the immutable standalone image with:',
+      `docker pull ${exactStandaloneImage}`
+    );
+  }
+
+  return lines.join('\n');
 }
 
 try {
   const options = parseArgs(process.argv.slice(2));
+  const sourceBranch = getCurrentBranch();
 
-  ensureMainBranch();
+  ensureCleanWorkingTree();
+
   if (options.push) {
-    ensureMainBranchForPush();
+    refreshRemoteReleaseContext(options.remote);
+    ensureBranchContainsRemoteMain(options.remote);
+    ensureCleanWorkingTree();
   }
 
   const packageVersion = getPackageVersion();
@@ -349,21 +425,20 @@ try {
   const tagName = `navet-dev-${devVersion}`;
 
   stageMetadataCommit(devVersion);
-  createTag(tagName);
+  createTag(tagName, sourceBranch);
 
   if (options.push) {
-    pushRelease(options.remote, tagName);
+    pushRelease(options.remote, tagName, sourceBranch);
   }
 
   process.stdout.write(
-    [
-      `Prepared Navet Dev release ${devVersion}.`,
-      `Created metadata commit on main for Home Assistant add-on discovery.`,
-      `Created tag: ${tagName}`,
-      options.push
-        ? `Pushed metadata commit and ${tagName} to ${options.remote}.`
-        : `Next: git push ${options.remote} HEAD:main && git push ${options.remote} ${tagName}`,
-    ].join('\n') + '\n'
+    `${buildPublicationSummary({
+      devVersion,
+      sourceBranch,
+      tagName,
+      remote: options.remote,
+      pushed: options.push,
+    })}\n`
   );
 } catch (error) {
   fail(error instanceof Error ? error.message : String(error));

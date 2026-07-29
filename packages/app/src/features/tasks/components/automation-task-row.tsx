@@ -2,10 +2,11 @@ import { dispatchEntityCommand } from '@navet/app/commands';
 import { Button, IconButton, Tag } from '@navet/app/components/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useAccentColor, useI18n, useServiceActionHandler, useThemeMode } from '@navet/app/hooks';
+import { useProviderEntitySnapshotRecord } from '@navet/app/hooks/use-provider-entity';
 import type { PlatformTaskEntityMap } from '@navet/app/platform/provider-feature-models';
 import { integrationTaskService } from '@navet/app/services/integration-task.service';
 import { AlertTriangle, ChevronDown, ChevronUp, Play, Power, PowerOff } from 'lucide-react';
-import { useMemo, useState, useSyncExternalStore } from 'react';
+import { useMemo, useState } from 'react';
 import type { AutomationRoutine } from '../types';
 import { buildAutomationConfigSections } from '../utils/automation-config-details';
 import {
@@ -112,29 +113,33 @@ export function AutomationTaskRow({
     () => getAutomationConfigEntityIds(automationConfig),
     [automationConfig]
   );
-  const taskRuntime = useSyncExternalStore(
-    integrationTaskService.subscribeTaskRuntimeSnapshot,
-    integrationTaskService.getTaskRuntimeSnapshot,
-    integrationTaskService.getTaskRuntimeSnapshot
-  );
+  const detailEntitySnapshots = useProviderEntitySnapshotRecord(detailEntityIds, {
+    enabled: isDetailsOpen && detailEntityIds.length > 0,
+  });
   const detailEntities = useMemo((): PlatformTaskEntityMap | null => {
-    if (!taskRuntime.entities || detailEntityIds.length === 0) {
+    if (detailEntityIds.length === 0) {
       return null;
     }
 
     const entities: PlatformTaskEntityMap = {};
     for (const entityId of detailEntityIds) {
-      const entity = taskRuntime.entities[entityId];
-      if (entity) {
-        entities[entityId] = entity;
+      const snapshot = detailEntitySnapshots[entityId];
+      if (snapshot) {
+        const friendlyName = snapshot.attributes.friendly_name;
+        entities[entityId] = {
+          entityId,
+          state: snapshot.state,
+          name: typeof friendlyName === 'string' ? friendlyName : undefined,
+          attributes: snapshot.attributes,
+        };
       }
     }
 
     return entities;
-  }, [detailEntityIds, taskRuntime.entities]);
+  }, [detailEntityIds, detailEntitySnapshots]);
   const dependencySummaries = useMemo(
-    () => buildAutomationDependencySummaries(detailEntityIds, taskRuntime.entities),
-    [detailEntityIds, taskRuntime.entities]
+    () => buildAutomationDependencySummaries(detailEntityIds, detailEntities),
+    [detailEntities, detailEntityIds]
   );
 
   const configSections = useMemo(

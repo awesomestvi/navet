@@ -13,6 +13,10 @@ so there is no separate Home Assistant URL or access token to enter.
 Your rooms and devices should appear automatically. From there, arrange the dashboard around the
 controls, status, and routines you use most.
 
+Home Assistant provides the add-on with persistent `/data` storage automatically. Navet keeps its
+dashboard profile and optional secondary-provider sessions there, so normal add-on restarts and
+updates retain them. Home Assistant itself continues to use your current Ingress session.
+
 ## If Navet Does Not Open
 
 1. Confirm the add-on status is **Running**.

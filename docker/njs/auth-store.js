@@ -1,5 +1,6 @@
 import hashCrypto from 'crypto';
 import fs from 'fs';
+import installationAuthorityModule from './installation-authority.js';
 
 const AUTH_COOKIE_NAME = 'navet_auth_session';
 const AUTH_COOKIE_ID_PATTERN = /^[a-f0-9]{64}$/;
@@ -7,11 +8,28 @@ const AUTH_PUBLIC_ID_PATTERN = /^nas_[a-f0-9]{32}$/;
 const AUTH_BINDING_HEADER = 'X-Navet-OAuth-Binding';
 const AUTH_SESSIONS_DIRECTORY = '/data/navet-auth-sessions';
 const LEGACY_AUTH_PATH = '/data/navet-auth-session.json';
-const MAX_AUTH_BYTES = 24 * 1024;
+const MAX_AUTH_REQUEST_BYTES = 24 * 1024;
+const MAX_AUTH_RECORD_BYTES = 32 * 1024;
+const SESSION_RECORD_TOO_LARGE_ERROR_CODE = 'credential-session-record-too-large';
+const SESSION_RECORD_TOO_LARGE_STATUS = 507;
+const SESSION_CAPACITY_ERROR_CODE = 'credential-session-capacity-reached';
+const SESSION_CAPACITY_STATUS = 507;
 const OAUTH_PENDING_TTL_MS = 10 * 60 * 1000;
-const COOKIE_MAX_AGE_SECONDS = 365 * 24 * 60 * 60;
+const AUTH_SESSION_IDLE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+const COOKIE_MAX_AGE_SECONDS = AUTH_SESSION_IDLE_TTL_MS / 1000;
+const MAX_AUTH_SESSIONS = 256;
+const TEMP_FILE_TTL_MS = 60 * 60 * 1000;
 const NAVET_OAUTH_CALLBACK_PARAM = 'navet_oauth_callback';
+const NAVET_OAUTH_ERROR_PARAM = 'navet_oauth_error';
 const LEGACY_OAUTH_CALLBACK_PARAM = 'auth_callback';
+const OAUTH_ERROR_CODES = {
+  access_denied: true,
+  callback_incomplete: true,
+  invalid_response: true,
+  not_authorized: true,
+  session_changed: true,
+  temporarily_unavailable: true,
+};
 
 function getHeader(headers, name) {
   const source = headers || {};
@@ -74,31 +92,22 @@ function joinPath(basePath, suffix) {
   return normalizedBase ? normalizedBase + normalizedSuffix : normalizedSuffix;
 }
 
-function parseCookies(cookieHeader) {
-  const cookies = {};
-  const parts = String(cookieHeader || '').split(';');
+function getCookieIds(r) {
+  const values = [];
+  const parts = String(getHeader(r && r.headersIn, 'Cookie') || '').split(';');
   let index;
-
   for (index = 0; index < parts.length; index += 1) {
     const entry = parts[index].trim();
     const separator = entry.indexOf('=');
-    if (separator <= 0) {
+    if (separator <= 0 || entry.slice(0, separator).trim() !== AUTH_COOKIE_NAME) {
       continue;
     }
-
-    const name = entry.slice(0, separator).trim();
     const value = entry.slice(separator + 1).trim();
-    if (name) {
-      cookies[name] = value;
+    if (AUTH_COOKIE_ID_PATTERN.test(value) && values.indexOf(value) === -1) {
+      values.push(value);
     }
   }
-
-  return cookies;
-}
-
-function getCookieId(r) {
-  const value = parseCookies(getHeader(r && r.headersIn, 'Cookie'))[AUTH_COOKIE_NAME];
-  return typeof value === 'string' && AUTH_COOKIE_ID_PATTERN.test(value) ? value : '';
+  return values;
 }
 
 function getRequestProtocol(r) {
@@ -122,11 +131,13 @@ function getRequestOrigin(r) {
   return getRequestProtocol(r) + '://' + host;
 }
 
-function buildSessionCookie(r, cookieId, maxAgeSeconds) {
+function buildSessionCookie(r, cookieId, maxAgeSeconds, pathOverride) {
   const ingressPath = normalizeIngressPath(getHeader(r && r.headersIn, 'X-Ingress-Path'));
+  const cookiePath =
+    typeof pathOverride === 'string' ? pathOverride : ingressPath || '/';
   const attributes = [
     AUTH_COOKIE_NAME + '=' + cookieId,
-    'Path=' + (ingressPath || '/'),
+    'Path=' + cookiePath,
     'HttpOnly',
     'SameSite=Lax',
     'Max-Age=' + String(maxAgeSeconds),
@@ -144,7 +155,11 @@ function setSessionCookie(r, cookieId) {
 }
 
 function clearSessionCookie(r) {
-  r.headersOut['Set-Cookie'] = buildSessionCookie(r, '', 0);
+  const ingressPath = normalizeIngressPath(getHeader(r && r.headersIn, 'X-Ingress-Path'));
+  const paths = ingressPath ? [ingressPath, '/'] : ['/'];
+  r.headersOut['Set-Cookie'] = paths.map(function (path) {
+    return buildSessionCookie(r, '', 0, path);
+  });
 }
 
 function sendJson(r, statusCode, payload) {
@@ -152,6 +167,48 @@ function sendJson(r, statusCode, payload) {
   r.headersOut.Pragma = 'no-cache';
   r.headersOut['Content-Type'] = 'application/json; charset=utf-8';
   r.return(statusCode, JSON.stringify(payload));
+}
+
+function createSessionRecordTooLargeError() {
+  const error = new Error('Home Assistant credential session exceeds the storage limit');
+  error.code = SESSION_RECORD_TOO_LARGE_ERROR_CODE;
+  error.statusCode = SESSION_RECORD_TOO_LARGE_STATUS;
+  return error;
+}
+
+function createSessionCapacityError() {
+  const error = new Error('Home Assistant credential session capacity has been reached');
+  error.code = SESSION_CAPACITY_ERROR_CODE;
+  error.statusCode = SESSION_CAPACITY_STATUS;
+  return error;
+}
+
+function isSessionRecordTooLargeError(error) {
+  return Boolean(error && error.code === SESSION_RECORD_TOO_LARGE_ERROR_CODE);
+}
+
+function isSessionCapacityError(error) {
+  return Boolean(error && error.code === SESSION_CAPACITY_ERROR_CODE);
+}
+
+function sendSessionStoreError(r, error) {
+  let code;
+  let status;
+  if (isSessionRecordTooLargeError(error)) {
+    code = SESSION_RECORD_TOO_LARGE_ERROR_CODE;
+    status = SESSION_RECORD_TOO_LARGE_STATUS;
+  } else if (isSessionCapacityError(error)) {
+    code = SESSION_CAPACITY_ERROR_CODE;
+    status = SESSION_CAPACITY_STATUS;
+  } else {
+    return false;
+  }
+
+  sendJson(r, status, {
+    error: error.message,
+    code: code,
+  });
+  return true;
 }
 
 function sendNoContent(r) {
@@ -247,8 +304,80 @@ function normalizeHassUrl(value) {
     return '';
   }
 
-  return match[1].toLowerCase() + '://' + match[2] + path.replace(/\/+$/, '');
+  let decodedPath;
+  try {
+    decodedPath = decodeURIComponent(path || '/');
+  } catch (_error) {
+    return '';
+  }
+  if (
+    /%25/i.test(path) ||
+    decodedPath.includes('\\') ||
+    decodedPath.split('/').some(function (segment) {
+      return segment === '..' || segment === '.';
+    })
+  ) {
+    return '';
+  }
+
+  const protocol = match[1].toLowerCase();
+  const authority = match[2];
+  let hostname;
+  let port = '';
+  if (authority.startsWith('[')) {
+    const closingBracket = authority.indexOf(']');
+    hostname = '[' + authority.slice(1, closingBracket).toLowerCase() + ']';
+    port = authority.slice(closingBracket + 1).replace(/^:/, '');
+  } else {
+    const colonIndex = authority.lastIndexOf(':');
+    hostname = (colonIndex === -1 ? authority : authority.slice(0, colonIndex)).toLowerCase();
+    port = colonIndex === -1 ? '' : authority.slice(colonIndex + 1);
+  }
+  const numericPort = port ? Number(port) : null;
+  const canonicalPort =
+    numericPort === null ||
+    (protocol === 'http' && numericPort === 80) ||
+    (protocol === 'https' && numericPort === 443)
+      ? ''
+      : ':' + String(numericPort);
+  return protocol + '://' + hostname + canonicalPort + path.replace(/\/+$/, '');
 }
+
+function normalizeHassOrigin(value) {
+  const normalizedUrl = normalizeHassUrl(value);
+  const match = /^(https?):\/\/(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9._-]+)(?::([0-9]+))?/i.exec(
+    normalizedUrl
+  );
+  if (!match || !match[1] || !match[2]) {
+    return '';
+  }
+
+  const protocol = match[1].toLowerCase();
+  const hostname = match[2].toLowerCase();
+  const numericPort = match[3] ? Number(match[3]) : null;
+  const port =
+    numericPort === null ||
+    (protocol === 'http' && numericPort === 80) ||
+    (protocol === 'https' && numericPort === 443)
+      ? ''
+      : ':' + String(numericPort);
+  return protocol + '://' + hostname + port;
+}
+
+function createHomeAssistantTenantId(hassUrl) {
+  const normalizedUrl = normalizeHassUrl(hassUrl);
+  const origin = normalizeHassOrigin(normalizedUrl);
+  const match = /^(?:https?):\/\/[^/?#]+([^?#]*)$/i.exec(normalizedUrl);
+  if (!origin || !match) {
+    return '';
+  }
+  const normalizedBaseUrl = origin + (match[1] || '');
+  return 'hat_' + hashCrypto.createHash('sha256').update(normalizedBaseUrl).digest('hex');
+}
+
+const HOME_ASSISTANT_INGRESS_TENANT_ID =
+  'hat_' +
+  hashCrypto.createHash('sha256').update('home_assistant_ingress').digest('hex');
 
 function getDecodedQueryKey(value) {
   const separator = value.indexOf('=');
@@ -263,6 +392,7 @@ function getDecodedQueryKey(value) {
 function removeOAuthQueryParams(query) {
   const blockedKeys = {};
   blockedKeys[NAVET_OAUTH_CALLBACK_PARAM] = true;
+  blockedKeys[NAVET_OAUTH_ERROR_PARAM] = true;
   blockedKeys[LEGACY_OAUTH_CALLBACK_PARAM] = true;
   blockedKeys.code = true;
   blockedKeys.state = true;
@@ -307,6 +437,18 @@ function appendOAuthCallbackMarker(returnTo) {
   const pathAndQuery = hashIndex === -1 ? normalized : normalized.slice(0, hashIndex);
   const separator = pathAndQuery.includes('?') ? '&' : '?';
   return pathAndQuery + separator + NAVET_OAUTH_CALLBACK_PARAM + '=1' + hash;
+}
+
+function appendOAuthErrorMarker(returnTo, errorCode) {
+  const normalized = normalizeReturnTo(returnTo, '/');
+  const hashIndex = normalized.indexOf('#');
+  const hash = hashIndex === -1 ? '' : normalized.slice(hashIndex);
+  const pathAndQuery = hashIndex === -1 ? normalized : normalized.slice(0, hashIndex);
+  const separator = pathAndQuery.includes('?') ? '&' : '?';
+  const safeErrorCode = Object.prototype.hasOwnProperty.call(OAUTH_ERROR_CODES, errorCode)
+    ? errorCode
+    : 'temporarily_unavailable';
+  return pathAndQuery + separator + NAVET_OAUTH_ERROR_PARAM + '=' + safeErrorCode + hash;
 }
 
 function isValidAuthData(value) {
@@ -401,6 +543,26 @@ function createEmptySession() {
   };
 }
 
+function createEphemeralSession(cookieId, bindingSecret) {
+  const now = Date.now();
+  return {
+    version: 2,
+    sessionId:
+      'nas_' +
+      hashCrypto
+        .createHmac('sha256', bindingSecret)
+        .update(cookieId)
+        .digest('hex')
+        .slice(0, 32),
+    createdAt: now,
+    updatedAt: now,
+    auth: null,
+    pending: null,
+    userId: null,
+    userName: null,
+  };
+}
+
 function sanitizeSession(session) {
   const auth = session && session.auth;
   return {
@@ -420,11 +582,15 @@ function createAuthSessionStore(options) {
   const settings = options || {};
   const sessionsDirectory = settings.sessionsDirectory || AUTH_SESSIONS_DIRECTORY;
   const legacyAuthPath = settings.legacyAuthPath || LEGACY_AUTH_PATH;
+  const bindingSecretPath =
+    settings.bindingSecretPath || sessionsDirectory + '/.binding-secret';
   const fetchImpl =
     settings.fetch ||
     (typeof ngx !== 'undefined' && ngx && typeof ngx.fetch === 'function'
       ? ngx.fetch.bind(ngx)
       : null);
+  const installationAuthority =
+    settings.installationAuthority || installationAuthorityModule;
 
   function ensureDirectory() {
     try {
@@ -450,21 +616,184 @@ function createAuthSessionStore(options) {
     return sessionsDirectory + '/' + cookieId + '.json';
   }
 
+  function getBindingSecret() {
+    if (
+      typeof settings.bindingSecret === 'string' &&
+      /^[a-f0-9]{64}$/.test(settings.bindingSecret)
+    ) {
+      return settings.bindingSecret;
+    }
+
+    ensureDirectory();
+    try {
+      const existing = String(fs.readFileSync(bindingSecretPath, 'utf8') || '').trim();
+      if (/^[a-f0-9]{64}$/.test(existing)) {
+        return existing;
+      }
+    } catch (error) {
+      if (!error || error.code !== 'ENOENT') {
+        throw error;
+      }
+    }
+
+    const candidate = secureRandomHex(32);
+    try {
+      fs.writeFileSync(bindingSecretPath, candidate, {
+        encoding: 'utf8',
+        mode: 0o600,
+        flag: 'wx',
+      });
+      return candidate;
+    } catch (error) {
+      if (!error || error.code !== 'EEXIST') {
+        throw error;
+      }
+      const existing = String(fs.readFileSync(bindingSecretPath, 'utf8') || '').trim();
+      if (!/^[a-f0-9]{64}$/.test(existing)) {
+        throw new Error('Invalid auth binding secret');
+      }
+      return existing;
+    }
+  }
+
+  function deletePath(filePath) {
+    try {
+      fs.unlinkSync(filePath);
+    } catch (error) {
+      if (!error || error.code !== 'ENOENT') {
+        throw error;
+      }
+    }
+  }
+
   function readSession(cookieId) {
     if (!AUTH_COOKIE_ID_PATTERN.test(String(cookieId || ''))) {
       return null;
     }
 
+    const sessionPath = getSessionPath(cookieId);
+    let stat;
     try {
-      const sessionPath = getSessionPath(cookieId);
-      const stat = fs.statSync(sessionPath);
-      if (stat.size > MAX_AUTH_BYTES) {
+      stat = fs.statSync(sessionPath);
+    } catch (error) {
+      if (error && error.code === 'ENOENT') {
         return null;
       }
-      const session = parseJson(fs.readFileSync(sessionPath, 'utf8'));
-      return isValidStoredSession(session) ? session : null;
-    } catch (_error) {
+      throw error;
+    }
+    if (stat.size > MAX_AUTH_RECORD_BYTES) {
+      deletePath(sessionPath);
       return null;
+    }
+
+    let serialized;
+    try {
+      serialized = fs.readFileSync(sessionPath, 'utf8');
+    } catch (error) {
+      if (error && error.code === 'ENOENT') {
+        return null;
+      }
+      throw error;
+    }
+    const session = parseJson(serialized);
+    if (
+      !isValidStoredSession(session) ||
+      session.updatedAt + AUTH_SESSION_IDLE_TTL_MS < Date.now() ||
+      (!session.auth &&
+        (!session.pending || session.pending.expiresAt < Date.now()))
+    ) {
+      deletePath(sessionPath);
+      return null;
+    }
+    return session;
+  }
+
+  function listActiveSessions(now) {
+    let names;
+    try {
+      names = fs.readdirSync(sessionsDirectory);
+    } catch (error) {
+      if (error && error.code === 'ENOENT') {
+        return [];
+      }
+      throw error;
+    }
+
+    const active = [];
+    let index;
+    for (index = 0; index < names.length; index += 1) {
+      const name = names[index];
+      const match = /^([a-f0-9]{64})\.json$/.exec(name);
+      const filePath = sessionsDirectory + '/' + name;
+      if (!match) {
+        if (name.includes('.tmp-')) {
+          try {
+            if (fs.statSync(filePath).mtimeMs + TEMP_FILE_TTL_MS < now) {
+              deletePath(filePath);
+            }
+          } catch (_error) {
+            // Ignore a concurrently removed temporary file.
+          }
+        }
+        continue;
+      }
+      const session = readSession(match[1]);
+      if (session) {
+        active.push({
+          authenticated: Boolean(session.auth),
+          cookieId: match[1],
+          updatedAt: session.updatedAt,
+        });
+      }
+    }
+    return active;
+  }
+
+  function cleanupSessions(reserveSlots) {
+    const active = listActiveSessions(Date.now());
+    active.sort(function (left, right) {
+      if (left.authenticated !== right.authenticated) {
+        return left.authenticated ? 1 : -1;
+      }
+      return left.updatedAt - right.updatedAt;
+    });
+    const targetCount = Math.max(0, MAX_AUTH_SESSIONS - (reserveSlots || 0));
+    let index = 0;
+    let currentCount = active.length;
+    while (currentCount > targetCount && index < active.length) {
+      if (active[index].authenticated) {
+        index += 1;
+        continue;
+      }
+      deletePath(getSessionPath(active[index].cookieId));
+      index += 1;
+      currentCount -= 1;
+    }
+    return currentCount;
+  }
+
+  function writeSessionFile(cookieId, session) {
+    if (!AUTH_COOKIE_ID_PATTERN.test(String(cookieId || '')) || !isValidStoredSession(session)) {
+      throw new Error('Invalid auth session');
+    }
+
+    const serialized = JSON.stringify(session);
+    if (Buffer.byteLength(serialized, 'utf8') > MAX_AUTH_RECORD_BYTES) {
+      throw createSessionRecordTooLargeError();
+    }
+
+    ensureDirectory();
+    const sessionPath = getSessionPath(cookieId);
+    const tempPath = sessionPath + '.tmp-' + secureRandomHex(8);
+    try {
+      fs.writeFileSync(tempPath, serialized, {
+        encoding: 'utf8',
+        mode: 0o600,
+      });
+      fs.renameSync(tempPath, sessionPath);
+    } catch (error) {
+      deletePath(tempPath);
+      throw error;
     }
   }
 
@@ -473,14 +802,22 @@ function createAuthSessionStore(options) {
       throw new Error('Invalid auth session');
     }
 
+    const serialized = JSON.stringify(session);
+    if (Buffer.byteLength(serialized, 'utf8') > MAX_AUTH_RECORD_BYTES) {
+      throw createSessionRecordTooLargeError();
+    }
+
     ensureDirectory();
     const sessionPath = getSessionPath(cookieId);
-    const tempPath = sessionPath + '.tmp-' + secureRandomHex(8);
-    fs.writeFileSync(tempPath, JSON.stringify(session), {
-      encoding: 'utf8',
-      mode: 0o600,
-    });
-    fs.renameSync(tempPath, sessionPath);
+    try {
+      fs.statSync(sessionPath);
+    } catch (_error) {
+      const remaining = cleanupSessions(1);
+      if (remaining > MAX_AUTH_SESSIONS - 1) {
+        throw createSessionCapacityError();
+      }
+    }
+    writeSessionFile(cookieId, session);
   }
 
   function deleteSession(cookieId) {
@@ -488,36 +825,127 @@ function createAuthSessionStore(options) {
       return;
     }
 
-    try {
-      fs.unlinkSync(getSessionPath(cookieId));
-    } catch (error) {
-      if (!error || error.code !== 'ENOENT') {
-        throw error;
+    deletePath(getSessionPath(cookieId));
+  }
+
+  function getPreferredRequestSession(r) {
+    discardLegacyGlobalSession();
+    const contexts = [];
+    const cookieIds = getCookieIds(r);
+    const now = Date.now();
+    let index;
+    for (index = 0; index < cookieIds.length; index += 1) {
+      const session = readSession(cookieIds[index]);
+      if (session) {
+        contexts.push({
+          cookieId: cookieIds[index],
+          session: session,
+        });
       }
     }
+    contexts.sort(function (left, right) {
+      const leftCurrent = Boolean(
+        left.session.auth && left.session.auth.expires > now
+      );
+      const rightCurrent = Boolean(
+        right.session.auth && right.session.auth.expires > now
+      );
+      if (leftCurrent !== rightCurrent) {
+        return leftCurrent ? -1 : 1;
+      }
+      const leftAuthenticated = Boolean(left.session.auth);
+      const rightAuthenticated = Boolean(right.session.auth);
+      if (leftAuthenticated !== rightAuthenticated) {
+        return leftAuthenticated ? -1 : 1;
+      }
+      if (left.session.updatedAt !== right.session.updatedAt) {
+        return right.session.updatedAt - left.session.updatedAt;
+      }
+      if (left.cookieId === right.cookieId) {
+        return 0;
+      }
+      return left.cookieId < right.cookieId ? -1 : 1;
+    });
+    return contexts[0] || null;
   }
 
   function createRequestSession(r) {
-    discardLegacyGlobalSession();
-
-    const existingCookieId = getCookieId(r);
-    const existingSession = readSession(existingCookieId);
-    if (existingSession) {
-      return { cookieId: existingCookieId, session: existingSession };
+    const existing = getPreferredRequestSession(r);
+    if (existing) {
+      setSessionCookie(r, existing.cookieId);
+      return existing;
     }
 
+    // Never reuse an unbacked caller-supplied cookie. A fresh cookie plus the
+    // server-authenticated public binding supports OAuth bootstrap without
+    // creating one disk record per anonymous GET.
     const cookieId = secureRandomHex(32);
-    const session = createEmptySession();
-    writeSession(cookieId, session);
+    const session = createEphemeralSession(cookieId, getBindingSecret());
     setSessionCookie(r, cookieId);
     return { cookieId: cookieId, session: session };
   }
 
+  function renewRequestSession(r, context) {
+    const next = cloneSession(context.session, { updatedAt: Date.now() });
+    if (next.auth || next.pending) {
+      writeSession(context.cookieId, next);
+    }
+    setSessionCookie(r, context.cookieId);
+    return { cookieId: context.cookieId, session: next };
+  }
+
+  function rotateRequestSession(r, previousCookieId, session) {
+    const cookieId = secureRandomHex(32);
+    if (previousCookieId && readSession(previousCookieId)) {
+      writeSessionFile(cookieId, session);
+    } else {
+      writeSession(cookieId, session);
+    }
+    setSessionCookie(r, cookieId);
+    if (previousCookieId) {
+      deleteSession(previousCookieId);
+    }
+    return { cookieId: cookieId, session: session };
+  }
+
   function getRequestSession(r) {
+    return getPreferredRequestSession(r);
+  }
+
+  function getBoundRequestSession(r, allowEphemeral) {
     discardLegacyGlobalSession();
-    const cookieId = getCookieId(r);
-    const session = readSession(cookieId);
-    return session ? { cookieId: cookieId, session: session } : null;
+    const cookieIds = getCookieIds(r);
+    let index;
+    for (index = 0; index < cookieIds.length; index += 1) {
+      const stored = readSession(cookieIds[index]);
+      if (stored && hasValidBinding(r, stored)) {
+        return { cookieId: cookieIds[index], session: stored };
+      }
+    }
+    if (!allowEphemeral) {
+      return null;
+    }
+
+    for (index = 0; index < cookieIds.length; index += 1) {
+      const session = createEphemeralSession(cookieIds[index], getBindingSecret());
+      if (hasValidBinding(r, session)) {
+        return { cookieId: cookieIds[index], session: session };
+      }
+    }
+    return null;
+  }
+
+  function getOAuthCallbackSession(r, state) {
+    discardLegacyGlobalSession();
+    const cookieIds = getCookieIds(r);
+    let index;
+    for (index = 0; index < cookieIds.length; index += 1) {
+      const session = readSession(cookieIds[index]);
+      if (session && session.pending && session.pending.state === state) {
+        return { cookieId: cookieIds[index], session: session };
+      }
+    }
+    return null;
   }
 
   function hasValidBinding(r, session) {
@@ -527,17 +955,18 @@ function createAuthSessionStore(options) {
 
   function isSameOriginMutation(r) {
     const origin = getHeader(r && r.headersIn, 'Origin').trim();
-    return !origin || origin === getRequestOrigin(r);
+    return Boolean(origin) && origin === getRequestOrigin(r);
   }
 
   async function handleSessionGet(r) {
     const context = createRequestSession(r);
-    sendJson(r, 200, sanitizeSession(context.session));
+    const renewed = renewRequestSession(r, context);
+    sendJson(r, 200, sanitizeSession(renewed.session));
   }
 
   function handleCredentialsGet(r) {
-    const context = getRequestSession(r);
-    if (!context || !hasValidBinding(r, context.session)) {
+    const context = getBoundRequestSession(r, true);
+    if (!context) {
       sendJson(r, 401, { error: 'Authenticated browser session is required' });
       return;
     }
@@ -546,22 +975,19 @@ function createAuthSessionStore(options) {
       return;
     }
 
+    renewRequestSession(r, context);
     sendJson(r, 200, context.session.auth);
   }
 
   async function handleSessionPut(r) {
-    const context = getRequestSession(r);
-    if (
-      !context ||
-      !hasValidBinding(r, context.session) ||
-      !isSameOriginMutation(r)
-    ) {
+    const context = getBoundRequestSession(r, false);
+    if (!context || !isSameOriginMutation(r)) {
       sendJson(r, 401, { error: 'Authenticated browser session is required' });
       return;
     }
 
     const body = r.requestText || '';
-    if (!body || body.length > MAX_AUTH_BYTES) {
+    if (!body || Buffer.byteLength(body, 'utf8') > MAX_AUTH_REQUEST_BYTES) {
       sendJson(r, 400, { error: 'Invalid auth session body' });
       return;
     }
@@ -590,13 +1016,22 @@ function createAuthSessionStore(options) {
       userId: null,
       userName: null,
     });
-    writeSession(context.cookieId, next);
+    try {
+      writeSession(context.cookieId, next);
+    } catch (error) {
+      if (sendSessionStoreError(r, error)) {
+        return;
+      }
+      throw error;
+    }
+    setSessionCookie(r, context.cookieId);
     sendJson(r, 200, sanitizeSession(next));
   }
 
   async function handleSessionDelete(r) {
-    const context = getRequestSession(r);
-    if (context && !hasValidBinding(r, context.session)) {
+    const context = getBoundRequestSession(r, true);
+    const presentedCookieIds = getCookieIds(r);
+    if (!context && presentedCookieIds.length > 0) {
       sendJson(r, 401, { error: 'Authenticated browser session is required' });
       return;
     }
@@ -606,7 +1041,13 @@ function createAuthSessionStore(options) {
     }
 
     if (context) {
-      deleteSession(context.cookieId);
+      let index;
+      for (index = 0; index < presentedCookieIds.length; index += 1) {
+        const stored = readSession(presentedCookieIds[index]);
+        if (stored && hasValidBinding(r, stored)) {
+          deleteSession(presentedCookieIds[index]);
+        }
+      }
     }
     clearSessionCookie(r);
     sendJson(r, 200, { ok: true });
@@ -618,14 +1059,17 @@ function createAuthSessionStore(options) {
       return;
     }
 
-    const context = getRequestSession(r);
-    if (!context || !hasValidBinding(r, context.session)) {
+    const context = getBoundRequestSession(r, true);
+    if (!context) {
       sendJson(r, 401, { error: 'Authenticated browser session is required' });
       return;
     }
 
     const requestBody = r.requestText || '';
-    if (!requestBody || requestBody.length > MAX_AUTH_BYTES) {
+    if (
+      !requestBody ||
+      Buffer.byteLength(requestBody, 'utf8') > MAX_AUTH_REQUEST_BYTES
+    ) {
       sendJson(r, 400, { error: 'Invalid OAuth request body' });
       return;
     }
@@ -633,6 +1077,17 @@ function createAuthSessionStore(options) {
     const hassUrl = normalizeHassUrl(body.hassUrl);
     if (!hassUrl) {
       sendJson(r, 400, { error: 'A valid Home Assistant URL is required' });
+      return;
+    }
+    const installationAccess = installationAuthority.authorizeHomeAssistant(
+      r,
+      hassUrl,
+      normalizeHassUrl
+    );
+    if (!installationAccess.allowed) {
+      sendJson(r, 403, {
+        error: 'Operator pairing is required for this Home Assistant installation',
+      });
       return;
     }
 
@@ -652,12 +1107,22 @@ function createAuthSessionStore(options) {
       redirectUri: redirectUri,
       returnTo: returnTo,
       expiresAt: Date.now() + OAUTH_PENDING_TTL_MS,
+      installationPairingVerified:
+        installationAccess.pairingVerified === true,
     };
     const next = cloneSession(context.session, {
       updatedAt: Date.now(),
       pending: pending,
     });
-    writeSession(context.cookieId, next);
+    try {
+      writeSession(context.cookieId, next);
+    } catch (error) {
+      if (sendSessionStoreError(r, error)) {
+        return;
+      }
+      throw error;
+    }
+    setSessionCookie(r, context.cookieId);
 
     const authorizeUrl =
       hassUrl +
@@ -671,15 +1136,16 @@ function createAuthSessionStore(options) {
   }
 
   async function handleCallback(r) {
-    const context = getRequestSession(r);
     const code = r && r.args && typeof r.args.code === 'string' ? r.args.code.trim() : '';
     const state = r && r.args && typeof r.args.state === 'string' ? r.args.state.trim() : '';
+    const providerError =
+      r && r.args && typeof r.args.error === 'string' ? r.args.error.trim() : '';
+    const context = state ? getOAuthCallbackSession(r, state) : null;
     const pending = context && context.session.pending;
 
     if (
       !context ||
       !pending ||
-      !code ||
       !state ||
       state !== pending.state ||
       pending.expiresAt < Date.now()
@@ -687,13 +1153,44 @@ function createAuthSessionStore(options) {
       sendJson(r, 400, { error: 'OAuth callback does not match this browser session' });
       return;
     }
-    if (!fetchImpl) {
-      sendJson(r, 500, { error: 'OAuth token exchange is unavailable' });
+
+    // Consume state before the upstream exchange so concurrent or replayed
+    // callbacks cannot reuse it, including provider-declared callback failures.
+    const consumed = cloneSession(context.session, {
+      updatedAt: Date.now(),
+      pending: cloneSession(pending, {
+        state: secureRandomHex(32),
+      }),
+    });
+    try {
+      writeSession(context.cookieId, consumed);
+    } catch (_error) {
+      // The original state may still be valid when the atomic write fails.
+      // Keep the response non-redirecting so we never claim one-shot
+      // consumption that was not durably recorded.
+      sendJson(r, 503, { error: 'Unable to persist OAuth callback state' });
       return;
     }
 
+    const redirectFailure = function (errorCode) {
+      sendRedirect(r, appendOAuthErrorMarker(pending.returnTo, errorCode));
+    };
+    if (providerError) {
+      redirectFailure(providerError === 'access_denied' ? 'access_denied' : 'invalid_response');
+      return;
+    }
+    if (!code) {
+      redirectFailure('callback_incomplete');
+      return;
+    }
+    if (!fetchImpl) {
+      redirectFailure('temporarily_unavailable');
+      return;
+    }
+
+    let response;
     try {
-      const response = await fetchImpl(pending.hassUrl + '/auth/token', {
+      response = await fetchImpl(pending.hassUrl + '/auth/token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -705,37 +1202,75 @@ function createAuthSessionStore(options) {
           encodeURIComponent(code) +
           '&grant_type=authorization_code',
       });
-      if (!response.ok) {
-        sendJson(r, 502, { error: 'Home Assistant OAuth token exchange failed' });
-        return;
-      }
+    } catch (_error) {
+      redirectFailure('temporarily_unavailable');
+      return;
+    }
+    if (!response.ok) {
+      redirectFailure('temporarily_unavailable');
+      return;
+    }
 
-      const token = await response.json();
-      const auth = {
-        hassUrl: pending.hassUrl,
-        clientId: pending.clientId,
-        expires: Date.now() + Number(token.expires_in || 0) * 1000,
-        refresh_token: token.refresh_token,
-        access_token: token.access_token,
-        expires_in: Number(token.expires_in || 0),
-      };
-      if (!isValidAuthData(auth)) {
-        sendJson(r, 502, { error: 'Home Assistant returned an invalid OAuth session' });
-        return;
-      }
+    let token;
+    try {
+      token = await response.json();
+    } catch (_error) {
+      redirectFailure('invalid_response');
+      return;
+    }
+    const auth = {
+      hassUrl: pending.hassUrl,
+      clientId: pending.clientId,
+      expires: Date.now() + Number(token.expires_in || 0) * 1000,
+      refresh_token: token.refresh_token,
+      access_token: token.access_token,
+      expires_in: Number(token.expires_in || 0),
+    };
+    if (!isValidAuthData(auth)) {
+      redirectFailure('invalid_response');
+      return;
+    }
+    const current = readSession(context.cookieId);
+    if (!current || JSON.stringify(current) !== JSON.stringify(consumed)) {
+      redirectFailure('session_changed');
+      return;
+    }
 
-      const next = cloneSession(context.session, {
+    let installationAuthorized = false;
+    try {
+      installationAuthorized = installationAuthority.commitHomeAssistant(
+          pending.hassUrl,
+          normalizeHassUrl,
+          pending.installationPairingVerified === true
+        );
+    } catch (_error) {
+      installationAuthorized = false;
+    }
+    if (!installationAuthorized) {
+      redirectFailure('not_authorized');
+      return;
+    }
+
+    try {
+      const next = cloneSession(createEmptySession(), {
         updatedAt: Date.now(),
         auth: auth,
         pending: null,
         userId: null,
         userName: null,
       });
-      writeSession(context.cookieId, next);
+      const presentedCookieIds = getCookieIds(r);
+      rotateRequestSession(r, context.cookieId, next);
+      let index;
+      for (index = 0; index < presentedCookieIds.length; index += 1) {
+        if (presentedCookieIds[index] !== context.cookieId) {
+          deleteSession(presentedCookieIds[index]);
+        }
+      }
 
       sendRedirect(r, appendOAuthCallbackMarker(pending.returnTo));
     } catch (_error) {
-      sendJson(r, 502, { error: 'Unable to complete Home Assistant OAuth callback' });
+      redirectFailure('temporarily_unavailable');
     }
   }
 
@@ -813,6 +1348,7 @@ function createAuthSessionStore(options) {
         return {
           providerId: 'home_assistant',
           source: 'home_assistant_ingress',
+          tenantId: HOME_ASSISTANT_INGRESS_TENANT_ID,
           sessionId:
             'hai_' +
             hashCrypto
@@ -827,13 +1363,18 @@ function createAuthSessionStore(options) {
     }
 
     const context = resolveStandaloneAuthSession(r);
-    if (!context) {
+    if (
+      !context ||
+      !context.session.auth ||
+      context.session.auth.expires <= Date.now()
+    ) {
       return null;
     }
 
     return {
       providerId: 'home_assistant',
       source: 'standalone_session',
+      tenantId: createHomeAssistantTenantId(context.session.auth.hassUrl),
       sessionId: context.session.sessionId,
       userId: null,
       userName: null,
@@ -842,14 +1383,17 @@ function createAuthSessionStore(options) {
 
   return {
     createRequestSession: createRequestSession,
+    cleanupSessions: cleanupSessions,
     deleteSession: deleteSession,
     discardLegacyGlobalSession: discardLegacyGlobalSession,
     getRequestSession: getRequestSession,
     handle: handle,
     readSession: readSession,
+    renewRequestSession: renewRequestSession,
     resolveAuthenticatedPrincipal: resolveAuthenticatedPrincipalForStore,
     resolveStandaloneAuthSession: resolveStandaloneAuthSession,
     sanitizeSession: sanitizeSession,
+    rotateRequestSession: rotateRequestSession,
     writeSession: writeSession,
   };
 }
@@ -871,10 +1415,16 @@ async function handle(r) {
 export default {
   AUTH_BINDING_HEADER: AUTH_BINDING_HEADER,
   AUTH_COOKIE_NAME: AUTH_COOKIE_NAME,
+  SESSION_CAPACITY_ERROR_CODE: SESSION_CAPACITY_ERROR_CODE,
+  SESSION_RECORD_TOO_LARGE_ERROR_CODE: SESSION_RECORD_TOO_LARGE_ERROR_CODE,
   createAuthSessionStore: createAuthSessionStore,
+  createHomeAssistantTenantId: createHomeAssistantTenantId,
   handle: handle,
   isValidAuthData: isValidAuthData,
+  normalizeHassOrigin: normalizeHassOrigin,
   normalizeIngressPath: normalizeIngressPath,
+  isSessionCapacityError: isSessionCapacityError,
+  isSessionRecordTooLargeError: isSessionRecordTooLargeError,
   resolveAuthenticatedPrincipal: resolveAuthenticatedPrincipal,
   resolveStandaloneAuthSession: resolveStandaloneAuthSession,
   sanitizeSession: sanitizeSession,

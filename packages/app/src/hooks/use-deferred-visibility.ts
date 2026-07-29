@@ -2,6 +2,7 @@ import { startTransition, useEffect, useRef, useState } from 'react';
 
 interface UseDeferredVisibilityOptions {
   disabled?: boolean;
+  freezeOnceVisible?: boolean;
   initiallyVisible?: boolean;
   rootMargin?: string;
   threshold?: number;
@@ -9,6 +10,7 @@ interface UseDeferredVisibilityOptions {
 
 export function useDeferredVisibility<T extends HTMLElement>({
   disabled = false,
+  freezeOnceVisible = true,
   initiallyVisible = false,
   rootMargin = '150px 0px',
   threshold = 0,
@@ -34,10 +36,11 @@ export function useDeferredVisibility<T extends HTMLElement>({
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry?.isIntersecting) {
-          startTransition(() => {
-            setIsVisible(true);
-          });
+        const nextIsVisible = entry?.isIntersecting ?? false;
+        startTransition(() => {
+          setIsVisible(nextIsVisible);
+        });
+        if (nextIsVisible && freezeOnceVisible) {
           observer.disconnect();
         }
       },
@@ -49,7 +52,7 @@ export function useDeferredVisibility<T extends HTMLElement>({
     return () => {
       observer.disconnect();
     };
-  }, [disabled, initiallyVisible, rootMargin, threshold]);
+  }, [disabled, freezeOnceVisible, initiallyVisible, rootMargin, threshold]);
 
   return { ref, isVisible };
 }

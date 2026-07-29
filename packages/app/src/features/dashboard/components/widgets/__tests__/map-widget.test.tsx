@@ -4,8 +4,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MapMarker } from '../map-types';
 import { MapWidget } from '../map-widget';
 
+const { useProviderMapMarkersMock } = vi.hoisted(() => ({
+  useProviderMapMarkersMock: vi.fn(() => []),
+}));
+
 vi.mock('../map-widget-live', () => ({
   MapWidgetLive: () => <div data-testid="live-map" />,
+}));
+
+vi.mock('../use-provider-map-markers', () => ({
+  useProviderMapMarkers: useProviderMapMarkersMock,
 }));
 
 const MARKERS: MapMarker[] = [
@@ -23,6 +31,8 @@ describe('MapWidget', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.stubGlobal('IntersectionObserver', undefined);
+    useProviderMapMarkersMock.mockClear();
+    useProviderMapMarkersMock.mockReturnValue([]);
   });
 
   it('renders the placeholder immediately before mounting the live map', () => {
@@ -32,6 +42,7 @@ describe('MapWidget', () => {
     expect(screen.getByText('1 tracked')).toBeInTheDocument();
     expect(screen.getByTestId('map-widget-viewport').className).toContain('rounded-[inherit]');
     expect(screen.queryByTestId('live-map')).not.toBeInTheDocument();
+    expect(useProviderMapMarkersMock).toHaveBeenLastCalledWith(false);
   });
 
   it('mounts the live map after the defer timeout without requiring interaction', async () => {
@@ -46,5 +57,39 @@ describe('MapWidget', () => {
     });
 
     expect(screen.getByTestId('live-map')).toBeInTheDocument();
+  });
+
+  it('subscribes to provider markers only while a dynamic map is near the viewport', () => {
+    let observerCallback: IntersectionObserverCallback | null = null;
+
+    class TrackingIntersectionObserver {
+      constructor(callback: IntersectionObserverCallback) {
+        observerCallback = callback;
+      }
+
+      disconnect() {}
+      observe() {}
+    }
+
+    vi.stubGlobal('IntersectionObserver', TrackingIntersectionObserver);
+    renderWithProviders(<MapWidget />);
+
+    expect(useProviderMapMarkersMock).toHaveBeenLastCalledWith(false);
+
+    act(() => {
+      observerCallback?.(
+        [{ isIntersecting: true } as IntersectionObserverEntry],
+        {} as IntersectionObserver
+      );
+    });
+    expect(useProviderMapMarkersMock).toHaveBeenLastCalledWith(true);
+
+    act(() => {
+      observerCallback?.(
+        [{ isIntersecting: false } as IntersectionObserverEntry],
+        {} as IntersectionObserver
+      );
+    });
+    expect(useProviderMapMarkersMock).toHaveBeenLastCalledWith(false);
   });
 });

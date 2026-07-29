@@ -13,12 +13,15 @@ copy of important Navet dashboard configuration before switching to it.
 | Installation | Published Dev channel | Best for |
 |---|---|---|
 | HACS custom panel | No | Stable, Home Assistant-hosted Navet |
-| Home Assistant add-on | Yes: `Navet Dev` | Easiest Home Assistant development build |
-| Standalone Docker | Yes: `dev` and `edge` tags | Independent app, testing, and rollback control |
+| Home Assistant add-on | Yes: main-backed `Navet Dev` | Easiest Home Assistant development build |
+| Standalone Docker | Yes: `dev`, `edge`, and exact branch versions | Independent app, testing, and rollback control |
 
 Navet Dev publishes update the add-on and Docker images. They intentionally do not publish HACS
 updates. If you need the current development build inside the Home Assistant custom panel, use the
 advanced manual build below or choose the `Navet Dev` add-on instead.
+
+Every named clean branch can publish an immutable exact Dev version. Only a publish sourced from
+`main` advances the moving `dev` and `edge` tags or the Home Assistant Add-on Store metadata.
 
 ## Home Assistant Add-on
 
@@ -55,8 +58,9 @@ To test Homey as an additional provider, set the add-on's `homey_client_id`,
 
 ### Update
 
-Each Navet Dev publish advances the version in the add-on repository. Home Assistant will show an
-update when it refreshes that repository.
+Each main-backed Navet Dev publish advances the version in the add-on repository. Home Assistant
+will show an update when it refreshes that repository. An exact publish from another branch is not
+offered by the Add-on Store until matching metadata lands on `main`.
 
 1. Open `Settings -> Add-ons -> Navet Dev`.
 2. Create a Home Assistant backup if the update is important to your setup.
@@ -81,8 +85,9 @@ HACS integration; the dashboard itself can still come from the `Navet Dev` add-o
 
 ## Standalone Docker
 
-The moving `dev` and `edge` tags point to the same latest Navet Dev publication. Use `dev` unless
-you already standardize on `edge`.
+The moving `dev` and `edge` tags point to the latest Navet Dev publication sourced from `main`. Use
+`dev` unless you already standardize on `edge`. A publish from another branch is available only
+through its exact immutable version.
 
 ### Requirements
 
@@ -141,8 +146,9 @@ The named volume remains in place when the container is replaced.
 
 ### Pin Or Roll Back
 
-Moving tags change with every Dev publish. For reproducible installations, replace `dev` with an
-exact version from a `navet-dev-*` GitHub prerelease, for example:
+Moving tags change with every main-backed Dev publish. For reproducible installations or testing a
+non-main branch publish, replace `dev` with an exact version from a `navet-dev-*` GitHub prerelease,
+for example:
 
 ```yaml
 image: ghcr.io/awesomestvi/navet:0.8.0-dev.YYYYMMDDHHMMSS
@@ -156,6 +162,9 @@ docker compose up -d
 ```
 
 To return to stable Docker, change the image tag to `latest`.
+
+The GitHub prerelease identifies the source branch and commit. Confirm those values before using an
+exact branch build on a household dashboard.
 
 ## HACS Custom Panel
 
@@ -220,6 +229,8 @@ dashboard configuration before switching rather than assuming it will appear in 
 ## Troubleshooting
 
 - Add-on missing: verify the main repository URL was added to the Add-on Store, then reload it.
+- Exact branch release missing from the Add-on Store: this is expected until its metadata lands on
+  `main`; use the exact standalone Docker image to test it.
 - Docker cannot find Home Assistant: confirm `NAVET_HASS_URL` is reachable from both the browser and
   the Navet container; avoid `localhost` when Home Assistant runs on another host.
 - OAuth loops after changing hostnames, TLS, reverse proxies, or ports: sign in again so Navet can

@@ -563,6 +563,35 @@ describe('CameraStreamPlayer', () => {
     expect(screen.queryByRole('status', { name: 'Loading camera feed' })).not.toBeInTheDocument();
   });
 
+  it('stops per-frame callbacks after a decoded-frame counter becomes available', async () => {
+    const onLoad = vi.fn();
+    const { container } = render(
+      <CameraStreamPlayer
+        entityId={cameraEntityFixtures.normal.entity_id}
+        kind="web_rtc"
+        posterUrl={cameraEntityFixtures.relativeUrl.attributes.entity_picture as string}
+        fitMode="contain"
+        onLoad={onLoad}
+        onError={vi.fn()}
+      />
+    );
+
+    await waitFor(() => expect(subscribeCameraWebRtcOfferMock).toHaveBeenCalled());
+    const video = container.querySelector('video') as HTMLVideoElement;
+    setDecodedVideoEvidence(video, { decodedFrames: 1, height: 720, width: 1280 });
+
+    act(() => {
+      MockRTCPeerConnection.instances[0]?.ontrack?.({
+        track: { kind: 'video' } as MediaStreamTrack,
+      });
+      deliverNextVideoFrame();
+    });
+
+    expect(onLoad).toHaveBeenCalledTimes(1);
+    expect(requestVideoFrameCallbackMock).toHaveBeenCalledTimes(1);
+    expect(pendingFrameCallbacks.size).toBe(0);
+  });
+
   it('clears the HLS loading indicator when playback starts without a loadeddata event', async () => {
     const { container } = render(
       <CameraStreamPlayer

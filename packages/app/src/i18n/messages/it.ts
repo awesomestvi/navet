@@ -1642,6 +1642,8 @@ export const itMessages = {
     'La dashboard condivisa deve essere ripristinata. Le impostazioni locali di questa dashboard sono state conservate.',
   'dashboard.profileSync.unavailable':
     'La sincronizzazione della dashboard condivisa non è disponibile. Le impostazioni locali vengono conservate.',
+  'dashboard.profileSync.tenantMismatch':
+    'Questa dashboard condivisa appartiene a un altro indirizzo Home Assistant. Connettiti usando lo stesso indirizzo Home Assistant utilizzato per configurare questa installazione di Navet. Le impostazioni locali vengono conservate.',
   'dashboard.profileSync.unauthorized':
     'Accedi di nuovo per continuare a sincronizzare la dashboard condivisa. Le impostazioni locali vengono conservate.',
   'dashboard.profileSync.saveFailed':

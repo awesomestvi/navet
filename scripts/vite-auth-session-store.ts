@@ -1,6 +1,7 @@
-import { createHash, randomBytes } from 'node:crypto'
+import { createHash, createHmac, randomBytes } from 'node:crypto'
 import {
   mkdirSync,
+  readdirSync,
   readFileSync,
   renameSync,
   rmSync,
@@ -9,17 +10,37 @@ import {
 } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
+import type { ViteInstallationAuthority } from './vite-installation-authority'
 
 export const AUTH_COOKIE_NAME = 'navet_auth_session'
 export const AUTH_BINDING_HEADER = 'X-Navet-OAuth-Binding'
-export const AUTH_SESSION_MAX_BYTES = 24 * 1024
+export const AUTH_SESSION_REQUEST_MAX_BYTES = 24 * 1024
+export const AUTH_SESSION_RECORD_MAX_BYTES = 32 * 1024
+export const AUTH_SESSION_RECORD_TOO_LARGE_ERROR_CODE =
+  'credential-session-record-too-large'
+const AUTH_SESSION_RECORD_TOO_LARGE_STATUS = 507
+export const AUTH_SESSION_CAPACITY_ERROR_CODE =
+  'credential-session-capacity-reached'
+const AUTH_SESSION_CAPACITY_STATUS = 507
 
 const COOKIE_ID_PATTERN = /^[a-f0-9]{64}$/
 const PUBLIC_SESSION_ID_PATTERN = /^nas_[a-f0-9]{32}$/
 const OAUTH_PENDING_TTL_MS = 10 * 60 * 1000
-const COOKIE_MAX_AGE_SECONDS = 365 * 24 * 60 * 60
+const AUTH_SESSION_IDLE_TTL_MS = 90 * 24 * 60 * 60 * 1000
+const COOKIE_MAX_AGE_SECONDS = AUTH_SESSION_IDLE_TTL_MS / 1000
+const MAX_AUTH_SESSIONS = 256
+const TEMP_FILE_TTL_MS = 60 * 60 * 1000
 const NAVET_OAUTH_CALLBACK_PARAM = 'navet_oauth_callback'
+const NAVET_OAUTH_ERROR_PARAM = 'navet_oauth_error'
 const LEGACY_OAUTH_CALLBACK_PARAM = 'auth_callback'
+
+type OAuthFailureCode =
+  | 'access_denied'
+  | 'callback_incomplete'
+  | 'temporarily_unavailable'
+  | 'invalid_response'
+  | 'session_changed'
+  | 'not_authorized'
 
 export interface HomeAssistantAuthData {
   hassUrl: string
@@ -49,6 +70,7 @@ export interface VitePendingOAuth {
   redirectUri: string
   returnTo: string
   expiresAt: number
+  installationPairingVerified?: boolean
 }
 
 export interface ViteStoredAuthSession {
@@ -62,19 +84,69 @@ export interface ViteStoredAuthSession {
   userName: string | null
 }
 
+export class ViteAuthSessionRecordTooLargeError extends Error {
+  readonly code = AUTH_SESSION_RECORD_TOO_LARGE_ERROR_CODE
+  readonly statusCode = AUTH_SESSION_RECORD_TOO_LARGE_STATUS
+
+  constructor() {
+    super('Home Assistant credential session exceeds the storage limit')
+    this.name = 'ViteAuthSessionRecordTooLargeError'
+  }
+}
+
+export class ViteAuthSessionCapacityError extends Error {
+  readonly code = AUTH_SESSION_CAPACITY_ERROR_CODE
+  readonly statusCode = AUTH_SESSION_CAPACITY_STATUS
+
+  constructor() {
+    super('Home Assistant credential session capacity has been reached')
+    this.name = 'ViteAuthSessionCapacityError'
+  }
+}
+
+export function isViteAuthSessionRecordTooLargeError(
+  error: unknown
+): error is ViteAuthSessionRecordTooLargeError {
+  return (
+    error instanceof ViteAuthSessionRecordTooLargeError ||
+    (Boolean(error) &&
+      typeof error === 'object' &&
+      (error as { code?: unknown }).code ===
+        AUTH_SESSION_RECORD_TOO_LARGE_ERROR_CODE)
+  )
+}
+
+export function isViteAuthSessionCapacityError(
+  error: unknown
+): error is ViteAuthSessionCapacityError {
+  return (
+    error instanceof ViteAuthSessionCapacityError ||
+    (Boolean(error) &&
+      typeof error === 'object' &&
+      (error as { code?: unknown }).code === AUTH_SESSION_CAPACITY_ERROR_CODE)
+  )
+}
+
 export interface ViteAuthenticatedPrincipal {
   providerId: 'home_assistant'
   source: 'standalone_session' | 'home_assistant_ingress'
+  tenantId: string
   sessionId: string
   userId: string | null
   userName: string | null
 }
 
 export interface ViteAuthSessionStore {
+  cleanupSessions(reserveSlots?: number): number
+  createEphemeralSession(cookieId: string): ViteStoredAuthSession
   createSession(): { cookieId: string; session: ViteStoredAuthSession }
   deleteSession(cookieId: string): void
   discardLegacyGlobalSession(): void
   readSession(cookieId: string): ViteStoredAuthSession | null
+  rotateSession(
+    previousCookieId: string,
+    session: ViteStoredAuthSession
+  ): { cookieId: string; session: ViteStoredAuthSession }
   sanitizeSession(session: ViteStoredAuthSession): ViteAuthSessionMetadata
   writeSession(cookieId: string, session: ViteStoredAuthSession): void
 }
@@ -85,7 +157,21 @@ export function normalizeHassUrl(value: unknown): string {
   }
 
   try {
-    const parsed = new URL(value.trim())
+    const candidate = value.trim()
+    const rawMatch = /^(?:https?):\/\/[^/?#]+([^?#]*)/i.exec(candidate)
+    const rawPath = rawMatch?.[1] ?? ''
+    const decodedPath = decodeURIComponent(rawPath || '/')
+    if (
+      /%25/i.test(rawPath) ||
+      decodedPath.includes('\\') ||
+      decodedPath
+        .split('/')
+        .some((segment) => segment === '..' || segment === '.')
+    ) {
+      return ''
+    }
+
+    const parsed = new URL(candidate)
     if (
       (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') ||
       parsed.username ||
@@ -101,6 +187,30 @@ export function normalizeHassUrl(value: unknown): string {
     return ''
   }
 }
+
+export function normalizeHassOrigin(value: unknown): string {
+  const normalizedUrl = normalizeHassUrl(value)
+  if (!normalizedUrl) {
+    return ''
+  }
+
+  try {
+    return new URL(normalizedUrl).origin
+  } catch {
+    return ''
+  }
+}
+
+export function createHomeAssistantTenantId(hassUrl: unknown): string {
+  const normalizedBaseUrl = normalizeHassUrl(hassUrl)
+  return normalizedBaseUrl
+    ? `hat_${createHash('sha256').update(normalizedBaseUrl).digest('hex')}`
+    : ''
+}
+
+const HOME_ASSISTANT_INGRESS_TENANT_ID = `hat_${createHash('sha256')
+  .update('home_assistant_ingress')
+  .digest('hex')}`
 
 export function isValidAuthData(value: unknown): value is HomeAssistantAuthData {
   if (!value || typeof value !== 'object') {
@@ -140,8 +250,11 @@ function isValidPendingOAuth(value: unknown): value is VitePendingOAuth {
     pending.redirectUri.length > 0 &&
     typeof pending.returnTo === 'string' &&
     pending.returnTo.startsWith('/') &&
+    !pending.returnTo.startsWith('//') &&
     typeof pending.expiresAt === 'number' &&
-    Number.isFinite(pending.expiresAt)
+    Number.isFinite(pending.expiresAt) &&
+    (pending.installationPairingVerified === undefined ||
+      typeof pending.installationPairingVerified === 'boolean')
   )
 }
 
@@ -178,6 +291,26 @@ function createEmptySession(): ViteStoredAuthSession {
   }
 }
 
+function createEphemeralSession(
+  cookieId: string,
+  bindingSecret: Buffer
+): ViteStoredAuthSession {
+  const now = Date.now()
+  return {
+    version: 2,
+    sessionId: `nas_${createHmac('sha256', bindingSecret)
+      .update(cookieId)
+      .digest('hex')
+      .slice(0, 32)}`,
+    createdAt: now,
+    updatedAt: now,
+    auth: null,
+    pending: null,
+    userId: null,
+    userName: null,
+  }
+}
+
 export function sanitizeAuthSession(
   session: ViteStoredAuthSession
 ): ViteAuthSessionMetadata {
@@ -202,6 +335,7 @@ export function createViteAuthSessionStore(
     'navet-auth-session.json'
   )
 ): ViteAuthSessionStore {
+  const bindingSecret = randomBytes(32)
   const getSessionPath = (cookieId: string) =>
     path.join(sessionsDirectory, `${cookieId}.json`)
 
@@ -210,15 +344,129 @@ export function createViteAuthSessionStore(
       return null
     }
 
+    const sessionPath = getSessionPath(cookieId)
+    let size: number
     try {
-      const sessionPath = getSessionPath(cookieId)
-      if (statSync(sessionPath).size > AUTH_SESSION_MAX_BYTES) {
+      size = statSync(sessionPath).size
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
         return null
       }
-      const parsed = JSON.parse(readFileSync(sessionPath, 'utf8')) as unknown
-      return isValidStoredSession(parsed) ? parsed : null
-    } catch {
+      throw error
+    }
+    if (size > AUTH_SESSION_RECORD_MAX_BYTES) {
+      rmSync(sessionPath, { force: true })
       return null
+    }
+
+    let serialized: string
+    try {
+      serialized = readFileSync(sessionPath, 'utf8')
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
+        return null
+      }
+      throw error
+    }
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(serialized) as unknown
+    } catch {
+      rmSync(sessionPath, { force: true })
+      return null
+    }
+    if (
+      !isValidStoredSession(parsed) ||
+      parsed.updatedAt + AUTH_SESSION_IDLE_TTL_MS < Date.now() ||
+      (!parsed.auth && (!parsed.pending || parsed.pending.expiresAt < Date.now()))
+    ) {
+      rmSync(sessionPath, { force: true })
+      return null
+    }
+    return parsed
+  }
+
+  const cleanupSessions = (reserveSlots = 0) => {
+    let names: string[]
+    try {
+      names = readdirSync(sessionsDirectory)
+    } catch {
+      return 0
+    }
+
+    const now = Date.now()
+    const active: Array<{
+      authenticated: boolean
+      cookieId: string
+      updatedAt: number
+    }> = []
+    for (const name of names) {
+      const match = /^([a-f0-9]{64})\.json$/.exec(name)
+      const filePath = path.join(sessionsDirectory, name)
+      if (!match) {
+        if (name.includes('.tmp-')) {
+          try {
+            if (statSync(filePath).mtimeMs + TEMP_FILE_TTL_MS < now) {
+              rmSync(filePath, { force: true })
+            }
+          } catch {
+            // Ignore a concurrently removed temporary file.
+          }
+        }
+        continue
+      }
+      const session = readSession(match[1])
+      if (session) {
+        active.push({
+          authenticated: Boolean(session.auth),
+          cookieId: match[1],
+          updatedAt: session.updatedAt,
+        })
+      }
+    }
+
+    active.sort((left, right) => {
+      if (left.authenticated !== right.authenticated) {
+        return left.authenticated ? 1 : -1
+      }
+      return left.updatedAt - right.updatedAt
+    })
+    const targetCount = Math.max(0, MAX_AUTH_SESSIONS - reserveSlots)
+    let currentCount = active.length
+    for (const candidate of active) {
+      if (currentCount <= targetCount) {
+        break
+      }
+      if (!candidate.authenticated) {
+        rmSync(getSessionPath(candidate.cookieId), { force: true })
+        currentCount -= 1
+      }
+    }
+    return currentCount
+  }
+
+  const writeSessionFile = (cookieId: string, session: ViteStoredAuthSession) => {
+    if (!COOKIE_ID_PATTERN.test(cookieId) || !isValidStoredSession(session)) {
+      throw new Error('Invalid auth session')
+    }
+
+    const serialized = JSON.stringify(session)
+    if (Buffer.byteLength(serialized, 'utf8') > AUTH_SESSION_RECORD_MAX_BYTES) {
+      throw new ViteAuthSessionRecordTooLargeError()
+    }
+
+    mkdirSync(sessionsDirectory, { recursive: true, mode: 0o700 })
+    const sessionPath = getSessionPath(cookieId)
+    const tempFilePath = `${sessionPath}.tmp-${randomBytes(8).toString('hex')}`
+    try {
+      writeFileSync(tempFilePath, serialized, {
+        encoding: 'utf8',
+        mode: 0o600,
+      })
+      renameSync(tempFilePath, sessionPath)
+    } catch (error) {
+      rmSync(tempFilePath, { force: true })
+      throw error
     }
   }
 
@@ -227,17 +475,45 @@ export function createViteAuthSessionStore(
       throw new Error('Invalid auth session')
     }
 
+    const serialized = JSON.stringify(session)
+    if (Buffer.byteLength(serialized, 'utf8') > AUTH_SESSION_RECORD_MAX_BYTES) {
+      throw new ViteAuthSessionRecordTooLargeError()
+    }
+
     mkdirSync(sessionsDirectory, { recursive: true, mode: 0o700 })
     const sessionPath = getSessionPath(cookieId)
-    const tempFilePath = `${sessionPath}.tmp-${randomBytes(8).toString('hex')}`
-    writeFileSync(tempFilePath, JSON.stringify(session), {
-      encoding: 'utf8',
-      mode: 0o600,
-    })
-    renameSync(tempFilePath, sessionPath)
+    try {
+      statSync(sessionPath)
+    } catch {
+      const remaining = cleanupSessions(1)
+      if (remaining > MAX_AUTH_SESSIONS - 1) {
+        throw new ViteAuthSessionCapacityError()
+      }
+    }
+    writeSessionFile(cookieId, session)
+  }
+
+  const rotateSession = (
+    previousCookieId: string,
+    session: ViteStoredAuthSession
+  ) => {
+    const cookieId = randomBytes(32).toString('hex')
+    if (previousCookieId && readSession(previousCookieId)) {
+      writeSessionFile(cookieId, session)
+    } else {
+      writeSession(cookieId, session)
+    }
+    if (previousCookieId) {
+      rmSync(getSessionPath(previousCookieId), { force: true })
+    }
+    return { cookieId, session }
   }
 
   return {
+    cleanupSessions,
+    createEphemeralSession(cookieId) {
+      return createEphemeralSession(cookieId, bindingSecret)
+    },
     createSession() {
       const cookieId = randomBytes(32).toString('hex')
       const session = createEmptySession()
@@ -253,6 +529,7 @@ export function createViteAuthSessionStore(
       rmSync(legacySessionFilePath, { force: true })
     },
     readSession,
+    rotateSession,
     sanitizeSession: sanitizeAuthSession,
     writeSession,
   }
@@ -263,7 +540,8 @@ function getHeader(req: IncomingMessage, name: string): string {
   return Array.isArray(value) ? (value[0] ?? '') : (value ?? '')
 }
 
-export function parseViteAuthCookie(req: IncomingMessage): string {
+function parseViteAuthCookies(req: IncomingMessage): string[] {
+  const values: string[] = []
   const cookieHeader = getHeader(req, 'cookie')
   for (const entry of cookieHeader.split(';')) {
     const separator = entry.indexOf('=')
@@ -273,12 +551,20 @@ export function parseViteAuthCookie(req: IncomingMessage): string {
 
     const name = entry.slice(0, separator).trim()
     const value = entry.slice(separator + 1).trim()
-    if (name === AUTH_COOKIE_NAME && COOKIE_ID_PATTERN.test(value)) {
-      return value
+    if (
+      name === AUTH_COOKIE_NAME &&
+      COOKIE_ID_PATTERN.test(value) &&
+      !values.includes(value)
+    ) {
+      values.push(value)
     }
   }
 
-  return ''
+  return values
+}
+
+export function parseViteAuthCookie(req: IncomingMessage): string {
+  return parseViteAuthCookies(req)[0] ?? ''
 }
 
 export function normalizeIngressPath(value: unknown): string {
@@ -340,9 +626,23 @@ export function serializeViteAuthCookie(
   maxAgeSeconds = COOKIE_MAX_AGE_SECONDS
 ): string {
   const ingressPath = normalizeIngressPath(getHeader(req, 'x-ingress-path'))
+  return serializeViteAuthCookieAtPath(
+    req,
+    cookieId,
+    ingressPath || '/',
+    maxAgeSeconds
+  )
+}
+
+function serializeViteAuthCookieAtPath(
+  req: IncomingMessage,
+  cookieId: string,
+  cookiePath: string,
+  maxAgeSeconds: number
+): string {
   const attributes = [
     `${AUTH_COOKIE_NAME}=${cookieId}`,
-    `Path=${ingressPath || '/'}`,
+    `Path=${cookiePath}`,
     'HttpOnly',
     'SameSite=Lax',
     `Max-Age=${maxAgeSeconds}`,
@@ -353,33 +653,110 @@ export function serializeViteAuthCookie(
   return attributes.join('; ')
 }
 
+function serializeViteAuthCookieDeletion(req: IncomingMessage): string | string[] {
+  const ingressPath = normalizeIngressPath(getHeader(req, 'x-ingress-path'))
+  const currentPathCookie = serializeViteAuthCookie(req, '', 0)
+  return ingressPath
+    ? [
+        currentPathCookie,
+        serializeViteAuthCookieAtPath(req, '', '/', 0),
+      ]
+    : currentPathCookie
+}
+
+type ViteAuthRequestContext = {
+  cookieId: string
+  session: ViteStoredAuthSession
+}
+
+function getStoredRequestContexts(
+  req: IncomingMessage,
+  store: ViteAuthSessionStore
+): ViteAuthRequestContext[] {
+  store.discardLegacyGlobalSession()
+  const contexts: ViteAuthRequestContext[] = []
+  for (const cookieId of parseViteAuthCookies(req)) {
+    const session = store.readSession(cookieId)
+    if (session) {
+      contexts.push({ cookieId, session })
+    }
+  }
+  return contexts
+}
+
+function getPreferredStoredRequestContext(
+  req: IncomingMessage,
+  store: ViteAuthSessionStore
+): ViteAuthRequestContext | null {
+  const contexts = getStoredRequestContexts(req, store)
+  const now = Date.now()
+  contexts.sort((left, right) => {
+    const leftCurrent = Boolean(
+      left.session.auth && left.session.auth.expires > now
+    )
+    const rightCurrent = Boolean(
+      right.session.auth && right.session.auth.expires > now
+    )
+    if (leftCurrent !== rightCurrent) {
+      return leftCurrent ? -1 : 1
+    }
+    const leftAuthenticated = Boolean(left.session.auth)
+    const rightAuthenticated = Boolean(right.session.auth)
+    if (leftAuthenticated !== rightAuthenticated) {
+      return leftAuthenticated ? -1 : 1
+    }
+    if (left.session.updatedAt !== right.session.updatedAt) {
+      return right.session.updatedAt - left.session.updatedAt
+    }
+    return left.cookieId.localeCompare(right.cookieId)
+  })
+  return contexts[0] ?? null
+}
+
 function getRequestContext(
   req: IncomingMessage,
   res: ServerResponse,
   store: ViteAuthSessionStore,
   create: boolean
 ): { cookieId: string; session: ViteStoredAuthSession } | null {
-  store.discardLegacyGlobalSession()
-  const existingCookieId = parseViteAuthCookie(req)
-  const existingSession = store.readSession(existingCookieId)
-  if (existingSession) {
-    return { cookieId: existingCookieId, session: existingSession }
+  const existingContext = getPreferredStoredRequestContext(req, store)
+  if (existingContext) {
+    return existingContext
   }
   if (!create) {
     return null
   }
 
-  const context = store.createSession()
+  // Never reuse an unbacked caller-supplied cookie. The HMAC-bound public
+  // session ID allows the next OAuth request without writing an anonymous
+  // session file.
+  const cookieId = randomBytes(32).toString('hex')
+  res.setHeader('Set-Cookie', serializeViteAuthCookie(req, cookieId))
+  return { cookieId, session: store.createEphemeralSession(cookieId) }
+}
+
+function renewViteAuthRequestSession(
+  req: IncomingMessage,
+  res: ServerResponse,
+  store: ViteAuthSessionStore,
+  context: { cookieId: string; session: ViteStoredAuthSession }
+) {
+  const next: ViteStoredAuthSession = {
+    ...context.session,
+    updatedAt: Date.now(),
+  }
+  if (next.auth || next.pending) {
+    store.writeSession(context.cookieId, next)
+  }
   res.setHeader('Set-Cookie', serializeViteAuthCookie(req, context.cookieId))
-  return context
+  return { cookieId: context.cookieId, session: next }
 }
 
 export function resolveViteAuthSession(
   req: IncomingMessage,
   store: ViteAuthSessionStore
 ): ViteStoredAuthSession | null {
-  store.discardLegacyGlobalSession()
-  return store.readSession(parseViteAuthCookie(req))
+  return getPreferredStoredRequestContext(req, store)?.session ?? null
 }
 
 export function resolveViteAuthenticatedPrincipal(
@@ -393,6 +770,7 @@ export function resolveViteAuthenticatedPrincipal(
       return {
         providerId: 'home_assistant',
         source: 'home_assistant_ingress',
+        tenantId: HOME_ASSISTANT_INGRESS_TENANT_ID,
         sessionId: `hai_${createHash('sha256').update(userId).digest('hex').slice(0, 32)}`,
         userId,
         userName:
@@ -404,10 +782,11 @@ export function resolveViteAuthenticatedPrincipal(
   }
 
   const session = resolveViteAuthSession(req, store)
-  return session?.auth
+  return session?.auth && session.auth.expires > Date.now()
     ? {
         providerId: 'home_assistant',
         source: 'standalone_session',
+        tenantId: createHomeAssistantTenantId(session.auth.hassUrl),
         sessionId: session.sessionId,
         userId: null,
         userName: null,
@@ -430,18 +809,55 @@ function normalizeReturnTo(value: unknown, fallback: string): string {
       return fallback
     }
     parsed.searchParams.delete(NAVET_OAUTH_CALLBACK_PARAM)
+    parsed.searchParams.delete(NAVET_OAUTH_ERROR_PARAM)
     parsed.searchParams.delete(LEGACY_OAUTH_CALLBACK_PARAM)
     parsed.searchParams.delete('code')
     parsed.searchParams.delete('state')
+    parsed.searchParams.delete('error')
+    parsed.searchParams.delete('error_description')
+    parsed.searchParams.delete('error_uri')
     return `${parsed.pathname}${parsed.search}${parsed.hash}`
   } catch {
     return fallback
   }
 }
 
+function createOAuthReturnUrl(returnTo: string): URL {
+  try {
+    const parsed = new URL(returnTo, 'http://navet.local')
+    if (parsed.origin === 'http://navet.local') {
+      for (const parameter of [
+        NAVET_OAUTH_CALLBACK_PARAM,
+        NAVET_OAUTH_ERROR_PARAM,
+        LEGACY_OAUTH_CALLBACK_PARAM,
+        'code',
+        'state',
+        'error',
+        'error_description',
+        'error_uri',
+      ]) {
+        parsed.searchParams.delete(parameter)
+      }
+      return parsed
+    }
+  } catch {
+    // Fall through to the safe root route.
+  }
+  return new URL('/', 'http://navet.local')
+}
+
 function appendOAuthCallbackMarker(returnTo: string): string {
-  const parsed = new URL(returnTo, 'http://navet.local')
+  const parsed = createOAuthReturnUrl(returnTo)
   parsed.searchParams.set(NAVET_OAUTH_CALLBACK_PARAM, '1')
+  return `${parsed.pathname}${parsed.search}${parsed.hash}`
+}
+
+function appendOAuthFailureMarker(
+  returnTo: string,
+  failure: OAuthFailureCode
+): string {
+  const parsed = createOAuthReturnUrl(returnTo)
+  parsed.searchParams.set(NAVET_OAUTH_ERROR_PARAM, failure)
   return `${parsed.pathname}${parsed.search}${parsed.hash}`
 }
 
@@ -452,7 +868,7 @@ async function readRequestBody(req: IncomingMessage): Promise<string> {
   for await (const chunk of req) {
     const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
     size += buffer.byteLength
-    if (size > AUTH_SESSION_MAX_BYTES) {
+    if (size > AUTH_SESSION_REQUEST_MAX_BYTES) {
       throw new Error('Auth session is too large')
     }
     chunks.push(buffer)
@@ -473,6 +889,26 @@ function sendJson(
   res.end(JSON.stringify(payload))
 }
 
+function sendSessionStoreError(res: ServerResponse, error: unknown): boolean {
+  let code: string
+  let status: number
+  if (isViteAuthSessionRecordTooLargeError(error)) {
+    code = AUTH_SESSION_RECORD_TOO_LARGE_ERROR_CODE
+    status = AUTH_SESSION_RECORD_TOO_LARGE_STATUS
+  } else if (isViteAuthSessionCapacityError(error)) {
+    code = AUTH_SESSION_CAPACITY_ERROR_CODE
+    status = AUTH_SESSION_CAPACITY_STATUS
+  } else {
+    return false
+  }
+
+  sendJson(res, status, {
+    error: error.message,
+    code,
+  })
+  return true
+}
+
 function sendNoContent(res: ServerResponse) {
   res.statusCode = 204
   res.setHeader('Cache-Control', 'no-store')
@@ -487,9 +923,54 @@ function hasValidBinding(
   return getHeader(req, AUTH_BINDING_HEADER).trim() === session.sessionId
 }
 
+function getBoundRequestContext(
+  req: IncomingMessage,
+  store: ViteAuthSessionStore,
+  allowEphemeral: boolean
+): { cookieId: string; session: ViteStoredAuthSession } | null {
+  const storedContexts = getStoredRequestContexts(req, store)
+  const stored = storedContexts.find((context) =>
+    hasValidBinding(req, context.session)
+  )
+  if (stored) {
+    return stored
+  }
+  return allowEphemeral
+    ? getBoundEphemeralRequestContext(req, store)
+    : null
+}
+
+function getBoundEphemeralRequestContext(
+  req: IncomingMessage,
+  store: ViteAuthSessionStore
+): ViteAuthRequestContext | null {
+  for (const cookieId of parseViteAuthCookies(req)) {
+    const ephemeral = store.createEphemeralSession(cookieId)
+    if (hasValidBinding(req, ephemeral)) {
+      return { cookieId, session: ephemeral }
+    }
+  }
+  return null
+}
+
+function getOAuthCallbackRequestContext(
+  req: IncomingMessage,
+  store: ViteAuthSessionStore,
+  state: string
+): ViteAuthRequestContext | null {
+  if (!state) {
+    return null
+  }
+  return (
+    getStoredRequestContexts(req, store).find(
+      (context) => context.session.pending?.state === state
+    ) ?? null
+  )
+}
+
 function isSameOriginMutation(req: IncomingMessage): boolean {
   const origin = getHeader(req, 'origin').trim()
-  return !origin || origin === getRequestOrigin(req)
+  return Boolean(origin) && origin === getRequestOrigin(req)
 }
 
 function resolveAuthRoute(req: IncomingMessage): string {
@@ -501,8 +982,27 @@ function resolveAuthRoute(req: IncomingMessage): string {
 
 export function createViteAuthRequestHandler(
   store: ViteAuthSessionStore,
-  fetchImpl: typeof fetch = fetch
+  fetchImpl: typeof fetch,
+  installationAuthority: ViteInstallationAuthority
 ) {
+  const sessionMutationGenerations = new Map<string, number>()
+  const readMutationGeneration = (cookieId: string) =>
+    sessionMutationGenerations.get(cookieId) ?? 0
+  const advanceMutationGeneration = (cookieId: string) => {
+    const next = readMutationGeneration(cookieId) + 1
+    sessionMutationGenerations.delete(cookieId)
+    sessionMutationGenerations.set(cookieId, next)
+    if (sessionMutationGenerations.size > MAX_AUTH_SESSIONS * 4) {
+      const oldest = sessionMutationGenerations.keys().next().value as
+        | string
+        | undefined
+      if (oldest && oldest !== cookieId) {
+        sessionMutationGenerations.delete(oldest)
+      }
+    }
+    return next
+  }
+
   return async (req: IncomingMessage, res: ServerResponse) => {
     const route = resolveAuthRoute(req)
 
@@ -513,15 +1013,16 @@ export function createViteAuthRequestHandler(
         return
       }
 
-      const context = getRequestContext(req, res, store, false)
       const requestUrl = new URL(req.url ?? '/', 'http://navet.local')
       const code = requestUrl.searchParams.get('code')?.trim() ?? ''
       const state = requestUrl.searchParams.get('state')?.trim() ?? ''
+      const providerError =
+        requestUrl.searchParams.get('error')?.trim() ?? ''
+      const context = getOAuthCallbackRequestContext(req, store, state)
       const pending = context?.session.pending
       if (
         !context ||
         !pending ||
-        !code ||
         !state ||
         state !== pending.state ||
         pending.expiresAt < Date.now()
@@ -529,6 +1030,42 @@ export function createViteAuthRequestHandler(
         sendJson(res, 400, {
           error: 'OAuth callback does not match this browser session',
         })
+        return
+      }
+
+      // Consume state before the upstream exchange so failed or concurrent
+      // callbacks cannot replay the same browser-bound OAuth grant.
+      const consumed: ViteStoredAuthSession = {
+        ...context.session,
+        updatedAt: Date.now(),
+        pending: {
+          ...pending,
+          state: randomBytes(32).toString('hex'),
+        },
+      }
+      store.writeSession(context.cookieId, consumed)
+
+      const redirectFailure = (failure: OAuthFailureCode) => {
+        res.statusCode = 302
+        res.setHeader('Cache-Control', 'no-store')
+        res.setHeader('Pragma', 'no-cache')
+        res.setHeader(
+          'Location',
+          appendOAuthFailureMarker(pending.returnTo, failure)
+        )
+        res.end()
+      }
+
+      if (providerError) {
+        redirectFailure(
+          providerError === 'access_denied'
+            ? 'access_denied'
+            : 'temporarily_unavailable'
+        )
+        return
+      }
+      if (!code) {
+        redirectFailure('callback_incomplete')
         return
       }
 
@@ -543,13 +1080,17 @@ export function createViteAuthRequestHandler(
           }),
         })
         if (!tokenResponse.ok) {
-          sendJson(res, 502, {
-            error: 'Home Assistant OAuth token exchange failed',
-          })
+          redirectFailure('temporarily_unavailable')
           return
         }
 
-        const token = (await tokenResponse.json()) as Record<string, unknown>
+        let token: Record<string, unknown>
+        try {
+          token = (await tokenResponse.json()) as Record<string, unknown>
+        } catch {
+          redirectFailure('invalid_response')
+          return
+        }
         const auth: HomeAssistantAuthData = {
           hassUrl: pending.hassUrl,
           clientId: pending.clientId,
@@ -565,28 +1106,52 @@ export function createViteAuthRequestHandler(
             typeof token.expires_in === 'number' ? token.expires_in : 0,
         }
         if (!isValidAuthData(auth)) {
-          sendJson(res, 502, {
-            error: 'Home Assistant returned an invalid OAuth session',
-          })
+          redirectFailure('invalid_response')
           return
         }
 
-        store.writeSession(context.cookieId, {
-          ...context.session,
+        const next: ViteStoredAuthSession = {
+          ...createEmptySession(),
           updatedAt: Date.now(),
           auth,
           pending: null,
           userId: null,
           userName: null,
-        })
+        }
+        const current = store.readSession(context.cookieId)
+        if (!current || JSON.stringify(current) !== JSON.stringify(consumed)) {
+          redirectFailure('session_changed')
+          return
+        }
+        if (
+          !installationAuthority.commitHomeAssistant(
+            pending.hassUrl,
+            normalizeHassUrl,
+            pending.installationPairingVerified === true
+          )
+        ) {
+          redirectFailure('not_authorized')
+          return
+        }
+        const presentedContexts = getStoredRequestContexts(req, store)
+        advanceMutationGeneration(context.cookieId)
+        const rotated = store.rotateSession(context.cookieId, next)
+        for (const presentedContext of presentedContexts) {
+          if (presentedContext.cookieId !== context.cookieId) {
+            advanceMutationGeneration(presentedContext.cookieId)
+            store.deleteSession(presentedContext.cookieId)
+          }
+        }
         res.statusCode = 302
         res.setHeader('Cache-Control', 'no-store')
+        res.setHeader(
+          'Set-Cookie',
+          serializeViteAuthCookie(req, rotated.cookieId)
+        )
         res.setHeader('Location', appendOAuthCallbackMarker(pending.returnTo))
         res.end()
       } catch {
-        sendJson(res, 502, {
-          error: 'Unable to complete Home Assistant OAuth callback',
-        })
+        redirectFailure('temporarily_unavailable')
       }
       return
     }
@@ -602,13 +1167,15 @@ export function createViteAuthRequestHandler(
         return
       }
 
-      const context = getRequestContext(req, res, store, false)
-      if (!context || !hasValidBinding(req, context.session)) {
+      const context = getBoundRequestContext(req, store, true)
+      if (!context) {
         sendJson(res, 401, {
           error: 'Authenticated browser session is required',
         })
         return
       }
+      const storedAtStart = store.readSession(context.cookieId)
+      const generationAtStart = readMutationGeneration(context.cookieId)
 
       try {
         const body = JSON.parse(await readRequestBody(req)) as {
@@ -619,6 +1186,18 @@ export function createViteAuthRequestHandler(
         if (!hassUrl) {
           sendJson(res, 400, {
             error: 'A valid Home Assistant URL is required',
+          })
+          return
+        }
+        const installationAuthorization =
+          installationAuthority.authorizeHomeAssistant(
+            req,
+            hassUrl,
+            normalizeHassUrl
+          )
+        if (!installationAuthorization.allowed) {
+          sendJson(res, 403, {
+            error: 'Home Assistant target is not authorized for this installation',
           })
           return
         }
@@ -642,7 +1221,23 @@ export function createViteAuthRequestHandler(
             joinPath(ingressPath, '/') || '/'
           ),
           expiresAt: Date.now() + OAUTH_PENDING_TTL_MS,
+          installationPairingVerified:
+            installationAuthorization.pairingVerified,
         }
+        const current = store.readSession(context.cookieId)
+        if (
+          readMutationGeneration(context.cookieId) !== generationAtStart ||
+          (storedAtStart
+            ? !current ||
+              JSON.stringify(current) !== JSON.stringify(storedAtStart)
+            : Boolean(current))
+        ) {
+          sendJson(res, 409, {
+            error: 'OAuth session changed before login could start',
+          })
+          return
+        }
+        advanceMutationGeneration(context.cookieId)
         store.writeSession(context.cookieId, {
           ...context.session,
           updatedAt: Date.now(),
@@ -655,7 +1250,10 @@ export function createViteAuthRequestHandler(
         authorizeUrl.searchParams.set('redirect_uri', redirectUri)
         authorizeUrl.searchParams.set('state', pending.state)
         sendJson(res, 200, { authorizeUrl: authorizeUrl.toString() })
-      } catch {
+      } catch (error) {
+        if (sendSessionStoreError(res, error)) {
+          return
+        }
         sendJson(res, 400, { error: 'Unable to start Home Assistant OAuth' })
       }
       return
@@ -668,8 +1266,8 @@ export function createViteAuthRequestHandler(
         return
       }
 
-      const context = getRequestContext(req, res, store, false)
-      if (!context || !hasValidBinding(req, context.session)) {
+      const context = getBoundRequestContext(req, store, true)
+      if (!context) {
         sendJson(res, 401, {
           error: 'Authenticated browser session is required',
         })
@@ -679,6 +1277,7 @@ export function createViteAuthRequestHandler(
         sendNoContent(res)
         return
       }
+      renewViteAuthRequestSession(req, res, store, context)
       sendJson(res, 200, context.session.auth)
       return
     }
@@ -690,7 +1289,8 @@ export function createViteAuthRequestHandler(
 
     if (req.method === 'GET') {
       const context = getRequestContext(req, res, store, true)!
-      sendJson(res, 200, store.sanitizeSession(context.session))
+      const renewed = renewViteAuthRequestSession(req, res, store, context)
+      sendJson(res, 200, store.sanitizeSession(renewed.session))
       return
     }
 
@@ -702,13 +1302,14 @@ export function createViteAuthRequestHandler(
         return
       }
 
-      const context = getRequestContext(req, res, store, false)
-      if (!context || !hasValidBinding(req, context.session)) {
+      const context = getBoundRequestContext(req, store, false)
+      if (!context) {
         sendJson(res, 401, {
           error: 'Authenticated browser session is required',
         })
         return
       }
+      const storedAtStart = context.session
       try {
         const parsed = JSON.parse(await readRequestBody(req)) as unknown
         if (!isValidAuthData(parsed)) {
@@ -739,9 +1340,26 @@ export function createViteAuthRequestHandler(
           userId: null,
           userName: null,
         }
+        const current = store.readSession(context.cookieId)
+        if (
+          !current ||
+          JSON.stringify(current) !== JSON.stringify(storedAtStart)
+        ) {
+          sendJson(res, 409, {
+            error: 'Auth session changed before refresh completed',
+          })
+          return
+        }
         store.writeSession(context.cookieId, next)
+        res.setHeader(
+          'Set-Cookie',
+          serializeViteAuthCookie(req, context.cookieId)
+        )
         sendJson(res, 200, store.sanitizeSession(next))
-      } catch {
+      } catch (error) {
+        if (sendSessionStoreError(res, error)) {
+          return
+        }
         sendJson(res, 400, { error: 'Unable to save auth session' })
       }
       return
@@ -755,17 +1373,27 @@ export function createViteAuthRequestHandler(
         return
       }
 
-      const context = getRequestContext(req, res, store, false)
-      if (context && !hasValidBinding(req, context.session)) {
+      const storedContexts = getStoredRequestContexts(req, store)
+      const boundStoredContexts = storedContexts.filter((context) =>
+        hasValidBinding(req, context.session)
+      )
+      const context =
+        boundStoredContexts[0] ?? getBoundEphemeralRequestContext(req, store)
+      if (!context && parseViteAuthCookie(req)) {
         sendJson(res, 401, {
           error: 'Authenticated browser session is required',
         })
         return
       }
-      if (context) {
+      for (const boundContext of boundStoredContexts) {
+        advanceMutationGeneration(boundContext.cookieId)
+        store.deleteSession(boundContext.cookieId)
+      }
+      if (context && boundStoredContexts.length === 0) {
+        advanceMutationGeneration(context.cookieId)
         store.deleteSession(context.cookieId)
       }
-      res.setHeader('Set-Cookie', serializeViteAuthCookie(req, '', 0))
+      res.setHeader('Set-Cookie', serializeViteAuthCookieDeletion(req))
       sendJson(res, 200, { ok: true })
       return
     }

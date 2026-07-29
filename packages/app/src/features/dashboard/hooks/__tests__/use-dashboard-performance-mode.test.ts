@@ -61,6 +61,8 @@ describe('useDashboardPerformanceMode helpers', () => {
       effectiveEffectsQuality: 'low',
       reducePolling: true,
       allowBackdropBlur: false,
+      progressiveBatchInitialCount: 2,
+      progressiveBatchSize: 2,
     });
   });
 

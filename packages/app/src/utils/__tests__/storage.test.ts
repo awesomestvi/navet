@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { storage } from '../storage';
+import {
+  readLocalStorageString,
+  removeLocalStorageItem,
+  storage,
+  writeLocalStorageString,
+} from '../storage';
 
 describe('storage', () => {
   it('returns the default value for missing keys', () => {
@@ -61,5 +66,29 @@ describe('storage', () => {
 
     expect(() => storage.set('key', 'value')).not.toThrow();
     setItemSpy.mockRestore();
+  });
+
+  it('swallows a denied localStorage property getter for raw auth hints', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(window, 'localStorage');
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new DOMException('Storage access denied', 'SecurityError');
+      },
+    });
+
+    try {
+      expect(readLocalStorageString('navet_active_provider')).toBeNull();
+      expect(() =>
+        writeLocalStorageString('navet_active_provider', 'home_assistant')
+      ).not.toThrow();
+      expect(() => removeLocalStorageItem('navet_active_provider')).not.toThrow();
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(window, 'localStorage', descriptor);
+      }
+      warning.mockRestore();
+    }
   });
 });

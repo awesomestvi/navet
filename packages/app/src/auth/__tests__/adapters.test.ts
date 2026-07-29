@@ -1,20 +1,28 @@
 import { ingressSessionFixture } from '@navet/app/test/fixtures/home-assistant/auth/ingress';
 import { oauthSessionFixture } from '@navet/app/test/fixtures/home-assistant/auth/oauth';
 import { panelSessionFixture } from '@navet/app/test/fixtures/home-assistant/auth/panel';
-import type { Auth } from 'home-assistant-js-websocket';
+import { type Auth, ERR_INVALID_AUTH } from 'home-assistant-js-websocket';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { haIngressAuth } from '../adapters/haIngressAuth';
 import { haPanelAuth } from '../adapters/haPanelAuth';
+import { homeyOAuthAuth, homeyOAuthNavigation } from '../adapters/homeyOAuthAuth';
 import { openhabUrlSessionAuth } from '../adapters/openhabUrlSessionAuth';
 import {
   invalidateStandaloneOAuthSession,
+  StandaloneOAuthSessionUnavailableError,
   standaloneOAuthAuth,
   standaloneOAuthNavigation,
 } from '../adapters/standaloneOAuthAuth';
+import {
+  captureInstallationPairingKeyFromFragment,
+  clearInstallationPairingKey,
+  getInstallationPairingHeaders,
+} from '../installation-pairing';
 
 const AUTH_SESSION_LOAD_TIMEOUT_MS = 3_000;
 const STORED_SESSION_RESTORE_TIMEOUT_MS = 3_000;
 const OAUTH_CALLBACK_RESTORE_TIMEOUT_MS = 10_000;
+const INSTALLATION_KEY = 'a'.repeat(64);
 
 const { getAuthMock, refreshAccessTokenMock, revokeMock } = vi.hoisted(() => ({
   getAuthMock: vi.fn(),
@@ -23,6 +31,7 @@ const { getAuthMock, refreshAccessTokenMock, revokeMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('home-assistant-js-websocket', () => ({
+  ERR_INVALID_AUTH: 2,
   getAuth: getAuthMock,
 }));
 
@@ -98,7 +107,11 @@ function createCredentialsResponse(hassUrl = oauthSessionFixture.haBaseUrl) {
 
 function mockStandaloneSessionFetch(options?: {
   authenticated?: boolean;
+  authorizeError?: string;
+  authorizeStatus?: number;
+  deletionStatus?: number;
   hassUrl?: string;
+  persistenceStatus?: number;
   userId?: string | null;
 }) {
   return vi.spyOn(window, 'fetch').mockImplementation(async (input, init) => {
@@ -108,19 +121,43 @@ function mockStandaloneSessionFetch(options?: {
     }
     if (url.endsWith('/__navet_auth__/authorize')) {
       return new Response(
-        JSON.stringify({
-          authorizeUrl: `${
-            options?.hassUrl ?? 'https://ha.example.com'
-          }/auth/authorize?state=server-state`,
-        }),
+        JSON.stringify(
+          options?.authorizeStatus
+            ? { error: options.authorizeError ?? 'OAuth start rejected' }
+            : {
+                authorizeUrl: `${
+                  options?.hassUrl ?? 'https://ha.example.com'
+                }/auth/authorize?state=server-state`,
+              }
+        ),
         {
-          status: 200,
+          status: options?.authorizeStatus ?? 200,
           headers: { 'Content-Type': 'application/json' },
         }
       );
     }
     if (url.endsWith('/__navet_auth__/session') && !init?.method) {
       return createSessionMetadataResponse(options);
+    }
+    if (
+      url.endsWith('/__navet_auth__/session') &&
+      init?.method === 'PUT' &&
+      options?.persistenceStatus
+    ) {
+      return new Response(JSON.stringify({ ok: false }), {
+        status: options.persistenceStatus,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    if (
+      url.endsWith('/__navet_auth__/session') &&
+      init?.method === 'DELETE' &&
+      options?.deletionStatus
+    ) {
+      return new Response(JSON.stringify({ ok: false }), {
+        status: options.deletionStatus,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
@@ -131,6 +168,7 @@ function mockStandaloneSessionFetch(options?: {
 
 describe('auth adapters', () => {
   beforeEach(() => {
+    clearInstallationPairingKey();
     localStorage.clear();
     sessionStorage.clear();
     window.history.replaceState({}, '', '/');
@@ -222,26 +260,47 @@ describe('auth adapters', () => {
     );
   });
 
-  it('fails open to unauthenticated startup when the same-origin auth endpoint stalls', async () => {
+  it('reports temporarily unavailable startup when the same-origin auth endpoint stalls', async () => {
     vi.useFakeTimers();
     try {
       vi.spyOn(window, 'fetch').mockReturnValue(new Promise(() => {}));
       const sessionPromise = standaloneOAuthAuth.init();
+      const expectation = expect(sessionPromise).rejects.toBeInstanceOf(
+        StandaloneOAuthSessionUnavailableError
+      );
       await vi.advanceTimersByTimeAsync(AUTH_SESSION_LOAD_TIMEOUT_MS);
-      await expect(sessionPromise).resolves.toBeNull();
+      await expectation;
       expect(getAuthMock).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it('clears only the browser-bound standalone session when refresh fails on restore', async () => {
+  it('preserves the browser-bound standalone session when a restore refresh fails transiently', async () => {
     const auth = createAuth(oauthSessionFixture.haBaseUrl);
     Object.defineProperty(auth, 'expired', {
       configurable: true,
       get: () => true,
     });
     refreshAccessTokenMock.mockRejectedValueOnce(new Error('refresh failed'));
+    const fetchMock = mockStandaloneSessionFetch();
+    getAuthMock.mockResolvedValueOnce(auth);
+
+    await expect(standaloneOAuthAuth.init()).rejects.toBeInstanceOf(
+      StandaloneOAuthSessionUnavailableError
+    );
+
+    expect(refreshAccessTokenMock).toHaveBeenCalled();
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
+  });
+
+  it('clears only the browser-bound standalone session for confirmed invalid auth on restore', async () => {
+    const auth = createAuth(oauthSessionFixture.haBaseUrl);
+    Object.defineProperty(auth, 'expired', {
+      configurable: true,
+      get: () => true,
+    });
+    refreshAccessTokenMock.mockRejectedValueOnce(ERR_INVALID_AUTH);
     const fetchMock = mockStandaloneSessionFetch();
     getAuthMock.mockResolvedValueOnce(auth);
 
@@ -259,6 +318,21 @@ describe('auth adapters', () => {
     );
   });
 
+  it('keeps startup pending when a confirmed-invalid durable session cannot be deleted', async () => {
+    const auth = createAuth(oauthSessionFixture.haBaseUrl);
+    Object.defineProperty(auth, 'expired', {
+      configurable: true,
+      get: () => true,
+    });
+    refreshAccessTokenMock.mockRejectedValueOnce(ERR_INVALID_AUTH);
+    mockStandaloneSessionFetch({ deletionStatus: 503 });
+    getAuthMock.mockResolvedValueOnce(auth);
+
+    await expect(standaloneOAuthAuth.init()).rejects.toBeInstanceOf(
+      StandaloneOAuthSessionUnavailableError
+    );
+  });
+
   it('stops waiting for a stalled refresh during stored-session restore', async () => {
     vi.useFakeTimers();
     try {
@@ -272,13 +346,13 @@ describe('auth adapters', () => {
       getAuthMock.mockResolvedValueOnce(auth);
 
       const sessionPromise = standaloneOAuthAuth.init();
+      const expectation = expect(sessionPromise).rejects.toBeInstanceOf(
+        StandaloneOAuthSessionUnavailableError
+      );
       await vi.advanceTimersByTimeAsync(STORED_SESSION_RESTORE_TIMEOUT_MS);
 
-      await expect(sessionPromise).resolves.toBeNull();
-      expect(fetchMock).toHaveBeenCalledWith(
-        `${window.location.origin}/__navet_auth__/session`,
-        expect.objectContaining({ method: 'DELETE' })
-      );
+      await expectation;
+      expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
     } finally {
       vi.useRealTimers();
     }
@@ -333,6 +407,8 @@ describe('auth adapters', () => {
   });
 
   it('starts OAuth through the server-bound authorize endpoint without browser token exchange', async () => {
+    window.history.replaceState({}, '', `/#navet_pairing=${INSTALLATION_KEY}`);
+    captureInstallationPairingKeyFromFragment();
     const fetchMock = mockStandaloneSessionFetch({
       authenticated: false,
       hassUrl: 'http://homeassistant.local:8123',
@@ -356,6 +432,7 @@ describe('auth adapters', () => {
         method: 'POST',
         headers: expect.objectContaining({
           'X-Navet-OAuth-Binding': STANDALONE_SESSION_ID,
+          'X-Navet-Installation-Key': INSTALLATION_KEY,
         }),
         body: JSON.stringify({
           hassUrl: 'http://homeassistant.local:8123',
@@ -363,7 +440,145 @@ describe('auth adapters', () => {
         }),
       })
     );
+    expect(window.location.hash).toBe('');
+    expect(getInstallationPairingHeaders()).toEqual({});
     expect(getAuthMock).not.toHaveBeenCalled();
+  });
+
+  it('starts Homey OAuth through a same-origin POST before navigating to Athom', async () => {
+    window.history.replaceState({}, '', `/#navet_pairing=${INSTALLATION_KEY}`);
+    captureInstallationPairingKeyFromFragment();
+    const fetchMock = vi.spyOn(window, 'fetch').mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          authorizeUrl: 'https://api.athom.com/oauth2/authorise?state=server-state',
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+    );
+    const navigationMock = vi
+      .spyOn(homeyOAuthNavigation, 'assign')
+      .mockImplementation(() => undefined);
+
+    void homeyOAuthAuth.login?.({ providerId: 'homey' });
+
+    await vi.waitFor(() => {
+      expect(navigationMock).toHaveBeenCalledWith(
+        'https://api.athom.com/oauth2/authorise?state=server-state'
+      );
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${window.location.origin}/__navet_homey__/authorize`,
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: expect.objectContaining({
+          'X-Navet-Installation-Key': INSTALLATION_KEY,
+        }),
+        body: JSON.stringify({ returnTo: '/' }),
+      })
+    );
+    expect(getInstallationPairingHeaders()).toEqual({});
+  });
+
+  it('surfaces Home Assistant pairing rejection and retains the ephemeral key', async () => {
+    window.history.replaceState({}, '', `/#navet_pairing=${INSTALLATION_KEY}`);
+    captureInstallationPairingKeyFromFragment();
+    mockStandaloneSessionFetch({
+      authenticated: false,
+      authorizeStatus: 403,
+      authorizeError: 'Operator pairing is required',
+    });
+
+    await expect(
+      standaloneOAuthAuth.login?.({
+        hassUrl: 'http://homeassistant.local:8123',
+      })
+    ).rejects.toThrow('Operator pairing is required');
+    expect(getInstallationPairingHeaders()).toEqual({
+      'X-Navet-Installation-Key': INSTALLATION_KEY,
+    });
+  });
+
+  it('surfaces Homey pairing rejection and retains the ephemeral key', async () => {
+    window.history.replaceState({}, '', `/#navet_pairing=${INSTALLATION_KEY}`);
+    captureInstallationPairingKeyFromFragment();
+    vi.spyOn(window, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Operator pairing is required for Homey' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
+
+    await expect(homeyOAuthAuth.login?.({ providerId: 'homey' })).rejects.toThrow(
+      'Operator pairing is required for Homey'
+    );
+    expect(getInstallationPairingHeaders()).toEqual({
+      'X-Navet-Installation-Key': INSTALLATION_KEY,
+    });
+  });
+
+  it('surfaces a Home Assistant credential-capacity response', async () => {
+    mockStandaloneSessionFetch({
+      authenticated: false,
+      authorizeStatus: 507,
+      authorizeError: 'Home Assistant credential session capacity has been reached',
+    });
+
+    await expect(
+      standaloneOAuthAuth.login?.({
+        hassUrl: 'http://homeassistant.local:8123',
+      })
+    ).rejects.toThrow('Home Assistant credential session capacity has been reached');
+  });
+
+  it('surfaces a Homey credential-capacity response', async () => {
+    vi.spyOn(window, 'fetch').mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          error: 'Provider credential session capacity has been reached',
+          code: 'credential-session-capacity-reached',
+        }),
+        {
+          status: 507,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+    );
+
+    await expect(homeyOAuthAuth.login?.({ providerId: 'homey' })).rejects.toThrow(
+      'Provider credential session capacity has been reached'
+    );
+  });
+
+  it('refuses to navigate when the Homey OAuth start returns another origin', async () => {
+    window.history.replaceState({}, '', `/#navet_pairing=${INSTALLATION_KEY}`);
+    captureInstallationPairingKeyFromFragment();
+    vi.spyOn(window, 'fetch').mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          authorizeUrl: 'https://attacker.example/oauth2/authorise?state=server-state',
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+    );
+    const navigationMock = vi
+      .spyOn(homeyOAuthNavigation, 'assign')
+      .mockImplementation(() => undefined);
+
+    await expect(homeyOAuthAuth.login?.({ providerId: 'homey' })).rejects.toThrow(
+      'Homey returned an invalid authorization URL'
+    );
+    expect(navigationMock).not.toHaveBeenCalled();
+    expect(getInstallationPairingHeaders()).toEqual({
+      'X-Navet-Installation-Key': INSTALLATION_KEY,
+    });
   });
 
   it('rejects a callback marker without a server-created browser session', async () => {
@@ -374,10 +589,23 @@ describe('auth adapters', () => {
       'Home Assistant OAuth callback did not create a session'
     );
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      `${window.location.origin}/__navet_auth__/session`,
-      expect.objectContaining({ method: 'DELETE' })
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
+    expect(window.location.search).toBe('');
+  });
+
+  it('maps a server callback failure back to a retryable login message', async () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/?navet_oauth_error=temporarily_unavailable&code=discarded&state=discarded'
     );
+    const fetchMock = mockStandaloneSessionFetch({ authenticated: false });
+
+    await expect(standaloneOAuthAuth.init()).rejects.toThrow(
+      'Home Assistant sign-in could not be completed. Please try again.'
+    );
+
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
     expect(window.location.search).toBe('');
   });
 
@@ -389,16 +617,13 @@ describe('auth adapters', () => {
       getAuthMock.mockReturnValueOnce(new Promise(() => {}));
 
       const sessionPromise = standaloneOAuthAuth.init();
-      const timeoutExpectation = expect(sessionPromise).rejects.toThrow(
-        'Timed out restoring Home Assistant session'
+      const timeoutExpectation = expect(sessionPromise).rejects.toBeInstanceOf(
+        StandaloneOAuthSessionUnavailableError
       );
       await vi.advanceTimersByTimeAsync(OAUTH_CALLBACK_RESTORE_TIMEOUT_MS);
 
       await timeoutExpectation;
-      expect(fetchMock).toHaveBeenCalledWith(
-        `${window.location.origin}/__navet_auth__/session`,
-        expect.objectContaining({ method: 'DELETE' })
-      );
+      expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
       expect(window.location.search).toBe('');
     } finally {
       vi.useRealTimers();
@@ -434,6 +659,25 @@ describe('auth adapters', () => {
     );
   });
 
+  it('surfaces a failed token persistence response without deleting the durable session', async () => {
+    const auth = createAuth();
+    const fetchMock = mockStandaloneSessionFetch({ persistenceStatus: 503 });
+
+    await expect(
+      standaloneOAuthAuth.refresh?.({
+        providerId: 'home_assistant',
+        runtime: 'standalone-oauth',
+        authMode: 'oauth',
+        haBaseUrl: 'https://ha.example.com',
+        hassUrl: 'https://ha.example.com',
+        auth,
+        expiresAt: auth.data.expires,
+      })
+    ).rejects.toThrow('Unable to persist the refreshed Home Assistant session');
+
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
+  });
+
   it('invalidates only the same-origin browser session', async () => {
     const fetchMock = mockStandaloneSessionFetch();
 
@@ -465,10 +709,42 @@ describe('auth adapters', () => {
     );
   });
 
-  it('creates an openHAB session with base URL and credentials', async () => {
-    const fetchMock = vi
-      .spyOn(window, 'fetch')
-      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+  it('still clears the local browser session when upstream token revocation hangs', async () => {
+    vi.useFakeTimers();
+    try {
+      const auth = createAuth();
+      revokeMock.mockReturnValueOnce(new Promise(() => {}));
+      const fetchMock = mockStandaloneSessionFetch();
+      getAuthMock.mockResolvedValueOnce(auth);
+
+      const logoutPromise = standaloneOAuthAuth.logout?.();
+      await vi.advanceTimersByTimeAsync(AUTH_SESSION_LOAD_TIMEOUT_MS);
+      await logoutPromise;
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${window.location.origin}/__navet_auth__/session`,
+        expect.objectContaining({ method: 'DELETE' })
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('creates a proxied openHAB session without retaining credentials in the browser', async () => {
+    window.history.replaceState({}, '', `/#navet_pairing=${INSTALLATION_KEY}`);
+    captureInstallationPairingKeyFromFragment();
+    const fetchMock = vi.spyOn(window, 'fetch').mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          authenticated: true,
+          hassUrl: 'http://openhab.local:8080',
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+    );
 
     const session = await openhabUrlSessionAuth.login?.({
       hassUrl: 'http://openhab.local:8080/',
@@ -482,14 +758,91 @@ describe('auth adapters', () => {
       authMode: 'oauth',
       haBaseUrl: 'http://openhab.local:8080',
       hassUrl: 'http://openhab.local:8080',
-      username: 'navet',
-      password: 'secret',
       proxyBaseUrl: '/__navet_openhab_proxy__',
     });
+    expect(session).not.toHaveProperty('username');
+    expect(session).not.toHaveProperty('password');
     expect(fetchMock).toHaveBeenCalledWith(
       `${window.location.origin}/__navet_openhab__/session`,
-      expect.objectContaining({ method: 'PUT' })
+      expect.objectContaining({
+        method: 'PUT',
+        headers: expect.objectContaining({
+          'X-Navet-Installation-Key': INSTALLATION_KEY,
+        }),
+        body: JSON.stringify({
+          hassUrl: 'http://openhab.local:8080',
+          username: 'navet',
+          password: 'secret',
+        }),
+      })
     );
+    expect(getInstallationPairingHeaders()).toEqual({});
+  });
+
+  it('establishes an opaque browser binding before retrying an unbound openHAB login', async () => {
+    window.history.replaceState({}, '', `/#navet_pairing=${INSTALLATION_KEY}`);
+    captureInstallationPairingKeyFromFragment();
+    const fetchMock = vi
+      .spyOn(window, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: 'openHAB browser session is not bound' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            authenticated: true,
+            hassUrl: 'http://openhab.local:8080',
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+      );
+
+    const session = await openhabUrlSessionAuth.login?.({
+      hassUrl: 'http://openhab.local:8080',
+      username: 'navet',
+      password: 'secret',
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      `${window.location.origin}/__navet_openhab__/session`,
+      expect.objectContaining({
+        method: 'PUT',
+        headers: expect.objectContaining({
+          'X-Navet-Installation-Key': INSTALLATION_KEY,
+        }),
+      })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      `${window.location.origin}/__navet_openhab__/session`,
+      expect.not.objectContaining({ method: 'PUT' })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      `${window.location.origin}/__navet_openhab__/session`,
+      expect.objectContaining({
+        method: 'PUT',
+        headers: expect.objectContaining({
+          'X-Navet-Installation-Key': INSTALLATION_KEY,
+        }),
+      })
+    );
+    expect(session).toMatchObject({
+      providerId: 'openhab',
+      proxyBaseUrl: '/__navet_openhab_proxy__',
+    });
+    expect(session).not.toHaveProperty('username');
+    expect(getInstallationPairingHeaders()).toEqual({});
+    expect(session).not.toHaveProperty('password');
   });
 
   it('requires openHAB credentials for URL-session login', async () => {
@@ -530,9 +883,8 @@ describe('auth adapters', () => {
     vi.spyOn(window, 'fetch').mockResolvedValueOnce(
       new Response(
         JSON.stringify({
+          authenticated: true,
           hassUrl: 'http://openhab.local:8080',
-          username: 'navet',
-          password: 'secret',
         }),
         {
           status: 200,
@@ -546,9 +898,26 @@ describe('auth adapters', () => {
     expect(session).toMatchObject({
       providerId: 'openhab',
       hassUrl: 'http://openhab.local:8080',
-      username: 'navet',
-      password: 'secret',
       proxyBaseUrl: '/__navet_openhab_proxy__',
     });
+    expect(session).not.toHaveProperty('username');
+    expect(session).not.toHaveProperty('password');
+  });
+
+  it.each([
+    {
+      name: 'network failure',
+      response: () => Promise.reject(new TypeError('connection refused')),
+    },
+    {
+      name: 'missing server route',
+      response: () => Promise.resolve(new Response(null, { status: 404 })),
+    },
+  ])('keeps openHAB restoration retryable after a $name', async ({ response }) => {
+    vi.spyOn(window, 'fetch').mockImplementation(response);
+
+    await expect(openhabUrlSessionAuth.init()).rejects.toBeInstanceOf(
+      StandaloneOAuthSessionUnavailableError
+    );
   });
 });

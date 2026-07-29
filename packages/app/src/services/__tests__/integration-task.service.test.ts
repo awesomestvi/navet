@@ -30,7 +30,7 @@ vi.mock('../home-assistant.service', async () => {
 import { integrationTaskService } from '../integration-task.service';
 
 describe('integration-task.service', () => {
-  it('projects the Home Assistant task runtime into platform-owned task models', () => {
+  it('projects the task-scoped Home Assistant runtime into platform-owned models', () => {
     const automation = automationEntityFactory({
       friendly_name: 'Arrival',
     });
@@ -59,12 +59,6 @@ describe('integration-task.service', () => {
           state: automation.state,
           name: 'Arrival',
           attributes: automation.attributes,
-        },
-        'light.hall': {
-          entityId: 'light.hall',
-          state: light.state,
-          name: 'Hall light',
-          attributes: light.attributes,
         },
       },
       rooms: [{ id: 'hall', name: 'Hallway' }],

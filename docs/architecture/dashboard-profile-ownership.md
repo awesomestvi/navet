@@ -13,17 +13,38 @@ or server file.
 | Dashboard client | Kitchen panel or Vishal's phone | Kiosk/panel mode, keep-awake, local density, effects quality, and camera transport preference |
 | Credential session | One browser's Home Assistant OAuth grant | Access and refresh tokens for that browser only |
 
-A dashboard client has a random browser-local ID and a user-editable display name. It is useful for
-activity attribution; it is not authentication. The server accepts user attribution only from
-server-controlled identity data. Today that means trusted Home Assistant Ingress headers;
-standalone OAuth sessions remain intentionally unattributed because their token response does not
-contain a server-verifiable Home Assistant user ID. The server never trusts a caller-supplied user
-ID.
+A dashboard client has a random browser-local ID and a user-editable display name. Those values are
+useful for activity attribution, but they are not authentication. The profile server separately
+issues an opaque, `HttpOnly`, same-site browser binding and stores only that binding beside the
+client registry record. Device preference lookup and client-record mutation use the server-issued
+binding; changing `X-Navet-Client-Id` cannot select another browser's preferences. The private
+binding is never included in client-list responses.
 
-Device preferences are keyed by that stable dashboard-client ID, not by the replaceable OAuth
-session, so signing in again does not turn the same panel into a new device. Forgetting a dashboard
-removes its registry entry and saved device preferences. It deliberately does not alter revision
-history, sign the dashboard out, or revoke its provider credentials.
+The server accepts user attribution only from server-controlled identity data. Today that means
+trusted Home Assistant Ingress headers; standalone OAuth sessions remain intentionally
+unattributed because their token response does not contain a server-verifiable Home Assistant user
+ID. The server never trusts a caller-supplied user ID.
+
+Device preferences are keyed by the durable browser binding, not by the replaceable OAuth session,
+so signing in again does not turn the same panel into a new device. The public client ID remains in
+preference documents and revision metadata as a label. A browser can forget only its own bound
+client record; Navet does not expose remote client deletion because a client list is not an
+authorization mechanism. Forgetting removes registry metadata and saved device preferences, but
+does not alter revision history, sign the dashboard out, or revoke provider credentials.
+
+Legacy registry and preference records did not contain a browser binding. On upgrade, the first
+authenticated browser presenting a legacy client ID claims that record and its saved preferences.
+This one-time trust-on-first-use migration preserves existing wall-panel settings; eliminating that
+window requires an explicit pairing or recovery flow.
+
+The registry and bound client-preference collection each retain at most 200 browser records, and
+each preference collection is capped at 4 MiB. Registry clients idle for 90 days are removed
+together with their bound or legacy preference record. When all 200 clients are still active, a
+new browser receives a retryable `client-capacity-reached` response; Navet does not evict an active
+wall panel or mislabel capacity as a binding mismatch, so the browser keeps its client identity and
+retries with the normal sync backoff. Workspace, state, history, registry, bootstrap, profile, and
+preference files are size-checked before synchronous reads so damaged or oversized storage cannot
+stall the single Nginx worker or be silently overwritten.
 
 ## Shared Profile
 
@@ -48,9 +69,36 @@ The production Nginx runtime uses one event-driven worker because the local prof
 its revision check and atomic file replacement synchronously. This keeps concurrent browser writes
 serialized without reducing the number of WebSocket or HTTP connections the worker can serve.
 
+The workspace is also bound to the Home Assistant tenant that enrolled it. The server normalizes
+the authenticated Home Assistant base URL, including a non-root base path, and hashes that value
+into an opaque tenant ID; the raw URL is not stored in profile documents or returned to clients.
+Browser sessions using the same normalized base URL share the workspace, while a session
+authenticated through another URL receives `403` before any profile, history, preference, or
+client data is read.
+
+A connection URL is not a canonical Home Assistant installation identity. The same installation
+reached through a LAN hostname and an external hostname is intentionally treated as two tenants
+today, so every device should use the same configured Home Assistant URL. Seamless alias rebinding
+requires explicit re-pairing, an operator URL pin, or a server-verified stable installation
+identifier.
+
+The profile workspace binds on first authenticated use, but standalone provider authentication now
+has a separate installation-authority gate. A fresh standalone Docker installation generates a
+256-bit operator key under `/data`; the browser receives it only through an operator-opened URL
+fragment, removes that fragment synchronously, and holds the key only in memory. Unknown Home
+Assistant and openHAB targets and the first Homey account require that key unless the operator
+configured an exact provider URL pin. Authority is persisted only after provider authentication or
+credential verification succeeds. Existing authenticated records are migration evidence only when
+their normalized target is unanimous; Homey records must be a single record or share a non-empty
+common installation-ID intersection.
+
 ## Reconciliation
 
-Every client keeps the last common server profile as its merge base.
+Every active tab keeps the last server revision that it observed as its in-memory merge base.
+Merge bases are not persisted to shared browser storage: another tab must never advance a tab's
+ancestry behind its back. A reload or duplicated tab therefore starts without a merge base and
+uses the explicit conflict flow when its configured local profile differs from the server. This is
+intentionally conservative and prevents stale tabs from silently rolling back newer revisions.
 
 1. A clean client applies a newer remote revision in place and shows a short attributed update.
 2. Independent local and remote fields are merged automatically and saved as a new revision.
@@ -88,10 +136,19 @@ are excluded from the shared profile.
 
 - Standalone Docker and development use a per-browser opaque `HttpOnly` cookie. The OAuth state,
   callback, refresh token, access token, and proxy requests are bound to that one server session.
+- Standalone provider enrollment is additionally bound to the installation pairing key, an exact
+  operator URL pin, or already-persisted provider authority. The pairing header is stripped from
+  every upstream HTTP and WebSocket proxy request.
 - Home Assistant add-on Ingress may use the official `X-Remote-User-*` identity headers only in the
-  explicit Ingress handler.
+  explicit Ingress handler. This trusted, Ingress-only runtime bypasses standalone pairing.
 - The Home Assistant custom panel has no Navet profile-store endpoint and remains local-only until a
   provider-owned server persistence seam exists.
 
 The normal standalone profile route never trusts Ingress headers and never accepts anonymous
 profile access.
+
+Installation pairing prevents an unauthenticated caller from choosing a fresh installation's
+provider target. It does not make Navet an Internet-facing identity proxy. Keep provider-native
+authentication enabled, preserve `/data`, use HTTPS, and place externally reachable standalone
+deployments behind appropriate network or reverse-proxy access control. openHAB credential
+verification is rate-limited per direct source, but that throttle remains defense-in-depth.

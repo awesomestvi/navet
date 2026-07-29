@@ -10,8 +10,8 @@ permissions:
   packages: write
 
 concurrency:
-  group: dev-release-${{ github.ref }}
-  cancel-in-progress: true
+  group: navet-dev-release
+  cancel-in-progress: false
 
 env:
   REGISTRY: ghcr.io
@@ -27,6 +27,8 @@ jobs:
       tag_name: ${{ steps.version.outputs.tag_name }}
       release_sha: ${{ steps.version.outputs.release_sha }}
       release_sha_short: ${{ steps.version.outputs.release_sha_short }}
+      source_branch: ${{ steps.version.outputs.source_branch }}
+      main_backed: ${{ steps.version.outputs.main_backed }}
 
     steps:
       - name: Checkout
@@ -52,11 +54,33 @@ jobs:
 
           node scripts/check-dev-release-surfaces.mjs --tag "${TAG_NAME}" --version "${DEV_VERSION}"
 
+          RELEASE_SHA="$(git rev-list -n 1 "${TAG_NAME}")"
+          SOURCE_BRANCH="$(
+            git for-each-ref --format='%(contents)' "refs/tags/${TAG_NAME}" |
+              sed -n 's/^Source-Branch: //p' |
+              tail -n 1
+          )"
+
+          if [[ -z "${SOURCE_BRANCH}" ]]; then
+            echo "Navet Dev tag ${TAG_NAME} is missing Source-Branch provenance."
+            exit 1
+          fi
+
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          if [[ "${SOURCE_BRANCH}" == "main" ]] &&
+            git merge-base --is-ancestor "${RELEASE_SHA}" refs/remotes/origin/main; then
+            MAIN_BACKED=true
+          else
+            MAIN_BACKED=false
+          fi
+
           {
             echo "dev_version=${DEV_VERSION}"
             echo "tag_name=${TAG_NAME}"
-            echo "release_sha=${GITHUB_SHA}"
-            echo "release_sha_short=${GITHUB_SHA::7}"
+            echo "release_sha=${RELEASE_SHA}"
+            echo "release_sha_short=${RELEASE_SHA::7}"
+            echo "source_branch=${SOURCE_BRANCH}"
+            echo "main_backed=${MAIN_BACKED}"
           } >> "$GITHUB_OUTPUT"
 
   tier-1-release-critical:
@@ -100,9 +124,11 @@ jobs:
           {
             echo "value<<EOF"
             echo "$IMAGE:${{ needs.release-context.outputs.dev_version }}"
-            echo "$IMAGE:edge"
-            echo "$IMAGE:dev"
             echo "$IMAGE:sha-${{ needs.release-context.outputs.release_sha_short }}"
+            if [[ "${{ needs.release-context.outputs.main_backed }}" == "true" ]]; then
+              echo "$IMAGE:edge"
+              echo "$IMAGE:dev"
+            fi
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
@@ -182,9 +208,11 @@ jobs:
           {
             echo "value<<EOF"
             echo "$IMAGE:$VERSION"
-            echo "$IMAGE:edge"
-            echo "$IMAGE:dev"
             echo "$IMAGE:sha-${{ needs.release-context.outputs.release_sha_short }}"
+            if [[ "${{ needs.release-context.outputs.main_backed }}" == "true" ]]; then
+              echo "$IMAGE:edge"
+              echo "$IMAGE:dev"
+            fi
             echo "EOF"
             echo "version=$VERSION"
           } >> "$GITHUB_OUTPUT"
@@ -218,16 +246,41 @@ jobs:
     environment: edge
 
     steps:
+      - name: Build prerelease notes
+        id: notes
+        env:
+          DEV_VERSION: ${{ needs.release-context.outputs.dev_version }}
+          MAIN_BACKED: ${{ needs.release-context.outputs.main_backed }}
+          RELEASE_SHA: ${{ needs.release-context.outputs.release_sha }}
+          SOURCE_BRANCH: ${{ needs.release-context.outputs.source_branch }}
+        run: |
+          if [[ "${MAIN_BACKED}" == "true" ]]; then
+            SCOPE_NOTE="This build is backed by \`main\`. It advances the shared \`dev\` and \`edge\` image aliases and Home Assistant add-on discovery."
+          else
+            SCOPE_NOTE="This is an immutable branch validation build. It does not change \`main\`, the shared \`dev\` or \`edge\` aliases, or Home Assistant add-on discovery."
+          fi
+
+          {
+            echo "body<<EOF"
+            echo "Navet Dev publish for \`${DEV_VERSION}\`."
+            echo
+            echo "Source: \`${SOURCE_BRANCH}\` at \`${RELEASE_SHA}\`"
+            echo
+            echo "$SCOPE_NOTE"
+            echo
+            echo "Published artifacts:"
+            echo "- standalone app image \`${REGISTRY}/${IMAGE_NAME}:${DEV_VERSION}\` for linux/amd64 and linux/arm64"
+            echo "- Home Assistant add-on images \`ghcr.io/${GITHUB_REPOSITORY_OWNER}/{arch}-navet-addon:${DEV_VERSION}\` for amd64 and aarch64"
+            echo
+            echo "HACS/custom-panel, \`latest\`, and \`beta\` are unchanged."
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub prerelease
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.release-context.outputs.tag_name }}
           name: ${{ needs.release-context.outputs.tag_name }}
-          body: |
-            Navet Dev publish for `${{ needs.release-context.outputs.dev_version }}` from `main`.
-
-            Published artifacts:
-            - standalone app image `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.release-context.outputs.dev_version }}`
-            - Home Assistant add-on images `ghcr.io/${{ github.repository_owner }}/{arch}-navet-addon:${{ needs.release-context.outputs.dev_version }}`
+          body: ${{ steps.notes.outputs.body }}
           prerelease: true
           generate_release_notes: false

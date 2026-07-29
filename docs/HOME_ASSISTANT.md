@@ -104,8 +104,11 @@ Optional multi-provider add-on settings:
 - `homey_client_id` and `homey_client_secret` enable the Homey OAuth connection flow
 - `homey_redirect_uri` overrides the inferred Homey callback URL when the public Ingress URL
   differs
-- openHAB needs no add-on secret; connect it from **Settings -> System** with its browser-reachable
-  base URL, username, and password
+- openHAB needs no add-on secret; connect it from **Settings -> System** with its
+  add-on-reachable base URL, username, and password
+- `allow_insecure_provider_tls` disables certificate verification for every configured HTTPS
+  provider and should remain off unless a trusted private network uses certificates the add-on
+  cannot validate
 
 ### What To Expect
 
@@ -152,6 +155,9 @@ services:
       - "8080:80"
     volumes:
       - navet-data:/data
+    # Optional: hard-pin the only Home Assistant URL this installation may enroll.
+    # environment:
+    #   NAVET_HASS_URL: "http://homeassistant.local:8123"
 
 volumes:
   navet-data:
@@ -163,11 +169,36 @@ Start it:
 docker compose up -d
 ```
 
-Then open `http://localhost:8080`.
+Then inspect the startup log:
+
+```bash
+docker compose logs navet
+```
+
+On a new installation, Navet prints a one-time URL fragment such as
+`#navet_pairing=<64-character-key>`. Append that fragment to your trusted Navet URL and open it in
+the browser, for example `http://localhost:8080/#navet_pairing=...`, before connecting the first
+provider. The browser removes the fragment from the address bar immediately, keeps the key only in
+memory, and sends it only to Navet's same-origin enrollment endpoint. If you reload before the
+enrollment request is accepted, open the pairing URL again.
+
+The generated key persists in the `/data` volume. To recover it later:
+
+```bash
+docker exec navet cat /data/navet-installation-key
+```
+
+Then open `http://localhost:8080` (with the pairing fragment when required).
+
+`NAVET_HASS_URL` is an alternative operator-controlled hard pin. When set, Navet accepts only that
+exact normalized Home Assistant base URL and does not require the pairing key for that target.
+Changing the pin updates persisted authority only after the new Home Assistant login succeeds.
 
 ### What To Expect
 
 - Home Assistant login uses OAuth
+- a fresh, unpinned installation requires its startup pairing fragment before the first Home
+  Assistant enrollment; the key is never placed in an HTTP response or forwarded to Home Assistant
 - dashboard and profile state are stored through same-origin runtime endpoints under `/data`
 - every browser profile gets an independent Home Assistant OAuth session, even when several
   panels use the same Navet container and Home Assistant instance
@@ -178,6 +209,14 @@ Then open `http://localhost:8080`.
   that browser's session
 - signing out removes only the current browser's OAuth session
 - if the stored OAuth session becomes invalid during token refresh, Navet clears it and returns to login
+- temporary network, proxy, or Home Assistant failures keep the durable browser session and retry
+  instead of treating the interruption as a logout
+- the `/data` volume must remain persistent across container recreation; it contains the
+  installation key and the independent browser sessions
+
+Run updates from the same Compose project directory and keep the same project name so Compose
+reattaches the existing named volume. Do not use `docker compose down -v` during an update: `-v`
+deletes the stored sessions and profiles and every browser will need to sign in again.
 
 OAuth credentials and dashboard profile data have different scopes. The OAuth files under
 `/data/navet-auth-sessions` belong to individual browser sessions; they are not copied between
@@ -234,10 +273,19 @@ continue to use the provider that owns the entity or the active provider's featu
 ### Troubleshooting
 
 - If Navet repeatedly returns to login, verify that the saved Home Assistant URL still matches your current instance URL.
+- If every browser is asked to sign in after a container update, verify that the same persistent
+  volume is still mounted at `/data`; recreating that storage also recreates the installation key
+  and removes the server-side browser sessions.
+- A `403` saying that operator pairing is required means this target is not yet authorized. Reopen
+  the startup pairing fragment, or set the exact `NAVET_HASS_URL` pin and restart the container.
 - If you recently changed reverse-proxy, TLS, hostname, or port settings for Home Assistant, sign in again so Navet can obtain a fresh OAuth session.
 - If OAuth reaches Home Assistant but fails after returning to Navet, verify the Home Assistant URL
   from inside the Navet container. Browser-only `.local` names and private certificates that the
   container cannot resolve or trust will prevent the server-side token exchange.
+- Provider TLS verification is enabled by default. Prefer installing the private CA in the
+  container; on a trusted network, `NAVET_ALLOW_INSECURE_PROVIDER_TLS=true` (standalone) or the
+  add-on's `allow_insecure_provider_tls` option explicitly disables verification for all
+  configured HTTPS providers.
 - If the Home Assistant authorization was revoked or the refresh token became invalid, sign in again to recreate the stored session under `/data`.
 - If OAuth returns to a different browser or fails after a reverse-proxy change, verify that the
   proxy preserves the public `Host` and `X-Forwarded-Proto` values. The callback must return to the

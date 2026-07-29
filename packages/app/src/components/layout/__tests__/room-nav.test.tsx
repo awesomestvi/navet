@@ -210,7 +210,7 @@ describe('RoomNav', () => {
 
   it('collapses overflow rooms into a dropdown when width runs out', async () => {
     mockRoomLayout({
-      containerWidth: 260,
+      containerWidth: 320,
       roomWidths: {
         Home: 72,
         'Living Room': 104,
@@ -237,7 +237,7 @@ describe('RoomNav', () => {
 
   it('keeps the active room visible when it would otherwise overflow', async () => {
     mockRoomLayout({
-      containerWidth: 260,
+      containerWidth: 320,
       roomWidths: {
         Home: 72,
         'Living Room': 104,
@@ -260,6 +260,35 @@ describe('RoomNav', () => {
     expect(screen.getByRole('button', { name: 'Bedroom' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Kitchen' })).not.toBeInTheDocument();
     expect(screen.getByText('+2 rooms')).toBeInTheDocument();
+  });
+
+  it('does not render a duplicate interactive tree just to measure room labels', async () => {
+    mockRoomLayout({
+      containerWidth: 600,
+      roomWidths: {
+        Home: 72,
+        'Living Room': 104,
+        Kitchen: 88,
+        Bedroom: 92,
+      },
+    });
+
+    renderWithProviders(
+      <RoomNav
+        rooms={['Living Room', 'Kitchen', 'Bedroom']}
+        activeRoom="All"
+        onRoomChange={() => undefined}
+        isEditMode={false}
+        onToggleEditMode={() => undefined}
+      />
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Living Room' })).toBeInTheDocument()
+    );
+    expect(screen.getAllByText('Living Room')).toHaveLength(1);
+    expect(screen.getAllByText('Kitchen')).toHaveLength(1);
+    expect(screen.getAllByText('Bedroom')).toHaveLength(1);
   });
 
   it('selects an overflow room from the dropdown', async () => {

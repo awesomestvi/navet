@@ -3,30 +3,114 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const ts = require('typescript');
 const root = process.cwd();
+const stableTypeScriptApi = require('typescript');
+const scannerApi =
+  typeof stableTypeScriptApi.createScanner === 'function'
+    ? stableTypeScriptApi
+    : await import('typescript/unstable/ast');
+const astApi = scannerApi;
+let nativeCompilerApi = null;
+let nativeSnapshot = null;
+let nativeProgram = null;
+
+if (typeof stableTypeScriptApi.createSourceFile !== 'function') {
+  const { API } = await import('typescript/unstable/sync');
+  nativeCompilerApi = new API({ cwd: root });
+  nativeSnapshot = nativeCompilerApi.updateSnapshot({
+    openProjects: [path.join(root, 'tsconfig.json')],
+  });
+  nativeProgram = nativeSnapshot.getProject(path.join(root, 'tsconfig.json'))?.program ?? null;
+  if (!nativeProgram) {
+    nativeSnapshot.dispose();
+    nativeCompilerApi.close();
+    throw new Error('Unable to load the TypeScript project for the i18n checker');
+  }
+}
 const messagesDirectory = path.join(root, 'packages/app/src/i18n/messages');
 const languages = ['en', 'sv', 'de', 'fr', 'es', 'it', 'nl', 'pl', 'pt', 'no', 'da', 'fi', 'zh'];
 const failures = [];
 
+function parseSourceFile(file, source, scriptKind) {
+  if (typeof stableTypeScriptApi.createSourceFile === 'function') {
+    return stableTypeScriptApi.createSourceFile(
+      file,
+      source,
+      stableTypeScriptApi.ScriptTarget.Latest,
+      true,
+      scriptKind
+    );
+  }
+
+  const sourceFile = nativeProgram.getSourceFile(file);
+  if (!sourceFile) {
+    throw new Error(`Unable to parse ${path.relative(root, file)} for i18n validation`);
+  }
+  return sourceFile;
+}
+
+function visitChildren(node, visitor) {
+  if (typeof stableTypeScriptApi.forEachChild === 'function') {
+    stableTypeScriptApi.forEachChild(node, visitor);
+    return;
+  }
+  node.forEachChild(visitor);
+}
+
+function isStringLiteralLike(node) {
+  return typeof astApi.isStringLiteralLike === 'function'
+    ? astApi.isStringLiteralLike(node)
+    : astApi.isStringLiteral(node) || astApi.isNoSubstitutionTemplateLiteral(node);
+}
+
+function createMessageScanner(source) {
+  if (typeof stableTypeScriptApi.createScanner === 'function') {
+    return stableTypeScriptApi.createScanner(
+      stableTypeScriptApi.ScriptTarget.Latest,
+      true,
+      stableTypeScriptApi.LanguageVariant.Standard,
+      source
+    );
+  }
+
+  // TypeScript 7's native package intentionally exposes only version metadata
+  // from its root entry point. Its tokenizer lives in the unstable AST module
+  // and uses the newer scanner signature.
+  return scannerApi.createScanner(true, scannerApi.LanguageVariant.Standard, source);
+}
+
 function parseMessages(language) {
   const file = path.join(messagesDirectory, `${language}.ts`);
   const source = fs.readFileSync(file, 'utf8');
-  const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true);
+  const scanner = createMessageScanner(source);
+  const syntaxKind = scannerApi.SyntaxKind;
+  const endOfFileToken = syntaxKind.EndOfFileToken ?? syntaxKind.EndOfFile;
   const messages = new Map();
+  let token = scanner.scan();
 
-  function visit(node) {
-    if (
-      ts.isPropertyAssignment(node) &&
-      ts.isStringLiteral(node.name) &&
-      ts.isStringLiteralLike(node.initializer)
-    ) {
-      messages.set(node.name.text, node.initializer.text);
+  while (token !== endOfFileToken) {
+    if (token !== syntaxKind.StringLiteral) {
+      token = scanner.scan();
+      continue;
     }
-    ts.forEachChild(node, visit);
+
+    const key = scanner.getTokenValue();
+    const separator = scanner.scan();
+    if (separator !== syntaxKind.ColonToken) {
+      token = separator;
+      continue;
+    }
+
+    const valueToken = scanner.scan();
+    if (
+      valueToken === syntaxKind.StringLiteral ||
+      valueToken === syntaxKind.NoSubstitutionTemplateLiteral
+    ) {
+      messages.set(key, scanner.getTokenValue());
+    }
+    token = scanner.scan();
   }
 
-  visit(sourceFile);
   return messages;
 }
 
@@ -82,14 +166,14 @@ const allowedIdenticalValuesByLanguage = {
     'System', 'Auto', 'Standard', 'Celsius', 'Fahrenheit', 'Routine', 'Version', 'Status',
     'Widgets', 'Details', 'Wind', 'Shuffle', 'Soundbar', 'Sensor', 'Max', 'Live', 'Radio',
     'Administrator', 'Person', 'Widget', 'Info', 'Optional', 'Name', 'Link', 'Normal',
-    'Streams', 'Album', 'Alarm', 'Feeds', 'Orange', 'Neutral', 'Solar', 'Gas',
+    'Streams', 'Album', 'Alarm', 'Feeds', 'Orange', 'Neutral', 'Solar', 'Gas', 'In Navet',
   ]),
   fr: new Set([
     'Interaction', 'Auto', 'Standard', 'Celsius', 'Fahrenheit', 'Routine', 'Action',
     'Suggestions', 'Version', 'Photo', 'Widgets', 'Volume', 'Source', 'Mode', 'Zones',
     'Notifications', 'Important', 'Sections', 'Routines', 'Scripts', 'scripts', 'Total',
     'Sources', 'Radio', 'Conditions', 'Widget', 'Photos', 'pagination', 'Modes', 'charge',
-    'Usage', 'source', 'Menu', 'Destination', 'Attention', 'Album', 'Orange', 'Type',
+    'Usage', 'source', 'Menu', 'Destination', 'Attention', 'Album', 'Orange', 'Type', 'Actions',
   ]),
   es: new Set([
     'Experimental', 'Auto', 'Manual', 'Celsius', 'Fahrenheit', 'Error', 'Total', 'Radio',
@@ -97,7 +181,7 @@ const allowedIdenticalValuesByLanguage = {
   ]),
   it: new Set([
     'Auto', 'Standard', 'Fahrenheit', 'Routine', 'Volume', 'Media', 'Radio', 'Menu',
-    'Eco', 'Album', 'Comfort', 'Relax', 'Gas',
+    'Eco', 'Album', 'Comfort', 'Relax', 'Gas', 'In Navet',
   ]),
   nl: new Set([
     'Week {week}', 'Dashboard', 'Project', 'Celsius', 'Fahrenheit', 'Status', 'Widgets',
@@ -105,7 +189,7 @@ const allowedIdenticalValuesByLanguage = {
     'Later', 'Updates', 'camera', 'Routines', 'Scripts', 'scripts', 'Recent', 'Fans',
     'Radio', 'Script', 'Helper', 'Camera', 'Triggers', 'Stop', 'Open {name}', 'Widget',
     'Info', 'Week', 'Eco', '{count} live', 'Album', 'Alarm', 'Comfort', 'Feeds', 'Gas',
-    'kW import',
+    'kW import', 'In Navet',
   ]),
   pl: new Set([
     'System',
@@ -184,7 +268,8 @@ const skippedPathParts = [
 ];
 const checkedAttributes = new Set(['aria-label', 'title', 'placeholder', 'alt', 'description', 'emptyLabel']);
 const allowedLiteralValues = new Set([
-  'OK', 'kWh', 'kW', 'W', 'Navet', 'awesomestvi', 'OSM', 'CARTO',
+  'OK', 'kWh', 'kW', 'W', 'Navet', 'openHAB', 'Alert', 'Continue', 'Selected', 'Home',
+  'Language', 'Loading', 'awesomestvi', 'OSM', 'CARTO',
   'OpenStreetMap copyright', 'OpenStreetMap contributors', 'CARTO attributions',
 ]);
 
@@ -214,7 +299,7 @@ function isAllowedLiteral(value) {
 
 for (const file of walk(productionRoot).filter(isProductionTsx)) {
   const source = fs.readFileSync(file, 'utf8');
-  const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const sourceFile = parseSourceFile(file, source, astApi.ScriptKind.TSX);
 
   function report(node, kind, value) {
     if (!/[A-Za-z]{2}/.test(value) || isAllowedLiteral(value)) return;
@@ -223,21 +308,21 @@ for (const file of walk(productionRoot).filter(isProductionTsx)) {
   }
 
   function visit(node) {
-    if (ts.isJsxText(node)) report(node, 'JSX text', node.text.trim());
+    if (astApi.isJsxText(node)) report(node, 'JSX text', node.text.trim());
     if (
-      ts.isJsxAttribute(node) &&
+      astApi.isJsxAttribute(node) &&
       checkedAttributes.has(node.name.text) &&
       node.initializer &&
-      ts.isStringLiteral(node.initializer)
+      astApi.isStringLiteral(node.initializer)
     ) {
       report(node, node.name.text, node.initializer.text);
     }
     if (
-      ts.isJsxAttribute(node) &&
+      astApi.isJsxAttribute(node) &&
       checkedAttributes.has(node.name.text) &&
       node.initializer &&
-      ts.isJsxExpression(node.initializer) &&
-      ts.isTemplateExpression(node.initializer.expression)
+      astApi.isJsxExpression(node.initializer) &&
+      astApi.isTemplateExpression(node.initializer.expression)
     ) {
       const expression = node.initializer.expression;
       const staticText = [
@@ -246,7 +331,7 @@ for (const file of walk(productionRoot).filter(isProductionTsx)) {
       ].join('{}');
       report(node, `${node.name.text} template`, staticText.trim());
     }
-    ts.forEachChild(node, visit);
+    visitChildren(node, visit);
   }
 
   visit(sourceFile);
@@ -297,21 +382,19 @@ function isAllowedSemanticValue(value) {
 
 for (const file of walk(productionRoot).filter(isProductionSemanticFile)) {
   const source = fs.readFileSync(file, 'utf8');
-  const sourceFile = ts.createSourceFile(
+  const sourceFile = parseSourceFile(
     file,
     source,
-    ts.ScriptTarget.Latest,
-    true,
-    file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+    file.endsWith('.tsx') ? astApi.ScriptKind.TSX : astApi.ScriptKind.TS
   );
 
   function visit(node) {
-    if (ts.isPropertyAssignment(node)) {
+    if (astApi.isPropertyAssignment(node)) {
       const propertyName =
-        ts.isIdentifier(node.name) || ts.isStringLiteral(node.name) ? node.name.text : '';
+        astApi.isIdentifier(node.name) || astApi.isStringLiteral(node.name) ? node.name.text : '';
       if (
         semanticProperties.has(propertyName) &&
-        ts.isStringLiteralLike(node.initializer) &&
+        isStringLiteralLike(node.initializer) &&
         /[A-Za-z]{2}/.test(node.initializer.text) &&
         !isAllowedSemanticValue(node.initializer.text)
       ) {
@@ -321,11 +404,14 @@ for (const file of walk(productionRoot).filter(isProductionSemanticFile)) {
         );
       }
     }
-    ts.forEachChild(node, visit);
+    visitChildren(node, visit);
   }
 
   visit(sourceFile);
 }
+
+nativeSnapshot?.dispose();
+nativeCompilerApi?.close();
 
 if (failures.length > 0) {
   console.error(`i18n check failed (${failures.length} issue${failures.length === 1 ? '' : 's'}):`);

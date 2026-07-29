@@ -11,11 +11,14 @@ function jsonResponse(payload: unknown) {
   });
 }
 
-function createAuthenticatedSessionFetch() {
+function createAuthenticatedSessionFetch(options?: {
+  expired?: boolean;
+  persistenceStatus?: number;
+}) {
   const authData = {
     hassUrl: HASS_URL,
     clientId: `${window.location.origin}/`,
-    expires: Date.now() + 3_600_000,
+    expires: options?.expired ? Date.now() - 1 : Date.now() + 3_600_000,
     refresh_token: 'refresh-token',
     access_token: 'access-token',
     expires_in: 3600,
@@ -33,12 +36,22 @@ function createAuthenticatedSessionFetch() {
   };
 
   return vi.spyOn(window, 'fetch').mockImplementation(async (input, init) => {
-    const pathname = new URL(String(input), window.location.origin).pathname;
+    const url = new URL(String(input), window.location.origin);
+    const pathname = url.pathname;
+    if (url.origin === HASS_URL && pathname === '/auth/token') {
+      return jsonResponse({
+        access_token: 'refreshed-access-token',
+        expires_in: 3600,
+      });
+    }
     if (pathname === '/__navet_auth__/session/credentials') {
       return jsonResponse(authData);
     }
     if (pathname === '/__navet_auth__/session' && init?.method === 'PUT') {
-      return jsonResponse(metadata);
+      return new Response(JSON.stringify(metadata), {
+        status: options?.persistenceStatus ?? 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
     if (pathname === '/__navet_auth__/session' && !init?.method) {
       return jsonResponse(metadata);
@@ -78,4 +91,38 @@ describe('standalone OAuth with the real Home Assistant auth library', () => {
       expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
     }
   );
+
+  it('shares the real auth-library refresh persistence with the awaited save', async () => {
+    const fetchMock = createAuthenticatedSessionFetch({ expired: true });
+
+    const session = await standaloneOAuthAuth.init();
+    const persistenceCalls = fetchMock.mock.calls.filter(([input, init]) => {
+      const pathname = new URL(String(input), window.location.origin).pathname;
+      return pathname === '/__navet_auth__/session' && init?.method === 'PUT';
+    });
+
+    expect(session?.auth?.accessToken).toBe('refreshed-access-token');
+    expect(persistenceCalls).toHaveLength(1);
+    expect(JSON.parse(String(persistenceCalls[0]?.[1]?.body))).toMatchObject({
+      access_token: 'refreshed-access-token',
+      refresh_token: 'refresh-token',
+    });
+  });
+
+  it('surfaces a shared real-library persistence failure without issuing a second save', async () => {
+    const fetchMock = createAuthenticatedSessionFetch({
+      expired: true,
+      persistenceStatus: 503,
+    });
+
+    await expect(standaloneOAuthAuth.init()).rejects.toThrow(
+      'Unable to restore the Home Assistant session'
+    );
+    expect(
+      fetchMock.mock.calls.filter(([input, init]) => {
+        const pathname = new URL(String(input), window.location.origin).pathname;
+        return pathname === '/__navet_auth__/session' && init?.method === 'PUT';
+      })
+    ).toHaveLength(1);
+  });
 });

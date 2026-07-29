@@ -22,6 +22,7 @@ import { CalendarCard } from '@navet/app/features/calendar/components/calendar-c
 import { ClimateCard } from '@navet/app/features/climate/components/climate-card';
 import { HumidifierCard } from '@navet/app/features/climate/components/humidifier-card';
 import { type CustomCard, DashboardLayout, WidgetCard } from '@navet/app/features/dashboard';
+import { useProgressiveBatching } from '@navet/app/features/dashboard/hooks/use-progressive-batching';
 import { EnergyDashboardPage } from '@navet/app/features/energy/components/dashboard/energy-dashboard-page';
 import { EnergyNowCardView } from '@navet/app/features/energy/components/widgets/energy-now-card-view';
 import {
@@ -65,8 +66,7 @@ import { defaultSettings, useSettingsStore } from '@navet/app/stores/settings-st
 import { useThemeStore } from '@navet/app/stores/theme-store';
 import type { NavetAlarmEntity } from '@navet/core/alarm-types';
 import { Fan, Lightbulb, ShieldCheck, Speaker, Zap } from 'lucide-react';
-import type { CSSProperties, ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { Children, type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import type {
   CameraDevice,
   DeviceWithType,
@@ -879,6 +879,8 @@ function useDemoDisplayDefaults() {
   const [runtimeReady, setRuntimeReady] = useState(false);
 
   useEffect(() => {
+    const detectedEffectsQuality = useSettingsStore.getState().effectsQuality;
+    const reduceEffects = detectedEffectsQuality === 'low';
     useEditModeStore.getState().setEditMode(false);
     useThemeStore.getState().setTheme('dark');
     useThemeStore.getState().setPrimaryColor('orange');
@@ -890,17 +892,18 @@ function useDemoDisplayDefaults() {
       language: 'en',
       temperatureUnit: 'celsius',
       cameraDashboardViewMode: 'snapshot',
-      effectsQuality: 'high',
-      disableAnimations: false,
-      lowPowerMode: false,
+      effectsQuality: detectedEffectsQuality,
+      effectsQualityUserOverride: false,
+      disableAnimations: reduceEffects,
+      lowPowerMode: reduceEffects,
     });
 
     document.documentElement.dataset.theme = 'dark';
     document.documentElement.dataset.navetPreviewRuntime = 'demo';
     document.documentElement.style.setProperty('--navet-accent', '#f97316');
-    document.documentElement.dataset.effectsQuality = 'high';
-    document.documentElement.dataset.lowPower = 'false';
-    document.documentElement.dataset.noAnimation = 'false';
+    document.documentElement.dataset.effectsQuality = detectedEffectsQuality;
+    document.documentElement.dataset.lowPower = reduceEffects ? 'true' : 'false';
+    document.documentElement.dataset.noAnimation = reduceEffects ? 'true' : 'false';
     installPreviewRuntime(getPreviewRuntimeScenario('demo'));
     setRuntimeReady(true);
 
@@ -986,262 +989,281 @@ function DemoSummaryRow() {
 }
 
 function ProductGrid() {
+  const reduceRenderingWork = useSettingsStore(
+    (state) =>
+      state.effectsQuality === 'low' ||
+      state.lowPowerMode === true ||
+      state.disableAnimations === true
+  );
+  const cardElements = (
+    <>
+      <CardSlot size="small">
+        <LightCard
+          id="light.kitchen_island"
+          name="Kitchen island"
+          room="Kitchen"
+          initialState
+          initialBrightness={72}
+          initialTemp={3600}
+          size="small"
+          onSizeChange={noopCardSizeChange}
+          isEditMode={false}
+        />
+      </CardSlot>
+      <CardSlot size="small">
+        <FanCard
+          id="fan.bedroom_ceiling"
+          name="Bedroom fan"
+          room="Bedroom"
+          initialState
+          initialPercentage={66}
+          size="small"
+          onSizeChange={noopCardSizeChange}
+          isEditMode={false}
+        />
+      </CardSlot>
+      <CardSlot size="medium">
+        <ClimateCard
+          id="climate.main_floor"
+          name="Main floor"
+          room="Hallway"
+          initialTemp={22}
+          initialCurrentTemp={21}
+          initialMode="heat"
+          initialAction="heating"
+          initialState
+          size="medium"
+          onSizeChange={noopCardSizeChange}
+          isEditMode={false}
+        />
+      </CardSlot>
+      <CardSlot size="medium">
+        <HumidifierCard
+          id="humidifier.bedroom"
+          name="Bedroom Humidifier"
+          room="Bedroom"
+          entityType="Humidifier"
+          deviceClass="humidifier"
+          initialState
+          initialTargetHumidity={46}
+          minHumidity={30}
+          maxHumidity={70}
+          targetHumidityStep={1}
+          initialMode="auto"
+          availableModes={['auto', 'eco', 'sleep']}
+          size="medium"
+          onSizeChange={noopCardSizeChange}
+          isEditMode={false}
+        />
+      </CardSlot>
+      <CardSlot size="medium">
+        <MediaCard
+          id="media_player.living_room_speaker"
+          name="Living Room Speaker"
+          room="Living Room"
+          title="Morning Mix"
+          artist="Navet Radio"
+          entityType="Speaker"
+          entityPicture={sampleArtworkImage}
+          state="playing"
+          volume={42}
+          isMuted={false}
+          elapsedSeconds={86}
+          durationSeconds={243}
+          positionUpdatedAt={new Date('2026-05-16T12:00:00.000Z').toISOString()}
+          supportsGrouping
+          groupMembers={['Kitchen Speaker']}
+          size="medium"
+          onSizeChange={noopCardSizeChange}
+          isEditMode={false}
+        />
+      </CardSlot>
+      <CardSlot size="medium">
+        <MediaCard
+          id="media_player.living_room_tv"
+          name="Living Room TV"
+          room="Living Room"
+          title="Aerial"
+          artist="Navet Studio"
+          entityType="TV"
+          deviceClass="tv"
+          source="Samsung TV Plus"
+          sourceList={['Samsung TV Plus', 'HDMI 1', 'HDMI 2', 'Apple TV']}
+          state="idle"
+          volume={36}
+          isMuted={false}
+          supportsGrouping={false}
+          groupMembers={[]}
+          size="medium"
+          onSizeChange={noopCardSizeChange}
+          isEditMode={false}
+          simulateTvRemote
+        />
+      </CardSlot>
+      <CardSlot size="small">
+        <CoverCard
+          id="cover.living_room_blind"
+          name="Living Room Blind"
+          room="Living Room"
+          initialPosition={48}
+          initialDeviceClass="blind"
+          size="small"
+          onSizeChange={noopCardSizeChange}
+          isEditMode={false}
+        />
+      </CardSlot>
+      <CardSlot size="small">
+        <LockCard id="lock.front_door" name="Front Door" initialState size="small" />
+      </CardSlot>
+      <CardSlot size="medium">
+        <AlarmPanelCard alarms={demoAlarmEntities} size="medium" />
+      </CardSlot>
+      <CardSlot size="small">
+        <PersonCard
+          id="person.alice"
+          name="Alice"
+          room="Home"
+          location="Home"
+          state="home"
+          size="small"
+          onSizeChange={noopCardSizeChange}
+          isEditMode={false}
+        />
+      </CardSlot>
+      <CardSlot size="large">
+        <WeatherCard
+          id="weather.home"
+          location="Stockholm"
+          temperature={18}
+          feelsLikeTemperature={17}
+          condition="partlycloudy"
+          humidity={58}
+          windSpeed={12}
+          precipitation={0.4}
+          precipitationUnit="mm"
+          sunrise="05:08"
+          sunset="20:51"
+          daylight="15h 43m"
+          rainForecast="Light rain possible later"
+          forecast={forecast}
+          forecastMode="weekly"
+          highTemp={22}
+          lowTemp={13}
+          size="large"
+          onSizeChange={noopCardSizeChange}
+          isEditMode={false}
+        />
+      </CardSlot>
+      <CardSlot size="large">
+        <CalendarCard
+          id="calendar.home"
+          name="Family Calendar"
+          room="Home"
+          events={calendarEvents}
+          inEditMode={false}
+          size="large"
+          onSizeChange={noopCardSizeChange}
+        />
+      </CardSlot>
+      <CardSlot size="medium">
+        <EnergyNowCardView
+          title="Energy now"
+          currentLoadW={842}
+          todayUsageKWh={12.4}
+          trend={energyTrend}
+          accentColor="#f97316"
+          size="medium"
+        />
+      </CardSlot>
+      <CardSlot size="small">
+        <SwitchCard
+          id="switch.desk_power"
+          name="Desk power"
+          initialState
+          size="small"
+          isEditMode={false}
+        />
+      </CardSlot>
+      <CardSlot size="small">
+        <SwitchCard
+          id="input_boolean.guest_mode"
+          name="Guest mode"
+          initialState
+          entityType="helper"
+          serviceDomain="input_boolean"
+          serviceAction="toggle"
+          size="small"
+          isEditMode={false}
+        />
+      </CardSlot>
+      <CardSlot size="small">
+        <SwitchCard
+          id="script.goodnight"
+          name="Goodnight"
+          initialState={false}
+          entityType="script"
+          serviceDomain="script"
+          serviceAction="turn_on"
+          size="small"
+          isEditMode={false}
+        />
+      </CardSlot>
+      <CardSlot size="small">
+        <SceneCard
+          id="scene.movie_mode"
+          name="Movie Mode"
+          room="Living Room"
+          size="small"
+          onSizeChange={noopCardSizeChange}
+          isEditMode={false}
+        />
+      </CardSlot>
+      <CardSlot size="small">
+        <SensorCard
+          id="sensor.living_room_temp"
+          name="Living Room Temperature"
+          room="Living Room"
+          value="22.4"
+          unit="C"
+          icon="thermometer"
+          subtitle="Sensor"
+          size="small"
+          onSizeChange={noopCardSizeChange}
+          isEditMode={false}
+        />
+      </CardSlot>
+      <CardSlot size="medium">
+        <VacuumCard
+          id="vacuum.downstairs"
+          name="Downstairs Vacuum"
+          status="docked"
+          battery={92}
+          cleanedArea="48 m²"
+          cleaningTime="42 min"
+          nextCleaning="Tomorrow"
+          size="medium"
+          onSizeChange={noopCardSizeChange}
+          isEditMode={false}
+        />
+      </CardSlot>
+      {demoHomeWidgets.map((card) => (
+        <DemoWidgetCard key={card.id} card={card} />
+      ))}
+    </>
+  );
+  const cards = Children.toArray(cardElements.props.children);
+  const visibleCardCount = useProgressiveBatching(cards.length, false, {
+    enabled: reduceRenderingWork,
+    initialBatch: 2,
+    batchSize: 1,
+    timeoutFallbackMs: 128,
+  });
+
   return (
     <div className="space-y-4 md:space-y-5">
       <DemoSummaryRow />
       <DashboardGrid>
-        <CardSlot size="small">
-          <LightCard
-            id="light.kitchen_island"
-            name="Kitchen island"
-            room="Kitchen"
-            initialState
-            initialBrightness={72}
-            initialTemp={3600}
-            size="small"
-            onSizeChange={noopCardSizeChange}
-            isEditMode={false}
-          />
-        </CardSlot>
-        <CardSlot size="small">
-          <FanCard
-            id="fan.bedroom_ceiling"
-            name="Bedroom fan"
-            room="Bedroom"
-            initialState
-            initialPercentage={66}
-            size="small"
-            onSizeChange={noopCardSizeChange}
-            isEditMode={false}
-          />
-        </CardSlot>
-        <CardSlot size="medium">
-          <ClimateCard
-            id="climate.main_floor"
-            name="Main floor"
-            room="Hallway"
-            initialTemp={22}
-            initialCurrentTemp={21}
-            initialMode="heat"
-            initialAction="heating"
-            initialState
-            size="medium"
-            onSizeChange={noopCardSizeChange}
-            isEditMode={false}
-          />
-        </CardSlot>
-        <CardSlot size="medium">
-          <HumidifierCard
-            id="humidifier.bedroom"
-            name="Bedroom Humidifier"
-            room="Bedroom"
-            entityType="Humidifier"
-            deviceClass="humidifier"
-            initialState
-            initialTargetHumidity={46}
-            minHumidity={30}
-            maxHumidity={70}
-            targetHumidityStep={1}
-            initialMode="auto"
-            availableModes={['auto', 'eco', 'sleep']}
-            size="medium"
-            onSizeChange={noopCardSizeChange}
-            isEditMode={false}
-          />
-        </CardSlot>
-        <CardSlot size="medium">
-          <MediaCard
-            id="media_player.living_room_speaker"
-            name="Living Room Speaker"
-            room="Living Room"
-            title="Morning Mix"
-            artist="Navet Radio"
-            entityType="Speaker"
-            entityPicture={sampleArtworkImage}
-            state="playing"
-            volume={42}
-            isMuted={false}
-            elapsedSeconds={86}
-            durationSeconds={243}
-            positionUpdatedAt={new Date('2026-05-16T12:00:00.000Z').toISOString()}
-            supportsGrouping
-            groupMembers={['Kitchen Speaker']}
-            size="medium"
-            onSizeChange={noopCardSizeChange}
-            isEditMode={false}
-          />
-        </CardSlot>
-        <CardSlot size="medium">
-          <MediaCard
-            id="media_player.living_room_tv"
-            name="Living Room TV"
-            room="Living Room"
-            title="Aerial"
-            artist="Navet Studio"
-            entityType="TV"
-            deviceClass="tv"
-            source="Samsung TV Plus"
-            sourceList={['Samsung TV Plus', 'HDMI 1', 'HDMI 2', 'Apple TV']}
-            state="idle"
-            volume={36}
-            isMuted={false}
-            supportsGrouping={false}
-            groupMembers={[]}
-            size="medium"
-            onSizeChange={noopCardSizeChange}
-            isEditMode={false}
-            simulateTvRemote
-          />
-        </CardSlot>
-        <CardSlot size="small">
-          <CoverCard
-            id="cover.living_room_blind"
-            name="Living Room Blind"
-            room="Living Room"
-            initialPosition={48}
-            initialDeviceClass="blind"
-            size="small"
-            onSizeChange={noopCardSizeChange}
-            isEditMode={false}
-          />
-        </CardSlot>
-        <CardSlot size="small">
-          <LockCard id="lock.front_door" name="Front Door" initialState size="small" />
-        </CardSlot>
-        <CardSlot size="medium">
-          <AlarmPanelCard alarms={demoAlarmEntities} size="medium" />
-        </CardSlot>
-        <CardSlot size="small">
-          <PersonCard
-            id="person.alice"
-            name="Alice"
-            room="Home"
-            location="Home"
-            state="home"
-            size="small"
-            onSizeChange={noopCardSizeChange}
-            isEditMode={false}
-          />
-        </CardSlot>
-        <CardSlot size="large">
-          <WeatherCard
-            id="weather.home"
-            location="Stockholm"
-            temperature={18}
-            feelsLikeTemperature={17}
-            condition="partlycloudy"
-            humidity={58}
-            windSpeed={12}
-            precipitation={0.4}
-            precipitationUnit="mm"
-            sunrise="05:08"
-            sunset="20:51"
-            daylight="15h 43m"
-            rainForecast="Light rain possible later"
-            forecast={forecast}
-            forecastMode="weekly"
-            highTemp={22}
-            lowTemp={13}
-            size="large"
-            onSizeChange={noopCardSizeChange}
-            isEditMode={false}
-          />
-        </CardSlot>
-        <CardSlot size="large">
-          <CalendarCard
-            id="calendar.home"
-            name="Family Calendar"
-            room="Home"
-            events={calendarEvents}
-            inEditMode={false}
-            size="large"
-            onSizeChange={noopCardSizeChange}
-          />
-        </CardSlot>
-        <CardSlot size="medium">
-          <EnergyNowCardView
-            title="Energy now"
-            currentLoadW={842}
-            todayUsageKWh={12.4}
-            trend={energyTrend}
-            accentColor="#f97316"
-            size="medium"
-          />
-        </CardSlot>
-        <CardSlot size="small">
-          <SwitchCard
-            id="switch.desk_power"
-            name="Desk power"
-            initialState
-            size="small"
-            isEditMode={false}
-          />
-        </CardSlot>
-        <CardSlot size="small">
-          <SwitchCard
-            id="input_boolean.guest_mode"
-            name="Guest mode"
-            initialState
-            entityType="helper"
-            serviceDomain="input_boolean"
-            serviceAction="toggle"
-            size="small"
-            isEditMode={false}
-          />
-        </CardSlot>
-        <CardSlot size="small">
-          <SwitchCard
-            id="script.goodnight"
-            name="Goodnight"
-            initialState={false}
-            entityType="script"
-            serviceDomain="script"
-            serviceAction="turn_on"
-            size="small"
-            isEditMode={false}
-          />
-        </CardSlot>
-        <CardSlot size="small">
-          <SceneCard
-            id="scene.movie_mode"
-            name="Movie Mode"
-            room="Living Room"
-            size="small"
-            onSizeChange={noopCardSizeChange}
-            isEditMode={false}
-          />
-        </CardSlot>
-        <CardSlot size="small">
-          <SensorCard
-            id="sensor.living_room_temp"
-            name="Living Room Temperature"
-            room="Living Room"
-            value="22.4"
-            unit="C"
-            icon="thermometer"
-            subtitle="Sensor"
-            size="small"
-            onSizeChange={noopCardSizeChange}
-            isEditMode={false}
-          />
-        </CardSlot>
-        <CardSlot size="medium">
-          <VacuumCard
-            id="vacuum.downstairs"
-            name="Downstairs Vacuum"
-            status="docked"
-            battery={92}
-            cleanedArea="48 m²"
-            cleaningTime="42 min"
-            nextCleaning="Tomorrow"
-            size="medium"
-            onSizeChange={noopCardSizeChange}
-            isEditMode={false}
-          />
-        </CardSlot>
-        {demoHomeWidgets.map((card) => (
-          <DemoWidgetCard key={card.id} card={card} />
-        ))}
+        {reduceRenderingWork ? cards.slice(0, visibleCardCount) : cards}
       </DashboardGrid>
     </div>
   );

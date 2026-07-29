@@ -17,7 +17,7 @@ const profile: DashboardConfigPayload = {
 
 describe('dashboard profile base cache', () => {
   beforeEach(() => {
-    localStorage.clear();
+    clearDashboardProfileBase();
   });
 
   it('round-trips the last common server revision', () => {
@@ -35,6 +35,22 @@ describe('dashboard profile base cache', () => {
 
     clearDashboardProfileBase();
     expect(readDashboardProfileBase()).toBeNull();
+  });
+
+  it('ignores and removes legacy persisted cross-tab merge bases', () => {
+    const persistedBase = JSON.stringify({
+      profile,
+      profileId: 'default',
+      revision: 9,
+      savedAt: '2026-07-25T08:00:00.000Z',
+      workspaceId: 'workspace_1',
+    });
+    localStorage.setItem('navet-dashboard-profile-base', persistedBase);
+    sessionStorage.setItem('navet-dashboard-profile-base', persistedBase);
+
+    expect(readDashboardProfileBase()).toBeNull();
+    expect(localStorage.getItem('navet-dashboard-profile-base')).toBeNull();
+    expect(sessionStorage.getItem('navet-dashboard-profile-base')).toBeNull();
   });
 
   it('rejects unsafe workspace metadata', () => {

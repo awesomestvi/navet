@@ -4,6 +4,7 @@ import { resolveAddonLocalEndpointUrl } from '@navet/app/utils/home-assistant-co
 import {
   DASHBOARD_PROFILE_CONTRACT_VERSION,
   DASHBOARD_PROFILE_ENDPOINTS,
+  DASHBOARD_PROFILE_ERROR_CODES,
   DASHBOARD_PROFILE_HEADERS,
   DASHBOARD_PROFILE_ID,
   type DashboardClientRegistryResponse,
@@ -12,6 +13,7 @@ import {
   type DashboardProfileAuthor,
   type DashboardProfileClient,
   type DashboardProfileDocument,
+  type DashboardProfileErrorCode,
   type DashboardProfileHistoryResponse,
   type DashboardProfilePatchOperation,
   type DashboardProfileRecovery,
@@ -28,6 +30,7 @@ export interface DashboardProfileLoadOptions {
 export interface DashboardProfileLoadResult {
   available: boolean;
   unauthorized: boolean;
+  failureCode: DashboardProfileErrorCode | null;
   profile: DashboardConfigPayload | null;
   notModified: boolean;
   etag: string | null;
@@ -54,6 +57,7 @@ export interface DashboardProfileSaveOptions extends DashboardProfileWriteOption
 export interface DashboardProfileWriteResult {
   saved: boolean;
   unauthorized: boolean;
+  failureCode: DashboardProfileErrorCode | null;
   permanentFailure: boolean;
   preconditionFailed: boolean;
   preconditionRequired: boolean;
@@ -71,6 +75,7 @@ export interface DashboardProfileSaveResult extends DashboardProfileWriteResult 
 export interface DashboardProfileResetResult {
   reset: boolean;
   unauthorized: boolean;
+  failureCode: DashboardProfileErrorCode | null;
   permanentFailure: boolean;
   preconditionFailed: boolean;
   preconditionRequired: boolean;
@@ -82,12 +87,14 @@ export interface DashboardProfileResetResult {
 export interface DashboardPreferenceLoadResult<TValues extends object = Record<string, unknown>> {
   available: boolean;
   unauthorized: boolean;
+  failureCode: DashboardProfileErrorCode | null;
   document: DashboardPreferenceDocument<TValues> | null;
 }
 
 export interface DashboardPreferenceWriteResult<TValues extends object = Record<string, unknown>> {
   saved: boolean;
   unauthorized: boolean;
+  failureCode: DashboardProfileErrorCode | null;
   permanentFailure: boolean;
   preconditionFailed: boolean;
   preconditionRequired: boolean;
@@ -98,6 +105,12 @@ export interface DashboardPreferenceOptions {
   author?: DashboardProfileClient;
   baseRevision?: number;
   client?: DashboardProfileClient;
+  keepalive?: boolean;
+}
+
+export interface DashboardClientTouchResult {
+  failureCode: DashboardProfileErrorCode | null;
+  registry: DashboardClientRegistryResponse | null;
 }
 
 const EMPTY_RECOVERY: DashboardProfileRecovery = {
@@ -110,6 +123,7 @@ function unavailableLoadResult(): DashboardProfileLoadResult {
   return {
     available: false,
     unauthorized: false,
+    failureCode: null,
     profile: null,
     notModified: false,
     etag: null,
@@ -126,6 +140,7 @@ function unavailableWriteResult(): DashboardProfileWriteResult {
   return {
     saved: false,
     unauthorized: false,
+    failureCode: null,
     permanentFailure: true,
     preconditionFailed: false,
     preconditionRequired: false,
@@ -140,7 +155,24 @@ function unavailableWriteResult(): DashboardProfileWriteResult {
 }
 
 function isPermanentProfileFailure(status: number): boolean {
-  return status === 400 || status === 404 || status === 405 || status === 413 || status === 422;
+  return (
+    status === 400 ||
+    status === 403 ||
+    status === 404 ||
+    status === 405 ||
+    status === 413 ||
+    status === 422
+  );
+}
+
+function readProfileErrorCode(response: Response): DashboardProfileErrorCode | null {
+  const code = response.headers.get(DASHBOARD_PROFILE_HEADERS.errorCode);
+  return code === DASHBOARD_PROFILE_ERROR_CODES.workspaceTenantMismatch ||
+    code === DASHBOARD_PROFILE_ERROR_CODES.clientBindingMismatch ||
+    code === DASHBOARD_PROFILE_ERROR_CODES.clientCapacityReached ||
+    code === DASHBOARD_PROFILE_ERROR_CODES.profileStorageUnavailable
+    ? code
+    : null;
 }
 
 function readIntegerHeader(response: Response, name: string): number | null {
@@ -328,10 +360,17 @@ export async function loadDashboardProfile(
     );
     const metadata = readResponseMetadata(response);
 
-    if (response.status === 401 || response.status === 403) {
+    if (response.status === 401) {
       return {
         ...unavailableLoadResult(),
         unauthorized: true,
+        recovery: metadata.recovery,
+      };
+    }
+    if (response.status === 403) {
+      return {
+        ...unavailableLoadResult(),
+        failureCode: readProfileErrorCode(response),
         recovery: metadata.recovery,
       };
     }
@@ -339,6 +378,7 @@ export async function loadDashboardProfile(
       return {
         available: true,
         unauthorized: false,
+        failureCode: null,
         profile: null,
         notModified: true,
         ...metadata,
@@ -348,6 +388,7 @@ export async function loadDashboardProfile(
       return {
         available: response.status !== 404,
         unauthorized: false,
+        failureCode: null,
         profile: null,
         notModified: false,
         ...metadata,
@@ -365,6 +406,7 @@ export async function loadDashboardProfile(
     return {
       available: true,
       unauthorized: false,
+      failureCode: null,
       profile: profile as DashboardConfigPayload,
       notModified: false,
       ...metadata,
@@ -419,7 +461,8 @@ async function writeDashboardProfile(
 
     return {
       saved: response.ok,
-      unauthorized: response.status === 401 || response.status === 403,
+      unauthorized: response.status === 401,
+      failureCode: readProfileErrorCode(response),
       permanentFailure: isPermanentProfileFailure(response.status),
       preconditionFailed: response.status === 412,
       preconditionRequired: response.status === 428,
@@ -452,6 +495,7 @@ export async function deleteDashboardProfile(
     return {
       reset: false,
       unauthorized: false,
+      failureCode: null,
       permanentFailure: true,
       preconditionFailed: false,
       preconditionRequired: false,
@@ -477,7 +521,8 @@ export async function deleteDashboardProfile(
 
     return {
       reset: response.ok,
-      unauthorized: response.status === 401 || response.status === 403,
+      unauthorized: response.status === 401,
+      failureCode: readProfileErrorCode(response),
       permanentFailure: isPermanentProfileFailure(response.status),
       preconditionFailed: response.status === 412,
       preconditionRequired: response.status === 428,
@@ -490,6 +535,7 @@ export async function deleteDashboardProfile(
     return {
       reset: false,
       unauthorized: false,
+      failureCode: null,
       permanentFailure: false,
       preconditionFailed: false,
       preconditionRequired: false,
@@ -562,7 +608,8 @@ export async function restoreDashboardProfileRevision(
     const metadata = readResponseMetadata(response);
     return {
       saved: response.ok,
-      unauthorized: response.status === 401 || response.status === 403,
+      unauthorized: response.status === 401,
+      failureCode: readProfileErrorCode(response),
       permanentFailure: isPermanentProfileFailure(response.status),
       preconditionFailed: response.status === 412,
       preconditionRequired: response.status === 428,
@@ -585,7 +632,7 @@ export async function loadDashboardPreferences<TValues extends object = Record<s
   options: Pick<DashboardPreferenceOptions, 'author' | 'client'> = {}
 ): Promise<DashboardPreferenceLoadResult<TValues>> {
   if (isHomeAssistantPanelMode()) {
-    return { available: false, unauthorized: false, document: null };
+    return { available: false, unauthorized: false, failureCode: null, document: null };
   }
 
   const headers = new Headers();
@@ -595,12 +642,13 @@ export async function loadDashboardPreferences<TValues extends object = Record<s
     { headers }
   );
   if (!result) {
-    return { available: false, unauthorized: false, document: null };
+    return { available: false, unauthorized: false, failureCode: null, document: null };
   }
 
   return {
     available: result.response.ok || result.response.status === 204,
-    unauthorized: result.response.status === 401 || result.response.status === 403,
+    unauthorized: result.response.status === 401,
+    failureCode: readProfileErrorCode(result.response),
     document: result.response.ok ? result.body : null,
   };
 }
@@ -618,6 +666,7 @@ export async function saveDashboardPreferences<TValues extends object = Record<s
     return {
       saved: false,
       unauthorized: false,
+      failureCode: null,
       permanentFailure: true,
       preconditionFailed: false,
       preconditionRequired: false,
@@ -644,6 +693,7 @@ export async function saveDashboardPreferences<TValues extends object = Record<s
     {
       method: 'PUT',
       headers,
+      keepalive: options.keepalive,
       body: JSON.stringify({ schemaVersion: options.schemaVersion, values }),
     }
   );
@@ -651,6 +701,7 @@ export async function saveDashboardPreferences<TValues extends object = Record<s
     return {
       saved: false,
       unauthorized: false,
+      failureCode: null,
       permanentFailure: false,
       preconditionFailed: false,
       preconditionRequired: false,
@@ -660,7 +711,8 @@ export async function saveDashboardPreferences<TValues extends object = Record<s
 
   return {
     saved: result.response.ok,
-    unauthorized: result.response.status === 401 || result.response.status === 403,
+    unauthorized: result.response.status === 401,
+    failureCode: readProfileErrorCode(result.response),
     permanentFailure: isPermanentProfileFailure(result.response.status),
     preconditionFailed: result.response.status === 412,
     preconditionRequired: result.response.status === 428,
@@ -683,6 +735,12 @@ export async function listDashboardClients(
 export async function touchDashboardClient(
   client: DashboardProfileClient
 ): Promise<DashboardClientRegistryResponse | null> {
+  return (await touchDashboardClientWithStatus(client)).registry;
+}
+
+export async function touchDashboardClientWithStatus(
+  client: DashboardProfileClient
+): Promise<DashboardClientTouchResult> {
   const headers = new Headers();
   headers.set('Content-Type', 'application/json');
   applyClientHeaders(headers, client);
@@ -690,13 +748,21 @@ export async function touchDashboardClient(
     DASHBOARD_PROFILE_ENDPOINTS.clients,
     { method: 'PUT', headers, body: '{}' }
   );
-  return result?.response.ok ? result.body : null;
+  return {
+    failureCode: result ? readProfileErrorCode(result.response) : null,
+    registry: result?.response.ok ? result.body : null,
+  };
 }
 
-export async function forgetDashboardClient(clientId: string): Promise<boolean> {
+export async function forgetDashboardClient(
+  clientId: string,
+  client: DashboardProfileClient
+): Promise<boolean> {
+  const headers = new Headers();
+  applyClientHeaders(headers, client);
   const result = await fetchProfileJson<Record<string, unknown>>(
     `${DASHBOARD_PROFILE_ENDPOINTS.clients}/${encodeURIComponent(clientId)}`,
-    { method: 'DELETE' }
+    { method: 'DELETE', headers }
   );
   return result?.response.ok ?? false;
 }

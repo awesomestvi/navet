@@ -62,6 +62,7 @@ export function PhotoFrameWidget({
   const { roomValue, roomLabel, roomOptions } = useDashboardWidgetRoomOptions(room, rooms);
   const isCompact = isCompactCardSize(size);
   const { ref: viewportRef, isVisible } = useDeferredVisibility<HTMLDivElement>({
+    freezeOnceVisible: false,
     initiallyVisible: false,
     rootMargin: '180px 0px',
   });

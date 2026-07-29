@@ -9,14 +9,41 @@ DASHBOARD_CONFIG_URL="$(bashio::config 'dashboard_config_url')"
 HOMEY_CLIENT_ID="$(bashio::config 'homey_client_id')"
 HOMEY_CLIENT_SECRET="$(bashio::config 'homey_client_secret')"
 HOMEY_REDIRECT_URI="$(bashio::config 'homey_redirect_uri')"
+ALLOW_INSECURE_PROVIDER_TLS="$(bashio::config 'allow_insecure_provider_tls')"
 RESOLVED_HASS_PROXY_BASE="http://supervisor/core"
 
 mkdir -p /data
 chown nginx:nginx /data 2>/dev/null || true
 
+RESOLVER_ADDRESSES="$(
+  awk '
+    $1 == "nameserver" && $2 ~ /^[0-9A-Fa-f:.]+$/ {
+      if (index($2, ":") > 0) {
+        printf "[%s] ", $2
+      } else {
+        printf "%s ", $2
+      }
+    }
+  ' /etc/resolv.conf
+)"
+if [[ -z "${RESOLVER_ADDRESSES}" ]]; then
+  echo "No usable runtime DNS resolver found in /etc/resolv.conf" >&2
+  exit 1
+fi
+printf 'resolver %svalid=30s ipv6=off;\n' "${RESOLVER_ADDRESSES}" \
+  > /etc/nginx/resolver.conf
+
+PROVIDER_TLS_VERIFY=on
+if [[ "${ALLOW_INSECURE_PROVIDER_TLS}" == "true" ]]; then
+  PROVIDER_TLS_VERIFY=off
+  echo "WARNING: provider TLS certificate verification is explicitly disabled" >&2
+fi
+
 export NAVET_HOMEY_CLIENT_ID="${HOMEY_CLIENT_ID}"
 export NAVET_HOMEY_CLIENT_SECRET="${HOMEY_CLIENT_SECRET}"
 export NAVET_HOMEY_REDIRECT_URI="${HOMEY_REDIRECT_URI}"
+export NAVET_ALLOW_INSECURE_PROVIDER_TLS="${ALLOW_INSECURE_PROVIDER_TLS}"
+export NAVET_TRUST_HOME_ASSISTANT_INGRESS="true"
 
 if [[ "${DASHBOARD_CONFIG_URL}" == *\"* || "${DASHBOARD_CONFIG_URL}" == *\'* || "${DASHBOARD_CONFIG_URL}" == *";"* ]]; then
   echo "dashboard_config_url must not contain quotes or semicolons" >&2
@@ -42,6 +69,8 @@ cat > "${NGINX_CONF}" <<EOF
 server {
   listen 8099;
   server_name _;
+  allow 172.30.32.2;
+  deny all;
 
   root /usr/share/nginx/html;
   index index.html;
@@ -50,8 +79,12 @@ server {
   include /etc/nginx/snippets/navet-homey-store.conf;
   include /etc/nginx/snippets/navet-openhab-store.conf;
   include /etc/nginx/snippets/navet-profile-store-ingress.conf;
+  js_set \$navet_provider_proxy_request_allowed navet_homey_proxy.request_allowed;
 
   location /__navet_ha_proxy__/ {
+    if (\$navet_provider_proxy_request_allowed = "") {
+      return 403;
+    }
     if (\$uri ~ "\.\.") {
       return 400;
     }
@@ -64,25 +97,58 @@ server {
     proxy_set_header X-Forwarded-Proto "";
     proxy_set_header X-Real-IP "";
     proxy_set_header Cookie "";
+    proxy_set_header X-Navet-Installation-Key "";
     proxy_set_header Upgrade \$http_upgrade;
     proxy_set_header Connection "upgrade";
+    proxy_ignore_headers X-Accel-Redirect X-Accel-Expires X-Accel-Buffering X-Accel-Charset X-Accel-Limit-Rate Set-Cookie;
+    proxy_hide_header Set-Cookie;
+    proxy_hide_header Location;
+    proxy_hide_header WWW-Authenticate;
+    proxy_hide_header X-Accel-Redirect;
+    proxy_hide_header Access-Control-Allow-Origin;
+    proxy_hide_header Access-Control-Allow-Credentials;
+    proxy_hide_header Access-Control-Allow-Headers;
+    proxy_hide_header Access-Control-Allow-Methods;
+    proxy_hide_header Access-Control-Expose-Headers;
+    proxy_hide_header Access-Control-Max-Age;
     proxy_read_timeout 3600s;
     proxy_send_timeout 3600s;
 ${PROXY_AUTH_DIRECTIVE}
   }
 
   location /__navet_homey_proxy__/ {
+    include /etc/nginx/snippets/navet-security-headers.conf;
+    if (\$navet_provider_proxy_request_allowed = "") {
+      return 403;
+    }
     if (\$uri ~ "\.\.") {
       return 400;
     }
     js_set \$navet_homey_proxy_url navet_homey_proxy.upstream_url;
     js_set \$navet_homey_proxy_auth_header navet_homey_proxy.authorization_header;
+    js_set \$navet_homey_session_cookie navet_homey_store.touchSessionCookie;
 
     if (\$navet_homey_proxy_url = "") {
       return 502;
     }
 
+    add_header Set-Cookie \$navet_homey_session_cookie always;
     proxy_pass \$navet_homey_proxy_url;
+    proxy_ssl_server_name on;
+    proxy_ssl_name \$proxy_host;
+    proxy_ssl_verify ${PROVIDER_TLS_VERIFY};
+    proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+    proxy_ignore_headers X-Accel-Redirect X-Accel-Expires X-Accel-Buffering X-Accel-Charset X-Accel-Limit-Rate Set-Cookie;
+    proxy_hide_header Set-Cookie;
+    proxy_hide_header Location;
+    proxy_hide_header WWW-Authenticate;
+    proxy_hide_header X-Accel-Redirect;
+    proxy_hide_header Access-Control-Allow-Origin;
+    proxy_hide_header Access-Control-Allow-Credentials;
+    proxy_hide_header Access-Control-Allow-Headers;
+    proxy_hide_header Access-Control-Allow-Methods;
+    proxy_hide_header Access-Control-Expose-Headers;
+    proxy_hide_header Access-Control-Max-Age;
     proxy_http_version 1.1;
     proxy_set_header Host \$proxy_host;
     proxy_set_header Forwarded "";
@@ -90,6 +156,8 @@ ${PROXY_AUTH_DIRECTIVE}
     proxy_set_header X-Forwarded-Host "";
     proxy_set_header X-Forwarded-Proto "";
     proxy_set_header X-Real-IP "";
+    proxy_set_header Cookie "";
+    proxy_set_header X-Navet-Installation-Key "";
     proxy_set_header Authorization \$navet_homey_proxy_auth_header;
     proxy_set_header Upgrade \$http_upgrade;
     proxy_set_header Connection "upgrade";
@@ -97,19 +165,34 @@ ${PROXY_AUTH_DIRECTIVE}
     proxy_send_timeout 3600s;
   }
 
-  location /__navet_openhab_proxy__/ {
-    if (\$uri ~ "\.\.") {
-      return 400;
-    }
+  location = /__navet_openhab_proxy__/ws {
+    include /etc/nginx/snippets/navet-security-headers.conf;
     js_set \$navet_openhab_proxy_url navet_openhab_proxy.upstream_url;
     js_set \$navet_openhab_proxy_auth_header navet_openhab_proxy.authorization_header;
+    js_set \$navet_openhab_session_cookie navet_openhab_store.touchSessionCookie;
 
     if (\$navet_openhab_proxy_url = "") {
       return 502;
     }
 
     add_header Cache-Control "no-store" always;
+    add_header Set-Cookie \$navet_openhab_session_cookie always;
     proxy_pass \$navet_openhab_proxy_url;
+    proxy_ssl_server_name on;
+    proxy_ssl_name \$proxy_host;
+    proxy_ssl_verify ${PROVIDER_TLS_VERIFY};
+    proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+    proxy_ignore_headers X-Accel-Redirect X-Accel-Expires X-Accel-Buffering X-Accel-Charset X-Accel-Limit-Rate Set-Cookie;
+    proxy_hide_header Set-Cookie;
+    proxy_hide_header Location;
+    proxy_hide_header WWW-Authenticate;
+    proxy_hide_header X-Accel-Redirect;
+    proxy_hide_header Access-Control-Allow-Origin;
+    proxy_hide_header Access-Control-Allow-Credentials;
+    proxy_hide_header Access-Control-Allow-Headers;
+    proxy_hide_header Access-Control-Allow-Methods;
+    proxy_hide_header Access-Control-Expose-Headers;
+    proxy_hide_header Access-Control-Max-Age;
     proxy_http_version 1.1;
     proxy_set_header Host \$proxy_host;
     proxy_set_header Forwarded "";
@@ -117,6 +200,8 @@ ${PROXY_AUTH_DIRECTIVE}
     proxy_set_header X-Forwarded-Host "";
     proxy_set_header X-Forwarded-Proto "";
     proxy_set_header X-Real-IP "";
+    proxy_set_header Cookie "";
+    proxy_set_header X-Navet-Installation-Key "";
     proxy_set_header Authorization \$navet_openhab_proxy_auth_header;
     proxy_set_header Upgrade \$http_upgrade;
     proxy_set_header Connection "upgrade";
@@ -124,9 +209,57 @@ ${PROXY_AUTH_DIRECTIVE}
     proxy_send_timeout 3600s;
   }
 
+  location /__navet_openhab_proxy__/ {
+    include /etc/nginx/snippets/navet-security-headers.conf;
+    if (\$uri ~ "\.\.") {
+      return 400;
+    }
+    js_set \$navet_openhab_proxy_url navet_openhab_proxy.upstream_url;
+    js_set \$navet_openhab_proxy_auth_header navet_openhab_proxy.authorization_header;
+    js_set \$navet_openhab_session_cookie navet_openhab_store.touchSessionCookie;
+
+    if (\$navet_openhab_proxy_url = "") {
+      return 502;
+    }
+
+    add_header Cache-Control "no-store" always;
+    add_header Set-Cookie \$navet_openhab_session_cookie always;
+    proxy_pass \$navet_openhab_proxy_url;
+    proxy_ssl_server_name on;
+    proxy_ssl_name \$proxy_host;
+    proxy_ssl_verify ${PROVIDER_TLS_VERIFY};
+    proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+    proxy_ignore_headers X-Accel-Redirect X-Accel-Expires X-Accel-Buffering X-Accel-Charset X-Accel-Limit-Rate Set-Cookie;
+    proxy_hide_header Set-Cookie;
+    proxy_hide_header Location;
+    proxy_hide_header WWW-Authenticate;
+    proxy_hide_header X-Accel-Redirect;
+    proxy_hide_header Access-Control-Allow-Origin;
+    proxy_hide_header Access-Control-Allow-Credentials;
+    proxy_hide_header Access-Control-Allow-Headers;
+    proxy_hide_header Access-Control-Allow-Methods;
+    proxy_hide_header Access-Control-Expose-Headers;
+    proxy_hide_header Access-Control-Max-Age;
+    proxy_http_version 1.1;
+    proxy_set_header Host \$proxy_host;
+    proxy_set_header Forwarded "";
+    proxy_set_header X-Forwarded-For "";
+    proxy_set_header X-Forwarded-Host "";
+    proxy_set_header X-Forwarded-Proto "";
+    proxy_set_header X-Real-IP "";
+    proxy_set_header Cookie "";
+    proxy_set_header X-Navet-Installation-Key "";
+    proxy_set_header Authorization \$navet_openhab_proxy_auth_header;
+    proxy_set_header Upgrade "";
+    proxy_set_header Connection "";
+    proxy_read_timeout 60s;
+    proxy_send_timeout 60s;
+  }
+
   include /etc/nginx/snippets/navet-rss-proxy.conf;
 
   location = /config.js {
+    include /etc/nginx/snippets/navet-security-headers.conf;
     add_header Cache-Control "no-store";
     try_files \$uri =404;
   }
@@ -140,6 +273,7 @@ ${PROXY_AUTH_DIRECTIVE}
   }
 
   location / {
+    include /etc/nginx/snippets/navet-security-headers.conf;
     sub_filter '<head>' '<head><base href="\$http_x_ingress_path/">';
     sub_filter '<link rel="manifest" href="' '<link rel="x-navet-disabled-manifest" href="';
     sub_filter_once on;

@@ -61,6 +61,12 @@ accent colors plus a custom accent, built-in and uploaded wallpapers, optional r
 adaptive effects that reduce expensive rendering on weaker hardware. The interface ships with
 English, German, Spanish, French, Italian, Portuguese, Swedish, and Chinese message catalogs.
 
+With visual quality set to **Auto**, ARM Linux browsers such as Raspberry Pi OS start in the
+low-cost rendering tier. Navet removes animated transitions, backdrop and filter effects, large
+shadows, ambient layers, and other compositor-heavy decoration while keeping controls and
+information intact. The setting is device-owned, so a wall panel can stay on **Low** without
+reducing visual quality on another signed-in phone or computer.
+
 Custom sidebar extensions can open links in an embedded Navet page and attach up to five quick
 actions. Provider notifications and available update/restart actions appear in the app's
 notification surface when the active provider registers those services. Navet is installable as a

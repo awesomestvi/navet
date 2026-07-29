@@ -5,7 +5,7 @@ declare module '@docker/njs/auth-store.js' {
     requestText?: string;
     args?: Record<string, string>;
     headersIn?: Record<string, string | undefined>;
-    headersOut: Record<string, string>;
+    headersOut: Record<string, string | string[]>;
     variables?: Record<string, string>;
     return: (status: number, body?: string) => void;
   }
@@ -38,6 +38,7 @@ declare module '@docker/njs/auth-store.js' {
   interface AuthenticatedPrincipal {
     providerId: string;
     source: 'home_assistant_ingress' | 'standalone_session';
+    tenantId: string;
     sessionId: string;
     userId: string | null;
     userName: string | null;
@@ -46,6 +47,7 @@ declare module '@docker/njs/auth-store.js' {
   interface AuthSessionStore {
     getRequestSession(request: NjsAuthRequest): AuthSessionContext | null;
     handle(request: NjsAuthRequest): Promise<void>;
+    readSession(cookieId: string): AuthSession | null;
     resolveAuthenticatedPrincipal(
       request: NjsAuthRequest,
       options?: { trustIngressHeaders?: boolean }
@@ -58,12 +60,26 @@ declare module '@docker/njs/auth-store.js' {
     sessionsDirectory: string;
     legacyAuthPath: string;
     fetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+    installationAuthority?: {
+      authorizeHomeAssistant(
+        request: NjsAuthRequest,
+        target: string,
+        normalizeTarget: (value: unknown) => string
+      ): { allowed: boolean; pairingVerified: boolean };
+      commitHomeAssistant(
+        target: string,
+        normalizeTarget: (value: unknown) => string,
+        pairingVerified: boolean
+      ): boolean;
+    };
   }
 
   interface AuthStoreModule {
     AUTH_BINDING_HEADER: string;
     AUTH_COOKIE_NAME: string;
     createAuthSessionStore(options: CreateAuthSessionStoreOptions): AuthSessionStore;
+    createHomeAssistantTenantId(hassUrl: string): string;
+    normalizeHassOrigin(hassUrl: string): string;
   }
 
   const authStore: AuthStoreModule;
@@ -80,6 +96,7 @@ declare module '@docker/njs/ha-proxy.template.js' {
 
   interface HomeAssistantProxy {
     authorization_header(request: HomeAssistantProxyRequest): string;
+    request_allowed(request: HomeAssistantProxyRequest): string;
     upstream_url(request: HomeAssistantProxyRequest): string;
     websocket_url(request: HomeAssistantProxyRequest): string;
   }
