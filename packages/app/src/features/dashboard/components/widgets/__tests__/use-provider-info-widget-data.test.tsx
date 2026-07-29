@@ -1,6 +1,7 @@
 import { createEmptyDeviceCollection } from '@navet/app/core/navet-device-collections';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { renderHookWithProviders } from '@navet/app/test/render';
+import { act } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useProviderInfoWidgetData } from '../use-provider-info-widget-data';
 
@@ -134,5 +135,86 @@ describe('useProviderInfoWidgetData', () => {
         unit: 'psi',
       }),
     ]);
+  });
+
+  it('defers the full picker catalog and ignores unrelated sensor updates while closed', () => {
+    integrationStore.setState({
+      ...integrationStore.getState(),
+      currentProviderId: 'home_assistant',
+    });
+
+    let renderCount = 0;
+    const { result } = renderHookWithProviders(() => {
+      renderCount += 1;
+      return useProviderInfoWidgetData(['sensor.kitchen_temperature'], {
+        includeAvailableSensors: false,
+        includeBinarySensors: true,
+        use24HourTime: true,
+      });
+    });
+
+    expect(result.current.availableSensors).toEqual([]);
+    expect(result.current.currentSensors).toEqual([
+      expect.objectContaining({
+        id: 'home_assistant:sensor.kitchen_temperature',
+        value: '22.1',
+      }),
+    ]);
+
+    const collections = integrationStore.getState().providerDeviceCollectionsByProviderId;
+    const homeAssistantCollection = collections.home_assistant;
+    const selectedSensor = homeAssistantCollection?.sensors[0];
+    const unrelatedSensor = homeAssistantCollection?.sensors[1];
+    expect(selectedSensor).toBeDefined();
+    expect(unrelatedSensor).toBeDefined();
+    if (!selectedSensor || !unrelatedSensor) {
+      throw new Error('Expected selected and unrelated Home Assistant sensor fixtures');
+    }
+
+    act(() => {
+      integrationStore.setState({
+        providerDeviceCollectionsByProviderId: {
+          ...collections,
+          home_assistant: {
+            ...(homeAssistantCollection ?? createEmptyDeviceCollection()),
+            sensors: [
+              selectedSensor,
+              {
+                ...unrelatedSensor,
+                value: '15.2',
+              },
+            ],
+          },
+        },
+      });
+    });
+
+    expect(renderCount).toBe(1);
+
+    act(() => {
+      integrationStore.setState({
+        providerDeviceCollectionsByProviderId: {
+          ...collections,
+          home_assistant: {
+            ...(homeAssistantCollection ?? createEmptyDeviceCollection()),
+            sensors: [
+              {
+                ...selectedSensor,
+                value: '22.8',
+              },
+              unrelatedSensor,
+            ],
+          },
+        },
+      });
+    });
+
+    expect(renderCount).toBe(2);
+    expect(result.current.currentSensors[0]).toEqual(
+      expect.objectContaining({
+        id: 'home_assistant:sensor.kitchen_temperature',
+        value: '22.8',
+      })
+    );
   });
 });

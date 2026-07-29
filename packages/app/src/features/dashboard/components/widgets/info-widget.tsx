@@ -13,7 +13,7 @@ import { useAreaRooms, useI18n, useTheme } from '@navet/app/hooks';
 import { useDashboardWidgetRoomOptions } from '@navet/app/hooks/use-dashboard-widget-room-options';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { Gauge, Plus } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   type ProviderInfoWidgetDataResult,
   useProviderInfoWidgetData,
@@ -70,9 +70,13 @@ export function InfoWidget({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { roomValue, roomLabel, roomOptions } = useDashboardWidgetRoomOptions(room, rooms);
   const showRoomSelector = room !== ENERGY_WIDGET_ROOM;
-  const sensorEntityIds = getSensorEntityIds(data);
+  const sensorEntityIds = useMemo(
+    () => getSensorEntityIds(data),
+    [data?.entityId, data?.sensorEntityIds]
+  );
   const { availableSensors, currentSensors } = useProviderInfoWidgetData(sensorEntityIds, {
     includeBinarySensors: true,
+    includeAvailableSensors: isSettingsOpen,
     use24HourTime,
     availableSensorCategoryFilter: data?.sensorCategoryFilter,
   }) as {
@@ -81,9 +85,6 @@ export function InfoWidget({
   };
   const primaryEntityId = currentSensors[0]?.id;
   const { points: sparklineData, hasHistory } = useSensorStatisticsHistory(primaryEntityId);
-  const primarySensor = primaryEntityId
-    ? availableSensors.find((sensor) => sensor.id === primaryEntityId)
-    : undefined;
   const accentColor = data?.accentColor ?? (currentSensors.length > 1 ? 'teal' : 'blue');
   const emptyTitle = t('dashboard.addCard.templates.info.name');
   const emptyDescription = t('dashboard.addCard.templates.info.description');
@@ -92,9 +93,7 @@ export function InfoWidget({
   const maxSelectableSensors = usesSingleSensorPicker ? 1 : MAX_INFO_WIDGET_SENSORS;
   const resolvedCardName =
     data?.name?.trim() ||
-    (currentSensors.length === 1
-      ? (primarySensor?.label ?? currentSensors[0]?.label)
-      : defaultCardName) ||
+    (currentSensors.length === 1 ? currentSensors[0]?.label : defaultCardName) ||
     defaultCardName;
 
   const handleSensorsUpdate = (sensors: SensorReading[]) => {

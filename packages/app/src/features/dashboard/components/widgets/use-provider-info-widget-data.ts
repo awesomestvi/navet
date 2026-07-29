@@ -12,6 +12,7 @@ import { useMemo } from 'react';
 
 export interface ProviderInfoWidgetDataOptions {
   includeBinarySensors?: boolean;
+  includeAvailableSensors?: boolean;
   use24HourTime: boolean;
   availableSensorCategoryFilter?: AvailableSensor['category'];
 }
@@ -70,10 +71,7 @@ function toAvailableSensor(device: SensorDevice): AvailableSensor {
   };
 }
 
-function toSensorReading(
-  device: SensorDevice,
-  options: ProviderInfoWidgetDataOptions
-): SensorReading {
+function toSensorReading(device: SensorDevice, use24HourTime: boolean): SensorReading {
   const id = getSelectableSensorId(device);
   const iconEntityId = device.nativeId ?? id ?? '';
   const resolvedEntityType = formatEntityType(device);
@@ -86,7 +84,7 @@ function toSensorReading(
       status: device.status ?? 'measurement',
     },
     {
-      use24HourTime: options.use24HourTime,
+      use24HourTime,
     }
   );
 
@@ -141,28 +139,34 @@ export function useProviderInfoWidgetData(
   options: ProviderInfoWidgetDataOptions
 ): ProviderInfoWidgetDataResult {
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
+  const includeAvailableSensors = options.includeAvailableSensors ?? true;
   const providerId = useMemo(
     () => resolveProviderIdForSensorSelection(sensorEntityIds, currentProviderId),
     [currentProviderId, sensorEntityIds]
   );
-  const sensors = useProviderSensorCollection(providerId);
+  const sensors = useProviderSensorCollection(providerId, {
+    entityIds: sensorEntityIds,
+    includeAll: includeAvailableSensors,
+  });
 
   return useMemo(() => {
     const lookup = buildSensorLookup(sensors, providerId);
 
-    const availableSensors = sensors
-      .map(toAvailableSensor)
-      .filter((sensor) =>
-        options.availableSensorCategoryFilter
-          ? sensor.category === options.availableSensorCategoryFilter
-          : true
-      )
-      .sort(
-        (left, right) =>
-          (left.room ?? '').localeCompare(right.room ?? '') ||
-          left.label.localeCompare(right.label) ||
-          left.id.localeCompare(right.id)
-      );
+    const availableSensors = includeAvailableSensors
+      ? sensors
+          .map(toAvailableSensor)
+          .filter((sensor) =>
+            options.availableSensorCategoryFilter
+              ? sensor.category === options.availableSensorCategoryFilter
+              : true
+          )
+          .sort(
+            (left, right) =>
+              (left.room ?? '').localeCompare(right.room ?? '') ||
+              left.label.localeCompare(right.label) ||
+              left.id.localeCompare(right.id)
+          )
+      : [];
 
     const currentSensors = sensorEntityIds.flatMap((entityId) => {
       const device = lookup.get(entityId);
@@ -170,9 +174,16 @@ export function useProviderInfoWidgetData(
         return [];
       }
 
-      return [toSensorReading(device, options)];
+      return [toSensorReading(device, options.use24HourTime)];
     });
 
     return { availableSensors, currentSensors };
-  }, [options, providerId, sensorEntityIds, sensors]);
+  }, [
+    includeAvailableSensors,
+    options.availableSensorCategoryFilter,
+    options.use24HourTime,
+    providerId,
+    sensorEntityIds,
+    sensors,
+  ]);
 }
