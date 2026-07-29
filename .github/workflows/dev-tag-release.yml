@@ -54,6 +54,16 @@ jobs:
 
           node scripts/check-dev-release-surfaces.mjs --tag "${TAG_NAME}" --version "${DEV_VERSION}"
 
+          # actions/checkout can materialize a tag push as a commit ref. Fetch the remote tag
+          # object explicitly so annotated provenance is available and cannot be mistaken for
+          # the release commit message.
+          git fetch --force --no-tags origin \
+            "refs/tags/${TAG_NAME}:refs/tags/${TAG_NAME}"
+          if [[ "$(git cat-file -t "refs/tags/${TAG_NAME}")" != "tag" ]]; then
+            echo "Navet Dev tag ${TAG_NAME} must be an annotated tag."
+            exit 1
+          fi
+
           RELEASE_SHA="$(git rev-list -n 1 "${TAG_NAME}")"
           SOURCE_BRANCH="$(
             git for-each-ref --format='%(contents)' "refs/tags/${TAG_NAME}" |

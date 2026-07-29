@@ -21,6 +21,11 @@ describe('Navet Dev tag workflow', () => {
     });
 
     const resolveStep = findStep('release-context', 'Resolve Navet Dev version');
+    expect(resolveStep.run).toContain(
+      '"refs/tags/${TAG_NAME}:refs/tags/${TAG_NAME}"'
+    );
+    expect(resolveStep.run).toContain('git cat-file -t');
+    expect(resolveStep.run).toContain('must be an annotated tag');
     expect(resolveStep.run).toContain('Source-Branch:');
     expect(resolveStep.run).toContain('git merge-base --is-ancestor');
     expect(workflow.jobs['release-context'].outputs).toMatchObject({
