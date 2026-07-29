@@ -247,9 +247,17 @@ async function rawHttpStatus(
 
 async function verifyNjsWriteValidatorShield(baseUrl) {
   for (const header of ['If-Match', 'If-Unmodified-Since']) {
-    const status = await rawHttpStatus(baseUrl, '/__navet_profile__/default', {
-      [header]: '"njs-validator-probe"',
-    });
+    const status = await rawHttpStatus(
+      baseUrl,
+      '/__navet_profile__/default',
+      {
+        [header]: '"njs-validator-probe"',
+        'Content-Type': 'application/json',
+        Origin: baseUrl,
+        'X-Navet-Base-Revision': '0',
+      },
+      { body: '{}', method: 'PUT' }
+    );
     if (status !== 428) {
       throw new Error(`${header} reached the njs profile handler with status ${status}`);
     }
@@ -1538,7 +1546,7 @@ try {
   });
   const combinedRuntimeLogs = `${runtimeLogs.stdout}\n${runtimeLogs.stderr}`;
   if (
-    /header already sent|worker process \d+ exited on signal 11/i.test(
+    /headers? already sent|worker process \d+ exited on signal 11/i.test(
       combinedRuntimeLogs
     )
   ) {
