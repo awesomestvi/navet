@@ -252,7 +252,7 @@ describe('dashboard add-on endpoints', () => {
     });
   });
 
-  it('sends revision, changed-path, and client attribution headers', async () => {
+  it('prefers the revision header over njs-unsafe HTTP validators', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), {
         status: 200,
@@ -281,11 +281,15 @@ describe('dashboard add-on endpoints', () => {
         },
         baseRevision: 7,
         changedPaths: ['/dashboard/rooms'],
+        etag: '"navet-workspace-7"',
+        lastModified: 'Tue, 02 Jan 2024 12:00:00 GMT',
       }
     );
 
     const headers = getRequestHeaders(fetchMock.mock.calls[0]?.[1] as RequestInit | undefined);
     expect(headers.get('X-Navet-Base-Revision')).toBe('7');
+    expect(headers.get('If-Match')).toBeNull();
+    expect(headers.get('If-Unmodified-Since')).toBeNull();
     expect(headers.get('X-Navet-Client-Id')).toBe('client-panel-01');
     expect(decodeURIComponent(headers.get('X-Navet-Client-Name') ?? '')).toBe('Kitchen panel');
     expect(headers.get('X-Navet-Client-Kind')).toBe('wall_panel');

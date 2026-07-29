@@ -1592,8 +1592,9 @@ function evaluateWritePrecondition(r, workspace, state) {
       ? 'satisfied'
       : 'failed';
   }
-  // nginx-module-njs 0.8.10 can crash while reading these standard
-  // validators. Never touch them when Navet's revision header is present.
+  // Production rejects these validators before js_content because njs 0.8.10
+  // can crash when r.return() processes them. Normal Navet writes use the
+  // revision header above and must never inspect the legacy fallback.
   const ifMatch = getHeader(r, 'If-Match');
   const ifUnmodifiedSince = getHeader(r, 'If-Unmodified-Since');
   const validators = buildProfileMetadata(workspace, state);

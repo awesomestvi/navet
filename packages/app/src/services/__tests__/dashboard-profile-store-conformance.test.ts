@@ -218,6 +218,11 @@ describe('dashboard profile backend conformance', () => {
     expect(standaloneSnippet).toContain('navet_profile_store.handle;');
     expect(standaloneSnippet).not.toContain('handleIngress');
     expect(ingressSnippet).toContain('navet_profile_store.handleIngress;');
+    for (const snippet of [standaloneSnippet, ingressSnippet]) {
+      expect(snippet).toContain('$http_if_match');
+      expect(snippet).toContain('$http_if_unmodified_since');
+      expect(snippet).toContain('return 428;');
+    }
   });
 
   it('keeps NJS and Vite security, revision, attribution, stale-write, and reset semantics aligned', async () => {

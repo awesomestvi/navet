@@ -307,13 +307,12 @@ function applyClientHeaders(headers: Headers, client?: DashboardProfileClient): 
 
 function applyWriteHeaders(headers: Headers, options: DashboardProfileWriteOptions): void {
   applyClientHeaders(headers, options.author ?? options.client);
-  if (options.etag) {
+  if (options.baseRevision !== undefined) {
+    headers.set(DASHBOARD_PROFILE_HEADERS.baseRevision, String(options.baseRevision));
+  } else if (options.etag) {
     headers.set('If-Match', options.etag);
   } else if (options.lastModified) {
     headers.set('If-Unmodified-Since', options.lastModified);
-  }
-  if (options.baseRevision !== undefined) {
-    headers.set(DASHBOARD_PROFILE_HEADERS.baseRevision, String(options.baseRevision));
   }
   if (options.changedPaths) {
     headers.set(

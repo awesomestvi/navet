@@ -245,6 +245,22 @@ async function rawHttpStatus(
   });
 }
 
+async function verifyNjsWriteValidatorShield(baseUrl) {
+  for (const header of ['If-Match', 'If-Unmodified-Since']) {
+    const status = await rawHttpStatus(baseUrl, '/__navet_profile__/default', {
+      [header]: '"njs-validator-probe"',
+    });
+    if (status !== 428) {
+      throw new Error(`${header} reached the njs profile handler with status ${status}`);
+    }
+  }
+
+  const healthResponse = await fetch(`${baseUrl}/__navet_auth__/session`);
+  if (healthResponse.status !== 200) {
+    throw new Error('Navet stopped responding after the njs validator probes');
+  }
+}
+
 async function readAuthMetadata(baseUrl) {
   try {
     const response = await fetch(`${baseUrl}/__navet_auth__/session`, {
@@ -1038,6 +1054,36 @@ async function verifyProfileColdBinding(baseUrl, authCookie) {
   if (write.status !== 200) {
     throw new Error(`Actual-image profile write failed with ${write.status}`);
   }
+
+  const staleWrite = await fetch(`${baseUrl}/__navet_profile__/default`, {
+    method: 'PUT',
+    headers: {
+      Cookie: `${authCookie}; ${profileCookie}`,
+      Origin: baseUrl,
+      'Content-Type': 'application/json',
+      'X-Navet-Base-Revision': '0',
+      'X-Navet-Changed-Paths': encodeURIComponent(
+        JSON.stringify(['/dashboard/title'])
+      ),
+      'X-Navet-Client-Id': clientId,
+      'X-Navet-Client-Name': 'Actual image panel',
+      'X-Navet-Client-Kind': 'wall_panel',
+    },
+    body: JSON.stringify({
+      app: 'navet',
+      version: 3,
+      exportedAt: '2026-07-29T00:00:00.000Z',
+      dashboard: { title: 'Stale profile write' },
+    }),
+  });
+  if (staleWrite.status !== 412) {
+    throw new Error(`Actual-image stale profile write returned ${staleWrite.status}`);
+  }
+
+  const afterStaleWrite = await request('/default', profileCookie);
+  if (afterStaleWrite.status !== 200) {
+    throw new Error('Profile endpoint stopped responding after a stale write');
+  }
   return profileCookie;
 }
 
@@ -1346,6 +1392,7 @@ try {
   if ((await authApiResponse.text()).includes(installationKey)) {
     throw new Error('The installation key leaked into the auth API response');
   }
+  await verifyNjsWriteValidatorShield(baseUrl);
   if (firstBrowser.metadata.sessionId === secondBrowser.metadata.sessionId) {
     throw new Error('Separate cookie-less requests received the same auth session ID');
   }
@@ -1489,7 +1536,15 @@ try {
     stdio: 'pipe',
     encoding: 'utf8',
   });
-  const keyLogLines = `${runtimeLogs.stdout}\n${runtimeLogs.stderr}`
+  const combinedRuntimeLogs = `${runtimeLogs.stdout}\n${runtimeLogs.stderr}`;
+  if (
+    /header already sent|worker process \d+ exited on signal 11/i.test(
+      combinedRuntimeLogs
+    )
+  ) {
+    throw new Error('The profile runtime crashed while handling conditional writes');
+  }
+  const keyLogLines = combinedRuntimeLogs
     .split('\n')
     .filter((line) => line.includes(installationKey));
   if (
