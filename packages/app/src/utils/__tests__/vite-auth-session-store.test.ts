@@ -3,6 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
+import { createInstallationCookieNames } from '@scripts/installation-cookie-scope';
 import {
   AUTH_BINDING_HEADER,
   createHomeAssistantTenantId,
@@ -24,6 +25,7 @@ const TEST_INSTALLATION_AUTHORITY: ViteInstallationAuthority = {
   commitHomeAssistant: () => true,
   commitHomey: () => true,
   commitOpenHAB: () => true,
+  getCookieNames: (baseName) => createInstallationCookieNames(baseName),
 };
 
 const AUTH_A = {
@@ -211,6 +213,93 @@ function seedPendingOAuth(
 }
 
 describe('Vite standalone auth session conformance', () => {
+  it('promotes only local legacy sessions and revokes every local legacy duplicate on logout', async () => {
+    const legacy = createStore();
+    const fetchImpl = vi.fn().mockResolvedValue(new Response('{}', { status: 404 }));
+    const legacyHandler = createViteAuthRequestHandler(
+      legacy.store,
+      fetchImpl,
+      TEST_INSTALLATION_AUTHORITY
+    );
+    const browser = await createBrowser(legacyHandler);
+    const secondLegacyBrowser = await createBrowser(legacyHandler);
+    seedAuth(legacy.store, browser, AUTH_A);
+    seedAuth(legacy.store, secondLegacyBrowser, AUTH_B);
+
+    const cookieNames = createInstallationCookieNames('navet_auth_session', '1'.repeat(64));
+    const scopedStore = createViteAuthSessionStore(
+      legacy.sessionsDirectory,
+      legacy.legacyFile,
+      cookieNames
+    );
+    const scopedHandler = createViteAuthRequestHandler(
+      scopedStore,
+      fetchImpl,
+      TEST_INSTALLATION_AUTHORITY
+    );
+    const migratedResponse = createResponse();
+    await scopedHandler(createRequest({ cookie: browser.cookie }), migratedResponse.response);
+    expect(JSON.parse(migratedResponse.body)).toMatchObject({
+      authenticated: true,
+      hassUrl: AUTH_A.hassUrl,
+    });
+    const scopedCookie = cookieHeader(migratedResponse.getHeader('set-cookie'));
+    expect(scopedCookie).toBe(`${cookieNames.currentName}=${browser.cookie.split('=')[1]}`);
+
+    const logoutResponse = createResponse();
+    await scopedHandler(
+      createRequest({
+        method: 'DELETE',
+        cookie: `${browser.cookie}; ${secondLegacyBrowser.cookie}; ${scopedCookie}`,
+        headers: {
+          Origin: 'http://navet.example',
+          [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+        },
+      }),
+      logoutResponse.response
+    );
+    const logoutCookies = logoutResponse.getHeader('set-cookie');
+    const serializedLogoutCookies = Array.isArray(logoutCookies)
+      ? logoutCookies
+      : [logoutCookies ?? ''];
+    expect(
+      serializedLogoutCookies.every((serialized) =>
+        serialized.startsWith(`${cookieNames.currentName}=`)
+      )
+    ).toBe(true);
+    expect(serializedLogoutCookies.join('; ')).not.toContain('navet_auth_session=');
+    expect(legacy.store.readSession(browser.cookie.split('=')[1] ?? '')).toBeNull();
+    expect(legacy.store.readSession(secondLegacyBrowser.cookie.split('=')[1] ?? '')).toBeNull();
+    const cannotResurrectResponse = createResponse();
+    await scopedHandler(
+      createRequest({ cookie: secondLegacyBrowser.cookie }),
+      cannotResurrectResponse.response
+    );
+    expect(JSON.parse(cannotResurrectResponse.body).authenticated).toBe(false);
+
+    const neighbor = createStore();
+    const neighborCookieNames = createInstallationCookieNames('navet_auth_session', '2'.repeat(64));
+    const neighborStore = createViteAuthSessionStore(
+      neighbor.sessionsDirectory,
+      neighbor.legacyFile,
+      neighborCookieNames
+    );
+    const neighborHandler = createViteAuthRequestHandler(
+      neighborStore,
+      fetchImpl,
+      TEST_INSTALLATION_AUTHORITY
+    );
+    const unknownLegacyResponse = createResponse();
+    await neighborHandler(
+      createRequest({ cookie: browser.cookie }),
+      unknownLegacyResponse.response
+    );
+    expect(JSON.parse(unknownLegacyResponse.body).authenticated).toBe(false);
+    expect(cookieHeader(unknownLegacyResponse.getHeader('set-cookie'))).toMatch(
+      new RegExp(`^${neighborCookieNames.currentName}=`)
+    );
+  });
+
   it('derives an opaque tenant identity from the full canonical Home Assistant base URL', () => {
     expect(normalizeHassOrigin('HTTPS://HA-A.Example.com:443/home-assistant/?panel=1')).toBe(
       'https://ha-a.example.com'

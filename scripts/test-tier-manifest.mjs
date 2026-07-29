@@ -10,6 +10,7 @@ export const TEST_TIERS = {
       'assets/public/boot-i18n.test.ts',
       'scripts/create-dev-release.test.mjs',
       'scripts/dev-tag-release-workflow.test.mjs',
+      'scripts/vite-preload-graph.test.mjs',
       'packages/provider-homeassistant/src/homeassistant-contract.test.ts',
       'packages/provider-homey/src/homey-contract.test.ts',
       'packages/provider-openhab/src/openhab-contract.test.ts',

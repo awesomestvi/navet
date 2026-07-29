@@ -2,6 +2,7 @@ import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
 import type { DashboardController } from '@navet/app/features/dashboard/hooks/use-dashboard-controller';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
+import type { DeviceWithType } from '@navet/app/types/device.types';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,6 +10,7 @@ import { DashboardSectionRouter, shouldSubscribeTaskRoutines } from '../dashboar
 
 const roomNavMock = vi.fn();
 const dashboardLayoutMock = vi.fn();
+const deviceGridPropsMock = vi.fn();
 let deviceGridMountCount = 0;
 
 vi.mock('@navet/app/components/layout/room-nav', () => ({
@@ -30,7 +32,8 @@ vi.mock('../home-dashboard-overview', () => ({
 }));
 
 vi.mock('../../device-grid', () => ({
-  DeviceGrid: () => {
+  DeviceGrid: (props: unknown) => {
+    deviceGridPropsMock(props);
     useEffect(() => {
       deviceGridMountCount += 1;
     }, []);
@@ -44,6 +47,7 @@ describe('DashboardSectionRouter home controls', () => {
     await resetAppStores();
     roomNavMock.mockClear();
     dashboardLayoutMock.mockClear();
+    deviceGridPropsMock.mockClear();
     deviceGridMountCount = 0;
   });
 
@@ -104,6 +108,53 @@ describe('DashboardSectionRouter home controls', () => {
     );
 
     expect(deviceGridMountCount).toBe(2);
+  });
+
+  it('passes the offscreen paint signal to room grids', () => {
+    const controller = createController();
+    controller.activeRoom = 'Kitchen';
+    controller.optimizeOffscreenPaint = true;
+
+    renderWithProviders(<DashboardSectionRouter controller={controller} />);
+
+    expect(deviceGridPropsMock.mock.calls.at(-1)?.[0]).toMatchObject({
+      isEditMode: false,
+      optimizeOffscreenPaint: true,
+    });
+  });
+
+  it('passes the offscreen paint signal to climate grids', () => {
+    const controller = createController();
+    const climateDevice = {
+      id: 'climate.living_room',
+      name: 'Living Room Thermostat',
+      room: 'Living Room',
+      size: 'small',
+      temperature: 21,
+      currentTemperature: 20,
+      mode: 'heat',
+      type: 'climate',
+    } satisfies DeviceWithType;
+    controller.activeSection = 'climate';
+    controller.optimizeOffscreenPaint = true;
+    controller.sectionData = {
+      ...controller.sectionData,
+      climateDeviceMap: new Map([[climateDevice.id, climateDevice]]),
+      climateSections: [
+        {
+          key: 'climate',
+          titleKey: 'sections.climate.title',
+          orderedIds: [climateDevice.id],
+        },
+      ],
+    };
+
+    renderWithProviders(<DashboardSectionRouter controller={controller} />);
+
+    expect(deviceGridPropsMock.mock.calls.at(-1)?.[0]).toMatchObject({
+      isEditMode: false,
+      optimizeOffscreenPaint: true,
+    });
   });
 
   it('suppresses duplicated edit actions for the energy dashboard header controls', async () => {
@@ -181,6 +232,8 @@ function createController(): DashboardController {
     customCards: [],
     dashboardArrivalVariant: null,
     deviceMap: new Map(),
+    densePerformanceMode: false,
+    denseVisibleCardCount: 0,
     devicesLoaded: true,
     handleChooseAllEntities: vi.fn(),
     handleChooseBlankDashboard: vi.fn(),
@@ -226,6 +279,7 @@ function createController(): DashboardController {
     openAddEntityDialog: vi.fn(),
     openDeviceSettingsDialog: vi.fn(),
     orderedCardIds: [],
+    optimizeOffscreenPaint: false,
     removeHomeCard: vi.fn(),
     redoHomeLayout: vi.fn(),
     roomHiddenItemCounts: new Map(),

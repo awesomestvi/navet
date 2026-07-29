@@ -1,4 +1,5 @@
 import fs from 'fs';
+import installationCookieScope from './installation-cookie-scope.js';
 
 const COOKIE_ID_PATTERN = /^[a-f0-9]{64}$/;
 const SESSION_IDLE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
@@ -151,7 +152,15 @@ function isStrictSameOriginMutation(r) {
 
 function createProviderSessionStore(options) {
   const settings = options || {};
-  const cookieName = settings.cookieName;
+  const cookieNames =
+    settings.cookieNames ||
+    installationCookieScope.createInstallationCookieNames(
+      settings.cookieName,
+      settings
+    );
+  const cookieName = cookieNames.currentName;
+  const legacyCookieName = cookieNames.legacyName;
+  const hasScopedCookie = cookieNames.scoped === true;
   const sessionsDirectory = settings.sessionsDirectory;
   const legacySessionPath = settings.legacySessionPath || '';
   const maxRecordBytes = settings.maxRecordBytes;
@@ -171,6 +180,8 @@ function createProviderSessionStore(options) {
   if (
     typeof cookieName !== 'string' ||
     !/^[a-z0-9_]+$/.test(cookieName) ||
+    typeof legacyCookieName !== 'string' ||
+    !/^[a-z0-9_]+$/.test(legacyCookieName) ||
     typeof sessionsDirectory !== 'string' ||
     !sessionsDirectory ||
     typeof maxRecordBytes !== 'number' ||
@@ -258,14 +269,17 @@ function createProviderSessionStore(options) {
     }
   }
 
-  function getCookieIds(r) {
+  function getCookieIds(r, requestedCookieName) {
     const values = [];
     const parts = String(getHeader(r && r.headersIn, 'Cookie') || '').split(';');
     let index;
     for (index = 0; index < parts.length; index += 1) {
       const entry = parts[index].trim();
       const separator = entry.indexOf('=');
-      if (separator <= 0 || entry.slice(0, separator).trim() !== cookieName) {
+      if (
+        separator <= 0 ||
+        entry.slice(0, separator).trim() !== requestedCookieName
+      ) {
         continue;
       }
       const value = entry.slice(separator + 1).trim();
@@ -367,16 +381,28 @@ function createProviderSessionStore(options) {
 
   function getRequestSessions(r) {
     discardLegacyGlobalSession();
-    const contexts = [];
-    const cookieIds = getCookieIds(r);
+    let contexts = [];
+    const currentCookieIds = getCookieIds(r, cookieName);
     let index;
-    for (index = 0; index < cookieIds.length; index += 1) {
-      const session = readSession(cookieIds[index]);
+    for (index = 0; index < currentCookieIds.length; index += 1) {
+      const session = readSession(currentCookieIds[index]);
       if (session) {
         contexts.push({
-          cookieId: cookieIds[index],
+          cookieId: currentCookieIds[index],
           session: session,
         });
+      }
+    }
+    if (contexts.length === 0 && hasScopedCookie) {
+      const legacyCookieIds = getCookieIds(r, legacyCookieName);
+      for (index = 0; index < legacyCookieIds.length; index += 1) {
+        const legacySession = readSession(legacyCookieIds[index]);
+        if (legacySession) {
+          contexts.push({
+            cookieId: legacyCookieIds[index],
+            session: legacySession,
+          });
+        }
       }
     }
     contexts.sort(function (left, right) {
@@ -527,7 +553,19 @@ function createProviderSessionStore(options) {
   }
 
   function deleteRequestSessions(r, preserveCookieId) {
-    const cookieIds = getCookieIds(r);
+    const cookieIds = getCookieIds(r, cookieName);
+    if (hasScopedCookie) {
+      const legacyCookieIds = getCookieIds(r, legacyCookieName);
+      let legacyIndex;
+      for (legacyIndex = 0; legacyIndex < legacyCookieIds.length; legacyIndex += 1) {
+        if (
+          readSession(legacyCookieIds[legacyIndex]) &&
+          cookieIds.indexOf(legacyCookieIds[legacyIndex]) === -1
+        ) {
+          cookieIds.push(legacyCookieIds[legacyIndex]);
+        }
+      }
+    }
     let index;
     for (index = 0; index < cookieIds.length; index += 1) {
       if (cookieIds[index] !== preserveCookieId) {
@@ -571,7 +609,19 @@ function createProviderSessionStore(options) {
   }
 
   function rotateRequestSession(r, previousCookieId, record) {
-    const staleCookieIds = getCookieIds(r);
+    const staleCookieIds = getCookieIds(r, cookieName);
+    if (hasScopedCookie) {
+      const legacyCookieIds = getCookieIds(r, legacyCookieName);
+      let legacyIndex;
+      for (legacyIndex = 0; legacyIndex < legacyCookieIds.length; legacyIndex += 1) {
+        if (
+          readSession(legacyCookieIds[legacyIndex]) &&
+          staleCookieIds.indexOf(legacyCookieIds[legacyIndex]) === -1
+        ) {
+          staleCookieIds.push(legacyCookieIds[legacyIndex]);
+        }
+      }
+    }
     if (
       previousCookieId &&
       COOKIE_ID_PATTERN.test(String(previousCookieId)) &&
@@ -657,6 +707,7 @@ function createProviderSessionStore(options) {
   }
 
   return {
+    cookieNames: cookieNames,
     clearSessionCookie: clearSessionCookie,
     createRequestSession: createRequestSession,
     cleanupSessions: cleanupSessions,

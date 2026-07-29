@@ -1,6 +1,7 @@
 import hashCrypto from 'crypto';
 import fs from 'fs';
 import installationAuthorityModule from './installation-authority.js';
+import installationCookieScope from './installation-cookie-scope.js';
 
 const AUTH_COOKIE_NAME = 'navet_auth_session';
 const AUTH_COOKIE_ID_PATTERN = /^[a-f0-9]{64}$/;
@@ -92,14 +93,14 @@ function joinPath(basePath, suffix) {
   return normalizedBase ? normalizedBase + normalizedSuffix : normalizedSuffix;
 }
 
-function getCookieIds(r) {
+function getCookieIds(r, cookieName) {
   const values = [];
   const parts = String(getHeader(r && r.headersIn, 'Cookie') || '').split(';');
   let index;
   for (index = 0; index < parts.length; index += 1) {
     const entry = parts[index].trim();
     const separator = entry.indexOf('=');
-    if (separator <= 0 || entry.slice(0, separator).trim() !== AUTH_COOKIE_NAME) {
+    if (separator <= 0 || entry.slice(0, separator).trim() !== cookieName) {
       continue;
     }
     const value = entry.slice(separator + 1).trim();
@@ -131,12 +132,18 @@ function getRequestOrigin(r) {
   return getRequestProtocol(r) + '://' + host;
 }
 
-function buildSessionCookie(r, cookieId, maxAgeSeconds, pathOverride) {
+function buildSessionCookie(
+  r,
+  cookieName,
+  cookieId,
+  maxAgeSeconds,
+  pathOverride
+) {
   const ingressPath = normalizeIngressPath(getHeader(r && r.headersIn, 'X-Ingress-Path'));
   const cookiePath =
     typeof pathOverride === 'string' ? pathOverride : ingressPath || '/';
   const attributes = [
-    AUTH_COOKIE_NAME + '=' + cookieId,
+    cookieName + '=' + cookieId,
     'Path=' + cookiePath,
     'HttpOnly',
     'SameSite=Lax',
@@ -150,16 +157,13 @@ function buildSessionCookie(r, cookieId, maxAgeSeconds, pathOverride) {
   return attributes.join('; ');
 }
 
-function setSessionCookie(r, cookieId) {
-  r.headersOut['Set-Cookie'] = buildSessionCookie(r, cookieId, COOKIE_MAX_AGE_SECONDS);
-}
-
-function clearSessionCookie(r) {
+function buildSessionCookieDeletion(r, cookieName) {
   const ingressPath = normalizeIngressPath(getHeader(r && r.headersIn, 'X-Ingress-Path'));
   const paths = ingressPath ? [ingressPath, '/'] : ['/'];
-  r.headersOut['Set-Cookie'] = paths.map(function (path) {
-    return buildSessionCookie(r, '', 0, path);
+  const cookies = paths.map(function (path) {
+    return buildSessionCookie(r, cookieName, '', 0, path);
   });
+  return cookies.length === 1 ? cookies[0] : cookies;
 }
 
 function sendJson(r, statusCode, payload) {
@@ -580,6 +584,15 @@ function sanitizeSession(session) {
 
 function createAuthSessionStore(options) {
   const settings = options || {};
+  const cookieNames =
+    settings.cookieNames ||
+    installationCookieScope.createInstallationCookieNames(
+      AUTH_COOKIE_NAME,
+      settings
+    );
+  const cookieName = cookieNames.currentName;
+  const legacyCookieName = cookieNames.legacyName;
+  const hasScopedCookie = cookieNames.scoped === true;
   const sessionsDirectory = settings.sessionsDirectory || AUTH_SESSIONS_DIRECTORY;
   const legacyAuthPath = settings.legacyAuthPath || LEGACY_AUTH_PATH;
   const bindingSecretPath =
@@ -708,6 +721,63 @@ function createAuthSessionStore(options) {
     return session;
   }
 
+  function getCurrentCookieIds(r) {
+    return getCookieIds(r, cookieName);
+  }
+
+  function getRecognizedLegacyCookieIds(r) {
+    if (!hasScopedCookie) {
+      return [];
+    }
+    return getCookieIds(r, legacyCookieName).filter(function (cookieId) {
+      return Boolean(readSession(cookieId));
+    });
+  }
+
+  function getRequestCookieIds(r) {
+    const currentCookieIds = getCurrentCookieIds(r);
+    return currentCookieIds.concat(
+      getRecognizedLegacyCookieIds(r).filter(function (cookieId) {
+        return currentCookieIds.indexOf(cookieId) === -1;
+      })
+    );
+  }
+
+  function getStoredRequestContexts(r) {
+    const currentContexts = getCurrentCookieIds(r)
+      .map(function (cookieId) {
+        const session = readSession(cookieId);
+        return session ? { cookieId: cookieId, session: session } : null;
+      })
+      .filter(function (context) {
+        return Boolean(context);
+      });
+    if (currentContexts.length > 0 || !hasScopedCookie) {
+      return currentContexts;
+    }
+    return getRecognizedLegacyCookieIds(r)
+      .map(function (cookieId) {
+        const session = readSession(cookieId);
+        return session ? { cookieId: cookieId, session: session } : null;
+      })
+      .filter(function (context) {
+        return Boolean(context);
+      });
+  }
+
+  function setSessionCookie(r, cookieId) {
+    r.headersOut['Set-Cookie'] = buildSessionCookie(
+      r,
+      cookieName,
+      cookieId,
+      COOKIE_MAX_AGE_SECONDS
+    );
+  }
+
+  function clearSessionCookie(r) {
+    r.headersOut['Set-Cookie'] = buildSessionCookieDeletion(r, cookieName);
+  }
+
   function listActiveSessions(now) {
     let names;
     try {
@@ -830,19 +900,8 @@ function createAuthSessionStore(options) {
 
   function getPreferredRequestSession(r) {
     discardLegacyGlobalSession();
-    const contexts = [];
-    const cookieIds = getCookieIds(r);
+    const contexts = getStoredRequestContexts(r);
     const now = Date.now();
-    let index;
-    for (index = 0; index < cookieIds.length; index += 1) {
-      const session = readSession(cookieIds[index]);
-      if (session) {
-        contexts.push({
-          cookieId: cookieIds[index],
-          session: session,
-        });
-      }
-    }
     contexts.sort(function (left, right) {
       const leftCurrent = Boolean(
         left.session.auth && left.session.auth.expires > now
@@ -914,22 +973,25 @@ function createAuthSessionStore(options) {
 
   function getBoundRequestSession(r, allowEphemeral) {
     discardLegacyGlobalSession();
-    const cookieIds = getCookieIds(r);
+    const storedContexts = getStoredRequestContexts(r);
     let index;
-    for (index = 0; index < cookieIds.length; index += 1) {
-      const stored = readSession(cookieIds[index]);
-      if (stored && hasValidBinding(r, stored)) {
-        return { cookieId: cookieIds[index], session: stored };
+    for (index = 0; index < storedContexts.length; index += 1) {
+      if (hasValidBinding(r, storedContexts[index].session)) {
+        return storedContexts[index];
       }
     }
     if (!allowEphemeral) {
       return null;
     }
 
-    for (index = 0; index < cookieIds.length; index += 1) {
-      const session = createEphemeralSession(cookieIds[index], getBindingSecret());
+    const currentCookieIds = getCurrentCookieIds(r);
+    for (index = 0; index < currentCookieIds.length; index += 1) {
+      const session = createEphemeralSession(
+        currentCookieIds[index],
+        getBindingSecret()
+      );
       if (hasValidBinding(r, session)) {
-        return { cookieId: cookieIds[index], session: session };
+        return { cookieId: currentCookieIds[index], session: session };
       }
     }
     return null;
@@ -937,12 +999,14 @@ function createAuthSessionStore(options) {
 
   function getOAuthCallbackSession(r, state) {
     discardLegacyGlobalSession();
-    const cookieIds = getCookieIds(r);
+    const contexts = getStoredRequestContexts(r);
     let index;
-    for (index = 0; index < cookieIds.length; index += 1) {
-      const session = readSession(cookieIds[index]);
-      if (session && session.pending && session.pending.state === state) {
-        return { cookieId: cookieIds[index], session: session };
+    for (index = 0; index < contexts.length; index += 1) {
+      if (
+        contexts[index].session.pending &&
+        contexts[index].session.pending.state === state
+      ) {
+        return contexts[index];
       }
     }
     return null;
@@ -1030,7 +1094,7 @@ function createAuthSessionStore(options) {
 
   async function handleSessionDelete(r) {
     const context = getBoundRequestSession(r, true);
-    const presentedCookieIds = getCookieIds(r);
+    const presentedCookieIds = getRequestCookieIds(r);
     if (!context && presentedCookieIds.length > 0) {
       sendJson(r, 401, { error: 'Authenticated browser session is required' });
       return;
@@ -1044,7 +1108,7 @@ function createAuthSessionStore(options) {
       let index;
       for (index = 0; index < presentedCookieIds.length; index += 1) {
         const stored = readSession(presentedCookieIds[index]);
-        if (stored && hasValidBinding(r, stored)) {
+        if (stored && (hasScopedCookie || hasValidBinding(r, stored))) {
           deleteSession(presentedCookieIds[index]);
         }
       }
@@ -1259,7 +1323,7 @@ function createAuthSessionStore(options) {
         userId: null,
         userName: null,
       });
-      const presentedCookieIds = getCookieIds(r);
+      const presentedCookieIds = getRequestCookieIds(r);
       rotateRequestSession(r, context.cookieId, next);
       let index;
       for (index = 0; index < presentedCookieIds.length; index += 1) {
@@ -1382,6 +1446,7 @@ function createAuthSessionStore(options) {
   }
 
   return {
+    cookieNames: cookieNames,
     createRequestSession: createRequestSession,
     cleanupSessions: cleanupSessions,
     deleteSession: deleteSession,

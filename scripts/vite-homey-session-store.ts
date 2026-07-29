@@ -3,6 +3,10 @@ import {
   createViteProviderSessionStore,
   type ViteProviderSessionStore,
 } from './vite-provider-session-store'
+import {
+  createInstallationCookieNames,
+  type InstallationCookieNames,
+} from './installation-cookie-scope'
 
 export const HOMEY_SESSION_COOKIE_NAME = 'navet_homey_session'
 export const HOMEY_OAUTH_PENDING_TTL_MS = 10 * 60 * 1000
@@ -253,12 +257,16 @@ function createEmptyStoredHomeySession(): ViteStoredHomeySession {
 
 export function createViteHomeySessionStore(
   options: {
+    cookieNames?: InstallationCookieNames
     legacySessionPath?: string
     sessionsDirectory?: string
   } = {}
 ): ViteProviderSessionStore<ViteStoredHomeySession> {
   const cacheDirectory = path.resolve(process.cwd(), '.cache')
   return createViteProviderSessionStore({
+    cookieNames:
+      options.cookieNames ??
+      createInstallationCookieNames(HOMEY_SESSION_COOKIE_NAME),
     createRecord: createEmptyStoredHomeySession,
     isValidRecord: isValidStoredHomeySession,
     legacySessionPath:

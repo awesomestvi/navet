@@ -1,13 +1,16 @@
 import { readFileSync, statSync } from 'node:fs';
-import { basename, join } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { appPaths } from './repo-paths.mjs';
+import { readViteDynamicPreloadAssetPaths } from './vite-preload-graph.mjs';
 
 // Keep enough headroom for normal dependency drift without allowing the low-power
 // startup graph to return to multi-megabyte parsing and compilation costs.
 const MAX_ENTRY_JS_BYTES = 48 * 1024;
 const MAX_EAGER_CHUNK_BYTES = 256 * 1024;
 const MAX_TOTAL_EAGER_JS_BYTES = 768 * 1024;
+const MAX_AUTHENTICATED_TRANSITION_JS_BYTES = 320 * 1024;
 const MAX_MAIN_CSS_BYTES = 550 * 1024;
+const FORBIDDEN_AUTHENTICATED_TRANSITION_PREFIXES = ['dnd-vendor', 'primitives-'];
 const LAZY_CHUNK_PREFIXES = [
   'dashboard-card-item-draggable-',
   'dashboard-widget-battery-',
@@ -68,8 +71,9 @@ function assertWithinBudget(label, value, limit) {
   }
 }
 
-const indexHtmlPath = join(appPaths.standaloneDist, 'index.html');
-const assetsDir = join(appPaths.standaloneDist, 'assets');
+const standaloneDist = process.argv[2] ? resolve(process.argv[2]) : appPaths.standaloneDist;
+const indexHtmlPath = join(standaloneDist, 'index.html');
+const assetsDir = join(standaloneDist, 'assets');
 const indexHtml = readFileSync(indexHtmlPath, 'utf8');
 
 const entryScriptPath = getSingleMatch(
@@ -83,9 +87,9 @@ const mainCssPath = getSingleMatch(
   'main stylesheet'
 );
 
-const entryScriptFilePath = join(appPaths.standaloneDist, entryScriptPath);
+const entryScriptFilePath = join(standaloneDist, entryScriptPath);
 const entryScriptSize = statSync(entryScriptFilePath).size;
-const mainCssSize = statSync(join(appPaths.standaloneDist, mainCssPath)).size;
+const mainCssSize = statSync(join(standaloneDist, mainCssPath)).size;
 
 assertWithinBudget(`Entry bundle ${basename(entryScriptPath)}`, entryScriptSize, MAX_ENTRY_JS_BYTES);
 assertWithinBudget(`Main stylesheet ${basename(mainCssPath)}`, mainCssSize, MAX_MAIN_CSS_BYTES);
@@ -126,6 +130,35 @@ const totalEagerJsSize = Array.from(eagerAssetPaths).reduce(
 );
 assertWithinBudget('Total eager JavaScript', totalEagerJsSize, MAX_TOTAL_EAGER_JS_BYTES);
 
+const authenticatedPreloadGraph = readViteDynamicPreloadAssetPaths(
+  entrySource,
+  'authenticated-app-'
+);
+const authenticatedTransitionAssetPaths = Array.from(
+  new Set(
+    authenticatedPreloadGraph.assetPaths.filter(
+      (assetPath) => assetPath.endsWith('.js') && !eagerAssetPaths.has(assetPath)
+    )
+  )
+);
+const forbiddenAuthenticatedAssets = authenticatedTransitionAssetPaths.filter((assetPath) =>
+  FORBIDDEN_AUTHENTICATED_TRANSITION_PREFIXES.some((prefix) => assetPath.startsWith(prefix))
+);
+if (forbiddenAuthenticatedAssets.length > 0) {
+  throw new Error(
+    `Authenticated transition eagerly loads dashboard-only chunks: ${forbiddenAuthenticatedAssets.join(', ')}`
+  );
+}
+const authenticatedTransitionJsSize = authenticatedTransitionAssetPaths.reduce(
+  (total, assetPath) => total + statSync(join(assetsDir, assetPath)).size,
+  0
+);
+assertWithinBudget(
+  'Authenticated transition JavaScript',
+  authenticatedTransitionJsSize,
+  MAX_AUTHENTICATED_TRANSITION_JS_BYTES
+);
+
 const eagerLazyImports = staticImportPaths.filter((importPath) => {
   const importFileName = basename(importPath);
   return LAZY_CHUNK_PREFIXES.some((prefix) => importFileName.startsWith(prefix));
@@ -136,5 +169,5 @@ if (eagerLazyImports.length > 0) {
 }
 
 console.log(
-  `Bundle budgets passed: ${basename(entryScriptPath)} ${formatBytes(entryScriptSize)}, total eager JavaScript ${formatBytes(totalEagerJsSize)}, ${basename(mainCssPath)} ${formatBytes(mainCssSize)}`
+  `Bundle budgets passed: ${basename(entryScriptPath)} ${formatBytes(entryScriptSize)}, total eager JavaScript ${formatBytes(totalEagerJsSize)}, authenticated transition JavaScript ${formatBytes(authenticatedTransitionJsSize)}, ${basename(mainCssPath)} ${formatBytes(mainCssSize)}`
 );

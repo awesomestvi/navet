@@ -13,6 +13,10 @@ import {
 } from 'node:fs'
 import type { IncomingMessage } from 'node:http'
 import path from 'node:path'
+import {
+  createInstallationCookieNames,
+  type InstallationCookieNames,
+} from './installation-cookie-scope'
 
 export const INSTALLATION_KEY_HEADER = 'X-Navet-Installation-Key'
 const INSTALLATION_KEY_PATTERN = /^[a-f0-9]{64}$/
@@ -54,6 +58,7 @@ export interface ViteInstallationAuthority {
     normalizeTarget: (value: unknown) => string,
     pairingVerified: boolean
   ): boolean
+  getCookieNames(baseName: string): InstallationCookieNames
 }
 
 function emptyState(): InstallationAuthorityState {
@@ -460,6 +465,9 @@ export function createViteInstallationAuthority(
     },
     commitOpenHAB(target, normalizeTarget, pairingVerified) {
       return commitTarget('openhab', target, normalizeTarget, pairingVerified)
+    },
+    getCookieNames(baseName) {
+      return createInstallationCookieNames(baseName, installationKey)
     },
   }
 }

@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createInstallationCookieNames } from '@scripts/installation-cookie-scope';
 import {
   appendHomeyOAuthCallbackMarker,
   appendHomeyOAuthFailureMarker,
@@ -18,6 +19,7 @@ import {
   findViteProviderRequestSession,
   getViteProviderRequestSession,
   rotateViteProviderRequestSession,
+  setViteProviderSessionCookie,
 } from '@scripts/vite-provider-session-store';
 import { describe, expect, it } from 'vitest';
 
@@ -111,6 +113,74 @@ function createResponse() {
 }
 
 describe('vite Homey session store', () => {
+  it('migrates a locally backed generic cookie without clearing the shared legacy name', () => {
+    const fixture = createFixture();
+    const legacy = fixture.store.createSession();
+    const secondLegacy = fixture.store.createSession();
+    fixture.store.writeSession(legacy.cookieId, withAuth(legacy.session, HOMEY_SESSION));
+    fixture.store.writeSession(
+      secondLegacy.cookieId,
+      withAuth(secondLegacy.session, {
+        ...HOMEY_SESSION,
+        accessToken: 'second-legacy-access-token',
+      })
+    );
+    const cookieNames = createInstallationCookieNames(HOMEY_SESSION_COOKIE_NAME, '1'.repeat(64));
+    const scopedStore = createViteHomeySessionStore({
+      cookieNames,
+      legacySessionPath: fixture.legacySessionPath,
+      sessionsDirectory: fixture.sessionsDirectory,
+    });
+    const request = createRequest(`${HOMEY_SESSION_COOKIE_NAME}=${legacy.cookieId}`);
+    const context = getViteProviderRequestSession(request, cookieNames, scopedStore);
+    expect(context?.session.auth).toEqual(HOMEY_SESSION);
+
+    const migratedResponse = createResponse();
+    setViteProviderSessionCookie(
+      request,
+      migratedResponse.response,
+      cookieNames,
+      context?.cookieId ?? ''
+    );
+    expect(migratedResponse.getSetCookie()).toContain(
+      `${cookieNames.currentName}=${legacy.cookieId}`
+    );
+
+    const logoutRequest = createRequest(
+      [
+        `${cookieNames.currentName}=${legacy.cookieId}`,
+        `${HOMEY_SESSION_COOKIE_NAME}=${legacy.cookieId}`,
+        `${HOMEY_SESSION_COOKIE_NAME}=${secondLegacy.cookieId}`,
+      ].join('; ')
+    );
+    const logoutResponse = createResponse();
+    clearViteProviderSessionCookie(
+      logoutRequest,
+      logoutResponse.response,
+      cookieNames,
+      scopedStore
+    );
+    deleteViteProviderRequestSessions(logoutRequest, cookieNames, scopedStore);
+    const deletions = logoutResponse.getSetCookie();
+    expect(Array.isArray(deletions) ? deletions.join('; ') : deletions).not.toContain(
+      `${HOMEY_SESSION_COOKIE_NAME}=`
+    );
+    expect(scopedStore.readSession(legacy.cookieId)).toBeNull();
+    expect(scopedStore.readSession(secondLegacy.cookieId)).toBeNull();
+
+    const neighbor = createFixture();
+    const neighborCookieNames = createInstallationCookieNames(
+      HOMEY_SESSION_COOKIE_NAME,
+      '2'.repeat(64)
+    );
+    const neighborStore = createViteHomeySessionStore({
+      cookieNames: neighborCookieNames,
+      legacySessionPath: neighbor.legacySessionPath,
+      sessionsDirectory: neighbor.sessionsDirectory,
+    });
+    expect(getViteProviderRequestSession(request, neighborCookieNames, neighborStore)).toBeNull();
+  });
+
   it('creates bounded OAuth redirects without callback secrets or external targets', () => {
     expect(
       appendHomeyOAuthFailureMarker(

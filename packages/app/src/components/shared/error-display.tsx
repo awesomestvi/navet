@@ -1,4 +1,4 @@
-import { Button } from '@navet/app/components/primitives';
+import { Button } from '@navet/app/components/primitives/button';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { navetTypographyTokens } from '@navet/app/components/system/tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';

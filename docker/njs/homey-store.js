@@ -606,6 +606,9 @@ function createHomeySessionStore(options) {
       : null);
   const bindingStore = createProviderSessionStore({
     cookieName: HOMEY_COOKIE_NAME,
+    cookieNames: settings.cookieNames,
+    installationKey: settings.installationKey,
+    keyPath: settings.keyPath,
     sessionsDirectory: settings.sessionsDirectory || HOMEY_SESSIONS_DIRECTORY,
     legacySessionPath: settings.legacySessionPath || LEGACY_HOMEY_PATH,
     maxRecordBytes: MAX_HOMEY_RECORD_BYTES,
@@ -954,7 +957,11 @@ function createHomeySessionStore(options) {
           sendLatestSessionOrNoContent();
           return;
         }
-        bindingStore.deleteSession(context.cookieId);
+        if (bindingStore.cookieNames.scoped) {
+          bindingStore.deleteRequestSessions(r);
+        } else {
+          bindingStore.deleteSession(context.cookieId);
+        }
         bindingStore.clearSessionCookie(r);
         sendNoContent(r);
         return;
@@ -1065,7 +1072,11 @@ function createHomeySessionStore(options) {
           sendJson(r, 409, { error: 'Homey session changed before selection completed' });
           return;
         }
-        bindingStore.deleteSession(context.cookieId);
+        if (bindingStore.cookieNames.scoped) {
+          bindingStore.deleteRequestSessions(r);
+        } else {
+          bindingStore.deleteSession(context.cookieId);
+        }
         bindingStore.clearSessionCookie(r);
         sendJson(r, 401, { error: 'Homey login has expired' });
         return;

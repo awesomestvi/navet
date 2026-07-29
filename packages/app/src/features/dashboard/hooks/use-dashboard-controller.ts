@@ -515,6 +515,7 @@ export function useDashboardController(): DashboardController {
     connecting,
     densePerformanceMode,
     denseVisibleCardCount,
+    optimizeOffscreenPaint: performanceProfile.optimizeOffscreenPaint,
     devicesLoaded,
     handleAddCard,
     handleAddLibraryCard,

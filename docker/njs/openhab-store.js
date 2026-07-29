@@ -405,6 +405,9 @@ function createOpenHABSessionStore(options) {
       : null);
   const bindingStore = createProviderSessionStore({
     cookieName: OPENHAB_COOKIE_NAME,
+    cookieNames: settings.cookieNames,
+    installationKey: settings.installationKey,
+    keyPath: settings.keyPath,
     sessionsDirectory: settings.sessionsDirectory || OPENHAB_SESSIONS_DIRECTORY,
     legacySessionPath: settings.legacySessionPath || LEGACY_OPENHAB_PATH,
     maxRecordBytes: MAX_OPENHAB_RECORD_BYTES,

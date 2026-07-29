@@ -15,5 +15,6 @@ export interface DeviceGridProps {
   allowEntityRemoval?: boolean;
   usesHideAction?: boolean;
   densePerformanceMode?: boolean;
+  optimizeOffscreenPaint?: boolean;
   getDeviceHeaderSubtitle?: (device: DeviceWithType) => string | undefined;
 }

@@ -38,6 +38,7 @@ else
   mv "${INSTALLATION_KEY_PATH}.tmp" "${INSTALLATION_KEY_PATH}"
   PAIRING_KEY_CREATED=true
 fi
+chmod 600 "${INSTALLATION_KEY_PATH}"
 chown nginx:nginx "${INSTALLATION_KEY_PATH}" 2>/dev/null || true
 
 write_runtime_resolver() {

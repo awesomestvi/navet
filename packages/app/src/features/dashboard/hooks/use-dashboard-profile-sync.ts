@@ -17,8 +17,11 @@ import {
   rotateDashboardClientIdentity,
 } from '@navet/app/features/dashboard/clients/dashboard-client-identity';
 import {
+  getDashboardProfileFingerprint,
   readDashboardProfileBase,
+  readDashboardProfileReceipt,
   writeDashboardProfileBase,
+  writeDashboardProfileReceipt,
 } from '@navet/app/features/dashboard/clients/dashboard-profile-base-cache';
 import {
   getDashboardProfileChangedPaths,
@@ -76,6 +79,16 @@ interface PendingConflict {
   base: DashboardConfigPayload | null;
   local: DashboardConfigPayload;
   remote: DashboardProfileLoadResult;
+}
+
+interface KeepLocalResolution {
+  base: DashboardConfigPayload | null;
+  chosenLocal: DashboardConfigPayload;
+  generation: string | null;
+  installationId: string | null;
+  lastAttempt: DashboardConfigPayload;
+  profileId: typeof DASHBOARD_PROFILE_ID;
+  workspaceId: string | null;
 }
 
 function getProfileForSync(): DashboardConfigPayload {
@@ -201,7 +214,9 @@ export function useDashboardProfileSync() {
     let pollTimeout: number | null = null;
     let conflictToastId: string | number | null = null;
     let pendingConflict: PendingConflict | null = null;
+    let keepLocalResolution: KeepLocalResolution | null = null;
     let commonBase = readDashboardProfileBase();
+    let cleanReceipt = readDashboardProfileReceipt();
     let client = getDashboardClientIdentity({
       profileMode: useSettingsStore.getState().dashboardProfileMode,
     });
@@ -240,6 +255,7 @@ export function useDashboardProfileSync() {
         result.revision === null ||
         base.workspaceId !== result.workspace.workspaceId ||
         base.profileId !== DASHBOARD_PROFILE_ID ||
+        base.generation !== result.generation ||
         base.revision > result.revision
       ) {
         return null;
@@ -249,20 +265,26 @@ export function useDashboardProfileSync() {
 
     function rememberCommonBase(
       profile: DashboardConfigPayload,
-      result: DashboardProfileLoadResult
+      result: DashboardProfileLoadResult,
+      { recordCleanReceipt = true }: { recordCleanReceipt?: boolean } = {}
     ) {
-      if (!result.workspace || result.revision === null) {
+      if (!result.workspace || !result.generation || result.revision === null) {
         return;
       }
 
-      commonBase = {
+      const snapshot = {
+        generation: result.generation,
         profile,
         profileId: DASHBOARD_PROFILE_ID,
         revision: result.revision,
         savedAt: new Date().toISOString(),
         workspaceId: result.workspace.workspaceId,
       };
+      commonBase = snapshot;
       writeDashboardProfileBase(commonBase);
+      if (recordCleanReceipt) {
+        cleanReceipt = writeDashboardProfileReceipt(snapshot);
+      }
     }
 
     function markRemoteSynced(result: DashboardProfileLoadResult) {
@@ -420,16 +442,19 @@ export function useDashboardProfileSync() {
                     return;
                   }
 
+                  const currentLocal = getProfileForSync();
                   const rebased = currentConflict.base
                     ? rebaseLocalDashboardProfile(
                         currentConflict.base,
-                        currentConflict.local,
+                        currentLocal,
                         currentConflict.remote.profile
                       )
-                    : currentConflict.local;
+                    : currentLocal;
                   clearConflict();
                   remoteResult = currentConflict.remote;
-                  rememberCommonBase(currentConflict.remote.profile, currentConflict.remote);
+                  rememberCommonBase(currentConflict.remote.profile, currentConflict.remote, {
+                    recordCleanReceipt: false,
+                  });
                   applyingRemote = true;
                   try {
                     importDashboardConfig(
@@ -439,8 +464,17 @@ export function useDashboardProfileSync() {
                   } finally {
                     applyingRemote = false;
                   }
+                  keepLocalResolution = {
+                    base: currentConflict.base,
+                    chosenLocal: currentLocal,
+                    generation: currentConflict.remote.generation,
+                    installationId: currentConflict.remote.workspace?.installationId ?? null,
+                    lastAttempt: getProfileForSync(),
+                    profileId: DASHBOARD_PROFILE_ID,
+                    workspaceId: currentConflict.remote.workspace?.workspaceId ?? null,
+                  };
                   pendingLocalChanges = true;
-                  void saveProfile(getProfileForSync());
+                  void saveProfile(keepLocalResolution.lastAttempt);
                 },
               },
               tRef.current('dashboard.profileSync.keepMine')
@@ -454,6 +488,7 @@ export function useDashboardProfileSync() {
                 onClick: () => {
                   const currentConflict = pendingConflict;
                   if (currentConflict) {
+                    keepLocalResolution = null;
                     applyRemoteProfile(currentConflict.remote, false);
                   }
                 },
@@ -516,8 +551,12 @@ export function useDashboardProfileSync() {
         ? getDashboardProfileChangedPaths(remoteResult.profile, profile)
         : ['/'];
       if (changedPaths.length === 0) {
+        keepLocalResolution = null;
         pendingLocalChanges = false;
         clearSaveTimeout();
+        if (remoteResult.profile) {
+          rememberCommonBase(remoteResult.profile, remoteResult);
+        }
         markRemoteSynced(remoteResult);
         return false;
       }
@@ -551,6 +590,7 @@ export function useDashboardProfileSync() {
 
         if (result.saved) {
           const savedRemote = remoteFromWrite(profile, result, remoteResult);
+          keepLocalResolution = null;
           remoteResult = savedRemote;
           pendingLocalChanges = false;
           failureCount = 0;
@@ -565,6 +605,7 @@ export function useDashboardProfileSync() {
 
         pendingLocalChanges = true;
         if (result.failureCode === DASHBOARD_PROFILE_ERROR_CODES.workspaceTenantMismatch) {
+          keepLocalResolution = null;
           writesBlocked = true;
           permanentAccessFailure = true;
           runtime.markError(tRef.current('dashboard.profileSync.tenantMismatch'));
@@ -572,6 +613,7 @@ export function useDashboardProfileSync() {
           return false;
         }
         if (result.failureCode === DASHBOARD_PROFILE_ERROR_CODES.clientBindingMismatch) {
+          keepLocalResolution = null;
           writesBlocked = true;
           permanentAccessFailure = true;
           runtime.markError(tRef.current('dashboard.profileSync.unavailable'));
@@ -627,6 +669,7 @@ export function useDashboardProfileSync() {
       permanentAccessFailure = false;
 
       if (!result.profile) {
+        keepLocalResolution = null;
         clearConflict();
         if (result.recovery.status === 'uninitialized') {
           writesBlocked = false;
@@ -649,10 +692,61 @@ export function useDashboardProfileSync() {
       writesBlocked = false;
       const base = readCompatibleBase(result);
       const local = getProfileForSync();
+      if (
+        keepLocalResolution &&
+        (result.recovery.status !== 'active' ||
+          keepLocalResolution.generation !== result.generation ||
+          keepLocalResolution.installationId !== (result.workspace?.installationId ?? null) ||
+          keepLocalResolution.profileId !== DASHBOARD_PROFILE_ID ||
+          keepLocalResolution.workspaceId !== (result.workspace?.workspaceId ?? null))
+      ) {
+        keepLocalResolution = null;
+      }
+      if (keepLocalResolution) {
+        const chosenRebased = keepLocalResolution.base
+          ? rebaseLocalDashboardProfile(
+              keepLocalResolution.base,
+              keepLocalResolution.chosenLocal,
+              result.profile
+            )
+          : keepLocalResolution.chosenLocal;
+        const rebased = rebaseLocalDashboardProfile(
+          keepLocalResolution.lastAttempt,
+          local,
+          chosenRebased
+        );
+        rememberCommonBase(result.profile, result, { recordCleanReceipt: false });
+        applyingRemote = true;
+        try {
+          importDashboardConfig(
+            { ...rebased, exportedAt: new Date().toISOString() },
+            { applyNavigation: false }
+          );
+        } finally {
+          applyingRemote = false;
+        }
+        keepLocalResolution.lastAttempt = getProfileForSync();
+        pendingLocalChanges = true;
+        markRemoteSynced(result);
+        await saveProfile(keepLocalResolution.lastAttempt);
+        return;
+      }
       const localDiffersFromRemote =
         getDashboardProfileChangedPaths(result.profile, local).length > 0;
+      const localMatchesCleanReceipt =
+        !base &&
+        cleanReceipt !== null &&
+        result.workspace !== null &&
+        result.revision !== null &&
+        cleanReceipt.workspaceId === result.workspace.workspaceId &&
+        cleanReceipt.profileId === DASHBOARD_PROFILE_ID &&
+        cleanReceipt.revision <= result.revision &&
+        cleanReceipt.profileFingerprint === getDashboardProfileFingerprint(local);
       const shouldPreserveConfiguredLocalWithoutBase =
-        !base && onboardingCompletedRef.current && localDiffersFromRemote;
+        !base &&
+        !localMatchesCleanReceipt &&
+        onboardingCompletedRef.current &&
+        localDiffersFromRemote;
       const hasPendingLocalChanges =
         pendingLocalChanges ||
         shouldPreserveConfiguredLocalWithoutBase ||
@@ -682,7 +776,7 @@ export function useDashboardProfileSync() {
       }
 
       if (reconciliation.kind === 'save-merged') {
-        rememberCommonBase(result.profile, result);
+        rememberCommonBase(result.profile, result, { recordCleanReceipt: false });
         applyingRemote = true;
         try {
           importDashboardConfig(

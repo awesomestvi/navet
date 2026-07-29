@@ -9,6 +9,7 @@ import {
 } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
+import type { InstallationCookieNames } from './installation-cookie-scope'
 import { isViteStrictSameOriginMutation } from './vite-provider-session-store'
 import {
   DASHBOARD_PROFILE_ERROR_CODES,
@@ -2051,12 +2052,25 @@ function resolveClientBinding(
   res: ServerResponse,
   principal: ViteDashboardProfilePrincipal,
   clientId: string,
-  store: ViteDashboardProfileStore
+  store: ViteDashboardProfileStore,
+  cookieNames: InstallationCookieNames
 ): string {
-  const cookieBindings = readCookieValues(
+  const currentCookieBindings = readCookieValues(
     getHeader(req, 'Cookie'),
-    CLIENT_BINDING_COOKIE_NAME
+    cookieNames.currentName
   ).filter((candidate) => CLIENT_BINDING_PATTERN.test(candidate))
+  const legacyCookieBindings = cookieNames.scoped
+    ? readCookieValues(
+        getHeader(req, 'Cookie'),
+        cookieNames.legacyName
+      ).filter((candidate) => CLIENT_BINDING_PATTERN.test(candidate))
+    : currentCookieBindings
+  const cookieBindings = [
+    ...currentCookieBindings,
+    ...legacyCookieBindings.filter(
+      (candidate) => !currentCookieBindings.includes(candidate)
+    ),
+  ]
   const now = Date.now()
   const remoteAddress =
     (getHeader(req, 'X-Forwarded-For') ?? '').split(',')[0]?.trim() ||
@@ -2078,7 +2092,7 @@ function resolveClientBinding(
     cookieBindings
   )
   if (registered.bindingId) {
-    setClientBindingCookie(req, res, registered.bindingId)
+    setClientBindingCookie(req, res, registered.bindingId, cookieNames)
     return registered.bindingId
   }
   if (registered.clientExists) {
@@ -2091,18 +2105,26 @@ function resolveClientBinding(
         record.bindingId === registered.expectedBindingId
     )
     if (concurrentBootstrap) {
-      setClientBindingCookie(req, res, concurrentBootstrap.bindingId)
+      setClientBindingCookie(
+        req,
+        res,
+        concurrentBootstrap.bindingId,
+        cookieNames
+      )
       return concurrentBootstrap.bindingId
     }
     // Do not overwrite a registered browser binding because a duplicate,
     // stale, or malformed parent-path cookie was presented.
-    return cookieBindings[0] ?? randomBytes(32).toString('hex')
+    return currentCookieBindings[0] ?? randomBytes(32).toString('hex')
   }
-  if (cookieBindings.length > 0) {
-    // A brand-new client may adopt one legacy unsigned binding. Once it is
-    // registered, later duplicate-cookie resolution is registry-backed.
-    setClientBindingCookie(req, res, cookieBindings[0])
-    return cookieBindings[0]
+  if (currentCookieBindings.length > 0) {
+    setClientBindingCookie(
+      req,
+      res,
+      currentCookieBindings[0],
+      cookieNames
+    )
+    return currentCookieBindings[0]
   }
 
   const bindingId = resolvePersistedClientBinding(
@@ -2111,18 +2133,19 @@ function resolveClientBinding(
     now
   )
 
-  setClientBindingCookie(req, res, bindingId)
+  setClientBindingCookie(req, res, bindingId, cookieNames)
   return bindingId
 }
 
 function setClientBindingCookie(
   req: IncomingMessage,
   res: ServerResponse,
-  bindingId: string
+  bindingId: string,
+  cookieNames: InstallationCookieNames
 ): void {
   const ingressPath = normalizeIngressPath(getHeader(req, 'X-Ingress-Path'))
   const attributes = [
-    `${CLIENT_BINDING_COOKIE_NAME}=${bindingId}`,
+    `${cookieNames.currentName}=${bindingId}`,
     `Path=${ingressPath || '/'}`,
     'HttpOnly',
     'SameSite=Lax',
@@ -2150,6 +2173,7 @@ function readClient(
   res: ServerResponse,
   principal: ViteDashboardProfilePrincipal,
   store: ViteDashboardProfileStore,
+  cookieNames: InstallationCookieNames,
   required: boolean
 ): BoundDashboardProfileClient | null {
   const id = getHeader(req, DASHBOARD_PROFILE_HEADERS.clientId)
@@ -2172,7 +2196,14 @@ function readClient(
         .trim()
         .slice(0, 120) || 'Navet dashboard',
     kind,
-    bindingId: resolveClientBinding(req, res, principal, id, store),
+    bindingId: resolveClientBinding(
+      req,
+      res,
+      principal,
+      id,
+      store,
+      cookieNames
+    ),
   }
 }
 
@@ -2341,12 +2372,19 @@ function sendPrecondition(
 }
 
 export function createViteDashboardProfileRequestHandler(options: {
+  cookieNames?: InstallationCookieNames
   store?: ViteDashboardProfileStore
   resolvePrincipal: (
     request: IncomingMessage
   ) => ViteDashboardProfilePrincipal | null | Promise<ViteDashboardProfilePrincipal | null>
 }) {
   const store = options.store ?? createViteDashboardProfileStore()
+  const cookieNames =
+    options.cookieNames ?? {
+      currentName: CLIENT_BINDING_COOKIE_NAME,
+      legacyName: CLIENT_BINDING_COOKIE_NAME,
+      scoped: false,
+    }
 
   const handleRequest = async (
     req: IncomingMessage,
@@ -2375,7 +2413,14 @@ export function createViteDashboardProfileRequestHandler(options: {
       sendJson(res, 403, { error: 'Cross-origin profile mutation is not allowed' })
       return
     }
-    const client = readClient(req, res, principal, store, false)
+    const client = readClient(
+      req,
+      res,
+      principal,
+      store,
+      cookieNames,
+      false
+    )
     if (
       client &&
       !store.touchClient(principal, client, store.getState().revision)

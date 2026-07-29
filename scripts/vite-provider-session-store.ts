@@ -10,6 +10,7 @@ import {
 } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
+import type { InstallationCookieNames } from './installation-cookie-scope'
 
 const COOKIE_ID_PATTERN = /^[a-f0-9]{64}$/
 const SESSION_IDLE_TTL_MS = 90 * 24 * 60 * 60 * 1000
@@ -68,6 +69,7 @@ export function isViteProviderSessionCapacityError(
 }
 
 export interface ViteProviderSessionStore<T extends { updatedAt: number }> {
+  cookieNames: InstallationCookieNames
   cleanupSessions(preserveCookieId?: string, reserveSlots?: number): number
   createSession(): { cookieId: string; session: T }
   deleteSession(cookieId: string): void
@@ -78,6 +80,7 @@ export interface ViteProviderSessionStore<T extends { updatedAt: number }> {
 }
 
 interface ViteProviderSessionStoreOptions<T extends { updatedAt: number }> {
+  cookieNames: InstallationCookieNames
   createRecord: () => T
   isValidRecord: (value: unknown) => value is T
   legacySessionPath: string
@@ -174,7 +177,23 @@ export function getViteProviderCookieId(req: IncomingMessage, cookieName: string
   return getViteProviderCookieIds(req, cookieName)[0] ?? ''
 }
 
-export function getViteProviderCookieIds(req: IncomingMessage, cookieName: string) {
+function normalizeCookieNames(
+  cookieNames: string | InstallationCookieNames
+): InstallationCookieNames {
+  return typeof cookieNames === 'string'
+    ? {
+        currentName: cookieNames,
+        legacyName: cookieNames,
+        scoped: false,
+      }
+    : cookieNames
+}
+
+export function getViteProviderCookieIds(
+  req: IncomingMessage,
+  cookieNames: string | InstallationCookieNames
+) {
+  const cookieName = normalizeCookieNames(cookieNames).currentName
   const values: string[] = []
   for (const part of String(req.headers.cookie ?? '').split(';')) {
     const entry = part.trim()
@@ -193,30 +212,32 @@ export function getViteProviderCookieIds(req: IncomingMessage, cookieName: strin
 export function setViteProviderSessionCookie(
   req: IncomingMessage,
   res: ServerResponse,
-  cookieName: string,
+  cookieNames: string | InstallationCookieNames,
   cookieId: string
 ) {
+  const cookieName = normalizeCookieNames(cookieNames).currentName
   res.setHeader(
     'Set-Cookie',
     buildSessionCookie(req, cookieName, cookieId, COOKIE_MAX_AGE_SECONDS)
   )
 }
 
-export function clearViteProviderSessionCookie(
+export function clearViteProviderSessionCookie<T extends { updatedAt: number }>(
   req: IncomingMessage,
   res: ServerResponse,
-  cookieName: string
+  cookieNames: string | InstallationCookieNames,
+  _store?: ViteProviderSessionStore<T>
 ) {
+  const names = normalizeCookieNames(cookieNames)
+  const cookieName = names.currentName
   const ingressPath = normalizeIngressPath(req.headers['x-ingress-path'])
-  res.setHeader(
-    'Set-Cookie',
-    ingressPath
-      ? [
-          buildSessionCookie(req, cookieName, '', 0, ingressPath),
-          buildSessionCookie(req, cookieName, '', 0, '/'),
-        ]
-      : buildSessionCookie(req, cookieName, '', 0, '/')
-  )
+  const cookies = ingressPath
+    ? [
+        buildSessionCookie(req, cookieName, '', 0, ingressPath),
+        buildSessionCookie(req, cookieName, '', 0, '/'),
+      ]
+    : [buildSessionCookie(req, cookieName, '', 0, '/')]
+  res.setHeader('Set-Cookie', cookies.length === 1 ? cookies[0] : cookies)
 }
 
 export function createViteProviderSessionStore<T extends { updatedAt: number }>(
@@ -231,6 +252,7 @@ export function createViteProviderSessionStore<T extends { updatedAt: number }>(
   } = options
   const idleTtlMs = options.idleTtlMs ?? SESSION_IDLE_TTL_MS
   const maxSessions = options.maxSessions ?? DEFAULT_MAX_SESSIONS
+  const cookieNames = options.cookieNames
 
   const ensureDirectory = () => {
     mkdirSync(sessionsDirectory, { recursive: true, mode: 0o700 })
@@ -434,6 +456,7 @@ export function createViteProviderSessionStore<T extends { updatedAt: number }>(
   }
 
   return {
+    cookieNames,
     cleanupSessions,
     createSession,
     deleteSession,
@@ -449,23 +472,35 @@ export function createViteProviderSessionStore<T extends { updatedAt: number }>(
 
 export function getViteProviderRequestSession<T extends { updatedAt: number }>(
   req: IncomingMessage,
-  cookieName: string,
+  cookieNames: string | InstallationCookieNames,
   store: ViteProviderSessionStore<T>
 ) {
-  return getViteProviderRequestSessions(req, cookieName, store)[0] ?? null
+  return getViteProviderRequestSessions(req, cookieNames, store)[0] ?? null
 }
 
 export function getViteProviderRequestSessions<T extends { updatedAt: number }>(
   req: IncomingMessage,
-  cookieName: string,
+  cookieNames: string | InstallationCookieNames,
   store: ViteProviderSessionStore<T>
 ) {
-  const contexts: Array<{ cookieId: string; session: T }> = []
-  for (const cookieId of getViteProviderCookieIds(req, cookieName)) {
+  const names = normalizeCookieNames(cookieNames)
+  let contexts: Array<{ cookieId: string; session: T }> = []
+  for (const cookieId of getViteProviderCookieIds(req, names)) {
     const session = store.readSession(cookieId)
     if (session) {
       contexts.push({ cookieId, session })
     }
+  }
+  if (contexts.length === 0 && names.scoped) {
+    const legacyNames: InstallationCookieNames = {
+      currentName: names.legacyName,
+      legacyName: names.legacyName,
+      scoped: false,
+    }
+    contexts = getViteProviderCookieIds(req, legacyNames).flatMap((cookieId) => {
+      const session = store.readSession(cookieId)
+      return session ? [{ cookieId, session }] : []
+    })
   }
   contexts.sort((left, right) => {
     const leftAuthenticated =
@@ -487,12 +522,12 @@ export function getViteProviderRequestSessions<T extends { updatedAt: number }>(
 
 export function findViteProviderRequestSession<T extends { updatedAt: number }>(
   req: IncomingMessage,
-  cookieName: string,
+  cookieNames: string | InstallationCookieNames,
   store: ViteProviderSessionStore<T>,
   predicate: (context: { cookieId: string; session: T }) => boolean
 ) {
   return (
-    getViteProviderRequestSessions(req, cookieName, store).find(predicate) ??
+    getViteProviderRequestSessions(req, cookieNames, store).find(predicate) ??
     null
   )
 }
@@ -501,11 +536,25 @@ export function deleteViteProviderRequestSessions<
   T extends { updatedAt: number },
 >(
   req: IncomingMessage,
-  cookieName: string,
+  cookieNames: string | InstallationCookieNames,
   store: ViteProviderSessionStore<T>,
   preserveCookieId = ''
 ) {
-  for (const cookieId of getViteProviderCookieIds(req, cookieName)) {
+  const names = normalizeCookieNames(cookieNames)
+  const cookieIds = getViteProviderCookieIds(req, names)
+  if (names.scoped) {
+    const legacyNames: InstallationCookieNames = {
+      currentName: names.legacyName,
+      legacyName: names.legacyName,
+      scoped: false,
+    }
+    for (const cookieId of getViteProviderCookieIds(req, legacyNames)) {
+      if (store.readSession(cookieId) && !cookieIds.includes(cookieId)) {
+        cookieIds.push(cookieId)
+      }
+    }
+  }
+  for (const cookieId of cookieIds) {
     if (cookieId !== preserveCookieId) {
       store.deleteSession(cookieId)
     }
@@ -517,14 +566,27 @@ export function rotateViteProviderRequestSession<
 >(
   req: IncomingMessage,
   res: ServerResponse,
-  cookieName: string,
+  cookieNames: string | InstallationCookieNames,
   store: ViteProviderSessionStore<T>,
   previousCookieId: string,
   session: T
 ) {
-  const staleCookieIds = getViteProviderCookieIds(req, cookieName)
+  const names = normalizeCookieNames(cookieNames)
+  const staleCookieIds = getViteProviderCookieIds(req, names)
+  if (names.scoped) {
+    const legacyNames: InstallationCookieNames = {
+      currentName: names.legacyName,
+      legacyName: names.legacyName,
+      scoped: false,
+    }
+    for (const cookieId of getViteProviderCookieIds(req, legacyNames)) {
+      if (store.readSession(cookieId) && !staleCookieIds.includes(cookieId)) {
+        staleCookieIds.push(cookieId)
+      }
+    }
+  }
   const rotated = store.rotateSession(previousCookieId, session)
-  setViteProviderSessionCookie(req, res, cookieName, rotated.cookieId)
+  setViteProviderSessionCookie(req, res, names, rotated.cookieId)
   for (const cookieId of staleCookieIds) {
     if (cookieId !== rotated.cookieId) {
       store.deleteSession(cookieId)
@@ -536,17 +598,17 @@ export function rotateViteProviderRequestSession<
 export function createViteProviderRequestSession<T extends { updatedAt: number }>(
   req: IncomingMessage,
   res: ServerResponse,
-  cookieName: string,
+  cookieNames: string | InstallationCookieNames,
   store: ViteProviderSessionStore<T>
 ) {
-  const existing = getViteProviderRequestSession(req, cookieName, store)
+  const existing = getViteProviderRequestSession(req, cookieNames, store)
   if (existing) {
-    setViteProviderSessionCookie(req, res, cookieName, existing.cookieId)
+    setViteProviderSessionCookie(req, res, cookieNames, existing.cookieId)
     return existing
   }
 
   const created = store.createSession()
-  setViteProviderSessionCookie(req, res, cookieName, created.cookieId)
+  setViteProviderSessionCookie(req, res, cookieNames, created.cookieId)
   return created
 }
 

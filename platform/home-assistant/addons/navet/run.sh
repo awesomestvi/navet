@@ -15,6 +15,24 @@ RESOLVED_HASS_PROXY_BASE="http://supervisor/core"
 mkdir -p /data
 chown nginx:nginx /data 2>/dev/null || true
 
+INSTALLATION_KEY_PATH="/data/navet-installation-key"
+if [[ -f "${INSTALLATION_KEY_PATH}" ]]; then
+  NAVET_INSTALLATION_KEY="$(tr -d '\r\n' < "${INSTALLATION_KEY_PATH}")"
+  if ! printf '%s' "${NAVET_INSTALLATION_KEY}" | grep -Eq '^[a-f0-9]{64}$'; then
+    echo "${INSTALLATION_KEY_PATH} is invalid; refusing to replace installation authority" >&2
+    exit 1
+  fi
+else
+  NAVET_INSTALLATION_KEY="$(
+    od -An -N32 -tx1 /dev/urandom | tr -d ' \n'
+  )"
+  printf '%s\n' "${NAVET_INSTALLATION_KEY}" > "${INSTALLATION_KEY_PATH}.tmp"
+  chmod 600 "${INSTALLATION_KEY_PATH}.tmp"
+  mv "${INSTALLATION_KEY_PATH}.tmp" "${INSTALLATION_KEY_PATH}"
+fi
+chmod 600 "${INSTALLATION_KEY_PATH}"
+chown nginx:nginx "${INSTALLATION_KEY_PATH}" 2>/dev/null || true
+
 RESOLVER_ADDRESSES="$(
   awk '
     $1 == "nameserver" && $2 ~ /^[0-9A-Fa-f:.]+$/ {

@@ -1,6 +1,7 @@
 import fs from 'fs';
 import hashCrypto from 'crypto';
 import authStore from './auth-store.js';
+import installationCookieScope from './installation-cookie-scope.js';
 import providerSessionStore from './provider-session-store.js';
 
 const isStrictSameOriginMutation =
@@ -24,6 +25,10 @@ const PROFILE_HASH_PATTERN = /^[a-f0-9]{64}$/;
 const CLIENT_TOUCH_INTERVAL_MS = 15 * 60 * 1000;
 const TENANT_ID_PATTERN = /^hat_[a-f0-9]{64}$/;
 const CLIENT_BINDING_COOKIE_NAME = 'navet_profile_client';
+const CLIENT_BINDING_COOKIE_NAMES =
+  installationCookieScope.createInstallationCookieNames(
+    CLIENT_BINDING_COOKIE_NAME
+  );
 const CLIENT_BINDING_PATTERN = /^[a-f0-9]{64}$/;
 const CLIENT_BINDING_MAX_AGE_SECONDS = 365 * 24 * 60 * 60;
 const CLIENT_STALE_AFTER_MS = 90 * 24 * 60 * 60 * 1000;
@@ -239,7 +244,7 @@ function requestUsesHttps(r) {
 function setClientBindingCookie(r, bindingId) {
   const ingressPath = normalizeIngressPath(getHeader(r, 'X-Ingress-Path'));
   const attributes = [
-    `${CLIENT_BINDING_COOKIE_NAME}=${bindingId}`,
+    `${CLIENT_BINDING_COOKIE_NAMES.currentName}=${bindingId}`,
     `Path=${ingressPath || '/'}`,
     'HttpOnly',
     'SameSite=Lax',
@@ -321,7 +326,7 @@ function persistClientBindingBootstrap(records, key, bindingId, now) {
 function resolveClientBinding(r, principal, clientId) {
   const responseBindings = readCookieValues(
     r.headersOut['Set-Cookie'],
-    CLIENT_BINDING_COOKIE_NAME
+    CLIENT_BINDING_COOKIE_NAMES.currentName
   ).filter(function (value) {
     return CLIENT_BINDING_PATTERN.test(value);
   });
@@ -329,12 +334,25 @@ function resolveClientBinding(r, principal, clientId) {
     return responseBindings[0];
   }
 
-  const cookieBindings = readCookieValues(
+  const currentCookieBindings = readCookieValues(
     getHeader(r, 'Cookie'),
-    CLIENT_BINDING_COOKIE_NAME
+    CLIENT_BINDING_COOKIE_NAMES.currentName
   ).filter(function (value) {
     return CLIENT_BINDING_PATTERN.test(value);
   });
+  const legacyCookieBindings = CLIENT_BINDING_COOKIE_NAMES.scoped
+    ? readCookieValues(
+        getHeader(r, 'Cookie'),
+        CLIENT_BINDING_COOKIE_NAMES.legacyName
+      ).filter(function (value) {
+        return CLIENT_BINDING_PATTERN.test(value);
+      })
+    : currentCookieBindings;
+  const cookieBindings = currentCookieBindings.concat(
+    legacyCookieBindings.filter(function (value) {
+      return currentCookieBindings.indexOf(value) === -1;
+    })
+  );
   const now = Date.now();
   const forwardedAddress = String(getHeader(r, 'X-Forwarded-For') || '')
     .split(',')[0]
@@ -381,11 +399,11 @@ function resolveClientBinding(r, principal, clientId) {
     }
     // Never overwrite a registered browser binding merely because a duplicate,
     // stale, or malformed parent-path cookie was presented.
-    return cookieBindings[0] || secureRandomHex(32);
+    return currentCookieBindings[0] || secureRandomHex(32);
   }
 
-  for (let index = 0; index < cookieBindings.length; index += 1) {
-    const candidate = cookieBindings[index];
+  for (let index = 0; index < legacyCookieBindings.length; index += 1) {
+    const candidate = legacyCookieBindings[index];
     const hasBindingContinuity = registry.clients.some(function (entry) {
       return entry.bindingId === candidate;
     });
@@ -394,11 +412,9 @@ function resolveClientBinding(r, principal, clientId) {
       return candidate;
     }
   }
-  if (cookieBindings.length > 0) {
-    // A brand-new client can adopt one legacy unsigned binding. Once it is in
-    // the registry, all later duplicate-cookie resolution is registry-backed.
-    setClientBindingCookie(r, cookieBindings[0]);
-    return cookieBindings[0];
+  if (currentCookieBindings.length > 0) {
+    setClientBindingCookie(r, currentCookieBindings[0]);
+    return currentCookieBindings[0];
   }
 
   let bindingId = null;

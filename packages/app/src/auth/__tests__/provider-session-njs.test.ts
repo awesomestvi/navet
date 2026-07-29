@@ -279,6 +279,64 @@ describe('production njs provider credential sessions', () => {
     }
   });
 
+  it('revokes scoped Homey plus every locally backed legacy duplicate after confirmed expiry', async () => {
+    vi.stubEnv('NAVET_HOMEY_CLIENT_ID', 'homey-client-id');
+    vi.stubEnv('NAVET_HOMEY_CLIENT_SECRET', 'homey-client-secret');
+    const paths = createProviderDirectory('homey');
+    const legacyStore = createHomeySessionStore({
+      ...paths,
+      fetch: vi.fn(),
+    });
+    const legacyCookieA = createProviderCookie('navet_homey_session');
+    const legacyCookieB = createProviderCookie('navet_homey_session');
+    seedProviderAuth(legacyStore, legacyCookieA, {
+      ...HOMEY_AUTH_A,
+      expiresAt: Date.now() - 1,
+    });
+    seedProviderAuth(legacyStore, legacyCookieB, HOMEY_AUTH_B);
+
+    const scopedStore = createHomeySessionStore({
+      ...paths,
+      installationKey: '1'.repeat(64),
+      fetch: vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ error: 'invalid_grant' }), {
+          status: 400,
+        })
+      ),
+    });
+    expect(scopedStore.bindingStore.cookieNames.currentName).toMatch(
+      /^navet_homey_session_[a-f0-9]{24}$/
+    );
+    const scopedCookie = `${scopedStore.bindingStore.cookieNames.currentName}=${providerCookieId(
+      legacyCookieA
+    )}`;
+    const metadata = createRequest({
+      uri: '/__navet_homey__/session',
+      cookie: `${scopedCookie}; ${legacyCookieA}; ${legacyCookieB}`,
+    });
+    await scopedStore.handle(metadata.request);
+
+    expect(metadata.result.status).toBe(204);
+    expect(scopedStore.bindingStore.readSession(providerCookieId(legacyCookieA))).toBeNull();
+    expect(scopedStore.bindingStore.readSession(providerCookieId(legacyCookieB))).toBeNull();
+    const deletions = Array.isArray(metadata.request.headersOut['Set-Cookie'])
+      ? metadata.request.headersOut['Set-Cookie']
+      : [metadata.request.headersOut['Set-Cookie']];
+    expect(
+      deletions.every((serialized) =>
+        serialized.startsWith(`${scopedStore.bindingStore.cookieNames.currentName}=`)
+      )
+    ).toBe(true);
+    expect(deletions.join('; ')).not.toContain('navet_homey_session=');
+
+    const cannotResurrect = createRequest({
+      uri: '/__navet_homey__/session',
+      cookie: legacyCookieB,
+    });
+    await scopedStore.handle(cannotResurrect.request);
+    expect(cannotResurrect.result.status).toBe(204);
+  });
+
   it('isolates Homey metadata, proxy credentials, and logout between browser cookie jars', async () => {
     const store = createHomeySessionStore({
       ...createProviderDirectory('homey'),

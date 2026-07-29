@@ -23,6 +23,7 @@ import {
 } from 'vite'
 import { VitePWA, type VitePWAOptions } from 'vite-plugin-pwa'
 import {
+  AUTH_COOKIE_NAME,
   createViteAuthRequestHandler,
   createViteAuthSessionStore,
   type HomeAssistantAuthData,
@@ -38,13 +39,14 @@ import {
   createViteInstallationAuthority,
   type ViteInstallationAuthority,
 } from '../../scripts/vite-installation-authority'
+import { createInstallationCookieNames } from '../../scripts/installation-cookie-scope'
 import { normalizeViteProxyTargetPath } from '../../scripts/vite-proxy-path'
 import {
   appendHomeyOAuthCallbackMarker,
   appendHomeyOAuthFailureMarker,
   createViteHomeySessionStore,
   HOMEY_OAUTH_PENDING_TTL_MS,
-  HOMEY_SESSION_COOKIE_NAME,
+  HOMEY_SESSION_COOKIE_NAME as HOMEY_SESSION_COOKIE_BASE_NAME,
   type HomeyOAuthFailureCode,
   type HomeySessionData,
   isConfirmedInvalidHomeyRefreshError,
@@ -53,7 +55,7 @@ import {
 } from '../../scripts/vite-homey-session-store'
 import {
   createViteOpenHABSessionStore,
-  OPENHAB_SESSION_COOKIE_NAME,
+  OPENHAB_SESSION_COOKIE_NAME as OPENHAB_SESSION_COOKIE_BASE_NAME,
   type OpenHABSessionData,
   normalizeOpenHABBaseUrl,
   normalizeOpenHABSessionData,
@@ -140,6 +142,7 @@ const DISABLED_INSTALLATION_AUTHORITY: ViteInstallationAuthority = {
   commitHomeAssistant: () => false,
   commitHomey: () => false,
   commitOpenHAB: () => false,
+  getCookieNames: (baseName) => createInstallationCookieNames(baseName),
 }
 
 function resolveFallbackGitSha() {
@@ -1418,7 +1421,11 @@ function openhabProxyPlugin(
 function authSessionStorePlugin(
   installationAuthority: ViteInstallationAuthority
 ) {
-  const authSessionStore = createViteAuthSessionStore()
+  const authSessionStore = createViteAuthSessionStore(
+    undefined,
+    undefined,
+    installationAuthority.getCookieNames(AUTH_COOKIE_NAME)
+  )
   const handleRequest = createViteAuthRequestHandler(
     authSessionStore,
     fetch,
@@ -1450,11 +1457,15 @@ function authSessionStorePlugin(
 }
 
 function dashboardProfileStorePlugin(
+  installationAuthority: ViteInstallationAuthority,
   resolvePrincipal: (
     req: IncomingMessage
   ) => ViteDashboardProfilePrincipal | null | Promise<ViteDashboardProfilePrincipal | null>
 ) {
-  const handleRequest = createViteDashboardProfileRequestHandler({ resolvePrincipal })
+  const handleRequest = createViteDashboardProfileRequestHandler({
+    cookieNames: installationAuthority.getCookieNames('navet_profile_client'),
+    resolvePrincipal,
+  })
   const registerMiddleware = (server: ViteDevServer | PreviewServer) => {
     server.middlewares.use('/__navet_profile__', async (req, res) => {
       await handleRequest(req, res)
@@ -1471,7 +1482,12 @@ function dashboardProfileStorePlugin(
 function homeySessionStorePlugin(
   installationAuthority: ViteInstallationAuthority
 ) {
-  const homeySessionStore = createViteHomeySessionStore()
+  const HOMEY_SESSION_COOKIE_NAME = installationAuthority.getCookieNames(
+    HOMEY_SESSION_COOKIE_BASE_NAME
+  )
+  const homeySessionStore = createViteHomeySessionStore({
+    cookieNames: HOMEY_SESSION_COOKIE_NAME,
+  })
   const athomApiBaseUrl = 'https://api.athom.com'
   const defaultHomeyCallbackPath = '/__navet_homey__/callback'
   const sessionTouchIntervalMs = 24 * 60 * 60 * 1000
@@ -1926,8 +1942,21 @@ function homeySessionStorePlugin(
             sendLatestSessionOrNoContent()
             return
           }
-          homeySessionStore.deleteSession(context.cookieId)
-          clearViteProviderSessionCookie(req, res, HOMEY_SESSION_COOKIE_NAME)
+          clearViteProviderSessionCookie(
+            req,
+            res,
+            HOMEY_SESSION_COOKIE_NAME,
+            homeySessionStore
+          )
+          if (HOMEY_SESSION_COOKIE_NAME.scoped) {
+            deleteViteProviderRequestSessions(
+              req,
+              HOMEY_SESSION_COOKIE_NAME,
+              homeySessionStore
+            )
+          } else {
+            homeySessionStore.deleteSession(context.cookieId)
+          }
           sendNoContent(res)
           return
         }
@@ -1961,12 +1990,17 @@ function homeySessionStorePlugin(
         return
       }
 
+      clearViteProviderSessionCookie(
+        req,
+        res,
+        HOMEY_SESSION_COOKIE_NAME,
+        homeySessionStore
+      )
       deleteViteProviderRequestSessions(
         req,
         HOMEY_SESSION_COOKIE_NAME,
         homeySessionStore
       )
-      clearViteProviderSessionCookie(req, res, HOMEY_SESSION_COOKIE_NAME)
       sendJson(res, 200, { ok: true })
       return
     }
@@ -2353,8 +2387,21 @@ function homeySessionStorePlugin(
             })
             return
           }
-          homeySessionStore.deleteSession(context.cookieId)
-          clearViteProviderSessionCookie(req, res, HOMEY_SESSION_COOKIE_NAME)
+          clearViteProviderSessionCookie(
+            req,
+            res,
+            HOMEY_SESSION_COOKIE_NAME,
+            homeySessionStore
+          )
+          if (HOMEY_SESSION_COOKIE_NAME.scoped) {
+            deleteViteProviderRequestSessions(
+              req,
+              HOMEY_SESSION_COOKIE_NAME,
+              homeySessionStore
+            )
+          } else {
+            homeySessionStore.deleteSession(context.cookieId)
+          }
           sendJson(res, 401, { error: 'Homey OAuth session has expired' })
           return
         }
@@ -2396,7 +2443,12 @@ function homeySessionStorePlugin(
 function openhabSessionStorePlugin(
   installationAuthority: ViteInstallationAuthority
 ) {
-  const openhabSessionStore = createViteOpenHABSessionStore()
+  const OPENHAB_SESSION_COOKIE_NAME = installationAuthority.getCookieNames(
+    OPENHAB_SESSION_COOKIE_BASE_NAME
+  )
+  const openhabSessionStore = createViteOpenHABSessionStore({
+    cookieNames: OPENHAB_SESSION_COOKIE_NAME,
+  })
   const loginRateLimiter = createViteOpenHABLoginRateLimiter()
   const OPENHAB_VALIDATE_TIMEOUT_MS = 5_000
   const sessionTouchIntervalMs = 24 * 60 * 60 * 1000
@@ -2633,12 +2685,17 @@ function openhabSessionStorePlugin(
         return
       }
 
+      clearViteProviderSessionCookie(
+        req,
+        res,
+        OPENHAB_SESSION_COOKIE_NAME,
+        openhabSessionStore
+      )
       deleteViteProviderRequestSessions(
         req,
         OPENHAB_SESSION_COOKIE_NAME,
         openhabSessionStore
       )
-      clearViteProviderSessionCookie(req, res, OPENHAB_SESSION_COOKIE_NAME)
       sendJson(res, 200, { ok: true })
       return
     }
@@ -2781,6 +2838,7 @@ export default defineConfig(({ command, mode }) => {
         : DISABLED_INSTALLATION_AUTHORITY
     const authSessionPlugin = authSessionStorePlugin(installationAuthority)
     const dashboardProfilePlugin = dashboardProfileStorePlugin(
+      installationAuthority,
       (req) =>
         (
           authSessionPlugin as PluginOption & {

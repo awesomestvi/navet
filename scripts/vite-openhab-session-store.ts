@@ -3,6 +3,10 @@ import {
   createViteProviderSessionStore,
   type ViteProviderSessionStore,
 } from './vite-provider-session-store'
+import {
+  createInstallationCookieNames,
+  type InstallationCookieNames,
+} from './installation-cookie-scope'
 
 export const OPENHAB_SESSION_COOKIE_NAME = 'navet_openhab_session'
 const OPENHAB_SESSION_RECORD_MAX_BYTES = 16 * 1024
@@ -265,12 +269,16 @@ function createEmptyStoredOpenHABSession(): ViteStoredOpenHABSession {
 
 export function createViteOpenHABSessionStore(
   options: {
+    cookieNames?: InstallationCookieNames
     legacySessionPath?: string
     sessionsDirectory?: string
   } = {}
 ): ViteProviderSessionStore<ViteStoredOpenHABSession> {
   const cacheDirectory = path.resolve(process.cwd(), '.cache')
   return createViteProviderSessionStore({
+    cookieNames:
+      options.cookieNames ??
+      createInstallationCookieNames(OPENHAB_SESSION_COOKIE_NAME),
     createRecord: createEmptyStoredOpenHABSession,
     isValidRecord: isValidStoredOpenHABSession,
     legacySessionPath:

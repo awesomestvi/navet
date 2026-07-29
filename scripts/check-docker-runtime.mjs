@@ -36,6 +36,62 @@ function ensureDockerAvailable() {
   throw new Error(`check:docker requires a running Docker daemon.\n${message.trim()}`);
 }
 
+function resolveHomeAssistantAddonTarget() {
+  const result = spawnSync(
+    'docker',
+    ['info', '--format', '{{.Architecture}}'],
+    { stdio: 'pipe', encoding: 'utf8' }
+  );
+  const architecture = result.stdout.trim().toLowerCase();
+  if (result.error || result.status !== 0) {
+    throw new Error(
+      result.error?.message ||
+        result.stderr?.trim() ||
+        'Unable to resolve the Docker host architecture'
+    );
+  }
+  let target;
+  if (architecture === 'amd64' || architecture === 'x86_64') {
+    target = {
+      addonArchitecture: 'amd64',
+      buildFrom: 'ghcr.io/home-assistant/amd64-base:3.20',
+      platform: 'linux/amd64',
+    };
+  } else if (architecture === 'arm64' || architecture === 'aarch64') {
+    target = {
+      addonArchitecture: 'aarch64',
+      buildFrom: 'ghcr.io/home-assistant/aarch64-base:3.20',
+      platform: 'linux/arm64',
+    };
+  } else {
+    throw new Error(`Unsupported Home Assistant add-on host architecture: ${architecture}`);
+  }
+
+  const exactBase = spawnSync(
+    'docker',
+    ['manifest', 'inspect', target.buildFrom],
+    { stdio: 'pipe', encoding: 'utf8' }
+  );
+  if (!exactBase.error && exactBase.status === 0) {
+    return {
+      ...target,
+      compatibilityEntrypoint: false,
+      exactBase: true,
+    };
+  }
+
+  console.warn(
+    `Exact Home Assistant add-on base ${target.buildFrom} is unavailable to this Docker client; ` +
+      'using Alpine 3.20 with a with-contenv/bashio compatibility shim.'
+  );
+  return {
+    ...target,
+    buildFrom: 'alpine:3.20',
+    compatibilityEntrypoint: true,
+    exactBase: false,
+  };
+}
+
 function ensureSerializedProfileRuntime() {
   const workerConfigs = [
     'docker/nginx.main.conf',
@@ -83,6 +139,12 @@ function ensurePersistentDataConfiguration() {
     if (!source.includes('mkdir -p /data') || !source.includes('chown nginx:nginx /data')) {
       throw new Error(`${file} must prepare the persistent /data mount for the Nginx worker`);
     }
+    if (
+      !source.includes('INSTALLATION_KEY_PATH="/data/navet-installation-key"') ||
+      !source.includes('chmod 600 "${INSTALLATION_KEY_PATH}"')
+    ) {
+      throw new Error(`${file} must persist a private installation key for cookie isolation`);
+    }
   }
 }
 
@@ -116,9 +178,32 @@ function assertBuiltStandaloneMetadata(containerName, expectedBuildVersion) {
 }
 
 function extractCookie(response, cookieName) {
+  const escapedName = cookieName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return response.headers
     .get('set-cookie')
-    ?.match(new RegExp(`(?:^|,\\s*)(${cookieName}=[a-f0-9]{64})(?:;|$)`, 'i'))?.[1];
+    ?.match(
+      new RegExp(
+        `(?:^|,\\s*)(${escapedName}(?:_[a-f0-9]{24})?=[a-f0-9]{64})(?:;|$)`,
+        'i'
+      )
+    )?.[1];
+}
+
+function extractScopedCookie(response, cookieName) {
+  const cookie = extractCookie(response, cookieName);
+  if (!cookie) {
+    return cookie;
+  }
+  const escapedName = cookieName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (!new RegExp(`^${escapedName}_[a-f0-9]{24}=[a-f0-9]{64}$`, 'i').test(cookie)) {
+    throw new Error(`Production ${cookieName} cookie is missing its installation namespace`);
+  }
+  return cookie;
+}
+
+function cookieValue(cookie) {
+  const separator = String(cookie || '').indexOf('=');
+  return separator === -1 ? '' : String(cookie).slice(separator + 1);
 }
 
 function assertSecurityHeaders(response, surface) {
@@ -166,7 +251,7 @@ async function readAuthMetadata(baseUrl) {
       signal: AbortSignal.timeout(2_000),
     });
     const metadata = await response.json();
-    const cookie = extractCookie(response, 'navet_auth_session');
+    const cookie = extractScopedCookie(response, 'navet_auth_session');
     if (
       response.status !== 200 ||
       metadata?.authenticated !== false ||
@@ -200,7 +285,7 @@ async function assertAnonymousProviderReadDoesNotMint(baseUrl, containerName, pr
   const response = await fetch(`${baseUrl}${endpoint}`);
   if (
     response.status !== 204 ||
-    response.headers.get('set-cookie')?.includes(`${cookieName}=`)
+    extractCookie(response, cookieName)
   ) {
     throw new Error(`Anonymous ${providerId} GET minted a durable browser session`);
   }
@@ -257,6 +342,25 @@ function readInstallationKey(containerName) {
   return key;
 }
 
+function assertInstallationKeyOwner(containerName) {
+  const result = spawnSync(
+    'docker',
+    [
+      'exec',
+      containerName,
+      'stat',
+      '-c',
+      '%U:%G',
+      '/data/navet-installation-key',
+    ],
+    { stdio: 'pipe', encoding: 'utf8' }
+  );
+  const owner = result.stdout.trim();
+  if (result.error || result.status !== 0 || owner !== 'nginx:nginx') {
+    throw new Error(`Actual-image installation key has unexpected owner ${owner || 'unknown'}`);
+  }
+}
+
 async function startHomeAssistantOAuth(
   baseUrl,
   containerName,
@@ -295,7 +399,7 @@ async function startHomeAssistantOAuth(
 
   const payload = await response.json();
   const authorizeUrl = new URL(payload.authorizeUrl);
-  const cookieId = browserSession.cookie.slice('navet_auth_session='.length);
+  const cookieId = cookieValue(browserSession.cookie);
   const pendingResult = spawnSync(
     'docker',
     [
@@ -338,7 +442,7 @@ async function completeHomeAssistantOAuth(baseUrl, browserSession, state) {
       redirect: 'manual',
     }
   );
-  const cookie = extractCookie(response, 'navet_auth_session');
+  const cookie = extractScopedCookie(response, 'navet_auth_session');
   if (
     response.status !== 302 ||
     !cookie ||
@@ -425,6 +529,332 @@ function startNavetContainer(containerName, networkName, volumeName, imageTag) {
   return `http://127.0.0.1:${portMatch[1]}`;
 }
 
+function seedHomeAssistantAddonOptions(imageTag, volumeName) {
+  const options = JSON.stringify({
+    dashboard_config_url: '',
+    homey_client_id: '',
+    homey_client_secret: '',
+    homey_redirect_uri: '',
+    allow_insecure_provider_tls: false,
+  });
+  const bashioShim = `bashio::config() {
+  case "$1" in
+    allow_insecure_provider_tls)
+      printf '%s\\n' 'false'
+      ;;
+    dashboard_config_url|homey_client_id|homey_client_secret|homey_redirect_uri)
+      printf '%s\\n' ''
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}`;
+  run('docker', [
+    'run',
+    '--rm',
+    '--entrypoint',
+    '/bin/sh',
+    '--mount',
+    `type=volume,source=${volumeName},target=/data`,
+    '-e',
+    `NAVET_ADDON_OPTIONS=${options}`,
+    '-e',
+    `NAVET_ADDON_BASHIO_SHIM=${bashioShim}`,
+    imageTag,
+    '-c',
+    'printf "%s\\n" "$NAVET_ADDON_OPTIONS" > /data/options.json && ' +
+      'printf "%s\\n" "$NAVET_ADDON_BASHIO_SHIM" > /data/navet-bashio-runtime-check',
+  ]);
+}
+
+function startHomeAssistantAddonContainer({
+  containerName,
+  imageTag,
+  networkName,
+  volumeName,
+  compatibilityEntrypoint,
+}) {
+  const args = [
+    'run',
+    '-d',
+    '--name',
+    containerName,
+    '--network',
+    networkName,
+    '--network-alias',
+    'navet-addon-check',
+    '--ip',
+    '172.30.32.3',
+    '--mount',
+    `type=volume,source=${volumeName},target=/data`,
+    '-e',
+    'SUPERVISOR_TOKEN=actual-image-supervisor-token',
+  ];
+  if (compatibilityEntrypoint) {
+    args.push(
+      '-e',
+      'BASH_ENV=/data/navet-bashio-runtime-check',
+      '--entrypoint',
+      '/bin/bash'
+    );
+  }
+  args.push(imageTag);
+  if (compatibilityEntrypoint) {
+    args.push('/run.sh');
+  }
+  run('docker', args);
+}
+
+const addonIngressPath = '/api/hassio_ingress/navet-runtime-check';
+const addonIngressProbeSource = `
+  const headers = {
+    'X-Forwarded-Proto': 'https',
+    'X-Ingress-Path': process.env.NAVET_ADDON_INGRESS_PATH,
+    'X-Navet-Client-Id': 'actual-addon-panel-01',
+    'X-Navet-Client-Kind': 'wall_panel',
+    'X-Navet-Client-Name': 'Actual add-on panel',
+    'X-Remote-User-Id': 'actual-addon-user',
+    'X-Remote-User-Name': 'Actual add-on user'
+  };
+  if (process.env.NAVET_ADDON_COOKIE) {
+    headers.Cookie = process.env.NAVET_ADDON_COOKIE;
+  }
+  fetch(
+    'http://navet-addon-check:8099/__navet_profile__/preferences/client',
+    { headers, signal: AbortSignal.timeout(2000) }
+  ).then(async (response) => {
+    process.stdout.write(JSON.stringify({
+      body: await response.text(),
+      cookie: response.headers.get('set-cookie') || '',
+      status: response.status
+    }));
+  }).catch((error) => {
+    process.stderr.write(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });
+`;
+
+function readHomeAssistantAddonIngressProfile(probeContainerName, cookie = '') {
+  const result = spawnSync(
+    'docker',
+    [
+      'exec',
+      '-e',
+      `NAVET_ADDON_COOKIE=${cookie}`,
+      '-e',
+      `NAVET_ADDON_INGRESS_PATH=${addonIngressPath}`,
+      probeContainerName,
+      'node',
+      '-e',
+      addonIngressProbeSource,
+    ],
+    { stdio: 'pipe', encoding: 'utf8' }
+  );
+  if (result.error || result.status !== 0) {
+    return {
+      error: result.error?.message || result.stderr.trim() || result.stdout.trim(),
+      response: null,
+    };
+  }
+  try {
+    return { error: null, response: JSON.parse(result.stdout) };
+  } catch {
+    return {
+      error: `Add-on Ingress probe returned invalid JSON: ${result.stdout.trim()}`,
+      response: null,
+    };
+  }
+}
+
+async function waitForHomeAssistantAddonIngressProfile(
+  addonContainerName,
+  probeContainerName,
+  cookie = ''
+) {
+  let lastError = 'Home Assistant add-on Nginx is not ready';
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    const result = readHomeAssistantAddonIngressProfile(
+      probeContainerName,
+      cookie
+    );
+    if (
+      result.response &&
+      result.response.status === 204 &&
+      !result.response.body
+    ) {
+      return result.response;
+    }
+    lastError =
+      result.error ||
+      `Unexpected add-on profile response: ${JSON.stringify(result.response)}`;
+    await delay(250);
+  }
+  const logs = spawnSync('docker', ['logs', addonContainerName], {
+    stdio: 'pipe',
+    encoding: 'utf8',
+  });
+  const diagnostic = [logs.stdout?.trim(), logs.stderr?.trim()]
+    .filter(Boolean)
+    .join('\n');
+  throw new Error(diagnostic ? `${lastError}\n${diagnostic}` : lastError);
+}
+
+function assertHomeAssistantAddonIngressCookie(serialized, expectedCookie = '') {
+  const attributes = String(serialized)
+    .split(';')
+    .map((value) => value.trim());
+  const cookie = attributes[0] || '';
+  if (
+    !/^navet_profile_client_[a-f0-9]{24}=[a-f0-9]{64}$/i.test(cookie) ||
+    attributes.indexOf(`Path=${addonIngressPath}`) === -1 ||
+    attributes.indexOf('HttpOnly') === -1 ||
+    attributes.indexOf('SameSite=Lax') === -1 ||
+    attributes.indexOf('Secure') === -1
+  ) {
+    throw new Error(`Home Assistant add-on emitted an invalid Ingress cookie: ${serialized}`);
+  }
+  if (expectedCookie && cookie !== expectedCookie) {
+    throw new Error('Home Assistant add-on cookie namespace changed after replacement');
+  }
+  return cookie;
+}
+
+class HostCookieJar {
+  #cookiesByHost = new Map();
+
+  #host(baseUrl) {
+    return new URL(baseUrl).hostname;
+  }
+
+  seed(baseUrl, cookie) {
+    const separator = cookie.indexOf('=');
+    if (separator <= 0) {
+      throw new Error('Cannot seed the runtime cookie jar with an invalid cookie');
+    }
+    const host = this.#host(baseUrl);
+    const cookies = this.#cookiesByHost.get(host) ?? new Map();
+    cookies.set(cookie.slice(0, separator), cookie.slice(separator + 1));
+    this.#cookiesByHost.set(host, cookies);
+  }
+
+  absorb(baseUrl, response) {
+    const getSetCookie = response.headers.getSetCookie;
+    const values =
+      typeof getSetCookie === 'function'
+        ? getSetCookie.call(response.headers)
+        : [response.headers.get('set-cookie')].filter(Boolean);
+    for (const serialized of values) {
+      const pair = serialized.split(';', 1)[0] ?? '';
+      const separator = pair.indexOf('=');
+      if (separator <= 0) {
+        continue;
+      }
+      const host = this.#host(baseUrl);
+      const cookies = this.#cookiesByHost.get(host) ?? new Map();
+      const name = pair.slice(0, separator);
+      if (/;\s*Max-Age=0(?:;|$)/i.test(serialized)) {
+        cookies.delete(name);
+      } else {
+        cookies.set(name, pair.slice(separator + 1));
+      }
+      this.#cookiesByHost.set(host, cookies);
+    }
+  }
+
+  header(baseUrl) {
+    return [...(this.#cookiesByHost.get(this.#host(baseUrl)) ?? new Map())]
+      .map(([name, value]) => `${name}=${value}`)
+      .join('; ');
+  }
+}
+
+async function fetchWithCookieJar(cookieJar, baseUrl, path) {
+  const cookie = cookieJar.header(baseUrl);
+  const response = await fetch(`${baseUrl}${path}`, {
+    headers: cookie ? { Cookie: cookie } : {},
+  });
+  cookieJar.absorb(baseUrl, response);
+  return response;
+}
+
+async function verifyTwoInstallationCookieJar({
+  authenticatedCookie,
+  baseUrl,
+  imageTag,
+  networkName,
+  primaryInstallationKey,
+}) {
+  const siblingContainerName = `${networkName}-sibling`;
+  const siblingVolumeName = `${networkName}-sibling-data`;
+  try {
+    run('docker', ['volume', 'create', siblingVolumeName]);
+    const siblingBaseUrl = startNavetContainer(
+      siblingContainerName,
+      networkName,
+      siblingVolumeName,
+      imageTag
+    );
+    await waitForAuthMetadata(siblingBaseUrl, siblingContainerName);
+    const siblingInstallationKey = readInstallationKey(siblingContainerName);
+    if (siblingInstallationKey === primaryInstallationKey) {
+      throw new Error('Separate Navet volumes produced the same installation key');
+    }
+
+    const cookieJar = new HostCookieJar();
+    cookieJar.seed(baseUrl, authenticatedCookie);
+    const primaryBefore = await fetchWithCookieJar(
+      cookieJar,
+      baseUrl,
+      '/__navet_auth__/session'
+    );
+    const primaryBeforeMetadata = await primaryBefore.json();
+    const primaryCookie = extractScopedCookie(primaryBefore, 'navet_auth_session');
+    if (primaryBeforeMetadata?.authenticated !== true || !primaryCookie) {
+      throw new Error('Primary installation was not authenticated before sibling visit');
+    }
+
+    const siblingResponse = await fetchWithCookieJar(
+      cookieJar,
+      siblingBaseUrl,
+      '/__navet_auth__/session'
+    );
+    const siblingMetadata = await siblingResponse.json();
+    const siblingCookie = extractScopedCookie(siblingResponse, 'navet_auth_session');
+    if (
+      siblingMetadata?.authenticated !== false ||
+      !siblingCookie ||
+      siblingCookie.split('=', 1)[0] === primaryCookie.split('=', 1)[0]
+    ) {
+      throw new Error('Sibling installation did not mint an isolated browser cookie');
+    }
+
+    const primaryAfter = await fetchWithCookieJar(
+      cookieJar,
+      baseUrl,
+      '/__navet_auth__/session'
+    );
+    const primaryAfterMetadata = await primaryAfter.json();
+    const jarHeader = cookieJar.header(baseUrl);
+    if (
+      primaryAfterMetadata?.authenticated !== true ||
+      !jarHeader.includes(`${primaryCookie.split('=', 1)[0]}=`) ||
+      !jarHeader.includes(`${siblingCookie.split('=', 1)[0]}=`)
+    ) {
+      throw new Error(
+        'Visiting a sibling Navet port displaced the primary authenticated cookie'
+      );
+    }
+  } finally {
+    spawnSync('docker', ['rm', '-f', siblingContainerName], {
+      stdio: 'ignore',
+    });
+    spawnSync('docker', ['volume', 'rm', '-f', siblingVolumeName], {
+      stdio: 'ignore',
+    });
+  }
+}
+
 async function startHomeyOAuth(baseUrl, installationKey) {
   const requestStart = (key) =>
     fetch(`${baseUrl}/__navet_homey__/authorize`, {
@@ -440,13 +870,13 @@ async function startHomeyOAuth(baseUrl, installationKey) {
     const rejected = await requestStart(rejectedKey);
     if (
       rejected.status !== 403 ||
-      rejected.headers.get('set-cookie')?.includes('navet_homey_session=')
+      extractCookie(rejected, 'navet_homey_session')
     ) {
       throw new Error('Fresh Homey enrollment did not require operator pairing');
     }
   }
   const response = await requestStart(installationKey);
-  const cookie = extractCookie(response, 'navet_homey_session');
+  const cookie = extractScopedCookie(response, 'navet_homey_session');
   const body = await response.json();
   const state =
     typeof body?.authorizeUrl === 'string'
@@ -482,14 +912,14 @@ async function createOpenHABSession(baseUrl, installationKey) {
     const rejected = await requestLogin(rejectedKey);
     if (
       rejected.status !== 403 ||
-      rejected.headers.get('set-cookie')?.includes('navet_openhab_session=')
+      extractCookie(rejected, 'navet_openhab_session')
     ) {
       throw new Error('Fresh openHAB enrollment did not require operator pairing');
     }
   }
   const response = await requestLogin(installationKey);
   const responseBody = await response.text();
-  const cookie = extractCookie(response, 'navet_openhab_session');
+  const cookie = extractScopedCookie(response, 'navet_openhab_session');
   if (response.status !== 200 || !cookie) {
     throw new Error(
       `Actual-image openHAB login through the runtime resolver failed with ${response.status}: ${responseBody}`
@@ -516,7 +946,7 @@ async function createOpenHABSession(baseUrl, installationKey) {
   ) {
     throw new Error('Actual-image openHAB response-header confinement failed');
   }
-  if (!extractCookie(proxyResponse, 'navet_openhab_session')) {
+  if (!extractScopedCookie(proxyResponse, 'navet_openhab_session')) {
     throw new Error('Active openHAB proxy traffic did not slide its browser cookie');
   }
 
@@ -564,7 +994,7 @@ async function verifyProfileColdBinding(baseUrl, authCookie) {
   ]);
   const bodies = await Promise.all(responses.map((response) => response.text()));
   const cookies = responses.map((response) =>
-    extractCookie(response, 'navet_profile_client')
+    extractScopedCookie(response, 'navet_profile_client')
   );
   if (
     responses.some((response) => ![200, 204].includes(response.status)) ||
@@ -688,11 +1118,16 @@ async function verifyPersistedStateAfterReplacement({
 }
 
 const imageTag = `navet-docker-runtime-check:${Date.now()}`;
+const addonImageTag = `navet-addon-runtime-check:${Date.now()}`;
 const expectedBuildVersion = '0.0.0-dev.20990101010101';
 const containerName = `navet-docker-runtime-check-${process.pid}-${Date.now()}`;
+const addonContainerName = `${containerName}-addon`;
+const addonProbeContainerName = `${containerName}-addon-probe`;
 const providerContainerName = `${containerName}-provider`;
 const networkName = `${containerName}-network`;
+const addonNetworkName = `${containerName}-addon-network`;
 const volumeName = `${containerName}-data`;
+const addonVolumeName = `${containerName}-addon-data`;
 const providerServerSource = `
   const http = require('http');
   http.createServer((req, res) => {
@@ -776,6 +1211,106 @@ try {
     'nginx',
     '-t',
   ]);
+  const addonTarget = resolveHomeAssistantAddonTarget();
+  run(
+    'docker',
+    [
+      'build',
+      '--platform',
+      addonTarget.platform,
+      '--file',
+      'platform/home-assistant/addons/navet/Dockerfile',
+      '--build-arg',
+      `BUILD_FROM=${addonTarget.buildFrom}`,
+      '--build-arg',
+      `BUILD_ARCH=${addonTarget.addonArchitecture}`,
+      '--build-arg',
+      `BUILD_VERSION=${expectedBuildVersion}`,
+      '--build-arg',
+      'NAVET_GIT_SHA=actual-image-runtime-check',
+      '--build-arg',
+      'NAVET_BUILD_DATE=2099-01-01T01:01:01Z',
+      '--build-arg',
+      'NAVET_RELEASE_CHANNEL=development',
+      '--build-arg',
+      `NAVET_BUILD_VERSION=${expectedBuildVersion}`,
+      '-t',
+      addonImageTag,
+      '.',
+    ],
+    {
+      cwd: process.cwd(),
+    }
+  );
+  run('docker', ['volume', 'create', addonVolumeName]);
+  seedHomeAssistantAddonOptions(addonImageTag, addonVolumeName);
+  run('docker', [
+    'network',
+    'create',
+    '--subnet',
+    '172.30.32.0/24',
+    addonNetworkName,
+  ]);
+  run('docker', [
+    'run',
+    '-d',
+    '--name',
+    addonProbeContainerName,
+    '--network',
+    addonNetworkName,
+    '--network-alias',
+    'supervisor',
+    '--ip',
+    '172.30.32.2',
+    'node:22-alpine',
+    'node',
+    '-e',
+    'setInterval(() => {}, 60_000)',
+  ]);
+  startHomeAssistantAddonContainer({
+    compatibilityEntrypoint: addonTarget.compatibilityEntrypoint,
+    containerName: addonContainerName,
+    imageTag: addonImageTag,
+    networkName: addonNetworkName,
+    volumeName: addonVolumeName,
+  });
+  const firstAddonProfile = await waitForHomeAssistantAddonIngressProfile(
+    addonContainerName,
+    addonProbeContainerName
+  );
+  const addonCookie = assertHomeAssistantAddonIngressCookie(
+    firstAddonProfile.cookie
+  );
+  const addonInstallationKey = readInstallationKey(addonContainerName);
+  assertInstallationKeyOwner(addonContainerName);
+  run('docker', ['exec', addonContainerName, 'nginx', '-t']);
+
+  run('docker', ['rm', '-f', addonContainerName]);
+  startHomeAssistantAddonContainer({
+    compatibilityEntrypoint: addonTarget.compatibilityEntrypoint,
+    containerName: addonContainerName,
+    imageTag: addonImageTag,
+    networkName: addonNetworkName,
+    volumeName: addonVolumeName,
+  });
+  const replacementAddonProfile =
+    await waitForHomeAssistantAddonIngressProfile(
+      addonContainerName,
+      addonProbeContainerName,
+      addonCookie
+    );
+  assertHomeAssistantAddonIngressCookie(
+    replacementAddonProfile.cookie,
+    addonCookie
+  );
+  if (readInstallationKey(addonContainerName) !== addonInstallationKey) {
+    throw new Error(
+      'Home Assistant add-on generated a different installation key after replacement'
+    );
+  }
+  assertInstallationKeyOwner(addonContainerName);
+  run('docker', ['exec', addonContainerName, 'nginx', '-t']);
+
   run('docker', ['volume', 'create', volumeName]);
   run('docker', ['network', 'create', networkName]);
   run('docker', [
@@ -852,6 +1387,13 @@ try {
     firstBrowser,
     state
   );
+  await verifyTwoInstallationCookieJar({
+    authenticatedCookie,
+    baseUrl,
+    imageTag,
+    networkName,
+    primaryInstallationKey: installationKey,
+  });
   const oldCookieMetadata = await fetch(`${baseUrl}/__navet_auth__/session`, {
     headers: { Cookie: firstBrowser.cookie },
   }).then((response) => response.json());
@@ -1000,7 +1542,11 @@ try {
   });
 
   console.log(
-    `Docker NJS auth smoke check passed with exact standalone build metadata, no anonymous record minting, OAuth rotation, runtime hostname resolution, provider confinement, stable parallel profile binding, and persisted auth/profile state after container replacement.`
+    `Docker NJS auth smoke check passed with a Home Assistant add-on startup/replacement cycle using ${
+      addonTarget.exactBase
+        ? 'the exact Home Assistant base image'
+        : 'the explicit Alpine with-contenv/bashio compatibility fallback'
+    }, exact standalone build metadata, no anonymous record minting, OAuth rotation, two-installation host cookie isolation, runtime hostname resolution, provider confinement, stable parallel profile binding, and persisted auth/profile state after container replacement.`
   );
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
@@ -1009,13 +1555,28 @@ try {
   spawnSync('docker', ['rm', '-f', containerName], {
     stdio: 'ignore',
   });
+  spawnSync('docker', ['rm', '-f', addonContainerName], {
+    stdio: 'ignore',
+  });
+  spawnSync('docker', ['rm', '-f', addonProbeContainerName], {
+    stdio: 'ignore',
+  });
   spawnSync('docker', ['rm', '-f', providerContainerName], {
+    stdio: 'ignore',
+  });
+  spawnSync('docker', ['network', 'rm', addonNetworkName], {
     stdio: 'ignore',
   });
   spawnSync('docker', ['network', 'rm', networkName], {
     stdio: 'ignore',
   });
+  spawnSync('docker', ['volume', 'rm', '-f', addonVolumeName], {
+    stdio: 'ignore',
+  });
   spawnSync('docker', ['volume', 'rm', '-f', volumeName], {
+    stdio: 'ignore',
+  });
+  spawnSync('docker', ['image', 'rm', '-f', addonImageTag], {
     stdio: 'ignore',
   });
   spawnSync('docker', ['image', 'rm', '-f', imageTag], {

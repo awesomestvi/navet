@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createInstallationCookieNames } from '@scripts/installation-cookie-scope';
 import {
   applyDashboardProfilePatch,
   createViteDashboardProfileRequestHandler,
@@ -691,6 +692,58 @@ describe('createViteDashboardProfileStore', () => {
 });
 
 describe('Vite dashboard profile request handler', () => {
+  it('ignores an unregistered generic profile cookie and migrates only registry-backed continuity', async () => {
+    const cookieNames = createInstallationCookieNames('navet_profile_client', '1'.repeat(64));
+    const store = createStore();
+    const handler = createViteDashboardProfileRequestHandler({
+      cookieNames,
+      store,
+      resolvePrincipal: () => PRINCIPAL,
+    });
+    const unrecognizedBinding = 'b'.repeat(64);
+    const unknownOutput = createResponse();
+    await handler(
+      createRequest('GET', '/preferences/client', {
+        'x-navet-client-id': 'client-unknown-cookie',
+        'x-navet-client-name': 'Unknown cookie panel',
+        'x-navet-client-kind': 'wall_panel',
+        cookie: `navet_profile_client=${unrecognizedBinding}`,
+      }),
+      unknownOutput.response
+    );
+    expect(unknownOutput.status).toBe(204);
+    expect(unknownOutput.header('set-cookie')).toMatch(new RegExp(`^${cookieNames.currentName}=`));
+    expect(unknownOutput.header('set-cookie')).not.toContain(`=${unrecognizedBinding};`);
+
+    const recognizedBinding = 'c'.repeat(64);
+    expect(
+      store.touchClient(
+        PRINCIPAL,
+        {
+          id: 'client-legacy-continuity',
+          name: 'Legacy continuity panel',
+          kind: 'wall_panel',
+          bindingId: recognizedBinding,
+        },
+        store.getState().revision
+      )
+    ).toMatchObject({ id: 'client-legacy-continuity' });
+    const recognizedOutput = createResponse();
+    await handler(
+      createRequest('GET', '/preferences/client', {
+        'x-navet-client-id': 'client-legacy-continuity',
+        'x-navet-client-name': 'Legacy continuity panel',
+        'x-navet-client-kind': 'wall_panel',
+        cookie: `navet_profile_client=${recognizedBinding}`,
+      }),
+      recognizedOutput.response
+    );
+    expect(recognizedOutput.status).toBe(204);
+    expect(recognizedOutput.header('set-cookie')).toContain(
+      `${cookieNames.currentName}=${recognizedBinding};`
+    );
+  });
+
   it('rejects anonymous requests instead of exposing the shared profile', async () => {
     const handler = createViteDashboardProfileRequestHandler({
       store: createStore(),

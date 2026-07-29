@@ -94,16 +94,26 @@ common installation-ID intersection.
 
 ## Reconciliation
 
-Every active tab keeps the last server revision that it observed as its in-memory merge base.
+Every active tab keeps the last server revision and profile generation that it observed as its
+in-memory merge base. A generation change invalidates that ancestry.
 Merge bases are not persisted to shared browser storage: another tab must never advance a tab's
-ancestry behind its back. A reload or duplicated tab therefore starts without a merge base and
-uses the explicit conflict flow when its configured local profile differs from the server. This is
-intentionally conservative and prevents stale tabs from silently rolling back newer revisions.
+ancestry behind its back. A reload or duplicated tab therefore starts without a merge base. It
+uses the explicit conflict flow only when its configured local profile cannot be proven clean;
+this prevents real offline edits from being discarded without treating every stale device as a
+competing editor.
+
+The browser may persist a credential-free clean-state receipt containing the workspace, revision,
+and a fingerprint of the last profile it successfully applied or saved. The receipt never contains
+the profile itself and is not merge ancestry. It only lets a reloaded client prove that its current
+local state has not changed since that acknowledged revision before applying a newer server profile.
 
 1. A clean client applies a newer remote revision in place and shows a short attributed update.
 2. Independent local and remote fields are merged automatically and saved as a new revision.
 3. Only overlapping fields produce a conflict choice.
-4. **Keep mine** rebases the local fields over the latest remote revision.
+4. **Keep mine** rebases the local fields over the latest remote revision and carries that choice
+   across stale-write retries until the compare-and-swap succeeds. The intent is bound to its
+   installation, workspace, and profile generation; edits made while a retry is in flight are
+   folded into the next attempt.
 5. **Load remote** discards the pending local fields and applies the server revision.
 
 An empty server is not automatically destructive. An uninitialized workspace may be seeded from a

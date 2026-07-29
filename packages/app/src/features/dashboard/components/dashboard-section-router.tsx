@@ -387,6 +387,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                       allowEntityRemoval
                       usesHideAction
                       densePerformanceMode={controller.densePerformanceMode}
+                      optimizeOffscreenPaint={controller.optimizeOffscreenPaint}
                       getDeviceHeaderSubtitle={getDeviceRoomLabel}
                     />
                   </section>
@@ -609,6 +610,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                 allowEntityRemoval
                 usesHideAction
                 densePerformanceMode={controller.densePerformanceMode}
+                optimizeOffscreenPaint={controller.optimizeOffscreenPaint}
               />
             </SummaryBarStack>
           </RenderProfiler>
@@ -722,7 +724,8 @@ function areDashboardSectionRouterPropsEqual(
     previousController.updateCardSize === nextController.updateCardSize &&
     previousController.availableDeviceMap === nextController.availableDeviceMap &&
     previousController.deviceMap === nextController.deviceMap &&
-    previousController.densePerformanceMode === nextController.densePerformanceMode;
+    previousController.densePerformanceMode === nextController.densePerformanceMode &&
+    previousController.optimizeOffscreenPaint === nextController.optimizeOffscreenPaint;
 
   if (!hasSameCommonFields) {
     return false;

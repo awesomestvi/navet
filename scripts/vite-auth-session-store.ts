@@ -11,6 +11,10 @@ import {
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
 import type { ViteInstallationAuthority } from './vite-installation-authority'
+import {
+  createInstallationCookieNames,
+  type InstallationCookieNames,
+} from './installation-cookie-scope'
 
 export const AUTH_COOKIE_NAME = 'navet_auth_session'
 export const AUTH_BINDING_HEADER = 'X-Navet-OAuth-Binding'
@@ -137,6 +141,7 @@ export interface ViteAuthenticatedPrincipal {
 }
 
 export interface ViteAuthSessionStore {
+  cookieNames: InstallationCookieNames
   cleanupSessions(reserveSlots?: number): number
   createEphemeralSession(cookieId: string): ViteStoredAuthSession
   createSession(): { cookieId: string; session: ViteStoredAuthSession }
@@ -333,7 +338,8 @@ export function createViteAuthSessionStore(
   legacySessionFilePath = path.resolve(
     path.dirname(sessionsDirectory),
     'navet-auth-session.json'
-  )
+  ),
+  cookieNames = createInstallationCookieNames(AUTH_COOKIE_NAME)
 ): ViteAuthSessionStore {
   const bindingSecret = randomBytes(32)
   const getSessionPath = (cookieId: string) =>
@@ -510,6 +516,7 @@ export function createViteAuthSessionStore(
   }
 
   return {
+    cookieNames,
     cleanupSessions,
     createEphemeralSession(cookieId) {
       return createEphemeralSession(cookieId, bindingSecret)
@@ -540,7 +547,10 @@ function getHeader(req: IncomingMessage, name: string): string {
   return Array.isArray(value) ? (value[0] ?? '') : (value ?? '')
 }
 
-function parseViteAuthCookies(req: IncomingMessage): string[] {
+function parseViteAuthCookies(
+  req: IncomingMessage,
+  cookieName = AUTH_COOKIE_NAME
+): string[] {
   const values: string[] = []
   const cookieHeader = getHeader(req, 'cookie')
   for (const entry of cookieHeader.split(';')) {
@@ -552,7 +562,7 @@ function parseViteAuthCookies(req: IncomingMessage): string[] {
     const name = entry.slice(0, separator).trim()
     const value = entry.slice(separator + 1).trim()
     if (
-      name === AUTH_COOKIE_NAME &&
+      name === cookieName &&
       COOKIE_ID_PATTERN.test(value) &&
       !values.includes(value)
     ) {
@@ -628,6 +638,7 @@ export function serializeViteAuthCookie(
   const ingressPath = normalizeIngressPath(getHeader(req, 'x-ingress-path'))
   return serializeViteAuthCookieAtPath(
     req,
+    AUTH_COOKIE_NAME,
     cookieId,
     ingressPath || '/',
     maxAgeSeconds
@@ -636,12 +647,13 @@ export function serializeViteAuthCookie(
 
 function serializeViteAuthCookieAtPath(
   req: IncomingMessage,
+  cookieName: string,
   cookieId: string,
   cookiePath: string,
   maxAgeSeconds: number
 ): string {
   const attributes = [
-    `${AUTH_COOKIE_NAME}=${cookieId}`,
+    `${cookieName}=${cookieId}`,
     `Path=${cookiePath}`,
     'HttpOnly',
     'SameSite=Lax',
@@ -653,15 +665,37 @@ function serializeViteAuthCookieAtPath(
   return attributes.join('; ')
 }
 
-function serializeViteAuthCookieDeletion(req: IncomingMessage): string | string[] {
+function serializeViteAuthCookieForStore(
+  req: IncomingMessage,
+  store: ViteAuthSessionStore,
+  cookieId: string,
+  maxAgeSeconds = COOKIE_MAX_AGE_SECONDS
+): string {
   const ingressPath = normalizeIngressPath(getHeader(req, 'x-ingress-path'))
-  const currentPathCookie = serializeViteAuthCookie(req, '', 0)
-  return ingressPath
-    ? [
-        currentPathCookie,
-        serializeViteAuthCookieAtPath(req, '', '/', 0),
-      ]
-    : currentPathCookie
+  return serializeViteAuthCookieAtPath(
+    req,
+    store.cookieNames.currentName,
+    cookieId,
+    ingressPath || '/',
+    maxAgeSeconds
+  )
+}
+
+function serializeViteAuthCookieDeletion(
+  req: IncomingMessage,
+  cookieNames: InstallationCookieNames
+): string | string[] {
+  const ingressPath = normalizeIngressPath(getHeader(req, 'x-ingress-path'))
+  const cookieNamesToClear = [cookieNames.currentName]
+  const cookies = cookieNamesToClear.flatMap((cookieName) =>
+    ingressPath
+      ? [
+          serializeViteAuthCookieAtPath(req, cookieName, '', ingressPath, 0),
+          serializeViteAuthCookieAtPath(req, cookieName, '', '/', 0),
+        ]
+      : [serializeViteAuthCookieAtPath(req, cookieName, '', '/', 0)]
+  )
+  return cookies.length === 1 ? cookies[0] : cookies
 }
 
 type ViteAuthRequestContext = {
@@ -674,14 +708,43 @@ function getStoredRequestContexts(
   store: ViteAuthSessionStore
 ): ViteAuthRequestContext[] {
   store.discardLegacyGlobalSession()
-  const contexts: ViteAuthRequestContext[] = []
-  for (const cookieId of parseViteAuthCookies(req)) {
+  let contexts: ViteAuthRequestContext[] = []
+  for (const cookieId of parseViteAuthCookies(
+    req,
+    store.cookieNames.currentName
+  )) {
     const session = store.readSession(cookieId)
     if (session) {
       contexts.push({ cookieId, session })
     }
   }
+  if (contexts.length === 0 && store.cookieNames.scoped) {
+    contexts = parseViteAuthCookies(req, store.cookieNames.legacyName).flatMap(
+      (cookieId) => {
+        const session = store.readSession(cookieId)
+        return session ? [{ cookieId, session }] : []
+      }
+    )
+  }
   return contexts
+}
+
+function getLocallyBackedPresentedContexts(
+  req: IncomingMessage,
+  store: ViteAuthSessionStore
+): ViteAuthRequestContext[] {
+  const cookieIds = parseViteAuthCookies(req, store.cookieNames.currentName)
+  if (store.cookieNames.scoped) {
+    for (const cookieId of parseViteAuthCookies(req, store.cookieNames.legacyName)) {
+      if (!cookieIds.includes(cookieId)) {
+        cookieIds.push(cookieId)
+      }
+    }
+  }
+  return cookieIds.flatMap((cookieId) => {
+    const session = store.readSession(cookieId)
+    return session ? [{ cookieId, session }] : []
+  })
 }
 
 function getPreferredStoredRequestContext(
@@ -731,7 +794,7 @@ function getRequestContext(
   // session ID allows the next OAuth request without writing an anonymous
   // session file.
   const cookieId = randomBytes(32).toString('hex')
-  res.setHeader('Set-Cookie', serializeViteAuthCookie(req, cookieId))
+  res.setHeader('Set-Cookie', serializeViteAuthCookieForStore(req, store, cookieId))
   return { cookieId, session: store.createEphemeralSession(cookieId) }
 }
 
@@ -748,7 +811,10 @@ function renewViteAuthRequestSession(
   if (next.auth || next.pending) {
     store.writeSession(context.cookieId, next)
   }
-  res.setHeader('Set-Cookie', serializeViteAuthCookie(req, context.cookieId))
+  res.setHeader(
+    'Set-Cookie',
+    serializeViteAuthCookieForStore(req, store, context.cookieId)
+  )
   return { cookieId: context.cookieId, session: next }
 }
 
@@ -944,7 +1010,10 @@ function getBoundEphemeralRequestContext(
   req: IncomingMessage,
   store: ViteAuthSessionStore
 ): ViteAuthRequestContext | null {
-  for (const cookieId of parseViteAuthCookies(req)) {
+  for (const cookieId of parseViteAuthCookies(
+    req,
+    store.cookieNames.currentName
+  )) {
     const ephemeral = store.createEphemeralSession(cookieId)
     if (hasValidBinding(req, ephemeral)) {
       return { cookieId, session: ephemeral }
@@ -1146,7 +1215,7 @@ export function createViteAuthRequestHandler(
         res.setHeader('Cache-Control', 'no-store')
         res.setHeader(
           'Set-Cookie',
-          serializeViteAuthCookie(req, rotated.cookieId)
+          serializeViteAuthCookieForStore(req, store, rotated.cookieId)
         )
         res.setHeader('Location', appendOAuthCallbackMarker(pending.returnTo))
         res.end()
@@ -1353,7 +1422,7 @@ export function createViteAuthRequestHandler(
         store.writeSession(context.cookieId, next)
         res.setHeader(
           'Set-Cookie',
-          serializeViteAuthCookie(req, context.cookieId)
+          serializeViteAuthCookieForStore(req, store, context.cookieId)
         )
         sendJson(res, 200, store.sanitizeSession(next))
       } catch (error) {
@@ -1374,26 +1443,45 @@ export function createViteAuthRequestHandler(
       }
 
       const storedContexts = getStoredRequestContexts(req, store)
+      const presentedStoredContexts = getLocallyBackedPresentedContexts(req, store)
       const boundStoredContexts = storedContexts.filter((context) =>
         hasValidBinding(req, context.session)
       )
       const context =
         boundStoredContexts[0] ?? getBoundEphemeralRequestContext(req, store)
-      if (!context && parseViteAuthCookie(req)) {
+      if (
+        !context &&
+        (parseViteAuthCookies(req, store.cookieNames.currentName).length > 0 ||
+          presentedStoredContexts.length > 0)
+      ) {
         sendJson(res, 401, {
           error: 'Authenticated browser session is required',
         })
         return
       }
-      for (const boundContext of boundStoredContexts) {
-        advanceMutationGeneration(boundContext.cookieId)
-        store.deleteSession(boundContext.cookieId)
+      const storedContextsToRevoke = store.cookieNames.scoped
+        ? presentedStoredContexts
+        : boundStoredContexts
+      for (const storedContext of storedContextsToRevoke) {
+        advanceMutationGeneration(storedContext.cookieId)
+        store.deleteSession(storedContext.cookieId)
       }
-      if (context && boundStoredContexts.length === 0) {
+      if (
+        context &&
+        !storedContextsToRevoke.some(
+          (storedContext) => storedContext.cookieId === context.cookieId
+        )
+      ) {
         advanceMutationGeneration(context.cookieId)
         store.deleteSession(context.cookieId)
       }
-      res.setHeader('Set-Cookie', serializeViteAuthCookieDeletion(req))
+      res.setHeader(
+        'Set-Cookie',
+        serializeViteAuthCookieDeletion(
+          req,
+          store.cookieNames
+        )
+      )
       sendJson(res, 200, { ok: true })
       return
     }

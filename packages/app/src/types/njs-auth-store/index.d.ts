@@ -44,7 +44,14 @@ declare module '@docker/njs/auth-store.js' {
     userName: string | null;
   }
 
+  interface InstallationCookieNames {
+    currentName: string;
+    legacyName: string;
+    scoped: boolean;
+  }
+
   interface AuthSessionStore {
+    cookieNames: InstallationCookieNames;
     getRequestSession(request: NjsAuthRequest): AuthSessionContext | null;
     handle(request: NjsAuthRequest): Promise<void>;
     readSession(cookieId: string): AuthSession | null;
@@ -59,6 +66,9 @@ declare module '@docker/njs/auth-store.js' {
   interface CreateAuthSessionStoreOptions {
     sessionsDirectory: string;
     legacyAuthPath: string;
+    installationKey?: string;
+    keyPath?: string;
+    cookieNames?: InstallationCookieNames;
     fetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
     installationAuthority?: {
       authorizeHomeAssistant(

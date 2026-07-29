@@ -114,6 +114,7 @@ function createStore(fetchImpl = vi.fn()) {
   return {
     directory,
     legacyAuthPath,
+    sessionsDirectory,
     store: createAuthSessionStore({
       sessionsDirectory,
       legacyAuthPath,
@@ -160,6 +161,81 @@ function seedAuth(
 }
 
 describe('production njs standalone OAuth sessions', () => {
+  it('migrates only locally backed legacy cookies and revokes every local legacy duplicate on logout', async () => {
+    const legacy = createStore();
+    const legacyBrowser = await createBrowserSession(legacy.store);
+    const secondLegacyBrowser = await createBrowserSession(legacy.store);
+    seedAuth(legacy.store, legacyBrowser, AUTH_A);
+    seedAuth(legacy.store, secondLegacyBrowser, AUTH_B);
+    const installationKey = '1'.repeat(64);
+    const scopedStore = createAuthSessionStore({
+      sessionsDirectory: legacy.sessionsDirectory,
+      legacyAuthPath: legacy.legacyAuthPath,
+      installationKey,
+      installationAuthority: TEST_INSTALLATION_AUTHORITY,
+    });
+    const replacementStore = createAuthSessionStore({
+      sessionsDirectory: legacy.sessionsDirectory,
+      legacyAuthPath: legacy.legacyAuthPath,
+      installationKey,
+      installationAuthority: TEST_INSTALLATION_AUTHORITY,
+    });
+    expect(scopedStore.cookieNames).toEqual(replacementStore.cookieNames);
+    expect(scopedStore.cookieNames.currentName).toMatch(/^navet_auth_session_[a-f0-9]{24}$/);
+
+    const migrated = createRequest({ cookie: legacyBrowser.cookie });
+    await scopedStore.handle(migrated.request);
+    expect(JSON.parse(migrated.result.body)).toMatchObject({
+      authenticated: true,
+      hassUrl: AUTH_A.hassUrl,
+    });
+    const scopedCookie = cookieHeader(migrated.request.headersOut['Set-Cookie']);
+    expect(scopedCookie).toBe(
+      `${scopedStore.cookieNames.currentName}=${legacyBrowser.cookie.split('=')[1]}`
+    );
+
+    const logout = createRequest({
+      method: 'DELETE',
+      cookie: `${legacyBrowser.cookie}; ${secondLegacyBrowser.cookie}; ${scopedCookie}`,
+      headers: {
+        [AUTH_BINDING_HEADER]: legacyBrowser.metadata.sessionId,
+        Origin: 'http://navet.example',
+      },
+    });
+    await scopedStore.handle(logout.request);
+    expect(logout.result.status).toBe(200);
+    expect(
+      responseSetCookies(logout.request.headersOut['Set-Cookie']).every((serialized) =>
+        serialized.startsWith(`${scopedStore.cookieNames.currentName}=`)
+      )
+    ).toBe(true);
+    expect(responseSetCookies(logout.request.headersOut['Set-Cookie'])).not.toContainEqual(
+      expect.stringContaining('navet_auth_session=')
+    );
+    expect(legacy.store.readSession(legacyBrowser.cookie.split('=')[1] ?? '')).toBeNull();
+    expect(legacy.store.readSession(secondLegacyBrowser.cookie.split('=')[1] ?? '')).toBeNull();
+    const cannotResurrect = createRequest({ cookie: secondLegacyBrowser.cookie });
+    await scopedStore.handle(cannotResurrect.request);
+    expect(JSON.parse(cannotResurrect.result.body).authenticated).toBe(false);
+
+    const neighbor = createStore();
+    const neighborStore = createAuthSessionStore({
+      sessionsDirectory: neighbor.sessionsDirectory,
+      legacyAuthPath: neighbor.legacyAuthPath,
+      installationKey: '2'.repeat(64),
+      installationAuthority: TEST_INSTALLATION_AUTHORITY,
+    });
+    expect(neighborStore.cookieNames.currentName).not.toBe(scopedStore.cookieNames.currentName);
+    const unknownLegacy = createRequest({ cookie: legacyBrowser.cookie });
+    await neighborStore.handle(unknownLegacy.request);
+    expect(JSON.parse(unknownLegacy.result.body).authenticated).toBe(false);
+    expect(
+      responseSetCookies(unknownLegacy.request.headersOut['Set-Cookie']).every((serialized) =>
+        serialized.startsWith(`${neighborStore.cookieNames.currentName}=`)
+      )
+    ).toBe(true);
+  });
+
   it('caches Home Assistant auth only within the exact proxied njs request', () => {
     const requestA = createRequest({
       cookie: `navet_auth_session=${'a'.repeat(64)}`,
