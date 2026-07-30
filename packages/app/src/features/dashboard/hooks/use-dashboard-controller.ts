@@ -51,6 +51,8 @@ import {
   normalizeMediaStackWidgetData,
   shouldShowMediaStackWidget,
 } from '../components/widgets/media-stack-widget-data';
+import { resolveDashboardNavigationRooms } from '../dashboards/dashboard-collection';
+import { useDashboardCollectionStore } from '../dashboards/dashboard-collection-store';
 import {
   buildDashboardPackLayout,
   DASHBOARD_PACKS,
@@ -58,7 +60,6 @@ import {
 } from '../packs/dashboard-packs';
 import { useRoomWorkspaceStore } from '../rooms/room-workspace-store';
 import { useCustomCardsStore } from '../stores/custom-cards-store';
-import { useHomeDashboardLayoutStore } from '../stores/home-dashboard-layout-store';
 import { resolveDashboardRoomPreferences } from './dashboard-room-preferences';
 import { useAvailableRooms } from './use-available-rooms';
 import { useCardOrdering } from './use-card-ordering';
@@ -185,7 +186,10 @@ export function useDashboardController(): DashboardController {
   const { hiddenEntityIds, shownSensorEntityIds, hideAutoEntity, showAutoEntity } =
     useDashboardEntityVisibility();
 
-  const homeLayoutCardIds = useHomeDashboardLayoutStore((state) => state.cardIds);
+  const activeDashboard = useDashboardCollectionStore(
+    (state) => state.collection.dashboardsById[state.activeDashboardId]
+  );
+  const homeLayoutCardIds = activeDashboard?.homeLayout.cardIds ?? [];
   const isDeviceHeavySection =
     DASHBOARD_DEVICE_SECTION_IDS.has(activeSection) ||
     !['energy', 'media', 'security', 'settings', 'tasks'].includes(activeSection);
@@ -246,10 +250,14 @@ export function useDashboardController(): DashboardController {
   );
   const rooms = roomPreferences.rooms;
   const effectiveHiddenRoomNames = roomPreferences.hiddenRoomNames;
+  const dashboardRooms = useMemo(
+    () => resolveDashboardNavigationRooms(rooms, activeDashboard?.homeRoomNames),
+    [activeDashboard?.homeRoomNames, rooms]
+  );
   const visibleRooms = useMemo(() => {
     const hiddenRooms = new Set(effectiveHiddenRoomNames);
-    return rooms.filter((room) => !hiddenRooms.has(room));
-  }, [effectiveHiddenRoomNames, rooms]);
+    return dashboardRooms.filter((room) => !hiddenRooms.has(room));
+  }, [dashboardRooms, effectiveHiddenRoomNames]);
 
   const { activeRoom, preferredRoom, changeRoom, fallbackRoom } = useRoomNavigation(
     ALL_ROOMS_ID,
@@ -277,7 +285,15 @@ export function useDashboardController(): DashboardController {
     startTransition(toggleEditMode);
   }, [toggleEditMode]);
   useEditModeBeforeUnload(isEditMode);
-  const allCards = useCustomCardsStore((state) => state.cards);
+  const globalCards = useCustomCardsStore((state) => state.cards);
+  const activeHomeCustomCards = activeDashboard?.homeCustomCards ?? [];
+  const allCards = useMemo(
+    () => [
+      ...globalCards.filter((card) => card.room !== HOME_WIDGET_ROOM && !isAllRooms(card.room)),
+      ...activeHomeCustomCards,
+    ],
+    [activeHomeCustomCards, globalCards]
+  );
   const shouldTrackMediaDevices = resolveShouldTrackMediaDevices({
     activeSection,
     cards: allCards,
@@ -304,17 +320,57 @@ export function useDashboardController(): DashboardController {
       }),
     [allCards, isEditMode, mediaDevicesById, shouldTrackMediaDevices]
   );
-  const allCustomCards = useMemo(
-    () => visibleCards.filter((card) => isAllRooms(card.room) || card.room === HOME_WIDGET_ROOM),
-    [visibleCards]
-  );
+  const allCustomCards = useMemo(() => {
+    const visibleCardIds = new Set(visibleCards.map((card) => card.id));
+    return activeHomeCustomCards.filter((card) => visibleCardIds.has(card.id));
+  }, [activeHomeCustomCards, visibleCards]);
   const customCards = useMemo(
-    () => visibleCards.filter((card) => card.room === activeRoom || isAllRooms(card.room)),
-    [activeRoom, visibleCards]
+    () =>
+      visibleCards.filter(
+        (card) =>
+          card.room !== HOME_WIDGET_ROOM &&
+          (card.room === activeRoom || isAllRooms(card.room)) &&
+          !activeHomeCustomCards.includes(card)
+      ),
+    [activeHomeCustomCards, activeRoom, visibleCards]
   );
-  const { cardSizes, updateCardSize } = useCardState(devices);
+  const { cardSizes: sharedCardSizes, updateCardSize: updateSharedCardSize } =
+    useCardState(devices);
+  const homeCardSizes = activeDashboard?.homeCardSizes ?? {};
+  const isHomeOverview = activeSection === 'home' && isAllRooms(activeRoom);
+  const cardSizes = useMemo(
+    () => (isHomeOverview ? { ...sharedCardSizes, ...homeCardSizes } : sharedCardSizes),
+    [homeCardSizes, isHomeOverview, sharedCardSizes]
+  );
+  const updateActiveCardSize = useDashboardCollectionStore((state) => state.updateActiveCardSize);
+  const updateCardSize = useCallback(
+    (cardId: string, size: Parameters<typeof updateSharedCardSize>[1]) => {
+      if (isHomeOverview) {
+        updateActiveCardSize(cardId, size);
+        return;
+      }
+      updateSharedCardSize(cardId, size);
+    },
+    [isHomeOverview, updateActiveCardSize, updateSharedCardSize]
+  );
   const { cardOrders } = useCardOrdering(devices, rooms, visibleCards);
-  const { cardZones, updateCardZone } = useCardZones();
+  const { cardZones: sharedCardZones, updateCardZone: updateSharedCardZone } = useCardZones();
+  const homeCardZones = activeDashboard?.homeCardZones ?? {};
+  const cardZones = useMemo(
+    () => (isHomeOverview ? { ...sharedCardZones, ...homeCardZones } : sharedCardZones),
+    [homeCardZones, isHomeOverview, sharedCardZones]
+  );
+  const updateActiveCardZone = useDashboardCollectionStore((state) => state.updateActiveCardZone);
+  const updateCardZone = useCallback(
+    (cardId: string, zone: Parameters<typeof updateSharedCardZone>[1]) => {
+      if (isHomeOverview) {
+        updateActiveCardZone(cardId, zone);
+        return;
+      }
+      updateSharedCardZone(cardId, zone);
+    },
+    [isHomeOverview, updateActiveCardZone, updateSharedCardZone]
+  );
   const { deviceMap } = useDeviceMap(isDeviceHeavySection ? devices : EMPTY_DEVICE_COLLECTION);
   const { deviceMap: availableDeviceMap } = useDeviceMap(
     isDeviceHeavySection ? availableDevices : EMPTY_DEVICE_COLLECTION
@@ -469,13 +525,28 @@ export function useDashboardController(): DashboardController {
     [applyHomeLayout, t]
   );
 
-  const { addCard, removeCard, updateCard } = useCustomCardsStore(
+  const {
+    addCard: addSharedCard,
+    removeCard: removeSharedCard,
+    updateCard: updateSharedCard,
+  } = useCustomCardsStore(
     useShallow((state) => ({
       addCard: state.addCard,
       removeCard: state.removeCard,
       updateCard: state.updateCard,
     }))
   );
+  const { addActiveCustomCard, removeActiveCustomCard, updateActiveCustomCard } =
+    useDashboardCollectionStore(
+      useShallow((state) => ({
+        addActiveCustomCard: state.addActiveCustomCard,
+        removeActiveCustomCard: state.removeActiveCustomCard,
+        updateActiveCustomCard: state.updateActiveCustomCard,
+      }))
+    );
+  const addCard = isHomeOverview ? addActiveCustomCard : addSharedCard;
+  const removeCard = isHomeOverview ? removeActiveCustomCard : removeSharedCard;
+  const updateCard = isHomeOverview ? updateActiveCustomCard : updateSharedCard;
   const {
     handleAddCard,
     handleAddLibraryCard,
@@ -561,6 +632,7 @@ export function useDashboardController(): DashboardController {
     orderedCardIds,
     roomHiddenItemCounts,
     roomItemCounts,
+    dashboardRooms,
     rooms,
     sectionData,
     securityAlertCount,

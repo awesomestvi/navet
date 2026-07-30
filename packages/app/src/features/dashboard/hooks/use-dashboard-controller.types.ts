@@ -101,6 +101,7 @@ export type DashboardController = OnboardingController &
     onSetHiddenRoomNames: (rooms: string[]) => void;
     roomHiddenItemCounts: Map<string, number>;
     roomItemCounts: Map<string, number>;
+    dashboardRooms: string[];
     rooms: string[];
     sectionData: DashboardSectionData;
     securityAlertCount: number;

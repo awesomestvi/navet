@@ -439,7 +439,7 @@ export async function loadDashboardProfile(
     }
 
     const profile = await parseJsonResponse<Partial<DashboardConfigPayload>>(response);
-    if (profile?.app !== 'navet' || profile.version !== 3) {
+    if (profile?.app !== 'navet' || (profile.version !== 3 && profile.version !== 4)) {
       return { ...unavailableLoadResult(), ...metadata };
     }
 

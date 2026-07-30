@@ -1681,10 +1681,10 @@ const ADDITIONAL_STORY_DOCS: Record<string, string> = {
     ]
   ),
   'Components/Primitives/Stepper': doc(
-    'Shared stepper primitive for progress-style sequences and short multi-step flows.',
+    'Shared stepper primitive for progress-style sequences and short multi-step flows, including selectable workspace steps.',
     [
       'How ordered steps, active progress, and completion state are presented.',
-      'The baseline layout for simple guided flows within Navet surfaces.',
+      'Horizontal, compact, and summary-rich vertical layouts for guided Navet surfaces.',
     ],
     [
       'Use this story when changing step progression styling or hierarchy.',
@@ -1692,7 +1692,7 @@ const ADDITIONAL_STORY_DOCS: Record<string, string> = {
     ],
     [
       'Check that current, complete, and upcoming steps are easy to distinguish.',
-      'Check that the stepper remains readable in compact widths.',
+      'Check compact widths, disabled steps, touch targets, and keyboard focus.',
     ]
   ),
   'Components/Primitives/Surface Panel': doc(

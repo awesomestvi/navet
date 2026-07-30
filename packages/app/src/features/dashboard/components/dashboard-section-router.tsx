@@ -121,6 +121,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     cardSizes,
     changeRoom,
     customCards,
+    dashboardRooms,
     deviceMap,
     handleAddEntity,
     handleDeleteCard,
@@ -148,7 +149,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   );
   const dashboardVisibleEntityIds = useMemo(() => Array.from(deviceMap.keys()), [deviceMap]);
   const roomNavigationGroups = useMemo<RoomNavigationGroup[]>(() => {
-    const availableRoomNames = new Set(rooms);
+    const availableRoomNames = new Set(dashboardRooms);
 
     return getRoomWorkspaceSectionsV2(roomWorkspace).flatMap((section) => {
       if (!section.group) {
@@ -169,7 +170,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
           ]
         : [];
     });
-  }, [roomWorkspace, rooms]);
+  }, [dashboardRooms, roomWorkspace]);
   const roomManagement =
     activeSection === 'home' && manageableRooms.length > 0
       ? {
@@ -524,7 +525,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
       <div {...sectionStackProps}>
         {kioskMode ? null : (
           <RoomNav
-            rooms={rooms}
+            rooms={dashboardRooms}
             hiddenRoomNames={controller.hiddenRoomNames}
             roomHiddenItemCounts={controller.roomHiddenItemCounts}
             roomItemCounts={controller.roomItemCounts}
@@ -636,7 +637,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
       mobileRoomNavigation={{
         activeRoom,
         onRoomChange: changeRoom,
-        rooms,
+        rooms: dashboardRooms,
         hiddenRoomNames: controller.hiddenRoomNames,
         groups: roomNavigationGroups,
       }}
@@ -703,6 +704,7 @@ function areDashboardSectionRouterPropsEqual(
     previousController.cardOrders === nextController.cardOrders &&
     previousController.cardSizes === nextController.cardSizes &&
     previousController.changeRoom === nextController.changeRoom &&
+    previousController.dashboardRooms === nextController.dashboardRooms &&
     previousController.handleAddEntity === nextController.handleAddEntity &&
     previousController.handleApplyDashboardPack === nextController.handleApplyDashboardPack &&
     previousController.handleDeleteCard === nextController.handleDeleteCard &&

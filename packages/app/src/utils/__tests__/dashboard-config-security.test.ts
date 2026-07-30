@@ -2,6 +2,7 @@ import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import {
   useCardZonesStore,
   useCustomCardsStore,
+  useDashboardCollectionStore,
   useDashboardEntitiesStore,
   useHomeDashboardLayoutStore,
 } from '@navet/app/features/dashboard';
@@ -34,6 +35,7 @@ describe('dashboard-config import hardening', () => {
   beforeEach(() => {
     localStorage.clear();
     useCustomCardsStore.setState(useCustomCardsStore.getInitialState(), true);
+    useDashboardCollectionStore.setState(useDashboardCollectionStore.getInitialState(), true);
     useDashboardEntitiesStore.setState(useDashboardEntitiesStore.getInitialState(), true);
     useCardZonesStore.setState(useCardZonesStore.getInitialState(), true);
     useHomeDashboardLayoutStore.setState(useHomeDashboardLayoutStore.getInitialState(), true);
@@ -222,6 +224,15 @@ describe('dashboard-config import hardening', () => {
     });
 
     expect(useHomeDashboardLayoutStore.getState().cardIds).toEqual(['custom-note']);
+    expect(useCustomCardsStore.getState().cards).toEqual([]);
+    expect(
+      useDashboardCollectionStore.getState().collection.dashboardsById.home.homeCustomCards
+    ).toEqual([
+      expect.objectContaining({
+        id: 'custom-note',
+        room: '__home__',
+      }),
+    ]);
   });
 
   it('imports legacy sensor-group cards as canonical info cards', () => {
@@ -283,6 +294,36 @@ describe('dashboard-config import hardening', () => {
     });
     expect(exported.homeDashboardLayout).not.toHaveProperty('state');
     expect(exported.homeDashboardLayout).not.toHaveProperty('version');
+  });
+
+  it('round-trips each dashboard room-navigation scope', () => {
+    useDashboardCollectionStore.getState().createDashboard({
+      id: 'upstairs',
+      name: 'Upstairs',
+      source: {
+        kind: 'rooms',
+        roomNames: ['Living Room', 'Office', 'Guest Room'],
+        include: 'common',
+        devices: [],
+      },
+    });
+
+    const exported = exportDashboardConfig();
+    expect(exported.dashboards?.dashboardsById.upstairs.homeRoomNames).toEqual([
+      'Living Room',
+      'Office',
+      'Guest Room',
+    ]);
+
+    useDashboardCollectionStore.getState().resetCollection();
+    importDashboardConfig({
+      ...baseConfig,
+      dashboards: exported.dashboards,
+    });
+
+    expect(
+      useDashboardCollectionStore.getState().collection.dashboardsById.upstairs.homeRoomNames
+    ).toEqual(['Living Room', 'Office', 'Guest Room']);
   });
 
   it('exports locked card ids with dashboard entity state', () => {

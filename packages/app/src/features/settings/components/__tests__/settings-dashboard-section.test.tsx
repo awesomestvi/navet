@@ -1,3 +1,11 @@
+import { getDashboardClientIdentity } from '@navet/app/features/dashboard/clients/dashboard-client-identity';
+import { useDashboardProfileRuntimeStore } from '@navet/app/features/dashboard/clients/dashboard-profile-runtime-store';
+import {
+  createDashboardDefinition,
+  createLegacyDashboardCollection,
+  sanitizeDashboardCollection,
+} from '@navet/app/features/dashboard/dashboards/dashboard-collection';
+import { useDashboardCollectionStore } from '@navet/app/features/dashboard/dashboards/dashboard-collection-store';
 import { useSettingsSectionController } from '@navet/app/features/settings/hooks/use-settings-section-controller';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { renderWithProviders } from '@navet/app/test/render';
@@ -80,7 +88,7 @@ describe('SettingsDashboardSection', () => {
   it('applies dashboard profile presets through scoped settings', () => {
     renderWithProviders(<TestSection />);
 
-    const profileGroup = screen.getByRole('group', { name: 'Dashboard profile' });
+    const profileGroup = screen.getByRole('group', { name: 'Display preset' });
     expect(within(profileGroup).queryByRole('button', { name: 'Bedside' })).not.toBeInTheDocument();
     fireEvent.click(within(profileGroup).getByRole('button', { name: 'Wall display' }));
 
@@ -101,5 +109,49 @@ describe('SettingsDashboardSection', () => {
     renderWithProviders(<TestSection />);
 
     expect(screen.queryByText('Space usage')).not.toBeInTheDocument();
+  });
+
+  it('assigns another registered display without changing this device', async () => {
+    const currentClientId = getDashboardClientIdentity().id;
+    const now = new Date().toISOString();
+    useDashboardProfileRuntimeStore.getState().setClients([
+      {
+        id: 'sonoff-upstairs',
+        name: 'Sonoff upstairs',
+        kind: 'wall_panel',
+        firstSeenAt: now,
+        lastSeenAt: now,
+        lastRevision: 1,
+      },
+    ]);
+    const home = createDashboardDefinition({ id: 'home', name: 'Home' });
+    const upstairs = createDashboardDefinition({ id: 'upstairs', name: 'Upstairs lights' });
+    useDashboardCollectionStore.setState({
+      collection: sanitizeDashboardCollection(
+        {
+          schemaVersion: 1,
+          defaultDashboardId: 'home',
+          order: ['home', 'upstairs'],
+          dashboardsById: { home, upstairs },
+          dashboardIdByClientId: {},
+        },
+        createLegacyDashboardCollection({ homeLayout: null })
+      ),
+      activeDashboardId: 'home',
+    });
+
+    renderWithProviders(<TestSection />);
+
+    fireEvent.pointerDown(
+      screen.getByRole('button', { name: 'Dashboard actions for Upstairs lights' })
+    );
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Assign devices' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Assign Upstairs lights' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Sonoff upstairs' }));
+
+    const assignments = useDashboardCollectionStore.getState().collection.dashboardIdByClientId;
+    expect(assignments['sonoff-upstairs']).toBe('upstairs');
+    expect(assignments[currentClientId]).toBeUndefined();
   });
 });

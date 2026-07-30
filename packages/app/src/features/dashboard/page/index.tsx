@@ -2,12 +2,15 @@ import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner
 import { RenderProfiler } from '@navet/app/components/shared/render-profiler';
 import { isAllRooms } from '@navet/app/constants/rooms';
 import { useI18n } from '@navet/app/hooks';
+import { pathToDashboardId } from '@navet/app/navigation/sections';
 import { useErrorStore, useNavigationStore } from '@navet/app/stores';
 import { appErrorSelectors } from '@navet/app/stores/selectors';
 import { useEffect } from 'react';
+import { toast } from 'sonner';
 import { DashboardArrivalReveal } from '../components/dashboard-arrival-reveal';
 import { DashboardOverlays } from '../components/dashboard-overlays';
 import { DashboardSectionRouter } from '../components/dashboard-section-router';
+import { useDashboardCollectionStore } from '../dashboards/dashboard-collection-store';
 import { useDashboardController } from '../hooks/use-dashboard-controller';
 import { useDashboardProfileSync } from '../hooks/use-dashboard-profile-sync';
 
@@ -21,6 +24,15 @@ export function DashboardPage() {
   );
   const { profileLoadCompleted } = useDashboardProfileSync();
   const controller = useDashboardController();
+  const pendingAssignedDashboardId = useDashboardCollectionStore(
+    (state) => state.pendingAssignedDashboardId
+  );
+  const applyPendingAssignment = useDashboardCollectionStore(
+    (state) => state.applyPendingAssignment
+  );
+  const syncDashboardFromLocation = useDashboardCollectionStore(
+    (state) => state.syncDashboardFromLocation
+  );
   const isDashboardReady =
     controller.devicesLoaded &&
     profileLoadCompleted &&
@@ -48,6 +60,46 @@ export function DashboardPage() {
       clearAppError();
     }
   }, [appError, clearAppError, isDashboardReady, t]);
+
+  useEffect(() => {
+    const syncFromLocation = () => {
+      syncDashboardFromLocation();
+      const requestedDashboardId = pathToDashboardId(window.location.pathname);
+      if (
+        requestedDashboardId &&
+        !useDashboardCollectionStore.getState().collection.dashboardsById[requestedDashboardId]
+      ) {
+        toast.warning(t('dashboard.multiple.notFound'), {
+          id: 'dashboard-not-found',
+        });
+      }
+    };
+    const handlePopState = () => syncFromLocation();
+    if (profileLoadCompleted) {
+      syncFromLocation();
+    }
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [profileLoadCompleted, syncDashboardFromLocation, t]);
+
+  useEffect(() => {
+    if (
+      pendingAssignedDashboardId &&
+      controller.activeSection === 'home' &&
+      !controller.isEditMode &&
+      !controller.showAddCardDialog &&
+      !controller.showAddEntityDialog
+    ) {
+      applyPendingAssignment();
+    }
+  }, [
+    applyPendingAssignment,
+    controller.activeSection,
+    controller.isEditMode,
+    controller.showAddCardDialog,
+    controller.showAddEntityDialog,
+    pendingAssignedDashboardId,
+  ]);
 
   if (!isDashboardReady) {
     return controller.connecting ? (

@@ -1,6 +1,6 @@
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { DASHBOARD_CONFIG_VERSION } from '@navet/app/constants/dashboard-config-version';
-import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
+import { ALL_ROOMS_ID, HOME_WIDGET_ROOM, isAllRooms } from '@navet/app/constants/rooms';
 import { STORAGE_KEYS, STORE_STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import {
   type CardType,
@@ -11,6 +11,12 @@ import {
   useDashboardEntitiesStore,
   useHomeDashboardLayoutStore,
 } from '@navet/app/features/dashboard';
+import {
+  createLegacyDashboardCollection,
+  type NavetDashboardCollection,
+  sanitizeDashboardCollection,
+  useDashboardCollectionStore,
+} from '@navet/app/features/dashboard/dashboards';
 import {
   type LegacyRoomOrganization,
   parseRoomWorkspaceV2,
@@ -47,7 +53,7 @@ import {
 } from './settings-profile-scope';
 
 export interface DashboardConfigPayload {
-  version: typeof DASHBOARD_CONFIG_VERSION;
+  version: 1 | 2 | 3 | typeof DASHBOARD_CONFIG_VERSION;
   app: 'navet';
   exportedAt: string;
   theme: {
@@ -58,6 +64,7 @@ export interface DashboardConfigPayload {
   };
   settings: SettingsPreferenceValues<'shared'>;
   navigation: Pick<ReturnType<typeof useNavigationStore.getState>, 'currentRoom' | 'activeSection'>;
+  dashboards?: NavetDashboardCollection;
   customCards?: ReturnType<typeof useCustomCardsStore.getState>['cards'];
   dashboardEntities?: Pick<
     ReturnType<typeof useDashboardEntitiesStore.getState>,
@@ -109,6 +116,7 @@ export function resetDashboardProfileState() {
     STORAGE_KEYS.cardOrders,
     STORAGE_KEYS.cardZones,
     STORAGE_KEYS.homeDashboardLayout,
+    STORAGE_KEYS.dashboardCollection,
     STORAGE_KEYS.roomOrder,
     STORAGE_KEYS.hiddenRooms,
     STORAGE_KEYS.roomOrganization,
@@ -140,6 +148,7 @@ export function resetDashboardProfileState() {
   resetStore(useLightPresetStore);
   resetStore(useCardZonesStore);
   resetStore(useHomeDashboardLayoutStore);
+  useDashboardCollectionStore.getState().resetCollection();
 
   notifyPersistedStateChanged(STORAGE_KEYS.cardSizes, {});
   notifyPersistedStateChanged(STORAGE_KEYS.mediaDefaultViews, {});
@@ -181,6 +190,7 @@ export const exportDashboardConfig = (): DashboardConfigPayload => {
   const homeDashboardLayoutState = useHomeDashboardLayoutStore.getState();
   const lightPresetState = useLightPresetStore.getState();
   const roomWorkspace = readRoomWorkspaceV2();
+  const dashboardCollection = useDashboardCollectionStore.getState().collection;
   const legacyRoomOrganization = sanitizeLegacyRoomOrganization(
     parseStoredJson<unknown>(STORAGE_KEYS.roomOrganization, null)
   );
@@ -207,11 +217,14 @@ export const exportDashboardConfig = (): DashboardConfigPayload => {
       currentRoom: navigationState.currentRoom,
       activeSection: navigationState.activeSection,
     },
+    dashboards: dashboardCollection,
     customCards: pruneEmptyArray(
-      customCardsState.cards.map((card) => ({
-        ...card,
-        data: sanitizeCustomCardData(card.type, card.data),
-      }))
+      customCardsState.cards
+        .filter((card) => card.room !== HOME_WIDGET_ROOM && !isAllRooms(card.room))
+        .map((card) => ({
+          ...card,
+          data: sanitizeCustomCardData(card.type, card.data),
+        }))
     ),
     dashboardEntities:
       dashboardEntitiesState.hiddenEntityIds.length > 0 ||
@@ -619,7 +632,10 @@ export const importDashboardConfig = (
 ) => {
   if (
     !isRecord(value) ||
-    (value.version !== 1 && value.version !== 2 && value.version !== DASHBOARD_CONFIG_VERSION)
+    (value.version !== 1 &&
+      value.version !== 2 &&
+      value.version !== 3 &&
+      value.version !== DASHBOARD_CONFIG_VERSION)
   ) {
     throw new Error('Unsupported dashboard config format.');
   }
@@ -668,7 +684,12 @@ export const importDashboardConfig = (
     });
   }
 
-  useCustomCardsStore.getState().replaceCards(sanitizeImportedCustomCards(value.customCards));
+  const importedCustomCards = sanitizeImportedCustomCards(value.customCards);
+  useCustomCardsStore
+    .getState()
+    .replaceCards(
+      importedCustomCards.filter((card) => card.room !== HOME_WIDGET_ROOM && !isAllRooms(card.room))
+    );
 
   useDashboardEntitiesStore.getState().replaceDashboardEntitiesState({
     hiddenEntityIds: sanitizeStringArray(dashboardEntities.hiddenEntityIds),
@@ -714,6 +735,21 @@ export const importDashboardConfig = (
   }
   useCardZonesStore.getState().replaceCardZones(cardZones);
   useHomeDashboardLayoutStore.getState().replaceLayout(homeDashboardLayout);
+  const legacyDashboardCollection = createLegacyDashboardCollection({
+    homeLayout: homeDashboardLayout,
+    cardSizes,
+    customCards: importedCustomCards,
+    cardZones,
+  });
+  useDashboardCollectionStore
+    .getState()
+    .replaceCollection(
+      sanitizeDashboardCollection(
+        value.dashboards,
+        legacyDashboardCollection,
+        sanitizeImportedCustomCards
+      )
+    );
   if (roomWorkspace) {
     writeRoomWorkspaceV2(roomWorkspace);
   } else {

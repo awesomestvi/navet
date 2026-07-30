@@ -1,8 +1,14 @@
 import { RoomNav } from '@navet/app/components/layout/room-nav';
 import type { RoomNavigationGroup } from '@navet/app/components/layout/room-nav.utils';
+import {
+  createDashboardDefinition,
+  createLegacyDashboardCollection,
+  sanitizeDashboardCollection,
+} from '@navet/app/features/dashboard/dashboards/dashboard-collection';
+import { useDashboardCollectionStore } from '@navet/app/features/dashboard/dashboards/dashboard-collection-store';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import type { Meta, StoryObj } from '@storybook/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { expect, userEvent, within } from 'storybook/test';
 
 const DEFAULT_ROOMS = ['Living Room', 'Kitchen', 'Bedroom', 'Office'];
@@ -57,6 +63,45 @@ function RoomNavStory({
       addEntityLabel="Add card"
     />
   );
+}
+
+function MultipleDashboardsStory() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const previous = useDashboardCollectionStore.getState();
+    const home = createDashboardDefinition({ id: 'home', name: 'Home' });
+    const upstairs = createDashboardDefinition({ id: 'upstairs', name: 'Upstairs lights' });
+    useDashboardCollectionStore.setState({
+      collection: sanitizeDashboardCollection(
+        {
+          schemaVersion: 1,
+          defaultDashboardId: 'home',
+          order: ['home', 'upstairs'],
+          dashboardsById: { home, upstairs },
+          dashboardIdByClientId: {},
+        },
+        createLegacyDashboardCollection({ homeLayout: null })
+      ),
+      activeDashboardId: 'upstairs',
+      activeSource: 'preview',
+      pendingAssignedDashboardId: null,
+      layoutHistory: { future: [], past: [] },
+    });
+    setReady(true);
+
+    return () => {
+      useDashboardCollectionStore.setState({
+        collection: previous.collection,
+        activeDashboardId: previous.activeDashboardId,
+        activeSource: previous.activeSource,
+        pendingAssignedDashboardId: previous.pendingAssignedDashboardId,
+        layoutHistory: previous.layoutHistory,
+      });
+    };
+  }, []);
+
+  return ready ? <RoomNavStory /> : null;
 }
 
 const meta = {
@@ -137,6 +182,20 @@ export const EditMode: Story = {
 export const ManyRooms: Story = {
   args: {
     rooms: MANY_ROOMS,
+  },
+};
+
+export const MultipleDashboards: Story = {
+  render: () => <MultipleDashboardsStory />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+
+    await expect(await canvas.findByRole('button', { name: 'Upstairs lights' })).toBeVisible();
+    await userEvent.click(canvas.getByRole('button', { name: 'Open dashboards' }));
+    await expect(
+      within(await page.findByRole('menu')).getByRole('menuitem', { name: /Home/ })
+    ).toBeVisible();
   },
 };
 

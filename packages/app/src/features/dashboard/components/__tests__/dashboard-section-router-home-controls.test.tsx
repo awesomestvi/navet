@@ -274,6 +274,7 @@ function createController(): DashboardController {
     deviceMap: new Map(),
     densePerformanceMode: false,
     denseVisibleCardCount: 0,
+    dashboardRooms: [ALL_ROOMS_ID, 'Kitchen'],
     devicesLoaded: true,
     handleChooseAllEntities: vi.fn(),
     handleChooseBlankDashboard: vi.fn(),
