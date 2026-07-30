@@ -8,7 +8,7 @@ import {
 } from '@navet/app/utils/persisted-state-events';
 import { ensureCanonicalEntityId } from '@navet/app/utils/provider-entity-id';
 import { storage } from '@navet/app/utils/storage';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { CustomCard } from './use-custom-cards';
 
 function areRoomOrdersEqual(
@@ -55,20 +55,16 @@ export const useCardOrdering = (
     return pairs;
   }, [devices]);
 
-  // Stable string key — only changes when device ids or room assignments change.
-  // This gates ordering rebuilds so HA state-only updates (temp, brightness) don't trigger them.
-  const deviceIdentityKey = useMemo(
-    () => deviceIdRoomPairs.map((p) => `${p.id}:${p.room}`).join(','),
-    [deviceIdRoomPairs]
+  // The serialized membership snapshot changes only when device ids or room assignments change.
+  // Rehydrate it behind that key so state-only entity updates retain the same array reference
+  // without mutating refs during render.
+  const deviceIdentityKey = useMemo(() => JSON.stringify(deviceIdRoomPairs), [deviceIdRoomPairs]);
+  const stableDeviceIdRoomPairs = useMemo(
+    () => JSON.parse(deviceIdentityKey) as Array<{ id: string; room: string }>,
+    [deviceIdentityKey]
   );
 
-  // Keep a ref so buildOrders can read the latest pairs without having them as a dep.
-  // This avoids rebuilding buildOrders on every devices reference change.
-  const deviceIdRoomPairsRef = useRef(deviceIdRoomPairs);
-  deviceIdRoomPairsRef.current = deviceIdRoomPairs;
-
   const buildOrders = useCallback(() => {
-    const pairs = deviceIdRoomPairsRef.current;
     const orders: Record<string, string[]> = {};
     const orderedRooms = Array.from(
       new Set([
@@ -79,7 +75,7 @@ export const useCardOrdering = (
 
     orderedRooms.forEach((room) => {
       const roomCards: string[] = [];
-      pairs.forEach(({ id, room: deviceRoom }) => {
+      stableDeviceIdRoomPairs.forEach(({ id, room: deviceRoom }) => {
         if (deviceRoom === room) {
           roomCards.push(id);
         }
@@ -93,12 +89,12 @@ export const useCardOrdering = (
     });
 
     return orders;
-  }, [deviceIdentityKey, rooms, safeCustomCards]);
+  }, [rooms, safeCustomCards, stableDeviceIdRoomPairs]);
 
   const [cardOrders, setCardOrders] = useState<Record<string, string[]>>(() => {
     const stored = storage.get<Record<string, string[]> | null>(STORAGE_KEYS.cardOrders, null);
     if (stored) {
-      const allDeviceIds = new Set(deviceIdRoomPairs.map((p) => p.id));
+      const allDeviceIds = new Set(stableDeviceIdRoomPairs.map((pair) => pair.id));
       safeCustomCards.forEach((card) => {
         allDeviceIds.add(card.id);
       });
@@ -124,7 +120,7 @@ export const useCardOrdering = (
   });
 
   useEffect(() => {
-    const allDeviceIds = new Set(deviceIdRoomPairsRef.current.map((p) => p.id));
+    const allDeviceIds = new Set(stableDeviceIdRoomPairs.map((pair) => pair.id));
     safeCustomCards.forEach((card) => {
       allDeviceIds.add(card.id);
     });
@@ -168,7 +164,7 @@ export const useCardOrdering = (
 
       return mergedOrders;
     });
-  }, [buildOrders, safeCustomCards]);
+  }, [buildOrders, safeCustomCards, stableDeviceIdRoomPairs]);
 
   useEffect(() => {
     storage.set(STORAGE_KEYS.cardOrders, cardOrders);

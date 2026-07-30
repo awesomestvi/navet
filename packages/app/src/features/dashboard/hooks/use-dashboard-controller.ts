@@ -34,7 +34,15 @@ import type { DeviceCollection, DeviceWithType } from '@navet/app/types/device.t
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { logPerformanceDecision } from '@navet/app/utils/performance-diagnostics';
 import { buildAggregatedRooms } from '@navet/app/utils/provider-rooms';
-import { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 import { getClimateDashboardGroup } from '../../climate/utils/climate-dashboard-group';
@@ -265,6 +273,9 @@ export function useDashboardController(): DashboardController {
   useDashboardDevicesLoaded({ connected, connecting, setDevicesLoaded });
 
   const { isEditMode, toggleEditMode } = useEditMode();
+  const handleToggleEditMode = useCallback(() => {
+    startTransition(toggleEditMode);
+  }, [toggleEditMode]);
   useEditModeBeforeUnload(isEditMode);
   const allCards = useCustomCardsStore((state) => state.cards);
   const shouldTrackMediaDevices = resolveShouldTrackMediaDevices({
@@ -308,6 +319,10 @@ export function useDashboardController(): DashboardController {
   const { deviceMap: availableDeviceMap } = useDeviceMap(
     isDeviceHeavySection ? availableDevices : EMPTY_DEVICE_COLLECTION
   );
+  const availableDeviceMapRef = useRef(availableDeviceMap);
+  useLayoutEffect(() => {
+    availableDeviceMapRef.current = availableDeviceMap;
+  }, [availableDeviceMap]);
   const manualDevices = useAggregatedDevices({
     enabled: dialogs.showAddCardDialog && activeSection !== 'energy',
     includeFeatureCollections: shouldIncludeFeatureCollections,
@@ -326,6 +341,13 @@ export function useDashboardController(): DashboardController {
 
   const homeLayoutValidIds = useHomeLayoutValidIds(availableDeviceMap, allCustomCards);
   const homeLayoutController = useHomeDashboardLayout(homeLayoutValidIds, cardSizes);
+  const {
+    addCard: addHomeLayoutCard,
+    addSection: addHomeLayoutSection,
+    applyLayout: applyHomeLayout,
+    removeCard: removeHomeLayoutCard,
+    resetLayout: resetHomeLayout,
+  } = homeLayoutController;
   const homeLayoutHydrated = useHomeLayoutHydrated({
     cardIds: homeLayoutController.layout.cardIds,
     availableDeviceMap,
@@ -424,11 +446,15 @@ export function useDashboardController(): DashboardController {
     hiddenEntityIds,
   });
 
-  const resetDashboard = useResetDashboard(homeLayoutController);
+  const resetDashboard = useResetDashboard(resetHomeLayout);
   const onboarding = useOnboardingController({ allEntityIds, changeRoom, resetDashboard });
   const handleApplyDashboardPack = useCallback(
     (packId: DashboardPackId) => {
-      const nextLayout = buildDashboardPackLayout(packId, availableDeviceMap.values(), t);
+      const nextLayout = buildDashboardPackLayout(
+        packId,
+        availableDeviceMapRef.current.values(),
+        t
+      );
       const packLabelKey =
         DASHBOARD_PACKS.find((pack) => pack.id === packId)?.labelKey ?? 'dashboard.packs.title';
 
@@ -437,10 +463,10 @@ export function useDashboardController(): DashboardController {
         return;
       }
 
-      homeLayoutController.applyLayout(nextLayout);
+      applyHomeLayout(nextLayout);
       toast.success(t('dashboard.feedback.packApplied', { name: t(packLabelKey) }));
     },
-    [availableDeviceMap, homeLayoutController, t]
+    [applyHomeLayout, t]
   );
 
   const { addCard, removeCard, updateCard } = useCustomCardsStore(
@@ -469,7 +495,11 @@ export function useDashboardController(): DashboardController {
     showAutoEntity,
     t,
     addCardTargetSectionId: dialogs.addCardTargetSectionId,
-    homeLayoutController,
+    homeLayoutMode: homeLayoutController.layout.mode,
+    homeLayoutSections: homeLayoutController.layout.sections,
+    addHomeLayoutCard,
+    removeHomeLayoutCard,
+    addHomeLayoutSection,
   });
 
   return {
@@ -526,7 +556,7 @@ export function useDashboardController(): DashboardController {
     manualEntityViewsByCanonicalId,
     onSetAllViewGrouping: setAllViewGrouping,
     onSetHiddenRoomNames: setHiddenRoomNames,
-    onToggleEditMode: () => startTransition(toggleEditMode),
+    onToggleEditMode: handleToggleEditMode,
     onSetRoomOrder: setRoomOrder,
     orderedCardIds,
     roomHiddenItemCounts,
@@ -748,11 +778,11 @@ function useHomeLayoutValidIds(
   );
 }
 
-function useResetDashboard(homeLayoutController: ReturnType<typeof useHomeDashboardLayout>) {
+function useResetDashboard(resetHomeLayout: () => void) {
   return useCallback(() => {
-    homeLayoutController.resetLayout();
+    resetHomeLayout();
     useCustomCardsStore.getState().replaceCards([]);
-  }, [homeLayoutController]);
+  }, [resetHomeLayout]);
 }
 
 export { getClimateDashboardGroup } from '../../climate/utils/climate-dashboard-group';

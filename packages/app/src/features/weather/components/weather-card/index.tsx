@@ -99,6 +99,7 @@ export const WeatherCard = memo(function WeatherCard({
   const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
   const {
     theme,
+    effectiveEffectsQuality,
     surface,
     cardShell,
     shell,
@@ -208,6 +209,7 @@ export const WeatherCard = memo(function WeatherCard({
       >
         <WeatherBackground
           condition={condition}
+          effectsQuality={effectiveEffectsQuality}
           hasCustomTint={hasCustomTint}
           size={size}
           theme={theme}

@@ -9,6 +9,7 @@ import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { useI18n, usePersistedState, useTheme } from '@navet/app/hooks';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
+import { resolveEffectsQuality } from '@navet/app/utils/effects-quality';
 import { useState } from 'react';
 import { getWeatherCityName, getWeatherTextTreatment } from './weather-card-utils';
 import type { WeatherCondition } from './weather-icon';
@@ -35,10 +36,17 @@ export function useWeatherCardController({
   );
   const selectedForecastMode = useSettingsStore(settingsSelectors.weatherForecastMode);
   const selectedMetricIds = useSettingsStore(settingsSelectors.weatherMetricIds);
+  const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
+  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
+  const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const updateSettings = useSettingsStore(settingsSelectors.updateSettings);
+  const effectiveEffectsQuality = resolveEffectsQuality(
+    effectsQuality,
+    disableAnimations || lowPowerMode
+  );
 
   const cardShell = getCardShellSurfaceTokens(theme);
-  const surface = getThemeSurfaceTokens(theme);
+  const surface = getThemeSurfaceTokens(theme, effectiveEffectsQuality);
   const tintColor = weatherTintColors[id];
   const tintSurface = getCustomCardTintSurface(theme, tintColor);
   const hasCustomTint = Boolean(tintSurface.panelStyle);
@@ -90,6 +98,7 @@ export function useWeatherCardController({
 
   return {
     theme,
+    effectiveEffectsQuality,
     surface,
     isGlass,
     cardShell,

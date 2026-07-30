@@ -22,15 +22,11 @@ interface UseDashboardCardActionsParams {
   showAutoEntity: (entityId: string) => void;
   t: TranslateFn;
   addCardTargetSectionId: string | null;
-  homeLayoutController: {
-    layout: {
-      mode: 'flow' | 'sectioned';
-      sections: Array<{ id: string }>;
-    };
-    addCard: (cardId: string, sectionId?: string) => void;
-    removeCard: (cardId: string) => void;
-    addSection: () => string;
-  };
+  homeLayoutMode: 'flow' | 'sectioned';
+  homeLayoutSections: Array<{ id: string }>;
+  addHomeLayoutCard: (cardId: string, sectionId?: string) => void;
+  removeHomeLayoutCard: (cardId: string) => void;
+  addHomeLayoutSection: () => string;
 }
 
 export function useDashboardCardActions({
@@ -44,7 +40,11 @@ export function useDashboardCardActions({
   showAutoEntity,
   t,
   addCardTargetSectionId,
-  homeLayoutController,
+  homeLayoutMode,
+  homeLayoutSections,
+  addHomeLayoutCard,
+  removeHomeLayoutCard,
+  addHomeLayoutSection,
 }: UseDashboardCardActionsParams) {
   const handleAddCard = useCallback(
     (template: CardTemplate, size: CardSize) => {
@@ -63,19 +63,17 @@ export function useDashboardCardActions({
           : activeRoom;
 
       if (isHomeCanvasTarget) {
-        if (homeLayoutController.layout.mode !== 'sectioned') {
-          homeLayoutController.addCard(newCard.id);
+        if (homeLayoutMode !== 'sectioned') {
+          addHomeLayoutCard(newCard.id);
         } else {
           const targetSectionId =
             (addCardTargetSectionId &&
-              homeLayoutController.layout.sections.some(
-                (section) => section.id === addCardTargetSectionId
-              ) &&
+              homeLayoutSections.some((section) => section.id === addCardTargetSectionId) &&
               addCardTargetSectionId) ||
-            homeLayoutController.layout.sections[0]?.id ||
-            homeLayoutController.addSection();
+            homeLayoutSections[0]?.id ||
+            addHomeLayoutSection();
 
-          homeLayoutController.addCard(newCard.id, targetSectionId);
+          addHomeLayoutCard(newCard.id, targetSectionId);
         }
       }
 
@@ -91,7 +89,10 @@ export function useDashboardCardActions({
       activeSection,
       addCard,
       addCardTargetSectionId,
-      homeLayoutController,
+      addHomeLayoutCard,
+      addHomeLayoutSection,
+      homeLayoutMode,
+      homeLayoutSections,
       isEditMode,
       t,
     ]
@@ -100,10 +101,10 @@ export function useDashboardCardActions({
   const handleDeleteCard = useCallback(
     (cardId: string) => {
       removeCard(cardId);
-      homeLayoutController.removeCard(cardId);
+      removeHomeLayoutCard(cardId);
       toast.success(t('dashboard.feedback.widgetDeleted'));
     },
-    [homeLayoutController, removeCard, t]
+    [removeCard, removeHomeLayoutCard, t]
   );
 
   const handleAddLibraryCard = useCallback(
@@ -113,24 +114,32 @@ export function useDashboardCardActions({
         return;
       }
 
-      if (homeLayoutController.layout.mode !== 'sectioned') {
-        homeLayoutController.addCard(cardId);
+      if (homeLayoutMode !== 'sectioned') {
+        addHomeLayoutCard(cardId);
       } else {
         const targetSectionId =
           (addCardTargetSectionId &&
-            homeLayoutController.layout.sections.some(
-              (section) => section.id === addCardTargetSectionId
-            ) &&
+            homeLayoutSections.some((section) => section.id === addCardTargetSectionId) &&
             addCardTargetSectionId) ||
-          homeLayoutController.layout.sections[0]?.id ||
-          homeLayoutController.addSection();
+          homeLayoutSections[0]?.id ||
+          addHomeLayoutSection();
 
-        homeLayoutController.addCard(cardId, targetSectionId);
+        addHomeLayoutCard(cardId, targetSectionId);
       }
 
       toast.success(t('dashboard.feedback.cardAddedToHome'));
     },
-    [activeRoom, activeSection, addCardTargetSectionId, homeLayoutController, isEditMode, t]
+    [
+      activeRoom,
+      activeSection,
+      addCardTargetSectionId,
+      addHomeLayoutCard,
+      addHomeLayoutSection,
+      homeLayoutMode,
+      homeLayoutSections,
+      isEditMode,
+      t,
+    ]
   );
 
   const handleAddEntity = useCallback(
@@ -148,19 +157,17 @@ export function useDashboardCardActions({
       const newCard = addCard('entity', 'small', targetRoom, { entityId });
 
       if (isHomeCanvasTarget) {
-        if (homeLayoutController.layout.mode !== 'sectioned') {
-          homeLayoutController.addCard(newCard.id);
+        if (homeLayoutMode !== 'sectioned') {
+          addHomeLayoutCard(newCard.id);
         } else {
           const targetSectionId =
             (addCardTargetSectionId &&
-              homeLayoutController.layout.sections.some(
-                (section) => section.id === addCardTargetSectionId
-              ) &&
+              homeLayoutSections.some((section) => section.id === addCardTargetSectionId) &&
               addCardTargetSectionId) ||
-            homeLayoutController.layout.sections[0]?.id ||
-            homeLayoutController.addSection();
+            homeLayoutSections[0]?.id ||
+            addHomeLayoutSection();
 
-          homeLayoutController.addCard(newCard.id, targetSectionId);
+          addHomeLayoutCard(newCard.id, targetSectionId);
         }
       }
 
@@ -171,7 +178,10 @@ export function useDashboardCardActions({
       activeSection,
       addCard,
       addCardTargetSectionId,
-      homeLayoutController,
+      addHomeLayoutCard,
+      addHomeLayoutSection,
+      homeLayoutMode,
+      homeLayoutSections,
       isEditMode,
       t,
     ]
