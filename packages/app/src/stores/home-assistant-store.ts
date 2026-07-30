@@ -54,12 +54,11 @@ const initialState: HomeAssistantState = {
   reconnecting: false,
 };
 
-// Debounce window for entity state updates. Multiple HA entity changes arriving
-// within this window are coalesced into a single Zustand set call, reducing
-// React reconciler pressure during bursts (automations, energy sensors, etc.).
-// The service always holds the latest HassEntities — only the notification is
-// deferred, so getEntities() at flush time returns the most recent snapshot.
-const ENTITY_DEBOUNCE_MS = 50;
+// Bounded coalescing window for entity state updates. Multiple HA entity changes
+// arriving within this window are committed in a single Zustand set call,
+// reducing React reconciler pressure during bursts (automations, energy sensors,
+// etc.) without postponing the flush indefinitely under a continuous stream.
+const ENTITY_COALESCE_MS = 50;
 const HA_CONNECTION_GRACE_PERIOD_MS = 10_000;
 const HA_CONNECTION_TIMEOUT_MESSAGE =
   'Cannot connect to Home Assistant. Check the saved URL and update it if your Home Assistant address changed.';
@@ -133,7 +132,8 @@ function reconcilePanelEntities(
 }
 
 export const homeAssistantStore = createStore<HomeAssistantStore>()((set, get) => {
-  let entityDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let entityCoalesceTimer: ReturnType<typeof setTimeout> | null = null;
+  let pendingEntities: HassEntities | null = null;
   let connectionGraceTimer: ReturnType<typeof setTimeout> | null = null;
   let activeServiceUnsubscribe: (() => void) | null = null;
   let panelRegistryLoadStarted = false;
@@ -141,11 +141,12 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, get) =
   let panelEntityFingerprints = new Map<string, PanelEntityFingerprint>();
   let connectAttemptId = 0;
 
-  const clearEntityDebounce = () => {
-    if (entityDebounceTimer !== null) {
-      clearTimeout(entityDebounceTimer);
-      entityDebounceTimer = null;
+  const clearEntityCoalescer = () => {
+    if (entityCoalesceTimer !== null) {
+      clearTimeout(entityCoalesceTimer);
+      entityCoalesceTimer = null;
     }
+    pendingEntities = null;
   };
 
   const clearConnectionGraceTimer = () => {
@@ -158,7 +159,7 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, get) =
   const clearServiceSubscriptions = () => {
     activeServiceUnsubscribe?.();
     activeServiceUnsubscribe = null;
-    clearEntityDebounce();
+    clearEntityCoalescer();
   };
 
   const getConnectionTimeoutDetails = (config: HomeAssistantConfiguration) => {
@@ -207,17 +208,22 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, get) =
             if (attemptId !== connectAttemptId) {
               return;
             }
-            clearEntityDebounce();
-            entityDebounceTimer = setTimeout(() => {
+            pendingEntities = entities;
+            if (entityCoalesceTimer !== null) {
+              return;
+            }
+            entityCoalesceTimer = setTimeout(() => {
+              entityCoalesceTimer = null;
+              const nextEntities = pendingEntities;
+              pendingEntities = null;
               if (attemptId !== connectAttemptId) {
                 return;
               }
-              entityDebounceTimer = null;
-              if (get().entities === entities) {
+              if (nextEntities === null || get().entities === nextEntities) {
                 return;
               }
-              set({ entities });
-            }, ENTITY_DEBOUNCE_MS);
+              set({ entities: nextEntities });
+            }, ENTITY_COALESCE_MS);
           }),
           homeAssistantService.addListener('config', (config) => {
             if (attemptId !== connectAttemptId) {
@@ -295,7 +301,7 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, get) =
         ];
         const unsubscribe = () => {
           for (const fn of unsubscribers) fn();
-          clearEntityDebounce();
+          clearEntityCoalescer();
         };
         activeServiceUnsubscribe = unsubscribe;
 

@@ -1,7 +1,8 @@
 import { runProviderContractTests } from '@navet/core/contract-test-suite';
 import { createProviderScopedId } from '@navet/core/ids';
+import type { NavetEntityEvent } from '@navet/core/types';
 import { createHomeAssistantContractAdapter } from '@navet/provider-homeassistant/homeassistant-adapter';
-import { beforeEach, expect, vi } from 'vitest';
+import { beforeEach, expect, it, vi } from 'vitest';
 import {
   configureHomeAssistantServiceBridge,
   type HomeAssistantServiceBridge,
@@ -32,7 +33,9 @@ const {
   callServiceMock,
   homeAssistantState,
   homeAssistantListeners,
+  homeAssistantStoreListeners,
   emitHomeAssistantSnapshot,
+  emitHomeAssistantRawSnapshot,
 } = vi.hoisted(() => {
   const listeners = {
     entities: new Set<() => void>(),
@@ -40,6 +43,7 @@ const {
     connection: new Set<() => void>(),
     config: new Set<() => void>(),
   };
+  const storeListeners = new Set<() => void>();
   const state = {
     connected: true,
     entities: {} as Record<string, unknown>,
@@ -51,7 +55,13 @@ const {
     callServiceMock: vi.fn(async () => undefined),
     homeAssistantState: state,
     homeAssistantListeners: listeners,
+    homeAssistantStoreListeners: storeListeners,
     emitHomeAssistantSnapshot: () => {
+      for (const listener of storeListeners) {
+        listener();
+      }
+    },
+    emitHomeAssistantRawSnapshot: () => {
       for (const listener of listeners.entities) {
         listener();
       }
@@ -78,6 +88,7 @@ beforeEach(() => {
   for (const listeners of Object.values(homeAssistantListeners)) {
     listeners.clear();
   }
+  homeAssistantStoreListeners.clear();
   currentSession = null;
   configureHomeAssistantServiceBridge({
     callApi: vi.fn(async () => []) as unknown as HomeAssistantServiceBridge['callApi'],
@@ -151,7 +162,12 @@ beforeEach(() => {
       disconnect: disconnectMock,
       syncPanelHass: vi.fn(),
     }),
-    subscribeStore: () => () => {},
+    subscribeStore: (listener) => {
+      homeAssistantStoreListeners.add(listener);
+      return () => {
+        homeAssistantStoreListeners.delete(listener);
+      };
+    },
   });
 });
 
@@ -242,4 +258,36 @@ runProviderContractTests({
       broken_entity: {} as never,
     };
   },
+});
+
+it('emits the latest committed store entity update instead of stale raw entity callbacks', async () => {
+  const adapter = createHomeAssistantContractAdapter();
+  const events: NavetEntityEvent[] = [];
+  const unsubscribe = await adapter.subscribeToEvents((event) => {
+    events.push(event);
+  });
+
+  homeAssistantState.entities = {
+    'light.kitchen': lightEntityFactory({ state: 'unavailable' }),
+  };
+  emitHomeAssistantRawSnapshot();
+  homeAssistantState.entities = {
+    'light.kitchen': lightEntityFactory({ state: 'off' }),
+  };
+  emitHomeAssistantRawSnapshot();
+
+  expect(events).toEqual([]);
+
+  emitHomeAssistantSnapshot();
+
+  expect(events).toEqual([
+    expect.objectContaining({
+      type: 'entity_updated',
+      entity: expect.objectContaining({
+        externalId: 'light.kitchen',
+        primaryState: 'off',
+      }),
+    }),
+  ]);
+  unsubscribe();
 });

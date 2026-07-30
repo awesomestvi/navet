@@ -243,6 +243,21 @@ export function subscribeHomeAssistantStore(listener: () => void) {
   return getBridge().subscribeStore(listener);
 }
 
+export function subscribeHomeAssistantStoreEntities(listener: () => void) {
+  const currentBridge = getBridge();
+  let previousEntities = currentBridge.getStoreState().entities;
+
+  return currentBridge.subscribeStore(() => {
+    const nextEntities = currentBridge.getStoreState().entities;
+    if (nextEntities === previousEntities) {
+      return;
+    }
+
+    previousEntities = nextEntities;
+    listener();
+  });
+}
+
 export function playHomeAssistantMedia(entityId: string, media: PlatformMediaPlayRequest) {
   return getBridge().playMedia(entityId, media);
 }

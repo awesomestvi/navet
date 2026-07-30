@@ -280,7 +280,7 @@ describe('homeAssistantStore', () => {
     ]);
   });
 
-  it('debounces entity updates from the service', async () => {
+  it('coalesces burst entity updates to the latest snapshot within a bounded window', async () => {
     vi.useFakeTimers();
     await homeAssistantStore.getState().connect({
       providerId: 'home_assistant',
@@ -290,19 +290,77 @@ describe('homeAssistantStore', () => {
       hassUrl: 'https://ha.example.com',
     });
 
-    homeAssistantServiceStub.entities = {
-      'light.kitchen': createPanelEntity('on'),
-    };
+    const storeListener = vi.fn();
+    const unsubscribe = homeAssistantStore.subscribe(storeListener);
+
     homeAssistantServiceStub.listeners.entities.forEach((listener) => {
       listener({
         'light.kitchen': createPanelEntity('on'),
       });
     });
+    vi.advanceTimersByTime(20);
+    homeAssistantServiceStub.listeners.entities.forEach((listener) => {
+      listener({
+        'light.kitchen': createPanelEntity('off'),
+      });
+    });
+    vi.advanceTimersByTime(20);
+    homeAssistantServiceStub.listeners.entities.forEach((listener) => {
+      listener({
+        'light.kitchen': createPanelEntity('unavailable'),
+      });
+    });
 
     expect(homeAssistantStore.getState().entities).toBeNull();
 
+    vi.advanceTimersByTime(9);
+
+    expect(homeAssistantStore.getState().entities).toBeNull();
+
+    vi.advanceTimersByTime(1);
+
+    expect(homeAssistantStore.getState().entities?.['light.kitchen']?.state).toBe('unavailable');
+    expect(storeListener).toHaveBeenCalledTimes(1);
+    unsubscribe();
+  });
+
+  it('keeps connection lifecycle updates synchronous while an entity batch is pending', async () => {
+    vi.useFakeTimers();
+    await homeAssistantStore.getState().connect({
+      providerId: 'home_assistant',
+      runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: 'https://ha.example.com',
+      hassUrl: 'https://ha.example.com',
+    });
+
+    homeAssistantServiceStub.listeners.entities.forEach((listener) => {
+      listener({
+        'light.kitchen': createPanelEntity('on'),
+      });
+    });
+    homeAssistantServiceStub.listeners.connection.forEach((listener) => {
+      listener({
+        connected: false,
+        connection: homeAssistantServiceStub.connection,
+        reconnecting: true,
+      });
+    });
+
+    expect(homeAssistantStore.getState()).toMatchObject({
+      connected: false,
+      connecting: true,
+      reconnecting: true,
+      entities: null,
+    });
+
     vi.advanceTimersByTime(50);
 
+    expect(homeAssistantStore.getState()).toMatchObject({
+      connected: false,
+      connecting: true,
+      reconnecting: true,
+    });
     expect(homeAssistantStore.getState().entities?.['light.kitchen']?.state).toBe('on');
   });
 

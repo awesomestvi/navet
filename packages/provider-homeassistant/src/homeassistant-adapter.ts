@@ -18,6 +18,7 @@ import {
   isHomeAssistantConnected,
   resolveHomeAssistantArtwork,
   resolveHomeAssistantProxyUrl,
+  subscribeHomeAssistantStoreEntities,
 } from './homeassistant-service-bridge';
 
 const ALARM_COMMAND_SERVICES: Record<
@@ -402,7 +403,7 @@ export function createHomeAssistantProviderContract(): NavetProviderContract {
     getState: getHomeAssistantState,
     subscribeState: (listener) => {
       const unsubscribers = [
-        addHomeAssistantListener('entities', listener),
+        subscribeHomeAssistantStoreEntities(listener),
         addHomeAssistantListener('registries', listener),
         addHomeAssistantListener('connection', listener),
       ];
