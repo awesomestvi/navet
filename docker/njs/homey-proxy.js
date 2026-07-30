@@ -1,17 +1,9 @@
-import fs from 'fs';
+import homeyStoreModule from './homey-store.js';
+import providerSessionModule from './provider-session-store.js';
 
-const HOMEY_PATH = '/data/navet-homey-session.json';
 const PROXY_PREFIX = '/__navet_homey_proxy__';
-
-function isValidHomeySession(value) {
-  return (
-    value &&
-    typeof value.homeyBaseUrl === 'string' &&
-    /^https?:\/\//.test(value.homeyBaseUrl) &&
-    typeof value.homeySessionToken === 'string' &&
-    value.homeySessionToken.length > 0
-  );
-}
+const getHeader = providerSessionModule.getHeader;
+const isStrictSameOriginMutation = providerSessionModule.isStrictSameOriginMutation;
 
 function normalizeBaseUrl(value) {
   if (typeof value !== 'string' || !/^https?:\/\//.test(value)) {
@@ -19,16 +11,6 @@ function normalizeBaseUrl(value) {
   }
 
   return value.replace(/\/+$/, '');
-}
-
-function readStoredSession() {
-  try {
-    const content = fs.readFileSync(HOMEY_PATH, 'utf8');
-    const parsed = JSON.parse(content);
-    return isValidHomeySession(parsed) ? parsed : null;
-  } catch (_error) {
-    return null;
-  }
 }
 
 function stripProxyPrefix(requestUri) {
@@ -40,22 +22,52 @@ function stripProxyPrefix(requestUri) {
   return proxiedPath + query;
 }
 
-function upstream_url(r) {
-  const session = readStoredSession();
-  const baseUrl = session ? normalizeBaseUrl(session.homeyBaseUrl) : '';
-  if (!baseUrl) {
-    return '';
+function createHomeyProxy(sessionStore) {
+  function requestAllowed(r) {
+    const method = String((r && r.method) || 'GET').toUpperCase();
+    const upgrade = getHeader(r && r.headersIn, 'Upgrade').trim();
+    const connection = getHeader(r && r.headersIn, 'Connection').toLowerCase();
+    const upgraded =
+      Boolean(upgrade) ||
+      connection.split(',').some(function (token) {
+        return token.trim() === 'upgrade';
+      });
+    return !upgraded && (method === 'GET' || method === 'HEAD')
+      ? '1'
+      : isStrictSameOriginMutation(r)
+        ? '1'
+        : '';
   }
 
-  return baseUrl + stripProxyPrefix(r.variables.request_uri);
+  function upstreamUrl(r) {
+    const context = sessionStore.resolveHomeySession(r);
+    const baseUrl = context ? normalizeBaseUrl(context.session.homeyBaseUrl) : '';
+    if (!baseUrl || !context.session.homeySessionToken) {
+      return '';
+    }
+
+    return baseUrl + stripProxyPrefix(r.variables.request_uri);
+  }
+
+  function authorizationHeader(r) {
+    const context = sessionStore.resolveHomeySession(r);
+    return context && context.session.homeySessionToken
+      ? 'Bearer ' + context.session.homeySessionToken
+      : '';
+  }
+
+  return {
+    authorization_header: authorizationHeader,
+    request_allowed: requestAllowed,
+    upstream_url: upstreamUrl,
+  };
 }
 
-function authorization_header(_r) {
-  const session = readStoredSession();
-  return session ? 'Bearer ' + session.homeySessionToken : '';
-}
+const homeyProxy = createHomeyProxy(homeyStoreModule);
 
 export default {
-  authorization_header,
-  upstream_url,
+  authorization_header: homeyProxy.authorization_header,
+  createHomeyProxy,
+  request_allowed: homeyProxy.request_allowed,
+  upstream_url: homeyProxy.upstream_url,
 };

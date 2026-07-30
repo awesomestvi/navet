@@ -1353,6 +1353,8 @@ export const ptMessages = {
     'O painel partilhado precisa de recuperação. As definições locais deste painel foram preservadas.',
   'dashboard.profileSync.unavailable':
     'A sincronização do painel partilhado está indisponível. As definições locais são preservadas.',
+  'dashboard.profileSync.tenantMismatch':
+    'Este painel partilhado pertence a outro endereço do Home Assistant. Ligue-se através do mesmo endereço do Home Assistant utilizado para configurar esta instalação do Navet. As definições locais são preservadas.',
   'dashboard.profileSync.unauthorized':
     'Inicie sessão novamente para continuar a sincronizar o painel partilhado. As definições locais são preservadas.',
   'dashboard.profileSync.saveFailed':

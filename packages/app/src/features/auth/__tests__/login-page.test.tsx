@@ -41,6 +41,19 @@ describe('LoginPage', () => {
     expect(screen.queryByLabelText(/token/i)).not.toBeInTheDocument();
   });
 
+  it('shows an authentication initialization error before provider selection', () => {
+    fetchDiscoveryMock.mockResolvedValue(null);
+    chooseDiscoveryMock.mockReturnValue(null);
+
+    renderWithProviders(
+      <LoginPage initialError="Home Assistant sign-in could not be completed. Please try again." />
+    );
+
+    expect(
+      screen.getByText('Home Assistant sign-in could not be completed. Please try again.')
+    ).toBeInTheDocument();
+  });
+
   it('prefills a discovered Home Assistant URL while keeping the field editable', async () => {
     fetchDiscoveryMock.mockResolvedValue({
       candidates: [

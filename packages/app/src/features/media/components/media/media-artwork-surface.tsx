@@ -1,3 +1,4 @@
+import { useEffectiveEffectsQuality } from '@navet/app/components/shared/theme/effective-effects-quality';
 import { MediaFallbackArtwork } from './media-fallback-artwork';
 import { useArtworkEdgeBlur } from './use-artwork-edge-blur';
 import type { MediaArtworkPalette } from './use-media-artwork-colors';
@@ -50,6 +51,8 @@ export function MediaArtworkSurface({
   artRegionClassName = 'w-[44%]',
   subduedFallback = false,
 }: MediaArtworkSurfaceProps) {
+  const effectsQuality = useEffectiveEffectsQuality();
+  const isLowEffects = effectsQuality === 'low';
   const useSubduedFallback = subduedFallback && !artwork;
   const useSoftGlassFallback = theme === 'glass' && useSubduedFallback;
   const fallbackSplitSurfaceColor = getSplitSurfaceColor(palette);
@@ -62,6 +65,7 @@ export function MediaArtworkSurface({
   const layoutBlendEdge =
     layout === 'split' ? 'right' : layout === 'stacked' ? 'bottom' : undefined;
   const artworkEdgeAnalysis = useArtworkEdgeBlur(artwork, {
+    enabled: !isLowEffects,
     matchColor: layoutSurfaceMatchColor,
     preferEdge: layoutBlendEdge,
   });
@@ -83,11 +87,13 @@ export function MediaArtworkSurface({
   return (
     <div
       className="pointer-events-none absolute inset-0"
+      data-media-artwork-surface={effectsQuality}
       style={{ ['--navet-media-bg' as string]: palette.dominant }}
     >
       {theme !== 'glass' || artwork ? (
         <div
           className="absolute inset-0"
+          data-media-paint-layer="base"
           style={{
             background:
               useSubduedFallback && layout === 'split'
@@ -114,7 +120,7 @@ export function MediaArtworkSurface({
           }}
         />
       ) : null}
-      {!artwork ? (
+      {!isLowEffects && !artwork ? (
         <MediaFallbackArtwork
           palette={palette}
           className={`absolute inset-0 scale-[1.08] blur-[42px] ${
@@ -152,7 +158,7 @@ export function MediaArtworkSurface({
               className={`h-full w-full object-contain object-left ${imageClassName}`}
               decoding="async"
               style={
-                artworkEdgeAnalysis.shouldFadeEdge
+                !isLowEffects && artworkEdgeAnalysis.shouldFadeEdge
                   ? {
                       WebkitMaskImage: edgeFadeMask,
                       maskImage: edgeFadeMask,
@@ -160,16 +166,18 @@ export function MediaArtworkSurface({
                   : undefined
               }
             />
-            {layout === 'full' && (
+            {!isLowEffects && layout === 'full' && (
               <>
                 <div
                   className="absolute inset-y-0 left-0 w-[20%]"
+                  data-media-decorative-layer="artwork-edge"
                   style={{
                     background: `linear-gradient(90deg, ${palette.dominant} 0%, rgba(0,0,0,0) 100%)`,
                   }}
                 />
                 <div
                   className="absolute inset-y-0 right-0 w-[20%]"
+                  data-media-decorative-layer="artwork-edge"
                   style={{
                     background: `linear-gradient(270deg, ${palette.dominant} 0%, rgba(0,0,0,0) 100%)`,
                   }}
@@ -196,46 +204,63 @@ export function MediaArtworkSurface({
         </div>
       )}
 
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            layout === 'split'
-              ? 'none'
-              : `linear-gradient(180deg, ${withAlpha(palette.highlight, useSoftGlassFallback ? 0.02 : useSubduedFallback ? 0.015 : 0.03)} 0%, ${withAlpha(useSoftGlassFallback ? palette.dominant : palette.darkMuted, useSoftGlassFallback ? 0.028 : useSubduedFallback ? 0.04 : 0.08)} 52%, ${withAlpha(useSoftGlassFallback ? palette.gradientEnd : palette.darkMuted, useSoftGlassFallback ? 0.04 : useSubduedFallback ? 0.08 : 0.18)} 100%)`,
-        }}
-      />
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            useSoftGlassFallback && layout === 'split'
-              ? `linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 78%, ${withAlpha(
-                  palette.dominant,
-                  0.012
-                )} 90%, ${withAlpha(palette.gradientEnd, 0.025)} 100%)`
-              : useSubduedFallback && layout === 'split'
-                ? `linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 72%, ${withAlpha(
-                    palette.darkMuted,
-                    0.02
-                  )} 86%, ${withAlpha(palette.darkMuted, 0.05)} 100%)`
-                : useSoftGlassFallback && layout === 'stacked'
-                  ? `linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 68%, ${withAlpha(
+      {isLowEffects ? (
+        <div
+          className="absolute inset-0"
+          data-media-paint-layer="readability"
+          style={{
+            background:
+              layout === 'split'
+                ? `linear-gradient(90deg, rgba(0,0,0,0) 34%, ${withAlpha(palette.darkMuted, 0.22)} 100%)`
+                : `linear-gradient(180deg, rgba(0,0,0,0) 45%, ${withAlpha(palette.darkMuted, 0.32)} 100%)`,
+          }}
+        />
+      ) : (
+        <>
+          <div
+            className="absolute inset-0"
+            data-media-decorative-layer="highlight"
+            style={{
+              background:
+                layout === 'split'
+                  ? 'none'
+                  : `linear-gradient(180deg, ${withAlpha(palette.highlight, useSoftGlassFallback ? 0.02 : useSubduedFallback ? 0.015 : 0.03)} 0%, ${withAlpha(useSoftGlassFallback ? palette.dominant : palette.darkMuted, useSoftGlassFallback ? 0.028 : useSubduedFallback ? 0.04 : 0.08)} 52%, ${withAlpha(useSoftGlassFallback ? palette.gradientEnd : palette.darkMuted, useSoftGlassFallback ? 0.04 : useSubduedFallback ? 0.08 : 0.18)} 100%)`,
+            }}
+          />
+          <div
+            className="absolute inset-0"
+            data-media-decorative-layer="depth"
+            style={{
+              background:
+                useSoftGlassFallback && layout === 'split'
+                  ? `linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 78%, ${withAlpha(
                       palette.dominant,
-                      0.014
-                    )} 84%, ${withAlpha(palette.gradientEnd, 0.03)} 100%)`
-                  : useSubduedFallback && layout === 'stacked'
-                    ? `linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 64%, ${withAlpha(
+                      0.012
+                    )} 90%, ${withAlpha(palette.gradientEnd, 0.025)} 100%)`
+                  : useSubduedFallback && layout === 'split'
+                    ? `linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 72%, ${withAlpha(
                         palette.darkMuted,
                         0.02
-                      )} 82%, ${withAlpha(palette.darkMuted, 0.05)} 100%)`
-                    : layout === 'split'
-                      ? 'none'
-                      : layout === 'stacked'
-                        ? 'none'
-                        : `linear-gradient(180deg, rgba(0,0,0,0) 0%, ${withAlpha(palette.darkMuted, 0.12)} 64%, ${withAlpha(palette.darkMuted, 0.28)} 100%)`,
-        }}
-      />
+                      )} 86%, ${withAlpha(palette.darkMuted, 0.05)} 100%)`
+                    : useSoftGlassFallback && layout === 'stacked'
+                      ? `linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 68%, ${withAlpha(
+                          palette.dominant,
+                          0.014
+                        )} 84%, ${withAlpha(palette.gradientEnd, 0.03)} 100%)`
+                      : useSubduedFallback && layout === 'stacked'
+                        ? `linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 64%, ${withAlpha(
+                            palette.darkMuted,
+                            0.02
+                          )} 82%, ${withAlpha(palette.darkMuted, 0.05)} 100%)`
+                        : layout === 'split'
+                          ? 'none'
+                          : layout === 'stacked'
+                            ? 'none'
+                            : `linear-gradient(180deg, rgba(0,0,0,0) 0%, ${withAlpha(palette.darkMuted, 0.12)} 64%, ${withAlpha(palette.darkMuted, 0.28)} 100%)`,
+            }}
+          />
+        </>
+      )}
     </div>
   );
 }

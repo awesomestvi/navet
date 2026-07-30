@@ -504,7 +504,9 @@ export const useSettingsStore = create<SettingsState>()(
         const next = pickKnownSettings(persisted);
         const effectsQualityUserOverride =
           next.effectsQualityUserOverride === true ||
-          (next.effectsQualityUserOverride === undefined && isEffectsQuality(next.effectsQuality));
+          (next.effectsQualityUserOverride === undefined &&
+            isEffectsQuality(next.effectsQuality) &&
+            next.effectsQuality !== 'high');
         return {
           ...current,
           ...next,

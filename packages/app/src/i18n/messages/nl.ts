@@ -1456,6 +1456,8 @@ export const nlMessages = {
     'Het gedeelde dashboard moet worden hersteld. De lokale instellingen van dit dashboard zijn behouden.',
   'dashboard.profileSync.unavailable':
     'Synchronisatie van het gedeelde dashboard is niet beschikbaar. Lokale instellingen blijven behouden.',
+  'dashboard.profileSync.tenantMismatch':
+    'Dit gedeelde dashboard hoort bij een ander Home Assistant-adres. Maak verbinding via hetzelfde Home Assistant-adres waarmee deze Navet-installatie is ingesteld. Lokale instellingen blijven behouden.',
   'dashboard.profileSync.unauthorized':
     'Meld u opnieuw aan om het gedeelde dashboard te blijven synchroniseren. Lokale instellingen blijven behouden.',
   'dashboard.profileSync.saveFailed':

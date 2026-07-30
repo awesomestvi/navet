@@ -1,7 +1,11 @@
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { renderWithProviders } from '@navet/app/test/render';
-import { fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  CAMERA_STREAM_OFFSCREEN_GRACE_MS,
+  resetCameraLiveStreamBudgetForTests,
+} from '../camera-live-stream-budget';
 import { CameraCardContainer } from '../container';
 
 const {
@@ -90,13 +94,17 @@ vi.mock('../use-provider-camera-live-data', () => ({
 }));
 
 class MockIntersectionObserver {
+  static instances: MockIntersectionObserver[] = [];
+
   constructor(
     private readonly callback: IntersectionObserverCallback,
     _options?: IntersectionObserverInit
-  ) {}
+  ) {
+    MockIntersectionObserver.instances.push(this);
+  }
 
   observe(_target: Element) {
-    this.callback([{ isIntersecting: false } as IntersectionObserverEntry], this as never);
+    this.emit(false);
   }
 
   disconnect() {}
@@ -106,16 +114,25 @@ class MockIntersectionObserver {
   takeRecords() {
     return [];
   }
+
+  emit(isIntersecting: boolean) {
+    this.callback([{ isIntersecting } as IntersectionObserverEntry], this as never);
+  }
 }
 
 describe('CameraCardContainer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    MockIntersectionObserver.instances = [];
+    resetCameraLiveStreamBudgetForTests();
     vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
     useSettingsStore.setState({
       cameraStreamPreferences: {},
       cameraWebRtcStreamSources: {},
       cameraDirectStreamUrls: {},
+      disableAnimations: false,
+      effectsQuality: 'high',
+      lowPowerMode: false,
     });
 
     useProviderEntityModelMock.mockReturnValue({
@@ -168,10 +185,13 @@ describe('CameraCardContainer', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
+    resetCameraLiveStreamBudgetForTests();
     vi.unstubAllGlobals();
   });
 
-  it('keeps the live stream player mounted even when intersection visibility is false', () => {
+  it('releases a live stream after an offscreen grace period', () => {
+    vi.useFakeTimers();
     renderWithProviders(
       <CameraCardContainer
         id="home_assistant:camera.front"
@@ -185,9 +205,24 @@ describe('CameraCardContainer', () => {
       />
     );
 
+    expect(screen.queryByTestId('camera-stream-player')).not.toBeInTheDocument();
+
+    act(() => {
+      MockIntersectionObserver.instances[0]?.emit(true);
+    });
     expect(screen.getByTestId('camera-stream-player')).toHaveTextContent(
       'home_assistant:camera.front:web_rtc'
     );
+
+    act(() => {
+      MockIntersectionObserver.instances[0]?.emit(false);
+    });
+    expect(screen.getByTestId('camera-stream-player')).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(CAMERA_STREAM_OFFSCREEN_GRACE_MS);
+    });
+    expect(screen.queryByTestId('camera-stream-player')).not.toBeInTheDocument();
   });
 
   it('does not start the shared camera clock interval when the card is hidden', () => {
@@ -224,6 +259,9 @@ describe('CameraCardContainer', () => {
       />
     );
 
+    act(() => {
+      MockIntersectionObserver.instances[0]?.emit(true);
+    });
     expect(cameraStreamPlayerRenderMock).toHaveBeenCalledTimes(1);
 
     useProviderCameraLiveDataMock.mockReturnValue({
@@ -265,6 +303,82 @@ describe('CameraCardContainer', () => {
     );
 
     expect(cameraStreamPlayerRenderMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('moves the single low-power live-stream slot to the visible camera', () => {
+    useSettingsStore.setState({
+      effectsQuality: 'low',
+      lowPowerMode: true,
+    });
+
+    renderWithProviders(
+      <>
+        <CameraCardContainer
+          id="home_assistant:camera.front"
+          name="Front Door"
+          room="Entrance"
+          entityPicture="/api/camera_proxy/camera.front"
+          isStreamCapable
+          size="large"
+          onSizeChange={vi.fn()}
+          isEditMode={false}
+        />
+        <CameraCardContainer
+          id="home_assistant:camera.garden"
+          name="Garden"
+          room="Outside"
+          entityPicture="/api/camera_proxy/camera.garden"
+          isStreamCapable
+          size="large"
+          onSizeChange={vi.fn()}
+          isEditMode={false}
+        />
+      </>
+    );
+
+    act(() => {
+      MockIntersectionObserver.instances[0]?.emit(true);
+      MockIntersectionObserver.instances[1]?.emit(true);
+    });
+
+    expect(screen.getAllByTestId('camera-stream-player')).toHaveLength(1);
+    expect(screen.getByTestId('camera-stream-player')).toHaveTextContent(
+      'home_assistant:camera.front:web_rtc'
+    );
+
+    act(() => {
+      MockIntersectionObserver.instances[0]?.emit(false);
+    });
+
+    expect(screen.getAllByTestId('camera-stream-player')).toHaveLength(1);
+    expect(screen.getByTestId('camera-stream-player')).toHaveTextContent(
+      'home_assistant:camera.garden:web_rtc'
+    );
+  });
+
+  it('releases the card stream while the fullscreen viewer owns playback', () => {
+    renderWithProviders(
+      <CameraCardContainer
+        id="home_assistant:camera.front"
+        name="Front Door"
+        room="Entrance"
+        entityPicture="/api/camera_proxy/camera.front"
+        isStreamCapable
+        size="large"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    act(() => {
+      MockIntersectionObserver.instances[0]?.emit(true);
+    });
+    expect(screen.getByTestId('camera-stream-player')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open camera viewer: Front Door' }));
+
+    expect(screen.getByTestId('camera-live-viewer')).toBeInTheDocument();
+    expect(screen.queryByTestId('camera-stream-player')).not.toBeInTheDocument();
   });
 
   it('normalizes an unsupported saved stream preference back to auto for playback planning', () => {

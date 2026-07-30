@@ -1445,6 +1445,8 @@ export const daMessages = {
     'Det delte dashboard skal gendannes. De lokale indstillinger på dette dashboard blev bevaret.',
   'dashboard.profileSync.unavailable':
     'Synkronisering af det delte dashboard er ikke tilgængelig. Lokale indstillinger bevares.',
+  'dashboard.profileSync.tenantMismatch':
+    'Dette delte dashboard tilhører en anden Home Assistant-adresse. Opret forbindelse via den samme Home Assistant-adresse, som blev brugt til at konfigurere denne Navet-installation. Lokale indstillinger bevares.',
   'dashboard.profileSync.unauthorized':
     'Log ind igen for at fortsætte synkroniseringen af det delte dashboard. Lokale indstillinger bevares.',
   'dashboard.profileSync.saveFailed':

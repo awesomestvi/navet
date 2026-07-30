@@ -12,6 +12,7 @@ const manifestPath = path.join(repoRoot, 'assets/brand/source/asset-manifest.jso
 const tokensPath = path.join(repoRoot, 'assets/brand/source/brand-tokens.json');
 const publicManifestPath = path.join(repoRoot, 'assets/public/site.webmanifest');
 const standaloneConfigPath = path.join(repoRoot, 'apps/standalone/vite.config.ts');
+const pwaCacheConfigPath = path.join(repoRoot, 'scripts/vite-pwa-cache.ts');
 const standaloneIndexPath = path.join(repoRoot, 'apps/standalone/index.html');
 const demoIndexPath = path.join(repoRoot, 'apps/demo/index.html');
 const docsStylesPath = path.join(repoRoot, 'apps/docs/src/styles/navet.css');
@@ -255,7 +256,7 @@ function validatePublicManifest(publicManifest) {
   }
 }
 
-function validateStandaloneManifestSource(configSource) {
+function validateStandaloneManifestSource(configSource, pwaCacheConfigSource) {
   assert(
     configSource.includes("assets/public/site.webmanifest"),
     'Standalone PWA config must read the checked public manifest.'
@@ -266,8 +267,16 @@ function validateStandaloneManifestSource(configSource) {
     'Standalone PWA config must derive its manifest and icon declarations from site.webmanifest.'
   );
 
+  assert(
+    configSource.includes('...NAVET_PWA_INCLUDE_ASSETS'),
+    'Standalone PWA config must use the bounded shared PWA asset list.'
+  );
+
   for (const src of ['pwa-maskable-192.png', 'pwa-maskable-512.png']) {
-    assert(configSource.includes(`'${src}'`), `Standalone PWA includeAssets is missing ${src}.`);
+    assert(
+      pwaCacheConfigSource.includes(`'${src}'`),
+      `Standalone PWA includeAssets is missing ${src}.`
+    );
   }
 }
 
@@ -437,7 +446,10 @@ async function checkAssets(manifest, tokens) {
   }
 
   validatePublicManifest(await readJson(publicManifestPath));
-  validateStandaloneManifestSource(await readFile(standaloneConfigPath, 'utf8'));
+  validateStandaloneManifestSource(
+    await readFile(standaloneConfigPath, 'utf8'),
+    await readFile(pwaCacheConfigPath, 'utf8')
+  );
   await validateBrandSourceAlignment(tokens);
   await validatePublishedBrandDocs();
   await validateOpaqueCanvasEdge('assets/public/pwa-maskable-192.png');

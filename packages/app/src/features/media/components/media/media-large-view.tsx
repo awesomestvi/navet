@@ -3,6 +3,7 @@ import { Slider } from '@navet/app/components/primitives/slider';
 import { getCardActionControlSizes } from '@navet/app/components/shared/card-action-control-sizes';
 import { getCardReadableTextTokens } from '@navet/app/components/shared/theme/card-readable-text-tokens';
 import { getCardStateSurfaceTokens } from '@navet/app/components/shared/theme/card-state-surface-tokens';
+import { useEffectiveEffectsQuality } from '@navet/app/components/shared/theme/effective-effects-quality';
 import { useI18n } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
@@ -114,6 +115,8 @@ export function MediaLargeView({
   onVolumeInteractionEnd,
 }: MediaLargeViewProps) {
   const { t } = useI18n();
+  const effectsQuality = useEffectiveEffectsQuality();
+  const isLowEffects = effectsQuality === 'low';
   const stateSurface = getCardStateSurfaceTokens(theme, isActive);
   const stableArtwork = useStableMediaArtwork(artwork);
   const paletteArtwork = getMediaArtworkPaletteSource(stableArtwork, artworkResource);
@@ -190,23 +193,25 @@ export function MediaLargeView({
       0.32
     )}`,
   };
-  const backgroundBaseStyle = {
-    background: subduedFallback
-      ? `linear-gradient(165deg, ${withAlpha(palette.dominant, 0.18)} 0%, ${withAlpha(
-          palette.dominant,
-          0.14
-        )} 42%, ${withAlpha(palette.gradientEnd, 0.2)} 100%)`
-      : `radial-gradient(circle at 18% 14%, ${withAlpha(
-          palette.highlight,
-          0.2
-        )} 0%, transparent 34%), linear-gradient(165deg, ${withAlpha(
-          palette.dominant,
-          0.72
-        )} 0%, ${withAlpha(palette.dominant, 0.62)} 42%, ${withAlpha(
-          palette.gradientEnd,
-          0.68
-        )} 100%)`,
-  };
+  const backgroundBaseStyle = isLowEffects
+    ? { backgroundColor: palette.darkMuted }
+    : {
+        background: subduedFallback
+          ? `linear-gradient(165deg, ${withAlpha(palette.dominant, 0.18)} 0%, ${withAlpha(
+              palette.dominant,
+              0.14
+            )} 42%, ${withAlpha(palette.gradientEnd, 0.2)} 100%)`
+          : `radial-gradient(circle at 18% 14%, ${withAlpha(
+              palette.highlight,
+              0.2
+            )} 0%, transparent 34%), linear-gradient(165deg, ${withAlpha(
+              palette.dominant,
+              0.72
+            )} 0%, ${withAlpha(palette.dominant, 0.62)} 42%, ${withAlpha(
+              palette.gradientEnd,
+              0.68
+            )} 100%)`,
+      };
   const colorTintStyle = {
     background: stableArtwork
       ? `linear-gradient(160deg, ${withAlpha(palette.dominant, 0.035)} 0%, ${withAlpha(
@@ -238,16 +243,28 @@ export function MediaLargeView({
     )} 0%, transparent 72%)`,
   };
   const glassDepthOverlay =
-    theme === 'glass' ? (
+    theme === 'glass' && !isLowEffects ? (
       stableArtwork ? (
         <>
-          <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(0,0,0,0.03),rgba(0,0,0,0)_42%,rgba(0,0,0,0.04)_100%)]" />
-          <div className="pointer-events-none absolute inset-0 z-[1] shadow-[inset_0_1px_0_rgba(255,255,255,0.16),inset_0_-18px_34px_rgba(0,0,0,0.04)]" />
+          <div
+            className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(0,0,0,0.03),rgba(0,0,0,0)_42%,rgba(0,0,0,0.04)_100%)]"
+            data-media-decorative-layer="glass-depth"
+          />
+          <div
+            className="pointer-events-none absolute inset-0 z-[1] shadow-[inset_0_1px_0_rgba(255,255,255,0.16),inset_0_-18px_34px_rgba(0,0,0,0.04)]"
+            data-media-decorative-layer="glass-depth"
+          />
         </>
       ) : (
         <>
-          <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(255,255,255,0.11),rgba(255,255,255,0.04)_24%,rgba(255,255,255,0.015)_100%)]" />
-          <div className="pointer-events-none absolute inset-0 z-[1] shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-16px_30px_rgba(255,255,255,0.03)]" />
+          <div
+            className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(255,255,255,0.11),rgba(255,255,255,0.04)_24%,rgba(255,255,255,0.015)_100%)]"
+            data-media-decorative-layer="glass-depth"
+          />
+          <div
+            className="pointer-events-none absolute inset-0 z-[1] shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-16px_30px_rgba(255,255,255,0.03)]"
+            data-media-decorative-layer="glass-depth"
+          />
         </>
       )
     ) : null;
@@ -262,15 +279,24 @@ export function MediaLargeView({
   const mirroredOffToggleSlashStyle = { transform: 'scaleX(-1)' };
 
   return (
-    <div className="relative -m-3 flex h-[calc(100%+1.5rem)] flex-col overflow-hidden rounded-[inherit]">
-      <div className="pointer-events-none absolute inset-0" style={backgroundBaseStyle} />
+    <div
+      className="relative -m-3 flex h-[calc(100%+1.5rem)] flex-col overflow-hidden rounded-[inherit]"
+      data-media-effects-quality={effectsQuality}
+    >
+      <div
+        className="pointer-events-none absolute inset-0"
+        data-media-paint-layer="base"
+        style={backgroundBaseStyle}
+      />
       {stableArtwork ? (
         <img
           src={stableArtwork}
           alt=""
           aria-hidden="true"
           onError={() => onArtworkError?.(stableArtwork)}
-          className="pointer-events-none absolute inset-0 h-full w-full scale-[1.03] object-cover opacity-92 saturate-[1.08] contrast-[1.04]"
+          className={`pointer-events-none absolute inset-0 h-full w-full object-cover ${
+            isLowEffects ? 'opacity-94' : 'scale-[1.03] opacity-92 saturate-[1.08] contrast-[1.04]'
+          }`}
           decoding="async"
         />
       ) : (
@@ -281,9 +307,25 @@ export function MediaLargeView({
           style={{ transform: 'scale(1.02)' }}
         />
       )}
-      <div className="pointer-events-none absolute inset-0" style={artworkAtmosphereStyle} />
-      <div className="pointer-events-none absolute inset-0" style={colorTintStyle} />
-      <div className="pointer-events-none absolute inset-0" style={readabilityGradientStyle} />
+      {!isLowEffects ? (
+        <>
+          <div
+            className="pointer-events-none absolute inset-0"
+            data-media-decorative-layer="atmosphere"
+            style={artworkAtmosphereStyle}
+          />
+          <div
+            className="pointer-events-none absolute inset-0"
+            data-media-decorative-layer="tint"
+            style={colorTintStyle}
+          />
+        </>
+      ) : null}
+      <div
+        className="pointer-events-none absolute inset-0"
+        data-media-paint-layer="readability"
+        style={readabilityGradientStyle}
+      />
       {glassDepthOverlay}
 
       <div className="relative z-[2] flex h-full min-h-0 flex-col p-3">

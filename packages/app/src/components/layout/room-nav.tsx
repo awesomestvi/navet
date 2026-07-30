@@ -40,6 +40,11 @@ import { RoomOrderDialog } from './room-order-dialog';
 
 const ROOM_NAV_GAP_PX = 8;
 const ROOM_NAV_MEGAMENU_THRESHOLD = 10;
+const ROOM_NAV_FONT_SIZE_REM = 0.875;
+const ROOM_NAV_FONT_WEIGHT = 500;
+const ROOM_NAV_ROOM_CHROME_PX = 30;
+const ROOM_NAV_GROUP_CHROME_PX = 78;
+const ROOM_NAV_OVERFLOW_CHROME_PX = 50;
 
 interface RoomNavProps {
   rooms?: string[];
@@ -108,6 +113,44 @@ function getInlineWidth(widths: number[]) {
   }
 
   return widths.reduce((total, width) => total + width, 0) + ROOM_NAV_GAP_PX * (widths.length - 1);
+}
+
+function getFallbackTextWidth(label: string, fontSizePx: number) {
+  let widthInEm = 0;
+
+  for (const character of Array.from(label)) {
+    const codePoint = character.codePointAt(0) ?? 0;
+    if (/\s/.test(character)) {
+      widthInEm += 0.34;
+    } else if (
+      (codePoint >= 0x2e80 && codePoint <= 0x9fff) ||
+      (codePoint >= 0xac00 && codePoint <= 0xd7af) ||
+      codePoint >= 0x1f000
+    ) {
+      widthInEm += 1;
+    } else if (/[ilI1.,'|!:;]/.test(character)) {
+      widthInEm += 0.34;
+    } else if (/[MW@#%&]/.test(character)) {
+      widthInEm += 0.9;
+    } else if (/[A-Z0-9]/.test(character)) {
+      widthInEm += 0.64;
+    } else {
+      widthInEm += 0.55;
+    }
+  }
+
+  return widthInEm * fontSizePx;
+}
+
+function measureRoomNavLabel(
+  label: string,
+  context: CanvasRenderingContext2D | null,
+  fontSizePx: number
+) {
+  const measuredWidth = context?.measureText(label).width;
+  return Number.isFinite(measuredWidth) && (measuredWidth ?? 0) > 0
+    ? (measuredWidth ?? 0)
+    : getFallbackTextWidth(label, fontSizePx);
 }
 
 function buildRoomNavEntries(
@@ -292,8 +335,8 @@ export const RoomNav = memo(function RoomNav({
     Record<string, string>
   >({});
   const roomListRef = useRef<HTMLDivElement>(null);
-  const overflowMeasureRef = useRef<HTMLButtonElement>(null);
-  const roomMeasureRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const measurementContextRef = useRef<CanvasRenderingContext2D | null>(null);
+  const measurementWidthCacheRef = useRef(new Map<string, number>());
   const manageableRooms = useMemo(
     () => Object.values(manageableRoomsByProviderId).flat(),
     [manageableRoomsByProviderId]
@@ -385,15 +428,61 @@ export const RoomNav = memo(function RoomNav({
     overflowRoomCount === 1 ? 'dashboard.roomNav.overflow.one' : 'dashboard.roomNav.overflow.other',
     { count: overflowRoomCount }
   );
+  const overflowMeasurementLabel = t(
+    availableRooms.length === 1
+      ? 'dashboard.roomNav.overflow.one'
+      : 'dashboard.roomNav.overflow.other',
+    { count: Math.max(1, availableRooms.length) }
+  );
 
   const updateRoomLayout = useCallback(() => {
-    const containerWidth = roomListRef.current?.getBoundingClientRect().width ?? 0;
-    const overflowWidth = overflowMeasureRef.current?.getBoundingClientRect().width ?? 0;
+    const roomList = roomListRef.current;
+    const containerWidth = roomList?.getBoundingClientRect().width ?? 0;
+    if (containerWidth <= 0) {
+      return;
+    }
+
+    const rootFontSize =
+      Number.parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
+    const fontSizePx = rootFontSize * ROOM_NAV_FONT_SIZE_REM;
+    const fontFamily = roomList ? window.getComputedStyle(roomList).fontFamily : 'system-ui';
+    const font = `${ROOM_NAV_FONT_WEIGHT} ${fontSizePx}px ${fontFamily || 'system-ui'}`;
+
+    if (!measurementContextRef.current && typeof CanvasRenderingContext2D !== 'undefined') {
+      try {
+        measurementContextRef.current = document.createElement('canvas').getContext('2d');
+      } catch {
+        measurementContextRef.current = null;
+      }
+    }
+    if (measurementContextRef.current) {
+      measurementContextRef.current.font = font;
+    }
+
+    const measureLabelWidth = (label: string) => {
+      const cacheKey = `${font}:${label}`;
+      const cachedWidth = measurementWidthCacheRef.current.get(cacheKey);
+      if (cachedWidth !== undefined) {
+        return cachedWidth;
+      }
+      const measuredWidth = measureRoomNavLabel(label, measurementContextRef.current, fontSizePx);
+      measurementWidthCacheRef.current.set(cacheKey, measuredWidth);
+      return measuredWidth;
+    };
+
+    const overflowWidth = measureLabelWidth(overflowMeasurementLabel) + ROOM_NAV_OVERFLOW_CHROME_PX;
     const roomWidths = new Map<string, number>();
 
     for (const entry of roomNavEntries) {
-      const width = roomMeasureRefs.current[entry.id]?.getBoundingClientRect().width ?? 0;
-      roomWidths.set(entry.id, width);
+      const label =
+        entry.kind === 'group'
+          ? (roomGroupTriggerLabelById.get(entry.group.id) ?? entry.label)
+          : getDashboardRoomLabel(entry.room, allLabel);
+      roomWidths.set(
+        entry.id,
+        measureLabelWidth(label) +
+          (entry.kind === 'group' ? ROOM_NAV_GROUP_CHROME_PX : ROOM_NAV_ROOM_CHROME_PX)
+      );
     }
 
     const nextLayout = resolveRoomLayout({
@@ -410,7 +499,13 @@ export const RoomNav = memo(function RoomNav({
         ? currentLayout
         : nextLayout
     );
-  }, [activeRoomNavEntryId, roomGroupTriggerLabelById, roomNavEntries]);
+  }, [
+    activeRoomNavEntryId,
+    allLabel,
+    overflowMeasurementLabel,
+    roomGroupTriggerLabelById,
+    roomNavEntries,
+  ]);
 
   useEffect(() => {
     const activeGroupEntry = roomNavEntries.find(
@@ -434,9 +529,35 @@ export const RoomNav = memo(function RoomNav({
   }, [updateRoomLayout]);
 
   useEffect(() => {
+    const roomList = roomListRef.current;
+    if (roomList && typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(updateRoomLayout);
+      observer.observe(roomList);
+      return () => {
+        observer.disconnect();
+      };
+    }
+
     window.addEventListener('resize', updateRoomLayout);
+    return () => window.removeEventListener('resize', updateRoomLayout);
+  }, [updateRoomLayout]);
+
+  useEffect(() => {
+    const fontsReady = document.fonts?.ready;
+    if (!fontsReady) {
+      return;
+    }
+
+    let cancelled = false;
+    void fontsReady.then(() => {
+      if (cancelled) {
+        return;
+      }
+      measurementWidthCacheRef.current.clear();
+      updateRoomLayout();
+    });
     return () => {
-      window.removeEventListener('resize', updateRoomLayout);
+      cancelled = true;
     };
   }, [updateRoomLayout]);
 
@@ -679,61 +800,6 @@ export const RoomNav = memo(function RoomNav({
               </InteractivePill>
             ) : null}
           </div>
-        </div>
-      </div>
-
-      <div aria-hidden="true" className="pointer-events-none absolute -left-[10000px] top-0 -z-10">
-        <div className="flex items-center gap-1.5 md:gap-2 whitespace-nowrap">
-          {roomNavEntries.map((entry) =>
-            entry.kind === 'group' ? (
-              <InteractivePill
-                key={`measure-${entry.id}`}
-                ref={(node) => {
-                  roomMeasureRefs.current[entry.id] = node;
-                }}
-                size="small"
-                variant="ghost"
-                className={`room-nav-item shrink-0 whitespace-nowrap rounded-[22px] transition-colors ${inactiveRoomItemClassName}`}
-                tabIndex={-1}
-              >
-                {entry.group.symbol ? (
-                  <span aria-hidden="true">
-                    <RoomSymbolIcon value={entry.group.symbol} className="h-3.5 w-3.5" />
-                  </span>
-                ) : (
-                  <Layers3 className="h-3.5 w-3.5 opacity-70" aria-hidden="true" />
-                )}
-                <span>{roomGroupTriggerLabelById.get(entry.group.id) ?? entry.label}</span>
-                <span className="-mr-1 inline-flex px-1">
-                  <ChevronDown className="h-3.5 w-3.5 opacity-70" aria-hidden="true" />
-                </span>
-              </InteractivePill>
-            ) : (
-              <RoomNavItem
-                key={`measure-${entry.id}`}
-                ref={(node) => {
-                  roomMeasureRefs.current[entry.id] = node;
-                }}
-                room={entry.room}
-                activeRoom="__measure__"
-                allLabel={allLabel}
-                activeClassName={activeRoomItemClassName}
-                inactiveClassName={inactiveRoomItemClassName}
-                tabIndex={-1}
-                onRoomChange={() => undefined}
-              />
-            )
-          )}
-          <InteractivePill
-            ref={overflowMeasureRef}
-            size="small"
-            variant="ghost"
-            className={`room-nav-item rounded-[22px] whitespace-nowrap shrink-0 transition-colors ${inactiveRoomItemClassName}`}
-            tabIndex={-1}
-          >
-            <span>{t('dashboard.roomNav.overflow.other', { count: 99 })}</span>
-            <ChevronDown className="h-3.5 w-3.5 opacity-70" />
-          </InteractivePill>
         </div>
       </div>
 

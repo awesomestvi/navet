@@ -4,6 +4,7 @@ import { useEditModeSettingsRequest } from '@navet/app/components/shared/edit-mo
 import { useEntityCardInteractionController } from '@navet/app/components/shared/entity-card-interaction-controller';
 import { getCardShellSurfaceTokens } from '@navet/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceTokens } from '@navet/app/components/shared/theme/card-state-surface-tokens';
+import { useEffectiveEffectsQuality } from '@navet/app/components/shared/theme/effective-effects-quality';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import type { NavetMediaCapabilities } from '@navet/app/core/navet-device-state';
 import { useI18n, useTheme } from '@navet/app/hooks';
@@ -166,6 +167,8 @@ export const MediaCard = memo(function MediaCard({
 }: MediaCardProps) {
   const { theme } = useTheme();
   const { t } = useI18n();
+  const effectsQuality = useEffectiveEffectsQuality();
+  const isLowEffects = effectsQuality === 'low';
   const mediaEntityTypeKey = getMediaEntityTypeKey(entityType, deviceClass);
   const mediaEntityTypeLabel = t(mediaEntityTypeKey);
   const resolvedPlayerName = resolveMediaPlayerName({
@@ -174,8 +177,8 @@ export const MediaCard = memo(function MediaCard({
     room: _room,
     entityType,
   });
-  const cardShell = getCardShellSurfaceTokens(theme);
-  const surface = getThemeSurfaceTokens(theme);
+  const cardShell = getCardShellSurfaceTokens(theme, undefined, effectsQuality);
+  const surface = getThemeSurfaceTokens(theme, effectsQuality);
   const mediaSize = getCompactCardSize(size);
   const {
     albumArt: resolvedAlbumArt,
@@ -304,7 +307,7 @@ export const MediaCard = memo(function MediaCard({
   const shellBorder = isOff ? inactiveShellBorder : isActiveTv ? activeTvShellBorder : cardBorder;
   const shellBlur = hasArtwork && !isOff ? '' : cardShell.backdropClassName;
   const shellOverlayClassName = isOff ? null : stateSurface.overlayClassName;
-  const tvOnGlowClassName = isActiveTv ? getActiveTvGlowClassName(theme) : null;
+  const tvOnGlowClassName = isActiveTv && !isLowEffects ? getActiveTvGlowClassName(theme) : null;
   const activeTvShellStyle = isActiveTv ? getActiveTvShellStyle(theme) : undefined;
   const mediaIdentityProps = {
     entityId: id,
@@ -372,12 +375,13 @@ export const MediaCard = memo(function MediaCard({
         ? ['rgba(63, 63, 70, 0.98)', 'rgba(39, 39, 42, 0.94)']
         : ['rgba(82, 82, 91, 0.98)', 'rgba(63, 63, 70, 0.94)'];
   const visibleStackLayerCount = Math.min(2, Math.max(1, mediaStackCount ?? 2));
-  const stackLayerShadows = mediaStackCount
-    ? []
-    : [`0 -26px 0 -14px ${stackLayerColors[0]}`, `0 -44px 0 -22px ${stackLayerColors[1]}`].slice(
-        0,
-        visibleStackLayerCount
-      );
+  const stackLayerShadows =
+    mediaStackCount || isLowEffects
+      ? []
+      : [`0 -26px 0 -14px ${stackLayerColors[0]}`, `0 -44px 0 -22px ${stackLayerColors[1]}`].slice(
+          0,
+          visibleStackLayerCount
+        );
   const stackShellStyle: CSSProperties = mediaStackAppearance
     ? {
         ...activeTvShellStyle,
@@ -401,16 +405,18 @@ export const MediaCard = memo(function MediaCard({
   const stackLayerSurfaceClassName =
     backgroundClassName ||
     (theme === 'light' ? 'bg-white' : theme === 'black' ? 'bg-black' : 'bg-zinc-950');
-  const stackLayerBackground = `radial-gradient(circle at 18% 14%, ${withAlpha(
-    stackPalette.highlight,
-    0.2
-  )} 0%, transparent 34%), linear-gradient(165deg, ${withAlpha(
-    stackPalette.dominant,
-    0.72
-  )} 0%, ${withAlpha(stackPalette.dominant, 0.62)} 42%, ${withAlpha(
-    stackPalette.gradientEnd,
-    0.68
-  )} 100%)`;
+  const stackLayerBackground = isLowEffects
+    ? stackPalette.darkMuted
+    : `radial-gradient(circle at 18% 14%, ${withAlpha(
+        stackPalette.highlight,
+        0.2
+      )} 0%, transparent 34%), linear-gradient(165deg, ${withAlpha(
+        stackPalette.dominant,
+        0.72
+      )} 0%, ${withAlpha(stackPalette.dominant, 0.62)} 42%, ${withAlpha(
+        stackPalette.gradientEnd,
+        0.68
+      )} 100%)`;
 
   return (
     <>
@@ -423,7 +429,7 @@ export const MediaCard = memo(function MediaCard({
               zIndex: 0,
               background: stackLayerBackground,
               borderColor: theme === 'light' ? 'rgba(148,163,184,0.26)' : 'rgba(255,255,255,0.09)',
-              boxShadow: '0 14px 30px -16px rgba(0,0,0,0.72)',
+              boxShadow: isLowEffects ? 'none' : '0 14px 30px -16px rgba(0,0,0,0.72)',
             }}
           />
         ) : null}
@@ -435,7 +441,7 @@ export const MediaCard = memo(function MediaCard({
               zIndex: 0,
               background: stackLayerBackground,
               borderColor: theme === 'light' ? 'rgba(148,163,184,0.34)' : 'rgba(255,255,255,0.12)',
-              boxShadow: '0 9px 22px -13px rgba(0,0,0,0.62)',
+              boxShadow: isLowEffects ? 'none' : '0 9px 22px -13px rgba(0,0,0,0.62)',
             }}
           />
         ) : null}

@@ -1,6 +1,7 @@
 import { Header } from '@navet/app/components/layout/header';
 import { Sidebar } from '@navet/app/components/layout/sidebar';
 import { useHeaderController } from '@navet/app/components/layout/use-header-controller';
+import { useEffectiveEffectsQuality } from '@navet/app/components/shared/theme/effective-effects-quality';
 import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { resolveWallpaperBackgroundImage } from '@navet/app/constants/built-in-wallpapers';
@@ -8,6 +9,7 @@ import { useMediaQuery, usePrimaryColor, useThemeMode, useWallpaper } from '@nav
 import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
+import { getLowestEffectsQuality } from '@navet/app/utils/effects-quality';
 import { lazy, memo, Suspense, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { resolveDashboardPerformanceProfile } from '../hooks/use-dashboard-performance-mode';
@@ -31,6 +33,7 @@ export const DashboardLayout = memo(function DashboardLayout({
   mobileRoomNavigation,
 }: DashboardLayoutProps) {
   const theme = useThemeMode();
+  const inheritedEffectsQuality = useEffectiveEffectsQuality();
   const wallpaper = useWallpaper();
   const primaryColor = usePrimaryColor();
   const { disableAnimations, lowPowerMode, effectsQuality } = useSettingsStore(
@@ -48,7 +51,6 @@ export const DashboardLayout = memo(function DashboardLayout({
   const useReducedTabletPadding = useMediaQuery('(min-width: 768px) and (max-width: 1024px)');
   const showNavetSidebar = !kioskMode || activeCustomSidebarActionId !== null;
   const showNavetHeader = !kioskMode;
-  const surface = getThemeSurfaceTokens(theme);
   const isGlass = theme === 'glass';
   const isBlack = theme === 'black';
   const performanceProfile = useMemo(
@@ -65,11 +67,14 @@ export const DashboardLayout = memo(function DashboardLayout({
       }),
     [disableAnimations, effectsQuality, lowPowerMode]
   );
-  const resolvedEffectsQuality = performanceProfile.effectiveEffectsQuality;
+  const resolvedEffectsQuality = getLowestEffectsQuality(
+    inheritedEffectsQuality,
+    densePerformanceMode ? 'low' : performanceProfile.effectiveEffectsQuality
+  );
+  const surface = getThemeSurfaceTokens(theme, resolvedEffectsQuality);
   const isMediumEffects = resolvedEffectsQuality === 'medium';
   const isLowEffects = resolvedEffectsQuality === 'low';
-  const showSharedGlassBlur =
-    isGlass && performanceProfile.allowBackdropBlur && !densePerformanceMode;
+  const showSharedGlassBlur = isGlass && resolvedEffectsQuality !== 'low';
   const headerController = useHeaderController();
   const [editingSidebarActionId, setEditingSidebarActionId] = useState<string | null>(null);
   const [isSidebarCustomizationOpen, setIsSidebarCustomizationOpen] = useState(false);
@@ -100,6 +105,7 @@ export const DashboardLayout = memo(function DashboardLayout({
   return (
     <div
       data-testid="dashboard-document-surface"
+      data-navet-effects-quality={resolvedEffectsQuality}
       className={`relative min-h-[100dvh] overflow-x-clip ${bgColor} ${textColor}`}
     >
       {/* Background Wallpaper with Theme-Specific Overlay */}

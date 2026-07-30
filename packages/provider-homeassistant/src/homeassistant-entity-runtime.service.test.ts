@@ -21,9 +21,16 @@ const listeners = {
   connection: new Set<() => void>(),
   config: new Set<() => void>(),
 };
+const storeListeners = new Set<() => void>();
 
 function emitBridgeEvent(event: keyof typeof listeners) {
   for (const listener of listeners[event]) {
+    listener();
+  }
+}
+
+function emitStoreChange() {
+  for (const listener of storeListeners) {
     listener();
   }
 }
@@ -38,6 +45,7 @@ describe('homeAssistantEntityRuntimeService', () => {
     listeners.registries.clear();
     listeners.connection.clear();
     listeners.config.clear();
+    storeListeners.clear();
     resetHomeAssistantEntityRuntimeServiceCachesForTests();
     configureHomeAssistantServiceBridge({
       callApi: vi.fn(async () => []) as unknown as HomeAssistantServiceBridge['callApi'],
@@ -111,7 +119,12 @@ describe('homeAssistantEntityRuntimeService', () => {
         disconnect: vi.fn(async () => undefined),
         syncPanelHass: vi.fn(),
       }),
-      subscribeStore: () => () => {},
+      subscribeStore: (listener) => {
+        storeListeners.add(listener);
+        return () => {
+          storeListeners.delete(listener);
+        };
+      },
     });
   });
 
@@ -328,6 +341,14 @@ describe('homeAssistantEntityRuntimeService', () => {
   });
 
   it('notifies entity listeners only when the subscribed entity snapshot changes', () => {
+    const hallEntity = {
+      entity_id: 'sensor.hall_temperature',
+      state: '19',
+      attributes: { unit_of_measurement: 'C' },
+      last_changed: '2026-05-30T10:00:00.000Z',
+      last_updated: '2026-05-30T10:00:00.000Z',
+      context: { id: 'ctx-2', parent_id: null, user_id: null },
+    };
     state.entities = {
       'sensor.kitchen_temperature': {
         entity_id: 'sensor.kitchen_temperature',
@@ -354,16 +375,9 @@ describe('homeAssistantEntityRuntimeService', () => {
         last_updated: '2026-05-30T10:00:00.000Z',
         context: { id: 'ctx-1', parent_id: null, user_id: null },
       },
-      'sensor.hall_temperature': {
-        entity_id: 'sensor.hall_temperature',
-        state: '19',
-        attributes: { unit_of_measurement: 'C' },
-        last_changed: '2026-05-30T10:00:00.000Z',
-        last_updated: '2026-05-30T10:00:00.000Z',
-        context: { id: 'ctx-2', parent_id: null, user_id: null },
-      },
+      'sensor.hall_temperature': hallEntity,
     };
-    emitBridgeEvent('entities');
+    emitStoreChange();
 
     expect(listener).not.toHaveBeenCalled();
 
@@ -376,19 +390,57 @@ describe('homeAssistantEntityRuntimeService', () => {
         last_updated: '2026-05-30T10:05:00.000Z',
         context: { id: 'ctx-3', parent_id: null, user_id: null },
       },
+      'sensor.hall_temperature': hallEntity,
+    };
+    emitStoreChange();
+
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    state.entities = {
+      'sensor.hall_temperature': hallEntity,
+    };
+    emitStoreChange();
+
+    expect(listener).toHaveBeenCalledTimes(2);
+    unsubscribe?.();
+  });
+
+  it('notifies broad entity listeners only when the committed store entity reference changes', () => {
+    state.entities = {
+      'sensor.kitchen_temperature': {
+        entity_id: 'sensor.kitchen_temperature',
+        state: '21',
+        attributes: { unit_of_measurement: 'C' },
+        last_changed: '2026-05-30T10:00:00.000Z',
+        last_updated: '2026-05-30T10:00:00.000Z',
+        context: { id: 'ctx-1', parent_id: null, user_id: null },
+      },
+    };
+
+    const listener = vi.fn();
+    const unsubscribe = homeAssistantEntityRuntimeService.subscribeEntitySnapshots(listener);
+
+    state.config = { location_name: 'Updated Home' } as HassConfig;
+    emitStoreChange();
+    emitBridgeEvent('entities');
+
+    expect(listener).not.toHaveBeenCalled();
+
+    state.entities = {
+      ...state.entities,
       'sensor.hall_temperature': {
         entity_id: 'sensor.hall_temperature',
         state: '19',
         attributes: { unit_of_measurement: 'C' },
-        last_changed: '2026-05-30T10:00:00.000Z',
-        last_updated: '2026-05-30T10:00:00.000Z',
+        last_changed: '2026-05-30T10:05:00.000Z',
+        last_updated: '2026-05-30T10:05:00.000Z',
         context: { id: 'ctx-2', parent_id: null, user_id: null },
       },
     };
-    emitBridgeEvent('entities');
+    emitStoreChange();
 
     expect(listener).toHaveBeenCalledTimes(1);
-    unsubscribe?.();
+    unsubscribe();
   });
 
   it('notifies registry listeners only when the subscribed entity registry entry changes', () => {

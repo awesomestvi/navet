@@ -1,3 +1,4 @@
+import { AUTH_SESSION_REFRESHED_EVENT } from '@navet/app/auth/session-events';
 import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import {
@@ -7,14 +8,24 @@ import {
   useDashboardEntitiesStore,
   useHomeDashboardLayoutStore,
 } from '@navet/app/features/dashboard';
-import { writeDashboardProfileBase } from '@navet/app/features/dashboard/clients/dashboard-profile-base-cache';
+import { rotateDashboardClientIdentity } from '@navet/app/features/dashboard/clients/dashboard-client-identity';
+import {
+  clearDashboardProfileBase,
+  clearDashboardProfileReceipt,
+  readDashboardProfileReceipt,
+  writeDashboardProfileBase,
+  writeDashboardProfileReceipt,
+} from '@navet/app/features/dashboard/clients/dashboard-profile-base-cache';
 import { useDashboardProfileRuntimeStore } from '@navet/app/features/dashboard/clients/dashboard-profile-runtime-store';
 import {
   DASHBOARD_PROFILE_REFRESH_EVENT,
   useDashboardProfileSync,
 } from '@navet/app/features/dashboard/hooks/use-dashboard-profile-sync';
 import { useLightPresetStore } from '@navet/app/features/lighting';
-import type { DashboardProfileAuthor } from '@navet/app/services/dashboard-profile.contract';
+import {
+  DASHBOARD_PROFILE_ERROR_CODES,
+  type DashboardProfileAuthor,
+} from '@navet/app/services/dashboard-profile.contract';
 import { useThemeStore } from '@navet/app/stores/theme-store';
 import { renderHookWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
@@ -27,12 +38,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   exportDashboardConfig,
   importDashboardConfig,
+  isHomeAssistantAddonMode,
   isHomeAssistantPanelMode,
+  loadDashboardPreferences,
   loadDashboardProfile,
   loadDashboardProfileClients,
+  saveDashboardPreferences,
   saveDashboardProfile,
   toast,
-  touchDashboardClient,
+  touchDashboardClientWithStatus,
 } = vi.hoisted(() => {
   const toastFn = Object.assign(vi.fn(), {
     dismiss: vi.fn(),
@@ -41,12 +55,15 @@ const {
   return {
     exportDashboardConfig: vi.fn(),
     importDashboardConfig: vi.fn(),
+    isHomeAssistantAddonMode: vi.fn(),
     isHomeAssistantPanelMode: vi.fn(),
+    loadDashboardPreferences: vi.fn(),
     loadDashboardProfile: vi.fn(),
     loadDashboardProfileClients: vi.fn(),
+    saveDashboardPreferences: vi.fn(),
     saveDashboardProfile: vi.fn(),
     toast: toastFn,
-    touchDashboardClient: vi.fn(),
+    touchDashboardClientWithStatus: vi.fn(),
   };
 });
 
@@ -55,10 +72,12 @@ vi.mock('@navet/app/services/dashboard-profile.service', async (importOriginal) 
     await importOriginal<typeof import('@navet/app/services/dashboard-profile.service')>();
   return {
     ...actual,
+    loadDashboardPreferences,
     loadDashboardProfile,
     loadDashboardProfileClients,
+    saveDashboardPreferences,
     saveDashboardProfile,
-    touchDashboardClient,
+    touchDashboardClientWithStatus,
   };
 });
 
@@ -72,6 +91,7 @@ vi.mock('@navet/app/utils/dashboard-config', async (importOriginal) => {
 });
 
 vi.mock('@navet/app/runtime/app-mode', () => ({
+  isHomeAssistantAddonMode,
   isHomeAssistantPanelMode,
 }));
 
@@ -129,7 +149,8 @@ function metadata(
   revision: number,
   author: DashboardProfileAuthor = OTHER_CLIENT,
   changedPaths: string[] = ['/theme/primaryColor'],
-  workspace = WORKSPACE
+  workspace = WORKSPACE,
+  generation = 'generation_active'
 ) {
   return {
     contractVersion: 1 as const,
@@ -137,7 +158,7 @@ function metadata(
     workspaceId: workspace.workspaceId,
     profileId: 'default' as const,
     revision,
-    generation: `generation_${revision}`,
+    generation,
     kind: 'update' as const,
     updatedAt: `2026-07-25T09:0${revision}:00.000Z`,
     author,
@@ -150,7 +171,8 @@ function activeResult(
   revision = 1,
   author = OTHER_CLIENT,
   changedPaths?: string[],
-  workspace = WORKSPACE
+  workspace = WORKSPACE,
+  generation = 'generation_active'
 ) {
   return {
     available: true,
@@ -159,10 +181,10 @@ function activeResult(
     notModified: false,
     etag: `"revision-${revision}"`,
     lastModified: `Sat, 25 Jul 2026 09:0${revision}:00 GMT`,
-    generation: `generation_${revision}`,
+    generation,
     revision,
     workspace,
-    metadata: metadata(revision, author, changedPaths, workspace),
+    metadata: metadata(revision, author, changedPaths, workspace, generation),
     recovery: {
       status: 'active' as const,
       resetRevision: null,
@@ -199,6 +221,14 @@ function notModifiedResult(revision = 1) {
   };
 }
 
+function unavailableResult() {
+  return {
+    ...emptyResult(),
+    available: false,
+    workspace: null,
+  };
+}
+
 function savedResult(
   profile: ReturnType<typeof buildProfile>,
   revision = 2,
@@ -207,7 +237,8 @@ function savedResult(
     providerId: 'home_assistant',
     userId: 'ha_user_01',
     userName: 'Vishal',
-  }
+  },
+  generation = 'generation_active'
 ) {
   return {
     saved: true,
@@ -217,16 +248,39 @@ function savedResult(
     preconditionRequired: false,
     etag: `"revision-${revision}"`,
     lastModified: `Sat, 25 Jul 2026 09:0${revision}:00 GMT`,
-    generation: `generation_${revision}`,
+    generation,
     revision,
     workspace: WORKSPACE,
-    metadata: metadata(revision, author, ['/theme/primaryColor']),
+    metadata: metadata(revision, author, ['/theme/primaryColor'], WORKSPACE, generation),
     recovery: {
       status: 'active' as const,
       resetRevision: null,
       latestRecoverableRevision: revision,
     },
     profile,
+  };
+}
+
+function preconditionResult(
+  profile: ReturnType<typeof buildProfile>,
+  revision: number,
+  workspace = WORKSPACE,
+  generation = 'generation_active'
+) {
+  return {
+    saved: false,
+    unauthorized: false,
+    permanentFailure: false,
+    preconditionFailed: true,
+    preconditionRequired: false,
+    etag: `"revision-${revision}"`,
+    lastModified: null,
+    generation,
+    revision,
+    workspace,
+    metadata: metadata(revision, OTHER_CLIENT, ['/theme/primaryColor'], workspace, generation),
+    recovery: activeResult(profile, revision, OTHER_CLIENT, undefined, workspace, generation)
+      .recovery,
   };
 }
 
@@ -330,6 +384,8 @@ describe('useDashboardProfileSync', () => {
     vi.useFakeTimers();
     localStorage.clear();
     sessionStorage.clear();
+    clearDashboardProfileBase();
+    clearDashboardProfileReceipt();
     setVisibility('visible');
     setOnline(true);
     await resetAppStores();
@@ -347,11 +403,24 @@ describe('useDashboardProfileSync', () => {
     });
     loadDashboardProfile.mockReset();
     loadDashboardProfileClients.mockReset();
+    loadDashboardPreferences.mockReset();
+    loadDashboardPreferences.mockResolvedValue({
+      available: false,
+      unauthorized: false,
+      failureCode: null,
+      document: null,
+    });
+    saveDashboardPreferences.mockReset();
     saveDashboardProfile.mockReset();
-    touchDashboardClient.mockReset();
-    touchDashboardClient.mockResolvedValue(clientRegistry());
+    touchDashboardClientWithStatus.mockReset();
+    touchDashboardClientWithStatus.mockResolvedValue({
+      failureCode: null,
+      registry: clientRegistry(),
+    });
     loadDashboardProfileClients.mockResolvedValue(clientRegistry());
     saveDashboardProfile.mockImplementation(async (profile) => savedResult(profile));
+    isHomeAssistantAddonMode.mockReset();
+    isHomeAssistantAddonMode.mockReturnValue(false);
     isHomeAssistantPanelMode.mockReset();
     isHomeAssistantPanelMode.mockReturnValue(false);
     toast.mockReset();
@@ -368,15 +437,45 @@ describe('useDashboardProfileSync', () => {
 
     expect(result.current.profileLoadCompleted).toBe(true);
     expect(loadDashboardProfile).not.toHaveBeenCalled();
-    expect(touchDashboardClient).not.toHaveBeenCalled();
+    expect(touchDashboardClientWithStatus).not.toHaveBeenCalled();
     expect(saveDashboardProfile).not.toHaveBeenCalled();
     expect(useDashboardProfileRuntimeStore.getState().status).toBe('disabled');
+  });
+
+  it('syncs only client preferences in standalone mode', async () => {
+    loadDashboardProfile.mockResolvedValue(activeResult(buildProfile()));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    expect(loadDashboardPreferences.mock.calls.map(([scope]) => scope)).toEqual(['client']);
+
+    await advanceTime(60_000);
+
+    expect(loadDashboardPreferences.mock.calls.map(([scope]) => scope)).toEqual([
+      'client',
+      'client',
+    ]);
+  });
+
+  it('enables account preferences for Home Assistant Ingress', async () => {
+    isHomeAssistantAddonMode.mockReturnValue(true);
+    loadDashboardProfile.mockResolvedValueOnce(activeResult(buildProfile()));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    expect(loadDashboardPreferences.mock.calls.map(([scope]) => scope)).toEqual([
+      'account',
+      'client',
+    ]);
   });
 
   it('loads the shared profile on a new phone without a conflict prompt', async () => {
     const remote = buildProfile({
       theme: { theme: 'glass', primaryColor: 'green' },
     });
+    useDashboardEntitiesStore.getState().reopenOnboarding();
     loadDashboardProfile.mockResolvedValueOnce(activeResult(remote));
 
     renderHookWithProviders(() => useDashboardProfileSync());
@@ -390,6 +489,262 @@ describe('useDashboardProfileSync', () => {
       status: 'synced',
       workspaceId: WORKSPACE.workspaceId,
     });
+  });
+
+  it('retries an unauthorized initial load as soon as authentication refreshes', async () => {
+    const remote = buildProfile();
+    let resolveInitialLoad: ((result: ReturnType<typeof unavailableResult>) => void) | undefined;
+    loadDashboardProfile
+      .mockImplementationOnce(
+        async () =>
+          await new Promise<ReturnType<typeof unavailableResult>>((resolve) => {
+            resolveInitialLoad = resolve;
+          })
+      )
+      .mockResolvedValueOnce(activeResult(remote));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent(AUTH_SESSION_REFRESHED_EVENT, {
+          detail: { providerId: 'home_assistant' },
+        })
+      );
+    });
+    await act(async () => {
+      resolveInitialLoad?.({
+        ...unavailableResult(),
+        unauthorized: true,
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await flushEffects();
+    await advanceTime(0);
+
+    expect(loadDashboardProfile).toHaveBeenCalledTimes(2);
+    expect(useDashboardProfileRuntimeStore.getState()).toMatchObject({
+      revision: 1,
+      status: 'synced',
+    });
+  });
+
+  it('retries immediately when authentication refreshes during an in-flight profile save', async () => {
+    const base = buildProfile();
+    const local = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'red' },
+    });
+    loadDashboardProfile
+      .mockResolvedValueOnce(activeResult(base))
+      .mockResolvedValueOnce(activeResult(base));
+    let resolveFirstSave:
+      | ((result: ReturnType<typeof savedResult> & { saved: false; unauthorized: true }) => void)
+      | undefined;
+    saveDashboardProfile.mockImplementationOnce(
+      async () =>
+        await new Promise((resolve) => {
+          resolveFirstSave = resolve;
+        })
+    );
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    currentProfile = local;
+    act(() => {
+      useThemeStore.setState({ ...useThemeStore.getState(), primaryColor: 'red' });
+    });
+    await advanceTime(2_000);
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent(AUTH_SESSION_REFRESHED_EVENT, {
+          detail: { providerId: 'home_assistant' },
+        })
+      );
+    });
+    await flushEffects();
+    expect(loadDashboardProfile).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveFirstSave?.({
+        ...savedResult(local),
+        saved: false,
+        unauthorized: true,
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await flushEffects();
+
+    expect(loadDashboardProfile).toHaveBeenCalledTimes(2);
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(2);
+  });
+
+  it('preserves a configured local dashboard when the compatible merge base is missing', async () => {
+    const local = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'red' },
+    });
+    const remote = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'green' },
+    });
+    currentProfile = local;
+    loadDashboardProfile.mockResolvedValueOnce(activeResult(remote));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+    await advanceTime(2_000);
+
+    expect(importDashboardConfig).not.toHaveBeenCalled();
+    expect(saveDashboardProfile).not.toHaveBeenCalled();
+    expect(currentProfile).toBe(local);
+    expect(toast).toHaveBeenCalledWith(
+      'Dashboard changes detected on another device',
+      expect.objectContaining({ duration: Infinity })
+    );
+    expect(useDashboardProfileRuntimeStore.getState().conflict).toMatchObject({
+      baseRevision: null,
+      remoteRevision: 1,
+      overlappingPaths: ['/'],
+    });
+  });
+
+  it('applies a newer remote profile after reload when the local profile has a clean receipt', async () => {
+    const previouslySynced = buildProfile();
+    const remote = buildProfile({
+      exportedAt: '2026-07-25T09:02:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'green' },
+    });
+    currentProfile = previouslySynced;
+    writeDashboardProfileReceipt({
+      generation: 'generation_active',
+      profile: previouslySynced,
+      profileId: 'default',
+      revision: 1,
+      savedAt: '2026-07-25T09:01:00.000Z',
+      workspaceId: WORKSPACE.workspaceId,
+    });
+    loadDashboardProfile.mockResolvedValueOnce(activeResult(remote, 2));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    expect(importDashboardConfig).toHaveBeenCalledWith(remote, {
+      applyNavigation: false,
+    });
+    expect(saveDashboardProfile).not.toHaveBeenCalled();
+    expect(toast).not.toHaveBeenCalledWith(
+      'Dashboard changes detected on another device',
+      expect.anything()
+    );
+    expect(readDashboardProfileReceipt()).toMatchObject({
+      revision: 2,
+      workspaceId: WORKSPACE.workspaceId,
+    });
+  });
+
+  it('preserves a local edit after reload when it no longer matches the clean receipt', async () => {
+    const previouslySynced = buildProfile();
+    const local = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'red' },
+    });
+    const remote = buildProfile({
+      exportedAt: '2026-07-25T09:02:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'green' },
+    });
+    currentProfile = local;
+    writeDashboardProfileReceipt({
+      generation: 'generation_active',
+      profile: previouslySynced,
+      profileId: 'default',
+      revision: 1,
+      savedAt: '2026-07-25T09:01:00.000Z',
+      workspaceId: WORKSPACE.workspaceId,
+    });
+    loadDashboardProfile.mockResolvedValueOnce(activeResult(remote, 2));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    expect(importDashboardConfig).not.toHaveBeenCalled();
+    expect(saveDashboardProfile).not.toHaveBeenCalled();
+    expect(toast).toHaveBeenCalledWith(
+      'Dashboard changes detected on another device',
+      expect.objectContaining({ duration: Infinity })
+    );
+  });
+
+  it('preserves an offline local edit when merge-base storage is denied', async () => {
+    const base = buildProfile();
+    const local = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'red' },
+    });
+    const remote = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'green' },
+    });
+    const originalGetItem = Storage.prototype.getItem;
+    const originalSetItem = Storage.prototype.setItem;
+    const getItemSpy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(function getItem(
+      this: Storage,
+      key
+    ) {
+      if (key === STORAGE_KEYS.dashboardProfileBase) {
+        throw new DOMException('Storage access denied', 'SecurityError');
+      }
+      return originalGetItem.call(this, key);
+    });
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function setItem(
+      this: Storage,
+      key,
+      value
+    ) {
+      if (key === STORAGE_KEYS.dashboardProfileBase) {
+        throw new DOMException('Storage access denied', 'SecurityError');
+      }
+      return originalSetItem.call(this, key, value);
+    });
+    currentProfile = base;
+    loadDashboardProfile
+      .mockResolvedValueOnce(activeResult(base))
+      .mockResolvedValueOnce(activeResult(remote, 2));
+
+    try {
+      renderHookWithProviders(() => useDashboardProfileSync());
+      await flushEffects();
+
+      importDashboardConfig.mockClear();
+      setOnline(false);
+      act(() => {
+        window.dispatchEvent(new Event('offline'));
+      });
+      currentProfile = local;
+      act(() => {
+        useThemeStore.setState({ ...useThemeStore.getState(), primaryColor: 'red' });
+      });
+
+      setOnline(true);
+      await act(async () => {
+        window.dispatchEvent(new Event('online'));
+        await Promise.resolve();
+      });
+      await flushEffects();
+      await advanceTime(2_000);
+
+      expect(importDashboardConfig).not.toHaveBeenCalled();
+      expect(saveDashboardProfile).not.toHaveBeenCalled();
+      expect(currentProfile).toBe(local);
+      expect(useDashboardProfileRuntimeStore.getState().conflict).toMatchObject({
+        baseRevision: 1,
+        remoteRevision: 2,
+        overlappingPaths: ['/theme/primaryColor'],
+      });
+    } finally {
+      getItemSpy.mockRestore();
+      setItemSpy.mockRestore();
+    }
   });
 
   it('seeds an uninitialized installation from a configured local dashboard', async () => {
@@ -406,6 +761,34 @@ describe('useDashboardProfileSync', () => {
       currentProfile,
       expect.objectContaining({
         author: expect.objectContaining({ id: CURRENT_CLIENT.id }),
+        baseRevision: 0,
+        changedPaths: ['/'],
+        etag: '"revision-0"',
+      })
+    );
+  });
+
+  it('reseeds a live installation when its profile storage becomes uninitialized', async () => {
+    const configuredProfile = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'green' },
+    });
+    currentProfile = configuredProfile;
+    loadDashboardProfile
+      .mockResolvedValueOnce(activeResult(configuredProfile, 4))
+      .mockResolvedValueOnce(emptyResult());
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+    act(() => {
+      window.dispatchEvent(new Event(DASHBOARD_PROFILE_REFRESH_EVENT));
+    });
+    await flushEffects();
+    await advanceTime(2_000);
+
+    expect(saveDashboardProfile).toHaveBeenCalledOnce();
+    expect(saveDashboardProfile).toHaveBeenCalledWith(
+      configuredProfile,
+      expect.objectContaining({
         baseRevision: 0,
         changedPaths: ['/'],
         etag: '"revision-0"',
@@ -511,6 +894,7 @@ describe('useDashboardProfileSync', () => {
         'home_assistant:calendar.navet_overview': 'large',
       },
     });
+    currentProfile = base;
     loadDashboardProfile.mockResolvedValueOnce(activeResult(base));
 
     renderHookWithProviders(() => useDashboardProfileSync());
@@ -680,7 +1064,7 @@ describe('useDashboardProfileSync', () => {
     expect(useDashboardProfileRuntimeStore.getState().revision).toBe(2);
   });
 
-  it('accepts a lower revision from a replacement workspace', async () => {
+  it('preserves local state when a replacement workspace has no compatible merge base', async () => {
     const base = buildProfile();
     const replacement = buildProfile({
       theme: { theme: 'glass', primaryColor: 'green' },
@@ -706,13 +1090,12 @@ describe('useDashboardProfileSync', () => {
     });
     await flushEffects();
 
-    expect(importDashboardConfig).toHaveBeenCalledWith(replacement, {
-      applyNavigation: false,
-    });
-    expect(useDashboardProfileRuntimeStore.getState()).toMatchObject({
-      revision: 1,
-      status: 'synced',
-      workspaceId: replacementWorkspace.workspaceId,
+    expect(importDashboardConfig).not.toHaveBeenCalled();
+    expect(currentProfile).toEqual(base);
+    expect(useDashboardProfileRuntimeStore.getState().conflict).toMatchObject({
+      baseRevision: null,
+      remoteRevision: 1,
+      overlappingPaths: ['/'],
     });
   });
 
@@ -726,6 +1109,7 @@ describe('useDashboardProfileSync', () => {
     expect(saveDashboardProfile).not.toHaveBeenCalled();
 
     writeDashboardProfileBase({
+      generation: 'generation_active',
       profile: buildProfile({
         customCards: [
           {
@@ -752,6 +1136,52 @@ describe('useDashboardProfileSync', () => {
     expect(saveDashboardProfile).not.toHaveBeenCalled();
   });
 
+  it('does not accept another tab’s unseen merge base as its own lineage', async () => {
+    const revisionOne = buildProfile();
+    const revisionTwo = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'green' },
+    });
+    currentProfile = revisionOne;
+    loadDashboardProfile
+      .mockResolvedValueOnce(activeResult(revisionOne, 1))
+      .mockResolvedValueOnce(activeResult(revisionTwo, 2));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+    importDashboardConfig.mockClear();
+
+    localStorage.setItem(
+      STORAGE_KEYS.dashboardProfileBase,
+      JSON.stringify({
+        profile: revisionTwo,
+        profileId: 'default',
+        revision: 2,
+        savedAt: '2026-07-25T09:02:00.000Z',
+        workspaceId: WORKSPACE.workspaceId,
+      })
+    );
+    sessionStorage.setItem(
+      STORAGE_KEYS.dashboardProfileBase,
+      JSON.stringify({
+        profile: revisionTwo,
+        profileId: 'default',
+        revision: 2,
+        savedAt: '2026-07-25T09:02:00.000Z',
+        workspaceId: WORKSPACE.workspaceId,
+      })
+    );
+    act(() => {
+      window.dispatchEvent(new Event(DASHBOARD_PROFILE_REFRESH_EVENT));
+    });
+    await flushEffects();
+
+    expect(importDashboardConfig).toHaveBeenCalledWith(revisionTwo, {
+      applyNavigation: false,
+    });
+    expect(saveDashboardProfile).not.toHaveBeenCalled();
+    expect(currentProfile).toEqual(revisionTwo);
+  });
+
   it('compares the JSON transport shape instead of undefined object properties', async () => {
     const card: CustomCard = {
       id: 'custom-note',
@@ -761,6 +1191,7 @@ describe('useDashboardProfileSync', () => {
       createdAt: 1,
     };
     const remote = buildProfile({ customCards: [card] });
+    currentProfile = remote;
     loadDashboardProfile.mockResolvedValueOnce(activeResult(remote, 2));
 
     renderHookWithProviders(() => useDashboardProfileSync());
@@ -826,6 +1257,192 @@ describe('useDashboardProfileSync', () => {
 
     await advanceTime(60_000);
     expect(loadDashboardProfile).toHaveBeenCalledTimes(3);
+  });
+
+  it('preserves the increasing poll backoff while the profile service is unavailable', async () => {
+    loadDashboardProfile
+      .mockResolvedValueOnce(activeResult(buildProfile()))
+      .mockResolvedValueOnce(unavailableResult())
+      .mockResolvedValueOnce(unavailableResult())
+      .mockResolvedValueOnce(notModifiedResult());
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    await advanceTime(60_000);
+    expect(loadDashboardProfile).toHaveBeenCalledTimes(2);
+
+    await advanceTime(60_000);
+    expect(loadDashboardProfile).toHaveBeenCalledTimes(3);
+
+    await advanceTime(60_000);
+    expect(loadDashboardProfile).toHaveBeenCalledTimes(3);
+
+    await advanceTime(60_000);
+    expect(loadDashboardProfile).toHaveBeenCalledTimes(4);
+  });
+
+  it('stops polling and explains a permanent Home Assistant tenant mismatch', async () => {
+    loadDashboardProfile.mockResolvedValue({
+      ...unavailableResult(),
+      failureCode: 'workspace-tenant-mismatch',
+    });
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+    await advanceTime(600_000);
+
+    expect(loadDashboardProfile).toHaveBeenCalledTimes(1);
+    expect(useDashboardProfileRuntimeStore.getState()).toMatchObject({
+      status: 'error',
+      error:
+        'This shared dashboard belongs to a different Home Assistant address. Connect through the same Home Assistant address used to set up this Navet installation. Local settings are preserved.',
+    });
+  });
+
+  it('rotates a stale local client ID and retries its browser binding once', async () => {
+    loadDashboardProfile.mockResolvedValueOnce(activeResult(buildProfile()));
+    touchDashboardClientWithStatus
+      .mockResolvedValueOnce({
+        failureCode: 'client-binding-mismatch',
+        registry: null,
+      })
+      .mockResolvedValueOnce({
+        failureCode: null,
+        registry: clientRegistry(),
+      });
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    expect(touchDashboardClientWithStatus).toHaveBeenCalledTimes(2);
+    expect(touchDashboardClientWithStatus.mock.calls[0]?.[0]).toMatchObject({
+      id: CURRENT_CLIENT.id,
+    });
+    const recoveredClient = touchDashboardClientWithStatus.mock.calls[1]?.[0];
+    expect(recoveredClient).toMatchObject({
+      name: CURRENT_CLIENT.name,
+    });
+    expect(recoveredClient.id).not.toBe(CURRENT_CLIENT.id);
+    expect(useDashboardProfileRuntimeStore.getState()).toMatchObject({
+      client: recoveredClient,
+      status: 'synced',
+    });
+  });
+
+  it('retries a capacity-limited client with the normal poll backoff without rotating its ID', async () => {
+    loadDashboardProfile
+      .mockResolvedValueOnce(activeResult(buildProfile()))
+      .mockResolvedValueOnce(notModifiedResult());
+    touchDashboardClientWithStatus
+      .mockResolvedValueOnce({
+        failureCode: DASHBOARD_PROFILE_ERROR_CODES.clientCapacityReached,
+        registry: null,
+      })
+      .mockResolvedValueOnce({
+        failureCode: null,
+        registry: clientRegistry(),
+      });
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    expect(touchDashboardClientWithStatus).toHaveBeenCalledTimes(1);
+    expect(touchDashboardClientWithStatus.mock.calls[0]?.[0]).toMatchObject({
+      id: CURRENT_CLIENT.id,
+    });
+    expect(useDashboardProfileRuntimeStore.getState().client?.id).toBe(CURRENT_CLIENT.id);
+
+    await advanceTime(60_000);
+    expect(touchDashboardClientWithStatus).toHaveBeenCalledTimes(2);
+    expect(touchDashboardClientWithStatus.mock.calls[1]?.[0]).toMatchObject({
+      id: CURRENT_CLIENT.id,
+    });
+    expect(useDashboardProfileRuntimeStore.getState().client?.id).toBe(CURRENT_CLIENT.id);
+  });
+
+  it('reuses a concurrent preference recovery instead of creating a second client ID', async () => {
+    let resolveRejectedTouch:
+      | ((value: { failureCode: 'client-binding-mismatch'; registry: null }) => void)
+      | undefined;
+    loadDashboardProfile.mockResolvedValueOnce(activeResult(buildProfile()));
+    touchDashboardClientWithStatus
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveRejectedTouch = resolve;
+          })
+      )
+      .mockResolvedValue({
+        failureCode: null,
+        registry: clientRegistry(),
+      });
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+    expect(touchDashboardClientWithStatus).toHaveBeenCalledTimes(1);
+
+    const concurrentlyRecovered = rotateDashboardClientIdentity({
+      expectedCurrentId: CURRENT_CLIENT.id,
+      randomUUID: () => '87654321-4321-4321-4321-876543218765',
+    });
+    await flushEffects();
+    expect(touchDashboardClientWithStatus).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      resolveRejectedTouch?.({
+        failureCode: 'client-binding-mismatch',
+        registry: null,
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await flushEffects();
+
+    expect(touchDashboardClientWithStatus).toHaveBeenCalledTimes(3);
+    expect(touchDashboardClientWithStatus.mock.calls.map(([client]) => client.id)).toEqual([
+      CURRENT_CLIENT.id,
+      concurrentlyRecovered.id,
+      concurrentlyRecovered.id,
+    ]);
+    expect(useDashboardProfileRuntimeStore.getState().client?.id).toBe(concurrentlyRecovered.id);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEYS.dashboardClientIdentity) ?? '{}').id).toBe(
+      concurrentlyRecovered.id
+    );
+  });
+
+  it('converges another tab on a rotated browser identity before its next registry touch', async () => {
+    loadDashboardProfile.mockResolvedValueOnce(activeResult(buildProfile()));
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    const rotatedClient = {
+      ...CURRENT_CLIENT,
+      id: 'client_phone_rotated_02',
+      createdAt: '2026-07-25T09:05:00.000Z',
+      updatedAt: '2026-07-25T09:05:00.000Z',
+    };
+    localStorage.setItem(STORAGE_KEYS.dashboardClientIdentity, JSON.stringify(rotatedClient));
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key: STORAGE_KEYS.dashboardClientIdentity,
+          newValue: JSON.stringify(rotatedClient),
+          oldValue: JSON.stringify(CURRENT_CLIENT),
+          storageArea: localStorage,
+        })
+      );
+    });
+    await flushEffects();
+
+    expect(useDashboardProfileRuntimeStore.getState().client).toMatchObject({
+      id: rotatedClient.id,
+      name: rotatedClient.name,
+    });
+    expect(touchDashboardClientWithStatus.mock.calls.at(-1)?.[0]).toMatchObject({
+      id: rotatedClient.id,
+      name: rotatedClient.name,
+    });
   });
 
   it('auto-merges independent local and remote fields', async () => {
@@ -914,6 +1531,149 @@ describe('useDashboardProfileSync', () => {
     });
   });
 
+  it('keeps a dismissed conflict blocked and presents its resolution again', async () => {
+    const base = buildProfile();
+    const remote = buildProfile({
+      exportedAt: '2026-07-25T09:02:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'green' },
+    });
+    loadDashboardProfile
+      .mockResolvedValueOnce(activeResult(base))
+      .mockResolvedValueOnce(activeResult(remote, 2))
+      .mockResolvedValue(notModifiedResult(2));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+    currentProfile = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'red' },
+    });
+    act(() => {
+      useThemeStore.setState({ ...useThemeStore.getState(), primaryColor: 'red' });
+      window.dispatchEvent(new Event(DASHBOARD_PROFILE_REFRESH_EVENT));
+    });
+    await flushEffects();
+
+    const firstToastOptions = toast.mock.calls[0]?.[1] as {
+      description: ReactNode;
+      onDismiss?: (dismissedToast: { id: string | number }) => void;
+    };
+    expect(useDashboardProfileRuntimeStore.getState()).toMatchObject({
+      conflict: {
+        remoteRevision: 2,
+        overlappingPaths: ['/theme/primaryColor'],
+      },
+      status: 'error',
+    });
+
+    act(() => {
+      firstToastOptions.onDismiss?.({ id: 'profile-toast' });
+    });
+
+    expect(useDashboardProfileRuntimeStore.getState()).toMatchObject({
+      conflict: {
+        remoteRevision: 2,
+      },
+      status: 'error',
+    });
+    expect(saveDashboardProfile).not.toHaveBeenCalled();
+
+    await advanceTime(60_000);
+    await flushEffects();
+
+    const conflictToasts = toast.mock.calls.filter(
+      ([title]) => title === 'Dashboard changes detected on another device'
+    );
+    expect(conflictToasts).toHaveLength(2);
+    expect(useDashboardProfileRuntimeStore.getState().status).toBe('error');
+
+    const secondToastOptions = conflictToasts[1]?.[1] as {
+      description: ReactNode;
+      onDismiss?: (dismissedToast: { id: string | number }) => void;
+    };
+    const loadRemote = findButtonClickHandler(secondToastOptions.description, 'Load remote');
+    act(() => {
+      loadRemote?.();
+      // Sonner also invokes onDismiss when clearConflict dismisses the toast
+      // programmatically. That callback must not turn a completed choice into
+      // another reminder.
+      secondToastOptions.onDismiss?.({ id: 'profile-toast' });
+    });
+
+    expect(importDashboardConfig).toHaveBeenLastCalledWith(remote, {
+      applyNavigation: false,
+    });
+    expect(useDashboardProfileRuntimeStore.getState()).toMatchObject({
+      conflict: null,
+      status: 'synced',
+    });
+
+    await advanceTime(60_000);
+    expect(
+      toast.mock.calls.filter(([title]) => title === 'Dashboard changes detected on another device')
+    ).toHaveLength(2);
+  });
+
+  it('retires a deferred conflict when a newer remote revision makes the merge safe', async () => {
+    const base = buildProfile();
+    const conflictingRemote = buildProfile({
+      exportedAt: '2026-07-25T09:02:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'green' },
+    });
+    const mergeableRemote = buildProfile({
+      exportedAt: '2026-07-25T09:03:00.000Z',
+      settings: { showWeatherInHeader: false },
+    });
+    loadDashboardProfile
+      .mockResolvedValueOnce(activeResult(base))
+      .mockResolvedValueOnce(activeResult(conflictingRemote, 2))
+      .mockResolvedValueOnce(
+        activeResult(mergeableRemote, 3, OTHER_CLIENT, ['/settings/showWeatherInHeader'])
+      )
+      .mockResolvedValue(notModifiedResult(4));
+    saveDashboardProfile.mockImplementation(async (profile) => savedResult(profile, 4));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+    currentProfile = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'red' },
+    });
+    act(() => {
+      useThemeStore.setState({ ...useThemeStore.getState(), primaryColor: 'red' });
+      window.dispatchEvent(new Event(DASHBOARD_PROFILE_REFRESH_EVENT));
+    });
+    await flushEffects();
+
+    const conflictToastOptions = toast.mock.calls[0]?.[1] as {
+      onDismiss?: (dismissedToast: { id: string | number }) => void;
+    };
+    act(() => {
+      conflictToastOptions.onDismiss?.({ id: 'profile-toast' });
+      window.dispatchEvent(new Event(DASHBOARD_PROFILE_REFRESH_EVENT));
+    });
+    await flushEffects();
+
+    expect(saveDashboardProfile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        settings: { showWeatherInHeader: false },
+        theme: { theme: 'glass', primaryColor: 'red' },
+      }),
+      expect.objectContaining({
+        baseRevision: 3,
+        changedPaths: ['/theme/primaryColor'],
+      })
+    );
+    expect(useDashboardProfileRuntimeStore.getState()).toMatchObject({
+      conflict: null,
+      revision: 4,
+      status: 'synced',
+    });
+
+    await advanceTime(60_000);
+    expect(
+      toast.mock.calls.filter(([title]) => title === 'Dashboard changes detected on another device')
+    ).toHaveLength(1);
+  });
+
   it('rebases Keep mine over the latest remote revision', async () => {
     const base = buildProfile();
     const remote = buildProfile({
@@ -955,6 +1715,340 @@ describe('useDashboardProfileSync', () => {
         changedPaths: ['/theme/primaryColor'],
       })
     );
+  });
+
+  it('keeps the local conflict choice across a stale-write retry without prompting again', async () => {
+    const base = buildProfile();
+    const revisionTwo = buildProfile({
+      exportedAt: '2026-07-25T09:02:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'green' },
+      settings: { showWeatherInHeader: false },
+    });
+    const revisionThree = buildProfile({
+      exportedAt: '2026-07-25T09:03:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'purple' },
+      settings: { showWeatherInHeader: false },
+    });
+    const resolvedProfile = buildProfile({
+      exportedAt: '2026-07-25T09:04:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'red' },
+      settings: { showWeatherInHeader: false },
+    });
+    loadDashboardProfile
+      .mockResolvedValueOnce(activeResult(base))
+      .mockResolvedValueOnce(activeResult(revisionTwo, 2))
+      .mockResolvedValueOnce(activeResult(revisionThree, 3))
+      .mockResolvedValueOnce(activeResult(resolvedProfile, 4));
+    saveDashboardProfile
+      .mockResolvedValueOnce({
+        ...savedResult(revisionThree, 3),
+        saved: false,
+        preconditionFailed: true,
+      })
+      .mockImplementationOnce(async (profile) => savedResult(profile, 4));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+    currentProfile = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'red' },
+    });
+    act(() => {
+      useThemeStore.setState({ ...useThemeStore.getState(), primaryColor: 'red' });
+      window.dispatchEvent(new Event(DASHBOARD_PROFILE_REFRESH_EVENT));
+    });
+    await flushEffects();
+
+    const toastOptions = toast.mock.calls[0]?.[1] as { description: ReactNode };
+    const keepMine = findButtonClickHandler(toastOptions.description, 'Keep mine');
+    await act(async () => {
+      keepMine?.();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await flushEffects();
+
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(2);
+    expect(saveDashboardProfile).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        theme: { theme: 'glass', primaryColor: 'red' },
+        settings: { showWeatherInHeader: false },
+      }),
+      expect.objectContaining({
+        baseRevision: 3,
+        changedPaths: ['/theme/primaryColor'],
+      })
+    );
+    expect(
+      toast.mock.calls.filter(([title]) => title === 'Dashboard changes detected on another device')
+    ).toHaveLength(1);
+    expect(useDashboardProfileRuntimeStore.getState().conflict).toBeNull();
+
+    act(() => {
+      window.dispatchEvent(new Event(DASHBOARD_PROFILE_REFRESH_EVENT));
+    });
+    await flushEffects();
+
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(2);
+    expect(
+      toast.mock.calls.filter(([title]) => title === 'Dashboard changes detected on another device')
+    ).toHaveLength(1);
+    expect(currentProfile).toMatchObject({
+      theme: resolvedProfile.theme,
+      settings: resolvedProfile.settings,
+    });
+    expect(readDashboardProfileReceipt()).toMatchObject({ revision: 4 });
+  });
+
+  it('preserves edits made while a Keep mine stale-write retry is in flight', async () => {
+    const base = buildProfile();
+    const revisionTwo = buildProfile({
+      exportedAt: '2026-07-25T09:02:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'green' },
+      settings: { showWeatherInHeader: false },
+    });
+    const revisionThree = buildProfile({
+      exportedAt: '2026-07-25T09:03:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'purple' },
+      settings: { showWeatherInHeader: false },
+    });
+    let resolveFirstSave: ((result: ReturnType<typeof preconditionResult>) => void) | undefined;
+    loadDashboardProfile
+      .mockResolvedValueOnce(activeResult(base))
+      .mockResolvedValueOnce(activeResult(revisionTwo, 2))
+      .mockResolvedValueOnce(activeResult(revisionThree, 3));
+    saveDashboardProfile
+      .mockImplementationOnce(
+        async () =>
+          await new Promise<ReturnType<typeof preconditionResult>>((resolve) => {
+            resolveFirstSave = resolve;
+          })
+      )
+      .mockImplementationOnce(async (profile) => savedResult(profile, 4));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+    currentProfile = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'red' },
+    });
+    act(() => {
+      useThemeStore.setState({ ...useThemeStore.getState(), primaryColor: 'red' });
+      window.dispatchEvent(new Event(DASHBOARD_PROFILE_REFRESH_EVENT));
+    });
+    await flushEffects();
+
+    const toastOptions = toast.mock.calls[0]?.[1] as { description: ReactNode };
+    const keepMine = findButtonClickHandler(toastOptions.description, 'Keep mine');
+    act(() => {
+      keepMine?.();
+    });
+    await flushEffects();
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
+
+    currentProfile = {
+      ...currentProfile,
+      theme: { theme: 'glass', primaryColor: 'orange' },
+    };
+    act(() => {
+      useThemeStore.setState({ ...useThemeStore.getState(), primaryColor: 'orange' });
+    });
+    await act(async () => {
+      resolveFirstSave?.(preconditionResult(revisionThree, 3));
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await flushEffects();
+
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(2);
+    expect(saveDashboardProfile).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        theme: { theme: 'glass', primaryColor: 'orange' },
+        settings: { showWeatherInHeader: false },
+      }),
+      expect.objectContaining({
+        baseRevision: 3,
+        changedPaths: ['/theme/primaryColor'],
+      })
+    );
+    expect(currentProfile).toMatchObject({
+      theme: { theme: 'glass', primaryColor: 'orange' },
+      settings: { showWeatherInHeader: false },
+    });
+  });
+
+  it('does not carry Keep mine intent into a replacement workspace', async () => {
+    const replacementWorkspace = {
+      ...WORKSPACE,
+      installationId: 'installation_02',
+      workspaceId: 'workspace_02',
+    };
+    const base = buildProfile();
+    const revisionTwo = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'green' },
+    });
+    const replacementProfile = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'purple' },
+    });
+    loadDashboardProfile
+      .mockResolvedValueOnce(activeResult(base))
+      .mockResolvedValueOnce(activeResult(revisionTwo, 2))
+      .mockResolvedValueOnce(
+        activeResult(replacementProfile, 3, OTHER_CLIENT, undefined, replacementWorkspace)
+      );
+    saveDashboardProfile.mockResolvedValueOnce(preconditionResult(revisionTwo, 2));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+    currentProfile = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'red' },
+    });
+    act(() => {
+      useThemeStore.setState({ ...useThemeStore.getState(), primaryColor: 'red' });
+      window.dispatchEvent(new Event(DASHBOARD_PROFILE_REFRESH_EVENT));
+    });
+    await flushEffects();
+
+    const toastOptions = toast.mock.calls[0]?.[1] as { description: ReactNode };
+    const keepMine = findButtonClickHandler(toastOptions.description, 'Keep mine');
+    await act(async () => {
+      keepMine?.();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await flushEffects();
+
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
+    expect(
+      toast.mock.calls.filter(([title]) => title === 'Dashboard changes detected on another device')
+    ).toHaveLength(2);
+    expect(useDashboardProfileRuntimeStore.getState().conflict).toMatchObject({
+      baseRevision: null,
+      remoteRevision: 3,
+    });
+  });
+
+  it('does not carry Keep mine intent across a profile generation change', async () => {
+    const base = buildProfile();
+    const revisionTwo = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'green' },
+    });
+    const replacementGenerationProfile = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'purple' },
+    });
+    loadDashboardProfile
+      .mockResolvedValueOnce(activeResult(base))
+      .mockResolvedValueOnce(activeResult(revisionTwo, 2))
+      .mockResolvedValueOnce(
+        activeResult(
+          replacementGenerationProfile,
+          3,
+          OTHER_CLIENT,
+          undefined,
+          WORKSPACE,
+          'generation_replacement'
+        )
+      );
+    saveDashboardProfile.mockResolvedValueOnce(preconditionResult(revisionTwo, 2));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+    currentProfile = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'red' },
+    });
+    act(() => {
+      useThemeStore.setState({ ...useThemeStore.getState(), primaryColor: 'red' });
+      window.dispatchEvent(new Event(DASHBOARD_PROFILE_REFRESH_EVENT));
+    });
+    await flushEffects();
+
+    const toastOptions = toast.mock.calls[0]?.[1] as { description: ReactNode };
+    const keepMine = findButtonClickHandler(toastOptions.description, 'Keep mine');
+    await act(async () => {
+      keepMine?.();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await flushEffects();
+
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
+    expect(
+      toast.mock.calls.filter(([title]) => title === 'Dashboard changes detected on another device')
+    ).toHaveLength(2);
+    expect(useDashboardProfileRuntimeStore.getState().conflict).toMatchObject({
+      baseRevision: null,
+      remoteRevision: 3,
+    });
+  });
+
+  it('records a clean receipt when another device already saved the Keep mine choice', async () => {
+    const base = buildProfile();
+    const revisionTwo = buildProfile({
+      exportedAt: '2026-07-25T09:02:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'green' },
+    });
+    const alreadyResolved = buildProfile({
+      exportedAt: '2026-07-25T09:03:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'red' },
+    });
+    const laterRemote = buildProfile({
+      exportedAt: '2026-07-25T09:04:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'red' },
+      settings: { showWeatherInHeader: false },
+    });
+    loadDashboardProfile
+      .mockResolvedValueOnce(activeResult(base))
+      .mockResolvedValueOnce(activeResult(revisionTwo, 2))
+      .mockResolvedValueOnce(activeResult(alreadyResolved, 3))
+      .mockResolvedValueOnce(activeResult(laterRemote, 4));
+    saveDashboardProfile.mockResolvedValueOnce(preconditionResult(alreadyResolved, 3));
+
+    const firstHook = renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+    currentProfile = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'red' },
+    });
+    act(() => {
+      useThemeStore.setState({ ...useThemeStore.getState(), primaryColor: 'red' });
+      window.dispatchEvent(new Event(DASHBOARD_PROFILE_REFRESH_EVENT));
+    });
+    await flushEffects();
+
+    const toastOptions = toast.mock.calls[0]?.[1] as { description: ReactNode };
+    const keepMine = findButtonClickHandler(toastOptions.description, 'Keep mine');
+    await act(async () => {
+      keepMine?.();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await flushEffects();
+
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
+    expect(readDashboardProfileReceipt()).toMatchObject({
+      revision: 3,
+      workspaceId: WORKSPACE.workspaceId,
+    });
+
+    firstHook.unmount();
+    clearDashboardProfileBase();
+    importDashboardConfig.mockClear();
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    expect(importDashboardConfig).toHaveBeenCalledWith(laterRemote, {
+      applyNavigation: false,
+    });
+    expect(saveDashboardProfile).toHaveBeenCalledTimes(1);
+    expect(
+      toast.mock.calls.filter(([title]) => title === 'Dashboard changes detected on another device')
+    ).toHaveLength(1);
+    expect(readDashboardProfileReceipt()).toMatchObject({ revision: 4 });
   });
 
   it('reloads and reconciles after a stale write precondition', async () => {

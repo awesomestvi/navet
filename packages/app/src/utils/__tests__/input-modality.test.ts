@@ -1,5 +1,5 @@
 import { setMediaQueryMatch } from '@navet/app/test/browser-mocks';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { initializeInputModality } from '../input-modality';
 
 let cleanup: (() => void) | undefined;
@@ -56,6 +56,39 @@ describe('initializeInputModality', () => {
 
     dispatchPointerEvent('pointermove', 'mouse');
 
+    expect(document.documentElement.dataset.pointerModality).toBe('mouse');
+  });
+
+  it('does not rewrite the root modality for repeated activity from the active pointer', async () => {
+    setMediaQueryMatch('(any-pointer: fine)', true);
+    startInputModality();
+    const callback = vi.fn();
+    const observer = new MutationObserver(callback);
+    observer.observe(document.documentElement, {
+      attributeFilter: ['data-pointer-modality'],
+      attributes: true,
+    });
+
+    dispatchPointerEvent('pointerdown', 'mouse');
+    dispatchPointerEvent('pointerdown', 'mouse');
+    dispatchPointerEvent('pointermove', 'mouse');
+    await Promise.resolve();
+
+    expect(callback).not.toHaveBeenCalled();
+    observer.disconnect();
+  });
+
+  it('disarms mouse-move detection after recovering from touch input', () => {
+    startInputModality();
+
+    dispatchPointerEvent('pointermove', 'mouse');
+    expect(document.documentElement.dataset.pointerModality).toBe('mouse');
+
+    dispatchPointerEvent('pointermove', 'touch');
+    expect(document.documentElement.dataset.pointerModality).toBe('mouse');
+
+    dispatchPointerEvent('pointerdown', 'touch');
+    dispatchPointerEvent('pointermove', 'mouse');
     expect(document.documentElement.dataset.pointerModality).toBe('mouse');
   });
 

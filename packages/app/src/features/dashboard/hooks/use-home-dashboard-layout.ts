@@ -63,7 +63,11 @@ export function useHomeDashboardLayout(
   validCardIds: string[],
   cardSizes: Record<string, CardSize>
 ) {
-  const validIdSet = useMemo(() => new Set(validCardIds), [validCardIds]);
+  const validCardIdsKey = JSON.stringify(validCardIds);
+  const validIdSet = useMemo(
+    () => new Set<string>(JSON.parse(validCardIdsKey) as string[]),
+    [validCardIdsKey]
+  );
   const layout = useHomeDashboardLayoutStore(
     useShallow((state) => ({
       mode: state.mode,

@@ -129,13 +129,13 @@ const PROVIDER_OPTION_CONTENT: Record<
   },
 };
 
-export function LoginPage() {
+export function LoginPage({ initialError = '' }: { initialError?: string }) {
   const selectableProviders = INTEGRATION_PROVIDER_IDS.filter(
     (candidateId) => INTEGRATION_PROVIDERS[candidateId].loginMode !== 'unavailable'
   );
   const initialUrl = useRef(getRuntimeConfig().hassUrl ?? '');
   const urlInputRef = useRef<HTMLInputElement>(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(initialError);
   const [isLoading, setIsLoading] = useState(false);
   const [isDiscovering, setIsDiscovering] = useState(!initialUrl.current);
   const [discoveredUrl, setDiscoveredUrl] = useState<string | null>(null);
@@ -161,6 +161,12 @@ export function LoginPage() {
   const hasSelectedProvider = provider !== null;
   const surface = getThemeSurfaceTokens(theme);
   const logoSrc = getPublicAssetUrl('logo.svg');
+
+  useEffect(() => {
+    if (initialError) {
+      setError(initialError);
+    }
+  }, [initialError]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia?.('(prefers-color-scheme: dark)');
@@ -439,6 +445,12 @@ export function LoginPage() {
                   );
                 })}
               </ul>
+              {error ? (
+                <div className="flex items-start gap-3 rounded-2xl border border-red-400/22 bg-red-500/12 p-4">
+                  <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-300" />
+                  <p className="text-sm leading-6 text-red-100">{error}</p>
+                </div>
+              ) : null}
               {hasSelectedProvider && provider ? (
                 <div className="space-y-5 pt-5">
                   {requiresUrl ? (
@@ -505,13 +517,6 @@ export function LoginPage() {
                         </>
                       ) : null}
                     </>
-                  ) : null}
-
-                  {error ? (
-                    <div className="flex items-start gap-3 rounded-2xl border border-red-400/22 bg-red-500/12 p-4">
-                      <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-300" />
-                      <p className="text-sm leading-6 text-red-100">{error}</p>
-                    </div>
                   ) : null}
 
                   <div className="space-y-2">

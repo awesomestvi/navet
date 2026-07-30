@@ -1,8 +1,15 @@
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
+import type { EffectsQuality } from '@navet/app/stores/settings-store';
 import { useId } from 'react';
 import { getWeatherSvgOverlayTransform } from './weather-card-utils';
 
-export function StormLightningOverlaySvg({ size }: { size: CardSize }) {
+export function StormLightningOverlaySvg({
+  size,
+  effectsQuality,
+}: {
+  size: CardSize;
+  effectsQuality: EffectsQuality;
+}) {
   const glowId = useId();
   const haloGradientId = useId();
   const coreGradientId = useId();
@@ -14,13 +21,16 @@ export function StormLightningOverlaySvg({ size }: { size: CardSize }) {
       : size === 'medium'
         ? 'translate(0 -4)'
         : 'translate(0.4 -2.8) scale(0.9)';
+  const useFullEffects = effectsQuality !== 'low';
 
   return (
     <svg
-      className="absolute inset-0 h-full w-full mix-blend-screen"
+      className={`absolute inset-0 h-full w-full ${useFullEffects ? 'mix-blend-screen' : ''}`}
       viewBox="0 0 100 40"
       aria-hidden="true"
       preserveAspectRatio="xMidYMid slice"
+      data-effects-quality={effectsQuality}
+      data-weather-overlay="lightning"
       style={{ transform: getWeatherSvgOverlayTransform(size), transformOrigin: 'center top' }}
     >
       <defs>
@@ -40,31 +50,33 @@ export function StormLightningOverlaySvg({ size }: { size: CardSize }) {
           <stop offset="90%" stopColor="#5f5f5f" />
           <stop offset="100%" stopColor="white" />
         </linearGradient>
-        <filter id={glowId} x="-120%" y="-120%" width="340%" height="340%">
-          <feDropShadow
-            in="SourceGraphic"
-            dx="0"
-            dy="0"
-            stdDeviation="1.4"
-            floodColor="#ffd67c"
-            floodOpacity="0.38"
-            result="tightGlow"
-          />
-          <feDropShadow
-            in="SourceGraphic"
-            dx="0"
-            dy="0"
-            stdDeviation="3"
-            floodColor="#ffd67c"
-            floodOpacity="0.18"
-            result="wideGlow"
-          />
-          <feMerge>
-            <feMergeNode in="wideGlow" />
-            <feMergeNode in="tightGlow" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
+        {useFullEffects ? (
+          <filter id={glowId} x="-120%" y="-120%" width="340%" height="340%">
+            <feDropShadow
+              in="SourceGraphic"
+              dx="0"
+              dy="0"
+              stdDeviation="1.4"
+              floodColor="#ffd67c"
+              floodOpacity="0.38"
+              result="tightGlow"
+            />
+            <feDropShadow
+              in="SourceGraphic"
+              dx="0"
+              dy="0"
+              stdDeviation="3"
+              floodColor="#ffd67c"
+              floodOpacity="0.18"
+              result="wideGlow"
+            />
+            <feMerge>
+              <feMergeNode in="wideGlow" />
+              <feMergeNode in="tightGlow" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        ) : null}
         <mask id={clipMaskId} maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="40">
           <rect x="0" y="0" width="100" height="40" fill="white" />
           <path
@@ -93,7 +105,7 @@ export function StormLightningOverlaySvg({ size }: { size: CardSize }) {
         <path
           d="M64.7 10.4l-4.6 3.9 2.5 0.7-3.3 3.7 2.3 0.8-3.4 5 8.4-6.7-2.8-0.9 3.7-4-2.5-0.7 2.2-3.1Z"
           fill="#ffe4a2"
-          filter={`url(#${glowId})`}
+          filter={useFullEffects ? `url(#${glowId})` : undefined}
           opacity="0.84"
         />
       </g>

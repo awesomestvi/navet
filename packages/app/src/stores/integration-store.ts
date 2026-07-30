@@ -479,12 +479,14 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
     const providerEntitiesByCanonicalId = replaceFlattenedProviderRecord(
       current.providerEntitiesByCanonicalId,
       previousEntities,
-      nextProviderScopedState.entitiesByCanonicalId
+      nextProviderScopedState.entitiesByCanonicalId,
+      nextProviderScopedState.entityDeltaIds
     );
     const providerEntityViewsByCanonicalId = replaceFlattenedProviderRecord(
       current.providerEntityViewsByCanonicalId,
       previousViews,
-      nextProviderScopedState.entityViewsByCanonicalId
+      nextProviderScopedState.entityViewsByCanonicalId,
+      nextProviderScopedState.entityDeltaIds
     );
     const normalizedRoomsByCanonicalId = replaceFlattenedProviderRecord(
       current.normalizedRoomsByCanonicalId,
@@ -499,7 +501,8 @@ export const integrationStore = createStore<IntegrationStore>()((set) => {
     const providerEvents = collectProviderEntityEvents(
       providerId,
       previousEntities,
-      nextProviderScopedState.entitiesByCanonicalId
+      nextProviderScopedState.entitiesByCanonicalId,
+      nextProviderScopedState.entityDeltaIds
     );
     const shouldRebuildRoomDescriptors =
       options.shouldRebuildRoomDescriptors === true ||

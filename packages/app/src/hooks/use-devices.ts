@@ -8,10 +8,11 @@ import {
   type RoomWorkspaceV2,
 } from '@navet/app/features/dashboard/rooms/room-workspace-v2';
 import type { NavetProviderRoom } from '@navet/core/types';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useEntityRoomOverridesStore } from '../stores/entity-room-overrides-store';
+import type { IntegrationStore } from '../stores/integration-store';
 import { integrationSelectors } from '../stores/selectors';
-import type { DeviceCollection } from '../types/device.types';
+import type { DeviceCollection, SensorDevice } from '../types/device.types';
 import type { IntegrationProviderId } from '../types/provider';
 import { getAllRooms } from '../utils/device-location';
 import { createProviderScopedId } from '../utils/provider-ids';
@@ -24,6 +25,7 @@ const EMPTY_SELECTED_PROVIDER_IDS: IntegrationProviderId[] = [];
 const EMPTY_DEVICE_COLLECTION = Object.freeze(mapNavetEntitiesToDeviceCollection([]));
 const EMPTY_DEVICE_COLLECTIONS: DeviceCollection[] = [];
 const EMPTY_DEVICE_GROUP_SLICES: ReadonlyArray<readonly unknown[]> = [];
+const EMPTY_SENSOR_ENTITY_IDS: string[] = [];
 
 export const DEVICE_COLLECTION_KEYS = [
   'lights',
@@ -588,15 +590,47 @@ export const useProviderDevices = (providerId: IntegrationProviderId): DeviceCol
   );
 };
 export const useProviderDeviceCollection = useProviderDevices;
-export const useProviderSensorCollection = (providerId: IntegrationProviderId) =>
-  useIntegrationStore(
-    (state) =>
-      (
+
+interface UseProviderSensorCollectionOptions {
+  entityIds?: string[];
+  includeAll?: boolean;
+}
+
+function matchesSelectedSensorId(device: SensorDevice, selectedIds: Set<string>) {
+  return (
+    selectedIds.has(device.id) ||
+    (typeof device.canonicalId === 'string' && selectedIds.has(device.canonicalId)) ||
+    (typeof device.nativeId === 'string' && selectedIds.has(device.nativeId))
+  );
+}
+
+export const useProviderSensorCollection = (
+  providerId: IntegrationProviderId,
+  options: UseProviderSensorCollectionOptions = {}
+) => {
+  const entityIds = options.entityIds ?? EMPTY_SENSOR_ENTITY_IDS;
+  const includeAll = options.includeAll ?? true;
+  const selectedIds = useMemo(() => new Set(entityIds), [entityIds]);
+  const selectSensors = useCallback(
+    (state: IntegrationStore) => {
+      const sensors = (
         integrationSelectors.providerDeviceCollectionById(providerId)(state) ??
         EMPTY_DEVICE_COLLECTION
-      ).sensors,
-    Object.is
+      ).sensors;
+
+      if (includeAll) {
+        return sensors;
+      }
+      if (selectedIds.size === 0) {
+        return EMPTY_DEVICE_COLLECTION.sensors;
+      }
+      return sensors.filter((device) => matchesSelectedSensorId(device, selectedIds));
+    },
+    [includeAll, providerId, selectedIds]
   );
+
+  return useIntegrationStore(selectSensors, areArraysEqual);
+};
 export const useCalendarDevicesCollection = (options?: { enabled?: boolean }) => {
   const enabled = options?.enabled ?? true;
   const selectedProviderIds = useIntegrationStore(

@@ -11,6 +11,7 @@ import type {
 import { describe, expect, it } from 'vitest';
 import {
   buildSecurityCameraDashboardModel,
+  getSecurityDashboardAlertCount,
   isStillImageUtilityCamera,
 } from '../security-camera-dashboard-model';
 
@@ -149,6 +150,50 @@ function helper(
 }
 
 describe('security camera dashboard model', () => {
+  it('keeps the dedicated alert count aligned with the full dashboard model', () => {
+    const devices = {
+      cameras: [
+        camera({
+          id: 'camera.front_door',
+          name: 'Front Door',
+          sourceDeviceId: 'front-door-camera',
+          securitySeverity: 'unknown',
+        }),
+        camera({
+          id: 'camera.front_door_2',
+          name: 'Front Door',
+          sourceDeviceId: 'front-door-camera',
+          securitySeverity: 'normal',
+        }),
+      ],
+      covers: [cover({ id: 'cover.entry_shutter', name: 'Entry Shutter', position: 100 })],
+      helpers: [
+        helper({
+          id: 'button.doorbell_chime',
+          name: 'Doorbell Chime',
+          room: 'Entrance',
+          size: 'small',
+          state: false,
+          securityKind: 'button',
+        }),
+      ],
+      locks: [lock({ id: 'lock.front_door', name: 'Front Door', state: false })],
+      persons: [person({ id: 'person.alex', name: 'Alex' })],
+      sensors: [
+        sensor({
+          id: 'binary_sensor.smoke',
+          name: 'Kitchen Smoke',
+          securityKind: 'smoke',
+          securitySeverity: 'critical',
+        }),
+      ],
+    };
+
+    expect(getSecurityDashboardAlertCount(devices)).toBe(
+      buildSecurityCameraDashboardModel(devices).summary.attentionEntityCount
+    );
+  });
+
   it('groups security entities into the expected buckets', () => {
     const model = buildSecurityCameraDashboardModel({
       cameras: [

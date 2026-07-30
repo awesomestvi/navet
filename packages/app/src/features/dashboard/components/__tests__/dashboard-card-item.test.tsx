@@ -116,6 +116,21 @@ function createCameraDevice(): DeviceWithType {
   };
 }
 
+function createMediaDevice(): DeviceWithType {
+  return {
+    id: 'media_player.kitchen',
+    name: 'Kitchen speaker',
+    room: 'Kitchen',
+    size: 'small',
+    title: 'Daily mix',
+    artist: 'Navet',
+    state: 'playing',
+    volume: 35,
+    isMuted: false,
+    type: 'media',
+  };
+}
+
 describe('DashboardCardItem card locking', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -208,6 +223,45 @@ describe('DashboardCardItem card locking', () => {
     );
   });
 
+  it('rerenders only when the media presentation variant changes', () => {
+    const device = createMediaDevice();
+    const handleSizeChange = vi.fn();
+    const renderItem = (presentationVariant?: 'media-stack') => (
+      <DashboardCardItem
+        id={device.id}
+        size="small"
+        isEditMode={false}
+        handleSizeChange={handleSizeChange}
+        device={device}
+        presentationVariant={presentationVariant}
+      />
+    );
+    const { rerender } = renderWithProviders(renderItem());
+
+    expect(renderCardMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ presentationVariant: undefined })
+    );
+    renderCardMock.mockClear();
+
+    rerender(renderItem());
+    expect(renderCardMock).not.toHaveBeenCalled();
+
+    rerender(renderItem('media-stack'));
+    expect(renderCardMock).toHaveBeenCalledTimes(1);
+    expect(renderCardMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ presentationVariant: 'media-stack' })
+    );
+
+    rerender(renderItem('media-stack'));
+    expect(renderCardMock).toHaveBeenCalledTimes(1);
+
+    rerender(renderItem());
+    expect(renderCardMock).toHaveBeenCalledTimes(2);
+    expect(renderCardMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ presentationVariant: undefined })
+    );
+  });
+
   it('upgrades alarm sensor cards to the alarm panel footprint', () => {
     renderWithProviders(
       <DashboardCardItem
@@ -235,6 +289,24 @@ describe('DashboardCardItem card locking', () => {
 
     expect(container.firstElementChild?.className).toContain('[contain:layout_style]');
     expect(container.firstElementChild?.className).not.toContain('[contain:layout_style_paint]');
+  });
+
+  it('scopes dense cards to low effects even when the global preference is high', () => {
+    document.documentElement.dataset.effectsQuality = 'high';
+
+    const { container } = renderWithProviders(
+      <DashboardCardItem
+        id="light.kitchen"
+        size="small"
+        isEditMode={false}
+        handleSizeChange={vi.fn()}
+        device={createLightDevice()}
+        densePerformanceMode
+      />
+    );
+
+    expect(container.firstElementChild).toHaveAttribute('data-navet-effects-quality', 'low');
+    expect(document.documentElement).toHaveAttribute('data-effects-quality', 'high');
   });
 
   it('adds a settings action to the edit dock for switch cards and forwards the request', () => {

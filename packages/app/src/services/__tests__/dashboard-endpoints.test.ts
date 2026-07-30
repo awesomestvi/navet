@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   deleteDashboardProfile,
+  forgetDashboardClient,
   loadDashboardPreferences,
   loadDashboardProfile,
   saveDashboardPreferences,
@@ -251,7 +252,7 @@ describe('dashboard add-on endpoints', () => {
     });
   });
 
-  it('sends revision, changed-path, and client attribution headers', async () => {
+  it('prefers the revision header over njs-unsafe HTTP validators', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), {
         status: 200,
@@ -280,11 +281,15 @@ describe('dashboard add-on endpoints', () => {
         },
         baseRevision: 7,
         changedPaths: ['/dashboard/rooms'],
+        etag: '"navet-workspace-7"',
+        lastModified: 'Tue, 02 Jan 2024 12:00:00 GMT',
       }
     );
 
     const headers = getRequestHeaders(fetchMock.mock.calls[0]?.[1] as RequestInit | undefined);
     expect(headers.get('X-Navet-Base-Revision')).toBe('7');
+    expect(headers.get('If-Match')).toBeNull();
+    expect(headers.get('If-Unmodified-Since')).toBeNull();
     expect(headers.get('X-Navet-Client-Id')).toBe('client-panel-01');
     expect(decodeURIComponent(headers.get('X-Navet-Client-Name') ?? '')).toBe('Kitchen panel');
     expect(headers.get('X-Navet-Client-Kind')).toBe('wall_panel');
@@ -304,6 +309,25 @@ describe('dashboard add-on endpoints', () => {
     await expect(loadDashboardProfile()).resolves.toMatchObject({
       available: false,
       unauthorized: true,
+      profile: null,
+    });
+  });
+
+  it('does not tell users to sign in again when the workspace forbids their tenant', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ error: 'Workspace belongs to another installation' }), {
+        status: 403,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Navet-Profile-Error-Code': 'workspace-tenant-mismatch',
+        },
+      })
+    );
+
+    await expect(loadDashboardProfile()).resolves.toMatchObject({
+      available: false,
+      unauthorized: false,
+      failureCode: 'workspace-tenant-mismatch',
       profile: null,
     });
   });
@@ -419,5 +443,57 @@ describe('dashboard add-on endpoints', () => {
       schemaVersion: 2,
       values: { keepAwake: true },
     });
+  });
+
+  it('parses verified preference identity and workspace headers from an empty document', async () => {
+    const identity = {
+      principal: {
+        providerId: 'home_assistant',
+        userId: 'ha-user-1',
+        userName: 'Vishal',
+      },
+      clientId: null,
+    };
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(null, {
+        status: 204,
+        headers: {
+          'X-Navet-Installation-Id': 'installation_1',
+          'X-Navet-Workspace-Id': 'workspace_1',
+          'X-Navet-Preference-Identity': encodeURIComponent(JSON.stringify(identity)),
+        },
+      })
+    );
+
+    await expect(loadDashboardPreferences('account')).resolves.toMatchObject({
+      available: true,
+      document: null,
+      identity,
+      workspace: {
+        installationId: 'installation_1',
+        workspaceId: 'workspace_1',
+      },
+    });
+  });
+
+  it('identifies the requesting browser when forgetting its bound client record', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ ok: true, forgotten: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
+    const client = {
+      id: 'client-panel-01',
+      name: 'Kitchen panel',
+      kind: 'wall_panel' as const,
+    };
+
+    await expect(forgetDashboardClient(client.id, client)).resolves.toBe(true);
+
+    const headers = getRequestHeaders(fetchMock.mock.calls[0]?.[1] as RequestInit | undefined);
+    expect(headers.get('X-Navet-Client-Id')).toBe(client.id);
+    expect(decodeURIComponent(headers.get('X-Navet-Client-Name') ?? '')).toBe(client.name);
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ method: 'DELETE' });
   });
 });

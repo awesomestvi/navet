@@ -4,9 +4,24 @@ import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { useEffect } from 'react';
 
 const SAMPLE_FRAME_COUNT = 90;
+const INTERACTION_SAMPLE_FRAME_COUNT = 60;
 const SAMPLE_START_DELAY_MS = 250;
+const INTERACTION_SAMPLE_COOLDOWN_MS = 15_000;
+const INTERACTION_EVENTS = ['pointerdown', 'touchstart', 'wheel', 'scroll'] as const;
+const PASSIVE_LISTENER_OPTIONS = { passive: true, capture: true } as const;
 const QUALITY_RANK: Record<EffectsQuality, number> = { low: 0, medium: 1, high: 2 };
 let consecutiveUpgradeSamples = 0;
+
+type SampleKind = 'initial' | 'interaction';
+
+interface ActiveFrameSample {
+  interactionStartedAt: number | null;
+  firstInteractionFrameDelay: number | null;
+  kind: SampleKind;
+  targetFrameCount: number;
+  previousFrameTime: number | null;
+  frameDurations: number[];
+}
 
 export function resolveMeasuredEffectsQuality(frameDurations: readonly number[]): EffectsQuality {
   if (frameDurations.length < 12) {
@@ -37,31 +52,71 @@ export function capEffectsQualityToDeviceTier(
   return QUALITY_RANK[measuredQuality] <= QUALITY_RANK[deviceTier] ? measuredQuality : deviceTier;
 }
 
+export function resolveInteractionEffectsQuality(
+  frameDurations: readonly number[],
+  firstFrameDelay: number | null
+): EffectsQuality {
+  const frameQuality = resolveMeasuredEffectsQuality(frameDurations);
+  const responsivenessQuality =
+    firstFrameDelay !== null && firstFrameDelay >= 50
+      ? 'low'
+      : firstFrameDelay !== null && firstFrameDelay >= 24
+        ? 'medium'
+        : 'high';
+
+  return QUALITY_RANK[frameQuality] <= QUALITY_RANK[responsivenessQuality]
+    ? frameQuality
+    : responsivenessQuality;
+}
+
 /**
- * Samples real frame delivery after dashboard navigation. Automatic quality degrades immediately
- * when the browser misses frames, but needs three healthy samples before upgrading again.
+ * Samples real frame delivery after dashboard navigation and during occasional user interactions.
+ * Automatic quality degrades immediately when the browser misses frames, but needs three healthy
+ * navigation samples before upgrading again. Interaction samples are downgrade-only.
  */
 export function useAdaptiveEffectsQuality(sampleKey: string) {
-  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const effectsQualityUserOverride = useSettingsStore((state) => state.effectsQualityUserOverride);
   const updateSettings = useSettingsStore(settingsSelectors.updateSettings);
 
   useEffect(() => {
-    if (effectsQualityUserOverride || document.visibilityState === 'hidden') {
+    if (effectsQualityUserOverride) {
+      return;
+    }
+
+    const deviceTier = detectDeviceTier();
+    if (deviceTier === 'low') {
+      consecutiveUpgradeSamples = 0;
+      if (useSettingsStore.getState().effectsQuality !== 'low') {
+        updateSettings({ effectsQuality: 'low' });
+      }
       return;
     }
 
     let cancelled = false;
     let frameId: number | null = null;
-    let previousFrameTime: number | null = null;
-    const frameDurations: number[] = [];
+    let activeSample: ActiveFrameSample | null = null;
+    let initialSamplePending = false;
+    let lastInteractionSampleTime = Number.NEGATIVE_INFINITY;
 
-    const finishSample = () => {
+    const finishSample = (sample: ActiveFrameSample) => {
       const measuredQuality = capEffectsQualityToDeviceTier(
-        resolveMeasuredEffectsQuality(frameDurations),
-        detectDeviceTier()
+        sample.kind === 'interaction'
+          ? resolveInteractionEffectsQuality(
+              sample.frameDurations,
+              sample.firstInteractionFrameDelay
+            )
+          : resolveMeasuredEffectsQuality(sample.frameDurations),
+        deviceTier
       );
       const currentQuality = useSettingsStore.getState().effectsQuality;
+
+      if (
+        sample.kind === 'interaction' &&
+        QUALITY_RANK[measuredQuality] >= QUALITY_RANK[currentQuality]
+      ) {
+        return;
+      }
+
       if (measuredQuality === currentQuality) {
         consecutiveUpgradeSamples = 0;
         return;
@@ -81,31 +136,110 @@ export function useAdaptiveEffectsQuality(sampleKey: string) {
       }
     };
 
-    const sampleFrame = (frameTime: number) => {
-      if (cancelled) return;
-      if (previousFrameTime !== null) {
-        frameDurations.push(frameTime - previousFrameTime);
+    const cancelActiveSample = (retryInitial: boolean) => {
+      if (retryInitial && activeSample?.kind === 'initial') {
+        initialSamplePending = true;
       }
-      previousFrameTime = frameTime;
+      activeSample = null;
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+        frameId = null;
+      }
+    };
 
-      if (frameDurations.length >= SAMPLE_FRAME_COUNT) {
-        finishSample();
+    const sampleFrame = (frameTime: number) => {
+      frameId = null;
+      const sample = activeSample;
+      if (cancelled || !sample) return;
+      if (document.visibilityState === 'hidden') {
+        cancelActiveSample(true);
+        return;
+      }
+
+      if (
+        sample.kind === 'interaction' &&
+        sample.firstInteractionFrameDelay === null &&
+        sample.interactionStartedAt !== null
+      ) {
+        sample.firstInteractionFrameDelay = Math.max(0, frameTime - sample.interactionStartedAt);
+      }
+      if (sample.previousFrameTime !== null) {
+        sample.frameDurations.push(frameTime - sample.previousFrameTime);
+      }
+      sample.previousFrameTime = frameTime;
+
+      if (sample.frameDurations.length >= sample.targetFrameCount) {
+        activeSample = null;
+        finishSample(sample);
+        if (sample.kind === 'interaction') {
+          tryStartPendingInitialSample();
+        }
         return;
       }
 
       frameId = window.requestAnimationFrame(sampleFrame);
     };
 
-    const timeoutId = window.setTimeout(() => {
+    const startSample = (kind: SampleKind, interactionStartedAt: number | null = null) => {
+      if (cancelled || activeSample || document.visibilityState === 'hidden') {
+        return false;
+      }
+
+      activeSample = {
+        interactionStartedAt,
+        firstInteractionFrameDelay: null,
+        kind,
+        targetFrameCount: kind === 'initial' ? SAMPLE_FRAME_COUNT : INTERACTION_SAMPLE_FRAME_COUNT,
+        previousFrameTime: null,
+        frameDurations: [],
+      };
       frameId = window.requestAnimationFrame(sampleFrame);
+      return true;
+    };
+
+    const tryStartPendingInitialSample = () => {
+      if (initialSamplePending && startSample('initial')) {
+        initialSamplePending = false;
+      }
+    };
+
+    const handleInteraction = () => {
+      const now = performance.now();
+      if (now - lastInteractionSampleTime < INTERACTION_SAMPLE_COOLDOWN_MS) {
+        return;
+      }
+
+      if (startSample('interaction', now)) {
+        lastInteractionSampleTime = now;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        cancelActiveSample(true);
+        return;
+      }
+      tryStartPendingInitialSample();
+    };
+
+    for (const eventName of INTERACTION_EVENTS) {
+      window.addEventListener(eventName, handleInteraction, PASSIVE_LISTENER_OPTIONS);
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    const timeoutId = window.setTimeout(() => {
+      initialSamplePending = true;
+      tryStartPendingInitialSample();
     }, SAMPLE_START_DELAY_MS);
 
     return () => {
       cancelled = true;
       window.clearTimeout(timeoutId);
-      if (frameId !== null) {
-        window.cancelAnimationFrame(frameId);
+      cancelActiveSample(false);
+      for (const eventName of INTERACTION_EVENTS) {
+        window.removeEventListener(eventName, handleInteraction, PASSIVE_LISTENER_OPTIONS);
       }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [effectsQuality, effectsQualityUserOverride, sampleKey, updateSettings]);
+  }, [effectsQualityUserOverride, sampleKey, updateSettings]);
 }

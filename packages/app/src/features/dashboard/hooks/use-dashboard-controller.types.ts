@@ -56,6 +56,7 @@ export type DashboardController = OnboardingController &
     connecting: boolean;
     densePerformanceMode: boolean;
     denseVisibleCardCount: number;
+    optimizeOffscreenPaint: boolean;
     devicesLoaded: boolean;
     handleAddCard: (template: CardTemplate, size: CardSize) => void;
     handleAddLibraryCard: (cardId: string) => void;

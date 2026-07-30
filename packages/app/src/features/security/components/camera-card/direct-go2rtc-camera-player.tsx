@@ -632,6 +632,12 @@ export function DirectGo2RtcCameraPlayer({
               decodedFrameProgress += 1;
               markDecodedFrameReady(metadata);
             }
+            const decodedFrameCount = getDecodedVideoFrameCount(video);
+            if (hasDecodedFrame && decodedFrameCount !== null && decodedFrameCount > 0) {
+              decodedFrameProgress = decodedFrameCount;
+              useVideoFrameCallback = false;
+              return;
+            }
             scheduleDecodedFrameCallback();
           });
         } catch {

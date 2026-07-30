@@ -758,7 +758,7 @@ describe('SettingsSystemSection', () => {
     expect(screen.queryByRole('button', { name: 'Revision history' })).not.toBeInTheDocument();
   });
 
-  it('forgets only another dashboard registry record without changing its login', async () => {
+  it('lists another dashboard without exposing a cross-browser removal control', () => {
     const currentClient = useDashboardProfileRuntimeStore.getState().client;
     expect(currentClient).not.toBeNull();
     if (!currentClient) return;
@@ -781,33 +781,10 @@ describe('SettingsSystemSection', () => {
         lastRevision: 5,
       },
     ]);
-    dashboardProfileServiceMocks.forgetDashboardProfileClient.mockResolvedValue(true);
-
     renderWithProviders(<SettingsSystemSection controller={controller} />);
 
-    expect(screen.getAllByRole('button', { name: 'Remove device' })).toHaveLength(1);
-    fireEvent.click(screen.getByRole('button', { name: 'Remove device' }));
-
-    const confirmation = screen.getByRole('group', { name: 'Remove Kitchen panel?' });
-    expect(
-      within(confirmation).getByText(/does not sign that dashboard out or revoke its OAuth login/)
-    ).toBeInTheDocument();
+    expect(screen.getByText('Kitchen panel')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Remove device' })).not.toBeInTheDocument();
     expect(dashboardProfileServiceMocks.forgetDashboardProfileClient).not.toHaveBeenCalled();
-
-    fireEvent.click(within(confirmation).getByRole('button', { name: 'Remove device' }));
-
-    await waitFor(() => {
-      expect(dashboardProfileServiceMocks.forgetDashboardProfileClient).toHaveBeenCalledWith(
-        'kitchen_panel'
-      );
-    });
-    expect(useDashboardProfileRuntimeStore.getState().clients).toEqual([
-      expect.objectContaining({ id: currentClient.id }),
-    ]);
-    expect(
-      screen.getByText(
-        'Kitchen panel was removed from the connected dashboard list. Its login was not changed.'
-      )
-    ).toBeInTheDocument();
   });
 });

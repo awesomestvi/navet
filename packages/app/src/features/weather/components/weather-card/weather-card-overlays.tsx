@@ -1,5 +1,6 @@
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import type { ThemeType } from '@navet/app/hooks';
+import type { EffectsQuality } from '@navet/app/stores/settings-store';
 import type { ReactNode } from 'react';
 import { FogOverlaySvg } from './fog-overlay';
 import { PassageWaveOverlaySvg } from './passage-wave-overlay';
@@ -209,11 +210,13 @@ function getSunnyThemeSurface(theme: ThemeType): {
 
 export function WeatherBackground({
   condition,
+  effectsQuality,
   hasCustomTint,
   size,
   theme,
 }: {
   condition: WeatherCondition | string;
+  effectsQuality: EffectsQuality;
   hasCustomTint: boolean;
   size: CardSize;
   theme: ThemeType;
@@ -353,7 +356,7 @@ export function WeatherBackground({
           rimColor="rgba(196,214,255,0.08)"
           className={waveOpacity}
         />
-        <RainOverlaySvg size={size} intensity="rain" />
+        <RainOverlaySvg size={size} intensity="rain" effectsQuality={effectsQuality} />
         {surface.themeSurfaceClassName ? (
           <div className={`absolute inset-0 ${surface.themeSurfaceClassName}`} />
         ) : null}
@@ -378,7 +381,7 @@ export function WeatherBackground({
     return (
       <>
         <div className={`absolute inset-0 ${surface.baseGradient}`} />
-        <StormLightningOverlaySvg size={size} />
+        <StormLightningOverlaySvg size={size} effectsQuality={effectsQuality} />
         <PassageWaveOverlaySvg
           size={size}
           layerOneColor="rgba(130,145,196,0.16)"
@@ -395,7 +398,7 @@ export function WeatherBackground({
           rimColor="rgba(128,146,208,0.05)"
           className={farWaveOpacity}
         />
-        <RainOverlaySvg size={size} intensity="storm" />
+        <RainOverlaySvg size={size} intensity="storm" effectsQuality={effectsQuality} />
         {surface.themeSurfaceClassName ? (
           <div className={`absolute inset-0 ${surface.themeSurfaceClassName}`} />
         ) : null}

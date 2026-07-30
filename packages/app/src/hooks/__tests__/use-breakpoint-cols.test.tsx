@@ -106,4 +106,28 @@ describe('useBreakpointCols', () => {
 
     expect(result.current).toBe(6);
   });
+
+  it('shares one viewport subscription across multiple consumers', () => {
+    vi.useFakeTimers();
+    const visualViewport = window.visualViewport;
+    if (!visualViewport) {
+      throw new Error('Expected the browser test harness to install visualViewport');
+    }
+    const windowListenerSpy = vi.spyOn(window, 'addEventListener');
+    const visualViewportListenerSpy = vi.spyOn(visualViewport, 'addEventListener');
+    visualViewportListenerSpy.mockClear();
+
+    renderHookWithProviders(() => [useBreakpointCols(), useBreakpointCols()]);
+
+    act(() => {
+      vi.runAllTimers();
+    });
+
+    expect(
+      windowListenerSpy.mock.calls.filter(([eventName]) => eventName === 'resize')
+    ).toHaveLength(1);
+    expect(
+      visualViewportListenerSpy.mock.calls.filter(([eventName]) => eventName === 'resize')
+    ).toHaveLength(1);
+  });
 });

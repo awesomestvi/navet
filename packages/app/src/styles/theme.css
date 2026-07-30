@@ -255,15 +255,19 @@
   }
 
   html[data-no-animation="true"] {
-    scroll-behavior: auto;
+    /* biome-ignore lint/complexity/noImportantStyles: must override a scroll-smooth utility applied directly to the root element */
+    scroll-behavior: auto !important;
   }
 
   html[data-no-animation="true"] *,
   html[data-no-animation="true"] *::before,
   html[data-no-animation="true"] *::after {
-    animation: none;
-    transition: none;
-    scroll-behavior: auto;
+    /* biome-ignore lint/complexity/noImportantStyles: low-power mode must override Tailwind animation utilities declared in a later cascade layer */
+    animation: none !important;
+    /* biome-ignore lint/complexity/noImportantStyles: low-power mode must override Tailwind transition utilities declared in a later cascade layer */
+    transition: none !important;
+    /* biome-ignore lint/complexity/noImportantStyles: low-power mode must override smooth-scroll utilities declared in a later cascade layer */
+    scroll-behavior: auto !important;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -277,23 +281,44 @@
   }
 
   /* Universal suppression — catches all backdrop-blur values including arbitrary Tailwind classes */
-  html[data-effects-quality="low"] * {
-    /* biome-ignore lint/complexity/noImportantStyles: must override Tailwind utilities regardless of cascade layer order for RPi low-quality mode */
-    backdrop-filter: none !important;
+  html[data-effects-quality="low"] *,
+  [data-navet-effects-quality="low"] * {
     /* biome-ignore lint/complexity/noImportantStyles: must override Tailwind utilities regardless of cascade layer order for RPi low-quality mode */
     -webkit-backdrop-filter: none !important;
+    /* biome-ignore lint/complexity/noImportantStyles: low-power mode must also neutralize inline blur and drop-shadow filters on gauges, maps, and ambient layers */
+    filter: none !important;
     /* biome-ignore lint/complexity/noImportantStyles: must override Tailwind utilities regardless of cascade layer order for RPi low-quality mode */
     will-change: auto !important;
   }
 
-  /* blur-*, saturate-*, brightness-*, contrast-* Tailwind classes all produce filter stacking
-     contexts — on RPi with 100+ cards compositing hundreds of filter layers kills frame rate.
-     Attribute selectors catch all values including arbitrary ones like blur-[84px]. */
-  html[data-effects-quality="low"] [class*="blur-"],
-  html[data-effects-quality="low"] [class*="saturate-"],
-  html[data-effects-quality="low"] [class*="brightness-"],
-  html[data-effects-quality="low"] [class*="contrast-"] {
-    filter: none;
+  /*
+   * Keep the standards declaration in a distinct conditional rule. Lightning CSS
+   * otherwise folds adjacent prefixed/unprefixed declarations down to the final
+   * form during production minification, which left Chromium's backdrop-filter
+   * utility active on low-power devices.
+   */
+  @supports (backdrop-filter: none) {
+    html[data-effects-quality="low"] *,
+    [data-navet-effects-quality="low"] * {
+      /* biome-ignore lint/complexity/noImportantStyles: must override Tailwind utilities regardless of cascade layer order for RPi low-quality mode */
+      backdrop-filter: none !important;
+    }
+  }
+
+  html[data-effects-quality="low"] body {
+    /* biome-ignore lint/complexity/noImportantStyles: removes the standalone boot gradient that otherwise remains as a full-viewport repaint layer */
+    background-image: none !important;
+  }
+
+  [data-navet-effects-quality="low"] *,
+  [data-navet-effects-quality="low"] *::before,
+  [data-navet-effects-quality="low"] *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: scoped dashboard low quality must override Tailwind motion utilities while the global preference remains high */
+    animation: none !important;
+    /* biome-ignore lint/complexity/noImportantStyles: scoped dashboard low quality must override Tailwind motion utilities while the global preference remains high */
+    transition: none !important;
+    /* biome-ignore lint/complexity/noImportantStyles: scoped dashboard low quality must override smooth-scroll utilities while the global preference remains high */
+    scroll-behavior: auto !important;
   }
 
   /* ── MEDIUM: reduce motion and blur costs without eliminating them ─────────
@@ -329,7 +354,8 @@
      Each one forces an independent compositing layer and GPU overdraw.
      In MEDIUM this is a visual flourish worth trading for responsiveness. */
   html[data-effects-quality="medium"] [data-ambient-light-bleed="true"] {
-    display: none;
+    /* biome-ignore lint/complexity/noImportantStyles: must override any display utility on the decorative layer */
+    display: none !important;
   }
 
   /* Remove large drop shadows. [class*="shadow-[0_"] catches all outer arbitrary
@@ -338,24 +364,33 @@
   html[data-effects-quality="medium"] .shadow-xl,
   html[data-effects-quality="medium"] .shadow-2xl,
   html[data-effects-quality="medium"] [class*="shadow-[0_"] {
-    box-shadow: none;
+    /* biome-ignore lint/complexity/noImportantStyles: must override Tailwind shadow utilities declared in a later cascade layer */
+    box-shadow: none !important;
   }
 
   html[data-effects-quality="low"] .shadow-lg,
   html[data-effects-quality="low"] .shadow-xl,
   html[data-effects-quality="low"] .shadow-2xl,
-  html[data-effects-quality="low"] [class*="shadow-["] {
-    box-shadow: none;
+  html[data-effects-quality="low"] [class*="shadow-["],
+  [data-navet-effects-quality="low"] .shadow-lg,
+  [data-navet-effects-quality="low"] .shadow-xl,
+  [data-navet-effects-quality="low"] .shadow-2xl,
+  [data-navet-effects-quality="low"] [class*="shadow-["] {
+    /* biome-ignore lint/complexity/noImportantStyles: must override Tailwind shadow utilities declared in a later cascade layer */
+    box-shadow: none !important;
   }
 
   html[data-effects-quality="medium"] .room-nav-shell.is-stuck,
   html[data-effects-quality="low"] .room-nav-shell.is-stuck {
-    box-shadow: none;
+    /* biome-ignore lint/complexity/noImportantStyles: must override the sticky navigation shadow utility */
+    box-shadow: none !important;
   }
 
   html[data-effects-quality="medium"] [data-ambient-light-bleed="true"],
-  html[data-effects-quality="low"] [data-ambient-light-bleed="true"] {
-    display: none;
+  html[data-effects-quality="low"] [data-ambient-light-bleed="true"],
+  [data-navet-effects-quality="low"] [data-ambient-light-bleed="true"] {
+    /* biome-ignore lint/complexity/noImportantStyles: must override any display utility on the decorative layer */
+    display: none !important;
   }
 }
 
@@ -840,6 +875,15 @@
   }
 
   html[data-effects-quality='low'] .navet-light-card-color-cycle-effect {
+    display: none;
+  }
+
+  [data-navet-effects-quality='low'] .navet-light-effect-beam::before {
+    animation: none;
+    opacity: 0;
+  }
+
+  [data-navet-effects-quality='low'] .navet-light-card-color-cycle-effect {
     display: none;
   }
 

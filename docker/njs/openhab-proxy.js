@@ -1,67 +1,102 @@
-import fs from 'fs';
+import openHABStoreModule from './openhab-store.js';
+import providerSessionModule from './provider-session-store.js';
 
-const OPENHAB_PATH = '/data/navet-openhab-session.json';
 const PROXY_PREFIX = '/__navet_openhab_proxy__';
+const getHeader = providerSessionModule.getHeader;
+const isStrictSameOriginMutation = providerSessionModule.isStrictSameOriginMutation;
 
-function isValidOpenHABSession(value) {
-  return (
-    value &&
-    typeof value.hassUrl === 'string' &&
-    /^https?:\/\//.test(value.hassUrl) &&
-    typeof value.username === 'string' &&
-    value.username.trim().length > 0 &&
-    typeof value.password === 'string' &&
-    value.password.length > 0
-  );
-}
-
-function normalizeBaseUrl(value) {
-  if (typeof value !== 'string' || !/^https?:\/\//.test(value)) {
+function resolveAllowedSuffix(r) {
+  const requestUri = String((r && r.variables && r.variables.request_uri) || '');
+  const separator = requestUri.indexOf('?');
+  const rawPath = separator === -1 ? requestUri : requestUri.slice(0, separator);
+  const query = separator === -1 ? '' : requestUri.slice(separator + 1);
+  if (/%25/i.test(rawPath)) {
+    // Reject nested percent-encoding before decoding once. Item names do not
+    // require literal percent bytes, while traversal and query delimiters do.
     return '';
   }
-
-  return value.replace(/\/+$/, '');
-}
-
-function readStoredSession() {
+  let path;
   try {
-    const content = fs.readFileSync(OPENHAB_PATH, 'utf8');
-    const parsed = JSON.parse(content);
-    return isValidOpenHABSession(parsed) ? parsed : null;
+    path = decodeURIComponent(rawPath);
   } catch (_error) {
-    return null;
+    return '';
   }
-}
-
-function stripProxyPrefix(requestUri) {
-  const parts = String(requestUri || '').split('?');
-  const path = parts.length > 0 ? parts[0] : '';
-  const query = parts.length > 1 && parts[1] ? '?' + parts[1] : '';
-  const hasPrefix = path.indexOf(PROXY_PREFIX) === 0;
-  const proxiedPath = hasPrefix ? path.slice(PROXY_PREFIX.length) || '/' : path;
-  return proxiedPath + query;
-}
-
-function upstream_url(r) {
-  const session = readStoredSession();
-  const baseUrl = session ? normalizeBaseUrl(session.hassUrl) : '';
-  if (!baseUrl) {
+  if (
+    rawPath.indexOf(PROXY_PREFIX) !== 0 ||
+    path.includes('..') ||
+    path.includes('\\')
+  ) {
     return '';
   }
 
-  return baseUrl + stripProxyPrefix(r.variables.request_uri);
-}
-
-function authorization_header(_r) {
-  const session = readStoredSession();
-  if (!session) {
-    return '';
+  const suffix = path.slice(PROXY_PREFIX.length) || '/';
+  if (r.method === 'GET' && suffix === '/rest/items' && query === 'recursive=false') {
+    return '/rest/items?recursive=false';
   }
 
-  return 'Basic ' + Buffer.from(session.username + ':' + session.password).toString('base64');
+  if (
+    r.method === 'POST' &&
+    /^\/rest\/items\/[A-Za-z0-9_]+$/.test(suffix) &&
+    !query &&
+    isStrictSameOriginMutation(r)
+  ) {
+    return suffix;
+  }
+
+  if (
+    r.method === 'GET' &&
+    suffix === '/ws' &&
+    !query &&
+    isStrictSameOriginMutation(r) &&
+    getHeader(r.headersIn, 'Upgrade').toLowerCase() === 'websocket' &&
+    getHeader(r.headersIn, 'Connection').toLowerCase().includes('upgrade')
+  ) {
+    return '/ws';
+  }
+
+  return '';
 }
+
+function createOpenHABProxy(sessionStore) {
+  function resolveTarget(r) {
+    const context = sessionStore.resolveOpenHABSession(r);
+    const suffix = resolveAllowedSuffix(r);
+    const baseUrl =
+      context && openHABStoreModule.normalizeOpenHABBaseUrl(context.session.hassUrl);
+    return context && suffix && baseUrl
+      ? { context: context, target: baseUrl + suffix }
+      : null;
+  }
+
+  function upstreamUrl(r) {
+    const resolved = resolveTarget(r);
+    return resolved ? resolved.target : '';
+  }
+
+  function authorizationHeader(r) {
+    const resolved = resolveTarget(r);
+    if (!resolved) {
+      return '';
+    }
+
+    return (
+      'Basic ' +
+      Buffer.from(
+        resolved.context.session.username + ':' + resolved.context.session.password
+      ).toString('base64')
+    );
+  }
+
+  return {
+    authorization_header: authorizationHeader,
+    upstream_url: upstreamUrl,
+  };
+}
+
+const openHABProxy = createOpenHABProxy(openHABStoreModule);
 
 export default {
-  authorization_header,
-  upstream_url,
+  authorization_header: openHABProxy.authorization_header,
+  createOpenHABProxy,
+  upstream_url: openHABProxy.upstream_url,
 };

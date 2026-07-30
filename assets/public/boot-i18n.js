@@ -11,7 +11,7 @@
     zh: '正在启动你的智能家居仪表板',
   };
 
-  function resolveLanguage() {
+  function loadSettingsState() {
     try {
       let raw = localStorage.getItem(SETTINGS_KEY);
       const legacyRaw = localStorage.getItem(LEGACY_SETTINGS_KEY);
@@ -26,17 +26,22 @@
 
       if (raw) {
         const parsed = JSON.parse(raw);
-        const language =
-          parsed &&
-          parsed.state &&
-          typeof parsed.state.language === 'string' &&
-          parsed.state.language;
-        if (language && BOOT_COPY_BY_LANGUAGE[language]) {
-          return language;
+        if (parsed && parsed.state && typeof parsed.state === 'object') {
+          return parsed.state;
         }
       }
     } catch (_) {
-      // Ignore and fallback to browser language.
+      // Ignore unavailable or damaged browser storage.
+    }
+
+    return {};
+  }
+
+  function resolveLanguage(settings) {
+    const configuredLanguage =
+      typeof settings.language === 'string' ? settings.language : '';
+    if (configuredLanguage && BOOT_COPY_BY_LANGUAGE[configuredLanguage]) {
+      return configuredLanguage;
     }
 
     const navigatorLanguage =
@@ -46,7 +51,47 @@
     return BOOT_COPY_BY_LANGUAGE[navigatorLanguage] ? navigatorLanguage : 'en';
   }
 
-  const language = resolveLanguage();
+  function isArmLinuxBrowser() {
+    const identity = [navigator.platform, navigator.userAgent].filter(Boolean).join(' ');
+    return (
+      /\blinux\b/i.test(identity) &&
+      /\b(?:aarch64|arm64|armv\d+l?|arm)\b/i.test(identity) &&
+      !/\bandroid\b/i.test(identity)
+    );
+  }
+
+  function applyBootVisualQuality(settings) {
+    const configuredQuality =
+      settings.effectsQuality === 'low' ||
+      settings.effectsQuality === 'medium' ||
+      settings.effectsQuality === 'high'
+        ? settings.effectsQuality
+        : 'high';
+    const autoLowPower =
+      settings.effectsQualityUserOverride !== true && isArmLinuxBrowser();
+    const reducedByLegacyMode =
+      settings.lowPowerMode === true && configuredQuality === 'high';
+    const effectsQuality =
+      autoLowPower || reducedByLegacyMode ? 'low' : configuredQuality;
+    const reducedMotion =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const noAnimation =
+      settings.disableAnimations === true ||
+      effectsQuality === 'low' ||
+      reducedMotion;
+    const root = document.documentElement;
+
+    root.dataset.effectsQuality = effectsQuality;
+    root.dataset.lowPower = effectsQuality === 'low' ? 'true' : 'false';
+    root.dataset.noAnimation = noAnimation ? 'true' : 'false';
+    root.dataset.reducedMotion = reducedMotion ? 'true' : 'false';
+  }
+
+  const settings = loadSettingsState();
+  applyBootVisualQuality(settings);
+
+  const language = resolveLanguage(settings);
   const copyNode = document.getElementById('app-boot-copy');
   if (copyNode) {
     copyNode.textContent = BOOT_COPY_BY_LANGUAGE[language] || BOOT_COPY_BY_LANGUAGE.en;

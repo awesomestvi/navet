@@ -2,24 +2,37 @@ import { isAllRooms } from '@navet/app/constants/rooms';
 import type { PlatformRoom } from '@navet/app/platform/types';
 import { useMemo } from 'react';
 
-function countItemsByRoom(rooms: PlatformRoom[]) {
-  const counts = new Map<string, number>();
+function serializeItemCountsByRoom(rooms: PlatformRoom[]) {
+  return JSON.stringify(
+    rooms.flatMap((room) =>
+      !room.name || isAllRooms(room.name)
+        ? []
+        : ([[room.name, room.canonicalMemberIds.length]] satisfies Array<[string, number]>)
+    )
+  );
+}
 
-  for (const room of rooms) {
-    if (!room.name || isAllRooms(room.name)) {
-      continue;
-    }
-
-    counts.set(room.name, room.canonicalMemberIds.length);
-  }
-
-  return counts;
+function deserializeItemCountsByRoom(serializedCounts: string) {
+  return new Map<string, number>(
+    JSON.parse(serializedCounts) as Array<[room: string, count: number]>
+  );
 }
 
 export function useDashboardRoomCounts(allRooms: PlatformRoom[], visibleRooms: PlatformRoom[]) {
-  const roomItemCounts = useMemo(() => countItemsByRoom(allRooms), [allRooms]);
+  const roomItemCountsKey = useMemo(() => serializeItemCountsByRoom(allRooms), [allRooms]);
+  const roomItemCounts = useMemo(
+    () => deserializeItemCountsByRoom(roomItemCountsKey),
+    [roomItemCountsKey]
+  );
 
-  const visibleRoomItemCounts = useMemo(() => countItemsByRoom(visibleRooms), [visibleRooms]);
+  const visibleRoomItemCountsKey = useMemo(
+    () => serializeItemCountsByRoom(visibleRooms),
+    [visibleRooms]
+  );
+  const visibleRoomItemCounts = useMemo(
+    () => deserializeItemCountsByRoom(visibleRoomItemCountsKey),
+    [visibleRoomItemCountsKey]
+  );
 
   const roomHiddenItemCounts = useMemo(() => {
     const counts = new Map<string, number>();

@@ -1365,6 +1365,8 @@ export const frMessages = {
     'Le tableau de bord partagé doit être restauré. Les réglages locaux de ce tableau de bord ont été conservés.',
   'dashboard.profileSync.unavailable':
     'La synchronisation du tableau de bord partagé est indisponible. Les réglages locaux sont conservés.',
+  'dashboard.profileSync.tenantMismatch':
+    'Ce tableau de bord partagé appartient à une autre adresse Home Assistant. Connectez-vous avec la même adresse Home Assistant que celle utilisée pour configurer cette installation Navet. Les réglages locaux sont conservés.',
   'dashboard.profileSync.unauthorized':
     'Reconnectez-vous pour continuer à synchroniser le tableau de bord partagé. Les réglages locaux sont conservés.',
   'dashboard.profileSync.saveFailed':

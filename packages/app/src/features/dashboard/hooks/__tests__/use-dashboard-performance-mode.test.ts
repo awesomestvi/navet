@@ -61,6 +61,9 @@ describe('useDashboardPerformanceMode helpers', () => {
       effectiveEffectsQuality: 'low',
       reducePolling: true,
       allowBackdropBlur: false,
+      optimizeOffscreenPaint: true,
+      progressiveBatchInitialCount: 2,
+      progressiveBatchSize: 2,
     });
   });
 
@@ -119,7 +122,7 @@ describe('useDashboardPerformanceMode helpers', () => {
 
   it('keeps edit mode out of dense performance mode', () => {
     expect(
-      resolveDenseDashboardPerformanceMode({
+      resolveDashboardPerformanceProfile({
         activeSection: 'lights',
         deviceTier: 'low',
         effectsQuality: 'low',
@@ -130,7 +133,10 @@ describe('useDashboardPerformanceMode helpers', () => {
           createDevice(`light.${index}`, 'lights')
         ),
       })
-    ).toBe(false);
+    ).toMatchObject({
+      densePerformanceMode: false,
+      optimizeOffscreenPaint: false,
+    });
   });
 
   it('keeps premium visual features on high-tier hardware with full effects', () => {

@@ -32,6 +32,10 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
+import {
+  useCameraLiveStreamSlot,
+  useRetainedCameraStreamVisibility,
+} from './camera-live-stream-budget';
 import { CameraLiveViewer } from './camera-live-viewer';
 import { CameraSettingsDialog } from './camera-settings-dialog';
 import { CameraStreamPlayer } from './camera-stream-player';
@@ -128,7 +132,10 @@ function useCameraCardVisibility() {
       ([entry]) => {
         setIsVisible(entry?.isIntersecting ?? true);
       },
-      { threshold: 0.1 }
+      {
+        rootMargin: '240px 0px',
+        threshold: 0.01,
+      }
     );
 
     observer.observe(element);
@@ -192,6 +199,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const [isStreamReady, setIsStreamReady] = useState(false);
   const streamRetryTimeoutRef = useRef<number | null>(null);
   const { cardRef, isVisible } = useCameraCardVisibility();
+  const isStreamVisibilityRetained = useRetainedCameraStreamVisibility(isVisible);
   const now = useCameraClock(isVisible || isViewerOpen);
 
   const liveAttrs = liveEntity?.attributes as Record<string, unknown> | undefined;
@@ -474,8 +482,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   }, [id, liveState.motionDetectionEnabled, playbackModel?.motionDetectionEnabled]);
 
   const imageUrl = playbackModel?.snapshotResource?.url ?? snapshotUrl;
-  const streamKind = playbackModel?.selectedTransport ?? 'snapshot';
-  const streamLabelOverride = isStreamReadinessOpaque
+  const selectedStreamLabelOverride = isStreamReadinessOpaque
     ? t('camera.settings.webRtcStreamSource.direct')
     : isDirectStreamResource
       ? t('camera.settings.webRtcStreamSource.direct')
@@ -484,11 +491,33 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     isDirectCameraStreamSource(cameraWebRtcStreamSource) &&
     cameraDirectStreamUrl.trim().length > 0 &&
     (directStreamFailed || normalizeCameraDirectStreamUrl(cameraDirectStreamUrl) === null);
-  // Keep live streams mounted on the card even if intersection callbacks flap during layout churn.
-  const shouldRenderLiveStream = playbackModel?.selectedTransport ?? null;
+  const selectedLiveStream = playbackModel?.selectedTransport ?? null;
+  const maxConcurrentDashboardStreams =
+    performanceProfile.effectiveEffectsQuality === 'low'
+      ? 1
+      : performanceProfile.effectiveEffectsQuality === 'medium'
+        ? 2
+        : Number.POSITIVE_INFINITY;
+  const hasLiveStreamSlot = useCameraLiveStreamSlot({
+    enabled: Boolean(selectedLiveStream) && isStreamVisibilityRetained && !isViewerOpen,
+    isVisible,
+    maxConcurrent: maxConcurrentDashboardStreams,
+  });
+  const shouldRenderLiveStream = hasLiveStreamSlot ? selectedLiveStream : null;
+  const streamKind = shouldRenderLiveStream ?? 'snapshot';
+  const streamLabelOverride = shouldRenderLiveStream ? selectedStreamLabelOverride : undefined;
+  const isDashboardStreamReadinessOpaque =
+    Boolean(shouldRenderLiveStream) && isStreamReadinessOpaque;
   const loadingLabel = t('camera.loadingFeed');
   const webRtcTitle = t('camera.webRtcStreamTitle');
   const handleStreamLoad = useCallback(() => setIsStreamReady(true), []);
+
+  useEffect(() => {
+    if (!shouldRenderLiveStream) {
+      setIsStreamReady(false);
+    }
+  }, [shouldRenderLiveStream]);
+
   const streamElement = useMemo(() => {
     if (!shouldRenderLiveStream) {
       return undefined;
@@ -546,7 +575,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
         streamKind={streamKind}
         streamLabelOverride={streamLabelOverride}
         isStreamReady={isStreamReady}
-        isStreamReadinessOpaque={isStreamReadinessOpaque}
+        isStreamReadinessOpaque={isDashboardStreamReadinessOpaque}
         isStreamFallback={playbackModel?.isSnapshotFallback ?? false}
         onRefresh={handleRefresh}
         onImageError={() => undefined}

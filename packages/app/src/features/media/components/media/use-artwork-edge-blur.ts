@@ -6,6 +6,7 @@ type EdgeSide = 'top' | 'right' | 'bottom' | 'left';
 interface ArtworkEdgeAnalysisOptions {
   matchColor?: string | null;
   preferEdge?: EdgeSide;
+  enabled?: boolean;
 }
 
 interface ArtworkEdgeAnalysis {
@@ -14,6 +15,13 @@ interface ArtworkEdgeAnalysis {
   edgeMatchesSurface: boolean;
   preferredEdgeColor: string | null;
 }
+
+const DISABLED_ARTWORK_EDGE_ANALYSIS: ArtworkEdgeAnalysis = {
+  shouldBlur: false,
+  shouldFadeEdge: false,
+  edgeMatchesSurface: false,
+  preferredEdgeColor: null,
+};
 
 function getColorDistance(
   first: [number, number, number],
@@ -262,9 +270,14 @@ export function useArtworkEdgeBlur(
   });
   const matchColor = options?.matchColor ?? null;
   const preferEdge = options?.preferEdge;
+  const enabled = options?.enabled ?? true;
   const cacheKey = [artwork ?? '', preferEdge ?? '', matchColor ?? ''].join('::');
 
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
     if (!artwork) {
       setAnalysis({
         shouldBlur: true,
@@ -308,7 +321,7 @@ export function useArtworkEdgeBlur(
     return () => {
       cancelled = true;
     };
-  }, [artwork, cacheKey, matchColor, preferEdge]);
+  }, [artwork, cacheKey, enabled, matchColor, preferEdge]);
 
-  return analysis;
+  return enabled ? analysis : DISABLED_ARTWORK_EDGE_ANALYSIS;
 }

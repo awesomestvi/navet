@@ -82,8 +82,11 @@ function isActiveRoutine(routine: { enabled?: boolean; state: string }) {
   );
 }
 
-export function shouldSubscribeTaskRoutines(activeSection: DashboardController['activeSection']) {
-  return activeSection === 'home' || activeSection === 'tasks' || activeSection === 'lights';
+export function shouldSubscribeTaskRoutines(
+  activeSection: DashboardController['activeSection'],
+  showSummaryBar: boolean
+) {
+  return activeSection === 'lights' || (activeSection === 'home' && showSummaryBar);
 }
 
 function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterProps) {
@@ -103,7 +106,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   const customSidebarActions = useSettingsStore(settingsSelectors.customSidebarActions);
   const temperatureUnit = useSettingsStore(settingsSelectors.temperatureUnit);
   const routines = useTaskRoutines({
-    enabled: shouldSubscribeTaskRoutines(controller.activeSection),
+    enabled: shouldSubscribeTaskRoutines(controller.activeSection, showSummaryBar),
   });
   const [isAddLightEntityDialogOpen, setIsAddLightEntityDialogOpen] = useState(false);
   const [isAddClimateEntityDialogOpen, setIsAddClimateEntityDialogOpen] = useState(false);
@@ -384,6 +387,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                       allowEntityRemoval
                       usesHideAction
                       densePerformanceMode={controller.densePerformanceMode}
+                      optimizeOffscreenPaint={controller.optimizeOffscreenPaint}
                       getDeviceHeaderSubtitle={getDeviceRoomLabel}
                     />
                   </section>
@@ -606,6 +610,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                 allowEntityRemoval
                 usesHideAction
                 densePerformanceMode={controller.densePerformanceMode}
+                optimizeOffscreenPaint={controller.optimizeOffscreenPaint}
               />
             </SummaryBarStack>
           </RenderProfiler>
@@ -698,6 +703,7 @@ function areDashboardSectionRouterPropsEqual(
     previousController.cardOrders === nextController.cardOrders &&
     previousController.cardSizes === nextController.cardSizes &&
     previousController.changeRoom === nextController.changeRoom &&
+    previousController.handleAddEntity === nextController.handleAddEntity &&
     previousController.handleApplyDashboardPack === nextController.handleApplyDashboardPack &&
     previousController.handleDeleteCard === nextController.handleDeleteCard &&
     previousController.handleRemoveEntity === nextController.handleRemoveEntity &&
@@ -705,6 +711,8 @@ function areDashboardSectionRouterPropsEqual(
     previousController.hiddenEntityIds === nextController.hiddenEntityIds &&
     previousController.hiddenRoomNames === nextController.hiddenRoomNames &&
     previousController.isEditMode === nextController.isEditMode &&
+    previousController.lightDeviceMap === nextController.lightDeviceMap &&
+    previousController.lightRooms === nextController.lightRooms &&
     previousController.onOpenAddCardDialog === nextController.onOpenAddCardDialog &&
     previousController.onOpenAddEntityDialog === nextController.onOpenAddEntityDialog &&
     previousController.onSetAllViewGrouping === nextController.onSetAllViewGrouping &&
@@ -714,12 +722,14 @@ function areDashboardSectionRouterPropsEqual(
     previousController.roomHiddenItemCounts === nextController.roomHiddenItemCounts &&
     previousController.roomItemCounts === nextController.roomItemCounts &&
     previousController.rooms === nextController.rooms &&
+    previousController.securityAlertCount === nextController.securityAlertCount &&
     previousController.sectionData === nextController.sectionData &&
     previousController.setActiveSection === nextController.setActiveSection &&
     previousController.updateCardSize === nextController.updateCardSize &&
     previousController.availableDeviceMap === nextController.availableDeviceMap &&
     previousController.deviceMap === nextController.deviceMap &&
-    previousController.densePerformanceMode === nextController.densePerformanceMode;
+    previousController.densePerformanceMode === nextController.densePerformanceMode &&
+    previousController.optimizeOffscreenPaint === nextController.optimizeOffscreenPaint;
 
   if (!hasSameCommonFields) {
     return false;

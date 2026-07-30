@@ -197,7 +197,7 @@ function VacuumRobotVisual({
     : 'relative flex h-full min-h-[8rem] items-center justify-center overflow-hidden';
 
   useEffect(() => {
-    if (!isCompact || (!isCleaning && !isReturning)) {
+    if (!isCompact || motionLevel === 'low' || (!isCleaning && !isReturning)) {
       return undefined;
     }
 
@@ -215,7 +215,7 @@ function VacuumRobotVisual({
 
     capturePose();
     return subscribeVisibilityAwareTask(capturePose, 240);
-  }, [isCompact, isCleaning, isReturning]);
+  }, [isCompact, isCleaning, isReturning, motionLevel]);
 
   useLayoutEffect(() => {
     const previousDisplayState = previousDisplayStateRef.current;

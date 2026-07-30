@@ -1,9 +1,6 @@
-import { resolveDashboardPerformanceProfile } from '@navet/app/features/dashboard/hooks/use-dashboard-performance-mode';
+import { useEffectiveEffectsQuality } from '@navet/app/components/shared/theme/effective-effects-quality';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
-import { settingsSelectors } from '@navet/app/stores/selectors';
-import { useSettingsStore } from '@navet/app/stores/settings-store';
-import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { LruCache } from '@navet/app/utils/lru-cache';
 import { useEffect, useState } from 'react';
 import { resolveArtworkPalette } from './media-artwork-palette';
@@ -128,19 +125,7 @@ export function useMediaArtworkColors(
   artworkKey?: string
 ) {
   const [colors, setColors] = useState<MediaArtworkPalette>(FALLBACK_COLORS[theme]);
-  const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
-  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
-  const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
-  const performanceProfile = resolveDashboardPerformanceProfile({
-    activeSection: 'media',
-    deviceTier: detectDeviceTier(),
-    effectsQuality,
-    isEditMode: false,
-    lowPowerMode,
-    reducedEffectsEnabled: disableAnimations || lowPowerMode,
-    visibleCardCount: 1,
-    visibleDevices: [],
-  });
+  const effectsQuality = useEffectiveEffectsQuality();
   const artworkUrl = artworkSource?.url ?? null;
   const requestKey = [entityId, artworkSource?.cacheKey ?? artworkUrl, artworkKey]
     .filter(Boolean)
@@ -157,7 +142,7 @@ export function useMediaArtworkColors(
       };
     }
 
-    if (performanceProfile.effectiveEffectsQuality === 'low') {
+    if (effectsQuality === 'low') {
       setColors(FALLBACK_COLORS[theme]);
       return;
     }
@@ -216,7 +201,7 @@ export function useMediaArtworkColors(
     return () => {
       cancelled = true;
     };
-  }, [artworkSource, artworkUrl, performanceProfile.effectiveEffectsQuality, requestKey, theme]);
+  }, [artworkSource, artworkUrl, effectsQuality, requestKey, theme]);
 
   return colors;
 }

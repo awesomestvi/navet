@@ -1,5 +1,5 @@
 name: Navet Dev
-version: "0.11.0-dev.20260728011218"
+version: "0.11.1-dev.20260730103607"
 slug: navet_dev
 description: Development build of the Navet smart home dashboard
 url: https://github.com/awesomestvi/navet
@@ -22,10 +22,12 @@ options:
   homey_client_id: ""
   homey_client_secret: ""
   homey_redirect_uri: ""
+  allow_insecure_provider_tls: false
 schema:
   dashboard_config_url: str?
   homey_client_id: str?
   homey_client_secret: password?
   homey_redirect_uri: str?
+  allow_insecure_provider_tls: bool
   hass_url: str?
   token: password?

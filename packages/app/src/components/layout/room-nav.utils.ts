@@ -1,4 +1,4 @@
-import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
+import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
 
 export interface RoomNavigationGroup {
   id: string;
@@ -8,7 +8,7 @@ export interface RoomNavigationGroup {
 }
 
 export function getVisibleRoomNavRooms(rooms: string[]): string[] {
-  return [ALL_ROOMS_ID, ...rooms];
+  return [ALL_ROOMS_ID, ...rooms.filter((room) => !isAllRooms(room))];
 }
 
 export function filterHiddenRooms(rooms: string[], hiddenRoomNames: string[]): string[] {

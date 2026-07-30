@@ -21,7 +21,7 @@ import { resolveEffectsQuality } from '@navet/app/utils/effects-quality';
 import { clearViewportCssVars, syncViewportCssVars } from '@navet/app/utils/viewport';
 import type { HassConfig, HassEntities, HassUser } from 'home-assistant-js-websocket';
 import leafletStylesUrl from 'leaflet/dist/leaflet.css?url';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useLayoutEffect } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -162,7 +162,7 @@ function PanelRuntime({ hass }: HomeAssistantPanelProps) {
     };
   }, [accentColor]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.dataset.noAnimation = reducedEffectsEnabled ? 'true' : 'false';
     document.documentElement.dataset.lowPower = reducedEffectsEnabled ? 'true' : 'false';
     document.documentElement.dataset.effectsQuality = resolvedEffectsQuality;

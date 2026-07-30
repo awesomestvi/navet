@@ -44,4 +44,38 @@ describe('useCardOrdering', () => {
 
     expect(dispatchSpy).toHaveBeenCalledTimes(1);
   });
+
+  it('keeps card ordering stable across state-only entity updates', () => {
+    const rooms = ['Kitchen'];
+    const customCards: [] = [];
+    const light = {
+      id: 'home_assistant:light.kitchen',
+      canonicalId: 'home_assistant:light.kitchen',
+      nativeId: 'light.kitchen',
+      providerId: 'home_assistant' as const,
+      name: 'Kitchen Light',
+      room: 'Kitchen',
+      size: 'small' as const,
+      state: true,
+      brightness: 100,
+      temp: 3200,
+    };
+    const { result, rerender } = renderHook(
+      ({ brightness }: { brightness: number }) =>
+        useCardOrdering(
+          {
+            ...createEmptyDeviceCollection(),
+            lights: [{ ...light, brightness }],
+          },
+          rooms,
+          customCards
+        ),
+      { initialProps: { brightness: 100 } }
+    );
+    const firstCardOrders = result.current.cardOrders;
+
+    rerender({ brightness: 35 });
+
+    expect(result.current.cardOrders).toBe(firstCardOrders);
+  });
 });

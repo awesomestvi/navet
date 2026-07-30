@@ -31,6 +31,7 @@ export default defineConfig({
       'packages/**/*.{test,spec}.{ts,tsx}',
       'apps/**/*.{test,spec}.{ts,tsx}',
       'assets/**/*.{test,spec}.{ts,tsx}',
+      'scripts/**/*.{test,spec}.{js,mjs,ts}',
     ],
     setupFiles: [path.resolve(__dirname, './packages/app/src/setupTests.ts')],
     coverage: {

@@ -124,6 +124,26 @@ describe('settings profile scope', () => {
     });
   });
 
+  it('keeps the legacy default high quality on automatic device detection', () => {
+    expect(
+      migrateSettingsPreferenceLayer(
+        {
+          schemaVersion: 0,
+          settings: {
+            effectsQuality: 'high',
+          },
+        },
+        'device'
+      )
+    ).toEqual({
+      schemaVersion: 1,
+      settings: expect.objectContaining({
+        effectsQuality: 'high',
+        effectsQualityUserOverride: false,
+      }),
+    });
+  });
+
   it('redetects effects quality when a device preference remains on Auto', () => {
     const next = applySettingsPreferenceLayer(
       {

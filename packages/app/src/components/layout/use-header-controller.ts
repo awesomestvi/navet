@@ -59,6 +59,7 @@ export function useHeaderController() {
   const { theme, primaryColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
+  const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const user = useIntegrationStore(integrationSelectors.currentUser);
   const shouldResolveAvatarFromProvider = !user?.avatarUrl;
@@ -74,7 +75,9 @@ export function useHeaderController() {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const mobileNotificationButtonRef = useRef<HTMLButtonElement | null>(null);
   const desktopNotificationButtonRef = useRef<HTMLButtonElement | null>(null);
-  const unreadCount = useNotificationBadgeCount({ includeUpdates: !lowPowerMode });
+  const unreadCount = useNotificationBadgeCount({
+    includeUpdates: !lowPowerMode && effectsQuality !== 'low',
+  });
   const { t } = useI18n();
   const headerTitleMode = useSettingsStore(settingsSelectors.headerTitleMode);
   const headerCustomText = useSettingsStore(settingsSelectors.headerCustomText);

@@ -1,7 +1,19 @@
 import { useDeviceCollectionsByKeys, useSearch } from '@navet/app/hooks';
-import { settingsSelectors } from '@navet/app/stores/selectors';
-import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { useDeferredValue, useEffect, useRef, useState } from 'react';
+
+const SEARCH_DEVICE_KEYS = [
+  'lights',
+  'climate',
+  'hvac',
+  'switches',
+  'covers',
+  'locks',
+  'media',
+  'persons',
+  'sensors',
+  'vacuums',
+  'weather',
+] as const;
 
 const DEVICE_GROUPS = [
   { domain: 'light', type: 'lights', deviceKey: 'lights' },
@@ -23,28 +35,11 @@ export function useHeaderSearch() {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
-  const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
-  const shouldLoadDevices =
-    !lowPowerMode || isSearchFocused || isMobileSearchOpen || searchQuery.trim().length > 0;
-  const devices = useDeviceCollectionsByKeys(
-    [
-      'lights',
-      'climate',
-      'hvac',
-      'switches',
-      'covers',
-      'locks',
-      'media',
-      'persons',
-      'sensors',
-      'vacuums',
-      'weather',
-    ],
-    {
-      enabled: shouldLoadDevices,
-      includeFeatureCollections: false,
-    }
-  );
+  const shouldLoadDevices = isSearchFocused || isMobileSearchOpen || searchQuery.trim().length > 0;
+  const devices = useDeviceCollectionsByKeys(SEARCH_DEVICE_KEYS, {
+    enabled: shouldLoadDevices,
+    includeFeatureCollections: false,
+  });
   const deferredDevices = useDeferredValue(devices);
 
   useEffect(() => {

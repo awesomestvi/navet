@@ -524,6 +524,21 @@ describe('DirectGo2RtcCameraPlayer', () => {
     expect(onError).not.toHaveBeenCalled();
   });
 
+  it('stops per-frame callbacks after a decoded-frame counter becomes available', () => {
+    const { onLoad, video } = renderDirectPlayer({ mode: 'web_rtc' });
+    const peerConnection = MockRTCPeerConnection.instances[0];
+    setDecodedVideoEvidence(video, { decodedFrames: 1, height: 720, width: 1280 });
+
+    act(() => {
+      peerConnection?.emitTrack(new MockMediaStreamTrack('video'));
+      deliverNextVideoFrame();
+    });
+
+    expect(onLoad).toHaveBeenCalledTimes(1);
+    expect(requestVideoFrameCallbackMock).toHaveBeenCalledTimes(1);
+    expect(pendingFrameCallbacks.size).toBe(0);
+  });
+
   it('fails a decoded stream when video frames stop even while media time advances', async () => {
     const { onLoad, onError, video } = renderDirectPlayer({ mode: 'web_rtc' });
     const peerConnection = MockRTCPeerConnection.instances[0];

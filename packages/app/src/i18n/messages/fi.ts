@@ -1448,6 +1448,8 @@ export const fiMessages = {
     'Jaettu hallintapaneeli on palautettava. Tämän hallintapaneelin paikalliset asetukset säilytettiin.',
   'dashboard.profileSync.unavailable':
     'Jaetun hallintapaneelin synkronointi ei ole käytettävissä. Paikalliset asetukset säilytetään.',
+  'dashboard.profileSync.tenantMismatch':
+    'Tämä jaettu hallintapaneeli kuuluu toiseen Home Assistant -osoitteeseen. Yhdistä samalla Home Assistant -osoitteella, jota käytettiin tämän Navet-asennuksen määrityksessä. Paikalliset asetukset säilytetään.',
   'dashboard.profileSync.unauthorized':
     'Kirjaudu uudelleen sisään jatkaaksesi jaetun hallintapaneelin synkronointia. Paikalliset asetukset säilytetään.',
   'dashboard.profileSync.saveFailed':

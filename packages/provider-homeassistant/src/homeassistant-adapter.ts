@@ -9,10 +9,7 @@ import type {
 } from '@navet/core/provider-contract';
 import { createSnapshotBackedProviderAdapter } from '@navet/core/snapshot-backed-adapter';
 import type { NavetCommand, NavetEntity, NavetProviderState } from '@navet/core/types';
-import {
-  buildHomeAssistantProviderRooms,
-  mapHomeAssistantEntitiesToNavetEntities,
-} from './homeassistant-mappers';
+import { createHomeAssistantProviderStateMapper } from './homeassistant-mappers';
 import {
   addHomeAssistantListener,
   callHomeAssistantService,
@@ -21,6 +18,7 @@ import {
   isHomeAssistantConnected,
   resolveHomeAssistantArtwork,
   resolveHomeAssistantProxyUrl,
+  subscribeHomeAssistantStoreEntities,
 } from './homeassistant-service-bridge';
 
 const ALARM_COMMAND_SERVICES: Record<
@@ -64,6 +62,8 @@ function buildProviderSession(session: HomeAssistantProviderSessionInput, connec
   };
 }
 
+const mapHomeAssistantProviderState = createHomeAssistantProviderStateMapper();
+
 function getHomeAssistantState(): NavetProviderState {
   const state = getHomeAssistantStoreState();
   const mappingInput = {
@@ -72,14 +72,7 @@ function getHomeAssistantState(): NavetProviderState {
     deviceRegistry: state.deviceRegistry,
     entityRegistry: state.entityRegistry,
   };
-  const entities = mapHomeAssistantEntitiesToNavetEntities(mappingInput);
-
-  return {
-    providerId: 'home_assistant',
-    connected: state.connected,
-    entities,
-    rooms: buildHomeAssistantProviderRooms(mappingInput, entities),
-  };
+  return mapHomeAssistantProviderState(mappingInput, { connected: state.connected });
 }
 
 async function resolveHomeAssistantResource(
@@ -410,7 +403,7 @@ export function createHomeAssistantProviderContract(): NavetProviderContract {
     getState: getHomeAssistantState,
     subscribeState: (listener) => {
       const unsubscribers = [
-        addHomeAssistantListener('entities', listener),
+        subscribeHomeAssistantStoreEntities(listener),
         addHomeAssistantListener('registries', listener),
         addHomeAssistantListener('connection', listener),
       ];

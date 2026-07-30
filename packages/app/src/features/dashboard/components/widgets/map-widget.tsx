@@ -106,6 +106,7 @@ export const MapWidget = memo(function MapWidget({
   );
   const shouldReduceMapEffects = !performanceProfile.allowBackdropBlur;
   const { ref: mapViewportRef, isVisible: isMapVisible } = useDeferredVisibility<HTMLDivElement>({
+    freezeOnceVisible: false,
     rootMargin: '180px 0px',
   });
   const surface = getDashboardWidgetSurfaceTokens(theme, tintColor);
@@ -149,7 +150,7 @@ export const MapWidget = memo(function MapWidget({
         : undefined,
     [surface.panelStyle]
   );
-  const homeAssistantMarkers = useProviderMapMarkers();
+  const homeAssistantMarkers = useProviderMapMarkers(staticMarkers === undefined && isMapVisible);
   const markers = staticMarkers ?? homeAssistantMarkers;
   const stableResolvedMarkersRef = useRef<MapMarker[]>([]);
   const resolvedMarkers = useMemo(() => {

@@ -31,7 +31,7 @@ type DeviceSuppressionIndexes = {
   deviceIdsWithClimateEntity: Set<string>;
   deviceIdsWithFanEntity: Set<string>;
   deviceIdsWithVacuumEntity: Set<string>;
-  primarySwitchCanonicalIdByDeviceId: Map<string, string>;
+  primarySwitchByDeviceId: Map<string, NavetEntity>;
 };
 
 function readEntityState(entity: NavetEntity): EntityStateRecord {
@@ -149,6 +149,25 @@ function isSuppressedEntityCategory(state: EntityStateRecord) {
   return state.entityCategory === 'config' || state.entityCategory === 'diagnostic';
 }
 
+export function hasStableDeviceCollectionMembership(
+  previous: NavetEntity,
+  next: NavetEntity
+): boolean {
+  const previousState = readEntityState(previous);
+  const nextState = readEntityState(next);
+
+  return (
+    previous.canonicalId === next.canonicalId &&
+    previous.providerId === next.providerId &&
+    previous.externalId === next.externalId &&
+    previous.type === next.type &&
+    previous.name === next.name &&
+    readDeviceId(previousState) === readDeviceId(nextState) &&
+    previousState.entityCategory === nextState.entityCategory &&
+    previousState.securityKind === nextState.securityKind
+  );
+}
+
 function hasPrimaryCardType(entity: NavetEntity) {
   return [
     'light',
@@ -201,7 +220,7 @@ function buildDeviceSuppressionIndexes(entities: NavetEntity[]): DeviceSuppressi
     deviceIdsWithClimateEntity: new Set<string>(),
     deviceIdsWithFanEntity: new Set<string>(),
     deviceIdsWithVacuumEntity: new Set<string>(),
-    primarySwitchCanonicalIdByDeviceId: new Map<string, string>(),
+    primarySwitchByDeviceId: new Map<string, NavetEntity>(),
   };
 
   for (const entity of entities) {
@@ -242,22 +261,16 @@ function buildDeviceSuppressionIndexes(entities: NavetEntity[]): DeviceSuppressi
       continue;
     }
 
-    const currentPrimaryId = indexes.primarySwitchCanonicalIdByDeviceId.get(deviceId);
-    if (!currentPrimaryId) {
-      indexes.primarySwitchCanonicalIdByDeviceId.set(deviceId, entity.canonicalId);
-      continue;
-    }
-
-    const currentPrimary = entities.find((candidate) => candidate.canonicalId === currentPrimaryId);
+    const currentPrimary = indexes.primarySwitchByDeviceId.get(deviceId);
     if (!currentPrimary) {
-      indexes.primarySwitchCanonicalIdByDeviceId.set(deviceId, entity.canonicalId);
+      indexes.primarySwitchByDeviceId.set(deviceId, entity);
       continue;
     }
 
     if (
       compareSortKeys(getSwitchPrimarySortKey(entity), getSwitchPrimarySortKey(currentPrimary)) < 0
     ) {
-      indexes.primarySwitchCanonicalIdByDeviceId.set(deviceId, entity.canonicalId);
+      indexes.primarySwitchByDeviceId.set(deviceId, entity);
     }
   }
 
@@ -307,7 +320,7 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
         }
         if (
           deviceId &&
-          indexes.primarySwitchCanonicalIdByDeviceId.get(deviceId) !== entity.canonicalId
+          indexes.primarySwitchByDeviceId.get(deviceId)?.canonicalId !== entity.canonicalId
         ) {
           break;
         }
@@ -354,7 +367,7 @@ export function mapNavetEntitiesToDeviceCollection(entities: NavetEntity[]): Dev
           deviceId &&
           (indexes.deviceIdsWithPrimaryCards.has(deviceId) ||
             indexes.deviceIdsWithSensorCards.has(deviceId)) &&
-          indexes.primarySwitchCanonicalIdByDeviceId.get(deviceId) !== entity.canonicalId
+          indexes.primarySwitchByDeviceId.get(deviceId)?.canonicalId !== entity.canonicalId
         ) {
           break;
         }

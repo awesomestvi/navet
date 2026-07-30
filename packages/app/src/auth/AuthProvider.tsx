@@ -3,12 +3,24 @@ import type {
   IntegrationProviderId,
 } from '@navet/app/types/provider';
 import { INTEGRATION_PROVIDERS } from '@navet/app/types/provider';
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { removeLocalStorageItem } from '../utils/storage';
+import { isInvalidStandaloneOAuthAuthError } from './adapters/standaloneOAuthAuth';
 import {
   type IntegrationSessionSnapshot,
   integrationSessionRuntime,
 } from './integration-session-runtime';
 import type { AuthRuntime } from './runtime';
+import { isDurableAuthSessionUnavailableError } from './session-errors';
+import { dispatchAuthSessionRefreshed } from './session-events';
 import {
   type AuthSession,
   type AuthSessionMap,
@@ -38,29 +50,116 @@ interface AuthContextValue {
   }) => Promise<void>;
   logout: (providerId?: IntegrationProviderId) => Promise<void>;
   refresh: (providerId?: IntegrationProviderId) => Promise<AuthSession | null>;
+  retryInitialization: () => void;
   replaceSession: (session: AuthSession | null) => void;
   setActiveProvider: (providerId: IntegrationProviderId) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const AUTH_REFRESH_EARLY_MS = 60_000;
+const AUTH_REFRESH_MIN_DELAY_MS = 5_000;
+const AUTH_REFRESH_RETRY_DELAYS_MS = [5_000, 15_000, 30_000, 60_000] as const;
+const AUTH_INIT_RETRY_DELAYS_MS = [5_000, 15_000, 30_000, 60_000] as const;
+
+function getAuthErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Authentication expired';
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const runtime = integrationSessionRuntime.getAuthRuntime();
+  const refreshRequests = useRef<
+    Partial<Record<IntegrationProviderId, Promise<AuthSession | null>>>
+  >({});
   const [session, setSession] = useState<AuthSession | null>(null);
   const [snapshot, setSnapshot] = useState<IntegrationSessionSnapshot>(
     integrationSessionRuntime.getSnapshot()
   );
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [initializationAttempt, setInitializationAttempt] = useState(0);
+  const retryInitialization = useCallback(() => {
+    setInitializationAttempt((attempt) => attempt + 1);
+  }, []);
+  const refreshProviderSession = useCallback((providerId: IntegrationProviderId) => {
+    const existingRequest = refreshRequests.current[providerId];
+    if (existingRequest) {
+      return existingRequest;
+    }
+
+    const request = (async () => {
+      const currentSnapshot = integrationSessionRuntime.getSnapshot();
+      const sessionToRefresh = fromProviderSessionInput(currentSnapshot.sessions[providerId]);
+
+      try {
+        const nextSnapshot = await integrationSessionRuntime.refresh(providerId);
+        const nextSession = fromProviderSessionInput(integrationSessionRuntime.getSession());
+        const refreshedSession = fromProviderSessionInput(nextSnapshot.sessions[providerId]);
+        setSnapshot(nextSnapshot);
+        setSession(nextSession);
+        setError(null);
+        if (refreshedSession) {
+          dispatchAuthSessionRefreshed(providerId);
+        }
+        return refreshedSession;
+      } catch (err) {
+        const isStandaloneHomeAssistantSession =
+          sessionToRefresh?.providerId === 'home_assistant' &&
+          sessionToRefresh.runtime === 'standalone-oauth';
+        if (
+          !isStandaloneHomeAssistantSession ||
+          !isInvalidStandaloneOAuthAuthError(err) ||
+          !integrationSessionRuntime.invalidatePersistedSession
+        ) {
+          throw err;
+        }
+
+        try {
+          await integrationSessionRuntime.invalidatePersistedSession('home_assistant');
+        } catch (invalidationError) {
+          setError(getAuthErrorMessage(invalidationError));
+          throw invalidationError;
+        }
+
+        const nextSnapshot = integrationSessionRuntime.getSnapshot();
+        const nextSession = fromProviderSessionInput(integrationSessionRuntime.getSession());
+        const refreshedSession = fromProviderSessionInput(nextSnapshot.sessions[providerId]);
+        setSnapshot(nextSnapshot);
+        setSession(nextSession);
+        setError(nextSession ? null : getAuthErrorMessage(err));
+        if (refreshedSession) {
+          dispatchAuthSessionRefreshed(providerId);
+        }
+        return refreshedSession;
+      }
+    })();
+    refreshRequests.current[providerId] = request;
+    void request.then(
+      () => {
+        if (refreshRequests.current[providerId] === request) {
+          delete refreshRequests.current[providerId];
+        }
+      },
+      () => {
+        if (refreshRequests.current[providerId] === request) {
+          delete refreshRequests.current[providerId];
+        }
+      }
+    );
+    return request;
+  }, []);
 
   useEffect(() => {
-    localStorage.removeItem('ha_auth_config');
-    localStorage.removeItem('ha-dashboard-config');
-    localStorage.removeItem('navet-auth-config');
+    removeLocalStorageItem('ha_auth_config');
+    removeLocalStorageItem('ha-dashboard-config');
+    removeLocalStorageItem('navet-auth-config');
   }, []);
 
   useEffect(() => {
     let cancelled = false;
+    let initInFlight = false;
+    let retryAttempt = 0;
+    let retryPending = false;
+    let retryTimer: number | null = null;
     setReady(false);
     setError(null);
     const unsubscribe = integrationSessionRuntime.subscribe((nextSnapshot, nextSession) => {
@@ -72,55 +171,196 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(fromProviderSessionInput(nextSession));
     });
 
-    void integrationSessionRuntime
-      .init()
-      .then((nextSnapshot) => {
-        if (cancelled) return;
+    function clearRetryTimer() {
+      if (retryTimer !== null) {
+        window.clearTimeout(retryTimer);
+        retryTimer = null;
+      }
+    }
+
+    function scheduleRetry() {
+      const delay =
+        AUTH_INIT_RETRY_DELAYS_MS[Math.min(retryAttempt, AUTH_INIT_RETRY_DELAYS_MS.length - 1)];
+      retryAttempt += 1;
+      retryPending = true;
+      clearRetryTimer();
+      retryTimer = window.setTimeout(() => {
+        retryTimer = null;
+        void initialize();
+      }, delay);
+    }
+
+    async function initialize() {
+      if (cancelled || initInFlight) {
+        return;
+      }
+      if (navigator.onLine === false) {
+        scheduleRetry();
+        return;
+      }
+
+      initInFlight = true;
+      retryPending = false;
+      try {
+        const nextSnapshot = await integrationSessionRuntime.init();
+        if (cancelled) {
+          return;
+        }
         setSnapshot(nextSnapshot);
         setSession(fromProviderSessionInput(integrationSessionRuntime.getSession()));
-      })
-      .catch((err) => {
-        if (cancelled) return;
+        setError(null);
+        setReady(true);
+      } catch (err) {
+        if (cancelled) {
+          return;
+        }
+        if (isDurableAuthSessionUnavailableError(err)) {
+          setError(err.message);
+          setReady(false);
+          scheduleRetry();
+          return;
+        }
         setSession(null);
         setError(err instanceof Error ? err.message : 'Authentication failed');
-      })
-      .finally(() => {
-        if (!cancelled) setReady(true);
-      });
+        setReady(true);
+      } finally {
+        initInFlight = false;
+      }
+    }
+
+    function recoverInitialization() {
+      if (
+        cancelled ||
+        initInFlight ||
+        !retryPending ||
+        navigator.onLine === false ||
+        document.visibilityState !== 'visible'
+      ) {
+        return;
+      }
+      clearRetryTimer();
+      void initialize();
+    }
+
+    void initialize();
+    window.addEventListener('online', recoverInitialization);
+    document.addEventListener('visibilitychange', recoverInitialization);
 
     return () => {
       cancelled = true;
+      clearRetryTimer();
       unsubscribe();
+      window.removeEventListener('online', recoverInitialization);
+      document.removeEventListener('visibilitychange', recoverInitialization);
     };
-  }, []);
+  }, [initializationAttempt]);
+
+  const retainedHomeAssistantSession = fromProviderSessionInput(snapshot.sessions.home_assistant);
 
   useEffect(() => {
-    if (!session?.expiresAt || snapshot.authMode !== 'oauth') {
+    const expiresAt = retainedHomeAssistantSession?.expiresAt;
+    if (
+      !retainedHomeAssistantSession ||
+      typeof expiresAt !== 'number' ||
+      retainedHomeAssistantSession.authMode !== 'oauth'
+    ) {
       return;
     }
 
-    const delay = Math.max(5_000, session.expiresAt - Date.now() - 60_000);
-    const timeoutId = window.setTimeout(() => {
-      void integrationSessionRuntime
-        .refresh()
-        .then((nextSnapshot) => {
-          setSnapshot(nextSnapshot);
-          setSession(fromProviderSessionInput(integrationSessionRuntime.getSession()));
-          setError(null);
-        })
-        .catch(async (err) => {
-          if (session.providerId === 'home_assistant' && session.runtime === 'standalone-oauth') {
-            await Promise.resolve(
-              integrationSessionRuntime.invalidatePersistedSession?.('home_assistant')
-            ).catch(() => undefined);
-          }
-          setSession(null);
-          setError(err instanceof Error ? err.message : 'Authentication expired');
-        });
-    }, delay);
+    const sessionToRefresh = retainedHomeAssistantSession;
+    let cancelled = false;
+    let refreshInFlight = false;
+    let retryPending = false;
+    let retryAttempt = 0;
+    let timeoutId: number | null = null;
+    const refreshDueAt = expiresAt - AUTH_REFRESH_EARLY_MS;
 
-    return () => window.clearTimeout(timeoutId);
-  }, [session, snapshot.authMode]);
+    function clearRefreshTimer() {
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    }
+
+    function scheduleRefresh(delay: number) {
+      clearRefreshTimer();
+      timeoutId = window.setTimeout(() => {
+        timeoutId = null;
+        void refreshSession();
+      }, delay);
+    }
+
+    function scheduleTransientRetry() {
+      const retryDelay =
+        AUTH_REFRESH_RETRY_DELAYS_MS[
+          Math.min(retryAttempt, AUTH_REFRESH_RETRY_DELAYS_MS.length - 1)
+        ];
+      retryAttempt += 1;
+      retryPending = true;
+      scheduleRefresh(retryDelay);
+    }
+
+    async function refreshSession() {
+      if (cancelled || refreshInFlight) {
+        return;
+      }
+      if (navigator.onLine === false) {
+        scheduleTransientRetry();
+        return;
+      }
+
+      refreshInFlight = true;
+      retryPending = false;
+      try {
+        await refreshProviderSession(sessionToRefresh.providerId);
+        if (cancelled) {
+          return;
+        }
+      } catch (err) {
+        if (cancelled) {
+          return;
+        }
+
+        // A timeout, offline browser, network failure, or upstream server error
+        // does not prove that the durable refresh token is invalid. Keep the
+        // current dashboard alive and retry without destroying browser state.
+        setError(getAuthErrorMessage(err));
+        scheduleTransientRetry();
+      } finally {
+        refreshInFlight = false;
+      }
+    }
+
+    function recoverRefresh() {
+      if (
+        cancelled ||
+        refreshInFlight ||
+        navigator.onLine === false ||
+        document.visibilityState !== 'visible' ||
+        (!retryPending && Date.now() < refreshDueAt)
+      ) {
+        return;
+      }
+
+      clearRefreshTimer();
+      void refreshSession();
+    }
+
+    const delay =
+      refreshDueAt <= Date.now()
+        ? 0
+        : Math.max(AUTH_REFRESH_MIN_DELAY_MS, refreshDueAt - Date.now());
+    scheduleRefresh(delay);
+    window.addEventListener('online', recoverRefresh);
+    document.addEventListener('visibilitychange', recoverRefresh);
+
+    return () => {
+      cancelled = true;
+      clearRefreshTimer();
+      window.removeEventListener('online', recoverRefresh);
+      document.removeEventListener('visibilitychange', recoverRefresh);
+    };
+  }, [retainedHomeAssistantSession, refreshProviderSession]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -141,20 +381,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setError(null);
       },
       logout: async (providerId) => {
-        if (!providerId || providerId === session?.providerId) {
-          setSession(null);
-        }
         await integrationSessionRuntime.logout(providerId);
         setSnapshot(integrationSessionRuntime.getSnapshot());
         setSession(fromProviderSessionInput(integrationSessionRuntime.getSession()));
+        setError(null);
       },
       refresh: async (providerId) => {
-        const nextSnapshot = await integrationSessionRuntime.refresh(providerId);
-        const nextSession = fromProviderSessionInput(integrationSessionRuntime.getSession());
-        setSnapshot(nextSnapshot);
-        setSession(nextSession);
-        return nextSession;
+        const currentSnapshot = integrationSessionRuntime.getSnapshot();
+        const targetProviderId = providerId ?? currentSnapshot.providerId;
+        return await refreshProviderSession(targetProviderId);
       },
+      retryInitialization,
       replaceSession: (nextSession) => {
         const nextSnapshot = integrationSessionRuntime.replaceSession(
           toAuthCompatibleSession(nextSession)
@@ -168,7 +405,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(fromProviderSessionInput(integrationSessionRuntime.getSession()));
       },
     }),
-    [runtime, snapshot, session, ready, error]
+    [runtime, snapshot, session, ready, error, retryInitialization, refreshProviderSession]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -24,6 +24,10 @@ export interface BaseAuthSession {
 
 export interface HomeAssistantAuthSession extends BaseAuthSession {
   providerId: 'home_assistant';
+  /** Opaque server-side credential session selected by the HttpOnly browser cookie. */
+  credentialSessionId?: string;
+  /** Compare-before-write revision for standalone OAuth token persistence. */
+  credentialRevision?: number;
 }
 
 export interface HomeyAuthSession extends BaseAuthSession {
@@ -36,8 +40,12 @@ export interface HomeyAuthSession extends BaseAuthSession {
 
 export interface OpenHABAuthSession extends BaseAuthSession {
   providerId: 'openhab';
-  username: string;
-  password: string;
+  /**
+   * Direct openHAB sessions may carry credentials. Same-origin proxied sessions intentionally
+   * omit them because the browser is bound to server-side credentials through an HttpOnly cookie.
+   */
+  username?: string;
+  password?: string;
   proxyBaseUrl?: string;
 }
 
@@ -68,7 +76,7 @@ export interface AuthAdapter {
     providerId?: IntegrationProviderId;
   }): Promise<AuthSession>;
   refresh?(session: AuthSession): Promise<AuthSession>;
-  invalidatePersistedSession?(session: AuthSession): Promise<void>;
+  invalidatePersistedSession?(session: AuthSession): Promise<AuthSession | undefined>;
   logout?(): Promise<void>;
 }
 

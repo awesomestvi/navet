@@ -2,9 +2,9 @@ import { integrationStore } from '@navet/app/stores/integration-store';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { renderHookWithProviders, renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
-import { screen } from '@testing-library/react';
+import { act, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderCard, useAvailabilityEntitiesForCard } from '../card-renderer';
+import { renderCard, useCardIsUnavailable } from '../card-renderer';
 
 vi.mock('@navet/app/features/security', () => ({
   CameraCard: ({ id }: { id: string }) => <div data-testid="camera-card">{id}</div>,
@@ -71,11 +71,10 @@ describe('card availability lookup', () => {
     let renderCount = 0;
     const { result } = renderHookWithProviders(() => {
       renderCount += 1;
-      return useAvailabilityEntitiesForCard(['camera.front_door'], 'home_assistant');
+      return useCardIsUnavailable(['camera.front_door'], 'home_assistant');
     });
 
-    const initialEntity = result.current['camera.front_door'];
-    expect(initialEntity?.canonicalId).toBe('home_assistant:camera.front_door');
+    expect(result.current).toBe(true);
 
     integrationStore.setState({
       ...integrationStore.getState(),
@@ -109,7 +108,92 @@ describe('card availability lookup', () => {
     });
 
     expect(renderCount).toBe(1);
-    expect(result.current['camera.front_door']).toBe(initialEntity);
+    expect(result.current).toBe(true);
+  });
+
+  it('updates a grouped-source card only when the combined unavailable state changes', () => {
+    const entityIds = ['binary_sensor.front_door', 'binary_sensor.back_door'];
+    integrationStore.setState({
+      ...integrationStore.getState(),
+      currentProviderId: 'home_assistant',
+      providerEntitiesByProviderId: {
+        ...integrationStore.getState().providerEntitiesByProviderId,
+        home_assistant: {
+          'home_assistant:binary_sensor.front_door': {
+            id: 'home_assistant:binary_sensor.front_door',
+            canonicalId: 'home_assistant:binary_sensor.front_door',
+            providerId: 'home_assistant',
+            externalId: 'binary_sensor.front_door',
+            type: 'binary_sensor',
+            name: 'Front Door',
+            room: 'Entry',
+            primaryState: 'unavailable',
+            availability: 'unavailable',
+            capabilities: [],
+            attributes: {},
+          },
+          'home_assistant:binary_sensor.back_door': {
+            id: 'home_assistant:binary_sensor.back_door',
+            canonicalId: 'home_assistant:binary_sensor.back_door',
+            providerId: 'home_assistant',
+            externalId: 'binary_sensor.back_door',
+            type: 'binary_sensor',
+            name: 'Back Door',
+            room: 'Entry',
+            primaryState: 'off',
+            availability: 'available',
+            capabilities: [],
+            attributes: {},
+          },
+        },
+      },
+      providerEntityLookupByProviderId: {
+        ...integrationStore.getState().providerEntityLookupByProviderId,
+        home_assistant: {
+          'binary_sensor.front_door': 'home_assistant:binary_sensor.front_door',
+          'binary_sensor.back_door': 'home_assistant:binary_sensor.back_door',
+        },
+      },
+    });
+
+    let renderCount = 0;
+    const { result } = renderHookWithProviders(() => {
+      renderCount += 1;
+      return useCardIsUnavailable(entityIds, 'home_assistant');
+    });
+
+    expect(result.current).toBe(false);
+
+    act(() => {
+      integrationStore.setState({
+        ...integrationStore.getState(),
+        providerEntitiesByProviderId: {
+          ...integrationStore.getState().providerEntitiesByProviderId,
+          home_assistant: {
+            ...(integrationStore.getState().providerEntitiesByProviderId.home_assistant ?? {}),
+            'home_assistant:binary_sensor.back_door': {
+              ...(integrationStore.getState().providerEntitiesByProviderId.home_assistant?.[
+                'home_assistant:binary_sensor.back_door'
+              ] ?? {}),
+              id: 'home_assistant:binary_sensor.back_door',
+              canonicalId: 'home_assistant:binary_sensor.back_door',
+              providerId: 'home_assistant',
+              externalId: 'binary_sensor.back_door',
+              type: 'binary_sensor',
+              name: 'Back Door',
+              room: 'Entry',
+              primaryState: 'unavailable',
+              availability: 'unavailable',
+              capabilities: [],
+              attributes: {},
+            },
+          },
+        },
+      });
+    });
+
+    expect(result.current).toBe(true);
+    expect(renderCount).toBe(2);
   });
 
   it('renders alarm control panel sensors with the security panel card', async () => {

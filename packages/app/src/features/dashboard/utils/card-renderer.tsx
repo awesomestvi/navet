@@ -15,16 +15,16 @@ import type { SensorReading } from '@navet/app/features/sensors/components/senso
 import type { VacuumStatus } from '@navet/app/features/vacuum/components/vacuum/vacuum-utils';
 import { isLawnMowerEntityId } from '@navet/app/features/vacuum/components/vacuum/vacuum-utils';
 import { useI18n, useIntegrationStore } from '@navet/app/hooks';
+import type { IntegrationStore } from '@navet/app/stores/integration-store';
 import { integrationSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceMetric } from '@navet/app/types/device.types';
 import { type IntegrationProviderId, isIntegrationProviderId } from '@navet/app/types/provider';
 import { resolveEffectsQuality } from '@navet/app/utils/effects-quality';
 import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
-import { areRecordValuesEqual } from '@navet/app/utils/structural-equality';
 import type { NavetAlarmEntity } from '@navet/core/alarm-types';
 import type { NavetEntity } from '@navet/core/types';
-import { lazy, type ReactElement, type ReactNode, Suspense, useMemo } from 'react';
+import { lazy, type ReactElement, type ReactNode, Suspense, useCallback, useMemo } from 'react';
 
 interface DeviceData {
   id: string;
@@ -152,9 +152,7 @@ function readUnavailableState(device: DeviceData): string | undefined {
   return undefined;
 }
 
-function readProviderEntityStateValue(
-  entity: NonNullable<ReturnType<typeof resolveAvailabilityEntity>>
-): string | undefined {
+function readProviderEntityStateValue(entity: NavetEntity): string | undefined {
   switch (entity.type) {
     case 'camera':
       return readNavetCameraState(entity)?.value;
@@ -191,11 +189,17 @@ function resolveAvailabilityProviderId(
   return parseProviderScopedId(deviceId)?.providerId ?? currentProviderId;
 }
 
-function resolveAvailabilityEntity(
-  deviceId: string,
-  availabilityEntitiesById: Record<string, NavetEntity | null>
+function getProviderEntityByLookup(
+  state: IntegrationStore,
+  providerId: IntegrationProviderId,
+  entityId: string
 ): NavetEntity | null {
-  return availabilityEntitiesById[deviceId] ?? null;
+  const entities = state.providerEntitiesByProviderId[providerId] ?? {};
+  const canonicalId =
+    entities[entityId]?.canonicalId ??
+    state.providerEntityLookupByProviderId[providerId]?.[entityId];
+
+  return canonicalId ? (entities[canonicalId] ?? null) : null;
 }
 
 function readAlarmEntityFromCardDevice(device: DeviceData): NavetAlarmEntity | null {
@@ -238,23 +242,39 @@ function readAlarmEntityFromCardDevice(device: DeviceData): NavetAlarmEntity | n
   };
 }
 
-export function useAvailabilityEntitiesForCard(
-  entityIds: string[],
-  currentProviderId: ReturnType<typeof integrationSelectors.currentProviderId>
+export function selectCardIsUnavailable(
+  state: IntegrationStore,
+  entityIds: readonly string[],
+  currentProviderId: ReturnType<typeof integrationSelectors.currentProviderId>,
+  fallbackState?: string
 ) {
-  return useIntegrationStore(
-    (state) =>
-      Object.fromEntries(
-        entityIds.map((entityId) => {
-          const providerId = resolveAvailabilityProviderId(entityId, currentProviderId);
-          return [
-            entityId,
-            integrationSelectors.providerEntityByLookup(providerId, entityId)(state),
-          ];
-        })
-      ) as Record<string, NavetEntity | null>,
-    areRecordValuesEqual
+  if (entityIds.length === 0) {
+    return false;
+  }
+
+  return entityIds.every((entityId) => {
+    const providerId = resolveAvailabilityProviderId(entityId, currentProviderId);
+    const providerEntity = getProviderEntityByLookup(state, providerId, entityId);
+    const entityState = providerEntity
+      ? readProviderEntityStateValue(providerEntity)
+      : fallbackState;
+
+    return entityState === 'unavailable';
+  });
+}
+
+export function useCardIsUnavailable(
+  entityIds: readonly string[],
+  currentProviderId: ReturnType<typeof integrationSelectors.currentProviderId>,
+  fallbackState?: string
+) {
+  const selectUnavailable = useCallback(
+    (state: IntegrationStore) =>
+      selectCardIsUnavailable(state, entityIds, currentProviderId, fallbackState),
+    [currentProviderId, entityIds, fallbackState]
   );
+
+  return useIntegrationStore(selectUnavailable, Object.is);
 }
 
 function EntityAvailabilityFrame({
@@ -275,29 +295,24 @@ function EntityAvailabilityFrame({
   const shouldReducePaintEffects = resolveEffectsQuality(effectsQuality, lowPowerMode) !== 'high';
   const isTinyAvailabilityCard = size === 'tiny';
   const isCompactAvailabilityCard = isTinyAvailabilityCard || size === 'extra-small';
-  const entityIds = useMemo(() => {
-    const sourceIds = device.sourceIds;
-    if (Array.isArray(sourceIds) && sourceIds.every((value) => typeof value === 'string')) {
-      return sourceIds;
-    }
+  const entityIdsKey = JSON.stringify(
+    (() => {
+      const sourceIds = device.sourceIds;
+      if (Array.isArray(sourceIds) && sourceIds.every((value) => typeof value === 'string')) {
+        return sourceIds;
+      }
 
-    return typeof device.id === 'string' ? [device.id] : [];
-  }, [device]);
-  const availabilityEntitiesById = useAvailabilityEntitiesForCard(entityIds, currentProviderId);
-  const entityStates = useMemo(
-    () =>
-      entityIds.map((entityId) => {
-        const providerEntity = resolveAvailabilityEntity(entityId, availabilityEntitiesById);
-        return providerEntity
-          ? readProviderEntityStateValue(providerEntity)
-          : readUnavailableState(device);
-      }),
-    [availabilityEntitiesById, device, entityIds]
+      return typeof device.id === 'string' ? [device.id] : [];
+    })()
   );
-  const isUnavailable =
-    entityIds.length > 0 &&
-    entityStates.length === entityIds.length &&
-    entityStates.every((state) => state === 'unavailable');
+  const entityIds = useMemo(() => {
+    return JSON.parse(entityIdsKey) as string[];
+  }, [entityIdsKey]);
+  const isUnavailable = useCardIsUnavailable(
+    entityIds,
+    currentProviderId,
+    readUnavailableState(device)
+  );
   const usesDedicatedUnavailableState = device.type === 'cameras';
 
   if (!isUnavailable || usesDedicatedUnavailableState) {

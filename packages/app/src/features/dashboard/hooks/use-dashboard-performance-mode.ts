@@ -203,9 +203,9 @@ export function resolveDashboardPerformanceProfile({
       effectiveEffectsQuality !== 'high' ||
       (deviceTier !== 'high' && visibleCardCount >= 8),
     progressiveBatchInitialCount:
-      effectiveEffectsQuality === 'high' ? 10 : effectiveEffectsQuality === 'medium' ? 8 : 6,
+      effectiveEffectsQuality === 'high' ? 10 : effectiveEffectsQuality === 'medium' ? 6 : 2,
     progressiveBatchSize:
-      effectiveEffectsQuality === 'high' ? 10 : effectiveEffectsQuality === 'medium' ? 8 : 6,
+      effectiveEffectsQuality === 'high' ? 10 : effectiveEffectsQuality === 'medium' ? 6 : 2,
   };
 }
 

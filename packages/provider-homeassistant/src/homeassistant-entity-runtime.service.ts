@@ -9,11 +9,11 @@ import type { HassConfig, HassEntities } from 'home-assistant-js-websocket';
 import {
   addHomeAssistantListener,
   getHomeAssistantConfig,
-  getHomeAssistantEntities,
   getHomeAssistantEntityRegistry,
   getHomeAssistantStoreState,
   type HomeAssistantDeviceRegistryEntry,
   type HomeAssistantEntityRegistryEntry,
+  subscribeHomeAssistantStoreEntities,
 } from './homeassistant-service-bridge';
 
 const EMPTY_HASS_ENTITY_REGISTRY: HomeAssistantEntityRegistryEntry[] = [];
@@ -192,21 +192,13 @@ function toPlatformEntityRegistryEntries(
   return cachedPlatformRegistry;
 }
 
-function subscribeHomeAssistantEvent(
-  event: 'entities' | 'registries' | 'config',
-  listener: () => void
-) {
+function subscribeHomeAssistantEvent(event: 'registries' | 'config', listener: () => void) {
   return addHomeAssistantListener(event, () => {
     listener();
   });
 }
 
 function getHomeAssistantEntitiesSnapshot(): HassEntities | null {
-  const entities = getHomeAssistantEntities();
-  if (entities) {
-    return entities;
-  }
-
   return getHomeAssistantStoreState().entities;
 }
 
@@ -253,7 +245,7 @@ function subscribeHomeAssistantEntitySnapshot(entityId: string, listener: () => 
     entityId
   ];
 
-  return subscribeHomeAssistantEvent('entities', () => {
+  return subscribeHomeAssistantStoreEntities(() => {
     const nextSnapshot = toPlatformEntitySnapshotMap(getHomeAssistantEntitiesSnapshot())?.[
       entityId
     ];
@@ -290,7 +282,7 @@ function subscribeHomeAssistantEntityRegistryEntry(entityId: string, listener: (
 
 export const homeAssistantEntityRuntimeService: ProviderEntityRuntimeService = {
   getEntitySnapshots: () => toPlatformEntitySnapshotMap(getHomeAssistantEntitiesSnapshot()),
-  subscribeEntitySnapshots: (listener) => subscribeHomeAssistantEvent('entities', listener),
+  subscribeEntitySnapshots: (listener) => subscribeHomeAssistantStoreEntities(listener),
   getEntitySnapshot: (entityId) =>
     toPlatformEntitySnapshotMap(getHomeAssistantEntitiesSnapshot())?.[entityId],
   subscribeEntitySnapshot: (entityId, listener) =>

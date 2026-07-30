@@ -9,8 +9,6 @@ import type { DeviceCollectionKey } from '@navet/app/hooks';
 import {
   buildDashboardVisibilityResult,
   DEVICE_COLLECTION_KEYS,
-  getAbsorbedDashboardEntityIds,
-  getExpandedHiddenDashboardEntityIds,
   useAggregatedDevices,
   useAggregatedRooms,
   useCardState,
@@ -31,16 +29,23 @@ import {
   providerRuntimeSelectors,
   settingsSelectors,
 } from '@navet/app/stores/selectors';
-import { useSettingsStore } from '@navet/app/stores/settings-store';
+import { type EffectsQuality, useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceCollection, DeviceWithType } from '@navet/app/types/device.types';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { logPerformanceDecision } from '@navet/app/utils/performance-diagnostics';
 import { buildAggregatedRooms } from '@navet/app/utils/provider-rooms';
-import { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 import { getClimateDashboardGroup } from '../../climate/utils/climate-dashboard-group';
-import { buildSecurityCameraDashboardModel } from '../../security/utils/security-camera-dashboard-model';
 import type { AllViewGrouping } from '../all-view-grid';
 import {
   normalizeMediaStackWidgetData,
@@ -74,9 +79,13 @@ import { useDashboardRoomNavigation } from './use-dashboard-room-navigation';
 import { useEditModeBeforeUnload } from './use-edit-mode-beforeunload';
 import { useHomeDashboardLayout } from './use-home-dashboard-layout';
 import { useHomeLayoutHydrated } from './use-home-layout-hydrated';
+import { useHomeSecurityAlertCount } from './use-home-security-alert-count';
 import { useOnboardingController } from './use-onboarding-controller';
 
 const DASHBOARD_DEVICE_SECTION_IDS = new Set(['home', 'lights', 'climate']);
+const EMPTY_PROVIDER_ENTITY_VIEWS: ReturnType<
+  typeof integrationSelectors.providerEntityViewsByProviderId
+> = {};
 const SECURITY_SECTION_DEVICE_KEYS = [
   'cameras',
   'covers',
@@ -89,6 +98,7 @@ const MEDIA_SECTION_DEVICE_KEYS = ['media'] as const;
 const CLIMATE_SECTION_DEVICE_KEYS = ['climate', 'hvac', 'fans', 'switches', 'sensors'] as const;
 const LIGHTS_SECTION_DEVICE_KEYS = ['lights'] as const;
 const EMPTY_SECTION_DEVICE_KEYS: readonly DeviceCollectionKey[] = [];
+const FEATURE_COLLECTION_ENTITY_ID_PATTERN = /(?:^|:)(?:calendar|weather)\./;
 const CLIMATE_DASHBOARD_GROUPS: DashboardClimateSectionGroup[] = [
   {
     key: 'climate',
@@ -126,15 +136,35 @@ export function useDashboardController(): DashboardController {
   const { activeSection, setActiveSection } = useNavigation();
   useAdaptiveEffectsQuality(activeSection);
   const { t } = useI18n();
+  const dialogs = useDashboardDialogs();
   const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
+  const showHomeSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
+  const showFeatureCollectionSummary = useSettingsStore(
+    (state) =>
+      state.showHomeSummaryBar &&
+      state.advancedCustomizationEnabled &&
+      state.customSummaryPills.some(
+        (pill) =>
+          pill.valueSourceType === 'entity' &&
+          typeof pill.entityId === 'string' &&
+          FEATURE_COLLECTION_ENTITY_ID_PATTERN.test(pill.entityId)
+      )
+  );
   const currentProviderRuntime = useIntegrationStore(
     providerRuntimeSelectors.currentProviderRuntime
   );
   const selectedProviderIds = useIntegrationStore(integrationSelectors.selectedProviderIds);
+  const shouldTrackManualEntityViews = dialogs.showAddCardDialog;
   const providerEntityViewsByProviderId = useIntegrationStore(
-    integrationSelectors.providerEntityViewsByProviderId
+    useCallback(
+      (state) =>
+        shouldTrackManualEntityViews
+          ? integrationSelectors.providerEntityViewsByProviderId(state)
+          : EMPTY_PROVIDER_ENTITY_VIEWS,
+      [shouldTrackManualEntityViews]
+    )
   );
   const connected = currentProviderRuntime.connected;
   const connecting = currentProviderRuntime.connecting;
@@ -154,7 +184,6 @@ export function useDashboardController(): DashboardController {
 
   const { hiddenEntityIds, shownSensorEntityIds, hideAutoEntity, showAutoEntity } =
     useDashboardEntityVisibility();
-  const dialogs = useDashboardDialogs();
 
   const homeLayoutCardIds = useHomeDashboardLayoutStore((state) => state.cardIds);
   const isDeviceHeavySection =
@@ -162,10 +191,12 @@ export function useDashboardController(): DashboardController {
     !['energy', 'media', 'security', 'settings', 'tasks'].includes(activeSection);
   const shouldIncludeFeatureCollections = resolveShouldIncludeFeatureCollections({
     activeSection,
+    effectsQuality,
     homeLayoutCardIds,
     lowPowerMode,
     showAddCardDialog: dialogs.showAddCardDialog,
     showAddEntityDialog: dialogs.showAddEntityDialog,
+    showFeatureCollectionSummary,
   });
   const sectionDeviceKeys = useMemo(
     () => resolveDashboardSectionDeviceKeys(activeSection),
@@ -242,6 +273,9 @@ export function useDashboardController(): DashboardController {
   useDashboardDevicesLoaded({ connected, connecting, setDevicesLoaded });
 
   const { isEditMode, toggleEditMode } = useEditMode();
+  const handleToggleEditMode = useCallback(() => {
+    startTransition(toggleEditMode);
+  }, [toggleEditMode]);
   useEditModeBeforeUnload(isEditMode);
   const allCards = useCustomCardsStore((state) => state.cards);
   const shouldTrackMediaDevices = resolveShouldTrackMediaDevices({
@@ -285,6 +319,10 @@ export function useDashboardController(): DashboardController {
   const { deviceMap: availableDeviceMap } = useDeviceMap(
     isDeviceHeavySection ? availableDevices : EMPTY_DEVICE_COLLECTION
   );
+  const availableDeviceMapRef = useRef(availableDeviceMap);
+  useLayoutEffect(() => {
+    availableDeviceMapRef.current = availableDeviceMap;
+  }, [availableDeviceMap]);
   const manualDevices = useAggregatedDevices({
     enabled: dialogs.showAddCardDialog && activeSection !== 'energy',
     includeFeatureCollections: shouldIncludeFeatureCollections,
@@ -303,6 +341,13 @@ export function useDashboardController(): DashboardController {
 
   const homeLayoutValidIds = useHomeLayoutValidIds(availableDeviceMap, allCustomCards);
   const homeLayoutController = useHomeDashboardLayout(homeLayoutValidIds, cardSizes);
+  const {
+    addCard: addHomeLayoutCard,
+    addSection: addHomeLayoutSection,
+    applyLayout: applyHomeLayout,
+    removeCard: removeHomeLayoutCard,
+    resetLayout: resetHomeLayout,
+  } = homeLayoutController;
   const homeLayoutHydrated = useHomeLayoutHydrated({
     cardIds: homeLayoutController.layout.cardIds,
     availableDeviceMap,
@@ -395,41 +440,21 @@ export function useDashboardController(): DashboardController {
       visibleCardCount: denseVisibleCardCount,
     });
   }, [activeSection, denseVisibleCardCount, deviceTier, performanceProfile]);
-  const securityAlertCount = useMemo(() => {
-    if (!sectionData.isOverviewSection) {
-      return 0;
-    }
+  const securityAlertCount = useHomeSecurityAlertCount({
+    devices: allDevices,
+    enabled: showHomeSummaryBar && sectionData.isOverviewSection,
+    hiddenEntityIds,
+  });
 
-    const expandedHiddenSecurityIds = new Set(
-      getExpandedHiddenDashboardEntityIds(allDevices, hiddenEntityIds)
-    );
-    const absorbedSecurityIds = new Set(
-      getAbsorbedDashboardEntityIds(allDevices, [...expandedHiddenSecurityIds])
-    );
-
-    return buildSecurityCameraDashboardModel({
-      cameras: allDevices.cameras.filter((device) => !expandedHiddenSecurityIds.has(device.id)),
-      covers: (allDevices.covers ?? []).filter(
-        (device) => !expandedHiddenSecurityIds.has(device.id)
-      ),
-      locks: allDevices.locks.filter((device) => !expandedHiddenSecurityIds.has(device.id)),
-      sensors: allDevices.sensors.filter(
-        (device) => !expandedHiddenSecurityIds.has(device.id) && !absorbedSecurityIds.has(device.id)
-      ),
-      persons: (allDevices.persons ?? []).filter(
-        (device) => !expandedHiddenSecurityIds.has(device.id)
-      ),
-      helpers: (allDevices.helpers ?? []).filter(
-        (device) => !expandedHiddenSecurityIds.has(device.id) && !absorbedSecurityIds.has(device.id)
-      ),
-    }).summary.attentionEntityCount;
-  }, [allDevices, hiddenEntityIds, sectionData.isOverviewSection]);
-
-  const resetDashboard = useResetDashboard(homeLayoutController);
+  const resetDashboard = useResetDashboard(resetHomeLayout);
   const onboarding = useOnboardingController({ allEntityIds, changeRoom, resetDashboard });
   const handleApplyDashboardPack = useCallback(
     (packId: DashboardPackId) => {
-      const nextLayout = buildDashboardPackLayout(packId, availableDeviceMap.values(), t);
+      const nextLayout = buildDashboardPackLayout(
+        packId,
+        availableDeviceMapRef.current.values(),
+        t
+      );
       const packLabelKey =
         DASHBOARD_PACKS.find((pack) => pack.id === packId)?.labelKey ?? 'dashboard.packs.title';
 
@@ -438,10 +463,10 @@ export function useDashboardController(): DashboardController {
         return;
       }
 
-      homeLayoutController.applyLayout(nextLayout);
+      applyHomeLayout(nextLayout);
       toast.success(t('dashboard.feedback.packApplied', { name: t(packLabelKey) }));
     },
-    [availableDeviceMap, homeLayoutController, t]
+    [applyHomeLayout, t]
   );
 
   const { addCard, removeCard, updateCard } = useCustomCardsStore(
@@ -470,7 +495,11 @@ export function useDashboardController(): DashboardController {
     showAutoEntity,
     t,
     addCardTargetSectionId: dialogs.addCardTargetSectionId,
-    homeLayoutController,
+    homeLayoutMode: homeLayoutController.layout.mode,
+    homeLayoutSections: homeLayoutController.layout.sections,
+    addHomeLayoutCard,
+    removeHomeLayoutCard,
+    addHomeLayoutSection,
   });
 
   return {
@@ -490,6 +519,7 @@ export function useDashboardController(): DashboardController {
     connecting,
     densePerformanceMode,
     denseVisibleCardCount,
+    optimizeOffscreenPaint: performanceProfile.optimizeOffscreenPaint,
     devicesLoaded,
     handleAddCard,
     handleAddLibraryCard,
@@ -526,7 +556,7 @@ export function useDashboardController(): DashboardController {
     manualEntityViewsByCanonicalId,
     onSetAllViewGrouping: setAllViewGrouping,
     onSetHiddenRoomNames: setHiddenRoomNames,
-    onToggleEditMode: () => startTransition(toggleEditMode),
+    onToggleEditMode: handleToggleEditMode,
     onSetRoomOrder: setRoomOrder,
     orderedCardIds,
     roomHiddenItemCounts,
@@ -748,11 +778,11 @@ function useHomeLayoutValidIds(
   );
 }
 
-function useResetDashboard(homeLayoutController: ReturnType<typeof useHomeDashboardLayout>) {
+function useResetDashboard(resetHomeLayout: () => void) {
   return useCallback(() => {
-    homeLayoutController.resetLayout();
+    resetHomeLayout();
     useCustomCardsStore.getState().replaceCards([]);
-  }, [homeLayoutController]);
+  }, [resetHomeLayout]);
 }
 
 export { getClimateDashboardGroup } from '../../climate/utils/climate-dashboard-group';
@@ -775,24 +805,29 @@ export function resolveShouldTrackMediaDevices({
 
 export function resolveShouldIncludeFeatureCollections({
   activeSection,
+  effectsQuality,
   homeLayoutCardIds,
   lowPowerMode,
   showAddCardDialog,
   showAddEntityDialog,
+  showFeatureCollectionSummary,
 }: {
   activeSection: Section;
+  effectsQuality: EffectsQuality;
   homeLayoutCardIds: string[];
   lowPowerMode: boolean;
   showAddCardDialog: boolean;
   showAddEntityDialog: boolean;
+  showFeatureCollectionSummary: boolean;
 }) {
-  if (!lowPowerMode) {
+  if (!lowPowerMode && effectsQuality !== 'low') {
     return true;
   }
 
   if (
     activeSection === 'home' &&
-    (showAddCardDialog ||
+    (showFeatureCollectionSummary ||
+      showAddCardDialog ||
       showAddEntityDialog ||
       homeLayoutCardIds.some(
         (cardId) => cardId.includes('calendar.') || cardId.includes('weather.')

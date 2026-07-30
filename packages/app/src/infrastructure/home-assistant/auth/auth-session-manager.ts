@@ -15,14 +15,26 @@ import {
   type IntegrationProviderId,
   isIntegrationProviderId,
 } from '@navet/app/types/provider';
+import {
+  readLocalStorageString,
+  removeLocalStorageItem,
+  writeLocalStorageString,
+} from '@navet/app/utils/storage';
 import type { Auth } from 'home-assistant-js-websocket';
 import { toLegacyAuthRuntime } from '../runtime/runtime-context';
 import { getRuntimeContext } from '../runtime/runtime-detector';
 
 const LEGACY_STORED_INTEGRATION_SESSION_KEY = 'navet_auth_session';
 const LAST_ACTIVE_PROVIDER_KEY = 'navet_active_provider';
+const PROVIDER_RESTORE_RETRY_DELAYS_MS = [5_000, 15_000, 30_000, 60_000] as const;
 
 type AuthStateListener = (snapshot: AuthSessionSnapshot, session: AuthSession | null) => void;
+type ProviderRestoreRetry = {
+  attempt: number;
+  generation: number;
+  inFlight: boolean;
+  timerId: number | null;
+};
 
 const LEGACY_ADAPTERS: Record<ReturnType<typeof toLegacyAuthRuntime>, AuthAdapter> = {
   'ha-panel': haPanelAuth,
@@ -40,7 +52,7 @@ function readStoredActiveProviderId(): IntegrationProviderId | null {
     return null;
   }
 
-  const value = window.localStorage.getItem(LAST_ACTIVE_PROVIDER_KEY);
+  const value = readLocalStorageString(LAST_ACTIVE_PROVIDER_KEY);
   return value && isIntegrationProviderId(value) ? value : null;
 }
 
@@ -50,11 +62,11 @@ function writeStoredActiveProviderId(providerId: IntegrationProviderId | null): 
   }
 
   if (!providerId) {
-    window.localStorage.removeItem(LAST_ACTIVE_PROVIDER_KEY);
+    removeLocalStorageItem(LAST_ACTIVE_PROVIDER_KEY);
     return;
   }
 
-  window.localStorage.setItem(LAST_ACTIVE_PROVIDER_KEY, providerId);
+  writeLocalStorageString(LAST_ACTIVE_PROVIDER_KEY, providerId);
 }
 
 function buildSnapshot(session: AuthSession | null, sessions: AuthSessionMap): AuthSessionSnapshot {
@@ -89,48 +101,18 @@ function buildSnapshot(session: AuthSession | null, sessions: AuthSessionMap): A
   };
 }
 
-function readLegacyStoredIntegrationSession(): AuthSession | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  const raw = window.localStorage.getItem(LEGACY_STORED_INTEGRATION_SESSION_KEY);
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as AuthSession;
-    if (
-      !parsed ||
-      typeof parsed !== 'object' ||
-      parsed.providerId !== 'openhab' ||
-      typeof parsed.username !== 'string' ||
-      parsed.username.trim().length === 0 ||
-      typeof parsed.password !== 'string' ||
-      parsed.password.length === 0
-    ) {
-      return null;
-    }
-
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
 function clearLegacyStoredIntegrationSession(): void {
   if (typeof window === 'undefined') {
     return;
   }
 
-  window.localStorage.removeItem(LEGACY_STORED_INTEGRATION_SESSION_KEY);
+  removeLocalStorageItem(LEGACY_STORED_INTEGRATION_SESSION_KEY);
 }
 
 function getInitProviderOrder(): IntegrationProviderId[] {
   const runtime = getRuntimeContext().kind;
 
-  if (runtime === 'ha_panel' || runtime === 'ha_ingress') {
+  if (runtime === 'ha_panel') {
     return ['home_assistant'];
   }
 
@@ -141,17 +123,26 @@ export class AuthSessionManager {
   private sessions: AuthSessionMap = {};
   private activeProviderId: IntegrationProviderId | null = readStoredActiveProviderId();
   private listeners = new Set<AuthStateListener>();
+  private providerRestoreRetries = new Map<IntegrationProviderId, ProviderRestoreRetry>();
+  private initGeneration = 0;
+  private sessionRevision = 0;
+  private providerGenerations = new Map<IntegrationProviderId, number>();
 
   private get adapter(): AuthAdapter {
     return LEGACY_ADAPTERS[toLegacyAuthRuntime(getRuntimeContext().kind)];
   }
 
   private getAdapterForProvider(providerId: IntegrationProviderId | undefined): AuthAdapter {
-    if (providerId && PROVIDER_ADAPTERS[providerId]) {
-      return PROVIDER_ADAPTERS[providerId];
+    if (!providerId || providerId === 'home_assistant') {
+      return this.adapter;
     }
 
-    return this.adapter;
+    const adapter = PROVIDER_ADAPTERS[providerId];
+    if (!adapter) {
+      throw new Error(`Authentication is not available for provider "${providerId}"`);
+    }
+
+    return adapter;
   }
 
   getSession() {
@@ -179,6 +170,7 @@ export class AuthSessionManager {
     nextActiveProviderId?: IntegrationProviderId | null
   ) {
     this.sessions = typeof updater === 'function' ? updater(this.sessions) : updater;
+    this.sessionRevision += 1;
     const activeProviderId =
       nextActiveProviderId === undefined ? this.resolveActiveProviderId() : nextActiveProviderId;
     this.activeProviderId = activeProviderId;
@@ -191,29 +183,192 @@ export class AuthSessionManager {
     }
   }
 
+  private clearProviderRestoreRetry(providerId: IntegrationProviderId) {
+    const retry = this.providerRestoreRetries.get(providerId);
+    if (retry?.timerId !== null && retry?.timerId !== undefined) {
+      window.clearTimeout(retry.timerId);
+    }
+    this.providerRestoreRetries.delete(providerId);
+  }
+
+  private clearAllProviderRestoreRetries() {
+    for (const providerId of this.providerRestoreRetries.keys()) {
+      this.clearProviderRestoreRetry(providerId);
+    }
+  }
+
+  private getProviderGeneration(providerId: IntegrationProviderId): number {
+    return this.providerGenerations.get(providerId) ?? 0;
+  }
+
+  private bumpProviderGeneration(providerId: IntegrationProviderId): number {
+    const generation = this.getProviderGeneration(providerId) + 1;
+    this.providerGenerations.set(providerId, generation);
+    return generation;
+  }
+
+  private beginProviderOperation(providerId: IntegrationProviderId): number {
+    // Explicit login/logout/invalidation always wins over an older whole-app
+    // restore or a delayed provider restore that is already awaiting I/O.
+    this.initGeneration += 1;
+    const generation = this.bumpProviderGeneration(providerId);
+    this.clearProviderRestoreRetry(providerId);
+    return generation;
+  }
+
+  private resetSessionDiscovery(): number {
+    const generation = this.initGeneration + 1;
+    this.initGeneration = generation;
+    this.clearAllProviderRestoreRetries();
+    for (const providerId of INTEGRATION_PROVIDER_IDS) {
+      this.bumpProviderGeneration(providerId);
+    }
+    return generation;
+  }
+
+  private isProviderGenerationCurrent(
+    providerId: IntegrationProviderId,
+    generation: number
+  ): boolean {
+    return this.getProviderGeneration(providerId) === generation;
+  }
+
+  private scheduleProviderRestore(providerId: IntegrationProviderId) {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const generation = this.getProviderGeneration(providerId);
+    const existingRetry = this.providerRestoreRetries.get(providerId);
+    const retry =
+      existingRetry?.generation === generation
+        ? existingRetry
+        : {
+            attempt: 0,
+            generation,
+            inFlight: false,
+            timerId: null,
+          };
+    if (retry.timerId !== null || retry.inFlight) {
+      return;
+    }
+
+    const delay =
+      PROVIDER_RESTORE_RETRY_DELAYS_MS[
+        Math.min(retry.attempt, PROVIDER_RESTORE_RETRY_DELAYS_MS.length - 1)
+      ];
+    retry.timerId = window.setTimeout(async () => {
+      retry.timerId = null;
+      if (
+        !this.isProviderGenerationCurrent(providerId, generation) ||
+        this.providerRestoreRetries.get(providerId) !== retry
+      ) {
+        return;
+      }
+      retry.inFlight = true;
+      try {
+        const session = await this.getAdapterForProvider(providerId).init();
+        if (
+          !this.isProviderGenerationCurrent(providerId, generation) ||
+          this.providerRestoreRetries.get(providerId) !== retry
+        ) {
+          return;
+        }
+        retry.inFlight = false;
+        this.providerRestoreRetries.delete(providerId);
+        if (session) {
+          this.updateSessions((current) => ({
+            ...current,
+            [providerId]: session,
+          }));
+        }
+      } catch {
+        if (
+          !this.isProviderGenerationCurrent(providerId, generation) ||
+          this.providerRestoreRetries.get(providerId) !== retry
+        ) {
+          return;
+        }
+        retry.inFlight = false;
+        retry.attempt += 1;
+        this.providerRestoreRetries.set(providerId, retry);
+        this.scheduleProviderRestore(providerId);
+      }
+    }, delay);
+    this.providerRestoreRetries.set(providerId, retry);
+  }
+
   async init(): Promise<AuthSessionSnapshot> {
-    const legacyStoredSession = readLegacyStoredIntegrationSession();
+    // Legacy openHAB sessions stored plaintext credentials in localStorage. Never
+    // hydrate them into browser memory; the server-bound adapter is authoritative.
+    clearLegacyStoredIntegrationSession();
+    const initGeneration = this.resetSessionDiscovery();
+    const initialSessionRevision = this.sessionRevision;
     const providerOrder = getInitProviderOrder();
     const discoveredSessions: AuthSessionMap = {};
 
-    if (legacyStoredSession?.providerId === 'openhab' && providerOrder.includes('openhab')) {
-      discoveredSessions.openhab = legacyStoredSession;
-    }
-
-    const sessionResults = await Promise.all(
+    const sessionResults = await Promise.allSettled(
       providerOrder.map(async (providerId) => ({
         providerId,
         session: await this.getAdapterForProvider(providerId).init(),
       }))
     );
 
-    for (const { providerId, session } of sessionResults) {
+    if (this.initGeneration !== initGeneration || this.sessionRevision !== initialSessionRevision) {
+      return this.getSnapshot();
+    }
+
+    const failures = new Map<IntegrationProviderId, unknown>();
+    for (let index = 0; index < sessionResults.length; index += 1) {
+      const result = sessionResults[index];
+      const providerId = providerOrder[index];
+      if (!result || !providerId) {
+        continue;
+      }
+      if (result.status === 'rejected') {
+        failures.set(providerId, result.reason);
+        continue;
+      }
+      const { session } = result.value;
+      this.clearProviderRestoreRetry(providerId);
       if (session) {
         discoveredSessions[providerId] = session;
       }
     }
 
+    if (Object.keys(discoveredSessions).length === 0) {
+      // A missing durable endpoint for the provider that was active before reload
+      // is not evidence that the user logged out. Keep startup pending and retry.
+      const activeProviderFailure = this.activeProviderId
+        ? failures.get(this.activeProviderId)
+        : undefined;
+      if (activeProviderFailure !== undefined) {
+        throw activeProviderFailure;
+      }
+
+      // Home Assistant is the primary standalone session. If its endpoint is
+      // unavailable, showing Login would turn a transient backend outage into a
+      // false logout. Optional provider failures do not block a confirmed-clean
+      // Home Assistant startup.
+      const homeAssistantFailure = failures.get('home_assistant');
+      if (homeAssistantFailure !== undefined) {
+        throw homeAssistantFailure;
+      }
+
+      // The browser-visible active-provider hint is disposable localStorage,
+      // while provider sessions live in HttpOnly cookies. If localStorage was
+      // cleared, even an "optional" provider endpoint failure can be hiding the
+      // user's only durable session. Do not publish a false logged-out state
+      // until every provider has authoritatively returned no session.
+      if (failures.size > 0) {
+        throw failures.values().next().value;
+      }
+    }
+
     this.updateSessions(discoveredSessions);
+    for (const providerId of failures.keys()) {
+      this.scheduleProviderRestore(providerId);
+    }
     return this.getSnapshot();
   }
 
@@ -227,11 +382,13 @@ export class AuthSessionManager {
   }): Promise<AuthSessionSnapshot> {
     const targetProviderId = input?.providerId;
     const adapter = this.getAdapterForProvider(targetProviderId);
+    const expectedProviderId = targetProviderId ?? 'home_assistant';
 
     if (!adapter.login) {
       throw new Error('Login is not available in this runtime');
     }
 
+    const providerGeneration = this.beginProviderOperation(expectedProviderId);
     const nextSession = await adapter.login({
       hassUrl: input?.haBaseUrl ?? input?.hassUrl,
       accessToken: input?.accessToken,
@@ -239,6 +396,9 @@ export class AuthSessionManager {
       password: input?.password,
       providerId: input?.providerId,
     });
+    if (!this.isProviderGenerationCurrent(expectedProviderId, providerGeneration)) {
+      return this.getSnapshot();
+    }
     this.updateSessions((current) => ({
       ...current,
       [nextSession.providerId]: nextSession,
@@ -259,7 +419,14 @@ export class AuthSessionManager {
       return this.getSnapshot();
     }
 
+    const providerGeneration = this.getProviderGeneration(currentSession.providerId);
     const nextSession = await adapter.refresh(currentSession);
+    if (
+      !this.isProviderGenerationCurrent(currentSession.providerId, providerGeneration) ||
+      this.sessions[currentSession.providerId] !== currentSession
+    ) {
+      return this.getSnapshot();
+    }
     this.updateSessions((current) => ({
       ...current,
       [nextSession.providerId]: nextSession,
@@ -275,15 +442,43 @@ export class AuthSessionManager {
     }
 
     const adapter = this.getAdapterForProvider(currentSession.providerId);
-    await adapter.invalidatePersistedSession?.(currentSession);
+    if (!adapter.invalidatePersistedSession) {
+      return;
+    }
+
+    const providerGeneration = this.beginProviderOperation(currentSession.providerId);
+    const replacementSession = await adapter.invalidatePersistedSession(currentSession);
+    if (
+      !this.isProviderGenerationCurrent(currentSession.providerId, providerGeneration) ||
+      this.sessions[currentSession.providerId] !== currentSession
+    ) {
+      return;
+    }
+    if (replacementSession) {
+      if (replacementSession.providerId !== currentSession.providerId) {
+        throw new Error('Persisted session invalidation returned a different provider');
+      }
+      this.updateSessions((current) => ({
+        ...current,
+        [replacementSession.providerId]: replacementSession,
+      }));
+      return;
+    }
+    this.updateSessions((current) => {
+      const next = { ...current };
+      delete next[currentSession.providerId];
+      return next;
+    });
   }
 
   replaceSession(session: AuthSession | null): AuthSessionSnapshot {
     if (!session) {
+      this.resetSessionDiscovery();
       this.updateSessions({}, null);
       return this.getSnapshot();
     }
 
+    this.beginProviderOperation(session.providerId);
     this.updateSessions(
       (current) => ({
         ...current,
@@ -303,17 +498,24 @@ export class AuthSessionManager {
   async logout(providerId?: IntegrationProviderId): Promise<void> {
     const targetProviderId = providerId ?? this.activeProviderId;
     const session = targetProviderId ? this.sessions[targetProviderId] : null;
-    const adapter = session ? this.getAdapterForProvider(session.providerId) : this.adapter;
-    if (targetProviderId) {
-      this.updateSessions((current) => {
-        const next = { ...current };
-        delete next[targetProviderId];
-        return next;
-      });
-    } else {
-      this.updateSessions({}, null);
+    if (!targetProviderId || !session) {
+      return;
     }
+
+    const adapter = this.getAdapterForProvider(session.providerId);
+    const providerGeneration = this.beginProviderOperation(targetProviderId);
     await adapter.logout?.();
+    if (
+      !this.isProviderGenerationCurrent(targetProviderId, providerGeneration) ||
+      this.sessions[targetProviderId] !== session
+    ) {
+      return;
+    }
+    this.updateSessions((current) => {
+      const next = { ...current };
+      delete next[targetProviderId];
+      return next;
+    });
   }
 
   subscribe(listener: AuthStateListener): () => void {

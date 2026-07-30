@@ -8,6 +8,37 @@ import {
  * Type-safe localStorage wrapper with error handling and JSON serialization
  */
 
+export function readLocalStorageString(key: string): string | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    return readLocalStorageWithMigration(key, window.localStorage);
+  } catch (error) {
+    if (import.meta.env.DEV) console.warn(`[storage] read("${key}") failed:`, error);
+    return null;
+  }
+}
+
+export function writeLocalStorageString(key: string, value: string): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    writeLocalStorageWithMigration(key, value, window.localStorage);
+  } catch (error) {
+    if (import.meta.env.DEV) console.warn(`[storage] write("${key}") failed:`, error);
+  }
+}
+
+export function removeLocalStorageItem(key: string): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    removeLocalStorageWithMigration(key, window.localStorage);
+  } catch (error) {
+    if (import.meta.env.DEV) console.warn(`[storage] remove("${key}") failed:`, error);
+  }
+}
+
 class LocalStorage {
   /**
    * Get an item from localStorage with a default value

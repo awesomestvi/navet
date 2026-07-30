@@ -13,6 +13,7 @@ These suites block release-oriented workflows and should stay intentionally smal
 
 | Group | Why it exists | Status |
 |---|---|---|
+| `assets/public/boot-i18n.test.ts`, `scripts/vite-preload-graph.test.mjs` | Low-power startup and authenticated-transition preload graph remain parseable and release-gated | Keep |
 | `packages/provider-*/src/*.test.*` | Provider contract conformance for Home Assistant, Homey, openHAB, and planned-provider boundaries | Keep |
 | `packages/app/src/auth/__tests__/adapters.test.ts`, `runtime.test.ts`, `homeAssistantDiscovery.test.ts`, `homey-oauth-auth.test.ts` | Auth/runtime bootstrap and provider login flows | Keep |
 | `packages/app/src/infrastructure/home-assistant/resources/__tests__/resource-resolver.test.ts` | Signed URLs, proxy rewriting, unsafe URL rejection | Keep |
@@ -22,6 +23,7 @@ These suites block release-oriented workflows and should stay intentionally smal
 | `packages/app/src/features/security/components/camera-card/__tests__/camera-stream-player.test.tsx` | Camera stream runtime behavior across supported modes | Keep |
 | `packages/app/src/features/rss/components/rss-feed-card/__tests__/use-rss-feed-items.test.tsx` | Ingress-aware RSS proxy behavior and feed ordering | Keep |
 | `packages/app/src/provider-package-registry.initialization.test.ts` | Provider package startup with existing sessions and cycle-safe registry initialization | Keep |
+| `packages/app/src/pwa/pwa-update-store.test.tsx`, `packages/app/src/pwa/standalone-manifest-http-config.test.ts` | Production service-worker update recovery, bounded prompts, and revalidated standalone manifest delivery | Keep |
 | `packages/app/src/stores/__tests__/integration-store.test.ts` | Core provider-to-app state wiring | Keep |
 | `packages/app/src/services/__tests__/integration-runtime.service.test.ts`, `integration-registry.service.test.ts`, `integration-action.service.test.ts` | Runtime wiring, provider registration, and shared command dispatch | Keep |
 

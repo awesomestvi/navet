@@ -1,8 +1,15 @@
 import { renderWithProviders } from '@navet/app/test/render';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import { screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HomeDashboardOverview } from '../home-dashboard-overview';
+
+const overviewMocks = vi.hoisted(() => ({
+  showHomeSummaryBar: true,
+  useHomeEnergySummary: vi.fn(() => ({
+    gridImportTodayKWh: undefined,
+  })),
+}));
 
 vi.mock('@navet/app/hooks', async () => {
   const actual = await vi.importActual<object>('@navet/app/hooks');
@@ -33,7 +40,7 @@ vi.mock('@navet/app/stores', async () => {
       }) => unknown
     ) =>
       selector({
-        showHomeSummaryBar: true,
+        showHomeSummaryBar: overviewMocks.showHomeSummaryBar,
         temperatureUnit: 'C',
         advancedCustomizationEnabled: false,
         customSummaryPills: [],
@@ -42,9 +49,7 @@ vi.mock('@navet/app/stores', async () => {
 });
 
 vi.mock('../hooks/use-home-energy-summary', () => ({
-  useHomeEnergySummary: () => ({
-    gridImportTodayKWh: undefined,
-  }),
+  useHomeEnergySummary: overviewMocks.useHomeEnergySummary,
 }));
 
 vi.mock('../home-dashboard-overview-presentation', () => ({
@@ -81,6 +86,11 @@ function device(overrides: Partial<DeviceWithType> & Pick<DeviceWithType, 'id' |
 }
 
 describe('HomeDashboardOverview', () => {
+  beforeEach(() => {
+    overviewMocks.showHomeSummaryBar = true;
+    overviewMocks.useHomeEnergySummary.mockClear();
+  });
+
   it('builds the home summary bar from the visible summary map instead of hidden raw devices', () => {
     const hiddenAlertDevice = device({
       id: 'binary_sensor.side_door',
@@ -134,7 +144,7 @@ describe('HomeDashboardOverview', () => {
     expect(screen.queryByText('1 Alert')).not.toBeInTheDocument();
   });
 
-  it('keeps both presentation and edit trees mounted across mode toggles', async () => {
+  it('keeps only the active presentation or edit tree mounted across mode toggles', async () => {
     const props = {
       deviceMap: new Map(),
       summaryDeviceMap: new Map(),
@@ -161,17 +171,59 @@ describe('HomeDashboardOverview', () => {
       removeHomeSection: vi.fn(),
       resizeHomeSection: vi.fn(),
     };
-    const { rerender } = renderWithProviders(<HomeDashboardOverview {...props} isEditMode />);
+    const { rerender } = renderWithProviders(
+      <HomeDashboardOverview {...props} isEditMode={false} />
+    );
+
+    expect(screen.getByTestId('home-presentation')).toBeInTheDocument();
+    expect(screen.queryByTestId('home-edit')).not.toBeInTheDocument();
+
+    rerender(<HomeDashboardOverview {...props} isEditMode />);
 
     expect(await screen.findByTestId('home-edit')).toBeInTheDocument();
-    const presentation = screen.getByTestId('home-presentation');
-    expect(presentation).toBeInTheDocument();
-    expect(presentation.parentElement).toHaveClass('hidden');
-    expect(presentation.parentElement).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.queryByTestId('home-presentation')).not.toBeInTheDocument();
 
     rerender(<HomeDashboardOverview {...props} isEditMode={false} />);
 
     expect(screen.getByTestId('home-presentation')).toBeInTheDocument();
-    expect(screen.getByTestId('home-edit')).toBeInTheDocument();
+    expect(screen.queryByTestId('home-edit')).not.toBeInTheDocument();
+  });
+
+  it('does not mount Home summary data work when the summary bar is disabled', () => {
+    overviewMocks.showHomeSummaryBar = false;
+
+    renderWithProviders(
+      <HomeDashboardOverview
+        deviceMap={new Map()}
+        summaryDeviceMap={new Map()}
+        cardSizes={{}}
+        updateCardSize={vi.fn()}
+        isEditMode={false}
+        hiddenEntityCount={0}
+        allCustomCards={[]}
+        homeLayout={{
+          mode: 'flow',
+          showHero: true,
+          cardIds: [],
+          sections: [],
+          cardSectionAssignments: {},
+        }}
+        removeHomeCard={vi.fn()}
+        moveHomeCard={vi.fn()}
+        setHomeLayoutMode={vi.fn()}
+        addHomeSection={vi.fn()}
+        addHomeColumnSection={vi.fn()}
+        addHomeSectionBelow={vi.fn()}
+        moveHomeSection={vi.fn()}
+        moveHomeColumn={vi.fn()}
+        renameHomeSection={vi.fn()}
+        removeHomeSection={vi.fn()}
+        resizeHomeSection={vi.fn()}
+        onNavigateSection={vi.fn()}
+      />
+    );
+
+    expect(overviewMocks.useHomeEnergySummary).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText('Status summary')).not.toBeInTheDocument();
   });
 });

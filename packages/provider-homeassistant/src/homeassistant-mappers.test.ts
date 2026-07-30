@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildHomeAssistantProviderRooms,
+  createHomeAssistantEntityMapper,
+  createHomeAssistantProviderStateMapper,
   mapHomeAssistantEntitiesToNavetEntities,
 } from './homeassistant-mappers';
 
@@ -16,6 +18,317 @@ function makeEntity(entity_id: string, state: string, attributes: Record<string,
 }
 
 describe('homeassistant-mappers', () => {
+  it('reuses unchanged normalized entities across a large one-entity update', () => {
+    const mapper = createHomeAssistantEntityMapper();
+    const entities = Object.fromEntries(
+      Array.from({ length: 512 }, (_, index) => {
+        const entityId = `sensor.fixture_${index}`;
+        return [
+          entityId,
+          makeEntity(entityId, String(index), {
+            friendly_name: `Fixture ${index}`,
+            unit_of_measurement: 'units',
+          }),
+        ];
+      })
+    );
+    const input = {
+      entities,
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [],
+    };
+    const first = mapper.map(input);
+    const unchanged = first.find((entity) => entity.externalId === 'sensor.fixture_511');
+    const changed = first.find((entity) => entity.externalId === 'sensor.fixture_100');
+    const nextInput = {
+      ...input,
+      entities: {
+        ...entities,
+        'sensor.fixture_100': makeEntity('sensor.fixture_100', 'updated', {
+          friendly_name: 'Fixture 100',
+          unit_of_measurement: 'units',
+        }),
+      },
+    };
+
+    const second = mapper.map(nextInput);
+
+    expect(second).not.toBe(first);
+    expect(second.find((entity) => entity.externalId === 'sensor.fixture_511')).toBe(unchanged);
+    expect(second.find((entity) => entity.externalId === 'sensor.fixture_100')).not.toBe(changed);
+    expect(mapper.map(nextInput)).toBe(second);
+  });
+
+  it('does not re-read unchanged entity payloads during a large one-entity update', () => {
+    const mapper = createHomeAssistantEntityMapper();
+    let unchangedAttributeReads = 0;
+    const observedEntity = makeEntity('sensor.fixture_1023', '1023', {});
+    Object.defineProperty(observedEntity, 'attributes', {
+      configurable: true,
+      enumerable: true,
+      get: () => {
+        unchangedAttributeReads += 1;
+        return {
+          friendly_name: 'Fixture 1023',
+          unit_of_measurement: 'units',
+        };
+      },
+    });
+    const entities = Object.fromEntries(
+      Array.from({ length: 1_024 }, (_, index) => {
+        const entityId = `sensor.fixture_${index}`;
+        return [
+          entityId,
+          index === 1_023
+            ? observedEntity
+            : makeEntity(entityId, String(index), {
+                friendly_name: `Fixture ${index}`,
+                unit_of_measurement: 'units',
+              }),
+        ];
+      })
+    );
+    const input = {
+      entities,
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [],
+    };
+    mapper.map(input);
+    unchangedAttributeReads = 0;
+
+    mapper.map({
+      ...input,
+      entities: {
+        ...entities,
+        'sensor.fixture_100': makeEntity('sensor.fixture_100', 'updated', {
+          friendly_name: 'Fixture 100',
+          unit_of_measurement: 'units',
+        }),
+      },
+    });
+
+    expect(unchangedAttributeReads).toBe(0);
+  });
+
+  it('invalidates a switch when a related metric changes without remapping unrelated entities', () => {
+    const mapper = createHomeAssistantEntityMapper();
+    const switchEntity = makeEntity('switch.outlet', 'on', {
+      friendly_name: 'Outlet',
+    });
+    const metricEntity = makeEntity('sensor.outlet_power', '10', {
+      friendly_name: 'Outlet power',
+      device_class: 'power',
+      unit_of_measurement: 'W',
+    });
+    const unrelatedEntity = makeEntity('light.hall', 'off', {
+      friendly_name: 'Hall',
+    });
+    const input = {
+      entities: {
+        'switch.outlet': switchEntity,
+        'sensor.outlet_power': metricEntity,
+        'light.hall': unrelatedEntity,
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [
+        { entity_id: 'switch.outlet', device_id: 'device-outlet' },
+        { entity_id: 'sensor.outlet_power', device_id: 'device-outlet' },
+      ],
+    };
+    const first = mapper.map(input);
+    const firstSwitch = first.find((entity) => entity.externalId === 'switch.outlet');
+    const firstUnrelated = first.find((entity) => entity.externalId === 'light.hall');
+
+    const second = mapper.map({
+      ...input,
+      entities: {
+        ...input.entities,
+        'sensor.outlet_power': makeEntity('sensor.outlet_power', '20', {
+          friendly_name: 'Outlet power',
+          device_class: 'power',
+          unit_of_measurement: 'W',
+        }),
+      },
+    });
+    const secondSwitch = second.find((entity) => entity.externalId === 'switch.outlet');
+
+    expect(secondSwitch).not.toBe(firstSwitch);
+    expect(secondSwitch?.attributes).toEqual(expect.objectContaining({ power: 20 }));
+    expect(second.find((entity) => entity.externalId === 'light.hall')).toBe(firstUnrelated);
+  });
+
+  it('keeps incremental metric precedence identical when an earlier sensor becomes available', () => {
+    const mapper = createHomeAssistantEntityMapper();
+    const input = {
+      entities: {
+        'switch.outlet': makeEntity('switch.outlet', 'on', {
+          friendly_name: 'Outlet',
+        }),
+        'sensor.outlet_power_primary': makeEntity('sensor.outlet_power_primary', 'unavailable', {
+          friendly_name: 'Outlet primary power',
+          device_class: 'power',
+          unit_of_measurement: 'W',
+        }),
+        'sensor.outlet_power_secondary': makeEntity('sensor.outlet_power_secondary', '20', {
+          friendly_name: 'Outlet secondary power',
+          device_class: 'power',
+          unit_of_measurement: 'W',
+        }),
+      },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [
+        { entity_id: 'switch.outlet', device_id: 'device-outlet' },
+        {
+          entity_id: 'sensor.outlet_power_primary',
+          device_id: 'device-outlet',
+        },
+        {
+          entity_id: 'sensor.outlet_power_secondary',
+          device_id: 'device-outlet',
+        },
+      ],
+    };
+    mapper.map(input);
+    const nextInput = {
+      ...input,
+      entities: {
+        ...input.entities,
+        'sensor.outlet_power_primary': makeEntity('sensor.outlet_power_primary', '10', {
+          friendly_name: 'Outlet primary power',
+          device_class: 'power',
+          unit_of_measurement: 'W',
+        }),
+      },
+    };
+
+    const incremental = mapper
+      .map(nextInput)
+      .find((entity) => entity.externalId === 'switch.outlet');
+    const fresh = createHomeAssistantEntityMapper()
+      .map(nextInput)
+      .find((entity) => entity.externalId === 'switch.outlet');
+
+    expect(incremental).toEqual(fresh);
+    expect(incremental?.attributes).toEqual(expect.objectContaining({ power: 20 }));
+  });
+
+  it('reconciles entity additions and removals while preserving existing identities', () => {
+    const mapper = createHomeAssistantEntityMapper();
+    const light = makeEntity('light.kitchen', 'on', { friendly_name: 'Kitchen' });
+    const baseInput = {
+      entities: { 'light.kitchen': light },
+      areas: [],
+      deviceRegistry: [],
+      entityRegistry: [],
+    };
+    const first = mapper.map(baseInput);
+    const firstLight = first[0];
+    const withAdded = mapper.map({
+      ...baseInput,
+      entities: {
+        ...baseInput.entities,
+        'sensor.temperature': makeEntity('sensor.temperature', '21', {
+          friendly_name: 'Temperature',
+        }),
+      },
+    });
+
+    expect(withAdded.map((entity) => entity.externalId)).toEqual([
+      'light.kitchen',
+      'sensor.temperature',
+    ]);
+    expect(withAdded[0]).toBe(firstLight);
+
+    const afterRemoval = mapper.map({
+      ...baseInput,
+      entities: { ...baseInput.entities },
+    });
+
+    expect(afterRemoval.map((entity) => entity.externalId)).toEqual(['light.kitchen']);
+    expect(afterRemoval[0]).toBe(firstLight);
+  });
+
+  it('invalidates only entities whose registry dependencies change', () => {
+    const mapper = createHomeAssistantEntityMapper();
+    const kitchenRegistry = {
+      entity_id: 'light.kitchen',
+      area_id: 'area-kitchen',
+      original_name: 'Kitchen',
+    };
+    const hallRegistry = {
+      entity_id: 'light.hall',
+      area_id: 'area-hall',
+      original_name: 'Hall',
+    };
+    const input = {
+      entities: {
+        'light.kitchen': makeEntity('light.kitchen', 'on', {}),
+        'light.hall': makeEntity('light.hall', 'off', {}),
+      },
+      areas: [
+        { area_id: 'area-kitchen', name: 'Kitchen' },
+        { area_id: 'area-hall', name: 'Hall' },
+      ],
+      deviceRegistry: [],
+      entityRegistry: [kitchenRegistry, hallRegistry],
+    };
+    const first = mapper.map(input);
+    const firstKitchen = first.find((entity) => entity.externalId === 'light.kitchen');
+    const firstHall = first.find((entity) => entity.externalId === 'light.hall');
+
+    const second = mapper.map({
+      ...input,
+      entityRegistry: [
+        {
+          ...kitchenRegistry,
+          name: 'Cooking lights',
+        },
+        hallRegistry,
+      ],
+    });
+
+    expect(second.find((entity) => entity.externalId === 'light.kitchen')).not.toBe(firstKitchen);
+    expect(second.find((entity) => entity.externalId === 'light.kitchen')?.name).toBe(
+      'Cooking lights'
+    );
+    expect(second.find((entity) => entity.externalId === 'light.hall')).toBe(firstHall);
+  });
+
+  it('reuses provider state and rooms when only entity state changes preserve room placement', () => {
+    const mapProviderState = createHomeAssistantProviderStateMapper();
+    const areas = [{ area_id: 'area-kitchen', name: 'Kitchen' }];
+    const entityRegistry = [{ entity_id: 'sensor.temperature', area_id: 'area-kitchen' }];
+    const input = {
+      entities: {
+        'sensor.temperature': makeEntity('sensor.temperature', '20', {
+          friendly_name: 'Temperature',
+        }),
+      },
+      areas,
+      deviceRegistry: [],
+      entityRegistry,
+    };
+    const first = mapProviderState(input, { connected: true });
+    const nextInput = {
+      ...input,
+      entities: {
+        'sensor.temperature': makeEntity('sensor.temperature', '21', {
+          friendly_name: 'Temperature',
+        }),
+      },
+    };
+    const second = mapProviderState(nextInput, { connected: true });
+
+    expect(second).not.toBe(first);
+    expect(second.entities[0]).not.toBe(first.entities[0]);
+    expect(second.rooms).toBe(first.rooms);
+    expect(mapProviderState(nextInput, { connected: true })).toBe(second);
+  });
+
   it('keeps unassigned entities out of the provider room collection', () => {
     const mappedEntities = mapHomeAssistantEntitiesToNavetEntities({
       entities: {

@@ -1,15 +1,17 @@
 import { useIntegrationStore } from '@navet/app/hooks';
-import { useProviderEntitySnapshots } from '@navet/app/hooks/use-provider-entity';
+import { useProviderEntitySnapshotsByPrefix } from '@navet/app/hooks/use-provider-entity';
 import { integrationSelectors } from '@navet/app/stores/selectors';
 import { useMemo, useRef } from 'react';
 import { mapMarkersEqual, selectMapMarkersFromEntities } from './map-markers';
 import type { MapMarker } from './map-types';
 
-export function useProviderMapMarkers(): MapMarker[] {
+const MAP_MARKER_ENTITY_PREFIXES = ['person.', 'device_tracker.'] as const;
+
+export function useProviderMapMarkers(enabled = true): MapMarker[] {
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
-  const entities = useProviderEntitySnapshots({
+  const entities = useProviderEntitySnapshotsByPrefix(MAP_MARKER_ENTITY_PREFIXES, {
     providerId: currentProviderId,
-    enabled: currentProviderId === 'home_assistant',
+    enabled: enabled && currentProviderId === 'home_assistant',
   });
   const stableMarkersRef = useRef<MapMarker[]>([]);
 

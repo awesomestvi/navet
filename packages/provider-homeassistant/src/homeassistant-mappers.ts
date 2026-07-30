@@ -1,9 +1,9 @@
 import { createProviderScopedId } from '@navet/core/ids';
-import type { NavetEntity, NavetProviderRoom } from '@navet/core/types';
+import type { NavetEntity, NavetProviderRoom, NavetProviderState } from '@navet/core/types';
 import type { HassEntities, HassEntity } from 'home-assistant-js-websocket';
 import { mapHomeAssistantHassAlarmEntity } from './homeassistant-alarm';
 import {
-  createRegistryMaps,
+  type createRegistryMaps,
   getEntityCategory,
   getMediaPlayerCapabilities,
   getName,
@@ -39,6 +39,46 @@ type SwitchMetricState = {
   icon: 'zap' | 'gauge' | 'activity' | 'thermometer' | 'droplets' | 'motion';
   category: 'measurement' | 'configuration';
 };
+
+interface SwitchMetricContribution {
+  metric: SwitchMetricState;
+  targetDeviceIds: string[];
+}
+
+interface SwitchMetricCache {
+  contributionsByEntityId: Map<string, SwitchMetricContribution>;
+  consumerEntityIdsByDeviceId: Map<string, Set<string>>;
+  metricsByDeviceId: Map<string, SwitchMetricState[]>;
+  sourceOrderByEntityId: Map<string, number>;
+  sourceEntityIdsByDeviceId: Map<string, Set<string>>;
+}
+
+const MAPPED_HOME_ASSISTANT_DOMAINS = new Set([
+  'light',
+  'fan',
+  'switch',
+  'input_boolean',
+  'script',
+  'button',
+  'input_button',
+  'sensor',
+  'binary_sensor',
+  'climate',
+  'humidifier',
+  'water_heater',
+  'media_player',
+  'cover',
+  'lock',
+  'scene',
+  'person',
+  'device_tracker',
+  'camera',
+  'vacuum',
+  'lawn_mower',
+  'alarm_control_panel',
+  'siren',
+  'event',
+]);
 
 const HOME_ASSISTANT_VACUUM_FEATURES = {
   CLEAN_AREA: 16384,
@@ -78,6 +118,10 @@ function normalizeRoomName(name: string) {
 function getDomain(entityId: string): string {
   const separatorIndex = entityId.indexOf('.');
   return separatorIndex === -1 ? entityId : entityId.slice(0, separatorIndex);
+}
+
+function ownsKey(record: object, key: PropertyKey) {
+  return Reflect.apply(Object.prototype.hasOwnProperty, record, [key]);
 }
 
 function readPreferredEntityPicture(entity: HassEntity): string | undefined {
@@ -425,79 +469,308 @@ function createConfigMetric(entityId: string, entity: HassEntity): SwitchMetricS
   };
 }
 
-function buildSwitchMetricsByDeviceId(
-  entities: HassEntities,
+function resolveSwitchMetricContribution(
+  entityId: string,
+  entity: HassEntity,
+  entityRegistryMap: Map<string, HomeAssistantEntityRegistryEntry>
+): SwitchMetricContribution | null {
+  const domain = getDomain(entityId);
+  const entityEntry = entityRegistryMap.get(entityId);
+  const registryDeviceId = entityEntry?.device_id ?? undefined;
+
+  if (
+    (domain === 'number' || domain === 'input_number' || domain === 'select') &&
+    registryDeviceId &&
+    getEntityCategory(entityEntry) === 'config'
+  ) {
+    const metric = createConfigMetric(entityId, entity);
+    return metric ? { metric, targetDeviceIds: [registryDeviceId] } : null;
+  }
+
+  if (domain !== 'sensor') {
+    return null;
+  }
+
+  const rawValue =
+    readNumberish(entity.state) ??
+    readNumberish(entity.attributes?.native_value) ??
+    readNumberish(entity.attributes?.value);
+  if (rawValue == null) {
+    return null;
+  }
+
+  const deviceClass =
+    typeof entity.attributes?.device_class === 'string'
+      ? entity.attributes.device_class.toLowerCase()
+      : undefined;
+  const friendlyName =
+    typeof entity.attributes?.friendly_name === 'string'
+      ? entity.attributes.friendly_name.toLowerCase()
+      : '';
+  const label = formatMetricLabel(entityId, entity.attributes?.friendly_name);
+  const unit =
+    entity.attributes?.unit_of_measurement ?? entity.attributes?.native_unit_of_measurement;
+  const metric = normalizeMetric(entityId, deviceClass, label, friendlyName, rawValue, unit);
+  if (!metric) {
+    return null;
+  }
+
+  const sourceDeviceId =
+    typeof entity.attributes?.source_device_id === 'string'
+      ? entity.attributes.source_device_id
+      : typeof entity.attributes?.sourceDeviceId === 'string'
+        ? entity.attributes.sourceDeviceId
+        : undefined;
+  const targetDeviceIds = registryDeviceId
+    ? sourceDeviceId && sourceDeviceId !== registryDeviceId
+      ? [registryDeviceId, sourceDeviceId]
+      : [registryDeviceId]
+    : sourceDeviceId
+      ? [sourceDeviceId]
+      : [];
+
+  return targetDeviceIds.length > 0 ? { metric, targetDeviceIds } : null;
+}
+
+function areSwitchMetricEqual(previous: SwitchMetricState, next: SwitchMetricState) {
+  return (
+    previous.label === next.label &&
+    previous.value === next.value &&
+    previous.unit === next.unit &&
+    previous.icon === next.icon &&
+    previous.category === next.category
+  );
+}
+
+function areSwitchMetricsEqual(
+  previous: readonly SwitchMetricState[],
+  next: readonly SwitchMetricState[]
+) {
+  return (
+    previous.length === next.length &&
+    previous.every((metric, index) => {
+      const nextMetric = next[index];
+      return nextMetric !== undefined && areSwitchMetricEqual(metric, nextMetric);
+    })
+  );
+}
+
+function areSwitchMetricContributionsEqual(
+  previous: SwitchMetricContribution | undefined,
+  next: SwitchMetricContribution | null
+) {
+  if (!previous || !next) {
+    return previous === undefined && next === null;
+  }
+
+  return (
+    previous.targetDeviceIds.length === next.targetDeviceIds.length &&
+    previous.targetDeviceIds.every((deviceId, index) => deviceId === next.targetDeviceIds[index]) &&
+    areSwitchMetricEqual(previous.metric, next.metric)
+  );
+}
+
+function addMetricSource(
+  sourceEntityIdsByDeviceId: Map<string, Set<string>>,
+  deviceId: string,
+  entityId: string
+) {
+  const sourceEntityIds = sourceEntityIdsByDeviceId.get(deviceId);
+  if (sourceEntityIds) {
+    sourceEntityIds.add(entityId);
+    return;
+  }
+
+  sourceEntityIdsByDeviceId.set(deviceId, new Set([entityId]));
+}
+
+function addMetricConsumer(
+  consumerEntityIdsByDeviceId: Map<string, Set<string>>,
+  entityId: string,
   entityRegistryMap: Map<string, HomeAssistantEntityRegistryEntry>
 ) {
+  const domain = getDomain(entityId);
+  if (domain !== 'switch' && domain !== 'input_boolean') {
+    return;
+  }
+
+  const deviceId = entityRegistryMap.get(entityId)?.device_id;
+  if (!deviceId) {
+    return;
+  }
+
+  const consumerEntityIds = consumerEntityIdsByDeviceId.get(deviceId);
+  if (consumerEntityIds) {
+    consumerEntityIds.add(entityId);
+    return;
+  }
+
+  consumerEntityIdsByDeviceId.set(deviceId, new Set([entityId]));
+}
+
+function retainMetricConsumerTargets(
+  contribution: SwitchMetricContribution | null,
+  consumerEntityIdsByDeviceId: Map<string, Set<string>>
+): SwitchMetricContribution | null {
+  if (!contribution) {
+    return null;
+  }
+
+  if (contribution.targetDeviceIds.every((deviceId) => consumerEntityIdsByDeviceId.has(deviceId))) {
+    return contribution;
+  }
+
+  const targetDeviceIds = contribution.targetDeviceIds.filter((deviceId) =>
+    consumerEntityIdsByDeviceId.has(deviceId)
+  );
+  if (targetDeviceIds.length === 0) {
+    return null;
+  }
+
+  return { ...contribution, targetDeviceIds };
+}
+
+function buildSwitchMetricCache(
+  entities: HassEntities,
+  entityRegistryMap: Map<string, HomeAssistantEntityRegistryEntry>
+): SwitchMetricCache {
+  const contributionsByEntityId = new Map<string, SwitchMetricContribution>();
+  const consumerEntityIdsByDeviceId = new Map<string, Set<string>>();
   const metricsByDeviceId = new Map<string, SwitchMetricState[]>();
+  const sourceOrderByEntityId = new Map<string, number>();
+  const sourceEntityIdsByDeviceId = new Map<string, Set<string>>();
+  let sourceOrder = 0;
 
-  for (const [entityId, entity] of Object.entries(entities)) {
-    const domain = getDomain(entityId);
-    const entityEntry = entityRegistryMap.get(entityId);
-    const registryDeviceId = entityEntry?.device_id ?? undefined;
-
-    if (
-      (domain === 'number' || domain === 'input_number' || domain === 'select') &&
-      registryDeviceId &&
-      getEntityCategory(entityEntry) === 'config'
-    ) {
-      const configMetric = createConfigMetric(entityId, entity);
-      if (!configMetric) {
-        continue;
-      }
-
-      const metricState = metricsByDeviceId.get(registryDeviceId) ?? [];
-      upsertSwitchMetric(metricState, configMetric);
-      metricsByDeviceId.set(registryDeviceId, metricState);
-      continue;
-    }
-
-    if (domain !== 'sensor') {
-      continue;
-    }
-
-    const rawValue =
-      readNumberish(entity.state) ??
-      readNumberish(entity.attributes?.native_value) ??
-      readNumberish(entity.attributes?.value);
-    if (rawValue == null) {
-      continue;
-    }
-
-    const deviceClass =
-      typeof entity.attributes?.device_class === 'string'
-        ? entity.attributes.device_class.toLowerCase()
-        : undefined;
-    const friendlyName =
-      typeof entity.attributes?.friendly_name === 'string'
-        ? entity.attributes.friendly_name.toLowerCase()
-        : '';
-    const label = formatMetricLabel(entityId, entity.attributes?.friendly_name);
-    const unit =
-      entity.attributes?.unit_of_measurement ?? entity.attributes?.native_unit_of_measurement;
-    const metric = normalizeMetric(entityId, deviceClass, label, friendlyName, rawValue, unit);
-    if (!metric) {
-      continue;
-    }
-
-    const sourceDeviceId =
-      typeof entity.attributes?.source_device_id === 'string'
-        ? entity.attributes.source_device_id
-        : typeof entity.attributes?.sourceDeviceId === 'string'
-          ? entity.attributes.sourceDeviceId
-          : undefined;
-
-    for (const targetDeviceId of [registryDeviceId, sourceDeviceId]) {
-      if (!targetDeviceId) {
-        continue;
-      }
-      const metricState = metricsByDeviceId.get(targetDeviceId) ?? [];
-      upsertSwitchMetric(metricState, metric);
-      metricsByDeviceId.set(targetDeviceId, metricState);
+  for (const entityId in entities) {
+    if (ownsKey(entities, entityId)) {
+      addMetricConsumer(consumerEntityIdsByDeviceId, entityId, entityRegistryMap);
     }
   }
 
-  return metricsByDeviceId;
+  for (const entityId in entities) {
+    if (!ownsKey(entities, entityId)) {
+      continue;
+    }
+
+    const currentSourceOrder = sourceOrder;
+    sourceOrder += 1;
+    // Keep source order even while an entity is unavailable or otherwise does
+    // not contribute a metric. If it becomes valid during an incremental
+    // update, rebuilding the device metrics must match a fresh full mapping.
+    sourceOrderByEntityId.set(entityId, currentSourceOrder);
+    const contribution = retainMetricConsumerTargets(
+      resolveSwitchMetricContribution(
+        entityId,
+        entities[entityId] as HassEntity,
+        entityRegistryMap
+      ),
+      consumerEntityIdsByDeviceId
+    );
+    if (!contribution) {
+      continue;
+    }
+
+    contributionsByEntityId.set(entityId, contribution);
+    for (const deviceId of contribution.targetDeviceIds) {
+      addMetricSource(sourceEntityIdsByDeviceId, deviceId, entityId);
+      const metricState = metricsByDeviceId.get(deviceId) ?? [];
+      upsertSwitchMetric(metricState, contribution.metric);
+      metricsByDeviceId.set(deviceId, metricState);
+    }
+  }
+
+  return {
+    contributionsByEntityId,
+    consumerEntityIdsByDeviceId,
+    metricsByDeviceId,
+    sourceOrderByEntityId,
+    sourceEntityIdsByDeviceId,
+  };
+}
+
+function updateSwitchMetricCache(
+  cache: SwitchMetricCache,
+  entities: HassEntities,
+  changedEntityIds: readonly string[],
+  entityRegistryMap: Map<string, HomeAssistantEntityRegistryEntry>
+): Set<string> {
+  const affectedDeviceIds = new Set<string>();
+  const changedDeviceIds = new Set<string>();
+
+  for (const entityId of changedEntityIds) {
+    const previousContribution = cache.contributionsByEntityId.get(entityId);
+    const source = entities[entityId];
+    const nextContribution = source
+      ? retainMetricConsumerTargets(
+          resolveSwitchMetricContribution(entityId, source, entityRegistryMap),
+          cache.consumerEntityIdsByDeviceId
+        )
+      : null;
+    if (areSwitchMetricContributionsEqual(previousContribution, nextContribution)) {
+      continue;
+    }
+
+    for (const deviceId of previousContribution?.targetDeviceIds ?? []) {
+      affectedDeviceIds.add(deviceId);
+      const sourceEntityIds = cache.sourceEntityIdsByDeviceId.get(deviceId);
+      sourceEntityIds?.delete(entityId);
+      if (sourceEntityIds?.size === 0) {
+        cache.sourceEntityIdsByDeviceId.delete(deviceId);
+      }
+    }
+
+    if (nextContribution) {
+      cache.contributionsByEntityId.set(entityId, nextContribution);
+      for (const deviceId of nextContribution.targetDeviceIds) {
+        affectedDeviceIds.add(deviceId);
+        addMetricSource(cache.sourceEntityIdsByDeviceId, deviceId, entityId);
+      }
+    } else {
+      cache.contributionsByEntityId.delete(entityId);
+    }
+  }
+
+  for (const deviceId of affectedDeviceIds) {
+    const nextMetrics: SwitchMetricState[] = [];
+    const sourceEntityIds = [...(cache.sourceEntityIdsByDeviceId.get(deviceId) ?? [])].sort(
+      (left, right) =>
+        (cache.sourceOrderByEntityId.get(left) ?? Number.MAX_SAFE_INTEGER) -
+        (cache.sourceOrderByEntityId.get(right) ?? Number.MAX_SAFE_INTEGER)
+    );
+    for (const entityId of sourceEntityIds) {
+      const contribution = cache.contributionsByEntityId.get(entityId);
+      if (contribution?.targetDeviceIds.includes(deviceId)) {
+        upsertSwitchMetric(nextMetrics, contribution.metric);
+      }
+    }
+
+    const previousMetrics = cache.metricsByDeviceId.get(deviceId);
+    if (nextMetrics.length === 0) {
+      if (cache.metricsByDeviceId.delete(deviceId)) {
+        changedDeviceIds.add(deviceId);
+      }
+    } else if (!previousMetrics || !areSwitchMetricsEqual(previousMetrics, nextMetrics)) {
+      cache.metricsByDeviceId.set(deviceId, nextMetrics);
+      changedDeviceIds.add(deviceId);
+    }
+  }
+
+  return changedDeviceIds;
+}
+
+function reuseSwitchMetricArrays(previous: SwitchMetricCache | undefined, next: SwitchMetricCache) {
+  if (!previous) {
+    return next;
+  }
+
+  for (const [deviceId, nextMetrics] of next.metricsByDeviceId) {
+    const previousMetrics = previous.metricsByDeviceId.get(deviceId);
+    if (previousMetrics && areSwitchMetricsEqual(previousMetrics, nextMetrics)) {
+      next.metricsByDeviceId.set(deviceId, previousMetrics);
+    }
+  }
+
+  return next;
 }
 
 function readStringList(value: unknown): string[] | undefined {
@@ -1285,145 +1558,474 @@ function createHomeAssistantState(
   };
 }
 
-export function mapHomeAssistantEntitiesToNavetEntities(
-  input: HomeAssistantNavetMappingInput
-): NavetEntity[] {
-  if (!input.entities) {
-    return [];
+type HomeAssistantRegistryMaps = ReturnType<typeof createRegistryMaps>;
+
+interface CachedHomeAssistantEntity {
+  areaName: string | undefined;
+  areaMapDependency: Map<string, string> | undefined;
+  deviceEntry: HomeAssistantDeviceRegistryEntry | undefined;
+  entityEntry: HomeAssistantEntityRegistryEntry | undefined;
+  mapped: NavetEntity | null;
+  mappedIndex: number | null;
+  metrics: SwitchMetricState[] | undefined;
+  source: HassEntity;
+}
+
+interface HomeAssistantEntityMappingCache {
+  areas: HomeAssistantNavetMappingInput['areas'];
+  deviceRegistry: HomeAssistantNavetMappingInput['deviceRegistry'];
+  entities: HomeAssistantNavetMappingInput['entities'];
+  entityRegistry: HomeAssistantNavetMappingInput['entityRegistry'];
+  entries: Map<string, CachedHomeAssistantEntity>;
+  mappedEntities: NavetEntity[];
+  metricCache: SwitchMetricCache;
+  roomRevision: object;
+  sourceEntityIds: string[];
+}
+
+export interface HomeAssistantEntityMapper {
+  getRoomRevision: (mappedEntities: NavetEntity[]) => object;
+  map: (input: HomeAssistantNavetMappingInput) => NavetEntity[];
+}
+
+function createCachedRegistryMapResolver() {
+  let areas: HomeAssistantNavetMappingInput['areas'] | null = null;
+  let areaMap = new Map<string, string>();
+  let deviceRegistry: HomeAssistantNavetMappingInput['deviceRegistry'] | null = null;
+  let deviceRegistryMap = new Map<string, HomeAssistantDeviceRegistryEntry>();
+  let entityRegistry: HomeAssistantNavetMappingInput['entityRegistry'] | null = null;
+  let entityRegistryMap = new Map<string, HomeAssistantEntityRegistryEntry>();
+
+  return (input: HomeAssistantNavetMappingInput): HomeAssistantRegistryMaps => {
+    if (areas !== input.areas) {
+      areas = input.areas;
+      areaMap = new Map(input.areas.map((area) => [area.area_id, area.name]));
+    }
+    if (deviceRegistry !== input.deviceRegistry) {
+      deviceRegistry = input.deviceRegistry;
+      deviceRegistryMap = new Map(input.deviceRegistry.map((device) => [device.id, device]));
+    }
+    if (entityRegistry !== input.entityRegistry) {
+      entityRegistry = input.entityRegistry;
+      entityRegistryMap = new Map(
+        input.entityRegistry.map((registryEntry) => [registryEntry.entity_id, registryEntry])
+      );
+    }
+
+    return { areaMap, deviceRegistryMap, entityRegistryMap };
+  };
+}
+
+function resolveEntityAreaNameDependency(
+  entityEntry: HomeAssistantEntityRegistryEntry | undefined,
+  deviceEntry: HomeAssistantDeviceRegistryEntry | undefined,
+  areaMap: Map<string, string>
+) {
+  const areaId = entityEntry?.area_id ?? deviceEntry?.area_id ?? undefined;
+  return areaId ? areaMap.get(areaId) : undefined;
+}
+
+function mapHomeAssistantEntity(
+  entityId: string,
+  entity: HassEntity,
+  registryMaps: HomeAssistantRegistryMaps,
+  switchMetricsByDeviceId: Map<string, SwitchMetricState[]>
+): NavetEntity | null {
+  const { areaMap, deviceRegistryMap, entityRegistryMap } = registryMaps;
+  const domain = getDomain(entityId);
+  const entityEntry = entityRegistryMap.get(entityId);
+
+  if (!MAPPED_HOME_ASSISTANT_DOMAINS.has(domain)) {
+    return null;
   }
 
-  const { areaMap, deviceRegistryMap, entityRegistryMap } = createRegistryMaps(
-    input.areas,
-    input.deviceRegistry,
-    input.entityRegistry
-  );
-  const switchMetricsByDeviceId = buildSwitchMetricsByDeviceId(input.entities, entityRegistryMap);
+  if (domain === 'event' && classifySecurityEntity(entity) === null) {
+    return null;
+  }
 
-  const entities: NavetEntity[] = [];
+  if (getEntityCategory(entityEntry) === 'config') {
+    return null;
+  }
 
-  for (const [entityId, entity] of Object.entries(input.entities)) {
-    const domain = getDomain(entityId);
-    const entityEntry = entityRegistryMap.get(entityId);
-
-    if (
-      ![
-        'light',
-        'fan',
-        'switch',
-        'input_boolean',
-        'script',
-        'button',
-        'input_button',
-        'sensor',
-        'binary_sensor',
-        'climate',
-        'humidifier',
-        'water_heater',
-        'media_player',
-        'cover',
-        'lock',
-        'scene',
-        'person',
-        'device_tracker',
-        'camera',
-        'vacuum',
-        'lawn_mower',
-        'alarm_control_panel',
-        'siren',
-        'event',
-      ].includes(domain)
-    ) {
-      continue;
-    }
-
-    if (domain === 'event' && classifySecurityEntity(entity) === null) {
-      continue;
-    }
-
-    if (getEntityCategory(entityEntry) === 'config') {
-      continue;
-    }
-
-    const deviceId = entityEntry?.device_id ?? undefined;
-    const deviceEntry = deviceId ? deviceRegistryMap.get(deviceId) : undefined;
-    const securityKind = classifySecurityEntity(entity);
-    const room = resolveEntityRoom(entityId, entity, areaMap, entityRegistryMap, deviceRegistryMap);
-    const roomId = resolveEntityRoomId(entityId, entityRegistryMap, deviceRegistryMap);
-    const name = resolveSecurityEntityName(entity, entityEntry, deviceEntry, securityKind);
-    const capabilities = inferHomeAssistantCapabilities(entityId, entity);
-    const type =
-      domain === 'input_boolean' ||
-      domain === 'script' ||
-      domain === 'button' ||
-      domain === 'input_button'
-        ? 'helper'
-        : domain === 'humidifier'
-          ? 'switch'
-          : domain === 'device_tracker'
-            ? 'person'
-            : domain === 'alarm_control_panel' || domain === 'siren' || domain === 'event'
+  const deviceId = entityEntry?.device_id ?? undefined;
+  const deviceEntry = deviceId ? deviceRegistryMap.get(deviceId) : undefined;
+  const securityKind = classifySecurityEntity(entity);
+  const room = resolveEntityRoom(entityId, entity, areaMap, entityRegistryMap, deviceRegistryMap);
+  const roomId = resolveEntityRoomId(entityId, entityRegistryMap, deviceRegistryMap);
+  const name = resolveSecurityEntityName(entity, entityEntry, deviceEntry, securityKind);
+  const capabilities = inferHomeAssistantCapabilities(entityId, entity);
+  const type =
+    domain === 'input_boolean' ||
+    domain === 'script' ||
+    domain === 'button' ||
+    domain === 'input_button'
+      ? 'helper'
+      : domain === 'humidifier'
+        ? 'switch'
+        : domain === 'device_tracker'
+          ? 'person'
+          : domain === 'alarm_control_panel' || domain === 'siren' || domain === 'event'
+            ? 'sensor'
+            : domain === 'binary_sensor'
               ? 'sensor'
-              : domain === 'binary_sensor'
-                ? 'sensor'
-                : isVacuumLikeDomain(domain)
-                  ? 'vacuum'
-                  : (domain as NavetEntity['type']);
+              : isVacuumLikeDomain(domain)
+                ? 'vacuum'
+                : (domain as NavetEntity['type']);
 
-    const resources =
-      domain === 'camera'
+  const resources =
+    domain === 'camera'
+      ? ({
+          camera_snapshot: {
+            kind: 'camera_snapshot' as const,
+            providerId: 'home_assistant',
+            entityId,
+            path: readPreferredEntityPicture(entity),
+          },
+        } satisfies NavetEntity['resources'])
+      : domain === 'media_player'
         ? ({
-            camera_snapshot: {
-              kind: 'camera_snapshot' as const,
+            media_artwork: {
+              kind: 'media_artwork' as const,
               providerId: 'home_assistant',
               entityId,
-              path: readPreferredEntityPicture(entity),
+              path:
+                (typeof entity.attributes?.entity_picture_local === 'string' &&
+                  entity.attributes.entity_picture_local) ||
+                (typeof entity.attributes?.entity_picture === 'string' &&
+                  entity.attributes.entity_picture) ||
+                (typeof entity.attributes?.media_image_url === 'string' &&
+                  entity.attributes.media_image_url) ||
+                undefined,
             },
           } satisfies NavetEntity['resources'])
-        : domain === 'media_player'
+        : typeof entity.attributes?.entity_picture === 'string'
           ? ({
-              media_artwork: {
-                kind: 'media_artwork' as const,
+              primary_image: {
+                kind: 'primary_image' as const,
                 providerId: 'home_assistant',
                 entityId,
                 path:
-                  (typeof entity.attributes?.entity_picture_local === 'string' &&
-                    entity.attributes.entity_picture_local) ||
-                  (typeof entity.attributes?.entity_picture === 'string' &&
-                    entity.attributes.entity_picture) ||
-                  (typeof entity.attributes?.media_image_url === 'string' &&
-                    entity.attributes.media_image_url) ||
-                  undefined,
+                  typeof entity.attributes?.entity_picture === 'string'
+                    ? entity.attributes.entity_picture
+                    : undefined,
               },
             } satisfies NavetEntity['resources'])
-          : typeof entity.attributes?.entity_picture === 'string'
-            ? ({
-                primary_image: {
-                  kind: 'primary_image' as const,
-                  providerId: 'home_assistant',
-                  entityId,
-                  path:
-                    typeof entity.attributes?.entity_picture === 'string'
-                      ? entity.attributes.entity_picture
-                      : undefined,
-                },
-              } satisfies NavetEntity['resources'])
-            : undefined;
+          : undefined;
 
-    entities.push(
-      createNavetEntity(
-        entityId,
-        type,
-        name,
-        room || UNKNOWN_ROOM_LABEL,
-        capabilities,
-        createHomeAssistantState(entityId, entity, entityEntry, areaMap, switchMetricsByDeviceId),
-        resources,
-        roomId
-      )
+  return createNavetEntity(
+    entityId,
+    type,
+    name,
+    room || UNKNOWN_ROOM_LABEL,
+    capabilities,
+    createHomeAssistantState(entityId, entity, entityEntry, areaMap, switchMetricsByDeviceId),
+    resources,
+    roomId
+  );
+}
+
+function hasSameRoomPlacement(previous: NavetEntity | undefined, next: NavetEntity) {
+  return (
+    previous?.canonicalId === next.canonicalId &&
+    previous.roomId === next.roomId &&
+    previous.room === next.room
+  );
+}
+
+export function createHomeAssistantEntityMapper(): HomeAssistantEntityMapper {
+  const resolveRegistryMaps = createCachedRegistryMapResolver();
+  let cache: HomeAssistantEntityMappingCache | null = null;
+
+  const resolveEntry = (
+    entityId: string,
+    source: HassEntity,
+    registryMaps: HomeAssistantRegistryMaps,
+    metricCache: SwitchMetricCache,
+    mappedIndex: number | null
+  ): CachedHomeAssistantEntity => {
+    const domain = getDomain(entityId);
+    const entityEntry = registryMaps.entityRegistryMap.get(entityId);
+    const deviceId = entityEntry?.device_id ?? undefined;
+    const deviceEntry = deviceId ? registryMaps.deviceRegistryMap.get(deviceId) : undefined;
+    const areaName = resolveEntityAreaNameDependency(
+      entityEntry,
+      deviceEntry,
+      registryMaps.areaMap
     );
-  }
+    const areaMapDependency = domain === 'vacuum' ? registryMaps.areaMap : undefined;
+    const metrics =
+      (domain === 'switch' || domain === 'input_boolean') && deviceId
+        ? metricCache.metricsByDeviceId.get(deviceId)
+        : undefined;
+    const previousEntry = cache?.entries.get(entityId);
+    const canReuse =
+      previousEntry?.source === source &&
+      previousEntry.entityEntry === entityEntry &&
+      previousEntry.deviceEntry === deviceEntry &&
+      previousEntry.areaName === areaName &&
+      previousEntry.areaMapDependency === areaMapDependency &&
+      previousEntry.metrics === metrics;
 
-  return entities;
+    return {
+      areaName,
+      areaMapDependency,
+      deviceEntry,
+      entityEntry,
+      mapped: canReuse
+        ? previousEntry.mapped
+        : mapHomeAssistantEntity(entityId, source, registryMaps, metricCache.metricsByDeviceId),
+      mappedIndex,
+      metrics,
+      source,
+    };
+  };
+
+  return {
+    getRoomRevision: (mappedEntities) =>
+      cache?.mappedEntities === mappedEntities ? cache.roomRevision : mappedEntities,
+    map: (input) => {
+      if (
+        cache &&
+        cache.entities === input.entities &&
+        cache.areas === input.areas &&
+        cache.deviceRegistry === input.deviceRegistry &&
+        cache.entityRegistry === input.entityRegistry
+      ) {
+        return cache.mappedEntities;
+      }
+
+      if (!input.entities) {
+        const mappedEntities =
+          cache?.mappedEntities.length === 0 ? cache.mappedEntities : ([] as NavetEntity[]);
+        cache = {
+          areas: input.areas,
+          deviceRegistry: input.deviceRegistry,
+          entities: input.entities,
+          entityRegistry: input.entityRegistry,
+          entries: new Map(),
+          mappedEntities,
+          metricCache: buildSwitchMetricCache({} as HassEntities, new Map()),
+          roomRevision: cache?.mappedEntities.length === 0 ? cache.roomRevision : {},
+          sourceEntityIds: [],
+        };
+        return mappedEntities;
+      }
+
+      const registryMaps = resolveRegistryMaps(input);
+      const changedSourceEntityIds: string[] = [];
+      let sourceIndex = 0;
+      let sourceStructureStable = cache !== null;
+      for (const entityId in input.entities) {
+        if (!ownsKey(input.entities, entityId)) {
+          continue;
+        }
+
+        const source = input.entities[entityId] as HassEntity;
+        if (cache?.sourceEntityIds[sourceIndex] !== entityId) {
+          sourceStructureStable = false;
+        }
+        if (cache?.entries.get(entityId)?.source !== source) {
+          changedSourceEntityIds.push(entityId);
+        }
+        sourceIndex += 1;
+      }
+      if (sourceIndex !== cache?.sourceEntityIds.length) {
+        sourceStructureStable = false;
+      }
+
+      if (
+        cache &&
+        sourceStructureStable &&
+        changedSourceEntityIds.length === 0 &&
+        cache.areas === input.areas &&
+        cache.deviceRegistry === input.deviceRegistry &&
+        cache.entityRegistry === input.entityRegistry
+      ) {
+        cache.entities = input.entities;
+        return cache.mappedEntities;
+      }
+
+      let metricCache: SwitchMetricCache;
+      let changedMetricDeviceIds: Set<string>;
+      if (cache && sourceStructureStable && cache.entityRegistry === input.entityRegistry) {
+        metricCache = cache.metricCache;
+        changedMetricDeviceIds = updateSwitchMetricCache(
+          metricCache,
+          input.entities,
+          changedSourceEntityIds,
+          registryMaps.entityRegistryMap
+        );
+      } else {
+        metricCache = reuseSwitchMetricArrays(
+          cache?.metricCache,
+          buildSwitchMetricCache(input.entities, registryMaps.entityRegistryMap)
+        );
+        changedMetricDeviceIds = new Set<string>();
+        for (const [deviceId, metrics] of metricCache.metricsByDeviceId) {
+          if (cache?.metricCache.metricsByDeviceId.get(deviceId) !== metrics) {
+            changedMetricDeviceIds.add(deviceId);
+          }
+        }
+        for (const deviceId of cache?.metricCache.metricsByDeviceId.keys() ?? []) {
+          if (!metricCache.metricsByDeviceId.has(deviceId)) {
+            changedMetricDeviceIds.add(deviceId);
+          }
+        }
+      }
+
+      if (
+        cache &&
+        sourceStructureStable &&
+        cache.areas === input.areas &&
+        cache.deviceRegistry === input.deviceRegistry &&
+        cache.entityRegistry === input.entityRegistry
+      ) {
+        const currentCache = cache;
+        const invalidatedEntityIds = new Set(changedSourceEntityIds);
+        for (const deviceId of changedMetricDeviceIds) {
+          for (const entityId of metricCache.consumerEntityIdsByDeviceId.get(deviceId) ?? []) {
+            invalidatedEntityIds.add(entityId);
+          }
+        }
+
+        let mappedEntities = currentCache.mappedEntities;
+        let mappedEntitiesChanged = false;
+        let roomPlacementChanged = false;
+        let requiresFullReconciliation = false;
+
+        for (const entityId of invalidatedEntityIds) {
+          const source = input.entities[entityId] as HassEntity | undefined;
+          const previousEntry = currentCache.entries.get(entityId);
+          if (!source || !previousEntry) {
+            requiresFullReconciliation = true;
+            break;
+          }
+
+          const nextEntry = resolveEntry(
+            entityId,
+            source,
+            registryMaps,
+            metricCache,
+            previousEntry.mappedIndex
+          );
+          if (Boolean(previousEntry.mapped) !== Boolean(nextEntry.mapped)) {
+            requiresFullReconciliation = true;
+            break;
+          }
+
+          if (
+            previousEntry.mapped &&
+            nextEntry.mapped &&
+            previousEntry.mapped !== nextEntry.mapped
+          ) {
+            const mappedIndex = previousEntry.mappedIndex;
+            if (
+              mappedIndex === null ||
+              currentCache.mappedEntities[mappedIndex]?.canonicalId !== nextEntry.mapped.canonicalId
+            ) {
+              requiresFullReconciliation = true;
+              break;
+            }
+
+            if (!mappedEntitiesChanged) {
+              mappedEntities = [...currentCache.mappedEntities];
+              mappedEntitiesChanged = true;
+            }
+            mappedEntities[mappedIndex] = nextEntry.mapped;
+            if (!hasSameRoomPlacement(previousEntry.mapped, nextEntry.mapped)) {
+              roomPlacementChanged = true;
+            }
+          }
+
+          currentCache.entries.set(entityId, nextEntry);
+        }
+
+        if (!requiresFullReconciliation) {
+          cache = {
+            ...currentCache,
+            entities: input.entities,
+            mappedEntities,
+            metricCache,
+            roomRevision: roomPlacementChanged ? {} : currentCache.roomRevision,
+          };
+          return mappedEntities;
+        }
+      }
+
+      const entries = cache?.entries ?? new Map<string, CachedHomeAssistantEntity>();
+      const mappedEntities: NavetEntity[] = [];
+      let mappedEntitiesChanged = cache === null;
+      let roomPlacementChanged = cache === null;
+      const sourceEntityIds = sourceStructureStable ? cache?.sourceEntityIds : [];
+      let outputIndex = 0;
+
+      for (const entityId in input.entities) {
+        if (!ownsKey(input.entities, entityId)) {
+          continue;
+        }
+        const source = input.entities[entityId] as HassEntity;
+        if (!sourceStructureStable) {
+          sourceEntityIds?.push(entityId);
+        }
+        const nextEntry = resolveEntry(entityId, source, registryMaps, metricCache, null);
+
+        if (!nextEntry.mapped) {
+          entries.set(entityId, nextEntry);
+          continue;
+        }
+
+        nextEntry.mappedIndex = outputIndex;
+        entries.set(entityId, nextEntry);
+        const previousMapped = cache?.mappedEntities[outputIndex];
+        if (previousMapped !== nextEntry.mapped) {
+          mappedEntitiesChanged = true;
+        }
+        if (!hasSameRoomPlacement(previousMapped, nextEntry.mapped)) {
+          roomPlacementChanged = true;
+        }
+        mappedEntities.push(nextEntry.mapped);
+        outputIndex += 1;
+      }
+
+      if (!sourceStructureStable && cache) {
+        for (const entityId of cache.sourceEntityIds) {
+          if (!ownsKey(input.entities, entityId)) {
+            entries.delete(entityId);
+          }
+        }
+      }
+
+      if (cache && cache.mappedEntities.length !== mappedEntities.length) {
+        mappedEntitiesChanged = true;
+        roomPlacementChanged = true;
+      }
+
+      const stableMappedEntities =
+        cache && !mappedEntitiesChanged ? cache.mappedEntities : mappedEntities;
+      const roomRevision = cache && !roomPlacementChanged ? cache.roomRevision : {};
+      cache = {
+        areas: input.areas,
+        deviceRegistry: input.deviceRegistry,
+        entities: input.entities,
+        entityRegistry: input.entityRegistry,
+        entries,
+        mappedEntities: stableMappedEntities,
+        metricCache,
+        roomRevision,
+        sourceEntityIds: sourceEntityIds ?? [],
+      };
+
+      return stableMappedEntities;
+    },
+  };
+}
+
+const defaultHomeAssistantEntityMapper = createHomeAssistantEntityMapper();
+
+export function mapHomeAssistantEntitiesToNavetEntities(
+  input: HomeAssistantNavetMappingInput
+): NavetEntity[] {
+  return defaultHomeAssistantEntityMapper.map(input);
 }
 
 export function buildHomeAssistantProviderRooms(
@@ -1477,4 +2079,65 @@ export function buildHomeAssistantProviderRooms(
   }
 
   return Array.from(roomsById.values()).sort((left, right) => left.name.localeCompare(right.name));
+}
+
+export function createHomeAssistantProviderStateMapper() {
+  const entityMapper = createHomeAssistantEntityMapper();
+  let cache:
+    | {
+        areas: HomeAssistantNavetMappingInput['areas'];
+        connected: boolean;
+        deviceRegistry: HomeAssistantNavetMappingInput['deviceRegistry'];
+        entities: HomeAssistantNavetMappingInput['entities'];
+        entityRegistry: HomeAssistantNavetMappingInput['entityRegistry'];
+        providerState: NavetProviderState;
+        roomRevision: object;
+      }
+    | undefined;
+
+  return (
+    input: HomeAssistantNavetMappingInput,
+    options: { connected: boolean }
+  ): NavetProviderState => {
+    if (
+      cache &&
+      cache.connected === options.connected &&
+      cache.entities === input.entities &&
+      cache.areas === input.areas &&
+      cache.deviceRegistry === input.deviceRegistry &&
+      cache.entityRegistry === input.entityRegistry
+    ) {
+      return cache.providerState;
+    }
+
+    const entities = entityMapper.map(input);
+    const roomRevision = entityMapper.getRoomRevision(entities);
+    const rooms =
+      cache && cache.areas === input.areas && cache.roomRevision === roomRevision
+        ? cache.providerState.rooms
+        : buildHomeAssistantProviderRooms(input, entities);
+    const providerState: NavetProviderState =
+      cache &&
+      cache.connected === options.connected &&
+      cache.providerState.entities === entities &&
+      cache.providerState.rooms === rooms
+        ? cache.providerState
+        : {
+            providerId: 'home_assistant',
+            connected: options.connected,
+            entities,
+            rooms,
+          };
+
+    cache = {
+      areas: input.areas,
+      connected: options.connected,
+      deviceRegistry: input.deviceRegistry,
+      entities: input.entities,
+      entityRegistry: input.entityRegistry,
+      providerState,
+      roomRevision,
+    };
+    return providerState;
+  };
 }

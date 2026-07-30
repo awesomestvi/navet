@@ -1,5 +1,6 @@
 import { useDraggable } from '@dnd-kit/core';
 import { getDndTransformStyle } from '@navet/app/components/shared/dnd-transform-style';
+import type { EffectsQuality } from '@navet/app/stores/settings-store';
 import type { ReactNode } from 'react';
 import type { ZoneName } from '../zones/zone-types';
 
@@ -8,6 +9,7 @@ interface DashboardCardItemDraggableProps {
   zone: ZoneName;
   spanClass: string;
   ambientLightBleed: boolean;
+  effectsQuality: EffectsQuality;
   children: ReactNode;
 }
 
@@ -16,6 +18,7 @@ export function DashboardCardItemDraggable({
   zone,
   spanClass,
   ambientLightBleed,
+  effectsQuality,
   children,
 }: DashboardCardItemDraggableProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -36,6 +39,7 @@ export function DashboardCardItemDraggable({
       style={getDndTransformStyle(transform)}
       data-draggable-card="true"
       data-card-drag-surface="true"
+      data-navet-effects-quality={effectsQuality}
     >
       {children}
     </div>

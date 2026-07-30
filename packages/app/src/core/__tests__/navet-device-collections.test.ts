@@ -187,6 +187,40 @@ describe('mapNavetEntitiesToDeviceCollection', () => {
     ]);
   });
 
+  it('selects primary switches in linear time across a large multi-switch snapshot', () => {
+    const entities = Array.from({ length: 1_024 }, (_, index) => {
+      const deviceId = `device-${index}`;
+      return [
+        createEntity({
+          canonicalId: `home_assistant:switch.fixture_${index}_boost`,
+          externalId: `switch.fixture_${index}_boost`,
+          type: 'switch',
+          name: `Fixture ${index} Boost`,
+          attributes: {
+            value: 'off',
+            deviceId,
+          },
+        }),
+        createEntity({
+          canonicalId: `home_assistant:switch.fixture_${index}`,
+          externalId: `switch.fixture_${index}`,
+          type: 'switch',
+          name: `Fixture ${index}`,
+          attributes: {
+            value: 'on',
+            deviceId,
+          },
+        }),
+      ];
+    }).flat();
+
+    const devices = mapNavetEntitiesToDeviceCollection(entities);
+
+    expect(devices.switches).toHaveLength(1_024);
+    expect(devices.switches[0]?.id).toBe('home_assistant:switch.fixture_0');
+    expect(devices.switches.at(-1)?.id).toBe('home_assistant:switch.fixture_1023');
+  });
+
   it('does not surface brightness accessory switches as the primary switch card', () => {
     const devices = mapNavetEntitiesToDeviceCollection([
       createEntity({

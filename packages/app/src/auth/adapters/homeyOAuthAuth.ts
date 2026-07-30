@@ -1,14 +1,21 @@
 import type { HomeyCloudHomey } from '@navet/app/types/homey';
 import type { IntegrationUser } from '@navet/app/types/integration-user';
 import { resolveAddonLocalEndpointUrl } from '@navet/app/utils/home-assistant-connection-target';
+import {
+  clearInstallationPairingKey,
+  getInstallationPairingHeaders,
+} from '../installation-pairing';
+import { DurableAuthSessionUnavailableError } from '../session-errors';
 import type { AuthAdapter, HomeyAuthSession } from '../types';
 
 const HOMEY_SESSION_ENDPOINT = '/__navet_homey__/session';
 const HOMEY_AUTHORIZE_ENDPOINT = '/__navet_homey__/authorize';
 const HOMEY_SELECT_ENDPOINT = '/__navet_homey__/session/select';
 const HOMEY_CALLBACK_PARAM = 'homey_oauth_callback';
+const HOMEY_CALLBACK_ERROR_PARAM = 'homey_oauth_error';
 const HOMEY_SESSION_LOAD_TIMEOUT_MS = 3_000;
-const HOMEY_CALLBACK_PARAMS = [HOMEY_CALLBACK_PARAM, 'code', 'state'];
+const HOMEY_CALLBACK_PARAMS = [HOMEY_CALLBACK_PARAM, HOMEY_CALLBACK_ERROR_PARAM, 'code', 'state'];
+const HOMEY_OAUTH_ORIGIN = 'https://api.athom.com';
 
 interface StoredHomeySession {
   userId?: string | null;
@@ -17,6 +24,25 @@ interface StoredHomeySession {
   selectedHomeyId?: string | null;
   homeyBaseUrl?: string | null;
   hasActiveHomeySession?: boolean;
+}
+
+export const homeyOAuthNavigation = {
+  assign(url: string) {
+    window.location.assign(url);
+  },
+};
+
+function isValidHomeyAuthorizeUrl(value: unknown): value is string {
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  try {
+    const url = new URL(value);
+    return url.origin === HOMEY_OAUTH_ORIGIN && url.pathname === '/oauth2/authorise';
+  } catch {
+    return false;
+  }
 }
 
 function isValidIntegrationUser(value: unknown): value is IntegrationUser {
@@ -72,7 +98,9 @@ async function fetchHomeySessionResponse(timeoutMs = HOMEY_SESSION_LOAD_TIMEOUT_
       return null;
     }
 
-    throw error;
+    throw new DurableAuthSessionUnavailableError('The Homey session service could not be reached', {
+      cause: error,
+    });
   } finally {
     if (timeoutId !== null) {
       window.clearTimeout(timeoutId);
@@ -114,28 +142,61 @@ function isValidStoredHomeySession(value: unknown): value is StoredHomeySession 
 
 async function loadStoredHomeySession(): Promise<StoredHomeySession | null> {
   const response = await fetchHomeySessionResponse();
-  if (response === null || response.status === 204 || response.status === 404) {
+  if (response === null) {
+    throw new DurableAuthSessionUnavailableError('The Homey session service did not respond');
+  }
+  if (response.status === 204) {
     return null;
   }
 
   if (!response.ok || !response.headers.get('Content-Type')?.includes('application/json')) {
-    return null;
+    throw new DurableAuthSessionUnavailableError(
+      `The Homey session service returned ${response.status}`
+    );
   }
 
-  const parsed = await response.json();
-  return isValidStoredHomeySession(parsed) ? parsed : null;
+  const parsed: unknown = await response.json().catch(() => null);
+  if (!isValidStoredHomeySession(parsed)) {
+    throw new DurableAuthSessionUnavailableError(
+      'The Homey session service returned invalid metadata'
+    );
+  }
+  return parsed;
 }
 
 async function clearStoredHomeySession(): Promise<void> {
-  await fetch(getSessionEndpoint(), {
+  const response = await fetch(getSessionEndpoint(), {
     method: 'DELETE',
     cache: 'no-store',
     credentials: 'same-origin',
-  }).catch(() => undefined);
+  });
+  if (!response.ok && response.status !== 401 && response.status !== 404) {
+    throw new Error('Unable to clear the Homey browser session');
+  }
 }
 
 function hasOAuthCallback() {
-  return new URLSearchParams(window.location.search).get(HOMEY_CALLBACK_PARAM) === '1';
+  const params = new URLSearchParams(window.location.search);
+  return params.get(HOMEY_CALLBACK_PARAM) === '1' || params.has(HOMEY_CALLBACK_ERROR_PARAM);
+}
+
+function getHomeyCallbackErrorMessage(): string | null {
+  const code = new URLSearchParams(window.location.search).get(HOMEY_CALLBACK_ERROR_PARAM);
+  switch (code) {
+    case 'access_denied':
+      return 'Homey sign-in was cancelled.';
+    case 'session_changed':
+      return 'Homey sign-in expired before it completed. Please try again.';
+    case 'not_authorized':
+      return 'This Homey installation is not authorized for Navet.';
+    case 'callback_incomplete':
+      return 'Homey returned an incomplete sign-in response. Please try again.';
+    case 'invalid_response':
+    case 'temporarily_unavailable':
+      return 'Homey sign-in could not be completed. Please try again.';
+    default:
+      return code ? 'Homey sign-in failed. Please try again.' : null;
+  }
 }
 
 function clearOAuthCallbackUrl(): void {
@@ -177,20 +238,59 @@ export const homeyOAuthAuth: AuthAdapter = {
   kind: 'standalone-oauth',
   async init() {
     if (hasOAuthCallback()) {
-      const stored = await loadStoredHomeySession().catch(() => null);
+      const callbackErrorMessage = getHomeyCallbackErrorMessage();
+      const stored = await loadStoredHomeySession();
       clearOAuthCallbackUrl();
-      return stored ? toSession(stored) : null;
+      if (stored) {
+        return toSession(stored);
+      }
+      throw new Error(
+        callbackErrorMessage ?? 'Homey OAuth callback did not create a browser session'
+      );
     }
 
-    const stored = await loadStoredHomeySession().catch(() => null);
+    const stored = await loadStoredHomeySession();
     return stored ? toSession(stored) : null;
   },
   async login(): Promise<HomeyAuthSession> {
-    window.open(getAuthorizeEndpoint(), '_self');
+    const installationPairingHeaders = getInstallationPairingHeaders();
+    const response = await fetch(getAuthorizeEndpoint(), {
+      method: 'POST',
+      cache: 'no-store',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        ...installationPairingHeaders,
+      },
+      body: JSON.stringify({
+        returnTo: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+      }),
+    });
+    const isJsonResponse = response.headers.get('Content-Type')?.includes('application/json');
+    if (!response.ok || !isJsonResponse) {
+      let message = 'Unable to start Homey OAuth';
+      if (isJsonResponse) {
+        const payload = (await response.json().catch(() => null)) as {
+          error?: unknown;
+        } | null;
+        if (typeof payload?.error === 'string' && payload.error.trim()) {
+          message = payload.error.trim().replace(/\s+/g, ' ').slice(0, 240);
+        }
+      }
+      throw new Error(message);
+    }
+
+    const payload = (await response.json()) as { authorizeUrl?: unknown };
+    if (!isValidHomeyAuthorizeUrl(payload.authorizeUrl)) {
+      throw new Error('Homey returned an invalid authorization URL');
+    }
+
+    clearInstallationPairingKey();
+    homeyOAuthNavigation.assign(payload.authorizeUrl);
     return await new Promise<HomeyAuthSession>(() => undefined);
   },
   async refresh(_session) {
-    const stored = await loadStoredHomeySession().catch(() => null);
+    const stored = await loadStoredHomeySession();
     if (!stored) {
       throw new Error('Homey session is no longer available');
     }

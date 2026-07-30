@@ -13,6 +13,21 @@ vi.mock('sonner', () => ({
   },
 }));
 
+function toHomeLayoutActionParams(homeLayoutController: {
+  layout: { mode: 'flow' | 'sectioned'; sections: Array<{ id: string }> };
+  addCard: (cardId: string, sectionId?: string) => void;
+  removeCard: (cardId: string) => void;
+  addSection: () => string;
+}) {
+  return {
+    homeLayoutMode: homeLayoutController.layout.mode,
+    homeLayoutSections: homeLayoutController.layout.sections,
+    addHomeLayoutCard: homeLayoutController.addCard,
+    removeHomeLayoutCard: homeLayoutController.removeCard,
+    addHomeLayoutSection: homeLayoutController.addSection,
+  };
+}
+
 describe('useDashboardCardActions', () => {
   const infoTemplate: CardTemplate = {
     id: 'info',
@@ -68,7 +83,7 @@ describe('useDashboardCardActions', () => {
         showAutoEntity,
         t: (key: string) => key,
         addCardTargetSectionId: null,
-        homeLayoutController,
+        ...toHomeLayoutActionParams(homeLayoutController),
       })
     );
 
@@ -110,7 +125,7 @@ describe('useDashboardCardActions', () => {
         showAutoEntity,
         t: (key: string) => key,
         addCardTargetSectionId: null,
-        homeLayoutController,
+        ...toHomeLayoutActionParams(homeLayoutController),
       })
     );
 
@@ -160,7 +175,7 @@ describe('useDashboardCardActions', () => {
         t: (key: string, values?: Record<string, unknown>) =>
           values ? `${key}:${JSON.stringify(values)}` : key,
         addCardTargetSectionId: null,
-        homeLayoutController,
+        ...toHomeLayoutActionParams(homeLayoutController),
       })
     );
 
@@ -210,7 +225,7 @@ describe('useDashboardCardActions', () => {
         t: (key: string, values?: Record<string, unknown>) =>
           values ? `${key}:${JSON.stringify(values)}` : key,
         addCardTargetSectionId: null,
-        homeLayoutController,
+        ...toHomeLayoutActionParams(homeLayoutController),
       })
     );
 
@@ -264,7 +279,7 @@ describe('useDashboardCardActions', () => {
         showAutoEntity,
         t: (key: string) => key,
         addCardTargetSectionId: null,
-        homeLayoutController,
+        ...toHomeLayoutActionParams(homeLayoutController),
       })
     );
 
@@ -308,7 +323,7 @@ describe('useDashboardCardActions', () => {
         showAutoEntity,
         t: (key: string) => key,
         addCardTargetSectionId: null,
-        homeLayoutController,
+        ...toHomeLayoutActionParams(homeLayoutController),
       })
     );
 

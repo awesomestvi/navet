@@ -21,7 +21,16 @@ Example:
 services:
   navet:
     image: ghcr.io/awesomestvi/navet:v0.4.1
+    volumes:
+      - navet-data:/data
+
+volumes:
+  navet-data:
 ```
+
+Keep the same named volume and Compose project when rolling backward or forward. Never use
+`docker compose down -v` for a normal rollback because it deletes Navet's credential sessions and
+dashboard profile.
 
 ## Home Assistant Add-on
 

@@ -1,4 +1,6 @@
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
+import type { EffectsQuality } from '@navet/app/stores/settings-store';
+import { useMemo } from 'react';
 import { getWeatherSvgOverlayTransform } from './weather-card-utils';
 
 type RainOverlayIntensity = 'rain' | 'storm';
@@ -118,10 +120,13 @@ function buildDeterministicRaindrops(
 interface RainOverlaySvgProps {
   size: CardSize;
   intensity?: RainOverlayIntensity;
+  effectsQuality: EffectsQuality;
 }
 
-export function RainOverlaySvg({ size, intensity = 'rain' }: RainOverlaySvgProps) {
-  const densityMultiplier = 4;
+const HIGH_QUALITY_DENSITY_MULTIPLIER = 4;
+const LOW_QUALITY_DENSITY_RATIO = 0.1;
+
+function getRainBaseCounts(size: CardSize, intensity: RainOverlayIntensity) {
   const farBaseCount =
     intensity === 'storm'
       ? size === 'large'
@@ -158,27 +163,89 @@ export function RainOverlaySvg({ size, intensity = 'rain' }: RainOverlaySvgProps
         : size === 'medium'
           ? 72
           : 54;
-  const farCount = farBaseCount * densityMultiplier;
-  const midCount = midBaseCount * densityMultiplier;
-  const nearCount = nearBaseCount * densityMultiplier;
-  const farDrops = buildDeterministicRaindrops(
-    intensity === 'storm' ? 8127 : 4127,
-    farCount,
-    intensity,
-    'far'
+
+  return {
+    far: farBaseCount,
+    mid: midBaseCount,
+    near: nearBaseCount,
+  };
+}
+
+function formatRainPathValue(value: number) {
+  return value.toFixed(2);
+}
+
+function buildRainLayerPath(drops: ReturnType<typeof buildDeterministicRaindrops>) {
+  return drops
+    .map(
+      ({ x1, y1, x2, y2 }) =>
+        `M ${formatRainPathValue(x1)} ${formatRainPathValue(y1)} L ${formatRainPathValue(x2)} ${formatRainPathValue(y2)}`
+    )
+    .join(' ');
+}
+
+export function RainOverlaySvg({ size, intensity = 'rain', effectsQuality }: RainOverlaySvgProps) {
+  const isLowQuality = effectsQuality === 'low';
+  const baseCounts = getRainBaseCounts(size, intensity);
+  const resolveCount = (baseCount: number) =>
+    isLowQuality
+      ? Math.max(6, Math.round(baseCount * LOW_QUALITY_DENSITY_RATIO))
+      : baseCount * HIGH_QUALITY_DENSITY_MULTIPLIER;
+  const farCount = resolveCount(baseCounts.far);
+  const midCount = resolveCount(baseCounts.mid);
+  const nearCount = resolveCount(baseCounts.near);
+  const farDrops = useMemo(
+    () =>
+      buildDeterministicRaindrops(intensity === 'storm' ? 8127 : 4127, farCount, intensity, 'far'),
+    [farCount, intensity]
   );
-  const midDrops = buildDeterministicRaindrops(
-    intensity === 'storm' ? 12457 : 6847,
-    midCount,
-    intensity,
-    'mid'
+  const midDrops = useMemo(
+    () =>
+      buildDeterministicRaindrops(intensity === 'storm' ? 12457 : 6847, midCount, intensity, 'mid'),
+    [intensity, midCount]
   );
-  const nearDrops = buildDeterministicRaindrops(
-    intensity === 'storm' ? 17291 : 9311,
-    nearCount,
-    intensity,
-    'near'
+  const nearDrops = useMemo(
+    () =>
+      buildDeterministicRaindrops(
+        intensity === 'storm' ? 17291 : 9311,
+        nearCount,
+        intensity,
+        'near'
+      ),
+    [intensity, nearCount]
   );
+  const reducedLayers = useMemo(() => {
+    if (!isLowQuality) {
+      return null;
+    }
+
+    return [
+      {
+        depth: 'far' as const,
+        drops: farDrops,
+        stroke: 'rgba(170,200,239,0.84)',
+      },
+      {
+        depth: 'mid' as const,
+        drops: midDrops,
+        stroke: 'rgba(198,223,248,0.9)',
+      },
+      {
+        depth: 'near' as const,
+        drops: nearDrops,
+        stroke: 'rgba(233,244,255,0.96)',
+      },
+    ].map(({ depth, drops, stroke }) => {
+      const settings = getRainDropSettings(intensity, depth);
+      return {
+        depth,
+        path: buildRainLayerPath(drops),
+        stroke,
+        strokeWidth: (settings.strokeMin + settings.strokeMax) / 2,
+        opacity: (settings.opacityMin + settings.opacityMax) / 2,
+      };
+    });
+  }, [farDrops, intensity, isLowQuality, midDrops, nearDrops]);
 
   return (
     <svg
@@ -186,50 +253,70 @@ export function RainOverlaySvg({ size, intensity = 'rain' }: RainOverlaySvgProps
       viewBox="0 0 100 40"
       aria-hidden="true"
       preserveAspectRatio="xMidYMid slice"
+      data-effects-quality={effectsQuality}
+      data-weather-overlay="rain"
       style={{ transform: getWeatherSvgOverlayTransform(size), transformOrigin: 'center top' }}
     >
-      {farDrops.map((drop, index) => (
-        <line
-          key={`${intensity}-far-${index}`}
-          x1={drop.x1}
-          y1={drop.y1}
-          x2={drop.x2}
-          y2={drop.y2}
-          stroke="rgba(170,200,239,0.84)"
-          strokeWidth={drop.strokeWidth}
-          strokeLinecap="round"
-          opacity={drop.opacity}
-          vectorEffect="non-scaling-stroke"
-        />
-      ))}
-      {midDrops.map((drop, index) => (
-        <line
-          key={`${intensity}-mid-${index}`}
-          x1={drop.x1}
-          y1={drop.y1}
-          x2={drop.x2}
-          y2={drop.y2}
-          stroke="rgba(198,223,248,0.9)"
-          strokeWidth={drop.strokeWidth}
-          strokeLinecap="round"
-          opacity={drop.opacity}
-          vectorEffect="non-scaling-stroke"
-        />
-      ))}
-      {nearDrops.map((drop, index) => (
-        <line
-          key={`${intensity}-near-${index}`}
-          x1={drop.x1}
-          y1={drop.y1}
-          x2={drop.x2}
-          y2={drop.y2}
-          stroke="rgba(233,244,255,0.96)"
-          strokeWidth={drop.strokeWidth}
-          strokeLinecap="round"
-          opacity={drop.opacity}
-          vectorEffect="non-scaling-stroke"
-        />
-      ))}
+      {reducedLayers ? (
+        reducedLayers.map((layer) => (
+          <path
+            key={`${intensity}-${layer.depth}`}
+            d={layer.path}
+            data-rain-depth={layer.depth}
+            fill="none"
+            stroke={layer.stroke}
+            strokeWidth={layer.strokeWidth}
+            strokeLinecap="round"
+            opacity={layer.opacity}
+            vectorEffect="non-scaling-stroke"
+          />
+        ))
+      ) : (
+        <>
+          {farDrops.map((drop, index) => (
+            <line
+              key={`${intensity}-far-${index}`}
+              x1={drop.x1}
+              y1={drop.y1}
+              x2={drop.x2}
+              y2={drop.y2}
+              stroke="rgba(170,200,239,0.84)"
+              strokeWidth={drop.strokeWidth}
+              strokeLinecap="round"
+              opacity={drop.opacity}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+          {midDrops.map((drop, index) => (
+            <line
+              key={`${intensity}-mid-${index}`}
+              x1={drop.x1}
+              y1={drop.y1}
+              x2={drop.x2}
+              y2={drop.y2}
+              stroke="rgba(198,223,248,0.9)"
+              strokeWidth={drop.strokeWidth}
+              strokeLinecap="round"
+              opacity={drop.opacity}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+          {nearDrops.map((drop, index) => (
+            <line
+              key={`${intensity}-near-${index}`}
+              x1={drop.x1}
+              y1={drop.y1}
+              x2={drop.x2}
+              y2={drop.y2}
+              stroke="rgba(233,244,255,0.96)"
+              strokeWidth={drop.strokeWidth}
+              strokeLinecap="round"
+              opacity={drop.opacity}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+        </>
+      )}
     </svg>
   );
 }

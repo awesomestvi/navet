@@ -1322,6 +1322,8 @@ export const zhMessages = {
     '共享仪表板已重置。此仪表板的本地设置已保留；您可以在“设置”中恢复较早的版本。',
   'dashboard.profileSync.missingPreserved': '共享仪表板需要恢复。此仪表板的本地设置已保留。',
   'dashboard.profileSync.unavailable': '共享仪表板同步不可用。本地设置已保留。',
+  'dashboard.profileSync.tenantMismatch':
+    '此共享仪表板属于另一个 Home Assistant 地址。请使用设置此 Navet 安装时所用的同一 Home Assistant 地址连接。本地设置已保留。',
   'dashboard.profileSync.unauthorized': '请重新登录以继续同步共享仪表板。本地设置已保留。',
   'dashboard.profileSync.saveFailed': '无法同步仪表板。您的本地更改已保留，Navet 将重试。',
   'entityRoomSelector.movedTo': '房间 {room}',

@@ -1,16 +1,31 @@
-import { useSettingsStore } from '@navet/app/stores/settings-store';
-import { act, renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useHeaderSearch } from './use-header-search';
 
+const SEARCH_DEVICE_KEYS = [
+  'lights',
+  'climate',
+  'hvac',
+  'switches',
+  'covers',
+  'locks',
+  'media',
+  'persons',
+  'sensors',
+  'vacuums',
+  'weather',
+];
+
 const {
+  activeDeviceCollection,
+  emptyDeviceCollection,
   useDeviceCollectionsByKeysMock,
   searchState,
   setFilteredDeviceIdsMock,
   setSearchQueryMock,
   clearSearchMock,
-} = vi.hoisted(() => ({
-  useDeviceCollectionsByKeysMock: vi.fn(() => ({
+} = vi.hoisted(() => {
+  const emptyDeviceCollection = {
     lights: [],
     fans: [],
     hvac: [],
@@ -28,20 +43,35 @@ const {
     calendars: [],
     cameras: [],
     'grouped-sensors': [],
-  })),
-  searchState: {
+  };
+  const activeDeviceCollection = {
+    ...emptyDeviceCollection,
+    lights: [{ id: 'light.kitchen_pendant', name: 'Kitchen pendant', room: 'Kitchen' }],
+    sensors: [{ id: 'sensor.outdoor_temperature', name: 'Outdoor temperature', room: 'Garden' }],
+  };
+  const searchState = {
     searchQuery: '',
     filteredDeviceIds: [] as string[],
-  },
-  setFilteredDeviceIdsMock: vi.fn(),
-  setSearchQueryMock: vi.fn((value: string) => {
-    searchState.searchQuery = value;
-  }),
-  clearSearchMock: vi.fn(() => {
-    searchState.searchQuery = '';
-    searchState.filteredDeviceIds = [];
-  }),
-}));
+  };
+
+  return {
+    activeDeviceCollection,
+    emptyDeviceCollection,
+    useDeviceCollectionsByKeysMock: vi.fn(
+      (_keys: readonly string[], options?: { enabled?: boolean }) =>
+        options?.enabled ? activeDeviceCollection : emptyDeviceCollection
+    ),
+    searchState,
+    setFilteredDeviceIdsMock: vi.fn(),
+    setSearchQueryMock: vi.fn((value: string) => {
+      searchState.searchQuery = value;
+    }),
+    clearSearchMock: vi.fn(() => {
+      searchState.searchQuery = '';
+      searchState.filteredDeviceIds = [];
+    }),
+  };
+});
 
 vi.mock('@navet/app/hooks', () => ({
   useDeviceCollectionsByKeys: useDeviceCollectionsByKeysMock,
@@ -63,19 +93,52 @@ describe('useHeaderSearch', () => {
     clearSearchMock.mockClear();
     searchState.searchQuery = '';
     searchState.filteredDeviceIds = [];
-    useSettingsStore.setState({ ...useSettingsStore.getInitialState(), lowPowerMode: true }, true);
   });
 
-  it('keeps device loading disabled while low-power search is idle', () => {
-    renderHook(() => useHeaderSearch());
+  it('does not track device collections while search is closed and idle', () => {
+    const { result, rerender } = renderHook(() => useHeaderSearch());
 
-    expect(useDeviceCollectionsByKeysMock).toHaveBeenCalledWith(expect.any(Array), {
+    expect(useDeviceCollectionsByKeysMock).toHaveBeenCalledWith(SEARCH_DEVICE_KEYS, {
       enabled: false,
+      includeFeatureCollections: false,
+    });
+    expect(useDeviceCollectionsByKeysMock).toHaveLastReturnedWith(emptyDeviceCollection);
+
+    rerender();
+
+    expect(useDeviceCollectionsByKeysMock).toHaveBeenCalledTimes(2);
+    expect(result.current.isSearchFocused).toBe(false);
+    expect(result.current.isMobileSearchOpen).toBe(false);
+  });
+
+  it('loads collections on focus so the first query is ready immediately', () => {
+    const { result } = renderHook(() => useHeaderSearch());
+
+    act(() => {
+      result.current.setIsSearchFocused(true);
+    });
+
+    expect(useDeviceCollectionsByKeysMock).toHaveBeenLastCalledWith(SEARCH_DEVICE_KEYS, {
+      enabled: true,
+      includeFeatureCollections: false,
+    });
+    expect(useDeviceCollectionsByKeysMock).toHaveLastReturnedWith(activeDeviceCollection);
+  });
+
+  it('loads collections as soon as the mobile search sheet opens', () => {
+    const { result } = renderHook(() => useHeaderSearch());
+
+    act(() => {
+      result.current.setIsMobileSearchOpen(true);
+    });
+
+    expect(useDeviceCollectionsByKeysMock).toHaveBeenLastCalledWith(SEARCH_DEVICE_KEYS, {
+      enabled: true,
       includeFeatureCollections: false,
     });
   });
 
-  it('enables device loading after search input becomes active in low-power mode', () => {
+  it('loads and filters active search results by device metadata', async () => {
     const { result, rerender } = renderHook(() => useHeaderSearch());
 
     act(() => {
@@ -83,9 +146,12 @@ describe('useHeaderSearch', () => {
     });
     rerender();
 
-    expect(useDeviceCollectionsByKeysMock).toHaveBeenLastCalledWith(expect.any(Array), {
+    expect(useDeviceCollectionsByKeysMock).toHaveBeenLastCalledWith(SEARCH_DEVICE_KEYS, {
       enabled: true,
       includeFeatureCollections: false,
+    });
+    await waitFor(() => {
+      expect(setFilteredDeviceIdsMock).toHaveBeenLastCalledWith(['light.kitchen_pendant']);
     });
   });
 });

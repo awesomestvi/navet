@@ -19,7 +19,9 @@ interface DashboardClientEnvironment {
 }
 
 interface DashboardClientIdentityOptions {
+  dispatchEvent?: boolean;
   environment?: DashboardClientEnvironment;
+  expectedCurrentId?: string;
   now?: () => Date;
   profileMode?: 'standard' | 'wall_display' | 'bedside' | 'custom';
   randomUUID?: () => string;
@@ -28,6 +30,7 @@ interface DashboardClientIdentityOptions {
 const CLIENT_NAME_MAX_LENGTH = 64;
 const CLIENT_ID_PATTERN = /^[a-zA-Z0-9_-]{8,128}$/;
 export const DASHBOARD_CLIENT_IDENTITY_EVENT = 'navet:dashboard-client-identity';
+let volatileIdentity: DashboardClientIdentity | null = null;
 
 function sanitizeClientName(value: unknown): string | null {
   if (typeof value !== 'string') {
@@ -154,6 +157,25 @@ function parseDashboardClientIdentity(value: unknown): DashboardClientIdentity |
   };
 }
 
+function identitiesEqual(left: DashboardClientIdentity | null, right: DashboardClientIdentity) {
+  return (
+    left?.id === right.id &&
+    left.name === right.name &&
+    left.kind === right.kind &&
+    left.nameSource === right.nameSource &&
+    left.createdAt === right.createdAt &&
+    left.updatedAt === right.updatedAt
+  );
+}
+
+function persistDashboardClientIdentity(identity: DashboardClientIdentity) {
+  storage.set(STORAGE_KEYS.dashboardClientIdentity, identity);
+  const persisted = parseDashboardClientIdentity(
+    storage.get<DashboardClientIdentity | null>(STORAGE_KEYS.dashboardClientIdentity, null)
+  );
+  volatileIdentity = identitiesEqual(persisted, identity) ? null : identity;
+}
+
 export function getDashboardClientIdentity(
   options: DashboardClientIdentityOptions = {}
 ): DashboardClientIdentity {
@@ -161,24 +183,37 @@ export function getDashboardClientIdentity(
   const stored = parseDashboardClientIdentity(
     storage.get<DashboardClientIdentity | null>(STORAGE_KEYS.dashboardClientIdentity, null)
   );
+  let current = stored;
+  if (volatileIdentity) {
+    if (identitiesEqual(stored, volatileIdentity)) {
+      volatileIdentity = null;
+    } else if (!stored || Date.parse(volatileIdentity.updatedAt) >= Date.parse(stored.updatedAt)) {
+      current = volatileIdentity;
+      persistDashboardClientIdentity(volatileIdentity);
+    } else {
+      volatileIdentity = null;
+    }
+  }
   const kind = inferDashboardClientKind(
     resolveEnvironment(options.environment),
     options.profileMode
   );
 
-  if (stored) {
-    if (stored.kind === kind || kind === 'unknown') {
-      return stored;
+  if (current) {
+    if (current.kind === kind || kind === 'unknown') {
+      return current;
     }
 
     const nextIdentity: DashboardClientIdentity = {
-      ...stored,
+      ...current,
       kind,
       name:
-        stored.nameSource === 'generated' ? getGeneratedClientName(kind, stored.id) : stored.name,
+        current.nameSource === 'generated'
+          ? getGeneratedClientName(kind, current.id)
+          : current.name,
       updatedAt: now.toISOString(),
     };
-    storage.set(STORAGE_KEYS.dashboardClientIdentity, nextIdentity);
+    persistDashboardClientIdentity(nextIdentity);
     return nextIdentity;
   }
 
@@ -191,7 +226,7 @@ export function getDashboardClientIdentity(
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
   };
-  storage.set(STORAGE_KEYS.dashboardClientIdentity, identity);
+  persistDashboardClientIdentity(identity);
   return identity;
 }
 
@@ -211,8 +246,34 @@ export function renameDashboardClient(
     nameSource: 'custom',
     updatedAt: (options.now?.() ?? new Date()).toISOString(),
   };
-  storage.set(STORAGE_KEYS.dashboardClientIdentity, nextIdentity);
+  persistDashboardClientIdentity(nextIdentity);
   if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent(DASHBOARD_CLIENT_IDENTITY_EVENT, { detail: nextIdentity })
+    );
+  }
+  return nextIdentity;
+}
+
+export function rotateDashboardClientIdentity(
+  options: DashboardClientIdentityOptions = {}
+): DashboardClientIdentity {
+  const current = getDashboardClientIdentity(options);
+  if (options.expectedCurrentId && current.id !== options.expectedCurrentId) {
+    return current;
+  }
+  const now = options.now?.() ?? new Date();
+  const id = createClientId(options.randomUUID);
+  const nextIdentity: DashboardClientIdentity = {
+    ...current,
+    id,
+    name:
+      current.nameSource === 'generated' ? getGeneratedClientName(current.kind, id) : current.name,
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
+  };
+  persistDashboardClientIdentity(nextIdentity);
+  if (options.dispatchEvent !== false && typeof window !== 'undefined') {
     window.dispatchEvent(
       new CustomEvent(DASHBOARD_CLIENT_IDENTITY_EVENT, { detail: nextIdentity })
     );

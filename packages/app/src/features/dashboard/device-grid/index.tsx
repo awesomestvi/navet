@@ -25,6 +25,7 @@ export const DeviceGrid = memo(function DeviceGrid({
   allowEntityRemoval = false,
   usesHideAction = false,
   densePerformanceMode = false,
+  optimizeOffscreenPaint = false,
   getDeviceHeaderSubtitle,
 }: DeviceGridProps) {
   const { isSearchActive, filteredDeviceIds } = useSearch();
@@ -32,6 +33,7 @@ export const DeviceGrid = memo(function DeviceGrid({
   const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
     useFitDashboardGrid(breakpointCols);
   const deferredFilteredDeviceIds = useDeferredValue(filteredDeviceIds);
+  const shouldOptimizeOffscreenPaint = optimizeOffscreenPaint && !isEditMode;
 
   const handleSizeChange = useCallback(
     (id: string, size: CardSize) => {
@@ -111,6 +113,7 @@ export const DeviceGrid = memo(function DeviceGrid({
                   allowEntityRemoval={allowEntityRemoval}
                   usesHideAction={usesHideAction}
                   densePerformanceMode={densePerformanceMode}
+                  optimizeOffscreenPaint={shouldOptimizeOffscreenPaint}
                   headerSubtitleOverride={getDeviceHeaderSubtitle?.(device)}
                 />
               );
@@ -135,6 +138,7 @@ export const DeviceGrid = memo(function DeviceGrid({
                 allowEntityRemoval={allowEntityRemoval}
                 usesHideAction={usesHideAction}
                 densePerformanceMode={densePerformanceMode}
+                optimizeOffscreenPaint={shouldOptimizeOffscreenPaint}
               />
             );
           })}

@@ -1445,6 +1445,8 @@ export const plMessages = {
     'Udostępniony panel wymaga odzyskania. Lokalne ustawienia tego panelu zachowano.',
   'dashboard.profileSync.unavailable':
     'Synchronizacja udostępnionego panelu jest niedostępna. Lokalne ustawienia zostają zachowane.',
+  'dashboard.profileSync.tenantMismatch':
+    'Ten udostępniony panel należy do innego adresu Home Assistant. Połącz się przez ten sam adres Home Assistant, którego użyto do skonfigurowania tej instalacji Navet. Lokalne ustawienia zostają zachowane.',
   'dashboard.profileSync.unauthorized':
     'Zaloguj się ponownie, aby kontynuować synchronizację udostępnionego panelu. Lokalne ustawienia zostają zachowane.',
   'dashboard.profileSync.saveFailed':

@@ -42,27 +42,40 @@ Important note:
 
 ## Immutable Navet Dev Flow
 
-1. Push your tested changes to `main`.
-2. Run `pnpm release:dev-publish -- --push` locally from `main`.
-3. Let the script add the dev add-on metadata updates to your current staged set, create the
-   matching `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` release commit and tag, then push both to GitHub.
-4. Let [../../.github/workflows/dev-tag-release.yml](../../.github/workflows/dev-tag-release.yml)
+1. Commit and validate the changes you want to publish.
+2. Check out the named branch that owns those commits and make sure its worktree is clean.
+3. Run `pnpm release:dev-publish -- --push` locally from that branch.
+4. Let the script create and push the matching
+   `navet-dev-0.x.y-dev.YYYYMMDDHHMMSS` tag with branch and commit provenance.
+5. Let [../../.github/workflows/dev-tag-release.yml](../../.github/workflows/dev-tag-release.yml)
    publish the prerelease artifacts from the pushed `navet-dev-*` tag.
+
+Channel behavior depends on the source branch:
+
+- a publish from `main` creates immutable exact-version and `sha-*` images, refreshes the moving
+  `edge` and `dev` aliases, and commits the matching Navet Dev add-on metadata on `main` so Home
+  Assistant supervised installs can discover the update
+- a publish from any other named branch creates immutable exact-version and `sha-*` images plus a
+  GitHub prerelease only; it does not change `main`, `edge`, `dev`, or Home Assistant Add-on Store
+  metadata
+- a branch publish becomes visible to existing `Navet Dev` add-on installations only after its
+  metadata lands on `main` through a later main publish
 
 Fallback:
 
 - dispatch [../../.github/workflows/dev-tag-publish.yml](../../.github/workflows/dev-tag-publish.yml)
-  from `main` if you cannot run the local script
+  from `main` if you cannot run the local script; manual dispatch remains main-only
 - the dispatch workflow only creates and pushes the metadata commit plus `navet-dev-*` tag
 - the tag-triggered publish workflow performs the actual artifact publication
 
 Important note:
 
 - immutable dev-tag versioning comes from the publish workflow and tag name
-- the local dev-publish script or manual fallback helper updates
-  `platform/home-assistant/addons/navet-dev/config.yaml` on `main` so Home Assistant supervised
-  installs can detect the new version
-- dev publishes refresh Docker `edge` and `dev` plus the supervised `Navet Dev` add-on surface
+- every dev tag retains its source branch and commit provenance
+- only a main publish updates `platform/home-assistant/addons/navet-dev/config.yaml` on `main`,
+  refreshes Docker `edge` and `dev`, and advances the supervised `Navet Dev` add-on surface
+- install a non-main publish by its exact immutable Docker version; do not expect the moving aliases
+  or Add-on Store to select it
 - dev publishes do not sync `awesomestvi/navet-hacs` and do not create HACS updates
 
 ## Release Notes
@@ -134,7 +147,9 @@ Fallback source:
 
 - Cloudflare Pages deploys the marketing website, demo, Storybook, and docs as independent projects
 - GitHub Pages is retired for this surface
-- dev tags publish immutable app and add-on images and refresh the moving `edge` and `dev` aliases
+- all dev tags publish immutable exact-version and `sha-*` app and add-on images
+- only dev tags sourced from `main` refresh the moving `edge` and `dev` aliases and supervised
+  add-on metadata
 - prerelease tags do not move `latest`
 - stable tags publish the exact tag, moving stable aliases, and `sha-*`
 - stable tags continue to move Docker `latest`; Navet does not publish a separate Docker `stable`

@@ -1346,6 +1346,8 @@ export const svMessages = {
     'Den delade dashboarden behöver återställas. Den här dashboardens lokala inställningar bevarades.',
   'dashboard.profileSync.unavailable':
     'Synkronisering av den delade dashboarden är inte tillgänglig. Lokala inställningar bevaras.',
+  'dashboard.profileSync.tenantMismatch':
+    'Den delade dashboarden tillhör en annan Home Assistant-adress. Anslut via samma Home Assistant-adress som användes när den här Navet-installationen konfigurerades. Lokala inställningar bevaras.',
   'dashboard.profileSync.unauthorized':
     'Logga in igen för att fortsätta synkronisera den delade dashboarden. Lokala inställningar bevaras.',
   'dashboard.profileSync.saveFailed':

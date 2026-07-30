@@ -1360,6 +1360,8 @@ export const esMessages = {
     'El panel compartido necesita recuperación. Los ajustes locales de este panel se conservaron.',
   'dashboard.profileSync.unavailable':
     'La sincronización del panel compartido no está disponible. Los ajustes locales se conservan.',
+  'dashboard.profileSync.tenantMismatch':
+    'Este panel compartido pertenece a otra dirección de Home Assistant. Conéctate con la misma dirección de Home Assistant usada para configurar esta instalación de Navet. Los ajustes locales se conservan.',
   'dashboard.profileSync.unauthorized':
     'Inicia sesión de nuevo para seguir sincronizando el panel compartido. Los ajustes locales se conservan.',
   'dashboard.profileSync.saveFailed':

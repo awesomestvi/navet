@@ -5,10 +5,12 @@ ARG NAVET_VERSION=0.0.0
 ARG NAVET_GIT_SHA=local
 ARG NAVET_BUILD_DATE=unknown
 ARG NAVET_RELEASE_CHANNEL=development
+ARG NAVET_BUILD_VERSION
 
 ENV NAVET_GIT_SHA=$NAVET_GIT_SHA
 ENV NAVET_BUILD_DATE=$NAVET_BUILD_DATE
 ENV NAVET_RELEASE_CHANNEL=$NAVET_RELEASE_CHANNEL
+ENV NAVET_BUILD_VERSION=${NAVET_BUILD_VERSION:-${NAVET_VERSION}}
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/standalone/package.json apps/standalone/package.json
@@ -46,9 +48,13 @@ LABEL org.opencontainers.image.title="Navet" \
   io.navet.release-channel=$NAVET_RELEASE_CHANNEL
 
 COPY docker/nginx.main.conf /etc/nginx/nginx.conf
+COPY docker/resolver.conf /etc/nginx/resolver.conf
 COPY docker/njs/rss-proxy.js /etc/nginx/njs/rss-proxy.js
 COPY docker/njs/profile-store.js /etc/nginx/njs/profile-store.js
 COPY docker/njs/auth-store.js /etc/nginx/njs/auth-store.js
+COPY docker/njs/provider-session-store.js /etc/nginx/njs/provider-session-store.js
+COPY docker/njs/installation-authority.js /etc/nginx/njs/installation-authority.js
+COPY docker/njs/installation-cookie-scope.js /etc/nginx/njs/installation-cookie-scope.js
 COPY docker/njs/openhab-store.js /etc/nginx/njs/openhab-store.js
 COPY docker/njs/openhab-proxy.js /etc/nginx/njs/openhab-proxy.js
 COPY docker/njs/homey-store.js /etc/nginx/njs/homey-store.js
@@ -70,5 +76,7 @@ COPY --from=build /app/apps/standalone/dist /usr/share/nginx/html
 RUN mkdir -p /data \
   && chown -R nginx:nginx /data \
   && chmod +x /docker-entrypoint.d/30-navet-config.sh
+
+VOLUME ["/data"]
 
 EXPOSE 80

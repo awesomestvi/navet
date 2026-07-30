@@ -9,7 +9,6 @@ import { getRegisteredProviderContract } from '@navet/app/provider-contract-regi
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import type { NavetProviderSession } from '@navet/core/provider-contract';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import { useShallow } from 'zustand/react/shallow';
 import { LoadingSpinner } from './components/primitives/loading-spinner';
 import { ErrorDisplay } from './components/shared/error-display';
 import { NetworkStatusBanner } from './components/shared/network-status-banner';
@@ -23,7 +22,6 @@ import {
   useProviderHealth,
 } from './hooks';
 import { useKeepDeviceAwake } from './hooks/use-keep-device-awake';
-import { useMediaQuery } from './hooks/use-media-query';
 import { useViewportResize } from './hooks/use-viewport-resize';
 import { useI18n } from './i18n';
 import { resolveParentHomeAssistantBridge } from './infrastructure/home-assistant/runtime/parent-hass-bridge';
@@ -37,7 +35,6 @@ import { useErrorStore, useSettingsStore } from './stores';
 import { startNavigationStoreSync } from './stores/navigation-store';
 import { initializeSearchStore } from './stores/search-store';
 import { appErrorSelectors, integrationSelectors, settingsSelectors } from './stores/selectors';
-import { resolveEffectsQuality } from './utils/effects-quality';
 import { clearViewportCssVars, syncViewportCssVars } from './utils/viewport';
 
 const DashboardPage = lazy(async () => {
@@ -64,11 +61,13 @@ function createIngressProxyRecoverySession(
 }
 
 function AppContent() {
-  const { provider, runtime, session, sessions, logout, replaceSession } = useAuthSession();
+  const { provider, runtime, session, sessions, logout, refresh, replaceSession } =
+    useAuthSession();
   const { t } = useI18n();
   const isAuthenticated = Boolean(session);
   const needsHomeySelection =
     session?.providerId === 'homey' && Boolean(session.needsHomeySelection);
+  const retainedHomeAssistantSession = sessions.home_assistant;
   const canResetSessionFromError = runtime === 'standalone-oauth';
   const appError = useErrorStore(appErrorSelectors.error);
   const clearAppError = useErrorStore(appErrorSelectors.clearError);
@@ -84,19 +83,14 @@ function AppContent() {
   const setProviderSessions = useCurrentIntegrationStore(integrationSelectors.setProviderSessions);
   const accentColor = useAccentColor();
   const [localHabitsFeatureEnabled] = useLocalHabitsFeature();
-  const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
-  const { disableAnimations, lowPowerMode, effectsQuality, keepDeviceAwake } = useSettingsStore(
-    useShallow(settingsSelectors.displaySettings)
-  );
-  const resolvedEffectsQuality = resolveEffectsQuality(effectsQuality, lowPowerMode);
-  const reducedEffectsEnabled = resolvedEffectsQuality === 'low';
-  const animationsDisabled = disableAnimations || reducedEffectsEnabled || prefersReducedMotion;
+  const keepDeviceAwake = useSettingsStore(settingsSelectors.keepDeviceAwake);
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === 'undefined' ? true : navigator.onLine
   );
   const failedConnectionAttemptKeys = useRef<Partial<Record<IntegrationProviderId, string>>>({});
   const previousSessionProviderIds = useRef<IntegrationProviderId[]>([]);
   const ingressInvalidAuthRecoveryInFlight = useRef(false);
+  const standaloneInvalidAuthRecoveryInFlight = useRef(false);
   const isInvalidHomeAssistantAuth = appError?.message === INVALID_HOME_ASSISTANT_AUTH_MESSAGE;
 
   const syncViewportEnvironment = useCallback(() => {
@@ -132,9 +126,42 @@ function AppContent() {
       });
   }, [runtime, isAuthenticated, session, replaceSession, clearAppError]);
 
+  const recoverStandaloneInvalidAuthSession = useCallback(() => {
+    if (
+      runtime !== 'standalone-oauth' ||
+      standaloneInvalidAuthRecoveryInFlight.current ||
+      !retainedHomeAssistantSession
+    ) {
+      return;
+    }
+
+    standaloneInvalidAuthRecoveryInFlight.current = true;
+    delete failedConnectionAttemptKeys.current.home_assistant;
+
+    void refresh('home_assistant')
+      .then(async (refreshedSession) => {
+        if (refreshedSession?.providerId !== 'home_assistant') {
+          clearAppError();
+          return;
+        }
+
+        await bootstrapIntegrationSession(refreshedSession);
+        clearAppError();
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        standaloneInvalidAuthRecoveryInFlight.current = false;
+      });
+  }, [runtime, retainedHomeAssistantSession, refresh, clearAppError]);
+
   const retryConnect = useCallback(() => {
     if (runtime === 'ha-ingress') {
       recoverIngressSession();
+      return;
+    }
+
+    if (runtime === 'standalone-oauth' && isInvalidHomeAssistantAuth) {
+      recoverStandaloneInvalidAuthSession();
       return;
     }
 
@@ -146,7 +173,14 @@ function AppContent() {
     void bootstrapIntegrationSession(session).catch(() => {
       failedConnectionAttemptKeys.current.home_assistant = getConnectionAttemptKey(session);
     });
-  }, [runtime, recoverIngressSession, isAuthenticated, session]);
+  }, [
+    runtime,
+    recoverIngressSession,
+    isInvalidHomeAssistantAuth,
+    recoverStandaloneInvalidAuthSession,
+    isAuthenticated,
+    session,
+  ]);
 
   const resetSessionToLogin = useCallback(() => {
     if (session?.providerId) {
@@ -222,8 +256,8 @@ function AppContent() {
       return;
     }
 
-    resetSessionToLogin();
-  }, [appError, canResetSessionFromError, isAuthenticated, resetSessionToLogin]);
+    recoverStandaloneInvalidAuthSession();
+  }, [appError, canResetSessionFromError, isAuthenticated, recoverStandaloneInvalidAuthSession]);
 
   useEffect(() => {
     if (!isAuthenticated || runtime !== 'ha-ingress' || !isInvalidHomeAssistantAuth) {
@@ -395,20 +429,6 @@ function AppContent() {
       document.documentElement.style.removeProperty('--navet-accent');
     };
   }, [accentColor]);
-
-  useEffect(() => {
-    document.documentElement.dataset.noAnimation = animationsDisabled ? 'true' : 'false';
-    document.documentElement.dataset.lowPower = reducedEffectsEnabled ? 'true' : 'false';
-    document.documentElement.dataset.effectsQuality = resolvedEffectsQuality;
-    document.documentElement.dataset.reducedMotion = prefersReducedMotion ? 'true' : 'false';
-
-    return () => {
-      delete document.documentElement.dataset.noAnimation;
-      delete document.documentElement.dataset.lowPower;
-      delete document.documentElement.dataset.effectsQuality;
-      delete document.documentElement.dataset.reducedMotion;
-    };
-  }, [animationsDisabled, prefersReducedMotion, reducedEffectsEnabled, resolvedEffectsQuality]);
 
   useEffect(() => {
     syncViewportEnvironment();

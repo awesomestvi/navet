@@ -3,6 +3,7 @@ import { Slider } from '@navet/app/components/primitives/slider';
 import { getCardActionControlSizes } from '@navet/app/components/shared/card-action-control-sizes';
 import { getCardReadableTextTokens } from '@navet/app/components/shared/theme/card-readable-text-tokens';
 import { getCardStateSurfaceTokens } from '@navet/app/components/shared/theme/card-state-surface-tokens';
+import { useEffectiveEffectsQuality } from '@navet/app/components/shared/theme/effective-effects-quality';
 import { useI18n } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { ResolvedPlatformResource } from '@navet/app/platform/resources';
@@ -113,12 +114,15 @@ export function MediaMediumView({
   onVolumeInteractionEnd,
 }: MediaMediumViewProps) {
   const { t } = useI18n();
+  const effectsQuality = useEffectiveEffectsQuality();
+  const isLowEffects = effectsQuality === 'low';
   const { containerRef, isVolumeMode, registerVolumeInteraction, toggleVolumeMode } =
     useMediaVolumeMode();
   const displayVolume = getMediaDisplayVolume(volume, isMuted);
   const stateSurface = getCardStateSurfaceTokens(theme, isActive);
   const stableArtwork = useStableMediaArtwork(artwork);
   const artworkEdgeAnalysis = useArtworkEdgeBlur(stableArtwork, {
+    enabled: !isLowEffects,
     preferEdge: 'right',
   });
   const paletteArtwork = getMediaArtworkPaletteSource(stableArtwork, artworkResource);
@@ -184,10 +188,16 @@ export function MediaMediumView({
     )}`,
   };
   const glassDepthOverlay =
-    theme === 'glass' ? (
+    theme === 'glass' && !isLowEffects ? (
       <>
-        <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(255,255,255,0.11),rgba(255,255,255,0.04)_24%,rgba(255,255,255,0.015)_100%)]" />
-        <div className="pointer-events-none absolute inset-0 z-[1] shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-16px_30px_rgba(255,255,255,0.03)]" />
+        <div
+          className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(255,255,255,0.11),rgba(255,255,255,0.04)_24%,rgba(255,255,255,0.015)_100%)]"
+          data-media-decorative-layer="glass-depth"
+        />
+        <div
+          className="pointer-events-none absolute inset-0 z-[1] shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-16px_30px_rgba(255,255,255,0.03)]"
+          data-media-decorative-layer="glass-depth"
+        />
       </>
     ) : null;
 
@@ -201,7 +211,11 @@ export function MediaMediumView({
   const mirroredOffToggleSlashStyle = { transform: 'scaleX(-1)' };
 
   return (
-    <div ref={containerRef} className="relative -m-3 flex flex-1 overflow-hidden rounded-[inherit]">
+    <div
+      ref={containerRef}
+      className="relative -m-3 flex flex-1 overflow-hidden rounded-[inherit]"
+      data-media-effects-quality={effectsQuality}
+    >
       {glassDepthOverlay}
       <MediaArtworkSurface
         artwork={stableArtwork}

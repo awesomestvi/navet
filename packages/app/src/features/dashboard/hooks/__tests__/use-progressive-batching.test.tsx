@@ -10,6 +10,21 @@ describe('useProgressiveBatching', () => {
     expect(result.current).toBe(0);
   });
 
+  it('has the initial batch ready when adaptive quality enables batching', () => {
+    const { result, rerender } = renderHookWithProviders(
+      ({ enabled }: { enabled: boolean }) => useProgressiveBatching(20, false, enabled),
+      {
+        initialProps: { enabled: false },
+      }
+    );
+
+    expect(result.current).toBe(0);
+
+    rerender({ enabled: true });
+
+    expect(result.current).toBe(8);
+  });
+
   it('returns infinity in edit mode', () => {
     const { result } = renderHookWithProviders(() => useProgressiveBatching(20, true, true));
 
@@ -27,10 +42,13 @@ describe('useProgressiveBatching', () => {
     expect(result.current).toBe(8);
 
     act(() => {
-      vi.advanceTimersByTime(96);
-      vi.advanceTimersByTime(96);
+      vi.advanceTimersByTime(128);
     });
+    expect(result.current).toBe(16);
 
+    act(() => {
+      vi.advanceTimersByTime(128);
+    });
     expect(result.current).toBe(20);
     vi.useRealTimers();
   });
@@ -52,7 +70,7 @@ describe('useProgressiveBatching', () => {
     expect(result.current).toBe(4);
 
     act(() => {
-      vi.advanceTimersByTime(96);
+      vi.advanceTimersByTime(128);
     });
 
     expect(result.current).toBe(8);
@@ -60,6 +78,7 @@ describe('useProgressiveBatching', () => {
   });
 
   it('stops at the total count when idle callbacks are available', async () => {
+    vi.useFakeTimers();
     Object.defineProperty(window, 'requestIdleCallback', {
       configurable: true,
       value: (
@@ -76,6 +95,11 @@ describe('useProgressiveBatching', () => {
 
     const { result } = renderHookWithProviders(() => useProgressiveBatching(14, false, true));
 
+    expect(result.current).toBe(8);
+    act(() => {
+      vi.advanceTimersByTime(17);
+    });
     expect(result.current).toBe(14);
+    vi.useRealTimers();
   });
 });

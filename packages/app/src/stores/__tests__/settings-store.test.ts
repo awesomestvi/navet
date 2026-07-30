@@ -1,5 +1,6 @@
 import { STORE_STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { resetAppStores } from '@navet/app/test/store-reset';
+import { resetDetectedDeviceTierCache } from '@navet/app/utils/detect-device-tier';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { settingsSelectors } from '../selectors';
 import { defaultSettings, useSettingsStore } from '../settings-store';
@@ -401,6 +402,7 @@ describe('useSettingsStore', () => {
       JSON.stringify({
         state: {
           effectsQuality: 'high',
+          effectsQualityUserOverride: true,
           lowPowerMode: true,
         },
         version: 0,
@@ -410,7 +412,39 @@ describe('useSettingsStore', () => {
     await useSettingsStore.persist.rehydrate();
 
     expect(useSettingsStore.getState().effectsQuality).toBe('high');
+    expect(useSettingsStore.getState().effectsQualityUserOverride).toBe(true);
     expect(useSettingsStore.getState().lowPowerMode).toBe(true);
+  });
+
+  it('redetects quality for legacy default-high settings without an explicit override', async () => {
+    const originalPlatform = navigator.platform;
+    Object.defineProperty(navigator, 'platform', {
+      configurable: true,
+      value: 'Linux aarch64',
+    });
+    resetDetectedDeviceTierCache();
+    localStorage.setItem(
+      STORE_STORAGE_KEYS.settings,
+      JSON.stringify({
+        state: {
+          effectsQuality: 'high',
+        },
+        version: 0,
+      })
+    );
+
+    try {
+      await useSettingsStore.persist.rehydrate();
+
+      expect(useSettingsStore.getState().effectsQuality).toBe('low');
+      expect(useSettingsStore.getState().effectsQualityUserOverride).toBe(false);
+    } finally {
+      Object.defineProperty(navigator, 'platform', {
+        configurable: true,
+        value: originalPlatform,
+      });
+      resetDetectedDeviceTierCache();
+    }
   });
 
   it('rehydrates valid per-camera view modes only', async () => {

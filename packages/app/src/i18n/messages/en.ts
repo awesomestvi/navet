@@ -1431,6 +1431,8 @@ export const enMessages = {
     'The shared dashboard needs recovery. This dashboard’s local settings were preserved.',
   'dashboard.profileSync.unavailable':
     'Shared dashboard sync is unavailable. Local settings are preserved.',
+  'dashboard.profileSync.tenantMismatch':
+    'This shared dashboard belongs to a different Home Assistant address. Connect through the same Home Assistant address used to set up this Navet installation. Local settings are preserved.',
   'dashboard.profileSync.unauthorized':
     'Sign in again to continue syncing the shared dashboard. Local settings are preserved.',
   'dashboard.profileSync.saveFailed':

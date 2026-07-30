@@ -54,39 +54,99 @@ const initialState: HomeAssistantState = {
   reconnecting: false,
 };
 
-// Debounce window for entity state updates. Multiple HA entity changes arriving
-// within this window are coalesced into a single Zustand set call, reducing
-// React reconciler pressure during bursts (automations, energy sensors, etc.).
-// The service always holds the latest HassEntities — only the notification is
-// deferred, so getEntities() at flush time returns the most recent snapshot.
-const ENTITY_DEBOUNCE_MS = 50;
+// Bounded coalescing window for entity state updates. Multiple HA entity changes
+// arriving within this window are committed in a single Zustand set call,
+// reducing React reconciler pressure during bursts (automations, energy sensors,
+// etc.) without postponing the flush indefinitely under a continuous stream.
+const ENTITY_COALESCE_MS = 50;
 const HA_CONNECTION_GRACE_PERIOD_MS = 10_000;
 const HA_CONNECTION_TIMEOUT_MESSAGE =
   'Cannot connect to Home Assistant. Check the saved URL and update it if your Home Assistant address changed.';
 
-function clonePanelEntities(entities: HassEntities | null): HassEntities | null {
+interface PanelEntityFingerprint {
+  source: HassEntities[string];
+  state: string;
+  lastChanged: string;
+  lastReported: string | undefined;
+  lastUpdated: string;
+  attributes: HassEntities[string]['attributes'];
+  context: HassEntities[string]['context'];
+}
+
+function getEntityLastReported(entity: HassEntities[string]) {
+  const lastReported = (entity as HassEntities[string] & { last_reported?: unknown }).last_reported;
+  return typeof lastReported === 'string' ? lastReported : undefined;
+}
+
+function reconcilePanelEntities(
+  entities: HassEntities | null,
+  previousEntities: HassEntities | null,
+  previousFingerprints: Map<string, PanelEntityFingerprint>
+): {
+  entities: HassEntities | null;
+  fingerprints: Map<string, PanelEntityFingerprint>;
+} {
   if (!entities) {
-    return null;
+    return { entities: null, fingerprints: new Map() };
   }
 
-  return Object.fromEntries(
-    Object.entries(entities).map(([entityId, entity]) => [entityId, { ...entity }])
-  );
+  const fingerprints = new Map<string, PanelEntityFingerprint>();
+  const nextEntities: HassEntities = {};
+  let changed = previousEntities === null;
+  let entityCount = 0;
+
+  for (const [entityId, entity] of Object.entries(entities)) {
+    entityCount += 1;
+    const lastReported = getEntityLastReported(entity);
+    const previousFingerprint = previousFingerprints.get(entityId);
+    const canReusePrevious =
+      previousFingerprint?.source === entity &&
+      previousFingerprint.state === entity.state &&
+      previousFingerprint.lastChanged === entity.last_changed &&
+      previousFingerprint.lastReported === lastReported &&
+      previousFingerprint.lastUpdated === entity.last_updated &&
+      previousFingerprint.attributes === entity.attributes &&
+      previousFingerprint.context === entity.context &&
+      previousEntities?.[entityId] !== undefined;
+
+    nextEntities[entityId] = canReusePrevious
+      ? (previousEntities[entityId] as HassEntities[string])
+      : { ...entity };
+    changed ||= !canReusePrevious;
+    fingerprints.set(entityId, {
+      source: entity,
+      state: entity.state,
+      lastChanged: entity.last_changed,
+      lastReported,
+      lastUpdated: entity.last_updated,
+      attributes: entity.attributes,
+      context: entity.context,
+    });
+  }
+
+  changed ||= previousFingerprints.size !== entityCount;
+  return {
+    entities: changed ? nextEntities : previousEntities,
+    fingerprints,
+  };
 }
 
 export const homeAssistantStore = createStore<HomeAssistantStore>()((set, get) => {
-  let entityDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let entityCoalesceTimer: ReturnType<typeof setTimeout> | null = null;
+  let pendingEntities: HassEntities | null = null;
   let connectionGraceTimer: ReturnType<typeof setTimeout> | null = null;
   let activeServiceUnsubscribe: (() => void) | null = null;
   let panelRegistryLoadStarted = false;
   let panelHassAttached = false;
+  let panelEntityFingerprints = new Map<string, PanelEntityFingerprint>();
   let connectAttemptId = 0;
 
-  const clearEntityDebounce = () => {
-    if (entityDebounceTimer !== null) {
-      clearTimeout(entityDebounceTimer);
-      entityDebounceTimer = null;
+  const clearEntityCoalescer = () => {
+    if (entityCoalesceTimer !== null) {
+      clearTimeout(entityCoalesceTimer);
+      entityCoalesceTimer = null;
     }
+    pendingEntities = null;
   };
 
   const clearConnectionGraceTimer = () => {
@@ -99,7 +159,7 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, get) =
   const clearServiceSubscriptions = () => {
     activeServiceUnsubscribe?.();
     activeServiceUnsubscribe = null;
-    clearEntityDebounce();
+    clearEntityCoalescer();
   };
 
   const getConnectionTimeoutDetails = (config: HomeAssistantConfiguration) => {
@@ -148,17 +208,22 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, get) =
             if (attemptId !== connectAttemptId) {
               return;
             }
-            clearEntityDebounce();
-            entityDebounceTimer = setTimeout(() => {
+            pendingEntities = entities;
+            if (entityCoalesceTimer !== null) {
+              return;
+            }
+            entityCoalesceTimer = setTimeout(() => {
+              entityCoalesceTimer = null;
+              const nextEntities = pendingEntities;
+              pendingEntities = null;
               if (attemptId !== connectAttemptId) {
                 return;
               }
-              entityDebounceTimer = null;
-              if (get().entities === entities) {
+              if (nextEntities === null || get().entities === nextEntities) {
                 return;
               }
-              set({ entities });
-            }, ENTITY_DEBOUNCE_MS);
+              set({ entities: nextEntities });
+            }, ENTITY_COALESCE_MS);
           }),
           homeAssistantService.addListener('config', (config) => {
             if (attemptId !== connectAttemptId) {
@@ -236,7 +301,7 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, get) =
         ];
         const unsubscribe = () => {
           for (const fn of unsubscribers) fn();
-          clearEntityDebounce();
+          clearEntityCoalescer();
         };
         activeServiceUnsubscribe = unsubscribe;
 
@@ -297,7 +362,13 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, get) =
       const isPanelUpdate = panelHassAttached;
       panelHassAttached = true;
       homeAssistantService.setPanelHass(hass);
-      const panelEntities = clonePanelEntities(homeAssistantService.getEntities());
+      const panelEntityReconciliation = reconcilePanelEntities(
+        homeAssistantService.getEntities(),
+        get().entities,
+        panelEntityFingerprints
+      );
+      panelEntityFingerprints = panelEntityReconciliation.fingerprints;
+      const panelEntities = panelEntityReconciliation.entities;
 
       if (isPanelUpdate) {
         useErrorStore.getState().clearError();
@@ -372,6 +443,7 @@ export const homeAssistantStore = createStore<HomeAssistantStore>()((set, get) =
       clearServiceSubscriptions();
       panelRegistryLoadStarted = false;
       panelHassAttached = false;
+      panelEntityFingerprints = new Map();
       homeAssistantService.disconnect();
       set(initialState);
     },

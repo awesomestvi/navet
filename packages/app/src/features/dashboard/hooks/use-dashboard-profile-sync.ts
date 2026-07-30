@@ -1,3 +1,7 @@
+import {
+  AUTH_SESSION_REFRESHED_EVENT,
+  type AuthSessionRefreshedEventDetail,
+} from '@navet/app/auth/session-events';
 import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import {
@@ -10,10 +14,14 @@ import {
   DASHBOARD_CLIENT_IDENTITY_EVENT,
   type DashboardClientIdentity,
   getDashboardClientIdentity,
+  rotateDashboardClientIdentity,
 } from '@navet/app/features/dashboard/clients/dashboard-client-identity';
 import {
+  getDashboardProfileFingerprint,
   readDashboardProfileBase,
+  readDashboardProfileReceipt,
   writeDashboardProfileBase,
+  writeDashboardProfileReceipt,
 } from '@navet/app/features/dashboard/clients/dashboard-profile-base-cache';
 import {
   getDashboardProfileChangedPaths,
@@ -27,8 +35,9 @@ import {
 import { useDashboardPreferenceSync } from '@navet/app/features/dashboard/hooks/use-dashboard-preference-sync';
 import { useLightPresetStore } from '@navet/app/features/lighting/stores/light-preset-store';
 import { useI18n } from '@navet/app/hooks';
-import { isHomeAssistantPanelMode } from '@navet/app/runtime/app-mode';
+import { isHomeAssistantAddonMode, isHomeAssistantPanelMode } from '@navet/app/runtime/app-mode';
 import {
+  DASHBOARD_PROFILE_ERROR_CODES,
   DASHBOARD_PROFILE_ID,
   type DashboardProfileRevisionMetadata,
 } from '@navet/app/services/dashboard-profile.contract';
@@ -39,7 +48,7 @@ import {
   loadDashboardProfile,
   loadDashboardProfileClients,
   saveDashboardProfile,
-  touchDashboardClient,
+  touchDashboardClientWithStatus,
 } from '@navet/app/services/dashboard-profile.service';
 import { useEntityRoomOverridesStore } from '@navet/app/stores/entity-room-overrides-store';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
@@ -56,6 +65,7 @@ import { useShallow } from 'zustand/react/shallow';
 
 const PROFILE_SAVE_DEBOUNCE_MS = 2_000;
 const PROFILE_REMOTE_POLL_INTERVAL_MS = 60_000;
+const PROFILE_CONFLICT_REMINDER_INTERVAL_MS = 60_000;
 const PROFILE_REMOTE_POLL_BACKOFF_MS = [60_000, 120_000, 300_000] as const;
 
 export const DASHBOARD_PROFILE_REFRESH_EVENT = 'navet:dashboard-profile-refresh';
@@ -69,7 +79,18 @@ const SYNC_RELEVANT_PERSISTED_KEYS = new Set<string>([
 interface PendingConflict {
   base: DashboardConfigPayload | null;
   local: DashboardConfigPayload;
+  overlappingPaths: string[];
   remote: DashboardProfileLoadResult;
+}
+
+interface KeepLocalResolution {
+  base: DashboardConfigPayload | null;
+  chosenLocal: DashboardConfigPayload;
+  generation: string | null;
+  installationId: string | null;
+  lastAttempt: DashboardConfigPayload;
+  profileId: typeof DASHBOARD_PROFILE_ID;
+  workspaceId: string | null;
 }
 
 function getProfileForSync(): DashboardConfigPayload {
@@ -128,6 +149,7 @@ function remoteFromWrite(
   return {
     available: true,
     unauthorized: false,
+    failureCode: null,
     profile,
     notModified: false,
     etag: result.etag,
@@ -152,12 +174,14 @@ export function useDashboardProfileSync() {
   const onboardingCompletedRef = useRef(onboardingCompleted);
   const syncCurrentLocalStateRef = useRef<() => void>(() => undefined);
   const panelMode = isHomeAssistantPanelMode();
+  const addonMode = isHomeAssistantAddonMode();
   const preferenceClient = useDashboardProfileRuntimeStore((state) => state.client);
 
   tRef.current = t;
   onboardingCompletedRef.current = onboardingCompleted;
 
   useDashboardPreferenceSync({
+    accountEnabled: addonMode,
     client: preferenceClient,
     enabled: !panelMode && profileLoadCompleted,
   });
@@ -182,15 +206,22 @@ export function useDashboardProfileSync() {
     let saving = false;
     let loadingRemote = false;
     let pendingLocalChanges = false;
+    let refreshAfterAuthentication = false;
+    let clientRegistrationPending = false;
     let writesBlocked = false;
+    let permanentAccessFailure = false;
     let isOnline = typeof navigator === 'undefined' ? true : navigator.onLine;
     let isVisible = getDocumentVisibility() === 'visible';
     let failureCount = 0;
     let remoteResult: DashboardProfileLoadResult | null = null;
     let saveTimeout: number | null = null;
     let pollTimeout: number | null = null;
+    let conflictReminderTimeout: number | null = null;
     let conflictToastId: string | number | null = null;
     let pendingConflict: PendingConflict | null = null;
+    let keepLocalResolution: KeepLocalResolution | null = null;
+    let commonBase = readDashboardProfileBase();
+    let cleanReceipt = readDashboardProfileReceipt();
     let client = getDashboardClientIdentity({
       profileMode: useSettingsStore.getState().dashboardProfileMode,
     });
@@ -212,22 +243,53 @@ export function useDashboardProfileSync() {
       }
     }
 
-    function clearConflict() {
-      if (conflictToastId !== null) {
-        toast.dismiss(conflictToastId);
-        conflictToastId = null;
+    function clearConflictReminderTimeout() {
+      if (conflictReminderTimeout !== null) {
+        window.clearTimeout(conflictReminderTimeout);
+        conflictReminderTimeout = null;
       }
+    }
+
+    function scheduleConflictReminder() {
+      clearConflictReminderTimeout();
+      if (cancelled || !pendingConflict) {
+        return;
+      }
+
+      conflictReminderTimeout = window.setTimeout(() => {
+        conflictReminderTimeout = null;
+        const currentConflict = pendingConflict;
+        if (cancelled || !currentConflict || conflictToastId !== null || !isVisible) {
+          return;
+        }
+        showConflict(currentConflict);
+      }, PROFILE_CONFLICT_REMINDER_INTERVAL_MS);
+    }
+
+    function clearConflict() {
+      clearConflictReminderTimeout();
+      const toastId = conflictToastId;
+      conflictToastId = null;
       pendingConflict = null;
       runtime.clearConflict();
+      if (toastId !== null) {
+        // Clear the tracked id before asking Sonner to dismiss. Sonner invokes
+        // onDismiss for programmatic dismissal too; the cleared id identifies
+        // this as a completed resolution rather than a deferred user choice.
+        toast.dismiss(toastId);
+      }
     }
 
     function readCompatibleBase(result = remoteResult) {
-      const base = readDashboardProfileBase();
+      const base = commonBase;
       if (
         !base ||
         !result?.workspace ||
+        result.revision === null ||
         base.workspaceId !== result.workspace.workspaceId ||
-        base.profileId !== DASHBOARD_PROFILE_ID
+        base.profileId !== DASHBOARD_PROFILE_ID ||
+        base.generation !== result.generation ||
+        base.revision > result.revision
       ) {
         return null;
       }
@@ -236,19 +298,26 @@ export function useDashboardProfileSync() {
 
     function rememberCommonBase(
       profile: DashboardConfigPayload,
-      result: DashboardProfileLoadResult
+      result: DashboardProfileLoadResult,
+      { recordCleanReceipt = true }: { recordCleanReceipt?: boolean } = {}
     ) {
-      if (!result.workspace || result.revision === null) {
+      if (!result.workspace || !result.generation || result.revision === null) {
         return;
       }
 
-      writeDashboardProfileBase({
+      const snapshot = {
+        generation: result.generation,
         profile,
         profileId: DASHBOARD_PROFILE_ID,
         revision: result.revision,
         savedAt: new Date().toISOString(),
         workspaceId: result.workspace.workspaceId,
-      });
+      };
+      commonBase = snapshot;
+      writeDashboardProfileBase(commonBase);
+      if (recordCleanReceipt) {
+        cleanReceipt = writeDashboardProfileReceipt(snapshot);
+      }
     }
 
     function markRemoteSynced(result: DashboardProfileLoadResult) {
@@ -320,9 +389,28 @@ export function useDashboardProfileSync() {
       );
     }
 
+    async function touchCurrentClientWithRecovery() {
+      const rejectedClient = client;
+      let result = await touchDashboardClientWithStatus(rejectedClient);
+      if (result.failureCode !== DASHBOARD_PROFILE_ERROR_CODES.clientBindingMismatch) {
+        clientRegistrationPending = result.registry === null;
+        return result;
+      }
+
+      client = rotateDashboardClientIdentity({
+        dispatchEvent: false,
+        expectedCurrentId: rejectedClient.id,
+        profileMode: useSettingsStore.getState().dashboardProfileMode,
+      });
+      runtime.setClient(client);
+      result = await touchDashboardClientWithStatus(client);
+      clientRegistrationPending = result.registry === null;
+      return result;
+    }
+
     async function refreshRegisteredClients(touch = false) {
       const response = touch
-        ? await touchDashboardClient(client)
+        ? (await touchCurrentClientWithRecovery()).registry
         : await loadDashboardProfileClients(client);
       if (!cancelled) {
         setRegisteredClients(response);
@@ -346,22 +434,39 @@ export function useDashboardProfileSync() {
       void refreshRegisteredClients(true);
     }
 
-    function showConflict(conflict: PendingConflict, overlappingPaths: string[]) {
+    function isSameConflictTarget(left: PendingConflict, right: PendingConflict) {
+      return (
+        left.remote.revision === right.remote.revision &&
+        left.remote.generation === right.remote.generation &&
+        left.remote.workspace?.installationId === right.remote.workspace?.installationId &&
+        left.remote.workspace?.workspaceId === right.remote.workspace?.workspaceId
+      );
+    }
+
+    function setRuntimeConflict(conflict: PendingConflict) {
+      runtime.setConflict({
+        baseRevision: readCompatibleBase(conflict.remote)?.revision ?? null,
+        remoteRevision: conflict.remote.revision ?? 0,
+        overlappingPaths: conflict.overlappingPaths,
+        remoteActivity: toActivity(conflict.remote.metadata),
+      });
+    }
+
+    function showConflict(conflict: PendingConflict) {
       clearSaveTimeout();
-      const existingRevision = pendingConflict?.remote.revision;
-      if (existingRevision === conflict.remote.revision && conflictToastId !== null) {
+      if (
+        pendingConflict &&
+        isSameConflictTarget(pendingConflict, conflict) &&
+        conflictToastId !== null
+      ) {
         pendingConflict = conflict;
+        setRuntimeConflict(conflict);
         return;
       }
 
       clearConflict();
       pendingConflict = conflict;
-      runtime.setConflict({
-        baseRevision: readCompatibleBase(conflict.remote)?.revision ?? null,
-        remoteRevision: conflict.remote.revision ?? 0,
-        overlappingPaths,
-        remoteActivity: toActivity(conflict.remote.metadata),
-      });
+      setRuntimeConflict(conflict);
 
       conflictToastId = toast(tRef.current('dashboard.profileSync.conflictTitle'), {
         description: createElement(
@@ -387,16 +492,19 @@ export function useDashboardProfileSync() {
                     return;
                   }
 
+                  const currentLocal = getProfileForSync();
                   const rebased = currentConflict.base
                     ? rebaseLocalDashboardProfile(
                         currentConflict.base,
-                        currentConflict.local,
+                        currentLocal,
                         currentConflict.remote.profile
                       )
-                    : currentConflict.local;
+                    : currentLocal;
                   clearConflict();
                   remoteResult = currentConflict.remote;
-                  rememberCommonBase(currentConflict.remote.profile, currentConflict.remote);
+                  rememberCommonBase(currentConflict.remote.profile, currentConflict.remote, {
+                    recordCleanReceipt: false,
+                  });
                   applyingRemote = true;
                   try {
                     importDashboardConfig(
@@ -406,8 +514,17 @@ export function useDashboardProfileSync() {
                   } finally {
                     applyingRemote = false;
                   }
+                  keepLocalResolution = {
+                    base: currentConflict.base,
+                    chosenLocal: currentLocal,
+                    generation: currentConflict.remote.generation,
+                    installationId: currentConflict.remote.workspace?.installationId ?? null,
+                    lastAttempt: getProfileForSync(),
+                    profileId: DASHBOARD_PROFILE_ID,
+                    workspaceId: currentConflict.remote.workspace?.workspaceId ?? null,
+                  };
                   pendingLocalChanges = true;
-                  void saveProfile(getProfileForSync());
+                  void saveProfile(keepLocalResolution.lastAttempt);
                 },
               },
               tRef.current('dashboard.profileSync.keepMine')
@@ -421,6 +538,7 @@ export function useDashboardProfileSync() {
                 onClick: () => {
                   const currentConflict = pendingConflict;
                   if (currentConflict) {
+                    keepLocalResolution = null;
                     applyRemoteProfile(currentConflict.remote, false);
                   }
                 },
@@ -430,6 +548,20 @@ export function useDashboardProfileSync() {
           )
         ),
         duration: Infinity,
+        onDismiss: (dismissedToast) => {
+          if (dismissedToast.id !== conflictToastId) {
+            return;
+          }
+
+          conflictToastId = null;
+          if (pendingConflict) {
+            // Dismissing the presentation defers the choice; it does not resolve
+            // the merge. Keep the runtime visibly blocked and offer the same
+            // bound resolution again after a quiet interval.
+            setRuntimeConflict(pendingConflict);
+            scheduleConflictReminder();
+          }
+        },
         classNames: {
           toast:
             'max-w-[min(34rem,calc(100vw-1rem))] sm:min-w-[29rem] rounded-[28px] border-white/10 bg-[linear-gradient(180deg,rgba(18,18,20,0.96)_0%,rgba(12,12,14,0.94)_100%)] shadow-2xl',
@@ -441,7 +573,7 @@ export function useDashboardProfileSync() {
     }
 
     function shouldPoll() {
-      return loaded && isOnline && isVisible && !saving && !cancelled;
+      return loaded && isOnline && isVisible && !saving && !cancelled && !permanentAccessFailure;
     }
 
     function schedulePoll(delay = PROFILE_REMOTE_POLL_INTERVAL_MS) {
@@ -454,6 +586,17 @@ export function useDashboardProfileSync() {
         pollTimeout = null;
         void refreshRemote();
       }, delay);
+    }
+
+    function drainRefreshAfterAuthentication() {
+      if (!refreshAfterAuthentication || cancelled || !loaded || saving || loadingRemote) {
+        return false;
+      }
+
+      refreshAfterAuthentication = false;
+      clearPollTimeout();
+      void refreshRemote({ forceFull: true, notify: true });
+      return true;
     }
 
     async function saveProfile(
@@ -472,8 +615,12 @@ export function useDashboardProfileSync() {
         ? getDashboardProfileChangedPaths(remoteResult.profile, profile)
         : ['/'];
       if (changedPaths.length === 0) {
+        keepLocalResolution = null;
         pendingLocalChanges = false;
         clearSaveTimeout();
+        if (remoteResult.profile) {
+          rememberCommonBase(remoteResult.profile, remoteResult);
+        }
         markRemoteSynced(remoteResult);
         return false;
       }
@@ -481,47 +628,80 @@ export function useDashboardProfileSync() {
       clearSaveTimeout();
       saving = true;
       runtime.markSaving();
-      const result = await saveDashboardProfile(profile, {
+      const saveOptions = {
         author: client,
         baseRevision: remoteResult.revision ?? 0,
         changedPaths,
         etag: remoteResult.etag ?? undefined,
         keepalive: options.keepalive,
         lastModified: remoteResult.etag ? undefined : (remoteResult.lastModified ?? undefined),
-      });
-      saving = false;
-      if (cancelled) {
+      };
+      try {
+        let result = await saveDashboardProfile(profile, saveOptions);
+        if (result.failureCode === DASHBOARD_PROFILE_ERROR_CODES.clientBindingMismatch) {
+          const recovery = await touchCurrentClientWithRecovery();
+          if (!recovery.failureCode) {
+            result = await saveDashboardProfile(profile, {
+              ...saveOptions,
+              author: client,
+            });
+          }
+        }
+        saving = false;
+        if (cancelled) {
+          return false;
+        }
+
+        if (result.saved) {
+          const savedRemote = remoteFromWrite(profile, result, remoteResult);
+          keepLocalResolution = null;
+          remoteResult = savedRemote;
+          pendingLocalChanges = false;
+          failureCount = 0;
+          permanentAccessFailure = false;
+          rememberCommonBase(profile, savedRemote);
+          markRemoteSynced(savedRemote);
+          void refreshRegisteredClients();
+          syncCurrentLocalState();
+          schedulePoll();
+          return true;
+        }
+
+        pendingLocalChanges = true;
+        if (result.failureCode === DASHBOARD_PROFILE_ERROR_CODES.workspaceTenantMismatch) {
+          keepLocalResolution = null;
+          writesBlocked = true;
+          permanentAccessFailure = true;
+          runtime.markError(tRef.current('dashboard.profileSync.tenantMismatch'));
+          clearPollTimeout();
+          return false;
+        }
+        if (result.failureCode === DASHBOARD_PROFILE_ERROR_CODES.clientBindingMismatch) {
+          keepLocalResolution = null;
+          writesBlocked = true;
+          permanentAccessFailure = true;
+          runtime.markError(tRef.current('dashboard.profileSync.unavailable'));
+          clearPollTimeout();
+          return false;
+        }
+        if (!options.keepalive && (result.preconditionFailed || result.preconditionRequired)) {
+          await refreshRemote({ forceFull: true, notify: true });
+          return false;
+        }
+
+        runtime.markError(
+          tRef.current(
+            result.unauthorized
+              ? 'dashboard.profileSync.unauthorized'
+              : 'dashboard.profileSync.saveFailed'
+          )
+        );
+        schedulePoll(getNextPollDelay(++failureCount));
         return false;
+      } finally {
+        saving = false;
+        drainRefreshAfterAuthentication();
       }
-
-      if (result.saved) {
-        const savedRemote = remoteFromWrite(profile, result, remoteResult);
-        remoteResult = savedRemote;
-        pendingLocalChanges = false;
-        failureCount = 0;
-        rememberCommonBase(profile, savedRemote);
-        markRemoteSynced(savedRemote);
-        void refreshRegisteredClients();
-        syncCurrentLocalState();
-        schedulePoll();
-        return true;
-      }
-
-      pendingLocalChanges = true;
-      if (!options.keepalive && (result.preconditionFailed || result.preconditionRequired)) {
-        await refreshRemote({ forceFull: true, notify: true });
-        return false;
-      }
-
-      runtime.markError(
-        tRef.current(
-          result.unauthorized
-            ? 'dashboard.profileSync.unauthorized'
-            : 'dashboard.profileSync.saveFailed'
-        )
-      );
-      schedulePoll(getNextPollDelay(++failureCount));
-      return false;
     }
 
     async function handleRemoteResult(
@@ -530,7 +710,10 @@ export function useDashboardProfileSync() {
     ) {
       const resultWorkspaceId = result.workspace?.workspaceId;
       const currentWorkspaceId = remoteResult?.workspace?.workspaceId;
+      const isAuthoritativeUninitializedResult =
+        result.profile === null && result.recovery.status === 'uninitialized';
       if (
+        !isAuthoritativeUninitializedResult &&
         resultWorkspaceId &&
         resultWorkspaceId === currentWorkspaceId &&
         result.revision !== null &&
@@ -547,11 +730,14 @@ export function useDashboardProfileSync() {
 
       remoteResult = result;
       failureCount = 0;
+      permanentAccessFailure = false;
 
       if (!result.profile) {
+        keepLocalResolution = null;
         clearConflict();
         if (result.recovery.status === 'uninitialized') {
           writesBlocked = false;
+          pendingLocalChanges = onboardingCompletedRef.current;
           markRemoteSynced(result);
           return;
         }
@@ -570,12 +756,68 @@ export function useDashboardProfileSync() {
       writesBlocked = false;
       const base = readCompatibleBase(result);
       const local = getProfileForSync();
+      if (
+        keepLocalResolution &&
+        (result.recovery.status !== 'active' ||
+          keepLocalResolution.generation !== result.generation ||
+          keepLocalResolution.installationId !== (result.workspace?.installationId ?? null) ||
+          keepLocalResolution.profileId !== DASHBOARD_PROFILE_ID ||
+          keepLocalResolution.workspaceId !== (result.workspace?.workspaceId ?? null))
+      ) {
+        keepLocalResolution = null;
+      }
+      if (keepLocalResolution) {
+        const chosenRebased = keepLocalResolution.base
+          ? rebaseLocalDashboardProfile(
+              keepLocalResolution.base,
+              keepLocalResolution.chosenLocal,
+              result.profile
+            )
+          : keepLocalResolution.chosenLocal;
+        const rebased = rebaseLocalDashboardProfile(
+          keepLocalResolution.lastAttempt,
+          local,
+          chosenRebased
+        );
+        rememberCommonBase(result.profile, result, { recordCleanReceipt: false });
+        applyingRemote = true;
+        try {
+          importDashboardConfig(
+            { ...rebased, exportedAt: new Date().toISOString() },
+            { applyNavigation: false }
+          );
+        } finally {
+          applyingRemote = false;
+        }
+        keepLocalResolution.lastAttempt = getProfileForSync();
+        pendingLocalChanges = true;
+        markRemoteSynced(result);
+        await saveProfile(keepLocalResolution.lastAttempt);
+        return;
+      }
+      const localDiffersFromRemote =
+        getDashboardProfileChangedPaths(result.profile, local).length > 0;
+      const localMatchesCleanReceipt =
+        !base &&
+        cleanReceipt !== null &&
+        result.workspace !== null &&
+        result.revision !== null &&
+        cleanReceipt.workspaceId === result.workspace.workspaceId &&
+        cleanReceipt.profileId === DASHBOARD_PROFILE_ID &&
+        cleanReceipt.revision <= result.revision &&
+        cleanReceipt.profileFingerprint === getDashboardProfileFingerprint(local);
+      const shouldPreserveConfiguredLocalWithoutBase =
+        !base &&
+        !localMatchesCleanReceipt &&
+        onboardingCompletedRef.current &&
+        localDiffersFromRemote;
       const hasPendingLocalChanges =
         pendingLocalChanges ||
+        shouldPreserveConfiguredLocalWithoutBase ||
         Boolean(base && getDashboardProfileChangedPaths(base.profile, local).length > 0);
       const reconciliation = reconcileDashboardProfiles({
         base: base?.profile ?? null,
-        hasPendingLocalChanges: options.initial && !base ? false : hasPendingLocalChanges,
+        hasPendingLocalChanges,
         local,
         remote: result.profile,
       });
@@ -598,7 +840,12 @@ export function useDashboardProfileSync() {
       }
 
       if (reconciliation.kind === 'save-merged') {
-        rememberCommonBase(result.profile, result);
+        // A newer remote revision can make an earlier overlap disappear (for
+        // example, another client chose the same value). The merge is now
+        // provably safe, so retire the stale prompt before saving; otherwise
+        // pendingConflict would keep saveProfile blocked.
+        clearConflict();
+        rememberCommonBase(result.profile, result, { recordCleanReceipt: false });
         applyingRemote = true;
         try {
           importDashboardConfig(
@@ -617,14 +864,12 @@ export function useDashboardProfileSync() {
         return;
       }
 
-      showConflict(
-        {
-          base: base?.profile ?? null,
-          local,
-          remote: result,
-        },
-        reconciliation.overlappingPaths
-      );
+      showConflict({
+        base: base?.profile ?? null,
+        local,
+        overlappingPaths: reconciliation.overlappingPaths,
+        remote: result,
+      });
     }
 
     async function refreshRemote(options: { forceFull?: boolean; notify?: boolean } = {}) {
@@ -652,6 +897,13 @@ export function useDashboardProfileSync() {
         }
 
         if (!result.available) {
+          if (result.failureCode === DASHBOARD_PROFILE_ERROR_CODES.workspaceTenantMismatch) {
+            writesBlocked = true;
+            permanentAccessFailure = true;
+            clearPollTimeout();
+            runtime.markError(tRef.current('dashboard.profileSync.tenantMismatch'));
+            return;
+          }
           runtime.markError(
             tRef.current(
               result.unauthorized
@@ -666,6 +918,9 @@ export function useDashboardProfileSync() {
         await handleRemoteResult(result, {
           notify: options.notify ?? true,
         });
+        if (clientRegistrationPending) {
+          await refreshRegisteredClients(true);
+        }
       } catch (error) {
         console.warn('[DashboardProfile] Unable to reconcile the shared dashboard:', error);
         runtime.markError(tRef.current('dashboard.profileSync.unavailable'));
@@ -675,7 +930,14 @@ export function useDashboardProfileSync() {
         if (pendingLocalChanges && !pendingConflict) {
           syncCurrentLocalState();
         }
-        schedulePoll();
+        if (!drainRefreshAfterAuthentication()) {
+          // Preserve an error backoff already scheduled above. Replacing it with
+          // the normal poll interval makes an unavailable profile service wake
+          // every client aggressively during an outage.
+          if (pollTimeout === null) {
+            schedulePoll();
+          }
+        }
       }
     }
 
@@ -734,6 +996,16 @@ export function useDashboardProfileSync() {
       }
     };
     const handleStorage = (event: StorageEvent) => {
+      if (event.key === STORAGE_KEYS.dashboardClientIdentity) {
+        // Identity rotation writes localStorage before the originating tab emits
+        // DASHBOARD_CLIENT_IDENTITY_EVENT. Other tabs only receive the storage
+        // event, so converge them on the same public ID before their next
+        // registry touch can rekey the shared HttpOnly browser binding back.
+        if (event.newValue !== null) {
+          refreshClientIdentity();
+        }
+        return;
+      }
       if (event.key && SYNC_RELEVANT_PERSISTED_KEYS.has(event.key)) {
         syncCurrentLocalState();
       }
@@ -758,6 +1030,9 @@ export function useDashboardProfileSync() {
         return;
       }
 
+      if (pendingConflict && conflictToastId === null) {
+        showConflict(pendingConflict);
+      }
       syncCurrentLocalState();
       void refreshRemote({ notify: true });
     };
@@ -778,6 +1053,18 @@ export function useDashboardProfileSync() {
     const handleRefreshRequest = () => {
       void refreshRemote({ forceFull: true, notify: true });
     };
+    const handleAuthSessionRefreshed = (event: Event) => {
+      const detail = (event as CustomEvent<AuthSessionRefreshedEventDetail>).detail;
+      if (detail?.providerId !== 'home_assistant') {
+        return;
+      }
+      clearPollTimeout();
+      if (!loaded || loadingRemote || saving) {
+        refreshAfterAuthentication = true;
+        return;
+      }
+      void refreshRemote({ forceFull: true, notify: true });
+    };
 
     window.addEventListener(PERSISTED_STATE_EVENT, handlePersistedState as EventListener);
     window.addEventListener('storage', handleStorage);
@@ -786,6 +1073,10 @@ export function useDashboardProfileSync() {
     window.addEventListener('pagehide', handlePageHide);
     window.addEventListener(DASHBOARD_CLIENT_IDENTITY_EVENT, handleIdentityChange as EventListener);
     window.addEventListener(DASHBOARD_PROFILE_REFRESH_EVENT, handleRefreshRequest);
+    window.addEventListener(
+      AUTH_SESSION_REFRESHED_EVENT,
+      handleAuthSessionRefreshed as EventListener
+    );
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     async function initialize() {
@@ -797,16 +1088,26 @@ export function useDashboardProfileSync() {
           return;
         }
 
-        const [result, registeredClients] = await Promise.all([
+        const [result, clientTouch] = await Promise.all([
           loadDashboardProfile(),
-          touchDashboardClient(client),
+          touchCurrentClientWithRecovery(),
         ]);
         if (cancelled) {
           return;
         }
 
-        setRegisteredClients(registeredClients);
-        if (result.available) {
+        setRegisteredClients(clientTouch.registry);
+        if (result.failureCode === DASHBOARD_PROFILE_ERROR_CODES.workspaceTenantMismatch) {
+          writesBlocked = true;
+          permanentAccessFailure = true;
+          runtime.markError(tRef.current('dashboard.profileSync.tenantMismatch'));
+        } else if (
+          clientTouch.failureCode === DASHBOARD_PROFILE_ERROR_CODES.clientBindingMismatch
+        ) {
+          writesBlocked = true;
+          permanentAccessFailure = true;
+          runtime.markError(tRef.current('dashboard.profileSync.unavailable'));
+        } else if (result.available) {
           await handleRemoteResult(result, { initial: true, notify: false });
         } else {
           runtime.markError(
@@ -825,7 +1126,9 @@ export function useDashboardProfileSync() {
           loaded = true;
           setProfileLoadCompleted(true);
           syncCurrentLocalState();
-          schedulePoll();
+          if (!drainRefreshAfterAuthentication()) {
+            schedulePoll();
+          }
         }
       }
     }
@@ -851,6 +1154,10 @@ export function useDashboardProfileSync() {
         handleIdentityChange as EventListener
       );
       window.removeEventListener(DASHBOARD_PROFILE_REFRESH_EVENT, handleRefreshRequest);
+      window.removeEventListener(
+        AUTH_SESSION_REFRESHED_EVENT,
+        handleAuthSessionRefreshed as EventListener
+      );
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [panelMode]);

@@ -29,7 +29,19 @@ export const DASHBOARD_PROFILE_HEADERS = {
   clientName: 'X-Navet-Client-Name',
   clientKind: 'X-Navet-Client-Kind',
   preferenceRevision: 'X-Navet-Preference-Revision',
+  preferenceIdentity: 'X-Navet-Preference-Identity',
+  errorCode: 'X-Navet-Profile-Error-Code',
 } as const;
+
+export const DASHBOARD_PROFILE_ERROR_CODES = {
+  workspaceTenantMismatch: 'workspace-tenant-mismatch',
+  clientBindingMismatch: 'client-binding-mismatch',
+  clientCapacityReached: 'client-capacity-reached',
+  profileStorageUnavailable: 'profile-storage-unavailable',
+} as const;
+
+export type DashboardProfileErrorCode =
+  (typeof DASHBOARD_PROFILE_ERROR_CODES)[keyof typeof DASHBOARD_PROFILE_ERROR_CODES];
 
 export type DashboardProfileRecoveryStatus =
   | 'active'
@@ -117,6 +129,11 @@ export interface DashboardPreferenceDocument<TValues extends object = Record<str
   revision: number;
   updatedAt: string;
   values: TValues;
+  principal: DashboardProfilePrincipal;
+  clientId: string | null;
+}
+
+export interface DashboardPreferenceIdentity {
   principal: DashboardProfilePrincipal;
   clientId: string | null;
 }
