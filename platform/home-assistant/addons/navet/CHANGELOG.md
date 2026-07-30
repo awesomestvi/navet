@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.12.0
+
+## New features
+
+- Navet now supports multiple dashboards.
+
+## Improvements and bug fixes
+
+- Reduced rendering, media, and provider-update work on low-power wall displays.
+- Dashboard changes now survive concurrent edits and browser identity recovery without losing device preferences.
+
 ## 0.11.1
 
 ## Improvements and bug fixes

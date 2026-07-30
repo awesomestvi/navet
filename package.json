@@ -1,7 +1,7 @@
 {
   "name": "navet",
   "private": true,
-  "version": "0.11.1",
+  "version": "0.12.0",
   "description": "A provider-neutral, local-first smart-home dashboard.",
   "license": "AGPL-3.0-only",
   "homepage": "https://github.com/awesomestvi/navet#readme",
