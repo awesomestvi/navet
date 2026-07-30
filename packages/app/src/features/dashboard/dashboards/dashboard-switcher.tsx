@@ -1,3 +1,4 @@
+import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import { getThemeDropdownSurfaceClasses } from '@navet/app/components/shared/theme/dropdown-surface-tokens';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import {
@@ -152,11 +153,15 @@ export function DashboardSwitcherMenuContent({
 export function DashboardSwitcherDropdown({
   children,
   align = 'start',
+  onOpenChange,
+  open,
   side = 'bottom',
   showManage = true,
 }: {
   children: ReactNode;
   align?: 'start' | 'center' | 'end';
+  onOpenChange?: (open: boolean) => void;
+  open?: boolean;
   side?: 'top' | 'right' | 'bottom' | 'left';
   showManage?: boolean;
 }) {
@@ -165,7 +170,7 @@ export function DashboardSwitcherDropdown({
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu open={open} onOpenChange={onOpenChange}>
         <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
         <DropdownMenuContent
           align={align}
@@ -186,40 +191,58 @@ export function DashboardSwitcherDropdown({
 
 export function DashboardSwitcherPill({
   active,
-  activeClassName,
-  inactiveClassName,
+  className = '',
   onShowHome,
 }: {
   active: boolean;
-  activeClassName: string;
-  inactiveClassName: string;
+  className?: string;
   onShowHome: () => void;
 }) {
   const { t } = useI18n();
   const { activeDashboard } = useDashboardSwitcher();
-  const itemClassName = active ? activeClassName : inactiveClassName;
+  const [isOpen, setIsOpen] = useState(false);
+  const dashboardName = activeDashboard?.name ?? 'Home';
 
   return (
-    <div
-      className={`room-nav-item flex h-9 shrink-0 items-stretch overflow-hidden rounded-[22px] transition-colors ${itemClassName}`}
-    >
-      <button
-        type="button"
+    <DashboardSwitcherDropdown open={isOpen} onOpenChange={setIsOpen}>
+      <InteractivePill
+        active={active}
+        aria-label={`${t('dashboard.multiple.open')}: ${dashboardName}`}
         aria-current={active ? 'page' : undefined}
-        onClick={onShowHome}
-        className="min-w-0 px-3 text-sm font-medium"
+        onClick={(event) => {
+          if (isDashboardSwitcherChevronTarget(event.target) || active) {
+            return;
+          }
+          onShowHome();
+        }}
+        onKeyDown={(event) => {
+          if (!active && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            onShowHome();
+          }
+        }}
+        onPointerDown={(event) => {
+          if (!isDashboardSwitcherChevronTarget(event.target) && !active) {
+            event.preventDefault();
+          }
+        }}
+        size="small"
+        variant="ghost"
+        className={cn(
+          'room-nav-dashboard-context room-nav-item shrink-0 whitespace-nowrap rounded-[22px] transition-colors',
+          className
+        )}
       >
-        <span className="block max-w-40 truncate">{activeDashboard?.name ?? 'Home'}</span>
-      </button>
-      <DashboardSwitcherDropdown>
-        <button
-          type="button"
-          aria-label={t('dashboard.multiple.open')}
-          className="flex w-9 items-center justify-center border-l border-current/10"
-        >
-          <ChevronDown className="h-3.5 w-3.5 opacity-70" />
-        </button>
-      </DashboardSwitcherDropdown>
-    </div>
+        <LayoutDashboard className="h-3.5 w-3.5 opacity-70" aria-hidden="true" />
+        <span className="block max-w-40 truncate">{dashboardName}</span>
+        <span data-dashboard-switcher-chevron className="-mr-1 inline-flex px-1" aria-hidden="true">
+          <ChevronDown className="h-3.5 w-3.5 opacity-70" aria-hidden="true" />
+        </span>
+      </InteractivePill>
+    </DashboardSwitcherDropdown>
   );
+}
+
+function isDashboardSwitcherChevronTarget(target: EventTarget | null) {
+  return target instanceof Element && target.closest('[data-dashboard-switcher-chevron]') !== null;
 }

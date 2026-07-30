@@ -600,8 +600,9 @@ export const RoomNav = memo(function RoomNav({
                   <DashboardSwitcherPill
                     key={entry.id}
                     active={isAllRooms(activeRoom)}
-                    activeClassName={activeRoomItemClassName}
-                    inactiveClassName={inactiveRoomItemClassName}
+                    className={
+                      isAllRooms(activeRoom) ? activeRoomItemClassName : inactiveRoomItemClassName
+                    }
                     onShowHome={() => onRoomChange(entry.room)}
                   />
                 ) : (

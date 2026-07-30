@@ -101,7 +101,13 @@ function MultipleDashboardsStory() {
     };
   }, []);
 
-  return ready ? <RoomNavStory /> : null;
+  return ready ? (
+    <RoomNavStory
+      rooms={['Living Room', 'Kitchen', 'Guest Room', 'Office']}
+      groups={[UPSTAIRS_GROUP]}
+      initialActiveRoom="Living Room"
+    />
+  ) : null;
 }
 
 const meta = {
@@ -191,8 +197,12 @@ export const MultipleDashboards: Story = {
     const canvas = within(canvasElement);
     const page = within(canvasElement.ownerDocument.body);
 
-    await expect(await canvas.findByRole('button', { name: 'Upstairs lights' })).toBeVisible();
-    await userEvent.click(canvas.getByRole('button', { name: 'Open dashboards' }));
+    await expect(await canvas.findByRole('button', { name: /Upstairs lights/ })).toBeVisible();
+    await expect(canvas.getByRole('button', { name: 'Living Room' })).toBeVisible();
+    const dashboardSwitcher = canvas.getByRole('button', { name: /Open dashboards/ });
+    const dashboardChevron = dashboardSwitcher.querySelector('[data-dashboard-switcher-chevron]');
+    await expect(dashboardChevron).not.toBeNull();
+    await userEvent.click(dashboardChevron as Element);
     await expect(
       within(await page.findByRole('menu')).getByRole('menuitem', { name: /Home/ })
     ).toBeVisible();
