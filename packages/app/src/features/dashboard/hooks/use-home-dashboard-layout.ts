@@ -1,12 +1,11 @@
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { useCallback, useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
+import { useDashboardCollectionStore } from '../dashboards/dashboard-collection-store';
 import {
   DEFAULT_HOME_DASHBOARD_LAYOUT,
   type HomeDashboardLayoutState,
   type HomeDashboardSection,
   type HomeLayoutMode,
-  useHomeDashboardLayoutStore,
 } from '../stores/home-dashboard-layout-store';
 import {
   getBottomRow,
@@ -68,21 +67,17 @@ export function useHomeDashboardLayout(
     () => new Set<string>(JSON.parse(validCardIdsKey) as string[]),
     [validCardIdsKey]
   );
-  const layout = useHomeDashboardLayoutStore(
-    useShallow((state) => ({
-      mode: state.mode,
-      showHero: state.showHero,
-      cardIds: state.cardIds,
-      sections: state.sections,
-      cardSectionAssignments: state.cardSectionAssignments,
-    }))
+  const layout = useDashboardCollectionStore(
+    (state) =>
+      state.collection.dashboardsById[state.activeDashboardId]?.homeLayout ??
+      DEFAULT_HOME_DASHBOARD_LAYOUT
   );
-  const canUndo = useHomeDashboardLayoutStore((state) => state.canUndo);
-  const canRedo = useHomeDashboardLayoutStore((state) => state.canRedo);
-  const updateLayout = useHomeDashboardLayoutStore((state) => state.updateLayout);
-  const replaceLayout = useHomeDashboardLayoutStore((state) => state.replaceLayout);
-  const undoLayout = useHomeDashboardLayoutStore((state) => state.undoLayout);
-  const redoLayout = useHomeDashboardLayoutStore((state) => state.redoLayout);
+  const canUndo = useDashboardCollectionStore((state) => state.layoutHistory.past.length > 0);
+  const canRedo = useDashboardCollectionStore((state) => state.layoutHistory.future.length > 0);
+  const updateLayout = useDashboardCollectionStore((state) => state.updateActiveHomeLayout);
+  const replaceLayout = useDashboardCollectionStore((state) => state.replaceActiveHomeLayout);
+  const undoLayout = useDashboardCollectionStore((state) => state.undoActiveHomeLayout);
+  const redoLayout = useDashboardCollectionStore((state) => state.redoActiveHomeLayout);
 
   const persistLayout = useCallback(
     (

@@ -1,5 +1,6 @@
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import type { Meta, StoryObj } from '@storybook/react';
+import { useState } from 'react';
 import { Stepper } from './stepper';
 
 const meta = {
@@ -19,7 +20,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Status: in-progress. Compact horizontal stepper for short setup and onboarding flows.',
+          'Status: in-progress. Shared horizontal and vertical stepper for short setup and onboarding flows.',
       },
     },
   },
@@ -53,6 +54,35 @@ export const Compact: Story = {
       { id: 'devices', label: 'Device tracking', compactLabel: 'Devices', optional: true },
     ],
   },
+};
+
+function InteractiveVerticalExample() {
+  const [currentStep, setCurrentStep] = useState(1);
+
+  return (
+    <div className="w-full max-w-sm">
+      <Stepper
+        ariaLabel="Dashboard setup"
+        currentStep={currentStep}
+        items={[
+          { id: 'name', label: 'Name', summary: 'Upstairs' },
+          { id: 'content', label: 'Start with', summary: 'Choose rooms' },
+          {
+            id: 'displays',
+            label: 'Use on',
+            summary: 'Not yet',
+            disabled: currentStep < 1,
+          },
+        ]}
+        onStepChange={setCurrentStep}
+        orientation="vertical"
+      />
+    </div>
+  );
+}
+
+export const InteractiveVertical: Story = {
+  render: () => <InteractiveVerticalExample />,
 };
 
 export const Docs: Story = {

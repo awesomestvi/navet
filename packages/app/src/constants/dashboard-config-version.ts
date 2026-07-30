@@ -1,1 +1,1 @@
-export const DASHBOARD_CONFIG_VERSION = 3 as const;
+export const DASHBOARD_CONFIG_VERSION = 4 as const;

@@ -33,7 +33,7 @@ import {
 
 export interface DashboardProfileData {
   app: 'navet'
-  version: 3
+  version: 3 | 4
   exportedAt?: string
   [key: string]: unknown
 }
@@ -206,7 +206,7 @@ export function isValidDashboardProfileData(value: unknown): value is DashboardP
   }
 
   const profile = value as Partial<DashboardProfileData>
-  return profile.app === 'navet' && profile.version === 3
+  return profile.app === 'navet' && (profile.version === 3 || profile.version === 4)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

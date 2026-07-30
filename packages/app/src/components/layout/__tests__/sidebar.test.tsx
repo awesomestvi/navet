@@ -1,4 +1,10 @@
 import { Sidebar } from '@navet/app/components/layout/sidebar';
+import {
+  createDashboardDefinition,
+  createLegacyDashboardCollection,
+  sanitizeDashboardCollection,
+} from '@navet/app/features/dashboard/dashboards/dashboard-collection';
+import { useDashboardCollectionStore } from '@navet/app/features/dashboard/dashboards/dashboard-collection-store';
 import type { NavetHomeAssistantShellListener } from '@navet/app/infrastructure/home-assistant/runtime/navet-ha-shell-api';
 import { NAVET_HOME_ASSISTANT_SHELL_GLOBAL } from '@navet/app/infrastructure/home-assistant/runtime/navet-ha-shell-api';
 import { resetRuntimeContextForTests } from '@navet/app/infrastructure/home-assistant/runtime/runtime-detector';
@@ -178,6 +184,34 @@ describe('Sidebar mobile navigation', () => {
     expect(within(dock).getByRole('button', { name: 'More' })).toBeInTheDocument();
     expect(within(dock).getByRole('button', { name: 'Search' })).toBeInTheDocument();
     expect(within(dock).queryByRole('button', { name: 'Settings' })).not.toBeInTheDocument();
+  });
+
+  it('adds dashboards above rooms in the mobile Home menu only when multiple exist', async () => {
+    const home = createDashboardDefinition({ id: 'home', name: 'Home' });
+    const upstairs = createDashboardDefinition({ id: 'upstairs', name: 'Upstairs lights' });
+    useDashboardCollectionStore.setState({
+      collection: sanitizeDashboardCollection(
+        {
+          schemaVersion: 1,
+          defaultDashboardId: 'home',
+          order: ['home', 'upstairs'],
+          dashboardsById: { home, upstairs },
+          dashboardIdByClientId: {},
+        },
+        createLegacyDashboardCollection({ homeLayout: null })
+      ),
+      activeDashboardId: 'home',
+    });
+
+    renderWithProviders(<Sidebar mobileRoomNavigation={mobileRoomNavigation} />);
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Rooms' }));
+
+    const menu = await screen.findByRole('menu');
+    expect(within(menu).getByRole('menuitem', { name: /Upstairs lights/ })).toBeInTheDocument();
+    expect(within(menu).getByText('Rooms')).toBeInTheDocument();
+    const menuText = menu.textContent ?? '';
+    expect(menuText.indexOf('Dashboards')).toBeLessThan(menuText.indexOf('Rooms'));
   });
 
   it('closes the more sheet after section selection', () => {

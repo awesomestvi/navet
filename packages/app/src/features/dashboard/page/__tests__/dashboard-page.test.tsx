@@ -5,9 +5,10 @@ import { resetAppStores } from '@navet/app/test/store-reset';
 import { screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getControllerMock, getProfileSyncMock } = vi.hoisted(() => ({
+const { getControllerMock, getProfileSyncMock, toastWarningMock } = vi.hoisted(() => ({
   getControllerMock: vi.fn(),
   getProfileSyncMock: vi.fn(),
+  toastWarningMock: vi.fn(),
 }));
 
 vi.mock('../../hooks/use-dashboard-controller', () => ({
@@ -30,6 +31,12 @@ vi.mock('../../components/dashboard-arrival-reveal', () => ({
   DashboardArrivalReveal: () => null,
 }));
 
+vi.mock('sonner', () => ({
+  toast: {
+    warning: toastWarningMock,
+  },
+}));
+
 import { DashboardPage } from '../index';
 
 describe('DashboardPage loading recovery', () => {
@@ -37,6 +44,7 @@ describe('DashboardPage loading recovery', () => {
     await resetAppStores();
     getControllerMock.mockReturnValue(createController());
     getProfileSyncMock.mockReturnValue({ profileLoadCompleted: true });
+    toastWarningMock.mockReset();
   });
 
   afterEach(() => {
@@ -108,6 +116,19 @@ describe('DashboardPage loading recovery', () => {
     expect(screen.getByText('Connecting to Home Assistant...')).toBeInTheDocument();
     expect(useErrorStore.getState().error).toBeNull();
   });
+
+  it('falls back cleanly and announces an unavailable direct dashboard link', () => {
+    window.history.replaceState({}, '', '/dashboard/missing');
+    getControllerMock.mockReturnValue(createController({ homeLayoutHydrated: true }));
+
+    renderWithProviders(<DashboardPage />);
+
+    expect(screen.getByText('dashboard ready')).toBeInTheDocument();
+    expect(toastWarningMock).toHaveBeenCalledWith(
+      'That dashboard is no longer available. Showing your default.',
+      { id: 'dashboard-not-found' }
+    );
+  });
 });
 
 function createController(overrides: Partial<DashboardController> = {}): DashboardController {
@@ -128,6 +149,7 @@ function createController(overrides: Partial<DashboardController> = {}): Dashboa
     connecting: false,
     densePerformanceMode: false,
     denseVisibleCardCount: 0,
+    dashboardRooms: [],
     devicesLoaded: true,
     handleAddCard: vi.fn(),
     handleAddLibraryCard: vi.fn(),

@@ -22,6 +22,7 @@ import {
 import { useI18n, useTheme } from '@navet/app/hooks';
 import {
   Columns2,
+  LayoutDashboard,
   LayoutPanelTop,
   LayoutTemplate,
   MoreHorizontal,
@@ -32,6 +33,7 @@ import {
   Undo2,
 } from 'lucide-react';
 import { type ButtonHTMLAttributes, forwardRef, type ReactNode, useEffect, useState } from 'react';
+import { DashboardSwitcherDropdown, useDashboardSwitcher } from '../dashboards/dashboard-switcher';
 import type { HomeLayoutMode } from '../hooks/use-home-dashboard-layout';
 import { DASHBOARD_PACKS, type DashboardPackId } from '../packs/dashboard-packs';
 
@@ -122,6 +124,7 @@ export function HomeEditCommandBar({
           : 'bg-[#18181b]';
   const dividerClass = theme === 'light' ? 'bg-black/10' : 'bg-white/10';
   const [pendingPackId, setPendingPackId] = useState<DashboardPackId | null>(null);
+  const { activeDashboard } = useDashboardSwitcher();
   const pendingPack = DASHBOARD_PACKS.find((pack) => pack.id === pendingPackId);
   const hasMobileOverflowActions =
     Boolean(onManageRooms) ||
@@ -230,6 +233,15 @@ export function HomeEditCommandBar({
 
               {showHomeLayoutControls ? (
                 <>
+                  <DashboardSwitcherDropdown align="start">
+                    <IconButton
+                      label={activeDashboard?.name ?? t('dashboard.multiple.title')}
+                      icon={<LayoutDashboard className="h-4 w-4" />}
+                      size="small"
+                      variant="ghost"
+                      className="h-10 w-10 rounded-full"
+                    />
+                  </DashboardSwitcherDropdown>
                   <IconButton
                     label={t('common.undo')}
                     icon={<Undo2 className="h-4 w-4" />}
@@ -283,6 +295,15 @@ export function HomeEditCommandBar({
           </div>
         ) : (
           <div className="pointer-events-auto mx-auto flex w-full max-w-[calc(100vw-1.5rem)] items-center justify-center gap-2 overflow-x-auto md:max-w-[calc(100vw-7rem)]">
+            {showHomeLayoutControls ? (
+              <DashboardSwitcherDropdown align="start">
+                <CommandBarMenuButton
+                  icon={<LayoutDashboard className="h-4 w-4" />}
+                  label={activeDashboard?.name ?? t('dashboard.multiple.title')}
+                />
+              </DashboardSwitcherDropdown>
+            ) : null}
+
             {onManageRooms ? (
               <Button
                 type="button"

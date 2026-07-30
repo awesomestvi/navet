@@ -1,6 +1,10 @@
 import type { DashboardConfigPayload } from '@navet/app/utils/dashboard-config';
 import { describe, expect, it } from 'vitest';
 import {
+  createDashboardDefinition,
+  createLegacyDashboardCollection,
+} from '../dashboards/dashboard-collection';
+import {
   getDashboardProfileChangedPaths,
   getOverlappingDashboardProfilePaths,
   mergeDashboardProfiles,
@@ -75,6 +79,49 @@ describe('dashboard profile diff and merge', () => {
       theme: { primaryColor: 'green' },
       settings: { showWeatherInHeader: false },
     });
+  });
+
+  it('merges edits to different named dashboards without treating the collection as one field', () => {
+    const home = createDashboardDefinition({ id: 'home', name: 'Home' });
+    const upstairs = createDashboardDefinition({ id: 'upstairs', name: 'Upstairs' });
+    const dashboards = {
+      ...createLegacyDashboardCollection({ homeLayout: null }),
+      order: ['home', 'upstairs'],
+      dashboardsById: { home, upstairs },
+    };
+    const base = buildProfile({ dashboards });
+    const local = buildProfile({
+      dashboards: {
+        ...dashboards,
+        dashboardsById: {
+          ...dashboards.dashboardsById,
+          home: { ...home, name: 'Main' },
+        },
+      },
+    });
+    const remote = buildProfile({
+      dashboards: {
+        ...dashboards,
+        dashboardsById: {
+          ...dashboards.dashboardsById,
+          upstairs: {
+            ...upstairs,
+            homeLayout: {
+              ...upstairs.homeLayout,
+              cardIds: ['homey:light.bedroom'],
+            },
+          },
+        },
+      },
+    });
+
+    const result = mergeDashboardProfiles(base, local, remote);
+
+    expect(result.overlappingPaths).toEqual([]);
+    expect(result.profile?.dashboards?.dashboardsById.home.name).toBe('Main');
+    expect(result.profile?.dashboards?.dashboardsById.upstairs.homeLayout.cardIds).toEqual([
+      'homey:light.bedroom',
+    ]);
   });
 
   it('reports only overlapping field edits as conflicts', () => {

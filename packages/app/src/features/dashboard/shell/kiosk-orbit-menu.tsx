@@ -20,6 +20,7 @@ import {
 import {
   Check,
   Compass,
+  LayoutDashboard,
   LayoutGrid,
   Lightbulb,
   type LucideIcon,
@@ -30,6 +31,8 @@ import {
 import { memo, type ReactNode, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { AllViewGrouping } from '../all-view-grid/types';
+import { DashboardCreateDialog } from '../dashboards/dashboard-create-dialog';
+import { useDashboardSwitcher } from '../dashboards/dashboard-switcher';
 
 interface KioskOrbitMenuProps {
   editActions?: MobileHeaderEditActions;
@@ -62,6 +65,9 @@ export const KioskOrbitMenu = memo(function KioskOrbitMenu({
   const sectionItems = getSectionNavigationItems(t);
   const [isOpen, setIsOpen] = useState(false);
   const [isReorderDialogOpen, setIsReorderDialogOpen] = useState(false);
+  const [isDashboardCreateOpen, setIsDashboardCreateOpen] = useState(false);
+  const { activeDashboardId, dashboards, openDashboard } = useDashboardSwitcher();
+  const showDashboards = dashboards.length > 1;
   const {
     activeCustomSidebarActionId,
     activeSection,
@@ -190,6 +196,42 @@ export const KioskOrbitMenu = memo(function KioskOrbitMenu({
                 }
               />
               <div className="grid gap-3">
+                {showDashboards ? (
+                  <OrbitMegaSection title={t('dashboard.multiple.group.dashboards')}>
+                    <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                      {dashboards.map((dashboard) => {
+                        const isActive = dashboard.id === activeDashboardId;
+                        return (
+                          <button
+                            key={dashboard.id}
+                            type="button"
+                            onClick={() => closeAfter(() => openDashboard(dashboard.id))}
+                            className={cn(
+                              roomDropdownItemClassName,
+                              isActive && 'room-nav-item-active'
+                            )}
+                          >
+                            <LayoutDashboard className="h-4 w-4 shrink-0" />
+                            <span className="min-w-0 flex-1 truncate">{dashboard.name}</span>
+                            {isActive ? <Check className="h-4 w-4 shrink-0" /> : null}
+                          </button>
+                        );
+                      })}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsOpen(false);
+                          setIsDashboardCreateOpen(true);
+                        }}
+                        className={roomDropdownItemClassName}
+                      >
+                        <Plus className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{t('dashboard.multiple.new')}</span>
+                      </button>
+                    </div>
+                  </OrbitMegaSection>
+                ) : null}
+
                 <section className="min-w-0">
                   <div className="flex flex-wrap gap-1.5">
                     {sectionItems.map(({ icon: Icon, label, section }) => (
@@ -331,6 +373,10 @@ export const KioskOrbitMenu = memo(function KioskOrbitMenu({
           onHiddenRoomsChange={editActions.reorderRooms.onHiddenRoomsChange}
         />
       ) : null}
+      <DashboardCreateDialog
+        isOpen={isDashboardCreateOpen}
+        onOpenChange={setIsDashboardCreateOpen}
+      />
     </>
   );
 });

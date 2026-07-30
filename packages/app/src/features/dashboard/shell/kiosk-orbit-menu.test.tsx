@@ -1,3 +1,9 @@
+import {
+  createDashboardDefinition,
+  createLegacyDashboardCollection,
+  sanitizeDashboardCollection,
+} from '@navet/app/features/dashboard/dashboards/dashboard-collection';
+import { useDashboardCollectionStore } from '@navet/app/features/dashboard/dashboards/dashboard-collection-store';
 import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
@@ -69,6 +75,44 @@ describe('KioskOrbitMenu custom sidebar actions', () => {
     expect(orbitMenu.getByRole('button', { name: 'Energy' })).toBeInTheDocument();
     expect(orbitMenu.getByRole('button', { name: 'Media' })).toBeInTheDocument();
     expect(orbitMenu.getByRole('button', { name: 'Tasks' })).toBeInTheDocument();
+  });
+
+  it('shows dashboards above rooms only after a second dashboard exists', () => {
+    const home = createDashboardDefinition({ id: 'home', name: 'Home' });
+    const upstairs = createDashboardDefinition({ id: 'upstairs', name: 'Upstairs lights' });
+    useDashboardCollectionStore.setState({
+      collection: sanitizeDashboardCollection(
+        {
+          schemaVersion: 1,
+          defaultDashboardId: 'home',
+          order: ['home', 'upstairs'],
+          dashboardsById: { home, upstairs },
+          dashboardIdByClientId: {},
+        },
+        createLegacyDashboardCollection({ homeLayout: null })
+      ),
+      activeDashboardId: 'home',
+    });
+
+    renderWithProviders(
+      <KioskOrbitMenu
+        roomNavigation={{
+          activeRoom: 'Bedroom',
+          hiddenRoomNames: [],
+          onRoomChange: vi.fn(),
+          rooms: ['Bedroom'],
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('kiosk-orbit-trigger'));
+
+    const menu = screen.getByTestId('kiosk-orbit-menu');
+    expect(within(menu).getByText('Dashboards')).toBeInTheDocument();
+    expect(within(menu).getByRole('button', { name: 'Upstairs lights' })).toBeInTheDocument();
+    expect(within(menu).getByText('Rooms')).toBeInTheDocument();
+    const menuText = menu.textContent ?? '';
+    expect(menuText.indexOf('Dashboards')).toBeLessThan(menuText.indexOf('Rooms'));
   });
 
   it('shows customize sidebar in edit mode', () => {

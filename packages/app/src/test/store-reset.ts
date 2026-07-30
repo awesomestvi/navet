@@ -1,3 +1,5 @@
+import { useDashboardProfileRuntimeStore } from '@navet/app/features/dashboard/clients/dashboard-profile-runtime-store';
+import { useDashboardCollectionStore } from '@navet/app/features/dashboard/dashboards/dashboard-collection-store';
 import { useRoomWorkspaceStore } from '@navet/app/features/dashboard/rooms/room-workspace-store';
 import { useHabitStore } from '@navet/app/features/habits/habit-store';
 import { authSessionManager } from '@navet/app/infrastructure/home-assistant/auth/auth-session-manager';
@@ -32,6 +34,8 @@ export async function resetAppStores() {
   resetStore(useErrorStore);
   resetStore(useHabitStore);
   resetStore(useEntityRoomOverridesStore);
+  useDashboardProfileRuntimeStore.getState().reset();
+  resetStore(useDashboardCollectionStore);
   resetStore(useRoomWorkspaceStore);
   homeAssistantStore.getState().disconnect();
   resetStore(homeAssistantStore);
@@ -50,6 +54,7 @@ export async function resetAppStores() {
       useEditModeStore,
       useHabitStore,
       useEntityRoomOverridesStore,
+      useDashboardCollectionStore,
       useNavigationStore,
       useSettingsStore,
       useThemeStore,

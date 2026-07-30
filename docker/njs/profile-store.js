@@ -690,7 +690,7 @@ function isValidProfile(value) {
     typeof value === 'object' &&
     !Array.isArray(value) &&
     value.app === 'navet' &&
-    value.version === 3
+    (value.version === 3 || value.version === 4)
   );
 }
 

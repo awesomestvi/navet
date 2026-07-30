@@ -27,6 +27,7 @@ export const STORAGE_KEYS = {
   lightMemoryState: 'navet-light-memory-state',
   cardZones: 'navet-card-zones',
   homeDashboardLayout: 'navet-home-layout',
+  dashboardCollection: 'navet-dashboard-collection',
   dashboardProfileSync: 'navet-dashboard-profile-sync',
   dashboardPreferenceSync: 'navet-dashboard-preference-sync',
   dashboardProfileBase: 'navet-dashboard-profile-base',

@@ -12,7 +12,9 @@ import { DashboardSectionRouter } from '../dashboard-section-router';
 let lightsDashboardRenderCount = 0;
 
 vi.mock('@navet/app/components/layout/room-nav', () => ({
-  RoomNav: () => <nav data-testid="room-nav">Room nav</nav>,
+  RoomNav: ({ rooms }: { rooms?: string[] }) => (
+    <nav data-testid="room-nav">{rooms?.join(', ') ?? 'Room nav'}</nav>
+  ),
 }));
 
 vi.mock('@navet/app/features/dashboard/shell', () => ({
@@ -43,6 +45,18 @@ describe('DashboardSectionRouter kiosk mode', () => {
 
     expect(await screen.findByText('Home dashboard')).toBeInTheDocument();
     expect(screen.getByTestId('room-nav')).toBeInTheDocument();
+  });
+
+  it('limits RoomNav to the active dashboard room scope', async () => {
+    const controller = createController();
+    controller.rooms = ['Living Room', 'Kitchen', 'Office', 'Guest Room'];
+    controller.dashboardRooms = ['Living Room', 'Office', 'Guest Room'];
+
+    renderWithProviders(<DashboardSectionRouter controller={controller} />);
+
+    expect(await screen.findByText('Home dashboard')).toBeInTheDocument();
+    expect(screen.getByTestId('room-nav')).toHaveTextContent('Living Room, Office, Guest Room');
+    expect(screen.getByTestId('room-nav')).not.toHaveTextContent('Kitchen');
   });
 
   it('omits RoomNav in kiosk mode', async () => {
@@ -211,6 +225,7 @@ function createController(): DashboardController {
     connecting: false,
     customCards: [],
     dashboardArrivalVariant: null,
+    dashboardRooms: [ALL_ROOMS_ID, 'Kitchen'],
     deviceMap: new Map(),
     devicesLoaded: true,
     handleChooseAllEntities: vi.fn(),

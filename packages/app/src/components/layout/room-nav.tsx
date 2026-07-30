@@ -11,6 +11,10 @@ import {
 import { cn } from '@navet/app/components/ui/utils';
 import { getDashboardRoomLabel, isAllRooms } from '@navet/app/constants/rooms';
 import type { AllViewGrouping } from '@navet/app/features/dashboard';
+import {
+  DashboardSwitcherPill,
+  useDashboardSwitcher,
+} from '@navet/app/features/dashboard/dashboards/dashboard-switcher';
 import { RoomSymbolIcon } from '@navet/app/features/dashboard/rooms/components/room-symbol-icon';
 import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
 import { integrationSelectors } from '@navet/app/stores/selectors';
@@ -326,6 +330,8 @@ export const RoomNav = memo(function RoomNav({
     integrationSelectors.manageableRoomsByProviderId
   );
   const surface = getThemeSurfaceTokens(theme);
+  const { activeDashboard, dashboards } = useDashboardSwitcher();
+  const hasMultipleDashboards = dashboards.length > 1;
   const [isReorderDialogOpen, setIsReorderDialogOpen] = useState(false);
   const [roomLayout, setRoomLayout] = useState<RoomLayoutState>({
     visibleRooms: [],
@@ -477,11 +483,16 @@ export const RoomNav = memo(function RoomNav({
       const label =
         entry.kind === 'group'
           ? (roomGroupTriggerLabelById.get(entry.group.id) ?? entry.label)
-          : getDashboardRoomLabel(entry.room, allLabel);
+          : isAllRooms(entry.room) && hasMultipleDashboards
+            ? (activeDashboard?.name ?? allLabel)
+            : getDashboardRoomLabel(entry.room, allLabel);
       roomWidths.set(
         entry.id,
         measureLabelWidth(label) +
-          (entry.kind === 'group' ? ROOM_NAV_GROUP_CHROME_PX : ROOM_NAV_ROOM_CHROME_PX)
+          (entry.kind === 'group' ||
+          (entry.kind === 'room' && isAllRooms(entry.room) && hasMultipleDashboards)
+            ? ROOM_NAV_GROUP_CHROME_PX
+            : ROOM_NAV_ROOM_CHROME_PX)
       );
     }
 
@@ -501,7 +512,9 @@ export const RoomNav = memo(function RoomNav({
     );
   }, [
     activeRoomNavEntryId,
+    activeDashboard?.name,
     allLabel,
+    hasMultipleDashboards,
     overflowMeasurementLabel,
     roomGroupTriggerLabelById,
     roomNavEntries,
@@ -582,6 +595,15 @@ export const RoomNav = memo(function RoomNav({
                     inactiveClassName={inactiveRoomItemClassName}
                     dropdownItemClassName={dropdownItemClassName}
                     onRoomChange={onRoomChange}
+                  />
+                ) : isAllRooms(entry.room) && hasMultipleDashboards ? (
+                  <DashboardSwitcherPill
+                    key={entry.id}
+                    active={isAllRooms(activeRoom)}
+                    className={
+                      isAllRooms(activeRoom) ? activeRoomItemClassName : inactiveRoomItemClassName
+                    }
+                    onShowHome={() => onRoomChange(entry.room)}
                   />
                 ) : (
                   <RoomNavItem

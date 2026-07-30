@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@navet/app/components/ui/alert-dialog';
+import { DashboardManager } from '@navet/app/features/dashboard/dashboards/dashboard-manager';
 import { useI18n } from '@navet/app/hooks';
 import {
   activateKeepDeviceAwakeFallback,
@@ -61,6 +62,14 @@ export function SettingsDashboardSection({ controller }: SettingsDashboardSectio
       description={t('settings.dashboard.sectionDescription')}
       styles={styles}
     >
+      <SettingsItem
+        title={t('dashboard.multiple.manager.title')}
+        description={t('dashboard.multiple.manager.description')}
+        styles={styles}
+      >
+        <DashboardManager styles={styles} />
+      </SettingsItem>
+
       <SettingsItem
         title={t('settings.dashboard.profileMode.title')}
         description={t('settings.dashboard.profileMode.description')}

@@ -9,9 +9,16 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@navet/app/components/ui/dropdown-menu';
 import { getDashboardRoomLabel, isAllRooms } from '@navet/app/constants/rooms';
+import { DashboardCreateDialog } from '@navet/app/features/dashboard/dashboards/dashboard-create-dialog';
+import {
+  DashboardSwitcherMenuContent,
+  useDashboardSwitcher,
+} from '@navet/app/features/dashboard/dashboards/dashboard-switcher';
 import { useHomeAssistantPanelShell, useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
 import { useEditModeStore, useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { settingsSelectors } from '@navet/app/stores/selectors';
@@ -90,6 +97,9 @@ export const Sidebar = memo(function Sidebar({
 }: SidebarProps) {
   const { theme, primaryColor } = useTheme();
   const { t } = useI18n();
+  const { activeDashboard, dashboards } = useDashboardSwitcher();
+  const hasMultipleDashboards = dashboards.length > 1;
+  const [isDashboardCreateOpen, setIsDashboardCreateOpen] = useState(false);
   const {
     activeCustomSidebarActionId,
     activeSection,
@@ -473,7 +483,9 @@ export const Sidebar = memo(function Sidebar({
                   activeHomeRoomNavigation?.activeRoom &&
                   !isAllRooms(activeHomeRoomNavigation.activeRoom)
                     ? activeHomeRoomNavigation.activeRoom
-                    : item.label;
+                    : hasMultipleDashboards
+                      ? (activeDashboard?.name ?? item.label)
+                      : item.label;
                 const ActiveHomeIcon =
                   activeHomeRoomNavigation?.activeRoom &&
                   !isAllRooms(activeHomeRoomNavigation.activeRoom)
@@ -514,6 +526,18 @@ export const Sidebar = memo(function Sidebar({
                         sideOffset={10}
                         className="w-56 md:hidden"
                       >
+                        {hasMultipleDashboards ? (
+                          <>
+                            <DashboardSwitcherMenuContent
+                              showManage
+                              onCreate={() => setIsDashboardCreateOpen(true)}
+                            />
+                            <DropdownMenuSeparator />
+                            <DropdownMenuLabel>
+                              {t('dashboard.multiple.group.rooms')}
+                            </DropdownMenuLabel>
+                          </>
+                        ) : null}
                         {visibleMobileRooms.map((room) => {
                           const label = getDashboardRoomLabel(room, t('dashboard.roomNav.all'));
 
@@ -565,6 +589,10 @@ export const Sidebar = memo(function Sidebar({
           </div>
         )}
       </div>
+      <DashboardCreateDialog
+        isOpen={isDashboardCreateOpen}
+        onOpenChange={setIsDashboardCreateOpen}
+      />
 
       <MobileSectionOrbitSheet
         activeSection={activeSection}

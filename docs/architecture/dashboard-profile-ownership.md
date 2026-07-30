@@ -8,9 +8,9 @@ or server file.
 
 | Layer | Example | Owns |
 |---|---|---|
-| Installation workspace | Navet on a Raspberry Pi | Shared dashboard profile, revisions, history, and registered clients |
-| Provider account | A Home Assistant user | Language, units, notification visibility, default view, and interaction preference |
-| Dashboard client | Kitchen panel or Vishal's phone | Kiosk/panel mode, keep-awake, local density, effects quality, and camera transport preference |
+| Installation workspace | Navet on a Raspberry Pi | Shared dashboard collection, default dashboard, client assignments, revisions, history, and registered clients |
+| Provider account | A Home Assistant user | Language, units, notification visibility, and interaction preference |
+| Dashboard client | Kitchen panel or Vishal's phone | Browser-local identity, display preset, kiosk/panel mode, keep-awake, local density, effects quality, and camera transport preference |
 | Credential session | One browser's Home Assistant OAuth grant | Access and refresh tokens for that browser only |
 
 A dashboard client has a random browser-local ID and a user-editable display name. Those values are
@@ -48,10 +48,23 @@ stall the single Nginx worker or be silently overwritten.
 
 ## Shared Profile
 
-The installation has one default shared profile today. It contains the household-facing dashboard
-definition: theme, cards, layouts, room organization, weather presentation, and shared custom
-actions that pass export security filtering. Camera transport and presentation preferences remain
+The installation has one revisioned shared profile. It contains the household-facing dashboard
+collection: named Home dashboards, their order, the workspace default, and assignments from
+registered dashboard-client IDs to dashboard IDs. Each dashboard owns its Home card membership,
+room-navigation scope, layout, sections, card sizes, custom-card instances, and zone assignments.
+Theme, room organization, weather presentation, and shared custom actions that pass export
+security filtering remain workspace-wide. Camera transport and presentation preferences remain
 device-owned because panel capabilities differ.
+
+Opening a dashboard is not an assignment. A direct link has the highest priority for that
+navigation, followed by a browser-session preview, the workspace assignment for that dashboard
+client, the workspace default, and finally the first valid dashboard. Preview state is
+session-local and never enters the shared profile. Assignments are convenience defaults, not
+authorization boundaries.
+
+Remote assignment changes are applied only at a safe Home navigation point. Navet defers the
+switch while the client is editing or a blocking customization surface is open, so shared profile
+sync cannot interrupt a drag or in-progress form.
 
 The server stores:
 
@@ -116,6 +129,10 @@ local state has not changed since that acknowledged revision before applying a n
    folded into the next attempt.
 5. **Load remote** discards the pending local fields and applies the server revision.
 
+Dashboard definitions reconcile by stable dashboard ID. Changes under different
+`dashboardsById/<id>` paths and changes to different client-assignment keys are independent;
+deleting a dashboard and remapping its assignments is one shared-profile mutation.
+
 An empty server is not automatically destructive. An uninitialized workspace may be seeded from a
 configured local dashboard. An explicit reset or a missing profile without a reset marker preserves
 local state and exposes recovery/history instead of clearing the browser.
@@ -151,8 +168,8 @@ are excluded from the shared profile.
   every upstream HTTP and WebSocket proxy request.
 - Home Assistant add-on Ingress may use the official `X-Remote-User-*` identity headers only in the
   explicit Ingress handler. This trusted, Ingress-only runtime bypasses standalone pairing.
-- The Home Assistant custom panel has no Navet profile-store endpoint and remains local-only until a
-  provider-owned server persistence seam exists.
+- The Home Assistant custom panel has no Navet profile-store endpoint. Its dashboard collection and
+  client assignment remain local-only until a provider-owned server persistence seam exists.
 
 The normal standalone profile route never trusts Ingress headers and never accepts anonymous
 profile access.

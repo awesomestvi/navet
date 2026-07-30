@@ -104,6 +104,34 @@ export const customSidebarActionToPath = (actionId: string): string => {
   return buildBaseRelativePath(`embedded/${encodeURIComponent(actionId)}`);
 };
 
+export const dashboardToPath = (dashboardId: string): string => {
+  const encodedDashboardId = encodeURIComponent(dashboardId);
+  if (typeof window !== 'undefined') {
+    const demoPathPrefix = getDemoPathPrefix(window.location.pathname);
+    if (demoPathPrefix) {
+      return `${demoPathPrefix}/dashboard/${encodedDashboardId}`;
+    }
+  }
+
+  return buildBaseRelativePath(`dashboard/${encodedDashboardId}`);
+};
+
+export const pathToDashboardId = (pathname: string): string | null => {
+  const segments = pathname.split('/').filter(Boolean);
+  const dashboardSegmentIndex = segments.lastIndexOf('dashboard');
+  const dashboardId =
+    dashboardSegmentIndex === segments.length - 2 ? segments[dashboardSegmentIndex + 1] : undefined;
+  if (!dashboardId) {
+    return null;
+  }
+
+  try {
+    return decodeURIComponent(dashboardId);
+  } catch {
+    return null;
+  }
+};
+
 export const pathToDestination = (pathname: string): NavigationDestination => {
   const ingressDestination = getIngressDestinationFromPath(pathname);
   if (ingressDestination) {

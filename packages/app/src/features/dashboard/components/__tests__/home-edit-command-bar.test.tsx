@@ -48,7 +48,7 @@ describe('HomeEditCommandBar', () => {
     expect(screen.queryByText('Editing Home')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Insert' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'More actions' })).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button')[0]?.textContent).toBe('Manage Rooms');
+    expect(screen.getAllByRole('button')[0]?.textContent).toBe('Home');
     expect(
       screen
         .getAllByRole('button')

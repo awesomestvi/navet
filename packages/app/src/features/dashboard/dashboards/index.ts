@@ -1,0 +1,22 @@
+export {
+  createDashboardDefinition,
+  createLegacyDashboardCollection,
+  DASHBOARD_COLLECTION_SCHEMA_VERSION,
+  type DashboardActivationSource,
+  type DashboardCreateInput,
+  type DashboardId,
+  type DashboardSeedDevice,
+  type DashboardSeedMode,
+  DEFAULT_DASHBOARD_ID,
+  deleteDashboardFromCollection,
+  MAX_DASHBOARD_COUNT,
+  MAX_DASHBOARD_NAME_LENGTH,
+  type NavetDashboardCollection,
+  type NavetDashboardDefinition,
+  normalizeHomeDashboardLayout,
+  resolveDashboard,
+  resolveDashboardNavigationRooms,
+  sanitizeDashboardCollection,
+  sanitizeDashboardName,
+} from './dashboard-collection';
+export { useDashboardCollectionStore } from './dashboard-collection-store';

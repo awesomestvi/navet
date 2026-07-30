@@ -1,4 +1,12 @@
+import { useDashboardProfileRuntimeStore } from '@navet/app/features/dashboard/clients/dashboard-profile-runtime-store';
+import {
+  createDashboardDefinition,
+  createLegacyDashboardCollection,
+  sanitizeDashboardCollection,
+} from '@navet/app/features/dashboard/dashboards/dashboard-collection';
+import { useDashboardCollectionStore } from '@navet/app/features/dashboard/dashboards/dashboard-collection-store';
 import type { Meta, StoryObj } from '@storybook/react';
+import { useEffect, useState } from 'react';
 import { useSettingsSectionController } from '../hooks/use-settings-section-controller';
 import { SettingsDashboardSection } from './settings-dashboard-section';
 
@@ -13,6 +21,78 @@ function DashboardStory() {
   );
 }
 
+function MultipleDashboardStory() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const previous = useDashboardCollectionStore.getState();
+    const home = createDashboardDefinition({ id: 'home', name: 'Home' });
+    const upstairs = createDashboardDefinition({
+      id: 'upstairs',
+      name: 'Upstairs lights',
+      source: {
+        kind: 'rooms',
+        roomNames: ['Bedroom', 'Hallway'],
+        include: 'lights',
+        devices: [
+          { id: '0:light.bedroom', room: 'Bedroom', type: 'lights', size: 'small' },
+          { id: '0:light.hallway', room: 'Hallway', type: 'lights', size: 'small' },
+        ],
+      },
+    });
+    const family = createDashboardDefinition({ id: 'family', name: 'Family overview' });
+    useDashboardCollectionStore.setState({
+      collection: sanitizeDashboardCollection(
+        {
+          schemaVersion: 1,
+          defaultDashboardId: 'home',
+          order: ['home', 'upstairs', 'family'],
+          dashboardsById: { home, upstairs, family },
+          dashboardIdByClientId: {
+            'sonoff-upstairs': 'upstairs',
+            'kitchen-tablet': 'family',
+          },
+        },
+        createLegacyDashboardCollection({ homeLayout: null })
+      ),
+      activeDashboardId: 'home',
+    });
+    const now = new Date().toISOString();
+    useDashboardProfileRuntimeStore.getState().setClients([
+      {
+        id: 'sonoff-upstairs',
+        name: 'Sonoff upstairs',
+        kind: 'wall_panel',
+        firstSeenAt: now,
+        lastSeenAt: now,
+        lastRevision: 4,
+      },
+      {
+        id: 'kitchen-tablet',
+        name: 'Kitchen tablet',
+        kind: 'tablet',
+        firstSeenAt: now,
+        lastSeenAt: now,
+        lastRevision: 4,
+      },
+    ]);
+    setReady(true);
+
+    return () => {
+      useDashboardCollectionStore.setState({
+        collection: previous.collection,
+        activeDashboardId: previous.activeDashboardId,
+        activeSource: previous.activeSource,
+        pendingAssignedDashboardId: previous.pendingAssignedDashboardId,
+        layoutHistory: previous.layoutHistory,
+      });
+      useDashboardProfileRuntimeStore.getState().reset();
+    };
+  }, []);
+
+  return ready ? <DashboardStory /> : null;
+}
+
 const meta = {
   title: 'Pages/Settings/Dashboard',
   component: DashboardStory,
@@ -22,7 +102,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Dashboard settings tab — entity visibility, onboarding restart, and YAML config backup/restore.',
+          'Dashboard settings tab — named Home dashboards, display presets, visibility, onboarding, and config backup/restore.',
       },
     },
   },
@@ -33,3 +113,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+export const MultipleDashboards: Story = {
+  render: () => <MultipleDashboardStory />,
+};

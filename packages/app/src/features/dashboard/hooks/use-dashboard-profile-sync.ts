@@ -32,6 +32,7 @@ import {
   type DashboardProfileActivity,
   useDashboardProfileRuntimeStore,
 } from '@navet/app/features/dashboard/clients/dashboard-profile-runtime-store';
+import { useDashboardCollectionStore } from '@navet/app/features/dashboard/dashboards';
 import { useDashboardPreferenceSync } from '@navet/app/features/dashboard/hooks/use-dashboard-preference-sync';
 import { useLightPresetStore } from '@navet/app/features/lighting/stores/light-preset-store';
 import { useI18n } from '@navet/app/hooks';
@@ -982,6 +983,7 @@ export function useDashboardProfileSync() {
       useThemeStore.subscribe(syncCurrentLocalState),
       useSettingsStore.subscribe(syncCurrentLocalState),
       useCustomCardsStore.subscribe(syncCurrentLocalState),
+      useDashboardCollectionStore.subscribe(syncCurrentLocalState),
       useDashboardEntitiesStore.subscribe(syncCurrentLocalState),
       useEntityRoomOverridesStore.subscribe(syncCurrentLocalState),
       useCardZonesStore.subscribe(syncCurrentLocalState),
