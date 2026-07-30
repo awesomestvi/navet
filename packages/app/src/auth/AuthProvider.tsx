@@ -3,7 +3,15 @@ import type {
   IntegrationProviderId,
 } from '@navet/app/types/provider';
 import { INTEGRATION_PROVIDERS } from '@navet/app/types/provider';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { removeLocalStorageItem } from '../utils/storage';
 import { isInvalidStandaloneOAuthAuthError } from './adapters/standaloneOAuthAuth';
 import {
@@ -59,6 +67,9 @@ function getAuthErrorMessage(error: unknown): string {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const runtime = integrationSessionRuntime.getAuthRuntime();
+  const refreshRequests = useRef<
+    Partial<Record<IntegrationProviderId, Promise<AuthSession | null>>>
+  >({});
   const [session, setSession] = useState<AuthSession | null>(null);
   const [snapshot, setSnapshot] = useState<IntegrationSessionSnapshot>(
     integrationSessionRuntime.getSnapshot()
@@ -68,6 +79,73 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [initializationAttempt, setInitializationAttempt] = useState(0);
   const retryInitialization = useCallback(() => {
     setInitializationAttempt((attempt) => attempt + 1);
+  }, []);
+  const refreshProviderSession = useCallback((providerId: IntegrationProviderId) => {
+    const existingRequest = refreshRequests.current[providerId];
+    if (existingRequest) {
+      return existingRequest;
+    }
+
+    const request = (async () => {
+      const currentSnapshot = integrationSessionRuntime.getSnapshot();
+      const sessionToRefresh = fromProviderSessionInput(currentSnapshot.sessions[providerId]);
+
+      try {
+        const nextSnapshot = await integrationSessionRuntime.refresh(providerId);
+        const nextSession = fromProviderSessionInput(integrationSessionRuntime.getSession());
+        const refreshedSession = fromProviderSessionInput(nextSnapshot.sessions[providerId]);
+        setSnapshot(nextSnapshot);
+        setSession(nextSession);
+        setError(null);
+        if (refreshedSession) {
+          dispatchAuthSessionRefreshed(providerId);
+        }
+        return refreshedSession;
+      } catch (err) {
+        const isStandaloneHomeAssistantSession =
+          sessionToRefresh?.providerId === 'home_assistant' &&
+          sessionToRefresh.runtime === 'standalone-oauth';
+        if (
+          !isStandaloneHomeAssistantSession ||
+          !isInvalidStandaloneOAuthAuthError(err) ||
+          !integrationSessionRuntime.invalidatePersistedSession
+        ) {
+          throw err;
+        }
+
+        try {
+          await integrationSessionRuntime.invalidatePersistedSession('home_assistant');
+        } catch (invalidationError) {
+          setError(getAuthErrorMessage(invalidationError));
+          throw invalidationError;
+        }
+
+        const nextSnapshot = integrationSessionRuntime.getSnapshot();
+        const nextSession = fromProviderSessionInput(integrationSessionRuntime.getSession());
+        const refreshedSession = fromProviderSessionInput(nextSnapshot.sessions[providerId]);
+        setSnapshot(nextSnapshot);
+        setSession(nextSession);
+        setError(nextSession ? null : getAuthErrorMessage(err));
+        if (refreshedSession) {
+          dispatchAuthSessionRefreshed(providerId);
+        }
+        return refreshedSession;
+      }
+    })();
+    refreshRequests.current[providerId] = request;
+    void request.then(
+      () => {
+        if (refreshRequests.current[providerId] === request) {
+          delete refreshRequests.current[providerId];
+        }
+      },
+      () => {
+        if (refreshRequests.current[providerId] === request) {
+          delete refreshRequests.current[providerId];
+        }
+      }
+    );
+    return request;
   }, []);
 
   useEffect(() => {
@@ -234,46 +312,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshInFlight = true;
       retryPending = false;
       try {
-        const nextSnapshot = await integrationSessionRuntime.refresh(sessionToRefresh.providerId);
+        await refreshProviderSession(sessionToRefresh.providerId);
         if (cancelled) {
           return;
         }
-        setSnapshot(nextSnapshot);
-        setSession(fromProviderSessionInput(integrationSessionRuntime.getSession()));
-        setError(null);
-        dispatchAuthSessionRefreshed(sessionToRefresh.providerId);
       } catch (err) {
         if (cancelled) {
-          return;
-        }
-
-        const isStandaloneHomeAssistantSession =
-          sessionToRefresh.providerId === 'home_assistant' &&
-          sessionToRefresh.runtime === 'standalone-oauth';
-        if (isStandaloneHomeAssistantSession && isInvalidStandaloneOAuthAuthError(err)) {
-          try {
-            await integrationSessionRuntime.invalidatePersistedSession?.('home_assistant');
-          } catch (invalidationError) {
-            if (cancelled) {
-              return;
-            }
-
-            // Do not clear React state until the server-bound session is gone.
-            // Otherwise a failed DELETE makes the user appear logged out, only
-            // for the same durable session to return after the next reload.
-            setError(getAuthErrorMessage(invalidationError));
-            scheduleTransientRetry();
-            return;
-          }
-          if (cancelled) {
-            return;
-          }
-
-          const nextSnapshot = integrationSessionRuntime.getSnapshot();
-          const nextSession = fromProviderSessionInput(integrationSessionRuntime.getSession());
-          setSnapshot(nextSnapshot);
-          setSession(nextSession);
-          setError(nextSession ? null : getAuthErrorMessage(err));
           return;
         }
 
@@ -316,7 +360,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener('online', recoverRefresh);
       document.removeEventListener('visibilitychange', recoverRefresh);
     };
-  }, [retainedHomeAssistantSession]);
+  }, [retainedHomeAssistantSession, refreshProviderSession]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -343,12 +387,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setError(null);
       },
       refresh: async (providerId) => {
-        const nextSnapshot = await integrationSessionRuntime.refresh(providerId);
-        const nextSession = fromProviderSessionInput(integrationSessionRuntime.getSession());
-        setSnapshot(nextSnapshot);
-        setSession(nextSession);
-        dispatchAuthSessionRefreshed(providerId ?? nextSnapshot.providerId);
-        return nextSession;
+        const currentSnapshot = integrationSessionRuntime.getSnapshot();
+        const targetProviderId = providerId ?? currentSnapshot.providerId;
+        return await refreshProviderSession(targetProviderId);
       },
       retryInitialization,
       replaceSession: (nextSession) => {
@@ -364,7 +405,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(fromProviderSessionInput(integrationSessionRuntime.getSession()));
       },
     }),
-    [runtime, snapshot, session, ready, error, retryInitialization]
+    [runtime, snapshot, session, ready, error, retryInitialization, refreshProviderSession]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

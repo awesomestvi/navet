@@ -823,6 +823,108 @@ describe('production njs standalone OAuth sessions', () => {
     });
   });
 
+  it('rejects stale or mismatched confirmed-invalid cleanup without deleting the winner', async () => {
+    const { store } = createStore();
+    const browser = await createBrowserSession(store);
+    seedAuth(store, browser, AUTH_A);
+    const winnerAuth = {
+      ...AUTH_A,
+      access_token: 'access-winner',
+      expires: AUTH_A.expires + 60_000,
+    };
+    const winner = createRequest({
+      method: 'PUT',
+      cookie: browser.cookie,
+      body: JSON.stringify(winnerAuth),
+      headers: {
+        [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+        [AUTH_REVISION_HEADER]: '0',
+        Origin: 'http://navet.example',
+      },
+    });
+    await store.handle(winner.request);
+    expect(winner.result.status).toBe(200);
+
+    for (const headers of [
+      {
+        [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+        [AUTH_REVISION_HEADER]: '0',
+      },
+      {
+        [AUTH_BINDING_HEADER]: `nas_${'b'.repeat(32)}`,
+        [AUTH_REVISION_HEADER]: '1',
+      },
+    ]) {
+      const staleInvalidation = createRequest({
+        method: 'DELETE',
+        cookie: browser.cookie,
+        headers: {
+          ...headers,
+          Origin: 'http://navet.example',
+        },
+      });
+      await store.handle(staleInvalidation.request);
+      expect(staleInvalidation.result.status).toBe(409);
+      expect(JSON.parse(staleInvalidation.result.body)).toMatchObject({
+        code: 'credential-session-superseded',
+        session: {
+          authRevision: 1,
+          sessionId: browser.metadata.sessionId,
+        },
+      });
+      expect(store.readSession(browser.cookie.split('=')[1] ?? '')).toMatchObject({
+        authRevision: 1,
+        auth: winnerAuth,
+      });
+    }
+  });
+
+  it('conditionally clears only the confirmed-invalid auth revision', async () => {
+    const { store } = createStore();
+    const browser = await createBrowserSession(store);
+    const anotherBrowser = await createBrowserSession(store);
+    seedAuth(store, browser, AUTH_A);
+    seedAuth(store, anotherBrowser, AUTH_B);
+    const invalidation = createRequest({
+      method: 'DELETE',
+      cookie: `${anotherBrowser.cookie}; ${browser.cookie}`,
+      headers: {
+        [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+        [AUTH_REVISION_HEADER]: '0',
+        Origin: 'http://navet.example',
+      },
+    });
+
+    await store.handle(invalidation.request);
+
+    expect(invalidation.result.status).toBe(200);
+    expect(store.readSession(browser.cookie.split('=')[1] ?? '')).toBeNull();
+    expect(store.readSession(anotherBrowser.cookie.split('=')[1] ?? '')?.auth).toEqual(AUTH_B);
+  });
+
+  it('rejects a malformed confirmed-invalid revision without clearing the session', async () => {
+    const { store } = createStore();
+    const browser = await createBrowserSession(store);
+    seedAuth(store, browser, AUTH_A);
+    const invalidation = createRequest({
+      method: 'DELETE',
+      cookie: browser.cookie,
+      headers: {
+        [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+        [AUTH_REVISION_HEADER]: 'not-a-revision',
+        Origin: 'http://navet.example',
+      },
+    });
+
+    await store.handle(invalidation.request);
+
+    expect(invalidation.result.status).toBe(428);
+    expect(JSON.parse(invalidation.result.body)).toMatchObject({
+      code: 'credential-session-revision-required',
+    });
+    expect(store.readSession(browser.cookie.split('=')[1] ?? '')?.auth).toEqual(AUTH_A);
+  });
+
   it('accepts a monotonic refresh from an old tab that omits the revision', async () => {
     const { store } = createStore();
     const browser = await createBrowserSession(store);

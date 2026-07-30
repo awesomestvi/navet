@@ -344,9 +344,73 @@ describe('auth adapters', () => {
         method: 'DELETE',
         headers: expect.objectContaining({
           'X-Navet-OAuth-Binding': STANDALONE_SESSION_ID,
+          'X-Navet-Auth-Revision': '0',
         }),
       })
     );
+  });
+
+  it('restores a newer durable session when confirmed-invalid cleanup loses a revision race', async () => {
+    const staleAuth = createAuth(oauthSessionFixture.haBaseUrl);
+    Object.defineProperty(staleAuth, 'expired', {
+      configurable: true,
+      get: () => true,
+    });
+    const winnerAuth = createAuth(oauthSessionFixture.haBaseUrl);
+    winnerAuth.data = {
+      ...winnerAuth.data,
+      access_token: 'winner-access-token',
+      expires: Date.now() + 7_200_000,
+    };
+    let serverRevision = 0;
+    const fetchMock = vi.spyOn(window, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/__navet_auth__/session/credentials')) {
+        return createCredentialsResponse(oauthSessionFixture.haBaseUrl);
+      }
+      if (url.endsWith('/__navet_auth__/session') && !init?.method) {
+        return createSessionMetadataResponse({ authRevision: serverRevision });
+      }
+      if (url.endsWith('/__navet_auth__/session') && init?.method === 'DELETE') {
+        serverRevision = 1;
+        return new Response(
+          JSON.stringify({
+            code: 'credential-session-superseded',
+            session: await createSessionMetadataResponse({ authRevision: serverRevision }).json(),
+          }),
+          {
+            status: 409,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
+      if (url.endsWith('/__navet_auth__/session') && init?.method === 'PUT') {
+        return createSessionMetadataResponse({ authRevision: serverRevision });
+      }
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+    refreshAccessTokenMock.mockRejectedValueOnce(ERR_INVALID_AUTH);
+    getAuthMock.mockResolvedValueOnce(staleAuth).mockResolvedValueOnce(winnerAuth);
+
+    await expect(standaloneOAuthAuth.init()).resolves.toMatchObject({
+      auth: winnerAuth,
+      credentialSessionId: STANDALONE_SESSION_ID,
+      credentialRevision: 1,
+    });
+
+    const deleteRequest = fetchMock.mock.calls.find(([, init]) => init?.method === 'DELETE');
+    expect(deleteRequest?.[1]).toEqual(
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'X-Navet-OAuth-Binding': STANDALONE_SESSION_ID,
+          'X-Navet-Auth-Revision': '0',
+        }),
+      })
+    );
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'DELETE')).toHaveLength(1);
   });
 
   it('keeps startup pending when a confirmed-invalid durable session cannot be deleted', async () => {
@@ -830,6 +894,71 @@ describe('auth adapters', () => {
       })
     );
     expect(revokeMock).not.toHaveBeenCalled();
+  });
+
+  it('returns the newer session when explicit confirmed-invalid cleanup is superseded', async () => {
+    const staleAuth = createAuth(oauthSessionFixture.haBaseUrl);
+    const winnerAuth = createAuth(oauthSessionFixture.haBaseUrl);
+    winnerAuth.data = {
+      ...winnerAuth.data,
+      access_token: 'winner-access-token',
+      expires: Date.now() + 7_200_000,
+    };
+    let serverRevision = 0;
+    const fetchMock = vi.spyOn(window, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/__navet_auth__/session/credentials')) {
+        return createCredentialsResponse(oauthSessionFixture.haBaseUrl);
+      }
+      if (url.endsWith('/__navet_auth__/session') && !init?.method) {
+        return createSessionMetadataResponse({ authRevision: serverRevision });
+      }
+      if (url.endsWith('/__navet_auth__/session') && init?.method === 'DELETE') {
+        serverRevision = 1;
+        return new Response(
+          JSON.stringify({
+            code: 'credential-session-superseded',
+            session: await createSessionMetadataResponse({ authRevision: serverRevision }).json(),
+          }),
+          {
+            status: 409,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
+      if (url.endsWith('/__navet_auth__/session') && init?.method === 'PUT') {
+        return createSessionMetadataResponse({ authRevision: serverRevision });
+      }
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+    getAuthMock.mockResolvedValueOnce(winnerAuth);
+
+    const replacement = await standaloneOAuthAuth.invalidatePersistedSession?.({
+      providerId: 'home_assistant',
+      runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: oauthSessionFixture.haBaseUrl,
+      hassUrl: oauthSessionFixture.hassUrl,
+      auth: staleAuth,
+      credentialSessionId: STANDALONE_SESSION_ID,
+      credentialRevision: 0,
+      expiresAt: staleAuth.data.expires,
+    });
+
+    expect(replacement).toMatchObject({
+      auth: winnerAuth,
+      credentialSessionId: STANDALONE_SESSION_ID,
+      credentialRevision: 1,
+    });
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'DELETE')).toHaveLength(1);
+    expect(
+      new Headers(
+        fetchMock.mock.calls.find(([, init]) => init?.method === 'DELETE')?.[1]?.headers
+      ).get('X-Navet-Auth-Revision')
+    ).toBe('0');
   });
 
   it('revokes and clears only the current browser OAuth session on logout', async () => {

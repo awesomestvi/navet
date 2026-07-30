@@ -1245,6 +1245,196 @@ describe('Vite standalone auth session conformance', () => {
     expect(() => writeFileSync(legacyFile, '', { flag: 'wx' })).not.toThrow();
   });
 
+  it('uses the public binding and auth revision as a CAS for confirmed-invalid cleanup', async () => {
+    const { store } = createStore();
+    const handler = createViteAuthRequestHandler(
+      store,
+      vi.fn().mockResolvedValue(new Response('{}', { status: 404 })),
+      TEST_INSTALLATION_AUTHORITY
+    );
+    const browser = await createBrowser(handler);
+    const anotherBrowser = await createBrowser(handler);
+    seedAuth(store, browser, AUTH_A);
+    const cookieId = browser.cookie.split('=')[1] ?? '';
+    const seeded = store.readSession(cookieId);
+    if (!seeded) {
+      throw new Error('Expected the seeded auth record');
+    }
+    store.writeSession(cookieId, {
+      ...seeded,
+      updatedAt: seeded.updatedAt + 1,
+      authRevision: 1,
+      auth: {
+        ...AUTH_A,
+        access_token: 'winning-access-token',
+      },
+    });
+
+    const staleResponse = createResponse();
+    await handler(
+      createRequest({
+        method: 'DELETE',
+        cookie: browser.cookie,
+        headers: {
+          Origin: 'http://navet.example',
+          [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+          [AUTH_REVISION_HEADER]: '0',
+        },
+      }),
+      staleResponse.response
+    );
+    expect(staleResponse.response.statusCode).toBe(409);
+    expect(JSON.parse(staleResponse.body)).toMatchObject({
+      error: 'Auth session changed before invalidation completed',
+      code: 'credential-session-superseded',
+      session: {
+        sessionId: browser.metadata.sessionId,
+        authRevision: 1,
+      },
+    });
+    expect(staleResponse.getHeader('set-cookie')).toBeUndefined();
+    expect(store.readSession(cookieId)).toMatchObject({
+      authRevision: 1,
+      auth: { access_token: 'winning-access-token' },
+    });
+
+    const mismatchedBindingResponse = createResponse();
+    await handler(
+      createRequest({
+        method: 'DELETE',
+        cookie: browser.cookie,
+        headers: {
+          Origin: 'http://navet.example',
+          [AUTH_BINDING_HEADER]: anotherBrowser.metadata.sessionId,
+          [AUTH_REVISION_HEADER]: '1',
+        },
+      }),
+      mismatchedBindingResponse.response
+    );
+    expect(mismatchedBindingResponse.response.statusCode).toBe(409);
+    expect(JSON.parse(mismatchedBindingResponse.body)).toMatchObject({
+      error: 'Auth session changed before invalidation completed',
+      code: 'credential-session-superseded',
+      session: {
+        sessionId: browser.metadata.sessionId,
+        authRevision: 1,
+      },
+    });
+    expect(mismatchedBindingResponse.getHeader('set-cookie')).toBeUndefined();
+    expect(store.readSession(cookieId)).not.toBeNull();
+
+    const exactResponse = createResponse();
+    await handler(
+      createRequest({
+        method: 'DELETE',
+        cookie: browser.cookie,
+        headers: {
+          Origin: 'http://navet.example',
+          [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+          [AUTH_REVISION_HEADER]: '1',
+        },
+      }),
+      exactResponse.response
+    );
+    expect(exactResponse.response.statusCode).toBe(200);
+    expect(exactResponse.getHeader('set-cookie')).toContain('Max-Age=0');
+    expect(store.readSession(cookieId)).toBeNull();
+
+    const missingResponse = createResponse();
+    await handler(
+      createRequest({
+        method: 'DELETE',
+        cookie: browser.cookie,
+        headers: {
+          Origin: 'http://navet.example',
+          [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+          [AUTH_REVISION_HEADER]: '1',
+        },
+      }),
+      missingResponse.response
+    );
+    expect(missingResponse.response.statusCode).toBe(409);
+    expect(JSON.parse(missingResponse.body)).toMatchObject({
+      error: 'Auth session changed before invalidation completed',
+      code: 'credential-session-superseded',
+      session: null,
+    });
+    expect(missingResponse.getHeader('set-cookie')).toBeUndefined();
+  });
+
+  it('rejects a malformed conditional-delete revision without falling back to logout', async () => {
+    const { store } = createStore();
+    const handler = createViteAuthRequestHandler(
+      store,
+      vi.fn().mockResolvedValue(new Response('{}', { status: 404 })),
+      TEST_INSTALLATION_AUTHORITY
+    );
+    const browser = await createBrowser(handler);
+    seedAuth(store, browser, AUTH_A);
+    const cookieId = browser.cookie.split('=')[1] ?? '';
+
+    const response = createResponse();
+    await handler(
+      createRequest({
+        method: 'DELETE',
+        cookie: browser.cookie,
+        headers: {
+          Origin: 'http://navet.example',
+          [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+          [AUTH_REVISION_HEADER]: 'not-a-revision',
+        },
+      }),
+      response.response
+    );
+
+    expect(response.response.statusCode).toBe(428);
+    expect(JSON.parse(response.body)).toMatchObject({
+      error: 'Home Assistant auth revision is invalid',
+      code: 'credential-session-revision-required',
+    });
+    expect(response.getHeader('set-cookie')).toBeUndefined();
+    expect(store.readSession(cookieId)?.auth).toEqual(AUTH_A);
+  });
+
+  it('keeps unrelated presented records during a successful scoped conditional delete', async () => {
+    const persistence = createStore();
+    const cookieNames = createInstallationCookieNames('navet_auth_session', '3'.repeat(64));
+    const store = createViteAuthSessionStore(
+      persistence.sessionsDirectory,
+      persistence.legacyFile,
+      cookieNames
+    );
+    const handler = createViteAuthRequestHandler(
+      store,
+      vi.fn().mockResolvedValue(new Response('{}', { status: 404 })),
+      TEST_INSTALLATION_AUTHORITY
+    );
+    const browserA = await createBrowser(handler);
+    const browserB = await createBrowser(handler);
+    seedAuth(store, browserA, AUTH_A);
+    seedAuth(store, browserB, AUTH_B);
+    const browserACookieId = browserA.cookie.split('=')[1] ?? '';
+    const browserBCookieId = browserB.cookie.split('=')[1] ?? '';
+
+    const response = createResponse();
+    await handler(
+      createRequest({
+        method: 'DELETE',
+        cookie: `${browserB.cookie}; ${browserA.cookie}`,
+        headers: {
+          Origin: 'http://navet.example',
+          [AUTH_BINDING_HEADER]: browserA.metadata.sessionId,
+          [AUTH_REVISION_HEADER]: '0',
+        },
+      }),
+      response.response
+    );
+
+    expect(response.response.statusCode).toBe(200);
+    expect(store.readSession(browserACookieId)).toBeNull();
+    expect(store.readSession(browserBCookieId)?.auth).toEqual(AUTH_B);
+  });
+
   it('revokes every presented record with the validated binding and clears current and root paths', async () => {
     for (const matchingCookieFirst of [true, false]) {
       const { store } = createStore();

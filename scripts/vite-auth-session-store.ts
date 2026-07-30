@@ -1580,13 +1580,44 @@ export function createViteAuthRequestHandler(
         return
       }
 
+      const revisionHeader = getHeader(req, AUTH_REVISION_HEADER).trim()
+      const conditionalDelete = revisionHeader !== ''
+      const expectedRevision = conditionalDelete
+        ? parseAuthRevisionHeader(req)
+        : null
+      if (conditionalDelete && expectedRevision === null) {
+        sendJson(res, 428, {
+          error: 'Home Assistant auth revision is invalid',
+          code: 'credential-session-revision-required',
+        })
+        return
+      }
+
       const storedContexts = getStoredRequestContexts(req, store)
       const presentedStoredContexts = getLocallyBackedPresentedContexts(req, store)
       const boundStoredContexts = storedContexts.filter((context) =>
         hasValidBinding(req, context.session)
       )
+      const conditionallyMatchedContext = conditionalDelete
+        ? boundStoredContexts.find(
+            (storedContext) =>
+              Boolean(storedContext.session.auth) &&
+              getAuthRevision(storedContext.session) === expectedRevision
+          )
+        : null
+      if (conditionalDelete && !conditionallyMatchedContext) {
+        const current = getPreferredStoredRequestContext(req, store)
+        sendJson(res, 409, {
+          error: 'Auth session changed before invalidation completed',
+          code: 'credential-session-superseded',
+          session: current ? store.sanitizeSession(current.session) : null,
+        })
+        return
+      }
       const context =
-        boundStoredContexts[0] ?? getBoundEphemeralRequestContext(req, store)
+        conditionallyMatchedContext ??
+        boundStoredContexts[0] ??
+        getBoundEphemeralRequestContext(req, store)
       if (
         !context &&
         (parseViteAuthCookies(req, store.cookieNames.currentName).length > 0 ||
@@ -1597,9 +1628,16 @@ export function createViteAuthRequestHandler(
         })
         return
       }
-      const storedContextsToRevoke = store.cookieNames.scoped
-        ? presentedStoredContexts
-        : boundStoredContexts
+      const storedContextsToRevoke = (
+        store.cookieNames.scoped
+          ? presentedStoredContexts
+          : boundStoredContexts
+      ).filter(
+        (storedContext) =>
+          !conditionalDelete ||
+          (storedContext.session.sessionId === context?.session.sessionId &&
+            getAuthRevision(storedContext.session) === expectedRevision)
+      )
       for (const storedContext of storedContextsToRevoke) {
         advanceMutationGeneration(storedContext.cookieId)
         store.deleteSession(storedContext.cookieId)

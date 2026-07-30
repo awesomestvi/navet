@@ -1213,8 +1213,56 @@ function createAuthSessionStore(options) {
   }
 
   async function handleSessionDelete(r) {
+    const revisionHeader = getHeader(r && r.headersIn, AUTH_REVISION_HEADER).trim();
+    const conditionalInvalidation = revisionHeader !== '';
+    const expectedRevision = parseAuthRevisionHeader(r);
+    if (conditionalInvalidation && expectedRevision === null) {
+      sendJson(r, 428, {
+        error: 'Home Assistant auth revision is invalid',
+        code: 'credential-session-revision-required',
+      });
+      return;
+    }
+    if (conditionalInvalidation && !isSameOriginMutation(r)) {
+      sendJson(r, 403, { error: 'Cross-origin session mutation is not allowed' });
+      return;
+    }
     const context = getBoundRequestSession(r, true);
     const presentedCookieIds = getRequestCookieIds(r);
+    if (conditionalInvalidation) {
+      const binding = getHeader(r && r.headersIn, AUTH_BINDING_HEADER).trim();
+      const current = context ? readSession(context.cookieId) : null;
+      const superseded =
+        !context ||
+        !current ||
+        !current.auth ||
+        current.sessionId !== binding ||
+        current.sessionId !== context.session.sessionId ||
+        getAuthRevision(current) !== expectedRevision;
+      let index;
+      if (superseded) {
+        const latest = getRequestSession(r);
+        sendJson(r, 409, {
+          error: 'Auth session changed before invalidation completed',
+          code: 'credential-session-superseded',
+          session: latest ? sanitizeSession(latest.session) : null,
+        });
+        return;
+      }
+      for (index = 0; index < presentedCookieIds.length; index += 1) {
+        const stored = readSession(presentedCookieIds[index]);
+        if (
+          stored &&
+          stored.sessionId === binding &&
+          getAuthRevision(stored) === expectedRevision
+        ) {
+          deleteSession(presentedCookieIds[index]);
+        }
+      }
+      clearSessionCookie(r);
+      sendJson(r, 200, { ok: true });
+      return;
+    }
     if (!context && presentedCookieIds.length > 0) {
       sendJson(r, 401, { error: 'Authenticated browser session is required' });
       return;

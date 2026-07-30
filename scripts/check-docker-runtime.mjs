@@ -616,6 +616,18 @@ async function verifyHomeAssistantRefreshRevision(baseUrl, authCookie) {
   ) {
     throw new Error('Actual-image stale Home Assistant refresh was not rejected');
   }
+  const staleInvalidation = await fetch(`${baseUrl}/__navet_auth__/session`, {
+    method: 'DELETE',
+    headers,
+  });
+  const staleInvalidationPayload = await staleInvalidation.json();
+  if (
+    staleInvalidation.status !== 409 ||
+    staleInvalidationPayload?.code !== 'credential-session-superseded' ||
+    staleInvalidationPayload?.session?.authRevision !== winnerMetadata.authRevision
+  ) {
+    throw new Error('Actual-image stale Home Assistant invalidation was not rejected');
+  }
   const persistedCredentials = await fetch(
     `${baseUrl}/__navet_auth__/session/credentials`,
     {

@@ -447,11 +447,21 @@ export class AuthSessionManager {
     }
 
     const providerGeneration = this.beginProviderOperation(currentSession.providerId);
-    await adapter.invalidatePersistedSession(currentSession);
+    const replacementSession = await adapter.invalidatePersistedSession(currentSession);
     if (
       !this.isProviderGenerationCurrent(currentSession.providerId, providerGeneration) ||
       this.sessions[currentSession.providerId] !== currentSession
     ) {
+      return;
+    }
+    if (replacementSession) {
+      if (replacementSession.providerId !== currentSession.providerId) {
+        throw new Error('Persisted session invalidation returned a different provider');
+      }
+      this.updateSessions((current) => ({
+        ...current,
+        [replacementSession.providerId]: replacementSession,
+      }));
       return;
     }
     this.updateSessions((current) => {

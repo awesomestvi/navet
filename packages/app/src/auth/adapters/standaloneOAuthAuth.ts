@@ -226,7 +226,7 @@ async function persistTokens(
   data: AuthData | null,
   context?: StandaloneSessionPersistenceContext
 ): Promise<void> {
-  const binding = data ? context?.sessionId : await resolveSessionBinding();
+  const binding = context?.sessionId ?? (await resolveSessionBinding());
   if (!binding) {
     throw new Error('Unable to resolve the Navet browser session');
   }
@@ -237,7 +237,9 @@ async function persistTokens(
   };
   if (data) {
     headers['Content-Type'] = 'application/json';
-    headers[AUTH_REVISION_HEADER] = String(context?.authRevision);
+  }
+  if (context) {
+    headers[AUTH_REVISION_HEADER] = String(context.authRevision);
   }
 
   const response = await fetch(getAuthEndpoint(AUTH_SESSION_ENDPOINT), {
@@ -247,7 +249,7 @@ async function persistTokens(
     headers,
     body: data ? JSON.stringify(data) : undefined,
   });
-  if (data && response.status === 409) {
+  if (response.status === 409) {
     throw new StandaloneOAuthSessionSupersededError(
       'A newer Home Assistant session was saved by another tab'
     );
@@ -310,18 +312,23 @@ function saveTokens(data: AuthData | null, context: StandaloneSessionPersistence
   void persistence.catch(() => undefined);
 }
 
-async function clearStoredTokens(): Promise<void> {
-  await persistTokens(null);
+async function clearStoredTokens(context?: StandaloneSessionPersistenceContext): Promise<void> {
+  await persistTokens(null, context);
 }
 
 export async function invalidateStandaloneOAuthSession(): Promise<void> {
   await clearStoredTokens();
 }
 
-async function clearConfirmedInvalidStandaloneSession(): Promise<void> {
+async function clearConfirmedInvalidStandaloneSession(
+  context: StandaloneSessionPersistenceContext
+): Promise<void> {
   try {
-    await invalidateStandaloneOAuthSession();
+    await clearStoredTokens(context);
   } catch (error) {
+    if (error instanceof StandaloneOAuthSessionSupersededError) {
+      throw error;
+    }
     throw new DurableAuthSessionUnavailableError(
       'Unable to clear the invalid Home Assistant browser session',
       { cause: error }
@@ -401,22 +408,29 @@ async function restoreSessionOnce(timeoutMs: number): Promise<AuthSession | null
     sessionId: stored.metadata.sessionId,
     authRevision: stored.metadata.authRevision,
   };
-  const auth = await withTimeout(
-    getAuth({
-      hassUrl: stored.tokens.hassUrl,
-      loadTokens: async () => stored.tokens,
-      saveTokens: (data) => saveTokens(data, context),
-      limitHassInstance: true,
-    }),
-    timeoutMs
-  );
-  persistenceContextByAuth.set(auth, context);
+  try {
+    const auth = await withTimeout(
+      getAuth({
+        hassUrl: stored.tokens.hassUrl,
+        loadTokens: async () => stored.tokens,
+        saveTokens: (data) => saveTokens(data, context),
+        limitHassInstance: true,
+      }),
+      timeoutMs
+    );
+    persistenceContextByAuth.set(auth, context);
 
-  if (auth.expired) {
-    await withTimeout(auth.refreshAccessToken(), timeoutMs);
+    if (auth.expired) {
+      await withTimeout(auth.refreshAccessToken(), timeoutMs);
+    }
+    await persistTokensAfterLibrarySave(auth.data, context);
+    return toAuthSession(auth, stored.metadata, context);
+  } catch (error) {
+    if (isInvalidStandaloneOAuthAuthError(error)) {
+      await clearConfirmedInvalidStandaloneSession(context);
+    }
+    throw error;
   }
-  await persistTokensAfterLibrarySave(auth.data, context);
-  return toAuthSession(auth, stored.metadata, context);
 }
 
 async function restoreSession(
@@ -510,7 +524,6 @@ export const standaloneOAuthAuth: AuthAdapter = {
         return session;
       } catch (error) {
         if (isInvalidStandaloneOAuthAuthError(error)) {
-          await clearConfirmedInvalidStandaloneSession();
           throw error;
         }
         if (error instanceof Error && error.message === OAUTH_CALLBACK_SESSION_MISSING_MESSAGE) {
@@ -534,7 +547,6 @@ export const standaloneOAuthAuth: AuthAdapter = {
       return await restoreSession(STORED_SESSION_RESTORE_TIMEOUT_MS);
     } catch (error) {
       if (isInvalidStandaloneOAuthAuthError(error)) {
-        await clearConfirmedInvalidStandaloneSession();
         return null;
       }
       throw new DurableAuthSessionUnavailableError('Unable to restore the Home Assistant session', {
@@ -597,8 +609,43 @@ export const standaloneOAuthAuth: AuthAdapter = {
       throw error;
     }
   },
-  async invalidatePersistedSession() {
-    await invalidateStandaloneOAuthSession();
+  async invalidatePersistedSession(session) {
+    const context =
+      session.providerId === 'home_assistant' &&
+      typeof session.credentialSessionId === 'string' &&
+      /^nas_[a-f0-9]{32}$/.test(session.credentialSessionId) &&
+      typeof session.credentialRevision === 'number' &&
+      Number.isSafeInteger(session.credentialRevision) &&
+      session.credentialRevision >= 0
+        ? {
+            sessionId: session.credentialSessionId,
+            authRevision: session.credentialRevision,
+          }
+        : session.auth
+          ? persistenceContextByAuth.get(session.auth)
+          : undefined;
+    if (!context) {
+      throw new DurableAuthSessionUnavailableError(
+        'Unable to verify the invalid Home Assistant browser session'
+      );
+    }
+    try {
+      await clearStoredTokens({ ...context });
+    } catch (error) {
+      if (error instanceof StandaloneOAuthSessionSupersededError) {
+        try {
+          return (await restoreSession(STORED_SESSION_RESTORE_TIMEOUT_MS)) ?? undefined;
+        } catch (restoreError) {
+          if (isInvalidStandaloneOAuthAuthError(restoreError)) {
+            // The winner was also confirmed invalid and was conditionally
+            // removed by restoreSessionOnce.
+            return undefined;
+          }
+          throw restoreError;
+        }
+      }
+      throw error;
+    }
   },
   async logout() {
     const storedTokens = await loadTokens().catch(() => null);

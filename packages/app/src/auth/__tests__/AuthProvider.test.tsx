@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider, useAuthSession } from '../AuthProvider';
 import { AUTH_SESSION_REFRESHED_EVENT } from '../session-events';
@@ -35,14 +36,28 @@ vi.mock('../session-errors', () => ({
 }));
 
 function AuthState() {
-  const { error, logout, ready, retryInitialization, session } = useAuthSession();
+  const { error, logout, ready, refresh, retryInitialization, session } = useAuthSession();
+  const [refreshedProviderId, setRefreshedProviderId] = useState('none');
   return (
     <>
       <div data-testid="ready">{ready ? 'ready' : 'loading'}</div>
       <div data-testid="session">{session?.providerId ?? 'none'}</div>
+      <div data-testid="refreshed-provider">{refreshedProviderId}</div>
       <div data-testid="error">{error ?? 'none'}</div>
       <button type="button" onClick={() => void logout().catch(() => undefined)}>
         Log out
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          void refresh('home_assistant')
+            .then((refreshedSession) => {
+              setRefreshedProviderId(refreshedSession?.providerId ?? 'none');
+            })
+            .catch(() => undefined)
+        }
+      >
+        Refresh Home Assistant
       </button>
       <button type="button" onClick={retryInitialization}>
         Retry initialization
@@ -414,6 +429,113 @@ describe('AuthProvider OAuth refresh durability', () => {
 
     expect(screen.getByTestId('session')).toHaveTextContent('home_assistant');
     expect(screen.getByTestId('error')).toHaveTextContent('session deletion failed');
+  });
+
+  it('keeps an explicit recovery refresh from invalidating a transiently unavailable session', async () => {
+    integrationSessionRuntimeMock.refresh.mockRejectedValueOnce(
+      new Error('temporary network failure')
+    );
+    await renderAuthProvider();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh Home Assistant' }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(integrationSessionRuntimeMock.refresh).toHaveBeenCalledWith('home_assistant');
+    expect(integrationSessionRuntimeMock.invalidatePersistedSession).not.toHaveBeenCalled();
+    expect(screen.getByTestId('session')).toHaveTextContent('home_assistant');
+  });
+
+  it('coalesces an explicit recovery with a scheduled refresh for the same session', async () => {
+    const session = createStandaloneSession(Date.now() + 61_000);
+    const snapshot = createSnapshot(session);
+    let resolveRefresh: ((value: typeof snapshot) => void) | undefined;
+    integrationSessionRuntimeMock.refresh.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveRefresh = resolve;
+      })
+    );
+    await renderAuthProvider();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh Home Assistant' }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_000);
+    });
+
+    expect(integrationSessionRuntimeMock.refresh).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveRefresh?.(snapshot);
+      await Promise.resolve();
+    });
+    expect(screen.getByTestId('session')).toHaveTextContent('home_assistant');
+  });
+
+  it('coalesces confirmed invalid auth through refresh and invalidation', async () => {
+    let rejectRefresh: ((reason: unknown) => void) | undefined;
+    integrationSessionRuntimeMock.refresh.mockReturnValueOnce(
+      new Promise((_resolve, reject) => {
+        rejectRefresh = reject;
+      })
+    );
+    integrationSessionRuntimeMock.invalidatePersistedSession.mockImplementationOnce(async () => {
+      integrationSessionRuntimeMock.getSnapshot.mockReturnValue(createUnauthenticatedSnapshot());
+      integrationSessionRuntimeMock.getSession.mockReturnValue(null);
+    });
+    await renderAuthProvider();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh Home Assistant' }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_000);
+      rejectRefresh?.(INVALID_HOME_ASSISTANT_AUTH_ERROR);
+      await Promise.resolve();
+    });
+
+    expect(integrationSessionRuntimeMock.refresh).toHaveBeenCalledTimes(1);
+    expect(integrationSessionRuntimeMock.invalidatePersistedSession).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('session')).toHaveTextContent('none');
+  });
+
+  it('returns a refreshed retained Home Assistant session while Homey stays active', async () => {
+    const homeAssistantSession = createStandaloneSession(Date.now() + 61_000);
+    const refreshedHomeAssistantSession = createStandaloneSession(Date.now() + 3_600_000);
+    const homeySession = createHomeySession();
+    const initialSnapshot = createMixedSnapshot(homeAssistantSession, homeySession);
+    const refreshedSnapshot = createMixedSnapshot(refreshedHomeAssistantSession, homeySession);
+    integrationSessionRuntimeMock.getSnapshot.mockReturnValue(initialSnapshot);
+    integrationSessionRuntimeMock.getSession.mockReturnValue(homeySession);
+    integrationSessionRuntimeMock.init.mockResolvedValue(initialSnapshot);
+    integrationSessionRuntimeMock.refresh.mockResolvedValueOnce(refreshedSnapshot);
+    await renderAuthProvider();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh Home Assistant' }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByTestId('session')).toHaveTextContent('homey');
+    expect(screen.getByTestId('refreshed-provider')).toHaveTextContent('home_assistant');
+  });
+
+  it('invalidates an explicit recovery refresh only after confirmed invalid auth', async () => {
+    integrationSessionRuntimeMock.refresh.mockRejectedValueOnce(INVALID_HOME_ASSISTANT_AUTH_ERROR);
+    integrationSessionRuntimeMock.invalidatePersistedSession.mockImplementationOnce(async () => {
+      integrationSessionRuntimeMock.getSnapshot.mockReturnValue(createUnauthenticatedSnapshot());
+      integrationSessionRuntimeMock.getSession.mockReturnValue(null);
+    });
+    await renderAuthProvider();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh Home Assistant' }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(integrationSessionRuntimeMock.invalidatePersistedSession).toHaveBeenCalledWith(
+      'home_assistant'
+    );
+    expect(screen.getByTestId('session')).toHaveTextContent('none');
+    expect(screen.getByTestId('error')).toHaveTextContent('Authentication expired');
   });
 
   it('keeps the live session visible until durable logout succeeds', async () => {

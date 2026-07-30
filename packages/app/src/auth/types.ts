@@ -76,7 +76,7 @@ export interface AuthAdapter {
     providerId?: IntegrationProviderId;
   }): Promise<AuthSession>;
   refresh?(session: AuthSession): Promise<AuthSession>;
-  invalidatePersistedSession?(session: AuthSession): Promise<void>;
+  invalidatePersistedSession?(session: AuthSession): Promise<AuthSession | undefined>;
   logout?(): Promise<void>;
 }
 

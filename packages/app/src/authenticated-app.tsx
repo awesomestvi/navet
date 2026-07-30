@@ -61,11 +61,13 @@ function createIngressProxyRecoverySession(
 }
 
 function AppContent() {
-  const { provider, runtime, session, sessions, logout, replaceSession } = useAuthSession();
+  const { provider, runtime, session, sessions, logout, refresh, replaceSession } =
+    useAuthSession();
   const { t } = useI18n();
   const isAuthenticated = Boolean(session);
   const needsHomeySelection =
     session?.providerId === 'homey' && Boolean(session.needsHomeySelection);
+  const retainedHomeAssistantSession = sessions.home_assistant;
   const canResetSessionFromError = runtime === 'standalone-oauth';
   const appError = useErrorStore(appErrorSelectors.error);
   const clearAppError = useErrorStore(appErrorSelectors.clearError);
@@ -88,6 +90,7 @@ function AppContent() {
   const failedConnectionAttemptKeys = useRef<Partial<Record<IntegrationProviderId, string>>>({});
   const previousSessionProviderIds = useRef<IntegrationProviderId[]>([]);
   const ingressInvalidAuthRecoveryInFlight = useRef(false);
+  const standaloneInvalidAuthRecoveryInFlight = useRef(false);
   const isInvalidHomeAssistantAuth = appError?.message === INVALID_HOME_ASSISTANT_AUTH_MESSAGE;
 
   const syncViewportEnvironment = useCallback(() => {
@@ -123,9 +126,42 @@ function AppContent() {
       });
   }, [runtime, isAuthenticated, session, replaceSession, clearAppError]);
 
+  const recoverStandaloneInvalidAuthSession = useCallback(() => {
+    if (
+      runtime !== 'standalone-oauth' ||
+      standaloneInvalidAuthRecoveryInFlight.current ||
+      !retainedHomeAssistantSession
+    ) {
+      return;
+    }
+
+    standaloneInvalidAuthRecoveryInFlight.current = true;
+    delete failedConnectionAttemptKeys.current.home_assistant;
+
+    void refresh('home_assistant')
+      .then(async (refreshedSession) => {
+        if (refreshedSession?.providerId !== 'home_assistant') {
+          clearAppError();
+          return;
+        }
+
+        await bootstrapIntegrationSession(refreshedSession);
+        clearAppError();
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        standaloneInvalidAuthRecoveryInFlight.current = false;
+      });
+  }, [runtime, retainedHomeAssistantSession, refresh, clearAppError]);
+
   const retryConnect = useCallback(() => {
     if (runtime === 'ha-ingress') {
       recoverIngressSession();
+      return;
+    }
+
+    if (runtime === 'standalone-oauth' && isInvalidHomeAssistantAuth) {
+      recoverStandaloneInvalidAuthSession();
       return;
     }
 
@@ -137,7 +173,14 @@ function AppContent() {
     void bootstrapIntegrationSession(session).catch(() => {
       failedConnectionAttemptKeys.current.home_assistant = getConnectionAttemptKey(session);
     });
-  }, [runtime, recoverIngressSession, isAuthenticated, session]);
+  }, [
+    runtime,
+    recoverIngressSession,
+    isInvalidHomeAssistantAuth,
+    recoverStandaloneInvalidAuthSession,
+    isAuthenticated,
+    session,
+  ]);
 
   const resetSessionToLogin = useCallback(() => {
     if (session?.providerId) {
@@ -213,8 +256,8 @@ function AppContent() {
       return;
     }
 
-    resetSessionToLogin();
-  }, [appError, canResetSessionFromError, isAuthenticated, resetSessionToLogin]);
+    recoverStandaloneInvalidAuthSession();
+  }, [appError, canResetSessionFromError, isAuthenticated, recoverStandaloneInvalidAuthSession]);
 
   useEffect(() => {
     if (!isAuthenticated || runtime !== 'ha-ingress' || !isInvalidHomeAssistantAuth) {

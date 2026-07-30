@@ -609,6 +609,40 @@ describe('authSessionManager snapshot', () => {
     });
   });
 
+  it('atomically retains a newer session when confirmed-invalid cleanup is superseded', async () => {
+    const staleSession = {
+      providerId: 'home_assistant' as const,
+      runtime: 'standalone-oauth' as const,
+      authMode: 'oauth' as const,
+      haBaseUrl: 'https://ha.example.com',
+      hassUrl: 'https://ha.example.com',
+      credentialSessionId: `nas_${'a'.repeat(32)}`,
+      credentialRevision: 0,
+      expiresAt: 1,
+    };
+    const winnerSession = {
+      ...staleSession,
+      credentialRevision: 1,
+      expiresAt: 2,
+    };
+    standaloneInvalidatePersistedSessionMock.mockResolvedValueOnce(winnerSession);
+    authSessionManager.replaceSession(staleSession);
+
+    await authSessionManager.invalidatePersistedSession('home_assistant');
+
+    expect(authSessionManager.getSession()).toBe(winnerSession);
+    expect(authSessionManager.getSnapshot()).toMatchObject({
+      providerId: 'home_assistant',
+      isAuthenticated: true,
+      sessions: {
+        home_assistant: {
+          credentialRevision: 1,
+          expiresAt: 2,
+        },
+      },
+    });
+  });
+
   it('falls back to another authenticated provider after invalidating Home Assistant', async () => {
     authSessionManager.replaceSession({
       providerId: 'homey',
