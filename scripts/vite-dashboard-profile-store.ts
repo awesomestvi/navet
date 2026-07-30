@@ -135,6 +135,9 @@ const CLIENT_BINDING_COOKIE_NAME = 'navet_profile_client'
 const CLIENT_BINDING_PATTERN = /^[a-f0-9]{64}$/
 const CLIENT_BINDING_MAX_AGE_SECONDS = 365 * 24 * 60 * 60
 const CLIENT_STALE_AFTER_MS = 90 * 24 * 60 * 60 * 1000
+// Tolerate brief host clock skew, but reset timestamps beyond this window to
+// the current server time so they cannot retain a registry slot indefinitely.
+const CLIENT_FUTURE_SKEW_MS = 5 * 60 * 1000
 const CLIENT_BINDING_BOOTSTRAP_TTL_MS = 5 * 1000
 const CLIENT_BINDING_BOOTSTRAP_LIMIT = 256
 const SHARED_SETTING_KEYS = [
@@ -1388,24 +1391,122 @@ export function createViteDashboardProfileStore(
     return next
   }
 
+  const invalidRegistry = (): DashboardProfileStorageReadError =>
+    new DashboardProfileStorageReadError(
+      `Dashboard profile storage cannot be read safely: ${paths.clients}`
+    )
+
+  const parseRegistryClient = (
+    candidate: unknown
+  ): {
+    entry: PersistedDashboardClientRegistryEntry
+    parsedFirstSeenAt: number
+    parsedLastSeenAt: number
+  } => {
+    if (
+      !candidate ||
+      typeof candidate !== 'object' ||
+      Array.isArray(candidate)
+    ) {
+      throw invalidRegistry()
+    }
+    const entry = candidate as Record<string, unknown>
+    const parsedFirstSeenAt =
+      typeof entry.firstSeenAt === 'string'
+        ? Date.parse(entry.firstSeenAt)
+        : Number.NaN
+    const parsedLastSeenAt =
+      typeof entry.lastSeenAt === 'string'
+        ? Date.parse(entry.lastSeenAt)
+        : Number.NaN
+    const principal =
+      entry.principal &&
+      typeof entry.principal === 'object' &&
+      !Array.isArray(entry.principal)
+        ? (entry.principal as Record<string, unknown>)
+        : null
+    if (
+      typeof entry.id !== 'string' ||
+      !/^[A-Za-z0-9_-]{8,128}$/.test(entry.id) ||
+      entry.id.includes('..') ||
+      typeof entry.name !== 'string' ||
+      (entry.kind !== 'desktop' &&
+        entry.kind !== 'phone' &&
+        entry.kind !== 'tablet' &&
+        entry.kind !== 'wall_panel' &&
+        entry.kind !== 'unknown') ||
+      !Number.isFinite(parsedFirstSeenAt) ||
+      !Number.isFinite(parsedLastSeenAt) ||
+      (entry.lastRevision !== undefined &&
+        entry.lastRevision !== null &&
+        (!Number.isSafeInteger(entry.lastRevision) ||
+          Number(entry.lastRevision) < 0)) ||
+      !principal ||
+      typeof principal.providerId !== 'string' ||
+      (principal.userId !== null && typeof principal.userId !== 'string') ||
+      (principal.userName !== null &&
+        typeof principal.userName !== 'string') ||
+      (entry.bindingId !== undefined &&
+        entry.bindingId !== null &&
+        (typeof entry.bindingId !== 'string' ||
+          !CLIENT_BINDING_PATTERN.test(entry.bindingId)))
+    ) {
+      throw invalidRegistry()
+    }
+    return {
+      entry: candidate as PersistedDashboardClientRegistryEntry,
+      parsedFirstSeenAt,
+      parsedLastSeenAt,
+    }
+  }
+
+  const normalizeRegistryBinding = (
+    entry: PersistedDashboardClientRegistryEntry
+  ): string | undefined =>
+    typeof entry.bindingId === 'string' &&
+    CLIENT_BINDING_PATTERN.test(entry.bindingId)
+      ? entry.bindingId
+      : undefined
+
+  const normalizeRegistryLastRevision = (
+    entry: PersistedDashboardClientRegistryEntry
+  ): number | null =>
+    Number.isSafeInteger(entry.lastRevision) &&
+    Number(entry.lastRevision) >= 0
+      ? Number(entry.lastRevision)
+      : null
+
   const readRegistry = (): RegistryCollection => {
     const workspace = readOrCreateWorkspace()
-    const candidate = readJson<unknown>(
+    const missingRegistry = Symbol('missing-dashboard-client-registry')
+    const candidate = readJson<unknown | typeof missingRegistry>(
       paths.clients,
-      null,
+      missingRegistry,
       MAX_CLIENT_REGISTRY_BYTES
     )
-    const registry =
-      candidate &&
-      typeof candidate === 'object' &&
-      !Array.isArray(candidate) &&
-      Array.isArray((candidate as Partial<RegistryCollection>).clients)
-        ? (candidate as RegistryCollection)
-        : {
-            contractVersion: DASHBOARD_PROFILE_CONTRACT_VERSION,
-            workspaceId: workspace.workspaceId,
-            clients: [],
-          }
+    if (candidate === missingRegistry) {
+      return {
+        contractVersion: DASHBOARD_PROFILE_CONTRACT_VERSION,
+        workspaceId: workspace.workspaceId,
+        clients: [],
+      }
+    }
+    if (
+      !candidate ||
+      typeof candidate !== 'object' ||
+      Array.isArray(candidate) ||
+      (candidate as Partial<RegistryCollection>).contractVersion !==
+        DASHBOARD_PROFILE_CONTRACT_VERSION ||
+      !Array.isArray((candidate as Partial<RegistryCollection>).clients)
+    ) {
+      throw new DashboardProfileStorageReadError(
+        `Dashboard profile storage cannot be read safely: ${paths.clients}`
+      )
+    }
+    const registry = candidate as RegistryCollection
+    for (const client of registry.clients) {
+      parseRegistryClient(client)
+    }
     return {
       contractVersion: DASHBOARD_PROFILE_CONTRACT_VERSION,
       workspaceId: workspace.workspaceId,
@@ -1479,25 +1580,85 @@ export function createViteDashboardProfileStore(
   }
 
   const normalizeRegistryClients = (
-    clients: PersistedDashboardClientRegistryEntry[],
-    now: number
+    clients: readonly unknown[],
+    now: number,
+    newestFirst = false
   ): PersistedDashboardClientRegistryEntry[] => {
+    const compareText = (left: string, right: string): number => {
+      if (left < right) {
+        return -1
+      }
+      if (left > right) {
+        return 1
+      }
+      return 0
+    }
+    const bindingSortValue = (
+      entry: PersistedDashboardClientRegistryEntry
+    ): { bound: boolean; value: string } => {
+      const value = typeof entry.bindingId === 'string' ? entry.bindingId : ''
+      return {
+        bound: CLIENT_BINDING_PATTERN.test(value),
+        value,
+      }
+    }
+    const compareClients = (
+      left: PersistedDashboardClientRegistryEntry,
+      right: PersistedDashboardClientRegistryEntry,
+      newestFirst: boolean
+    ): number => {
+      const leftBinding = bindingSortValue(left)
+      const rightBinding = bindingSortValue(right)
+      if (
+        left.id === right.id &&
+        leftBinding.bound !== rightBinding.bound
+      ) {
+        return leftBinding.bound ? -1 : 1
+      }
+      const timestampComparison = compareText(left.lastSeenAt, right.lastSeenAt)
+      if (timestampComparison !== 0) {
+        return newestFirst ? -timestampComparison : timestampComparison
+      }
+      const idComparison = compareText(left.id, right.id)
+      if (idComparison !== 0) {
+        return idComparison
+      }
+      if (leftBinding.bound !== rightBinding.bound) {
+        return leftBinding.bound ? -1 : 1
+      }
+      return compareText(leftBinding.value, rightBinding.value)
+    }
+    const futureBoundary = now + CLIENT_FUTURE_SKEW_MS
+    const normalized: PersistedDashboardClientRegistryEntry[] = []
+    for (const candidate of clients) {
+      const { entry, parsedFirstSeenAt, parsedLastSeenAt } =
+        parseRegistryClient(candidate)
+      const boundedLastSeenAt =
+        parsedLastSeenAt > futureBoundary ? now : parsedLastSeenAt
+      if (now - boundedLastSeenAt > CLIENT_STALE_AFTER_MS) {
+        continue
+      }
+      const boundedFirstSeenAt = Math.min(
+        parsedFirstSeenAt,
+        boundedLastSeenAt
+      )
+      normalized.push({
+        ...entry,
+        firstSeenAt: new Date(boundedFirstSeenAt).toISOString(),
+        lastSeenAt: new Date(boundedLastSeenAt).toISOString(),
+        lastRevision: normalizeRegistryLastRevision(entry),
+        bindingId: normalizeRegistryBinding(entry),
+      })
+    }
+
     const seenIds = new Set<string>()
     const seenBindings = new Set<string>()
-    return clients
-      .filter((entry) => {
-        const lastSeenAt = Date.parse(entry.lastSeenAt)
-        return (
-          /^[A-Za-z0-9_-]{8,128}$/.test(entry.id) &&
-          Number.isFinite(lastSeenAt) &&
-          now - lastSeenAt <= CLIENT_STALE_AFTER_MS
-        )
-      })
-      .slice()
-      .sort((left, right) => right.lastSeenAt.localeCompare(left.lastSeenAt))
+    return normalized
+      .sort((left, right) => compareClients(left, right, true))
       .filter((entry) => {
         const bindingId =
-          entry.bindingId && CLIENT_BINDING_PATTERN.test(entry.bindingId)
+          typeof entry.bindingId === 'string' &&
+          CLIENT_BINDING_PATTERN.test(entry.bindingId)
             ? entry.bindingId
             : null
         if (seenIds.has(entry.id) || (bindingId && seenBindings.has(bindingId))) {
@@ -1509,7 +1670,7 @@ export function createViteDashboardProfileStore(
         }
         return true
       })
-      .sort((left, right) => left.lastSeenAt.localeCompare(right.lastSeenAt))
+      .sort((left, right) => compareClients(left, right, newestFirst))
   }
 
   const reconcileClientPreferences = (
@@ -1882,8 +2043,9 @@ export function createViteDashboardProfileStore(
           'Dashboard client registry capacity reached'
         )
       }
-      registry.clients = [...retainedClients, persistedEntry].sort((left, right) =>
-        left.lastSeenAt.localeCompare(right.lastSeenAt)
+      registry.clients = normalizeRegistryClients(
+        [...retainedClients, persistedEntry],
+        Date.now()
       )
       writeJson(paths.clients, registry)
       if (continuity && continuity.id !== client.id) {
@@ -1892,9 +2054,7 @@ export function createViteDashboardProfileStore(
       return entry
     },
     listClients(): DashboardClientRegistryEntry[] {
-      return readRegistry().clients
-        .slice()
-        .sort((left, right) => right.lastSeenAt.localeCompare(left.lastSeenAt))
+      return normalizeRegistryClients(readRegistry().clients, Date.now(), true)
         .map(({ bindingId: _bindingId, ...client }) => client)
     },
     forgetClient(clientId: string, requestingClient: BoundDashboardProfileClient): boolean {

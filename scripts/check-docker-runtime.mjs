@@ -1002,13 +1002,21 @@ async function createOpenHABSession(baseUrl, installationKey) {
 
 async function verifyProfileColdBinding(baseUrl, authCookie) {
   const clientId = 'actual-image-panel-01';
-  const request = (path, profileCookie = '') =>
+  const request = (
+    path,
+    profileCookie = '',
+    client = {
+      id: clientId,
+      name: 'Actual image panel',
+      kind: 'wall_panel',
+    }
+  ) =>
     fetch(`${baseUrl}/__navet_profile__${path}`, {
       headers: {
         Cookie: [authCookie, profileCookie].filter(Boolean).join('; '),
-        'X-Navet-Client-Id': clientId,
-        'X-Navet-Client-Name': 'Actual image panel',
-        'X-Navet-Client-Kind': 'wall_panel',
+        'X-Navet-Client-Id': client.id,
+        'X-Navet-Client-Name': client.name,
+        'X-Navet-Client-Kind': client.kind,
       },
     });
   const responses = await Promise.all([
@@ -1036,6 +1044,51 @@ async function verifyProfileColdBinding(baseUrl, authCookie) {
     if (![200, 204].includes(replay.status) || body.includes('client-binding-mismatch')) {
       throw new Error(`Persisted profile client binding failed on ${path}`);
     }
+  }
+
+  const secondClient = {
+    id: 'actual-image-panel-02',
+    name: 'Second actual image panel',
+    kind: 'desktop',
+  };
+  const secondClientResponse = await request('/clients', '', secondClient);
+  const secondClientBody = await secondClientResponse.text();
+  const secondProfileCookie = extractScopedCookie(
+    secondClientResponse,
+    'navet_profile_client'
+  );
+  if (
+    secondClientResponse.status !== 200 ||
+    !secondProfileCookie ||
+    secondProfileCookie === profileCookie
+  ) {
+    throw new Error(
+      `Actual-image second profile client failed with ${secondClientResponse.status}: ${secondClientBody}`
+    );
+  }
+  const listedClients = JSON.parse(secondClientBody).clients;
+  if (
+    !Array.isArray(listedClients) ||
+    !listedClients.some((client) => client.id === clientId) ||
+    !listedClients.some((client) => client.id === secondClient.id)
+  ) {
+    throw new Error('Actual-image profile registry did not retain both browser clients');
+  }
+  const secondPreference = await request(
+    '/preferences/client',
+    secondProfileCookie,
+    secondClient
+  );
+  if (![200, 204].includes(secondPreference.status)) {
+    throw new Error(
+      `Actual-image second client preference read failed with ${secondPreference.status}`
+    );
+  }
+  const firstClientAfterSecond = await request('/clients', profileCookie);
+  if (firstClientAfterSecond.status !== 200) {
+    throw new Error(
+      `Actual-image first client failed after second enrollment with ${firstClientAfterSecond.status}`
+    );
   }
 
   const write = await fetch(`${baseUrl}/__navet_profile__/default`, {
@@ -1546,11 +1599,11 @@ try {
   });
   const combinedRuntimeLogs = `${runtimeLogs.stdout}\n${runtimeLogs.stderr}`;
   if (
-    /headers? already sent|worker process \d+ exited on signal 11/i.test(
+    /headers? already sent|worker process \d+ exited on signal 11|js exception/i.test(
       combinedRuntimeLogs
     )
   ) {
-    throw new Error('The profile runtime crashed while handling conditional writes');
+    throw new Error('The profile runtime logged a JavaScript exception or crashed');
   }
   const keyLogLines = combinedRuntimeLogs
     .split('\n')
@@ -1609,7 +1662,7 @@ try {
       addonTarget.exactBase
         ? 'the exact Home Assistant base image'
         : 'the explicit Alpine with-contenv/bashio compatibility fallback'
-    }, exact standalone build metadata, no anonymous record minting, OAuth rotation, two-installation host cookie isolation, runtime hostname resolution, provider confinement, stable parallel profile binding, and persisted auth/profile state after container replacement.`
+    }, exact standalone build metadata, no anonymous record minting, OAuth rotation, two-installation host cookie isolation, runtime hostname resolution, provider confinement, stable parallel profile binding, njs-safe two-client profile ordering, and persisted auth/profile state after container replacement.`
   );
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

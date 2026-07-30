@@ -839,6 +839,278 @@ describe('revisioned NJS dashboard profile store', () => {
     expect(mockFs.renameSync).toHaveBeenCalledWith(expect.any(String), CLIENT_REGISTRY_PATH);
   });
 
+  it('stores multiple clients oldest first and lists them newest first', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-25T09:00:00.000Z'));
+    const mockFs = createMockFs();
+    profileStore.setProfileStoreFsForTests(mockFs);
+    setPrincipal();
+
+    const first = createRequest({
+      method: 'PUT',
+      uri: '/__navet_profile__/clients',
+      headersIn: CLIENT_HEADERS,
+      requestText: '{}',
+    });
+    profileStore.handle(first);
+    expect(first.return.mock.calls.at(-1)?.[0]).toBe(200);
+
+    vi.setSystemTime(new Date('2026-07-25T09:01:00.000Z'));
+    const second = createRequest({
+      method: 'PUT',
+      uri: '/__navet_profile__/clients',
+      headersIn: {
+        ...CLIENT_HEADERS,
+        'X-Navet-Client-Id': 'client-panel-02',
+        'X-Navet-Client-Name': encodeURIComponent('Hallway panel'),
+        Cookie: `navet_profile_client=${CLIENT_BINDING_B}`,
+      },
+      requestText: '{}',
+    });
+    profileStore.handle(second);
+
+    expect(second.return.mock.calls.at(-1)?.[0]).toBe(200);
+    expect(
+      JSON.parse(readMockFile(mockFs, CLIENT_REGISTRY_PATH)).clients.map(
+        (client: { id: string }) => client.id
+      )
+    ).toEqual(['client-panel-01', 'client-panel-02']);
+    expect(parseResponse(second).clients.map((client: { id: string }) => client.id)).toEqual([
+      'client-panel-02',
+      'client-panel-01',
+    ]);
+  });
+
+  it('canonicalizes client clocks and uses deterministic ordering for equal timestamps', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-25T09:00:00.000Z'));
+    const registryClient = (id: string, bindingId: string, timestamp: string) => ({
+      id,
+      name: id,
+      kind: 'wall_panel',
+      firstSeenAt: timestamp,
+      lastSeenAt: timestamp,
+      lastRevision: null,
+      principal: {
+        providerId: PRINCIPAL.providerId,
+        userId: PRINCIPAL.userId,
+        userName: PRINCIPAL.userName,
+      },
+      bindingId,
+    });
+    const mockFs = createMockFs({
+      [CLIENT_REGISTRY_PATH]: JSON.stringify({
+        contractVersion: 1,
+        preferenceCollectionVersion: 1,
+        clients: [
+          registryClient('client-panel-02', CLIENT_BINDING_B, '2026-07-25T10:00:00.000+01:00'),
+          registryClient('client-panel-01', CLIENT_BINDING_A, '2099-01-01T00:00:00.000Z'),
+        ],
+      }),
+    });
+    profileStore.setProfileStoreFsForTests(mockFs);
+    setPrincipal();
+
+    const third = createRequest({
+      method: 'PUT',
+      uri: '/__navet_profile__/clients',
+      headersIn: {
+        ...CLIENT_HEADERS,
+        'X-Navet-Client-Id': 'client-panel-03',
+        'X-Navet-Client-Name': encodeURIComponent('Bedroom panel'),
+        Cookie: `navet_profile_client=${'c'.repeat(64)}`,
+      },
+      requestText: '{}',
+    });
+    profileStore.handle(third);
+
+    expect(third.return.mock.calls.at(-1)?.[0]).toBe(200);
+    const persistedClients = JSON.parse(readMockFile(mockFs, CLIENT_REGISTRY_PATH)).clients;
+    expect(persistedClients.map((client: { id: string }) => client.id)).toEqual([
+      'client-panel-01',
+      'client-panel-02',
+      'client-panel-03',
+    ]);
+    expect(persistedClients.map((client: { lastSeenAt: string }) => client.lastSeenAt)).toEqual([
+      '2026-07-25T09:00:00.000Z',
+      '2026-07-25T09:00:00.000Z',
+      '2026-07-25T09:00:00.000Z',
+    ]);
+    expect(parseResponse(third).clients.map((client: { id: string }) => client.id)).toEqual([
+      'client-panel-01',
+      'client-panel-02',
+      'client-panel-03',
+    ]);
+  });
+
+  it('prefers a bound client duplicate and preserves its device preferences', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-25T09:10:00.000Z'));
+    const boundPreference = {
+      contractVersion: 1,
+      schemaVersion: 1,
+      scope: 'client',
+      revision: 1,
+      updatedAt: '2026-07-25T09:00:00.000Z',
+      values: { lowPowerMode: true },
+      principal: {
+        providerId: PRINCIPAL.providerId,
+        userId: PRINCIPAL.userId,
+        userName: PRINCIPAL.userName,
+      },
+      clientId: 'client-panel-01',
+    };
+    const baseClient = {
+      id: 'client-panel-01',
+      name: 'Kitchen panel',
+      kind: 'wall_panel',
+      firstSeenAt: '2026-07-25T09:00:00.000Z',
+      lastRevision: null,
+      principal: {
+        providerId: PRINCIPAL.providerId,
+        userId: PRINCIPAL.userId,
+        userName: PRINCIPAL.userName,
+      },
+    };
+    const mockFs = createMockFs({
+      [CLIENT_REGISTRY_PATH]: JSON.stringify({
+        contractVersion: 1,
+        preferenceCollectionVersion: 1,
+        clients: [
+          {
+            ...baseClient,
+            lastSeenAt: '2026-07-25T09:00:00.000Z',
+            bindingId: CLIENT_BINDING_A,
+          },
+          {
+            ...baseClient,
+            lastSeenAt: '2026-07-25T09:05:00.000Z',
+          },
+        ],
+      }),
+      [CLIENT_PREFERENCES_PATH]: JSON.stringify({
+        contractVersion: 1,
+        records: {
+          [`client-binding:${CLIENT_BINDING_A}`]: boundPreference,
+        },
+      }),
+    });
+    profileStore.setProfileStoreFsForTests(mockFs);
+    setPrincipal();
+
+    const request = createRequest({
+      method: 'PUT',
+      uri: '/__navet_profile__/clients',
+      headersIn: {
+        ...CLIENT_HEADERS,
+        'X-Navet-Client-Id': 'client-panel-03',
+        Cookie: `navet_profile_client=${'c'.repeat(64)}`,
+      },
+      requestText: '{}',
+    });
+    profileStore.handle(request);
+
+    expect(request.return.mock.calls.at(-1)?.[0]).toBe(200);
+    const persisted = JSON.parse(readMockFile(mockFs, CLIENT_REGISTRY_PATH)).clients;
+    expect(persisted).toHaveLength(2);
+    expect(
+      persisted.find((client: { id: string }) => client.id === 'client-panel-01')
+    ).toMatchObject({ bindingId: CLIENT_BINDING_A });
+    expect(JSON.parse(readMockFile(mockFs, CLIENT_PREFERENCES_PATH)).records).toEqual({
+      [`client-binding:${CLIENT_BINDING_A}`]: boundPreference,
+    });
+  });
+
+  it('returns storage unavailable without mutating malformed client state or preferences', () => {
+    const validRegistryClient = {
+      id: 'client-panel-01',
+      name: 'Kitchen panel',
+      kind: 'wall_panel',
+      firstSeenAt: '2026-07-25T09:00:00.000Z',
+      lastSeenAt: '2026-07-25T09:00:00.000Z',
+      lastRevision: null,
+      principal: {
+        providerId: PRINCIPAL.providerId,
+        userId: PRINCIPAL.userId,
+        userName: PRINCIPAL.userName,
+      },
+      bindingId: CLIENT_BINDING_A,
+    };
+    const preferencesBefore = JSON.stringify({
+      contractVersion: 1,
+      records: {
+        [`client-binding:${CLIENT_BINDING_A}`]: {
+          contractVersion: 1,
+          schemaVersion: 1,
+          scope: 'client',
+          revision: 1,
+          updatedAt: '2026-07-25T09:00:00.000Z',
+          values: { lowPowerMode: true },
+          principal: {
+            providerId: PRINCIPAL.providerId,
+            userId: PRINCIPAL.userId,
+            userName: PRINCIPAL.userName,
+          },
+          clientId: 'client-panel-01',
+        },
+      },
+    });
+    const malformedRegistries = [
+      JSON.stringify({
+        contractVersion: 1,
+        preferenceCollectionVersion: 1,
+        clients: [
+          {
+            ...validRegistryClient,
+            lastSeenAt: ['2026-07-25T09:00:00.000Z'],
+          },
+        ],
+      }),
+      JSON.stringify({
+        contractVersion: 1,
+        preferenceCollectionVersion: 1,
+        clients: [{ ...validRegistryClient, id: 'bad' }],
+      }),
+      JSON.stringify({
+        contractVersion: 1,
+        preferenceCollectionVersion: 1,
+        clients: [{ ...validRegistryClient, firstSeenAt: null }],
+      }),
+      JSON.stringify({
+        contractVersion: 1,
+        preferenceCollectionVersion: 1,
+        clients: [{ ...validRegistryClient, bindingId: 'not-a-binding' }],
+      }),
+      JSON.stringify({
+        contractVersion: 1,
+        preferenceCollectionVersion: 1,
+        clients: [{ ...validRegistryClient, principal: null }],
+      }),
+      'null',
+    ];
+
+    for (const registryBefore of malformedRegistries) {
+      const mockFs = createMockFs({
+        [CLIENT_REGISTRY_PATH]: registryBefore,
+        [CLIENT_PREFERENCES_PATH]: preferencesBefore,
+      });
+      profileStore.setProfileStoreFsForTests(mockFs);
+      setPrincipal();
+
+      const request = createRequest({
+        uri: '/__navet_profile__/clients',
+      });
+      profileStore.handle(request);
+
+      expect(request.return).toHaveBeenCalledWith(
+        503,
+        JSON.stringify({ error: 'Dashboard profile storage is unavailable' })
+      );
+      expect(readMockFile(mockFs, CLIENT_REGISTRY_PATH)).toBe(registryBefore);
+      expect(readMockFile(mockFs, CLIENT_PREFERENCES_PATH)).toBe(preferencesBefore);
+    }
+  });
+
   it('reuses the route-authorized client instead of repeating registry work in downstream handlers', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-07-25T09:00:00.000Z'));

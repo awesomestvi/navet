@@ -272,7 +272,7 @@ describe('production njs standalone OAuth sessions', () => {
     expect(resolveStandaloneAuthSession).toHaveBeenCalledTimes(2);
   });
 
-  it('keeps packaged scripts free of constructors unavailable in njs 0.8.10', () => {
+  it('keeps packaged scripts free of APIs unavailable in njs 0.8.10', () => {
     for (const fileName of readdirSync('docker/njs')) {
       if (!fileName.endsWith('.js')) {
         continue;
@@ -280,6 +280,10 @@ describe('production njs standalone OAuth sessions', () => {
       const relativePath = join('docker/njs', fileName);
       const source = readFileSync(relativePath, 'utf8');
       expect(source, relativePath).not.toMatch(/\bnew\s+(?:Map|Set|URL|WeakMap|WeakSet)\s*\(/);
+      expect(source, relativePath).not.toMatch(/\bIntl\b/);
+      expect(source, relativePath).not.toMatch(
+        /\.(?:localeCompare|normalize|toLocaleLowerCase|toLocaleUpperCase)\s*\(/
+      );
     }
   });
 

@@ -32,6 +32,9 @@ const CLIENT_BINDING_COOKIE_NAMES =
 const CLIENT_BINDING_PATTERN = /^[a-f0-9]{64}$/;
 const CLIENT_BINDING_MAX_AGE_SECONDS = 365 * 24 * 60 * 60;
 const CLIENT_STALE_AFTER_MS = 90 * 24 * 60 * 60 * 1000;
+// Tolerate brief host clock skew, but reset timestamps beyond this window so
+// they cannot retain a registry slot indefinitely.
+const CLIENT_FUTURE_SKEW_MS = 5 * 60 * 1000;
 const CLIENT_BINDING_BOOTSTRAP_TTL_MS = 5 * 1000;
 const CLIENT_BINDING_BOOTSTRAP_LIMIT = 256;
 const SHARED_SETTING_KEYS = {
@@ -138,6 +141,49 @@ function setProfileStorePrincipalResolverForTests(resolver) {
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function compareText(leftValue, rightValue) {
+  const left = String(leftValue);
+  const right = String(rightValue);
+  if (left < right) {
+    return -1;
+  }
+  if (left > right) {
+    return 1;
+  }
+  return 0;
+}
+
+function compareRegistryClients(left, right, newestFirst) {
+  const timestampOrder = compareText(left.lastSeenAt, right.lastSeenAt);
+  if (timestampOrder !== 0) {
+    return newestFirst ? -timestampOrder : timestampOrder;
+  }
+  const idOrder = compareText(left.id, right.id);
+  if (idOrder !== 0) {
+    return idOrder;
+  }
+  return compareText(left.bindingId || '', right.bindingId || '');
+}
+
+function compareRegistryClientsOldestFirst(left, right) {
+  return compareRegistryClients(left, right, false);
+}
+
+function compareRegistryClientsNewestFirst(left, right) {
+  if (left.id === right.id) {
+    const leftHasBinding =
+      typeof left.bindingId === 'string' &&
+      CLIENT_BINDING_PATTERN.test(left.bindingId);
+    const rightHasBinding =
+      typeof right.bindingId === 'string' &&
+      CLIENT_BINDING_PATTERN.test(right.bindingId);
+    if (leftHasBinding !== rightHasBinding) {
+      return leftHasBinding ? -1 : 1;
+    }
+  }
+  return compareRegistryClients(left, right, true);
 }
 
 function createOpaqueId(prefix) {
@@ -1773,42 +1819,101 @@ function persistRevision(currentState, currentProfile, metadata, profile) {
 }
 
 function readRegistry() {
-  const registry = readJson(CLIENT_REGISTRY_PATH, {
-    contractVersion: CONTRACT_VERSION,
-    clients: [],
-  }, MAX_CLIENT_REGISTRY_BYTES);
-  return registry &&
-    registry.contractVersion === CONTRACT_VERSION &&
-    Array.isArray(registry.clients)
-    ? registry
-    : { contractVersion: CONTRACT_VERSION, clients: [] };
+  const missingRegistry = {};
+  const registry = readJson(
+    CLIENT_REGISTRY_PATH,
+    missingRegistry,
+    MAX_CLIENT_REGISTRY_BYTES
+  );
+  if (registry === missingRegistry) {
+    return { contractVersion: CONTRACT_VERSION, clients: [] };
+  }
+  if (
+    !registry ||
+    registry.contractVersion !== CONTRACT_VERSION ||
+    !Array.isArray(registry.clients)
+  ) {
+    throw createStorageReadError(CLIENT_REGISTRY_PATH);
+  }
+  for (let index = 0; index < registry.clients.length; index += 1) {
+    if (!isValidRegistryClient(registry.clients[index])) {
+      throw createStorageReadError(CLIENT_REGISTRY_PATH);
+    }
+  }
+  return registry;
 }
 
-function isCurrentRegistryClient(entry, now) {
-  if (
-    !entry ||
-    typeof entry.id !== 'string' ||
-    !/^[A-Za-z0-9_-]{8,128}$/.test(entry.id) ||
-    typeof entry.lastSeenAt !== 'string'
-  ) {
-    return false;
-  }
-  const lastSeenAt = Date.parse(entry.lastSeenAt);
-  return (
-    Number.isFinite(lastSeenAt) &&
-    now - lastSeenAt <= CLIENT_STALE_AFTER_MS
+function isValidRegistryClient(entry) {
+  return Boolean(
+    entry &&
+    typeof entry === 'object' &&
+    !Array.isArray(entry) &&
+    typeof entry.id === 'string' &&
+    /^[A-Za-z0-9_-]{8,128}$/.test(entry.id) &&
+    entry.id.indexOf('..') === -1 &&
+    typeof entry.name === 'string' &&
+    (entry.kind === 'desktop' ||
+      entry.kind === 'phone' ||
+      entry.kind === 'tablet' ||
+      entry.kind === 'wall_panel' ||
+      entry.kind === 'unknown') &&
+    typeof entry.firstSeenAt === 'string' &&
+    Number.isFinite(Date.parse(entry.firstSeenAt)) &&
+    typeof entry.lastSeenAt === 'string' &&
+    Number.isFinite(Date.parse(entry.lastSeenAt)) &&
+    (entry.lastRevision === undefined ||
+      entry.lastRevision === null ||
+      (Number.isSafeInteger(entry.lastRevision) && entry.lastRevision >= 0)) &&
+    entry.principal &&
+    typeof entry.principal === 'object' &&
+    typeof entry.principal.providerId === 'string' &&
+    (entry.principal.userId === null ||
+      typeof entry.principal.userId === 'string') &&
+    (entry.principal.userName === null ||
+      typeof entry.principal.userName === 'string') &&
+    (entry.bindingId === undefined ||
+      entry.bindingId === null ||
+      (typeof entry.bindingId === 'string' &&
+        CLIENT_BINDING_PATTERN.test(entry.bindingId)))
   );
 }
 
 function normalizeRegistryClients(clients, now) {
-  const newestFirst = clients
-    .filter(function (entry) {
-      return isCurrentRegistryClient(entry, now);
-    })
+  const currentClients = [];
+  for (let index = 0; index < clients.length; index += 1) {
+    const entry = clients[index];
+    const parsedLastSeenAt = Date.parse(entry.lastSeenAt);
+    if (now - parsedLastSeenAt > CLIENT_STALE_AFTER_MS) {
+      continue;
+    }
+    const boundedLastSeenAt =
+      parsedLastSeenAt > now + CLIENT_FUTURE_SKEW_MS
+        ? now
+        : parsedLastSeenAt;
+    const parsedFirstSeenAt = Date.parse(entry.firstSeenAt);
+    const boundedFirstSeenAt = Math.min(
+      parsedFirstSeenAt,
+      boundedLastSeenAt
+    );
+    const canonicalFirstSeenAt = new Date(boundedFirstSeenAt).toISOString();
+    const canonicalLastSeenAt = new Date(boundedLastSeenAt).toISOString();
+    const canonicalLastRevision =
+      entry.lastRevision === undefined ? null : entry.lastRevision;
+    currentClients.push(
+      canonicalFirstSeenAt === entry.firstSeenAt &&
+        canonicalLastSeenAt === entry.lastSeenAt &&
+        canonicalLastRevision === entry.lastRevision
+        ? entry
+        : Object.assign({}, entry, {
+            firstSeenAt: canonicalFirstSeenAt,
+            lastSeenAt: canonicalLastSeenAt,
+            lastRevision: canonicalLastRevision,
+          })
+    );
+  }
+  const newestFirst = currentClients
     .slice()
-    .sort(function (left, right) {
-      return String(right.lastSeenAt).localeCompare(String(left.lastSeenAt));
-    });
+    .sort(compareRegistryClientsNewestFirst);
   const seenIds = Object.create(null);
   const seenBindings = Object.create(null);
   const retained = [];
@@ -1828,9 +1933,7 @@ function normalizeRegistryClients(clients, now) {
     }
     retained.push(entry);
   }
-  return retained.sort(function (left, right) {
-    return String(left.lastSeenAt).localeCompare(String(right.lastSeenAt));
-  });
+  return retained.sort(compareRegistryClientsOldestFirst);
 }
 
 function reconcileClientPreferences(registry, allowEmptyRegistry) {
@@ -2016,9 +2119,7 @@ function touchClient(workspace, principal, client, lastRevision) {
     return 'capacity';
   }
   retainedClients.push(next);
-  registry.clients = retainedClients.sort(function (left, right) {
-    return String(left.lastSeenAt).localeCompare(String(right.lastSeenAt));
-  });
+  registry.clients = retainedClients.sort(compareRegistryClientsOldestFirst);
   registry.workspaceId = workspace.workspaceId;
   writeJson(CLIENT_REGISTRY_PATH, registry);
   if (continuity && continuity.id !== client.id) {
@@ -2756,14 +2857,13 @@ function deletePreference(r, principal, scope, workspace, client) {
 
 function listClients(r, workspace) {
   const registry = readRegistry();
+  const clients = normalizeRegistryClients(registry.clients, Date.now());
   applyWorkspaceHeaders(r, workspace);
   sendJson(r, 200, {
     workspace: publicWorkspace(workspace),
-    clients: registry.clients
+    clients: clients
       .slice()
-      .sort(function (left, right) {
-        return String(right.lastSeenAt).localeCompare(String(left.lastSeenAt));
-      })
+      .sort(compareRegistryClientsNewestFirst)
       .map(publicRegistryClient),
   });
 }

@@ -15,6 +15,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const HA_TENANT_ID = `hat_${'a'.repeat(64)}`;
 const CLIENT_BINDING_A = 'a'.repeat(64);
+const CLIENT_BINDING_B = 'b'.repeat(64);
+const CLIENT_BINDING_C = 'c'.repeat(64);
 
 const PROFILE: DashboardProfileData = {
   app: 'navet',
@@ -59,6 +61,31 @@ function createStore() {
   const directory = mkdtempSync(join(tmpdir(), 'navet-dashboard-profile-'));
   tempDirs.push(directory);
   return createViteDashboardProfileStore(join(directory, 'profile.json'));
+}
+
+interface PersistedTestRegistryClient {
+  id: string;
+  bindingId?: string;
+  lastSeenAt?: unknown;
+  [key: string]: unknown;
+}
+
+interface PersistedTestRegistry {
+  clients: PersistedTestRegistryClient[];
+  [key: string]: unknown;
+}
+
+function readPersistedRegistry(
+  store: ReturnType<typeof createViteDashboardProfileStore>
+): PersistedTestRegistry {
+  return JSON.parse(readFileSync(store.getPaths().clients, 'utf8')) as PersistedTestRegistry;
+}
+
+function writePersistedRegistry(
+  store: ReturnType<typeof createViteDashboardProfileStore>,
+  registry: PersistedTestRegistry
+): void {
+  writeFileSync(store.getPaths().clients, JSON.stringify(registry), 'utf8');
 }
 
 function createRequest(
@@ -250,6 +277,241 @@ describe('createViteDashboardProfileStore', () => {
     expect(readFileSync(clientsPath, 'utf8')).not.toBe(initial);
   });
 
+  it('normalizes reversed canonical registry order while listing newest clients first', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-25T09:00:00.000Z'));
+    const store = createStore();
+    store.touchClient(PRINCIPAL, BOUND_CLIENT);
+
+    vi.setSystemTime(new Date('2026-07-25T10:00:00.000Z'));
+    const secondClient = {
+      id: 'client-panel-02',
+      name: 'Hallway panel',
+      kind: 'wall_panel' as const,
+      bindingId: CLIENT_BINDING_B,
+    };
+    store.touchClient(PRINCIPAL, secondClient);
+    const reversedRegistry = readPersistedRegistry(store);
+    reversedRegistry.clients.reverse();
+    writePersistedRegistry(store, reversedRegistry);
+
+    store.touchClient(PRINCIPAL, secondClient);
+
+    expect(readPersistedRegistry(store).clients.map((client) => client.id)).toEqual([
+      BOUND_CLIENT.id,
+      secondClient.id,
+    ]);
+    expect(store.listClients().map((client) => client.id)).toEqual([
+      secondClient.id,
+      BOUND_CLIENT.id,
+    ]);
+  });
+
+  it('orders equal client timestamps deterministically by id and binding', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-25T09:00:00.000Z'));
+    const store = createStore();
+    const zetaClient = {
+      id: 'client-panel-zeta',
+      name: 'Zeta panel',
+      kind: 'wall_panel' as const,
+      bindingId: CLIENT_BINDING_C,
+    };
+    const alphaClient = {
+      id: 'client-panel-alpha',
+      name: 'Alpha panel',
+      kind: 'wall_panel' as const,
+      bindingId: CLIENT_BINDING_B,
+    };
+    store.touchClient(PRINCIPAL, zetaClient);
+    store.touchClient(PRINCIPAL, alphaClient);
+
+    const registryWithDuplicate = readPersistedRegistry(store);
+    const alphaEntry = registryWithDuplicate.clients.find((client) => client.id === alphaClient.id);
+    if (!alphaEntry) {
+      throw new Error('Expected the alpha client to be persisted');
+    }
+    registryWithDuplicate.clients.unshift({
+      ...alphaEntry,
+      bindingId: 'd'.repeat(64),
+    });
+    writePersistedRegistry(store, registryWithDuplicate);
+
+    store.touchClient(PRINCIPAL, zetaClient);
+
+    const persistedClients = readPersistedRegistry(store).clients;
+    expect(persistedClients.map((client) => client.id)).toEqual([alphaClient.id, zetaClient.id]);
+    expect(persistedClients.find((client) => client.id === alphaClient.id)?.bindingId).toBe(
+      CLIENT_BINDING_B
+    );
+    expect(store.listClients().map((client) => client.id)).toEqual([alphaClient.id, zetaClient.id]);
+  });
+
+  it('prefers a bound duplicate over a newer legacy record and preserves its preference', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-25T09:00:00.000Z'));
+    const store = createStore();
+    store.touchClient(PRINCIPAL, BOUND_CLIENT);
+    store.savePreference('client', PRINCIPAL, 1, { lowPowerMode: true }, BOUND_CLIENT);
+    const registryWithLegacyDuplicate = readPersistedRegistry(store);
+    const boundEntry = registryWithLegacyDuplicate.clients[0];
+    if (!boundEntry) {
+      throw new Error('Expected the bound dashboard client to be persisted');
+    }
+    const legacyEntry = { ...boundEntry };
+    delete legacyEntry.bindingId;
+    legacyEntry.lastSeenAt = '2026-07-25T09:05:00.000Z';
+    registryWithLegacyDuplicate.clients.unshift(legacyEntry);
+    writePersistedRegistry(store, registryWithLegacyDuplicate);
+
+    vi.setSystemTime(new Date('2026-07-25T09:10:00.000Z'));
+    store.touchClient(PRINCIPAL, BOUND_CLIENT);
+
+    expect(readPersistedRegistry(store).clients).toEqual([
+      expect.objectContaining({
+        id: BOUND_CLIENT.id,
+        bindingId: CLIENT_BINDING_A,
+      }),
+    ]);
+    expect(store.getPreference('client', PRINCIPAL, BOUND_CLIENT)).toMatchObject({
+      clientId: BOUND_CLIENT.id,
+      values: { lowPowerMode: true },
+    });
+  });
+
+  it('canonicalizes parseable non-UTC client timestamps', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-25T09:00:00.000Z'));
+    const store = createStore();
+    store.touchClient(PRINCIPAL, BOUND_CLIENT);
+    const registry = readPersistedRegistry(store);
+    const persistedClient = registry.clients[0];
+    if (!persistedClient) {
+      throw new Error('Expected the dashboard client to be persisted');
+    }
+    persistedClient.firstSeenAt = '2026-07-25T11:00:00+02:00';
+    persistedClient.lastSeenAt = '2026-07-25T11:00:00+02:00';
+    writePersistedRegistry(store, registry);
+
+    vi.setSystemTime(new Date('2026-07-25T09:05:00.000Z'));
+    expect(store.listClients()[0]?.firstSeenAt).toBe('2026-07-25T09:00:00.000Z');
+    expect(store.listClients()[0]?.lastSeenAt).toBe('2026-07-25T09:00:00.000Z');
+    store.touchClient(PRINCIPAL, BOUND_CLIENT);
+
+    expect(readPersistedRegistry(store).clients[0]?.firstSeenAt).toBe('2026-07-25T09:00:00.000Z');
+    expect(readPersistedRegistry(store).clients[0]?.lastSeenAt).toBe('2026-07-25T09:00:00.000Z');
+  });
+
+  it('clamps far-future client timestamps to the bounded clock-skew allowance', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-25T09:00:00.000Z'));
+    const store = createStore();
+    store.touchClient(PRINCIPAL, BOUND_CLIENT);
+    const registry = readPersistedRegistry(store);
+    const persistedClient = registry.clients[0];
+    if (!persistedClient) {
+      throw new Error('Expected the dashboard client to be persisted');
+    }
+    persistedClient.lastSeenAt = '2099-01-01T00:00:00.000Z';
+    writePersistedRegistry(store, registry);
+
+    expect(store.listClients()[0]?.lastSeenAt).toBe('2026-07-25T09:00:00.000Z');
+    store.touchClient(PRINCIPAL, BOUND_CLIENT);
+
+    expect(readPersistedRegistry(store).clients[0]?.lastSeenAt).toBe('2026-07-25T09:00:00.000Z');
+  });
+
+  it.each([
+    {
+      label: 'array lastSeenAt',
+      corrupt: (client: PersistedTestRegistryClient) => {
+        client.lastSeenAt = [];
+      },
+    },
+    {
+      label: 'null lastSeenAt',
+      corrupt: (client: PersistedTestRegistryClient) => {
+        client.lastSeenAt = null;
+      },
+    },
+    {
+      label: 'missing lastSeenAt',
+      corrupt: (client: PersistedTestRegistryClient) => {
+        delete client.lastSeenAt;
+      },
+    },
+    {
+      label: 'unparseable lastSeenAt',
+      corrupt: (client: PersistedTestRegistryClient) => {
+        client.lastSeenAt = 'not-a-timestamp';
+      },
+    },
+    {
+      label: 'malformed id',
+      corrupt: (client: PersistedTestRegistryClient) => {
+        client.id = 'bad';
+      },
+    },
+    {
+      label: 'malformed firstSeenAt',
+      corrupt: (client: PersistedTestRegistryClient) => {
+        client.firstSeenAt = [];
+      },
+    },
+    {
+      label: 'malformed binding',
+      corrupt: (client: PersistedTestRegistryClient) => {
+        client.bindingId = 'not-a-binding';
+      },
+    },
+    {
+      label: 'malformed principal',
+      corrupt: (client: PersistedTestRegistryClient) => {
+        client.principal = null;
+      },
+    },
+  ])('rejects a $label without mutating registry or preferences', ({ corrupt }) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-25T09:00:00.000Z'));
+    const store = createStore();
+    store.touchClient(PRINCIPAL, BOUND_CLIENT);
+    store.savePreference('client', PRINCIPAL, 1, { lowPowerMode: true }, BOUND_CLIENT);
+    const registry = readPersistedRegistry(store);
+    const persistedClient = registry.clients[0];
+    if (!persistedClient) {
+      throw new Error('Expected the dashboard client to be persisted');
+    }
+    corrupt(persistedClient);
+    writePersistedRegistry(store, registry);
+    const registryBefore = readFileSync(store.getPaths().clients, 'utf8');
+    const preferencesBefore = readFileSync(store.getPaths().clientPreferences, 'utf8');
+
+    expect(() => store.listClients()).toThrow('Dashboard profile storage cannot be read safely');
+    expect(() => store.touchClient(PRINCIPAL, BOUND_CLIENT)).toThrow(
+      'Dashboard profile storage cannot be read safely'
+    );
+    expect(readFileSync(store.getPaths().clients, 'utf8')).toBe(registryBefore);
+    expect(readFileSync(store.getPaths().clientPreferences, 'utf8')).toBe(preferencesBefore);
+  });
+
+  it('rejects a literal null registry without mutating client preferences', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-25T09:00:00.000Z'));
+    const store = createStore();
+    store.touchClient(PRINCIPAL, BOUND_CLIENT);
+    store.savePreference('client', PRINCIPAL, 1, { lowPowerMode: true }, BOUND_CLIENT);
+    writeFileSync(store.getPaths().clients, 'null', 'utf8');
+    const registryBefore = readFileSync(store.getPaths().clients, 'utf8');
+    const preferencesBefore = readFileSync(store.getPaths().clientPreferences, 'utf8');
+
+    expect(() => store.listClients()).toThrow('Dashboard profile storage cannot be read safely');
+    expect(() => store.touchClient(PRINCIPAL, BOUND_CLIENT)).toThrow(
+      'Dashboard profile storage cannot be read safely'
+    );
+    expect(readFileSync(store.getPaths().clients, 'utf8')).toBe(registryBefore);
+    expect(readFileSync(store.getPaths().clientPreferences, 'utf8')).toBe(preferencesBefore);
+  });
+
   it('rekeys one durable browser binding instead of leaving a ghost client', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-07-25T09:00:00.000Z'));
@@ -305,7 +567,7 @@ describe('createViteDashboardProfileStore', () => {
     expect(store.listClients()).toHaveLength(200);
   });
 
-  it('prunes stale client preferences together with their expired registry entries', () => {
+  it('prunes valid stale client entries and their preferences', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-07-25T09:00:00.000Z'));
     const store = createStore();
