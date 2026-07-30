@@ -69,11 +69,26 @@ describe('dashboard profile runtime store', () => {
       overlappingPaths: ['/theme/primaryColor'],
       remoteActivity: null,
     });
-    expect(useDashboardProfileRuntimeStore.getState().conflict).toMatchObject({
-      remoteRevision: 7,
+    expect(useDashboardProfileRuntimeStore.getState()).toMatchObject({
+      conflict: {
+        remoteRevision: 7,
+      },
+      status: 'error',
+    });
+
+    useDashboardProfileRuntimeStore.getState().markSynced({ revision: 8 });
+    expect(useDashboardProfileRuntimeStore.getState()).toMatchObject({
+      conflict: {
+        remoteRevision: 7,
+      },
+      revision: 8,
+      status: 'error',
     });
 
     useDashboardProfileRuntimeStore.getState().clearConflict();
     expect(useDashboardProfileRuntimeStore.getState().conflict).toBeNull();
+
+    useDashboardProfileRuntimeStore.getState().markSynced({ revision: 8 });
+    expect(useDashboardProfileRuntimeStore.getState().status).toBe('synced');
   });
 });

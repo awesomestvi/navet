@@ -202,6 +202,32 @@ describe('useDashboardPreferenceSync', () => {
     expect(saveDashboardPreferences).not.toHaveBeenCalled();
   });
 
+  it('polls only client preferences when account sync is unavailable in standalone mode', async () => {
+    const deviceProjection = projectSettingsPreferenceLayer(useSettingsStore.getState(), 'device');
+    loadDashboardPreferences.mockResolvedValue(
+      availableDocument('client', 7, deviceProjection as unknown as Record<string, unknown>)
+    );
+
+    renderHookWithProviders(() =>
+      useDashboardPreferenceSync({
+        accountEnabled: false,
+        client: CLIENT,
+        enabled: true,
+      })
+    );
+    await flushEffects();
+
+    expect(loadDashboardPreferences.mock.calls.map(([scope]) => scope)).toEqual(['client']);
+
+    await advanceTime(60_000);
+
+    expect(loadDashboardPreferences.mock.calls.map(([scope]) => scope)).toEqual([
+      'client',
+      'client',
+    ]);
+    expect(saveDashboardPreferences).not.toHaveBeenCalled();
+  });
+
   it.each([
     ['unavailable', unavailableDocument(false)],
     ['unauthorized', unavailableDocument(true)],

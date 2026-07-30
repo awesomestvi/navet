@@ -35,7 +35,7 @@ import {
 import { useDashboardPreferenceSync } from '@navet/app/features/dashboard/hooks/use-dashboard-preference-sync';
 import { useLightPresetStore } from '@navet/app/features/lighting/stores/light-preset-store';
 import { useI18n } from '@navet/app/hooks';
-import { isHomeAssistantPanelMode } from '@navet/app/runtime/app-mode';
+import { isHomeAssistantAddonMode, isHomeAssistantPanelMode } from '@navet/app/runtime/app-mode';
 import {
   DASHBOARD_PROFILE_ERROR_CODES,
   DASHBOARD_PROFILE_ID,
@@ -65,6 +65,7 @@ import { useShallow } from 'zustand/react/shallow';
 
 const PROFILE_SAVE_DEBOUNCE_MS = 2_000;
 const PROFILE_REMOTE_POLL_INTERVAL_MS = 60_000;
+const PROFILE_CONFLICT_REMINDER_INTERVAL_MS = 60_000;
 const PROFILE_REMOTE_POLL_BACKOFF_MS = [60_000, 120_000, 300_000] as const;
 
 export const DASHBOARD_PROFILE_REFRESH_EVENT = 'navet:dashboard-profile-refresh';
@@ -78,6 +79,7 @@ const SYNC_RELEVANT_PERSISTED_KEYS = new Set<string>([
 interface PendingConflict {
   base: DashboardConfigPayload | null;
   local: DashboardConfigPayload;
+  overlappingPaths: string[];
   remote: DashboardProfileLoadResult;
 }
 
@@ -172,12 +174,14 @@ export function useDashboardProfileSync() {
   const onboardingCompletedRef = useRef(onboardingCompleted);
   const syncCurrentLocalStateRef = useRef<() => void>(() => undefined);
   const panelMode = isHomeAssistantPanelMode();
+  const addonMode = isHomeAssistantAddonMode();
   const preferenceClient = useDashboardProfileRuntimeStore((state) => state.client);
 
   tRef.current = t;
   onboardingCompletedRef.current = onboardingCompleted;
 
   useDashboardPreferenceSync({
+    accountEnabled: addonMode,
     client: preferenceClient,
     enabled: !panelMode && profileLoadCompleted,
   });
@@ -212,6 +216,7 @@ export function useDashboardProfileSync() {
     let remoteResult: DashboardProfileLoadResult | null = null;
     let saveTimeout: number | null = null;
     let pollTimeout: number | null = null;
+    let conflictReminderTimeout: number | null = null;
     let conflictToastId: string | number | null = null;
     let pendingConflict: PendingConflict | null = null;
     let keepLocalResolution: KeepLocalResolution | null = null;
@@ -238,13 +243,41 @@ export function useDashboardProfileSync() {
       }
     }
 
-    function clearConflict() {
-      if (conflictToastId !== null) {
-        toast.dismiss(conflictToastId);
-        conflictToastId = null;
+    function clearConflictReminderTimeout() {
+      if (conflictReminderTimeout !== null) {
+        window.clearTimeout(conflictReminderTimeout);
+        conflictReminderTimeout = null;
       }
+    }
+
+    function scheduleConflictReminder() {
+      clearConflictReminderTimeout();
+      if (cancelled || !pendingConflict) {
+        return;
+      }
+
+      conflictReminderTimeout = window.setTimeout(() => {
+        conflictReminderTimeout = null;
+        const currentConflict = pendingConflict;
+        if (cancelled || !currentConflict || conflictToastId !== null || !isVisible) {
+          return;
+        }
+        showConflict(currentConflict);
+      }, PROFILE_CONFLICT_REMINDER_INTERVAL_MS);
+    }
+
+    function clearConflict() {
+      clearConflictReminderTimeout();
+      const toastId = conflictToastId;
+      conflictToastId = null;
       pendingConflict = null;
       runtime.clearConflict();
+      if (toastId !== null) {
+        // Clear the tracked id before asking Sonner to dismiss. Sonner invokes
+        // onDismiss for programmatic dismissal too; the cleared id identifies
+        // this as a completed resolution rather than a deferred user choice.
+        toast.dismiss(toastId);
+      }
     }
 
     function readCompatibleBase(result = remoteResult) {
@@ -401,22 +434,39 @@ export function useDashboardProfileSync() {
       void refreshRegisteredClients(true);
     }
 
-    function showConflict(conflict: PendingConflict, overlappingPaths: string[]) {
+    function isSameConflictTarget(left: PendingConflict, right: PendingConflict) {
+      return (
+        left.remote.revision === right.remote.revision &&
+        left.remote.generation === right.remote.generation &&
+        left.remote.workspace?.installationId === right.remote.workspace?.installationId &&
+        left.remote.workspace?.workspaceId === right.remote.workspace?.workspaceId
+      );
+    }
+
+    function setRuntimeConflict(conflict: PendingConflict) {
+      runtime.setConflict({
+        baseRevision: readCompatibleBase(conflict.remote)?.revision ?? null,
+        remoteRevision: conflict.remote.revision ?? 0,
+        overlappingPaths: conflict.overlappingPaths,
+        remoteActivity: toActivity(conflict.remote.metadata),
+      });
+    }
+
+    function showConflict(conflict: PendingConflict) {
       clearSaveTimeout();
-      const existingRevision = pendingConflict?.remote.revision;
-      if (existingRevision === conflict.remote.revision && conflictToastId !== null) {
+      if (
+        pendingConflict &&
+        isSameConflictTarget(pendingConflict, conflict) &&
+        conflictToastId !== null
+      ) {
         pendingConflict = conflict;
+        setRuntimeConflict(conflict);
         return;
       }
 
       clearConflict();
       pendingConflict = conflict;
-      runtime.setConflict({
-        baseRevision: readCompatibleBase(conflict.remote)?.revision ?? null,
-        remoteRevision: conflict.remote.revision ?? 0,
-        overlappingPaths,
-        remoteActivity: toActivity(conflict.remote.metadata),
-      });
+      setRuntimeConflict(conflict);
 
       conflictToastId = toast(tRef.current('dashboard.profileSync.conflictTitle'), {
         description: createElement(
@@ -498,6 +548,20 @@ export function useDashboardProfileSync() {
           )
         ),
         duration: Infinity,
+        onDismiss: (dismissedToast) => {
+          if (dismissedToast.id !== conflictToastId) {
+            return;
+          }
+
+          conflictToastId = null;
+          if (pendingConflict) {
+            // Dismissing the presentation defers the choice; it does not resolve
+            // the merge. Keep the runtime visibly blocked and offer the same
+            // bound resolution again after a quiet interval.
+            setRuntimeConflict(pendingConflict);
+            scheduleConflictReminder();
+          }
+        },
         classNames: {
           toast:
             'max-w-[min(34rem,calc(100vw-1rem))] sm:min-w-[29rem] rounded-[28px] border-white/10 bg-[linear-gradient(180deg,rgba(18,18,20,0.96)_0%,rgba(12,12,14,0.94)_100%)] shadow-2xl',
@@ -776,6 +840,11 @@ export function useDashboardProfileSync() {
       }
 
       if (reconciliation.kind === 'save-merged') {
+        // A newer remote revision can make an earlier overlap disappear (for
+        // example, another client chose the same value). The merge is now
+        // provably safe, so retire the stale prompt before saving; otherwise
+        // pendingConflict would keep saveProfile blocked.
+        clearConflict();
         rememberCommonBase(result.profile, result, { recordCleanReceipt: false });
         applyingRemote = true;
         try {
@@ -795,14 +864,12 @@ export function useDashboardProfileSync() {
         return;
       }
 
-      showConflict(
-        {
-          base: base?.profile ?? null,
-          local,
-          remote: result,
-        },
-        reconciliation.overlappingPaths
-      );
+      showConflict({
+        base: base?.profile ?? null,
+        local,
+        overlappingPaths: reconciliation.overlappingPaths,
+        remote: result,
+      });
     }
 
     async function refreshRemote(options: { forceFull?: boolean; notify?: boolean } = {}) {
@@ -963,6 +1030,9 @@ export function useDashboardProfileSync() {
         return;
       }
 
+      if (pendingConflict && conflictToastId === null) {
+        showConflict(pendingConflict);
+      }
       syncCurrentLocalState();
       void refreshRemote({ notify: true });
     };

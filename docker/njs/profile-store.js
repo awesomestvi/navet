@@ -587,13 +587,18 @@ function removeFile(path) {
 function isValidWorkspace(value) {
   return (
     value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
     value.contractVersion === CONTRACT_VERSION &&
     typeof value.installationId === 'string' &&
     value.installationId.length > 4 &&
     typeof value.workspaceId === 'string' &&
     value.workspaceId.length > 4 &&
     value.defaultProfileId === PROFILE_ID &&
-    typeof value.createdAt === 'string'
+    typeof value.createdAt === 'string' &&
+    Number.isFinite(Date.parse(value.createdAt)) &&
+    (value.tenantBinding === undefined ||
+      isValidTenantBinding(value.tenantBinding))
   );
 }
 
@@ -619,20 +624,27 @@ function publicWorkspace(workspace) {
 }
 
 function readOrCreateWorkspace() {
-  const existing = readJson(WORKSPACE_PATH, null, MAX_WORKSPACE_BYTES);
+  const missingWorkspace = {};
+  const existing = readJson(
+    WORKSPACE_PATH,
+    missingWorkspace,
+    MAX_WORKSPACE_BYTES
+  );
+  if (existing === missingWorkspace) {
+    const workspace = {
+      contractVersion: CONTRACT_VERSION,
+      installationId: createOpaqueId('nvi'),
+      workspaceId: createOpaqueId('nvw'),
+      defaultProfileId: PROFILE_ID,
+      createdAt: nowIso(),
+    };
+    writeJson(WORKSPACE_PATH, workspace);
+    return workspace;
+  }
   if (isValidWorkspace(existing)) {
     return existing;
   }
-
-  const workspace = {
-    contractVersion: CONTRACT_VERSION,
-    installationId: createOpaqueId('nvi'),
-    workspaceId: createOpaqueId('nvw'),
-    defaultProfileId: PROFILE_ID,
-    createdAt: nowIso(),
-  };
-  writeJson(WORKSPACE_PATH, workspace);
-  return workspace;
+  throw createStorageReadError(WORKSPACE_PATH);
 }
 
 function authorizeWorkspacePrincipal(principal) {
@@ -1936,8 +1948,14 @@ function normalizeRegistryClients(clients, now) {
   return retained.sort(compareRegistryClientsOldestFirst);
 }
 
-function reconcileClientPreferences(registry, allowEmptyRegistry) {
-  const collection = readPreferenceCollection(CLIENT_PREFERENCES_PATH);
+function reconcileClientPreferences(
+  registry,
+  allowEmptyRegistry,
+  preloadedCollection
+) {
+  const collection =
+    preloadedCollection ||
+    readPreferenceCollection(CLIENT_PREFERENCES_PATH);
   const originalRecordCount = Object.keys(collection.records).length;
   if (
     allowEmptyRegistry !== true &&
@@ -1977,11 +1995,12 @@ function reconcileClientPreferences(registry, allowEmptyRegistry) {
     };
     if (preferenceCollectionFits(reconciled, 'client')) {
       writeJson(CLIENT_PREFERENCES_PATH, reconciled);
+      return reconciled;
     } else if (originalRecordCount > CLIENT_REGISTRY_LIMIT) {
       throw createStorageReadError(CLIENT_PREFERENCES_PATH);
     }
   }
-  return true;
+  return collection;
 }
 
 function publicPrincipal(principal) {
@@ -2010,8 +2029,10 @@ function publicRegistryClient(client) {
   };
 }
 
-function clientPreferenceBelongsToAnotherBinding(client) {
-  const collection = readPreferenceCollection(CLIENT_PREFERENCES_PATH);
+function clientPreferenceBelongsToAnotherBinding(
+  client,
+  collection
+) {
   const ownedKey = `client-binding:${client.bindingId}`;
   for (const key in collection.records) {
     if (
@@ -2027,10 +2048,26 @@ function clientPreferenceBelongsToAnotherBinding(client) {
   return false;
 }
 
-function touchClient(workspace, principal, client, lastRevision) {
+function touchClient(
+  workspace,
+  principal,
+  client,
+  lastRevision,
+  preferenceContext
+) {
   if (!client) {
     return true;
   }
+  const preferenceValidationPath = preferenceContext
+    ? preferenceContext.path
+    : null;
+  let routedPreferenceValidated = Boolean(preferenceContext);
+  let clientPreferenceCollection =
+    preferenceContext &&
+    preferenceContext.path === CLIENT_PREFERENCES_PATH
+      ? preferenceContext.collection
+      : null;
+  let clientPreferenceCollectionNormalized = false;
   const registry = readRegistry();
   const hadRegistryClients = registry.clients.length > 0;
   const normalizedClients = normalizeRegistryClients(
@@ -2041,12 +2078,6 @@ function touchClient(workspace, principal, client, lastRevision) {
     JSON.stringify(normalizedClients) !== JSON.stringify(registry.clients);
   if (registryChanged) {
     registry.clients = normalizedClients;
-  }
-  if (registry.preferenceCollectionVersion !== 1 || registryChanged) {
-    reconcileClientPreferences(registry, registryChanged && hadRegistryClients);
-    registry.preferenceCollectionVersion = 1;
-    registry.workspaceId = workspace.workspaceId;
-    writeJson(CLIENT_REGISTRY_PATH, registry);
   }
   const timestamp = nowIso();
   let existing = null;
@@ -2072,12 +2103,56 @@ function touchClient(workspace, principal, client, lastRevision) {
     return 'capacity';
   }
   if (
-    (!continuity ||
-      typeof continuity.bindingId !== 'string' ||
-      !CLIENT_BINDING_PATTERN.test(continuity.bindingId)) &&
-    clientPreferenceBelongsToAnotherBinding(client)
+    !continuity ||
+    typeof continuity.bindingId !== 'string' ||
+    !CLIENT_BINDING_PATTERN.test(continuity.bindingId)
   ) {
-    return false;
+    if (!clientPreferenceCollection) {
+      clientPreferenceCollection = readPreferenceCollection(
+        CLIENT_PREFERENCES_PATH,
+        false
+      );
+    }
+    if (
+      clientPreferenceBelongsToAnotherBinding(
+        client,
+        clientPreferenceCollection
+      )
+    ) {
+      return false;
+    }
+  }
+  if (registry.preferenceCollectionVersion !== 1 || registryChanged) {
+    if (
+      clientPreferenceCollection &&
+      !clientPreferenceCollectionNormalized
+    ) {
+      clientPreferenceCollection = normalizePreferenceCollection(
+        CLIENT_PREFERENCES_PATH,
+        clientPreferenceCollection
+      );
+      clientPreferenceCollectionNormalized = true;
+      if (preferenceValidationPath === CLIENT_PREFERENCES_PATH) {
+        preferenceContext.collection = clientPreferenceCollection;
+      }
+    }
+    if (preferenceValidationPath && !routedPreferenceValidated) {
+      readPreferenceCollection(preferenceValidationPath, false);
+      routedPreferenceValidated = true;
+    }
+    clientPreferenceCollection = reconcileClientPreferences(
+      registry,
+      registryChanged && hadRegistryClients,
+      clientPreferenceCollection
+    );
+    clientPreferenceCollectionNormalized = true;
+    if (preferenceValidationPath === CLIENT_PREFERENCES_PATH) {
+      preferenceContext.collection = clientPreferenceCollection;
+      routedPreferenceValidated = true;
+    }
+    registry.preferenceCollectionVersion = 1;
+    registry.workspaceId = workspace.workspaceId;
+    writeJson(CLIENT_REGISTRY_PATH, registry);
   }
   const nextPrincipal = publicPrincipal(principal);
   const requestedRevision =
@@ -2121,9 +2196,39 @@ function touchClient(workspace, principal, client, lastRevision) {
   retainedClients.push(next);
   registry.clients = retainedClients.sort(compareRegistryClientsOldestFirst);
   registry.workspaceId = workspace.workspaceId;
+  const rekeysExistingClient = continuity && continuity.id !== client.id;
+  if (rekeysExistingClient) {
+    if (!clientPreferenceCollection) {
+      clientPreferenceCollection = readPreferenceCollection(
+        CLIENT_PREFERENCES_PATH,
+        false
+      );
+    }
+    if (!clientPreferenceCollectionNormalized) {
+      clientPreferenceCollection = normalizePreferenceCollection(
+        CLIENT_PREFERENCES_PATH,
+        clientPreferenceCollection
+      );
+      clientPreferenceCollectionNormalized = true;
+    }
+    if (preferenceValidationPath === CLIENT_PREFERENCES_PATH) {
+      preferenceContext.collection = clientPreferenceCollection;
+      routedPreferenceValidated = true;
+    }
+  }
+  if (preferenceValidationPath && !routedPreferenceValidated) {
+    readPreferenceCollection(preferenceValidationPath, false);
+  }
   writeJson(CLIENT_REGISTRY_PATH, registry);
-  if (continuity && continuity.id !== client.id) {
-    reconcileClientPreferences(registry);
+  if (rekeysExistingClient) {
+    clientPreferenceCollection = reconcileClientPreferences(
+      registry,
+      false,
+      clientPreferenceCollection
+    );
+    if (preferenceValidationPath === CLIENT_PREFERENCES_PATH) {
+      preferenceContext.collection = clientPreferenceCollection;
+    }
   }
   return true;
 }
@@ -2622,28 +2727,71 @@ function principalStorageKey(principal) {
   return `${providerId}|${userIdentity}`;
 }
 
-function readPreferenceCollection(path) {
-  const collection = readJson(path, {
-    contractVersion: CONTRACT_VERSION,
-    records: {},
-  }, MAX_PREFERENCE_COLLECTION_BYTES);
-  const validCollection =
-    collection &&
-    collection.contractVersion === CONTRACT_VERSION &&
-    collection.records &&
-    typeof collection.records === 'object' &&
-    !Array.isArray(collection.records)
-    ? collection
-    : { contractVersion: CONTRACT_VERSION, records: {} };
+function isValidPreferenceRecordKey(key, scope) {
+  if (
+    typeof key !== 'string' ||
+    key.length === 0 ||
+    key.length > 512 ||
+    key === '__proto__' ||
+    key === 'prototype' ||
+    key === 'constructor'
+  ) {
+    return false;
+  }
+  if (scope === 'client' && key.indexOf('client-binding:') === 0) {
+    return CLIENT_BINDING_PATTERN.test(
+      key.slice('client-binding:'.length)
+    );
+  }
+  return true;
+}
+
+function isValidPreferenceDocument(document, scope) {
+  if (
+    !document ||
+    typeof document !== 'object' ||
+    Array.isArray(document) ||
+    document.contractVersion !== CONTRACT_VERSION ||
+    !Number.isSafeInteger(document.schemaVersion) ||
+    document.schemaVersion < 1 ||
+    document.scope !== scope ||
+    !Number.isSafeInteger(document.revision) ||
+    document.revision < 1 ||
+    typeof document.updatedAt !== 'string' ||
+    !Number.isFinite(Date.parse(document.updatedAt)) ||
+    !document.values ||
+    typeof document.values !== 'object' ||
+    Array.isArray(document.values) ||
+    !document.principal ||
+    typeof document.principal !== 'object' ||
+    Array.isArray(document.principal) ||
+    typeof document.principal.providerId !== 'string' ||
+    document.principal.providerId.length === 0 ||
+    (document.principal.userId !== null &&
+      typeof document.principal.userId !== 'string') ||
+    (document.principal.userName !== null &&
+      typeof document.principal.userName !== 'string')
+  ) {
+    return false;
+  }
+  if (scope === 'account') {
+    return document.clientId === null;
+  }
+  return (
+    typeof document.clientId === 'string' &&
+    /^[A-Za-z0-9_-]{8,128}$/.test(document.clientId) &&
+    document.clientId.indexOf('..') === -1
+  );
+}
+
+function normalizePreferenceCollection(path, collection) {
+  const scope = path === CLIENT_PREFERENCES_PATH ? 'client' : 'account';
   let changed = false;
-  for (const key in validCollection.records) {
-    if (!Object.prototype.hasOwnProperty.call(validCollection.records, key)) {
+  for (const key in collection.records) {
+    if (!Object.prototype.hasOwnProperty.call(collection.records, key)) {
       continue;
     }
-    const document = validCollection.records[key];
-    if (!document || (document.scope !== 'account' && document.scope !== 'client')) {
-      continue;
-    }
+    const document = collection.records[key];
     const values = sanitizePreferenceValues(document.values, document.scope);
     if (JSON.stringify(values) !== JSON.stringify(document.values)) {
       document.values = values;
@@ -2651,26 +2799,64 @@ function readPreferenceCollection(path) {
     }
     if (
       document.scope === 'client' &&
-      typeof document.clientId === 'string' &&
-      /^[A-Za-z0-9_-]{8,128}$/.test(document.clientId) &&
       key.indexOf('client-binding:') !== 0
     ) {
       const canonicalKey = `client:${document.clientId}`;
       if (key !== canonicalKey) {
-        const canonical = validCollection.records[canonicalKey];
+        const canonical = collection.records[canonicalKey];
         if (!canonical || Number(document.revision) > Number(canonical.revision)) {
-          validCollection.records[canonicalKey] = document;
+          collection.records[canonicalKey] = document;
         }
-        delete validCollection.records[key];
+        delete collection.records[key];
         changed = true;
       }
     }
   }
-  const scope = path === CLIENT_PREFERENCES_PATH ? 'client' : 'account';
-  if (changed && preferenceCollectionFits(validCollection, scope)) {
-    writeJson(path, validCollection);
+  if (changed && preferenceCollectionFits(collection, scope)) {
+    writeJson(path, collection);
   }
-  return validCollection;
+  return collection;
+}
+
+function readPreferenceCollection(path, normalize) {
+  const missingCollection = {};
+  const collection = readJson(
+    path,
+    missingCollection,
+    MAX_PREFERENCE_COLLECTION_BYTES
+  );
+  if (collection === missingCollection) {
+    return {
+      contractVersion: CONTRACT_VERSION,
+      records: {},
+    };
+  }
+  if (
+    !collection ||
+    typeof collection !== 'object' ||
+    Array.isArray(collection) ||
+    collection.contractVersion !== CONTRACT_VERSION ||
+    !collection.records ||
+    typeof collection.records !== 'object' ||
+    Array.isArray(collection.records)
+  ) {
+    throw createStorageReadError(path);
+  }
+  const scope = path === CLIENT_PREFERENCES_PATH ? 'client' : 'account';
+  const recordKeys = Object.keys(collection.records);
+  for (let index = 0; index < recordKeys.length; index += 1) {
+    const key = recordKeys[index];
+    if (
+      !isValidPreferenceRecordKey(key, scope) ||
+      !isValidPreferenceDocument(collection.records[key], scope)
+    ) {
+      throw createStorageReadError(path);
+    }
+  }
+  if (normalize === false) {
+    return collection;
+  }
+  return normalizePreferenceCollection(path, collection);
 }
 
 function preferenceRecordKey(scope, principal, client) {
@@ -2713,7 +2899,14 @@ function migrateLegacyClientPreference(collection, client) {
   }
 }
 
-function loadPreference(r, principal, scope, workspace, client) {
+function loadPreference(
+  r,
+  principal,
+  scope,
+  workspace,
+  client,
+  preferenceContext
+) {
   if (scope === 'account' && (!principal.userId || typeof principal.userId !== 'string')) {
     sendJson(r, 403, { error: 'A verified account identity is required' });
     return;
@@ -2722,7 +2915,13 @@ function loadPreference(r, principal, scope, workspace, client) {
     sendJson(r, 400, { error: 'A valid dashboard client identity is required' });
     return;
   }
-  const collection = readPreferenceCollection(preferencePath(scope));
+  const path = preferencePath(scope);
+  const collection = preferenceContext
+    ? normalizePreferenceCollection(path, preferenceContext.collection)
+    : readPreferenceCollection(path);
+  if (preferenceContext) {
+    preferenceContext.collection = collection;
+  }
   if (scope === 'client') {
     migrateLegacyClientPreference(collection, client);
   }
@@ -2740,7 +2939,14 @@ function loadPreference(r, principal, scope, workspace, client) {
   sendJson(r, 200, document);
 }
 
-function writePreference(r, principal, scope, workspace, client) {
+function writePreference(
+  r,
+  principal,
+  scope,
+  workspace,
+  client,
+  preferenceContext
+) {
   try {
     if (scope === 'account' && (!principal.userId || typeof principal.userId !== 'string')) {
       sendJson(r, 403, { error: 'A verified account identity is required' });
@@ -2769,7 +2975,13 @@ function writePreference(r, principal, scope, workspace, client) {
       sendJson(r, 400, { error: 'Unsupported preference document' });
       return;
     }
-    const collection = readPreferenceCollection(preferencePath(scope));
+    const path = preferencePath(scope);
+    const collection = preferenceContext
+      ? normalizePreferenceCollection(path, preferenceContext.collection)
+      : readPreferenceCollection(path);
+    if (preferenceContext) {
+      preferenceContext.collection = collection;
+    }
     if (scope === 'client') {
       migrateLegacyClientPreference(collection, client);
     }
@@ -2832,7 +3044,14 @@ function writePreference(r, principal, scope, workspace, client) {
   }
 }
 
-function deletePreference(r, principal, scope, workspace, client) {
+function deletePreference(
+  r,
+  principal,
+  scope,
+  workspace,
+  client,
+  preferenceContext
+) {
   if (scope === 'account' && (!principal.userId || typeof principal.userId !== 'string')) {
     sendJson(r, 403, { error: 'A verified account identity is required' });
     return;
@@ -2841,7 +3060,13 @@ function deletePreference(r, principal, scope, workspace, client) {
     sendJson(r, 400, { error: 'A valid dashboard client identity is required' });
     return;
   }
-  const collection = readPreferenceCollection(preferencePath(scope));
+  const path = preferencePath(scope);
+  const collection = preferenceContext
+    ? normalizePreferenceCollection(path, preferenceContext.collection)
+    : readPreferenceCollection(path);
+  if (preferenceContext) {
+    preferenceContext.collection = collection;
+  }
   if (scope === 'client') {
     migrateLegacyClientPreference(collection, client);
   }
@@ -2886,12 +3111,11 @@ function forgetClient(r, workspace, clientId, requestingClient) {
     sendClientForbidden(r);
     return;
   }
+  const preferences = readPreferenceCollection(CLIENT_PREFERENCES_PATH);
   const before = registry.clients.length;
   registry.clients = registry.clients.filter(function (entry) {
     return entry.id !== clientId;
   });
-  writeJson(CLIENT_REGISTRY_PATH, registry);
-  const preferences = readPreferenceCollection(CLIENT_PREFERENCES_PATH);
   for (const key in preferences.records) {
     if (
       Object.prototype.hasOwnProperty.call(preferences.records, key) &&
@@ -2904,6 +3128,7 @@ function forgetClient(r, workspace, clientId, requestingClient) {
       delete preferences.records[key];
     }
   }
+  writeJson(CLIENT_REGISTRY_PATH, registry);
   writeJson(CLIENT_PREFERENCES_PATH, preferences);
   applyWorkspaceHeaders(r, workspace);
   sendJson(r, 200, {
@@ -2926,6 +3151,31 @@ function routeRequest(r, principal) {
     return;
   }
   const requestClient = readClient(r, false, principal);
+  const routedPreferenceMatch = normalizedUri.match(
+    /^\/__navet_profile__\/preferences\/(account|client)$/
+  );
+  const routedPreferenceScope = routedPreferenceMatch
+    ? routedPreferenceMatch[1]
+    : null;
+  const routedPreferencePath =
+    routedPreferenceScope &&
+    (r.method === 'GET' ||
+      r.method === 'PUT' ||
+      r.method === 'DELETE') &&
+    (routedPreferenceScope === 'account'
+      ? typeof principal.userId === 'string' && principal.userId.length > 0
+      : Boolean(requestClient))
+      ? preferencePath(routedPreferenceScope)
+      : null;
+  const preferenceContext = routedPreferencePath
+    ? {
+        path: routedPreferencePath,
+        collection: readPreferenceCollection(routedPreferencePath, false),
+      }
+    : null;
+  const isClientDeleteRequest =
+    r.method === 'DELETE' &&
+    /^\/__navet_profile__\/clients\/[^/]+$/.test(normalizedUri);
   const isDefaultProfileRequest =
     normalizedUri === '/__navet_profile__/default' &&
     (r.method === 'GET' ||
@@ -2935,12 +3185,13 @@ function routeRequest(r, principal) {
   const routedProfileState = isDefaultProfileRequest
     ? readState(workspace)
     : null;
-  if (requestClient) {
+  if (requestClient && !isClientDeleteRequest) {
     const touchResult = touchClient(
       workspace,
       principal,
       requestClient,
-      routedProfileState ? routedProfileState.revision : null
+      routedProfileState ? routedProfileState.revision : null,
+      preferenceContext
     );
     if (touchResult === 'capacity') {
       sendClientCapacityUnavailable(r);
@@ -3037,11 +3288,32 @@ function routeRequest(r, principal) {
   if (preferenceMatch) {
     const scope = preferenceMatch[1];
     if (r.method === 'GET') {
-      loadPreference(r, principal, scope, workspace, requestClient);
+      loadPreference(
+        r,
+        principal,
+        scope,
+        workspace,
+        requestClient,
+        preferenceContext
+      );
     } else if (r.method === 'PUT') {
-      writePreference(r, principal, scope, workspace, requestClient);
+      writePreference(
+        r,
+        principal,
+        scope,
+        workspace,
+        requestClient,
+        preferenceContext
+      );
     } else if (r.method === 'DELETE') {
-      deletePreference(r, principal, scope, workspace, requestClient);
+      deletePreference(
+        r,
+        principal,
+        scope,
+        workspace,
+        requestClient,
+        preferenceContext
+      );
     } else {
       r.headersOut.Allow = 'GET, PUT, DELETE';
       sendJson(r, 405, { error: 'Method not allowed' });

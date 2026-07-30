@@ -94,13 +94,12 @@ export const useDashboardProfileRuntimeStore = create<DashboardProfileRuntimeSta
   markSaving: () => set({ error: null, status: 'saving' }),
   markSynced: ({ activity, at = new Date().toISOString(), profileId, revision, workspaceId }) =>
     set((state) => ({
-      conflict: null,
       error: null,
       lastActivity: activity === undefined ? state.lastActivity : activity,
       lastSyncedAt: at,
       profileId: profileId === undefined ? state.profileId : profileId,
       revision: revision === undefined ? state.revision : revision,
-      status: 'synced',
+      status: state.conflict ? 'error' : 'synced',
       workspaceId: workspaceId === undefined ? state.workspaceId : workspaceId,
     })),
   reset: () => set(initialState),
@@ -111,5 +110,5 @@ export const useDashboardProfileRuntimeStore = create<DashboardProfileRuntimeSta
         (left, right) => Date.parse(right.lastSeenAt) - Date.parse(left.lastSeenAt)
       ),
     }),
-  setConflict: (conflict) => set({ conflict, status: 'synced' }),
+  setConflict: (conflict) => set({ conflict, error: null, status: 'error' }),
 }));

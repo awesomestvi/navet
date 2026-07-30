@@ -38,9 +38,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   exportDashboardConfig,
   importDashboardConfig,
+  isHomeAssistantAddonMode,
   isHomeAssistantPanelMode,
+  loadDashboardPreferences,
   loadDashboardProfile,
   loadDashboardProfileClients,
+  saveDashboardPreferences,
   saveDashboardProfile,
   toast,
   touchDashboardClientWithStatus,
@@ -52,9 +55,12 @@ const {
   return {
     exportDashboardConfig: vi.fn(),
     importDashboardConfig: vi.fn(),
+    isHomeAssistantAddonMode: vi.fn(),
     isHomeAssistantPanelMode: vi.fn(),
+    loadDashboardPreferences: vi.fn(),
     loadDashboardProfile: vi.fn(),
     loadDashboardProfileClients: vi.fn(),
+    saveDashboardPreferences: vi.fn(),
     saveDashboardProfile: vi.fn(),
     toast: toastFn,
     touchDashboardClientWithStatus: vi.fn(),
@@ -66,8 +72,10 @@ vi.mock('@navet/app/services/dashboard-profile.service', async (importOriginal) 
     await importOriginal<typeof import('@navet/app/services/dashboard-profile.service')>();
   return {
     ...actual,
+    loadDashboardPreferences,
     loadDashboardProfile,
     loadDashboardProfileClients,
+    saveDashboardPreferences,
     saveDashboardProfile,
     touchDashboardClientWithStatus,
   };
@@ -83,6 +91,7 @@ vi.mock('@navet/app/utils/dashboard-config', async (importOriginal) => {
 });
 
 vi.mock('@navet/app/runtime/app-mode', () => ({
+  isHomeAssistantAddonMode,
   isHomeAssistantPanelMode,
 }));
 
@@ -394,6 +403,14 @@ describe('useDashboardProfileSync', () => {
     });
     loadDashboardProfile.mockReset();
     loadDashboardProfileClients.mockReset();
+    loadDashboardPreferences.mockReset();
+    loadDashboardPreferences.mockResolvedValue({
+      available: false,
+      unauthorized: false,
+      failureCode: null,
+      document: null,
+    });
+    saveDashboardPreferences.mockReset();
     saveDashboardProfile.mockReset();
     touchDashboardClientWithStatus.mockReset();
     touchDashboardClientWithStatus.mockResolvedValue({
@@ -402,6 +419,8 @@ describe('useDashboardProfileSync', () => {
     });
     loadDashboardProfileClients.mockResolvedValue(clientRegistry());
     saveDashboardProfile.mockImplementation(async (profile) => savedResult(profile));
+    isHomeAssistantAddonMode.mockReset();
+    isHomeAssistantAddonMode.mockReturnValue(false);
     isHomeAssistantPanelMode.mockReset();
     isHomeAssistantPanelMode.mockReturnValue(false);
     toast.mockReset();
@@ -421,6 +440,35 @@ describe('useDashboardProfileSync', () => {
     expect(touchDashboardClientWithStatus).not.toHaveBeenCalled();
     expect(saveDashboardProfile).not.toHaveBeenCalled();
     expect(useDashboardProfileRuntimeStore.getState().status).toBe('disabled');
+  });
+
+  it('syncs only client preferences in standalone mode', async () => {
+    loadDashboardProfile.mockResolvedValue(activeResult(buildProfile()));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    expect(loadDashboardPreferences.mock.calls.map(([scope]) => scope)).toEqual(['client']);
+
+    await advanceTime(60_000);
+
+    expect(loadDashboardPreferences.mock.calls.map(([scope]) => scope)).toEqual([
+      'client',
+      'client',
+    ]);
+  });
+
+  it('enables account preferences for Home Assistant Ingress', async () => {
+    isHomeAssistantAddonMode.mockReturnValue(true);
+    loadDashboardProfile.mockResolvedValueOnce(activeResult(buildProfile()));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    expect(loadDashboardPreferences.mock.calls.map(([scope]) => scope)).toEqual([
+      'account',
+      'client',
+    ]);
   });
 
   it('loads the shared profile on a new phone without a conflict prompt', async () => {
@@ -1481,6 +1529,149 @@ describe('useDashboardProfileSync', () => {
     expect(importDashboardConfig).toHaveBeenLastCalledWith(remote, {
       applyNavigation: false,
     });
+  });
+
+  it('keeps a dismissed conflict blocked and presents its resolution again', async () => {
+    const base = buildProfile();
+    const remote = buildProfile({
+      exportedAt: '2026-07-25T09:02:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'green' },
+    });
+    loadDashboardProfile
+      .mockResolvedValueOnce(activeResult(base))
+      .mockResolvedValueOnce(activeResult(remote, 2))
+      .mockResolvedValue(notModifiedResult(2));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+    currentProfile = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'red' },
+    });
+    act(() => {
+      useThemeStore.setState({ ...useThemeStore.getState(), primaryColor: 'red' });
+      window.dispatchEvent(new Event(DASHBOARD_PROFILE_REFRESH_EVENT));
+    });
+    await flushEffects();
+
+    const firstToastOptions = toast.mock.calls[0]?.[1] as {
+      description: ReactNode;
+      onDismiss?: (dismissedToast: { id: string | number }) => void;
+    };
+    expect(useDashboardProfileRuntimeStore.getState()).toMatchObject({
+      conflict: {
+        remoteRevision: 2,
+        overlappingPaths: ['/theme/primaryColor'],
+      },
+      status: 'error',
+    });
+
+    act(() => {
+      firstToastOptions.onDismiss?.({ id: 'profile-toast' });
+    });
+
+    expect(useDashboardProfileRuntimeStore.getState()).toMatchObject({
+      conflict: {
+        remoteRevision: 2,
+      },
+      status: 'error',
+    });
+    expect(saveDashboardProfile).not.toHaveBeenCalled();
+
+    await advanceTime(60_000);
+    await flushEffects();
+
+    const conflictToasts = toast.mock.calls.filter(
+      ([title]) => title === 'Dashboard changes detected on another device'
+    );
+    expect(conflictToasts).toHaveLength(2);
+    expect(useDashboardProfileRuntimeStore.getState().status).toBe('error');
+
+    const secondToastOptions = conflictToasts[1]?.[1] as {
+      description: ReactNode;
+      onDismiss?: (dismissedToast: { id: string | number }) => void;
+    };
+    const loadRemote = findButtonClickHandler(secondToastOptions.description, 'Load remote');
+    act(() => {
+      loadRemote?.();
+      // Sonner also invokes onDismiss when clearConflict dismisses the toast
+      // programmatically. That callback must not turn a completed choice into
+      // another reminder.
+      secondToastOptions.onDismiss?.({ id: 'profile-toast' });
+    });
+
+    expect(importDashboardConfig).toHaveBeenLastCalledWith(remote, {
+      applyNavigation: false,
+    });
+    expect(useDashboardProfileRuntimeStore.getState()).toMatchObject({
+      conflict: null,
+      status: 'synced',
+    });
+
+    await advanceTime(60_000);
+    expect(
+      toast.mock.calls.filter(([title]) => title === 'Dashboard changes detected on another device')
+    ).toHaveLength(2);
+  });
+
+  it('retires a deferred conflict when a newer remote revision makes the merge safe', async () => {
+    const base = buildProfile();
+    const conflictingRemote = buildProfile({
+      exportedAt: '2026-07-25T09:02:00.000Z',
+      theme: { theme: 'glass', primaryColor: 'green' },
+    });
+    const mergeableRemote = buildProfile({
+      exportedAt: '2026-07-25T09:03:00.000Z',
+      settings: { showWeatherInHeader: false },
+    });
+    loadDashboardProfile
+      .mockResolvedValueOnce(activeResult(base))
+      .mockResolvedValueOnce(activeResult(conflictingRemote, 2))
+      .mockResolvedValueOnce(
+        activeResult(mergeableRemote, 3, OTHER_CLIENT, ['/settings/showWeatherInHeader'])
+      )
+      .mockResolvedValue(notModifiedResult(4));
+    saveDashboardProfile.mockImplementation(async (profile) => savedResult(profile, 4));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+    currentProfile = buildProfile({
+      theme: { theme: 'glass', primaryColor: 'red' },
+    });
+    act(() => {
+      useThemeStore.setState({ ...useThemeStore.getState(), primaryColor: 'red' });
+      window.dispatchEvent(new Event(DASHBOARD_PROFILE_REFRESH_EVENT));
+    });
+    await flushEffects();
+
+    const conflictToastOptions = toast.mock.calls[0]?.[1] as {
+      onDismiss?: (dismissedToast: { id: string | number }) => void;
+    };
+    act(() => {
+      conflictToastOptions.onDismiss?.({ id: 'profile-toast' });
+      window.dispatchEvent(new Event(DASHBOARD_PROFILE_REFRESH_EVENT));
+    });
+    await flushEffects();
+
+    expect(saveDashboardProfile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        settings: { showWeatherInHeader: false },
+        theme: { theme: 'glass', primaryColor: 'red' },
+      }),
+      expect.objectContaining({
+        baseRevision: 3,
+        changedPaths: ['/theme/primaryColor'],
+      })
+    );
+    expect(useDashboardProfileRuntimeStore.getState()).toMatchObject({
+      conflict: null,
+      revision: 4,
+      status: 'synced',
+    });
+
+    await advanceTime(60_000);
+    expect(
+      toast.mock.calls.filter(([title]) => title === 'Dashboard changes detected on another device')
+    ).toHaveLength(1);
   });
 
   it('rebases Keep mine over the latest remote revision', async () => {

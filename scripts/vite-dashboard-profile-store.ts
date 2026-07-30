@@ -80,6 +80,11 @@ interface PreferenceCollection {
   records: Record<string, DashboardPreferenceDocument>
 }
 
+interface PreferenceRequestContext {
+  scope: DashboardPreferenceScope
+  collection: PreferenceCollection
+}
+
 interface BoundDashboardProfileClient extends DashboardProfileClient {
   bindingId: string
 }
@@ -539,14 +544,21 @@ function pruneHistoryBySerializedSize(
 }
 
 function validWorkspace(value: unknown): value is PersistedDashboardWorkspace {
-  const workspace = value as Partial<DashboardWorkspaceIdentity> | null
+  const workspace = value as Partial<PersistedDashboardWorkspace> | null
   return Boolean(
     workspace &&
+      typeof workspace === 'object' &&
+      !Array.isArray(workspace) &&
       workspace.contractVersion === DASHBOARD_PROFILE_CONTRACT_VERSION &&
       typeof workspace.installationId === 'string' &&
+      workspace.installationId.length > 4 &&
       typeof workspace.workspaceId === 'string' &&
+      workspace.workspaceId.length > 4 &&
       workspace.defaultProfileId === DASHBOARD_PROFILE_ID &&
-      typeof workspace.createdAt === 'string'
+      typeof workspace.createdAt === 'string' &&
+      Number.isFinite(Date.parse(workspace.createdAt)) &&
+      (workspace.tenantBinding === undefined ||
+        validTenantBinding(workspace.tenantBinding))
   )
 }
 
@@ -806,23 +818,29 @@ export function createViteDashboardProfileStore(
   const paths = resolveStorePaths(profileFilePath)
 
   const readOrCreateWorkspace = (): PersistedDashboardWorkspace => {
-    const existing = readJson<unknown>(
+    const missingWorkspace = Symbol('missing-dashboard-workspace')
+    const existing = readJson<unknown | typeof missingWorkspace>(
       paths.workspace,
-      null,
+      missingWorkspace,
       MAX_WORKSPACE_BYTES
     )
+    if (existing === missingWorkspace) {
+      const workspace: PersistedDashboardWorkspace = {
+        contractVersion: DASHBOARD_PROFILE_CONTRACT_VERSION,
+        installationId: createId('nvi'),
+        workspaceId: createId('nvw'),
+        defaultProfileId: DASHBOARD_PROFILE_ID,
+        createdAt: new Date().toISOString(),
+      }
+      writeJson(paths.workspace, workspace)
+      return workspace
+    }
     if (validWorkspace(existing)) {
       return existing
     }
-    const workspace: PersistedDashboardWorkspace = {
-      contractVersion: DASHBOARD_PROFILE_CONTRACT_VERSION,
-      installationId: createId('nvi'),
-      workspaceId: createId('nvw'),
-      defaultProfileId: DASHBOARD_PROFILE_ID,
-      createdAt: new Date().toISOString(),
-    }
-    writeJson(paths.workspace, workspace)
-    return workspace
+    throw new DashboardProfileStorageReadError(
+      `Dashboard profile storage cannot be read safely: ${paths.workspace}`
+    )
   }
 
   const authorizePrincipal = (
@@ -1518,65 +1536,140 @@ export function createViteDashboardProfileStore(
   }
 
   const readPreferenceCollection = (
-    file: string
+    file: string,
+    normalize = true
   ): PreferenceCollection => {
-    const candidate = readJson<unknown>(
+    const missingCollection = Symbol('missing-dashboard-preference-collection')
+    const candidate = readJson<unknown | typeof missingCollection>(
       file,
-      null,
+      missingCollection,
       MAX_PREFERENCE_COLLECTION_BYTES
     )
+    if (candidate === missingCollection) {
+      return {
+        contractVersion: DASHBOARD_PROFILE_CONTRACT_VERSION,
+        records: {},
+      }
+    }
     if (
-      candidate &&
-      typeof candidate === 'object' &&
-      !Array.isArray(candidate) &&
-      (candidate as Partial<PreferenceCollection>).contractVersion ===
-        DASHBOARD_PROFILE_CONTRACT_VERSION &&
-      (candidate as Partial<PreferenceCollection>).records &&
-      typeof (candidate as Partial<PreferenceCollection>).records === 'object' &&
-      !Array.isArray((candidate as Partial<PreferenceCollection>).records)
+      !candidate ||
+      typeof candidate !== 'object' ||
+      Array.isArray(candidate) ||
+      (candidate as Partial<PreferenceCollection>).contractVersion !==
+        DASHBOARD_PROFILE_CONTRACT_VERSION ||
+      !(candidate as Partial<PreferenceCollection>).records ||
+      typeof (candidate as Partial<PreferenceCollection>).records !== 'object' ||
+      Array.isArray((candidate as Partial<PreferenceCollection>).records)
     ) {
-      const collection = candidate as PreferenceCollection
-      let changed = false
-      for (const [key, document] of Object.entries(collection.records)) {
-        if (document.scope !== 'account' && document.scope !== 'client') {
-          continue
-        }
-        const values = sanitizeDashboardPreferenceValues(
-          document.values,
-          document.scope
+      throw new DashboardProfileStorageReadError(
+        `Dashboard profile storage cannot be read safely: ${file}`
+      )
+    }
+    const collection = candidate as PreferenceCollection
+    const scope =
+      file === paths.clientPreferences ? 'client' : 'account'
+    const validRecordKey = (key: string): boolean => {
+      if (
+        key.length === 0 ||
+        key.length > 512 ||
+        key === '__proto__' ||
+        key === 'prototype' ||
+        key === 'constructor'
+      ) {
+        return false
+      }
+      return (
+        scope !== 'client' ||
+        !key.startsWith('client-binding:') ||
+        CLIENT_BINDING_PATTERN.test(key.slice('client-binding:'.length))
+      )
+    }
+    const validDocument = (
+      value: unknown
+    ): value is DashboardPreferenceDocument => {
+      if (!isRecord(value)) {
+        return false
+      }
+      const document = value as Partial<DashboardPreferenceDocument>
+      const principal = document.principal
+      if (
+        document.contractVersion !==
+          DASHBOARD_PROFILE_CONTRACT_VERSION ||
+        !Number.isSafeInteger(document.schemaVersion) ||
+        Number(document.schemaVersion) < 1 ||
+        document.scope !== scope ||
+        !Number.isSafeInteger(document.revision) ||
+        Number(document.revision) < 1 ||
+        typeof document.updatedAt !== 'string' ||
+        !Number.isFinite(Date.parse(document.updatedAt)) ||
+        !isRecord(document.values) ||
+        !isRecord(principal) ||
+        typeof principal.providerId !== 'string' ||
+        principal.providerId.length === 0 ||
+        (principal.userId !== null &&
+          typeof principal.userId !== 'string') ||
+        (principal.userName !== null &&
+          typeof principal.userName !== 'string')
+      ) {
+        return false
+      }
+      if (scope === 'account') {
+        return document.clientId === null
+      }
+      return (
+        typeof document.clientId === 'string' &&
+        /^[A-Za-z0-9_-]{8,128}$/.test(document.clientId) &&
+        !document.clientId.includes('..')
+      )
+    }
+    for (const [key, document] of Object.entries(collection.records)) {
+      if (!validRecordKey(key) || !validDocument(document)) {
+        throw new DashboardProfileStorageReadError(
+          `Dashboard profile storage cannot be read safely: ${file}`
         )
-        if (JSON.stringify(values) !== JSON.stringify(document.values)) {
-          document.values = values
-          changed = true
-        }
-        if (
-          document.scope === 'client' &&
-          typeof document.clientId === 'string' &&
-          /^[A-Za-z0-9_-]{8,128}$/.test(document.clientId) &&
-          !key.startsWith('client-binding:')
-        ) {
-          const canonicalKey = `client:${document.clientId}`
-          if (key !== canonicalKey) {
-            const canonical = collection.records[canonicalKey]
-            if (!canonical || document.revision > canonical.revision) {
-              collection.records[canonicalKey] = document
-            }
-            delete collection.records[key]
-            changed = true
-          }
-        }
       }
-      const scope =
-        file === paths.clientPreferences ? 'client' : 'account'
-      if (changed && preferenceCollectionFits(collection, scope)) {
-        writeJson(file, collection)
-      }
+    }
+    if (!normalize) {
       return collection
     }
-    return {
-      contractVersion: DASHBOARD_PROFILE_CONTRACT_VERSION,
-      records: {},
+    return normalizePreferenceCollection(file, collection)
+  }
+
+  const normalizePreferenceCollection = (
+    file: string,
+    collection: PreferenceCollection
+  ): PreferenceCollection => {
+    const scope =
+      file === paths.clientPreferences ? 'client' : 'account'
+    let changed = false
+    for (const [key, document] of Object.entries(collection.records)) {
+      const values = sanitizeDashboardPreferenceValues(
+        document.values,
+        document.scope
+      )
+      if (JSON.stringify(values) !== JSON.stringify(document.values)) {
+        document.values = values
+        changed = true
+      }
+      if (
+        document.scope === 'client' &&
+        !key.startsWith('client-binding:')
+      ) {
+        const canonicalKey = `client:${document.clientId}`
+        if (key !== canonicalKey) {
+          const canonical = collection.records[canonicalKey]
+          if (!canonical || document.revision > canonical.revision) {
+            collection.records[canonicalKey] = document
+          }
+          delete collection.records[key]
+          changed = true
+        }
+      }
     }
+    if (changed && preferenceCollectionFits(collection, scope)) {
+      writeJson(file, collection)
+    }
+    return collection
   }
 
   const normalizeRegistryClients = (
@@ -1675,9 +1768,12 @@ export function createViteDashboardProfileStore(
 
   const reconcileClientPreferences = (
     registry: RegistryCollection,
-    allowEmptyRegistry = false
-  ): void => {
-    const collection = readPreferenceCollection(paths.clientPreferences)
+    allowEmptyRegistry = false,
+    preloadedCollection?: PreferenceCollection
+  ): PreferenceCollection => {
+    const collection =
+      preloadedCollection ??
+      readPreferenceCollection(paths.clientPreferences)
     const originalRecordCount = Object.keys(collection.records).length
     if (!allowEmptyRegistry && registry.clients.length === 0 && originalRecordCount > 0) {
       throw new DashboardProfileStorageReadError(
@@ -1711,12 +1807,14 @@ export function createViteDashboardProfileStore(
       } satisfies PreferenceCollection
       if (preferenceCollectionFits(reconciled, 'client')) {
         writeJson(paths.clientPreferences, reconciled)
+        return reconciled
       } else if (originalRecordCount > CLIENT_REGISTRY_LIMIT) {
         throw new DashboardProfileStorageReadError(
           `Dashboard profile storage cannot be reconciled safely: ${paths.clientPreferences}`
         )
       }
     }
+    return collection
   }
 
   const preferenceCollectionFits = (
@@ -1764,6 +1862,19 @@ export function createViteDashboardProfileStore(
     getPaths: () => paths,
     resolveRegisteredClientBinding,
     authorizePrincipal,
+    createPreferenceRequestContext(
+      scope: DashboardPreferenceScope
+    ): PreferenceRequestContext {
+      return {
+        scope,
+        collection: readPreferenceCollection(
+          scope === 'account'
+            ? paths.accountPreferences
+            : paths.clientPreferences,
+          false
+        ),
+      }
+    },
     getWorkspace: () => publicWorkspace(readOrCreateWorkspace()),
     getState,
     getRecovery,
@@ -1864,11 +1975,17 @@ export function createViteDashboardProfileStore(
     getPreference(
       scope: DashboardPreferenceScope,
       principal: ViteDashboardProfilePrincipal,
-      client?: BoundDashboardProfileClient
+      client?: BoundDashboardProfileClient,
+      preferenceContext?: PreferenceRequestContext
     ): DashboardPreferenceDocument | null {
       const file =
         scope === 'account' ? paths.accountPreferences : paths.clientPreferences
-      const collection = readPreferenceCollection(file)
+      const collection = preferenceContext
+        ? normalizePreferenceCollection(file, preferenceContext.collection)
+        : readPreferenceCollection(file)
+      if (preferenceContext) {
+        preferenceContext.collection = collection
+      }
       const key =
         scope === 'client'
           ? `client-binding:${client?.bindingId ?? ''}`
@@ -1903,11 +2020,17 @@ export function createViteDashboardProfileStore(
       principal: ViteDashboardProfilePrincipal,
       schemaVersion: number,
       values: Record<string, unknown>,
-      client?: BoundDashboardProfileClient
+      client?: BoundDashboardProfileClient,
+      preferenceContext?: PreferenceRequestContext
     ): DashboardPreferenceDocument {
       const file =
         scope === 'account' ? paths.accountPreferences : paths.clientPreferences
-      const collection = readPreferenceCollection(file)
+      const collection = preferenceContext
+        ? normalizePreferenceCollection(file, preferenceContext.collection)
+        : readPreferenceCollection(file)
+      if (preferenceContext) {
+        preferenceContext.collection = collection
+      }
       const key =
         scope === 'client'
           ? `client-binding:${client?.bindingId ?? ''}`
@@ -1955,8 +2078,16 @@ export function createViteDashboardProfileStore(
     touchClient(
       principal: ViteDashboardProfilePrincipal,
       client: BoundDashboardProfileClient,
-      lastRevision: number | null = null
+      lastRevision: number | null = null,
+      preferenceContext?: PreferenceRequestContext
     ): DashboardClientRegistryEntry | null {
+      const preferenceValidationScope = preferenceContext?.scope
+      let routedPreferenceValidated = Boolean(preferenceContext)
+      let clientPreferenceCollection =
+        preferenceContext?.scope === 'client'
+          ? preferenceContext.collection
+          : undefined
+      let clientPreferenceCollectionNormalized = false
       const registry = readRegistry()
       const hadRegistryClients = registry.clients.length > 0
       const normalizedClients = normalizeRegistryClients(
@@ -1967,11 +2098,6 @@ export function createViteDashboardProfileStore(
         JSON.stringify(normalizedClients) !== JSON.stringify(registry.clients)
       if (registryChanged) {
         registry.clients = normalizedClients
-      }
-      if (registry.preferenceCollectionVersion !== 1 || registryChanged) {
-        reconcileClientPreferences(registry, registryChanged && hadRegistryClients)
-        registry.preferenceCollectionVersion = 1
-        writeJson(paths.clients, registry)
       }
       const current = registry.clients.find((entry) => entry.id === client.id)
       const bindingContinuity = registry.clients.find(
@@ -1991,16 +2117,58 @@ export function createViteDashboardProfileStore(
         )
       }
       if (
-        (!continuity?.bindingId ||
-          !CLIENT_BINDING_PATTERN.test(continuity.bindingId)) &&
-        Object.entries(readPreferenceCollection(paths.clientPreferences).records).some(
+        !continuity?.bindingId ||
+        !CLIENT_BINDING_PATTERN.test(continuity.bindingId)
+      ) {
+        clientPreferenceCollection ??= readPreferenceCollection(
+          paths.clientPreferences,
+          false
+        )
+        if (Object.entries(clientPreferenceCollection.records).some(
           ([key, document]) =>
             key.startsWith('client-binding:') &&
             key !== `client-binding:${client.bindingId}` &&
             document.clientId === client.id
+        )) {
+          return null
+        }
+      }
+      if (registry.preferenceCollectionVersion !== 1 || registryChanged) {
+        if (
+          clientPreferenceCollection &&
+          !clientPreferenceCollectionNormalized
+        ) {
+          clientPreferenceCollection = normalizePreferenceCollection(
+            paths.clientPreferences,
+            clientPreferenceCollection
+          )
+          clientPreferenceCollectionNormalized = true
+          if (
+            preferenceValidationScope === 'client' &&
+            preferenceContext
+          ) {
+            preferenceContext.collection = clientPreferenceCollection
+          }
+        }
+        if (preferenceValidationScope && !routedPreferenceValidated) {
+          readPreferenceCollection(paths.accountPreferences, false)
+          routedPreferenceValidated = true
+        }
+        clientPreferenceCollection = reconcileClientPreferences(
+          registry,
+          registryChanged && hadRegistryClients,
+          clientPreferenceCollection
         )
-      ) {
-        return null
+        clientPreferenceCollectionNormalized = true
+        if (
+          preferenceValidationScope === 'client' &&
+          preferenceContext
+        ) {
+          preferenceContext.collection = clientPreferenceCollection
+          routedPreferenceValidated = true
+        }
+        registry.preferenceCollectionVersion = 1
+        writeJson(paths.clients, registry)
       }
       const timestamp = new Date().toISOString()
       const nextPrincipal = publicPrincipal(principal)
@@ -2047,9 +2215,43 @@ export function createViteDashboardProfileStore(
         [...retainedClients, persistedEntry],
         Date.now()
       )
+      const rekeysExistingClient =
+        Boolean(continuity) && continuity?.id !== client.id
+      if (rekeysExistingClient) {
+        clientPreferenceCollection ??= readPreferenceCollection(
+          paths.clientPreferences,
+          false
+        )
+        if (!clientPreferenceCollectionNormalized) {
+          clientPreferenceCollection = normalizePreferenceCollection(
+            paths.clientPreferences,
+            clientPreferenceCollection
+          )
+          clientPreferenceCollectionNormalized = true
+        }
+        if (preferenceValidationScope === 'client' && preferenceContext) {
+          preferenceContext.collection = clientPreferenceCollection
+          routedPreferenceValidated = true
+        }
+      }
+      if (preferenceValidationScope && !routedPreferenceValidated) {
+        readPreferenceCollection(
+          preferenceValidationScope === 'account'
+            ? paths.accountPreferences
+            : paths.clientPreferences,
+          false
+        )
+      }
       writeJson(paths.clients, registry)
-      if (continuity && continuity.id !== client.id) {
-        reconcileClientPreferences(registry)
+      if (rekeysExistingClient) {
+        clientPreferenceCollection = reconcileClientPreferences(
+          registry,
+          false,
+          clientPreferenceCollection
+        )
+        if (preferenceValidationScope === 'client' && preferenceContext) {
+          preferenceContext.collection = clientPreferenceCollection
+        }
       }
       return entry
     },
@@ -2068,10 +2270,9 @@ export function createViteDashboardProfileStore(
       if (!ownedClient) {
         return false
       }
+      const preferences = readPreferenceCollection(paths.clientPreferences)
       const previousLength = registry.clients.length
       registry.clients = registry.clients.filter((entry) => entry.id !== clientId)
-      writeJson(paths.clients, registry)
-      const preferences = readPreferenceCollection(paths.clientPreferences)
       preferences.records = Object.fromEntries(
         Object.entries(preferences.records).filter(
           ([key, document]) =>
@@ -2081,6 +2282,7 @@ export function createViteDashboardProfileStore(
             document.clientId !== clientId
         )
       )
+      writeJson(paths.clients, registry)
       writeJson(paths.clientPreferences, preferences)
       return registry.clients.length !== previousLength
     },
@@ -2581,9 +2783,75 @@ export function createViteDashboardProfileRequestHandler(options: {
       cookieNames,
       false
     )
+    const routedPreferenceMatch = route.match(
+      /^\/preferences\/(account|client)$/
+    )
+    const routedPreferenceScope = routedPreferenceMatch?.[1] as
+      | DashboardPreferenceScope
+      | undefined
+    const requestPreferenceScope =
+      routedPreferenceScope &&
+      (method === 'GET' || method === 'PUT') &&
+      (routedPreferenceScope === 'account'
+        ? Boolean(principal.userId)
+        : Boolean(client))
+        ? routedPreferenceScope
+        : undefined
+    let requestPreferenceInput:
+      | {
+          schemaVersion: number
+          values: Record<string, unknown>
+        }
+      | undefined
+    if (requestPreferenceScope && method === 'PUT') {
+      let input: {
+        schemaVersion?: number
+        values?: Record<string, unknown>
+      }
+      try {
+        const serialized = await readBody(req, MAX_PREFERENCE_BYTES)
+        input = JSON.parse(serialized) as typeof input
+      } catch (error) {
+        sendJson(
+          res,
+          error instanceof Error &&
+            error.message === 'Request body is too large'
+            ? 413
+            : 400,
+          { error: 'Unable to save preferences' }
+        )
+        return
+      }
+      if (
+        typeof input.schemaVersion !== 'number' ||
+        !Number.isSafeInteger(input.schemaVersion) ||
+        input.schemaVersion < 1 ||
+        !input.values ||
+        typeof input.values !== 'object' ||
+        Array.isArray(input.values)
+      ) {
+        sendJson(res, 400, { error: 'Unsupported preference document' })
+        return
+      }
+      requestPreferenceInput = {
+        schemaVersion: input.schemaVersion,
+        values: input.values,
+      }
+    }
+    const preferenceContext = requestPreferenceScope
+      ? store.createPreferenceRequestContext(requestPreferenceScope)
+      : undefined
+    const isClientDeleteRequest =
+      method === 'DELETE' && /^\/clients\/[^/]+$/.test(route)
     if (
       client &&
-      !store.touchClient(principal, client, store.getState().revision)
+      !isClientDeleteRequest &&
+      !store.touchClient(
+        principal,
+        client,
+        store.getState().revision,
+        preferenceContext
+      )
     ) {
       res.setHeader(
         DASHBOARD_PROFILE_HEADERS.errorCode,
@@ -2804,7 +3072,8 @@ export function createViteDashboardProfileRequestHandler(options: {
         const document = store.getPreference(
           scope,
           principal,
-          preferenceClient ?? undefined
+          preferenceClient ?? undefined,
+          preferenceContext
         )
         if (!document) {
           sendNoContent(res)
@@ -2820,7 +3089,8 @@ export function createViteDashboardProfileRequestHandler(options: {
           const current = store.getPreference(
             scope,
             principal,
-            preferenceClient ?? undefined
+            preferenceClient ?? undefined,
+            preferenceContext
           )
           const baseRevision = parseRevisionHeader(req)
           if (baseRevision === null && current) {
@@ -2839,36 +3109,9 @@ export function createViteDashboardProfileRequestHandler(options: {
             sendJson(res, 412, { error: 'Preferences changed before save' })
             return
           }
-          const serialized = await readBody(req, MAX_PREFERENCE_BYTES)
-          const input = JSON.parse(serialized) as {
-            schemaVersion?: number
-            values?: Record<string, unknown>
-          }
-          if (
-            typeof input.schemaVersion !== 'number' ||
-            !Number.isSafeInteger(input.schemaVersion) ||
-            input.schemaVersion < 1 ||
-            !input.values ||
-            typeof input.values !== 'object' ||
-            Array.isArray(input.values)
-          ) {
-            sendJson(res, 400, { error: 'Unsupported preference document' })
-            return
-          }
-          const latest = store.getPreference(
-            scope,
-            principal,
-            preferenceClient ?? undefined
-          )
-          if (
-            (baseRevision === null && latest) ||
-            (baseRevision !== null && baseRevision !== (latest?.revision ?? 0))
-          ) {
-            res.setHeader(
-              DASHBOARD_PROFILE_HEADERS.preferenceRevision,
-              String(latest?.revision ?? 0)
-            )
-            sendJson(res, 412, { error: 'Preferences changed before save' })
+          const input = requestPreferenceInput
+          if (!input) {
+            sendJson(res, 400, { error: 'Unable to save preferences' })
             return
           }
           const document = store.savePreference(
@@ -2876,7 +3119,8 @@ export function createViteDashboardProfileRequestHandler(options: {
             principal,
             input.schemaVersion,
             input.values,
-            preferenceClient ?? undefined
+            preferenceClient ?? undefined,
+            preferenceContext
           )
           res.setHeader(
             DASHBOARD_PROFILE_HEADERS.preferenceRevision,

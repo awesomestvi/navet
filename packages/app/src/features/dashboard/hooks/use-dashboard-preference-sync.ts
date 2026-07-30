@@ -81,9 +81,11 @@ function mergePreferenceProjection(
 }
 
 export function useDashboardPreferenceSync({
+  accountEnabled = true,
   client,
   enabled,
 }: {
+  accountEnabled?: boolean;
   client: DashboardProfileClient | null;
   enabled: boolean;
 }) {
@@ -131,6 +133,7 @@ export function useDashboardPreferenceSync({
         saving: false,
       },
     };
+    const activeStates = accountEnabled ? [states.account, states.device] : [states.device];
 
     function clearLayerTimer(state: PreferenceLayerState) {
       if (state.saveTimer !== null) {
@@ -164,7 +167,7 @@ export function useDashboardPreferenceSync({
 
       clientBindingRecoveryStarted = true;
       clearPollTimer();
-      for (const state of [states.account, states.device]) {
+      for (const state of activeStates) {
         state.available = false;
         clearLayerTimer(state);
       }
@@ -191,7 +194,7 @@ export function useDashboardPreferenceSync({
     }
 
     function hasSaveInFlight() {
-      return states.account.saving || states.device.saving;
+      return activeStates.some((state) => state.saving);
     }
 
     function drainPendingRefresh() {
@@ -374,7 +377,7 @@ export function useDashboardPreferenceSync({
 
       refreshInFlight = true;
       try {
-        await Promise.all([refreshLayer(states.account), refreshLayer(states.device)]);
+        await Promise.all(activeStates.map((state) => refreshLayer(state)));
       } finally {
         refreshInFlight = false;
         if (!drainPendingRefresh()) {
@@ -387,7 +390,7 @@ export function useDashboardPreferenceSync({
       if (!initialized || applying || cancelled) {
         return;
       }
-      for (const state of [states.account, states.device]) {
+      for (const state of activeStates) {
         if (!state.available) {
           continue;
         }
@@ -418,7 +421,7 @@ export function useDashboardPreferenceSync({
       }
     };
     const handlePageHide = () => {
-      for (const state of [states.account, states.device]) {
+      for (const state of activeStates) {
         if (!state.available) {
           continue;
         }
@@ -462,7 +465,7 @@ export function useDashboardPreferenceSync({
 
       applying = true;
       try {
-        for (const state of [states.account, states.device]) {
+        for (const state of activeStates) {
           const result = await loadDashboardPreferences(preferenceScope(state.layer), {
             author: getActiveClient(),
           });
@@ -500,7 +503,7 @@ export function useDashboardPreferenceSync({
         initialized = true;
       }
 
-      for (const state of [states.account, states.device]) {
+      for (const state of activeStates) {
         if (state.available && state.base === null) {
           void saveLayer(state);
         }
@@ -527,5 +530,5 @@ export function useDashboardPreferenceSync({
       );
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [clientId, enabled]);
+  }, [accountEnabled, clientId, enabled]);
 }

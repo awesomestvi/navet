@@ -1182,7 +1182,7 @@ describe('revisioned NJS dashboard profile store', () => {
           headersIn: CLIENT_HEADERS,
         }),
         expectedStatus: 200,
-        expectedRegistryReads: 3,
+        expectedRegistryReads: 2,
       },
     ];
 
