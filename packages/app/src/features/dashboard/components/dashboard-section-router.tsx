@@ -703,6 +703,7 @@ function areDashboardSectionRouterPropsEqual(
     previousController.cardOrders === nextController.cardOrders &&
     previousController.cardSizes === nextController.cardSizes &&
     previousController.changeRoom === nextController.changeRoom &&
+    previousController.handleAddEntity === nextController.handleAddEntity &&
     previousController.handleApplyDashboardPack === nextController.handleApplyDashboardPack &&
     previousController.handleDeleteCard === nextController.handleDeleteCard &&
     previousController.handleRemoveEntity === nextController.handleRemoveEntity &&
@@ -710,6 +711,8 @@ function areDashboardSectionRouterPropsEqual(
     previousController.hiddenEntityIds === nextController.hiddenEntityIds &&
     previousController.hiddenRoomNames === nextController.hiddenRoomNames &&
     previousController.isEditMode === nextController.isEditMode &&
+    previousController.lightDeviceMap === nextController.lightDeviceMap &&
+    previousController.lightRooms === nextController.lightRooms &&
     previousController.onOpenAddCardDialog === nextController.onOpenAddCardDialog &&
     previousController.onOpenAddEntityDialog === nextController.onOpenAddEntityDialog &&
     previousController.onSetAllViewGrouping === nextController.onSetAllViewGrouping &&
@@ -719,6 +722,7 @@ function areDashboardSectionRouterPropsEqual(
     previousController.roomHiddenItemCounts === nextController.roomHiddenItemCounts &&
     previousController.roomItemCounts === nextController.roomItemCounts &&
     previousController.rooms === nextController.rooms &&
+    previousController.securityAlertCount === nextController.securityAlertCount &&
     previousController.sectionData === nextController.sectionData &&
     previousController.setActiveSection === nextController.setActiveSection &&
     previousController.updateCardSize === nextController.updateCardSize &&

@@ -273,6 +273,8 @@ function areSectionCanvasPropsEqual(previous: SectionCanvasProps, next: SectionC
     previous.title === next.title &&
     previous.gridCols === next.gridCols &&
     previous.isActive === next.isActive &&
+    previous.isPreviewHidden === next.isPreviewHidden &&
+    previous.activeDragCard === next.activeDragCard &&
     previous.accentColor === next.accentColor &&
     previous.updateCardSize === next.updateCardSize &&
     previous.isEditMode === next.isEditMode &&
@@ -289,7 +291,7 @@ function areSectionCanvasPropsEqual(previous: SectionCanvasProps, next: SectionC
     previous.rowSiblingCount === next.rowSiblingCount &&
     previous.onResizeSection === next.onResizeSection &&
     previous.surface === next.surface &&
-    previous.minWidthsBySection[previous.sectionId] === next.minWidthsBySection[next.sectionId] &&
+    previous.minWidthsBySection === next.minWidthsBySection &&
     areCardIdsStable(
       previous.cardIds,
       next.cardIds,

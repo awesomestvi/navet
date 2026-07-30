@@ -3,6 +3,7 @@ import type { DashboardController } from '@navet/app/features/dashboard/hooks/us
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import type { DeviceWithType } from '@navet/app/types/device.types';
+import { screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -121,6 +122,45 @@ describe('DashboardSectionRouter home controls', () => {
       isEditMode: false,
       optimizeOffscreenPaint: true,
     });
+  });
+
+  it('rerenders when independently consumed controller inputs change', async () => {
+    const controller = createController();
+    const { rerender } = renderWithProviders(<DashboardSectionRouter controller={controller} />);
+
+    await screen.findByText('Home dashboard');
+    dashboardLayoutMock.mockClear();
+
+    let nextController = {
+      ...controller,
+      handleAddEntity: vi.fn(),
+    };
+    rerender(<DashboardSectionRouter controller={nextController} />);
+    expect(dashboardLayoutMock).toHaveBeenCalled();
+    dashboardLayoutMock.mockClear();
+
+    nextController = {
+      ...nextController,
+      lightDeviceMap: new Map(),
+    };
+    rerender(<DashboardSectionRouter controller={nextController} />);
+    expect(dashboardLayoutMock).toHaveBeenCalled();
+    dashboardLayoutMock.mockClear();
+
+    nextController = {
+      ...nextController,
+      lightRooms: ['Kitchen'],
+    };
+    rerender(<DashboardSectionRouter controller={nextController} />);
+    expect(dashboardLayoutMock).toHaveBeenCalled();
+    dashboardLayoutMock.mockClear();
+
+    nextController = {
+      ...nextController,
+      securityAlertCount: 1,
+    };
+    rerender(<DashboardSectionRouter controller={nextController} />);
+    expect(dashboardLayoutMock).toHaveBeenCalled();
   });
 
   it('passes the offscreen paint signal to climate grids', () => {
@@ -285,6 +325,7 @@ function createController(): DashboardController {
     roomHiddenItemCounts: new Map(),
     roomItemCounts: new Map(),
     rooms: [ALL_ROOMS_ID, 'Kitchen'],
+    securityAlertCount: 0,
     sectionData: {
       isOverviewSection: true,
       energyCustomCards: [],
