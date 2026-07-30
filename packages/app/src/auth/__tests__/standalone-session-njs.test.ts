@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 const {
   AUTH_BINDING_HEADER,
+  AUTH_REVISION_HEADER,
   createAuthSessionStore,
   createHomeAssistantTenantId,
   normalizeHassOrigin,
@@ -133,6 +134,7 @@ async function createBrowserSession(
   const metadata = JSON.parse(result.body) as {
     sessionId: string;
     authenticated: boolean;
+    authRevision: number;
   };
   return {
     cookie: cookieHeader(request.headersOut['Set-Cookie']),
@@ -153,6 +155,7 @@ function seedAuth(
     sessionId: browser.metadata.sessionId,
     createdAt: now,
     updatedAt: now,
+    authRevision: 0,
     auth,
     pending: null,
     userId: null,
@@ -406,6 +409,7 @@ describe('production njs standalone OAuth sessions', () => {
 
     expect(metadata).toMatchObject({
       authenticated: true,
+      authRevision: 0,
       hassUrl: AUTH_A.hassUrl,
       sessionId: browser.metadata.sessionId,
       userId: null,
@@ -547,6 +551,51 @@ describe('production njs standalone OAuth sessions', () => {
     expect(store.readSession(cookieId)?.auth).toEqual(AUTH_A);
   });
 
+  it.each([
+    ['malformed JSON', '{"version":2'],
+    ['an invalid schema', JSON.stringify({ version: 2, auth: AUTH_A })],
+    ['an oversized record', 'x'.repeat(33 * 1024)],
+  ])('preserves %s and returns typed storage unavailability', async (_label, serialized) => {
+    const { directory, store } = createStore();
+    const browser = await createBrowserSession(store);
+    const cookieId = browser.cookie.split('=')[1] ?? '';
+    const sessionPath = join(directory, 'sessions', `${cookieId}.json`);
+    fs.mkdirSync(join(directory, 'sessions'), { recursive: true });
+    writeFileSync(sessionPath, serialized, { encoding: 'utf8', mode: 0o600 });
+
+    const request = createRequest({ cookie: browser.cookie });
+    await store.handle(request.request);
+
+    expect(request.result.status).toBe(503);
+    expect(JSON.parse(request.result.body)).toMatchObject({
+      code: 'credential-session-record-unavailable',
+    });
+    expect(readFileSync(sessionPath, 'utf8')).toBe(serialized);
+  });
+
+  it('still removes a genuinely idle auth session', async () => {
+    const { directory, store } = createStore();
+    const browser = await createBrowserSession(store);
+    seedAuth(store, browser, AUTH_A);
+    const cookieId = browser.cookie.split('=')[1] ?? '';
+    const sessionPath = join(directory, 'sessions', `${cookieId}.json`);
+    const stored = store.readSession(cookieId);
+    if (!stored) {
+      throw new Error('Expected a stored auth session');
+    }
+    writeFileSync(
+      sessionPath,
+      JSON.stringify({
+        ...stored,
+        updatedAt: Date.now() - 91 * 24 * 60 * 60 * 1000,
+      }),
+      'utf8'
+    );
+
+    expect(store.readSession(cookieId)).toBeNull();
+    expect(fs.existsSync(sessionPath)).toBe(false);
+  });
+
   it('rejects an oversized wrapped credential record before replacing valid auth', async () => {
     const { store } = createStore();
     const browser = await createBrowserSession(store);
@@ -683,6 +732,7 @@ describe('production njs standalone OAuth sessions', () => {
     const browser = await createBrowserSession(store);
     const headers = {
       [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+      [AUTH_REVISION_HEADER]: String(browser.metadata.authRevision),
       Origin: 'http://navet.example',
     };
 
@@ -725,6 +775,155 @@ describe('production njs standalone OAuth sessions', () => {
     );
   });
 
+  it('rejects a stale refresh from a second tab and preserves the winning tokens', async () => {
+    const { store } = createStore();
+    const browser = await createBrowserSession(store);
+    seedAuth(store, browser, AUTH_A);
+    const headers = {
+      [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+      [AUTH_REVISION_HEADER]: '0',
+      Origin: 'http://navet.example',
+    };
+    const winnerAuth = {
+      ...AUTH_A,
+      access_token: 'access-winner',
+      expires: AUTH_A.expires + 60_000,
+    };
+    const loserAuth = {
+      ...AUTH_A,
+      access_token: 'access-stale-loser',
+      expires: AUTH_A.expires + 120_000,
+    };
+
+    const winner = createRequest({
+      method: 'PUT',
+      cookie: browser.cookie,
+      body: JSON.stringify(winnerAuth),
+      headers,
+    });
+    await store.handle(winner.request);
+    expect(winner.result.status).toBe(200);
+    expect(JSON.parse(winner.result.body).authRevision).toBe(1);
+
+    const loser = createRequest({
+      method: 'PUT',
+      cookie: browser.cookie,
+      body: JSON.stringify(loserAuth),
+      headers,
+    });
+    await store.handle(loser.request);
+    expect(loser.result.status).toBe(409);
+    expect(JSON.parse(loser.result.body)).toMatchObject({
+      code: 'credential-session-superseded',
+      session: { authRevision: 1 },
+    });
+    expect(store.readSession(browser.cookie.split('=')[1] ?? '')).toMatchObject({
+      authRevision: 1,
+      auth: winnerAuth,
+    });
+  });
+
+  it('accepts a monotonic refresh from an old tab that omits the revision', async () => {
+    const { store } = createStore();
+    const browser = await createBrowserSession(store);
+    seedAuth(store, browser, AUTH_A);
+    const cookieId = browser.cookie.split('=')[1] ?? '';
+    const legacyRefresh = {
+      ...AUTH_A,
+      access_token: 'old-client-refresh',
+      expires: AUTH_A.expires + 60_000,
+    };
+    const oldClientRefresh = createRequest({
+      method: 'PUT',
+      cookie: browser.cookie,
+      body: JSON.stringify(legacyRefresh),
+      headers: {
+        [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+        Origin: 'http://navet.example',
+      },
+    });
+
+    await store.handle(oldClientRefresh.request);
+
+    expect(oldClientRefresh.result.status).toBe(200);
+    expect(JSON.parse(oldClientRefresh.result.body)).toMatchObject({
+      authenticated: true,
+      authRevision: 1,
+    });
+    expect(store.readSession(cookieId)).toMatchObject({
+      authRevision: 1,
+      auth: legacyRefresh,
+    });
+  });
+
+  it('treats a stale old-tab refresh as a successful no-op', async () => {
+    const { store } = createStore();
+    const browser = await createBrowserSession(store);
+    const winnerAuth = {
+      ...AUTH_A,
+      access_token: 'winning-refresh',
+      expires: AUTH_A.expires + 120_000,
+    };
+    seedAuth(store, browser, winnerAuth);
+    const cookieId = browser.cookie.split('=')[1] ?? '';
+    const before = store.readSession(cookieId);
+    const staleRefresh = createRequest({
+      method: 'PUT',
+      cookie: browser.cookie,
+      body: JSON.stringify({
+        ...AUTH_A,
+        access_token: 'stale-old-client-refresh',
+        expires: AUTH_A.expires + 60_000,
+      }),
+      headers: {
+        [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+        Origin: 'http://navet.example',
+      },
+    });
+
+    await store.handle(staleRefresh.request);
+
+    expect(staleRefresh.result.status).toBe(200);
+    expect(JSON.parse(staleRefresh.result.body)).toMatchObject({
+      authenticated: true,
+      authRevision: 0,
+    });
+    expect(store.readSession(cookieId)).toEqual(before);
+  });
+
+  it.each(['not-a-revision', String(Number.MAX_SAFE_INTEGER), '9999999999999999'])(
+    'rejects the invalid nonempty auth revision %s instead of using legacy compatibility',
+    async (revision) => {
+      const { store } = createStore();
+      const browser = await createBrowserSession(store);
+      seedAuth(store, browser, AUTH_A);
+      const cookieId = browser.cookie.split('=')[1] ?? '';
+      const before = store.readSession(cookieId);
+      const malformedRefresh = createRequest({
+        method: 'PUT',
+        cookie: browser.cookie,
+        body: JSON.stringify({
+          ...AUTH_A,
+          access_token: 'malformed-revision-refresh',
+          expires: AUTH_A.expires + 60_000,
+        }),
+        headers: {
+          [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+          [AUTH_REVISION_HEADER]: revision,
+          Origin: 'http://navet.example',
+        },
+      });
+
+      await store.handle(malformedRefresh.request);
+
+      expect(malformedRefresh.result.status).toBe(428);
+      expect(JSON.parse(malformedRefresh.result.body)).toMatchObject({
+        code: 'credential-session-revision-required',
+      });
+      expect(store.readSession(cookieId)).toEqual(before);
+    }
+  );
+
   it('uses the public binding to resolve duplicate backed cookies in either order', async () => {
     const { store } = createStore(vi.fn().mockResolvedValue(new Response('{}', { status: 404 })));
     const browserA = await createBrowserSession(store);
@@ -758,6 +957,7 @@ describe('production njs standalone OAuth sessions', () => {
       body: JSON.stringify(refreshedAuth),
       headers: {
         [AUTH_BINDING_HEADER]: browserB.metadata.sessionId,
+        [AUTH_REVISION_HEADER]: String(browserB.metadata.authRevision),
         Origin: 'http://navet.example',
       },
     });

@@ -9,6 +9,7 @@ import {
   DASHBOARD_PROFILE_ID,
   type DashboardClientRegistryResponse,
   type DashboardPreferenceDocument,
+  type DashboardPreferenceIdentity,
   type DashboardPreferenceScope,
   type DashboardProfileAuthor,
   type DashboardProfileClient,
@@ -89,6 +90,8 @@ export interface DashboardPreferenceLoadResult<TValues extends object = Record<s
   unauthorized: boolean;
   failureCode: DashboardProfileErrorCode | null;
   document: DashboardPreferenceDocument<TValues> | null;
+  identity: DashboardPreferenceIdentity | null;
+  workspace: DashboardWorkspaceIdentity | null;
 }
 
 export interface DashboardPreferenceWriteResult<TValues extends object = Record<string, unknown>> {
@@ -99,6 +102,7 @@ export interface DashboardPreferenceWriteResult<TValues extends object = Record<
   preconditionFailed: boolean;
   preconditionRequired: boolean;
   document: DashboardPreferenceDocument<TValues> | null;
+  workspace: DashboardWorkspaceIdentity | null;
 }
 
 export interface DashboardPreferenceOptions {
@@ -236,6 +240,43 @@ function readWorkspace(response: Response): DashboardWorkspaceIdentity | null {
     defaultProfileId: DASHBOARD_PROFILE_ID,
     createdAt: response.headers.get('X-Navet-Workspace-Created-At') ?? '',
   };
+}
+
+function readPreferenceIdentity(
+  response: Response,
+  scope: DashboardPreferenceScope
+): DashboardPreferenceIdentity | null {
+  const candidate = readEncodedJsonHeader<Partial<DashboardPreferenceIdentity>>(
+    response,
+    DASHBOARD_PROFILE_HEADERS.preferenceIdentity
+  );
+  if (
+    !candidate ||
+    Object.keys(candidate).sort().join(',') !== 'clientId,principal' ||
+    !candidate.principal ||
+    typeof candidate.principal !== 'object' ||
+    Array.isArray(candidate.principal) ||
+    Object.keys(candidate.principal).sort().join(',') !== 'providerId,userId,userName' ||
+    typeof candidate.principal.providerId !== 'string' ||
+    candidate.principal.providerId.length < 1 ||
+    candidate.principal.providerId.length > 64 ||
+    (candidate.principal.userId !== null &&
+      (typeof candidate.principal.userId !== 'string' ||
+        candidate.principal.userId.length < 1 ||
+        candidate.principal.userId.length > 256)) ||
+    (candidate.principal.userName !== null &&
+      (typeof candidate.principal.userName !== 'string' ||
+        candidate.principal.userName.length > 256)) ||
+    (candidate.clientId !== null &&
+      (typeof candidate.clientId !== 'string' ||
+        !/^[a-zA-Z0-9_-]{1,128}$/.test(candidate.clientId))) ||
+    (scope === 'account' && (candidate.principal.userId === null || candidate.clientId !== null)) ||
+    (scope === 'client' && candidate.clientId === null)
+  ) {
+    return null;
+  }
+
+  return candidate as DashboardPreferenceIdentity;
 }
 
 function readRevisionMetadata(
@@ -631,7 +672,14 @@ export async function loadDashboardPreferences<TValues extends object = Record<s
   options: Pick<DashboardPreferenceOptions, 'author' | 'client'> = {}
 ): Promise<DashboardPreferenceLoadResult<TValues>> {
   if (isHomeAssistantPanelMode()) {
-    return { available: false, unauthorized: false, failureCode: null, document: null };
+    return {
+      available: false,
+      unauthorized: false,
+      failureCode: null,
+      document: null,
+      identity: null,
+      workspace: null,
+    };
   }
 
   const headers = new Headers();
@@ -641,14 +689,29 @@ export async function loadDashboardPreferences<TValues extends object = Record<s
     { headers }
   );
   if (!result) {
-    return { available: false, unauthorized: false, failureCode: null, document: null };
+    return {
+      available: false,
+      unauthorized: false,
+      failureCode: null,
+      document: null,
+      identity: null,
+      workspace: null,
+    };
   }
 
+  const document = result.response.ok ? result.body : null;
   return {
     available: result.response.ok || result.response.status === 204,
     unauthorized: result.response.status === 401,
     failureCode: readProfileErrorCode(result.response),
-    document: result.response.ok ? result.body : null,
+    document,
+    identity: document
+      ? {
+          principal: document.principal,
+          clientId: document.clientId,
+        }
+      : readPreferenceIdentity(result.response, scope),
+    workspace: readWorkspace(result.response),
   };
 }
 
@@ -670,6 +733,7 @@ export async function saveDashboardPreferences<TValues extends object = Record<s
       preconditionFailed: false,
       preconditionRequired: false,
       document: null,
+      workspace: null,
     };
   }
 
@@ -705,6 +769,7 @@ export async function saveDashboardPreferences<TValues extends object = Record<s
       preconditionFailed: false,
       preconditionRequired: false,
       document: null,
+      workspace: null,
     };
   }
 
@@ -716,6 +781,7 @@ export async function saveDashboardPreferences<TValues extends object = Record<s
     preconditionFailed: result.response.status === 412,
     preconditionRequired: result.response.status === 428,
     document: result.response.ok ? result.body : null,
+    workspace: readWorkspace(result.response),
   };
 }
 

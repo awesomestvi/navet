@@ -1,11 +1,14 @@
 import type { DashboardConfigPayload } from '@navet/app/utils/dashboard-config';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  clearDashboardPreferenceReceipts,
   clearDashboardProfileBase,
   clearDashboardProfileReceipt,
   getDashboardProfileFingerprint,
+  readDashboardPreferenceReceipt,
   readDashboardProfileBase,
   readDashboardProfileReceipt,
+  writeDashboardPreferenceReceipt,
   writeDashboardProfileBase,
   writeDashboardProfileReceipt,
 } from './dashboard-profile-base-cache';
@@ -21,6 +24,7 @@ const profile: DashboardConfigPayload = {
 
 describe('dashboard profile base cache', () => {
   beforeEach(() => {
+    clearDashboardPreferenceReceipts();
     clearDashboardProfileBase();
     clearDashboardProfileReceipt();
   });
@@ -110,6 +114,84 @@ describe('dashboard profile base cache', () => {
     expect(persistedReceipt).not.toContain('private-note');
     expect(persistedReceipt).not.toContain('Do not persist');
     expect(persistedReceipt).not.toContain('"profile"');
+  });
+
+  it('scopes credential-free preference receipts to workspace, layer, and owner', () => {
+    const preference = {
+      schemaVersion: 1,
+      settings: {
+        language: 'sv',
+      },
+    };
+    const receipt = writeDashboardPreferenceReceipt({
+      installationId: 'installation_1',
+      layer: 'account',
+      ownerKey: 'account:home_assistant:user_1',
+      preference,
+      revision: 7,
+      savedAt: '2026-07-25T09:00:00.000Z',
+      workspaceId: 'workspace_1',
+    });
+
+    expect(
+      readDashboardPreferenceReceipt({
+        installationId: 'installation_1',
+        layer: 'account',
+        ownerKey: 'account:home_assistant:user_1',
+        workspaceId: 'workspace_1',
+      })
+    ).toEqual(receipt);
+    expect(
+      readDashboardPreferenceReceipt({
+        installationId: 'installation_1',
+        layer: 'device',
+        ownerKey: 'client:client_phone_1',
+        workspaceId: 'workspace_1',
+      })
+    ).toBeNull();
+    expect(
+      readDashboardPreferenceReceipt({
+        installationId: 'installation_2',
+        layer: 'account',
+        ownerKey: 'account:home_assistant:user_1',
+        workspaceId: 'workspace_2',
+      })
+    ).toBeNull();
+
+    const persistedReceipt = localStorage.getItem('navet-dashboard-preference-sync');
+    expect(persistedReceipt).not.toContain('user_1');
+    expect(persistedReceipt).not.toContain('sv');
+    expect(persistedReceipt).toContain('"version":2');
+    expect(receipt?.fieldFingerprints.language).toMatch(/^dpv1_[a-f0-9]{32}$/);
+  });
+
+  it('reports a failed preference receipt write instead of trusting swallowed storage errors', () => {
+    const originalSetItem = Storage.prototype.setItem;
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (
+      this: Storage,
+      key: string,
+      value: string
+    ) {
+      if (key === 'navet-dashboard-preference-sync') {
+        throw new DOMException('Quota exceeded', 'QuotaExceededError');
+      }
+      return originalSetItem.call(this, key, value);
+    });
+
+    expect(
+      writeDashboardPreferenceReceipt({
+        installationId: 'installation_1',
+        layer: 'device',
+        ownerKey: 'client:client_phone_1',
+        preference: {
+          schemaVersion: 1,
+          settings: { lowPowerMode: true },
+        },
+        revision: 3,
+        workspaceId: 'workspace_1',
+      })
+    ).toBeNull();
+    setItem.mockRestore();
   });
 
   it('fingerprints shared state while ignoring transport-only profile fields', () => {

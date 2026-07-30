@@ -101,6 +101,7 @@ const HEADERS = {
   clientName: 'X-Navet-Client-Name',
   clientKind: 'X-Navet-Client-Kind',
   preferenceRevision: 'X-Navet-Preference-Revision',
+  preferenceIdentity: 'X-Navet-Preference-Identity',
   errorCode: 'X-Navet-Profile-Error-Code',
 };
 
@@ -2930,6 +2931,10 @@ function loadPreference(
     collection.records[key] ||
     (scope === 'client' ? collection.records[`client:${client.id}`] : null);
   applyWorkspaceHeaders(r, workspace);
+  r.headersOut[HEADERS.preferenceIdentity] = encodeHeaderJson({
+    principal: publicPrincipal(principal),
+    clientId: scope === 'client' ? client.id : null,
+  });
   if (!document) {
     sendNoContent(r);
     return;
@@ -3033,6 +3038,10 @@ function writePreference(
     }
     writeJson(preferencePath(scope), nextCollection);
     applyWorkspaceHeaders(r, workspace);
+    r.headersOut[HEADERS.preferenceIdentity] = encodeHeaderJson({
+      principal: publicPrincipal(principal),
+      clientId: scope === 'client' ? client.id : null,
+    });
     r.headersOut[HEADERS.preferenceRevision] = String(document.revision);
     r.headersOut.ETag = `"navet-preference-${scope}-${document.revision}"`;
     sendJson(r, 200, document);

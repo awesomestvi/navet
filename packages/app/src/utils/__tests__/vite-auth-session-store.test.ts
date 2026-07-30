@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -6,6 +6,7 @@ import { Readable } from 'node:stream';
 import { createInstallationCookieNames } from '@scripts/installation-cookie-scope';
 import {
   AUTH_BINDING_HEADER,
+  AUTH_REVISION_HEADER,
   createHomeAssistantTenantId,
   createViteAuthRequestHandler,
   createViteAuthSessionStore,
@@ -157,6 +158,7 @@ async function createBrowser(
   const metadata = JSON.parse(response.body) as {
     sessionId: string;
     authenticated: boolean;
+    authRevision: number;
   };
   return {
     cookie: cookieHeader(response.getHeader('set-cookie')),
@@ -177,6 +179,7 @@ function seedAuth(
     sessionId: browser.metadata.sessionId,
     createdAt: now,
     updatedAt: now,
+    authRevision: 0,
     auth,
     pending: null,
     userId: null,
@@ -197,6 +200,7 @@ function seedPendingOAuth(
     sessionId: browser.metadata.sessionId,
     createdAt: now,
     updatedAt: now,
+    authRevision: 0,
     auth: null,
     pending: {
       state,
@@ -548,6 +552,33 @@ describe('Vite standalone auth session conformance', () => {
     expect(JSON.parse(allowedResponse.body)).toEqual(AUTH_A);
   });
 
+  it.each([
+    ['malformed JSON', '{"version":2'],
+    ['an invalid schema', JSON.stringify({ version: 2, auth: AUTH_A })],
+    ['an oversized record', 'x'.repeat(33 * 1024)],
+  ])('preserves %s and reports durable storage unavailability', async (_label, serialized) => {
+    const { sessionsDirectory, store } = createStore();
+    const handler = createViteAuthRequestHandler(
+      store,
+      vi.fn().mockResolvedValue(new Response('{}', { status: 404 })),
+      TEST_INSTALLATION_AUTHORITY
+    );
+    const browser = await createBrowser(handler);
+    const cookieId = browser.cookie.split('=')[1] ?? '';
+    const sessionPath = join(sessionsDirectory, `${cookieId}.json`);
+    mkdirSync(sessionsDirectory, { recursive: true });
+    writeFileSync(sessionPath, serialized, { encoding: 'utf8', mode: 0o600 });
+
+    const response = createResponse();
+    await handler(createRequest({ cookie: browser.cookie }), response.response);
+
+    expect(response.response.statusCode).toBe(503);
+    expect(JSON.parse(response.body)).toMatchObject({
+      code: 'credential-session-record-unavailable',
+    });
+    expect(readFileSync(sessionPath, 'utf8')).toBe(serialized);
+  });
+
   it('prefers a current authenticated duplicate over a newer expired record', async () => {
     const { store } = createStore();
     const handler = createViteAuthRequestHandler(
@@ -651,6 +682,7 @@ describe('Vite standalone auth session conformance', () => {
     const headers = {
       Origin: 'http://navet.example',
       [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+      [AUTH_REVISION_HEADER]: String(browser.metadata.authRevision),
     };
 
     const unauthenticatedPutResponse = createResponse();
@@ -699,6 +731,187 @@ describe('Vite standalone auth session conformance', () => {
     ).toBe('access-a-refreshed');
   });
 
+  it('rejects a stale second-tab refresh and preserves the winning tokens', async () => {
+    const { store } = createStore();
+    const handler = createViteAuthRequestHandler(
+      store,
+      vi.fn().mockResolvedValue(new Response('{}', { status: 404 })),
+      TEST_INSTALLATION_AUTHORITY
+    );
+    const browser = await createBrowser(handler);
+    seedAuth(store, browser, AUTH_A);
+    const headers = {
+      Origin: 'http://navet.example',
+      [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+      [AUTH_REVISION_HEADER]: '0',
+    };
+    const winnerAuth = {
+      ...AUTH_A,
+      access_token: 'access-winner',
+      expires: AUTH_A.expires + 60_000,
+    };
+    const staleAuth = {
+      ...AUTH_A,
+      access_token: 'access-stale-loser',
+      expires: AUTH_A.expires + 120_000,
+    };
+
+    const winnerResponse = createResponse();
+    await handler(
+      createRequest({
+        method: 'PUT',
+        cookie: browser.cookie,
+        body: JSON.stringify(winnerAuth),
+        headers,
+      }),
+      winnerResponse.response
+    );
+    expect(winnerResponse.response.statusCode).toBe(200);
+    expect(JSON.parse(winnerResponse.body).authRevision).toBe(1);
+
+    const staleResponse = createResponse();
+    await handler(
+      createRequest({
+        method: 'PUT',
+        cookie: browser.cookie,
+        body: JSON.stringify(staleAuth),
+        headers,
+      }),
+      staleResponse.response
+    );
+    expect(staleResponse.response.statusCode).toBe(409);
+    expect(JSON.parse(staleResponse.body)).toMatchObject({
+      code: 'credential-session-superseded',
+      session: { authRevision: 1 },
+    });
+    expect(resolveViteAuthSession(createRequest({ cookie: browser.cookie }), store)).toMatchObject({
+      authRevision: 1,
+      auth: winnerAuth,
+    });
+  });
+
+  it('accepts a monotonic refresh from an old tab that omits the revision', async () => {
+    const { store } = createStore();
+    const handler = createViteAuthRequestHandler(
+      store,
+      vi.fn().mockResolvedValue(new Response('{}', { status: 404 })),
+      TEST_INSTALLATION_AUTHORITY
+    );
+    const browser = await createBrowser(handler);
+    seedAuth(store, browser, AUTH_A);
+    const cookieId = browser.cookie.split('=')[1] ?? '';
+    const legacyRefresh = {
+      ...AUTH_A,
+      access_token: 'old-client-refresh',
+      expires: AUTH_A.expires + 60_000,
+    };
+    const response = createResponse();
+    await handler(
+      createRequest({
+        method: 'PUT',
+        cookie: browser.cookie,
+        body: JSON.stringify(legacyRefresh),
+        headers: {
+          Origin: 'http://navet.example',
+          [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+        },
+      }),
+      response.response
+    );
+
+    expect(response.response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toMatchObject({
+      authenticated: true,
+      authRevision: 1,
+    });
+    expect(store.readSession(cookieId)).toMatchObject({
+      auth: legacyRefresh,
+      authRevision: 1,
+    });
+  });
+
+  it('treats a stale old-tab refresh as a successful no-op', async () => {
+    const { store } = createStore();
+    const handler = createViteAuthRequestHandler(
+      store,
+      vi.fn().mockResolvedValue(new Response('{}', { status: 404 })),
+      TEST_INSTALLATION_AUTHORITY
+    );
+    const browser = await createBrowser(handler);
+    const winnerAuth = {
+      ...AUTH_A,
+      access_token: 'winning-refresh',
+      expires: AUTH_A.expires + 120_000,
+    };
+    seedAuth(store, browser, winnerAuth);
+    const cookieId = browser.cookie.split('=')[1] ?? '';
+    const before = store.readSession(cookieId);
+    const response = createResponse();
+    await handler(
+      createRequest({
+        method: 'PUT',
+        cookie: browser.cookie,
+        body: JSON.stringify({
+          ...AUTH_A,
+          access_token: 'stale-old-client-refresh',
+          expires: AUTH_A.expires + 60_000,
+        }),
+        headers: {
+          Origin: 'http://navet.example',
+          [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+        },
+      }),
+      response.response
+    );
+
+    expect(response.response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toMatchObject({
+      authenticated: true,
+      authRevision: 0,
+    });
+    expect(store.readSession(cookieId)).toEqual(before);
+  });
+
+  it.each(['not-a-revision', String(Number.MAX_SAFE_INTEGER), '9999999999999999'])(
+    'rejects the invalid nonempty auth revision %s instead of using legacy compatibility',
+    async (revision) => {
+      const { store } = createStore();
+      const handler = createViteAuthRequestHandler(
+        store,
+        vi.fn().mockResolvedValue(new Response('{}', { status: 404 })),
+        TEST_INSTALLATION_AUTHORITY
+      );
+      const browser = await createBrowser(handler);
+      seedAuth(store, browser, AUTH_A);
+      const cookieId = browser.cookie.split('=')[1] ?? '';
+      const before = store.readSession(cookieId);
+      const response = createResponse();
+      await handler(
+        createRequest({
+          method: 'PUT',
+          cookie: browser.cookie,
+          body: JSON.stringify({
+            ...AUTH_A,
+            access_token: 'malformed-revision-refresh',
+            expires: AUTH_A.expires + 60_000,
+          }),
+          headers: {
+            Origin: 'http://navet.example',
+            [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+            [AUTH_REVISION_HEADER]: revision,
+          },
+        }),
+        response.response
+      );
+
+      expect(response.response.statusCode).toBe(428);
+      expect(JSON.parse(response.body)).toMatchObject({
+        code: 'credential-session-revision-required',
+      });
+      expect(store.readSession(cookieId)).toEqual(before);
+    }
+  );
+
   it('selects the public-binding-matched backed session regardless of duplicate cookie order', async () => {
     for (const matchingCookieFirst of [true, false]) {
       const { store } = createStore();
@@ -727,6 +940,7 @@ describe('Vite standalone auth session conformance', () => {
           headers: {
             Origin: 'http://navet.example',
             [AUTH_BINDING_HEADER]: browserB.metadata.sessionId,
+            [AUTH_REVISION_HEADER]: String(browserB.metadata.authRevision),
           },
         }),
         response.response
@@ -1133,6 +1347,7 @@ describe('Vite standalone auth session conformance', () => {
     const refreshHeaders = {
       Origin: 'http://navet.example',
       [AUTH_BINDING_HEADER]: refreshBrowser.metadata.sessionId,
+      [AUTH_REVISION_HEADER]: String(refreshBrowser.metadata.authRevision),
     };
     const deferredRefresh = createDeferredRequest({
       method: 'PUT',

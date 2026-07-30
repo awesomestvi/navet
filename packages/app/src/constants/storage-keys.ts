@@ -28,6 +28,7 @@ export const STORAGE_KEYS = {
   cardZones: 'navet-card-zones',
   homeDashboardLayout: 'navet-home-layout',
   dashboardProfileSync: 'navet-dashboard-profile-sync',
+  dashboardPreferenceSync: 'navet-dashboard-preference-sync',
   dashboardProfileBase: 'navet-dashboard-profile-base',
   dashboardClientIdentity: 'navet-dashboard-client-identity',
   settingsProfileScopes: 'navet-settings-profile-scopes',

@@ -7,9 +7,21 @@ import {
   rotateDashboardClientIdentity,
 } from '@navet/app/features/dashboard/clients/dashboard-client-identity';
 import {
+  createDashboardPreferenceContext,
+  type DashboardPreferenceContext,
+  dashboardPreferenceContextsEqual,
+  getDashboardPreferenceFieldFingerprint,
+  getDashboardPreferenceFieldFingerprints,
+  readDashboardPreferenceReceiptState,
+  writeDashboardPreferenceReceipt,
+} from '@navet/app/features/dashboard/clients/dashboard-profile-base-cache';
+import {
   DASHBOARD_PROFILE_ERROR_CODES,
+  type DashboardPreferenceDocument,
+  type DashboardPreferenceIdentity,
   type DashboardProfileClient,
   type DashboardProfileErrorCode,
+  type DashboardWorkspaceIdentity,
 } from '@navet/app/services/dashboard-profile.contract';
 import {
   loadDashboardPreferences,
@@ -34,6 +46,7 @@ type PreferenceProjection = SettingsPreferenceProjection<PreferenceLayer>;
 interface PreferenceLayerState {
   available: boolean;
   base: PreferenceProjection | null;
+  context: ResolvedPreferenceContext | null;
   layer: PreferenceLayer;
   observedSignature: string;
   outageBase: PreferenceProjection | null;
@@ -41,6 +54,11 @@ interface PreferenceLayerState {
   revision: number;
   saveTimer: number | null;
   saving: boolean;
+}
+
+interface ResolvedPreferenceContext {
+  persisted: DashboardPreferenceContext;
+  ownerKey: string;
 }
 
 function preferenceScope(layer: PreferenceLayer) {
@@ -51,25 +69,51 @@ function projectLayer(layer: PreferenceLayer): PreferenceProjection {
   return projectSettingsPreferenceLayer(useSettingsStore.getState(), layer);
 }
 
+function projectDefaultLayer(layer: PreferenceLayer): PreferenceProjection {
+  return projectSettingsPreferenceLayer(useSettingsStore.getInitialState(), layer);
+}
+
+function materializeRemoteProjection(
+  layer: PreferenceLayer,
+  remote: PreferenceProjection
+): PreferenceProjection {
+  const defaults = projectDefaultLayer(layer);
+  return {
+    schemaVersion: SETTINGS_PROFILE_SCHEMA_VERSION,
+    settings: {
+      ...defaults.settings,
+      ...remote.settings,
+    },
+  } as PreferenceProjection;
+}
+
 function projectionSignature(projection: PreferenceProjection) {
   return JSON.stringify(projection);
 }
 
-function valuesEqual(left: unknown, right: unknown) {
-  return JSON.stringify(left) === JSON.stringify(right);
+function preferenceFingerprintSchemaMatches(
+  fingerprints: Record<string, string>,
+  projection: PreferenceProjection
+) {
+  const fingerprintKeys = Object.keys(fingerprints).sort();
+  const projectionKeys = Object.keys(getDashboardPreferenceFieldFingerprints(projection)).sort();
+  return (
+    fingerprintKeys.length === projectionKeys.length &&
+    fingerprintKeys.every((key, index) => key === projectionKeys[index])
+  );
 }
 
 function mergePreferenceProjection(
-  base: PreferenceProjection | null,
+  baseFingerprints: Record<string, string>,
   local: PreferenceProjection,
   remote: PreferenceProjection
 ): PreferenceProjection {
   const settings: Record<string, unknown> = { ...remote.settings };
   for (const [key, localValue] of Object.entries(local.settings)) {
-    const baseHasKey = Boolean(base && Object.hasOwn(base.settings, key));
-    const baseValue =
-      base && baseHasKey ? (base.settings as Record<string, unknown>)[key] : undefined;
-    if (!base || !baseHasKey || !valuesEqual(localValue, baseValue)) {
+    if (
+      baseFingerprints[key] === undefined ||
+      baseFingerprints[key] !== getDashboardPreferenceFieldFingerprint(localValue)
+    ) {
       settings[key] = localValue;
     }
   }
@@ -113,6 +157,7 @@ export function useDashboardPreferenceSync({
       account: {
         available: false,
         base: null,
+        context: null,
         layer: 'account',
         observedSignature: '',
         outageBase: null,
@@ -124,6 +169,7 @@ export function useDashboardPreferenceSync({
       device: {
         available: false,
         base: null,
+        context: null,
         layer: 'device',
         observedSignature: '',
         outageBase: null,
@@ -155,6 +201,207 @@ export function useDashboardPreferenceSync({
         activeClient = latestClient;
       }
       return activeClient;
+    }
+
+    function resolvePreferenceContext(
+      state: PreferenceLayerState,
+      document: DashboardPreferenceDocument,
+      workspace: DashboardWorkspaceIdentity | null
+    ): ResolvedPreferenceContext | null {
+      if (
+        !workspace ||
+        document.contractVersion !== 1 ||
+        document.scope !== preferenceScope(state.layer) ||
+        !Number.isSafeInteger(document.revision) ||
+        document.revision < 0
+      ) {
+        return null;
+      }
+
+      let ownerKey: string;
+      if (state.layer === 'device') {
+        const activeClientId = getActiveClient().id;
+        if (document.clientId !== activeClientId) {
+          return null;
+        }
+        ownerKey = `client:${activeClientId}`;
+      } else {
+        if (
+          !document.principal.providerId ||
+          !document.principal.userId ||
+          document.clientId !== null
+        ) {
+          return null;
+        }
+        ownerKey = `account:${document.principal.providerId}:${document.principal.userId}`;
+      }
+
+      const persisted = createDashboardPreferenceContext({
+        installationId: workspace.installationId,
+        layer: state.layer,
+        ownerKey,
+        workspaceId: workspace.workspaceId,
+      });
+      return persisted ? { ownerKey, persisted } : null;
+    }
+
+    function resolveEmptyPreferenceContext(
+      state: PreferenceLayerState,
+      workspace: DashboardWorkspaceIdentity | null,
+      identity: DashboardPreferenceIdentity | null
+    ): ResolvedPreferenceContext | null {
+      if (!workspace || !identity) {
+        return null;
+      }
+      let ownerKey: string;
+      if (state.layer === 'device') {
+        const activeClientId = getActiveClient().id;
+        if (identity.clientId !== activeClientId) {
+          return null;
+        }
+        ownerKey = `client:${activeClientId}`;
+      } else {
+        if (
+          !identity.principal.providerId ||
+          !identity.principal.userId ||
+          identity.clientId !== null
+        ) {
+          return null;
+        }
+        ownerKey = `account:${identity.principal.providerId}:${identity.principal.userId}`;
+      }
+      const persisted = createDashboardPreferenceContext({
+        installationId: workspace.installationId,
+        layer: state.layer,
+        ownerKey,
+        workspaceId: workspace.workspaceId,
+      });
+      return persisted ? { ownerKey, persisted } : null;
+    }
+
+    function rememberCleanPreference(
+      state: PreferenceLayerState,
+      projection: PreferenceProjection,
+      revision: number,
+      context: ResolvedPreferenceContext
+    ) {
+      try {
+        return Boolean(
+          writeDashboardPreferenceReceipt({
+            installationId: context.persisted.installationId,
+            layer: state.layer,
+            ownerKey: context.ownerKey,
+            preference: projection,
+            revision,
+            workspaceId: context.persisted.workspaceId,
+          })
+        );
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn('[DashboardProfile] Unable to remember clean preference state:', error);
+        }
+        return false;
+      }
+    }
+
+    function readPreferenceReceipt(context: ResolvedPreferenceContext) {
+      return readDashboardPreferenceReceiptState({
+        installationId: context.persisted.installationId,
+        layer: context.persisted.layer,
+        ownerKey: context.ownerKey,
+        workspaceId: context.persisted.workspaceId,
+      });
+    }
+
+    function disableLayer(state: PreferenceLayerState, clearContext = true) {
+      state.available = false;
+      clearLayerTimer(state);
+      state.pendingSave = false;
+      state.base = null;
+      state.outageBase = null;
+      state.revision = 0;
+      if (clearContext) {
+        state.context = null;
+      }
+      state.observedSignature = projectionSignature(projectLayer(state.layer));
+    }
+
+    function resetLayerForContext(state: PreferenceLayerState, context: ResolvedPreferenceContext) {
+      clearLayerTimer(state);
+      state.pendingSave = false;
+      state.base = null;
+      state.outageBase = null;
+      state.revision = 0;
+      state.context = context;
+    }
+
+    function pauseLayerForIdentityRefresh(state: PreferenceLayerState) {
+      state.available = false;
+      clearLayerTimer(state);
+      state.pendingSave = false;
+      state.observedSignature = projectionSignature(projectLayer(state.layer));
+    }
+
+    function contextMatches(
+      left: ResolvedPreferenceContext | null,
+      right: ResolvedPreferenceContext
+    ) {
+      return dashboardPreferenceContextsEqual(left?.persisted ?? null, right.persisted);
+    }
+
+    function projectionChangedFromFingerprints(
+      projection: PreferenceProjection,
+      fingerprints: Record<string, string>
+    ) {
+      return Object.entries(projection.settings).some(
+        ([key, value]) =>
+          fingerprints[key] === undefined ||
+          fingerprints[key] !== getDashboardPreferenceFieldFingerprint(value)
+      );
+    }
+
+    function ensureWritableReceipt(state: PreferenceLayerState) {
+      const context = state.context;
+      const base = state.base;
+      if (!context || !base) {
+        disableLayer(state);
+        return false;
+      }
+
+      let stored = readPreferenceReceipt(context);
+      if (
+        stored.storageStatus === 'available' &&
+        dashboardPreferenceContextsEqual(stored.activeContext, context.persisted) &&
+        stored.receipt?.revision === state.revision &&
+        JSON.stringify(stored.receipt.fieldFingerprints) ===
+          JSON.stringify(getDashboardPreferenceFieldFingerprints(base))
+      ) {
+        return true;
+      }
+      if (
+        stored.storageStatus === 'invalid' ||
+        (stored.activeContext !== null &&
+          !dashboardPreferenceContextsEqual(stored.activeContext, context.persisted))
+      ) {
+        disableLayer(state);
+        refreshPending = true;
+        return false;
+      }
+
+      if (!rememberCleanPreference(state, base, state.revision, context)) {
+        disableLayer(state);
+        return false;
+      }
+      stored = readPreferenceReceipt(context);
+      if (
+        stored.storageStatus !== 'available' ||
+        !dashboardPreferenceContextsEqual(stored.activeContext, context.persisted) ||
+        stored.receipt?.revision !== state.revision
+      ) {
+        disableLayer(state);
+        return false;
+      }
+      return true;
     }
 
     function recoverClientBinding(failureCode: DashboardProfileErrorCode | null) {
@@ -239,9 +486,14 @@ export function useDashboardPreferenceSync({
         state.pendingSave = true;
         return;
       }
+      if (!ensureWritableReceipt(state)) {
+        drainPendingRefresh();
+        return;
+      }
 
       clearLayerTimer(state);
       state.saving = true;
+      const writeContext = state.context;
       try {
         const result = await saveDashboardPreferences(
           preferenceScope(state.layer),
@@ -261,10 +513,22 @@ export function useDashboardPreferenceSync({
         }
 
         if (result.saved && result.document) {
+          const resultContext = resolvePreferenceContext(state, result.document, result.workspace);
+          if (!writeContext || !resultContext || !contextMatches(writeContext, resultContext)) {
+            disableLayer(state);
+            return;
+          }
           state.revision = result.document.revision;
           state.base = projection;
+          state.context = resultContext;
           state.outageBase = null;
           state.observedSignature = projectionSignature(projection);
+          if (
+            !rememberCleanPreference(state, projection, result.document.revision, resultContext)
+          ) {
+            disableLayer(state);
+            return;
+          }
           if (hadPendingSave) {
             const latestProjection = projectLayer(state.layer);
             if (projectionSignature(latestProjection) !== projectionSignature(projection)) {
@@ -306,6 +570,142 @@ export function useDashboardPreferenceSync({
       }, PREFERENCE_SAVE_DEBOUNCE_MS);
     }
 
+    function applyRemoteBootstrap(
+      state: PreferenceLayerState,
+      remote: PreferenceProjection,
+      document: DashboardPreferenceDocument,
+      context: ResolvedPreferenceContext
+    ) {
+      resetLayerForContext(state, context);
+      state.revision = document.revision;
+      state.base = remote;
+      applyProjection(state, remote);
+
+      const stored = readPreferenceReceipt(context);
+      if (
+        stored.storageStatus === 'invalid' ||
+        !rememberCleanPreference(state, remote, document.revision, context)
+      ) {
+        state.available = false;
+        clearLayerTimer(state);
+        return;
+      }
+      state.available = true;
+    }
+
+    async function reconcileRemoteDocument(
+      state: PreferenceLayerState,
+      document: DashboardPreferenceDocument,
+      workspace: DashboardWorkspaceIdentity | null,
+      retryLocal = false
+    ) {
+      const context = resolvePreferenceContext(state, document, workspace);
+      if (!context) {
+        disableLayer(state);
+        return;
+      }
+
+      const remote = materializeRemoteProjection(
+        state.layer,
+        migrateSettingsPreferenceLayer(document.values, state.layer)
+      );
+      const contextChanged = state.context !== null && !contextMatches(state.context, context);
+      const stored = readPreferenceReceipt(context);
+      const exactReceipt =
+        stored.storageStatus === 'available' &&
+        dashboardPreferenceContextsEqual(stored.activeContext, context.persisted) &&
+        stored.receipt &&
+        stored.receipt.revision <= document.revision &&
+        preferenceFingerprintSchemaMatches(stored.receipt.fieldFingerprints, remote)
+          ? stored.receipt
+          : null;
+
+      if (contextChanged || !exactReceipt) {
+        applyRemoteBootstrap(state, remote, document, context);
+        return;
+      }
+
+      state.context = context;
+      state.available = true;
+      if (!retryLocal && document.revision === state.revision) {
+        const local = projectLayer(state.layer);
+        const baseFingerprints = state.base
+          ? getDashboardPreferenceFieldFingerprints(state.base)
+          : exactReceipt.fieldFingerprints;
+        if (!state.saving && projectionChangedFromFingerprints(local, baseFingerprints)) {
+          await saveLayer(state, local);
+        }
+        return;
+      }
+
+      const local = projectLayer(state.layer);
+      const mergeBase = state.base ?? state.outageBase;
+      const baseFingerprints = mergeBase
+        ? getDashboardPreferenceFieldFingerprints(mergeBase)
+        : exactReceipt.fieldFingerprints;
+      const hasLocalChanges = projectionChangedFromFingerprints(local, baseFingerprints);
+      state.revision = document.revision;
+
+      if (!hasLocalChanges) {
+        state.base = remote;
+        state.outageBase = null;
+        applyProjection(state, remote);
+        if (!rememberCleanPreference(state, remote, document.revision, context)) {
+          disableLayer(state);
+        }
+        return;
+      }
+
+      const merged = mergePreferenceProjection(baseFingerprints, local, remote);
+      state.base = remote;
+      state.outageBase = null;
+      applyProjection(state, merged);
+      if (projectionSignature(merged) === projectionSignature(remote)) {
+        if (!rememberCleanPreference(state, remote, document.revision, context)) {
+          disableLayer(state);
+        }
+        return;
+      }
+      await saveLayer(state, merged, false);
+    }
+
+    async function initializeEmptyPreference(
+      state: PreferenceLayerState,
+      workspace: DashboardWorkspaceIdentity | null,
+      identity: DashboardPreferenceIdentity | null
+    ) {
+      const context = resolveEmptyPreferenceContext(state, workspace, identity);
+      if (!context) {
+        disableLayer(state);
+        return;
+      }
+      const stored = readPreferenceReceipt(context);
+      if (stored.storageStatus === 'invalid') {
+        disableLayer(state);
+        return;
+      }
+
+      const contextChanged =
+        (state.context !== null && !contextMatches(state.context, context)) ||
+        (stored.activeContext !== null &&
+          !dashboardPreferenceContextsEqual(stored.activeContext, context.persisted));
+      const projection =
+        state.layer === 'account' || contextChanged
+          ? projectDefaultLayer(state.layer)
+          : projectLayer(state.layer);
+      resetLayerForContext(state, context);
+      state.available = true;
+      state.base = projection;
+      if (state.layer === 'account' || contextChanged) {
+        applyProjection(state, projection);
+      }
+      if (!rememberCleanPreference(state, projection, 0, context)) {
+        disableLayer(state);
+        return;
+      }
+      await saveLayer(state, projection, false);
+    }
+
     async function refreshLayer(state: PreferenceLayerState, retryLocal = false) {
       const result = await loadDashboardPreferences(preferenceScope(state.layer), {
         author: getActiveClient(),
@@ -322,48 +722,13 @@ export function useDashboardPreferenceSync({
         return;
       }
 
-      state.available = true;
       if (!result.document) {
         if (!state.saving) {
-          const projection = projectLayer(state.layer);
-          state.revision = 0;
-          state.base = null;
-          state.outageBase = projection;
-          await saveLayer(state, projection, false);
+          await initializeEmptyPreference(state, result.workspace, result.identity);
         }
         return;
       }
-      if (!retryLocal && result.document.revision === state.revision) {
-        const local = projectLayer(state.layer);
-        if (
-          state.base &&
-          !state.saving &&
-          projectionSignature(local) !== projectionSignature(state.base)
-        ) {
-          await saveLayer(state, local);
-        }
-        return;
-      }
-
-      const remote = migrateSettingsPreferenceLayer(result.document.values, state.layer);
-      const local = projectLayer(state.layer);
-      const mergeBase = state.base ?? state.outageBase;
-      const hasLocalChanges =
-        mergeBase !== null && projectionSignature(local) !== projectionSignature(mergeBase);
-      state.revision = result.document.revision;
-
-      if (!hasLocalChanges) {
-        state.base = remote;
-        state.outageBase = null;
-        applyProjection(state, remote);
-        return;
-      }
-
-      const merged = mergePreferenceProjection(mergeBase, local, remote);
-      state.base = remote;
-      state.outageBase = null;
-      applyProjection(state, merged);
-      await saveLayer(state, merged, false);
+      await reconcileRemoteDocument(state, result.document, result.workspace, retryLocal);
     }
 
     async function refreshAllLayers() {
@@ -442,6 +807,9 @@ export function useDashboardPreferenceSync({
         return;
       }
       clearPollTimer();
+      if (accountEnabled) {
+        pauseLayerForIdentityRefresh(states.account);
+      }
       if (!initialized || refreshInFlight || hasSaveInFlight()) {
         refreshPending = true;
         return;
@@ -463,7 +831,6 @@ export function useDashboardPreferenceSync({
         return;
       }
 
-      applying = true;
       try {
         for (const state of activeStates) {
           const result = await loadDashboardPreferences(preferenceScope(state.layer), {
@@ -485,29 +852,16 @@ export function useDashboardPreferenceSync({
             continue;
           }
           if (!result.document) {
-            const projection = projectLayer(state.layer);
-            state.revision = 0;
-            state.outageBase = projection;
-            state.observedSignature = projectionSignature(projection);
+            await initializeEmptyPreference(state, result.workspace, result.identity);
             continue;
           }
 
-          const projection = migrateSettingsPreferenceLayer(result.document.values, state.layer);
-          state.revision = result.document.revision;
-          state.base = projection;
-          applySettingsPreferenceLayerToStore(projection, state.layer);
-          state.observedSignature = projectionSignature(projectLayer(state.layer));
+          await reconcileRemoteDocument(state, result.document, result.workspace);
         }
       } finally {
-        applying = false;
         initialized = true;
       }
 
-      for (const state of activeStates) {
-        if (state.available && state.base === null) {
-          void saveLayer(state);
-        }
-      }
       if (!drainPendingRefresh()) {
         schedulePoll();
       }

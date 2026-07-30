@@ -35,6 +35,7 @@ function createFixture(options?: { hassUrlPin?: string; openhabUrlPin?: string }
   const paths = {
     authSessionsDirectory: join(directory, 'auth-sessions'),
     homeySessionsDirectory: join(directory, 'homey-sessions'),
+    keyPath: join(directory, 'installation-key'),
     openHABSessionsDirectory: join(directory, 'openhab-sessions'),
     statePath: join(directory, 'authority.json'),
   };
@@ -80,6 +81,33 @@ describe('Vite installation authority', () => {
     expect(readFileSync(keyPath, 'utf8').trim()).toBe(key);
     expect(warning).not.toHaveBeenCalled();
     warning.mockRestore();
+  });
+
+  it('persists a configured key once and rejects later key rotation', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'navet-configured-installation-key-vite-'));
+    const keyPath = join(directory, 'installation-key');
+    createViteInstallationAuthority({
+      cacheDirectory: directory,
+      installationKey: INSTALLATION_KEY,
+      keyPath,
+    });
+    expect(readFileSync(keyPath, 'utf8').trim()).toBe(INSTALLATION_KEY);
+
+    expect(() =>
+      createViteInstallationAuthority({
+        cacheDirectory: directory,
+        installationKey: INSTALLATION_KEY,
+        keyPath,
+      })
+    ).not.toThrow();
+    expect(() =>
+      createViteInstallationAuthority({
+        cacheDirectory: directory,
+        installationKey: 'b'.repeat(64),
+        keyPath,
+      })
+    ).toThrow('does not match the persisted Navet installation key');
+    expect(readFileSync(keyPath, 'utf8').trim()).toBe(INSTALLATION_KEY);
   });
 
   it('requires the exact key and persists only verified target authority', () => {

@@ -26,6 +26,7 @@ declare module '@docker/njs/auth-store.js' {
   interface AuthSession {
     sessionId: string;
     updatedAt: number;
+    authRevision?: number;
     auth?: HomeAssistantAuthData;
     [key: string]: unknown;
   }
@@ -87,6 +88,7 @@ declare module '@docker/njs/auth-store.js' {
   interface AuthStoreModule {
     AUTH_BINDING_HEADER: string;
     AUTH_COOKIE_NAME: string;
+    AUTH_REVISION_HEADER: string;
     createAuthSessionStore(options: CreateAuthSessionStoreOptions): AuthSessionStore;
     createHomeAssistantTenantId(hassUrl: string): string;
     normalizeHassOrigin(hassUrl: string): string;

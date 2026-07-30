@@ -7,6 +7,7 @@ const AUTH_COOKIE_NAME = 'navet_auth_session';
 const AUTH_COOKIE_ID_PATTERN = /^[a-f0-9]{64}$/;
 const AUTH_PUBLIC_ID_PATTERN = /^nas_[a-f0-9]{32}$/;
 const AUTH_BINDING_HEADER = 'X-Navet-OAuth-Binding';
+const AUTH_REVISION_HEADER = 'X-Navet-Auth-Revision';
 const AUTH_SESSIONS_DIRECTORY = '/data/navet-auth-sessions';
 const LEGACY_AUTH_PATH = '/data/navet-auth-session.json';
 const MAX_AUTH_REQUEST_BYTES = 24 * 1024;
@@ -15,6 +16,8 @@ const SESSION_RECORD_TOO_LARGE_ERROR_CODE = 'credential-session-record-too-large
 const SESSION_RECORD_TOO_LARGE_STATUS = 507;
 const SESSION_CAPACITY_ERROR_CODE = 'credential-session-capacity-reached';
 const SESSION_CAPACITY_STATUS = 507;
+const SESSION_UNAVAILABLE_ERROR_CODE = 'credential-session-record-unavailable';
+const SESSION_UNAVAILABLE_STATUS = 503;
 const OAUTH_PENDING_TTL_MS = 10 * 60 * 1000;
 const AUTH_SESSION_IDLE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const COOKIE_MAX_AGE_SECONDS = AUTH_SESSION_IDLE_TTL_MS / 1000;
@@ -187,12 +190,23 @@ function createSessionCapacityError() {
   return error;
 }
 
+function createSessionUnavailableError() {
+  const error = new Error('Home Assistant credential session is unavailable');
+  error.code = SESSION_UNAVAILABLE_ERROR_CODE;
+  error.statusCode = SESSION_UNAVAILABLE_STATUS;
+  return error;
+}
+
 function isSessionRecordTooLargeError(error) {
   return Boolean(error && error.code === SESSION_RECORD_TOO_LARGE_ERROR_CODE);
 }
 
 function isSessionCapacityError(error) {
   return Boolean(error && error.code === SESSION_CAPACITY_ERROR_CODE);
+}
+
+function isSessionUnavailableError(error) {
+  return Boolean(error && error.code === SESSION_UNAVAILABLE_ERROR_CODE);
 }
 
 function sendSessionStoreError(r, error) {
@@ -204,6 +218,9 @@ function sendSessionStoreError(r, error) {
   } else if (isSessionCapacityError(error)) {
     code = SESSION_CAPACITY_ERROR_CODE;
     status = SESSION_CAPACITY_STATUS;
+  } else if (isSessionUnavailableError(error)) {
+    code = SESSION_UNAVAILABLE_ERROR_CODE;
+    status = SESSION_UNAVAILABLE_STATUS;
   } else {
     return false;
   }
@@ -496,6 +513,11 @@ function isValidStoredSession(value) {
     AUTH_PUBLIC_ID_PATTERN.test(value.sessionId) &&
     typeof value.createdAt === 'number' &&
     typeof value.updatedAt === 'number' &&
+    (value.authRevision === undefined ||
+      (typeof value.authRevision === 'number' &&
+        Number.isSafeInteger(value.authRevision) &&
+        value.authRevision >= 0 &&
+        value.authRevision < Number.MAX_SAFE_INTEGER)) &&
     (value.auth === null || isValidAuthData(value.auth)) &&
     (value.pending === null || isValidPendingOAuth(value.pending)) &&
     value.userId === null &&
@@ -520,6 +542,25 @@ function cloneSession(session, overrides) {
   return next;
 }
 
+function getAuthRevision(session) {
+  return session && typeof session.authRevision === 'number'
+    ? session.authRevision
+    : 0;
+}
+
+function parseAuthRevisionHeader(r) {
+  const value = getHeader(r && r.headersIn, AUTH_REVISION_HEADER).trim();
+  if (!/^(0|[1-9][0-9]{0,15})$/.test(value)) {
+    return null;
+  }
+  const revision = Number(value);
+  return Number.isSafeInteger(revision) &&
+    revision >= 0 &&
+    revision < Number.MAX_SAFE_INTEGER
+    ? revision
+    : null;
+}
+
 function secureRandomHex(byteLength) {
   const values = new Uint32Array(Math.ceil(byteLength / 4));
   crypto.getRandomValues(values);
@@ -540,6 +581,7 @@ function createEmptySession() {
     sessionId: 'nas_' + secureRandomHex(16),
     createdAt: now,
     updatedAt: now,
+    authRevision: 0,
     auth: null,
     pending: null,
     userId: null,
@@ -560,6 +602,7 @@ function createEphemeralSession(cookieId, bindingSecret) {
         .slice(0, 32),
     createdAt: now,
     updatedAt: now,
+    authRevision: 0,
     auth: null,
     pending: null,
     userId: null,
@@ -573,6 +616,8 @@ function sanitizeSession(session) {
     authenticated: Boolean(auth),
     providerId: 'home_assistant',
     sessionId: session.sessionId,
+    authRevision:
+      typeof session.authRevision === 'number' ? session.authRevision : 0,
     hassUrl: auth ? auth.hassUrl : null,
     clientId: auth ? auth.clientId : null,
     expiresAt: auth ? auth.expires : null,
@@ -695,8 +740,7 @@ function createAuthSessionStore(options) {
       throw error;
     }
     if (stat.size > MAX_AUTH_RECORD_BYTES) {
-      deletePath(sessionPath);
-      return null;
+      throw createSessionUnavailableError();
     }
 
     let serialized;
@@ -709,8 +753,10 @@ function createAuthSessionStore(options) {
       throw error;
     }
     const session = parseJson(serialized);
+    if (!isValidStoredSession(session)) {
+      throw createSessionUnavailableError();
+    }
     if (
-      !isValidStoredSession(session) ||
       session.updatedAt + AUTH_SESSION_IDLE_TTL_MS < Date.now() ||
       (!session.auth &&
         (!session.pending || session.pending.expiresAt < Date.now()))
@@ -807,12 +853,26 @@ function createAuthSessionStore(options) {
         }
         continue;
       }
-      const session = readSession(match[1]);
-      if (session) {
+      try {
+        const session = readSession(match[1]);
+        if (session) {
+          active.push({
+            authenticated: Boolean(session.auth),
+            cookieId: match[1],
+            updatedAt: session.updatedAt,
+          });
+        }
+      } catch (error) {
+        if (!isSessionUnavailableError(error)) {
+          throw error;
+        }
+        // Preserve unreadable credential records and count them toward capacity.
+        // A caller presenting this cookie receives a typed 503 instead of a
+        // false logged-out response, while unrelated browser sessions continue.
         active.push({
-          authenticated: Boolean(session.auth),
+          authenticated: true,
           cookieId: match[1],
-          updatedAt: session.updatedAt,
+          updatedAt: now,
         });
       }
     }
@@ -1073,8 +1133,68 @@ function createAuthSessionStore(options) {
       return;
     }
 
-    const next = cloneSession(context.session, {
+    const revisionHeader = getHeader(r && r.headersIn, AUTH_REVISION_HEADER).trim();
+    const legacyRefresh = revisionHeader === '';
+    const expectedRevision = parseAuthRevisionHeader(r);
+    if (!legacyRefresh && expectedRevision === null) {
+      sendJson(r, 428, {
+        error: 'Home Assistant auth revision is invalid',
+        code: 'credential-session-revision-required',
+      });
+      return;
+    }
+    const current = readSession(context.cookieId);
+    const unchanged =
+      Boolean(current && current.auth) &&
+      JSON.stringify(current.auth) === JSON.stringify(auth);
+    if (!current || current.sessionId !== context.session.sessionId) {
+      if (unchanged) {
+        setSessionCookie(r, context.cookieId);
+        sendJson(r, 200, sanitizeSession(current));
+        return;
+      }
+      sendJson(r, 409, {
+        error: 'Auth session changed before refresh completed',
+        code: 'credential-session-superseded',
+        session: current ? sanitizeSession(current) : null,
+      });
+      return;
+    }
+    if (legacyRefresh) {
+      // Compatibility for a tab that loaded before auth revisions shipped:
+      // a later token expiry may advance the session, while stale/equal
+      // refreshes become successful no-ops instead of retrying forever.
+      if (
+        unchanged ||
+        !current.auth ||
+        auth.expires <= current.auth.expires
+      ) {
+        setSessionCookie(r, context.cookieId);
+        sendJson(r, 200, sanitizeSession(current));
+        return;
+      }
+    } else if (expectedRevision !== getAuthRevision(current)) {
+      if (unchanged) {
+        setSessionCookie(r, context.cookieId);
+        sendJson(r, 200, sanitizeSession(current));
+        return;
+      }
+      sendJson(r, 409, {
+        error: 'Auth session changed before refresh completed',
+        code: 'credential-session-superseded',
+        session: sanitizeSession(current),
+      });
+      return;
+    }
+    if (unchanged) {
+      setSessionCookie(r, context.cookieId);
+      sendJson(r, 200, sanitizeSession(current));
+      return;
+    }
+
+    const next = cloneSession(current, {
       updatedAt: Date.now(),
+      authRevision: getAuthRevision(current) + 1,
       auth: auth,
       pending: null,
       userId: null,
@@ -1318,6 +1438,7 @@ function createAuthSessionStore(options) {
     try {
       const next = cloneSession(createEmptySession(), {
         updatedAt: Date.now(),
+        authRevision: 1,
         auth: auth,
         pending: null,
         userId: null,
@@ -1338,7 +1459,7 @@ function createAuthSessionStore(options) {
     }
   }
 
-  async function handle(r) {
+  async function handleRequest(r) {
     const uri = String((r && r.uri) || '');
 
     if (uri === '/__navet_auth__/callback') {
@@ -1391,6 +1512,17 @@ function createAuthSessionStore(options) {
 
     r.headersOut.Allow = 'GET, PUT, DELETE';
     sendJson(r, 405, { error: 'Method not allowed' });
+  }
+
+  async function handle(r) {
+    try {
+      await handleRequest(r);
+    } catch (error) {
+      if (sendSessionStoreError(r, error)) {
+        return;
+      }
+      throw error;
+    }
   }
 
   function resolveStandaloneAuthSession(r) {
@@ -1480,8 +1612,10 @@ async function handle(r) {
 export default {
   AUTH_BINDING_HEADER: AUTH_BINDING_HEADER,
   AUTH_COOKIE_NAME: AUTH_COOKIE_NAME,
+  AUTH_REVISION_HEADER: AUTH_REVISION_HEADER,
   SESSION_CAPACITY_ERROR_CODE: SESSION_CAPACITY_ERROR_CODE,
   SESSION_RECORD_TOO_LARGE_ERROR_CODE: SESSION_RECORD_TOO_LARGE_ERROR_CODE,
+  SESSION_UNAVAILABLE_ERROR_CODE: SESSION_UNAVAILABLE_ERROR_CODE,
   createAuthSessionStore: createAuthSessionStore,
   createHomeAssistantTenantId: createHomeAssistantTenantId,
   handle: handle,
@@ -1490,6 +1624,7 @@ export default {
   normalizeIngressPath: normalizeIngressPath,
   isSessionCapacityError: isSessionCapacityError,
   isSessionRecordTooLargeError: isSessionRecordTooLargeError,
+  isSessionUnavailableError: isSessionUnavailableError,
   resolveAuthenticatedPrincipal: resolveAuthenticatedPrincipal,
   resolveStandaloneAuthSession: resolveStandaloneAuthSession,
   sanitizeSession: sanitizeSession,

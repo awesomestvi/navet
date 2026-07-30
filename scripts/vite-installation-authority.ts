@@ -138,30 +138,36 @@ export function createViteInstallationAuthority(
       options.installationKey?.trim() ||
       process.env.NAVET_INSTALLATION_KEY?.trim() ||
       ''
-    if (configured) {
-      if (!INSTALLATION_KEY_PATTERN.test(configured)) {
-        throw new Error(
-          'NAVET_INSTALLATION_KEY must contain exactly 64 lowercase hexadecimal characters'
-        )
-      }
-      return configured
+    if (configured && !INSTALLATION_KEY_PATTERN.test(configured)) {
+      throw new Error(
+        'NAVET_INSTALLATION_KEY must contain exactly 64 lowercase hexadecimal characters'
+      )
     }
+
+    let persisted = ''
     try {
-      const persisted = readFileSync(keyPath, 'utf8').trim()
+      persisted = readFileSync(keyPath, 'utf8').trim()
       if (!INSTALLATION_KEY_PATTERN.test(persisted)) {
         throw new Error('Persisted Navet installation key is invalid')
       }
-      return persisted
     } catch (error) {
       if ((error as NodeJS.ErrnoException)?.code !== 'ENOENT') {
         throw error
       }
     }
+    if (persisted) {
+      if (configured && configured !== persisted) {
+        throw new Error(
+          'NAVET_INSTALLATION_KEY does not match the persisted Navet installation key'
+        )
+      }
+      return persisted
+    }
 
-    const generated = randomBytes(32).toString('hex')
+    const candidate = configured || randomBytes(32).toString('hex')
     mkdirSync(path.dirname(keyPath), { recursive: true, mode: 0o700 })
     try {
-      writeFileSync(keyPath, `${generated}\n`, {
+      writeFileSync(keyPath, `${candidate}\n`, {
         encoding: 'utf8',
         flag: 'wx',
         mode: 0o600,
@@ -174,13 +180,20 @@ export function createViteInstallationAuthority(
       if (!INSTALLATION_KEY_PATTERN.test(persisted)) {
         throw new Error('Persisted Navet installation key is invalid')
       }
+      if (configured && configured !== persisted) {
+        throw new Error(
+          'NAVET_INSTALLATION_KEY does not match the persisted Navet installation key'
+        )
+      }
       return persisted
     }
-    console.warn(
-      'Navet operator pairing key created. Append ' +
-        `#navet_pairing=${generated} to your trusted Navet URL for first enrollment.`
-    )
-    return generated
+    if (!configured) {
+      console.warn(
+        'Navet operator pairing key created. Append ' +
+          `#navet_pairing=${candidate} to your trusted Navet URL for first enrollment.`
+      )
+    }
+    return candidate
   }
   const installationKey = resolveInstallationKey()
 

@@ -281,6 +281,8 @@ async function readAuthMetadata(baseUrl) {
       metadata?.authenticated !== false ||
       metadata?.providerId !== 'home_assistant' ||
       !/^nas_[a-f0-9]{32}$/.test(metadata?.sessionId) ||
+      !Number.isSafeInteger(metadata?.authRevision) ||
+      metadata.authRevision < 0 ||
       !cookie ||
       Object.hasOwn(metadata, 'access_token') ||
       Object.hasOwn(metadata, 'refresh_token')
@@ -477,6 +479,150 @@ async function completeHomeAssistantOAuth(baseUrl, browserSession, state) {
     throw new Error('Docker NJS OAuth callback did not rotate the browser session');
   }
   return cookie;
+}
+
+async function verifyHomeAssistantRefreshRevision(baseUrl, authCookie) {
+  const metadataResponse = await fetch(`${baseUrl}/__navet_auth__/session`, {
+    headers: { Cookie: authCookie },
+  });
+  const metadata = await metadataResponse.json();
+  if (
+    metadataResponse.status !== 200 ||
+    metadata?.authenticated !== true ||
+    !Number.isSafeInteger(metadata?.authRevision)
+  ) {
+    throw new Error('Actual-image authenticated session did not expose an auth revision');
+  }
+  const credentialsResponse = await fetch(
+    `${baseUrl}/__navet_auth__/session/credentials`,
+    {
+      method: 'POST',
+      headers: {
+        Cookie: authCookie,
+        'X-Navet-OAuth-Binding': metadata.sessionId,
+      },
+    }
+  );
+  const credentials = await credentialsResponse.json();
+  const legacyAuth = {
+    ...credentials,
+    access_token: 'actual-image-legacy-access',
+    expires: Number(credentials.expires) + 60_000,
+  };
+  const oldClient = await fetch(`${baseUrl}/__navet_auth__/session`, {
+    method: 'PUT',
+    headers: {
+      Cookie: authCookie,
+      Origin: baseUrl,
+      'Content-Type': 'application/json',
+      'X-Navet-OAuth-Binding': metadata.sessionId,
+    },
+    body: JSON.stringify(legacyAuth),
+  });
+  const oldClientPayload = await oldClient.json();
+  if (
+    oldClient.status !== 200 ||
+    oldClientPayload?.authRevision !== metadata.authRevision + 1
+  ) {
+    throw new Error('Actual image rejected a monotonic old-client refresh without a revision');
+  }
+  const staleLegacy = await fetch(`${baseUrl}/__navet_auth__/session`, {
+    method: 'PUT',
+    headers: {
+      Cookie: authCookie,
+      Origin: baseUrl,
+      'Content-Type': 'application/json',
+      'X-Navet-OAuth-Binding': metadata.sessionId,
+    },
+    body: JSON.stringify({
+      ...credentials,
+      access_token: 'actual-image-stale-legacy-access',
+    }),
+  });
+  const staleLegacyPayload = await staleLegacy.json();
+  if (
+    staleLegacy.status !== 200 ||
+    staleLegacyPayload?.authRevision !== oldClientPayload.authRevision
+  ) {
+    throw new Error('Actual image did not treat a stale old-client refresh as a no-op');
+  }
+  const legacyCredentials = await fetch(
+    `${baseUrl}/__navet_auth__/session/credentials`,
+    {
+      method: 'POST',
+      headers: {
+        Cookie: authCookie,
+        'X-Navet-OAuth-Binding': metadata.sessionId,
+      },
+    }
+  ).then((response) => response.json());
+  if (legacyCredentials?.access_token !== legacyAuth.access_token) {
+    throw new Error('Actual-image stale old-client refresh replaced newer credentials');
+  }
+
+  const winningAuth = {
+    ...legacyAuth,
+    access_token: 'actual-image-winning-access',
+    expires: Number(legacyAuth.expires) + 60_000,
+  };
+  const headers = {
+    Cookie: authCookie,
+    Origin: baseUrl,
+    'Content-Type': 'application/json',
+    'X-Navet-OAuth-Binding': metadata.sessionId,
+    'X-Navet-Auth-Revision': String(oldClientPayload.authRevision),
+  };
+  const winner = await fetch(`${baseUrl}/__navet_auth__/session`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(winningAuth),
+  });
+  const winnerMetadata = await winner.json();
+  if (
+    winner.status !== 200 ||
+    winnerMetadata?.authRevision !== oldClientPayload.authRevision + 1
+  ) {
+    throw new Error('Actual-image winning Home Assistant refresh was not revisioned');
+  }
+
+  const staleAuth = {
+    ...legacyAuth,
+    access_token: 'actual-image-stale-access',
+    expires: Number(legacyAuth.expires) + 120_000,
+  };
+  const stale = await fetch(`${baseUrl}/__navet_auth__/session`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(staleAuth),
+  });
+  const stalePayload = await stale.json();
+  if (
+    stale.status !== 409 ||
+    stalePayload?.code !== 'credential-session-superseded' ||
+    stalePayload?.session?.authRevision !== winnerMetadata.authRevision
+  ) {
+    throw new Error('Actual-image stale Home Assistant refresh was not rejected');
+  }
+  const persistedCredentials = await fetch(
+    `${baseUrl}/__navet_auth__/session/credentials`,
+    {
+      method: 'POST',
+      headers: {
+        Cookie: authCookie,
+        'X-Navet-OAuth-Binding': winnerMetadata.sessionId,
+      },
+    }
+  ).then((response) => response.json());
+  if (persistedCredentials?.access_token !== winningAuth.access_token) {
+    throw new Error('Actual-image stale refresh replaced the winning credentials');
+  }
+  return {
+    authRevision: winnerMetadata.authRevision,
+    sessionId: winnerMetadata.sessionId,
+    staleAuth,
+    staleRevision: oldClientPayload.authRevision,
+    winningAuth,
+  };
 }
 
 async function waitForAuthMetadata(baseUrl, containerName) {
@@ -1037,6 +1183,38 @@ async function verifyProfileColdBinding(baseUrl, authCookie) {
     throw new Error('Parallel cold profile requests produced competing client bindings');
   }
 
+  const emptyClientPreference = responses[1];
+  const preferenceInstallationId = emptyClientPreference.headers.get(
+    'x-navet-installation-id'
+  );
+  const preferenceWorkspaceId = emptyClientPreference.headers.get(
+    'x-navet-workspace-id'
+  );
+  const encodedPreferenceIdentity = emptyClientPreference.headers.get(
+    'x-navet-preference-identity'
+  );
+  let preferenceIdentity = null;
+  try {
+    preferenceIdentity = encodedPreferenceIdentity
+      ? JSON.parse(decodeURIComponent(encodedPreferenceIdentity))
+      : null;
+  } catch {
+    preferenceIdentity = null;
+  }
+  if (
+    emptyClientPreference.status !== 204 ||
+    !/^[a-zA-Z0-9_-]{1,128}$/.test(preferenceInstallationId ?? '') ||
+    !/^[a-zA-Z0-9_-]{1,128}$/.test(preferenceWorkspaceId ?? '') ||
+    preferenceIdentity?.clientId !== clientId ||
+    preferenceIdentity?.principal?.providerId !== 'home_assistant' ||
+    preferenceIdentity?.principal?.userId !== null ||
+    preferenceIdentity?.principal?.userName !== null
+  ) {
+    throw new Error(
+      'Actual-image empty client preference response omitted its workspace or verified client identity'
+    );
+  }
+
   const profileCookie = cookies[0];
   for (const path of ['/default', '/preferences/client', '/clients']) {
     const replay = await request(path, profileCookie);
@@ -1148,10 +1326,136 @@ async function verifyProfileColdBinding(baseUrl, authCookie) {
   return profileCookie;
 }
 
-async function verifyPersistedStateAfterReplacement({
+async function seedAndVerifyUnavailableAuthRecord({
   authCookie,
   baseUrl,
   containerName,
+}) {
+  const cookieId = cookieValue(authCookie);
+  if (!/^[a-f0-9]{64}$/.test(cookieId)) {
+    throw new Error('Cannot seed an invalid actual-image auth cookie');
+  }
+  const sessionPath = `/data/navet-auth-sessions/${cookieId}.json`;
+  run('docker', [
+    'exec',
+    containerName,
+    'sh',
+    '-c',
+    `umask 077; printf '%s' '{"version":2' > ${sessionPath}; chown nginx:nginx ${sessionPath}`,
+  ]);
+  const response = await fetch(`${baseUrl}/__navet_auth__/session`, {
+    headers: { Cookie: authCookie },
+  });
+  const payload = await response.json();
+  if (
+    response.status !== 503 ||
+    payload?.code !== 'credential-session-record-unavailable'
+  ) {
+    throw new Error('Actual image presented a corrupt auth record as a logout');
+  }
+  const preserved = spawnSync(
+    'docker',
+    ['exec', containerName, 'cat', sessionPath],
+    { stdio: 'pipe', encoding: 'utf8' }
+  );
+  if (
+    preserved.error ||
+    preserved.status !== 0 ||
+    preserved.stdout !== '{"version":2'
+  ) {
+    throw new Error('Actual image destroyed a corrupt auth record');
+  }
+  return { authCookie, sessionPath };
+}
+
+function assertConfiguredInstallationKeyMismatchRejected({
+  imageTag,
+  installationKey,
+  volumeName,
+}) {
+  const mismatchedKey =
+    installationKey === 'f'.repeat(64) ? 'e'.repeat(64) : 'f'.repeat(64);
+  const mismatch = spawnSync(
+    'docker',
+    [
+      'run',
+      '--rm',
+      '--mount',
+      `type=volume,source=${volumeName},target=/data`,
+      '-e',
+      `NAVET_INSTALLATION_KEY=${mismatchedKey}`,
+      imageTag,
+    ],
+    { stdio: 'pipe', encoding: 'utf8' }
+  );
+  if (
+    mismatch.error ||
+    mismatch.status === 0 ||
+    !`${mismatch.stdout}\n${mismatch.stderr}`.includes(
+      'refusing to rotate browser cookie scope'
+    )
+  ) {
+    throw new Error('Actual image did not reject installation-key rotation on restart');
+  }
+  const persisted = spawnSync(
+    'docker',
+    [
+      'run',
+      '--rm',
+      '--entrypoint',
+      '/bin/cat',
+      '--mount',
+      `type=volume,source=${volumeName},target=/data`,
+      imageTag,
+      '/data/navet-installation-key',
+    ],
+    { stdio: 'pipe', encoding: 'utf8' }
+  );
+  if (
+    persisted.error ||
+    persisted.status !== 0 ||
+    persisted.stdout.trim() !== installationKey
+  ) {
+    throw new Error('Rejected installation-key rotation changed the persisted key');
+  }
+}
+
+function assertConfiguredInstallationKeyIsNotLogged(imageTag) {
+  const configuredKey = 'c'.repeat(64);
+  const configuredStartup = spawnSync(
+    'docker',
+    [
+      'run',
+      '--rm',
+      '--tmpfs',
+      '/data',
+      '--entrypoint',
+      '/bin/sh',
+      '-e',
+      `NAVET_INSTALLATION_KEY=${configuredKey}`,
+      imageTag,
+      '-c',
+      '/docker-entrypoint.d/30-navet-config.sh',
+    ],
+    { stdio: 'pipe', encoding: 'utf8' }
+  );
+  const output = `${configuredStartup.stdout}\n${configuredStartup.stderr}`;
+  if (
+    configuredStartup.error ||
+    configuredStartup.status !== 0 ||
+    output.includes(configuredKey) ||
+    output.includes('#navet_pairing=')
+  ) {
+    throw new Error('Actual image logged an operator-supplied installation key');
+  }
+}
+
+async function verifyPersistedStateAfterReplacement({
+  authCookie,
+  authRefresh,
+  baseUrl,
+  containerName,
+  corruptAuthRecord,
   installationKey,
   openHABCookie,
   profileCookie,
@@ -1172,6 +1476,59 @@ async function verifyPersistedStateAfterReplacement({
     Object.hasOwn(authMetadata, 'refresh_token')
   ) {
     throw new Error('Home Assistant browser session did not survive container replacement');
+  }
+  if (authMetadata.authRevision !== authRefresh.authRevision) {
+    throw new Error('Home Assistant auth revision did not survive container replacement');
+  }
+  const persistedCredentials = await fetch(
+    `${baseUrl}/__navet_auth__/session/credentials`,
+    {
+      method: 'POST',
+      headers: {
+        Cookie: authCookie,
+        'X-Navet-OAuth-Binding': authRefresh.sessionId,
+      },
+    }
+  ).then((response) => response.json());
+  if (persistedCredentials?.access_token !== authRefresh.winningAuth.access_token) {
+    throw new Error('Winning Home Assistant credentials did not survive replacement');
+  }
+  const staleAfterReplacement = await fetch(`${baseUrl}/__navet_auth__/session`, {
+    method: 'PUT',
+    headers: {
+      Cookie: authCookie,
+      Origin: baseUrl,
+      'Content-Type': 'application/json',
+      'X-Navet-OAuth-Binding': authRefresh.sessionId,
+      'X-Navet-Auth-Revision': String(authRefresh.staleRevision),
+    },
+    body: JSON.stringify(authRefresh.staleAuth),
+  });
+  if (staleAfterReplacement.status !== 409) {
+    throw new Error('A stale Home Assistant refresh was accepted after replacement');
+  }
+
+  const corruptResponse = await fetch(`${baseUrl}/__navet_auth__/session`, {
+    headers: { Cookie: corruptAuthRecord.authCookie },
+  });
+  const corruptPayload = await corruptResponse.json();
+  if (
+    corruptResponse.status !== 503 ||
+    corruptPayload?.code !== 'credential-session-record-unavailable'
+  ) {
+    throw new Error('Corrupt auth unavailability did not survive replacement');
+  }
+  const corruptContents = spawnSync(
+    'docker',
+    ['exec', containerName, 'cat', corruptAuthRecord.sessionPath],
+    { stdio: 'pipe', encoding: 'utf8' }
+  );
+  if (
+    corruptContents.error ||
+    corruptContents.status !== 0 ||
+    corruptContents.stdout !== '{"version":2'
+  ) {
+    throw new Error('Replacement destroyed the preserved corrupt auth record');
   }
 
   const proxyResponse = await fetch(`${baseUrl}/__navet_ha_proxy__/api/states`, {
@@ -1318,6 +1675,7 @@ try {
     'nginx',
     '-t',
   ]);
+  assertConfiguredInstallationKeyIsNotLogged(imageTag);
   const addonTarget = resolveHomeAssistantAddonTarget();
   run(
     'docker',
@@ -1495,6 +1853,10 @@ try {
     firstBrowser,
     state
   );
+  const authRefresh = await verifyHomeAssistantRefreshRevision(
+    baseUrl,
+    authenticatedCookie
+  );
   await verifyTwoInstallationCookieJar({
     authenticatedCookie,
     baseUrl,
@@ -1571,6 +1933,11 @@ try {
   await startHomeyOAuth(baseUrl, installationKey);
   const openHABCookie = await createOpenHABSession(baseUrl, installationKey);
   const profileCookie = await verifyProfileColdBinding(baseUrl, authenticatedCookie);
+  const corruptAuthRecord = await seedAndVerifyUnavailableAuthRecord({
+    authCookie: secondBrowser.cookie,
+    baseUrl,
+    containerName,
+  });
 
   const dataFiles = spawnSync(
     'docker',
@@ -1641,6 +2008,11 @@ try {
   }
 
   run('docker', ['rm', '-f', containerName]);
+  assertConfiguredInstallationKeyMismatchRejected({
+    imageTag,
+    installationKey,
+    volumeName,
+  });
   const replacementBaseUrl = startNavetContainer(
     containerName,
     networkName,
@@ -1650,8 +2022,10 @@ try {
   await waitForAuthMetadata(replacementBaseUrl, containerName);
   await verifyPersistedStateAfterReplacement({
     authCookie: authenticatedCookie,
+    authRefresh,
     baseUrl: replacementBaseUrl,
     containerName,
+    corruptAuthRecord,
     installationKey,
     openHABCookie,
     profileCookie,

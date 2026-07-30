@@ -15,6 +15,7 @@ const AUTH_SESSION_ENDPOINT = '/__navet_auth__/session';
 const AUTH_CREDENTIALS_ENDPOINT = '/__navet_auth__/session/credentials';
 const AUTH_AUTHORIZE_ENDPOINT = '/__navet_auth__/authorize';
 const AUTH_BINDING_HEADER = 'X-Navet-OAuth-Binding';
+const AUTH_REVISION_HEADER = 'X-Navet-Auth-Revision';
 const AUTH_CALLBACK_PARAM = 'navet_oauth_callback';
 const AUTH_CALLBACK_ERROR_PARAM = 'navet_oauth_error';
 const LEGACY_AUTH_CALLBACK_PARAM = 'auth_callback';
@@ -35,6 +36,7 @@ interface StandaloneSessionMetadata {
   authenticated: boolean;
   providerId: 'home_assistant';
   sessionId: string;
+  authRevision: number;
   hassUrl: string | null;
   clientId: string | null;
   expiresAt: number | null;
@@ -43,8 +45,23 @@ interface StandaloneSessionMetadata {
   userName: string | null;
 }
 
+interface StandaloneSessionPersistenceContext {
+  sessionId: string;
+  authRevision: number;
+}
+
+interface StoredStandaloneCredentials {
+  metadata: StandaloneSessionMetadata;
+  tokens: AuthData;
+}
+
+class StandaloneOAuthSessionSupersededError extends Error {
+  override name = 'StandaloneOAuthSessionSupersededError';
+}
+
 let latestSessionBinding: string | null = null;
 const libraryTokenPersistenceBySignature = new Map<string, Promise<void>>();
+const persistenceContextByAuth = new WeakMap<object, StandaloneSessionPersistenceContext>();
 
 export {
   DurableAuthSessionUnavailableError as StandaloneOAuthSessionUnavailableError,
@@ -108,6 +125,10 @@ function isSessionMetadata(value: unknown): value is StandaloneSessionMetadata {
     metadata.providerId === 'home_assistant' &&
     typeof metadata.sessionId === 'string' &&
     /^nas_[a-f0-9]{32}$/.test(metadata.sessionId) &&
+    typeof metadata.authRevision === 'number' &&
+    Number.isSafeInteger(metadata.authRevision) &&
+    metadata.authRevision >= 0 &&
+    metadata.authRevision < Number.MAX_SAFE_INTEGER &&
     (metadata.hassUrl === null || typeof metadata.hassUrl === 'string') &&
     (metadata.userId === null || typeof metadata.userId === 'string') &&
     (metadata.userName === null || typeof metadata.userName === 'string')
@@ -143,7 +164,9 @@ async function loadSessionMetadata(
   return metadata;
 }
 
-async function loadTokens(timeoutMs = AUTH_SESSION_LOAD_TIMEOUT_MS): Promise<AuthData | null> {
+async function loadStoredCredentials(
+  timeoutMs = AUTH_SESSION_LOAD_TIMEOUT_MS
+): Promise<StoredStandaloneCredentials | null> {
   const metadata = await loadSessionMetadata(timeoutMs);
   if (!metadata?.authenticated) {
     return null;
@@ -172,7 +195,14 @@ async function loadTokens(timeoutMs = AUTH_SESSION_LOAD_TIMEOUT_MS): Promise<Aut
     );
   }
 
-  return (await response.json()) as AuthData;
+  return {
+    metadata,
+    tokens: (await response.json()) as AuthData,
+  };
+}
+
+async function loadTokens(timeoutMs = AUTH_SESSION_LOAD_TIMEOUT_MS): Promise<AuthData | null> {
+  return (await loadStoredCredentials(timeoutMs))?.tokens ?? null;
 }
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
@@ -192,8 +222,11 @@ async function resolveSessionBinding(): Promise<string | null> {
   return metadata?.sessionId ?? latestSessionBinding;
 }
 
-async function persistTokens(data: AuthData | null): Promise<void> {
-  const binding = await resolveSessionBinding();
+async function persistTokens(
+  data: AuthData | null,
+  context?: StandaloneSessionPersistenceContext
+): Promise<void> {
+  const binding = data ? context?.sessionId : await resolveSessionBinding();
   if (!binding) {
     throw new Error('Unable to resolve the Navet browser session');
   }
@@ -204,6 +237,7 @@ async function persistTokens(data: AuthData | null): Promise<void> {
   };
   if (data) {
     headers['Content-Type'] = 'application/json';
+    headers[AUTH_REVISION_HEADER] = String(context?.authRevision);
   }
 
   const response = await fetch(getAuthEndpoint(AUTH_SESSION_ENDPOINT), {
@@ -213,6 +247,11 @@ async function persistTokens(data: AuthData | null): Promise<void> {
     headers,
     body: data ? JSON.stringify(data) : undefined,
   });
+  if (data && response.status === 409) {
+    throw new StandaloneOAuthSessionSupersededError(
+      'A newer Home Assistant session was saved by another tab'
+    );
+  }
   if (!response.ok) {
     throw new Error(
       data
@@ -221,17 +260,29 @@ async function persistTokens(data: AuthData | null): Promise<void> {
     );
   }
 
-  if (!data) {
+  if (data) {
+    const metadata: unknown = await response.json().catch(() => null);
+    if (!context || !isSessionMetadata(metadata) || metadata.sessionId !== context.sessionId) {
+      throw new Error('The Navet authentication service returned an invalid refresh revision');
+    }
+    context.authRevision = metadata.authRevision;
+  } else {
     latestSessionBinding = null;
   }
 }
 
-function getTokenPersistenceSignature(data: AuthData | null): string {
-  return data ? JSON.stringify(data) : 'null';
+function getTokenPersistenceSignature(
+  data: AuthData | null,
+  context: StandaloneSessionPersistenceContext
+): string {
+  return `${context.sessionId}:${data ? JSON.stringify(data) : 'null'}`;
 }
 
-async function persistTokensAfterLibrarySave(data: AuthData | null): Promise<void> {
-  const signature = getTokenPersistenceSignature(data);
+async function persistTokensAfterLibrarySave(
+  data: AuthData | null,
+  context: StandaloneSessionPersistenceContext
+): Promise<void> {
+  const signature = getTokenPersistenceSignature(data, context);
   const existing = libraryTokenPersistenceBySignature.get(signature);
   if (existing) {
     try {
@@ -243,18 +294,18 @@ async function persistTokensAfterLibrarySave(data: AuthData | null): Promise<voi
     }
     return;
   }
-  await persistTokens(data);
+  await persistTokens(data, context);
 }
 
-function saveTokens(data: AuthData | null): void {
+function saveTokens(data: AuthData | null, context: StandaloneSessionPersistenceContext): void {
   // Auth.refreshAccessToken invokes this callback synchronously without awaiting
   // it. Share that request with the awaited persistence pass so failures are
   // surfaced without racing a duplicate write for the same token data.
-  const signature = getTokenPersistenceSignature(data);
+  const signature = getTokenPersistenceSignature(data, context);
   if (libraryTokenPersistenceBySignature.has(signature)) {
     return;
   }
-  const persistence = persistTokens(data);
+  const persistence = persistTokens(data, context);
   libraryTokenPersistenceBySignature.set(signature, persistence);
   void persistence.catch(() => undefined);
 }
@@ -323,7 +374,8 @@ function clearOAuthCallbackUrl(): void {
 
 function toAuthSession(
   auth: Awaited<ReturnType<typeof getAuth>>,
-  metadata: StandaloneSessionMetadata | null
+  metadata: StandaloneSessionMetadata,
+  context: StandaloneSessionPersistenceContext
 ): AuthSession {
   return {
     providerId: 'home_assistant',
@@ -333,32 +385,52 @@ function toAuthSession(
     hassUrl: auth.data.hassUrl,
     auth,
     expiresAt: auth.data.expires,
+    credentialSessionId: context.sessionId,
+    credentialRevision: context.authRevision,
     userId: metadata?.userId ?? undefined,
   };
 }
 
-async function restoreSession(timeoutMs: number): Promise<AuthSession | null> {
-  const storedTokens = await loadTokens(timeoutMs);
-  if (!storedTokens) {
+async function restoreSessionOnce(timeoutMs: number): Promise<AuthSession | null> {
+  const stored = await loadStoredCredentials(timeoutMs);
+  if (!stored) {
     return null;
   }
 
-  const metadata = await loadSessionMetadata(timeoutMs);
+  const context: StandaloneSessionPersistenceContext = {
+    sessionId: stored.metadata.sessionId,
+    authRevision: stored.metadata.authRevision,
+  };
   const auth = await withTimeout(
     getAuth({
-      hassUrl: storedTokens.hassUrl,
-      loadTokens: async () => storedTokens,
-      saveTokens,
+      hassUrl: stored.tokens.hassUrl,
+      loadTokens: async () => stored.tokens,
+      saveTokens: (data) => saveTokens(data, context),
       limitHassInstance: true,
     }),
     timeoutMs
   );
+  persistenceContextByAuth.set(auth, context);
 
   if (auth.expired) {
     await withTimeout(auth.refreshAccessToken(), timeoutMs);
   }
-  await persistTokensAfterLibrarySave(auth.data);
-  return toAuthSession(auth, metadata);
+  await persistTokensAfterLibrarySave(auth.data, context);
+  return toAuthSession(auth, stored.metadata, context);
+}
+
+async function restoreSession(
+  timeoutMs: number,
+  allowSupersededRetry = true
+): Promise<AuthSession | null> {
+  try {
+    return await restoreSessionOnce(timeoutMs);
+  } catch (error) {
+    if (allowSupersededRetry && error instanceof StandaloneOAuthSessionSupersededError) {
+      return await restoreSession(timeoutMs, false);
+    }
+    throw error;
+  }
 }
 
 async function beginOAuthLogin(hassUrl: string): Promise<never> {
@@ -404,6 +476,16 @@ async function beginOAuthLogin(hassUrl: string): Promise<never> {
   clearInstallationPairingKey();
   standaloneOAuthNavigation.assign(payload.authorizeUrl);
   return await new Promise<never>(() => undefined);
+}
+
+async function restoreCurrentStandaloneSession(): Promise<AuthSession> {
+  const restored = await restoreSession(STORED_SESSION_RESTORE_TIMEOUT_MS);
+  if (!restored) {
+    throw new DurableAuthSessionUnavailableError(
+      'The Home Assistant browser session changed while it was refreshing'
+    );
+  }
+  return restored;
 }
 
 export const standaloneOAuthAuth: AuthAdapter = {
@@ -469,13 +551,51 @@ export const standaloneOAuthAuth: AuthAdapter = {
     return await beginOAuthLogin(hassUrl);
   },
   async refresh(session) {
-    if (!session.auth) throw new Error('Missing OAuth session');
-    await session.auth.refreshAccessToken();
-    await persistTokensAfterLibrarySave(session.auth.data);
-    return {
-      ...session,
-      expiresAt: session.auth.data.expires,
-    };
+    if (session.providerId !== 'home_assistant' || !session.auth) {
+      throw new Error('Missing Home Assistant OAuth session');
+    }
+    const metadata = await loadSessionMetadata();
+    if (
+      !metadata?.authenticated ||
+      session.credentialSessionId !== metadata.sessionId ||
+      session.credentialRevision !== metadata.authRevision
+    ) {
+      return await restoreCurrentStandaloneSession();
+    }
+    let context = persistenceContextByAuth.get(session.auth);
+    if (
+      !context &&
+      session.credentialSessionId === metadata.sessionId &&
+      session.credentialRevision === metadata.authRevision
+    ) {
+      context = {
+        sessionId: metadata.sessionId,
+        authRevision: metadata.authRevision,
+      };
+      persistenceContextByAuth.set(session.auth, context);
+    }
+    if (
+      !context ||
+      context.sessionId !== metadata.sessionId ||
+      context.authRevision !== metadata.authRevision
+    ) {
+      return await restoreCurrentStandaloneSession();
+    }
+    try {
+      await session.auth.refreshAccessToken();
+      await persistTokensAfterLibrarySave(session.auth.data, context);
+      return {
+        ...session,
+        credentialSessionId: context.sessionId,
+        credentialRevision: context.authRevision,
+        expiresAt: session.auth.data.expires,
+      };
+    } catch (error) {
+      if (error instanceof StandaloneOAuthSessionSupersededError) {
+        return await restoreCurrentStandaloneSession();
+      }
+      throw error;
+    }
   },
   async invalidatePersistedSession() {
     await invalidateStandaloneOAuthSession();

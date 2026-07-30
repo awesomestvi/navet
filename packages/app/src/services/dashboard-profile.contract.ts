@@ -29,6 +29,7 @@ export const DASHBOARD_PROFILE_HEADERS = {
   clientName: 'X-Navet-Client-Name',
   clientKind: 'X-Navet-Client-Kind',
   preferenceRevision: 'X-Navet-Preference-Revision',
+  preferenceIdentity: 'X-Navet-Preference-Identity',
   errorCode: 'X-Navet-Profile-Error-Code',
 } as const;
 
@@ -128,6 +129,11 @@ export interface DashboardPreferenceDocument<TValues extends object = Record<str
   revision: number;
   updatedAt: string;
   values: TValues;
+  principal: DashboardProfilePrincipal;
+  clientId: string | null;
+}
+
+export interface DashboardPreferenceIdentity {
   principal: DashboardProfilePrincipal;
   clientId: string | null;
 }

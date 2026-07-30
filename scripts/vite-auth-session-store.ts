@@ -18,6 +18,7 @@ import {
 
 export const AUTH_COOKIE_NAME = 'navet_auth_session'
 export const AUTH_BINDING_HEADER = 'X-Navet-OAuth-Binding'
+export const AUTH_REVISION_HEADER = 'X-Navet-Auth-Revision'
 export const AUTH_SESSION_REQUEST_MAX_BYTES = 24 * 1024
 export const AUTH_SESSION_RECORD_MAX_BYTES = 32 * 1024
 export const AUTH_SESSION_RECORD_TOO_LARGE_ERROR_CODE =
@@ -26,6 +27,9 @@ const AUTH_SESSION_RECORD_TOO_LARGE_STATUS = 507
 export const AUTH_SESSION_CAPACITY_ERROR_CODE =
   'credential-session-capacity-reached'
 const AUTH_SESSION_CAPACITY_STATUS = 507
+export const AUTH_SESSION_UNAVAILABLE_ERROR_CODE =
+  'credential-session-record-unavailable'
+const AUTH_SESSION_UNAVAILABLE_STATUS = 503
 
 const COOKIE_ID_PATTERN = /^[a-f0-9]{64}$/
 const PUBLIC_SESSION_ID_PATTERN = /^nas_[a-f0-9]{32}$/
@@ -59,6 +63,7 @@ export interface ViteAuthSessionMetadata {
   authenticated: boolean
   providerId: 'home_assistant'
   sessionId: string
+  authRevision: number
   hassUrl: string | null
   clientId: string | null
   expiresAt: number | null
@@ -82,6 +87,7 @@ export interface ViteStoredAuthSession {
   sessionId: string
   createdAt: number
   updatedAt: number
+  authRevision?: number
   auth: HomeAssistantAuthData | null
   pending: VitePendingOAuth | null
   userId: string | null
@@ -108,6 +114,16 @@ export class ViteAuthSessionCapacityError extends Error {
   }
 }
 
+export class ViteAuthSessionUnavailableError extends Error {
+  readonly code = AUTH_SESSION_UNAVAILABLE_ERROR_CODE
+  readonly statusCode = AUTH_SESSION_UNAVAILABLE_STATUS
+
+  constructor() {
+    super('Home Assistant credential session is unavailable')
+    this.name = 'ViteAuthSessionUnavailableError'
+  }
+}
+
 export function isViteAuthSessionRecordTooLargeError(
   error: unknown
 ): error is ViteAuthSessionRecordTooLargeError {
@@ -128,6 +144,18 @@ export function isViteAuthSessionCapacityError(
     (Boolean(error) &&
       typeof error === 'object' &&
       (error as { code?: unknown }).code === AUTH_SESSION_CAPACITY_ERROR_CODE)
+  )
+}
+
+export function isViteAuthSessionUnavailableError(
+  error: unknown
+): error is ViteAuthSessionUnavailableError {
+  return (
+    error instanceof ViteAuthSessionUnavailableError ||
+    (Boolean(error) &&
+      typeof error === 'object' &&
+      (error as { code?: unknown }).code ===
+        AUTH_SESSION_UNAVAILABLE_ERROR_CODE)
   )
 }
 
@@ -275,6 +303,11 @@ function isValidStoredSession(value: unknown): value is ViteStoredAuthSession {
     PUBLIC_SESSION_ID_PATTERN.test(session.sessionId) &&
     typeof session.createdAt === 'number' &&
     typeof session.updatedAt === 'number' &&
+    (session.authRevision === undefined ||
+      (typeof session.authRevision === 'number' &&
+        Number.isSafeInteger(session.authRevision) &&
+        session.authRevision >= 0 &&
+        session.authRevision < Number.MAX_SAFE_INTEGER)) &&
     (session.auth === null || isValidAuthData(session.auth)) &&
     (session.pending === null || isValidPendingOAuth(session.pending)) &&
     session.userId === null &&
@@ -289,6 +322,7 @@ function createEmptySession(): ViteStoredAuthSession {
     sessionId: `nas_${randomBytes(16).toString('hex')}`,
     createdAt: now,
     updatedAt: now,
+    authRevision: 0,
     auth: null,
     pending: null,
     userId: null,
@@ -309,6 +343,7 @@ function createEphemeralSession(
       .slice(0, 32)}`,
     createdAt: now,
     updatedAt: now,
+    authRevision: 0,
     auth: null,
     pending: null,
     userId: null,
@@ -324,6 +359,7 @@ export function sanitizeAuthSession(
     authenticated: Boolean(auth),
     providerId: 'home_assistant',
     sessionId: session.sessionId,
+    authRevision: session.authRevision ?? 0,
     hassUrl: auth?.hassUrl ?? null,
     clientId: auth?.clientId ?? null,
     expiresAt: auth?.expires ?? null,
@@ -361,8 +397,7 @@ export function createViteAuthSessionStore(
       throw error
     }
     if (size > AUTH_SESSION_RECORD_MAX_BYTES) {
-      rmSync(sessionPath, { force: true })
-      return null
+      throw new ViteAuthSessionUnavailableError()
     }
 
     let serialized: string
@@ -378,11 +413,12 @@ export function createViteAuthSessionStore(
     try {
       parsed = JSON.parse(serialized) as unknown
     } catch {
-      rmSync(sessionPath, { force: true })
-      return null
+      throw new ViteAuthSessionUnavailableError()
+    }
+    if (!isValidStoredSession(parsed)) {
+      throw new ViteAuthSessionUnavailableError()
     }
     if (
-      !isValidStoredSession(parsed) ||
       parsed.updatedAt + AUTH_SESSION_IDLE_TTL_MS < Date.now() ||
       (!parsed.auth && (!parsed.pending || parsed.pending.expiresAt < Date.now()))
     ) {
@@ -421,12 +457,23 @@ export function createViteAuthSessionStore(
         }
         continue
       }
-      const session = readSession(match[1])
-      if (session) {
+      try {
+        const session = readSession(match[1])
+        if (session) {
+          active.push({
+            authenticated: Boolean(session.auth),
+            cookieId: match[1],
+            updatedAt: session.updatedAt,
+          })
+        }
+      } catch (error) {
+        if (!isViteAuthSessionUnavailableError(error)) {
+          throw error
+        }
         active.push({
-          authenticated: Boolean(session.auth),
+          authenticated: true,
           cookieId: match[1],
-          updatedAt: session.updatedAt,
+          updatedAt: now,
         })
       }
     }
@@ -545,6 +592,23 @@ export function createViteAuthSessionStore(
 function getHeader(req: IncomingMessage, name: string): string {
   const value = req.headers[name.toLowerCase()]
   return Array.isArray(value) ? (value[0] ?? '') : (value ?? '')
+}
+
+function getAuthRevision(session: ViteStoredAuthSession): number {
+  return session.authRevision ?? 0
+}
+
+function parseAuthRevisionHeader(req: IncomingMessage): number | null {
+  const value = getHeader(req, AUTH_REVISION_HEADER).trim()
+  if (!/^(0|[1-9][0-9]{0,15})$/.test(value)) {
+    return null
+  }
+  const revision = Number(value)
+  return Number.isSafeInteger(revision) &&
+    revision >= 0 &&
+    revision < Number.MAX_SAFE_INTEGER
+    ? revision
+    : null
 }
 
 function parseViteAuthCookies(
@@ -964,6 +1028,9 @@ function sendSessionStoreError(res: ServerResponse, error: unknown): boolean {
   } else if (isViteAuthSessionCapacityError(error)) {
     code = AUTH_SESSION_CAPACITY_ERROR_CODE
     status = AUTH_SESSION_CAPACITY_STATUS
+  } else if (isViteAuthSessionUnavailableError(error)) {
+    code = AUTH_SESSION_UNAVAILABLE_ERROR_CODE
+    status = AUTH_SESSION_UNAVAILABLE_STATUS
   } else {
     return false
   }
@@ -1072,7 +1139,7 @@ export function createViteAuthRequestHandler(
     return next
   }
 
-  return async (req: IncomingMessage, res: ServerResponse) => {
+  const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     const route = resolveAuthRoute(req)
 
     if (route === '/callback') {
@@ -1182,6 +1249,7 @@ export function createViteAuthRequestHandler(
         const next: ViteStoredAuthSession = {
           ...createEmptySession(),
           updatedAt: Date.now(),
+          authRevision: 1,
           auth,
           pending: null,
           userId: null,
@@ -1378,7 +1446,6 @@ export function createViteAuthRequestHandler(
         })
         return
       }
-      const storedAtStart = context.session
       try {
         const parsed = JSON.parse(await readRequestBody(req)) as unknown
         if (!isValidAuthData(parsed)) {
@@ -1401,21 +1468,92 @@ export function createViteAuthRequestHandler(
           return
         }
 
+        const revisionHeader = getHeader(req, AUTH_REVISION_HEADER).trim()
+        const legacyRefresh = revisionHeader === ''
+        const expectedRevision = parseAuthRevisionHeader(req)
+        if (!legacyRefresh && expectedRevision === null) {
+          sendJson(res, 428, {
+            error: 'Home Assistant auth revision is invalid',
+            code: 'credential-session-revision-required',
+          })
+          return
+        }
+        const current = store.readSession(context.cookieId)
+        const unchanged =
+          Boolean(current?.auth) &&
+          JSON.stringify(current?.auth) === JSON.stringify(parsed)
+        if (!current || current.sessionId !== context.session.sessionId) {
+          if (unchanged && current) {
+            res.setHeader(
+              'Set-Cookie',
+              serializeViteAuthCookieForStore(req, store, context.cookieId)
+            )
+            sendJson(res, 200, store.sanitizeSession(current))
+            return
+          }
+          sendJson(res, 409, {
+            error: 'Auth session changed before refresh completed',
+            code: 'credential-session-superseded',
+            session: current ? store.sanitizeSession(current) : null,
+          })
+          return
+        }
+        if (legacyRefresh) {
+          // Compatibility for a tab that loaded before auth revisions shipped:
+          // a later token expiry may advance the session, while stale/equal
+          // refreshes become successful no-ops instead of retrying forever.
+          if (
+            unchanged ||
+            !current.auth ||
+            parsed.expires <= current.auth.expires
+          ) {
+            res.setHeader(
+              'Set-Cookie',
+              serializeViteAuthCookieForStore(req, store, context.cookieId)
+            )
+            sendJson(res, 200, store.sanitizeSession(current))
+            return
+          }
+        } else if (expectedRevision !== getAuthRevision(current)) {
+          if (unchanged) {
+            res.setHeader(
+              'Set-Cookie',
+              serializeViteAuthCookieForStore(req, store, context.cookieId)
+            )
+            sendJson(res, 200, store.sanitizeSession(current))
+            return
+          }
+          sendJson(res, 409, {
+            error: 'Auth session changed before refresh completed',
+            code: 'credential-session-superseded',
+            session: store.sanitizeSession(current),
+          })
+          return
+        }
+        if (unchanged) {
+          res.setHeader(
+            'Set-Cookie',
+            serializeViteAuthCookieForStore(req, store, context.cookieId)
+          )
+          sendJson(res, 200, store.sanitizeSession(current))
+          return
+        }
+
         const next: ViteStoredAuthSession = {
-          ...context.session,
+          ...current,
           updatedAt: Date.now(),
+          authRevision: getAuthRevision(current) + 1,
           auth: parsed,
           pending: null,
           userId: null,
           userName: null,
         }
-        const current = store.readSession(context.cookieId)
-        if (
-          !current ||
-          JSON.stringify(current) !== JSON.stringify(storedAtStart)
-        ) {
+        const latest = store.readSession(context.cookieId)
+        if (!latest || JSON.stringify(latest) !== JSON.stringify(current)) {
           sendJson(res, 409, {
             error: 'Auth session changed before refresh completed',
+            code: 'credential-session-superseded',
+            session: latest ? store.sanitizeSession(latest) : null,
           })
           return
         }
@@ -1488,5 +1626,16 @@ export function createViteAuthRequestHandler(
 
     res.setHeader('Allow', 'GET, PUT, DELETE')
     sendJson(res, 405, { error: 'Method not allowed' })
+  }
+
+  return async (req: IncomingMessage, res: ServerResponse) => {
+    try {
+      await handleRequest(req, res)
+    } catch (error) {
+      if (sendSessionStoreError(res, error)) {
+        return
+      }
+      throw error
+    }
   }
 }

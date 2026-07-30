@@ -227,6 +227,51 @@ describe('dashboard profile backend conformance', () => {
     }
   });
 
+  it('returns workspace and verified preference identity headers for empty NJS and Vite documents', async () => {
+    profileStore.setProfileStoreFsForTests(createMockFs());
+    const directory = mkdtempSync(join(tmpdir(), 'navet-preference-identity-conformance-'));
+    tempDirectories.push(directory);
+    const viteStore = createViteDashboardProfileStore(join(directory, 'profile.json'));
+    const viteHandler = createViteDashboardProfileRequestHandler({
+      store: viteStore,
+      resolvePrincipal: () => PRINCIPAL,
+    });
+
+    for (const scope of ['account', 'client'] as const) {
+      const path = `/preferences/${scope}`;
+      const njsResult = runNjs('GET', CLIENT_HEADERS, '', true, PRINCIPAL, path);
+      const viteResult = createViteResponse();
+      await viteHandler(createViteRequest('GET', CLIENT_HEADERS, '', path), viteResult.response);
+
+      expect([njsResult.status, viteResult.status]).toEqual([204, 204]);
+      for (const header of [
+        'X-Navet-Profile-Contract',
+        'X-Navet-Installation-Id',
+        'X-Navet-Workspace-Id',
+        'X-Navet-Preference-Identity',
+      ]) {
+        expect(njsResult.headers[header], `NJS ${scope} ${header}`).toBeTruthy();
+        expect(viteResult.header(header), `Vite ${scope} ${header}`).toBeTruthy();
+      }
+
+      const njsIdentity = JSON.parse(
+        decodeURIComponent(njsResult.headers['X-Navet-Preference-Identity'])
+      );
+      const viteIdentity = JSON.parse(
+        decodeURIComponent(viteResult.header('X-Navet-Preference-Identity') ?? '')
+      );
+      expect(njsIdentity).toEqual(viteIdentity);
+      expect(njsIdentity).toEqual({
+        principal: {
+          providerId: PRINCIPAL.providerId,
+          userId: PRINCIPAL.userId,
+          userName: PRINCIPAL.userName,
+        },
+        clientId: scope === 'client' ? CLIENT_HEADERS['X-Navet-Client-Id'] : null,
+      });
+    }
+  });
+
   it('keeps NJS and Vite security, revision, attribution, stale-write, and reset semantics aligned', async () => {
     profileStore.setProfileStoreFsForTests(createMockFs());
     const directory = mkdtempSync(join(tmpdir(), 'navet-profile-conformance-'));

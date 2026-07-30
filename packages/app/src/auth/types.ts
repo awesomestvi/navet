@@ -24,6 +24,10 @@ export interface BaseAuthSession {
 
 export interface HomeAssistantAuthSession extends BaseAuthSession {
   providerId: 'home_assistant';
+  /** Opaque server-side credential session selected by the HttpOnly browser cookie. */
+  credentialSessionId?: string;
+  /** Compare-before-write revision for standalone OAuth token persistence. */
+  credentialRevision?: number;
 }
 
 export interface HomeyAuthSession extends BaseAuthSession {

@@ -445,6 +445,37 @@ describe('dashboard add-on endpoints', () => {
     });
   });
 
+  it('parses verified preference identity and workspace headers from an empty document', async () => {
+    const identity = {
+      principal: {
+        providerId: 'home_assistant',
+        userId: 'ha-user-1',
+        userName: 'Vishal',
+      },
+      clientId: null,
+    };
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(null, {
+        status: 204,
+        headers: {
+          'X-Navet-Installation-Id': 'installation_1',
+          'X-Navet-Workspace-Id': 'workspace_1',
+          'X-Navet-Preference-Identity': encodeURIComponent(JSON.stringify(identity)),
+        },
+      })
+    );
+
+    await expect(loadDashboardPreferences('account')).resolves.toMatchObject({
+      available: true,
+      document: null,
+      identity,
+      workspace: {
+        installationId: 'installation_1',
+        workspaceId: 'workspace_1',
+      },
+    });
+  });
+
   it('identifies the requesting browser when forgetting its bound client record', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ ok: true, forgotten: true }), {

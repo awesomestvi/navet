@@ -114,6 +114,7 @@ export function resetDashboardProfileState() {
     STORAGE_KEYS.roomOrganization,
     STORAGE_KEYS.roomWorkspace,
     STORAGE_KEYS.dashboardProfileSync,
+    STORAGE_KEYS.dashboardPreferenceSync,
     STORAGE_KEYS.settingsProfileScopes,
     STORE_STORAGE_KEYS.theme,
     STORE_STORAGE_KEYS.settings,

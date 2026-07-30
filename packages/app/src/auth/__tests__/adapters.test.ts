@@ -69,6 +69,7 @@ const STANDALONE_SESSION_ID = `nas_${'a'.repeat(32)}`;
 
 function createSessionMetadataResponse(options?: {
   authenticated?: boolean;
+  authRevision?: number;
   hassUrl?: string;
   userId?: string | null;
 }) {
@@ -78,6 +79,7 @@ function createSessionMetadataResponse(options?: {
       authenticated,
       providerId: 'home_assistant',
       sessionId: STANDALONE_SESSION_ID,
+      authRevision: options?.authRevision ?? 0,
       hassUrl: authenticated ? (options?.hassUrl ?? oauthSessionFixture.haBaseUrl) : null,
       clientId: authenticated ? `${window.location.origin}/` : null,
       expiresAt: authenticated ? Date.now() + 3_600_000 : null,
@@ -107,6 +109,7 @@ function createCredentialsResponse(hassUrl = oauthSessionFixture.haBaseUrl) {
 
 function mockStandaloneSessionFetch(options?: {
   authenticated?: boolean;
+  authRevision?: number;
   authorizeError?: string;
   authorizeStatus?: number;
   deletionStatus?: number;
@@ -114,6 +117,7 @@ function mockStandaloneSessionFetch(options?: {
   persistenceStatus?: number;
   userId?: string | null;
 }) {
+  let authRevision = options?.authRevision ?? 0;
   return vi.spyOn(window, 'fetch').mockImplementation(async (input, init) => {
     const url = String(input);
     if (url.endsWith('/__navet_auth__/session/credentials')) {
@@ -137,7 +141,7 @@ function mockStandaloneSessionFetch(options?: {
       );
     }
     if (url.endsWith('/__navet_auth__/session') && !init?.method) {
-      return createSessionMetadataResponse(options);
+      return createSessionMetadataResponse({ ...options, authRevision });
     }
     if (
       url.endsWith('/__navet_auth__/session') &&
@@ -148,6 +152,10 @@ function mockStandaloneSessionFetch(options?: {
         status: options.persistenceStatus,
         headers: { 'Content-Type': 'application/json' },
       });
+    }
+    if (url.endsWith('/__navet_auth__/session') && init?.method === 'PUT') {
+      authRevision += 1;
+      return createSessionMetadataResponse({ ...options, authRevision });
     }
     if (
       url.endsWith('/__navet_auth__/session') &&
@@ -255,9 +263,32 @@ describe('auth adapters', () => {
       `${window.location.origin}/__navet_auth__/session`,
       expect.objectContaining({
         method: 'PUT',
+        headers: expect.objectContaining({
+          'X-Navet-Auth-Revision': '0',
+        }),
         body: JSON.stringify(auth.data),
       })
     );
+  });
+
+  it('deduplicates a library save that finishes before the awaited persistence pass', async () => {
+    const auth = createAuth(oauthSessionFixture.haBaseUrl);
+    const fetchMock = mockStandaloneSessionFetch();
+    getAuthMock.mockImplementationOnce(
+      async (options: { saveTokens: (data: Auth['data'] | null) => void }) => {
+        options.saveTokens(auth.data);
+        await vi.waitFor(() => {
+          expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'PUT')).toHaveLength(1);
+        });
+        return auth;
+      }
+    );
+
+    await expect(standaloneOAuthAuth.init()).resolves.toMatchObject({
+      credentialSessionId: STANDALONE_SESSION_ID,
+      credentialRevision: 1,
+    });
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'PUT')).toHaveLength(1);
   });
 
   it('reports temporarily unavailable startup when the same-origin auth endpoint stalls', async () => {
@@ -642,6 +673,8 @@ describe('auth adapters', () => {
       haBaseUrl: 'https://ha.example.com',
       hassUrl: 'https://ha.example.com',
       auth,
+      credentialSessionId: STANDALONE_SESSION_ID,
+      credentialRevision: 0,
       expiresAt: auth.data.expires,
     });
 
@@ -653,10 +686,112 @@ describe('auth adapters', () => {
         method: 'PUT',
         headers: expect.objectContaining({
           'X-Navet-OAuth-Binding': STANDALONE_SESSION_ID,
+          'X-Navet-Auth-Revision': '0',
         }),
         body: JSON.stringify(auth.data),
       })
     );
+  });
+
+  it('loads the winning server tokens when another tab wins the refresh race', async () => {
+    let serverRevision = 0;
+    let serverTokens = {
+      ...oauthSessionFixture.tokenPayload,
+      hassUrl: oauthSessionFixture.haBaseUrl,
+    };
+    let saveTokens: ((data: Auth['data'] | null) => void) | undefined;
+    let staleWrites = 0;
+    const fetchMock = vi.spyOn(window, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/__navet_auth__/session/credentials')) {
+        return new Response(JSON.stringify(serverTokens), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      if (url.endsWith('/__navet_auth__/session') && !init?.method) {
+        return createSessionMetadataResponse({ authRevision: serverRevision });
+      }
+      if (url.endsWith('/__navet_auth__/session') && init?.method === 'PUT') {
+        const headers = new Headers(init.headers);
+        const expectedRevision = Number(headers.get('X-Navet-Auth-Revision'));
+        const submitted = JSON.parse(String(init.body)) as typeof serverTokens;
+        if (
+          expectedRevision !== serverRevision &&
+          JSON.stringify(submitted) !== JSON.stringify(serverTokens)
+        ) {
+          staleWrites += 1;
+          return new Response(
+            JSON.stringify({
+              code: 'credential-session-superseded',
+              session: {
+                ...(await createSessionMetadataResponse({
+                  authRevision: serverRevision,
+                }).json()),
+              },
+            }),
+            {
+              status: 409,
+              headers: { 'Content-Type': 'application/json' },
+            }
+          );
+        }
+        if (JSON.stringify(submitted) !== JSON.stringify(serverTokens)) {
+          serverTokens = submitted;
+          serverRevision += 1;
+        }
+        return createSessionMetadataResponse({ authRevision: serverRevision });
+      }
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+    getAuthMock.mockImplementation(
+      async (options: {
+        loadTokens: () => Promise<Auth['data']>;
+        saveTokens: (data: Auth['data'] | null) => void;
+      }) => {
+        const auth = createAuth(oauthSessionFixture.haBaseUrl);
+        auth.data = await options.loadTokens();
+        saveTokens = options.saveTokens;
+        return auth;
+      }
+    );
+    const initial = await standaloneOAuthAuth.init();
+    if (!initial?.auth) {
+      throw new Error('Expected the initial standalone OAuth session');
+    }
+    const initialAuth = initial.auth;
+    refreshAccessTokenMock.mockImplementationOnce(async () => {
+      serverTokens = {
+        ...serverTokens,
+        access_token: 'winner-access-token',
+        expires: Date.now() + 3_600_000,
+      };
+      serverRevision = 1;
+      initialAuth.data = {
+        ...initialAuth.data,
+        access_token: 'stale-loser-access-token',
+        expires: Date.now() + 3_600_000,
+      };
+      saveTokens?.(initialAuth.data);
+    });
+
+    const converged = await standaloneOAuthAuth.refresh?.(initial);
+
+    expect(staleWrites).toBe(1);
+    expect(converged).toMatchObject({
+      credentialSessionId: STANDALONE_SESSION_ID,
+      credentialRevision: 1,
+      auth: {
+        data: {
+          access_token: 'winner-access-token',
+        },
+      },
+    });
+    expect(serverTokens.access_token).toBe('winner-access-token');
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
   });
 
   it('surfaces a failed token persistence response without deleting the durable session', async () => {
@@ -671,6 +806,8 @@ describe('auth adapters', () => {
         haBaseUrl: 'https://ha.example.com',
         hassUrl: 'https://ha.example.com',
         auth,
+        credentialSessionId: STANDALONE_SESSION_ID,
+        credentialRevision: 0,
         expiresAt: auth.data.expires,
       })
     ).rejects.toThrow('Unable to persist the refreshed Home Assistant session');

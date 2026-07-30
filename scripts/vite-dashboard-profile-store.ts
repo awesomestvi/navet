@@ -2647,16 +2647,29 @@ function sendProfileStorageUnavailable(res: ServerResponse): void {
   sendJson(res, 503, { error: 'Dashboard profile storage is unavailable' })
 }
 
-function applyStoreHeaders(res: ServerResponse, store: ViteDashboardProfileStore): void {
+function applyWorkspaceHeaders(
+  res: ServerResponse,
+  store: ViteDashboardProfileStore
+): void {
   const workspace = store.getWorkspace()
-  const state = store.getState()
-  const recovery = store.getRecovery()
-  const validators = store.getProfileMetadata()
-  res.setHeader(DASHBOARD_PROFILE_HEADERS.contractVersion, String(DASHBOARD_PROFILE_CONTRACT_VERSION))
-  res.setHeader(DASHBOARD_PROFILE_HEADERS.installationId, workspace.installationId)
+  res.setHeader(
+    DASHBOARD_PROFILE_HEADERS.contractVersion,
+    String(DASHBOARD_PROFILE_CONTRACT_VERSION)
+  )
+  res.setHeader(
+    DASHBOARD_PROFILE_HEADERS.installationId,
+    workspace.installationId
+  )
   res.setHeader(DASHBOARD_PROFILE_HEADERS.workspaceId, workspace.workspaceId)
   res.setHeader(DASHBOARD_PROFILE_HEADERS.profileId, DASHBOARD_PROFILE_ID)
   res.setHeader('X-Navet-Workspace-Created-At', workspace.createdAt)
+}
+
+function applyStoreHeaders(res: ServerResponse, store: ViteDashboardProfileStore): void {
+  applyWorkspaceHeaders(res, store)
+  const state = store.getState()
+  const recovery = store.getRecovery()
+  const validators = store.getProfileMetadata()
   res.setHeader(DASHBOARD_PROFILE_HEADERS.generation, state.generation)
   res.setHeader(DASHBOARD_PROFILE_HEADERS.revision, String(state.revision))
   res.setHeader(DASHBOARD_PROFILE_HEADERS.recovery, recovery.status)
@@ -3068,6 +3081,16 @@ export function createViteDashboardProfileRequestHandler(options: {
         sendJson(res, 400, { error: 'A valid dashboard client identity is required' })
         return
       }
+      applyWorkspaceHeaders(res, store)
+      res.setHeader(
+        DASHBOARD_PROFILE_HEADERS.preferenceIdentity,
+        encodeURIComponent(
+          JSON.stringify({
+            principal: publicPrincipal(principal),
+            clientId: scope === 'client' ? preferenceClient?.id ?? null : null,
+          })
+        )
+      )
       if (method === 'GET') {
         const document = store.getPreference(
           scope,
