@@ -1,7 +1,7 @@
 import { useI18n } from '@navet/app/hooks';
 import {
   applyPwaUpdate,
-  dismissPwaUpdate,
+  snoozePwaUpdate,
   usePwaUpdateState,
 } from '@navet/app/pwa/pwa-update-store';
 import { useEffect, useRef } from 'react';
@@ -33,7 +33,7 @@ export function PwaUpdatePrompt() {
       cancel: {
         label: t('pwa.later'),
         onClick: () => {
-          dismissPwaUpdate();
+          snoozePwaUpdate();
         },
       },
     });

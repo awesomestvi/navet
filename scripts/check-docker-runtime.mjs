@@ -218,6 +218,19 @@ function assertSecurityHeaders(response, surface) {
   }
 }
 
+async function assertWebManifestDelivery(baseUrl) {
+  const response = await fetch(`${baseUrl}/site.webmanifest`);
+  if (
+    response.status !== 200 ||
+    !response.headers.get('content-type')?.startsWith('application/manifest+json') ||
+    response.headers.get('cache-control') !== 'no-cache'
+  ) {
+    throw new Error(
+      'The stable standalone web manifest must use application/manifest+json and revalidate'
+    );
+  }
+}
+
 async function rawHttpStatus(
   baseUrl,
   path,
@@ -1804,6 +1817,7 @@ try {
   if ((await htmlResponse.text()).includes(installationKey)) {
     throw new Error('The installation key leaked into the HTML response');
   }
+  await assertWebManifestDelivery(baseUrl);
   const authApiResponse = await fetch(`${baseUrl}/__navet_auth__/session`, {
     headers: { Cookie: firstBrowser.cookie },
   });
