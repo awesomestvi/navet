@@ -1980,7 +1980,12 @@ function reconcileClientPreferences(
       : null;
     const legacyDocument = collection.records[legacyKey];
     if (boundDocument && boundDocument.scope === 'client') {
-      records[canonicalKey] = boundDocument;
+      // Device preferences belong to the durable browser binding. Keep the
+      // replaceable public client label aligned when that same binding rekeys.
+      records[canonicalKey] =
+        boundDocument.clientId === client.id
+          ? boundDocument
+          : Object.assign({}, boundDocument, { clientId: client.id });
     } else if (
       legacyDocument &&
       legacyDocument.scope === 'client' &&
@@ -2927,9 +2932,34 @@ function loadPreference(
     migrateLegacyClientPreference(collection, client);
   }
   const key = preferenceRecordKey(scope, principal, client);
-  const document =
+  let document =
     collection.records[key] ||
     (scope === 'client' ? collection.records[`client:${client.id}`] : null);
+  if (
+    scope === 'client' &&
+    document &&
+    collection.records[key] === document &&
+    document.clientId !== client.id
+  ) {
+    const relabeledDocument = Object.assign({}, document, {
+      clientId: client.id,
+    });
+    const nextCollection = {
+      contractVersion: CONTRACT_VERSION,
+      records: Object.assign({}, collection.records),
+    };
+    nextCollection.records[key] = relabeledDocument;
+    if (!preferenceCollectionFits(nextCollection, 'client')) {
+      sendProfileStorageUnavailable(r);
+      return;
+    }
+    writeJson(CLIENT_PREFERENCES_PATH, nextCollection);
+    collection.records = nextCollection.records;
+    if (preferenceContext) {
+      preferenceContext.collection = collection;
+    }
+    document = relabeledDocument;
+  }
   applyWorkspaceHeaders(r, workspace);
   r.headersOut[HEADERS.preferenceIdentity] = encodeHeaderJson({
     principal: publicPrincipal(principal),

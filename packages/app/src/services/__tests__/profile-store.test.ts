@@ -1319,6 +1319,24 @@ describe('revisioned NJS dashboard profile store', () => {
     profileStore.handle(first);
     const originalRegistry = JSON.parse(readMockFile(mockFs, CLIENT_REGISTRY_PATH)).clients;
 
+    const preference = createRequest({
+      method: 'PUT',
+      uri: '/__navet_profile__/preferences/client',
+      headersIn: {
+        ...CLIENT_HEADERS,
+        'X-Navet-Base-Revision': '0',
+      },
+      requestText: JSON.stringify({
+        schemaVersion: 1,
+        values: { effectsQuality: 'low' },
+      }),
+    });
+    profileStore.handle(preference);
+    expect(parseResponse(preference)).toMatchObject({
+      clientId: 'client-panel-01',
+      revision: 1,
+    });
+
     const rotated = createRequest({
       method: 'PUT',
       uri: '/__navet_profile__/clients',
@@ -1340,5 +1358,96 @@ describe('revisioned NJS dashboard profile store', () => {
     expect(parseResponse(rotated).clients).toEqual([
       expect.objectContaining({ id: 'client-panel-rotated' }),
     ]);
+
+    const rotatedPreference = createRequest({
+      uri: '/__navet_profile__/preferences/client',
+      headersIn: {
+        ...CLIENT_HEADERS,
+        'X-Navet-Client-Id': 'client-panel-rotated',
+        'X-Navet-Client-Name': encodeURIComponent('Kitchen panel restored'),
+      },
+    });
+    profileStore.handle(rotatedPreference);
+    expect(parseResponse(rotatedPreference)).toMatchObject({
+      clientId: 'client-panel-rotated',
+      revision: 1,
+      values: { effectsQuality: 'low' },
+    });
+    expect(JSON.parse(readMockFile(mockFs, CLIENT_PREFERENCES_PATH)).records).toEqual({
+      [`client-binding:${CLIENT_BINDING_A}`]: expect.objectContaining({
+        clientId: 'client-panel-rotated',
+        revision: 1,
+        values: { effectsQuality: 'low' },
+      }),
+    });
+  });
+
+  it('self-heals a stale preference label after an interrupted same-binding rekey', () => {
+    const mockFs = createMockFs();
+    profileStore.setProfileStoreFsForTests(mockFs);
+    setPrincipal();
+
+    const preference = createRequest({
+      method: 'PUT',
+      uri: '/__navet_profile__/preferences/client',
+      headersIn: {
+        ...CLIENT_HEADERS,
+        'X-Navet-Base-Revision': '0',
+      },
+      requestText: JSON.stringify({
+        schemaVersion: 1,
+        values: { effectsQuality: 'low' },
+      }),
+    });
+    profileStore.handle(preference);
+    expect(preference.return).toHaveBeenCalledWith(200, expect.any(String));
+
+    mockFs.failNextRenameTo(CLIENT_PREFERENCES_PATH);
+    const rotatedHeaders = {
+      ...CLIENT_HEADERS,
+      'X-Navet-Client-Id': 'client-panel-rotated',
+      'X-Navet-Client-Name': encodeURIComponent('Kitchen panel restored'),
+    };
+    const interruptedRekey = createRequest({
+      method: 'PUT',
+      uri: '/__navet_profile__/clients',
+      headersIn: rotatedHeaders,
+    });
+    profileStore.handle(interruptedRekey);
+    expect(interruptedRekey.return).toHaveBeenCalledWith(
+      503,
+      JSON.stringify({ error: 'Dashboard profile storage is unavailable' })
+    );
+    expect(interruptedRekey.headersOut['X-Navet-Profile-Error-Code']).toBe(
+      'profile-storage-unavailable'
+    );
+    expect(JSON.parse(readMockFile(mockFs, CLIENT_REGISTRY_PATH)).clients).toEqual([
+      expect.objectContaining({
+        bindingId: CLIENT_BINDING_A,
+        id: 'client-panel-rotated',
+      }),
+    ]);
+    expect(JSON.parse(readMockFile(mockFs, CLIENT_PREFERENCES_PATH)).records).toEqual({
+      [`client-binding:${CLIENT_BINDING_A}`]: expect.objectContaining({
+        clientId: 'client-panel-01',
+      }),
+    });
+
+    const recoveredPreference = createRequest({
+      uri: '/__navet_profile__/preferences/client',
+      headersIn: rotatedHeaders,
+    });
+    profileStore.handle(recoveredPreference);
+    expect(parseResponse(recoveredPreference)).toMatchObject({
+      clientId: 'client-panel-rotated',
+      revision: 1,
+      values: { effectsQuality: 'low' },
+    });
+    expect(JSON.parse(readMockFile(mockFs, CLIENT_PREFERENCES_PATH)).records).toEqual({
+      [`client-binding:${CLIENT_BINDING_A}`]: expect.objectContaining({
+        clientId: 'client-panel-rotated',
+        revision: 1,
+      }),
+    });
   });
 });

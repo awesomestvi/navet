@@ -538,8 +538,45 @@ describe('createViteDashboardProfileStore', () => {
       }),
     ]);
     expect(store.getPreference('client', PRINCIPAL, rotatedClient)).toMatchObject({
-      clientId: BOUND_CLIENT.id,
+      clientId: rotatedClient.id,
+      revision: 1,
       values: { compactMode: true },
+    });
+  });
+
+  it('self-heals a stale preference label after an interrupted same-binding rekey', () => {
+    const store = createStore();
+    store.touchClient(PRINCIPAL, BOUND_CLIENT);
+    store.savePreference('client', PRINCIPAL, 1, { compactMode: true }, BOUND_CLIENT);
+    const rotatedClient = {
+      ...BOUND_CLIENT,
+      id: 'client-panel-rotated',
+      name: 'Kitchen panel restored',
+    };
+    store.touchClient(PRINCIPAL, rotatedClient);
+
+    const persisted = JSON.parse(readFileSync(store.getPaths().clientPreferences, 'utf8')) as {
+      records: Record<string, { clientId: string }>;
+    };
+    const persistedPreference = persisted.records[`client-binding:${CLIENT_BINDING_A}`];
+    if (!persistedPreference) {
+      throw new Error('Expected the bound client preference to be persisted');
+    }
+    persistedPreference.clientId = BOUND_CLIENT.id;
+    writeFileSync(store.getPaths().clientPreferences, JSON.stringify(persisted), 'utf8');
+
+    expect(store.getPreference('client', PRINCIPAL, rotatedClient)).toMatchObject({
+      clientId: rotatedClient.id,
+      revision: 1,
+      values: { compactMode: true },
+    });
+    expect(
+      JSON.parse(readFileSync(store.getPaths().clientPreferences, 'utf8')).records[
+        `client-binding:${CLIENT_BINDING_A}`
+      ]
+    ).toMatchObject({
+      clientId: rotatedClient.id,
+      revision: 1,
     });
   });
 

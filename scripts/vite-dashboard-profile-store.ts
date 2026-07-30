@@ -1792,7 +1792,12 @@ export function createViteDashboardProfileStore(
         : undefined
       const legacyDocument = collection.records[legacyKey]
       if (boundDocument?.scope === 'client') {
-        records[canonicalKey] = boundDocument
+        // Device preferences belong to the durable browser binding. Keep the
+        // replaceable public client label aligned when that same binding rekeys.
+        records[canonicalKey] =
+          boundDocument.clientId === client.id
+            ? boundDocument
+            : { ...boundDocument, clientId: client.id }
       } else if (
         legacyDocument?.scope === 'client' &&
         legacyDocument.clientId === client.id
@@ -2007,13 +2012,40 @@ export function createViteDashboardProfileStore(
           writeJson(file, nextCollection)
         }
       }
-      return (
+      let document =
         collection.records[key] ??
         (scope === 'client' && client
           ? collection.records[`client:${client.id}`]
           : null) ??
         null
-      )
+      if (
+        scope === 'client' &&
+        client &&
+        document &&
+        collection.records[key] === document &&
+        document.clientId !== client.id
+      ) {
+        const relabeledDocument = { ...document, clientId: client.id }
+        const nextCollection = {
+          contractVersion: DASHBOARD_PROFILE_CONTRACT_VERSION,
+          records: {
+            ...collection.records,
+            [key]: relabeledDocument,
+          },
+        } satisfies PreferenceCollection
+        if (!preferenceCollectionFits(nextCollection, 'client')) {
+          throw new DashboardProfileStorageCapacityError(
+            'Dashboard client preference relabel exceeds storage capacity'
+          )
+        }
+        writeJson(file, nextCollection)
+        collection.records = nextCollection.records
+        if (preferenceContext) {
+          preferenceContext.collection = collection
+        }
+        document = relabeledDocument
+      }
+      return document
     },
     savePreference(
       scope: DashboardPreferenceScope,

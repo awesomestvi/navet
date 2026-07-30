@@ -460,6 +460,68 @@ describe('dashboard profile backend conformance', () => {
     expect([njsOwnerRead.status, viteOwnerRead.status]).toEqual([200, 200]);
   });
 
+  it('relabels device preferences when the same durable binding rotates its client ID', async () => {
+    profileStore.setProfileStoreFsForTests(createMockFs());
+    const directory = mkdtempSync(join(tmpdir(), 'navet-profile-client-rekey-'));
+    tempDirectories.push(directory);
+    const viteStore = createViteDashboardProfileStore(join(directory, 'profile.json'));
+    const viteHandler = createViteDashboardProfileRequestHandler({
+      store: viteStore,
+      resolvePrincipal: () => PRINCIPAL,
+    });
+    const preferenceBody = JSON.stringify({
+      schemaVersion: 1,
+      values: { effectsQuality: 'low' },
+    });
+    const writeHeaders = {
+      ...CLIENT_HEADERS,
+      'X-Navet-Base-Revision': '0',
+    };
+
+    const njsWrite = runNjs(
+      'PUT',
+      writeHeaders,
+      preferenceBody,
+      true,
+      PRINCIPAL,
+      '/preferences/client'
+    );
+    const viteWrite = createViteResponse();
+    await viteHandler(
+      createViteRequest('PUT', writeHeaders, preferenceBody, '/preferences/client'),
+      viteWrite.response
+    );
+    expect([njsWrite.status, viteWrite.status]).toEqual([200, 200]);
+
+    const rotatedHeaders = {
+      ...CLIENT_HEADERS,
+      'X-Navet-Client-Id': 'client-panel-rotated',
+      'X-Navet-Client-Name': encodeURIComponent('Kitchen panel restored'),
+    };
+    const njsTouch = runNjs('PUT', rotatedHeaders, '{}', true, PRINCIPAL, '/clients');
+    const viteTouch = createViteResponse();
+    await viteHandler(
+      createViteRequest('PUT', rotatedHeaders, '{}', '/clients'),
+      viteTouch.response
+    );
+    expect([njsTouch.status, viteTouch.status]).toEqual([200, 200]);
+
+    const njsRead = runNjs('GET', rotatedHeaders, '', true, PRINCIPAL, '/preferences/client');
+    const viteRead = createViteResponse();
+    await viteHandler(
+      createViteRequest('GET', rotatedHeaders, '', '/preferences/client'),
+      viteRead.response
+    );
+    expect([njsRead.status, viteRead.status]).toEqual([200, 200]);
+    for (const body of [njsRead.body, viteRead.body]) {
+      expect(JSON.parse(body ?? '{}')).toMatchObject({
+        clientId: 'client-panel-rotated',
+        revision: 1,
+        values: { effectsQuality: 'low' },
+      });
+    }
+  });
+
   // This deliberately exercises both backends at the full supported
   // 200-client boundary and can overlap with other Vitest workers in CI.
   it('bounds active clients and preferences without rotating or evicting a live binding', async () => {
