@@ -116,6 +116,21 @@ function createCameraDevice(): DeviceWithType {
   };
 }
 
+function createMediaDevice(): DeviceWithType {
+  return {
+    id: 'media_player.kitchen',
+    name: 'Kitchen speaker',
+    room: 'Kitchen',
+    size: 'small',
+    title: 'Daily mix',
+    artist: 'Navet',
+    state: 'playing',
+    volume: 35,
+    isMuted: false,
+    type: 'media',
+  };
+}
+
 describe('DashboardCardItem card locking', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -205,6 +220,45 @@ describe('DashboardCardItem card locking', () => {
 
     expect(renderCardMock).toHaveBeenCalledWith(
       expect.objectContaining({ headerSubtitleOverride: 'Kitchen' })
+    );
+  });
+
+  it('rerenders only when the media presentation variant changes', () => {
+    const device = createMediaDevice();
+    const handleSizeChange = vi.fn();
+    const renderItem = (presentationVariant?: 'media-stack') => (
+      <DashboardCardItem
+        id={device.id}
+        size="small"
+        isEditMode={false}
+        handleSizeChange={handleSizeChange}
+        device={device}
+        presentationVariant={presentationVariant}
+      />
+    );
+    const { rerender } = renderWithProviders(renderItem());
+
+    expect(renderCardMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ presentationVariant: undefined })
+    );
+    renderCardMock.mockClear();
+
+    rerender(renderItem());
+    expect(renderCardMock).not.toHaveBeenCalled();
+
+    rerender(renderItem('media-stack'));
+    expect(renderCardMock).toHaveBeenCalledTimes(1);
+    expect(renderCardMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ presentationVariant: 'media-stack' })
+    );
+
+    rerender(renderItem('media-stack'));
+    expect(renderCardMock).toHaveBeenCalledTimes(1);
+
+    rerender(renderItem());
+    expect(renderCardMock).toHaveBeenCalledTimes(2);
+    expect(renderCardMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ presentationVariant: undefined })
     );
   });
 

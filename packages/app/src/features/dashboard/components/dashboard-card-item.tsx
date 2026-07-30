@@ -908,6 +908,7 @@ function areDashboardCardItemPropsEqual(
     previous.usesHideAction === next.usesHideAction &&
     previous.densePerformanceMode === next.densePerformanceMode &&
     previous.optimizeOffscreenPaint === next.optimizeOffscreenPaint &&
-    previous.headerSubtitleOverride === next.headerSubtitleOverride
+    previous.headerSubtitleOverride === next.headerSubtitleOverride &&
+    previous.presentationVariant === next.presentationVariant
   );
 }
