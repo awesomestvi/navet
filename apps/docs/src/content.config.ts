@@ -31,11 +31,23 @@ const routeIds = new Map([
   ["SECURITY.md", "security"],
 ]);
 
+function getHowToRouteId(entry: string) {
+  if (!entry.startsWith("docs/how-to/") || !entry.endsWith(".md")) {
+    return null;
+  }
+
+  const relativePath = entry
+    .slice("docs/how-to/".length, -".md".length)
+    .replace(/\/index$/, "");
+
+  return relativePath === "index" ? "guide/how-to" : `guide/${relativePath}`;
+}
+
 const docs = defineCollection({
   loader: glob({
     base: "../..",
-    pattern: [...routeIds.keys()],
-    generateId: ({ entry }) => routeIds.get(entry) ?? entry,
+    pattern: [...routeIds.keys(), "docs/how-to/**/*.md"],
+    generateId: ({ entry }) => routeIds.get(entry) ?? getHowToRouteId(entry) ?? entry,
   }),
   schema: docsSchema(),
 });
