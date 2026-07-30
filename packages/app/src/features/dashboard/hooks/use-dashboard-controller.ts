@@ -9,8 +9,6 @@ import type { DeviceCollectionKey } from '@navet/app/hooks';
 import {
   buildDashboardVisibilityResult,
   DEVICE_COLLECTION_KEYS,
-  getAbsorbedDashboardEntityIds,
-  getExpandedHiddenDashboardEntityIds,
   useAggregatedDevices,
   useAggregatedRooms,
   useCardState,
@@ -40,7 +38,6 @@ import { startTransition, useCallback, useEffect, useMemo, useState } from 'reac
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 import { getClimateDashboardGroup } from '../../climate/utils/climate-dashboard-group';
-import { buildSecurityCameraDashboardModel } from '../../security/utils/security-camera-dashboard-model';
 import type { AllViewGrouping } from '../all-view-grid';
 import {
   normalizeMediaStackWidgetData,
@@ -74,6 +71,7 @@ import { useDashboardRoomNavigation } from './use-dashboard-room-navigation';
 import { useEditModeBeforeUnload } from './use-edit-mode-beforeunload';
 import { useHomeDashboardLayout } from './use-home-dashboard-layout';
 import { useHomeLayoutHydrated } from './use-home-layout-hydrated';
+import { useHomeSecurityAlertCount } from './use-home-security-alert-count';
 import { useOnboardingController } from './use-onboarding-controller';
 
 const DASHBOARD_DEVICE_SECTION_IDS = new Set(['home', 'lights', 'climate']);
@@ -420,35 +418,11 @@ export function useDashboardController(): DashboardController {
       visibleCardCount: denseVisibleCardCount,
     });
   }, [activeSection, denseVisibleCardCount, deviceTier, performanceProfile]);
-  const securityAlertCount = useMemo(() => {
-    if (!showHomeSummaryBar || !sectionData.isOverviewSection) {
-      return 0;
-    }
-
-    const expandedHiddenSecurityIds = new Set(
-      getExpandedHiddenDashboardEntityIds(allDevices, hiddenEntityIds)
-    );
-    const absorbedSecurityIds = new Set(
-      getAbsorbedDashboardEntityIds(allDevices, [...expandedHiddenSecurityIds])
-    );
-
-    return buildSecurityCameraDashboardModel({
-      cameras: allDevices.cameras.filter((device) => !expandedHiddenSecurityIds.has(device.id)),
-      covers: (allDevices.covers ?? []).filter(
-        (device) => !expandedHiddenSecurityIds.has(device.id)
-      ),
-      locks: allDevices.locks.filter((device) => !expandedHiddenSecurityIds.has(device.id)),
-      sensors: allDevices.sensors.filter(
-        (device) => !expandedHiddenSecurityIds.has(device.id) && !absorbedSecurityIds.has(device.id)
-      ),
-      persons: (allDevices.persons ?? []).filter(
-        (device) => !expandedHiddenSecurityIds.has(device.id)
-      ),
-      helpers: (allDevices.helpers ?? []).filter(
-        (device) => !expandedHiddenSecurityIds.has(device.id) && !absorbedSecurityIds.has(device.id)
-      ),
-    }).summary.attentionEntityCount;
-  }, [allDevices, hiddenEntityIds, sectionData.isOverviewSection, showHomeSummaryBar]);
+  const securityAlertCount = useHomeSecurityAlertCount({
+    devices: allDevices,
+    enabled: showHomeSummaryBar && sectionData.isOverviewSection,
+    hiddenEntityIds,
+  });
 
   const resetDashboard = useResetDashboard(homeLayoutController);
   const onboarding = useOnboardingController({ allEntityIds, changeRoom, resetDashboard });

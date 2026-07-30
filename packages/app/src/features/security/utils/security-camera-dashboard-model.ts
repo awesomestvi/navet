@@ -74,6 +74,12 @@ export interface CameraDashboardModel {
   summary: SecurityDashboardSummary;
 }
 
+export type SecurityDashboardDeviceCollection = Pick<
+  DeviceCollection,
+  'cameras' | 'locks' | 'sensors'
+> &
+  Partial<Pick<DeviceCollection, 'covers' | 'persons' | 'helpers'>>;
+
 const GROUP_ORDER: SecurityGroupKey[] = [
   'alarms',
   'access',
@@ -390,6 +396,28 @@ function toTypedDevices<TType extends keyof DeviceCollection>(
   type: TType
 ): Array<DeviceCollection[TType][number] & { type: TType }> {
   return devices.map((device) => ({ ...device, type }));
+}
+
+function buildSecurityDashboardCandidates(
+  devices: SecurityDashboardDeviceCollection
+): DeviceWithType[] {
+  const dedupedCameras = collapseCameraVariants(devices.cameras);
+  return collapseOverlappingSecurityDevices([
+    ...toTypedDevices(dedupedCameras, 'cameras'),
+    ...toTypedDevices(devices.covers ?? [], 'covers'),
+    ...toTypedDevices(devices.locks, 'locks'),
+    ...toTypedDevices(devices.sensors, 'sensors'),
+    ...toTypedDevices(devices.persons ?? [], 'persons'),
+    ...toTypedDevices(devices.helpers ?? [], 'helpers'),
+  ]);
+}
+
+export function getSecurityDashboardAlertCount(devices: SecurityDashboardDeviceCollection): number {
+  return getSecurityAlertCount(
+    buildSecurityDashboardCandidates(devices).filter(
+      (device) => getSecurityGroupKey(device) !== null
+    )
+  );
 }
 
 function countBySeverity(entities: DeviceWithType[]) {
@@ -1046,20 +1074,11 @@ function buildGroupSummaries(
 }
 
 export function buildSecurityCameraDashboardModel(
-  devices: Pick<DeviceCollection, 'cameras' | 'locks' | 'sensors'> &
-    Partial<Pick<DeviceCollection, 'covers' | 'persons' | 'helpers'>>,
+  devices: SecurityDashboardDeviceCollection,
   t: TranslateFn = defaultTranslate
 ): CameraDashboardModel {
   const groups = createEmptyGroups();
-  const dedupedCameras = collapseCameraVariants(devices.cameras);
-  const candidates = collapseOverlappingSecurityDevices([
-    ...toTypedDevices(dedupedCameras, 'cameras'),
-    ...toTypedDevices(devices.covers ?? [], 'covers'),
-    ...toTypedDevices(devices.locks, 'locks'),
-    ...toTypedDevices(devices.sensors, 'sensors'),
-    ...toTypedDevices(devices.persons ?? [], 'persons'),
-    ...toTypedDevices(devices.helpers ?? [], 'helpers'),
-  ]);
+  const candidates = buildSecurityDashboardCandidates(devices);
 
   for (const device of candidates) {
     const groupKey = getSecurityGroupKey(device);
