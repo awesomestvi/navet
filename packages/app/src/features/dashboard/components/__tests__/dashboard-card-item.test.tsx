@@ -237,6 +237,24 @@ describe('DashboardCardItem card locking', () => {
     expect(container.firstElementChild?.className).not.toContain('[contain:layout_style_paint]');
   });
 
+  it('scopes dense cards to low effects even when the global preference is high', () => {
+    document.documentElement.dataset.effectsQuality = 'high';
+
+    const { container } = renderWithProviders(
+      <DashboardCardItem
+        id="light.kitchen"
+        size="small"
+        isEditMode={false}
+        handleSizeChange={vi.fn()}
+        device={createLightDevice()}
+        densePerformanceMode
+      />
+    );
+
+    expect(container.firstElementChild).toHaveAttribute('data-navet-effects-quality', 'low');
+    expect(document.documentElement).toHaveAttribute('data-effects-quality', 'high');
+  });
+
   it('adds a settings action to the edit dock for switch cards and forwards the request', () => {
     const dispatchEventSpy = vi.spyOn(window, 'dispatchEvent');
 

@@ -11,6 +11,10 @@ import {
 } from '@navet/app/components/shared/card-size-selector';
 import { dispatchEditModeSettingsRequest } from '@navet/app/components/shared/edit-mode-settings-request';
 import { withTintAlpha } from '@navet/app/components/shared/theme/custom-card-tint-surface';
+import {
+  EffectiveEffectsQualityProvider,
+  useEffectiveEffectsQuality,
+} from '@navet/app/components/shared/theme/effective-effects-quality';
 import { getBaseCardRadiusClassName } from '@navet/app/components/system/tokens';
 import { useAccentColor, useI18n, useTheme } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
@@ -18,6 +22,7 @@ import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
+import { getLowestEffectsQuality } from '@navet/app/utils/effects-quality';
 import { EyeOff, Lock, Settings2, SlidersHorizontal, Unlock, X } from 'lucide-react';
 import type { MouseEvent, ReactNode } from 'react';
 import { lazy, memo, Suspense, useEffect, useMemo, useState } from 'react';
@@ -78,6 +83,7 @@ export const DashboardCardItem = memo(function DashboardCardItem({
 }: DashboardCardItemProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
+  const inheritedEffectsQuality = useEffectiveEffectsQuality();
   const breakpointCols = useBreakpointCols();
   const accentColor = useAccentColor();
   const { ambientLightBleed, disableAnimations, effectsQuality, lowPowerMode } = useSettingsStore(
@@ -110,10 +116,12 @@ export const DashboardCardItem = memo(function DashboardCardItem({
       }),
     [device, disableAnimations, effectsQuality, isEditMode, lowPowerMode]
   );
-  const resolvedEffectsQuality =
+  const resolvedEffectsQuality = getLowestEffectsQuality(
+    inheritedEffectsQuality,
     densePerformanceMode || disableAnimations || lowPowerMode
       ? 'low'
-      : performanceProfile.effectiveEffectsQuality;
+      : performanceProfile.effectiveEffectsQuality
+  );
   const resolvedAmbientLightBleed =
     !densePerformanceMode && ambientLightBleed && performanceProfile.allowAmbientBleed;
   const allowedSizes = getAllowedSizes(device, card, allowExtraLargeSizes);
@@ -281,29 +289,41 @@ export const DashboardCardItem = memo(function DashboardCardItem({
 
   if (draggable && zone) {
     return (
-      <Suspense
-        fallback={
-          <div className={`${containerClassName} touch-none cursor-grab active:cursor-grabbing`}>
-            {cardContent}
-          </div>
-        }
-      >
-        <DashboardCardItemDraggable
-          id={id}
-          zone={zone}
-          spanClass={spanClass}
-          ambientLightBleed={device?.type === 'lights' && resolvedAmbientLightBleed}
+      <EffectiveEffectsQualityProvider value={resolvedEffectsQuality}>
+        <Suspense
+          fallback={
+            <div
+              className={`${containerClassName} touch-none cursor-grab active:cursor-grabbing`}
+              data-navet-effects-quality={resolvedEffectsQuality}
+            >
+              {cardContent}
+            </div>
+          }
         >
-          {cardContent}
-        </DashboardCardItemDraggable>
-      </Suspense>
+          <DashboardCardItemDraggable
+            id={id}
+            zone={zone}
+            spanClass={spanClass}
+            ambientLightBleed={device?.type === 'lights' && resolvedAmbientLightBleed}
+            effectsQuality={resolvedEffectsQuality}
+          >
+            {cardContent}
+          </DashboardCardItemDraggable>
+        </Suspense>
+      </EffectiveEffectsQualityProvider>
     );
   }
 
   return (
-    <div className={`${containerClassName} cursor-inherit`} data-card-nodrag="true">
-      {cardContent}
-    </div>
+    <EffectiveEffectsQualityProvider value={resolvedEffectsQuality}>
+      <div
+        className={`${containerClassName} cursor-inherit`}
+        data-card-nodrag="true"
+        data-navet-effects-quality={resolvedEffectsQuality}
+      >
+        {cardContent}
+      </div>
+    </EffectiveEffectsQualityProvider>
   );
 }, areDashboardCardItemPropsEqual);
 

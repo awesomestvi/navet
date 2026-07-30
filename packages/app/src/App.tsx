@@ -1,4 +1,5 @@
 import { AuthProvider, useAuthSession } from '@navet/app/auth/AuthProvider';
+import { EffectiveEffectsQualityProvider } from '@navet/app/components/shared/theme/effective-effects-quality';
 import { useMediaQuery } from '@navet/app/hooks/use-media-query';
 import { useSettingsStore } from '@navet/app/stores';
 import { settingsSelectors } from '@navet/app/stores/selectors';
@@ -33,7 +34,11 @@ function VisualQualityRoot({ children }: { children: ReactNode }) {
     };
   }, [animationsDisabled, prefersReducedMotion, reducedEffectsEnabled, resolvedEffectsQuality]);
 
-  return children;
+  return (
+    <EffectiveEffectsQualityProvider value={resolvedEffectsQuality}>
+      {children}
+    </EffectiveEffectsQualityProvider>
+  );
 }
 
 function AppLoading({

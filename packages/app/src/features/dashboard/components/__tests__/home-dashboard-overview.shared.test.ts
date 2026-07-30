@@ -11,6 +11,7 @@ import {
   buildHomeOverviewCollections,
   getCardGridGapPx,
   getCardGridTargetWidth,
+  useHomeOverviewCollections,
 } from '../home-dashboard-overview.shared';
 
 const baseDevices: DeviceCollection = {
@@ -104,6 +105,42 @@ describe('home dashboard overview collections', () => {
     expect(collections.allCards.has('missing.entity')).toBe(false);
     expect(collections.flowCards).toEqual([]);
     expect(collections.sectionCards[0]?.cardIds).toEqual(['calendar.kitchen']);
+  });
+
+  it('retains topology references while publishing current state-only card values', () => {
+    const initialDevice = {
+      ...kitchenCalendar,
+      name: 'Kitchen calendar',
+    };
+    const updatedDevice = {
+      ...kitchenCalendar,
+      name: 'Kitchen calendar updated',
+    };
+    const { result, rerender } = renderHook(
+      ({ deviceMap }) =>
+        useHomeOverviewCollections({
+          deviceMap,
+          allCustomCards: [],
+          homeLayout,
+        }),
+      {
+        initialProps: {
+          deviceMap: new Map([['calendar.kitchen', initialDevice]]),
+        },
+      }
+    );
+    const initialAllCards = result.current.allCards;
+    const initialFlowCards = result.current.flowCards;
+    const initialSectionCards = result.current.sectionCards;
+
+    rerender({
+      deviceMap: new Map([['calendar.kitchen', updatedDevice]]),
+    });
+
+    expect(result.current.allCards).not.toBe(initialAllCards);
+    expect(result.current.allCards.get('calendar.kitchen')).toBe(updatedDevice);
+    expect(result.current.flowCards).toBe(initialFlowCards);
+    expect(result.current.sectionCards).toBe(initialSectionCards);
   });
 
   it('keeps the phone small tile aligned to the 168 logical px target footprint', () => {

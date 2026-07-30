@@ -1,5 +1,6 @@
 import type { CardSize } from '@navet/app/components/shared/card-size';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
+import type { EffectsQuality } from '@navet/app/stores/settings-store';
 
 export interface CardShellSurfaceTokens {
   backdropClassName: string;
@@ -13,9 +14,18 @@ function isTallGlassCard(size?: CardSize) {
 
 export function getCardShellSurfaceTokens(
   theme: ThemeType,
-  size?: CardSize
+  size?: CardSize,
+  effectsQuality: EffectsQuality = 'high'
 ): CardShellSurfaceTokens {
   if (theme === 'glass') {
+    if (effectsQuality === 'low') {
+      return {
+        backdropClassName: '',
+        sheenOverlayClassName: null,
+        rootFrameClassName: '',
+      };
+    }
+
     const tallGlassCard = isTallGlassCard(size);
 
     return {

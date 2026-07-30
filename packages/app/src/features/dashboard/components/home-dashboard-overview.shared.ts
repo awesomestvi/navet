@@ -10,7 +10,7 @@ import type { Section } from '@navet/app/navigation/sections';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import { getLogicalViewportWidth, getVisibleViewportSize } from '@navet/app/utils/viewport';
 import type { ReactNode } from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type {
   HomeDashboardLayoutState,
   HomeDashboardSectionSpan,
@@ -217,14 +217,12 @@ export function areCardIdsStable(
   );
 }
 
-export function buildHomeOverviewCollections({
+export function buildHomeOverviewCardMap({
   deviceMap,
   allCustomCards,
-  homeLayout,
 }: {
   deviceMap: Map<string, DeviceWithType>;
   allCustomCards: CustomCard[];
-  homeLayout: HomeDashboardLayoutState;
 }) {
   const cards = new Map<string, DeviceWithType | CustomCard>();
   for (const [id, device] of deviceMap) {
@@ -235,8 +233,18 @@ export function buildHomeOverviewCollections({
     cards.set(card.id, card);
   }
 
+  return cards;
+}
+
+export function buildHomeOverviewTopology({
+  availableCardIds,
+  homeLayout,
+}: {
+  availableCardIds: ReadonlySet<string>;
+  homeLayout: HomeDashboardLayoutState;
+}) {
   const sectionIdSet = new Set(homeLayout.sections.map((section) => section.id));
-  const selectedIds = homeLayout.cardIds.filter((id) => cards.has(id));
+  const selectedIds = homeLayout.cardIds.filter((id) => availableCardIds.has(id));
   const groupedCards = new Map<string, string[]>();
 
   for (const id of selectedIds) {
@@ -254,7 +262,6 @@ export function buildHomeOverviewCollections({
   }
 
   return {
-    allCards: cards,
     flowCards:
       homeLayout.mode !== 'sectioned'
         ? selectedIds
@@ -267,6 +274,53 @@ export function buildHomeOverviewCollections({
       cardIds: groupedCards.get(section.id) ?? [],
     })),
   };
+}
+
+export function buildHomeOverviewCollections({
+  deviceMap,
+  allCustomCards,
+  homeLayout,
+}: {
+  deviceMap: Map<string, DeviceWithType>;
+  allCustomCards: CustomCard[];
+  homeLayout: HomeDashboardLayoutState;
+}) {
+  const allCards = buildHomeOverviewCardMap({ deviceMap, allCustomCards });
+  const topology = buildHomeOverviewTopology({
+    availableCardIds: new Set(allCards.keys()),
+    homeLayout,
+  });
+
+  return { allCards, ...topology };
+}
+
+export function useHomeOverviewCollections({
+  deviceMap,
+  allCustomCards,
+  homeLayout,
+}: {
+  deviceMap: Map<string, DeviceWithType>;
+  allCustomCards: CustomCard[];
+  homeLayout: HomeDashboardLayoutState;
+}) {
+  const allCards = useMemo(
+    () => buildHomeOverviewCardMap({ deviceMap, allCustomCards }),
+    [allCustomCards, deviceMap]
+  );
+  const availableCardIdsKey = JSON.stringify([
+    ...deviceMap.keys(),
+    ...allCustomCards.map((card) => card.id),
+  ]);
+  const availableCardIds = useMemo(
+    () => new Set<string>(JSON.parse(availableCardIdsKey) as string[]),
+    [availableCardIdsKey]
+  );
+  const topology = useMemo(
+    () => buildHomeOverviewTopology({ availableCardIds, homeLayout }),
+    [availableCardIds, homeLayout]
+  );
+
+  return useMemo(() => ({ allCards, ...topology }), [allCards, topology]);
 }
 
 export function getRenderedSectionColumnStart(

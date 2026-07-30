@@ -11,9 +11,9 @@ import { settingsSelectors } from '@navet/app/stores/selectors';
 import { lazy, memo, Suspense, useMemo } from 'react';
 import { useHomeEnergySummary } from '../hooks/use-home-energy-summary';
 import {
-  buildHomeOverviewCollections,
   type HomeDashboardOverviewProps,
   useHomeLayoutViewport,
+  useHomeOverviewCollections,
 } from './home-dashboard-overview.shared';
 import { HomePresentation } from './home-dashboard-overview-presentation';
 
@@ -106,15 +106,11 @@ export const HomeDashboardOverview = memo(function HomeDashboardOverview({
   const showHomeSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
   const { effectiveCols: sectionGridCols, isPortrait: isPortraitHome } = useHomeLayoutViewport();
   const surface = getThemeSurfaceTokens(theme);
-  const { allCards, flowCards, sectionCards } = useMemo(
-    () =>
-      buildHomeOverviewCollections({
-        deviceMap,
-        allCustomCards,
-        homeLayout,
-      }),
-    [allCustomCards, deviceMap, homeLayout]
-  );
+  const { allCards, flowCards, sectionCards } = useHomeOverviewCollections({
+    deviceMap,
+    allCustomCards,
+    homeLayout,
+  });
   const infoBadgeStrip =
     showHomeSummaryBar && onNavigateSection ? (
       <HomeStatusSummary

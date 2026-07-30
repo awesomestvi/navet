@@ -33,6 +33,39 @@ function isArmLinuxBrowser() {
   return isArmLinuxIdentity(identity);
 }
 
+function isRaspberryPiGraphicsIdentity(identity: string) {
+  return /\b(?:broadcom|v3d|videocore)\b/i.test(identity);
+}
+
+function getGraphicsIdentity() {
+  if (typeof document === 'undefined') {
+    return '';
+  }
+
+  try {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('webgl');
+    if (!context) {
+      return '';
+    }
+
+    const debugInfo = context.getExtension('WEBGL_debug_renderer_info') as {
+      UNMASKED_RENDERER_WEBGL: number;
+      UNMASKED_VENDOR_WEBGL: number;
+    } | null;
+    const renderer = String(
+      context.getParameter(debugInfo?.UNMASKED_RENDERER_WEBGL ?? context.RENDERER) ?? ''
+    );
+    const vendor = debugInfo
+      ? String(context.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) ?? '')
+      : '';
+    context.getExtension('WEBGL_lose_context')?.loseContext();
+    return `${vendor} ${renderer}`;
+  } catch {
+    return '';
+  }
+}
+
 /**
  * Estimates the device's rendering tier synchronously using platform, hardware, and CPU signals.
  * The settings store uses this baseline immediately; `detectDeviceTierWithHighEntropy` refines it
@@ -60,6 +93,17 @@ export function detectDeviceTier(): EffectsQuality {
   // filters. ARM Linux is therefore a rendering constraint, not a CPU benchmark result. Users can
   // still opt back into richer effects from Appearance settings.
   if (isArmLinuxBrowser()) {
+    cachedDeviceTier = 'low';
+    return cachedDeviceTier;
+  }
+
+  // Raspberry Pi OS Chromium can advertise a reduced/spoofed CrOS x86_64 identity even though
+  // the browser is using the Pi's V3D compositor. Probe graphics only for that identity or other
+  // constrained four-core devices so high-end browsers do not pay for an unnecessary GL context.
+  const shouldProbeGraphics =
+    /\bCrOS\b/i.test(navigator.userAgent) ||
+    (cores <= 4 && (memoryGb === undefined || memoryGb <= 4));
+  if (shouldProbeGraphics && isRaspberryPiGraphicsIdentity(getGraphicsIdentity())) {
     cachedDeviceTier = 'low';
     return cachedDeviceTier;
   }

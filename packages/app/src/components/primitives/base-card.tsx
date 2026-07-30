@@ -17,6 +17,7 @@ import {
 } from '@navet/app/components/shared/theme/card-readable-text-tokens';
 import { getCardShellSurfaceTokens } from '@navet/app/components/shared/theme/card-shell-surface-tokens';
 import { getCardStateSurfaceStyleTokens } from '@navet/app/components/shared/theme/card-state-surface-tokens';
+import { useEffectiveEffectsQuality } from '@navet/app/components/shared/theme/effective-effects-quality';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import {
   getBaseCardGapClassName,
@@ -209,9 +210,10 @@ export function BaseCard({
   ...props
 }: BaseCardProps) {
   const { theme: activeTheme, accentColor: themeAccentColor } = useTheme();
+  const effectsQuality = useEffectiveEffectsQuality();
   const theme = themeOverride ?? activeTheme;
-  const surface = getThemeSurfaceTokens(theme);
-  const shell = getCardShellSurfaceTokens(theme, size);
+  const surface = getThemeSurfaceTokens(theme, effectsQuality);
+  const shell = getCardShellSurfaceTokens(theme, size, effectsQuality);
   const resolvedSurface = getBaseCardSurfaceTokens({ theme, size, surfaceVariant, surface });
   const baseCardRadiusClassName = getBaseCardRadiusClassName(size);
   const isTiny = isTinyCardSize(size);
@@ -298,7 +300,7 @@ export function BaseCard({
 
   const sheenOverlay =
     !disableDefaultSheen && shell.sheenOverlayClassName ? (
-      <div className={shell.sheenOverlayClassName} />
+      <div className={shell.sheenOverlayClassName} data-card-sheen="true" />
     ) : null;
   const lightOverlay =
     !disableDefaultLightOverlay && surface.lightOverlay ? (
@@ -361,6 +363,7 @@ export function BaseCard({
     <div
       {...props}
       style={mergedStyle}
+      data-effective-effects-quality={effectsQuality}
       className={`relative flex h-full w-full flex-col overflow-hidden ${baseCardRadiusClassName} ${paddingClassName} ${gapClassName} ${resolvedSurface.borderClassName} ${surfaceBackgroundClassName} ${shell.backdropClassName} ${backgroundClassName} ${frameClassName} ${interactive ? 'cursor-pointer' : ''} ${className}`}
     >
       {activeStateUnderlay}
