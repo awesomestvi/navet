@@ -1410,7 +1410,7 @@ function LightsShot() {
 }
 
 function SettingsShot() {
-  return <SettingsSection hiddenTabs={['system']} />;
+  return <SettingsSection />;
 }
 
 function MediaShot() {

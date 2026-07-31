@@ -35,6 +35,7 @@ export const frMessages = {
     'Utilisez cet appareil pour un comportement spécifique au panneau, ou tous les appareils pour synchroniser la modification avec le profil de tableau de bord partagé.',
   'settings.scopeDialog.thisDevice': 'Cet appareil',
   'settings.scopeDialog.allDevices': 'Tous les appareils',
+  'settings.search.noResults': 'Aucun réglage trouvé',
   'settings.nav.appearance': 'Apparence',
   'settings.nav.localization': 'Localisation',
   'settings.nav.interaction': 'Interaction',
@@ -42,7 +43,7 @@ export const frMessages = {
   'settings.nav.habits': 'Habitudes',
   'settings.nav.experimental': 'Expérimental',
   'settings.nav.system': 'Système',
-  'settings.nav.project': 'Projet',
+  'settings.nav.project': 'À propos de Navet',
   'settings.appearance.sectionTitle': 'Apparence',
   'settings.appearance.sectionDescription':
     'Thème, fond, intensité du verre et ambiance lumineuse qui définissent l’identité visuelle de Navet.',
@@ -359,7 +360,7 @@ export const frMessages = {
     '{client} a été retiré de la liste des tableaux de bord connectés. Sa connexion n’a pas été modifiée.',
   'settings.system.clients.forgetFailed': 'Impossible de supprimer l’enregistrement de l’appareil.',
   'settings.system.logout.description': 'Mettre fin à cette session Navet sur cet appareil.',
-  'settings.project.sectionTitle': 'Projet',
+  'settings.project.sectionTitle': 'À propos de Navet',
   'settings.project.sectionDescription':
     'Détails de version, liens du mainteneur et bases juridiques de l’utilisation de Navet.',
   'settings.project.about.title': 'À propos',

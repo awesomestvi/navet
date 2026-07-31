@@ -34,6 +34,7 @@ export const plMessages = {
     'Wybierz to urządzenie dla ustawień lokalnych albo wszystkie urządzenia, aby zsynchronizować zmianę ze wspólnym profilem panelu.',
   'settings.scopeDialog.thisDevice': 'To urządzenie',
   'settings.scopeDialog.allDevices': 'Wszystkie urządzenia',
+  'settings.search.noResults': 'Nie znaleziono ustawień',
   'settings.nav.appearance': 'Wygląd',
   'settings.nav.localization': 'Język i region',
   'settings.nav.interaction': 'Interakcja',
@@ -41,7 +42,7 @@ export const plMessages = {
   'settings.nav.habits': 'Nawyki',
   'settings.nav.experimental': 'Eksperymentalne',
   'settings.nav.system': 'System',
-  'settings.nav.project': 'Projekt',
+  'settings.nav.project': 'O Navet',
   'settings.appearance.sectionTitle': 'Wygląd',
   'settings.appearance.sectionDescription':
     'Motyw, tapeta, intensywność szkła i poświata oświetlenia określają wygląd Navet.',
@@ -449,7 +450,7 @@ export const plMessages = {
     'Usunięto {client} z listy połączonych dashboardów. Dane logowania nie zostały zmienione.',
   'settings.system.clients.forgetFailed': 'Nie udało się usunąć wpisu urządzenia.',
   'settings.system.logout.description': 'Zakończ tę sesję Navet na tym urządzeniu.',
-  'settings.project.sectionTitle': 'Projekt',
+  'settings.project.sectionTitle': 'O Navet',
   'settings.project.sectionDescription':
     'Informacje o wersji, opiekunach projektu i podstawach prawnych korzystania z Navet.',
   'settings.project.about.title': 'O projekcie',

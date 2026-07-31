@@ -42,6 +42,7 @@ export const itMessages = {
   'settings.hero.title': 'Un posto più tranquillo per configurare Navet.',
   'settings.hero.description':
     'Regola aspetto, comportamento e connessione di Navet in un unico posto.',
+  'settings.search.noResults': 'Nessuna impostazione trovata',
   'settings.nav.appearance': 'Aspetto',
   'settings.nav.localization': 'Localizzazione',
   'settings.nav.interaction': 'Interazione',
@@ -49,7 +50,7 @@ export const itMessages = {
   'settings.nav.habits': 'Abitudini',
   'settings.nav.experimental': 'Sperimentale',
   'settings.nav.system': 'Sistema',
-  'settings.nav.project': 'Progetto',
+  'settings.nav.project': 'Informazioni su Navet',
   'settings.appearance.sectionTitle': 'Aspetto',
   'settings.appearance.sectionDescription':
     'Tema, sfondo, intensità del vetro e atmosfera luminosa che definiscono l’identità visiva di Navet.',
@@ -366,7 +367,7 @@ export const itMessages = {
     '{client} è stata rimossa dall’elenco delle dashboard connesse. Il suo accesso non è cambiato.',
   'settings.system.clients.forgetFailed': 'Impossibile rimuovere il record del dispositivo.',
   'settings.system.logout.description': 'Termina questa sessione Navet su questo dispositivo.',
-  'settings.project.sectionTitle': 'Progetto',
+  'settings.project.sectionTitle': 'Informazioni su Navet',
   'settings.project.sectionDescription':
     'Dettagli versione, link del manutentore e informazioni legali di base per usare Navet.',
   'settings.project.about.title': 'Informazioni',

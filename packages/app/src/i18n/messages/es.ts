@@ -34,6 +34,7 @@ export const esMessages = {
     'Utilice este dispositivo para un comportamiento específico del panel o todos los dispositivos para sincronizar el cambio con el perfil del panel compartido.',
   'settings.scopeDialog.thisDevice': 'este dispositivo',
   'settings.scopeDialog.allDevices': 'Todos los dispositivos',
+  'settings.search.noResults': 'No se encontraron ajustes',
   'settings.nav.appearance': 'Apariencia',
   'settings.nav.localization': 'Localización',
   'settings.nav.interaction': 'Interacción',
@@ -41,7 +42,7 @@ export const esMessages = {
   'settings.nav.habits': 'Hábitos',
   'settings.nav.experimental': 'Experimental',
   'settings.nav.system': 'Sistema',
-  'settings.nav.project': 'Proyecto',
+  'settings.nav.project': 'Acerca de Navet',
   'settings.appearance.sectionTitle': 'Apariencia',
   'settings.appearance.sectionDescription':
     'Tema, fondo, intensidad del cristal y ambiente de luz que definen la identidad visual de Navet.',
@@ -356,7 +357,7 @@ export const esMessages = {
     '{client} se eliminó de la lista de paneles conectados. Su inicio de sesión no cambió.',
   'settings.system.clients.forgetFailed': 'No se pudo eliminar el registro del dispositivo.',
   'settings.system.logout.description': 'Finaliza esta sesión de Navet en este dispositivo.',
-  'settings.project.sectionTitle': 'Proyecto',
+  'settings.project.sectionTitle': 'Acerca de Navet',
   'settings.project.sectionDescription':
     'Detalles de versión, enlaces del mantenedor y fundamentos legales para usar Navet.',
   'settings.project.about.title': 'Acerca de',

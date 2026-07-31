@@ -1,3 +1,4 @@
+import { NavigationWorkspace } from '@navet/app/components/patterns';
 import { Button } from '@navet/app/components/primitives';
 import {
   getThemeSurfaceTokens,
@@ -43,24 +44,13 @@ function WorkspaceStatus({
   }
 
   return (
-    <section
+    <NavigationWorkspace.Frame
       aria-label={labels.title}
-      className={cn(
-        'flex h-[min(82dvh,54rem)] min-h-0 max-h-full w-full flex-col overflow-hidden rounded-[28px] border',
-        surface.shellPanel,
-        surface.border,
-        surface.cardShadow,
-        className
-      )}
+      className={cn('h-[min(82dvh,54rem)] max-h-full', className)}
       data-room-workspace
       data-room-workspace-layout="status"
     >
-      <header
-        className={cn(
-          'flex min-w-0 items-start justify-between gap-3 border-b px-4 py-4 md:px-5',
-          surface.border
-        )}
-      >
+      <NavigationWorkspace.Header className="flex min-w-0 items-start justify-between gap-3 px-4 py-4 md:px-5">
         <div className="min-w-0">
           <h1 className={cn(navetTypographyTokens.pageHeading, surface.textPrimary)}>
             {labels.title}
@@ -70,11 +60,11 @@ function WorkspaceStatus({
           </p>
         </div>
         {headerTrailing ? <div className="shrink-0">{headerTrailing}</div> : null}
-      </header>
+      </NavigationWorkspace.Header>
       <div className="min-h-0 flex-1 overflow-y-auto">
         <RoomWorkspaceStatusPanel status={viewModel.status} labels={labels} actions={actions} />
       </div>
-    </section>
+    </NavigationWorkspace.Frame>
   );
 }
 
@@ -89,26 +79,22 @@ export function RoomsWorkspaceDesktop(props: RoomsWorkspaceProps) {
   const panelProps = { ...props, surface, accentColor, showInlineSaveBar: true };
 
   return (
-    <section
+    <NavigationWorkspace.Frame
       aria-label={labels.title}
-      className={cn(
-        'flex h-[min(78dvh,54rem)] min-h-0 max-h-full w-full flex-col overflow-hidden rounded-[28px] border',
-        surface.shellPanel,
-        surface.border,
-        surface.cardShadow,
-        className
-      )}
+      className={cn('h-[min(78dvh,54rem)] max-h-full', className)}
       data-room-workspace
       data-room-workspace-layout="desktop"
     >
       <RoomWorkspaceHeader {...panelProps} trailingAction={headerTrailing} />
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(16rem,0.64fr)_minmax(0,1.36fr)]">
-        <RoomOutline {...panelProps} />
-        <main className={cn('min-h-0 border-l', surface.border)}>
+      <NavigationWorkspace.Body className="grid-cols-[minmax(16rem,0.64fr)_minmax(0,1.36fr)]">
+        <NavigationWorkspace.Sidebar>
+          <RoomOutline {...panelProps} />
+        </NavigationWorkspace.Sidebar>
+        <NavigationWorkspace.Content>
           <RoomWorkspaceActivePanel {...panelProps} />
-        </main>
-      </div>
-    </section>
+        </NavigationWorkspace.Content>
+      </NavigationWorkspace.Body>
+    </NavigationWorkspace.Frame>
   );
 }
 
@@ -123,26 +109,22 @@ export function RoomsWorkspaceTablet(props: RoomsWorkspaceProps) {
   const panelProps = { ...props, surface, accentColor, showInlineSaveBar: true };
 
   return (
-    <section
+    <NavigationWorkspace.Frame
       aria-label={labels.title}
-      className={cn(
-        'flex h-[min(82dvh,54rem)] min-h-0 max-h-full w-full flex-col overflow-hidden rounded-[28px] border',
-        surface.shellPanel,
-        surface.border,
-        surface.cardShadow,
-        className
-      )}
+      className={cn('h-[min(82dvh,54rem)] max-h-full', className)}
       data-room-workspace
       data-room-workspace-layout="tablet"
     >
       <RoomWorkspaceHeader {...panelProps} trailingAction={headerTrailing} />
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(15rem,0.64fr)_minmax(0,1.36fr)]">
-        <RoomOutline {...panelProps} />
-        <main className={cn('min-h-0 border-l', surface.border)}>
+      <NavigationWorkspace.Body className="grid-cols-[minmax(15rem,0.64fr)_minmax(0,1.36fr)]">
+        <NavigationWorkspace.Sidebar>
+          <RoomOutline {...panelProps} />
+        </NavigationWorkspace.Sidebar>
+        <NavigationWorkspace.Content>
           <RoomWorkspaceActivePanel {...panelProps} />
-        </main>
-      </div>
-    </section>
+        </NavigationWorkspace.Content>
+      </NavigationWorkspace.Body>
+    </NavigationWorkspace.Frame>
   );
 }
 
@@ -164,15 +146,9 @@ export function RoomsWorkspacePhone(props: RoomsWorkspaceProps) {
     viewModel.stage !== 'impact-review';
 
   return (
-    <section
+    <NavigationWorkspace.Frame
       aria-label={labels.title}
-      className={cn(
-        'flex h-[min(88dvh,54rem)] min-h-0 max-h-full w-full flex-col overflow-hidden rounded-[28px] border',
-        surface.shellPanel,
-        surface.border,
-        surface.cardShadow,
-        className
-      )}
+      className={cn('h-[min(88dvh,54rem)] max-h-full', className)}
       data-room-workspace
       data-room-workspace-layout="phone"
     >
@@ -202,7 +178,7 @@ export function RoomsWorkspacePhone(props: RoomsWorkspaceProps) {
           <RoomWorkspaceActivePanel {...panelProps} />
         )}
       </main>
-    </section>
+    </NavigationWorkspace.Frame>
   );
 }
 

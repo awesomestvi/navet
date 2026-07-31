@@ -34,6 +34,7 @@ export const daMessages = {
     'Brug denne enhed til panelspecifik adfærd eller alle enheder til at synkronisere ændringen med den delte dashboardprofil.',
   'settings.scopeDialog.thisDevice': 'Denne enhed',
   'settings.scopeDialog.allDevices': 'Alle enheder',
+  'settings.search.noResults': 'Ingen indstillinger fundet',
   'settings.nav.appearance': 'Udseende',
   'settings.nav.localization': 'Lokalisering',
   'settings.nav.interaction': 'Interaktion',
@@ -41,7 +42,7 @@ export const daMessages = {
   'settings.nav.habits': 'Vaner',
   'settings.nav.experimental': 'Eksperimentel',
   'settings.nav.system': 'System',
-  'settings.nav.project': 'Projekt',
+  'settings.nav.project': 'Om Navet',
   'settings.appearance.sectionTitle': 'Udseende',
   'settings.appearance.sectionDescription':
     'Tema, tapet, glasintensitet og lysstemning, der former Navets visuelle identitet.',
@@ -448,7 +449,7 @@ export const daMessages = {
     '{client} blev fjernet fra listen over tilsluttede dashboards. Dets login blev ikke ændret.',
   'settings.system.clients.forgetFailed': 'Enhedsposten kunne ikke fjernes.',
   'settings.system.logout.description': 'Afslut denne Navet-session på denne enhed.',
-  'settings.project.sectionTitle': 'Projekt',
+  'settings.project.sectionTitle': 'Om Navet',
   'settings.project.sectionDescription':
     'Versionsdetaljer, vedligeholdelseslinks og det juridiske grundlag for brug af Navet.',
   'settings.project.about.title': 'Om',

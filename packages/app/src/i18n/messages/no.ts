@@ -35,6 +35,7 @@ export const noMessages = {
     'Bruk denne enheten for panelspesifikk oppførsel, eller alle enheter for å synkronisere endringen med den delte oversiktsprofilen.',
   'settings.scopeDialog.thisDevice': 'Denne enheten',
   'settings.scopeDialog.allDevices': 'Alle enheter',
+  'settings.search.noResults': 'Ingen innstillinger funnet',
   'settings.nav.appearance': 'Utseende',
   'settings.nav.localization': 'Lokalisering',
   'settings.nav.interaction': 'Interaksjon',
@@ -42,7 +43,7 @@ export const noMessages = {
   'settings.nav.habits': 'Vaner',
   'settings.nav.experimental': 'Eksperimentell',
   'settings.nav.system': 'System',
-  'settings.nav.project': 'Prosjekt',
+  'settings.nav.project': 'Om Navet',
   'settings.appearance.sectionTitle': 'Utseende',
   'settings.appearance.sectionDescription':
     'Tema, tapet, glassintensitet og lysstemning som former Navets visuelle identitet.',
@@ -449,7 +450,7 @@ export const noMessages = {
     '{client} ble fjernet fra listen over tilkoblede dashboards. Innloggingen ble ikke endret.',
   'settings.system.clients.forgetFailed': 'Enhetsoppføringen kunne ikke fjernes.',
   'settings.system.logout.description': 'Avslutt denne Navet-økten på denne enheten.',
-  'settings.project.sectionTitle': 'Prosjekt',
+  'settings.project.sectionTitle': 'Om Navet',
   'settings.project.sectionDescription':
     'Versjonsdetaljer, vedlikeholderkoblinger og det juridiske grunnleggende for bruk av Navet.',
   'settings.project.about.title': 'Om',

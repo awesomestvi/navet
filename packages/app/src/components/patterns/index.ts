@@ -19,6 +19,20 @@ export {
   type SettingsLivePreviewFrameProps,
 } from './interaction-preview-card';
 export {
+  NavigationWorkspace,
+  NavigationWorkspaceBody,
+  NavigationWorkspaceContent,
+  NavigationWorkspaceFrame,
+  NavigationWorkspaceGroup,
+  NavigationWorkspaceHeader,
+  NavigationWorkspaceItem,
+  NavigationWorkspaceItemButton,
+  NavigationWorkspaceItemIcon,
+  NavigationWorkspaceItemText,
+  NavigationWorkspaceSeparator,
+  NavigationWorkspaceSidebar,
+} from './navigation-workspace';
+export {
   getPortalActionDockAnchorRect,
   PortalActionDock,
   type PortalActionDockAnchorRect,

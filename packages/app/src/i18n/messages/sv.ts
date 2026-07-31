@@ -34,6 +34,7 @@ export const svMessages = {
     'Använd den här enheten för panelspecifikt beteende eller alla enheter för att synkronisera ändringen med den delade dashboardprofilen.',
   'settings.scopeDialog.thisDevice': 'Den här enheten',
   'settings.scopeDialog.allDevices': 'Alla enheter',
+  'settings.search.noResults': 'Inga inställningar hittades',
   'settings.nav.appearance': 'Utseende',
   'settings.nav.localization': 'Lokalisering',
   'settings.nav.interaction': 'Interaktion',
@@ -41,7 +42,7 @@ export const svMessages = {
   'settings.nav.habits': 'Vanor',
   'settings.nav.experimental': 'Experimentellt',
   'settings.nav.system': 'System',
-  'settings.nav.project': 'Projekt',
+  'settings.nav.project': 'Om Navet',
   'settings.appearance.sectionTitle': 'Utseende',
   'settings.appearance.sectionDescription':
     'Tema, bakgrund, glasintensitet och ljusatmosfär som formar Navets visuella identitet.',
@@ -355,7 +356,7 @@ export const svMessages = {
     '{client} togs bort från listan över anslutna dashboards. Inloggningen ändrades inte.',
   'settings.system.clients.forgetFailed': 'Det gick inte att ta bort enhetsposten.',
   'settings.system.logout.description': 'Avsluta Navet-sessionen på den här enheten.',
-  'settings.project.sectionTitle': 'Projekt',
+  'settings.project.sectionTitle': 'Om Navet',
   'settings.project.sectionDescription':
     'Versionsdetaljer, maintainer-länkar och den juridiska grunden för att använda Navet.',
   'settings.project.about.title': 'Om',

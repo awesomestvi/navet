@@ -34,6 +34,7 @@ export const enMessages = {
     'Use this device for panel-specific behavior, or all devices to sync the change with the shared dashboard profile.',
   'settings.scopeDialog.thisDevice': 'This device',
   'settings.scopeDialog.allDevices': 'All devices',
+  'settings.search.noResults': 'No settings found',
   'settings.nav.appearance': 'Appearance',
   'settings.nav.localization': 'Localization',
   'settings.nav.interaction': 'Interaction',
@@ -41,7 +42,7 @@ export const enMessages = {
   'settings.nav.habits': 'Habits',
   'settings.nav.experimental': 'Experimental',
   'settings.nav.system': 'System',
-  'settings.nav.project': 'Project',
+  'settings.nav.project': 'About Navet',
   'settings.appearance.sectionTitle': 'Appearance',
   'settings.appearance.sectionDescription':
     'Theme, wallpaper, glass intensity, and lighting ambience that shape Navet’s visual identity.',
@@ -447,7 +448,7 @@ export const enMessages = {
     '{client} was removed from the connected dashboard list. Its login was not changed.',
   'settings.system.clients.forgetFailed': 'The device record could not be removed.',
   'settings.system.logout.description': 'End this Navet session on this device.',
-  'settings.project.sectionTitle': 'Project',
+  'settings.project.sectionTitle': 'About Navet',
   'settings.project.sectionDescription':
     'Version details, maintainer links, and the legal basics for using Navet.',
   'settings.project.about.title': 'About',

@@ -35,6 +35,7 @@ export const deMessages = {
     'Verwenden Sie dieses Gerät für Panel-spezifisches Verhalten oder alle Geräte, um die Änderung mit dem freigegebenen Dashboard-Profil zu synchronisieren.',
   'settings.scopeDialog.thisDevice': 'Dieses Gerät',
   'settings.scopeDialog.allDevices': 'Alle Geräte',
+  'settings.search.noResults': 'Keine Einstellungen gefunden',
   'settings.nav.appearance': 'Darstellung',
   'settings.nav.localization': 'Lokalisierung',
   'settings.nav.interaction': 'Interaktion',
@@ -42,7 +43,7 @@ export const deMessages = {
   'settings.nav.habits': 'Gewohnheiten',
   'settings.nav.experimental': 'Experimentell',
   'settings.nav.system': 'System',
-  'settings.nav.project': 'Projekt',
+  'settings.nav.project': 'Über Navet',
   'settings.appearance.sectionTitle': 'Darstellung',
   'settings.appearance.sectionDescription':
     'Thema, Hintergrundbild, Glasintensität und Lichtambiente, die Navets visuelle Identität prägen.',
@@ -359,7 +360,7 @@ export const deMessages = {
     '{client} wurde aus der Liste der verbundenen Dashboards entfernt. Die Anmeldung wurde nicht geändert.',
   'settings.system.clients.forgetFailed': 'Der Geräteeintrag konnte nicht entfernt werden.',
   'settings.system.logout.description': 'Diese Navet-Sitzung auf diesem Gerät beenden.',
-  'settings.project.sectionTitle': 'Projekt',
+  'settings.project.sectionTitle': 'Über Navet',
   'settings.project.sectionDescription':
     'Versionsdetails, Maintainer-Links und die rechtlichen Grundlagen für die Nutzung von Navet.',
   'settings.project.about.title': 'Info',

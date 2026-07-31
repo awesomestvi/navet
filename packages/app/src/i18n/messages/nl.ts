@@ -35,6 +35,7 @@ export const nlMessages = {
     'Gebruik dit apparaat voor paneelspecifiek gedrag, of alle apparaten om de wijziging te synchroniseren met het gedeelde dashboardprofiel.',
   'settings.scopeDialog.thisDevice': 'Dit apparaat',
   'settings.scopeDialog.allDevices': 'Alle apparaten',
+  'settings.search.noResults': 'Geen instellingen gevonden',
   'settings.nav.appearance': 'Uiterlijk',
   'settings.nav.localization': 'Lokalisatie',
   'settings.nav.interaction': 'Interactie',
@@ -42,7 +43,7 @@ export const nlMessages = {
   'settings.nav.habits': 'Gewoonten',
   'settings.nav.experimental': 'Experimenteel',
   'settings.nav.system': 'Systeem',
-  'settings.nav.project': 'Project',
+  'settings.nav.project': 'Over Navet',
   'settings.appearance.sectionTitle': 'Uiterlijk',
   'settings.appearance.sectionDescription':
     'Thema, achtergrond, glasintensiteit en verlichtingssfeer die de visuele identiteit van Navet bepalen.',
@@ -452,7 +453,7 @@ export const nlMessages = {
     '{client} is uit de lijst met verbonden dashboards verwijderd. De login is niet gewijzigd.',
   'settings.system.clients.forgetFailed': 'Het apparaatrecord kon niet worden verwijderd.',
   'settings.system.logout.description': 'Beëindig deze Navet-sessie op dit apparaat.',
-  'settings.project.sectionTitle': 'Project',
+  'settings.project.sectionTitle': 'Over Navet',
   'settings.project.sectionDescription':
     'Versiedetails, links naar beheerders en de juridische basis voor het gebruik van Navet.',
   'settings.project.about.title': 'Over',

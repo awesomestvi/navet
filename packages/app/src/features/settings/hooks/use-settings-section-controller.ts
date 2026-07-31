@@ -14,12 +14,6 @@ import { useShallow } from 'zustand/react/shallow';
 import { getSettingsSectionStyles } from './settings-section-styles';
 import { useSettingsSectionActions } from './use-settings-section-actions';
 
-export type SectionNavItem = {
-  id: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-};
-
 type ProviderCardStatus =
   | 'connected'
   | 'connecting'

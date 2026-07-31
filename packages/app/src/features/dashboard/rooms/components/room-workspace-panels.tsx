@@ -17,6 +17,8 @@ import {
 import {
   CardDialogTabList,
   DashboardEmptyState,
+  NavigationWorkspace,
+  NavigationWorkspaceHeader,
   SelectableCheckboxRow,
 } from '@navet/app/components/patterns';
 import {
@@ -76,7 +78,7 @@ import {
   UsersRound,
   X,
 } from 'lucide-react';
-import { type CSSProperties, type ReactNode, useId, useMemo, useState } from 'react';
+import { type ReactNode, useId, useMemo, useState } from 'react';
 import { RoomSymbolIcon } from './room-symbol-icon';
 import { RoomWallpaperPreviewImage } from './room-wallpaper-preview-image';
 import type {
@@ -183,30 +185,31 @@ function RoomSymbol({
 }) {
   const isCompact = size === 'compact';
   const isHeader = size === 'header';
+  const content = room.symbol ? (
+    <RoomSymbolIcon
+      value={room.symbol}
+      className={size === 'standard' ? navetIconSizeTokens.md : navetIconSizeTokens.sm}
+    />
+  ) : (
+    room.name.trim().slice(0, 1).toLocaleUpperCase() || <Home />
+  );
+
+  if (isCompact) {
+    return <NavigationWorkspace.ItemIcon>{content}</NavigationWorkspace.ItemIcon>;
+  }
 
   return (
     <span
       aria-hidden="true"
       className={cn(
         'flex shrink-0 items-center justify-center border font-semibold',
-        isCompact
-          ? 'h-8 w-8 rounded-[14px] text-sm'
-          : isHeader
-            ? 'h-9 w-9 rounded-2xl text-sm'
-            : 'h-10 w-10 rounded-[18px] text-base',
+        isHeader ? 'h-9 w-9 rounded-2xl text-sm' : 'h-10 w-10 rounded-[18px] text-base',
         surface.iconBg,
         surface.borderStrong,
         surface.textPrimary
       )}
     >
-      {room.symbol ? (
-        <RoomSymbolIcon
-          value={room.symbol}
-          className={size === 'standard' ? navetIconSizeTokens.md : navetIconSizeTokens.sm}
-        />
-      ) : (
-        room.name.trim().slice(0, 1).toLocaleUpperCase() || <Home />
-      )}
+      {content}
     </span>
   );
 }
@@ -545,7 +548,7 @@ export function RoomWorkspaceHeader({
   trailingAction,
 }: WorkspacePanelProps & { trailingAction?: ReactNode }) {
   return (
-    <header className={cn('border-b px-3 py-3 md:px-5 md:py-4', surface.border)}>
+    <NavigationWorkspaceHeader className="px-3 py-3 md:px-5 md:py-4">
       <div className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h1 className={cn(navetTypographyTokens.pageHeading, surface.textPrimary)}>
@@ -581,7 +584,7 @@ export function RoomWorkspaceHeader({
           {trailingAction}
         </div>
       </div>
-    </header>
+    </NavigationWorkspaceHeader>
   );
 }
 
@@ -604,38 +607,22 @@ function RoomOutlineItem({
   surface: SurfaceTokens;
   accentColor: string;
 }) {
-  const { theme } = useTheme();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: room.id,
     disabled: dragDisabled,
   });
-  const selectedStyle: CSSProperties | undefined = selected
-    ? { backgroundColor: `${accentColor}14` }
-    : undefined;
-
   return (
-    <div
+    <NavigationWorkspace.Item
       ref={setNodeRef}
-      className={cn(
-        'group/room relative flex min-w-0 items-center rounded-[22px] border transition-[background-color,border-color] motion-reduce:transition-none',
-        selected ? surface.borderStrong : 'border-transparent',
-        selected ? '' : surface.hoverBg,
-        isDragging ? 'z-10 opacity-75 shadow-lg' : ''
-      )}
+      active={selected}
+      accentColor={accentColor}
+      className={cn('group/room', isDragging ? 'z-10 opacity-75 shadow-lg' : '')}
       style={{
         ...getDndTransformStyle(transform, transition),
-        ...selectedStyle,
         contentVisibility: 'auto',
         containIntrinsicSize: '48px',
       }}
     >
-      {selected ? (
-        <span
-          className="absolute inset-y-2.5 left-0 w-1 rounded-full"
-          style={{ backgroundColor: accentColor }}
-          aria-hidden="true"
-        />
-      ) : null}
       {manage && actions.onDropRoom ? (
         <button
           type="button"
@@ -653,8 +640,7 @@ function RoomOutlineItem({
           <GripVertical className={navetIconSizeTokens.sm} aria-hidden="true" />
         </button>
       ) : null}
-      <button
-        type="button"
+      <NavigationWorkspace.ItemButton
         onClick={() => {
           actions.onSelectRoom(room.id);
           if (manage) {
@@ -663,28 +649,17 @@ function RoomOutlineItem({
         }}
         aria-current={selected ? 'page' : undefined}
         aria-label={`${labels.selectRoom}: ${room.name}`}
-        className={cn(
-          'flex min-h-12 min-w-0 flex-1 items-center gap-2.5 rounded-[22px] px-2.5 py-1 text-left',
-          getThemeFocusRingClassName(theme)
-        )}
       >
         <RoomSymbol room={room} surface={surface} size="compact" />
-        <span className="min-w-0 flex-1">
-          <span className={cn('block truncate text-sm font-semibold', surface.textPrimary)}>
-            {room.name}
-          </span>
-          <span className={cn('mt-0.5 block truncate text-xs', surface.textMuted)}>
-            {room.deviceSummary}
-          </span>
-        </span>
+        <NavigationWorkspace.ItemText title={room.name} description={room.deviceSummary} />
         {room.attentionSummary ? (
           <CircleAlert
             className={cn(navetIconSizeTokens.sm, 'shrink-0 text-amber-400')}
             aria-hidden="true"
           />
         ) : null}
-      </button>
-    </div>
+      </NavigationWorkspace.ItemButton>
+    </NavigationWorkspace.Item>
   );
 }
 

@@ -35,6 +35,7 @@ export const ptMessages = {
     'Use este dispositivo para comportamento específico do painel ou todos os dispositivos para sincronizar a alteração com o perfil do painel compartilhado.',
   'settings.scopeDialog.thisDevice': 'Este dispositivo',
   'settings.scopeDialog.allDevices': 'Todos os dispositivos',
+  'settings.search.noResults': 'Nenhuma definição encontrada',
   'settings.nav.appearance': 'Aparência',
   'settings.nav.localization': 'Localização',
   'settings.nav.interaction': 'Interação',
@@ -42,7 +43,7 @@ export const ptMessages = {
   'settings.nav.habits': 'Hábitos',
   'settings.nav.experimental': 'Experimental',
   'settings.nav.system': 'Sistema',
-  'settings.nav.project': 'Projeto',
+  'settings.nav.project': 'Sobre o Navet',
   'settings.appearance.sectionTitle': 'Aparência',
   'settings.appearance.sectionDescription':
     'Tema, papel de parede, intensidade do vidro e atmosfera de iluminação que moldam a identidade visual do Navet.',
@@ -356,7 +357,7 @@ export const ptMessages = {
     '{client} foi removido da lista de painéis ligados. O respetivo início de sessão não foi alterado.',
   'settings.system.clients.forgetFailed': 'Não foi possível remover o registo do dispositivo.',
   'settings.system.logout.description': 'Encerrar esta sessão do Navet neste dispositivo.',
-  'settings.project.sectionTitle': 'Projeto',
+  'settings.project.sectionTitle': 'Sobre o Navet',
   'settings.project.sectionDescription':
     'Detalhes da versão, links do mantenedor e informações legais básicas para usar o Navet.',
   'settings.project.about.title': 'Sobre',
