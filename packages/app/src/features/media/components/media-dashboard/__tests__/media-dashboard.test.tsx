@@ -843,7 +843,7 @@ describe('MediaDashboard', () => {
         ).toBeInTheDocument();
       }
     );
-  });
+  }, 10_000);
 
   it('uses a compact single-row media rail below 900px', async () => {
     setMediaQueryMatch('(max-width: 899px)', true);

@@ -3,31 +3,49 @@ import { renderHookWithProviders } from '@navet/app/test/render';
 import { act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { dispatchEntityCommandMock, entitiesState, runActionMock, serviceMock } = vi.hoisted(() => ({
-  dispatchEntityCommandMock: vi.fn().mockResolvedValue({
-    accepted: true,
-    requiresEventConfirmation: true,
-  }),
-  entitiesState: {
-    entities: {} as Record<string, unknown>,
-    entityRegistry: [] as Array<{ entityId: string; platform?: string | null }>,
-  },
-  runActionMock: vi.fn(async (action: () => Promise<void>) => action()),
-  serviceMock: {
-    addListener: vi.fn(() => () => {}),
-    getEntities: vi.fn(() => entitiesState.entities),
-    getEntityRegistry: vi.fn(() => entitiesState.entityRegistry),
-    selectMediaPlayerSource: vi.fn().mockResolvedValue(undefined),
-    selectMediaPlayerSoundMode: vi.fn().mockResolvedValue(undefined),
-    seekMediaPlayer: vi.fn().mockResolvedValue(undefined),
-    clearMediaPlayerPlaylist: vi.fn().mockResolvedValue(undefined),
-    sendRemoteCommand: vi.fn().mockResolvedValue(undefined),
-    setMediaPlayerMute: vi.fn().mockResolvedValue(undefined),
-    setMediaPlayerVolume: vi.fn().mockResolvedValue(undefined),
-    updateMediaPlayerPlayback: vi.fn().mockResolvedValue(undefined),
-    updateMediaPlayerPower: vi.fn().mockResolvedValue(undefined),
-  },
-}));
+const { dispatchEntityCommandMock, entitiesState, runActionMock, runtimeServiceMock, serviceMock } =
+  vi.hoisted(() => {
+    const entitiesState = {
+      entities: {} as Record<string, unknown>,
+      entityRegistry: [] as Array<{ entityId: string; platform?: string | null }>,
+    };
+    const serviceMock = {
+      selectMediaPlayerSource: vi.fn().mockResolvedValue(undefined),
+      selectMediaPlayerSoundMode: vi.fn().mockResolvedValue(undefined),
+      seekMediaPlayer: vi.fn().mockResolvedValue(undefined),
+      clearMediaPlayerPlaylist: vi.fn().mockResolvedValue(undefined),
+      sendRemoteCommand: vi.fn().mockResolvedValue(undefined),
+      setMediaPlayerMute: vi.fn().mockResolvedValue(undefined),
+      setMediaPlayerVolume: vi.fn().mockResolvedValue(undefined),
+      updateMediaPlayerPlayback: vi.fn().mockResolvedValue(undefined),
+      updateMediaPlayerPower: vi.fn().mockResolvedValue(undefined),
+    };
+    const runtimeServiceMock = {
+      getEntitySnapshots: vi.fn(() => entitiesState.entities),
+      subscribeEntitySnapshots: vi.fn(() => () => {}),
+      getEntitySnapshot: vi.fn((entityId: string) => entitiesState.entities[entityId]),
+      subscribeEntitySnapshot: vi.fn(() => () => {}),
+      getEntityRegistryEntries: vi.fn(() => entitiesState.entityRegistry),
+      subscribeEntityRegistryEntries: vi.fn(() => () => {}),
+      getEntityRegistryEntry: vi.fn((entityId: string) =>
+        entitiesState.entityRegistry.find((entry) => entry.entityId === entityId)
+      ),
+      subscribeEntityRegistryEntry: vi.fn(() => () => {}),
+      getConfig: vi.fn(() => null),
+      subscribeConfig: vi.fn(() => () => {}),
+    };
+
+    return {
+      dispatchEntityCommandMock: vi.fn().mockResolvedValue({
+        accepted: true,
+        requiresEventConfirmation: true,
+      }),
+      entitiesState,
+      runActionMock: vi.fn(async (action: () => Promise<void>) => action()),
+      runtimeServiceMock,
+      serviceMock,
+    };
+  });
 
 vi.mock('@navet/app/hooks', () => ({
   useHomeAssistant: vi.fn((selector: (state: typeof entitiesState) => unknown) =>
@@ -43,8 +61,11 @@ vi.mock('@navet/app/hooks/use-provider-runtime', () => ({
   ),
 }));
 
-vi.mock('@navet/app/services/home-assistant.service', () => ({
-  homeAssistantService: serviceMock,
+vi.mock('@navet/app/provider-runtime-registry', () => ({
+  getProviderRuntimeRegistration: () => ({
+    entityRuntimeService: runtimeServiceMock,
+    mediaFeatureService: serviceMock,
+  }),
 }));
 
 vi.mock('@navet/app/commands', () => ({
@@ -105,7 +126,7 @@ const defaultParams = {
 function setMediaEntities(includeRemote: boolean) {
   entitiesState.entities = {
     'media_player.kitchen': {
-      entity_id: 'media_player.kitchen',
+      entityId: 'media_player.kitchen',
       state: 'idle',
       attributes: {
         device_class: 'tv',
@@ -116,7 +137,7 @@ function setMediaEntities(includeRemote: boolean) {
     ...(includeRemote
       ? {
           'remote.kitchen': {
-            entity_id: 'remote.kitchen',
+            entityId: 'remote.kitchen',
             state: 'on',
             attributes: {
               friendly_name: 'Kitchen',
@@ -134,9 +155,13 @@ function setMediaEntities(includeRemote: boolean) {
 describe('useMediaCardController', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    serviceMock.addListener.mockImplementation(() => () => {});
-    serviceMock.getEntities.mockImplementation(() => entitiesState.entities);
-    serviceMock.getEntityRegistry.mockImplementation(() => entitiesState.entityRegistry);
+    runtimeServiceMock.getEntitySnapshots.mockImplementation(() => entitiesState.entities);
+    runtimeServiceMock.getEntitySnapshot.mockImplementation(
+      (entityId: string) => entitiesState.entities[entityId]
+    );
+    runtimeServiceMock.getEntityRegistryEntries.mockImplementation(
+      () => entitiesState.entityRegistry
+    );
     setMediaEntities(true);
   });
 

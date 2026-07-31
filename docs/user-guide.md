@@ -77,6 +77,12 @@ PWA and offers keep-awake and wall-display settings for tablet and kiosk use.
 The [widget guide](/guide/widgets/) documents the available widget types, supported sizes, and
 placement limits.
 
+## Step-by-step help
+
+Use the [how-to guides](/guide/how-to/) for complete tasks such as creating another dashboard,
+organizing rooms, setting up kiosk mode, assigning dashboards to devices, and recovering a
+synchronization or connection problem.
+
 ## Provider-specific behavior
 
 Connection and deployment behavior varies by provider. Use the

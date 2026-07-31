@@ -33,6 +33,10 @@ the dashboard. Start by confirming that the expected rooms appear, then:
 Home Assistant currently enables the broadest set of advanced dashboards and provider services.
 Read the [integration capability matrix](/integrations/) for the exact Homey and openHAB scope.
 
+For step-by-step product help, continue with
+[Your first 15 minutes with Navet](/guide/quick-start/first-15-minutes/) or browse the
+[how-to guides](/guide/how-to/).
+
 ## Keep it private
 
 Navet is designed for local use. Before exposing any smart-home interface beyond your trusted

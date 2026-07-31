@@ -6,6 +6,7 @@ import {
   isDevOrLocalBuild,
 } from '@navet/app/constants/app-build-metadata';
 import { APP_VERSION } from '@navet/app/constants/app-version';
+import { DASHBOARD_CONFIG_VERSION } from '@navet/app/constants/dashboard-config-version';
 import { describe, expect, it } from 'vitest';
 
 describe('APP_BUILD_METADATA', () => {
@@ -16,7 +17,7 @@ describe('APP_BUILD_METADATA', () => {
       buildDate: '2026-01-01T00:00:00.000Z',
       releaseChannel: 'development',
       buildVersion: APP_VERSION,
-      dashboardConfigVersion: 3,
+      dashboardConfigVersion: DASHBOARD_CONFIG_VERSION,
     });
   });
 
