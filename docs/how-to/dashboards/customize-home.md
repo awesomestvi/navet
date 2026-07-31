@@ -7,7 +7,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/dashboards/c
 Home edit mode changes the active dashboard layout. It does not reconfigure the underlying device
 unless a separate dialog explicitly describes a provider change.
 
-![Home before editing, with Customize identified.](/docs/how-to/dashboards/customize-home-entry.webp)
+![Home in edit mode with card controls, layout choices, undo, redo, Add Card, and Done visible.](/docs/how-to/dashboards/customize-home-layout-edit-mode.webp)
 
 ## Enter edit mode
 
@@ -29,7 +29,7 @@ While editing, you can:
 Card sizes are intentional per card type. A size that is unavailable would not provide a useful
 version of that card.
 
-![Home edit mode showing drag handles, size controls, lock, undo, and redo.](/docs/how-to/dashboards/customize-home-edit-mode.webp)
+![Home edit mode showing the full layout, row, column, undo, redo, Add card, and Done command bar.](/docs/how-to/dashboards/customize-home-edit-mode.webp)
 
 ## Use undo and redo
 

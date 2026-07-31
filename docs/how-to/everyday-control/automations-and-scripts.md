@@ -33,8 +33,6 @@ Choose **View** to open:
 - Dependencies and recent state.
 - Diagnostics such as provider ID, room, mode, and current runs.
 
-![Automation details showing the When, If, Then sequence and diagnostics.](/docs/how-to/everyday-control/automation-details.webp)
-
 Navet presents these details for understanding and recovery. Edit the underlying automation in the
 provider when changes are required.
 

@@ -29,8 +29,6 @@ does not replace semantic colors for warnings, security, or device state.
 3. Review the preview.
 4. Apply the change.
 
-![The wallpaper chooser and the resulting Home dashboard.](/docs/how-to/settings/wallpaper-result.webp)
-
 Choose **Remove wallpaper** to return to the theme background.
 
 ## Light card ambience

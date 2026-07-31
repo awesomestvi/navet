@@ -39,8 +39,6 @@ On installations with server-backed profile history:
 4. Choose **Restore**.
 5. Review the revision number and confirm.
 
-![Revision history with a previous dashboard revision selected for restore.](/docs/how-to/dashboards/revision-history.webp)
-
 Restoring creates a new current revision based on the earlier snapshot; it does not silently erase
 the audit trail.
 

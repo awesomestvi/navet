@@ -7,7 +7,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/dashboards/s
 A conflict means the shared profile changed elsewhere while the current device had a different
 local version. It is not usually a sign that the profile is corrupted.
 
-![A dashboard synchronization notice offering local and remote choices.](/docs/how-to/troubleshooting/sync-conflict.webp)
+![Connected devices showing that dashboard synchronization needs attention.](/docs/how-to/troubleshooting/sync-conflict.webp)
 
 ## Choose which version to keep
 
@@ -31,8 +31,6 @@ If the wrong version was kept:
 2. Choose **Revision history**.
 3. Find the revision created before the conflict.
 4. Choose **Restore** and confirm.
-
-![Revision history showing the device that created each dashboard update.](/docs/how-to/dashboards/revision-history.webp)
 
 ## If the notice returns repeatedly
 

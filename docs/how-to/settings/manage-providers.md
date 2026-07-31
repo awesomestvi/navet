@@ -29,8 +29,6 @@ When more than one provider is connected, choose **Make active** for the provide
 supply single-provider operations. Selected provider entities can still appear together in shared
 collections.
 
-![Two connected providers with one marked Active.](/docs/how-to/settings/provider-active.webp)
-
 ## Disconnect
 
 Choose **Disconnect** on the provider card and confirm. This ends that provider session on the

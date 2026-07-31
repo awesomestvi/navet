@@ -7,8 +7,6 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/settings/sid
 Custom extensions provide bounded sidebar actions and optional summary pills. They require manual
 configuration and should use addresses you trust.
 
-![Custom extensions settings with an empty sidebar-action list.](/docs/how-to/settings/sidebar-extensions.webp)
-
 ## Add a shortcut
 
 1. Open **Settings** and find **Custom extensions**.
@@ -25,7 +23,7 @@ configuration and should use addresses you trust.
 
 For a link or embedded page, enter a valid `http` or `https` address.
 
-![The extension dialog showing section, browser tab, and embedded destinations.](/docs/how-to/settings/sidebar-extension-dialog.webp)
+![The full Add sidebar action dialog with its name, destination, icon, and save controls visible.](/docs/how-to/settings/sidebar-extension-dialog.webp)
 
 ## Save and test
 

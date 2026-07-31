@@ -7,7 +7,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/settings/car
 Card interaction style changes the common tap path without changing what the provider device can
 do.
 
-![Interaction settings with card behavior and camera stream controls.](/docs/how-to/settings/card-interaction-settings.webp)
+![Interaction settings with card behavior choices and a live card preview.](/docs/how-to/settings/card-interaction-settings.webp)
 
 ## Choose a card behavior
 
@@ -22,8 +22,6 @@ Settings buttons and secondary card actions remain available in both modes.
 
 Choose whether camera cards should request live playback as part of their normal interaction.
 Live video can use more network and device resources than snapshots.
-
-![The same light card showing the toggle-first and control-first outcomes.](/docs/how-to/settings/card-interaction-comparison.webp)
 
 ## Choose a safe household default
 

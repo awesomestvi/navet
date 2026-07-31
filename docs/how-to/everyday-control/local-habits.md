@@ -20,8 +20,6 @@ bounded routines without sending household activity to a Navet-operated cloud.
 The Habits page summarizes observations and suggestions. Review the proposed trigger and action
 before creating a routine.
 
-![The Local Habits summary with a suggested routine ready for review.](/docs/how-to/everyday-control/local-habits-suggestion.webp)
-
 When provider automation creation is supported, Navet asks the provider to create the routine.
 Otherwise it can retain the supported local rule.
 

@@ -28,8 +28,6 @@ unavailable.
 
 Choose **Remove image**, then apply the appearance. The room returns to its theme-native surface.
 
-![Room navigation and the selected room after applying a symbol and image.](/docs/how-to/rooms/room-appearance-result.webp)
-
 ## Keep room navigation readable
 
 - Prefer images with a clear center and moderate contrast.

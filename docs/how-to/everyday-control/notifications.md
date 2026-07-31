@@ -7,7 +7,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-con
 Navet combines supported provider notifications into an attention surface. Available actions
 depend on the provider service that produced the item.
 
-![The notification surface with an attention item expanded.](/docs/how-to/everyday-control/notifications.webp)
+![The notification surface showing that there are no current attention items.](/docs/how-to/everyday-control/notifications.webp)
 
 ## Review an item
 
@@ -27,8 +27,6 @@ provider.
 
 When the active provider registers administration services, an update or restart action can appear
 on the relevant notification. Review the target and provider before confirming.
-
-![A provider update notification with its supported action.](/docs/how-to/everyday-control/provider-update-action.webp)
 
 ## If no notifications appear
 

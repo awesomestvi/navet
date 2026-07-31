@@ -30,8 +30,6 @@ Open the light card to use available controls:
 
 The card only shows controls supported by the entity.
 
-![A light control dialog with brightness, color temperature, and color controls.](/docs/how-to/everyday-control/light-controls.webp)
-
 ## Run a scene
 
 Choose a scene shortcut to ask the owning provider to activate it. Scene behavior comes from the

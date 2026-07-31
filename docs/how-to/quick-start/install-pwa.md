@@ -1,13 +1,11 @@
 ---
-title: Install Navet as a PWA
-description: Add Navet to a phone, tablet, or desktop and apply future updates.
+title: Add Navet to your phone
+description: Add Navet to the Home Screen on iPhone or Android and apply future updates.
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/quick-start/install-pwa.md
 ---
 
-Installing Navet as a Progressive Web App gives it an app icon and a standalone window while it
-continues to use your self-hosted Navet installation.
-
-![A supported browser offering to install Navet.](/docs/how-to/quick-start/pwa-install-prompt.webp)
+Adding Navet to your phone's Home Screen gives it an app icon and opens it without the usual
+browser controls. It continues to use your self-hosted Navet installation.
 
 ## Before you start
 
@@ -15,9 +13,9 @@ continues to use your self-hosted Navet installation.
 - Sign in and confirm that the dashboard works in the browser.
 - HTTPS is normally required outside local development.
 
-## Install on a phone or tablet
+## Add Navet to your phone
 
-### iPhone or iPad
+### iPhone
 
 1. Open Navet in Safari.
 2. Open the Share menu.
@@ -31,12 +29,7 @@ continues to use your self-hosted Navet installation.
 3. Choose **Install app** or **Add to Home screen**.
 4. Confirm the installation.
 
-## Install on desktop
-
-In a supporting Chromium-based browser, choose the install action in the address bar or browser
-menu. The wording varies by browser.
-
-![Navet running from an installed app window with its own icon.](/docs/how-to/quick-start/pwa-installed.webp)
+![Navet opened from a phone's Home Screen without browser controls.](/docs/how-to/quick-start/pwa-installed.webp)
 
 ## Apply an update
 

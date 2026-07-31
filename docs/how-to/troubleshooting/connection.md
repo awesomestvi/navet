@@ -7,7 +7,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/troubleshoot
 Connection recovery differs by deployment mode. Avoid clearing all dashboard data before checking
 the provider and address.
 
-![System connection status showing a disconnected provider and recovery actions.](/docs/how-to/troubleshooting/connection-status.webp)
+![System settings showing connected and available providers.](/docs/how-to/troubleshooting/connection-status.webp)
 
 ## Check the visible error
 
@@ -27,8 +27,6 @@ Common causes include:
 4. Choose **Connect** or repeat the supported sign-in flow.
 
 Do not use a manual long-lived-token flow for Home Assistant.
-
-![The provider connection dialog with the address field and sign-in action.](/docs/how-to/troubleshooting/reconnect-provider.webp)
 
 ## Deployment-specific checks
 

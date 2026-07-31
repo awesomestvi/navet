@@ -7,7 +7,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/troubleshoot
 Work from the provider toward the dashboard. Recreating a missing entity as a widget can hide the
 real connection or visibility problem.
 
-![A missing-device checklist from provider connection to dashboard placement.](/docs/how-to/troubleshooting/missing-entity-checklist.webp)
+![System settings showing the connected providers and their registered capabilities.](/docs/how-to/troubleshooting/missing-entity-checklist.webp)
 
 ## 1. Confirm the provider
 
@@ -33,7 +33,7 @@ Move or show the device if needed.
 Open **Settings → Dashboard → Entity visibility**. Restore removed entities, or search the Add
 Card library for a generic entity card.
 
-![Entity visibility and Add Card search used to restore an entity.](/docs/how-to/troubleshooting/restore-missing-entity.webp)
+![Entity visibility settings used to restore removed entities.](/docs/how-to/troubleshooting/restore-missing-entity.webp)
 
 ## 5. Check provider capability
 

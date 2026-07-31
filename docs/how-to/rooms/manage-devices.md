@@ -30,8 +30,6 @@ Use **Show** to restore it to the dashboard.
 4. Review whether the move affects only Navet or also the connected provider.
 5. Save the change.
 
-![The Move device dialog with a destination room selected.](/docs/how-to/rooms/move-device-dialog.webp)
-
 ## Remove a manually placed device
 
 **Remove** takes the device out of the current dashboard placement. It is not the same as deleting

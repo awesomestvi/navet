@@ -7,11 +7,11 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/wall-display
 Navet can reduce expensive visual effects while preserving information, layout meaning, and
 controls.
 
-![System settings showing Auto, High, Medium, and Low visual quality.](/docs/how-to/wall-displays/visual-quality.webp)
+![Appearance settings showing Auto, High, Medium, and Low visual quality.](/docs/how-to/wall-displays/visual-quality.webp)
 
 ## Start with Auto
 
-1. Open **Settings → System** on the low-power screen.
+1. Open **Settings → Appearance** on the low-power screen.
 2. Find **Visual quality**.
 3. Choose **Auto**.
 
@@ -27,8 +27,6 @@ Use **Low** when scrolling, live updates, or dialogs remain sluggish. Low qualit
 - Other compositor-heavy decoration.
 
 It does not remove device state or household controls.
-
-![The same dashboard in richer and reduced visual-quality modes.](/docs/how-to/wall-displays/visual-quality-comparison.webp)
 
 ## Reduce motion
 

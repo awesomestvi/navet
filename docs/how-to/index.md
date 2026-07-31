@@ -19,8 +19,8 @@ If Navet is new to you, follow this path:
 
 ## Browse by task
 
-- [Quick start](/guide/quick-start/) — learn the interface, use Navet on smaller screens, and
-  install the PWA.
+- [Quick start](/guide/quick-start/) — learn the interface, use Navet on smaller screens, and add
+  Navet to your phone's Home Screen.
 - [Dashboards](/guide/dashboards/) — create, edit, assign, synchronize, back up, and restore
   dashboards.
 - [Rooms](/guide/rooms/) — organize rooms, devices, groups, and room appearance.

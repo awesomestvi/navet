@@ -7,7 +7,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/dashboards/a
 Each registered browser or display can open a different Home dashboard while sharing the same
 dashboard collection.
 
-![Connected devices showing the current browser and another display.](/docs/how-to/dashboards/connected-devices.webp)
+![The Assign Upstairs lights dialog showing This device, Sonoff upstairs, and Kitchen tablet, with Sonoff upstairs selected.](/docs/how-to/dashboards/assign-dashboard-devices.webp)
 
 ## Give devices useful names
 
@@ -24,9 +24,8 @@ Clear names make assignments and revision history easier to understand.
 2. Open the action menu beside a dashboard.
 3. Choose **Assign devices**.
 4. Select the displays and browsers that should open it.
-5. Save the assignment.
-
-![The Assign dashboard dialog with two registered devices selected.](/docs/how-to/dashboards/assign-dashboard-dialog.webp)
+5. Close the dialog when the correct devices are selected. Changes apply as you select or clear a
+   device.
 
 You can also create a dashboard and choose **This device** in the creation flow.
 

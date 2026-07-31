@@ -7,7 +7,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/wall-display
 Use this guide when normal navigation is hidden, the screen still sleeps, or an embedded page will
 not load.
 
-![The kiosk orbit trigger and Settings destination.](/docs/how-to/wall-displays/kiosk-recovery-route.webp)
+![Dashboard settings showing the Kiosk mode control and recovery guidance.](/docs/how-to/wall-displays/kiosk-recovery-route.webp)
 
 ## Exit kiosk mode
 
@@ -31,7 +31,7 @@ Open **Settings → Dashboard → Keep device awake** and read the status:
 
 Choose **Tap to activate fallback audio** when shown.
 
-![Keep-awake statuses including pending activation and blocked.](/docs/how-to/wall-displays/keep-awake-status.webp)
+![Dashboard settings showing the Keep device awake control and fallback behavior.](/docs/how-to/wall-displays/keep-awake-status.webp)
 
 Keep-awake is best effort. Some embedded browsers, power-saving modes, and operating-system rules
 can still turn off a display.

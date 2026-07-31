@@ -27,8 +27,6 @@ the action.
 Use **Queue** to review upcoming media. Now-playing controls can include play, pause, next, previous,
 seek, repeat, shuffle, and volume.
 
-![The media browser and queue with a destination selected.](/docs/how-to/everyday-control/media-browser-queue.webp)
-
 ## Group speakers
 
 Choose a primary session or destination, then add compatible speakers. Grouping support and group

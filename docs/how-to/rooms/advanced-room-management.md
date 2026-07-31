@@ -34,7 +34,7 @@ the provider change cannot be undone.
 4. Choose **Create split room**.
 5. Review and save the changes.
 
-![The Split room dialog with devices selected for the new room.](/docs/how-to/rooms/split-room-dialog.webp)
+![The device-selection step used while splitting a room.](/docs/how-to/rooms/split-room-dialog.webp)
 
 ## Delete a room
 

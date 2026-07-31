@@ -7,8 +7,6 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-con
 Energy requires compatible energy and history services. Home Assistant is currently the reference
 provider for the complete setup flow.
 
-![The Energy setup panel offering Home Assistant auto-detection.](/docs/how-to/everyday-control/energy-auto-detect.webp)
-
 ## Auto-detect sources
 
 1. Open **Energy**.

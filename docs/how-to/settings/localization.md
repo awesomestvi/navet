@@ -30,8 +30,6 @@ Choose:
 Choose **Celsius** or **Fahrenheit**. Navet presents normalized temperature values in the selected
 unit where conversion is supported.
 
-![The dashboard header and climate card before and after localization changes.](/docs/how-to/settings/localization-result.webp)
-
 ## If some text does not change
 
 Entity names, media titles, notification messages, and automation descriptions can come directly

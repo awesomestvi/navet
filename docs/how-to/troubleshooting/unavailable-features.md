@@ -32,7 +32,7 @@ Multi-provider installations can aggregate selected entities, but one provider r
 operations requiring a single advanced feature service. Open **Settings → System → Providers** and
 review **Active**.
 
-![An unavailable section state linking back to provider status and capabilities.](/docs/how-to/troubleshooting/unavailable-section.webp)
+![An unavailable alarm card with its controls disabled.](/docs/how-to/troubleshooting/unavailable-section.webp)
 
 ## Treat connection errors separately
 

@@ -19,8 +19,6 @@ registered browsers while preserving settings that belong to one physical screen
 When Navet asks **Apply to this device** or **Apply to all devices**, choose the smallest scope that
 matches your goal.
 
-![The scope chooser for this device or all devices.](/docs/how-to/dashboards/settings-scope-dialog.webp)
-
 ## Name each screen
 
 1. Open **Settings → System → Connected devices**.

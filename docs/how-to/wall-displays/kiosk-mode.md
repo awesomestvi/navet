@@ -33,8 +33,6 @@ Kiosk mode hides the normal Navet header and sidebar. Use the orbit trigger to o
 - Settings.
 - Dashboard customization.
 
-![A landscape tablet in kiosk mode with the orbit menu open.](/docs/how-to/wall-displays/kiosk-orbit-menu.webp)
-
 ## Home Assistant header and sidebar
 
 Navet kiosk mode controls Navet's own chrome. In Home Assistant-hosted modes, hiding Home

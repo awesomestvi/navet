@@ -47,7 +47,7 @@ Choose **Create dashboard**.
 Navet opens the new dashboard and enters edit mode so you can finish the layout. The original
 dashboard remains available in the switcher.
 
-![The finished second dashboard open in edit mode.](/docs/how-to/dashboards/second-dashboard-result.webp)
+![Upstairs lights open in edit mode, with Home and Upstairs lights visible in the Room Nav dashboard switcher.](/docs/how-to/dashboards/second-dashboard-result.webp)
 
 ## If you do not see New dashboard
 

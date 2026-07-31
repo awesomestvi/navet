@@ -22,8 +22,6 @@ reported capabilities.
 Humidifiers and dehumidifiers can expose a target humidity. Water heaters can expose temperature,
 operation mode, or power when the provider supplies those capabilities.
 
-![A thermostat control beside a target-humidity control.](/docs/how-to/everyday-control/climate-controls.webp)
-
 ## Fans
 
 Supported fans can expose power, percentage, direction, oscillation, or presets. A fan with only a

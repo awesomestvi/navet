@@ -48,7 +48,7 @@ size, or other card-specific options.
 4. Use **Undo** if the result is not useful.
 5. Choose **Done** to leave edit mode.
 
-![Home edit mode with move, size, undo, and Done controls identified.](/docs/how-to/dashboards/customize-home-edit-mode.webp)
+![Home edit mode with the full command bar, including layout, undo, redo, Add card, and Done controls.](/docs/how-to/dashboards/customize-home-edit-mode.webp)
 
 Dashboard changes save to your Navet profile. They do not rename or reconfigure the underlying
 device in your provider unless a dialog explicitly says that the provider will also change.
