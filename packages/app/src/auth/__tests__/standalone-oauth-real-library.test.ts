@@ -27,6 +27,7 @@ function createAuthenticatedSessionFetch(options?: {
     authenticated: true,
     providerId: 'home_assistant',
     sessionId: SESSION_ID,
+    authRevision: 1,
     hassUrl: HASS_URL,
     clientId: authData.clientId,
     expiresAt: authData.expires,

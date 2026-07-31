@@ -1,5 +1,7 @@
-import type { HomeAssistantEntityRegistryEntry } from '@navet/app/services/home-assistant.service';
-import { homeyService } from '@navet/app/services/homey.service';
+import type {
+  PlatformEntityRegistryEntry,
+  PlatformEntitySnapshotMap,
+} from '@navet/app/platform/provider-feature-models';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { renderHookWithProviders } from '@navet/app/test/render';
 import { act } from '@testing-library/react';
@@ -9,16 +11,6 @@ type MockProviderConfig =
   | { unit_system?: { temperature?: unknown } }
   | { temperatureUnit?: unknown }
   | null;
-type MockEntityMap = Record<
-  string,
-  {
-    state: string;
-    attributes?: Record<string, unknown>;
-    last_changed?: string;
-    last_updated?: string;
-  }
->;
-
 const { serviceMock } = vi.hoisted(() => {
   const entityListeners = new Set<() => void>();
   const registryListeners = new Set<() => void>();
@@ -29,25 +21,27 @@ const { serviceMock } = vi.hoisted(() => {
       entityListeners,
       registryListeners,
       configListeners,
-      addListener: vi.fn((event: 'entities' | 'registries' | 'config', listener: () => void) => {
-        const listeners =
-          event === 'entities'
-            ? entityListeners
-            : event === 'registries'
-              ? registryListeners
-              : configListeners;
-        listeners.add(listener);
-        return () => listeners.delete(listener);
+      subscribeEntitySnapshots: vi.fn((listener: () => void) => {
+        entityListeners.add(listener);
+        return () => entityListeners.delete(listener);
+      }),
+      subscribeEntityRegistryEntries: vi.fn((listener: () => void) => {
+        registryListeners.add(listener);
+        return () => registryListeners.delete(listener);
+      }),
+      subscribeConfig: vi.fn((listener: () => void) => {
+        configListeners.add(listener);
+        return () => configListeners.delete(listener);
       }),
       getConfig: vi.fn<() => MockProviderConfig>(() => ({ unit_system: { temperature: 'C' } })),
-      getEntities: vi.fn<() => MockEntityMap | null>(() => null),
-      getEntityRegistry: vi.fn<() => HomeAssistantEntityRegistryEntry[]>(() => []),
+      getEntitySnapshots: vi.fn<() => PlatformEntitySnapshotMap | null>(() => null),
+      getEntityRegistryEntries: vi.fn<() => PlatformEntityRegistryEntry[]>(() => []),
     },
   };
 });
 
-vi.mock('@navet/app/services/home-assistant.service', () => ({
-  homeAssistantService: serviceMock,
+vi.mock('@navet/app/provider-runtime-registry', () => ({
+  getProviderRuntimeRegistration: () => ({ entityRuntimeService: serviceMock }),
 }));
 
 import {
@@ -65,30 +59,31 @@ import {
 describe('useProviderEntity hooks', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    homeyService.resetSnapshot();
     serviceMock.entityListeners.clear();
     serviceMock.registryListeners.clear();
     serviceMock.configListeners.clear();
-    serviceMock.getEntities.mockReturnValue({
+    serviceMock.getConfig.mockReturnValue({ unit_system: { temperature: 'C' } });
+    serviceMock.getEntitySnapshots.mockReturnValue({
       'light.kitchen': {
+        entityId: 'light.kitchen',
         state: 'on',
         attributes: { friendly_name: 'Kitchen Light' },
-        last_changed: '2026-05-29T07:00:00.000Z',
-        last_updated: '2026-05-29T07:01:00.000Z',
+        lastChanged: '2026-05-29T07:00:00.000Z',
+        lastUpdated: '2026-05-29T07:01:00.000Z',
       },
     });
-    serviceMock.getEntityRegistry.mockReturnValue([
+    serviceMock.getEntityRegistryEntries.mockReturnValue([
       {
-        entity_id: 'light.kitchen',
-        device_id: 'device-kitchen',
-        area_id: 'area-kitchen',
+        entityId: 'light.kitchen',
+        deviceId: 'device-kitchen',
+        areaId: 'area-kitchen',
         name: 'Kitchen Light',
         platform: 'hue',
       },
       {
-        entity_id: 'switch.kitchen_boost',
-        device_id: 'device-kitchen',
-        area_id: null,
+        entityId: 'switch.kitchen_boost',
+        deviceId: 'device-kitchen',
+        areaId: null,
         name: 'Kitchen Boost',
         platform: 'hue',
       },
@@ -166,35 +161,32 @@ describe('useProviderEntity hooks', () => {
       ])
     );
     expect(unitResult.current).toBe('celsius');
-    expect(serviceMock.getEntities).toHaveBeenCalled();
-    expect(serviceMock.getEntityRegistry).toHaveBeenCalled();
+    expect(serviceMock.getEntitySnapshots).toHaveBeenCalled();
+    expect(serviceMock.getEntityRegistryEntries).toHaveBeenCalled();
     expect(serviceMock.getConfig).toHaveBeenCalled();
   });
 
   it('reads Homey entity snapshots and registry entries through the provider runtime service', () => {
-    homeyService.replaceSnapshot({
-      connected: true,
-      zones: {
-        zone_living: {
-          id: 'zone_living',
-          name: 'Living Room',
-        },
-      },
-      devices: {
-        'device-1': {
-          id: 'device-1',
-          name: 'Living Room Sensor',
-          zone: 'zone_living',
-          capabilitiesObj: {
-            measure_temperature: {
-              value: 21.5,
-              units: 'C',
-              title: 'Temperature',
-            },
-          },
+    serviceMock.getEntitySnapshots.mockReturnValue({
+      'device-1#measure_temperature': {
+        entityId: 'device-1#measure_temperature',
+        state: '21.5',
+        attributes: {
+          friendly_name: 'Temperature',
+          unit_of_measurement: 'C',
+          source_device_id: 'device-1',
         },
       },
     });
+    serviceMock.getEntityRegistryEntries.mockReturnValue([
+      {
+        entityId: 'device-1#measure_temperature',
+        deviceId: 'device-1',
+        areaId: 'zone_living',
+        name: 'Temperature',
+        platform: 'homey',
+      },
+    ]);
     integrationStore.setState({
       ...integrationStore.getState(),
       currentProviderId: 'homey',
@@ -272,20 +264,19 @@ describe('useProviderEntity hooks', () => {
     );
 
     const firstSnapshot = result.current;
+    if (!firstSnapshot) {
+      throw new Error('Expected the selected entity snapshot to be available');
+    }
 
     act(() => {
-      serviceMock.getEntities.mockReturnValue({
-        'light.kitchen': {
-          state: 'on',
-          attributes: { friendly_name: 'Kitchen Light' },
-          last_changed: '2026-05-29T07:00:00.000Z',
-          last_updated: '2026-05-29T07:01:00.000Z',
-        },
+      serviceMock.getEntitySnapshots.mockReturnValue({
+        'light.kitchen': firstSnapshot,
         'light.hall': {
+          entityId: 'light.hall',
           state: 'off',
           attributes: { friendly_name: 'Hall Light' },
-          last_changed: '2026-05-29T07:00:00.000Z',
-          last_updated: '2026-05-29T07:01:00.000Z',
+          lastChanged: '2026-05-29T07:00:00.000Z',
+          lastUpdated: '2026-05-29T07:01:00.000Z',
         },
       });
       for (const listener of serviceMock.entityListeners) {
@@ -332,18 +323,20 @@ describe('useProviderEntity hooks', () => {
   });
 
   it('preserves a selected snapshot record reference when unrelated provider entities update', () => {
-    serviceMock.getEntities.mockReturnValue({
+    serviceMock.getEntitySnapshots.mockReturnValue({
       'light.kitchen': {
+        entityId: 'light.kitchen',
         state: 'on',
         attributes: { friendly_name: 'Kitchen Light' },
-        last_changed: '2026-05-29T07:00:00.000Z',
-        last_updated: '2026-05-29T07:01:00.000Z',
+        lastChanged: '2026-05-29T07:00:00.000Z',
+        lastUpdated: '2026-05-29T07:01:00.000Z',
       },
       'calendar.family': {
+        entityId: 'calendar.family',
         state: 'on',
         attributes: { friendly_name: 'Family Calendar' },
-        last_changed: '2026-05-29T07:00:00.000Z',
-        last_updated: '2026-05-29T07:01:00.000Z',
+        lastChanged: '2026-05-29T07:00:00.000Z',
+        lastUpdated: '2026-05-29T07:01:00.000Z',
       },
     });
 
@@ -351,26 +344,27 @@ describe('useProviderEntity hooks', () => {
       useProviderEntitySnapshotRecord(['calendar.family'], { providerId: 'home_assistant' })
     );
     const firstRecord = result.current;
+    const firstCalendarSnapshot = firstRecord['calendar.family'];
+    if (!firstCalendarSnapshot) {
+      throw new Error('Expected the calendar snapshot record to be available');
+    }
 
     act(() => {
-      serviceMock.getEntities.mockReturnValue({
+      serviceMock.getEntitySnapshots.mockReturnValue({
         'light.kitchen': {
+          entityId: 'light.kitchen',
           state: 'on',
           attributes: { friendly_name: 'Kitchen Light' },
-          last_changed: '2026-05-29T07:00:00.000Z',
-          last_updated: '2026-05-29T07:01:00.000Z',
+          lastChanged: '2026-05-29T07:00:00.000Z',
+          lastUpdated: '2026-05-29T07:01:00.000Z',
         },
-        'calendar.family': {
-          state: 'on',
-          attributes: { friendly_name: 'Family Calendar' },
-          last_changed: '2026-05-29T07:00:00.000Z',
-          last_updated: '2026-05-29T07:01:00.000Z',
-        },
+        'calendar.family': firstCalendarSnapshot,
         'light.hall': {
+          entityId: 'light.hall',
           state: 'off',
           attributes: { friendly_name: 'Hall Light' },
-          last_changed: '2026-05-29T07:00:00.000Z',
-          last_updated: '2026-05-29T07:01:00.000Z',
+          lastChanged: '2026-05-29T07:00:00.000Z',
+          lastUpdated: '2026-05-29T07:01:00.000Z',
         },
       });
       for (const listener of serviceMock.entityListeners) {
@@ -382,12 +376,14 @@ describe('useProviderEntity hooks', () => {
   });
 
   it('preserves a prefix-filtered snapshot map when another entity domain changes', () => {
-    serviceMock.getEntities.mockReturnValue({
+    serviceMock.getEntitySnapshots.mockReturnValue({
       'calendar.family': {
+        entityId: 'calendar.family',
         state: 'on',
         attributes: { friendly_name: 'Family Calendar' },
       },
       'light.kitchen': {
+        entityId: 'light.kitchen',
         state: 'on',
         attributes: { friendly_name: 'Kitchen Light' },
       },
@@ -397,14 +393,16 @@ describe('useProviderEntity hooks', () => {
       useProviderEntitySnapshotsByPrefix(['calendar.'], { providerId: 'home_assistant' })
     );
     const firstSnapshots = result.current;
+    const firstCalendarSnapshot = firstSnapshots['calendar.family'];
+    if (!firstCalendarSnapshot) {
+      throw new Error('Expected the filtered calendar snapshot to be available');
+    }
 
     act(() => {
-      serviceMock.getEntities.mockReturnValue({
-        'calendar.family': {
-          state: 'on',
-          attributes: { friendly_name: 'Family Calendar' },
-        },
+      serviceMock.getEntitySnapshots.mockReturnValue({
+        'calendar.family': firstCalendarSnapshot,
         'light.kitchen': {
+          entityId: 'light.kitchen',
           state: 'off',
           attributes: { friendly_name: 'Kitchen Light' },
         },
@@ -443,25 +441,12 @@ describe('useProviderEntity hooks', () => {
     const firstEntries = result.current;
 
     act(() => {
-      serviceMock.getEntityRegistry.mockReturnValue([
+      serviceMock.getEntityRegistryEntries.mockReturnValue([
+        ...firstEntries,
         {
-          entity_id: 'light.kitchen',
-          device_id: 'device-kitchen',
-          area_id: 'area-kitchen',
-          name: 'Kitchen Light',
-          platform: 'hue',
-        },
-        {
-          entity_id: 'switch.kitchen_boost',
-          device_id: 'device-kitchen',
-          area_id: null,
-          name: 'Kitchen Boost',
-          platform: 'hue',
-        },
-        {
-          entity_id: 'light.hall',
-          device_id: 'device-hall',
-          area_id: 'area-hall',
+          entityId: 'light.hall',
+          deviceId: 'device-hall',
+          areaId: 'area-hall',
           name: 'Hall Light',
           platform: 'hue',
         },
