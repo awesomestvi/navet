@@ -2,7 +2,5 @@
 
 ## In Progress
 
-- Current Navet Dev scope since `v0.12.0`.
-- Redesign control center
-- Redesign responsive settings workspace
-- Add comprehensive Navet how-to guides (#132)
+- Current Navet Dev scope since `navet-dev-0.12.0-dev.20260801003736`.
+- Accept current profile sync format
