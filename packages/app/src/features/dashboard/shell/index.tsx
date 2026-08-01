@@ -13,9 +13,13 @@ import { getLowestEffectsQuality } from '@navet/app/utils/effects-quality';
 import { lazy, memo, Suspense, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { resolveDashboardPerformanceProfile } from '../hooks/use-dashboard-performance-mode';
-import { KioskControlCenter } from './kiosk-control-center';
 import type { DashboardLayoutProps } from './types';
 import { useKioskRoomSwipeNavigation } from './use-kiosk-room-swipe-navigation';
+
+const KioskControlCenter = lazy(async () => {
+  const module = await import('./kiosk-control-center');
+  return { default: module.KioskControlCenter };
+});
 
 const CustomExtensionsDialog = lazy(async () => {
   const module = await import('@navet/app/features/settings/components/custom-extensions-dialog');
@@ -246,20 +250,22 @@ export const DashboardLayout = memo(function DashboardLayout({
           {children}
         </div>
         {kioskMode && !showNavetSidebar ? (
-          <KioskControlCenter
-            editActions={mobileEditActions}
-            open={isKioskControlCenterOpen}
-            onOpenChange={setIsKioskControlCenterOpen}
-            onCustomizeSidebar={() => {
-              setEditingSidebarActionId(null);
-              setIsSidebarCustomizationOpen(true);
-            }}
-            onEditSidebarItem={(id) => {
-              setEditingSidebarActionId(id);
-              setIsSidebarCustomizationOpen(true);
-            }}
-            roomNavigation={mobileRoomNavigation}
-          />
+          <Suspense fallback={null}>
+            <KioskControlCenter
+              editActions={mobileEditActions}
+              open={isKioskControlCenterOpen}
+              onOpenChange={setIsKioskControlCenterOpen}
+              onCustomizeSidebar={() => {
+                setEditingSidebarActionId(null);
+                setIsSidebarCustomizationOpen(true);
+              }}
+              onEditSidebarItem={(id) => {
+                setEditingSidebarActionId(id);
+                setIsSidebarCustomizationOpen(true);
+              }}
+              roomNavigation={mobileRoomNavigation}
+            />
+          </Suspense>
         ) : null}
         {isSidebarCustomizationOpen ? (
           <Suspense fallback={null}>

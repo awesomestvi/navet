@@ -2,12 +2,15 @@ module.exports = {
   ci: {
     collect: {
       staticDistDir: './apps/standalone/dist',
-      numberOfRuns: 1,
+      numberOfRuns: 3,
     },
     assert: {
       assertions: {
-        'categories:performance': ['error', { minScore: 0.8 }],
-        'categories:best-practices': ['error', { minScore: 0.9 }],
+        'categories:performance': ['error', { aggregationMethod: 'median', minScore: 0.8 }],
+        'categories:best-practices': [
+          'error',
+          { aggregationMethod: 'median', minScore: 0.9 },
+        ],
       },
     },
     upload: {
