@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.12.1 - 2026-08-01
+
+## Improvements and bug fixes
+
+- Redesigned Settings with grouped navigation and search across desktop, tablet, and mobile.
+- Redesigned kiosk controls with room swipe navigation and mobile-safe layouts.
+- Added step-by-step guides for setup, dashboards, rooms, everyday control, wall displays, and troubleshooting.
+- Fixed dashboard synchronization recovery for profiles saved in the current format.
+
 ## 0.12.0 - 2026-07-30
 
 ## New features

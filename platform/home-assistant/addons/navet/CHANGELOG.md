@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.12.1
+
+## Improvements and bug fixes
+
+- Redesigned Settings with grouped navigation and search across desktop, tablet, and mobile.
+- Redesigned kiosk controls with room swipe navigation and mobile-safe layouts.
+- Fixed dashboard synchronization recovery for profiles saved in the current format.
+
 ## 0.12.0
 
 ## New features
