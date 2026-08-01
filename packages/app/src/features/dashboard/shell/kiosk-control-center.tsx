@@ -789,7 +789,10 @@ export const KioskControlCenter = memo(function KioskControlCenter({
           data-testid="kiosk-orbit-menu"
           data-kiosk-control-center
         >
-          <NavigationWorkspace.Header className="flex min-h-[4.5rem] items-center justify-between gap-3 px-4 py-3 md:px-5">
+          <NavigationWorkspace.Header
+            className="flex min-h-[calc(4.5rem+env(safe-area-inset-top,0px))] items-center justify-between gap-3 pb-3 pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] md:min-h-[4.5rem] md:px-5 md:py-3"
+            data-kiosk-control-header
+          >
             <div className="flex min-w-0 items-center gap-2">
               {!isWide && mobilePanel !== 'index' ? (
                 <IconButton
@@ -909,7 +912,7 @@ export const KioskControlCenter = memo(function KioskControlCenter({
                 <NavigationWorkspace.ScrollArea>
                   <nav
                     aria-label={t('dashboard.kiosk.controlCenterTitle')}
-                    className="grid gap-5 px-3 py-4"
+                    className="grid gap-5 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] pl-[calc(env(safe-area-inset-left,0px)+0.75rem)] pr-[calc(env(safe-area-inset-right,0px)+0.75rem)] pt-4 md:px-3 md:py-4"
                   >
                     <KioskMobileIndexGroup>
                       {sectionItems.map((item) => (
@@ -968,7 +971,7 @@ export const KioskControlCenter = memo(function KioskControlCenter({
                   </nav>
                 </NavigationWorkspace.ScrollArea>
               ) : (
-                <NavigationWorkspace.ScrollArea className="px-4 py-5 md:px-6 md:py-6 lg:px-8">
+                <NavigationWorkspace.ScrollArea className="pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-5 md:px-6 md:py-6 lg:px-8">
                   <div className="mx-auto max-w-5xl">{renderPanel()}</div>
                 </NavigationWorkspace.ScrollArea>
               )}

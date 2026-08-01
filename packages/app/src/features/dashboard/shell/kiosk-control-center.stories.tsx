@@ -179,6 +179,10 @@ export const MobileIndex: Story = {
     const page = within(canvasElement.ownerDocument.body);
     const dialog = await page.findByRole('dialog', { name: 'Kiosk control' });
     await waitFor(() => expect(dialog).toBeVisible());
+    const safeAreaHeader = canvasElement.ownerDocument.querySelector<HTMLElement>(
+      '[data-kiosk-control-header]'
+    );
+    await expect(safeAreaHeader?.className).toContain('safe-area-inset-top');
     await expect(page.queryByRole('navigation', { name: 'Navigate' })).toBeNull();
     await userEvent.click(page.getByRole('button', { name: 'Home' }));
     await expect(page.getByText('Current location')).toBeVisible();
