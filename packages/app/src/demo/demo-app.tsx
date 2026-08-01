@@ -5,6 +5,7 @@ import { RUNTIME_SAMPLE_SCREENSHOTS } from '@navet/app/assets/runtime-sample-ima
 import { AuthProvider } from '@navet/app/auth/AuthProvider';
 import { buildMediaSections } from '@navet/app/components/layout/media-section';
 import { RoomNav } from '@navet/app/components/layout/room-nav';
+import type { RoomNavigationGroup } from '@navet/app/components/layout/room-nav.utils';
 import {
   type CardSize,
   getCardGridAutoRowsStyle,
@@ -94,6 +95,20 @@ const DEMO_ROOMS = [
   'Unassigned',
   ...Array.from({ length: 48 }, (_, index) => `Demo Room ${String(index + 1).padStart(2, '0')}`),
 ];
+const DEMO_ROOM_GROUPS = [
+  {
+    id: 'upstairs',
+    name: 'Upstairs',
+    rooms: ['Bedroom', 'Guest room', 'Office'],
+    symbol: 'Layers3',
+  },
+  {
+    id: 'shared-spaces',
+    name: 'Shared spaces',
+    rooms: ['Kitchen', 'Living Room', 'Hallway'],
+    symbol: 'Home',
+  },
+] satisfies RoomNavigationGroup[];
 
 const energyTrend = [
   ['00:00', 420],
@@ -881,6 +896,7 @@ function useDemoDisplayDefaults() {
   useEffect(() => {
     const detectedEffectsQuality = useSettingsStore.getState().effectsQuality;
     const reduceEffects = detectedEffectsQuality === 'low';
+    const kioskPreview = window.location.pathname.split('/').filter(Boolean).includes('kiosk');
     useEditModeStore.getState().setEditMode(false);
     useThemeStore.getState().setTheme('dark');
     useThemeStore.getState().setPrimaryColor('orange');
@@ -896,6 +912,8 @@ function useDemoDisplayDefaults() {
       effectsQualityUserOverride: false,
       disableAnimations: reduceEffects,
       lowPowerMode: reduceEffects,
+      kioskMode: kioskPreview,
+      kioskSwipeRooms: kioskPreview,
     });
 
     document.documentElement.dataset.theme = 'dark';
@@ -1410,7 +1428,7 @@ function LightsShot() {
 }
 
 function SettingsShot() {
-  return <SettingsSection hiddenTabs={['system']} />;
+  return <SettingsSection />;
 }
 
 function MediaShot() {
@@ -1825,7 +1843,12 @@ function DemoContent() {
       mobileEditActions={{ isEditMode, onToggleEditMode: toggleEditMode }}
       mobileRoomNavigation={
         section === 'home'
-          ? { activeRoom, onRoomChange: setActiveRoom, rooms: DEMO_ROOMS }
+          ? {
+              activeRoom,
+              onRoomChange: setActiveRoom,
+              rooms: DEMO_ROOMS,
+              groups: DEMO_ROOM_GROUPS,
+            }
           : undefined
       }
     >

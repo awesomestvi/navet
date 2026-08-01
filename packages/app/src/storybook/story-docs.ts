@@ -74,6 +74,22 @@ const STORY_DOCS: Record<string, string> = {
       'Check that the navigation remains comfortable to tap on touch-first displays.',
     ]
   ),
+  'App Shell/Kiosk/Kiosk Control Center': doc(
+    'Fullscreen kiosk workspace for navigating dashboards, sections, and rooms while keeping management and display behavior out of the always-visible dashboard.',
+    [
+      'The desktop sidebar, mobile grouped index, room ribbon, and grouped room navigation.',
+      'The handoff to Room Workspace and the separation between navigation, customization, and kiosk behavior.',
+      'Stable full-height layout at desktop, tablet, and phone viewports.',
+    ],
+    [
+      'Use this story when changing kiosk navigation, room switching, display controls, or kiosk management entrypoints.',
+      'Keep routine navigation in the Navigate panel and configuration in its dedicated panels.',
+    ],
+    [
+      'Check touch targets, focus order, close and back behavior, and the absence of nested sidebars at tablet widths.',
+      'Check long room lists, grouped rooms, all four themes, reduced motion, and low-effects presentation.',
+    ]
+  ),
   'App Shell/Section Customize Button': doc(
     'Small entrypoint button for section-level customization actions on the dashboard.',
     [

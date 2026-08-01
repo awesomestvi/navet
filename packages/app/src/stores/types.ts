@@ -85,6 +85,7 @@ interface UserSettings {
   defaultView: 'all' | string;
   compactMode: boolean;
   kioskMode: boolean;
+  kioskSwipeRooms: boolean;
   dashboardProfileMode: DashboardProfileMode;
   dashboardSpaceMode: DashboardSpaceMode;
   disableAnimations: boolean;

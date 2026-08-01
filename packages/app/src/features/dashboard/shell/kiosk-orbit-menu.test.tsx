@@ -5,15 +5,25 @@ import {
 } from '@navet/app/features/dashboard/dashboards/dashboard-collection';
 import { useDashboardCollectionStore } from '@navet/app/features/dashboard/dashboards/dashboard-collection-store';
 import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
+import { setMediaQueryMatch } from '@navet/app/test/browser-mocks';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import { fireEvent, screen, within } from '@testing-library/react';
+import { type ComponentProps, useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { KioskOrbitMenu } from './kiosk-orbit-menu';
+import { KioskControlCenter } from './kiosk-control-center';
 
-describe('KioskOrbitMenu custom sidebar actions', () => {
+function TestControlCenter({
+  ...props
+}: Omit<ComponentProps<typeof KioskControlCenter>, 'onOpenChange' | 'open'>) {
+  const [open, setOpen] = useState(false);
+  return <KioskControlCenter {...props} open={open} onOpenChange={setOpen} />;
+}
+
+describe('KioskControlCenter', () => {
   beforeEach(async () => {
     await resetAppStores();
+    setMediaQueryMatch('(min-width: 768px)', true);
     vi.spyOn(window, 'open').mockImplementation(() => null);
   });
 
@@ -32,7 +42,7 @@ describe('KioskOrbitMenu custom sidebar actions', () => {
       ],
     });
 
-    renderWithProviders(<KioskOrbitMenu />);
+    renderWithProviders(<TestControlCenter />);
 
     fireEvent.click(screen.getByTestId('kiosk-orbit-trigger'));
     fireEvent.click(screen.getByRole('button', { name: 'Movie status' }));
@@ -57,7 +67,7 @@ describe('KioskOrbitMenu custom sidebar actions', () => {
     });
     useNavigationStore.getState().setActiveCustomSidebarAction('movie-status');
 
-    renderWithProviders(<KioskOrbitMenu />);
+    renderWithProviders(<TestControlCenter />);
 
     fireEvent.click(screen.getByTestId('kiosk-orbit-trigger'));
 
@@ -67,7 +77,7 @@ describe('KioskOrbitMenu custom sidebar actions', () => {
   });
 
   it('renders the shared sidebar section items in the kiosk mega menu', () => {
-    renderWithProviders(<KioskOrbitMenu />);
+    renderWithProviders(<TestControlCenter />);
 
     fireEvent.click(screen.getByTestId('kiosk-orbit-trigger'));
 
@@ -95,7 +105,7 @@ describe('KioskOrbitMenu custom sidebar actions', () => {
     });
 
     renderWithProviders(
-      <KioskOrbitMenu
+      <TestControlCenter
         roomNavigation={{
           activeRoom: 'Bedroom',
           hiddenRoomNames: [],
@@ -119,7 +129,7 @@ describe('KioskOrbitMenu custom sidebar actions', () => {
     const onCustomizeSidebar = vi.fn();
 
     renderWithProviders(
-      <KioskOrbitMenu
+      <TestControlCenter
         editActions={{
           allViewGrouping: 'custom',
           isEditMode: true,
@@ -131,6 +141,7 @@ describe('KioskOrbitMenu custom sidebar actions', () => {
     );
 
     fireEvent.click(screen.getByTestId('kiosk-orbit-trigger'));
+    fireEvent.click(screen.getByRole('button', { name: 'Customize' }));
     fireEvent.click(screen.getByRole('button', { name: 'Customize sidebar' }));
 
     expect(onCustomizeSidebar).toHaveBeenCalled();
@@ -154,7 +165,7 @@ describe('KioskOrbitMenu custom sidebar actions', () => {
     });
 
     renderWithProviders(
-      <KioskOrbitMenu
+      <TestControlCenter
         editActions={{
           allViewGrouping: 'custom',
           isEditMode: true,
@@ -171,9 +182,9 @@ describe('KioskOrbitMenu custom sidebar actions', () => {
     expect(onEditSidebarItem).toHaveBeenCalledWith('movie-status');
   });
 
-  it('lays out large room counts without a scrollable room bucket', () => {
+  it('keeps large room lists inside the workspace content scroll region', () => {
     renderWithProviders(
-      <KioskOrbitMenu
+      <TestControlCenter
         roomNavigation={{
           activeRoom: 'Room 1',
           hiddenRoomNames: [],
@@ -185,10 +196,8 @@ describe('KioskOrbitMenu custom sidebar actions', () => {
 
     fireEvent.click(screen.getByTestId('kiosk-orbit-trigger'));
 
-    const roomGrid = screen.getByTestId('kiosk-orbit-room-grid');
-    expect(roomGrid.className).toContain('grid-cols-2');
-    expect(roomGrid.className).toContain('xl:grid-cols-5');
-    expect(roomGrid.className).not.toContain('overflow-y-auto');
-    expect(within(roomGrid).getByRole('button', { name: 'Room 40' })).toBeInTheDocument();
+    const roomList = screen.getByTestId('kiosk-control-room-list');
+    expect(roomList.className).not.toContain('overflow-y-auto');
+    expect(within(roomList).getByRole('button', { name: 'Room 40' })).toBeInTheDocument();
   });
 });

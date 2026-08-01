@@ -35,6 +35,7 @@ export const noMessages = {
     'Bruk denne enheten for panelspesifikk oppførsel, eller alle enheter for å synkronisere endringen med den delte oversiktsprofilen.',
   'settings.scopeDialog.thisDevice': 'Denne enheten',
   'settings.scopeDialog.allDevices': 'Alle enheter',
+  'settings.search.noResults': 'Ingen innstillinger funnet',
   'settings.nav.appearance': 'Utseende',
   'settings.nav.localization': 'Lokalisering',
   'settings.nav.interaction': 'Interaksjon',
@@ -42,7 +43,7 @@ export const noMessages = {
   'settings.nav.habits': 'Vaner',
   'settings.nav.experimental': 'Eksperimentell',
   'settings.nav.system': 'System',
-  'settings.nav.project': 'Prosjekt',
+  'settings.nav.project': 'Om Navet',
   'settings.appearance.sectionTitle': 'Utseende',
   'settings.appearance.sectionDescription':
     'Tema, tapet, glassintensitet og lysstemning som former Navets visuelle identitet.',
@@ -186,6 +187,28 @@ export const noMessages = {
     'Skjul overskriften og navigasjonskromen slik at dashbordet kan fylle en veggskjerm.',
   'settings.dashboard.kioskMode.recoveryHint':
     'Bruk Mer-menyen nederst til høyre for å gå tilbake til Hjem, åpne Innstillinger eller tilpasse dashbordet.',
+  'dashboard.kiosk.controlCenterTitle': 'Kioskkontroll',
+  'dashboard.kiosk.controlCenterDescription':
+    'Naviger i hjemmet, administrer dashbordet og juster denne skjermen.',
+  'dashboard.kiosk.openControlCenter': 'Åpne kioskkontroll',
+  'dashboard.kiosk.backToMenu': 'Tilbake til kioskmenyen',
+  'dashboard.kiosk.navigate': 'Naviger',
+  'dashboard.kiosk.navigateDescription': 'Bytt dashbord, seksjon og rom uten å forlate kioskmodus.',
+  'dashboard.kiosk.currentLocation': 'Gjeldende plassering',
+  'dashboard.kiosk.previousRoom': 'Forrige rom',
+  'dashboard.kiosk.nextRoom': 'Neste rom',
+  'dashboard.kiosk.customizeDescription': 'Endre innhold, rom og navigasjon fra ett sted.',
+  'dashboard.kiosk.behavior': 'Kioskatferd',
+  'dashboard.kiosk.behaviorDescription':
+    'Velg hvordan skjermen oppfører seg når dashbordkontrollene er skjult.',
+  'dashboard.kiosk.swipeRooms.title': 'Sveip mellom rom',
+  'dashboard.kiosk.swipeRooms.description':
+    'Sveip til venstre eller høyre på et tomt område for å gå mellom synlige rom.',
+  'dashboard.kiosk.exit': 'Avslutt kioskmodus',
+  'dashboard.kiosk.exitDescription': 'Gjenopprett Navets vanlige topp- og sidemeny.',
+  'dashboard.kiosk.manage': 'Administrer',
+  'dashboard.kiosk.customSections': 'Egendefinerte seksjoner',
+  'dashboard.roomNav.grouping.label': 'Grupper kort etter',
   'settings.dashboard.keepAwake.title': 'Hold enheten våken',
   'settings.dashboard.keepAwake.description':
     'Prøv å forhindre at delte skjermer sover mens Navet forblir åpen.',
@@ -449,7 +472,7 @@ export const noMessages = {
     '{client} ble fjernet fra listen over tilkoblede dashboards. Innloggingen ble ikke endret.',
   'settings.system.clients.forgetFailed': 'Enhetsoppføringen kunne ikke fjernes.',
   'settings.system.logout.description': 'Avslutt denne Navet-økten på denne enheten.',
-  'settings.project.sectionTitle': 'Prosjekt',
+  'settings.project.sectionTitle': 'Om Navet',
   'settings.project.sectionDescription':
     'Versjonsdetaljer, vedlikeholderkoblinger og det juridiske grunnleggende for bruk av Navet.',
   'settings.project.about.title': 'Om',

@@ -35,6 +35,7 @@ export const ptMessages = {
     'Use este dispositivo para comportamento específico do painel ou todos os dispositivos para sincronizar a alteração com o perfil do painel compartilhado.',
   'settings.scopeDialog.thisDevice': 'Este dispositivo',
   'settings.scopeDialog.allDevices': 'Todos os dispositivos',
+  'settings.search.noResults': 'Nenhuma definição encontrada',
   'settings.nav.appearance': 'Aparência',
   'settings.nav.localization': 'Localização',
   'settings.nav.interaction': 'Interação',
@@ -42,7 +43,7 @@ export const ptMessages = {
   'settings.nav.habits': 'Hábitos',
   'settings.nav.experimental': 'Experimental',
   'settings.nav.system': 'Sistema',
-  'settings.nav.project': 'Projeto',
+  'settings.nav.project': 'Sobre o Navet',
   'settings.appearance.sectionTitle': 'Aparência',
   'settings.appearance.sectionDescription':
     'Tema, papel de parede, intensidade do vidro e atmosfera de iluminação que moldam a identidade visual do Navet.',
@@ -186,6 +187,29 @@ export const ptMessages = {
     'Oculta o cabeçalho e a navegação para o dashboard preencher uma tela de parede.',
   'settings.dashboard.kioskMode.recoveryHint':
     'Use o menu Mais no canto inferior direito para voltar ao início, abrir Configurações ou personalizar o dashboard.',
+  'dashboard.kiosk.controlCenterTitle': 'Controlo do modo quiosque',
+  'dashboard.kiosk.controlCenterDescription':
+    'Navegue pela casa, faça a gestão do painel e ajuste este ecrã.',
+  'dashboard.kiosk.openControlCenter': 'Abrir controlo do modo quiosque',
+  'dashboard.kiosk.backToMenu': 'Voltar ao menu do quiosque',
+  'dashboard.kiosk.navigate': 'Navegar',
+  'dashboard.kiosk.navigateDescription':
+    'Mude de painel, secção e divisão sem sair do modo quiosque.',
+  'dashboard.kiosk.currentLocation': 'Localização atual',
+  'dashboard.kiosk.previousRoom': 'Divisão anterior',
+  'dashboard.kiosk.nextRoom': 'Divisão seguinte',
+  'dashboard.kiosk.customizeDescription': 'Altere conteúdos, divisões e navegação num único local.',
+  'dashboard.kiosk.behavior': 'Comportamento do quiosque',
+  'dashboard.kiosk.behaviorDescription':
+    'Escolha como este ecrã funciona quando os controlos do painel estão ocultos.',
+  'dashboard.kiosk.swipeRooms.title': 'Deslizar entre divisões',
+  'dashboard.kiosk.swipeRooms.description':
+    'Deslize para a esquerda ou direita numa área vazia para percorrer as divisões visíveis.',
+  'dashboard.kiosk.exit': 'Sair do modo quiosque',
+  'dashboard.kiosk.exitDescription': 'Restaure o cabeçalho e a barra lateral normais do Navet.',
+  'dashboard.kiosk.manage': 'Gerir',
+  'dashboard.kiosk.customSections': 'Secções personalizadas',
+  'dashboard.roomNav.grouping.label': 'Agrupar cartões por',
   'settings.dashboard.keepAwake.title': 'Manter dispositivo acordado',
   'settings.dashboard.keepAwake.description':
     'Tenta impedir que telas compartilhadas entrem em repouso enquanto o Navet permanece aberto.',
@@ -356,7 +380,7 @@ export const ptMessages = {
     '{client} foi removido da lista de painéis ligados. O respetivo início de sessão não foi alterado.',
   'settings.system.clients.forgetFailed': 'Não foi possível remover o registo do dispositivo.',
   'settings.system.logout.description': 'Encerrar esta sessão do Navet neste dispositivo.',
-  'settings.project.sectionTitle': 'Projeto',
+  'settings.project.sectionTitle': 'Sobre o Navet',
   'settings.project.sectionDescription':
     'Detalhes da versão, links do mantenedor e informações legais básicas para usar o Navet.',
   'settings.project.about.title': 'Sobre',

@@ -35,6 +35,7 @@ export const nlMessages = {
     'Gebruik dit apparaat voor paneelspecifiek gedrag, of alle apparaten om de wijziging te synchroniseren met het gedeelde dashboardprofiel.',
   'settings.scopeDialog.thisDevice': 'Dit apparaat',
   'settings.scopeDialog.allDevices': 'Alle apparaten',
+  'settings.search.noResults': 'Geen instellingen gevonden',
   'settings.nav.appearance': 'Uiterlijk',
   'settings.nav.localization': 'Lokalisatie',
   'settings.nav.interaction': 'Interactie',
@@ -42,7 +43,7 @@ export const nlMessages = {
   'settings.nav.habits': 'Gewoonten',
   'settings.nav.experimental': 'Experimenteel',
   'settings.nav.system': 'Systeem',
-  'settings.nav.project': 'Project',
+  'settings.nav.project': 'Over Navet',
   'settings.appearance.sectionTitle': 'Uiterlijk',
   'settings.appearance.sectionDescription':
     'Thema, achtergrond, glasintensiteit en verlichtingssfeer die de visuele identiteit van Navet bepalen.',
@@ -188,6 +189,30 @@ export const nlMessages = {
     'Verberg de koptekst en het navigatiechroom zodat het dashboard een wanddisplay kan vullen.',
   'settings.dashboard.kioskMode.recoveryHint':
     'Gebruik het menu Meer rechtsonder om terug te keren naar Home, Instellingen te openen of het dashboard aan te passen.',
+  'dashboard.kiosk.controlCenterTitle': 'Kioskbediening',
+  'dashboard.kiosk.controlCenterDescription':
+    'Navigeer door je huis, beheer het dashboard en pas dit scherm aan.',
+  'dashboard.kiosk.openControlCenter': 'Kioskbediening openen',
+  'dashboard.kiosk.backToMenu': 'Terug naar het kioskmenu',
+  'dashboard.kiosk.navigate': 'Navigeren',
+  'dashboard.kiosk.navigateDescription':
+    'Wissel van dashboard, sectie en kamer zonder de kioskmodus te verlaten.',
+  'dashboard.kiosk.currentLocation': 'Huidige locatie',
+  'dashboard.kiosk.previousRoom': 'Vorige kamer',
+  'dashboard.kiosk.nextRoom': 'Volgende kamer',
+  'dashboard.kiosk.customizeDescription':
+    'Wijzig dashboardinhoud, kamers en navigatie op één plek.',
+  'dashboard.kiosk.behavior': 'Kioskgedrag',
+  'dashboard.kiosk.behaviorDescription':
+    'Kies hoe dit scherm werkt wanneer de dashboardbediening verborgen is.',
+  'dashboard.kiosk.swipeRooms.title': 'Vegen tussen kamers',
+  'dashboard.kiosk.swipeRooms.description':
+    'Veeg links of rechts over lege dashboardruimte om door zichtbare kamers te gaan.',
+  'dashboard.kiosk.exit': 'Kioskmodus afsluiten',
+  'dashboard.kiosk.exitDescription': 'Herstel de normale Navet-kop en zijbalk op dit scherm.',
+  'dashboard.kiosk.manage': 'Beheren',
+  'dashboard.kiosk.customSections': 'Aangepaste secties',
+  'dashboard.roomNav.grouping.label': 'Kaarten groeperen op',
   'settings.dashboard.keepAwake.title': 'Houd het apparaat wakker',
   'settings.dashboard.keepAwake.description':
     'Probeer te voorkomen dat gedeelde schermen slapen terwijl Navet open blijft.',
@@ -452,7 +477,7 @@ export const nlMessages = {
     '{client} is uit de lijst met verbonden dashboards verwijderd. De login is niet gewijzigd.',
   'settings.system.clients.forgetFailed': 'Het apparaatrecord kon niet worden verwijderd.',
   'settings.system.logout.description': 'Beëindig deze Navet-sessie op dit apparaat.',
-  'settings.project.sectionTitle': 'Project',
+  'settings.project.sectionTitle': 'Over Navet',
   'settings.project.sectionDescription':
     'Versiedetails, links naar beheerders en de juridische basis voor het gebruik van Navet.',
   'settings.project.about.title': 'Over',

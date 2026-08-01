@@ -1,3 +1,4 @@
+import { DASHBOARD_CONFIG_VERSION } from '@navet/app/constants/dashboard-config-version';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import type { DashboardConfigPayload } from '@navet/app/utils/dashboard-config';
 import { storage } from '@navet/app/utils/storage';
@@ -80,7 +81,7 @@ function parseDashboardProfileBaseSnapshot(value: unknown): DashboardProfileBase
   const candidate = value as Partial<DashboardProfileBaseSnapshot>;
   if (
     candidate.profile?.app !== 'navet' ||
-    candidate.profile.version !== 3 ||
+    (candidate.profile.version !== 3 && candidate.profile.version !== DASHBOARD_CONFIG_VERSION) ||
     typeof candidate.generation !== 'string' ||
     !SAFE_ID_PATTERN.test(candidate.generation) ||
     typeof candidate.profileId !== 'string' ||

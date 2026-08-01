@@ -35,6 +35,7 @@ export const frMessages = {
     'Utilisez cet appareil pour un comportement spécifique au panneau, ou tous les appareils pour synchroniser la modification avec le profil de tableau de bord partagé.',
   'settings.scopeDialog.thisDevice': 'Cet appareil',
   'settings.scopeDialog.allDevices': 'Tous les appareils',
+  'settings.search.noResults': 'Aucun réglage trouvé',
   'settings.nav.appearance': 'Apparence',
   'settings.nav.localization': 'Localisation',
   'settings.nav.interaction': 'Interaction',
@@ -42,7 +43,7 @@ export const frMessages = {
   'settings.nav.habits': 'Habitudes',
   'settings.nav.experimental': 'Expérimental',
   'settings.nav.system': 'Système',
-  'settings.nav.project': 'Projet',
+  'settings.nav.project': 'À propos de Navet',
   'settings.appearance.sectionTitle': 'Apparence',
   'settings.appearance.sectionDescription':
     'Thème, fond, intensité du verre et ambiance lumineuse qui définissent l’identité visuelle de Navet.',
@@ -188,6 +189,30 @@ export const frMessages = {
     'Masque l’en-tête et la navigation pour que le tableau de bord remplisse un écran mural.',
   'settings.dashboard.kioskMode.recoveryHint':
     'Utilisez le menu Plus en bas à droite pour revenir à l’accueil, ouvrir les paramètres ou personnaliser le tableau de bord.',
+  'dashboard.kiosk.controlCenterTitle': 'Commandes du mode kiosque',
+  'dashboard.kiosk.controlCenterDescription':
+    'Naviguez dans la maison, gérez le tableau de bord et réglez cet écran.',
+  'dashboard.kiosk.openControlCenter': 'Ouvrir les commandes du mode kiosque',
+  'dashboard.kiosk.backToMenu': 'Retour au menu kiosque',
+  'dashboard.kiosk.navigate': 'Naviguer',
+  'dashboard.kiosk.navigateDescription':
+    'Changez de tableau de bord, de section ou de pièce sans quitter le mode kiosque.',
+  'dashboard.kiosk.currentLocation': 'Emplacement actuel',
+  'dashboard.kiosk.previousRoom': 'Pièce précédente',
+  'dashboard.kiosk.nextRoom': 'Pièce suivante',
+  'dashboard.kiosk.customizeDescription':
+    'Modifiez le contenu, les pièces et la navigation depuis un seul endroit.',
+  'dashboard.kiosk.behavior': 'Comportement du kiosque',
+  'dashboard.kiosk.behaviorDescription':
+    'Choisissez le comportement de cet écran lorsque l’interface est masquée.',
+  'dashboard.kiosk.swipeRooms.title': 'Balayer entre les pièces',
+  'dashboard.kiosk.swipeRooms.description':
+    'Balayez vers la gauche ou la droite sur une zone vide pour parcourir les pièces visibles.',
+  'dashboard.kiosk.exit': 'Quitter le mode kiosque',
+  'dashboard.kiosk.exitDescription': 'Rétablit l’en-tête et la barre latérale habituels de Navet.',
+  'dashboard.kiosk.manage': 'Gérer',
+  'dashboard.kiosk.customSections': 'Sections personnalisées',
+  'dashboard.roomNav.grouping.label': 'Regrouper les cartes par',
   'settings.dashboard.keepAwake.title': 'Garder l’appareil éveillé',
   'settings.dashboard.keepAwake.description':
     'Tente d’empêcher les écrans partagés de se mettre en veille pendant que Navet reste ouvert.',
@@ -359,7 +384,7 @@ export const frMessages = {
     '{client} a été retiré de la liste des tableaux de bord connectés. Sa connexion n’a pas été modifiée.',
   'settings.system.clients.forgetFailed': 'Impossible de supprimer l’enregistrement de l’appareil.',
   'settings.system.logout.description': 'Mettre fin à cette session Navet sur cet appareil.',
-  'settings.project.sectionTitle': 'Projet',
+  'settings.project.sectionTitle': 'À propos de Navet',
   'settings.project.sectionDescription':
     'Détails de version, liens du mainteneur et bases juridiques de l’utilisation de Navet.',
   'settings.project.about.title': 'À propos',

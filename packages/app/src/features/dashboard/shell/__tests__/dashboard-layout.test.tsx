@@ -123,7 +123,7 @@ describe('DashboardLayout', () => {
     expect(screen.getByTestId('dashboard-layout-content')).not.toHaveClass('px-4', 'py-5');
   });
 
-  it('hides the dashboard chrome and renders the kiosk more menu in kiosk mode', () => {
+  it('hides the dashboard chrome and renders the kiosk more menu in kiosk mode', async () => {
     setPath('/dashboard');
     useSettingsStore.getState().updateSettings({ kioskMode: true });
 
@@ -136,8 +136,8 @@ describe('DashboardLayout', () => {
     expect(screen.getByText('Dashboard content')).toBeInTheDocument();
     expect(screen.queryByTestId('header')).not.toBeInTheDocument();
     expect(screen.queryByTestId('sidebar')).not.toBeInTheDocument();
-    expect(screen.getByTestId('kiosk-orbit-menu')).toBeInTheDocument();
-    expect(screen.getByTestId('kiosk-orbit-trigger')).toBeInTheDocument();
+    expect(screen.queryByTestId('kiosk-orbit-menu')).not.toBeInTheDocument();
+    expect(await screen.findByTestId('kiosk-orbit-trigger')).toBeInTheDocument();
     expect(screen.getByTestId('dashboard-layout-content')).not.toHaveClass('md:ml-16');
     expect(screen.getByTestId('dashboard-layout-content')).toHaveClass('pb-24');
   });
@@ -157,7 +157,7 @@ describe('DashboardLayout', () => {
     expect(screen.queryByTestId('sidebar')).not.toBeInTheDocument();
   });
 
-  it('navigates home from the kiosk more menu', () => {
+  it('navigates home from the kiosk more menu', async () => {
     useSettingsStore.getState().updateSettings({ kioskMode: true });
     useNavigationStore.getState().setActiveSection('settings');
 
@@ -167,13 +167,13 @@ describe('DashboardLayout', () => {
       </DashboardLayout>
     );
 
-    fireEvent.click(screen.getByTestId('kiosk-orbit-trigger'));
-    fireEvent.click(screen.getByRole('button', { name: 'Home' }));
+    fireEvent.click(await screen.findByTestId('kiosk-orbit-trigger'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Home' }));
 
     expect(useNavigationStore.getState().activeSection).toBe('home');
   });
 
-  it('navigates to settings from the kiosk more menu', () => {
+  it('navigates to settings from the kiosk more menu', async () => {
     useSettingsStore.getState().updateSettings({ kioskMode: true });
     useNavigationStore.getState().setActiveSection('home');
 
@@ -183,13 +183,13 @@ describe('DashboardLayout', () => {
       </DashboardLayout>
     );
 
-    fireEvent.click(screen.getByTestId('kiosk-orbit-trigger'));
-    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    fireEvent.click(await screen.findByTestId('kiosk-orbit-trigger'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Settings' }));
 
     expect(useNavigationStore.getState().activeSection).toBe('settings');
   });
 
-  it('toggles customize from the kiosk more menu', () => {
+  it('toggles customize from the kiosk more menu', async () => {
     const onToggleEditMode = vi.fn();
     useSettingsStore.getState().updateSettings({ kioskMode: true });
 
@@ -199,13 +199,14 @@ describe('DashboardLayout', () => {
       </DashboardLayout>
     );
 
-    fireEvent.click(screen.getByTestId('kiosk-orbit-trigger'));
-    fireEvent.click(screen.getByRole('button', { name: 'Customize' }));
+    fireEvent.click(await screen.findByTestId('kiosk-orbit-trigger'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Customize' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Customize' }));
 
     expect(onToggleEditMode).toHaveBeenCalledTimes(1);
   });
 
-  it('switches rooms from the kiosk more menu', () => {
+  it('switches rooms from the kiosk more menu', async () => {
     const onRoomChange = vi.fn();
     useSettingsStore.getState().updateSettings({ kioskMode: true });
     useNavigationStore.getState().setActiveSection('home');
@@ -222,8 +223,9 @@ describe('DashboardLayout', () => {
       </DashboardLayout>
     );
 
-    fireEvent.click(screen.getByTestId('kiosk-orbit-trigger'));
-    fireEvent.click(screen.getByRole('button', { name: 'Kitchen' }));
+    fireEvent.click(await screen.findByTestId('kiosk-orbit-trigger'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Home' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Kitchen' }));
 
     expect(onRoomChange).toHaveBeenCalledWith('Kitchen');
   });

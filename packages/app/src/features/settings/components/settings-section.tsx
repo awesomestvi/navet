@@ -1,6 +1,5 @@
-import { TabList, TabPanel, Tabs, TabTrigger } from '@navet/app/components/primitives';
 import { useLocalHabitsFeature } from '@navet/app/features/habits';
-import { useI18n, usePersistedState } from '@navet/app/hooks';
+import { useI18n, useMediaQuery, usePersistedState } from '@navet/app/hooks';
 import {
   Brain,
   FlaskConical,
@@ -11,7 +10,7 @@ import {
   Palette,
   Server,
 } from 'lucide-react';
-import { startTransition, useEffect } from 'react';
+import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import { useSettingsSectionController } from '../hooks/use-settings-section-controller';
 import { SettingsAppearanceSection } from './settings-appearance-section';
 import { SettingsDashboardSection } from './settings-dashboard-section';
@@ -19,8 +18,10 @@ import { SettingsExperimentalSection } from './settings-experimental-section';
 import { SettingsHabitsSection } from './settings-habits-section';
 import { SettingsInteractionSection } from './settings-interaction-section';
 import { SettingsLocalizationSection } from './settings-localization-section';
+import { type SettingsNavigationGroup, SettingsNavigationShell } from './settings-navigation-shell';
 import { SettingsProjectSection } from './settings-project-section';
-import { SettingsHero } from './settings-section-shell';
+import { createSettingsSearchItems } from './settings-search-items';
+import { SettingsEmbeddedSurface } from './settings-section-shell';
 import { SettingsSystemSection } from './settings-system-section';
 
 type SettingsTabId =
@@ -35,24 +36,42 @@ type SettingsTabId =
 
 interface SettingsSectionProps {
   hiddenTabs?: SettingsTabId[];
+  layout?: 'auto' | 'desktop' | 'mobile';
 }
 
 const SETTINGS_TAB_STORAGE_KEY = 'navet-settings-active-tab';
-export function SettingsSection({ hiddenTabs = [] }: SettingsSectionProps) {
+const SETTINGS_DETAIL_HISTORY_KEY = 'navetSettingsDetail';
+const EMPTY_HIDDEN_TABS: SettingsTabId[] = [];
+
+export function SettingsSection({
+  hiddenTabs = EMPTY_HIDDEN_TABS,
+  layout = 'auto',
+}: SettingsSectionProps) {
   const { t } = useI18n();
   const controller = useSettingsSectionController();
-  const hiddenTabSet = new Set<string>(hiddenTabs);
+  const hiddenTabSet = useMemo(() => new Set<string>(hiddenTabs), [hiddenTabs]);
   const [localHabitsEnabled, setLocalHabitsEnabled] = useLocalHabitsFeature();
-  const navItems = [
-    { id: 'appearance', label: t('settings.nav.appearance'), icon: Palette },
-    { id: 'localization', label: t('settings.nav.localization'), icon: Languages },
-    { id: 'interaction', label: t('settings.nav.interaction'), icon: Hand },
-    { id: 'dashboard', label: t('settings.nav.dashboard'), icon: LayoutGrid },
-    ...(localHabitsEnabled ? [{ id: 'habits', label: t('settings.nav.habits'), icon: Brain }] : []),
-    { id: 'experimental', label: t('settings.nav.experimental'), icon: FlaskConical },
-    { id: 'system', label: t('settings.nav.system'), icon: Server },
-    { id: 'project', label: t('settings.nav.project'), icon: Info },
-  ].filter(({ id }) => !hiddenTabSet.has(id));
+  const responsiveIsMobile = useMediaQuery('(max-width: 767px)');
+  const isMobile = layout === 'mobile' || (layout === 'auto' && responsiveIsMobile);
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const [pendingSearchTarget, setPendingSearchTarget] = useState<string | null>(null);
+  const settingsRootRef = useRef<HTMLDivElement | null>(null);
+  const navItems = useMemo(
+    () =>
+      [
+        { id: 'appearance', label: t('settings.nav.appearance'), icon: Palette },
+        { id: 'localization', label: t('settings.nav.localization'), icon: Languages },
+        { id: 'interaction', label: t('settings.nav.interaction'), icon: Hand },
+        { id: 'dashboard', label: t('settings.nav.dashboard'), icon: LayoutGrid },
+        ...(localHabitsEnabled
+          ? [{ id: 'habits', label: t('settings.nav.habits'), icon: Brain }]
+          : []),
+        { id: 'experimental', label: t('settings.nav.experimental'), icon: FlaskConical },
+        { id: 'system', label: t('settings.nav.system'), icon: Server },
+        { id: 'project', label: t('settings.project.sectionTitle'), icon: Info },
+      ].filter(({ id }) => !hiddenTabSet.has(id)),
+    [hiddenTabSet, localHabitsEnabled, t]
+  );
   const fallbackTab = (navItems[0]?.id ?? 'appearance') as SettingsTabId;
   const [persistedTab, setPersistedTab] = usePersistedState<SettingsTabId>(
     SETTINGS_TAB_STORAGE_KEY,
@@ -66,71 +85,148 @@ export function SettingsSection({ hiddenTabs = [] }: SettingsSectionProps) {
     }
   }, [activeTab, persistedTab, setPersistedTab]);
 
+  useEffect(() => {
+    if (!isMobile) {
+      setMobileDetailOpen(false);
+      return;
+    }
+
+    setMobileDetailOpen(Boolean(window.history.state?.[SETTINGS_DETAIL_HISTORY_KEY]));
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (!isMobile) {
+      return;
+    }
+
+    const handlePopState = (event: PopStateEvent) => {
+      setMobileDetailOpen(Boolean(event.state?.[SETTINGS_DETAIL_HISTORY_KEY]));
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isMobile]);
+
+  const navigationGroups = useMemo<SettingsNavigationGroup[]>(() => {
+    const itemById = new Map(navItems.map((item) => [item.id, item]));
+    const createGroup = (id: string, itemIds: SettingsTabId[], label?: string) => ({
+      id,
+      label,
+      items: itemIds.flatMap((itemId) => {
+        const item = itemById.get(itemId);
+        return item ? [item] : [];
+      }),
+    });
+
+    return [
+      createGroup('personal', ['appearance', 'localization', 'interaction']),
+      createGroup('dashboard', ['dashboard', 'habits'], t('settings.nav.dashboard')),
+      createGroup('navet', ['system', 'experimental', 'project'], 'Navet'),
+    ].filter((group) => group.items.length > 0);
+  }, [navItems, t]);
+  const searchItems = useMemo(
+    () =>
+      createSettingsSearchItems(t, localHabitsEnabled).filter(
+        (item) => !hiddenTabSet.has(item.sectionId)
+      ),
+    [hiddenTabSet, localHabitsEnabled, t]
+  );
+
+  const selectTab = (value: string) => {
+    startTransition(() => {
+      setPersistedTab(value as SettingsTabId);
+    });
+
+    if (isMobile) {
+      window.history.pushState(
+        { ...window.history.state, [SETTINGS_DETAIL_HISTORY_KEY]: true },
+        '',
+        window.location.href
+      );
+      setMobileDetailOpen(true);
+    }
+  };
+
+  const closeMobileDetail = () => {
+    setMobileDetailOpen(false);
+    if (window.history.state?.[SETTINGS_DETAIL_HISTORY_KEY]) {
+      window.history.back();
+    }
+  };
+
+  useEffect(() => {
+    if (!pendingSearchTarget) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const target = Array.from(
+        settingsRootRef.current?.querySelectorAll<HTMLElement>('[data-settings-search-label]') ?? []
+      ).find((element) => element.dataset.settingsSearchLabel === pendingSearchTarget);
+
+      if (!target) {
+        return;
+      }
+
+      const scrollContainer = target.closest<HTMLElement>('main');
+      if (scrollContainer) {
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        scrollContainer.scrollTo?.({
+          top: scrollContainer.scrollTop + targetRect.top - containerRect.top - 16,
+          behavior: 'auto',
+        });
+      }
+      target.focus({ preventScroll: true });
+      setPendingSearchTarget(null);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeTab, mobileDetailOpen, pendingSearchTarget]);
+
+  const activeSection =
+    activeTab === 'appearance' ? (
+      <SettingsAppearanceSection controller={controller} />
+    ) : activeTab === 'localization' ? (
+      <SettingsLocalizationSection controller={controller} />
+    ) : activeTab === 'interaction' ? (
+      <SettingsInteractionSection controller={controller} />
+    ) : activeTab === 'dashboard' ? (
+      <SettingsDashboardSection controller={controller} />
+    ) : activeTab === 'habits' && localHabitsEnabled ? (
+      <SettingsHabitsSection controller={controller} />
+    ) : activeTab === 'experimental' ? (
+      <SettingsExperimentalSection
+        controller={controller}
+        localHabitsEnabled={localHabitsEnabled}
+        onLocalHabitsEnabledChange={setLocalHabitsEnabled}
+      />
+    ) : activeTab === 'system' && !hiddenTabSet.has('system') ? (
+      <SettingsSystemSection controller={controller} />
+    ) : (
+      <SettingsProjectSection controller={controller} />
+    );
+
   return (
-    <div className="h-full min-w-0 overflow-x-hidden overflow-y-auto">
-      <div className="mx-auto min-w-0 max-w-6xl space-y-4 md:space-y-5">
-        <SettingsHero navItems={[]} styles={controller.styles} />
-
-        <Tabs
-          value={activeTab}
-          defaultValue={activeTab}
-          onValueChange={(value) => {
-            startTransition(() => {
-              setPersistedTab(value as SettingsTabId);
-            });
-          }}
-        >
-          <TabList
-            size="compact"
-            className="md:!flex-nowrap md:!overflow-x-auto md:!overflow-y-hidden md:gap-2 md:rounded-[28px] md:px-4 md:py-3"
-          >
-            {navItems.map(({ id, label, icon: Icon }) => (
-              <TabTrigger
-                key={id}
-                value={id}
-                size="compact"
-                className="md:h-10 md:min-h-10 md:px-4"
-              >
-                <Icon className="h-4 w-4" />
-                <span>{label}</span>
-              </TabTrigger>
-            ))}
-          </TabList>
-
-          <TabPanel value="appearance">
-            <SettingsAppearanceSection controller={controller} />
-          </TabPanel>
-          <TabPanel value="localization">
-            <SettingsLocalizationSection controller={controller} />
-          </TabPanel>
-          <TabPanel value="interaction">
-            <SettingsInteractionSection controller={controller} />
-          </TabPanel>
-          <TabPanel value="dashboard">
-            <SettingsDashboardSection controller={controller} />
-          </TabPanel>
-          {localHabitsEnabled ? (
-            <TabPanel value="habits">
-              <SettingsHabitsSection controller={controller} />
-            </TabPanel>
-          ) : null}
-          <TabPanel value="experimental">
-            <SettingsExperimentalSection
-              controller={controller}
-              localHabitsEnabled={localHabitsEnabled}
-              onLocalHabitsEnabledChange={setLocalHabitsEnabled}
-            />
-          </TabPanel>
-          {hiddenTabSet.has('system') ? null : (
-            <TabPanel value="system">
-              <SettingsSystemSection controller={controller} />
-            </TabPanel>
-          )}
-          <TabPanel value="project">
-            <SettingsProjectSection controller={controller} />
-          </TabPanel>
-        </Tabs>
-      </div>
-    </div>
+    <SettingsNavigationShell
+      activeId={activeTab}
+      emptySearchLabel={t('settings.search.noResults')}
+      groups={navigationGroups}
+      isMobile={isMobile}
+      mobileDetailOpen={mobileDetailOpen}
+      onBack={closeMobileDetail}
+      onSearchSelect={(item) => {
+        setPendingSearchTarget(item.targetLabel ?? null);
+        selectTab(item.sectionId);
+      }}
+      onSelect={selectTab}
+      rootRef={settingsRootRef}
+      searchLabel={t('sidebar.search')}
+      searchItems={searchItems}
+      styles={controller.styles}
+      title={t('settings.hero.eyebrow')}
+    >
+      <SettingsEmbeddedSurface>{activeSection}</SettingsEmbeddedSurface>
+    </SettingsNavigationShell>
   );
 }

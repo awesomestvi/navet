@@ -35,6 +35,7 @@ export const deMessages = {
     'Verwenden Sie dieses Gerät für Panel-spezifisches Verhalten oder alle Geräte, um die Änderung mit dem freigegebenen Dashboard-Profil zu synchronisieren.',
   'settings.scopeDialog.thisDevice': 'Dieses Gerät',
   'settings.scopeDialog.allDevices': 'Alle Geräte',
+  'settings.search.noResults': 'Keine Einstellungen gefunden',
   'settings.nav.appearance': 'Darstellung',
   'settings.nav.localization': 'Lokalisierung',
   'settings.nav.interaction': 'Interaktion',
@@ -42,7 +43,7 @@ export const deMessages = {
   'settings.nav.habits': 'Gewohnheiten',
   'settings.nav.experimental': 'Experimentell',
   'settings.nav.system': 'System',
-  'settings.nav.project': 'Projekt',
+  'settings.nav.project': 'Über Navet',
   'settings.appearance.sectionTitle': 'Darstellung',
   'settings.appearance.sectionDescription':
     'Thema, Hintergrundbild, Glasintensität und Lichtambiente, die Navets visuelle Identität prägen.',
@@ -188,6 +189,31 @@ export const deMessages = {
     'Blendet Kopfzeile und Navigation aus, damit das Dashboard eine Wandanzeige ausfüllen kann.',
   'settings.dashboard.kioskMode.recoveryHint':
     'Nutze das Mehr-Menü unten rechts, um zur Startseite zu wechseln, Einstellungen zu öffnen oder das Dashboard anzupassen.',
+  'dashboard.kiosk.controlCenterTitle': 'Kiosk-Steuerung',
+  'dashboard.kiosk.controlCenterDescription':
+    'Im Zuhause navigieren, das Dashboard verwalten und dieses Display anpassen.',
+  'dashboard.kiosk.openControlCenter': 'Kiosk-Steuerung öffnen',
+  'dashboard.kiosk.backToMenu': 'Zurück zum Kiosk-Menü',
+  'dashboard.kiosk.navigate': 'Navigieren',
+  'dashboard.kiosk.navigateDescription':
+    'Dashboards, Bereiche und Räume wechseln, ohne den Kioskmodus zu verlassen.',
+  'dashboard.kiosk.currentLocation': 'Aktueller Ort',
+  'dashboard.kiosk.previousRoom': 'Vorheriger Raum',
+  'dashboard.kiosk.nextRoom': 'Nächster Raum',
+  'dashboard.kiosk.customizeDescription':
+    'Dashboard-Inhalte, Räume und Navigation an einem Ort ändern.',
+  'dashboard.kiosk.behavior': 'Kioskverhalten',
+  'dashboard.kiosk.behaviorDescription':
+    'Festlegen, wie sich dieses Display bei ausgeblendeter Navigation verhält.',
+  'dashboard.kiosk.swipeRooms.title': 'Zwischen Räumen wischen',
+  'dashboard.kiosk.swipeRooms.description':
+    'Auf einer freien Dashboard-Fläche nach links oder rechts wischen, um sichtbare Räume zu wechseln.',
+  'dashboard.kiosk.exit': 'Kioskmodus beenden',
+  'dashboard.kiosk.exitDescription':
+    'Die normale Navet-Kopfzeile und Seitenleiste wiederherstellen.',
+  'dashboard.kiosk.manage': 'Verwalten',
+  'dashboard.kiosk.customSections': 'Eigene Bereiche',
+  'dashboard.roomNav.grouping.label': 'Karten gruppieren nach',
   'settings.dashboard.keepAwake.title': 'Gerät wach halten',
   'settings.dashboard.keepAwake.description':
     'Versucht zu verhindern, dass gemeinsame Bildschirme in den Ruhezustand gehen, während Navet geöffnet ist.',
@@ -359,7 +385,7 @@ export const deMessages = {
     '{client} wurde aus der Liste der verbundenen Dashboards entfernt. Die Anmeldung wurde nicht geändert.',
   'settings.system.clients.forgetFailed': 'Der Geräteeintrag konnte nicht entfernt werden.',
   'settings.system.logout.description': 'Diese Navet-Sitzung auf diesem Gerät beenden.',
-  'settings.project.sectionTitle': 'Projekt',
+  'settings.project.sectionTitle': 'Über Navet',
   'settings.project.sectionDescription':
     'Versionsdetails, Maintainer-Links und die rechtlichen Grundlagen für die Nutzung von Navet.',
   'settings.project.about.title': 'Info',

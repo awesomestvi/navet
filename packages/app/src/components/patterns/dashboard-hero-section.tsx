@@ -1,6 +1,7 @@
 import { SurfacePanel } from '@navet/app/components/primitives/surface-panel';
+import { getNavetAccentWashStyle } from '@navet/app/components/shared/theme/accent-wash-style';
 import type { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 export interface DashboardHeroSectionProps {
   accentColor: string;
@@ -31,11 +32,7 @@ export function DashboardHeroSection({
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 opacity-90"
-        style={
-          {
-            background: `radial-gradient(circle at top left, ${accentColor}30, transparent 34%), radial-gradient(circle at bottom right, ${accentColor}14, transparent 28%)`,
-          } as CSSProperties
-        }
+        style={getNavetAccentWashStyle(accentColor)}
       />
 
       <div

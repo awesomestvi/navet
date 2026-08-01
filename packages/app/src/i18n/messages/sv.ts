@@ -34,6 +34,7 @@ export const svMessages = {
     'Använd den här enheten för panelspecifikt beteende eller alla enheter för att synkronisera ändringen med den delade dashboardprofilen.',
   'settings.scopeDialog.thisDevice': 'Den här enheten',
   'settings.scopeDialog.allDevices': 'Alla enheter',
+  'settings.search.noResults': 'Inga inställningar hittades',
   'settings.nav.appearance': 'Utseende',
   'settings.nav.localization': 'Lokalisering',
   'settings.nav.interaction': 'Interaktion',
@@ -41,7 +42,7 @@ export const svMessages = {
   'settings.nav.habits': 'Vanor',
   'settings.nav.experimental': 'Experimentellt',
   'settings.nav.system': 'System',
-  'settings.nav.project': 'Projekt',
+  'settings.nav.project': 'Om Navet',
   'settings.appearance.sectionTitle': 'Utseende',
   'settings.appearance.sectionDescription':
     'Tema, bakgrund, glasintensitet och ljusatmosfär som formar Navets visuella identitet.',
@@ -185,6 +186,29 @@ export const svMessages = {
     'Dölj sidhuvudet och navigationen så att dashboarden kan fylla en väggskärm.',
   'settings.dashboard.kioskMode.recoveryHint':
     'Använd Mer-menyn nere till höger för att gå hem, öppna inställningar eller anpassa dashboarden.',
+  'dashboard.kiosk.controlCenterTitle': 'Kioskkontroll',
+  'dashboard.kiosk.controlCenterDescription':
+    'Navigera i hemmet, hantera instrumentpanelen och justera den här skärmen.',
+  'dashboard.kiosk.openControlCenter': 'Öppna kioskkontroll',
+  'dashboard.kiosk.backToMenu': 'Tillbaka till kioskmenyn',
+  'dashboard.kiosk.navigate': 'Navigera',
+  'dashboard.kiosk.navigateDescription':
+    'Byt instrumentpanel, sektion och rum utan att lämna kioskläget.',
+  'dashboard.kiosk.currentLocation': 'Aktuell plats',
+  'dashboard.kiosk.previousRoom': 'Föregående rum',
+  'dashboard.kiosk.nextRoom': 'Nästa rum',
+  'dashboard.kiosk.customizeDescription': 'Ändra innehåll, rum och navigering från ett ställe.',
+  'dashboard.kiosk.behavior': 'Kioskbeteende',
+  'dashboard.kiosk.behaviorDescription':
+    'Välj hur skärmen beter sig när instrumentpanelens ram är dold.',
+  'dashboard.kiosk.swipeRooms.title': 'Svep mellan rum',
+  'dashboard.kiosk.swipeRooms.description':
+    'Svep åt vänster eller höger på en tom yta för att gå mellan synliga rum.',
+  'dashboard.kiosk.exit': 'Avsluta kioskläge',
+  'dashboard.kiosk.exitDescription': 'Återställ Navets vanliga sidhuvud och sidofält på skärmen.',
+  'dashboard.kiosk.manage': 'Hantera',
+  'dashboard.kiosk.customSections': 'Anpassade sektioner',
+  'dashboard.roomNav.grouping.label': 'Gruppera kort efter',
   'settings.dashboard.keepAwake.title': 'Håll enheten vaken',
   'settings.dashboard.keepAwake.description':
     'Försök att hindra delade skärmar från att somna medan Navet är öppet.',
@@ -355,7 +379,7 @@ export const svMessages = {
     '{client} togs bort från listan över anslutna dashboards. Inloggningen ändrades inte.',
   'settings.system.clients.forgetFailed': 'Det gick inte att ta bort enhetsposten.',
   'settings.system.logout.description': 'Avsluta Navet-sessionen på den här enheten.',
-  'settings.project.sectionTitle': 'Projekt',
+  'settings.project.sectionTitle': 'Om Navet',
   'settings.project.sectionDescription':
     'Versionsdetaljer, maintainer-länkar och den juridiska grunden för att använda Navet.',
   'settings.project.about.title': 'Om',

@@ -34,6 +34,7 @@ export const daMessages = {
     'Brug denne enhed til panelspecifik adfærd eller alle enheder til at synkronisere ændringen med den delte dashboardprofil.',
   'settings.scopeDialog.thisDevice': 'Denne enhed',
   'settings.scopeDialog.allDevices': 'Alle enheder',
+  'settings.search.noResults': 'Ingen indstillinger fundet',
   'settings.nav.appearance': 'Udseende',
   'settings.nav.localization': 'Lokalisering',
   'settings.nav.interaction': 'Interaktion',
@@ -41,7 +42,7 @@ export const daMessages = {
   'settings.nav.habits': 'Vaner',
   'settings.nav.experimental': 'Eksperimentel',
   'settings.nav.system': 'System',
-  'settings.nav.project': 'Projekt',
+  'settings.nav.project': 'Om Navet',
   'settings.appearance.sectionTitle': 'Udseende',
   'settings.appearance.sectionDescription':
     'Tema, tapet, glasintensitet og lysstemning, der former Navets visuelle identitet.',
@@ -185,6 +186,29 @@ export const daMessages = {
     'Skjul headeren og navigationskrom, så instrumentbrættet kan fylde en vægskærm.',
   'settings.dashboard.kioskMode.recoveryHint':
     'Brug menuen Mere nederst til højre til at vende tilbage til startsiden, åbne Indstillinger eller tilpasse betjeningspanelet.',
+  'dashboard.kiosk.controlCenterTitle': 'Kioskkontrol',
+  'dashboard.kiosk.controlCenterDescription':
+    'Naviger i hjemmet, administrer dashboardet og juster denne skærm.',
+  'dashboard.kiosk.openControlCenter': 'Åbn kioskkontrol',
+  'dashboard.kiosk.backToMenu': 'Tilbage til kioskmenuen',
+  'dashboard.kiosk.navigate': 'Naviger',
+  'dashboard.kiosk.navigateDescription':
+    'Skift dashboard, sektion og rum uden at forlade kiosktilstand.',
+  'dashboard.kiosk.currentLocation': 'Aktuel placering',
+  'dashboard.kiosk.previousRoom': 'Forrige rum',
+  'dashboard.kiosk.nextRoom': 'Næste rum',
+  'dashboard.kiosk.customizeDescription': 'Skift indhold, rum og navigation fra ét sted.',
+  'dashboard.kiosk.behavior': 'Kioskadfærd',
+  'dashboard.kiosk.behaviorDescription':
+    'Vælg hvordan skærmen fungerer, når dashboardets navigation er skjult.',
+  'dashboard.kiosk.swipeRooms.title': 'Stryg mellem rum',
+  'dashboard.kiosk.swipeRooms.description':
+    'Stryg til venstre eller højre på et tomt område for at gå mellem synlige rum.',
+  'dashboard.kiosk.exit': 'Afslut kiosktilstand',
+  'dashboard.kiosk.exitDescription': 'Gendan Navets normale sidehoved og sidepanel.',
+  'dashboard.kiosk.manage': 'Administrer',
+  'dashboard.kiosk.customSections': 'Tilpassede sektioner',
+  'dashboard.roomNav.grouping.label': 'Gruppér kort efter',
   'settings.dashboard.keepAwake.title': 'Hold enheden vågen',
   'settings.dashboard.keepAwake.description':
     'Prøv at forhindre delte skærme i at sove, mens Navet forbliver åben.',
@@ -448,7 +472,7 @@ export const daMessages = {
     '{client} blev fjernet fra listen over tilsluttede dashboards. Dets login blev ikke ændret.',
   'settings.system.clients.forgetFailed': 'Enhedsposten kunne ikke fjernes.',
   'settings.system.logout.description': 'Afslut denne Navet-session på denne enhed.',
-  'settings.project.sectionTitle': 'Projekt',
+  'settings.project.sectionTitle': 'Om Navet',
   'settings.project.sectionDescription':
     'Versionsdetaljer, vedligeholdelseslinks og det juridiske grundlag for brug af Navet.',
   'settings.project.about.title': 'Om',

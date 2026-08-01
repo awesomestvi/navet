@@ -1,3 +1,4 @@
+import { DASHBOARD_CONFIG_VERSION } from '@navet/app/constants/dashboard-config-version';
 import type { DashboardConfigPayload } from '@navet/app/utils/dashboard-config';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -45,6 +46,25 @@ describe('dashboard profile base cache', () => {
 
     clearDashboardProfileBase();
     expect(readDashboardProfileBase()).toBeNull();
+  });
+
+  it('accepts the current dashboard profile format as a shared-sync merge base', () => {
+    const currentProfile = {
+      ...profile,
+      version: DASHBOARD_CONFIG_VERSION,
+    } satisfies DashboardConfigPayload;
+    const snapshot = {
+      generation: 'generation_active',
+      profile: currentProfile,
+      profileId: 'default',
+      revision: 5,
+      savedAt: '2026-08-01T08:00:00.000Z',
+      workspaceId: 'workspace_1',
+    };
+
+    expect(() => writeDashboardProfileBase(snapshot)).not.toThrow();
+    expect(() => writeDashboardProfileReceipt(snapshot)).not.toThrow();
+    expect(readDashboardProfileBase()).toEqual(snapshot);
   });
 
   it('ignores and removes legacy persisted cross-tab merge bases', () => {

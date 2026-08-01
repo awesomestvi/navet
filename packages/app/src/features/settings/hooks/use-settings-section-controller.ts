@@ -14,12 +14,6 @@ import { useShallow } from 'zustand/react/shallow';
 import { getSettingsSectionStyles } from './settings-section-styles';
 import { useSettingsSectionActions } from './use-settings-section-actions';
 
-export type SectionNavItem = {
-  id: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-};
-
 type ProviderCardStatus =
   | 'connected'
   | 'connecting'
@@ -78,6 +72,7 @@ export function useSettingsSectionController() {
     dashboardProfileMode,
     dashboardSpaceMode,
     kioskMode,
+    kioskSwipeRooms,
     showHomeSummaryBar,
     updateSettings,
   } = useSettingsStore(
@@ -100,6 +95,7 @@ export function useSettingsSectionController() {
       dashboardProfileMode: state.dashboardProfileMode,
       dashboardSpaceMode: state.dashboardSpaceMode,
       kioskMode: state.kioskMode,
+      kioskSwipeRooms: state.kioskSwipeRooms,
       showHomeSummaryBar: state.showHomeSummaryBar,
       updateSettings: state.updateSettings,
     }))
@@ -233,6 +229,7 @@ export function useSettingsSectionController() {
     hiddenEntityIds,
     importInputRef,
     kioskMode,
+    kioskSwipeRooms,
     keepDeviceAwake,
     language,
     languageOptions,
