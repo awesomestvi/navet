@@ -57,6 +57,7 @@ export interface UserSettings {
   defaultView: 'all' | string;
   compactMode: boolean;
   kioskMode: boolean;
+  kioskSwipeRooms: boolean;
   dashboardProfileMode: DashboardProfileMode;
   dashboardSpaceMode: DashboardSpaceMode;
   disableAnimations: boolean;
@@ -107,6 +108,7 @@ export const defaultSettings: UserSettings = {
   defaultView: 'all',
   compactMode: false,
   kioskMode: false,
+  kioskSwipeRooms: false,
   dashboardProfileMode: 'standard',
   dashboardSpaceMode: 'default',
   disableAnimations: false,

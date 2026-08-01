@@ -188,6 +188,30 @@ export const fiMessages = {
     'Piilota otsikko ja navigointikromi, jotta kojelauta voi täyttää seinänäytön.',
   'settings.dashboard.kioskMode.recoveryHint':
     'Käytä oikeassa alakulmassa olevaa Lisää-valikkoa palataksesi etusivulle, avaa Asetukset tai mukauta kojelautaa.',
+  'dashboard.kiosk.controlCenterTitle': 'Kioskin ohjaus',
+  'dashboard.kiosk.controlCenterDescription':
+    'Siirry kodissa, hallitse koontinäyttöä ja säädä tätä näyttöä.',
+  'dashboard.kiosk.openControlCenter': 'Avaa kioskin ohjaus',
+  'dashboard.kiosk.backToMenu': 'Takaisin kioskin valikkoon',
+  'dashboard.kiosk.navigate': 'Siirry',
+  'dashboard.kiosk.navigateDescription':
+    'Vaihda koontinäyttöä, osiota ja huonetta poistumatta kioskitilasta.',
+  'dashboard.kiosk.currentLocation': 'Nykyinen sijainti',
+  'dashboard.kiosk.previousRoom': 'Edellinen huone',
+  'dashboard.kiosk.nextRoom': 'Seuraava huone',
+  'dashboard.kiosk.customizeDescription':
+    'Muuta sisältöä, huoneita ja navigointia yhdessä paikassa.',
+  'dashboard.kiosk.behavior': 'Kioskin toiminta',
+  'dashboard.kiosk.behaviorDescription':
+    'Valitse miten näyttö toimii, kun koontinäytön navigointi on piilotettu.',
+  'dashboard.kiosk.swipeRooms.title': 'Pyyhkäise huoneiden välillä',
+  'dashboard.kiosk.swipeRooms.description':
+    'Pyyhkäise tyhjällä alueella vasemmalle tai oikealle siirtyäksesi näkyvien huoneiden välillä.',
+  'dashboard.kiosk.exit': 'Poistu kioskitilasta',
+  'dashboard.kiosk.exitDescription': 'Palauta Navetin tavallinen ylätunniste ja sivupalkki.',
+  'dashboard.kiosk.manage': 'Hallitse',
+  'dashboard.kiosk.customSections': 'Mukautetut osiot',
+  'dashboard.roomNav.grouping.label': 'Ryhmittele kortit',
   'settings.dashboard.keepAwake.title': 'Pidä laite hereillä',
   'settings.dashboard.keepAwake.description':
     'Yritä estää jaettuja näyttöjä nukkumasta Navetin ollessa auki.',

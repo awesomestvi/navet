@@ -189,6 +189,31 @@ export const deMessages = {
     'Blendet Kopfzeile und Navigation aus, damit das Dashboard eine Wandanzeige ausfüllen kann.',
   'settings.dashboard.kioskMode.recoveryHint':
     'Nutze das Mehr-Menü unten rechts, um zur Startseite zu wechseln, Einstellungen zu öffnen oder das Dashboard anzupassen.',
+  'dashboard.kiosk.controlCenterTitle': 'Kiosk-Steuerung',
+  'dashboard.kiosk.controlCenterDescription':
+    'Im Zuhause navigieren, das Dashboard verwalten und dieses Display anpassen.',
+  'dashboard.kiosk.openControlCenter': 'Kiosk-Steuerung öffnen',
+  'dashboard.kiosk.backToMenu': 'Zurück zum Kiosk-Menü',
+  'dashboard.kiosk.navigate': 'Navigieren',
+  'dashboard.kiosk.navigateDescription':
+    'Dashboards, Bereiche und Räume wechseln, ohne den Kioskmodus zu verlassen.',
+  'dashboard.kiosk.currentLocation': 'Aktueller Ort',
+  'dashboard.kiosk.previousRoom': 'Vorheriger Raum',
+  'dashboard.kiosk.nextRoom': 'Nächster Raum',
+  'dashboard.kiosk.customizeDescription':
+    'Dashboard-Inhalte, Räume und Navigation an einem Ort ändern.',
+  'dashboard.kiosk.behavior': 'Kioskverhalten',
+  'dashboard.kiosk.behaviorDescription':
+    'Festlegen, wie sich dieses Display bei ausgeblendeter Navigation verhält.',
+  'dashboard.kiosk.swipeRooms.title': 'Zwischen Räumen wischen',
+  'dashboard.kiosk.swipeRooms.description':
+    'Auf einer freien Dashboard-Fläche nach links oder rechts wischen, um sichtbare Räume zu wechseln.',
+  'dashboard.kiosk.exit': 'Kioskmodus beenden',
+  'dashboard.kiosk.exitDescription':
+    'Die normale Navet-Kopfzeile und Seitenleiste wiederherstellen.',
+  'dashboard.kiosk.manage': 'Verwalten',
+  'dashboard.kiosk.customSections': 'Eigene Bereiche',
+  'dashboard.roomNav.grouping.label': 'Karten gruppieren nach',
   'settings.dashboard.keepAwake.title': 'Gerät wach halten',
   'settings.dashboard.keepAwake.description':
     'Versucht zu verhindern, dass gemeinsame Bildschirme in den Ruhezustand gehen, während Navet geöffnet ist.',

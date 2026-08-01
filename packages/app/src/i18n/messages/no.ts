@@ -187,6 +187,28 @@ export const noMessages = {
     'Skjul overskriften og navigasjonskromen slik at dashbordet kan fylle en veggskjerm.',
   'settings.dashboard.kioskMode.recoveryHint':
     'Bruk Mer-menyen nederst til høyre for å gå tilbake til Hjem, åpne Innstillinger eller tilpasse dashbordet.',
+  'dashboard.kiosk.controlCenterTitle': 'Kioskkontroll',
+  'dashboard.kiosk.controlCenterDescription':
+    'Naviger i hjemmet, administrer dashbordet og juster denne skjermen.',
+  'dashboard.kiosk.openControlCenter': 'Åpne kioskkontroll',
+  'dashboard.kiosk.backToMenu': 'Tilbake til kioskmenyen',
+  'dashboard.kiosk.navigate': 'Naviger',
+  'dashboard.kiosk.navigateDescription': 'Bytt dashbord, seksjon og rom uten å forlate kioskmodus.',
+  'dashboard.kiosk.currentLocation': 'Gjeldende plassering',
+  'dashboard.kiosk.previousRoom': 'Forrige rom',
+  'dashboard.kiosk.nextRoom': 'Neste rom',
+  'dashboard.kiosk.customizeDescription': 'Endre innhold, rom og navigasjon fra ett sted.',
+  'dashboard.kiosk.behavior': 'Kioskatferd',
+  'dashboard.kiosk.behaviorDescription':
+    'Velg hvordan skjermen oppfører seg når dashbordkontrollene er skjult.',
+  'dashboard.kiosk.swipeRooms.title': 'Sveip mellom rom',
+  'dashboard.kiosk.swipeRooms.description':
+    'Sveip til venstre eller høyre på et tomt område for å gå mellom synlige rom.',
+  'dashboard.kiosk.exit': 'Avslutt kioskmodus',
+  'dashboard.kiosk.exitDescription': 'Gjenopprett Navets vanlige topp- og sidemeny.',
+  'dashboard.kiosk.manage': 'Administrer',
+  'dashboard.kiosk.customSections': 'Egendefinerte seksjoner',
+  'dashboard.roomNav.grouping.label': 'Grupper kort etter',
   'settings.dashboard.keepAwake.title': 'Hold enheten våken',
   'settings.dashboard.keepAwake.description':
     'Prøv å forhindre at delte skjermer sover mens Navet forblir åpen.',

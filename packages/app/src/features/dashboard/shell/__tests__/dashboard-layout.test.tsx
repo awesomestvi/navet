@@ -136,7 +136,7 @@ describe('DashboardLayout', () => {
     expect(screen.getByText('Dashboard content')).toBeInTheDocument();
     expect(screen.queryByTestId('header')).not.toBeInTheDocument();
     expect(screen.queryByTestId('sidebar')).not.toBeInTheDocument();
-    expect(screen.getByTestId('kiosk-orbit-menu')).toBeInTheDocument();
+    expect(screen.queryByTestId('kiosk-orbit-menu')).not.toBeInTheDocument();
     expect(screen.getByTestId('kiosk-orbit-trigger')).toBeInTheDocument();
     expect(screen.getByTestId('dashboard-layout-content')).not.toHaveClass('md:ml-16');
     expect(screen.getByTestId('dashboard-layout-content')).toHaveClass('pb-24');
@@ -201,6 +201,7 @@ describe('DashboardLayout', () => {
 
     fireEvent.click(screen.getByTestId('kiosk-orbit-trigger'));
     fireEvent.click(screen.getByRole('button', { name: 'Customize' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Customize' }));
 
     expect(onToggleEditMode).toHaveBeenCalledTimes(1);
   });
@@ -223,6 +224,7 @@ describe('DashboardLayout', () => {
     );
 
     fireEvent.click(screen.getByTestId('kiosk-orbit-trigger'));
+    fireEvent.click(screen.getByRole('button', { name: 'Home' }));
     fireEvent.click(screen.getByRole('button', { name: 'Kitchen' }));
 
     expect(onRoomChange).toHaveBeenCalledWith('Kitchen');

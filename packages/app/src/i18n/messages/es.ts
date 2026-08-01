@@ -185,6 +185,30 @@ export const esMessages = {
     'Oculta el encabezado y la navegación para que el panel llene una pantalla de pared.',
   'settings.dashboard.kioskMode.recoveryHint':
     'Usa el menú Más de abajo a la derecha para volver al inicio, abrir ajustes o personalizar el panel.',
+  'dashboard.kiosk.controlCenterTitle': 'Control del modo quiosco',
+  'dashboard.kiosk.controlCenterDescription':
+    'Navega por tu hogar, gestiona el panel y ajusta esta pantalla.',
+  'dashboard.kiosk.openControlCenter': 'Abrir el control del modo quiosco',
+  'dashboard.kiosk.backToMenu': 'Volver al menú del quiosco',
+  'dashboard.kiosk.navigate': 'Navegar',
+  'dashboard.kiosk.navigateDescription':
+    'Cambia de panel, sección o habitación sin salir del modo quiosco.',
+  'dashboard.kiosk.currentLocation': 'Ubicación actual',
+  'dashboard.kiosk.previousRoom': 'Habitación anterior',
+  'dashboard.kiosk.nextRoom': 'Habitación siguiente',
+  'dashboard.kiosk.customizeDescription':
+    'Cambia el contenido, las habitaciones y la navegación desde un solo lugar.',
+  'dashboard.kiosk.behavior': 'Comportamiento del quiosco',
+  'dashboard.kiosk.behaviorDescription':
+    'Elige cómo funciona esta pantalla cuando la interfaz del panel está oculta.',
+  'dashboard.kiosk.swipeRooms.title': 'Deslizar entre habitaciones',
+  'dashboard.kiosk.swipeRooms.description':
+    'Desliza a izquierda o derecha sobre un espacio vacío para recorrer las habitaciones visibles.',
+  'dashboard.kiosk.exit': 'Salir del modo quiosco',
+  'dashboard.kiosk.exitDescription': 'Restaura la cabecera y la barra lateral habituales de Navet.',
+  'dashboard.kiosk.manage': 'Gestionar',
+  'dashboard.kiosk.customSections': 'Secciones personalizadas',
+  'dashboard.roomNav.grouping.label': 'Agrupar tarjetas por',
   'settings.dashboard.keepAwake.title': 'Mantener el dispositivo despierto',
   'settings.dashboard.keepAwake.description':
     'Intenta evitar que las pantallas compartidas se duerman mientras Navet permanece abierto.',

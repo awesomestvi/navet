@@ -12,6 +12,7 @@ export interface DashboardProfileModeOption {
     | 'headerTitleMode'
     | 'keepDeviceAwake'
     | 'kioskMode'
+    | 'kioskSwipeRooms'
     | 'showHomeSummaryBar'
   >;
 }
@@ -27,6 +28,7 @@ export const DASHBOARD_PROFILE_MODE_OPTIONS: DashboardProfileModeOption[] = [
       headerTitleMode: 'auto_greeting',
       keepDeviceAwake: false,
       kioskMode: false,
+      kioskSwipeRooms: false,
       showHomeSummaryBar: true,
     },
   },
@@ -40,6 +42,7 @@ export const DASHBOARD_PROFILE_MODE_OPTIONS: DashboardProfileModeOption[] = [
       headerTitleMode: 'clock',
       keepDeviceAwake: true,
       kioskMode: true,
+      kioskSwipeRooms: false,
       showHomeSummaryBar: true,
     },
   },
@@ -51,6 +54,7 @@ export const DASHBOARD_PROFILE_MODE_SCOPE_KEYS = [
   'headerTitleMode',
   'keepDeviceAwake',
   'kioskMode',
+  'kioskSwipeRooms',
   'showHomeSummaryBar',
 ] as const;
 

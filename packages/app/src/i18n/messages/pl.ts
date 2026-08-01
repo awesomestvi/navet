@@ -187,6 +187,30 @@ export const plMessages = {
     'Ukryj nagłówek i nawigację, aby panel wypełniał cały ekran ścienny.',
   'settings.dashboard.kioskMode.recoveryHint':
     'Użyj menu Więcej w prawym dolnym rogu, aby wrócić do Domu, otworzyć Ustawienia lub dostosować panel.',
+  'dashboard.kiosk.controlCenterTitle': 'Sterowanie trybem kiosku',
+  'dashboard.kiosk.controlCenterDescription':
+    'Poruszaj się po domu, zarządzaj pulpitem i dostosuj ten ekran.',
+  'dashboard.kiosk.openControlCenter': 'Otwórz sterowanie trybem kiosku',
+  'dashboard.kiosk.backToMenu': 'Wróć do menu kiosku',
+  'dashboard.kiosk.navigate': 'Nawigacja',
+  'dashboard.kiosk.navigateDescription':
+    'Przełączaj pulpity, sekcje i pokoje bez wychodzenia z trybu kiosku.',
+  'dashboard.kiosk.currentLocation': 'Bieżąca lokalizacja',
+  'dashboard.kiosk.previousRoom': 'Poprzedni pokój',
+  'dashboard.kiosk.nextRoom': 'Następny pokój',
+  'dashboard.kiosk.customizeDescription':
+    'Zmieniaj zawartość pulpitu, pokoje i nawigację w jednym miejscu.',
+  'dashboard.kiosk.behavior': 'Działanie kiosku',
+  'dashboard.kiosk.behaviorDescription':
+    'Wybierz sposób działania ekranu, gdy interfejs pulpitu jest ukryty.',
+  'dashboard.kiosk.swipeRooms.title': 'Przesuwaj między pokojami',
+  'dashboard.kiosk.swipeRooms.description':
+    'Przesuń w lewo lub w prawo po pustym miejscu, aby przejść między widocznymi pokojami.',
+  'dashboard.kiosk.exit': 'Wyjdź z trybu kiosku',
+  'dashboard.kiosk.exitDescription': 'Przywróć zwykły nagłówek i pasek boczny Navet.',
+  'dashboard.kiosk.manage': 'Zarządzaj',
+  'dashboard.kiosk.customSections': 'Sekcje niestandardowe',
+  'dashboard.roomNav.grouping.label': 'Grupuj karty według',
   'settings.dashboard.keepAwake.title': 'Nie wygaszaj ekranu',
   'settings.dashboard.keepAwake.description':
     'Zapobiegaj wygaszaniu współdzielonych ekranów, gdy Navet jest otwarty.',

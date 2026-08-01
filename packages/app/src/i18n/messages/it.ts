@@ -194,6 +194,30 @@ export const itMessages = {
     'Nasconde intestazione e navigazione per far riempire alla dashboard uno schermo a parete.',
   'settings.dashboard.kioskMode.recoveryHint':
     'Usa il menu Altro in basso a destra per tornare alla home, aprire le impostazioni o personalizzare la dashboard.',
+  'dashboard.kiosk.controlCenterTitle': 'Controlli modalità chiosco',
+  'dashboard.kiosk.controlCenterDescription':
+    'Naviga in casa, gestisci la dashboard e regola questo display.',
+  'dashboard.kiosk.openControlCenter': 'Apri i controlli modalità chiosco',
+  'dashboard.kiosk.backToMenu': 'Torna al menu chiosco',
+  'dashboard.kiosk.navigate': 'Naviga',
+  'dashboard.kiosk.navigateDescription':
+    'Cambia dashboard, sezione e stanza senza uscire dalla modalità chiosco.',
+  'dashboard.kiosk.currentLocation': 'Posizione attuale',
+  'dashboard.kiosk.previousRoom': 'Stanza precedente',
+  'dashboard.kiosk.nextRoom': 'Stanza successiva',
+  'dashboard.kiosk.customizeDescription':
+    'Modifica contenuti, stanze e navigazione da un unico posto.',
+  'dashboard.kiosk.behavior': 'Comportamento chiosco',
+  'dashboard.kiosk.behaviorDescription':
+    'Scegli come si comporta questo display quando i controlli della dashboard sono nascosti.',
+  'dashboard.kiosk.swipeRooms.title': 'Scorri tra le stanze',
+  'dashboard.kiosk.swipeRooms.description':
+    'Scorri a sinistra o a destra su uno spazio vuoto per passare tra le stanze visibili.',
+  'dashboard.kiosk.exit': 'Esci dalla modalità chiosco',
+  'dashboard.kiosk.exitDescription': 'Ripristina intestazione e barra laterale normali di Navet.',
+  'dashboard.kiosk.manage': 'Gestisci',
+  'dashboard.kiosk.customSections': 'Sezioni personalizzate',
+  'dashboard.roomNav.grouping.label': 'Raggruppa schede per',
   'settings.dashboard.keepAwake.title': 'Mantieni attivo il dispositivo',
   'settings.dashboard.keepAwake.description':
     'Prova a impedire che gli schermi condivisi vadano in standby mentre Navet resta aperto.',

@@ -189,6 +189,30 @@ export const frMessages = {
     'Masque l’en-tête et la navigation pour que le tableau de bord remplisse un écran mural.',
   'settings.dashboard.kioskMode.recoveryHint':
     'Utilisez le menu Plus en bas à droite pour revenir à l’accueil, ouvrir les paramètres ou personnaliser le tableau de bord.',
+  'dashboard.kiosk.controlCenterTitle': 'Commandes du mode kiosque',
+  'dashboard.kiosk.controlCenterDescription':
+    'Naviguez dans la maison, gérez le tableau de bord et réglez cet écran.',
+  'dashboard.kiosk.openControlCenter': 'Ouvrir les commandes du mode kiosque',
+  'dashboard.kiosk.backToMenu': 'Retour au menu kiosque',
+  'dashboard.kiosk.navigate': 'Naviguer',
+  'dashboard.kiosk.navigateDescription':
+    'Changez de tableau de bord, de section ou de pièce sans quitter le mode kiosque.',
+  'dashboard.kiosk.currentLocation': 'Emplacement actuel',
+  'dashboard.kiosk.previousRoom': 'Pièce précédente',
+  'dashboard.kiosk.nextRoom': 'Pièce suivante',
+  'dashboard.kiosk.customizeDescription':
+    'Modifiez le contenu, les pièces et la navigation depuis un seul endroit.',
+  'dashboard.kiosk.behavior': 'Comportement du kiosque',
+  'dashboard.kiosk.behaviorDescription':
+    'Choisissez le comportement de cet écran lorsque l’interface est masquée.',
+  'dashboard.kiosk.swipeRooms.title': 'Balayer entre les pièces',
+  'dashboard.kiosk.swipeRooms.description':
+    'Balayez vers la gauche ou la droite sur une zone vide pour parcourir les pièces visibles.',
+  'dashboard.kiosk.exit': 'Quitter le mode kiosque',
+  'dashboard.kiosk.exitDescription': 'Rétablit l’en-tête et la barre latérale habituels de Navet.',
+  'dashboard.kiosk.manage': 'Gérer',
+  'dashboard.kiosk.customSections': 'Sections personnalisées',
+  'dashboard.roomNav.grouping.label': 'Regrouper les cartes par',
   'settings.dashboard.keepAwake.title': 'Garder l’appareil éveillé',
   'settings.dashboard.keepAwake.description':
     'Tente d’empêcher les écrans partagés de se mettre en veille pendant que Navet reste ouvert.',

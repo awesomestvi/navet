@@ -187,6 +187,29 @@ export const ptMessages = {
     'Oculta o cabeçalho e a navegação para o dashboard preencher uma tela de parede.',
   'settings.dashboard.kioskMode.recoveryHint':
     'Use o menu Mais no canto inferior direito para voltar ao início, abrir Configurações ou personalizar o dashboard.',
+  'dashboard.kiosk.controlCenterTitle': 'Controlo do modo quiosque',
+  'dashboard.kiosk.controlCenterDescription':
+    'Navegue pela casa, faça a gestão do painel e ajuste este ecrã.',
+  'dashboard.kiosk.openControlCenter': 'Abrir controlo do modo quiosque',
+  'dashboard.kiosk.backToMenu': 'Voltar ao menu do quiosque',
+  'dashboard.kiosk.navigate': 'Navegar',
+  'dashboard.kiosk.navigateDescription':
+    'Mude de painel, secção e divisão sem sair do modo quiosque.',
+  'dashboard.kiosk.currentLocation': 'Localização atual',
+  'dashboard.kiosk.previousRoom': 'Divisão anterior',
+  'dashboard.kiosk.nextRoom': 'Divisão seguinte',
+  'dashboard.kiosk.customizeDescription': 'Altere conteúdos, divisões e navegação num único local.',
+  'dashboard.kiosk.behavior': 'Comportamento do quiosque',
+  'dashboard.kiosk.behaviorDescription':
+    'Escolha como este ecrã funciona quando os controlos do painel estão ocultos.',
+  'dashboard.kiosk.swipeRooms.title': 'Deslizar entre divisões',
+  'dashboard.kiosk.swipeRooms.description':
+    'Deslize para a esquerda ou direita numa área vazia para percorrer as divisões visíveis.',
+  'dashboard.kiosk.exit': 'Sair do modo quiosque',
+  'dashboard.kiosk.exitDescription': 'Restaure o cabeçalho e a barra lateral normais do Navet.',
+  'dashboard.kiosk.manage': 'Gerir',
+  'dashboard.kiosk.customSections': 'Secções personalizadas',
+  'dashboard.roomNav.grouping.label': 'Agrupar cartões por',
   'settings.dashboard.keepAwake.title': 'Manter dispositivo acordado',
   'settings.dashboard.keepAwake.description':
     'Tenta impedir que telas compartilhadas entrem em repouso enquanto o Navet permanece aberto.',

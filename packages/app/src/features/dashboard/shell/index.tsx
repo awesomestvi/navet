@@ -6,15 +6,16 @@ import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-col
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { resolveWallpaperBackgroundImage } from '@navet/app/constants/built-in-wallpapers';
 import { useMediaQuery, usePrimaryColor, useThemeMode, useWallpaper } from '@navet/app/hooks';
-import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
-import { settingsSelectors } from '@navet/app/stores/selectors';
+import { useEditModeStore, useNavigationStore, useSettingsStore } from '@navet/app/stores';
+import { editModeSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { getLowestEffectsQuality } from '@navet/app/utils/effects-quality';
 import { lazy, memo, Suspense, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { resolveDashboardPerformanceProfile } from '../hooks/use-dashboard-performance-mode';
-import { KioskOrbitMenu } from './kiosk-orbit-menu';
+import { KioskControlCenter } from './kiosk-control-center';
 import type { DashboardLayoutProps } from './types';
+import { useKioskRoomSwipeNavigation } from './use-kiosk-room-swipe-navigation';
 
 const CustomExtensionsDialog = lazy(async () => {
   const module = await import('@navet/app/features/settings/components/custom-extensions-dialog');
@@ -44,6 +45,8 @@ export const DashboardLayout = memo(function DashboardLayout({
     }))
   );
   const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
+  const kioskSwipeRooms = useSettingsStore(settingsSelectors.kioskSwipeRooms);
+  const isEditMode = useEditModeStore(editModeSelectors.isEditMode);
   const activeCustomSidebarActionId = useNavigationStore(
     (state) => state.activeCustomSidebarActionId
   );
@@ -78,6 +81,16 @@ export const DashboardLayout = memo(function DashboardLayout({
   const headerController = useHeaderController();
   const [editingSidebarActionId, setEditingSidebarActionId] = useState<string | null>(null);
   const [isSidebarCustomizationOpen, setIsSidebarCustomizationOpen] = useState(false);
+  const [isKioskControlCenterOpen, setIsKioskControlCenterOpen] = useState(false);
+  const kioskSwipeHandlers = useKioskRoomSwipeNavigation({
+    enabled:
+      kioskMode &&
+      kioskSwipeRooms &&
+      !isEditMode &&
+      !isKioskControlCenterOpen &&
+      activeCustomSidebarActionId === null,
+    navigation: mobileRoomNavigation,
+  });
   const wallpaperBackgroundImage = resolveWallpaperBackgroundImage(wallpaper);
   const accentColorValue = getThemeColorValue(primaryColor);
   const contentSpacingClassName = useReducedTabletPadding
@@ -217,6 +230,10 @@ export const DashboardLayout = memo(function DashboardLayout({
 
         <div
           data-testid="dashboard-layout-content"
+          data-kiosk-room-swipe={kioskMode && kioskSwipeRooms ? 'enabled' : undefined}
+          onPointerCancel={kioskSwipeHandlers.onPointerCancel}
+          onPointerDown={kioskSwipeHandlers.onPointerDown}
+          onPointerUp={kioskSwipeHandlers.onPointerUp}
           className={`safe-area-pt-5 min-w-0 flex flex-col overflow-x-clip ${contentSpacingClassName}`}
         >
           {showNavetHeader ? (
@@ -229,8 +246,10 @@ export const DashboardLayout = memo(function DashboardLayout({
           {children}
         </div>
         {kioskMode && !showNavetSidebar ? (
-          <KioskOrbitMenu
+          <KioskControlCenter
             editActions={mobileEditActions}
+            open={isKioskControlCenterOpen}
+            onOpenChange={setIsKioskControlCenterOpen}
             onCustomizeSidebar={() => {
               setEditingSidebarActionId(null);
               setIsSidebarCustomizationOpen(true);

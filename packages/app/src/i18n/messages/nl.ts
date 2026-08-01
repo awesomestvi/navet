@@ -189,6 +189,30 @@ export const nlMessages = {
     'Verberg de koptekst en het navigatiechroom zodat het dashboard een wanddisplay kan vullen.',
   'settings.dashboard.kioskMode.recoveryHint':
     'Gebruik het menu Meer rechtsonder om terug te keren naar Home, Instellingen te openen of het dashboard aan te passen.',
+  'dashboard.kiosk.controlCenterTitle': 'Kioskbediening',
+  'dashboard.kiosk.controlCenterDescription':
+    'Navigeer door je huis, beheer het dashboard en pas dit scherm aan.',
+  'dashboard.kiosk.openControlCenter': 'Kioskbediening openen',
+  'dashboard.kiosk.backToMenu': 'Terug naar het kioskmenu',
+  'dashboard.kiosk.navigate': 'Navigeren',
+  'dashboard.kiosk.navigateDescription':
+    'Wissel van dashboard, sectie en kamer zonder de kioskmodus te verlaten.',
+  'dashboard.kiosk.currentLocation': 'Huidige locatie',
+  'dashboard.kiosk.previousRoom': 'Vorige kamer',
+  'dashboard.kiosk.nextRoom': 'Volgende kamer',
+  'dashboard.kiosk.customizeDescription':
+    'Wijzig dashboardinhoud, kamers en navigatie op één plek.',
+  'dashboard.kiosk.behavior': 'Kioskgedrag',
+  'dashboard.kiosk.behaviorDescription':
+    'Kies hoe dit scherm werkt wanneer de dashboardbediening verborgen is.',
+  'dashboard.kiosk.swipeRooms.title': 'Vegen tussen kamers',
+  'dashboard.kiosk.swipeRooms.description':
+    'Veeg links of rechts over lege dashboardruimte om door zichtbare kamers te gaan.',
+  'dashboard.kiosk.exit': 'Kioskmodus afsluiten',
+  'dashboard.kiosk.exitDescription': 'Herstel de normale Navet-kop en zijbalk op dit scherm.',
+  'dashboard.kiosk.manage': 'Beheren',
+  'dashboard.kiosk.customSections': 'Aangepaste secties',
+  'dashboard.roomNav.grouping.label': 'Kaarten groeperen op',
   'settings.dashboard.keepAwake.title': 'Houd het apparaat wakker',
   'settings.dashboard.keepAwake.description':
     'Probeer te voorkomen dat gedeelde schermen slapen terwijl Navet open blijft.',

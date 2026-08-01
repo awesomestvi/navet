@@ -230,6 +230,22 @@ export function NavigationWorkspaceContent({
   );
 }
 
+export function NavigationWorkspaceScrollArea({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        'h-full min-h-0 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]',
+        className
+      )}
+      data-navigation-workspace-scroll-area
+      {...props}
+    />
+  );
+}
+
 export const NavigationWorkspace = {
   Frame: NavigationWorkspaceFrame,
   Group: NavigationWorkspaceGroup,
@@ -242,4 +258,5 @@ export const NavigationWorkspace = {
   Body: NavigationWorkspaceBody,
   Sidebar: NavigationWorkspaceSidebar,
   Content: NavigationWorkspaceContent,
+  ScrollArea: NavigationWorkspaceScrollArea,
 };

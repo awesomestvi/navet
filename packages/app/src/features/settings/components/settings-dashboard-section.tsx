@@ -44,6 +44,7 @@ export function SettingsDashboardSection({ controller }: SettingsDashboardSectio
     importInputRef,
     keepDeviceAwake,
     kioskMode,
+    kioskSwipeRooms,
     dashboardProfileMode,
     setShowRestartOnboardingConfirm,
     setShowRevealAllConfirm,
@@ -213,6 +214,20 @@ export function SettingsDashboardSection({ controller }: SettingsDashboardSectio
             {t('settings.dashboard.kioskMode.recoveryHint')}
           </p>
         </div>
+      </SettingsItem>
+
+      <SettingsItem
+        title={t('dashboard.kiosk.swipeRooms.title')}
+        description={t('dashboard.kiosk.swipeRooms.description')}
+        styles={styles}
+      >
+        <OnOffPillToggle
+          value={kioskSwipeRooms}
+          onChange={(checked) =>
+            controller.updateScopedSettings({ kioskSwipeRooms: checked }, ['kioskSwipeRooms'])
+          }
+          ariaLabel={t('dashboard.kiosk.swipeRooms.title')}
+        />
       </SettingsItem>
 
       <SettingsItem

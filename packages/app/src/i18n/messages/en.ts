@@ -187,6 +187,31 @@ export const enMessages = {
     'Hide the header and navigation chrome so the dashboard can fill a wall display.',
   'settings.dashboard.kioskMode.recoveryHint':
     'Use the bottom-right More menu to return Home, open Settings, or customize the dashboard.',
+  'dashboard.kiosk.controlCenterTitle': 'Kiosk control',
+  'dashboard.kiosk.controlCenterDescription':
+    'Move around your home, manage the dashboard, and adjust this display.',
+  'dashboard.kiosk.openControlCenter': 'Open kiosk control',
+  'dashboard.kiosk.backToMenu': 'Back to kiosk menu',
+  'dashboard.kiosk.navigate': 'Navigate',
+  'dashboard.kiosk.navigateDescription':
+    'Switch dashboards, sections, and rooms without leaving kiosk mode.',
+  'dashboard.kiosk.currentLocation': 'Current location',
+  'dashboard.kiosk.previousRoom': 'Previous room',
+  'dashboard.kiosk.nextRoom': 'Next room',
+  'dashboard.kiosk.customizeDescription':
+    'Change dashboard content, rooms, and navigation from one place.',
+  'dashboard.kiosk.behavior': 'Kiosk behavior',
+  'dashboard.kiosk.behaviorDescription':
+    'Choose how this display behaves while the dashboard chrome is hidden.',
+  'dashboard.kiosk.swipeRooms.title': 'Swipe between rooms',
+  'dashboard.kiosk.swipeRooms.description':
+    'Swipe left or right on empty dashboard space to move through visible rooms.',
+  'dashboard.kiosk.exit': 'Exit kiosk mode',
+  'dashboard.kiosk.exitDescription':
+    'Restore the regular Navet header and sidebar on this display.',
+  'dashboard.kiosk.manage': 'Manage',
+  'dashboard.kiosk.customSections': 'Custom sections',
+  'dashboard.roomNav.grouping.label': 'Group cards by',
   'settings.dashboard.keepAwake.title': 'Keep device awake',
   'settings.dashboard.keepAwake.description':
     'Try to prevent shared screens from sleeping while Navet stays open.',

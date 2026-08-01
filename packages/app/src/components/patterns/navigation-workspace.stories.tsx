@@ -83,11 +83,13 @@ function NavigationWorkspaceStory() {
               </NavigationWorkspace.Item>
             </nav>
           </NavigationWorkspace.Sidebar>
-          <NavigationWorkspace.Content className="overflow-y-auto p-6">
-            <h2 className={navetTypographyTokens.sectionHeading}>Overview</h2>
-            <p className={`mt-2 ${navetTypographyTokens.body} ${surface.textSecondary}`}>
-              Detail content owns its own scroll region while the navigation remains in context.
-            </p>
+          <NavigationWorkspace.Content>
+            <NavigationWorkspace.ScrollArea className="p-6">
+              <h2 className={navetTypographyTokens.sectionHeading}>Overview</h2>
+              <p className={`mt-2 ${navetTypographyTokens.body} ${surface.textSecondary}`}>
+                Detail content owns its own scroll region while the navigation remains in context.
+              </p>
+            </NavigationWorkspace.ScrollArea>
           </NavigationWorkspace.Content>
         </NavigationWorkspace.Body>
       </NavigationWorkspace.Frame>
@@ -157,6 +159,7 @@ export const Default: Story = {};
 
 export const MobileGrouped: Story = {
   render: () => <MobileGroupedNavigationWorkspaceStory />,
+  globals: { viewport: { value: 'iphone14', isRotated: false } },
   parameters: {
     docs: {
       description: {
@@ -164,7 +167,7 @@ export const MobileGrouped: Story = {
           'The mobile composition uses equal-height Navet rows inside iOS-inspired grouped surfaces, with label-aligned separators and a compact single-row group.',
       },
     },
-    viewport: { defaultViewport: 'mobile1' },
+    viewport: { defaultViewport: 'iphone14' },
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
