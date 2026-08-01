@@ -345,7 +345,7 @@ export function SettingsNavigationShell({
   return (
     <div ref={rootRef} className="min-w-0 overflow-hidden">
       <NavigationWorkspace.Frame
-        className="mx-auto h-[calc(100dvh-10rem)] min-h-[36rem] max-h-[54rem] max-w-6xl"
+        className="mx-auto h-[85dvh] min-h-[36rem] max-h-[calc(100dvh-2rem)] max-w-6xl"
         data-settings-workspace
       >
         <NavigationWorkspace.Header className="px-5 py-4 md:px-6">
