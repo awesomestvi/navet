@@ -117,7 +117,7 @@
     "@storybook/react": "10.5.2",
     "@storybook/react-vite": "^10.5.2",
     "@tailwindcss/vite": "4.3.3",
-    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^26.1.1",
