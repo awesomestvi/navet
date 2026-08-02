@@ -11,7 +11,7 @@
   "dependencies": {
     "devices.css": "0.2.0",
     "react": "^19.2.1",
-    "react-dom": "^19.2.1"
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@rolldown/plugin-babel": "^0.2.0",
