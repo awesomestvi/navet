@@ -9,6 +9,7 @@ export type SettingsSectionStyles = {
   chipBg: string;
   chipHoverBg: string;
   chipTextColor: string;
+  dividerBorderColor: string;
   dividerColor: string;
   elevatedShadow: string;
   floatingButtonBg: string;
@@ -48,6 +49,7 @@ export function getSettingsSectionStyles(
             ? 'hover:bg-white/16'
             : 'hover:bg-white/10',
     chipTextColor: theme === 'light' ? 'text-gray-600' : surface.textSecondary,
+    dividerBorderColor: surface.dividerBorder,
     dividerColor: surface.divider,
     elevatedShadow:
       theme === 'light' ? '0 10px 30px rgba(15, 23, 42, 0.06)' : '0 10px 30px rgba(0, 0, 0, 0.18)',

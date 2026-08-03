@@ -34,7 +34,6 @@ import {
 import {
   ArrowLeft,
   Check,
-  ChevronLeft,
   ChevronRight,
   Compass,
   LayoutDashboard,
@@ -256,73 +255,6 @@ function KioskRoomButton({
   );
 }
 
-function RoomRibbon({ navigation, rooms }: { navigation: MobileRoomNavigation; rooms: string[] }) {
-  const { t, locale } = useI18n();
-  const { theme, accentColor } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
-  const activeIndex = rooms.indexOf(navigation.activeRoom);
-  const previous = activeIndex > 0 ? rooms[activeIndex - 1] : null;
-  const next = activeIndex >= 0 && activeIndex < rooms.length - 1 ? rooms[activeIndex + 1] : null;
-  const format = (room: string) => getDashboardRoomLabel(room, t('dashboard.roomNav.all'));
-  const activeLabel = format(navigation.activeRoom);
-
-  return (
-    <div
-      className={cn(
-        'grid grid-cols-[minmax(0,1fr)_minmax(9rem,1.3fr)_minmax(0,1fr)] items-center gap-2 rounded-[22px] border p-2',
-        surface.subtleBg,
-        surface.border
-      )}
-      data-kiosk-room-ribbon
-    >
-      <button
-        type="button"
-        disabled={!previous}
-        onClick={() => previous && navigation.onRoomChange(previous)}
-        aria-label={
-          previous ? `${t('dashboard.kiosk.previousRoom')}: ${format(previous)}` : undefined
-        }
-        className={cn(
-          'flex min-h-11 min-w-0 items-center justify-start gap-1.5 rounded-[16px] px-2 text-sm',
-          surface.hoverBg,
-          surface.textSecondary,
-          'disabled:opacity-25'
-        )}
-      >
-        <ChevronLeft className={navetIconSizeTokens.sm} aria-hidden="true" />
-        <span className="truncate">{previous ? format(previous) : ''}</span>
-      </button>
-      <div
-        className={cn(
-          'flex min-h-12 min-w-0 items-center justify-center rounded-[17px] border px-3 text-center text-sm font-semibold',
-          surface.panel,
-          surface.borderStrong,
-          surface.textPrimary
-        )}
-        style={{ boxShadow: `inset 0 -2px 0 ${accentColor}80` }}
-        lang={locale}
-      >
-        <span className="truncate">{activeLabel}</span>
-      </div>
-      <button
-        type="button"
-        disabled={!next}
-        onClick={() => next && navigation.onRoomChange(next)}
-        aria-label={next ? `${t('dashboard.kiosk.nextRoom')}: ${format(next)}` : undefined}
-        className={cn(
-          'flex min-h-11 min-w-0 items-center justify-end gap-1.5 rounded-[16px] px-2 text-sm',
-          surface.hoverBg,
-          surface.textSecondary,
-          'disabled:opacity-25'
-        )}
-      >
-        <span className="truncate">{next ? format(next) : ''}</span>
-        <ChevronRight className={navetIconSizeTokens.sm} aria-hidden="true" />
-      </button>
-    </div>
-  );
-}
-
 function KioskNavigatePanel({
   onClose,
   onCreateDashboard,
@@ -335,7 +267,7 @@ function KioskNavigatePanel({
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const { activeDashboard, activeDashboardId, dashboards, openDashboard } = useDashboardSwitcher();
+  const { activeDashboardId, dashboards, openDashboard } = useDashboardSwitcher();
   const rooms = useMemo(() => resolveRooms(roomNavigation), [roomNavigation]);
   const showDashboards = dashboards.length > 1;
   const navigate = (action: () => void) => {
@@ -345,31 +277,6 @@ function KioskNavigatePanel({
 
   return (
     <div className="grid gap-6">
-      <KioskPanelIntro
-        icon={Compass}
-        title={t('dashboard.kiosk.navigate')}
-        description={t('dashboard.kiosk.navigateDescription')}
-      />
-
-      {roomNavigation && rooms.visibleRooms.length > 0 ? (
-        <section aria-labelledby="kiosk-current-location" className="grid gap-3">
-          <div className="flex min-w-0 items-end justify-between gap-3 px-1">
-            <div className="min-w-0">
-              <h3
-                id="kiosk-current-location"
-                className={cn(navetTypographyTokens.titleMd, surface.textPrimary)}
-              >
-                {t('dashboard.kiosk.currentLocation')}
-              </h3>
-              <p className={cn('mt-0.5 truncate text-sm', surface.textSecondary)}>
-                {activeDashboard?.name ?? t('dashboard.multiple.title')}
-              </p>
-            </div>
-          </div>
-          <RoomRibbon navigation={roomNavigation} rooms={rooms.visibleRooms} />
-        </section>
-      ) : null}
-
       {showDashboards ? (
         <section aria-labelledby="kiosk-dashboards-title" className="grid gap-3">
           <div className="flex items-center justify-between gap-3 px-1">

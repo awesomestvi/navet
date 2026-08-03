@@ -19,6 +19,7 @@ import {
   DASHBOARD_PROFILE_ID,
   type DashboardClientKind,
   type DashboardClientRegistryEntry,
+  type DashboardDisplayProfileDocument,
   type DashboardPreferenceDocument,
   type DashboardPreferenceScope,
   type DashboardProfileAuthor,
@@ -85,6 +86,20 @@ interface PreferenceRequestContext {
   collection: PreferenceCollection
 }
 
+interface SanitizedDisplayProfile {
+  id: string
+  name: string
+  settings: Record<string, unknown>
+  createdAt: string
+  updatedAt: string
+}
+
+interface SanitizedDisplayProfilePolicy extends Record<string, unknown> {
+  schemaVersion: 1
+  profilesById: Record<string, SanitizedDisplayProfile>
+  profileIdByClientId: Record<string, string>
+}
+
 interface BoundDashboardProfileClient extends DashboardProfileClient {
   bindingId: string
 }
@@ -119,6 +134,7 @@ interface StorePaths {
   history: string
   accountPreferences: string
   clientPreferences: string
+  displayProfiles: string
   clients: string
   clientBindingBootstrap: string
 }
@@ -127,6 +143,7 @@ const MAX_PROFILE_BYTES = 1024 * 1024
 const MAX_HISTORY_BYTES = 4 * 1024 * 1024
 const MAX_PREFERENCE_BYTES = 256 * 1024
 const MAX_PREFERENCE_COLLECTION_BYTES = 4 * 1024 * 1024
+const MAX_DISPLAY_PROFILES_BYTES = 256 * 1024
 const MAX_WORKSPACE_BYTES = 128 * 1024
 const MAX_PROFILE_STATE_BYTES = 128 * 1024
 const MAX_CLIENT_REGISTRY_BYTES = 512 * 1024
@@ -168,6 +185,7 @@ const CLIENT_SETTING_KEYS = [
   'keepDeviceAwake',
   'compactMode',
   'kioskMode',
+  'kioskSwipeRooms',
   'dashboardProfileMode',
   'dashboardSpaceMode',
   'disableAnimations',
@@ -182,6 +200,39 @@ const CLIENT_SETTING_KEYS = [
   'cameraFitModes',
   'ambientLightBleed',
 ] as const
+const DISPLAY_PROFILE_SETTING_KEYS = [
+  'headerTitleMode',
+  'headerCustomText',
+  'keepDeviceAwake',
+  'compactMode',
+  'kioskMode',
+  'kioskSwipeRooms',
+  'dashboardProfileMode',
+  'dashboardSpaceMode',
+  'disableAnimations',
+  'lowPowerMode',
+  'effectsQuality',
+  'effectsQualityUserOverride',
+  'ambientLightBleed',
+] as const
+const DISPLAY_PROFILE_ID_PATTERN = /^[A-Za-z0-9_-]{8,128}$/
+const DISPLAY_PROFILE_LIMIT = 20
+const BOOLEAN_DISPLAY_PROFILE_SETTING_KEYS = new Set([
+  'keepDeviceAwake',
+  'compactMode',
+  'kioskMode',
+  'kioskSwipeRooms',
+  'disableAnimations',
+  'lowPowerMode',
+  'effectsQualityUserOverride',
+  'ambientLightBleed',
+])
+const DISPLAY_PROFILE_SETTING_VALUES: Record<string, ReadonlySet<string>> = {
+  headerTitleMode: new Set(['auto_greeting', 'custom_text', 'clock']),
+  dashboardProfileMode: new Set(['standard', 'wall_display', 'bedside', 'custom']),
+  dashboardSpaceMode: new Set(['default', 'more_space']),
+  effectsQuality: new Set(['high', 'medium', 'low']),
+}
 
 const SYSTEM_AUTHOR: DashboardProfileAuthor = {
   id: 'legacy-import',
@@ -410,6 +461,32 @@ function pickPreferenceSettings(
   )
 }
 
+function pickDisplayProfileSettings(value: unknown): Record<string, unknown> {
+  const candidates = pickPreferenceSettings(value, DISPLAY_PROFILE_SETTING_KEYS)
+  const settings: Record<string, unknown> = {}
+  for (const [key, candidate] of Object.entries(candidates)) {
+    if (BOOLEAN_DISPLAY_PROFILE_SETTING_KEYS.has(key)) {
+      if (typeof candidate === 'boolean') {
+        settings[key] = candidate
+      }
+      continue
+    }
+    if (key === 'headerCustomText') {
+      if (typeof candidate === 'string') {
+        settings[key] = candidate.trim().slice(0, 40)
+      }
+      continue
+    }
+    if (typeof candidate === 'string' && DISPLAY_PROFILE_SETTING_VALUES[key]?.has(candidate)) {
+      settings[key] = candidate
+    }
+  }
+  if (settings.effectsQualityUserOverride === false) {
+    delete settings.effectsQuality
+  }
+  return settings
+}
+
 export function sanitizeDashboardPreferenceValues(
   value: Record<string, unknown>,
   scope: DashboardPreferenceScope
@@ -424,6 +501,56 @@ export function sanitizeDashboardPreferenceValues(
     }
   }
   return pickPreferenceSettings(value, allowedKeys)
+}
+
+function sanitizeDisplayProfilePolicy(value: unknown): SanitizedDisplayProfilePolicy {
+  const source = isRecord(value) ? value : {}
+  const rawProfiles = isRecord(source.profilesById) ? source.profilesById : {}
+  const profilesById: Record<string, SanitizedDisplayProfile> = {}
+  for (const [profileId, candidate] of Object.entries(rawProfiles).slice(
+    0,
+    DISPLAY_PROFILE_LIMIT
+  )) {
+    if (!DISPLAY_PROFILE_ID_PATTERN.test(profileId) || !isRecord(candidate)) {
+      continue
+    }
+    const name = typeof candidate.name === 'string' ? candidate.name.trim().slice(0, 64) : ''
+    if (!name) {
+      continue
+    }
+    const createdAt =
+      typeof candidate.createdAt === 'string' && Number.isFinite(Date.parse(candidate.createdAt))
+        ? candidate.createdAt
+        : new Date(0).toISOString()
+    const updatedAt =
+      typeof candidate.updatedAt === 'string' && Number.isFinite(Date.parse(candidate.updatedAt))
+        ? candidate.updatedAt
+        : createdAt
+    profilesById[profileId] = {
+      id: profileId,
+      name,
+      settings: pickDisplayProfileSettings(candidate.settings),
+      createdAt,
+      updatedAt,
+    }
+  }
+  const assignments = isRecord(source.profileIdByClientId)
+    ? source.profileIdByClientId
+    : {}
+  const profileIdByClientId = Object.fromEntries(
+    Object.entries(assignments).flatMap(([clientId, profileId]) =>
+      DISPLAY_PROFILE_ID_PATTERN.test(clientId) &&
+      typeof profileId === 'string' &&
+      Object.hasOwn(profilesById, profileId)
+        ? [[clientId, profileId]]
+        : []
+    )
+  )
+  return {
+    schemaVersion: 1,
+    profilesById,
+    profileIdByClientId,
+  }
 }
 
 export function buildDashboardProfileMetadata(
@@ -461,6 +588,7 @@ function resolveStorePaths(profileFilePath: string): StorePaths {
     history: `${profileFilePath}.history`,
     accountPreferences: `${profileFilePath}.account-preferences`,
     clientPreferences: `${profileFilePath}.client-preferences`,
+    displayProfiles: `${profileFilePath}.display-profiles`,
     clients: `${profileFilePath}.clients`,
     clientBindingBootstrap: `${profileFilePath}.client-binding-bootstrap`,
   }
@@ -1863,6 +1991,79 @@ export function createViteDashboardProfileStore(
     }
   }
 
+  const readDisplayProfiles = ():
+    | DashboardDisplayProfileDocument<SanitizedDisplayProfilePolicy>
+    | null => {
+    const missing = Symbol('missing-display-profiles')
+    const value = readJson<unknown | typeof missing>(
+      paths.displayProfiles,
+      missing,
+      MAX_DISPLAY_PROFILES_BYTES
+    )
+    if (value === missing) {
+      return null
+    }
+    if (
+      !isRecord(value) ||
+      value.contractVersion !== DASHBOARD_PROFILE_CONTRACT_VERSION ||
+      !Number.isSafeInteger(value.schemaVersion) ||
+      !Number.isSafeInteger(value.revision) ||
+      Number(value.revision) < 1 ||
+      typeof value.updatedAt !== 'string' ||
+      !Number.isFinite(Date.parse(value.updatedAt)) ||
+      !isRecord(value.values) ||
+      !isRecord(value.author) ||
+      typeof value.author.id !== 'string' ||
+      typeof value.author.name !== 'string' ||
+      typeof value.author.kind !== 'string'
+    ) {
+      throw new DashboardProfileStorageReadError(
+        `Dashboard display profile storage cannot be read safely: ${paths.displayProfiles}`
+      )
+    }
+    const document = value as unknown as DashboardDisplayProfileDocument<
+      SanitizedDisplayProfilePolicy
+    >
+    const values = sanitizeDisplayProfilePolicy(document.values)
+    if (JSON.stringify(values) !== JSON.stringify(document.values)) {
+      const sanitized = { ...document, values }
+      writeJson(paths.displayProfiles, sanitized)
+      return sanitized
+    }
+    return document
+  }
+
+  const remapDisplayProfileClient = (
+    previousClientId: string,
+    nextClientId: string | null
+  ): void => {
+    if (previousClientId === nextClientId) {
+      return
+    }
+    const current = readDisplayProfiles()
+    const profileId = current?.values.profileIdByClientId?.[previousClientId]
+    if (!current || typeof profileId !== 'string') {
+      return
+    }
+    const profileIdByClientId = {
+      ...current.values.profileIdByClientId,
+    }
+    delete profileIdByClientId[previousClientId]
+    if (nextClientId) {
+      profileIdByClientId[nextClientId] = profileId
+    }
+    writeJson(paths.displayProfiles, {
+      ...current,
+      revision: current.revision + 1,
+      updatedAt: new Date().toISOString(),
+      values: sanitizeDisplayProfilePolicy({
+        ...current.values,
+        profileIdByClientId,
+      }),
+      author: SYSTEM_AUTHOR,
+    } satisfies DashboardDisplayProfileDocument)
+  }
+
   return {
     getPaths: () => paths,
     resolveRegisteredClientBinding,
@@ -1976,6 +2177,96 @@ export function createViteDashboardProfileStore(
     },
     resetProfile(author: DashboardProfileAuthor = SYSTEM_AUTHOR) {
       return persistRevision(null, author, 'reset', ['/'])
+    },
+    getDisplayProfiles(): DashboardDisplayProfileDocument | null {
+      return readDisplayProfiles()
+    },
+    saveDisplayProfiles(
+      schemaVersion: number,
+      values: Record<string, unknown>,
+      author: DashboardProfileAuthor
+    ): DashboardDisplayProfileDocument {
+      const current = readDisplayProfiles()
+      const document: DashboardDisplayProfileDocument = {
+        contractVersion: DASHBOARD_PROFILE_CONTRACT_VERSION,
+        schemaVersion,
+        revision: (current?.revision ?? 0) + 1,
+        updatedAt: new Date().toISOString(),
+        values: sanitizeDisplayProfilePolicy(values),
+        author,
+      }
+      if (
+        Buffer.byteLength(JSON.stringify(document), 'utf8') >
+        MAX_DISPLAY_PROFILES_BYTES
+      ) {
+        throw new DashboardProfileStorageCapacityError(
+          'Dashboard display profiles exceed storage capacity'
+        )
+      }
+      writeJson(paths.displayProfiles, document)
+      return document
+    },
+    copyDisplaySettings(
+      settings: Record<string, unknown>,
+      targetClientIds: readonly string[]
+    ): { updatedClientIds: string[]; skippedClientIds: string[] } {
+      const sanitizedSettings = pickDisplayProfileSettings(settings)
+      const registry = readRegistry()
+      const collection = readPreferenceCollection(paths.clientPreferences)
+      const nextCollection: PreferenceCollection = {
+        contractVersion: DASHBOARD_PROFILE_CONTRACT_VERSION,
+        records: { ...collection.records },
+      }
+      const updatedClientIds: string[] = []
+      const skippedClientIds: string[] = []
+      for (const clientId of [...new Set(targetClientIds)].slice(0, CLIENT_REGISTRY_LIMIT)) {
+        const registered = registry.clients.find((entry) => entry.id === clientId)
+        if (!registered) {
+          skippedClientIds.push(clientId)
+          continue
+        }
+        const key =
+          registered.bindingId && CLIENT_BINDING_PATTERN.test(registered.bindingId)
+            ? `client-binding:${registered.bindingId}`
+            : `client:${registered.id}`
+        const current = collection.records[key] ?? collection.records[`client:${registered.id}`]
+        const currentValues = sanitizeDashboardPreferenceValues(
+          current?.values ?? {},
+          'client'
+        )
+        const currentSettings = {
+          ...(isRecord(currentValues.settings) ? currentValues.settings : currentValues),
+        }
+        if (sanitizedSettings.effectsQualityUserOverride === false) {
+          delete currentSettings.effectsQuality
+        }
+        const document: DashboardPreferenceDocument = {
+          contractVersion: DASHBOARD_PROFILE_CONTRACT_VERSION,
+          schemaVersion: 1,
+          scope: 'client',
+          revision: (current?.revision ?? 0) + 1,
+          updatedAt: new Date().toISOString(),
+          values: {
+            schemaVersion: 1,
+            settings: { ...currentSettings, ...sanitizedSettings },
+          },
+          principal: current?.principal ?? registered.principal,
+          clientId: registered.id,
+        }
+        const legacyKey = `client:${registered.id}`
+        if (legacyKey !== key) {
+          delete nextCollection.records[legacyKey]
+        }
+        nextCollection.records[key] = document
+        updatedClientIds.push(clientId)
+      }
+      if (!preferenceCollectionFits(nextCollection, 'client')) {
+        throw new DashboardProfileStorageCapacityError(
+          'Copied display settings exceed device preference storage capacity'
+        )
+      }
+      writeJson(paths.clientPreferences, nextCollection)
+      return { updatedClientIds, skippedClientIds }
     },
     getPreference(
       scope: DashboardPreferenceScope,
@@ -2275,7 +2566,7 @@ export function createViteDashboardProfileStore(
         )
       }
       writeJson(paths.clients, registry)
-      if (rekeysExistingClient) {
+      if (continuity && continuity.id !== client.id) {
         clientPreferenceCollection = reconcileClientPreferences(
           registry,
           false,
@@ -2284,6 +2575,7 @@ export function createViteDashboardProfileStore(
         if (preferenceValidationScope === 'client' && preferenceContext) {
           preferenceContext.collection = clientPreferenceCollection
         }
+        remapDisplayProfileClient(continuity.id, client.id)
       }
       return entry
     },
@@ -2316,6 +2608,7 @@ export function createViteDashboardProfileStore(
       )
       writeJson(paths.clients, registry)
       writeJson(paths.clientPreferences, preferences)
+      remapDisplayProfileClient(clientId, null)
       return registry.clients.length !== previousLength
     },
   }
@@ -3098,6 +3391,138 @@ export function createViteDashboardProfileRequestHandler(options: {
             },
         profile: entry.profile,
       })
+      return
+    }
+
+    if (route === '/display-profiles/copy') {
+      if (method !== 'POST') {
+        res.setHeader('Allow', 'POST')
+        sendJson(res, 405, { error: 'Method not allowed' })
+        return
+      }
+      if (!client) {
+        sendJson(res, 400, { error: 'A valid dashboard client identity is required' })
+        return
+      }
+      try {
+        const serialized = await readBody(req, MAX_PREFERENCE_BYTES)
+        const input = JSON.parse(serialized) as {
+          schemaVersion?: unknown
+          settings?: unknown
+          targetClientIds?: unknown
+        }
+        if (
+          input.schemaVersion !== 1 ||
+          !isRecord(input.settings) ||
+          !Array.isArray(input.targetClientIds) ||
+          input.targetClientIds.some(
+            (entry) => typeof entry !== 'string' || !DISPLAY_PROFILE_ID_PATTERN.test(entry)
+          )
+        ) {
+          sendJson(res, 400, { error: 'Unsupported display settings copy request' })
+          return
+        }
+        const result = store.copyDisplaySettings(
+          input.settings,
+          input.targetClientIds as string[]
+        )
+        applyWorkspaceHeaders(res, store)
+        sendJson(res, 200, result)
+      } catch (error) {
+        if (
+          error instanceof DashboardProfileStorageReadError ||
+          error instanceof DashboardProfileStorageCapacityError
+        ) {
+          throw error
+        }
+        sendJson(res, 400, { error: 'Unable to copy display settings' })
+      }
+      return
+    }
+
+    if (route === '/display-profiles') {
+      applyWorkspaceHeaders(res, store)
+      if (method === 'GET') {
+        const document = store.getDisplayProfiles()
+        if (!document) {
+          sendNoContent(res)
+          return
+        }
+        res.setHeader(
+          DASHBOARD_PROFILE_HEADERS.preferenceRevision,
+          String(document.revision)
+        )
+        res.setHeader('ETag', `"navet-display-profiles-${document.revision}"`)
+        sendJson(res, 200, document)
+        return
+      }
+      if (method === 'PUT') {
+        if (!client) {
+          sendJson(res, 400, { error: 'A valid dashboard client identity is required' })
+          return
+        }
+        const current = store.getDisplayProfiles()
+        const baseRevision = parseRevisionHeader(req)
+        if (baseRevision === null && current) {
+          res.setHeader(
+            DASHBOARD_PROFILE_HEADERS.preferenceRevision,
+            String(current.revision)
+          )
+          sendJson(res, 428, { error: 'A base display profile revision is required' })
+          return
+        }
+        if (baseRevision !== null && baseRevision !== (current?.revision ?? 0)) {
+          res.setHeader(
+            DASHBOARD_PROFILE_HEADERS.preferenceRevision,
+            String(current?.revision ?? 0)
+          )
+          sendJson(res, 412, { error: 'Display profiles changed before save' })
+          return
+        }
+        try {
+          const serialized = await readBody(req, MAX_DISPLAY_PROFILES_BYTES)
+          const input = JSON.parse(serialized) as {
+            schemaVersion?: unknown
+            values?: unknown
+          }
+          if (
+            !Number.isSafeInteger(input.schemaVersion) ||
+            Number(input.schemaVersion) < 1 ||
+            !isRecord(input.values)
+          ) {
+            sendJson(res, 400, { error: 'Unsupported display profile document' })
+            return
+          }
+          const document = store.saveDisplayProfiles(
+            Number(input.schemaVersion),
+            input.values,
+            createAuthor(principal, client)
+          )
+          res.setHeader(
+            DASHBOARD_PROFILE_HEADERS.preferenceRevision,
+            String(document.revision)
+          )
+          res.setHeader('ETag', `"navet-display-profiles-${document.revision}"`)
+          sendJson(res, 200, document)
+        } catch (error) {
+          if (
+            error instanceof DashboardProfileStorageReadError ||
+            error instanceof DashboardProfileStorageCapacityError
+          ) {
+            throw error
+          }
+          sendJson(
+            res,
+            error instanceof Error && error.message === 'Request body is too large'
+              ? 413
+              : 400,
+            { error: 'Unable to save display profiles' }
+          )
+        }
+        return
+      }
+      res.setHeader('Allow', 'GET, PUT')
+      sendJson(res, 405, { error: 'Method not allowed' })
       return
     }
 

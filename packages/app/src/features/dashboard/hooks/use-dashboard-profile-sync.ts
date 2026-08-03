@@ -34,6 +34,7 @@ import {
 } from '@navet/app/features/dashboard/clients/dashboard-profile-runtime-store';
 import { useDashboardCollectionStore } from '@navet/app/features/dashboard/dashboards';
 import { useDashboardPreferenceSync } from '@navet/app/features/dashboard/hooks/use-dashboard-preference-sync';
+import { useDeviceDisplayProfileSync } from '@navet/app/features/dashboard/hooks/use-device-display-profile-sync';
 import { useLightPresetStore } from '@navet/app/features/lighting/stores/light-preset-store';
 import { useI18n } from '@navet/app/hooks';
 import { isHomeAssistantAddonMode, isHomeAssistantPanelMode } from '@navet/app/runtime/app-mode';
@@ -60,6 +61,7 @@ import {
   importDashboardConfig,
 } from '@navet/app/utils/dashboard-config';
 import { PERSISTED_STATE_EVENT } from '@navet/app/utils/persisted-state-events';
+import { projectSettingsPreferenceLayer } from '@navet/app/utils/settings-profile-scope';
 import { createElement, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
@@ -181,10 +183,14 @@ export function useDashboardProfileSync() {
   tRef.current = t;
   onboardingCompletedRef.current = onboardingCompleted;
 
-  useDashboardPreferenceSync({
+  const { preferencesLoadCompleted } = useDashboardPreferenceSync({
     accountEnabled: addonMode,
     client: preferenceClient,
     enabled: !panelMode && profileLoadCompleted,
+  });
+  useDeviceDisplayProfileSync({
+    client: preferenceClient,
+    enabled: !panelMode && profileLoadCompleted && preferencesLoadCompleted,
   });
 
   useEffect(() => {
@@ -221,6 +227,9 @@ export function useDashboardProfileSync() {
     let conflictToastId: string | number | null = null;
     let pendingConflict: PendingConflict | null = null;
     let keepLocalResolution: KeepLocalResolution | null = null;
+    let observedSharedSettingsSignature = JSON.stringify(
+      projectSettingsPreferenceLayer(useSettingsStore.getState(), 'shared')
+    );
     let commonBase = readDashboardProfileBase();
     let cleanReceipt = readDashboardProfileReceipt();
     let client = getDashboardClientIdentity({
@@ -979,9 +988,20 @@ export function useDashboardProfileSync() {
     }
     syncCurrentLocalStateRef.current = syncCurrentLocalState;
 
+    function syncSharedSettingsIfChanged() {
+      const signature = JSON.stringify(
+        projectSettingsPreferenceLayer(useSettingsStore.getState(), 'shared')
+      );
+      if (signature === observedSharedSettingsSignature) {
+        return;
+      }
+      observedSharedSettingsSignature = signature;
+      syncCurrentLocalState();
+    }
+
     const subscriptions = [
       useThemeStore.subscribe(syncCurrentLocalState),
-      useSettingsStore.subscribe(syncCurrentLocalState),
+      useSettingsStore.subscribe(syncSharedSettingsIfChanged),
       useCustomCardsStore.subscribe(syncCurrentLocalState),
       useDashboardCollectionStore.subscribe(syncCurrentLocalState),
       useDashboardEntitiesStore.subscribe(syncCurrentLocalState),
@@ -1053,6 +1073,11 @@ export function useDashboardProfileSync() {
       void refreshRegisteredClients(true);
     };
     const handleRefreshRequest = () => {
+      if (cancelled || loadingRemote || saving) {
+        return;
+      }
+      clearPollTimeout();
+      runtime.markLoading();
       void refreshRemote({ forceFull: true, notify: true });
     };
     const handleAuthSessionRefreshed = (event: Event) => {

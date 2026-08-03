@@ -440,6 +440,7 @@ export const plMessages = {
   'settings.system.clients.changedPaths': 'Zmieniono {count} ustawień w wersji {revision}, {time}.',
   'settings.system.clients.status.disabled': 'Tylko lokalnie',
   'settings.system.clients.status.error': 'Synchronizacja wymaga uwagi',
+  'settings.system.clients.retrySync': 'Ponów synchronizację',
   'settings.system.clients.status.idle': 'Gotowe',
   'settings.system.clients.status.loading': 'Wczytywanie',
   'settings.system.clients.status.offline': 'Brak połączenia',
@@ -473,6 +474,36 @@ export const plMessages = {
   'settings.system.clients.forgetSuccess':
     'Usunięto {client} z listy połączonych dashboardów. Dane logowania nie zostały zmienione.',
   'settings.system.clients.forgetFailed': 'Nie udało się usunąć wpisu urządzenia.',
+  'settings.system.clients.displaySync.title': 'Ustawienia urządzenia',
+  'settings.system.clients.displaySync.description':
+    'Zachowaj tryb kiosku, jakość wizualną i układ tylko dla tego urządzenia. Skopiuj je raz lub połącz urządzenia, aby były synchronizowane.',
+  'settings.system.clients.displaySync.independent': 'Niezależne na tym urządzeniu',
+  'settings.system.clients.displaySync.linkedTo': 'Połączono z {name}',
+  'settings.system.clients.displaySync.copy': 'Kopiuj na urządzenia',
+  'settings.system.clients.displaySync.create': 'Synchronizuj urządzenia',
+  'settings.system.clients.displaySync.copyTitle': 'Kopiuj ustawienia urządzenia',
+  'settings.system.clients.displaySync.copyDescription':
+    'Wybierz urządzenia, które jednorazowo otrzymają bieżące ustawienia tego urządzenia. Później mogą się od nich różnić.',
+  'settings.system.clients.displaySync.copyConfirm': 'Kopiuj ustawienia',
+  'settings.system.clients.displaySync.copying': 'Kopiowanie...',
+  'settings.system.clients.displaySync.copySuccess':
+    'Skopiowano ustawienia urządzenia na {count} urządzeń.',
+  'settings.system.clients.displaySync.createTitle': 'Synchronizuj ustawienia urządzeń',
+  'settings.system.clients.displaySync.createDescription':
+    'Połączone urządzenia automatycznie współdzielą tryb kiosku, jakość wizualną i układ.',
+  'settings.system.clients.displaySync.profileName': 'Nazwa grupy',
+  'settings.system.clients.displaySync.profileCreated': 'Utworzono i połączono profil {name}.',
+  'settings.system.clients.displaySync.manageTitle': 'Zarządzaj synchronizowanymi urządzeniami',
+  'settings.system.clients.displaySync.manageDescription':
+    'Wybierz urządzenia korzystające z tego profilu. Niewybrane urządzenia zachowają własne ustawienia.',
+  'settings.system.clients.displaySync.profileUpdated': 'Zaktualizowano połączone urządzenia.',
+  'settings.system.clients.displaySync.profileDeleted': 'Usunięto grupę synchronizacji.',
+  'settings.system.clients.displaySync.deviceCountOne': '{count} urządzenie',
+  'settings.system.clients.displaySync.deviceCount': '{count} urządzeń',
+  'settings.system.clients.displaySync.delete': 'Usuń grupę',
+  'settings.system.clients.displaySync.save': 'Zapisz',
+  'settings.system.clients.displaySync.actionFailed':
+    'Nie udało się zsynchronizować ustawień urządzenia. Spróbuj ponownie.',
   'settings.system.logout.description': 'Zakończ tę sesję Navet na tym urządzeniu.',
   'settings.project.sectionTitle': 'O Navet',
   'settings.project.sectionDescription':

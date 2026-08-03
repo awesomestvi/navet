@@ -35,7 +35,7 @@ import {
   SETTINGS_PROFILE_SCHEMA_VERSION,
   type SettingsPreferenceProjection,
 } from '@navet/app/utils/settings-profile-scope';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const PREFERENCE_SAVE_DEBOUNCE_MS = 750;
 const PREFERENCE_POLL_INTERVAL_MS = 60_000;
@@ -133,6 +133,7 @@ export function useDashboardPreferenceSync({
   client: DashboardProfileClient | null;
   enabled: boolean;
 }) {
+  const [preferencesLoadCompleted, setPreferencesLoadCompleted] = useState(false);
   const clientRef = useRef(client);
   clientRef.current = client;
   const clientId = client?.id;
@@ -140,8 +141,11 @@ export function useDashboardPreferenceSync({
   useEffect(() => {
     const initialClient = clientRef.current;
     if (!enabled || !initialClient || initialClient.id !== clientId) {
+      setPreferencesLoadCompleted(true);
       return;
     }
+
+    setPreferencesLoadCompleted(false);
 
     let activeClient = initialClient;
     let cancelled = false;
@@ -828,6 +832,7 @@ export function useDashboardPreferenceSync({
     async function initialize() {
       if (!online) {
         initialized = true;
+        setPreferencesLoadCompleted(true);
         return;
       }
 
@@ -860,6 +865,9 @@ export function useDashboardPreferenceSync({
         }
       } finally {
         initialized = true;
+        if (!cancelled) {
+          setPreferencesLoadCompleted(true);
+        }
       }
 
       if (!drainPendingRefresh()) {
@@ -885,4 +893,6 @@ export function useDashboardPreferenceSync({
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [accountEnabled, clientId, enabled]);
+
+  return { preferencesLoadCompleted: !enabled || preferencesLoadCompleted };
 }

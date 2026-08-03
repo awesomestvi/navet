@@ -53,9 +53,7 @@ export function SettingsSectionShell({
       <div className={embedded ? 'px-4 py-5 md:px-6 md:py-7 lg:px-8' : 'px-4 py-5 md:px-8 md:py-8'}>
         <div
           className={cn(
-            'relative flex items-start justify-center gap-3 overflow-hidden rounded-[22px] px-4 py-5 text-left',
-            '@xl/settings-detail:flex-col @xl/settings-detail:items-center @xl/settings-detail:gap-0',
-            '@xl/settings-detail:px-6 @xl/settings-detail:py-6 @xl/settings-detail:text-center',
+            'relative flex items-center justify-between gap-4 overflow-hidden rounded-[22px] px-5 py-4 text-left',
             styles.insetBg
           )}
         >
@@ -64,35 +62,25 @@ export function SettingsSectionShell({
             className="pointer-events-none absolute inset-0 opacity-90"
             style={getNavetAccentWashStyle(styles.accentColor)}
           />
+          <div className="relative min-w-0">
+            <h2
+              id={`${id}-settings-title`}
+              className={cn('text-xl font-semibold tracking-tight', styles.textColor)}
+            >
+              {title}
+            </h2>
+            <p className={cn('mt-1 max-w-2xl text-sm leading-5', styles.subtleColor)}>
+              {description}
+            </p>
+          </div>
           <div
             className={cn(
               'relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border',
-              '@xl/settings-detail:h-12 @xl/settings-detail:w-12 @xl/settings-detail:rounded-[18px]',
               styles.borderColor,
               styles.iconBg
             )}
           >
-            <Icon
-              className={cn(
-                'h-4.5 w-4.5 @xl/settings-detail:h-5 @xl/settings-detail:w-5',
-                styles.mutedColor
-              )}
-            />
-          </div>
-          <div className="relative min-w-0 @xl/settings-detail:flex @xl/settings-detail:flex-col @xl/settings-detail:items-center">
-            <h2
-              id={`${id}-settings-title`}
-              className={cn(
-                'text-lg font-semibold tracking-tight',
-                '@xl/settings-detail:mt-3 @xl/settings-detail:text-xl',
-                styles.textColor
-              )}
-            >
-              {title}
-            </h2>
-            <p className={cn('mt-1 max-w-2xl text-sm leading-6', styles.subtleColor)}>
-              {description}
-            </p>
+            <Icon className={cn('h-4.5 w-4.5', styles.mutedColor)} />
           </div>
         </div>
 

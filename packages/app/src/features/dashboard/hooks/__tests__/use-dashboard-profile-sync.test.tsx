@@ -17,6 +17,8 @@ import {
   writeDashboardProfileReceipt,
 } from '@navet/app/features/dashboard/clients/dashboard-profile-base-cache';
 import { useDashboardProfileRuntimeStore } from '@navet/app/features/dashboard/clients/dashboard-profile-runtime-store';
+import { emptyDeviceDisplayProfilePolicy } from '@navet/app/features/dashboard/clients/device-display-profile';
+import { useDeviceDisplayProfileRuntimeStore } from '@navet/app/features/dashboard/clients/device-display-profile-runtime-store';
 import {
   DASHBOARD_PROFILE_REFRESH_EVENT,
   useDashboardProfileSync,
@@ -26,6 +28,7 @@ import {
   DASHBOARD_PROFILE_ERROR_CODES,
   type DashboardProfileAuthor,
 } from '@navet/app/services/dashboard-profile.contract';
+import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { useThemeStore } from '@navet/app/stores/theme-store';
 import { renderHookWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
@@ -40,10 +43,12 @@ const {
   importDashboardConfig,
   isHomeAssistantAddonMode,
   isHomeAssistantPanelMode,
+  loadDashboardDisplayProfiles,
   loadDashboardPreferences,
   loadDashboardProfile,
   loadDashboardProfileClients,
   saveDashboardPreferences,
+  saveDashboardDisplayProfiles,
   saveDashboardProfile,
   toast,
   touchDashboardClientWithStatus,
@@ -57,10 +62,12 @@ const {
     importDashboardConfig: vi.fn(),
     isHomeAssistantAddonMode: vi.fn(),
     isHomeAssistantPanelMode: vi.fn(),
+    loadDashboardDisplayProfiles: vi.fn(),
     loadDashboardPreferences: vi.fn(),
     loadDashboardProfile: vi.fn(),
     loadDashboardProfileClients: vi.fn(),
     saveDashboardPreferences: vi.fn(),
+    saveDashboardDisplayProfiles: vi.fn(),
     saveDashboardProfile: vi.fn(),
     toast: toastFn,
     touchDashboardClientWithStatus: vi.fn(),
@@ -73,9 +80,11 @@ vi.mock('@navet/app/services/dashboard-profile.service', async (importOriginal) 
   return {
     ...actual,
     loadDashboardPreferences,
+    loadDashboardDisplayProfiles,
     loadDashboardProfile,
     loadDashboardProfileClients,
     saveDashboardPreferences,
+    saveDashboardDisplayProfiles,
     saveDashboardProfile,
     touchDashboardClientWithStatus,
   };
@@ -391,6 +400,14 @@ describe('useDashboardProfileSync', () => {
     await resetAppStores();
     await resetDashboardStores();
     useDashboardProfileRuntimeStore.getState().reset();
+    useDeviceDisplayProfileRuntimeStore.setState({
+      error: null,
+      lastSyncedAt: null,
+      loaded: false,
+      policy: emptyDeviceDisplayProfilePolicy(),
+      revision: 0,
+      status: 'loading',
+    });
     useDashboardEntitiesStore.getState().markOnboardingCompleted();
     localStorage.setItem(STORAGE_KEYS.dashboardClientIdentity, JSON.stringify(CURRENT_CLIENT));
 
@@ -411,6 +428,15 @@ describe('useDashboardProfileSync', () => {
       document: null,
     });
     saveDashboardPreferences.mockReset();
+    loadDashboardDisplayProfiles.mockReset();
+    loadDashboardDisplayProfiles.mockResolvedValue({
+      available: true,
+      unauthorized: false,
+      failureCode: null,
+      document: null,
+      workspace: WORKSPACE,
+    });
+    saveDashboardDisplayProfiles.mockReset();
     saveDashboardProfile.mockReset();
     touchDashboardClientWithStatus.mockReset();
     touchDashboardClientWithStatus.mockResolvedValue({
@@ -456,6 +482,106 @@ describe('useDashboardProfileSync', () => {
       'client',
       'client',
     ]);
+  });
+
+  it('does not wake shared dashboard sync for device-only settings', async () => {
+    loadDashboardProfile.mockResolvedValue(activeResult(buildProfile()));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+    exportDashboardConfig.mockClear();
+    saveDashboardProfile.mockClear();
+
+    act(() => {
+      useSettingsStore.getState().updateSettings({
+        kioskMode: true,
+        effectsQuality: 'low',
+        effectsQualityUserOverride: true,
+      });
+    });
+    await flushEffects();
+
+    expect(exportDashboardConfig).not.toHaveBeenCalled();
+    expect(saveDashboardProfile).not.toHaveBeenCalled();
+  });
+
+  it('applies and updates only the linked display profile', async () => {
+    const linkedPolicy = {
+      schemaVersion: 1 as const,
+      profilesById: {
+        display_personal: {
+          id: 'display_personal',
+          name: 'Personal devices',
+          settings: {
+            kioskMode: false,
+            effectsQuality: 'high' as const,
+            effectsQualityUserOverride: true,
+          },
+          createdAt: '2026-08-03T10:00:00.000Z',
+          updatedAt: '2026-08-03T10:00:00.000Z',
+        },
+      },
+      profileIdByClientId: { [CURRENT_CLIENT.id]: 'display_personal' },
+    };
+    loadDashboardProfile.mockResolvedValue(activeResult(buildProfile()));
+    loadDashboardDisplayProfiles.mockResolvedValue({
+      available: true,
+      unauthorized: false,
+      failureCode: null,
+      document: {
+        contractVersion: 1,
+        schemaVersion: 1,
+        revision: 1,
+        updatedAt: '2026-08-03T10:00:00.000Z',
+        values: linkedPolicy,
+        author: OTHER_CLIENT,
+      },
+      workspace: WORKSPACE,
+    });
+    saveDashboardDisplayProfiles.mockImplementation(async (values) => ({
+      saved: true,
+      unauthorized: false,
+      failureCode: null,
+      permanentFailure: false,
+      preconditionFailed: false,
+      preconditionRequired: false,
+      document: {
+        contractVersion: 1,
+        schemaVersion: 1,
+        revision: 2,
+        updatedAt: '2026-08-03T10:01:00.000Z',
+        values,
+        author: CURRENT_CLIENT,
+      },
+      workspace: WORKSPACE,
+    }));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    expect(useSettingsStore.getState()).toMatchObject({
+      kioskMode: false,
+      effectsQuality: 'high',
+      effectsQualityUserOverride: true,
+    });
+    saveDashboardProfile.mockClear();
+
+    act(() => {
+      useSettingsStore.getState().updateSettings({ effectsQuality: 'medium' });
+    });
+    await advanceTime(1_000);
+
+    expect(saveDashboardDisplayProfiles).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profilesById: expect.objectContaining({
+          display_personal: expect.objectContaining({
+            settings: expect.objectContaining({ effectsQuality: 'medium' }),
+          }),
+        }),
+      }),
+      expect.objectContaining({ baseRevision: 1, schemaVersion: 1 })
+    );
+    expect(saveDashboardProfile).not.toHaveBeenCalled();
   });
 
   it('enables account preferences for Home Assistant Ingress', async () => {

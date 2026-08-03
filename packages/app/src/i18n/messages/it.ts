@@ -354,6 +354,7 @@ export const itMessages = {
     '{count} impostazioni modificate nella revisione {revision}, {time}.',
   'settings.system.clients.status.disabled': 'Solo locale',
   'settings.system.clients.status.error': 'Sincronizzazione da controllare',
+  'settings.system.clients.retrySync': 'Riprova la sincronizzazione',
   'settings.system.clients.status.idle': 'Pronto',
   'settings.system.clients.status.loading': 'Caricamento',
   'settings.system.clients.status.offline': 'Non in linea',
@@ -390,6 +391,36 @@ export const itMessages = {
   'settings.system.clients.forgetSuccess':
     '{client} è stata rimossa dall’elenco delle dashboard connesse. Il suo accesso non è cambiato.',
   'settings.system.clients.forgetFailed': 'Impossibile rimuovere il record del dispositivo.',
+  'settings.system.clients.displaySync.title': 'Impostazioni dispositivo',
+  'settings.system.clients.displaySync.description':
+    'Mantieni modalità kiosk, qualità visiva e layout specifici per questo dispositivo. Copiali una volta oppure collega i dispositivi per sincronizzarli.',
+  'settings.system.clients.displaySync.independent': 'Indipendente su questo dispositivo',
+  'settings.system.clients.displaySync.linkedTo': 'Collegato a {name}',
+  'settings.system.clients.displaySync.copy': 'Copia sui dispositivi',
+  'settings.system.clients.displaySync.create': 'Mantieni sincronizzati i dispositivi',
+  'settings.system.clients.displaySync.copyTitle': 'Copia impostazioni dispositivo',
+  'settings.system.clients.displaySync.copyDescription':
+    'Scegli i dispositivi che riceveranno una volta le impostazioni attuali di questo dispositivo. In seguito potranno differire.',
+  'settings.system.clients.displaySync.copyConfirm': 'Copia impostazioni',
+  'settings.system.clients.displaySync.copying': 'Copia in corso...',
+  'settings.system.clients.displaySync.copySuccess':
+    'Impostazioni dispositivo copiate su {count} dispositivi.',
+  'settings.system.clients.displaySync.createTitle': 'Sincronizza le impostazioni dei dispositivi',
+  'settings.system.clients.displaySync.createDescription':
+    'I dispositivi collegati condividono automaticamente modalità kiosk, qualità visiva e layout.',
+  'settings.system.clients.displaySync.profileName': 'Nome gruppo',
+  'settings.system.clients.displaySync.profileCreated': '{name} è stato creato e collegato.',
+  'settings.system.clients.displaySync.manageTitle': 'Gestisci dispositivi sincronizzati',
+  'settings.system.clients.displaySync.manageDescription':
+    'Scegli quali dispositivi seguono questo profilo. Quelli non selezionati mantengono le impostazioni in modo indipendente.',
+  'settings.system.clients.displaySync.profileUpdated': 'Dispositivi collegati aggiornati.',
+  'settings.system.clients.displaySync.profileDeleted': 'Gruppo di sincronizzazione eliminato.',
+  'settings.system.clients.displaySync.deviceCountOne': '{count} dispositivo',
+  'settings.system.clients.displaySync.deviceCount': '{count} dispositivi',
+  'settings.system.clients.displaySync.delete': 'Elimina gruppo',
+  'settings.system.clients.displaySync.save': 'Salva',
+  'settings.system.clients.displaySync.actionFailed':
+    'Impossibile sincronizzare le impostazioni del dispositivo. Riprova.',
   'settings.system.logout.description': 'Termina questa sessione Navet su questo dispositivo.',
   'settings.project.sectionTitle': 'Informazioni su Navet',
   'settings.project.sectionDescription':

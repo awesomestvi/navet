@@ -348,6 +348,7 @@ export const frMessages = {
     '{count} paramètres modifiés dans la révision {revision}, {time}.',
   'settings.system.clients.status.disabled': 'Local uniquement',
   'settings.system.clients.status.error': 'Synchronisation à vérifier',
+  'settings.system.clients.retrySync': 'Réessayer la synchronisation',
   'settings.system.clients.status.idle': 'Prêt',
   'settings.system.clients.status.loading': 'Chargement',
   'settings.system.clients.status.offline': 'Hors ligne',
@@ -383,6 +384,36 @@ export const frMessages = {
   'settings.system.clients.forgetSuccess':
     '{client} a été retiré de la liste des tableaux de bord connectés. Sa connexion n’a pas été modifiée.',
   'settings.system.clients.forgetFailed': 'Impossible de supprimer l’enregistrement de l’appareil.',
+  'settings.system.clients.displaySync.title': 'Réglages de l’appareil',
+  'settings.system.clients.displaySync.description':
+    'Gardez le mode kiosque, la qualité visuelle et la disposition propres à cet appareil. Copiez-les une fois ou liez des appareils pour les synchroniser.',
+  'settings.system.clients.displaySync.independent': 'Indépendant sur cet appareil',
+  'settings.system.clients.displaySync.linkedTo': 'Lié à {name}',
+  'settings.system.clients.displaySync.copy': 'Copier vers des appareils',
+  'settings.system.clients.displaySync.create': 'Synchroniser les appareils',
+  'settings.system.clients.displaySync.copyTitle': 'Copier les réglages de l’appareil',
+  'settings.system.clients.displaySync.copyDescription':
+    'Choisissez les appareils qui recevront une fois les réglages actuels de cet appareil. Ils pourront ensuite diverger.',
+  'settings.system.clients.displaySync.copyConfirm': 'Copier les réglages',
+  'settings.system.clients.displaySync.copying': 'Copie en cours...',
+  'settings.system.clients.displaySync.copySuccess':
+    'Réglages de l’appareil copiés sur {count} appareils.',
+  'settings.system.clients.displaySync.createTitle': 'Synchroniser les réglages des appareils',
+  'settings.system.clients.displaySync.createDescription':
+    'Les appareils liés partagent automatiquement le mode kiosque, la qualité visuelle et la disposition.',
+  'settings.system.clients.displaySync.profileName': 'Nom du groupe',
+  'settings.system.clients.displaySync.profileCreated': '{name} a été créé et lié.',
+  'settings.system.clients.displaySync.manageTitle': 'Gérer les appareils synchronisés',
+  'settings.system.clients.displaySync.manageDescription':
+    'Choisissez les appareils qui suivent ce profil. Les appareils non sélectionnés conservent leurs réglages indépendamment.',
+  'settings.system.clients.displaySync.profileUpdated': 'Appareils liés mis à jour.',
+  'settings.system.clients.displaySync.profileDeleted': 'Groupe de synchronisation supprimé.',
+  'settings.system.clients.displaySync.deviceCountOne': '{count} appareil',
+  'settings.system.clients.displaySync.deviceCount': '{count} appareils',
+  'settings.system.clients.displaySync.delete': 'Supprimer le groupe',
+  'settings.system.clients.displaySync.save': 'Enregistrer',
+  'settings.system.clients.displaySync.actionFailed':
+    'Les réglages de l’appareil n’ont pas pu être synchronisés. Réessayez.',
   'settings.system.logout.description': 'Mettre fin à cette session Navet sur cet appareil.',
   'settings.project.sectionTitle': 'À propos de Navet',
   'settings.project.sectionDescription':

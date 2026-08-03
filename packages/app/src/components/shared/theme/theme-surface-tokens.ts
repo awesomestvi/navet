@@ -9,6 +9,7 @@ export interface ThemeSurfaceTokens {
   border: string;
   borderStrong: string;
   divider: string;
+  dividerBorder: string;
   textPrimary: string;
   textSecondary: string;
   textSubtle: string;
@@ -46,6 +47,7 @@ export function getThemeSurfaceTokens(
       border: 'border-slate-300/80',
       borderStrong: 'border-slate-300',
       divider: 'divide-slate-300/80',
+      dividerBorder: 'border-slate-300/80',
       textPrimary: 'text-slate-950',
       textSecondary: 'text-slate-700',
       textSubtle: 'text-slate-600',
@@ -76,6 +78,7 @@ export function getThemeSurfaceTokens(
       border: 'border-white/6',
       borderStrong: 'border-white/8',
       divider: 'divide-white/10',
+      dividerBorder: 'border-white/10',
       textPrimary: 'text-white',
       textSecondary: 'text-gray-300',
       textSubtle: 'text-zinc-300',
@@ -116,6 +119,7 @@ export function getThemeSurfaceTokens(
       border: isHigh ? 'border-white/22' : 'border-white/16',
       borderStrong: isHigh ? 'border-white/28' : 'border-white/18',
       divider: isHigh ? 'divide-white/12' : 'divide-white/10',
+      dividerBorder: isHigh ? 'border-white/12' : 'border-white/10',
       textPrimary: 'text-white',
       textSecondary: isHigh ? 'text-white/88' : 'text-white/84',
       textSubtle: isHigh ? 'text-white/80' : 'text-white/76',
@@ -154,6 +158,7 @@ export function getThemeSurfaceTokens(
     border: 'border-[rgba(161,161,170,0.18)]',
     borderStrong: 'border-[rgba(161,161,170,0.24)]',
     divider: 'divide-[rgba(161,161,170,0.18)]',
+    dividerBorder: 'border-[rgba(161,161,170,0.18)]',
     textPrimary: 'text-white',
     textSecondary: 'text-gray-300',
     textSubtle: 'text-zinc-300',

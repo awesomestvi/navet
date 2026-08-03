@@ -437,6 +437,7 @@ export const daMessages = {
     '{count} indstillinger ændret i revision {revision}, {time}.',
   'settings.system.clients.status.disabled': 'Kun lokalt',
   'settings.system.clients.status.error': 'Synkronisering kræver opmærksomhed',
+  'settings.system.clients.retrySync': 'Prøv synkronisering igen',
   'settings.system.clients.status.idle': 'Klar',
   'settings.system.clients.status.loading': 'Indlæser',
   'settings.system.clients.status.offline': 'Ikke tilsluttet',
@@ -471,6 +472,36 @@ export const daMessages = {
   'settings.system.clients.forgetSuccess':
     '{client} blev fjernet fra listen over tilsluttede dashboards. Dets login blev ikke ændret.',
   'settings.system.clients.forgetFailed': 'Enhedsposten kunne ikke fjernes.',
+  'settings.system.clients.displaySync.title': 'Enhedsindstillinger',
+  'settings.system.clients.displaySync.description':
+    'Hold kiosktilstand, visuel kvalitet og layout unikke for denne enhed. Kopiér dem én gang, eller forbind enheder for at holde dem synkroniserede.',
+  'settings.system.clients.displaySync.independent': 'Uafhængig på denne enhed',
+  'settings.system.clients.displaySync.linkedTo': 'Forbundet med {name}',
+  'settings.system.clients.displaySync.copy': 'Kopiér til enheder',
+  'settings.system.clients.displaySync.create': 'Hold enheder synkroniserede',
+  'settings.system.clients.displaySync.copyTitle': 'Kopiér enhedsindstillinger',
+  'settings.system.clients.displaySync.copyDescription':
+    'Vælg enheder, der skal modtage denne enheds aktuelle indstillinger én gang. De kan afvige bagefter.',
+  'settings.system.clients.displaySync.copyConfirm': 'Kopiér indstillinger',
+  'settings.system.clients.displaySync.copying': 'Kopierer...',
+  'settings.system.clients.displaySync.copySuccess':
+    'Enhedsindstillinger kopieret til {count} enheder.',
+  'settings.system.clients.displaySync.createTitle': 'Hold enhedsindstillinger synkroniserede',
+  'settings.system.clients.displaySync.createDescription':
+    'Forbundne enheder deler automatisk kiosktilstand, visuel kvalitet og layout.',
+  'settings.system.clients.displaySync.profileName': 'Gruppenavn',
+  'settings.system.clients.displaySync.profileCreated': '{name} blev oprettet og forbundet.',
+  'settings.system.clients.displaySync.manageTitle': 'Administrer synkroniserede enheder',
+  'settings.system.clients.displaySync.manageDescription':
+    'Vælg hvilke enheder der følger profilen. Ikke-valgte enheder beholder deres egne indstillinger.',
+  'settings.system.clients.displaySync.profileUpdated': 'Forbundne enheder opdateret.',
+  'settings.system.clients.displaySync.profileDeleted': 'Synkroniseringsgruppe slettet.',
+  'settings.system.clients.displaySync.deviceCountOne': '{count} enhed',
+  'settings.system.clients.displaySync.deviceCount': '{count} enheder',
+  'settings.system.clients.displaySync.delete': 'Slet gruppe',
+  'settings.system.clients.displaySync.save': 'Gem',
+  'settings.system.clients.displaySync.actionFailed':
+    'Enhedsindstillingerne kunne ikke synkroniseres. Prøv igen.',
   'settings.system.logout.description': 'Afslut denne Navet-session på denne enhed.',
   'settings.project.sectionTitle': 'Om Navet',
   'settings.project.sectionDescription':

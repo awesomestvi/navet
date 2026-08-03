@@ -15,6 +15,7 @@ const MAX_HISTORY_BYTES = 4 * 1024 * 1024;
 const MAX_PROFILE_BYTES = 1024 * 1024;
 const MAX_PREFERENCE_BYTES = 256 * 1024;
 const MAX_PREFERENCE_COLLECTION_BYTES = 4 * 1024 * 1024;
+const MAX_DISPLAY_PROFILES_BYTES = 256 * 1024;
 const MAX_WORKSPACE_BYTES = 128 * 1024;
 const MAX_PROFILE_STATE_BYTES = 128 * 1024;
 const MAX_CLIENT_REGISTRY_BYTES = 512 * 1024;
@@ -60,6 +61,7 @@ const CLIENT_SETTING_KEYS = {
   keepDeviceAwake: true,
   compactMode: true,
   kioskMode: true,
+  kioskSwipeRooms: true,
   dashboardProfileMode: true,
   dashboardSpaceMode: true,
   disableAnimations: true,
@@ -74,6 +76,39 @@ const CLIENT_SETTING_KEYS = {
   cameraFitModes: true,
   ambientLightBleed: true,
 };
+const DISPLAY_PROFILE_SETTING_KEYS = {
+  headerTitleMode: true,
+  headerCustomText: true,
+  keepDeviceAwake: true,
+  compactMode: true,
+  kioskMode: true,
+  kioskSwipeRooms: true,
+  dashboardProfileMode: true,
+  dashboardSpaceMode: true,
+  disableAnimations: true,
+  lowPowerMode: true,
+  effectsQuality: true,
+  effectsQualityUserOverride: true,
+  ambientLightBleed: true,
+};
+const DISPLAY_PROFILE_ID_PATTERN = /^[A-Za-z0-9_-]{8,128}$/;
+const DISPLAY_PROFILE_LIMIT = 20;
+const BOOLEAN_DISPLAY_PROFILE_SETTING_KEYS = {
+  keepDeviceAwake: true,
+  compactMode: true,
+  kioskMode: true,
+  kioskSwipeRooms: true,
+  disableAnimations: true,
+  lowPowerMode: true,
+  effectsQualityUserOverride: true,
+  ambientLightBleed: true,
+};
+const DISPLAY_PROFILE_SETTING_VALUES = {
+  headerTitleMode: { auto_greeting: true, custom_text: true, clock: true },
+  dashboardProfileMode: { standard: true, wall_display: true, bedside: true, custom: true },
+  dashboardSpaceMode: { default: true, more_space: true },
+  effectsQuality: { high: true, medium: true, low: true },
+};
 
 const WORKSPACE_PATH = '/data/navet-dashboard-workspace.json';
 const PROFILE_PATH = '/data/navet-dashboard-profile.json';
@@ -81,6 +116,7 @@ const PROFILE_STATE_PATH = '/data/navet-dashboard-profile-state.json';
 const PROFILE_HISTORY_PATH = '/data/navet-dashboard-profile-history.json';
 const ACCOUNT_PREFERENCES_PATH = '/data/navet-dashboard-account-preferences.json';
 const CLIENT_PREFERENCES_PATH = '/data/navet-dashboard-client-preferences.json';
+const DISPLAY_PROFILES_PATH = '/data/navet-dashboard-display-profiles.json';
 const CLIENT_REGISTRY_PATH = '/data/navet-dashboard-clients.json';
 const CLIENT_BINDING_BOOTSTRAP_PATH =
   '/data/navet-dashboard-client-binding-bootstrap.json';
@@ -979,6 +1015,36 @@ function pickPreferenceSettings(value, allowedKeys) {
   return settings;
 }
 
+function pickDisplayProfileSettings(value) {
+  const candidates = pickPreferenceSettings(value, DISPLAY_PROFILE_SETTING_KEYS);
+  const settings = {};
+  for (const key in candidates) {
+    if (!Object.prototype.hasOwnProperty.call(candidates, key)) {
+      continue;
+    }
+    const candidate = candidates[key];
+    if (BOOLEAN_DISPLAY_PROFILE_SETTING_KEYS[key]) {
+      if (typeof candidate === 'boolean') {
+        settings[key] = candidate;
+      }
+    } else if (key === 'headerCustomText') {
+      if (typeof candidate === 'string') {
+        settings[key] = candidate.trim().slice(0, 40);
+      }
+    } else if (
+      typeof candidate === 'string' &&
+      DISPLAY_PROFILE_SETTING_VALUES[key] &&
+      DISPLAY_PROFILE_SETTING_VALUES[key][candidate]
+    ) {
+      settings[key] = candidate;
+    }
+  }
+  if (settings.effectsQualityUserOverride === false) {
+    delete settings.effectsQuality;
+  }
+  return settings;
+}
+
 function sanitizePreferenceValues(value, scope) {
   const source =
     value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -997,6 +1063,78 @@ function sanitizePreferenceValues(value, scope) {
     };
   }
   return pickPreferenceSettings(source, allowedKeys);
+}
+
+function sanitizeDisplayProfilePolicy(value) {
+  const source =
+    value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const rawProfiles =
+    source.profilesById &&
+    typeof source.profilesById === 'object' &&
+    !Array.isArray(source.profilesById)
+      ? source.profilesById
+      : {};
+  const profilesById = {};
+  const profileIds = Object.keys(rawProfiles).slice(0, DISPLAY_PROFILE_LIMIT);
+  for (let index = 0; index < profileIds.length; index += 1) {
+    const profileId = profileIds[index];
+    const candidate = rawProfiles[profileId];
+    if (
+      !DISPLAY_PROFILE_ID_PATTERN.test(profileId) ||
+      !candidate ||
+      typeof candidate !== 'object' ||
+      Array.isArray(candidate)
+    ) {
+      continue;
+    }
+    const name = typeof candidate.name === 'string'
+      ? candidate.name.trim().slice(0, 64)
+      : '';
+    if (!name) {
+      continue;
+    }
+    const createdAt =
+      typeof candidate.createdAt === 'string' &&
+      Number.isFinite(Date.parse(candidate.createdAt))
+        ? candidate.createdAt
+        : new Date(0).toISOString();
+    const updatedAt =
+      typeof candidate.updatedAt === 'string' &&
+      Number.isFinite(Date.parse(candidate.updatedAt))
+        ? candidate.updatedAt
+        : createdAt;
+    profilesById[profileId] = {
+      id: profileId,
+      name: name,
+      settings: pickDisplayProfileSettings(candidate.settings),
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    };
+  }
+  const assignments =
+    source.profileIdByClientId &&
+    typeof source.profileIdByClientId === 'object' &&
+    !Array.isArray(source.profileIdByClientId)
+      ? source.profileIdByClientId
+      : {};
+  const profileIdByClientId = {};
+  const clientIds = Object.keys(assignments);
+  for (let index = 0; index < clientIds.length; index += 1) {
+    const clientId = clientIds[index];
+    const profileId = assignments[clientId];
+    if (
+      DISPLAY_PROFILE_ID_PATTERN.test(clientId) &&
+      typeof profileId === 'string' &&
+      Object.prototype.hasOwnProperty.call(profilesById, profileId)
+    ) {
+      profileIdByClientId[clientId] = profileId;
+    }
+  }
+  return {
+    schemaVersion: 1,
+    profilesById: profilesById,
+    profileIdByClientId: profileIdByClientId,
+  };
 }
 
 function readProfileFile() {
@@ -2235,6 +2373,7 @@ function touchClient(
     if (preferenceValidationPath === CLIENT_PREFERENCES_PATH) {
       preferenceContext.collection = clientPreferenceCollection;
     }
+    remapDisplayProfileClient(continuity.id, client.id);
   }
   return true;
 }
@@ -3119,6 +3258,270 @@ function deletePreference(
   sendNoContent(r);
 }
 
+function readDisplayProfiles() {
+  const missing = {};
+  const value = readJson(
+    DISPLAY_PROFILES_PATH,
+    missing,
+    MAX_DISPLAY_PROFILES_BYTES
+  );
+  if (value === missing) {
+    return null;
+  }
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    value.contractVersion !== CONTRACT_VERSION ||
+    !Number.isSafeInteger(value.schemaVersion) ||
+    !Number.isSafeInteger(value.revision) ||
+    value.revision < 1 ||
+    typeof value.updatedAt !== 'string' ||
+    !Number.isFinite(Date.parse(value.updatedAt)) ||
+    !value.values ||
+    typeof value.values !== 'object' ||
+    Array.isArray(value.values) ||
+    !value.author ||
+    typeof value.author !== 'object' ||
+    typeof value.author.id !== 'string' ||
+    typeof value.author.name !== 'string' ||
+    typeof value.author.kind !== 'string'
+  ) {
+    throw createStorageReadError(DISPLAY_PROFILES_PATH);
+  }
+  const values = sanitizeDisplayProfilePolicy(value.values);
+  if (JSON.stringify(values) !== JSON.stringify(value.values)) {
+    value.values = values;
+    writeJson(DISPLAY_PROFILES_PATH, value);
+  }
+  return value;
+}
+
+function remapDisplayProfileClient(previousClientId, nextClientId) {
+  if (previousClientId === nextClientId) {
+    return;
+  }
+  const current = readDisplayProfiles();
+  const profileId =
+    current &&
+    current.values &&
+    current.values.profileIdByClientId &&
+    current.values.profileIdByClientId[previousClientId];
+  if (!current || typeof profileId !== 'string') {
+    return;
+  }
+  const profileIdByClientId = Object.assign(
+    {},
+    current.values.profileIdByClientId
+  );
+  delete profileIdByClientId[previousClientId];
+  if (nextClientId) {
+    profileIdByClientId[nextClientId] = profileId;
+  }
+  current.revision += 1;
+  current.updatedAt = nowIso();
+  current.values = sanitizeDisplayProfilePolicy(
+    Object.assign({}, current.values, { profileIdByClientId: profileIdByClientId })
+  );
+  current.author = SYSTEM_AUTHOR;
+  writeJson(DISPLAY_PROFILES_PATH, current);
+}
+
+function loadDisplayProfiles(r, workspace) {
+  const document = readDisplayProfiles();
+  applyWorkspaceHeaders(r, workspace);
+  if (!document) {
+    sendNoContent(r);
+    return;
+  }
+  r.headersOut[HEADERS.preferenceRevision] = String(document.revision);
+  r.headersOut.ETag = `"navet-display-profiles-${document.revision}"`;
+  sendJson(r, 200, document);
+}
+
+function writeDisplayProfiles(r, principal, workspace, client) {
+  try {
+    if (!client) {
+      sendJson(r, 400, { error: 'A valid dashboard client identity is required' });
+      return;
+    }
+    const body = r.requestText || '';
+    if (!body || Buffer.byteLength(body, 'utf8') > MAX_DISPLAY_PROFILES_BYTES) {
+      sendJson(r, body ? 413 : 400, {
+        error: body ? 'Display profiles are too large' : 'Missing display profile body',
+      });
+      return;
+    }
+    const input = JSON.parse(body);
+    if (
+      !input ||
+      !Number.isSafeInteger(input.schemaVersion) ||
+      input.schemaVersion < 1 ||
+      !input.values ||
+      typeof input.values !== 'object' ||
+      Array.isArray(input.values)
+    ) {
+      sendJson(r, 400, { error: 'Unsupported display profile document' });
+      return;
+    }
+    const current = readDisplayProfiles();
+    const currentRevision = current ? current.revision : 0;
+    const baseRevision = parseRevision(getHeader(r, HEADERS.baseRevision));
+    if (baseRevision === null && currentRevision > 0) {
+      r.headersOut[HEADERS.preferenceRevision] = String(currentRevision);
+      sendJson(r, 428, { error: 'A base display profile revision is required' });
+      return;
+    }
+    if (baseRevision !== null && baseRevision !== currentRevision) {
+      r.headersOut[HEADERS.preferenceRevision] = String(currentRevision);
+      sendJson(r, 412, {
+        error: 'Display profiles changed before save',
+        revision: currentRevision,
+      });
+      return;
+    }
+    const document = {
+      contractVersion: CONTRACT_VERSION,
+      schemaVersion: input.schemaVersion,
+      revision: currentRevision + 1,
+      updatedAt: nowIso(),
+      values: sanitizeDisplayProfilePolicy(input.values),
+      author: createAuthor(principal, client),
+    };
+    if (
+      Buffer.byteLength(JSON.stringify(document), 'utf8') >
+      MAX_DISPLAY_PROFILES_BYTES
+    ) {
+      sendJson(r, 413, { error: 'Display profiles are too large' });
+      return;
+    }
+    writeJson(DISPLAY_PROFILES_PATH, document);
+    applyWorkspaceHeaders(r, workspace);
+    r.headersOut[HEADERS.preferenceRevision] = String(document.revision);
+    r.headersOut.ETag = `"navet-display-profiles-${document.revision}"`;
+    sendJson(r, 200, document);
+  } catch (error) {
+    if (error && error.code === 'NAVET_PROFILE_STORAGE_READ_LIMIT') {
+      throw error;
+    }
+    sendJson(r, 400, { error: 'Unable to save display profiles' });
+  }
+}
+
+function copyDisplaySettings(r, workspace, client) {
+  try {
+    if (!client) {
+      sendJson(r, 400, { error: 'A valid dashboard client identity is required' });
+      return;
+    }
+    const body = r.requestText || '';
+    if (!body || Buffer.byteLength(body, 'utf8') > MAX_PREFERENCE_BYTES) {
+      sendJson(r, body ? 413 : 400, { error: 'Unable to copy display settings' });
+      return;
+    }
+    const input = JSON.parse(body);
+    if (
+      !input ||
+      input.schemaVersion !== 1 ||
+      !input.settings ||
+      typeof input.settings !== 'object' ||
+      Array.isArray(input.settings) ||
+      !Array.isArray(input.targetClientIds)
+    ) {
+      sendJson(r, 400, { error: 'Unsupported display settings copy request' });
+      return;
+    }
+    for (let index = 0; index < input.targetClientIds.length; index += 1) {
+      if (
+        typeof input.targetClientIds[index] !== 'string' ||
+        !DISPLAY_PROFILE_ID_PATTERN.test(input.targetClientIds[index])
+      ) {
+        sendJson(r, 400, { error: 'Unsupported display settings copy request' });
+        return;
+      }
+    }
+    const settings = pickDisplayProfileSettings(input.settings);
+    const registry = readRegistry();
+    const collection = readPreferenceCollection(CLIENT_PREFERENCES_PATH);
+    const nextCollection = {
+      contractVersion: CONTRACT_VERSION,
+      records: Object.assign({}, collection.records),
+    };
+    const updatedClientIds = [];
+    const skippedClientIds = [];
+    const seenClientIds = {};
+    const targetClientIds = input.targetClientIds.slice(0, CLIENT_REGISTRY_LIMIT);
+    for (let index = 0; index < targetClientIds.length; index += 1) {
+      const clientId = targetClientIds[index];
+      if (seenClientIds[clientId]) {
+        continue;
+      }
+      seenClientIds[clientId] = true;
+      const registered = registry.clients.find(function (entry) {
+        return entry.id === clientId;
+      });
+      if (!registered) {
+        skippedClientIds.push(clientId);
+        continue;
+      }
+      const key =
+        typeof registered.bindingId === 'string' &&
+        CLIENT_BINDING_PATTERN.test(registered.bindingId)
+          ? `client-binding:${registered.bindingId}`
+          : `client:${registered.id}`;
+      const legacyKey = `client:${registered.id}`;
+      const current = collection.records[key] || collection.records[legacyKey];
+      const currentValues = sanitizePreferenceValues(
+        current ? current.values : {},
+        'client'
+      );
+      const currentSettings = Object.assign({},
+        currentValues.settings &&
+        typeof currentValues.settings === 'object' &&
+        !Array.isArray(currentValues.settings)
+          ? currentValues.settings
+          : currentValues
+      );
+      if (settings.effectsQualityUserOverride === false) {
+        delete currentSettings.effectsQuality;
+      }
+      const document = {
+        contractVersion: CONTRACT_VERSION,
+        schemaVersion: 1,
+        scope: 'client',
+        revision: (current ? current.revision : 0) + 1,
+        updatedAt: nowIso(),
+        values: {
+          schemaVersion: 1,
+          settings: Object.assign({}, currentSettings, settings),
+        },
+        principal: current ? current.principal : registered.principal,
+        clientId: registered.id,
+      };
+      if (legacyKey !== key) {
+        delete nextCollection.records[legacyKey];
+      }
+      nextCollection.records[key] = document;
+      updatedClientIds.push(clientId);
+    }
+    if (!preferenceCollectionFits(nextCollection, 'client')) {
+      sendProfileStorageUnavailable(r);
+      return;
+    }
+    writeJson(CLIENT_PREFERENCES_PATH, nextCollection);
+    applyWorkspaceHeaders(r, workspace);
+    sendJson(r, 200, {
+      updatedClientIds: updatedClientIds,
+      skippedClientIds: skippedClientIds,
+    });
+  } catch (error) {
+    if (error && error.code === 'NAVET_PROFILE_STORAGE_READ_LIMIT') {
+      throw error;
+    }
+    sendJson(r, 400, { error: 'Unable to copy display settings' });
+  }
+}
+
 function listClients(r, workspace) {
   const registry = readRegistry();
   const clients = normalizeRegistryClients(registry.clients, Date.now());
@@ -3169,6 +3572,7 @@ function forgetClient(r, workspace, clientId, requestingClient) {
   }
   writeJson(CLIENT_REGISTRY_PATH, registry);
   writeJson(CLIENT_PREFERENCES_PATH, preferences);
+  remapDisplayProfileClient(clientId, null);
   applyWorkspaceHeaders(r, workspace);
   sendJson(r, 200, {
     ok: true,
@@ -3324,6 +3728,29 @@ function routeRequest(r, principal) {
   const preferenceMatch = normalizedUri.match(
     /^\/__navet_profile__\/preferences\/(account|client)$/
   );
+
+  if (normalizedUri === '/__navet_profile__/display-profiles/copy') {
+    if (r.method !== 'POST') {
+      r.headersOut.Allow = 'POST';
+      sendJson(r, 405, { error: 'Method not allowed' });
+      return;
+    }
+    copyDisplaySettings(r, workspace, requestClient);
+    return;
+  }
+
+  if (normalizedUri === '/__navet_profile__/display-profiles') {
+    if (r.method === 'GET') {
+      loadDisplayProfiles(r, workspace);
+    } else if (r.method === 'PUT') {
+      writeDisplayProfiles(r, principal, workspace, requestClient);
+    } else {
+      r.headersOut.Allow = 'GET, PUT';
+      sendJson(r, 405, { error: 'Method not allowed' });
+    }
+    return;
+  }
+
   if (preferenceMatch) {
     const scope = preferenceMatch[1];
     if (r.method === 'GET') {

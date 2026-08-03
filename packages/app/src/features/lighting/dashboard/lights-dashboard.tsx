@@ -190,7 +190,11 @@ const LightsRoomSection = memo(function LightsRoomSection({
   }`;
 
   return (
-    <section aria-label={roomSummary} className="min-h-0">
+    <section
+      aria-label={roomSummary}
+      className="ios-pwa-scroll-repaint min-h-0"
+      data-lights-room-section
+    >
       <BaseCard
         size="large"
         title={displayName}
@@ -397,6 +401,7 @@ export const LightsDashboard = memo(function LightsDashboard({
     <SummaryBarStack data-testid="lights-dashboard">
       <SummaryBar
         items={summaryItems}
+        className="ios-pwa-scroll-repaint"
         ariaLabel={t('lighting.dashboard.summary', {
           active: model.activeCount,
           rooms: model.activeRoomCount,

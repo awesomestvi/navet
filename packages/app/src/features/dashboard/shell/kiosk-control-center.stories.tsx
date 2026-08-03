@@ -158,7 +158,10 @@ export const DesktopNavigation: Story = {
     const desktopNavigation = page.queryByRole('navigation', { name: 'Navigate' });
     if (desktopNavigation) {
       await expect(desktopNavigation).toBeVisible();
-      await expect(page.getByText('Current location')).toBeVisible();
+      await expect(page.queryByText('Current location')).toBeNull();
+      await expect(
+        page.queryByText('Switch dashboards, sections, and rooms without leaving kiosk mode.')
+      ).toBeNull();
       await expect(page.getByRole('button', { name: 'Guest controls' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Kitchen' })).toBeVisible();
     } else {
@@ -185,7 +188,8 @@ export const MobileIndex: Story = {
     await expect(safeAreaHeader?.className).toContain('safe-area-inset-top');
     await expect(page.queryByRole('navigation', { name: 'Navigate' })).toBeNull();
     await userEvent.click(page.getByRole('button', { name: 'Home' }));
-    await expect(page.getByText('Current location')).toBeVisible();
+    await expect(page.queryByText('Current location')).toBeNull();
+    await expect(page.getByRole('button', { name: 'Kitchen' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Back to kiosk menu' })).toBeVisible();
   },
 };

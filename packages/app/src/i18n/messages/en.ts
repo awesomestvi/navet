@@ -438,6 +438,7 @@ export const enMessages = {
     '{count} settings changed in revision {revision}, {time}.',
   'settings.system.clients.status.disabled': 'Local only',
   'settings.system.clients.status.error': 'Sync needs attention',
+  'settings.system.clients.retrySync': 'Retry sync',
   'settings.system.clients.status.idle': 'Ready',
   'settings.system.clients.status.loading': 'Loading',
   'settings.system.clients.status.offline': 'Offline',
@@ -472,6 +473,35 @@ export const enMessages = {
   'settings.system.clients.forgetSuccess':
     '{client} was removed from the connected dashboard list. Its login was not changed.',
   'settings.system.clients.forgetFailed': 'The device record could not be removed.',
+  'settings.system.clients.displaySync.title': 'Device settings',
+  'settings.system.clients.displaySync.description':
+    'Keep kiosk mode, visual quality, and layout unique to this device. Copy them once, or link devices to keep them in sync.',
+  'settings.system.clients.displaySync.independent': 'Independent on this device',
+  'settings.system.clients.displaySync.linkedTo': 'Linked to {name}',
+  'settings.system.clients.displaySync.copy': 'Copy to devices',
+  'settings.system.clients.displaySync.create': 'Keep devices in sync',
+  'settings.system.clients.displaySync.copyTitle': 'Copy device settings',
+  'settings.system.clients.displaySync.copyDescription':
+    'Choose devices that should receive this device’s current kiosk, visual quality, and layout settings. They remain independent afterward.',
+  'settings.system.clients.displaySync.copyConfirm': 'Copy settings',
+  'settings.system.clients.displaySync.copying': 'Copying...',
+  'settings.system.clients.displaySync.copySuccess': 'Device settings copied to {count} devices.',
+  'settings.system.clients.displaySync.createTitle': 'Keep device settings in sync',
+  'settings.system.clients.displaySync.createDescription':
+    'Name this group and choose the devices that should automatically share kiosk mode, visual quality, and layout.',
+  'settings.system.clients.displaySync.profileName': 'Group name',
+  'settings.system.clients.displaySync.profileCreated': '{name} is now syncing.',
+  'settings.system.clients.displaySync.manageTitle': 'Manage synced devices',
+  'settings.system.clients.displaySync.manageDescription':
+    'Choose which devices share these settings. Unselected devices keep their current settings independently.',
+  'settings.system.clients.displaySync.profileUpdated': 'Linked devices updated.',
+  'settings.system.clients.displaySync.profileDeleted': 'Sync group deleted.',
+  'settings.system.clients.displaySync.deviceCountOne': '{count} device',
+  'settings.system.clients.displaySync.deviceCount': '{count} devices',
+  'settings.system.clients.displaySync.delete': 'Delete group',
+  'settings.system.clients.displaySync.save': 'Save',
+  'settings.system.clients.displaySync.actionFailed':
+    'Device settings could not be synchronized. Try again.',
   'settings.system.logout.description': 'End this Navet session on this device.',
   'settings.project.sectionTitle': 'About Navet',
   'settings.project.sectionDescription':

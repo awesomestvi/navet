@@ -350,6 +350,7 @@ export const deMessages = {
     '{count} Einstellungen in Revision {revision} geändert, {time}.',
   'settings.system.clients.status.disabled': 'Nur lokal',
   'settings.system.clients.status.error': 'Synchronisierung prüfen',
+  'settings.system.clients.retrySync': 'Synchronisierung erneut versuchen',
   'settings.system.clients.status.idle': 'Bereit',
   'settings.system.clients.status.loading': 'Wird geladen',
   'settings.system.clients.status.offline': 'Nicht verbunden',
@@ -384,6 +385,36 @@ export const deMessages = {
   'settings.system.clients.forgetSuccess':
     '{client} wurde aus der Liste der verbundenen Dashboards entfernt. Die Anmeldung wurde nicht geändert.',
   'settings.system.clients.forgetFailed': 'Der Geräteeintrag konnte nicht entfernt werden.',
+  'settings.system.clients.displaySync.title': 'Geräteeinstellungen',
+  'settings.system.clients.displaySync.description':
+    'Kioskmodus, visuelle Qualität und Layout bleiben für dieses Gerät individuell. Kopiere sie einmal oder verknüpfe Geräte für die automatische Synchronisierung.',
+  'settings.system.clients.displaySync.independent': 'Auf diesem Gerät unabhängig',
+  'settings.system.clients.displaySync.linkedTo': 'Mit {name} verknüpft',
+  'settings.system.clients.displaySync.copy': 'Auf Geräte kopieren',
+  'settings.system.clients.displaySync.create': 'Geräte synchron halten',
+  'settings.system.clients.displaySync.copyTitle': 'Geräteeinstellungen kopieren',
+  'settings.system.clients.displaySync.copyDescription':
+    'Wähle Geräte aus, die einmalig die aktuellen Einstellungen dieses Geräts erhalten. Danach können sie wieder abweichen.',
+  'settings.system.clients.displaySync.copyConfirm': 'Einstellungen kopieren',
+  'settings.system.clients.displaySync.copying': 'Wird kopiert...',
+  'settings.system.clients.displaySync.copySuccess':
+    'Geräteeinstellungen auf {count} Geräte kopiert.',
+  'settings.system.clients.displaySync.createTitle': 'Geräteeinstellungen synchron halten',
+  'settings.system.clients.displaySync.createDescription':
+    'Verknüpfte Geräte teilen automatisch Kioskmodus, visuelle Qualität und Layout.',
+  'settings.system.clients.displaySync.profileName': 'Gruppenname',
+  'settings.system.clients.displaySync.profileCreated': '{name} wurde erstellt und verknüpft.',
+  'settings.system.clients.displaySync.manageTitle': 'Synchronisierte Geräte verwalten',
+  'settings.system.clients.displaySync.manageDescription':
+    'Wähle die Geräte aus, die diesem Profil folgen. Nicht ausgewählte Geräte behalten ihre Einstellungen unabhängig.',
+  'settings.system.clients.displaySync.profileUpdated': 'Verknüpfte Geräte aktualisiert.',
+  'settings.system.clients.displaySync.profileDeleted': 'Synchronisierungsgruppe gelöscht.',
+  'settings.system.clients.displaySync.deviceCountOne': '{count} Gerät',
+  'settings.system.clients.displaySync.deviceCount': '{count} Geräte',
+  'settings.system.clients.displaySync.delete': 'Gruppe löschen',
+  'settings.system.clients.displaySync.save': 'Speichern',
+  'settings.system.clients.displaySync.actionFailed':
+    'Geräteeinstellungen konnten nicht synchronisiert werden. Versuche es erneut.',
   'settings.system.logout.description': 'Diese Navet-Sitzung auf diesem Gerät beenden.',
   'settings.project.sectionTitle': 'Über Navet',
   'settings.project.sectionDescription':
