@@ -5,6 +5,7 @@ import type { NavetEntity } from '@navet/core/types';
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps, ReactNode } from 'react';
 import { useEffect } from 'react';
+import { expect } from 'storybook/test';
 import { LightsDashboard } from './lights-dashboard';
 
 function device(
@@ -294,6 +295,16 @@ export const IPadPortrait: Story = {
 
 export const IPhone: Story = {
   parameters: { viewport: { defaultViewport: 'iphone14' } },
+  play: async ({ canvasElement }) => {
+    const summary = canvasElement.querySelector('nav');
+    const roomSections = canvasElement.querySelectorAll('[data-lights-room-section]');
+
+    await expect(summary).toHaveClass('ios-pwa-scroll-repaint');
+    await expect(roomSections.length).toBeGreaterThan(0);
+    for (const roomSection of roomSections) {
+      await expect(roomSection).toHaveClass('ios-pwa-scroll-repaint');
+    }
+  },
 };
 
 export const DarkWallpaper: Story = {};

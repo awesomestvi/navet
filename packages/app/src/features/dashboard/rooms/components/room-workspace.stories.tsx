@@ -941,8 +941,12 @@ export const PhoneFullScreen: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const workspace = canvas.getByRole('region', { name: 'Rooms' });
+    const header = canvas.getByRole('heading', { name: 'Rooms' }).closest('header');
     await expect(workspace).toHaveClass('min-h-0', 'max-h-full');
     await expect(workspace).not.toHaveClass('min-h-[36rem]');
+    await expect(header?.className).toContain('safe-area-inset-top');
+    await expect(header?.className).toContain('safe-area-inset-left');
+    await expect(header?.className).toContain('safe-area-inset-right');
   },
 };
 

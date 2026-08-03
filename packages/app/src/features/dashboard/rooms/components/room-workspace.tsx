@@ -50,7 +50,7 @@ function WorkspaceStatus({
       data-room-workspace
       data-room-workspace-layout="status"
     >
-      <NavigationWorkspace.Header className="flex min-w-0 items-start justify-between gap-3 px-4 py-4 md:px-5">
+      <NavigationWorkspace.Header className="flex min-w-0 items-start justify-between gap-3 pb-4 pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-[calc(env(safe-area-inset-top,0px)+1rem)] md:px-5 md:py-4">
         <div className="min-w-0">
           <h1 className={cn(navetTypographyTokens.pageHeading, surface.textPrimary)}>
             {labels.title}

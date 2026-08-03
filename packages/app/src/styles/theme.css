@@ -521,6 +521,19 @@
     display: none;
   }
 
+  /*
+   * iOS standalone WebKit can retain a rounded card's surface while failing to
+   * repaint its children after a long document scroll. Keep the workaround
+   * opt-in so regular browsers and dense kiosk grids do not gain extra layers.
+   */
+  @supports (-webkit-touch-callout: none) {
+    @media (display-mode: standalone), (display-mode: fullscreen) {
+      .ios-pwa-scroll-repaint {
+        transform: scale(1);
+      }
+    }
+  }
+
   .room-nav-scrollbar {
     --room-nav-scrollbar-thumb: rgba(2, 6, 23, 0.28);
     --room-nav-scrollbar-thumb-hover: rgba(2, 6, 23, 0.38);

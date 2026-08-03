@@ -988,6 +988,115 @@ describe('createViteDashboardProfileStore', () => {
     expect(store.forgetClient(AUTHOR.id, BOUND_CLIENT)).toBe(true);
     expect(store.getPreference('client', nextSession, BOUND_CLIENT)).toBeNull();
   });
+
+  it('stores display profiles in a separate revision domain', () => {
+    const store = createStore();
+
+    const saved = store.saveDisplayProfiles(
+      1,
+      {
+        profilesById: {
+          display_wall: {
+            id: 'display_wall',
+            name: 'Wall displays',
+            settings: { kioskMode: true, effectsQuality: 'low', language: 'sv' },
+            createdAt: '2026-08-03T10:00:00.000Z',
+            updatedAt: '2026-08-03T10:00:00.000Z',
+          },
+        },
+        profileIdByClientId: { [BOUND_CLIENT.id]: 'display_wall' },
+      },
+      AUTHOR
+    );
+
+    expect(saved.revision).toBe(1);
+    expect(store.getState().revision).toBe(0);
+    expect(store.getDisplayProfiles()).toMatchObject({
+      revision: 1,
+      values: {
+        profilesById: {
+          display_wall: {
+            settings: { kioskMode: true, effectsQuality: 'low' },
+          },
+        },
+        profileIdByClientId: { [BOUND_CLIENT.id]: 'display_wall' },
+      },
+    });
+    expect(JSON.stringify(store.getDisplayProfiles())).not.toContain('language');
+  });
+
+  it('copies display settings to selected registered devices only', () => {
+    const store = createStore();
+    const target = {
+      id: 'client-phone-01',
+      name: 'Phone',
+      kind: 'phone' as const,
+      bindingId: CLIENT_BINDING_B,
+    };
+    store.touchClient(PRINCIPAL, BOUND_CLIENT);
+    store.touchClient(PRINCIPAL, target);
+    store.savePreference('client', PRINCIPAL, 1, { compactMode: false }, target);
+
+    expect(
+      store.copyDisplaySettings({ kioskMode: true, effectsQuality: 'low', language: 'sv' }, [
+        target.id,
+        'client-missing-01',
+      ])
+    ).toEqual({
+      updatedClientIds: [target.id],
+      skippedClientIds: ['client-missing-01'],
+    });
+    expect(store.getPreference('client', PRINCIPAL, target)).toMatchObject({
+      revision: 2,
+      values: {
+        schemaVersion: 1,
+        settings: { compactMode: false, kioskMode: true, effectsQuality: 'low' },
+      },
+    });
+    expect(JSON.stringify(store.getPreference('client', PRINCIPAL, target))).not.toContain(
+      'language'
+    );
+  });
+
+  it('keeps linked display assignments through rekey and removes them when forgotten', () => {
+    const store = createStore();
+    store.touchClient(PRINCIPAL, BOUND_CLIENT);
+    store.saveDisplayProfiles(
+      1,
+      {
+        profilesById: {
+          display_wall: {
+            id: 'display_wall',
+            name: 'Wall displays',
+            settings: { kioskMode: true },
+            createdAt: '2026-08-03T10:00:00.000Z',
+            updatedAt: '2026-08-03T10:00:00.000Z',
+          },
+        },
+        profileIdByClientId: { [BOUND_CLIENT.id]: 'display_wall' },
+      },
+      AUTHOR
+    );
+    const rotatedClient = {
+      ...BOUND_CLIENT,
+      id: 'client-panel-rotated',
+    };
+
+    store.touchClient(PRINCIPAL, rotatedClient);
+    expect(store.getDisplayProfiles()).toMatchObject({
+      revision: 2,
+      values: { profileIdByClientId: { [rotatedClient.id]: 'display_wall' } },
+    });
+    expect(store.getDisplayProfiles()?.values.profileIdByClientId).not.toHaveProperty(
+      BOUND_CLIENT.id
+    );
+
+    expect(store.forgetClient(rotatedClient.id, rotatedClient)).toBe(true);
+    expect(store.getDisplayProfiles()).toMatchObject({
+      revision: 3,
+      values: { profileIdByClientId: {} },
+    });
+  });
 });
 
 describe('Vite dashboard profile request handler', () => {

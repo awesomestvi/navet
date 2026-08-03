@@ -1,5 +1,7 @@
 import { getDashboardClientIdentity } from '@navet/app/features/dashboard/clients/dashboard-client-identity';
 import { useDashboardProfileRuntimeStore } from '@navet/app/features/dashboard/clients/dashboard-profile-runtime-store';
+import { emptyDeviceDisplayProfilePolicy } from '@navet/app/features/dashboard/clients/device-display-profile';
+import { useDeviceDisplayProfileRuntimeStore } from '@navet/app/features/dashboard/clients/device-display-profile-runtime-store';
 import { DASHBOARD_PROFILE_REFRESH_EVENT } from '@navet/app/features/dashboard/hooks/use-dashboard-profile-sync';
 import { getSettingsSectionStyles } from '@navet/app/features/settings/hooks/settings-section-styles';
 import type { SettingsSectionController } from '@navet/app/features/settings/hooks/use-settings-section-controller';
@@ -9,6 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SettingsSystemSection } from '../settings-system-section';
 
 const dashboardProfileServiceMocks = vi.hoisted(() => ({
+  copyDashboardDisplaySettings: vi.fn(),
   forgetDashboardProfileClient: vi.fn(),
   loadDashboardProfileHistory: vi.fn(),
   restoreDashboardProfileRevision: vi.fn(),
@@ -179,6 +182,14 @@ describe('SettingsSystemSection', () => {
     dashboardProfileServiceMocks.loadDashboardProfileHistory.mockResolvedValue(null);
     localStorage.clear();
     useDashboardProfileRuntimeStore.getState().reset();
+    useDeviceDisplayProfileRuntimeStore.setState({
+      error: null,
+      lastSyncedAt: null,
+      loaded: false,
+      policy: emptyDeviceDisplayProfilePolicy(),
+      revision: 0,
+      status: 'disabled',
+    });
     const client = getDashboardClientIdentity({
       environment: { userAgent: 'Mozilla/5.0 (iPhone; Mobile)' },
       now: () => new Date('2026-07-25T08:00:00.000Z'),
@@ -507,6 +518,72 @@ describe('SettingsSystemSection', () => {
     expect(screen.getByRole('button', { name: 'Rename device' })).toBeInTheDocument();
   });
 
+  it('copies display settings once or creates an automatic linked profile', async () => {
+    const currentClient = useDashboardProfileRuntimeStore.getState().client;
+    expect(currentClient).not.toBeNull();
+    if (!currentClient) return;
+    const kitchenPanel = {
+      id: 'kitchen_panel',
+      name: 'Kitchen panel',
+      kind: 'wall_panel' as const,
+      firstSeenAt: '2026-07-24T08:00:00.000Z',
+      lastSeenAt: '2026-07-25T09:00:00.000Z',
+      lastRevision: 5,
+    };
+    useDashboardProfileRuntimeStore.getState().setClients([
+      {
+        id: currentClient.id,
+        name: currentClient.name,
+        kind: currentClient.kind,
+        firstSeenAt: '2026-07-25T08:00:00.000Z',
+        lastSeenAt: '2026-07-25T08:00:00.000Z',
+        lastRevision: 5,
+      },
+      kitchenPanel,
+    ]);
+    useDeviceDisplayProfileRuntimeStore
+      .getState()
+      .replacePolicy(emptyDeviceDisplayProfilePolicy(), 0);
+    dashboardProfileServiceMocks.copyDashboardDisplaySettings.mockResolvedValue({
+      updatedClientIds: [kitchenPanel.id],
+      skippedClientIds: [],
+    });
+
+    renderWithProviders(<SettingsSystemSection controller={controller} />);
+
+    expect(screen.getByText('Independent on this device')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Copy to devices' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Copy settings' }));
+    await waitFor(() =>
+      expect(dashboardProfileServiceMocks.copyDashboardDisplaySettings).toHaveBeenCalledWith(
+        expect.objectContaining({ kioskMode: false, effectsQualityUserOverride: false }),
+        [kitchenPanel.id],
+        expect.objectContaining({ id: currentClient.id })
+      )
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Keep devices in sync' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Group name' }), {
+      target: { value: 'Personal devices' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(
+      Object.values(useDeviceDisplayProfileRuntimeStore.getState().policy.profilesById)
+    ).toEqual([
+      expect.objectContaining({
+        name: 'Personal devices',
+        settings: expect.objectContaining({
+          kioskMode: false,
+          effectsQualityUserOverride: false,
+        }),
+      }),
+    ]);
+    expect(
+      useDeviceDisplayProfileRuntimeStore.getState().policy.profileIdByClientId[currentClient.id]
+    ).toBeTruthy();
+  });
+
   it('loads revision history on demand and restores an older snapshot as a new revision', async () => {
     const currentClient = useDashboardProfileRuntimeStore.getState().client;
     expect(currentClient).not.toBeNull();
@@ -756,6 +833,21 @@ describe('SettingsSystemSection', () => {
 
     expect(screen.getByText('Local only')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Revision history' })).not.toBeInTheDocument();
+  });
+
+  it('offers a manual recovery action when dashboard sync needs attention', () => {
+    useDashboardProfileRuntimeStore
+      .getState()
+      .markError('Shared dashboard sync is unavailable. Local settings are preserved.');
+    const refreshListener = vi.fn();
+    window.addEventListener(DASHBOARD_PROFILE_REFRESH_EVENT, refreshListener);
+
+    renderWithProviders(<SettingsSystemSection controller={controller} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry sync' }));
+    expect(refreshListener).toHaveBeenCalledTimes(1);
+
+    window.removeEventListener(DASHBOARD_PROFILE_REFRESH_EVENT, refreshListener);
   });
 
   it('lists another dashboard without exposing a cross-browser removal control', () => {

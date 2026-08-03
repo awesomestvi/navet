@@ -1,4 +1,4 @@
-import { Badge, Input } from '@navet/app/components/primitives';
+import { Badge, Button, Input } from '@navet/app/components/primitives';
 import {
   type DashboardClientKind,
   getDashboardClientIdentity,
@@ -24,6 +24,7 @@ import {
   History,
   Laptop,
   Monitor,
+  RefreshCw,
   RotateCcw,
   Smartphone,
   Tablet,
@@ -31,6 +32,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
+import { SettingsDeviceDisplaySync } from './settings-device-display-sync';
 
 function DashboardClientIcon({
   className,
@@ -305,7 +307,7 @@ export function SettingsDashboardClients({
                   setClientName(resolvedClient.name);
                   setEditingClientName(true);
                 }}
-                className={`relative ml-12 inline-flex h-9 shrink-0 items-center justify-center self-start rounded-full border px-3.5 text-sm font-medium transition-colors after:absolute after:-inset-y-1 after:inset-x-0 after:content-[''] sm:ml-0 sm:self-center ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
+                className={`relative ml-12 inline-flex h-9 shrink-0 items-center justify-center self-start rounded-full border px-3.5 text-sm font-medium transition-colors after:absolute after:-inset-y-1 after:inset-x-0 after:content-[''] sm:ml-0 ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
               >
                 {t('settings.system.clients.rename')}
               </button>
@@ -315,7 +317,7 @@ export function SettingsDashboardClients({
           {editingClientName ? (
             <form
               id="dashboard-client-name-editor"
-              className={`ml-12 mt-3 border-l-2 pl-4 ${styles.dividerColor}`}
+              className={`ml-12 mt-3 border-l-2 pl-4 ${styles.dividerBorderColor}`}
               onSubmit={(event) => {
                 event.preventDefault();
                 if (hasNameChange && clientName.trim()) {
@@ -360,15 +362,27 @@ export function SettingsDashboardClients({
           ) : null}
 
           {error ? (
-            <div className="ml-12 mt-3 flex items-start gap-2 text-sm leading-6 text-red-400">
-              <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{error}</span>
+            <div className="ml-12 mt-3">
+              <div className="flex items-start gap-2 text-sm leading-6 text-red-400">
+                <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="small"
+                leading={<RefreshCw className="h-4 w-4" />}
+                onClick={() => window.dispatchEvent(new Event(DASHBOARD_PROFILE_REFRESH_EVENT))}
+                className="mt-3 rounded-full"
+              >
+                {t('settings.system.clients.retrySync')}
+              </Button>
             </div>
           ) : null}
         </div>
 
         {lastActivity && lastActivity.actor.clientId !== resolvedClient.id ? (
-          <div className={`border-t px-4 py-3 md:px-5 ${styles.dividerColor}`}>
+          <div className={`border-t px-4 py-3 md:px-5 ${styles.dividerBorderColor}`}>
             <p className={`text-sm font-medium ${styles.textColor}`}>
               {t('settings.system.clients.updatedBy', {
                 client: lastActivity.actor.clientName,
@@ -385,7 +399,7 @@ export function SettingsDashboardClients({
         ) : null}
 
         {otherClients.length > 0 ? (
-          <div className={`border-t ${styles.dividerColor}`}>
+          <div className={`border-t ${styles.dividerBorderColor}`}>
             <p className={`px-4 pt-4 text-sm font-medium md:px-5 ${styles.textColor}`}>
               {t('settings.system.clients.otherDashboards')}
             </p>
@@ -407,13 +421,13 @@ export function SettingsDashboardClients({
                           <p className={`truncate text-sm font-medium ${styles.textColor}`}>
                             {registeredClient.name}
                           </p>
-                          <p className={`mt-0.5 truncate text-xs ${styles.subtleColor}`}>
-                            {registeredClient.userName
-                              ? t('settings.system.clients.signedInAs', {
-                                  name: registeredClient.userName,
-                                })
-                              : t('settings.system.clients.identityUnknown')}
-                          </p>
+                          {registeredClient.userName ? (
+                            <p className={`mt-0.5 truncate text-xs ${styles.subtleColor}`}>
+                              {t('settings.system.clients.signedInAs', {
+                                name: registeredClient.userName,
+                              })}
+                            </p>
+                          ) : null}
                           <div
                             className={`mt-1 flex flex-wrap items-center gap-2 text-xs ${styles.subtleColor}`}
                           >
@@ -442,6 +456,8 @@ export function SettingsDashboardClients({
           </div>
         ) : null}
       </div>
+
+      <SettingsDeviceDisplaySync clients={clients} currentClient={resolvedClient} styles={styles} />
 
       {status !== 'disabled' ? (
         <div>
@@ -547,7 +563,7 @@ export function SettingsDashboardClients({
 
                           {confirmingRestore ? (
                             <fieldset
-                              className={`mt-2 min-w-0 border-0 border-l-2 pl-3 ${styles.dividerColor}`}
+                              className={`mt-2 min-w-0 border-0 border-l-2 pl-3 ${styles.dividerBorderColor}`}
                               aria-label={t('settings.system.clients.restoreConfirm', {
                                 revision: entry.revision,
                               })}

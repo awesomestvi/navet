@@ -442,6 +442,7 @@ export const nlMessages = {
     '{count} instellingen gewijzigd in revisie {revision}, {time}.',
   'settings.system.clients.status.disabled': 'Alleen lokaal',
   'settings.system.clients.status.error': 'Synchronisatie vereist aandacht',
+  'settings.system.clients.retrySync': 'Synchronisatie opnieuw proberen',
   'settings.system.clients.status.idle': 'Gereed',
   'settings.system.clients.status.loading': 'Laden',
   'settings.system.clients.status.offline': 'Niet verbonden',
@@ -476,6 +477,36 @@ export const nlMessages = {
   'settings.system.clients.forgetSuccess':
     '{client} is uit de lijst met verbonden dashboards verwijderd. De login is niet gewijzigd.',
   'settings.system.clients.forgetFailed': 'Het apparaatrecord kon niet worden verwijderd.',
+  'settings.system.clients.displaySync.title': 'Apparaatinstellingen',
+  'settings.system.clients.displaySync.description':
+    'Houd kioskmodus, visuele kwaliteit en indeling uniek voor dit apparaat. Kopieer ze eenmalig of koppel apparaten om ze gesynchroniseerd te houden.',
+  'settings.system.clients.displaySync.independent': 'Onafhankelijk op dit apparaat',
+  'settings.system.clients.displaySync.linkedTo': 'Gekoppeld aan {name}',
+  'settings.system.clients.displaySync.copy': 'Naar apparaten kopiëren',
+  'settings.system.clients.displaySync.create': 'Apparaten gesynchroniseerd houden',
+  'settings.system.clients.displaySync.copyTitle': 'Apparaatinstellingen kopiëren',
+  'settings.system.clients.displaySync.copyDescription':
+    'Kies apparaten die de huidige instellingen van dit apparaat één keer ontvangen. Daarna kunnen ze weer afwijken.',
+  'settings.system.clients.displaySync.copyConfirm': 'Instellingen kopiëren',
+  'settings.system.clients.displaySync.copying': 'Kopiëren...',
+  'settings.system.clients.displaySync.copySuccess':
+    'Apparaatinstellingen naar {count} apparaten gekopieerd.',
+  'settings.system.clients.displaySync.createTitle': 'Apparaatinstellingen synchroniseren',
+  'settings.system.clients.displaySync.createDescription':
+    'Gekoppelde apparaten delen automatisch kioskmodus, visuele kwaliteit en indeling.',
+  'settings.system.clients.displaySync.profileName': 'Groepsnaam',
+  'settings.system.clients.displaySync.profileCreated': '{name} is gemaakt en gekoppeld.',
+  'settings.system.clients.displaySync.manageTitle': 'Gesynchroniseerde apparaten beheren',
+  'settings.system.clients.displaySync.manageDescription':
+    'Kies welke apparaten dit profiel volgen. Niet-geselecteerde apparaten houden hun huidige instellingen onafhankelijk.',
+  'settings.system.clients.displaySync.profileUpdated': 'Gekoppelde apparaten bijgewerkt.',
+  'settings.system.clients.displaySync.profileDeleted': 'Synchronisatiegroep verwijderd.',
+  'settings.system.clients.displaySync.deviceCountOne': '{count} apparaat',
+  'settings.system.clients.displaySync.deviceCount': '{count} apparaten',
+  'settings.system.clients.displaySync.delete': 'Groep verwijderen',
+  'settings.system.clients.displaySync.save': 'Opslaan',
+  'settings.system.clients.displaySync.actionFailed':
+    'Apparaatinstellingen konden niet worden gesynchroniseerd. Probeer het opnieuw.',
   'settings.system.logout.description': 'Beëindig deze Navet-sessie op dit apparaat.',
   'settings.project.sectionTitle': 'Over Navet',
   'settings.project.sectionDescription':

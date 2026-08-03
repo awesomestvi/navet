@@ -437,6 +437,7 @@ export const noMessages = {
     '{count} innstillinger endret i revisjon {revision}, {time}.',
   'settings.system.clients.status.disabled': 'Bare lokalt',
   'settings.system.clients.status.error': 'Synkronisering krever oppmerksomhet',
+  'settings.system.clients.retrySync': 'Prøv synkronisering på nytt',
   'settings.system.clients.status.idle': 'Klar',
   'settings.system.clients.status.loading': 'Laster',
   'settings.system.clients.status.offline': 'Frakoblet',
@@ -471,6 +472,36 @@ export const noMessages = {
   'settings.system.clients.forgetSuccess':
     '{client} ble fjernet fra listen over tilkoblede dashboards. Innloggingen ble ikke endret.',
   'settings.system.clients.forgetFailed': 'Enhetsoppføringen kunne ikke fjernes.',
+  'settings.system.clients.displaySync.title': 'Enhetsinnstillinger',
+  'settings.system.clients.displaySync.description':
+    'Hold kioskmodus, visuell kvalitet og layout unike for denne enheten. Kopier dem én gang, eller koble enheter for å holde dem synkronisert.',
+  'settings.system.clients.displaySync.independent': 'Uavhengig på denne enheten',
+  'settings.system.clients.displaySync.linkedTo': 'Koblet til {name}',
+  'settings.system.clients.displaySync.copy': 'Kopier til enheter',
+  'settings.system.clients.displaySync.create': 'Hold enheter synkronisert',
+  'settings.system.clients.displaySync.copyTitle': 'Kopier enhetsinnstillinger',
+  'settings.system.clients.displaySync.copyDescription':
+    'Velg enheter som skal motta denne enhetens gjeldende innstillinger én gang. De kan avvike etterpå.',
+  'settings.system.clients.displaySync.copyConfirm': 'Kopier innstillinger',
+  'settings.system.clients.displaySync.copying': 'Kopierer...',
+  'settings.system.clients.displaySync.copySuccess':
+    'Enhetsinnstillinger kopiert til {count} enheter.',
+  'settings.system.clients.displaySync.createTitle': 'Hold enhetsinnstillinger synkronisert',
+  'settings.system.clients.displaySync.createDescription':
+    'Koblede enheter deler automatisk kioskmodus, visuell kvalitet og layout.',
+  'settings.system.clients.displaySync.profileName': 'Gruppenavn',
+  'settings.system.clients.displaySync.profileCreated': '{name} ble opprettet og koblet.',
+  'settings.system.clients.displaySync.manageTitle': 'Administrer synkroniserte enheter',
+  'settings.system.clients.displaySync.manageDescription':
+    'Velg hvilke enheter som følger profilen. Enheter som ikke er valgt, beholder egne innstillinger.',
+  'settings.system.clients.displaySync.profileUpdated': 'Koblede enheter oppdatert.',
+  'settings.system.clients.displaySync.profileDeleted': 'Synkroniseringsgruppe slettet.',
+  'settings.system.clients.displaySync.deviceCountOne': '{count} enhet',
+  'settings.system.clients.displaySync.deviceCount': '{count} enheter',
+  'settings.system.clients.displaySync.delete': 'Slett gruppe',
+  'settings.system.clients.displaySync.save': 'Lagre',
+  'settings.system.clients.displaySync.actionFailed':
+    'Enhetsinnstillingene kunne ikke synkroniseres. Prøv igjen.',
   'settings.system.logout.description': 'Avslutt denne Navet-økten på denne enheten.',
   'settings.project.sectionTitle': 'Om Navet',
   'settings.project.sectionDescription':

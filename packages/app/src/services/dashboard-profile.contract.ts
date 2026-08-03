@@ -10,6 +10,8 @@ export const DASHBOARD_PROFILE_ENDPOINTS = {
   revisions: '/__navet_profile__/default/revisions',
   accountPreferences: '/__navet_profile__/preferences/account',
   clientPreferences: '/__navet_profile__/preferences/client',
+  displayProfiles: '/__navet_profile__/display-profiles',
+  copyDisplaySettings: '/__navet_profile__/display-profiles/copy',
   clients: '/__navet_profile__/clients',
 } as const;
 
@@ -136,6 +138,20 @@ export interface DashboardPreferenceDocument<TValues extends object = Record<str
 export interface DashboardPreferenceIdentity {
   principal: DashboardProfilePrincipal;
   clientId: string | null;
+}
+
+export interface DashboardDisplayProfileDocument<TValues extends object = Record<string, unknown>> {
+  contractVersion: typeof DASHBOARD_PROFILE_CONTRACT_VERSION;
+  schemaVersion: number;
+  revision: number;
+  updatedAt: string;
+  values: TValues;
+  author: DashboardProfileAuthor;
+}
+
+export interface DashboardDevicePreferenceCopyResult {
+  updatedClientIds: string[];
+  skippedClientIds: string[];
 }
 
 export interface DashboardClientRegistryEntry extends DashboardProfileClient {

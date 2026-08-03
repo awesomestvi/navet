@@ -344,6 +344,7 @@ export const svMessages = {
     '{count} inställningar ändrades i revision {revision}, {time}.',
   'settings.system.clients.status.disabled': 'Endast lokalt',
   'settings.system.clients.status.error': 'Synkronisering kräver åtgärd',
+  'settings.system.clients.retrySync': 'Försök synkronisera igen',
   'settings.system.clients.status.idle': 'Redo',
   'settings.system.clients.status.loading': 'Läser in',
   'settings.system.clients.status.offline': 'Frånkopplad',
@@ -378,6 +379,36 @@ export const svMessages = {
   'settings.system.clients.forgetSuccess':
     '{client} togs bort från listan över anslutna dashboards. Inloggningen ändrades inte.',
   'settings.system.clients.forgetFailed': 'Det gick inte att ta bort enhetsposten.',
+  'settings.system.clients.displaySync.title': 'Enhetsinställningar',
+  'settings.system.clients.displaySync.description':
+    'Behåll kioskläge, visuell kvalitet och layout unika för den här enheten. Kopiera dem en gång eller länka enheter för att hålla dem synkroniserade.',
+  'settings.system.clients.displaySync.independent': 'Fristående på den här enheten',
+  'settings.system.clients.displaySync.linkedTo': 'Länkad till {name}',
+  'settings.system.clients.displaySync.copy': 'Kopiera till enheter',
+  'settings.system.clients.displaySync.create': 'Håll enheter synkroniserade',
+  'settings.system.clients.displaySync.copyTitle': 'Kopiera enhetsinställningar',
+  'settings.system.clients.displaySync.copyDescription':
+    'Välj enheter som ska få den här enhetens aktuella inställningar en gång. De kan ändras separat efteråt.',
+  'settings.system.clients.displaySync.copyConfirm': 'Kopiera inställningar',
+  'settings.system.clients.displaySync.copying': 'Kopierar...',
+  'settings.system.clients.displaySync.copySuccess':
+    'Enhetsinställningar kopierades till {count} enheter.',
+  'settings.system.clients.displaySync.createTitle': 'Håll enhetsinställningar synkroniserade',
+  'settings.system.clients.displaySync.createDescription':
+    'Länkade enheter delar automatiskt kioskläge, visuell kvalitet och layout.',
+  'settings.system.clients.displaySync.profileName': 'Gruppnamn',
+  'settings.system.clients.displaySync.profileCreated': '{name} skapades och länkades.',
+  'settings.system.clients.displaySync.manageTitle': 'Hantera synkroniserade enheter',
+  'settings.system.clients.displaySync.manageDescription':
+    'Välj vilka enheter som följer profilen. Omarkerade enheter behåller sina aktuella inställningar fristående.',
+  'settings.system.clients.displaySync.profileUpdated': 'Länkade enheter uppdaterades.',
+  'settings.system.clients.displaySync.profileDeleted': 'Synkroniseringsgruppen togs bort.',
+  'settings.system.clients.displaySync.deviceCountOne': '{count} enhet',
+  'settings.system.clients.displaySync.deviceCount': '{count} enheter',
+  'settings.system.clients.displaySync.delete': 'Ta bort grupp',
+  'settings.system.clients.displaySync.save': 'Spara',
+  'settings.system.clients.displaySync.actionFailed':
+    'Enhetsinställningarna kunde inte synkroniseras. Försök igen.',
   'settings.system.logout.description': 'Avsluta Navet-sessionen på den här enheten.',
   'settings.project.sectionTitle': 'Om Navet',
   'settings.project.sectionDescription':

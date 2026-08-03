@@ -346,6 +346,7 @@ export const esMessages = {
     '{count} ajustes cambiaron en la revisión {revision}, {time}.',
   'settings.system.clients.status.disabled': 'Solo local',
   'settings.system.clients.status.error': 'La sincronización requiere atención',
+  'settings.system.clients.retrySync': 'Reintentar sincronización',
   'settings.system.clients.status.idle': 'Listo',
   'settings.system.clients.status.loading': 'Cargando',
   'settings.system.clients.status.offline': 'Sin conexión',
@@ -380,6 +381,36 @@ export const esMessages = {
   'settings.system.clients.forgetSuccess':
     '{client} se eliminó de la lista de paneles conectados. Su inicio de sesión no cambió.',
   'settings.system.clients.forgetFailed': 'No se pudo eliminar el registro del dispositivo.',
+  'settings.system.clients.displaySync.title': 'Ajustes del dispositivo',
+  'settings.system.clients.displaySync.description':
+    'Mantén el modo quiosco, la calidad visual y el diseño propios de este dispositivo. Cópialos una vez o vincula dispositivos para sincronizarlos.',
+  'settings.system.clients.displaySync.independent': 'Independiente en este dispositivo',
+  'settings.system.clients.displaySync.linkedTo': 'Vinculado a {name}',
+  'settings.system.clients.displaySync.copy': 'Copiar a dispositivos',
+  'settings.system.clients.displaySync.create': 'Mantener dispositivos sincronizados',
+  'settings.system.clients.displaySync.copyTitle': 'Copiar ajustes del dispositivo',
+  'settings.system.clients.displaySync.copyDescription':
+    'Elige los dispositivos que recibirán una vez los ajustes actuales de este dispositivo. Después podrán ser diferentes.',
+  'settings.system.clients.displaySync.copyConfirm': 'Copiar ajustes',
+  'settings.system.clients.displaySync.copying': 'Copiando...',
+  'settings.system.clients.displaySync.copySuccess':
+    'Ajustes del dispositivo copiados en {count} dispositivos.',
+  'settings.system.clients.displaySync.createTitle': 'Sincronizar ajustes de dispositivos',
+  'settings.system.clients.displaySync.createDescription':
+    'Los dispositivos vinculados comparten automáticamente el modo quiosco, la calidad visual y el diseño.',
+  'settings.system.clients.displaySync.profileName': 'Nombre del grupo',
+  'settings.system.clients.displaySync.profileCreated': '{name} se creó y vinculó.',
+  'settings.system.clients.displaySync.manageTitle': 'Gestionar dispositivos sincronizados',
+  'settings.system.clients.displaySync.manageDescription':
+    'Elige qué dispositivos siguen este perfil. Los no seleccionados mantienen sus ajustes de forma independiente.',
+  'settings.system.clients.displaySync.profileUpdated': 'Dispositivos vinculados actualizados.',
+  'settings.system.clients.displaySync.profileDeleted': 'Grupo de sincronización eliminado.',
+  'settings.system.clients.displaySync.deviceCountOne': '{count} dispositivo',
+  'settings.system.clients.displaySync.deviceCount': '{count} dispositivos',
+  'settings.system.clients.displaySync.delete': 'Eliminar grupo',
+  'settings.system.clients.displaySync.save': 'Guardar',
+  'settings.system.clients.displaySync.actionFailed':
+    'No se pudieron sincronizar los ajustes del dispositivo. Inténtalo de nuevo.',
   'settings.system.logout.description': 'Finaliza esta sesión de Navet en este dispositivo.',
   'settings.project.sectionTitle': 'Acerca de Navet',
   'settings.project.sectionDescription':

@@ -440,6 +440,7 @@ export const fiMessages = {
     '{count} asetusta muutettiin versiossa {revision}, {time}.',
   'settings.system.clients.status.disabled': 'Vain paikallinen',
   'settings.system.clients.status.error': 'Synkronointi vaatii huomiota',
+  'settings.system.clients.retrySync': 'Yritä synkronointia uudelleen',
   'settings.system.clients.status.idle': 'Valmis',
   'settings.system.clients.status.loading': 'Ladataan',
   'settings.system.clients.status.offline': 'Ei yhteyttä',
@@ -474,6 +475,35 @@ export const fiMessages = {
   'settings.system.clients.forgetSuccess':
     '{client} poistettiin yhdistettyjen hallintapaneelien luettelosta. Sen kirjautumista ei muutettu.',
   'settings.system.clients.forgetFailed': 'Laitetietuetta ei voitu poistaa.',
+  'settings.system.clients.displaySync.title': 'Laiteasetukset',
+  'settings.system.clients.displaySync.description':
+    'Pidä kioskitila, visuaalinen laatu ja asettelu tämän laitteen omina. Kopioi ne kerran tai linkitä laitteet pysymään synkronoituina.',
+  'settings.system.clients.displaySync.independent': 'Erillinen tällä laitteella',
+  'settings.system.clients.displaySync.linkedTo': 'Linkitetty profiiliin {name}',
+  'settings.system.clients.displaySync.copy': 'Kopioi laitteisiin',
+  'settings.system.clients.displaySync.create': 'Pidä laitteet synkronoituina',
+  'settings.system.clients.displaySync.copyTitle': 'Kopioi laiteasetukset',
+  'settings.system.clients.displaySync.copyDescription':
+    'Valitse laitteet, jotka saavat tämän laitteen nykyiset asetukset kerran. Ne voivat poiketa myöhemmin.',
+  'settings.system.clients.displaySync.copyConfirm': 'Kopioi asetukset',
+  'settings.system.clients.displaySync.copying': 'Kopioidaan...',
+  'settings.system.clients.displaySync.copySuccess': 'Laiteasetukset kopioitu {count} laitteeseen.',
+  'settings.system.clients.displaySync.createTitle': 'Pidä laiteasetukset synkronoituina',
+  'settings.system.clients.displaySync.createDescription':
+    'Linkitetyt laitteet jakavat automaattisesti kioskitilan, visuaalisen laadun ja asettelun.',
+  'settings.system.clients.displaySync.profileName': 'Ryhmän nimi',
+  'settings.system.clients.displaySync.profileCreated': '{name} luotiin ja linkitettiin.',
+  'settings.system.clients.displaySync.manageTitle': 'Hallitse synkronoituja laitteita',
+  'settings.system.clients.displaySync.manageDescription':
+    'Valitse profiilia seuraavat laitteet. Valitsemattomat laitteet säilyttävät omat asetuksensa.',
+  'settings.system.clients.displaySync.profileUpdated': 'Linkitetyt laitteet päivitetty.',
+  'settings.system.clients.displaySync.profileDeleted': 'Synkronointiryhmä poistettu.',
+  'settings.system.clients.displaySync.deviceCountOne': '{count} laite',
+  'settings.system.clients.displaySync.deviceCount': '{count} laitetta',
+  'settings.system.clients.displaySync.delete': 'Poista ryhmä',
+  'settings.system.clients.displaySync.save': 'Tallenna',
+  'settings.system.clients.displaySync.actionFailed':
+    'Laiteasetuksia ei voitu synkronoida. Yritä uudelleen.',
   'settings.system.logout.description': 'Lopeta tämä Navet-istunto tällä laitteella.',
   'settings.project.sectionTitle': 'Tietoja Navetista',
   'settings.project.sectionDescription':

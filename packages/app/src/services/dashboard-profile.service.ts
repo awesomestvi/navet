@@ -8,6 +8,8 @@ import {
   DASHBOARD_PROFILE_HEADERS,
   DASHBOARD_PROFILE_ID,
   type DashboardClientRegistryResponse,
+  type DashboardDevicePreferenceCopyResult,
+  type DashboardDisplayProfileDocument,
   type DashboardPreferenceDocument,
   type DashboardPreferenceIdentity,
   type DashboardPreferenceScope,
@@ -110,6 +112,29 @@ export interface DashboardPreferenceOptions {
   baseRevision?: number;
   client?: DashboardProfileClient;
   keepalive?: boolean;
+}
+
+export interface DashboardDisplayProfileLoadResult<
+  TValues extends object = Record<string, unknown>,
+> {
+  available: boolean;
+  unauthorized: boolean;
+  failureCode: DashboardProfileErrorCode | null;
+  document: DashboardDisplayProfileDocument<TValues> | null;
+  workspace: DashboardWorkspaceIdentity | null;
+}
+
+export interface DashboardDisplayProfileWriteResult<
+  TValues extends object = Record<string, unknown>,
+> {
+  saved: boolean;
+  unauthorized: boolean;
+  failureCode: DashboardProfileErrorCode | null;
+  permanentFailure: boolean;
+  preconditionFailed: boolean;
+  preconditionRequired: boolean;
+  document: DashboardDisplayProfileDocument<TValues> | null;
+  workspace: DashboardWorkspaceIdentity | null;
 }
 
 export interface DashboardClientTouchResult {
@@ -783,6 +808,127 @@ export async function saveDashboardPreferences<TValues extends object = Record<s
     document: result.response.ok ? result.body : null,
     workspace: readWorkspace(result.response),
   };
+}
+
+export async function loadDashboardDisplayProfiles<
+  TValues extends object = Record<string, unknown>,
+>(client?: DashboardProfileClient): Promise<DashboardDisplayProfileLoadResult<TValues>> {
+  if (isHomeAssistantPanelMode()) {
+    return {
+      available: false,
+      unauthorized: false,
+      failureCode: null,
+      document: null,
+      workspace: null,
+    };
+  }
+
+  const headers = new Headers();
+  applyClientHeaders(headers, client);
+  const result = await fetchProfileJson<DashboardDisplayProfileDocument<TValues>>(
+    DASHBOARD_PROFILE_ENDPOINTS.displayProfiles,
+    { headers }
+  );
+  if (!result) {
+    return {
+      available: false,
+      unauthorized: false,
+      failureCode: null,
+      document: null,
+      workspace: null,
+    };
+  }
+  return {
+    available: result.response.ok || result.response.status === 204,
+    unauthorized: result.response.status === 401,
+    failureCode: readProfileErrorCode(result.response),
+    document: result.response.ok ? result.body : null,
+    workspace: readWorkspace(result.response),
+  };
+}
+
+export async function saveDashboardDisplayProfiles<
+  TValues extends object = Record<string, unknown>,
+>(
+  values: TValues,
+  options: DashboardPreferenceOptions & { schemaVersion: number }
+): Promise<DashboardDisplayProfileWriteResult<TValues>> {
+  if (isHomeAssistantPanelMode()) {
+    return {
+      saved: false,
+      unauthorized: false,
+      failureCode: null,
+      permanentFailure: true,
+      preconditionFailed: false,
+      preconditionRequired: false,
+      document: null,
+      workspace: null,
+    };
+  }
+
+  const headers = new Headers();
+  headers.set('Content-Type', 'application/json');
+  applyClientHeaders(headers, options.author ?? options.client);
+  if (options.baseRevision !== undefined) {
+    headers.set(DASHBOARD_PROFILE_HEADERS.baseRevision, String(options.baseRevision));
+  }
+  const result = await fetchProfileJson<DashboardDisplayProfileDocument<TValues>>(
+    DASHBOARD_PROFILE_ENDPOINTS.displayProfiles,
+    {
+      method: 'PUT',
+      headers,
+      keepalive: options.keepalive,
+      body: JSON.stringify({ schemaVersion: options.schemaVersion, values }),
+    }
+  );
+  if (!result) {
+    return {
+      saved: false,
+      unauthorized: false,
+      failureCode: null,
+      permanentFailure: false,
+      preconditionFailed: false,
+      preconditionRequired: false,
+      document: null,
+      workspace: null,
+    };
+  }
+  return {
+    saved: result.response.ok,
+    unauthorized: result.response.status === 401,
+    failureCode: readProfileErrorCode(result.response),
+    permanentFailure: isPermanentProfileFailure(result.response.status),
+    preconditionFailed: result.response.status === 412,
+    preconditionRequired: result.response.status === 428,
+    document: result.response.ok ? result.body : null,
+    workspace: readWorkspace(result.response),
+  };
+}
+
+export async function copyDashboardDisplaySettings(
+  settings: Record<string, unknown>,
+  targetClientIds: string[],
+  client: DashboardProfileClient
+): Promise<DashboardDevicePreferenceCopyResult | null> {
+  if (isHomeAssistantPanelMode()) {
+    return null;
+  }
+  const headers = new Headers();
+  headers.set('Content-Type', 'application/json');
+  applyClientHeaders(headers, client);
+  const result = await fetchProfileJson<DashboardDevicePreferenceCopyResult>(
+    DASHBOARD_PROFILE_ENDPOINTS.copyDisplaySettings,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        schemaVersion: 1,
+        settings,
+        targetClientIds,
+      }),
+    }
+  );
+  return result?.response.ok ? result.body : null;
 }
 
 export async function listDashboardClients(

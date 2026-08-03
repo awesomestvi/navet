@@ -273,18 +273,18 @@ export function DashboardManager({ styles }: DashboardManagerProps) {
               </div>
             );
           })}
-        </div>
-        <div className={`border-t p-3.5 md:p-4 ${styles.dividerColor}`}>
-          <Button
-            type="button"
-            variant="secondary"
-            size="small"
-            leading={<Plus className="h-4 w-4" />}
-            onClick={() => setCreateOpen(true)}
-            className="rounded-full"
-          >
-            {t('dashboard.multiple.new')}
-          </Button>
+          <div className="p-3.5 md:p-4">
+            <Button
+              type="button"
+              variant="secondary"
+              size="small"
+              leading={<Plus className="h-4 w-4" />}
+              onClick={() => setCreateOpen(true)}
+              className="rounded-full"
+            >
+              {t('dashboard.multiple.new')}
+            </Button>
+          </div>
         </div>
       </div>
 

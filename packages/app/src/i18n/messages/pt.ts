@@ -345,6 +345,7 @@ export const ptMessages = {
     '{count} definições alteradas na revisão {revision}, {time}.',
   'settings.system.clients.status.disabled': 'Apenas local',
   'settings.system.clients.status.error': 'A sincronização precisa de atenção',
+  'settings.system.clients.retrySync': 'Tentar sincronizar novamente',
   'settings.system.clients.status.idle': 'Pronto',
   'settings.system.clients.status.loading': 'A carregar',
   'settings.system.clients.status.offline': 'Sem ligação',
@@ -379,6 +380,36 @@ export const ptMessages = {
   'settings.system.clients.forgetSuccess':
     '{client} foi removido da lista de painéis ligados. O respetivo início de sessão não foi alterado.',
   'settings.system.clients.forgetFailed': 'Não foi possível remover o registo do dispositivo.',
+  'settings.system.clients.displaySync.title': 'Definições do dispositivo',
+  'settings.system.clients.displaySync.description':
+    'Mantenha o modo quiosque, a qualidade visual e o esquema próprios deste dispositivo. Copie-os uma vez ou ligue dispositivos para os sincronizar.',
+  'settings.system.clients.displaySync.independent': 'Independente neste dispositivo',
+  'settings.system.clients.displaySync.linkedTo': 'Ligado a {name}',
+  'settings.system.clients.displaySync.copy': 'Copiar para dispositivos',
+  'settings.system.clients.displaySync.create': 'Manter dispositivos sincronizados',
+  'settings.system.clients.displaySync.copyTitle': 'Copiar definições do dispositivo',
+  'settings.system.clients.displaySync.copyDescription':
+    'Escolha os dispositivos que receberão uma vez as definições atuais deste dispositivo. Depois poderão ser diferentes.',
+  'settings.system.clients.displaySync.copyConfirm': 'Copiar definições',
+  'settings.system.clients.displaySync.copying': 'A copiar...',
+  'settings.system.clients.displaySync.copySuccess':
+    'Definições do dispositivo copiadas para {count} dispositivos.',
+  'settings.system.clients.displaySync.createTitle': 'Sincronizar definições dos dispositivos',
+  'settings.system.clients.displaySync.createDescription':
+    'Os dispositivos ligados partilham automaticamente o modo quiosque, a qualidade visual e o esquema.',
+  'settings.system.clients.displaySync.profileName': 'Nome do grupo',
+  'settings.system.clients.displaySync.profileCreated': '{name} foi criado e ligado.',
+  'settings.system.clients.displaySync.manageTitle': 'Gerir dispositivos sincronizados',
+  'settings.system.clients.displaySync.manageDescription':
+    'Escolha os dispositivos que seguem este perfil. Os não selecionados mantêm as suas definições independentes.',
+  'settings.system.clients.displaySync.profileUpdated': 'Dispositivos ligados atualizados.',
+  'settings.system.clients.displaySync.profileDeleted': 'Grupo de sincronização eliminado.',
+  'settings.system.clients.displaySync.deviceCountOne': '{count} dispositivo',
+  'settings.system.clients.displaySync.deviceCount': '{count} dispositivos',
+  'settings.system.clients.displaySync.delete': 'Eliminar grupo',
+  'settings.system.clients.displaySync.save': 'Guardar',
+  'settings.system.clients.displaySync.actionFailed':
+    'Não foi possível sincronizar as definições do dispositivo. Tente novamente.',
   'settings.system.logout.description': 'Encerrar esta sessão do Navet neste dispositivo.',
   'settings.project.sectionTitle': 'Sobre o Navet',
   'settings.project.sectionDescription':

@@ -460,6 +460,130 @@ describe('dashboard profile backend conformance', () => {
     expect([njsOwnerRead.status, viteOwnerRead.status]).toEqual([200, 200]);
   });
 
+  it('keeps linked display policies and one-time copies consistent across backends', async () => {
+    profileStore.setProfileStoreFsForTests(createMockFs());
+    const directory = mkdtempSync(join(tmpdir(), 'navet-display-profile-conformance-'));
+    tempDirectories.push(directory);
+    const viteStore = createViteDashboardProfileStore(join(directory, 'profile.json'));
+    const viteHandler = createViteDashboardProfileRequestHandler({
+      store: viteStore,
+      resolvePrincipal: () => PRINCIPAL,
+    });
+
+    const njsTouch = runNjs('PUT', CLIENT_HEADERS, '{}', true, PRINCIPAL, '/clients');
+    const viteTouch = createViteResponse();
+    await viteHandler(
+      createViteRequest('PUT', CLIENT_HEADERS, '{}', '/clients'),
+      viteTouch.response
+    );
+    expect([njsTouch.status, viteTouch.status]).toEqual([200, 200]);
+
+    const displayPolicyBody = JSON.stringify({
+      schemaVersion: 1,
+      values: {
+        profilesById: {
+          display_wall: {
+            id: 'display_wall',
+            name: 'Wall displays',
+            settings: {
+              kioskMode: true,
+              effectsQuality: 'low',
+              lowPowerMode: 'yes',
+              language: 'sv',
+            },
+            createdAt: '2026-08-03T10:00:00.000Z',
+            updatedAt: '2026-08-03T10:00:00.000Z',
+          },
+        },
+        profileIdByClientId: { 'client-panel-01': 'display_wall' },
+      },
+    });
+    const initialHeaders = { ...CLIENT_HEADERS, 'X-Navet-Base-Revision': '0' };
+    const njsWrite = runNjs(
+      'PUT',
+      initialHeaders,
+      displayPolicyBody,
+      true,
+      PRINCIPAL,
+      '/display-profiles'
+    );
+    const viteWrite = createViteResponse();
+    await viteHandler(
+      createViteRequest('PUT', initialHeaders, displayPolicyBody, '/display-profiles'),
+      viteWrite.response
+    );
+    expect([njsWrite.status, viteWrite.status]).toEqual([200, 200]);
+    for (const body of [njsWrite.body, viteWrite.body]) {
+      const document = JSON.parse(body ?? '{}');
+      expect(document).toMatchObject({
+        revision: 1,
+        values: {
+          profilesById: {
+            display_wall: {
+              settings: { kioskMode: true, effectsQuality: 'low' },
+            },
+          },
+          profileIdByClientId: { 'client-panel-01': 'display_wall' },
+        },
+      });
+      expect(body).not.toContain('language');
+      expect(body).not.toContain('lowPowerMode');
+    }
+
+    const njsStale = runNjs(
+      'PUT',
+      initialHeaders,
+      displayPolicyBody,
+      true,
+      PRINCIPAL,
+      '/display-profiles'
+    );
+    const viteStale = createViteResponse();
+    await viteHandler(
+      createViteRequest('PUT', initialHeaders, displayPolicyBody, '/display-profiles'),
+      viteStale.response
+    );
+    expect([njsStale.status, viteStale.status]).toEqual([412, 412]);
+
+    const copyBody = JSON.stringify({
+      schemaVersion: 1,
+      settings: { kioskMode: true, effectsQuality: 'low', language: 'sv' },
+      targetClientIds: ['client-panel-01'],
+    });
+    const njsCopy = runNjs(
+      'POST',
+      CLIENT_HEADERS,
+      copyBody,
+      true,
+      PRINCIPAL,
+      '/display-profiles/copy'
+    );
+    const viteCopy = createViteResponse();
+    await viteHandler(
+      createViteRequest('POST', CLIENT_HEADERS, copyBody, '/display-profiles/copy'),
+      viteCopy.response
+    );
+    expect([njsCopy.status, viteCopy.status]).toEqual([200, 200]);
+
+    const njsPreference = runNjs('GET', CLIENT_HEADERS, '', true, PRINCIPAL, '/preferences/client');
+    const vitePreference = createViteResponse();
+    await viteHandler(
+      createViteRequest('GET', CLIENT_HEADERS, '', '/preferences/client'),
+      vitePreference.response
+    );
+    expect([njsPreference.status, vitePreference.status]).toEqual([200, 200]);
+    for (const body of [njsPreference.body, vitePreference.body]) {
+      expect(JSON.parse(body ?? '{}')).toMatchObject({
+        revision: 1,
+        values: {
+          schemaVersion: 1,
+          settings: { kioskMode: true, effectsQuality: 'low' },
+        },
+      });
+      expect(body).not.toContain('language');
+    }
+  });
+
   it('relabels device preferences when the same durable binding rotates its client ID', async () => {
     profileStore.setProfileStoreFsForTests(createMockFs());
     const directory = mkdtempSync(join(tmpdir(), 'navet-profile-client-rekey-'));

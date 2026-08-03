@@ -159,6 +159,34 @@ sync account preferences because Supervisor supplies the verified `X-Remote-User
 Credential-bearing URLs, raw camera stream URLs, usernames, email addresses, and provider tokens
 are excluded from the shared profile.
 
+### Display profiles
+
+Device settings are independent by default. Changing kiosk mode or visual quality on a phone must
+not write the shared dashboard profile and must not change a wall panel or development browser.
+Navet offers two explicit ways to coordinate the safe display subset:
+
+- **Copy to devices** is a one-time server-side copy into the selected clients' durable device
+  preference records. The devices remain independent after the copy.
+- **Linked display profiles** are named policies such as `Wall displays`. Assigning clients to a
+  policy makes later changes to the allowed display settings propagate between only those linked
+  clients. Removing an assignment returns that client to independent behavior without deleting its
+  current settings.
+
+The link policy has its own revision and compare-and-swap endpoint. It is deliberately separate
+from dashboard collection revisions and from each client's preference revision, so display policy
+management cannot make a dashboard save stale. Assignments use public client IDs for UI and are
+remapped when the server recognizes the same durable browser binding under a rotated client ID.
+Forgetting a device also removes its linked-profile assignment.
+
+Only allowlisted non-secret presentation settings can be copied or linked. Visual-quality
+automatic detection remains local to each device unless the user explicitly chooses a quality in
+the linked policy; camera URLs, provider credentials, language, and account preferences never enter
+this domain. The custom-panel deployment stays local-only because it has no profile-store endpoint.
+
+These controls use the same authenticated workspace authority as dashboard editing. They are a
+coordination feature, not a device-management authorization boundary; Internet-facing deployments
+still require the access controls described below.
+
 ## Deployment Modes
 
 - Standalone Docker and development use a per-browser opaque `HttpOnly` cookie. The OAuth state,

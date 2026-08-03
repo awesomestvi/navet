@@ -1,5 +1,6 @@
 import { getDashboardClientIdentity } from '@navet/app/features/dashboard/clients/dashboard-client-identity';
 import { useDashboardProfileRuntimeStore } from '@navet/app/features/dashboard/clients/dashboard-profile-runtime-store';
+import { useDeviceDisplayProfileRuntimeStore } from '@navet/app/features/dashboard/clients/device-display-profile-runtime-store';
 import type { Meta, StoryObj } from '@storybook/react';
 import { useEffect } from 'react';
 import { useSettingsSectionController } from '../hooks/use-settings-section-controller';
@@ -19,6 +20,7 @@ function SystemStory({ scenario = 'synced' }: { scenario?: 'empty' | 'error' | '
 
     if (scenario === 'error') {
       runtime.markError('The shared dashboard could not be reached. Local settings are preserved.');
+      useDeviceDisplayProfileRuntimeStore.getState().markDisabled();
     } else if (scenario === 'synced') {
       const now = new Date();
       runtime.setClients([
@@ -56,10 +58,29 @@ function SystemStory({ scenario = 'synced' }: { scenario?: 'empty' | 'error' | '
           },
         },
       });
+      useDeviceDisplayProfileRuntimeStore.getState().replacePolicy(
+        {
+          schemaVersion: 1,
+          profilesById: {
+            display_wall: {
+              id: 'display_wall',
+              name: 'Wall displays',
+              settings: { kioskMode: true, effectsQuality: 'low' },
+              createdAt: now.toISOString(),
+              updatedAt: now.toISOString(),
+            },
+          },
+          profileIdByClientId: { [identity.id]: 'display_wall' },
+        },
+        1
+      );
+    } else {
+      useDeviceDisplayProfileRuntimeStore.getState().markDisabled();
     }
 
     return () => {
       useDashboardProfileRuntimeStore.getState().reset();
+      useDeviceDisplayProfileRuntimeStore.getState().markDisabled();
     };
   }, [scenario]);
 

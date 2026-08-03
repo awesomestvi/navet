@@ -128,6 +128,32 @@ describe('DashboardPage loading recovery', () => {
       'That dashboard is no longer available. Showing your default.',
       { id: 'dashboard-not-found' }
     );
+    expect(window.location.pathname).toBe('/dashboard/home');
+  });
+
+  it('does not replace a non-home route during dashboard profile startup', () => {
+    window.history.replaceState({}, '', '/settings');
+    getControllerMock.mockReturnValue(
+      createController({ activeSection: 'settings', homeLayoutHydrated: true })
+    );
+
+    renderWithProviders(<DashboardPage />);
+
+    expect(screen.getByText('dashboard ready')).toBeInTheDocument();
+    expect(toastWarningMock).not.toHaveBeenCalled();
+    expect(window.location.pathname).toBe('/settings');
+  });
+
+  it('does not let a stale dashboard link override an active non-home section', () => {
+    window.history.replaceState({}, '', '/dashboard/missing');
+    getControllerMock.mockReturnValue(
+      createController({ activeSection: 'settings', homeLayoutHydrated: true })
+    );
+
+    renderWithProviders(<DashboardPage />);
+
+    expect(toastWarningMock).not.toHaveBeenCalled();
+    expect(window.location.pathname).toBe('/dashboard/missing');
   });
 });
 
