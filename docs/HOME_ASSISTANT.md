@@ -96,19 +96,12 @@ Choose this option only if you are comfortable using Docker.
        restart: unless-stopped
        ports:
          - "8080:80"
-       environment:
-         NAVET_HASS_URL: "http://homeassistant.local:8123"
        volumes:
          - navet-data:/data
 
    volumes:
      navet-data:
    ```
-
-4. Replace `http://homeassistant.local:8123` with your Home Assistant address.
-
-Use an address that works from both your browser and the Navet container. If you normally use an
-HTTPS address, put that same HTTPS address here.
 
 ### Start Navet
 
@@ -123,11 +116,28 @@ HTTPS address, put that same HTTPS address here.
 4. Choose **Home Assistant** and sign in.
 5. Approve the Home Assistant login when asked.
 
-The `NAVET_HASS_URL` setting tells Navet which Home Assistant server to use, so there is no extra
-setup code to find or enter.
-
 Keep the `navet-data` volume. It stores your Navet dashboard and browser sign-ins when the
 container is updated or recreated.
+
+### Optional: set the Home Assistant address
+
+`NAVET_HASS_URL` is **not required**. If your Navet installation already connects to Home Assistant,
+leave your Compose file as it is. Navet remembers the approved server in the `navet-data` volume.
+
+For a brand-new installation, setting the address is the simplest way to approve the exact Home
+Assistant server. Add these lines under `restart: unless-stopped`:
+
+```yaml
+environment:
+  NAVET_HASS_URL: "http://homeassistant.local:8123"
+```
+
+Replace the example with the Home Assistant address you normally open in your browser. Use an
+address that works from both your browser and the Navet container.
+
+If you leave the setting out, Navet tries common local Home Assistant addresses. A completely new
+installation may then ask you to approve the first server using the one-time link shown in the
+container log. Existing installations with saved `navet-data` do not need to do this again.
 
 ### Update the Docker installation
 
@@ -183,9 +193,9 @@ create a second `frontend:` section.
 
 ### Docker cannot connect to Home Assistant
 
-1. Check the `NAVET_HASS_URL` value in `docker-compose.yml`.
-2. Make sure that exact address opens in your browser.
-3. Make sure the Navet container can also reach it.
+1. Make sure your Home Assistant address opens in the browser.
+2. If Navet does not find it, add the optional `NAVET_HASS_URL` setting shown above.
+3. Make sure that address also works from the Navet container.
 4. If the address uses HTTPS, make sure the container trusts its certificate.
 5. Run `docker compose up -d` again after changing the file.
 
