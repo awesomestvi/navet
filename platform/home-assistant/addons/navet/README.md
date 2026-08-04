@@ -6,16 +6,15 @@ so there is no separate Home Assistant URL or access token to enter.
 ## Open Your Dashboard
 
 1. Select **Start** and wait for the add-on to finish starting.
-2. Select **Open Web UI** to open Navet through Home Assistant Ingress.
+2. Select **Open Web UI** to open Navet inside Home Assistant.
 3. Enable **Show in sidebar** for quicker access next time.
 4. Enable **Start on boot** if you want Navet available whenever Home Assistant starts.
 
 Your rooms and devices should appear automatically. From there, arrange the dashboard around the
 controls, status, and routines you use most.
 
-Home Assistant provides the add-on with persistent `/data` storage automatically. Navet keeps its
-dashboard profile and optional secondary-provider sessions there, so normal add-on restarts and
-updates retain them. Home Assistant itself continues to use your current Ingress session.
+Home Assistant saves Navet's data automatically. Normal add-on restarts and updates keep your
+dashboard. Navet also uses your current Home Assistant sign-in.
 
 ## If Navet Does Not Open
 

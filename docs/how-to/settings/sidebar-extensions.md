@@ -9,11 +9,13 @@ configuration and should use addresses you trust.
 
 ## Add a shortcut
 
-1. Open **Settings** and find **Custom extensions**.
-2. Choose **Add sidebar action**.
+1. Open **Home** and choose **Customize**.
+2. On desktop, choose the **Customize sidebar** plus button at the bottom of the sidebar. On a
+   phone, open the section menu and choose **Customize sidebar**. In kiosk mode, open **Kiosk
+   control → Customize → Customize sidebar**.
 3. Enter a short label.
 4. Choose an icon.
-5. Choose who should see it: all screens, desktop, or mobile.
+5. Choose who should see it: desktop and mobile, desktop only, or mobile only.
 
 ## Choose a destination
 
