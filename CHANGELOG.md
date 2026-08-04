@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.2 - 2026-08-04
+
+## New features
+
+- Added linked device profiles and one-time copying to sync device settings across selected devices.
+
 ## 0.12.1 - 2026-08-01
 
 ## Improvements and bug fixes
