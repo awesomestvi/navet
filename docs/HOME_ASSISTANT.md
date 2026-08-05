@@ -1,294 +1,210 @@
 ---
 title: Home Assistant
-description: Install Navet as a Home Assistant custom panel, add-on, or standalone application.
+description: Install Navet with HACS, as a Home Assistant add-on, or with Docker.
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/HOME_ASSISTANT.md
 ---
 
-Use this guide when you want Navet to connect to Home Assistant.
+This guide helps you install Navet for Home Assistant.
 
-To explore the interface without connecting a provider, use the public demo at
-[`demo.navet.app`](https://demo.navet.app/). The demo is a separate static deployment and contains
-sample data only.
+You only need to choose **one** installation method.
 
-## Overview
+## Pick an installation method
 
-Navet currently supports three Home Assistant deployment paths:
+| Choose this | Use it when |
+|---|---|
+| **HACS custom panel** | You already use HACS and want Navet in the Home Assistant sidebar. This is the easiest choice for most HACS users. |
+| **Home Assistant add-on** | You use Home Assistant OS or Supervised and want Home Assistant to run Navet for you. |
+| **Standalone Docker** | You already manage Docker and want Navet to run as a separate website. |
 
-- custom panel via HACS
-- add-on
-- standalone Docker connected to Home Assistant
+Not sure which one to choose? Use the **HACS custom panel** if you already have HACS. Otherwise,
+use the **Home Assistant add-on**.
 
-To test frequently updated development builds, see [Install Navet Dev](/install/navet-dev/). Published Dev
-builds are available for the add-on and Docker; HACS remains stable-only.
+## Option 1: Install with HACS
 
-## Which Path Should You Choose?
-
-| Path | Best when | Notes |
-|---|---|---|
-| Custom panel | you want Navet in the Home Assistant sidebar through HACS | Home Assistant-hosted experience |
-| Add-on | you want Home Assistant to package and manage Navet | runs behind Ingress |
-| Standalone Docker | you want Navet as its own app while still connecting to Home Assistant | uses OAuth and stores app state under `/data` |
-
-## Home Assistant Custom Panel
-
-### When To Choose It
-
-Use the custom panel if you want Navet in the Home Assistant sidebar through HACS with the most
-integrated Home Assistant experience.
-
-### Prerequisites
+### What you need
 
 - Home Assistant
 - HACS
 
-### Setup Steps
+### Install Navet
 
-1. Add `https://github.com/awesomestvi/navet-hacs` as a custom HACS repository with category
-   `Integration`.
-2. Install `Navet`.
-3. Restart Home Assistant.
-4. Add the `Navet` integration from `Settings -> Devices & services`.
-5. Optional but recommended for native Home Assistant chrome hiding in the custom panel and add-on: add Navet's shell module under `frontend.extra_module_url`:
+1. Open **HACS** in Home Assistant.
+2. Open **Integrations**.
+3. Open the menu in the top-right corner and choose **Custom repositories**.
+4. Paste this address:
 
-```yaml
-frontend:
-  extra_module_url:
-    - /api/navet/static/navet-ha-shell.js
-```
+   ```text
+   https://github.com/awesomestvi/navet-hacs
+   ```
 
-6. Restart Home Assistant after updating `configuration.yaml`.
-7. Open Navet from the Home Assistant sidebar.
+5. Choose **Integration** as the category, then add the repository.
+6. Search for **Navet** in HACS and download it.
+7. Restart Home Assistant.
+8. Go to **Settings → Devices & services**.
+9. Choose **Add integration**, search for **Navet**, and add it.
+10. Open **Navet** from the Home Assistant sidebar.
 
-### What To Expect
+That is all. Navet uses your current Home Assistant session. You do not need a separate Navet
+account, Home Assistant address, or access token.
 
-- Navet appears in the Home Assistant sidebar
-- Home Assistant remains the host environment
-- If `navet-ha-shell.js` is loaded through `frontend.extra_module_url`, Navet can hide the Home Assistant header and sidebar while the custom panel or add-on is open
-- The shell module is served by the Navet integration at `/api/navet/static/navet-ha-shell.js`
+## Option 2: Install the Home Assistant add-on
 
-### Troubleshooting
+### What you need
 
-- If you previously added `https://github.com/awesomestvi/navet` to HACS, remove that custom
-  repository and add `https://github.com/awesomestvi/navet-hacs` with category `Integration`.
+- Home Assistant OS or Home Assistant Supervised
 
-## Home Assistant Add-on
+### Install Navet
 
-### When To Choose It
+1. Go to **Settings → Add-ons → Add-on Store**.
+2. Open the menu in the top-right corner and choose **Repositories**.
+3. Paste this address and add it:
 
-Use the add-on if you want Navet packaged and managed from Home Assistant itself.
+   ```text
+   https://github.com/awesomestvi/navet
+   ```
 
-### Prerequisites
+4. Find **Navet** in the Add-on Store and install it.
+5. Turn on **Start on boot**.
+6. Turn on **Show in sidebar**.
+7. Choose **Start**.
+8. Wait until the add-on says **Running**.
+9. Choose **Open Web UI**.
 
-- Home Assistant with add-on support
+Your rooms and devices should appear automatically. You do not need to enter a Home Assistant
+address or access token.
 
-### Setup Steps
+## Option 3: Install with Docker
 
-1. Open `Settings -> Add-ons -> Add-on Store`.
-2. Open the repository menu and choose `Repositories`.
-3. Add `https://github.com/awesomestvi/navet` as an Add-on Store repository.
-4. Install `Navet` for stable releases or `Navet Dev` for the published development channel.
-5. If you want native Home Assistant chrome hiding in add-on mode, also install the Navet HACS integration so Home Assistant can serve `/api/navet/static/navet-ha-shell.js` to the parent frontend.
-6. Start the add-on and open Navet from the Home Assistant sidebar.
-7. Optional but recommended for native Home Assistant chrome hiding in the add-on: add Navet's shell module under `frontend.extra_module_url`:
+Choose this option only if you are comfortable using Docker.
 
-```yaml
-frontend:
-  extra_module_url:
-    - /api/navet/static/navet-ha-shell.js
-```
+### What you need
 
-8. Restart Home Assistant after updating `configuration.yaml`.
+- Docker with Docker Compose
+- The normal Home Assistant address that you open in your browser
 
-Optional multi-provider add-on settings:
+### Create the Compose file
 
-- `homey_client_id` and `homey_client_secret` enable the Homey OAuth connection flow
-- `homey_redirect_uri` overrides the inferred Homey callback URL when the public Ingress URL
-  differs
-- openHAB needs no add-on secret; connect it from **Settings -> System** with its
-  add-on-reachable base URL, username, and password
-- `allow_insecure_provider_tls` disables certificate verification for every configured HTTPS
-  provider and should remain off unless a trusted private network uses certificates the add-on
-  cannot validate
+1. Make a new folder for Navet.
+2. Inside that folder, create a file named `docker-compose.yml`.
+3. Paste this into the file:
 
-### What To Expect
+   ```yaml
+   services:
+     navet:
+       image: ghcr.io/awesomestvi/navet:latest
+       container_name: navet
+       restart: unless-stopped
+       ports:
+         - "8080:80"
+       volumes:
+         - navet-data:/data
 
-- Navet runs behind Home Assistant Ingress
-- the Home Assistant frontend session is reused through the parent `hass` runtime bridge
-- Navet does not open its own Home Assistant websocket while running inside Ingress
-- If `navet-ha-shell.js` is loaded through `frontend.extra_module_url`, Navet can hide the Home Assistant header and sidebar while the add-on is open
-- That shell module is served by the Navet HACS integration, not by the add-on ingress app
-- the add-on is Ingress-only and does not publish a direct host port
-- trusted Home Assistant user headers are accepted only on this Ingress-only deployment path
-- use standalone Docker when you need direct browser access and per-browser Home Assistant OAuth
+   volumes:
+     navet-data:
+   ```
 
-### Troubleshooting
+### Start Navet
 
-- Do not expose the add-on's internal port through a separate host proxy. That would bypass the
-  Ingress-only trust boundary. Install standalone Docker instead when direct access is required.
-- The add-on cannot inject host-shell code into Home Assistant by itself. Native Home Assistant chrome hiding in add-on mode requires both the global `frontend.extra_module_url` entry above and the Navet HACS integration that serves `/api/navet/static/navet-ha-shell.js`.
+1. Open a terminal in the folder that contains `docker-compose.yml`.
+2. Run:
 
-## Standalone Docker
+   ```bash
+   docker compose up -d
+   ```
 
-### When To Choose It
+3. Open [`http://localhost:8080`](http://localhost:8080) in your browser.
+4. Choose **Home Assistant** and sign in.
+5. Approve the Home Assistant login when asked.
 
-Use standalone Docker when you want Navet to run as its own app while still connecting to Home
-Assistant.
+Keep the `navet-data` volume. It stores your Navet dashboard and browser sign-ins when the
+container is updated or recreated.
 
-### Prerequisites
+### Optional: set the Home Assistant address
 
-- Docker
-- a Home Assistant instance reachable from both the browser and the Navet container; OAuth token
-  exchange and authenticated proxy requests now run through Navet's server-side session
-- for HTTPS Home Assistant URLs, a certificate chain trusted by the Navet container
+`NAVET_HASS_URL` is **not required**. If your Navet installation already connects to Home Assistant,
+leave your Compose file as it is. Navet remembers the approved server in the `navet-data` volume.
 
-### Setup Steps
-
-Use this `docker-compose.yml`:
+For a brand-new installation, setting the address is the simplest way to approve the exact Home
+Assistant server. Add these lines under `restart: unless-stopped`:
 
 ```yaml
-services:
-  navet:
-    image: ghcr.io/awesomestvi/navet:latest
-    container_name: navet
-    restart: unless-stopped
-    ports:
-      - "8080:80"
-    volumes:
-      - navet-data:/data
-    # Optional: hard-pin the only Home Assistant URL this installation may enroll.
-    # environment:
-    #   NAVET_HASS_URL: "http://homeassistant.local:8123"
-
-volumes:
-  navet-data:
+environment:
+  NAVET_HASS_URL: "http://homeassistant.local:8123"
 ```
 
-Start it:
+Replace the example with the Home Assistant address you normally open in your browser. Use an
+address that works from both your browser and the Navet container.
+
+If you leave the setting out, Navet tries common local Home Assistant addresses. A completely new
+installation may then ask you to approve the first server using the one-time link shown in the
+container log. Existing installations with saved `navet-data` do not need to do this again.
+
+### Update the Docker installation
+
+Run these commands from the same folder:
 
 ```bash
+docker compose pull
 docker compose up -d
 ```
 
-Then inspect the startup log:
+Do not add `-v` when stopping the Compose project. That option deletes the saved Navet data.
 
-```bash
-docker compose logs navet
-```
+## Optional: let Navet hide the Home Assistant bars
 
-On a new installation, Navet prints a one-time URL fragment such as
-`#navet_pairing=<64-character-key>`. Append that fragment to your trusted Navet URL and open it in
-the browser, for example `http://localhost:8080/#navet_pairing=...`, before connecting the first
-provider. The browser removes the fragment from the address bar immediately, keeps the key only in
-memory, and sends it only to Navet's same-origin enrollment endpoint. If you reload before the
-enrollment request is accepted, open the pairing URL again.
+Skip this section during your first install. Navet works without it.
 
-The generated key persists in the `/data` volume. To recover it later:
+The HACS integration includes a small Home Assistant module that lets Navet hide the Home Assistant
+header and sidebar in kiosk mode.
 
-```bash
-docker exec navet cat /data/navet-installation-key
-```
+1. Make sure the Navet HACS integration is installed.
+2. Open your Home Assistant `configuration.yaml` file.
+3. Add:
 
-Then open `http://localhost:8080` (with the pairing fragment when required).
+   ```yaml
+   frontend:
+     extra_module_url:
+       - /api/navet/static/navet-ha-shell.js
+   ```
 
-`NAVET_HASS_URL` is an alternative operator-controlled hard pin. When set, Navet accepts only that
-exact normalized Home Assistant base URL and does not require the pairing key for that target.
-Changing the pin updates persisted authority only after the new Home Assistant login succeeds.
+4. Save the file.
+5. Check the configuration in Home Assistant.
+6. Restart Home Assistant.
 
-### What To Expect
+If you already have a `frontend:` section, add only the `extra_module_url` lines inside it. Do not
+create a second `frontend:` section.
 
-- Home Assistant login uses OAuth
-- a fresh, unpinned installation requires its startup pairing fragment before the first Home
-  Assistant enrollment; the key is never placed in an HTTP response or forwarded to Home Assistant
-- dashboard and profile state are stored through same-origin runtime endpoints under `/data`
-- every browser profile gets an independent Home Assistant OAuth session, even when several
-  panels use the same Navet container and Home Assistant instance
-- an opaque `HttpOnly`, `SameSite=Lax` cookie selects that browser's server-side session; HTTPS
-  deployments also mark it `Secure`
-- OAuth state and callback processing are bound to the browser that started the login
-- the Home Assistant proxy discards caller-supplied authorization and injects only the token from
-  that browser's session
-- signing out removes only the current browser's OAuth session
-- if the stored OAuth session becomes invalid during token refresh, Navet clears it and returns to login
-- temporary network, proxy, or Home Assistant failures keep the durable browser session and retry
-  instead of treating the interruption as a logout
-- the `/data` volume must remain persistent across container recreation; it contains the
-  installation key and the independent browser sessions
+## If something does not work
 
-Run updates from the same Compose project directory and keep the same project name so Compose
-reattaches the existing named volume. Do not use `docker compose down -v` during an update: `-v`
-deletes the stored sessions and profiles and every browser will need to sign in again.
+### Navet is missing from the sidebar after a HACS install
 
-OAuth credentials and dashboard profile data have different scopes. The OAuth files under
-`/data/navet-auth-sessions` belong to individual browser sessions; they are not copied between
-phones or wall panels. Shared dashboard configuration can still synchronize through Navet's
-profile store without causing one panel to inherit another panel's Home Assistant account.
+1. Make sure Home Assistant was restarted after the download.
+2. Go to **Settings → Devices & services**.
+3. Check that the **Navet** integration is installed.
+4. If it is missing, choose **Add integration** and add **Navet**.
+5. Refresh the browser page.
 
-Navet's public session-status response contains only sanitized metadata such as the Home Assistant
-URL, expiry, and a non-secret public session ID. Access and refresh tokens are never returned by
-that `GET` response. Home Assistant's WebSocket protocol does require an access token in its
-opening authentication message, so Navet performs a separate same-session, binding-checked
-credentials handoff for the connected app.
+### The add-on does not open
 
-Home Assistant exposes its current-user identity through WebSocket rather than a server-verifiable
-REST endpoint. The standalone Nginx runtime therefore leaves `userId` and `userName` unset and does
-not accept browser-supplied identity. Account-scoped preferences remain local in standalone mode
-for now, while the shared dashboard profile still synchronizes across authenticated browsers.
-Add-on Ingress can synchronize account preferences because Supervisor supplies verified
-`X-Remote-User-*` headers on its Ingress-only route.
+1. Open **Settings → Add-ons → Navet**.
+2. Check that its status is **Running**.
+3. Open the **Log** tab and read the first error.
+4. Restart the add-on and try **Open Web UI** again.
 
-When upgrading from a version that stored one global `navet-auth-session.json`, Navet deliberately
-discards that ambiguous session instead of assigning its credentials to whichever device connects
-first. Sign in once on each browser profile after the upgrade.
+### Docker cannot connect to Home Assistant
 
-## Automation And Habit Insights
+1. Make sure your Home Assistant address opens in the browser.
+2. If Navet does not find it, add the optional `NAVET_HASS_URL` setting shown above.
+3. Make sure that address also works from the Navet container.
+4. If the address uses HTTPS, make sure the container trusts its certificate.
+5. Run `docker compose up -d` again after changing the file.
 
-Home Assistant is currently the provider path that supports native automation details and
-habit-suggested automation creation.
+### Login returns to the wrong page
 
-In the Tasks section, Navet can inspect Home Assistant automation config to show triggers,
-conditions, actions, diagnostics, and dependent entity states. In Habits, creating a suggested
-routine writes a Home Assistant automation with a `navet_` config key when the rule maps to a safe
-turn-on or turn-off action. Notify-only habit rules are not created as native Home Assistant
-automations yet.
+If Navet is behind a reverse proxy, make sure the proxy keeps the original host name and HTTPS
+information. Start the login and finish it in the same browser.
 
-## Home Assistant Feature Scope
+## You are ready
 
-Home Assistant is currently Navet's broadest provider runtime. In addition to normalized rooms,
-entities, lighting, switches, sensors, and realtime updates, it registers provider services for:
-
-- climate controls
-- media playback, browse, search, source selection, artwork, and speaker grouping
-- camera snapshots, WebRTC/HLS stream resolution, and camera accessories
-- locks, covers, and alarm panels
-- energy configuration, live energy, statistics, and entity history
-- calendars and weather forecasts
-- persistent notifications, update installation, and restart actions
-- automation details, triggering, dependency summaries, and supported habit-created automations
-- room creation/deletion and entity room/name administration
-
-In standalone mode, a Home Assistant session can remain connected alongside Homey or openHAB.
-Shared dashboard collections can include selected providers together; provider-specific features
-continue to use the provider that owns the entity or the active provider's feature service.
-
-### Troubleshooting
-
-- If Navet repeatedly returns to login, verify that the saved Home Assistant URL still matches your current instance URL.
-- If every browser is asked to sign in after a container update, verify that the same persistent
-  volume is still mounted at `/data`; recreating that storage also recreates the installation key
-  and removes the server-side browser sessions.
-- A `403` saying that operator pairing is required means this target is not yet authorized. Reopen
-  the startup pairing fragment, or set the exact `NAVET_HASS_URL` pin and restart the container.
-- If you recently changed reverse-proxy, TLS, hostname, or port settings for Home Assistant, sign in again so Navet can obtain a fresh OAuth session.
-- If OAuth reaches Home Assistant but fails after returning to Navet, verify the Home Assistant URL
-  from inside the Navet container. Browser-only `.local` names and private certificates that the
-  container cannot resolve or trust will prevent the server-side token exchange.
-- Provider TLS verification is enabled by default. Prefer installing the private CA in the
-  container; on a trusted network, `NAVET_ALLOW_INSECURE_PROVIDER_TLS=true` (standalone) or the
-  add-on's `allow_insecure_provider_tls` option explicitly disables verification for all
-  configured HTTPS providers.
-- If the Home Assistant authorization was revoked or the refresh token became invalid, sign in again to recreate the stored session under `/data`.
-- If OAuth returns to a different browser or fails after a reverse-proxy change, verify that the
-  proxy preserves the public `Host` and `X-Forwarded-Proto` values. The callback must return to the
-  same browser cookie jar that started login.
-- Browser profiles, private-browsing windows, and separate installed PWAs intentionally have
-  separate OAuth sessions. Logging in on one does not log in the others.
+Open Navet and check that your rooms and devices appear. Then continue with
+[Your first 15 minutes with Navet](/guide/quick-start/first-15-minutes/).

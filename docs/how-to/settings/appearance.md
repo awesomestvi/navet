@@ -4,8 +4,8 @@ description: Personalize Navet while keeping cards readable across household scr
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/settings/appearance.md
 ---
 
-Navet supports glass, dark, light, and black theme families, built-in accent choices, a custom
-accent, and built-in or uploaded wallpapers.
+Navet supports Liquid Glass, dark, light, and black theme families, built-in accent choices, a
+custom accent, and built-in or uploaded wallpapers.
 
 ![Appearance settings with the theme and accent controls.](/docs/how-to/settings/theme-accent.webp)
 
@@ -13,9 +13,10 @@ accent, and built-in or uploaded wallpapers.
 
 1. Open **Settings → Appearance**.
 2. Choose whether Navet should follow the system appearance automatically.
-3. For manual control, select **Glass**, **Dark**, **Light**, or **Black**.
+3. For manual control, select **Liquid Glass**, **Dark**, **Light**, or **Black**.
 
-Only Glass uses frosted or translucent card surfaces. Dark and Black remain dark-surface families.
+Only Liquid Glass uses frosted or translucent card surfaces. Dark and Black remain dark-surface
+families.
 
 ## Choose an accent
 
@@ -33,10 +34,12 @@ Choose **Remove wallpaper** to return to the theme background.
 
 ## Light card ambience
 
-Choose whether active light cards use ambient bleed, a contained treatment, or no ambience. Low
-visual-quality mode can disable expensive ambience automatically.
+Choose whether active light cards use **Ambient bleed** or stay **Contained**. Lower visual-quality
+modes disable expensive ambience automatically.
 
 ## Apply to the right screens
 
-When a scope chooser appears, keep hardware-specific visual quality local. Use a shared scope only
-when the household should receive the same appearance.
+Visual quality and layout stay independent on each device by default. To reuse them elsewhere,
+open **Settings → System → Connected devices → Device settings**, then either copy the current
+settings once or create a sync group. See
+[Keep dashboards synchronized across devices](/guide/dashboards/sync-across-devices/).

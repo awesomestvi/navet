@@ -7,14 +7,16 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/wall-display
 Use this guide when normal navigation is hidden, the screen still sleeps, or an embedded page will
 not load.
 
-![Dashboard settings showing the Kiosk mode control and recovery guidance.](/docs/how-to/wall-displays/kiosk-recovery-route.webp)
+![Kiosk behavior with Swipe between rooms and Exit kiosk mode.](/docs/how-to/wall-displays/kiosk-recovery-route.webp)
 
 ## Exit kiosk mode
 
-1. Use the orbit trigger.
-2. Open **Settings**.
-3. Open **Dashboard**.
-4. Choose **Standard** under **Display preset**, or turn off **Kiosk mode**.
+1. Use the bottom-right **More** button to open **Kiosk control**.
+2. Choose **Kiosk behavior**.
+3. Choose **Exit kiosk mode**.
+
+You can also open **Settings → Dashboard**, then choose **Standard** under **Display preset** or
+turn off **Kiosk mode**.
 
 If Home Assistant's outer chrome is also hidden, change or remove the optional shell module
 configuration from Home Assistant.
@@ -48,7 +50,8 @@ Sites can block framing through their own security headers; Navet cannot overrid
 
 ## Prevent getting locked out
 
-- Test the orbit menu before mounting the display.
+- Test **Kiosk control** before mounting the display.
 - Keep browser or operating-system access available.
-- Apply kiosk settings to **This device** first.
+- Keep the display independent until its kiosk behavior is confirmed; link it to a Device settings
+  group afterward if needed.
 - Record the Navet address outside the kiosk.

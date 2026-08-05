@@ -1,6 +1,6 @@
 ---
 title: Choose how cards react to taps
-description: Select toggle-first or control-first behavior and configure camera live-stream interaction.
+description: Select toggle-first or control-first behavior for supported cards.
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/settings/card-interactions.md
 ---
 
@@ -18,11 +18,6 @@ Open **Settings → Interaction**, then choose:
 
 Settings buttons and secondary card actions remain available in both modes.
 
-## Camera live streams
-
-Choose whether camera cards should request live playback as part of their normal interaction.
-Live video can use more network and device resources than snapshots.
-
 ## Choose a safe household default
 
 Control-first is useful on shared screens where accidental actions are more costly. Toggle-first
@@ -31,7 +26,5 @@ is useful for familiar lighting and switch controls.
 Locks, alarms, and other risky actions keep their own confirmation behavior rather than inheriting
 an unsafe one-tap path.
 
-## If behavior differs on another screen
-
-The setting may be device-owned. Apply it to all devices only when the same interaction model is
-appropriate for every household screen.
+This is an account preference when profile synchronization is available. It is separate from the
+device-setting groups used for kiosk mode, visual quality, and layout.

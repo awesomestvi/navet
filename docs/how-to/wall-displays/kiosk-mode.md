@@ -1,6 +1,6 @@
 ---
 title: Set up kiosk and Wall Display mode
-description: Hide normal chrome, keep the screen awake, and retain navigation through the orbit menu.
+description: Hide normal chrome, keep the screen awake, and navigate through Kiosk control.
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/wall-displays/kiosk-mode.md
 ---
 
@@ -13,25 +13,36 @@ instead of requiring each option to be changed separately.
 
 1. Open **Settings → Dashboard** on the display.
 2. Under **Display preset**, choose **Wall display**.
-3. When asked for scope, choose **This device** unless every registered screen should behave as a
-   wall display.
 
 The preset enables:
 
 - Kiosk mode.
 - Keep-awake.
 - A clock header.
-- More-space layout.
+- A denser layout.
 - The Home summary bar.
+
+The preset applies to the current device. To reuse the same display behavior elsewhere, use
+**Settings → System → Connected devices → Device settings** to copy it once or link a group of
+screens.
 
 ## Use Navet in kiosk mode
 
-Kiosk mode hides the normal Navet header and sidebar. Use the orbit trigger to open:
+Kiosk mode hides the normal Navet header and sidebar. Use the bottom-right **More** button to open
+**Kiosk control**.
 
-- Main sections.
-- Room navigation.
-- Settings.
-- Dashboard customization.
+![Kiosk control with dashboards, sections, rooms, management actions, and Exit kiosk mode.](/docs/how-to/wall-displays/kiosk-control-center.webp)
+
+Kiosk control provides:
+
+- Dashboards, sections, and room navigation.
+- Settings and room management.
+- Dashboard and sidebar customization.
+- Kiosk behavior, including swipe navigation.
+- A direct **Exit kiosk mode** action.
+
+Open **Kiosk behavior** to enable **Swipe between rooms**. Swipes work on empty dashboard space so
+they do not replace normal card gestures.
 
 ## Home Assistant header and sidebar
 
@@ -41,9 +52,10 @@ the [Home Assistant installation guide](/install/home-assistant/).
 
 ## Leave kiosk mode
 
-1. Open the orbit menu.
-2. Open **Settings**.
-3. Choose the **Standard** display preset or turn off **Kiosk mode**.
+1. Open **Kiosk control** from the bottom-right **More** button.
+2. Choose **Exit kiosk mode**.
+
+You can also open **Settings → Dashboard** and choose the **Standard** display preset.
 
 Keep this recovery path available before mounting a tablet where browser controls are difficult to
 reach.

@@ -7,17 +7,18 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/dashboards/s
 Supported standalone and server-backed installations can synchronize dashboard structure across
 registered browsers while preserving settings that belong to one physical screen.
 
-![Connected devices with sync state, last update, and device names.](/docs/how-to/dashboards/connected-devices.webp)
+![Connected devices showing sync state, recent activity, and the Device settings controls.](/docs/how-to/dashboards/connected-devices.webp)
 
-## Understand the scopes
+## Understand what synchronizes
 
 - Dashboard layouts, dashboard collections, room workspace configuration, and other household
   structure can be shared.
-- Display behavior such as visual quality and kiosk-related choices can be device-owned.
+- Display behavior such as kiosk mode, visual quality, and layout is independent on each device by
+  default.
 - Provider credential sessions remain browser-specific.
 
-When Navet asks **Apply to this device** or **Apply to all devices**, choose the smallest scope that
-matches your goal.
+Navet no longer asks you to choose a scope every time a display setting changes. Instead, use the
+controls under **Device settings** when two or more screens should match.
 
 ## Name each screen
 
@@ -26,6 +27,31 @@ matches your goal.
 3. Repeat on each important wall display or browser.
 
 The name appears in assignments, recent updates, and revision history.
+
+## Copy settings once
+
+Use this when another screen should start with the same kiosk, visual-quality, and layout settings
+but remain independent afterward.
+
+1. Configure the source screen the way you want.
+2. Open **Settings → System → Connected devices → Device settings**.
+3. Choose **Copy to devices**.
+4. Select the destination screens and choose **Copy settings**.
+
+Later changes on either screen do not affect the other.
+
+## Keep display settings linked
+
+Use a sync group for wall panels that should continue to share kiosk mode, visual quality, and
+layout.
+
+1. Under **Device settings**, choose **Keep devices in sync**.
+2. Enter a recognizable group name such as **Wall displays**.
+3. Select the devices that should share those settings.
+4. Save the group.
+
+Choose the group later to add or remove devices. A removed device keeps its current settings and
+becomes independent.
 
 ## Check synchronization
 

@@ -30,13 +30,15 @@ It does not remove device state or household controls.
 
 ## Reduce motion
 
-Use **Disable animations** or the system reduced-motion preference when motion is distracting or
-hardware is constrained.
+Use the browser or operating system's reduced-motion preference when motion is distracting or
+hardware is constrained. **Low** visual quality also strips expensive transitions and ambient
+effects.
 
-## Keep the setting local
+## Choose whether to share the setting
 
-When Navet asks where to apply visual quality, choose **This device**. A wall panel can remain on
-Low while a phone or desktop uses richer rendering.
+Visual quality stays on the current device by default, so a wall panel can remain on **Low** while
+a phone or desktop uses richer rendering. If several low-power panels should match, open
+**Settings → System → Connected devices → Device settings** and create a sync group.
 
 ## Additional checks
 
