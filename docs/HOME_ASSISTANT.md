@@ -1,6 +1,6 @@
 ---
 title: Home Assistant
-description: Install Navet with HACS, as a Home Assistant add-on, or with Docker.
+description: Install Navet with HACS, as a Home Assistant App, or with Docker.
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/HOME_ASSISTANT.md
 ---
 
@@ -13,11 +13,11 @@ You only need to choose **one** installation method.
 | Choose this | Use it when |
 |---|---|
 | **HACS custom panel** | You already use HACS and want Navet in the Home Assistant sidebar. This is the easiest choice for most HACS users. |
-| **Home Assistant add-on** | You use Home Assistant OS or Supervised and want Home Assistant to run Navet for you. |
+| **Home Assistant App** | You use Home Assistant OS and want Home Assistant to run Navet for you. |
 | **Standalone Docker** | You already manage Docker and want Navet to run as a separate website. |
 
 Not sure which one to choose? Use the **HACS custom panel** if you already have HACS. Otherwise,
-use the **Home Assistant add-on**.
+use the **Home Assistant App**.
 
 ## Option 1: Install with HACS
 
@@ -47,15 +47,15 @@ use the **Home Assistant add-on**.
 That is all. Navet uses your current Home Assistant session. You do not need a separate Navet
 account, Home Assistant address, or access token.
 
-## Option 2: Install the Home Assistant add-on
+## Option 2: Install the Home Assistant App
 
 ### What you need
 
-- Home Assistant OS or Home Assistant Supervised
+- Home Assistant OS on an `amd64` or `aarch64` system
 
 ### Install Navet
 
-1. Go to **Settings → Add-ons → Add-on Store**.
+1. Go to **Settings → Apps → App store**.
 2. Open the menu in the top-right corner and choose **Repositories**.
 3. Paste this address and add it:
 
@@ -63,11 +63,11 @@ account, Home Assistant address, or access token.
    https://github.com/awesomestvi/navet
    ```
 
-4. Find **Navet** in the Add-on Store and install it.
+4. Find **Navet** in the App store and install it.
 5. Turn on **Start on boot**.
 6. Turn on **Show in sidebar**.
 7. Choose **Start**.
-8. Wait until the add-on says **Running**.
+8. Wait until the App says **Running**.
 9. Choose **Open Web UI**.
 
 Your rooms and devices should appear automatically. You do not need to enter a Home Assistant
@@ -114,9 +114,14 @@ Choose this option only if you are comfortable using Docker.
    docker compose up -d
    ```
 
-3. Open [`http://localhost:8080`](http://localhost:8080) in your browser.
-4. Choose **Home Assistant**, enter an address that the current browser can reach, and sign in.
-5. Approve the Home Assistant login when asked.
+3. If you did not set `NAVET_HASS_URL` and this is a fresh installation, run
+   `docker compose logs navet`, copy the URL containing
+   `#navet_pairing=<64-character-key>`, and open that complete URL once. Navet removes the key
+   from the address immediately and keeps it only until the first server is approved.
+4. Open [`http://localhost:8080`](http://localhost:8080) when Docker runs on this computer. From
+   another device, replace `localhost` with the Docker host's LAN, VPN, or public name.
+5. Choose **Home Assistant**, enter an address that the current browser can reach, and sign in.
+6. Approve the Home Assistant login when asked.
 
 Keep the `navet-data` volume. It stores your Navet dashboard and browser sign-ins when the
 container is updated or recreated.
@@ -129,8 +134,9 @@ address while away.
 
 You do not need to add every address to Docker Compose or pair each address separately. The
 browser address opens the Home Assistant authorization page, while Navet verifies the completed
-login against its trusted server. An address for a different Home Assistant installation cannot
-silently replace it.
+login and proxies dashboard traffic through its trusted server connection. The remote browser does
+not need a route to the saved LAN address. An address for a different Home Assistant installation
+cannot silently replace it.
 
 ### Optional: set the trusted Home Assistant server
 
@@ -149,8 +155,8 @@ Replace the example with an address that works from the Navet container. A brows
 LAN, VPN, Tailscale, or external address for the same Home Assistant installation.
 
 If you leave the setting out, Navet tries common local Home Assistant addresses. A completely new
-installation may then ask you to approve the first server using the one-time link shown in the
-container log. Existing installations with saved `navet-data` do not need to do this again.
+installation requires the one-time pairing link shown in the container log before it can approve
+the first server. Existing installations with saved `navet-data` do not need to do this again.
 
 ### Update the Docker installation
 
@@ -197,12 +203,12 @@ create a second `frontend:` section.
 4. If it is missing, choose **Add integration** and add **Navet**.
 5. Refresh the browser page.
 
-### The add-on does not open
+### The Home Assistant App does not open
 
-1. Open **Settings → Add-ons → Navet**.
+1. Open **Settings → Apps → Navet**.
 2. Check that its status is **Running**.
 3. Open the **Log** tab and read the first error.
-4. Restart the add-on and try **Open Web UI** again.
+4. Restart the App and try **Open Web UI** again.
 
 ### Docker cannot connect to Home Assistant
 

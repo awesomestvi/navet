@@ -6,7 +6,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/HOMEY.md
 
 Use this guide when you want Navet to connect to Homey as the primary provider in standalone mode.
 The same OAuth client settings can enable Homey as an additional provider in the Home Assistant
-add-on.
+App.
 
 ## Overview
 
@@ -75,8 +75,8 @@ such as when Navet sits behind a reverse proxy or the public callback URL differ
 origin users open. Navet also supports a custom callback path if you register a different exact URL
 with Athom, such as `https://navet.example.com/callback`.
 
-For the Home Assistant add-on, set the corresponding `homey_client_id`, `homey_client_secret`, and
-optional `homey_redirect_uri` add-on options, restart the add-on, then connect Homey from
+For the Home Assistant App, set the corresponding `homey_client_id`, `homey_client_secret`, and
+optional `homey_redirect_uri` App options, restart the App, then connect Homey from
 **Settings -> System** inside Navet.
 
 ### 3. Start Navet
@@ -84,6 +84,11 @@ optional `homey_redirect_uri` add-on options, restart the add-on, then connect H
 ```bash
 docker compose up -d
 ```
+
+For the first Homey enrollment, run `docker compose logs navet`, copy the Navet URL containing
+`#navet_pairing=<64-character-key>`, and open that complete URL once. Navet removes the key from
+the address immediately. The key authorizes the first provider enrollment; it is not a Homey
+credential and is not needed again while the `navet-data` volume is preserved.
 
 ### 4. Sign in
 
@@ -109,6 +114,8 @@ docker compose up -d
 
 - If the `Homey` option does not appear on the login screen, check that
   `NAVET_HOMEY_CLIENT_ID` and `NAVET_HOMEY_CLIENT_SECRET` are set in the running Navet container.
+- If Navet says operator pairing is required, reopen the one-time pairing URL from the container
+  log. Preserve the `navet-data` volume so enrolled providers remain trusted across updates.
 - If sign-in returns to the wrong URL, set `NAVET_HOMEY_REDIRECT_URI` to the exact callback URL
   registered in your Athom Web API client.
 - If Navet keeps asking you to choose a Homey again, confirm the selected Homey is still available

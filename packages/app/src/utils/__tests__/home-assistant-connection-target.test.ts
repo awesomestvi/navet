@@ -22,6 +22,20 @@ describe('home-assistant-connection-target', () => {
     ).toBe('https://ha.example.com');
   });
 
+  it('uses the same-origin proxy for paired standalone OAuth sessions without a runtime URL pin', () => {
+    window.__NAVET_CONFIG__ = {
+      proxyBaseUrl: '/__navet_ha_proxy__',
+    };
+    resetRuntimeContextForTests();
+
+    expect(
+      resolveHomeAssistantConnectionUrl({
+        runtime: 'standalone-oauth',
+        hassUrl: 'http://192.168.68.71:8123',
+      })
+    ).toBe(`${window.location.origin}/__navet_ha_proxy__`);
+  });
+
   it('uses same-origin proxy URL for matching hosted runtime Home Assistant URLs', () => {
     window.__NAVET_CONFIG__ = {
       hassUrl: 'https://ha.example.com',

@@ -177,6 +177,57 @@ describe('createHomeAssistantClient', () => {
     expect(refreshAccessToken).not.toHaveBeenCalled();
   });
 
+  it('proxies paired standalone OAuth connections when no runtime Home Assistant URL is pinned', async () => {
+    window.__NAVET_CONFIG__ = {
+      proxyBaseUrl: '/__navet_ha_proxy__',
+    };
+    resetRuntimeContextForTests();
+
+    const pairedHassUrl = 'http://192.168.68.71:8123';
+    const auth = {
+      data: {
+        hassUrl: pairedHassUrl,
+        clientId: `${window.location.origin}/`,
+        expires: Date.now() + 3_600_000,
+        refresh_token: 'refresh-token',
+        access_token: 'access-token',
+        expires_in: 3600,
+      },
+      refreshAccessToken: vi.fn(),
+      revoke: vi.fn(),
+      get wsUrl() {
+        return `ws${this.data.hassUrl.slice(4)}/api/websocket`;
+      },
+      get accessToken() {
+        return this.data.access_token;
+      },
+      get expired() {
+        return Date.now() > this.data.expires;
+      },
+    } as Auth;
+
+    await createHomeAssistantClient({
+      providerId: 'home_assistant',
+      runtime: 'standalone-oauth',
+      authMode: 'oauth',
+      haBaseUrl: pairedHassUrl,
+      hassUrl: pairedHassUrl,
+      auth,
+      expiresAt: auth.data.expires,
+    });
+
+    expect(createConnectionMock).toHaveBeenCalledWith({
+      auth: expect.objectContaining({
+        data: expect.objectContaining({
+          hassUrl: `${window.location.origin}/__navet_ha_proxy__`,
+          access_token: 'access-token',
+        }),
+      }),
+      setupRetry: 3,
+    });
+    expect(auth.data.hassUrl).toBe(pairedHassUrl);
+  });
+
   it('refreshes standalone proxy auth through the original OAuth session', async () => {
     window.__NAVET_CONFIG__ = {
       hassUrl: oauthSessionFixture.haBaseUrl,

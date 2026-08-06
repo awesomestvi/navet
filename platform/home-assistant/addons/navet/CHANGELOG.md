@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.4
+
+No user-facing add-on changes in this release.
+
 ## 0.12.3
 
 No user-facing changes in this release.

@@ -20,13 +20,13 @@ Choose this path when:
 
 - you want Navet in standalone mode
 - you use openHAB as the provider
-- the Navet container or add-on can reach openHAB
+- the Navet container or Home Assistant App can reach openHAB
 
 ## Prerequisites
 
 You need:
 
-- an openHAB server reachable from the Navet container or add-on
+- an openHAB server reachable from the Navet container or Home Assistant App
 - the base URL for that openHAB server, for example `http://openhab.local:8080`
 - an openHAB username and password that can access the REST API
 - openHAB Basic auth or API Security enabled in `Settings -> API Security` (`org.openhab.restauth`)
@@ -143,7 +143,7 @@ cannot be overridden by another URL, even with the pairing key.
 - TLS certificate validation is enabled by default. For a private installation with a self-signed
   provider certificate, install the relevant CA in the container when possible. The explicit
   `NAVET_ALLOW_INSECURE_PROVIDER_TLS=true` standalone option or
-  `allow_insecure_provider_tls` add-on option disables provider verification for all configured
+  `allow_insecure_provider_tls` Home Assistant App option disables provider verification for all configured
   HTTPS providers and should be used only on a trusted network.
 - Remove trailing-path guesses such as `/rest` or `/basicui`; Navet expects the server base URL and
   will call the REST and WebSocket endpoints itself.

@@ -19,7 +19,11 @@ export function isRuntimeHostedHomeAssistantSession(
   const runtimeConfig = getRuntimeConfig();
   const runtimeContext = getRuntimeContext();
 
-  if (config.runtime === 'ha-ingress' || runtimeContext.kind === 'ha_ingress') {
+  if (
+    config.runtime === 'standalone-oauth' ||
+    config.runtime === 'ha-ingress' ||
+    runtimeContext.kind === 'ha_ingress'
+  ) {
     return true;
   }
 

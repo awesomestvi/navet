@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.12.4 - 2026-08-06
+
+## Improvements and bug fixes
+
+- Fixed remote Home Assistant dashboards using an unreachable saved LAN address after VPN sign-in.
+- Updated installation guides with current Home Assistant App paths and first-provider pairing steps.
+
 ## 0.12.3 - 2026-08-06
 
 ## Improvements and bug fixes

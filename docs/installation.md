@@ -13,7 +13,7 @@ Open the [Home Assistant installation guide](/install/home-assistant/).
 The guide gives you three choices:
 
 1. **HACS custom panel** if you already use HACS.
-2. **Home Assistant add-on** if you use Home Assistant OS or Supervised.
+2. **Home Assistant App** if you use Home Assistant OS and want Home Assistant to run Navet.
 3. **Standalone Docker** if you already manage Docker yourself.
 
 With standalone Docker, browsers can use a LAN address at home or a VPN, Tailscale, or external
