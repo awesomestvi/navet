@@ -33,6 +33,7 @@ interface InstallationAuthorityState {
 export interface InstallationAuthorization {
   allowed: boolean
   pairingVerified: boolean
+  upstreamTarget?: string
 }
 
 export interface ViteInstallationAuthority {
@@ -310,7 +311,8 @@ export function createViteInstallationAuthority(
     req: IncomingMessage,
     providerId: 'home_assistant' | 'openhab',
     target: string,
-    normalizeTarget: (value: unknown) => string
+    normalizeTarget: (value: unknown) => string,
+    allowBrowserAlias: boolean
   ): InstallationAuthorization => {
     if (options.trustIngress) {
       return { allowed: true, pairingVerified: false }
@@ -319,12 +321,21 @@ export function createViteInstallationAuthority(
     if (!normalizedTarget) {
       return { allowed: false, pairingVerified: false }
     }
+    // Home Assistant may open OAuth through a browser-reachable alias. The
+    // alias gains no authority: its code is redeemed against upstreamTarget.
     const rawPin =
       providerId === 'home_assistant'
         ? options.hassUrlPin
         : options.openhabUrlPin
     const pin = rawPin ? normalizeTarget(rawPin) : ''
     if (rawPin) {
+      if (pin && pin !== normalizedTarget && allowBrowserAlias) {
+        return {
+          allowed: true,
+          pairingVerified: false,
+          upstreamTarget: pin,
+        }
+      }
       return {
         allowed: Boolean(pin && pin === normalizedTarget),
         pairingVerified: false,
@@ -338,6 +349,20 @@ export function createViteInstallationAuthority(
     if (stateTarget === normalizedTarget) {
       return { allowed: true, pairingVerified: false }
     }
+    const pairingVerified = hasValidPairingKey(req)
+    if (stateTarget) {
+      if (pairingVerified) {
+        return { allowed: true, pairingVerified: true }
+      }
+      if (allowBrowserAlias) {
+        return {
+          allowed: true,
+          pairingVerified: false,
+          upstreamTarget: stateTarget,
+        }
+      }
+      return { allowed: false, pairingVerified: false }
+    }
     if (!stateTarget) {
       const evidence = unanimousTarget(
         providerId === 'home_assistant'
@@ -348,8 +373,14 @@ export function createViteInstallationAuthority(
       if (evidence === normalizedTarget) {
         return { allowed: true, pairingVerified: false }
       }
+      if (evidence && !pairingVerified && allowBrowserAlias) {
+        return {
+          allowed: true,
+          pairingVerified: false,
+          upstreamTarget: evidence,
+        }
+      }
     }
-    const pairingVerified = hasValidPairingKey(req)
     return { allowed: pairingVerified, pairingVerified }
   }
 
@@ -428,7 +459,13 @@ export function createViteInstallationAuthority(
 
   return {
     authorizeHomeAssistant(req, target, normalizeTarget) {
-      return authorizeTarget(req, 'home_assistant', target, normalizeTarget)
+      return authorizeTarget(
+        req,
+        'home_assistant',
+        target,
+        normalizeTarget,
+        true
+      )
     },
     authorizeHomeyStart(req) {
       if (options.trustIngress) {
@@ -441,7 +478,7 @@ export function createViteInstallationAuthority(
       }
     },
     authorizeOpenHAB(req, target, normalizeTarget) {
-      return authorizeTarget(req, 'openhab', target, normalizeTarget)
+      return authorizeTarget(req, 'openhab', target, normalizeTarget, false)
     },
     commitHomeAssistant(target, normalizeTarget, pairingVerified) {
       return commitTarget(

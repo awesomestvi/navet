@@ -161,7 +161,7 @@ describe('Vite installation authority', () => {
     });
   });
 
-  it('does not scan legacy sessions after a target authority is enrolled', () => {
+  it('uses enrolled authority as the upstream for an alternate browser route', () => {
     const { authority, paths } = createFixture();
     const authorized = authority.authorizeHomeAssistant(
       request(INSTALLATION_KEY),
@@ -179,6 +179,28 @@ describe('Vite installation authority', () => {
 
     expect(
       authority.authorizeHomeAssistant(request(), 'https://ha-b.example.com', normalizeTarget)
+    ).toEqual({
+      allowed: true,
+      pairingVerified: false,
+      upstreamTarget: 'https://ha-a.example.com',
+    });
+  });
+
+  it('keeps alternate-route authorization specific to Home Assistant OAuth', () => {
+    const { authority } = createFixture({
+      hassUrlPin: 'http://homeassistant.local:8123',
+      openhabUrlPin: 'http://openhab.local:8080',
+    });
+
+    expect(
+      authority.authorizeHomeAssistant(request(), 'http://100.77.118.32:8123', normalizeTarget)
+    ).toEqual({
+      allowed: true,
+      pairingVerified: false,
+      upstreamTarget: 'http://homeassistant.local:8123',
+    });
+    expect(
+      authority.authorizeOpenHAB(request(), 'http://100.64.0.10:8080', normalizeTarget)
     ).toEqual({ allowed: false, pairingVerified: false });
   });
 

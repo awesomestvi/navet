@@ -119,8 +119,11 @@ describe('production njs installation authority', () => {
 
     expect(
       authority.authorizeHomeAssistant(request(), 'https://ha-a.example.com', normalizeTarget)
-        .allowed
-    ).toBe(false);
+    ).toEqual({
+      allowed: true,
+      pairingVerified: false,
+      upstreamTarget: 'https://ha-b.example.com',
+    });
     const pinned = authority.authorizeHomeAssistant(
       request(),
       'https://ha-b.example.com',
@@ -135,7 +138,7 @@ describe('production njs installation authority', () => {
     });
   });
 
-  it('does not scan legacy sessions after a target authority is enrolled', () => {
+  it('uses enrolled authority as the upstream for an alternate browser route', () => {
     const { authority, paths } = createFixture();
     const authorized = authority.authorizeHomeAssistant(
       request(INSTALLATION_KEY),
@@ -153,6 +156,53 @@ describe('production njs installation authority', () => {
 
     expect(
       authority.authorizeHomeAssistant(request(), 'https://ha-b.example.com', normalizeTarget)
+    ).toEqual({
+      allowed: true,
+      pairingVerified: false,
+      upstreamTarget: 'https://ha-a.example.com',
+    });
+  });
+
+  it('still requires pairing to replace enrolled authority', () => {
+    const { authority, paths } = createFixture();
+    const first = authority.authorizeHomeAssistant(
+      request(INSTALLATION_KEY),
+      'https://ha-a.example.com',
+      normalizeTarget
+    );
+    expect(
+      authority.commitHomeAssistant(
+        'https://ha-a.example.com',
+        normalizeTarget,
+        first.pairingVerified
+      )
+    ).toBe(true);
+
+    const replacement = authority.authorizeHomeAssistant(
+      request(INSTALLATION_KEY),
+      'https://ha-b.example.com',
+      normalizeTarget
+    );
+    expect(replacement).toEqual({ allowed: true, pairingVerified: true });
+    expect(
+      authority.commitHomeAssistant(
+        'https://ha-b.example.com',
+        normalizeTarget,
+        replacement.pairingVerified
+      )
+    ).toBe(true);
+    expect(JSON.parse(readFileSync(paths.statePath, 'utf8'))).toMatchObject({
+      homeAssistantTarget: 'https://ha-b.example.com',
+    });
+  });
+
+  it('does not treat alternate openHAB URLs as browser-only routes', () => {
+    const { authority } = createFixture({
+      config: { openhabUrl: 'http://openhab.local:8080' },
+    });
+
+    expect(
+      authority.authorizeOpenHAB(request(), 'http://100.64.0.10:8080', normalizeTarget)
     ).toEqual({ allowed: false, pairingVerified: false });
   });
 

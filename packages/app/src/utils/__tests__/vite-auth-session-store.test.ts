@@ -1050,6 +1050,85 @@ describe('Vite standalone auth session conformance', () => {
     });
   });
 
+  it('uses an alternate browser route only for authorization and verifies it against the trusted upstream', async () => {
+    const browserHassUrl = 'http://100.77.118.32:8123';
+    const upstreamHassUrl = 'http://homeassistant.local:8123';
+    const installationAuthority: ViteInstallationAuthority = {
+      ...TEST_INSTALLATION_AUTHORITY,
+      authorizeHomeAssistant: vi.fn(() => ({
+        allowed: true,
+        pairingVerified: false,
+        upstreamTarget: upstreamHassUrl,
+      })),
+      commitHomeAssistant: vi.fn(() => true),
+    };
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            access_token: 'vpn-access',
+            refresh_token: 'vpn-refresh',
+            expires_in: 1800,
+          }),
+          { status: 200 }
+        )
+    );
+    const { store } = createStore();
+    const handler = createViteAuthRequestHandler(
+      store,
+      fetchMock as typeof fetch,
+      installationAuthority
+    );
+    const browser = await createBrowser(handler);
+    const authorizeResponse = createResponse();
+    await handler(
+      createRequest({
+        method: 'POST',
+        url: '/authorize',
+        cookie: browser.cookie,
+        headers: {
+          Origin: 'http://navet.example',
+          [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+        },
+        body: JSON.stringify({ hassUrl: browserHassUrl, returnTo: '/' }),
+      }),
+      authorizeResponse.response
+    );
+    const authorizeUrl = new URL(
+      (JSON.parse(authorizeResponse.body) as { authorizeUrl: string }).authorizeUrl
+    );
+    expect(authorizeUrl.origin).toBe(browserHassUrl);
+    const state = authorizeUrl.searchParams.get('state');
+    expect(state).toMatch(/^[a-f0-9]{64}$/);
+
+    const callbackResponse = createResponse();
+    await handler(
+      createRequest({
+        url: `/callback?code=vpn-code&state=${state}`,
+        cookie: browser.cookie,
+      }),
+      callbackResponse.response
+    );
+
+    expect(callbackResponse.response.statusCode).toBe(302);
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${upstreamHassUrl}/auth/token`,
+      expect.objectContaining({ method: 'POST' })
+    );
+    expect(installationAuthority.commitHomeAssistant).toHaveBeenCalledWith(
+      upstreamHassUrl,
+      expect.any(Function),
+      false
+    );
+    const rotatedCookie = cookieHeader(callbackResponse.getHeader('set-cookie'));
+    expect(
+      resolveViteAuthSession(createRequest({ cookie: rotatedCookie }), store)?.auth
+    ).toMatchObject({
+      hassUrl: upstreamHassUrl,
+      access_token: 'vpn-access',
+    });
+  });
+
   it('redirects a trusted OAuth denial safely, consumes its state, and preserves prior auth', async () => {
     const fetchMock = vi.fn();
     const { store } = createStore();

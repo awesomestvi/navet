@@ -76,7 +76,7 @@ declare module '@docker/njs/auth-store.js' {
         request: NjsAuthRequest,
         target: string,
         normalizeTarget: (value: unknown) => string
-      ): { allowed: boolean; pairingVerified: boolean };
+      ): { allowed: boolean; pairingVerified: boolean; upstreamTarget?: string };
       commitHomeAssistant(
         target: string,
         normalizeTarget: (value: unknown) => string,

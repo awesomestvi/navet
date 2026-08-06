@@ -75,6 +75,7 @@ export interface ViteAuthSessionMetadata {
 export interface VitePendingOAuth {
   state: string
   hassUrl: string
+  browserHassUrl?: string
   clientId: string
   redirectUri: string
   returnTo: string
@@ -277,6 +278,10 @@ function isValidPendingOAuth(value: unknown): value is VitePendingOAuth {
     /^[a-f0-9]{64}$/.test(pending.state) &&
     typeof pending.hassUrl === 'string' &&
     normalizeHassUrl(pending.hassUrl) === pending.hassUrl &&
+    (pending.browserHassUrl === undefined ||
+      (typeof pending.browserHassUrl === 'string' &&
+        normalizeHassUrl(pending.browserHassUrl) ===
+          pending.browserHassUrl)) &&
     typeof pending.clientId === 'string' &&
     pending.clientId.length > 0 &&
     typeof pending.redirectUri === 'string' &&
@@ -1338,6 +1343,16 @@ export function createViteAuthRequestHandler(
           })
           return
         }
+        const upstreamHassUrl =
+          installationAuthorization.upstreamTarget === undefined
+            ? hassUrl
+            : normalizeHassUrl(installationAuthorization.upstreamTarget)
+        if (!upstreamHassUrl) {
+          sendJson(res, 403, {
+            error: 'Home Assistant target is not authorized for this installation',
+          })
+          return
+        }
 
         const ingressPath = normalizeIngressPath(
           getHeader(req, 'x-ingress-path')
@@ -1350,7 +1365,9 @@ export function createViteAuthRequestHandler(
         const clientId = `${origin}${joinPath(ingressPath, '/')}`
         const pending: VitePendingOAuth = {
           state: randomBytes(32).toString('hex'),
-          hassUrl,
+          // Only hassUrl is used for server-side token exchange and proxying.
+          hassUrl: upstreamHassUrl,
+          browserHassUrl: hassUrl,
           clientId,
           redirectUri,
           returnTo: normalizeReturnTo(
@@ -1381,7 +1398,7 @@ export function createViteAuthRequestHandler(
           pending,
         })
 
-        const authorizeUrl = new URL(`${hassUrl}/auth/authorize`)
+        const authorizeUrl = new URL(`${pending.browserHassUrl}/auth/authorize`)
         authorizeUrl.searchParams.set('response_type', 'code')
         authorizeUrl.searchParams.set('client_id', clientId)
         authorizeUrl.searchParams.set('redirect_uri', redirectUri)

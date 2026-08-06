@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.3 - 2026-08-06
+
+## Improvements and bug fixes
+
+- Fixed standalone Home Assistant sign-in through LAN, VPN, or external addresses without requiring each route to be paired separately.
+
 ## 0.12.2 - 2026-08-04
 
 ## New features

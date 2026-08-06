@@ -83,27 +83,29 @@ its revision check and atomic file replacement synchronously. This keeps concurr
 serialized without reducing the number of WebSocket or HTTP connections the worker can serve.
 
 The workspace is also bound to the Home Assistant tenant that enrolled it. The server normalizes
-the authenticated Home Assistant base URL, including a non-root base path, and hashes that value
-into an opaque tenant ID; the raw URL is not stored in profile documents or returned to clients.
-Browser sessions using the same normalized base URL share the workspace, while a session
-authenticated through another URL receives `403` before any profile, history, preference, or
-client data is read.
+the trusted Home Assistant upstream, including a non-root base path, and hashes that value into an
+opaque tenant ID; the raw URL is not stored in profile documents or returned to clients. Browser
+sessions using the same trusted upstream share the workspace, even when their browser-facing OAuth
+routes differ. A session bound to another upstream receives `403` before any profile, history,
+preference, or client data is read.
 
-A connection URL is not a canonical Home Assistant installation identity. The same installation
-reached through a LAN hostname and an external hostname is intentionally treated as two tenants
-today, so every device should use the same configured Home Assistant URL. Seamless alias rebinding
-requires explicit re-pairing, an operator URL pin, or a server-verified stable installation
-identifier.
+A connection URL is not a canonical Home Assistant installation identity. Standalone OAuth keeps
+one trusted upstream as the tenant identity while allowing a browser to open the authorization
+page through another route, such as a LAN hostname, VPN address, or external hostname. The browser
+route becomes usable only when its authorization code is accepted by the trusted upstream, so
+those routes share one tenant without allowing them to replace installation authority.
 
 The profile workspace binds on first authenticated use, but standalone provider authentication now
 has a separate installation-authority gate. A fresh standalone Docker installation generates a
 256-bit operator key under `/data`; the browser receives it only through an operator-opened URL
-fragment, removes that fragment synchronously, and holds the key only in memory. Unknown Home
-Assistant and openHAB targets and the first Homey account require that key unless the operator
-configured an exact provider URL pin. Authority is persisted only after provider authentication or
-credential verification succeeds. Existing authenticated records are migration evidence only when
-their normalized target is unanimous; Homey records must be a single record or share a non-empty
-common installation-ID intersection.
+fragment, removes that fragment synchronously, and holds the key only in memory. The initial Home
+Assistant upstream, unknown openHAB targets, and the first Homey account require that key unless
+the operator configured an exact provider URL pin. Once Home Assistant authority exists, an alternate
+browser-facing route may start OAuth without the key, but Navet exchanges the returned code only
+with the trusted upstream. Authority is persisted only after provider authentication or credential
+verification succeeds. Existing authenticated records are migration evidence only when their
+normalized target is unanimous; Homey records must be a single record or share a non-empty common
+installation-ID intersection.
 
 ## Reconciliation
 
@@ -191,9 +193,10 @@ still require the access controls described below.
 
 - Standalone Docker and development use a per-browser opaque `HttpOnly` cookie. The OAuth state,
   callback, refresh token, access token, and proxy requests are bound to that one server session.
-- Standalone provider enrollment is additionally bound to the installation pairing key, an exact
-  operator URL pin, or already-persisted provider authority. The pairing header is stripped from
-  every upstream HTTP and WebSocket proxy request.
+- Standalone provider enrollment is additionally bound to the installation pairing key, an
+  operator URL pin, or already-persisted provider authority. Home Assistant may use a different
+  browser-facing OAuth route only when the resulting code is redeemed against that trusted
+  authority. The pairing header is stripped from every upstream HTTP and WebSocket proxy request.
 - Home Assistant add-on Ingress may use the official `X-Remote-User-*` identity headers only in the
   explicit Ingress handler. This trusted, Ingress-only runtime bypasses standalone pairing.
 - The Home Assistant custom panel has no Navet profile-store endpoint. Its dashboard collection and

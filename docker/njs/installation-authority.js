@@ -253,7 +253,13 @@ function createInstallationAuthority(options) {
     return targets.length === 1 ? targets[0] : '';
   }
 
-  function authorizeTarget(r, providerId, target, normalizeTarget) {
+  function authorizeTarget(
+    r,
+    providerId,
+    target,
+    normalizeTarget,
+    allowBrowserAlias
+  ) {
     if (isTrustedIngress()) {
       return { allowed: true, pairingVerified: false };
     }
@@ -261,11 +267,20 @@ function createInstallationAuthority(options) {
     if (!normalizedTarget) {
       return { allowed: false, pairingVerified: false };
     }
+    // Home Assistant may open OAuth through a browser-reachable alias. The
+    // alias gains no authority: its code is redeemed against upstreamTarget.
     const config = readConfig();
     const pinValue =
       providerId === 'home_assistant' ? config.hassUrl : config.openhabUrl;
     const pinnedTarget = pinValue ? normalizeTarget(pinValue) : '';
     if (pinValue) {
+      if (pinnedTarget && pinnedTarget !== normalizedTarget && allowBrowserAlias) {
+        return {
+          allowed: true,
+          pairingVerified: false,
+          upstreamTarget: pinnedTarget,
+        };
+      }
       return {
         allowed: Boolean(pinnedTarget && pinnedTarget === normalizedTarget),
         pairingVerified: false,
@@ -280,6 +295,20 @@ function createInstallationAuthority(options) {
     if (stateTarget === normalizedTarget) {
       return { allowed: true, pairingVerified: false };
     }
+    const pairingVerified = hasValidPairingKey(r);
+    if (stateTarget) {
+      if (pairingVerified) {
+        return { allowed: true, pairingVerified: true };
+      }
+      if (allowBrowserAlias) {
+        return {
+          allowed: true,
+          pairingVerified: false,
+          upstreamTarget: stateTarget,
+        };
+      }
+      return { allowed: false, pairingVerified: false };
+    }
     if (!stateTarget) {
       const evidence = findUnanimousTarget(
         providerId === 'home_assistant'
@@ -290,8 +319,14 @@ function createInstallationAuthority(options) {
       if (evidence === normalizedTarget) {
         return { allowed: true, pairingVerified: false };
       }
+      if (evidence && !pairingVerified && allowBrowserAlias) {
+        return {
+          allowed: true,
+          pairingVerified: false,
+          upstreamTarget: evidence,
+        };
+      }
     }
-    const pairingVerified = hasValidPairingKey(r);
     return {
       allowed: pairingVerified,
       pairingVerified: pairingVerified,
@@ -420,11 +455,11 @@ function createInstallationAuthority(options) {
 
   return {
     authorizeHomeAssistant: function (r, target, normalizeTarget) {
-      return authorizeTarget(r, 'home_assistant', target, normalizeTarget);
+      return authorizeTarget(r, 'home_assistant', target, normalizeTarget, true);
     },
     authorizeHomeyStart: authorizeHomeyStart,
     authorizeOpenHAB: function (r, target, normalizeTarget) {
-      return authorizeTarget(r, 'openhab', target, normalizeTarget);
+      return authorizeTarget(r, 'openhab', target, normalizeTarget, false);
     },
     commitHomeAssistant: function (target, normalizeTarget, pairingVerified) {
       return commitTarget(

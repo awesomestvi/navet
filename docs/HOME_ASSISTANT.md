@@ -80,7 +80,9 @@ Choose this option only if you are comfortable using Docker.
 ### What you need
 
 - Docker with Docker Compose
-- The normal Home Assistant address that you open in your browser
+- a Home Assistant address reachable from the browser that signs in, such as a LAN, VPN,
+  Tailscale, or external address
+- a route from the Navet container to the same Home Assistant installation
 
 ### Create the Compose file
 
@@ -113,13 +115,24 @@ Choose this option only if you are comfortable using Docker.
    ```
 
 3. Open [`http://localhost:8080`](http://localhost:8080) in your browser.
-4. Choose **Home Assistant** and sign in.
+4. Choose **Home Assistant**, enter an address that the current browser can reach, and sign in.
 5. Approve the Home Assistant login when asked.
 
 Keep the `navet-data` volume. It stores your Navet dashboard and browser sign-ins when the
 container is updated or recreated.
 
-### Optional: set the Home Assistant address
+### Sign in at home or through a VPN
+
+After the first trusted Home Assistant server is approved, each browser can use the address that
+works from its current network. Enter a LAN address at home or a VPN, Tailscale, or external
+address while away.
+
+You do not need to add every address to Docker Compose or pair each address separately. The
+browser address opens the Home Assistant authorization page, while Navet verifies the completed
+login against its trusted server. An address for a different Home Assistant installation cannot
+silently replace it.
+
+### Optional: set the trusted Home Assistant server
 
 `NAVET_HASS_URL` is **not required**. If your Navet installation already connects to Home Assistant,
 leave your Compose file as it is. Navet remembers the approved server in the `navet-data` volume.
@@ -132,8 +145,8 @@ environment:
   NAVET_HASS_URL: "http://homeassistant.local:8123"
 ```
 
-Replace the example with the Home Assistant address you normally open in your browser. Use an
-address that works from both your browser and the Navet container.
+Replace the example with an address that works from the Navet container. A browser may use another
+LAN, VPN, Tailscale, or external address for the same Home Assistant installation.
 
 If you leave the setting out, Navet tries common local Home Assistant addresses. A completely new
 installation may then ask you to approve the first server using the one-time link shown in the
@@ -193,16 +206,22 @@ create a second `frontend:` section.
 
 ### Docker cannot connect to Home Assistant
 
-1. Make sure your Home Assistant address opens in the browser.
-2. If Navet does not find it, add the optional `NAVET_HASS_URL` setting shown above.
-3. Make sure that address also works from the Navet container.
-4. If the address uses HTTPS, make sure the container trusts its certificate.
-5. Run `docker compose up -d` again after changing the file.
+1. If the Home Assistant sign-in page does not open, make sure the address entered in Navet works
+   from the current browser and that its VPN or external route is connected.
+2. If Home Assistant accepts the sign-in but Navet does not connect, make sure the trusted server
+   or `NAVET_HASS_URL` works from the Navet container.
+3. If the server uses HTTPS, make sure the container trusts its certificate.
+4. If Navet says operator pairing is required on an existing installation, make sure the original
+   `navet-data` volume is mounted. For a new installation, use the one-time link in the container
+   log or set `NAVET_HASS_URL`.
+5. Run `docker compose up -d` again after changing the Compose file.
 
 ### Login returns to the wrong page
 
 If Navet is behind a reverse proxy, make sure the proxy keeps the original host name and HTTPS
 information. Start the login and finish it in the same browser.
+
+For more checks, see [Connection or sign-in fails](/guide/troubleshooting/connection/).
 
 ## You are ready
 

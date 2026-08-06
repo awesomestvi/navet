@@ -16,6 +16,10 @@ The guide gives you three choices:
 2. **Home Assistant add-on** if you use Home Assistant OS or Supervised.
 3. **Standalone Docker** if you already manage Docker yourself.
 
+With standalone Docker, browsers can use a LAN address at home or a VPN, Tailscale, or external
+address while away. After the first trusted Home Assistant server is approved, you do not need to
+configure or pair each address separately.
+
 The guide tells you exactly what to click and what to paste.
 
 ## I use Homey

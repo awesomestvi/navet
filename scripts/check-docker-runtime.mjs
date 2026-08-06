@@ -465,10 +465,68 @@ async function startHomeAssistantOAuth(
       `${baseUrl}/__navet_auth__/callback` ||
     !/^[a-f0-9]{64}$/.test(authorizeUrl.searchParams.get('state') ?? '') ||
     pendingSession?.pending?.state !== authorizeUrl.searchParams.get('state') ||
+    pendingSession?.pending?.hassUrl !== 'http://provider-check:8080/ha' ||
+    pendingSession?.pending?.browserHassUrl !== 'http://provider-check:8080/ha' ||
     pendingSession?.pending?.returnTo !== '/wall-panel?view=home#lights' ||
     JSON.stringify(pendingSession).includes(installationKey)
   ) {
     throw new Error(`Unexpected Docker NJS OAuth authorize response: ${JSON.stringify(payload)}`);
+  }
+  return authorizeUrl.searchParams.get('state');
+}
+
+async function startHomeAssistantOAuthThroughAlternateBrowserRoute(
+  baseUrl,
+  containerName,
+  browserSession
+) {
+  const browserHassUrl = 'http://100.77.118.32:8123';
+  const response = await fetch(`${baseUrl}/__navet_auth__/authorize`, {
+    method: 'POST',
+    headers: {
+      Cookie: browserSession.cookie,
+      Origin: baseUrl,
+      'Content-Type': 'application/json',
+      'X-Navet-OAuth-Binding': browserSession.metadata.sessionId,
+    },
+    body: JSON.stringify({
+      hassUrl: browserHassUrl,
+      returnTo: '/wall-panel?view=home#lights',
+    }),
+  });
+  if (response.status !== 200) {
+    throw new Error(
+      `Trusted Home Assistant rejected an alternate browser route with ${response.status}`
+    );
+  }
+
+  const payload = await response.json();
+  const authorizeUrl = new URL(payload.authorizeUrl);
+  const cookieId = cookieValue(browserSession.cookie);
+  const pendingResult = spawnSync(
+    'docker',
+    [
+      'exec',
+      containerName,
+      'cat',
+      `/data/navet-auth-sessions/${cookieId}.json`,
+    ],
+    { stdio: 'pipe', encoding: 'utf8' }
+  );
+  const pendingSession =
+    !pendingResult.error && pendingResult.status === 0
+      ? JSON.parse(pendingResult.stdout)
+      : null;
+  if (
+    authorizeUrl.origin !== browserHassUrl ||
+    authorizeUrl.pathname !== '/auth/authorize' ||
+    pendingSession?.pending?.hassUrl !== 'http://provider-check:8080/ha' ||
+    pendingSession?.pending?.browserHassUrl !== browserHassUrl ||
+    !/^[a-f0-9]{64}$/.test(authorizeUrl.searchParams.get('state') ?? '')
+  ) {
+    throw new Error(
+      `Alternate Home Assistant browser route changed trusted upstream authority: ${JSON.stringify(payload)}`
+    );
   }
   return authorizeUrl.searchParams.get('state');
 }
@@ -1879,6 +1937,22 @@ try {
     firstBrowser,
     state
   );
+  const alternateState = await startHomeAssistantOAuthThroughAlternateBrowserRoute(
+    baseUrl,
+    containerName,
+    secondBrowser
+  );
+  const alternateAuthenticatedCookie = await completeHomeAssistantOAuth(
+    baseUrl,
+    secondBrowser,
+    alternateState
+  );
+  const alternateMetadata = await fetch(`${baseUrl}/__navet_auth__/session`, {
+    headers: { Cookie: alternateAuthenticatedCookie },
+  }).then((response) => response.json());
+  if (alternateMetadata.hassUrl !== 'http://provider-check:8080/ha') {
+    throw new Error('Alternate browser route replaced the trusted Home Assistant upstream');
+  }
   const authRefresh = await verifyHomeAssistantRefreshRevision(
     baseUrl,
     authenticatedCookie
@@ -2062,7 +2136,7 @@ try {
       addonTarget.exactBase
         ? 'the exact Home Assistant base image'
         : 'the explicit Alpine with-contenv/bashio compatibility fallback'
-    }, exact standalone build metadata, no anonymous record minting, OAuth rotation, two-installation host cookie isolation, runtime hostname resolution, provider confinement, stable parallel profile binding, njs-safe two-client profile ordering, and persisted auth/profile state after container replacement.`
+    }, exact standalone build metadata, no anonymous record minting, OAuth rotation, verified alternate browser routes, two-installation host cookie isolation, runtime hostname resolution, provider confinement, stable parallel profile binding, njs-safe two-client profile ordering, and persisted auth/profile state after container replacement.`
   );
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

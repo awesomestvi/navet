@@ -108,7 +108,7 @@ async function withoutGlobalUrl<T>(callback: () => Promise<T>): Promise<T> {
   }
 }
 
-function createStore(fetchImpl = vi.fn()) {
+function createStore(fetchImpl = vi.fn(), installationAuthority = TEST_INSTALLATION_AUTHORITY) {
   const directory = mkdtempSync(join(tmpdir(), 'navet-njs-auth-'));
   const sessionsDirectory = join(directory, 'sessions');
   const legacyAuthPath = join(directory, 'navet-auth-session.json');
@@ -120,7 +120,7 @@ function createStore(fetchImpl = vi.fn()) {
       sessionsDirectory,
       legacyAuthPath,
       fetch: fetchImpl,
-      installationAuthority: TEST_INSTALLATION_AUTHORITY,
+      installationAuthority,
     }),
   };
 }
@@ -1158,6 +1158,73 @@ describe('production njs standalone OAuth sessions', () => {
       source: 'standalone_session',
       userId: null,
       userName: null,
+    });
+  });
+
+  it('uses an alternate browser route only for authorization and verifies it against the trusted upstream', async () => {
+    const browserHassUrl = 'http://100.77.118.32:8123';
+    const upstreamHassUrl = 'http://homeassistant.local:8123';
+    const installationAuthority = {
+      authorizeHomeAssistant: vi.fn(() => ({
+        allowed: true,
+        pairingVerified: false,
+        upstreamTarget: upstreamHassUrl,
+      })),
+      commitHomeAssistant: vi.fn(() => true),
+    };
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            access_token: 'vpn-access',
+            refresh_token: 'vpn-refresh',
+            expires_in: 1800,
+          }),
+          { status: 200 }
+        )
+    );
+    const { store } = createStore(fetchImpl, installationAuthority);
+    const browser = await createBrowserSession(store);
+    const authorize = createRequest({
+      method: 'POST',
+      uri: '/__navet_auth__/authorize',
+      cookie: browser.cookie,
+      headers: {
+        [AUTH_BINDING_HEADER]: browser.metadata.sessionId,
+        Origin: 'http://navet.example',
+      },
+      body: JSON.stringify({ hassUrl: browserHassUrl, returnTo: '/' }),
+    });
+
+    await store.handle(authorize.request);
+    const authorizeUrl = new URL(
+      (JSON.parse(authorize.result.body) as { authorizeUrl: string }).authorizeUrl
+    );
+    expect(authorizeUrl.origin).toBe(browserHassUrl);
+    const state = authorizeUrl.searchParams.get('state');
+    expect(state).toMatch(/^[a-f0-9]{64}$/);
+
+    const callback = createRequest({
+      uri: '/__navet_auth__/callback',
+      cookie: browser.cookie,
+      args: { code: 'vpn-code', state: state ?? '' },
+    });
+    await store.handle(callback.request);
+
+    expect(callback.result.status).toBe(302);
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `${upstreamHassUrl}/auth/token`,
+      expect.objectContaining({ method: 'POST' })
+    );
+    expect(installationAuthority.commitHomeAssistant).toHaveBeenCalledWith(
+      upstreamHassUrl,
+      expect.any(Function),
+      false
+    );
+    const rotatedCookie = cookieHeader(callback.request.headersOut['Set-Cookie']);
+    expect(store.readSession(rotatedCookie.split('=')[1] ?? '')?.auth).toMatchObject({
+      hassUrl: upstreamHassUrl,
+      access_token: 'vpn-access',
     });
   });
 

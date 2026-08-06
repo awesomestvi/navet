@@ -92,7 +92,9 @@ through its exact immutable version.
 ### Requirements
 
 - Docker with Compose support
-- the credentials and browser-reachable URL required by the provider you want to test
+- the credentials required by the provider you want to test
+- for Home Assistant, a trusted upstream reachable from the Navet container and an authorization
+  address reachable from the browser; these may be different routes to the same installation
 
 ### Install
 
@@ -107,7 +109,7 @@ services:
     ports:
       - "8081:80"
     environment:
-      # Optional Home Assistant discovery hint.
+      # Optional trusted Home Assistant upstream pin.
       NAVET_HASS_URL: "http://homeassistant.local:8123"
       # Optional Homey OAuth client settings.
       NAVET_HOMEY_CLIENT_ID: "your-athom-client-id"
@@ -120,10 +122,11 @@ volumes:
 ```
 
 Remove any environment variables for providers you are not testing. For Home Assistant, change
-`NAVET_HASS_URL` to the browser-reachable instance URL or omit it and use first-run discovery. For
-Homey, register the exact callback URL described in the [Homey guide](/install/homey/). openHAB
-needs no container environment variable; choose it in Navet and enter its base URL and credentials.
-Do not use a container-only hostname unless the browser can also resolve it.
+`NAVET_HASS_URL` to an upstream reachable from the Navet container, or omit it and use first-run
+discovery and pairing. Each browser may then enter a LAN, VPN, Tailscale, or external address for
+that same Home Assistant installation. For Homey, register the exact callback URL described in the
+[Homey guide](/install/homey/). openHAB needs no container environment variable; choose it in Navet
+and enter its base URL and credentials.
 
 Start Navet Dev:
 
@@ -231,8 +234,11 @@ dashboard configuration before switching rather than assuming it will appear in 
 - Add-on missing: verify the main repository URL was added to the Add-on Store, then reload it.
 - Exact branch release missing from the Add-on Store: this is expected until its metadata lands on
   `main`; use the exact standalone Docker image to test it.
-- Docker cannot find Home Assistant: confirm `NAVET_HASS_URL` is reachable from both the browser and
-  the Navet container; avoid `localhost` when Home Assistant runs on another host.
+- Home Assistant authorization page does not open: confirm the address entered in Navet is
+  reachable from the current browser, including through the intended VPN or external route.
+- Home Assistant accepts authorization but returning to Navet fails: confirm `NAVET_HASS_URL`, or
+  the previously paired upstream, is reachable from the Navet container; avoid `localhost` when
+  Home Assistant runs on another host.
 - OAuth loops after changing hostnames, TLS, reverse proxies, or ports: sign in again so Navet can
   create a session for the current Home Assistant URL.
 - Custom panel still shows an older build: restart Home Assistant and hard-refresh the browser.

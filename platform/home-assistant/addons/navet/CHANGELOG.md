@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.3
+
+No user-facing changes in this release.
+
 ## 0.12.2
 
 ## New features

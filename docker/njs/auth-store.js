@@ -495,6 +495,8 @@ function isValidPendingOAuth(value) {
     typeof value.state === 'string' &&
     /^[a-f0-9]{64}$/.test(value.state) &&
     normalizeHassUrl(value.hassUrl) === value.hassUrl &&
+    (value.browserHassUrl === undefined ||
+      normalizeHassUrl(value.browserHassUrl) === value.browserHassUrl) &&
     typeof value.clientId === 'string' &&
     value.clientId.length > 0 &&
     typeof value.redirectUri === 'string' &&
@@ -1322,6 +1324,16 @@ function createAuthSessionStore(options) {
       });
       return;
     }
+    const upstreamHassUrl =
+      installationAccess.upstreamTarget === undefined
+        ? hassUrl
+        : normalizeHassUrl(installationAccess.upstreamTarget);
+    if (!upstreamHassUrl) {
+      sendJson(r, 403, {
+        error: 'Home Assistant target is not authorized for this installation',
+      });
+      return;
+    }
 
     const ingressPath = normalizeIngressPath(getHeader(r.headersIn, 'X-Ingress-Path'));
     const origin = getRequestOrigin(r);
@@ -1334,7 +1346,9 @@ function createAuthSessionStore(options) {
     const state = secureRandomHex(32);
     const pending = {
       state: state,
-      hassUrl: hassUrl,
+      // Only hassUrl is used for server-side token exchange and proxying.
+      hassUrl: upstreamHassUrl,
+      browserHassUrl: hassUrl,
       clientId: clientId,
       redirectUri: redirectUri,
       returnTo: returnTo,
@@ -1357,7 +1371,7 @@ function createAuthSessionStore(options) {
     setSessionCookie(r, context.cookieId);
 
     const authorizeUrl =
-      hassUrl +
+      pending.browserHassUrl +
       '/auth/authorize?response_type=code&client_id=' +
       encodeURIComponent(clientId) +
       '&redirect_uri=' +
