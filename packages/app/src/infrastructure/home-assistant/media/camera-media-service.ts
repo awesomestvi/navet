@@ -177,8 +177,11 @@ export class CameraMediaService {
           : directStreamResource
             ? ['web_rtc', ...orderedStreamTypes.filter((transport) => transport !== 'web_rtc')]
             : orderedStreamTypes;
+      const fallbackAwareStreamTypes = failedTransports.has('web_rtc')
+        ? this.addMsePreference(candidateStreamTypes)
+        : candidateStreamTypes;
       const streamTypes = this.applyPreferredTransport(
-        candidateStreamTypes,
+        fallbackAwareStreamTypes,
         input.preferredTransport
       );
       for (const transport of streamTypes) {

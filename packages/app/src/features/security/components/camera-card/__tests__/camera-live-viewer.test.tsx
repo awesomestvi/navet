@@ -283,6 +283,9 @@ describe('CameraLiveViewer', () => {
     );
     expect(screen.getByTestId('camera-stream-player')).toHaveAttribute('data-fit-mode', 'contain');
     expect(screen.getByText('HLS')).toBeInTheDocument();
+    expect(screen.getByTestId('camera-viewer-top-controls')).toHaveClass('z-20');
+    expect(screen.getByTestId('camera-viewer-bottom-controls')).toHaveClass('z-20');
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveClass('h-12', 'w-12');
     expect(
       screen.queryByRole('button', { name: 'Refresh camera snapshot' })
     ).not.toBeInTheDocument();

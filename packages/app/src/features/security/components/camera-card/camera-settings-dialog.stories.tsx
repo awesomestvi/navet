@@ -113,6 +113,12 @@ export const ProviderMse: Story = {
   },
 };
 
+export const LongCameraName: Story = {
+  args: {
+    name: 'AXIS P3407-VE Dome Camera',
+  },
+};
+
 export const DirectStream: Story = {
   args: {
     cameraWebRtcStreamSource: 'direct',

@@ -392,6 +392,47 @@ describe('CameraMediaService', () => {
     expect(model.selectedTransport).toBe('web_rtc');
   });
 
+  it('falls back from a failed provider WebRTC stream to MSE before native HLS', async () => {
+    const resolveMock = vi.fn(async (request: { rawPath?: string }) => ({
+      id: 'camera.front:hls',
+      kind: 'image',
+      cacheKey: 'camera.front:hls',
+      authStrategy: 'same_origin' as const,
+      url: request.rawPath,
+    }));
+    const getCameraCapabilitiesMock = vi.fn(async () =>
+      createCameraCapabilities(['web_rtc', 'hls', 'mjpeg'])
+    );
+    const service = new CameraMediaService(
+      { resolve: resolveMock } as never,
+      getCameraCapabilitiesMock,
+      vi.fn(async () => ({ url: '/api/hls/camera.front/master.m3u8' })),
+      vi.fn(async () => ({ mjpeg: '/api/camera_proxy_stream/camera.front' }))
+    );
+
+    const model = await service.getPlaybackPlan({
+      entityId: 'camera.front',
+      cameraState: 'streaming',
+      preferredMode: 'live',
+      preferredTransport: 'web_rtc',
+      snapshotUrl: '/api/camera_proxy/camera.front',
+      isStreamCapable: true,
+      motionDetectionEnabled: true,
+      failedTransports: new Set(['web_rtc']),
+    });
+
+    expect(model.liveTransports).toEqual(['mse', 'hls', 'mjpeg']);
+    expect(model.fallbackTransports).toEqual(['hls', 'mjpeg']);
+    expect(model.selectedTransport).toBe('mse');
+    expect(model.selectedStreamResource).toMatchObject({
+      kind: 'hls_stream',
+      metadata: {
+        source: 'provider_hls',
+        mode: 'mse',
+      },
+    });
+  });
+
   it('normalizes provider-scoped camera ids before requesting Home Assistant capabilities and HLS streams', async () => {
     const resolveMock = vi.fn(async (request: { rawPath?: string }) => ({
       id: 'home_assistant:camera.front:hls',

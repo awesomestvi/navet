@@ -1466,7 +1466,7 @@ describe('CameraStreamPlayer', () => {
     });
   });
 
-  it('extends the WebRTC startup timeout when signaling is still making progress', async () => {
+  it('falls back after an absolute WebRTC no-frame deadline despite signaling progress', async () => {
     vi.useFakeTimers();
     try {
       const onError = vi.fn();
@@ -1504,12 +1504,6 @@ describe('CameraStreamPlayer', () => {
         await Promise.resolve();
         await Promise.resolve();
       });
-
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(14_000);
-      });
-
-      expect(onError).not.toHaveBeenCalled();
 
       await act(async () => {
         await vi.advanceTimersByTimeAsync(2_000);

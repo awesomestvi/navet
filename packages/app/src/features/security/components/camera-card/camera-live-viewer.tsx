@@ -64,7 +64,7 @@ interface CameraLiveViewerProps {
 }
 
 const CAMERA_VIEWER_ACTION_BUTTON_CLASS_NAME =
-  'flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full border border-white/12 bg-black/45 text-white backdrop-blur-xl transition-colors hover:bg-white/12';
+  'flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/12 bg-black/45 text-white backdrop-blur-xl transition-colors hover:bg-white/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70';
 
 function CameraViewerDropdown<T extends string>({
   icon: Icon,
@@ -339,8 +339,8 @@ export function CameraLiveViewer({
       overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
       shellBodyClassName="h-full"
     >
-      <div className="relative flex h-full min-h-0 flex-col bg-black text-white">
-        <div className="absolute inset-0">
+      <div className="relative isolate flex h-full min-h-0 flex-col bg-black text-white">
+        <div className="absolute inset-0 z-0">
           {selectedTransport && cameraState !== 'unavailable' ? (
             <CameraStreamPlayer
               entityId={entityId}
@@ -377,7 +377,10 @@ export function CameraLiveViewer({
           )}
         </div>
 
-        <div className="pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-black/85 via-black/45 to-transparent pb-4 pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-[calc(env(safe-area-inset-top,0px)+1rem)] md:pb-5 md:pl-[calc(env(safe-area-inset-left,0px)+1.25rem)] md:pr-[calc(env(safe-area-inset-right,0px)+1.25rem)] md:pt-[calc(env(safe-area-inset-top,0px)+1.25rem)]">
+        <div
+          data-testid="camera-viewer-top-controls"
+          className="pointer-events-none absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-black/85 via-black/45 to-transparent pb-4 pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-[calc(env(safe-area-inset-top,0px)+1rem)] md:pb-5 md:pl-[calc(env(safe-area-inset-left,0px)+1.25rem)] md:pr-[calc(env(safe-area-inset-right,0px)+1.25rem)] md:pt-[calc(env(safe-area-inset-top,0px)+1.25rem)]"
+        >
           <div className="pointer-events-auto flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-white/76">
@@ -449,7 +452,10 @@ export function CameraLiveViewer({
           </div>
         </div>
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] md:pl-[calc(env(safe-area-inset-left,0px)+1.25rem)] md:pr-[calc(env(safe-area-inset-right,0px)+1.25rem)] md:pt-5 md:pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)]">
+        <div
+          data-testid="camera-viewer-bottom-controls"
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/85 via-black/45 to-transparent pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] md:pl-[calc(env(safe-area-inset-left,0px)+1.25rem)] md:pr-[calc(env(safe-area-inset-right,0px)+1.25rem)] md:pt-5 md:pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)]"
+        >
           <div className="flex flex-wrap justify-end gap-2">
             {!usesDirectStream && availableTransportPreferences.length > 1 ? (
               <CameraViewerDropdown

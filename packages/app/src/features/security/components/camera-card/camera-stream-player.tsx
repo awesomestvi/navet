@@ -21,7 +21,7 @@ interface CameraStreamPlayerProps {
   webRtcTitle?: string;
 }
 
-const CAMERA_WEBRTC_STREAM_LOAD_TIMEOUT_MS = 15_000;
+const CAMERA_WEBRTC_NO_FRAME_DEADLINE_MS = 15_000;
 const CAMERA_HLS_STREAM_LOAD_TIMEOUT_MS = 20_000;
 const CAMERA_STREAM_STALL_CHECK_INTERVAL_MS = 2_000;
 const CAMERA_STREAM_STALL_THRESHOLD_MS = 6_000;
@@ -942,16 +942,19 @@ function WebRtcCameraPlayer({
       }
     };
 
-    const refreshStartupTimeout = (expectedGeneration: number) => {
-      if (hasLoadedFrameRef.current) {
+    const ensureStartupDeadline = (expectedGeneration: number) => {
+      if (
+        hasLoadedFrameRef.current ||
+        loadTimeoutRef.current !== null ||
+        webRtcSignalingErrorReported
+      ) {
         return;
       }
 
-      clearStreamLoadTimeout(loadTimeoutRef);
       loadTimeoutRef.current = window.setTimeout(() => {
         loadTimeoutRef.current = null;
         reportWebRtcSignalingError(expectedGeneration);
-      }, CAMERA_WEBRTC_STREAM_LOAD_TIMEOUT_MS);
+      }, CAMERA_WEBRTC_NO_FRAME_DEADLINE_MS);
     };
 
     const start = async () => {
@@ -975,7 +978,7 @@ function WebRtcCameraPlayer({
       video.muted = true;
       video.autoplay = true;
       video.playsInline = true;
-      refreshStartupTimeout(activeGeneration);
+      ensureStartupDeadline(activeGeneration);
 
       try {
         const clientConfig =
@@ -983,7 +986,7 @@ function WebRtcCameraPlayer({
         if (isInactive()) {
           return;
         }
-        refreshStartupTimeout(activeGeneration);
+        ensureStartupDeadline(activeGeneration);
 
         const connection = new RTCPeerConnection(clientConfig.configuration);
         peerConnection = connection;
@@ -1014,7 +1017,7 @@ function WebRtcCameraPlayer({
           if (isInactive() || !videoRef.current) {
             return;
           }
-          refreshStartupTimeout(activeGeneration);
+          ensureStartupDeadline(activeGeneration);
           activeRemoteStream.addTrack(event.track);
           if (event.track.kind === 'video') {
             hasRemoteVideoTrack = true;
@@ -1047,7 +1050,7 @@ function WebRtcCameraPlayer({
             disconnectedTimeout = null;
           }
           if (iceState === 'checking' || iceState === 'connected' || iceState === 'completed') {
-            refreshStartupTimeout(activeGeneration);
+            ensureStartupDeadline(activeGeneration);
           }
           if (iceState === 'disconnected' && disconnectedTimeout === null) {
             disconnectedTimeout = window.setTimeout(() => {
@@ -1071,7 +1074,7 @@ function WebRtcCameraPlayer({
         if (!offer.sdp || isInactive()) {
           return;
         }
-        refreshStartupTimeout(activeGeneration);
+        ensureStartupDeadline(activeGeneration);
 
         unsubscribePromise = integrationCameraFeatureService.subscribeCameraWebRtcOffer(
           entityId,
@@ -1082,7 +1085,7 @@ function WebRtcCameraPlayer({
             }
             if (event.type === 'session') {
               sessionId = event.session_id;
-              refreshStartupTimeout(activeGeneration);
+              ensureStartupDeadline(activeGeneration);
               sendPendingCandidates(activeGeneration);
               return;
             }
@@ -1096,7 +1099,7 @@ function WebRtcCameraPlayer({
                     return;
                   }
                   remoteDescriptionReady = true;
-                  refreshStartupTimeout(activeGeneration);
+                  ensureStartupDeadline(activeGeneration);
                   await flushPendingRemoteCandidates(connection, activeGeneration);
                 })
                 .catch(() => reportWebRtcSignalingError(activeGeneration));
@@ -1107,7 +1110,7 @@ function WebRtcCameraPlayer({
                 pendingRemoteCandidates.push(event.candidate);
                 return;
               }
-              refreshStartupTimeout(activeGeneration);
+              ensureStartupDeadline(activeGeneration);
               void connection
                 .addIceCandidate(new RTCIceCandidate(normalizeRemoteIceCandidate(event.candidate)))
                 .catch(() => reportWebRtcSignalingError(activeGeneration));

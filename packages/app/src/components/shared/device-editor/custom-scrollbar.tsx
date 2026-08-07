@@ -19,7 +19,9 @@ export const CustomScrollbar = memo(function CustomScrollbar({
 
   return (
     <ScrollArea.Root className={`min-h-0 overflow-hidden ${className}`}>
-      <ScrollArea.Viewport className="h-full w-full min-h-0">{children}</ScrollArea.Viewport>
+      <ScrollArea.Viewport className="h-full w-full min-h-0 [&>div]:!block [&>div]:!w-full [&>div]:!min-w-0">
+        {children}
+      </ScrollArea.Viewport>
       <ScrollArea.Scrollbar className="hidden" orientation="vertical">
         <ScrollArea.Thumb
           className="relative flex-1 rounded-full transition-colors duration-500"
