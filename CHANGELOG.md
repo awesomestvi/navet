@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.12.6 - 2026-08-08
+
+## Improvements and bug fixes
+
+- Camera streams now fall back to MSE when WebRTC connects without displaying video.
+- Fullscreen camera controls remain available while a stream is loading.
+- Camera settings now keep all controls inside phone viewports.
+
 ## 0.12.5 - 2026-08-07
 
 ## Improvements and bug fixes
