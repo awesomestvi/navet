@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.12.5 - 2026-08-07
+
+## Improvements and bug fixes
+
+- Fixed expired Home Assistant sessions getting stuck on Starting your dashboard when the saved LAN address is unavailable.
+- Fixed Home Assistant camera snapshots and fallback streams bypassing Navet's proxy on VPN and remote connections.
+
 ## 0.12.4 - 2026-08-06
 
 ## Improvements and bug fixes

@@ -14,8 +14,8 @@ the provider and address.
 Common causes include:
 
 - An unreachable provider address.
-- A LAN, VPN, Tailscale, or external Home Assistant route that is unavailable from the current
-  browser.
+- A LAN, VPN, Tailscale, or external Home Assistant authorization route that is unavailable from
+  the current browser during sign-in.
 - DNS, firewall, or CORS restrictions.
 - HTTP and HTTPS mismatch.
 - An expired browser-specific session.
@@ -43,7 +43,9 @@ VPN, Tailscale, or external address while away.
 
 The address must lead to the same Home Assistant installation. Navet opens the authorization page
 through the browser address, then verifies the returned OAuth code against its already trusted
-upstream.
+upstream. Once sign-in finishes, Navet also proxies access-token renewal, WebSocket traffic, API
+calls, and provider-managed Home Assistant HTTP resources. The browser does not need a continuing
+route to the trusted LAN address.
 
 - If the authorization page does not open, troubleshoot the browser's LAN, VPN, DNS, or external
   route.
@@ -54,12 +56,25 @@ upstream.
   `navet-data` volume is mounted. On a fresh or reset installation, complete the one-time pairing
   described in [Home Assistant setup](/install/home-assistant/#standalone-docker).
 
+## Stuck on Starting your dashboard
+
+An existing standalone session should renew through Navet even when the browser cannot reach Home
+Assistant's LAN address.
+
+1. Reload Navet once to activate the current application version.
+2. Confirm that the VPN route to Navet is still active.
+3. Confirm from the Docker host that the Navet container can reach its trusted Home Assistant
+   upstream.
+4. If a recovery action appears, choose **Retry**. Disconnect the provider only when Navet reports
+   that the Home Assistant authorization itself is invalid.
+
 ## Deployment-specific checks
 
 - Home Assistant Ingress should reuse the parent Home Assistant session.
-- Standalone Docker needs a browser-reachable Home Assistant authorization address and a trusted
-  upstream reachable from the Navet container. They may be different routes to the same Home
-  Assistant installation.
+- Standalone Docker needs a browser-reachable Home Assistant address while authorization is open
+  and a trusted upstream reachable from the Navet container. They may be different routes to the
+  same Home Assistant installation; routine dashboard use and token renewal use the latter through
+  Navet's same-origin proxy.
 - openHAB must be reachable from the browser and use the configured credentials.
 - Homey OAuth requires the configured client and callback route.
 

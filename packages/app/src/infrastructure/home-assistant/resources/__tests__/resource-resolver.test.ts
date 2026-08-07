@@ -70,7 +70,7 @@ describe('HomeAssistantResourceResolver', () => {
     expect(resource.authStrategy).toBe('same_origin');
   });
 
-  it('keeps standalone OAuth signed camera snapshots on direct Home Assistant URLs', async () => {
+  it('keeps standalone OAuth signed camera snapshots on the same-origin proxy', async () => {
     window.__NAVET_CONFIG__ = { hassUrl: oauthSessionFixture.haBaseUrl };
     resetRuntimeContextForTests();
     const signedSnapshotPath = '/api/camera_proxy/camera.front_door?authSig=signed-camera-token';
@@ -92,11 +92,11 @@ describe('HomeAssistantResourceResolver', () => {
       rawPath: homeAssistantUrlFixtures.relativeCameraSnapshot,
     });
 
-    expect(resource.url).toBe(`${oauthSessionFixture.haBaseUrl}${signedSnapshotPath}`);
-    expect(resource.authStrategy).toBe('none');
+    expect(resource.url).toBe(`/__navet_ha_proxy__${signedSnapshotPath}`);
+    expect(resource.authStrategy).toBe('same_origin');
   });
 
-  it('keeps standalone OAuth signed camera HLS streams on direct Home Assistant URLs', async () => {
+  it('keeps standalone OAuth signed camera HLS streams on the same-origin proxy', async () => {
     window.__NAVET_CONFIG__ = { hassUrl: oauthSessionFixture.haBaseUrl };
     resetRuntimeContextForTests();
     const signedHlsPath = '/api/hls/camera.front_door/master.m3u8?authSig=signed-stream-token';
@@ -118,8 +118,8 @@ describe('HomeAssistantResourceResolver', () => {
       rawPath: homeAssistantUrlFixtures.relativeHlsStream,
     });
 
-    expect(resource.url).toBe(`${oauthSessionFixture.haBaseUrl}${signedHlsPath}`);
-    expect(resource.authStrategy).toBe('none');
+    expect(resource.url).toBe(`/__navet_ha_proxy__${signedHlsPath}`);
+    expect(resource.authStrategy).toBe('same_origin');
   });
 
   it('does not sign standalone OAuth media artwork that already uses the same-origin proxy', async () => {

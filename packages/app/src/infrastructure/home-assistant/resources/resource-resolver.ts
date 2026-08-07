@@ -88,10 +88,6 @@ function hasSignedAuthQuery(resourceUrl: string) {
   return resourceUrl.includes('authSig=');
 }
 
-function shouldPreferDirectSignedCameraResource(ref: HaResourceRef) {
-  return ref.kind === 'camera_snapshot' || ref.kind === 'camera_stream';
-}
-
 function toUrlWithCacheBust(url: string, cacheBustKey: ResolveOptions['cacheBustKey']) {
   if (cacheBustKey === undefined || cacheBustKey === null) {
     return url;
@@ -525,10 +521,7 @@ export class HomeAssistantResourceResolver {
         return resource;
       }
 
-      const signedResource = this.resolveSync(
-        { kind: 'absolute_url', url: signedPath },
-        shouldPreferDirectSignedCameraResource(ref) ? { ...options, allowDirect: true } : options
-      );
+      const signedResource = this.resolveSync({ kind: 'absolute_url', url: signedPath }, options);
 
       return {
         ...resource,

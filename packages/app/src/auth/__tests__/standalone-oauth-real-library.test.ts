@@ -3,6 +3,7 @@ import { standaloneOAuthAuth } from '../adapters/standaloneOAuthAuth';
 
 const SESSION_ID = `nas_${'b'.repeat(32)}`;
 const HASS_URL = 'https://ha.example.com';
+const getProxyUrl = () => `${window.location.origin}/__navet_ha_proxy__`;
 
 function jsonResponse(payload: unknown) {
   return new Response(JSON.stringify(payload), {
@@ -39,11 +40,14 @@ function createAuthenticatedSessionFetch(options?: {
   return vi.spyOn(window, 'fetch').mockImplementation(async (input, init) => {
     const url = new URL(String(input), window.location.origin);
     const pathname = url.pathname;
-    if (url.origin === HASS_URL && pathname === '/auth/token') {
+    if (url.origin === window.location.origin && pathname === '/__navet_ha_proxy__/auth/token') {
       return jsonResponse({
         access_token: 'refreshed-access-token',
         expires_in: 3600,
       });
+    }
+    if (url.origin === window.location.origin && pathname === '/__navet_ha_proxy__/auth/revoke') {
+      return new Response(null, { status: 200 });
     }
     if (pathname === '/__navet_auth__/session/credentials') {
       return jsonResponse(authData);
@@ -56,6 +60,9 @@ function createAuthenticatedSessionFetch(options?: {
     }
     if (pathname === '/__navet_auth__/session' && !init?.method) {
       return jsonResponse(metadata);
+    }
+    if (pathname === '/__navet_auth__/session' && init?.method === 'DELETE') {
+      return jsonResponse({ ok: true });
     }
     throw new Error(`Unexpected auth request: ${init?.method ?? 'GET'} ${pathname}`);
   });
@@ -82,7 +89,8 @@ describe('standalone OAuth with the real Home Assistant auth library', () => {
       expect(session).toMatchObject({
         runtime: 'standalone-oauth',
         authMode: 'oauth',
-        hassUrl: HASS_URL,
+        haBaseUrl: HASS_URL,
+        hassUrl: getProxyUrl(),
       });
       expect(session?.auth?.accessToken).toBe('access-token');
       expect(window.location.search).toBe('');
@@ -103,11 +111,43 @@ describe('standalone OAuth with the real Home Assistant auth library', () => {
     });
 
     expect(session?.auth?.accessToken).toBe('refreshed-access-token');
+    expect(session?.auth?.data.hassUrl).toBe(getProxyUrl());
+    expect(
+      fetchMock.mock.calls.some(([input]) =>
+        String(input).startsWith(`${getProxyUrl()}/auth/token`)
+      )
+    ).toBe(true);
+    expect(
+      fetchMock.mock.calls.some(([input]) => String(input).startsWith(`${HASS_URL}/auth/token`))
+    ).toBe(false);
     expect(persistenceCalls).toHaveLength(1);
     expect(JSON.parse(String(persistenceCalls[0]?.[1]?.body))).toMatchObject({
+      hassUrl: HASS_URL,
       access_token: 'refreshed-access-token',
       refresh_token: 'refresh-token',
     });
+  });
+
+  it('revokes the real auth-library session through the same-origin proxy', async () => {
+    const fetchMock = createAuthenticatedSessionFetch();
+
+    await standaloneOAuthAuth.logout?.();
+
+    expect(
+      fetchMock.mock.calls.some(([input]) =>
+        String(input).startsWith(`${getProxyUrl()}/auth/revoke`)
+      )
+    ).toBe(true);
+    expect(
+      fetchMock.mock.calls.some(([input]) => String(input).startsWith(`${HASS_URL}/auth/revoke`))
+    ).toBe(false);
+    expect(
+      fetchMock.mock.calls.some(
+        ([input, init]) =>
+          new URL(String(input), window.location.origin).pathname === '/__navet_auth__/session' &&
+          init?.method === 'DELETE'
+      )
+    ).toBe(true);
   });
 
   it('surfaces a shared real-library persistence failure without issuing a second save', async () => {

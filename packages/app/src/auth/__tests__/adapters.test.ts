@@ -23,6 +23,7 @@ const AUTH_SESSION_LOAD_TIMEOUT_MS = 3_000;
 const STORED_SESSION_RESTORE_TIMEOUT_MS = 3_000;
 const OAUTH_CALLBACK_RESTORE_TIMEOUT_MS = 10_000;
 const INSTALLATION_KEY = 'a'.repeat(64);
+const getStandaloneProxyUrl = () => `${window.location.origin}/__navet_ha_proxy__`;
 
 const { getAuthMock, refreshAccessTokenMock, revokeMock } = vi.hoisted(() => ({
   getAuthMock: vi.fn(),
@@ -238,7 +239,12 @@ describe('auth adapters', () => {
   it('restores a standalone OAuth session through sanitized metadata and bound credentials', async () => {
     const auth = createAuth(oauthSessionFixture.haBaseUrl);
     const fetchMock = mockStandaloneSessionFetch({ userId: 'ha-user-1' });
-    getAuthMock.mockResolvedValueOnce(auth);
+    getAuthMock.mockImplementationOnce(
+      async (options: { loadTokens: () => Promise<Auth['data']> }) => {
+        auth.data = await options.loadTokens();
+        return auth;
+      }
+    );
 
     const session = await standaloneOAuthAuth.init();
 
@@ -246,7 +252,7 @@ describe('auth adapters', () => {
       runtime: 'standalone-oauth',
       authMode: 'oauth',
       haBaseUrl: oauthSessionFixture.haBaseUrl,
-      hassUrl: oauthSessionFixture.hassUrl,
+      hassUrl: getStandaloneProxyUrl(),
       auth,
       userId: 'ha-user-1',
     });
@@ -266,7 +272,10 @@ describe('auth adapters', () => {
         headers: expect.objectContaining({
           'X-Navet-Auth-Revision': '0',
         }),
-        body: JSON.stringify(auth.data),
+        body: JSON.stringify({
+          ...auth.data,
+          hassUrl: oauthSessionFixture.haBaseUrl,
+        }),
       })
     );
   });
@@ -457,15 +466,18 @@ describe('auth adapters', () => {
     const auth = createAuth(oauthSessionFixture.haBaseUrl);
     setOAuthCallbackUrl();
     const fetchMock = mockStandaloneSessionFetch();
-    getAuthMock.mockImplementationOnce(async () => {
-      expect(window.location.search).toBe('');
-      return auth;
-    });
+    getAuthMock.mockImplementationOnce(
+      async (options: { loadTokens: () => Promise<Auth['data']> }) => {
+        expect(window.location.search).toBe('');
+        auth.data = await options.loadTokens();
+        return auth;
+      }
+    );
 
     const session = await standaloneOAuthAuth.init();
 
     expect(getAuthMock).toHaveBeenCalledWith({
-      hassUrl: auth.data.hassUrl,
+      hassUrl: getStandaloneProxyUrl(),
       loadTokens: expect.any(Function),
       saveTokens: expect.any(Function),
       limitHassInstance: true,
@@ -473,7 +485,8 @@ describe('auth adapters', () => {
     expect(session).toMatchObject({
       runtime: 'standalone-oauth',
       authMode: 'oauth',
-      haBaseUrl: auth.data.hassUrl,
+      haBaseUrl: oauthSessionFixture.haBaseUrl,
+      hassUrl: getStandaloneProxyUrl(),
       auth,
     });
     expect(fetchMock).toHaveBeenCalledWith(
@@ -969,6 +982,12 @@ describe('auth adapters', () => {
     await standaloneOAuthAuth.logout?.();
 
     expect(revokeMock).toHaveBeenCalled();
+    expect(getAuthMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hassUrl: getStandaloneProxyUrl(),
+        loadTokens: expect.any(Function),
+      })
+    );
     expect(fetchMock).toHaveBeenCalledWith(
       `${window.location.origin}/__navet_auth__/session`,
       expect.objectContaining({ method: 'DELETE' })

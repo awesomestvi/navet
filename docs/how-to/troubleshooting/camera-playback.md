@@ -22,7 +22,7 @@ Open the camera settings dialog and check:
 
 - Preferred playback mode.
 - A configured direct-stream URL, when your setup requires one.
-- Whether the URL is reachable from the browser running Navet.
+- Whether a configured direct-stream URL is reachable from the browser running Navet.
 
 ![Camera settings with playback preference and direct-stream URL.](/docs/how-to/troubleshooting/camera-stream-settings.webp)
 
@@ -34,9 +34,17 @@ WebRTC offer should fall back rather than pretending that live playback is activ
 ## Deployment checks
 
 - Panel and Ingress paths can require Home Assistant resource rewriting.
-- Standalone mode can require Navet's same-origin proxy.
-- Authenticated, signed, relative, and expiring URLs cannot be treated as ordinary public links.
-- A go2rtc endpoint must be reachable from the browser or server path that actually uses it.
+- In standalone mode, Home Assistant-provided snapshots, HLS playlists, and MJPEG fallbacks use
+  Navet's same-origin proxy. The browser does not need a direct route to Home Assistant for those
+  resources.
+- Authenticated, signed, relative, and expiring Home Assistant URLs stay on that proxy rather than
+  being treated as ordinary public links.
+- A custom go2rtc direct-stream URL is intentionally browser-loaded and must be reachable from the
+  current browser, including across a VPN when away.
+- A Home Assistant camera may advertise WebRTC even when its actual offer or source fails. Navet
+  then tries the next provider-supported transport. Native WebRTC may also negotiate a media route
+  that the current VPN cannot reach; HLS or MJPEG fallback remains on Navet's proxy. Verify those
+  transports work in Home Assistant if every live option fails.
 
 ## Collect useful support details
 

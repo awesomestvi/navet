@@ -1,4 +1,7 @@
-import { resolveAddonLocalEndpointUrl } from '@navet/app/utils/home-assistant-connection-target';
+import {
+  resolveAddonLocalEndpointUrl,
+  resolveHomeAssistantConnectionUrl,
+} from '@navet/app/utils/home-assistant-connection-target';
 import type { AuthData } from 'home-assistant-js-websocket';
 import { ERR_INVALID_AUTH, getAuth } from 'home-assistant-js-websocket';
 import {
@@ -48,6 +51,7 @@ interface StandaloneSessionMetadata {
 interface StandaloneSessionPersistenceContext {
   sessionId: string;
   authRevision: number;
+  upstreamHassUrl: string;
 }
 
 interface StoredStandaloneCredentials {
@@ -201,10 +205,6 @@ async function loadStoredCredentials(
   };
 }
 
-async function loadTokens(timeoutMs = AUTH_SESSION_LOAD_TIMEOUT_MS): Promise<AuthData | null> {
-  return (await loadStoredCredentials(timeoutMs))?.tokens ?? null;
-}
-
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   return await new Promise<T>((resolve, reject) => {
     const timeoutId = window.setTimeout(() => {
@@ -280,11 +280,24 @@ function getTokenPersistenceSignature(
   return `${context.sessionId}:${data ? JSON.stringify(data) : 'null'}`;
 }
 
+function restoreUpstreamHassUrl(
+  data: AuthData | null,
+  context: StandaloneSessionPersistenceContext
+): AuthData | null {
+  return data
+    ? {
+        ...data,
+        hassUrl: context.upstreamHassUrl,
+      }
+    : null;
+}
+
 async function persistTokensAfterLibrarySave(
   data: AuthData | null,
   context: StandaloneSessionPersistenceContext
 ): Promise<void> {
-  const signature = getTokenPersistenceSignature(data, context);
+  const upstreamData = restoreUpstreamHassUrl(data, context);
+  const signature = getTokenPersistenceSignature(upstreamData, context);
   const existing = libraryTokenPersistenceBySignature.get(signature);
   if (existing) {
     try {
@@ -296,18 +309,19 @@ async function persistTokensAfterLibrarySave(
     }
     return;
   }
-  await persistTokens(data, context);
+  await persistTokens(upstreamData, context);
 }
 
 function saveTokens(data: AuthData | null, context: StandaloneSessionPersistenceContext): void {
   // Auth.refreshAccessToken invokes this callback synchronously without awaiting
   // it. Share that request with the awaited persistence pass so failures are
   // surfaced without racing a duplicate write for the same token data.
-  const signature = getTokenPersistenceSignature(data, context);
+  const upstreamData = restoreUpstreamHassUrl(data, context);
+  const signature = getTokenPersistenceSignature(upstreamData, context);
   if (libraryTokenPersistenceBySignature.has(signature)) {
     return;
   }
-  const persistence = persistTokens(data, context);
+  const persistence = persistTokens(upstreamData, context);
   libraryTokenPersistenceBySignature.set(signature, persistence);
   void persistence.catch(() => undefined);
 }
@@ -388,7 +402,7 @@ function toAuthSession(
     providerId: 'home_assistant',
     runtime: 'standalone-oauth',
     authMode: 'oauth',
-    haBaseUrl: auth.data.hassUrl,
+    haBaseUrl: context.upstreamHassUrl,
     hassUrl: auth.data.hassUrl,
     auth,
     expiresAt: auth.data.expires,
@@ -407,12 +421,21 @@ async function restoreSessionOnce(timeoutMs: number): Promise<AuthSession | null
   const context: StandaloneSessionPersistenceContext = {
     sessionId: stored.metadata.sessionId,
     authRevision: stored.metadata.authRevision,
+    upstreamHassUrl: stored.tokens.hassUrl,
+  };
+  const proxyHassUrl = resolveHomeAssistantConnectionUrl({
+    runtime: 'standalone-oauth',
+    hassUrl: context.upstreamHassUrl,
+  });
+  const browserTokens: AuthData = {
+    ...stored.tokens,
+    hassUrl: proxyHassUrl,
   };
   try {
     const auth = await withTimeout(
       getAuth({
-        hassUrl: stored.tokens.hassUrl,
-        loadTokens: async () => stored.tokens,
+        hassUrl: proxyHassUrl,
+        loadTokens: async () => browserTokens,
         saveTokens: (data) => saveTokens(data, context),
         limitHassInstance: true,
       }),
@@ -583,6 +606,7 @@ export const standaloneOAuthAuth: AuthAdapter = {
       context = {
         sessionId: metadata.sessionId,
         authRevision: metadata.authRevision,
+        upstreamHassUrl: session.haBaseUrl,
       };
       persistenceContextByAuth.set(session.auth, context);
     }
@@ -620,6 +644,7 @@ export const standaloneOAuthAuth: AuthAdapter = {
         ? {
             sessionId: session.credentialSessionId,
             authRevision: session.credentialRevision,
+            upstreamHassUrl: session.haBaseUrl,
           }
         : session.auth
           ? persistenceContextByAuth.get(session.auth)
@@ -648,14 +673,22 @@ export const standaloneOAuthAuth: AuthAdapter = {
     }
   },
   async logout() {
-    const storedTokens = await loadTokens().catch(() => null);
+    const stored = await loadStoredCredentials().catch(() => null);
     try {
-      if (storedTokens) {
+      if (stored) {
+        const proxyHassUrl = resolveHomeAssistantConnectionUrl({
+          runtime: 'standalone-oauth',
+          hassUrl: stored.tokens.hassUrl,
+        });
+        const browserTokens: AuthData = {
+          ...stored.tokens,
+          hassUrl: proxyHassUrl,
+        };
         await withTimeout(
           (async () => {
             const auth = await getAuth({
-              hassUrl: storedTokens.hassUrl,
-              loadTokens: async () => storedTokens,
+              hassUrl: proxyHassUrl,
+              loadTokens: async () => browserTokens,
               limitHassInstance: true,
             }).catch(() => null);
             await Promise.resolve(auth?.revoke());

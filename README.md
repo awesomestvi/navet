@@ -98,7 +98,10 @@ data, dashboard state, and credentials stay on your device or server rather than
 Standalone Home Assistant logins are isolated per browser profile. Navet keeps each OAuth session
 under `/data`, identifies the browser with an opaque `HttpOnly` cookie, and never reuses one wall
 panel's Home Assistant login for another phone or panel. Signing out removes only that browser's
-session; shared dashboard settings remain a separate concern from provider credentials.
+session; shared dashboard settings remain a separate concern from provider credentials. After the
+Home Assistant authorization page closes, dashboard requests, token renewal, and provider-managed
+HTTP camera resources use Navet's same-origin proxy instead of requiring every browser to reach
+the container's Home Assistant address.
 
 The Home Assistant add-on is Ingress-only so its trusted Home Assistant user headers are never
 accepted from a directly exposed add-on port. Use standalone Docker for direct browser access and

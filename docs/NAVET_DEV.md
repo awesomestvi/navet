@@ -94,7 +94,8 @@ through its exact immutable version.
 - Docker with Compose support
 - the credentials required by the provider you want to test
 - for Home Assistant, a trusted upstream reachable from the Navet container and an authorization
-  address reachable from the browser; these may be different routes to the same installation
+  address reachable from the browser while signing in; these may be different routes to the same
+  installation
 
 ### Install
 
@@ -124,9 +125,10 @@ volumes:
 Remove any environment variables for providers you are not testing. For Home Assistant, change
 `NAVET_HASS_URL` to an upstream reachable from the Navet container, or omit it and use first-run
 discovery and pairing. Each browser may then enter a LAN, VPN, Tailscale, or external address for
-that same Home Assistant installation. For Homey, register the exact callback URL described in the
-[Homey guide](/install/homey/). openHAB needs no container environment variable; choose it in Navet
-and enter its base URL and credentials.
+that same Home Assistant installation. After authorization, Home Assistant API traffic, token
+renewal, and provider-managed HTTP camera resources use Navet's same-origin proxy. For Homey,
+register the exact callback URL described in the [Homey guide](/install/homey/). openHAB needs no
+container environment variable; choose it in Navet and enter its base URL and credentials.
 
 Start Navet Dev:
 

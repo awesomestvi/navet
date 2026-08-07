@@ -80,7 +80,7 @@ Choose this option only if you are comfortable using Docker.
 ### What you need
 
 - Docker with Docker Compose
-- a Home Assistant address reachable from the browser that signs in, such as a LAN, VPN,
+- a Home Assistant address reachable from the browser while it signs in, such as a LAN, VPN,
   Tailscale, or external address
 - a route from the Navet container to the same Home Assistant installation
 
@@ -134,9 +134,16 @@ address while away.
 
 You do not need to add every address to Docker Compose or pair each address separately. The
 browser address opens the Home Assistant authorization page, while Navet verifies the completed
-login and proxies dashboard traffic through its trusted server connection. The remote browser does
-not need a route to the saved LAN address. An address for a different Home Assistant installation
-cannot silently replace it.
+login and proxies dashboard API calls, WebSocket traffic, access-token renewal, and
+provider-managed HTTP camera resources through its trusted server connection. After sign-in, the
+remote browser does not need a route to the saved LAN address. An address for a different Home
+Assistant installation cannot silently replace it.
+
+A camera **direct-stream URL** that you explicitly configure in Navet is the exception: that custom
+URL is intentionally opened by the browser and must be reachable from the browser's current
+network. Home Assistant-provided snapshots, HLS, and fallback paths remain behind Navet's proxy.
+Native WebRTC can still negotiate a separate media path supplied by Home Assistant; when that path
+is not usable across the current network, Navet falls back to another provider-supported transport.
 
 ### Optional: set the trusted Home Assistant server
 
@@ -221,6 +228,17 @@ create a second `frontend:` section.
    `navet-data` volume is mounted. For a new installation, use the one-time link in the container
    log or set `NAVET_HASS_URL`.
 5. Run `docker compose up -d` again after changing the Compose file.
+
+### Navet stays on Starting your dashboard
+
+1. Reload Navet once so the current application version is active.
+2. Confirm that the Navet container can still reach its trusted Home Assistant upstream. The
+   browser does not need to reach that saved LAN address after sign-in.
+3. Keep the VPN connected if it is how you reach Navet itself. A VPN route to Home Assistant is
+   needed in the browser only when opening its authorization page or when you configured a custom
+   camera direct-stream URL.
+4. If the screen changes to a recovery message, use **Retry** before disconnecting the saved
+   session.
 
 ### Login returns to the wrong page
 

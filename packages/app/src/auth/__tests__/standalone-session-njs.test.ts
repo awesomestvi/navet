@@ -379,11 +379,19 @@ describe('production njs standalone OAuth sessions', () => {
       cookie: browserB.cookie,
       requestUri: '/__navet_ha_proxy__/api/states',
     }).request;
+    const tokenRefreshRequest = createRequest({
+      method: 'POST',
+      cookie: browserA.cookie,
+      requestUri: '/__navet_ha_proxy__/auth/token',
+      headers: { Origin: 'http://navet.example' },
+    }).request;
 
     expect(proxy.upstream_url(requestA)).toBe('https://ha-a.example.com/api/states?room=kitchen');
     expect(proxy.authorization_header(requestA)).toBe('Bearer access-a');
     expect(proxy.upstream_url(requestB)).toBe('https://ha-b.example.com/api/states');
     expect(proxy.authorization_header(requestB)).toBe('Bearer access-b');
+    expect(proxy.request_allowed(tokenRefreshRequest)).toBe('1');
+    expect(proxy.upstream_url(tokenRefreshRequest)).toBe('https://ha-a.example.com/auth/token');
 
     const injectedCookie = `navet_auth_session=${'f'.repeat(64)}`;
     for (const cookie of [

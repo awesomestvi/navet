@@ -552,6 +552,26 @@ async function completeHomeAssistantOAuth(baseUrl, browserSession, state) {
   return cookie;
 }
 
+async function verifyHomeAssistantProxyTokenRefresh(baseUrl, authCookie) {
+  const response = await fetch(`${baseUrl}/__navet_ha_proxy__/auth/token`, {
+    method: 'POST',
+    headers: {
+      Cookie: authCookie,
+      Origin: baseUrl,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      client_id: `${baseUrl}/`,
+      grant_type: 'refresh_token',
+      refresh_token: 'actual-image-refresh',
+    }),
+  });
+  const payload = await response.json().catch(() => null);
+  if (response.status !== 200 || payload?.access_token !== 'actual-image-access') {
+    throw new Error('Actual-image same-origin Home Assistant token renewal failed');
+  }
+}
+
 async function verifyHomeAssistantRefreshRevision(baseUrl, authCookie) {
   const metadataResponse = await fetch(`${baseUrl}/__navet_auth__/session`, {
     headers: { Cookie: authCookie },
@@ -1953,6 +1973,7 @@ try {
   if (alternateMetadata.hassUrl !== 'http://provider-check:8080/ha') {
     throw new Error('Alternate browser route replaced the trusted Home Assistant upstream');
   }
+  await verifyHomeAssistantProxyTokenRefresh(baseUrl, authenticatedCookie);
   const authRefresh = await verifyHomeAssistantRefreshRevision(
     baseUrl,
     authenticatedCookie
@@ -2136,7 +2157,7 @@ try {
       addonTarget.exactBase
         ? 'the exact Home Assistant base image'
         : 'the explicit Alpine with-contenv/bashio compatibility fallback'
-    }, exact standalone build metadata, no anonymous record minting, OAuth rotation, verified alternate browser routes, two-installation host cookie isolation, runtime hostname resolution, provider confinement, stable parallel profile binding, njs-safe two-client profile ordering, and persisted auth/profile state after container replacement.`
+    }, exact standalone build metadata, no anonymous record minting, OAuth rotation, proxied token renewal, verified alternate browser routes, two-installation host cookie isolation, runtime hostname resolution, provider confinement, stable parallel profile binding, njs-safe two-client profile ordering, and persisted auth/profile state after container replacement.`
   );
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

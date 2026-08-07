@@ -422,7 +422,7 @@ describe('App Home Assistant connection recovery', () => {
     await waitFor(() => expect(screen.queryByText('login')).not.toBeInTheDocument());
     expect(screen.getByText('dashboard')).toBeInTheDocument();
     expect(getAuthAppMock).toHaveBeenCalledWith({
-      hassUrl: 'http://192.168.68.71:8123',
+      hassUrl: `${window.location.origin}/__navet_ha_proxy__`,
       loadTokens: expect.any(Function),
       saveTokens: expect.any(Function),
       limitHassInstance: true,
@@ -465,7 +465,7 @@ describe('App Home Assistant connection recovery', () => {
     await waitFor(() => expect(screen.queryByText('login')).not.toBeInTheDocument());
     expect(screen.getByText('dashboard')).toBeInTheDocument();
     expect(getAuthAppMock).toHaveBeenCalledWith({
-      hassUrl: 'http://192.168.68.99:8123',
+      hassUrl: `${window.location.origin}/__navet_ha_proxy__`,
       loadTokens: expect.any(Function),
       saveTokens: expect.any(Function),
       limitHassInstance: true,
