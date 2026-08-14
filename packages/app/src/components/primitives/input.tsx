@@ -4,6 +4,7 @@ import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-col
 import {
   getControlFocusStyles,
   getInputSizeTokens,
+  type NavetInputSize,
   navetRadiusTokens,
   navetTypographyTokens,
 } from '@navet/app/components/system/tokens';
@@ -15,7 +16,7 @@ export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
   leading?: ReactNode;
   trailing?: ReactNode;
   invalid?: boolean;
-  size?: 'default' | 'small';
+  size?: NavetInputSize;
   variant?: 'default' | 'soft';
   containerClassName?: string;
   inputClassName?: string;
@@ -82,6 +83,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         className={cn(
           'w-full border outline-none transition-[border-color,box-shadow,background-color] disabled:cursor-not-allowed disabled:opacity-50',
           navetRadiusTokens.field,
+          sizeTokens.heightClassName,
           sizeTokens.insetClassName,
           navetTypographyTokens.control,
           leading ? sizeTokens.leadingPaddingClassName : sizeTokens.idlePaddingLeftClassName,

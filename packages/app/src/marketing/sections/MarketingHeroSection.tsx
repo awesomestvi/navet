@@ -163,7 +163,7 @@ export function MarketingHeroSection() {
                 ))}
               </div>
               <Text className="text-sm text-white/64 sm:text-[15px]">
-                Wall panels, tablets, desktops, and phones stay familiar.
+                One familiar dashboard from the hallway panel to your phone.
               </Text>
             </div>
           </div>

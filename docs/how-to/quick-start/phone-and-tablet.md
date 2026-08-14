@@ -13,7 +13,7 @@ touch-friendly sheets on smaller screens.
 
 1. Use the **Home** control to return to the Home overview.
 2. Open the section menu to choose **Energy**, **Climate**, **Security**, **Lights**, **Media**,
-   **Tasks**, or **Settings**.
+   **Household**, or **Settings**.
 3. Recently used sections remain easy to reach.
 
 The mobile menu renders only the controls for the active screen size. Keyboard and screen-reader

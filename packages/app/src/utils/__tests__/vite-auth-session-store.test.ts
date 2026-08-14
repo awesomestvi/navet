@@ -1650,6 +1650,32 @@ describe('Vite standalone auth session conformance', () => {
     ).toBeNull();
   });
 
+  it('keeps the Navet principal while an expired access token waits for refresh', async () => {
+    const { store } = createStore();
+    const handler = createViteAuthRequestHandler(
+      store,
+      vi.fn().mockResolvedValue(new Response('{}', { status: 404 })),
+      TEST_INSTALLATION_AUTHORITY
+    );
+    const browser = await createBrowser(handler);
+    const expiredAuth = {
+      ...AUTH_A,
+      expires: Date.now() - 1,
+    };
+    seedAuth(store, browser, expiredAuth);
+
+    expect(
+      resolveViteAuthenticatedPrincipal(createRequest({ cookie: browser.cookie }), store)
+    ).toEqual({
+      providerId: 'home_assistant',
+      source: 'standalone_session',
+      tenantId: createHomeAssistantTenantId(expiredAuth.hassUrl),
+      sessionId: browser.metadata.sessionId,
+      userId: null,
+      userName: null,
+    });
+  });
+
   it('matches ingress cookie and explicit-principal trust semantics', async () => {
     const request = createRequest({
       headers: {

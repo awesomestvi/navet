@@ -8,12 +8,13 @@ import { cn } from '@navet/app/components/ui/utils';
 import { useTheme } from '@navet/app/hooks/use-theme';
 import { forwardRef, type ReactNode, type SelectHTMLAttributes, useState } from 'react';
 
-type SelectSize = 'default' | 'small';
+type SelectSize = 'default' | 'small' | 'touch';
 type SelectVariant = 'default' | 'ghost';
 
 const SELECT_SIZE_CLASS_NAMES: Record<SelectSize, string> = {
-  default: 'px-4 py-3',
+  default: 'h-10 px-4 py-0 leading-5',
   small: 'h-9 pl-3.5 pr-10 py-0 leading-5',
+  touch: 'h-[42px] px-4 py-0 leading-5',
 };
 
 export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'size'> {

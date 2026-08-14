@@ -16,7 +16,7 @@ const meta = {
   argTypes: {
     size: {
       control: 'select',
-      options: ['compact', 'small', 'default'],
+      options: ['compact', 'small', 'default', 'touch'],
     },
   },
   parameters: {
@@ -125,6 +125,9 @@ export const Sizes: Story = {
         <Button size="default" variant="secondary">
           Default
         </Button>
+        <Button size="touch" variant="secondary">
+          Touch-forward
+        </Button>
       </div>
       <div className="flex flex-wrap items-center gap-4">
         <Button iconOnly label="Compact settings" variant="subtle" size="compact">
@@ -136,6 +139,9 @@ export const Sizes: Story = {
         <Button iconOnly label="Default settings" variant="subtle" size="default">
           <Settings2 className="h-4 w-4" />
         </Button>
+        <Button iconOnly label="Touch-forward settings" variant="subtle" size="touch">
+          <Settings2 className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   ),
@@ -143,7 +149,7 @@ export const Sizes: Story = {
     docs: {
       description: {
         story:
-          'Side-by-side comparison for text and icon-only buttons. `default` stays unchanged, `small` is the comfortable reduced tier, and `compact` is the dense tier for tight control rows.',
+          'Side-by-side comparison of Navet’s 36 px compact/small, 40 px default, and exceptional 42 px touch-forward tiers for text and icon-only buttons.',
       },
     },
   },

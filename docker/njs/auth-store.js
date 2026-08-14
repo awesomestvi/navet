@@ -1621,11 +1621,10 @@ function createAuthSessionStore(options) {
     }
 
     const context = resolveStandaloneAuthSession(r);
-    if (
-      !context ||
-      !context.session.auth ||
-      context.session.auth.expires <= Date.now()
-    ) {
+    // The access token expiry starts credential renewal; it does not revoke
+    // the browser-bound Navet session. Local profile and chore routes remain
+    // available until refresh confirms invalid auth and removes the record.
+    if (!context || !context.session.auth) {
       return null;
     }
 

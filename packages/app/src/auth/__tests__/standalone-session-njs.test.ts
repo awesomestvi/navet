@@ -1415,6 +1415,27 @@ describe('production njs standalone OAuth sessions', () => {
     }
   });
 
+  it('keeps the Navet principal while an expired access token waits for refresh', async () => {
+    const { store } = createStore();
+    const browser = await createBrowserSession(store);
+    const expiredAuth = {
+      ...AUTH_A,
+      expires: Date.now() - 1,
+    };
+    seedAuth(store, browser, expiredAuth);
+
+    expect(
+      store.resolveAuthenticatedPrincipal(createRequest({ cookie: browser.cookie }).request)
+    ).toEqual({
+      providerId: 'home_assistant',
+      source: 'standalone_session',
+      tenantId: createHomeAssistantTenantId(expiredAuth.hassUrl),
+      sessionId: browser.metadata.sessionId,
+      userId: null,
+      userName: null,
+    });
+  });
+
   it('uses ingress cookie paths, Secure on HTTPS, and trusts ingress users only explicitly', async () => {
     const { store } = createStore();
     const browser = await createBrowserSession(store, {

@@ -691,8 +691,8 @@ Deleting a dashboard and remapping its assignments must be one profile mutation.
 
 ## Accessibility and interaction
 
-- Keep every switcher, assignment row, and menu action at least 44 px high; prefer 48 px on wall
-  displays.
+- Keep every switcher, assignment row, and menu action on Navet's shared interaction scale: 36 px
+  compact minimum, 40 px standard, and 42 px only when a wall display needs extra separation.
 - Use `aria-current` for the open dashboard and explicit text for the assigned dashboard.
 - Do not communicate assignment through icon color alone.
 - Keep keyboard order: dashboard switcher, dashboard rows, footer actions.

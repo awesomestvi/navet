@@ -4,9 +4,8 @@ description: Filter tasks, enable or disable automations, trigger runs, and read
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/automations-and-scripts.md
 ---
 
-Tasks separates automations and scripts while keeping configuration details read-only in Navet.
-
-![The Tasks section with filters, attention state, recent runs, automations, and scripts.](/docs/how-to/everyday-control/tasks-dashboard.webp)
+Open **Household**, then choose **Routines**. This view separates automations and scripts while
+keeping configuration details read-only in Navet.
 
 ## Find a task
 

@@ -285,7 +285,13 @@ describe('CameraLiveViewer', () => {
     expect(screen.getByText('HLS')).toBeInTheDocument();
     expect(screen.getByTestId('camera-viewer-top-controls')).toHaveClass('z-20');
     expect(screen.getByTestId('camera-viewer-bottom-controls')).toHaveClass('z-20');
-    expect(screen.getByRole('button', { name: 'Close' })).toHaveClass('h-12', 'w-12');
+    expect(screen.getByTestId('camera-viewer-header-layout')).toHaveClass(
+      'grid',
+      'grid-cols-[minmax(0,1fr)_auto]',
+      'gap-y-2'
+    );
+    expect(screen.getByTestId('camera-viewer-status')).toHaveClass('col-span-2', 'row-start-2');
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveClass('h-9', 'w-9');
     expect(
       screen.queryByRole('button', { name: 'Refresh camera snapshot' })
     ).not.toBeInTheDocument();
@@ -295,6 +301,55 @@ describe('CameraLiveViewer', () => {
 
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('reuses an already-playing card stream without mounting a second player', async () => {
+    const retainedStreamHost = document.createElement('div');
+    const retainedFrame = document.createElement('div');
+    retainedFrame.dataset.testid = 'retained-camera-stream';
+    retainedFrame.textContent = 'retained HLS stream';
+    retainedStreamHost.appendChild(retainedFrame);
+    getCameraPlaybackPlanMock.mockResolvedValue({
+      cameraState: 'streaming',
+      snapshotResource: null,
+      supportsSnapshot: false,
+      supportedTransports: ['hls'],
+      liveTransports: ['hls'],
+      fallbackTransports: [],
+      selectedTransport: 'hls',
+      selectedStreamResource: {
+        id: 'camera.front_door:hls',
+        kind: 'hls_stream',
+        cacheKey: 'camera.front_door:hls',
+        authStrategy: 'bearer',
+        url: '/api/hls/camera.front_door/master.m3u8',
+      },
+      supportsStreaming: true,
+      isSnapshotFallback: false,
+      shouldStartWithSnapshot: false,
+      motionDetectionEnabled: true,
+      refreshPolicy: { retryDelaysMs: [1_000, 3_000, 7_000] },
+    });
+
+    renderWithProviders(
+      <CameraLiveViewer
+        {...defaultProps}
+        initialStreamResource={{
+          id: 'camera.front_door:hls',
+          kind: 'hls_stream',
+          cacheKey: 'camera.front_door:hls',
+          authStrategy: 'bearer',
+          url: '/api/hls/camera.front_door/master.m3u8',
+        }}
+        initialStreamTransport="hls"
+        initialStreamReady
+        retainedStreamHost={retainedStreamHost}
+      />
+    );
+
+    expect(await screen.findByTestId('retained-camera-stream')).toBe(retainedFrame);
+    expect(screen.queryByTestId('camera-stream-player')).not.toBeInTheDocument();
+    expect(screen.getByText('Live')).toBeInTheDocument();
   });
 
   it('treats an active selected stream as live even when the camera state is idle', async () => {

@@ -30,7 +30,7 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
         }
       }}
       className={cn(
-        'inline-flex h-7 w-12 items-center rounded-full border px-1 outline-none transition-[background-color,border-color,box-shadow,opacity] focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+        'inline-flex h-9 w-14 items-center rounded-full border px-1 outline-none transition-[background-color,border-color,box-shadow,opacity] focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
         theme === 'light'
           ? 'focus-visible:ring-gray-400 focus-visible:ring-offset-white'
           : 'focus-visible:ring-white/30 focus-visible:ring-offset-transparent',
@@ -49,7 +49,7 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
     >
       <span
         className={cn(
-          'h-5 w-5 rounded-full bg-white transition-transform',
+          'h-7 w-7 rounded-full bg-white transition-transform',
           checked ? 'translate-x-5' : 'translate-x-0'
         )}
       />

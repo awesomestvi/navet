@@ -295,7 +295,8 @@ Different household objects speak through the same grammar with domain-specific 
 Navet cards are designed for mixed-input homes.
 
 - Controls must read as controls without hover.
-- Product touch targets remain at least 44 px, with 48 px preferred for primary controls.
+- Focusable card controls use the shared Navet scale: 36 px compact minimum, 40 px standard, and
+  42 px only when extra separation or emphasis is genuinely needed.
 - Visible pressed, selected, focus, disabled, and unavailable states are required.
 - Keyboard focus follows a logical order and is never clipped by the card shell.
 - Drag or edit behavior must not steal taps, scrolling, sliders, or nested media interaction.
@@ -399,7 +400,7 @@ an ideal showcase.
 | Use artwork and weather scenes as information | Add decorative imagery unrelated to current content |
 | Put advanced configuration in a dialog or sheet | Nest a settings panel inside an operational card |
 | Show explicit unavailable, loading, and error states | Present stale or invented values as live data |
-| Preserve 44–48 px targets and visible focus | Depend on hover or tiny icon controls |
+| Preserve the 36 / 40 / 42 px interaction scale and visible focus | Depend on hover or controls smaller than the shared compact minimum |
 | Use actual card components and demo captures in marketing | Draw fake cards that cannot exist in the product |
 
 ## Extension Workflow

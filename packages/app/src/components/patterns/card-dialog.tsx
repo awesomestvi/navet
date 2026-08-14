@@ -252,7 +252,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
                 <button
                   type="button"
                   className={cn(
-                    'flex h-8 w-8 items-center justify-center rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-50',
+                    'flex h-9 w-9 items-center justify-center rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-50',
                     actionButtonClassName
                   )}
                   aria-label={t('entityNameEditor.save')}
@@ -265,7 +265,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
                 <button
                   type="button"
                   className={cn(
-                    'flex h-8 w-8 items-center justify-center rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-50',
+                    'flex h-9 w-9 items-center justify-center rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-50',
                     actionButtonClassName
                   )}
                   aria-label={t('common.cancel')}
@@ -302,7 +302,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
                   <button
                     type="button"
                     className={cn(
-                      'shrink-0 text-inherit [font:inherit] transition-colors',
+                      'inline-flex min-h-9 shrink-0 items-center text-inherit [font:inherit] transition-colors',
                       editLinkClassName
                     )}
                     aria-label={t('entityNameEditor.edit', { name: displayTitle })}
@@ -330,7 +330,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
           <button
             type="button"
             className={cn(
-              'flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full border transition-colors',
+              'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors',
               actionButtonClassName
             )}
             aria-label={t('common.close')}

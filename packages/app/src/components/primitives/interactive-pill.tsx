@@ -24,19 +24,19 @@ interface InteractivePillProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const INTERACTIVE_PILL_SIZE_CLASS_NAMES = {
   default: {
-    frame: 'h-9 gap-1 px-3.5 md:h-10 md:gap-1.5 md:px-4',
-    icon: 'h-3.5 w-3.5 md:h-4 md:w-4',
-    text: 'text-xs font-medium leading-5 md:text-sm',
+    frame: 'h-10 gap-1.5 px-4',
+    icon: 'h-4 w-4',
+    text: 'text-sm font-medium leading-5',
   },
   small: {
-    frame: 'h-8 gap-1 px-3 md:h-9 md:gap-1.5 md:px-3.5',
-    icon: 'h-3.5 w-3.5 md:h-4 md:w-4',
-    text: 'text-xs font-medium leading-5 md:text-sm',
+    frame: 'h-9 gap-1.5 px-3.5',
+    icon: 'h-3.5 w-3.5',
+    text: 'text-xs font-medium leading-5',
   },
   compact: {
-    frame: 'h-[30px] gap-1 px-2.5 md:h-8 md:px-3',
+    frame: 'h-9 gap-1 px-3',
     icon: 'h-3.5 w-3.5',
-    text: 'text-xs leading-4 md:leading-5',
+    text: 'text-xs leading-5',
   },
 } as const;
 

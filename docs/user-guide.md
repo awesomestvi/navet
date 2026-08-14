@@ -28,8 +28,8 @@ provider. The first screen is designed for glanceable state and common household
 - **Climate** collects thermostats, HVAC devices, water heaters, humidifiers, and dehumidifiers
   with the controls their normalized capabilities expose.
 - **Security** brings together alarms, locks, covers, cameras, and security-state summaries.
-- **Tasks** separates automations and scripts, with filters, attention states, recent runs,
-  dependency summaries, details, and triggering where supported.
+- **Household** puts native chores into a focused Today list, keeps chore schedules and people in a
+  management view, and preserves provider automations and scripts under Routines.
 - **Settings** controls appearance, dashboard profiles, kiosk behavior, interactions, providers,
   extensions, import/export, and project information.
 

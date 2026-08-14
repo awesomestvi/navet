@@ -31,8 +31,8 @@ describe('SlideAction', () => {
       value: 238,
     });
     vi.spyOn(button, 'getBoundingClientRect').mockReturnValue({
-      bottom: 48,
-      height: 48,
+      bottom: 42,
+      height: 42,
       left: 0,
       right: 238,
       toJSON: () => ({}),
@@ -46,7 +46,8 @@ describe('SlideAction', () => {
     fireEvent.pointerMove(button, { clientX: 96, pointerId: 1 });
 
     expect(button.style.getPropertyValue('--slide-knob-offset')).toBe('96px');
-    expect(button.style.getPropertyValue('--slide-fill-width')).toBe('134px');
+    expect(button.style.getPropertyValue('--slide-fill-width')).toBe('130px');
+    expect(button).toHaveClass('h-[42px]');
     expect(button.style.getPropertyValue('--slide-motion-duration')).toBe('0ms');
   });
 
@@ -70,8 +71,8 @@ describe('SlideAction', () => {
       value: 238,
     });
     vi.spyOn(button, 'getBoundingClientRect').mockReturnValue({
-      bottom: 48,
-      height: 48,
+      bottom: 42,
+      height: 42,
       left: 0,
       right: 238,
       toJSON: () => ({}),
@@ -85,14 +86,14 @@ describe('SlideAction', () => {
     fireEvent.pointerMove(button, { clientX: 192, pointerId: 1 });
     fireEvent.pointerUp(button, { clientX: 192, pointerId: 1 });
 
-    expect(button.style.getPropertyValue('--slide-knob-offset')).toBe('192px');
+    expect(button.style.getPropertyValue('--slide-knob-offset')).toBe('196px');
 
     act(() => {
       vi.advanceTimersByTime(120);
     });
 
     expect(onComplete).toHaveBeenCalledTimes(1);
-    expect(button.style.getPropertyValue('--slide-knob-offset')).toBe('192px');
+    expect(button.style.getPropertyValue('--slide-knob-offset')).toBe('196px');
 
     act(() => {
       vi.advanceTimersByTime(500);

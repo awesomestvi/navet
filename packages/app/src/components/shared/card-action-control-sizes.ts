@@ -1,3 +1,4 @@
+import { navetSizeTokens } from '../system/tokens/foundations';
 import type { CardSize } from './card-size-selector';
 
 export interface CardActionControlSizes {
@@ -10,7 +11,7 @@ export interface CardActionControlSizes {
 export function getCardActionControlSizes(size: CardSize | 'large'): CardActionControlSizes {
   if (size === 'tiny') {
     return {
-      button: 'h-6 w-6',
+      button: navetSizeTokens.iconButton.sm,
       icon: 'h-3 w-3',
       inner: 'h-3 w-3',
       dot: 'h-1.5 w-1.5',
@@ -19,7 +20,7 @@ export function getCardActionControlSizes(size: CardSize | 'large'): CardActionC
 
   if (size === 'extra-small') {
     return {
-      button: 'h-7 w-7',
+      button: navetSizeTokens.iconButton.sm,
       icon: 'h-3.5 w-3.5',
       inner: 'h-3.5 w-3.5',
       dot: 'h-1.5 w-1.5',
@@ -28,7 +29,7 @@ export function getCardActionControlSizes(size: CardSize | 'large'): CardActionC
 
   if (size === 'small') {
     return {
-      button: 'h-8 w-8',
+      button: navetSizeTokens.iconButton.sm,
       icon: 'h-3.5 w-3.5',
       inner: 'h-3.5 w-3.5',
       dot: 'h-1.5 w-1.5',
@@ -37,7 +38,7 @@ export function getCardActionControlSizes(size: CardSize | 'large'): CardActionC
 
   if (size === 'medium') {
     return {
-      button: 'h-8 w-8',
+      button: navetSizeTokens.iconButton.sm,
       icon: 'h-4 w-4',
       inner: 'h-4 w-4',
       dot: 'h-2 w-2',
@@ -46,7 +47,7 @@ export function getCardActionControlSizes(size: CardSize | 'large'): CardActionC
 
   if (size === 'large') {
     return {
-      button: 'h-9 w-9',
+      button: navetSizeTokens.iconButton.md,
       icon: 'h-4 w-4',
       inner: 'h-4 w-4',
       dot: 'h-2 w-2',
@@ -54,7 +55,7 @@ export function getCardActionControlSizes(size: CardSize | 'large'): CardActionC
   }
 
   return {
-    button: 'h-8 w-8',
+    button: navetSizeTokens.iconButton.sm,
     icon: 'h-4 w-4',
     inner: 'h-4 w-4',
     dot: 'h-2 w-2',

@@ -41,6 +41,9 @@ function ControlsPreview() {
               <Button>Save changes</Button>
               <Button variant="secondary">Secondary</Button>
               <Button variant="ghost">Cancel</Button>
+              <Button size="touch" variant="soft">
+                Touch-forward
+              </Button>
             </div>
           </div>
 
@@ -87,7 +90,7 @@ function ControlsPreview() {
 function ControlsStory() {
   return (
     <ThemeTokenShowcase
-      intro="Semantic control tokens define the sizing and density of Navet’s shared buttons, fields, icon actions, panels, and dialog controls. Use these primitives before introducing feature-local control styles."
+      intro="Semantic control tokens define Navet’s 36 px compact minimum, 40 px standard, and exceptional 42 px control tier across buttons, fields, icon actions, panels, and dialogs. Use these primitives before introducing feature-local control styles."
       tokens={{
         density: navetDensityTokens,
         controls: navetControlTokens,
@@ -110,7 +113,7 @@ const meta = {
           'Shared semantic control and layout tokens used by Navet’s canonical primitives.',
           '',
           'What this story proves:',
-          '- Density tiers for compact, comfortable, and touch-first UI.',
+          '- The shared 36 / 40 / 42 px interaction scale for compact, standard, and exceptional touch-forward UI.',
           '- Shared button, input, card, and dialog sizing decisions.',
           '- Canonical Navet primitives rendered through the active Storybook theme.',
           '',
@@ -119,7 +122,7 @@ const meta = {
           '- Prefer tokenized control dimensions before introducing inline component-specific values.',
           '',
           'Review before merging:',
-          '- Verify touch targets stay appropriate across compact, comfortable, and touch-oriented tiers.',
+          '- Verify controls stay within the 36 / 40 / 42 px scale across compact, comfortable, and touch-oriented tiers.',
           '- Use the Storybook toolbar to verify button, input, card, and dialog surfaces in glass, dark, light, and black themes.',
         ].join('\n'),
       },

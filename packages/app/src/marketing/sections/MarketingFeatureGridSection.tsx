@@ -36,9 +36,10 @@ const PROVIDERS = [
 ] as const;
 
 const DASHBOARD_OUTCOMES = [
-  'Find daily controls by room and purpose.',
-  'Use familiar interactions for lights, climate, media, and security.',
-  'Move between a wall panel, tablet, desktop, and phone without relearning the layout.',
+  'Walk into a room and find the controls that belong there.',
+  'Control lights, climate, media, cameras, energy, and security without digging through admin screens.',
+  'Keep household chores and smart-home routines together in one clear place.',
+  'Move from a wall panel to a tablet or phone without relearning the layout.',
 ] as const;
 
 export function MarketingFeatureGridSection({ className }: { className?: string }) {
@@ -47,8 +48,8 @@ export function MarketingFeatureGridSection({ className }: { className?: string 
 
   return (
     <MarketingSectionShell
-      title="Your platform runs the home. Navet makes it easier to use."
-      description="Keep Home Assistant, Homey, or openHAB as the system behind your devices. Navet turns that setup into a focused daily dashboard for the people and screens in your home."
+      title="A clearer front door for your smart home."
+      description="Keep the system that already runs your devices. Navet puts everyday controls, household work, and routines into a dashboard the whole home can understand."
       variant="editorial"
       compactMobile
       className={className}
@@ -70,10 +71,11 @@ export function MarketingFeatureGridSection({ className }: { className?: string 
             <Text
               className={cn('mt-3 text-xl font-semibold tracking-[-0.025em]', surface.textPrimary)}
             >
-              Keep the platform you already trust.
+              Keep the system you already trust.
             </Text>
             <Text tone="muted" className="mt-2 text-sm leading-6">
-              Navet connects to your current smart-home system instead of asking you to rebuild it.
+              Navet sits in front of your current smart-home system instead of asking you to rebuild
+              it.
             </Text>
 
             <div className="mt-6 space-y-2.5">
@@ -140,11 +142,11 @@ export function MarketingFeatureGridSection({ className }: { className?: string 
             <Text
               className={cn('mt-3 text-xl font-semibold tracking-[-0.025em]', surface.textPrimary)}
             >
-              Give everyday control a simpler home.
+              Make the everyday things obvious.
             </Text>
             <Text tone="muted" className="mt-2 text-sm leading-6">
-              Provider details stay in the background while the controls people use remain close at
-              hand.
+              Device details stay in the background. Rooms, controls, chores, and routines stay
+              close at hand.
             </Text>
 
             <ul className="mt-6 space-y-4">

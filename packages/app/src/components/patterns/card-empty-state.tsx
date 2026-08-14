@@ -121,7 +121,7 @@ export function CardEmptyState({
           leading={<ActionIcon className="h-3 w-3" />}
           className={cn(
             'border-[var(--card-empty-action-border)] bg-[var(--card-empty-action-bg)] text-[var(--card-empty-action-text)] hover:bg-[var(--card-empty-action-hover-bg)]',
-            'h-7 px-3 text-xs font-semibold',
+            'h-9 px-3 text-xs font-semibold',
             isCompact ? 'mt-0.5' : 'mt-1'
           )}
           style={actionStyle}

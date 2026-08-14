@@ -1,5 +1,6 @@
 export * from './alarm-types';
 export * from './capabilities';
+export * from './chores';
 export * from './dashboard-entity-view';
 export * from './energy-types';
 export * from './errors';

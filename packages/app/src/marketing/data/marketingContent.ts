@@ -2,15 +2,14 @@ import { MARKETING_URLS } from '@navet/app/marketing/constants/marketingLinks';
 
 export const MARKETING_HERO_CONTENT = {
   headline: {
-    lead: 'A smart home dashboard for',
-    accent: 'every screen',
+    lead: 'Your smart home,',
+    accent: 'easier to use.',
   },
   subheadline:
-    'Use Navet as a polished, local-first dashboard for Home Assistant, Homey, or openHAB on wall panels, tablets, desktops, and phones.',
-  supportLine:
-    'Control smart lights, climate, media, energy, and security by room—without the admin-screen clutter.',
-  pills: ['Local-first', '3 supported platforms', 'Wall panels to phones'],
-  primaryCtas: [{ label: 'Explore the demo', href: MARKETING_URLS.demo }],
+    'Navet turns Home Assistant into a clear, room-first dashboard for lights, climate, media, cameras, energy, security, and routines—on wall panels, tablets, computers, and phones.',
+  supportLine: 'Self-hosted and local-first. Homey and openHAB also work in standalone mode.',
+  pills: ['Room-first', 'Local-first', 'Wall panels to phones'],
+  primaryCtas: [{ label: 'Try the live demo', href: MARKETING_URLS.demo }],
   secondaryCtas: [
     {
       label: 'How to install',
@@ -36,7 +35,7 @@ export const MARKETING_CURRENT_SUPPORT = {
     'Energy',
     'Climate',
     'Security',
-    'Tasks',
+    'Household',
     'Settings',
   ],
   cards: [

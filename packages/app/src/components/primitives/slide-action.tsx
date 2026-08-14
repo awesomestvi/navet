@@ -90,15 +90,15 @@ export function SlideAction({
   const metrics =
     size === 'extra-small'
       ? {
-          knobSize: 28,
+          knobSize: 32,
           padding: 4,
-          railClassName: 'h-11 rounded-[24px]',
+          railClassName: 'h-10 rounded-[22px]',
           labelClassName: 'text-xs leading-[1.15] tracking-[0.01em]',
         }
       : {
-          knobSize: 38,
+          knobSize: 34,
           padding: 4,
-          railClassName: 'h-12 rounded-[26px]',
+          railClassName: 'h-[42px] rounded-[24px]',
           labelClassName: 'text-xs leading-[1.15] tracking-[0.01em]',
         };
 

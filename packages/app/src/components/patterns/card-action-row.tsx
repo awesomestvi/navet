@@ -41,14 +41,14 @@ function resolveCardActionRowSize(size: CardActionRowSize): CardActionRowResolve
 function getActionButtonSize(size: CardActionRowResolvedSize) {
   if (size === 'small') {
     return {
-      button: 'h-8 w-8',
+      button: 'h-9 w-9',
       icon: 'h-3 w-3',
     };
   }
 
   if (size === 'default') {
     return {
-      button: 'h-8 w-8',
+      button: 'h-9 w-9',
       icon: 'h-3.5 w-3.5',
     };
   }

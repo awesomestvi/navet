@@ -33,7 +33,7 @@ export function RoomEyebrow({
   const shellClassName = forceDark
     ? 'border border-white/12 bg-white/8'
     : `${surface.border} ${surface.subtleBg}`;
-  const sharedClassName = `inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium capitalize tracking-normal ${textClassName} ${shellClassName} ${className}`;
+  const sharedClassName = `inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium capitalize tracking-normal ${textClassName} ${shellClassName} ${className}`;
   const content = (
     <>
       {room}

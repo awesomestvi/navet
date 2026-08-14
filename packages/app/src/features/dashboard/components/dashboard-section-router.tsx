@@ -46,9 +46,9 @@ const HomeDashboardOverview = lazy(async () => {
   const module = await import('./home-dashboard-overview');
   return { default: module.HomeDashboardOverview };
 });
-const TasksSection = lazy(async () => {
-  const module = await import('@navet/app/features/tasks/components/tasks-section');
-  return { default: module.TasksSection };
+const HouseholdSection = lazy(async () => {
+  const module = await import('@navet/app/features/chores/components/household-section');
+  return { default: module.HouseholdSection };
 });
 const MediaSection = lazy(async () => {
   const module = await import('@navet/app/components/layout/media-section');
@@ -349,7 +349,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   } else if (activeSection === 'tasks') {
     sectionContent = (
       <Suspense fallback={<LoadingSpinner />}>
-        <TasksSection />
+        <HouseholdSection />
       </Suspense>
     );
   } else if (activeSection === 'climate') {

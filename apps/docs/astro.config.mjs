@@ -123,6 +123,10 @@ export default defineConfig({
                 { label: "Security", link: "/guide/everyday-control/security/" },
                 { label: "Energy", link: "/guide/everyday-control/energy/" },
                 {
+                  label: "Household chores",
+                  link: "/guide/everyday-control/household-chores/",
+                },
+                {
                   label: "Automations and scripts",
                   link: "/guide/everyday-control/automations-and-scripts/",
                 },

@@ -396,7 +396,7 @@ function BaseCardDialogRoot({
               type="button"
               onPointerDown={handleMobileCoverSheetPointerDown}
               onClick={handleMobileCoverSheetHandleClick}
-              className="relative z-[3] mx-auto mt-3 mb-1 hidden h-5 w-20 touch-none items-center justify-center max-sm:flex"
+              className="relative z-[3] mx-auto mt-3 mb-1 hidden h-9 w-20 touch-none items-center justify-center max-sm:flex"
               aria-label={
                 isMobileCoverSheetFullscreen ? 'Close dialog' : 'Drag dialog to fullscreen or close'
               }
@@ -449,7 +449,7 @@ function getWidgetRoomSelector(roomSelector: BaseCardDialogRoomSelector, theme: 
         </select>
       ) : null}
       <div
-        className={`inline-flex h-[34px] min-w-0 items-center rounded-full border px-2.5 ${
+        className={`inline-flex h-9 min-w-0 items-center rounded-full border px-2.5 ${
           isLightTheme
             ? 'border-slate-300/80 bg-slate-100/90 text-slate-700'
             : 'border-white/12 bg-white/8 text-white/82'
@@ -848,7 +848,7 @@ function BaseCardDialogSheetVariant({
           type="button"
           onPointerDown={handlePointerDown}
           onClick={handleClick}
-          className="mx-auto mb-3 flex h-5 w-16 touch-none items-center justify-center"
+          className="mx-auto mb-3 flex h-9 w-16 touch-none items-center justify-center"
           aria-label={closeLabel ?? `Close ${title}`}
         >
           <span className="h-1.5 w-12 rounded-full bg-white/20" aria-hidden="true" />

@@ -22,7 +22,11 @@ type EntityIconPillStyles = {
   iconStyle?: CSSProperties;
 };
 
-function getBadgeSizeClass(size: CardSize) {
+function getBadgeSizeClass(size: CardSize, isInteractive: boolean) {
+  if (isInteractive) {
+    return 'h-9 w-9';
+  }
+
   if (isTinyCardSize(size)) {
     return 'h-6 w-6';
   }
@@ -102,7 +106,7 @@ export function getEntityIconPillStyles({
             ? '#000000'
             : '#09090b',
   });
-  const badgeSizeClass = getBadgeSizeClass(size);
+  const badgeSizeClass = getBadgeSizeClass(size, isInteractive);
   const iconSizeClass = getIconSizeClass(size);
   const interactiveClass = isInteractive
     ? 'cursor-pointer hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2'

@@ -128,7 +128,10 @@ organize operational content; they should not become marketing-style hero blocks
 
 ## Interaction, Accessibility, And Copy
 
-- use the shared minimum 44 px touch target and prefer 48 px for primary controls
+- use the shared interaction scale for focusable controls: 36 px compact minimum, 40 px standard,
+  and 42 px only for exceptional touch-forward controls that need extra separation or emphasis
+- apply the 42 px ceiling to ordinary icon and single-line controls; content-rich rows and gesture
+  surfaces may be taller when their content or interaction genuinely requires it
 - preserve focus-visible behavior and provide a reduced-motion path
 - do not use hover, color, or motion as the only affordance or state signal
 - use sentence case, concise household language, and existing translation keys

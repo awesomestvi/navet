@@ -10,6 +10,7 @@ server {
   include /etc/nginx/snippets/navet-homey-store.conf;
   include /etc/nginx/snippets/navet-discovery.conf;
   include /etc/nginx/snippets/navet-profile-store.conf;
+  include /etc/nginx/snippets/navet-chore-store.conf;
 
   location = /__navet_ha_proxy__/api/websocket {
     js_set $navet_ha_proxy_websocket_url navet_ha_proxy.websocket_url;

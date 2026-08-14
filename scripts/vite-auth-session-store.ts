@@ -917,7 +917,11 @@ export function resolveViteAuthenticatedPrincipal(
   }
 
   const session = resolveViteAuthSession(req, store)
-  return session?.auth && session.auth.expires > Date.now()
+  // Home Assistant access tokens are short lived, but the browser-bound Navet
+  // credential session remains durable while its refresh credential is stored.
+  // Expiry schedules renewal; it must not make Navet-local profile or chore
+  // routes treat the browser as logged out before refresh can complete.
+  return session?.auth
     ? {
         providerId: 'home_assistant',
         source: 'standalone_session',

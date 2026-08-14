@@ -35,6 +35,7 @@ import {
   createViteDashboardProfileRequestHandler,
   type ViteDashboardProfilePrincipal,
 } from '../../scripts/vite-dashboard-profile-store'
+import { createViteChoreStoreRequestHandler } from '../../scripts/vite-chore-store'
 import {
   createViteInstallationAuthority,
   type ViteInstallationAuthority,
@@ -1479,6 +1480,25 @@ function dashboardProfileStorePlugin(
   }
 }
 
+function choreStorePlugin(
+  resolvePrincipal: (
+    req: IncomingMessage
+  ) => ViteDashboardProfilePrincipal | null | Promise<ViteDashboardProfilePrincipal | null>
+) {
+  const handleRequest = createViteChoreStoreRequestHandler({ resolvePrincipal })
+  const registerMiddleware = (server: ViteDevServer | PreviewServer) => {
+    server.middlewares.use('/__navet_chores__', async (req, res) => {
+      await handleRequest(req, res)
+    })
+  }
+
+  return {
+    name: 'navet-chore-store',
+    configureServer: registerMiddleware,
+    configurePreviewServer: registerMiddleware,
+  }
+}
+
 function homeySessionStorePlugin(
   installationAuthority: ViteInstallationAuthority
 ) {
@@ -2851,6 +2871,18 @@ export default defineConfig(({ command, mode }) => {
           }
         ).api?.resolveAuthenticatedPrincipal?.(req, { trustIngressHeaders: false }) ?? null
     )
+    const resolveAuthenticatedPrincipal = (req: IncomingMessage) =>
+      (
+        authSessionPlugin as PluginOption & {
+          api?: {
+            resolveAuthenticatedPrincipal?: (
+              req: IncomingMessage,
+              options?: { trustIngressHeaders?: boolean }
+            ) => ViteAuthenticatedPrincipal | null
+          }
+        }
+      ).api?.resolveAuthenticatedPrincipal?.(req, { trustIngressHeaders: false }) ?? null
+    const choresPlugin = choreStorePlugin(resolveAuthenticatedPrincipal)
     const homeySessionPlugin = homeySessionStorePlugin(installationAuthority)
     const openhabSessionPlugin = openhabSessionStorePlugin(
       installationAuthority
@@ -2867,6 +2899,7 @@ export default defineConfig(({ command, mode }) => {
       spotifyMetadataPlugin(),
       authSessionPlugin,
       dashboardProfilePlugin,
+      choresPlugin,
       homeySessionPlugin,
       openhabSessionPlugin,
       homeAssistantProxyPlugin(

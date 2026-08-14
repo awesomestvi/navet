@@ -7,15 +7,15 @@ import {
 } from './foundations';
 
 export type NavetDensity = 'compact' | 'comfortable' | 'touch';
-export type NavetButtonSize = 'compact' | 'small' | 'default';
-export type NavetInputSize = 'small' | 'default';
+export type NavetButtonSize = 'compact' | 'small' | 'default' | 'touch';
+export type NavetInputSize = 'small' | 'default' | 'touch';
 export type NavetDialogMaxWidth = 'sm' | 'md' | 'lg';
 export type NavetDialogHeight = 'tall' | 'capped' | undefined;
 
 /**
  * Density policy:
  * - comfortable: default for general product use and mixed-input devices
- * - touch: coarse-pointer / touch-first surfaces such as wall panels and kiosks
+ * - touch: the exceptional 42 px tier for controls that need extra separation or emphasis
  * - compact: desktop or keyboard/mouse-heavy surfaces where denser UI helps
  */
 export const navetDensityTokens = {
@@ -29,20 +29,21 @@ export const navetDensityTokens = {
       'Desktop or keyboard/mouse-heavy screens. Do not use as the default on touch-first panels.',
   },
   comfortable: {
-    controlHeightPx: 44,
-    iconButtonSizePx: 44,
+    controlHeightPx: 40,
+    iconButtonSizePx: 40,
     cardPaddingPx: 16,
     gridGapPx: 16,
     fontScale: 1,
     description: 'Default mode for tablets, laptops, and mixed input devices.',
   },
   touch: {
-    controlHeightPx: 48,
-    iconButtonSizePx: navetAccessibilityTokens.preferredTouchTargetPx,
+    controlHeightPx: navetAccessibilityTokens.exceptionalControlSizePx,
+    iconButtonSizePx: navetAccessibilityTokens.exceptionalControlSizePx,
     cardPaddingPx: 20,
     gridGapPx: 20,
     fontScale: 1.06,
-    description: 'Touch-first mode for wall panels, phones, tablets, and kiosk-style use.',
+    description:
+      'Exceptional touch-forward mode for controls that need more separation or emphasis.',
   },
 } as const;
 
@@ -52,9 +53,9 @@ export const navetControlTokens = {
     apiSizes: {
       compact: {
         density: 'compact' as const,
-        heightClassName: 'h-8',
-        heightPx: 32,
-        iconOnlyClassName: 'h-8 w-8',
+        heightClassName: 'h-9',
+        heightPx: navetDensityTokens.compact.controlHeightPx,
+        iconOnlyClassName: navetSizeTokens.iconButton.sm,
         paddingXClassName: 'px-3',
         textClassName: navetTypographyTokens.dense,
       },
@@ -74,6 +75,14 @@ export const navetControlTokens = {
         paddingXClassName: 'px-4',
         textClassName: navetTypographyTokens.control,
       },
+      touch: {
+        density: 'touch' as const,
+        heightClassName: navetSizeTokens.controlHeight.lg,
+        heightPx: navetDensityTokens.touch.controlHeightPx,
+        iconOnlyClassName: navetSizeTokens.iconButton.lg,
+        paddingXClassName: 'px-4',
+        textClassName: navetTypographyTokens.control,
+      },
     },
     densitySizes: {
       compact: {
@@ -83,15 +92,15 @@ export const navetControlTokens = {
         paddingXClassName: 'px-3.5',
       },
       comfortable: {
-        heightClassName: 'h-11',
+        heightClassName: 'h-10',
         heightPx: navetDensityTokens.comfortable.controlHeightPx,
-        iconOnlyClassName: 'h-11 w-11',
+        iconOnlyClassName: navetSizeTokens.iconButton.md,
         paddingXClassName: 'px-4',
       },
       touch: {
-        heightClassName: 'h-12',
+        heightClassName: 'h-[42px]',
         heightPx: navetDensityTokens.touch.controlHeightPx,
-        iconOnlyClassName: 'h-12 w-12',
+        iconOnlyClassName: navetSizeTokens.iconButton.lg,
         paddingXClassName: 'px-5',
       },
     },
@@ -104,11 +113,11 @@ export const navetControlTokens = {
         sizePx: navetDensityTokens.compact.iconButtonSizePx,
       },
       comfortable: {
-        className: 'h-11 w-11',
+        className: navetSizeTokens.iconButton.md,
         sizePx: navetDensityTokens.comfortable.iconButtonSizePx,
       },
       touch: {
-        className: 'h-12 w-12',
+        className: navetSizeTokens.iconButton.lg,
         sizePx: navetDensityTokens.touch.iconButtonSizePx,
       },
     },
@@ -118,6 +127,7 @@ export const navetControlTokens = {
     apiSizes: {
       small: {
         density: 'compact' as const,
+        heightClassName: navetSizeTokens.controlHeight.sm,
         heightPx: navetDensityTokens.compact.controlHeightPx,
         insetClassName: 'px-3 py-2',
         leadingPaddingClassName: 'pl-10',
@@ -128,8 +138,20 @@ export const navetControlTokens = {
       },
       default: {
         density: 'comfortable' as const,
+        heightClassName: navetSizeTokens.controlHeight.md,
         heightPx: navetDensityTokens.comfortable.controlHeightPx,
         insetClassName: navetSizeTokens.fieldInset,
+        leadingPaddingClassName: 'pl-10',
+        trailingPaddingClassName: 'pr-10',
+        idlePaddingClassName: 'px-4',
+        idlePaddingLeftClassName: 'pl-4',
+        idlePaddingRightClassName: 'pr-4',
+      },
+      touch: {
+        density: 'touch' as const,
+        heightClassName: navetSizeTokens.controlHeight.lg,
+        heightPx: navetDensityTokens.touch.controlHeightPx,
+        insetClassName: 'px-4 py-2.5',
         leadingPaddingClassName: 'pl-10',
         trailingPaddingClassName: 'pr-10',
         idlePaddingClassName: 'px-4',
@@ -147,8 +169,8 @@ export const navetControlTokens = {
         insetClassName: navetSizeTokens.fieldInset,
       },
       touch: {
-        heightPx: 52,
-        insetClassName: 'px-4 py-3.5',
+        heightPx: navetDensityTokens.touch.controlHeightPx,
+        insetClassName: 'px-4 py-2.5',
       },
     },
   },

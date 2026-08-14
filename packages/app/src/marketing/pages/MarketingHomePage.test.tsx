@@ -64,7 +64,7 @@ describe('MarketingHomePage', () => {
     win.cancelIdleCallback = vi.fn();
   });
 
-  it('places the demo CTA directly after product proof and keeps the privacy promise', async () => {
+  it('leads with product proof, then explains the product before release resources and the final CTA', async () => {
     renderWithProviders(<MarketingHomePage />);
 
     const releaseResources = await screen.findByText('Release resources section');
@@ -74,15 +74,21 @@ describe('MarketingHomePage', () => {
     });
     const featureGrid = await screen.findByText('Feature grid section');
     const privacyHeading = await screen.findByRole('heading', { name: 'Local by default.' });
+    const currentSupport = await screen.findByText('Current support section');
 
-    expect(releaseResources.compareDocumentPosition(productPreview)).toBe(
+    expect(productPreview.compareDocumentPosition(featureGrid)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
-    expect(productPreview.compareDocumentPosition(demoHeading)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING
-    );
-    expect(demoHeading.compareDocumentPosition(featureGrid)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(featureGrid.compareDocumentPosition(privacyHeading)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(privacyHeading.compareDocumentPosition(currentSupport)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(currentSupport.compareDocumentPosition(releaseResources)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(releaseResources.compareDocumentPosition(demoHeading)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
     expect(screen.getByText('Provider tokens stay local')).toBeInTheDocument();

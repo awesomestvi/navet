@@ -4,7 +4,7 @@ import { Button, type ButtonProps } from '../button';
 export interface IconButtonProps extends Omit<ButtonProps, 'children' | 'leading' | 'trailing'> {
   label: string;
   icon: ReactNode;
-  size?: 'default' | 'small' | 'compact';
+  size?: ButtonProps['size'];
   variant?: 'subtle' | 'ghost' | 'secondary';
   loading?: boolean;
 }
