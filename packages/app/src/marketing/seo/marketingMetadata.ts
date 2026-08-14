@@ -1,9 +1,9 @@
 import { getMarketingPublicSiteUrl } from '@navet/app/marketing/constants/marketingLinks';
 import type { MarketingWebsiteRoute } from '@navet/app/marketing/routing/marketingWebsiteRoutes';
 
-const DEFAULT_TITLE = 'Navet — A Simpler Smart Home Dashboard for Home Assistant';
+const DEFAULT_TITLE = 'Smart Home Dashboard for Home Assistant & Homey | Navet';
 const DEFAULT_DESCRIPTION =
-  'Make Home Assistant easier to use with Navet: a room-first, local smart home dashboard for lights, climate, media, cameras, energy, security, chores, and routines.';
+  'Navet is a local-first smart home dashboard for Home Assistant, Homey, and openHAB. Control smart lights, climate, media, and security on any screen.';
 const SOCIAL_IMAGE_PATH = '/navet-social-card.jpg';
 
 export interface MarketingWebsiteMetadata {
