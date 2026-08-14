@@ -15,7 +15,7 @@ function dateKey(timestamp: string) {
 
 function fixture(mode: 'default' | 'empty' | 'approval' = 'default'): ChoreWorkspaceData {
   const createdAt = isoAt(-72);
-  const participantsById =
+  const participantsById: ChoreWorkspaceData['participantsById'] =
     mode === 'empty'
       ? {}
       : {
@@ -56,7 +56,7 @@ function fixture(mode: 'default' | 'empty' | 'approval' = 'default'): ChoreWorks
     createdAt,
     updatedAt: createdAt,
   });
-  const definitionsById =
+  const definitionsById: ChoreWorkspaceData['definitionsById'] =
     mode === 'empty'
       ? {}
       : {
