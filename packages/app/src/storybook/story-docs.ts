@@ -1276,6 +1276,86 @@ const STORY_DOCS: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 const ADDITIONAL_STORY_DOCS: Record<string, string> = {
+  'Pages/Household/Today': doc(
+    'Complete Household workspace for daily chores, planning, progress, settings, and the neighboring provider-routine surface.',
+    [
+      'Attention-first ordering across overdue, due, remaining, and upcoming chores.',
+      'Responsive tablet, phone, wide-screen, empty, approval, completion, and recovery states.',
+      'Independent room-nav-style destinations for Today, Chores, Missions, Rewards, Progress, Settings, and Routines.',
+      'Missions and rewards stay out of Today until See rewards is opened from the House pulse banner.',
+    ],
+    [
+      'Use this story when the Household information hierarchy, navigation, shared-screen behavior, or management views change.',
+      'Compare its outer rhythm with Home and its inner surfaces with shared card, tab, dialog, and settings patterns.',
+    ],
+    [
+      'Check all four themes, phone and wall-display widths, reduced motion, long names, and no-hover operation.',
+      'Check that what needs doing, who owns it, when it is due, and whether it is done remain clear before motivation or setup detail.',
+    ]
+  ),
+  'Pages/Household/Chore Onboarding': doc(
+    'Six-step first-run flow for establishing people, appearance and reminders, initial chores, optional motivation, and management protection.',
+    [
+      'The requirement to keep at least one household manager.',
+      'Progressive person and chore creation without presenting every advanced field at once.',
+      'Desktop and phone behavior for the shared navigation-workspace dialog pattern.',
+    ],
+    [
+      'Use this story when setup order, validation, participant creation, or initial chore creation changes.',
+      'Keep advanced scheduling and motivation optional so setup can stay focused on the first useful household list.',
+    ],
+    [
+      'Check keyboard focus, step announcements, narrow-screen scrolling, and safe back and close behavior.',
+      'Check that setup can finish with motivation and the PIN skipped.',
+    ]
+  ),
+  'Pages/Household/Add Chore Dialog': doc(
+    'Four-step creation surface for adding a chore after onboarding, with the same fields available as one navigable editor when the chore is changed later.',
+    [
+      'Chore identity, Lucide icon preview, automatic or custom card color, room, estimated time, points, and optional instructions.',
+      'Assignment, once/daily/weekly/bi-weekly/tri-weekly/monthly/after-completion schedules, reminders, and missed-work behavior.',
+      'Phone and desktop behavior for long configuration forms.',
+    ],
+    [
+      'Use this story when chore fields, profile fields, validation, or step order changes.',
+      'Prefer the shared dialog, field, stepper, and navigation-workspace patterns over feature-local form shells.',
+    ],
+    [
+      'Check touch targets, focus order, validation copy, overflow, and translated labels.',
+      'Check that the first decision stays obvious even when every optional control is available.',
+    ]
+  ),
+  'Cards/Household/Chore': doc(
+    'Primary operational card and compact row for one scheduled household chore.',
+    [
+      'Due, overdue, awaiting-approval, completed, claimed, and child-friendly states.',
+      'Room and timing state, title, optional instructions, assignment, effort, earned points, and one secondary completion action in the ChoreBaseCard hierarchy.',
+      'Stable ID-based automatic color palettes, edit-time color overrides, overdue red, and completed green.',
+    ],
+    [
+      'Use this story when chore state language, actions, presentation metadata, or compact-list behavior changes.',
+      'Compare geometry and theme treatment with BaseCard and neighboring Home card stories.',
+    ],
+    [
+      'Check active and unavailable contrast across all themes, keyboard focus, and touch use.',
+      'Check long names and missing optional room or presentation data without weakening the primary action.',
+    ]
+  ),
+  'Cards/Household/Support': doc(
+    'Supporting progress cards for the one-row House pulse banner, missions, and optional reward goals.',
+    [
+      'Full-height metric cells for earned points, streak, completion, and the See rewards disclosure.',
+      'Mission and reward progress that remains secondary to operational work and hidden from Today until requested.',
+    ],
+    [
+      'Use this story when Household summary calculations or supporting card compositions change.',
+      'Keep these cards in the same theme-native surface family as Home rather than introducing a chores-only shell.',
+    ],
+    [
+      'Check incomplete and complete states, light and black themes, and compact grid behavior.',
+      'Check that optional points and goals never overpower due work.',
+    ]
+  ),
   'Components/Patterns/Card Action Row': doc(
     'Composed action-row pattern for card footers and control strips that combine primary controls, utility actions, and overflow commands.',
     [

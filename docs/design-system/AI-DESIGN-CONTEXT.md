@@ -95,7 +95,8 @@ Dashboard sections:
 Settings and dialogs:
 
 - Use shared modal, sheet, field, and dialog-section patterns.
-- Keep touch targets suitable for tablet and kiosk use.
+- Use the shared 36 px compact minimum and 40 px standard control size; reserve 42 px for
+  exceptional touch-forward controls that genuinely need extra separation or emphasis.
 - Use progressive disclosure for configuration-heavy workflows.
 
 Typography:

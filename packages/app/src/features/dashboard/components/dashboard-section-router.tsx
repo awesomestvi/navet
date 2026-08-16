@@ -8,6 +8,9 @@ import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner
 import { RenderProfiler } from '@navet/app/components/shared/render-profiler';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
+import { getRoomTodayChores } from '@navet/app/features/chores/chore-dashboard-selectors';
+import { useChoreWorkspaceStore } from '@navet/app/features/chores/chore-workspace-store';
+import { useChoreWorkspaceSync } from '@navet/app/features/chores/use-chore-workspace-sync';
 import { getClimateDashboardGroup } from '@navet/app/features/climate/utils/climate-dashboard-group';
 import { useRoomWorkspaceStore } from '@navet/app/features/dashboard/rooms/room-workspace-store';
 import { getRoomWorkspaceSectionsV2 } from '@navet/app/features/dashboard/rooms/room-workspace-v2';
@@ -21,6 +24,7 @@ import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
 import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { integrationSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
+import { getChoreTiming } from '@navet/core/chores';
 import { Lightbulb, Thermometer } from 'lucide-react';
 import {
   lazy,
@@ -46,10 +50,15 @@ const HomeDashboardOverview = lazy(async () => {
   const module = await import('./home-dashboard-overview');
   return { default: module.HomeDashboardOverview };
 });
+const HouseholdSection = lazy(async () => {
+  const module = await import('@navet/app/features/chores/components/household-section');
+  return { default: module.HouseholdSection };
+});
 const TasksSection = lazy(async () => {
   const module = await import('@navet/app/features/tasks/components/tasks-section');
   return { default: module.TasksSection };
 });
+const RoomChoreCard = lazy(() => import('@navet/app/features/chores/components/room-chore-card'));
 const MediaSection = lazy(async () => {
   const module = await import('@navet/app/components/layout/media-section');
   return { default: module.MediaSection };
@@ -98,7 +107,9 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   );
   const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
   const showSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
+  const choresEnabled = useSettingsStore(settingsSelectors.choresEnabled);
   const roomWorkspace = useRoomWorkspaceStore((state) => state.workspace);
+  const choreWorkspace = useChoreWorkspaceStore((state) => state.data);
   const activeCustomSidebarActionId = useNavigationStore(
     (state) => state.activeCustomSidebarActionId
   );
@@ -138,6 +149,37 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     sectionData,
     updateCardSize,
   } = controller;
+  useChoreWorkspaceSync(choresEnabled && activeSection === 'home' && !isAllRooms(activeRoom));
+  const activeRoomWorkspace = useMemo(
+    () => roomWorkspace?.rooms.find((room) => room.displayName === activeRoom),
+    [activeRoom, roomWorkspace]
+  );
+  const roomChoreNow = useMemo(() => new Date(), [activeRoom, choreWorkspace]);
+  const roomTodayChores = useMemo(
+    () =>
+      choresEnabled && choreWorkspace && !isAllRooms(activeRoom)
+        ? getRoomTodayChores(
+            choreWorkspace,
+            {
+              label: activeRoom,
+              canonicalIds: activeRoomWorkspace?.sourceRefs.map((source) => source.canonicalId),
+            },
+            roomChoreNow
+          )
+        : [],
+    [activeRoom, activeRoomWorkspace, choreWorkspace, choresEnabled, roomChoreNow]
+  );
+  const pendingRoomChores = useMemo(
+    () => roomTodayChores.filter((occurrence) => occurrence.status !== 'done'),
+    [roomTodayChores]
+  );
+  const overdueRoomChoreCount = useMemo(
+    () =>
+      pendingRoomChores.filter(
+        (occurrence) => getChoreTiming(occurrence, roomChoreNow) === 'overdue'
+      ).length,
+    [pendingRoomChores, roomChoreNow]
+  );
   const manageableRoomReferences = useMemo(
     () => Object.values(manageableRoomsByProviderId).flat(),
     [manageableRoomsByProviderId]
@@ -228,6 +270,8 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
       activeRoom,
       {
         climateEntityIds: roomClimateEntityIds,
+        pendingChoreCount: roomTodayChores.length > 0 ? pendingRoomChores.length : undefined,
+        overdueChoreCount: overdueRoomChoreCount,
         routineCount,
         temperatureUnit,
       },
@@ -236,7 +280,10 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   }, [
     activeRoom,
     availableDeviceMap,
+    pendingRoomChores.length,
+    overdueRoomChoreCount,
     roomClimateEntityIds,
+    roomTodayChores.length,
     routines.automations,
     routines.quickActions,
     showSummaryBar,
@@ -349,7 +396,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   } else if (activeSection === 'tasks') {
     sectionContent = (
       <Suspense fallback={<LoadingSpinner />}>
-        <TasksSection />
+        {choresEnabled ? <HouseholdSection /> : <TasksSection />}
       </Suspense>
     );
   } else if (activeSection === 'climate') {
@@ -612,6 +659,19 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                 usesHideAction
                 densePerformanceMode={controller.densePerformanceMode}
                 optimizeOffscreenPaint={controller.optimizeOffscreenPaint}
+                supplementalCards={pendingRoomChores.map((occurrence) => ({
+                  id: `room-chore-${occurrence.id}`,
+                  size: 'medium',
+                  content: choreWorkspace ? (
+                    <Suspense fallback={null}>
+                      <RoomChoreCard
+                        data={choreWorkspace}
+                        occurrence={occurrence}
+                        now={roomChoreNow}
+                      />
+                    </Suspense>
+                  ) : null,
+                }))}
               />
             </SummaryBarStack>
           </RenderProfiler>

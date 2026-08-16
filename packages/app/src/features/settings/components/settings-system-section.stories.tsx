@@ -3,11 +3,32 @@ import { useDashboardProfileRuntimeStore } from '@navet/app/features/dashboard/c
 import { useDeviceDisplayProfileRuntimeStore } from '@navet/app/features/dashboard/clients/device-display-profile-runtime-store';
 import type { Meta, StoryObj } from '@storybook/react';
 import { useEffect } from 'react';
+import { expect } from 'storybook/test';
 import { useSettingsSectionController } from '../hooks/use-settings-section-controller';
 import { SettingsSystemSection } from './settings-system-section';
 
-function SystemStory({ scenario = 'synced' }: { scenario?: 'empty' | 'error' | 'synced' }) {
+function SystemStory({
+  scenario = 'synced',
+  connectedProvider = false,
+}: {
+  scenario?: 'empty' | 'error' | 'synced';
+  connectedProvider?: boolean;
+}) {
   const controller = useSettingsSectionController();
+  if (connectedProvider) {
+    controller.providerCards = controller.providerCards.map((provider) =>
+      provider.id === 'home_assistant'
+        ? {
+            ...provider,
+            status: 'connected',
+            isActive: true,
+            isConnected: true,
+            canDisconnect: true,
+            baseUrl: 'http://navet.local:5200/__navet_ha_proxy__',
+          }
+        : provider
+    );
+  }
   useEffect(() => {
     const identity = getDashboardClientIdentity({
       environment: { userAgent: 'Mozilla/5.0 (iPad)' },
@@ -101,7 +122,8 @@ const meta = {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: 'System settings tab — Home Assistant connection info and logout.',
+        component:
+          'System settings grouped into smart-home providers, devices and sync, and device data and session actions.',
       },
     },
   },
@@ -114,6 +136,16 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     scenario: 'synced',
+  },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelectorAll('[data-settings-detail-group]')).toHaveLength(3);
+  },
+};
+
+export const ConnectedProvider: Story = {
+  args: {
+    scenario: 'synced',
+    connectedProvider: true,
   },
 };
 

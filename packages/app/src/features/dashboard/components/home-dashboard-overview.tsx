@@ -1,5 +1,8 @@
 import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { getHousePulse } from '@navet/app/features/chores/chore-dashboard-selectors';
+import { useChoreWorkspaceStore } from '@navet/app/features/chores/chore-workspace-store';
+import { useChoreWorkspaceSync } from '@navet/app/features/chores/use-chore-workspace-sync';
 import { buildHomeStatusSummaryItems } from '@navet/app/features/sensors/components/home-status-summary-model';
 import {
   SummaryBar,
@@ -36,7 +39,14 @@ const HomeStatusSummary = memo(function HomeStatusSummary({
     settingsSelectors.advancedCustomizationEnabled
   );
   const customSummaryPills = useSettingsStore(settingsSelectors.customSummaryPills);
+  const choresEnabled = useSettingsStore(settingsSelectors.choresEnabled);
   const energySummary = useHomeEnergySummary();
+  const choreWorkspace = useChoreWorkspaceStore((state) => state.data);
+  useChoreWorkspaceSync(choresEnabled);
+  const choreSummary = useMemo(
+    () => (choresEnabled && choreWorkspace ? getHousePulse(choreWorkspace) : undefined),
+    [choreWorkspace, choresEnabled]
+  );
   const statusSummaryItems = useMemo(
     () =>
       buildHomeStatusSummaryItems(
@@ -45,6 +55,8 @@ const HomeStatusSummary = memo(function HomeStatusSummary({
           gridImportTodayKWh: energySummary.gridImportTodayKWh,
           routineCount,
           securityAlertCount,
+          pendingChoreCount: choreSummary?.remaining,
+          overdueChoreCount: choreSummary?.overdue,
           temperatureUnit,
           customSummaryPills: advancedCustomizationEnabled ? customSummaryPills : [],
         },
@@ -54,6 +66,7 @@ const HomeStatusSummary = memo(function HomeStatusSummary({
       advancedCustomizationEnabled,
       customSummaryPills,
       energySummary.gridImportTodayKWh,
+      choreSummary,
       routineCount,
       securityAlertCount,
       summaryDeviceMap,

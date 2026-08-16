@@ -10,6 +10,7 @@ import { getOrderedSectionNavigationItems, MOBILE_SECTION_ORBIT_ORDER } from './
 
 interface MobileSectionOrbitSheetProps {
   activeSection: Section;
+  choresEnabled?: boolean;
   hasCustomActiveDestination?: boolean;
   customItems?: Array<{
     active?: boolean;
@@ -33,6 +34,7 @@ interface MobileSectionOrbitSheetProps {
 
 export const MobileSectionOrbitSheet = memo(function MobileSectionOrbitSheet({
   activeSection,
+  choresEnabled = true,
   hasCustomActiveDestination = false,
   customItems = [],
   homeAssistantAction,
@@ -57,8 +59,8 @@ export const MobileSectionOrbitSheet = memo(function MobileSectionOrbitSheet({
     [accentColor, primaryColor, theme]
   );
   const orbitItems = useMemo(
-    () => getOrderedSectionNavigationItems(t, MOBILE_SECTION_ORBIT_ORDER),
-    [t]
+    () => getOrderedSectionNavigationItems(t, MOBILE_SECTION_ORBIT_ORDER, choresEnabled),
+    [choresEnabled, t]
   );
 
   const handleSelectSection = (section: Section) => {

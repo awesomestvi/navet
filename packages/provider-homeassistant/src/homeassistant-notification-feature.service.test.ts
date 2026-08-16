@@ -78,4 +78,24 @@ describe('homeAssistantNotificationFeatureService', () => {
       ],
     });
   });
+
+  it('sends provider-neutral chore reminders through a Home Assistant notify target', async () => {
+    await homeAssistantNotificationFeatureService.sendNotification?.({
+      title: 'Empty dishes',
+      message: 'Empty dishes is due now.',
+      target: 'mobile_app_alice',
+      data: { choreOccurrenceId: 'occurrence-1' },
+    });
+
+    expect(callHomeAssistantServiceMock).toHaveBeenCalledWith(
+      'notify',
+      'mobile_app_alice',
+      {
+        title: 'Empty dishes',
+        message: 'Empty dishes is due now.',
+        data: { choreOccurrenceId: 'occurrence-1' },
+      },
+      undefined
+    );
+  });
 });

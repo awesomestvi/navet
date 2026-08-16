@@ -1,3 +1,4 @@
+import { getCardActionControlSizes } from '@navet/app/components/shared/card-action-control-sizes';
 import {
   getBaseCardGapClassName,
   getBaseCardRadiusClassName,
@@ -15,16 +16,23 @@ import { describe, expect, it } from 'vitest';
 describe('system tokens', () => {
   it('exposes density tiers aligned with touch-target guidance', () => {
     expect(navetDensityTokens.compact.controlHeightPx).toBe(36);
-    expect(navetDensityTokens.comfortable.controlHeightPx).toBe(44);
-    expect(navetDensityTokens.touch.controlHeightPx).toBe(48);
-    expect(navetAccessibilityTokens.preferredTouchTargetPx).toBe(48);
+    expect(navetDensityTokens.comfortable.controlHeightPx).toBe(40);
+    expect(navetDensityTokens.touch.controlHeightPx).toBe(42);
+    expect(navetAccessibilityTokens.minimumControlSizePx).toBe(36);
+    expect(navetAccessibilityTokens.standardControlSizePx).toBe(40);
+    expect(navetAccessibilityTokens.exceptionalControlSizePx).toBe(42);
   });
 
   it('resolves semantic button and input sizes from the shared token layer', () => {
     expect(getButtonSizeTokens('default').heightPx).toBe(40);
+    expect(getButtonSizeTokens('compact').heightPx).toBe(36);
+    expect(getButtonSizeTokens('touch').heightPx).toBe(42);
     expect(getButtonSizeTokens('small').iconOnlyClassName).toBe('h-9 w-9');
-    expect(getInputSizeTokens('default').heightPx).toBe(44);
+    expect(getInputSizeTokens('default').heightPx).toBe(40);
     expect(getInputSizeTokens('small').leadingPaddingClassName).toBe('pl-10');
+    expect(getInputSizeTokens('touch').heightPx).toBe(42);
+    expect(getCardActionControlSizes('tiny').button).toBe('h-9 w-9');
+    expect(getCardActionControlSizes('large').button).toBe('h-10 w-10');
   });
 
   it('maps dialog helper options to shared class names', () => {

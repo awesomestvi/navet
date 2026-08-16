@@ -97,6 +97,7 @@ server {
   include /etc/nginx/snippets/navet-homey-store.conf;
   include /etc/nginx/snippets/navet-openhab-store.conf;
   include /etc/nginx/snippets/navet-profile-store-ingress.conf;
+  include /etc/nginx/snippets/navet-chore-store-ingress.conf;
   js_set \$navet_provider_proxy_request_allowed navet_homey_proxy.request_allowed;
 
   location /__navet_ha_proxy__/ {

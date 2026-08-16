@@ -1,4 +1,4 @@
-import { getNavetAccentWashStyle } from '@navet/app/components/shared/theme/accent-wash-style';
+import { navetIconSizeTokens, navetTypographyTokens } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
 import type { LucideIcon } from 'lucide-react';
 import { createContext, type ReactNode, useContext } from 'react';
@@ -11,11 +11,19 @@ interface SettingsSectionShellProps {
   description: string;
   styles: SettingsSectionStyles;
   children: ReactNode;
+  grouped?: boolean;
 }
 
 interface SettingsItemProps {
   title: string;
   description: string;
+  styles: SettingsSectionStyles;
+  children: ReactNode;
+}
+
+interface SettingsSectionGroupProps {
+  id: string;
+  title: string;
   styles: SettingsSectionStyles;
   children: ReactNode;
 }
@@ -37,54 +45,99 @@ export function SettingsSectionShell({
   description,
   styles,
   children,
+  grouped = false,
 }: SettingsSectionShellProps) {
   const embedded = useContext(SettingsEmbeddedSurfaceContext);
 
   return (
     <section
       id={id}
+      data-settings-embedded={embedded ? '' : undefined}
       className={cn(
         '@container/settings-detail',
         embedded
           ? 'min-w-0'
-          : `rounded-[28px] border ${styles.borderColor} ${styles.cardBg} md:rounded-4xl`
+          : `min-w-0 rounded-[28px] border ${styles.borderColor} ${styles.cardBg}`
       )}
     >
-      <div className={embedded ? 'px-4 py-5 md:px-6 md:py-7 lg:px-8' : 'px-4 py-5 md:px-8 md:py-8'}>
+      <div className={embedded ? 'px-4 py-5 md:px-6 md:py-7 lg:px-8' : 'px-4 py-5 md:px-6 md:py-7'}>
         <div
           className={cn(
-            'relative flex items-center justify-between gap-4 overflow-hidden rounded-[22px] px-5 py-4 text-left',
-            styles.insetBg
+            'flex min-w-0 items-start gap-3 px-1 text-left md:items-center',
+            styles.textColor
           )}
+          data-settings-detail-header
         >
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 opacity-90"
-            style={getNavetAccentWashStyle(styles.accentColor)}
-          />
-          <div className="relative min-w-0">
+            className={cn(
+              'flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] border',
+              styles.borderColor,
+              styles.iconBg,
+              styles.mutedColor
+            )}
+          >
+            <Icon className={navetIconSizeTokens.sm} />
+          </span>
+          <div className="min-w-0 flex-1">
             <h2
               id={`${id}-settings-title`}
-              className={cn('text-xl font-semibold tracking-tight', styles.textColor)}
+              className={cn(navetTypographyTokens.sectionHeading, styles.textColor)}
             >
               {title}
             </h2>
-            <p className={cn('mt-1 max-w-2xl text-sm leading-5', styles.subtleColor)}>
+            <p className={cn('mt-1 max-w-2xl text-sm leading-5 md:leading-6', styles.subtleColor)}>
               {description}
             </p>
           </div>
-          <div
-            className={cn(
-              'relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border',
-              styles.borderColor,
-              styles.iconBg
-            )}
-          >
-            <Icon className={cn('h-4.5 w-4.5', styles.mutedColor)} />
-          </div>
         </div>
 
-        <div className={cn('mt-3 divide-y', styles.dividerColor)}>{children}</div>
+        {grouped ? (
+          <div className="mt-6 grid gap-6" data-settings-detail-groups>
+            {children}
+          </div>
+        ) : (
+          <div
+            className={cn(
+              'mt-5 overflow-hidden rounded-[22px] border divide-y',
+              styles.insetBorderColor,
+              styles.insetBg,
+              styles.dividerColor
+            )}
+            data-settings-detail-group
+          >
+            {children}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+export function SettingsSectionGroup({ id, title, styles, children }: SettingsSectionGroupProps) {
+  return (
+    <section aria-labelledby={`${id}-settings-group-title`}>
+      <h3
+        id={`${id}-settings-group-title`}
+        className={cn(
+          'mb-2 px-1',
+          navetTypographyTokens.caption,
+          'font-semibold',
+          styles.subtleColor
+        )}
+      >
+        {title}
+      </h3>
+      <div
+        className={cn(
+          'overflow-hidden rounded-[22px] border divide-y',
+          styles.insetBorderColor,
+          styles.insetBg,
+          styles.dividerColor
+        )}
+        data-settings-detail-group={id}
+      >
+        {children}
       </div>
     </section>
   );
@@ -94,22 +147,19 @@ export function SettingsItem({ title, description, styles, children }: SettingsI
   return (
     <div
       className={cn(
-        'scroll-mt-4 py-4 outline-none md:py-6',
-        'focus-visible:rounded-[20px] focus-visible:ring-2 focus-visible:ring-offset-4',
+        'scroll-mt-4 px-4 py-4 outline-none md:px-5 md:py-5',
+        'focus-visible:ring-2 focus-visible:ring-inset',
         styles.ringClass,
-        styles.ringOffsetClass
+        styles.hoverBg,
+        'transition-colors motion-reduce:transition-none'
       )}
       data-settings-search-label={title}
       tabIndex={-1}
     >
-      <div className="grid gap-4 md:gap-5 @3xl/settings-detail:grid-cols-[minmax(0,280px)_minmax(0,1fr)] @3xl/settings-detail:gap-8">
+      <div className="grid gap-4 @3xl/settings-detail:grid-cols-[minmax(0,240px)_minmax(0,1fr)] @3xl/settings-detail:items-start @3xl/settings-detail:gap-8">
         <div className="min-w-0">
-          <h3 className={`text-base font-medium tracking-tight ${styles.textColor}`}>{title}</h3>
-          <p
-            className={`mt-1.5 text-sm leading-6 md:mt-2 md:leading-relaxed ${styles.subtleColor}`}
-          >
-            {description}
-          </p>
+          <h3 className={cn(navetTypographyTokens.control, styles.textColor)}>{title}</h3>
+          <p className={cn('mt-1 text-sm leading-5', styles.subtleColor)}>{description}</p>
         </div>
         <div className="min-w-0">{children}</div>
       </div>

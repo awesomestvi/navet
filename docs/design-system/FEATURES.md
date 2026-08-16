@@ -111,10 +111,15 @@ when the widget is domain-specific.
 The `entity` widget is a generic fallback for normalized provider entities. Prefer a dedicated
 provider-neutral card when the entity type has meaningful controls or domain-specific presentation.
 
-## Tasks And Habit Automation
+## Household, Routines, And Habit Automation
 
-The tasks feature owns automation/script/todo presentation and provider-backed automation detail
-inspection. Automation detail rows can summarize triggers, conditions, actions, diagnostics, and
+The chores feature owns provider-neutral participants, definitions, occurrences, scheduling,
+workflow, activity, and the Today and Chores surfaces. Household participants are attribution and
+workflow profiles, not authenticated accounts. Shared chores use revisioned installation storage and
+are unavailable in the Home Assistant custom panel.
+
+The tasks feature continues to own provider automation and script presentation under Household's
+Routines tab. Automation detail rows can summarize triggers, conditions, actions, diagnostics, and
 dependent entities discovered from provider automation config.
 
 Habit insights can suggest safe local routines. When the active provider exposes

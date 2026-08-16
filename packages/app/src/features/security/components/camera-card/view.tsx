@@ -8,8 +8,9 @@ import type { TranslationKey } from '@navet/app/i18n';
 import type { PlatformCameraState } from '@navet/app/platform/provider-feature-models';
 import type { CameraFitMode, CameraViewMode } from '@navet/app/stores/settings-store';
 import { Camera, Eye, RefreshCw, Settings2 } from 'lucide-react';
-import { type KeyboardEvent, type ReactNode, type RefObject, useEffect, useState } from 'react';
+import { type KeyboardEvent, type RefObject, useEffect, useState } from 'react';
 import { CameraSnapshotImage } from './camera-snapshot-image';
+import { CameraStreamHostSlot } from './camera-stream-host-slot';
 import type { CameraImageSourceKind, CameraStreamType } from './camera-view-mode';
 import type { CameraCardImageSource } from './types';
 
@@ -20,7 +21,7 @@ interface CameraCardViewProps {
   cardRef?: RefObject<HTMLDivElement | null>;
   imageUrl: string | undefined;
   imageSources?: readonly CameraCardImageSource[];
-  streamElement?: ReactNode;
+  streamHost?: HTMLDivElement | null;
   cameraState: PlatformCameraState;
   statusChangedAt: number | null;
   motionDetected: boolean;
@@ -96,7 +97,7 @@ export function CameraCardView({
   cardRef,
   imageUrl,
   imageSources,
-  streamElement,
+  streamHost,
   cameraState,
   statusChangedAt,
   motionDetected,
@@ -134,12 +135,12 @@ export function CameraCardView({
   const isUnavailable = cameraState === 'unavailable';
   const isRunning = cameraState !== 'off' && !isUnavailable;
   const effectiveImageUrl = snapshotFailed ? undefined : imageUrl;
-  const hasVisualBackground = Boolean(streamElement) || Boolean(effectiveImageUrl);
+  const hasVisualBackground = Boolean(streamHost) || Boolean(effectiveImageUrl);
   const showRefreshButton =
     isRunning &&
     !isEditMode &&
     (cameraViewMode === 'snapshot' || isStreamFallback || !isStreamCapable);
-  const hasLiveStream = Boolean(streamElement) && !isUnavailable;
+  const hasLiveStream = Boolean(streamHost) && !isUnavailable;
   const motionLabel = motionDetected ? t('camera.motion.detected') : null;
   const statusElapsed = formatElapsedCompact(now, statusChangedAt);
   const motionElapsed = formatElapsedCompact(now, motionChangedAt);
@@ -247,16 +248,18 @@ export function CameraCardView({
               />
             ) : null}
 
-            {hasLiveStream
-              ? streamElement
-              : !effectiveImageUrl && (
-                  <div className={emptyStateClassName}>
-                    <Camera className={emptyStateIconClassName} />
-                    <span className={emptyStateTextClassName}>
-                      {isUnavailable ? t('camera.status.unavailable') : t('camera.status.noSignal')}
-                    </span>
-                  </div>
-                )}
+            {hasLiveStream && streamHost ? (
+              <CameraStreamHostSlot host={streamHost} />
+            ) : (
+              !effectiveImageUrl && (
+                <div className={emptyStateClassName}>
+                  <Camera className={emptyStateIconClassName} />
+                  <span className={emptyStateTextClassName}>
+                    {isUnavailable ? t('camera.status.unavailable') : t('camera.status.noSignal')}
+                  </span>
+                </div>
+              )
+            )}
           </div>
         }
         contentClassName="relative z-10 h-full"

@@ -74,6 +74,7 @@ export function useSettingsSectionController() {
     kioskMode,
     kioskSwipeRooms,
     showHomeSummaryBar,
+    choresEnabled,
     updateSettings,
   } = useSettingsStore(
     useShallow((state) => ({
@@ -97,6 +98,7 @@ export function useSettingsSectionController() {
       kioskMode: state.kioskMode,
       kioskSwipeRooms: state.kioskSwipeRooms,
       showHomeSummaryBar: state.showHomeSummaryBar,
+      choresEnabled: state.choresEnabled,
       updateSettings: state.updateSettings,
     }))
   );
@@ -247,6 +249,7 @@ export function useSettingsSectionController() {
     setShowRevealAllConfirm,
     setShowTerms,
     showHomeSummaryBar,
+    choresEnabled,
     setTheme,
     showAllEntities,
     showLicense,

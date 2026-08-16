@@ -102,7 +102,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Dashboard settings tab — named Home dashboards, display presets, visibility, onboarding, and config backup/restore.',
+          'Dashboard settings grouped by task: dashboard setup, Home content, wall display behavior, and maintenance.',
       },
     },
   },
@@ -113,6 +113,10 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+export const Mobile: Story = {
+  parameters: { viewport: { defaultViewport: 'mobile1' } },
+};
 
 export const MultipleDashboards: Story = {
   render: () => <MultipleDashboardStory />,

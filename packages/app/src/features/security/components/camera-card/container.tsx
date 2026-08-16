@@ -32,6 +32,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
+import { createPortal } from 'react-dom';
 import {
   useCameraLiveStreamSlot,
   useRetainedCameraStreamVisibility,
@@ -197,6 +198,13 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const [failedStreamTypes, setFailedStreamTypes] = useState<PlatformCameraTransport[]>([]);
   const [directStreamFailed, setDirectStreamFailed] = useState(false);
   const [isStreamReady, setIsStreamReady] = useState(false);
+  const [streamPortalHost] = useState(() => {
+    if (typeof document === 'undefined') return null;
+    const host = document.createElement('div');
+    host.className = 'relative h-full w-full';
+    host.dataset.cameraStreamHost = id;
+    return host;
+  });
   const streamRetryTimeoutRef = useRef<number | null>(null);
   const { cardRef, isVisible } = useCameraCardVisibility();
   const isStreamVisibilityRetained = useRetainedCameraStreamVisibility(isVisible);
@@ -291,6 +299,8 @@ export const CameraCardContainer = memo(function CameraCardContainer({
       }
     };
   }, []);
+
+  useEffect(() => () => streamPortalHost?.remove(), [streamPortalHost]);
 
   useEffect(() => {
     if (isVisible) {
@@ -503,7 +513,8 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     isVisible,
     maxConcurrent: maxConcurrentDashboardStreams,
   });
-  const shouldRenderLiveStream = hasLiveStreamSlot ? selectedLiveStream : null;
+  const shouldRenderLiveStream =
+    (isViewerOpen || hasLiveStreamSlot) && selectedLiveStream ? selectedLiveStream : null;
   const streamKind = shouldRenderLiveStream ?? 'snapshot';
   const streamLabelOverride = shouldRenderLiveStream ? selectedStreamLabelOverride : undefined;
   const isDashboardStreamReadinessOpaque =
@@ -557,7 +568,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
         cardRef={cardRef}
         imageUrl={imageUrl}
         imageSources={imageSources}
-        streamElement={streamElement}
+        streamHost={!isViewerOpen && shouldRenderLiveStream ? streamPortalHost : null}
         cameraState={cameraState}
         statusChangedAt={statusChangedAt}
         motionDetected={motionDetected}
@@ -604,6 +615,9 @@ export const CameraCardContainer = memo(function CameraCardContainer({
             playbackModel?.motionDetectionEnabled ?? liveState.motionDetectionEnabled
           }
           initialStreamResource={playbackModel?.selectedStreamResource ?? null}
+          initialStreamTransport={shouldRenderLiveStream}
+          initialStreamReady={isStreamReady}
+          retainedStreamHost={streamPortalHost}
           onRefresh={handleRefresh}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onCameraViewModeChange={setViewerCameraViewMode}
@@ -636,6 +650,8 @@ export const CameraCardContainer = memo(function CameraCardContainer({
           onCameraFitModeChange={handleCameraFitModeChange}
         />
       )}
+
+      {streamPortalHost && streamElement ? createPortal(streamElement, streamPortalHost) : null}
     </>
   );
 });

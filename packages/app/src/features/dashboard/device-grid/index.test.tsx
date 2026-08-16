@@ -1,5 +1,6 @@
 import { renderWithProviders } from '@navet/app/test/render';
 import type { DeviceWithType } from '@navet/app/types/device.types';
+import { screen } from '@testing-library/react';
 import type { PropsWithChildren } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DeviceGrid } from '.';
@@ -92,5 +93,28 @@ describe('DeviceGrid offscreen paint policy', () => {
       isEditMode: true,
       optimizeOffscreenPaint: false,
     });
+  });
+
+  it('renders contextual supplemental cards in the same room grid', () => {
+    const device = createDevice();
+    renderWithProviders(
+      <DeviceGrid
+        orderedCardIds={[device.id]}
+        deviceMap={new Map([[device.id, device]])}
+        isEditMode={false}
+        cardSizes={{}}
+        updateCardSize={vi.fn()}
+        supplementalCards={[
+          {
+            id: 'room-chore-dishes',
+            size: 'medium',
+            content: <article>Unload dishwasher</article>,
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByText('Unload dishwasher')).toBeInTheDocument();
+    expect(screen.getByText('Unload dishwasher').parentElement).toHaveClass('col-span-4');
   });
 });

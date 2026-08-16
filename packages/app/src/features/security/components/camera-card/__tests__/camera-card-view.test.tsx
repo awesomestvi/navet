@@ -5,6 +5,15 @@ import { CameraCardView } from '../view';
 
 const baseNow = new Date('2026-06-26T12:00:00.000Z').getTime();
 
+function createStreamHost(testId: string, text = '') {
+  const host = document.createElement('div');
+  const content = document.createElement('div');
+  content.dataset.testid = testId;
+  content.textContent = text;
+  host.appendChild(content);
+  return host;
+}
+
 const defaultProps = {
   id: 'camera.front_door',
   name: 'Front Door',
@@ -108,7 +117,7 @@ describe('CameraCardView', () => {
         streamKind="web_rtc"
         frontendStreamTypes={['web_rtc']}
         streamLabelOverride="MSE"
-        streamElement={<div data-testid="direct-mse-stream" />}
+        streamHost={createStreamHost('direct-mse-stream')}
         statusChangedAt={baseNow - 55 * 60_000}
       />
     );
@@ -126,7 +135,7 @@ describe('CameraCardView', () => {
         streamKind="web_rtc"
         frontendStreamTypes={['web_rtc']}
         streamLabelOverride="MSE"
-        streamElement={<div data-testid="direct-mse-stream" />}
+        streamHost={createStreamHost('direct-mse-stream')}
         isStreamReady
       />
     );
@@ -142,7 +151,7 @@ describe('CameraCardView', () => {
         streamKind="web_rtc"
         frontendStreamTypes={['web_rtc']}
         streamLabelOverride="Direct stream"
-        streamElement={<div data-testid="opaque-direct-stream" />}
+        streamHost={createStreamHost('opaque-direct-stream')}
         isStreamReadinessOpaque
       />
     );
@@ -166,7 +175,7 @@ describe('CameraCardView', () => {
         statusChangedAt={baseNow - 13 * 60 * 60_000}
         streamKind="web_rtc"
         frontendStreamTypes={['web_rtc']}
-        streamElement={<div data-testid="camera-stream-player">live stream</div>}
+        streamHost={createStreamHost('camera-stream-player', 'live stream')}
         isStreamReady
       />
     );
@@ -179,7 +188,7 @@ describe('CameraCardView', () => {
     renderWithProviders(
       <CameraCardView
         {...defaultProps}
-        streamElement={<div data-testid="camera-stream-player">live stream</div>}
+        streamHost={createStreamHost('camera-stream-player', 'live stream')}
       />
     );
 

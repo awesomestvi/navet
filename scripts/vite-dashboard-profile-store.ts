@@ -165,6 +165,7 @@ const CLIENT_BINDING_BOOTSTRAP_LIMIT = 256
 const SHARED_SETTING_KEYS = [
   'showWeatherInHeader',
   'showHomeSummaryBar',
+  'choresEnabled',
   'weatherForecastMode',
   'weatherMetricIds',
   'advancedCustomizationEnabled',

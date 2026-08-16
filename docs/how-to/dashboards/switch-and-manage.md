@@ -5,7 +5,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/dashboards/s
 ---
 
 Dashboard management changes the collection of Home dashboards. It does not change the main
-Energy, Climate, Security, Lights, Media, Tasks, or Settings sections.
+Energy, Climate, Security, Lights, Media, Household, or Settings sections.
 
 ![The dashboard switcher listing two focused Home dashboards.](/docs/how-to/dashboards/dashboard-switcher.webp)
 

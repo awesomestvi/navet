@@ -6,7 +6,7 @@ import { Brain, Database, Lightbulb, ListChecks, RotateCcw, ShieldCheck } from '
 import { useShallow } from 'zustand/react/shallow';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
 import { OnOffPillToggle } from './settings-pill-toggle';
-import { SettingsItem, SettingsSectionShell } from './settings-section-shell';
+import { SettingsItem, SettingsSectionGroup, SettingsSectionShell } from './settings-section-shell';
 
 function HabitsAssuranceRow({
   icon: Icon,
@@ -95,56 +95,60 @@ export function SettingsHabitsSection({
     }))
   );
 
-  const content = (
+  const learningItem = (
+    <SettingsItem
+      title={t('habits.settings.enable.title')}
+      description={t('habits.settings.enable.description')}
+      styles={controller.styles}
+    >
+      <div className="space-y-3">
+        <OnOffPillToggle
+          value={enabled}
+          onChange={setEnabled}
+          ariaLabel={t('habits.settings.enable.title')}
+        />
+        <p className={`min-w-0 text-sm ${controller.styles.subtleColor}`}>
+          {t('habits.settings.enable.helper', {
+            tier: hardwareProfile.tier,
+          })}
+        </p>
+      </div>
+    </SettingsItem>
+  );
+
+  const privacyItem = (
+    <SettingsItem
+      title={t('habits.settings.privacy.title')}
+      description={t('habits.settings.privacy.description')}
+      styles={controller.styles}
+    >
+      <div className="space-y-3">
+        <HabitsAssuranceRow
+          icon={Database}
+          title={t('habits.settings.privacy.localTitle')}
+          body={t('habits.settings.privacy.localBody')}
+          styles={controller.styles}
+        />
+        <HabitsAssuranceRow
+          icon={ShieldCheck}
+          title={t('habits.settings.privacy.safetyTitle')}
+          body={t('habits.settings.privacy.safetyBody')}
+          styles={controller.styles}
+        />
+        <Button
+          variant="soft"
+          size="small"
+          leading={<RotateCcw className="h-4 w-4" />}
+          onClick={() => void resetLocalData()}
+        >
+          {t('habits.settings.reset')}
+        </Button>
+      </div>
+    </SettingsItem>
+  );
+
+  const diagnosticsItems = (
     <>
-      <SettingsItem
-        title={t('habits.settings.enable.title')}
-        description={t('habits.settings.enable.description')}
-        styles={controller.styles}
-      >
-        <div className="space-y-3">
-          <OnOffPillToggle
-            value={enabled}
-            onChange={setEnabled}
-            ariaLabel={t('habits.settings.enable.title')}
-          />
-          <p className={`min-w-0 text-sm ${controller.styles.subtleColor}`}>
-            {t('habits.settings.enable.helper', {
-              tier: hardwareProfile.tier,
-            })}
-          </p>
-        </div>
-      </SettingsItem>
-
-      <SettingsItem
-        title={t('habits.settings.privacy.title')}
-        description={t('habits.settings.privacy.description')}
-        styles={controller.styles}
-      >
-        <div className="space-y-3">
-          <HabitsAssuranceRow
-            icon={Database}
-            title={t('habits.settings.privacy.localTitle')}
-            body={t('habits.settings.privacy.localBody')}
-            styles={controller.styles}
-          />
-          <HabitsAssuranceRow
-            icon={ShieldCheck}
-            title={t('habits.settings.privacy.safetyTitle')}
-            body={t('habits.settings.privacy.safetyBody')}
-            styles={controller.styles}
-          />
-          <Button
-            variant="soft"
-            size="small"
-            leading={<RotateCcw className="h-4 w-4" />}
-            onClick={() => void resetLocalData()}
-          >
-            {t('habits.settings.reset')}
-          </Button>
-        </div>
-      </SettingsItem>
-
       <SettingsItem
         title={t('habits.settings.rules.title')}
         description={t('habits.settings.rules.description')}
@@ -156,7 +160,9 @@ export function SettingsHabitsSection({
               icon={Database}
               label={t('habits.settings.rules.events')}
               value={events.length}
-              detail={`Capped at ${hardwareProfile.maxJournalEvents}`}
+              detail={t('habits.settings.rules.eventLimit', {
+                count: hardwareProfile.maxJournalEvents,
+              })}
               styles={controller.styles}
             />
             <HabitsMetricPanel
@@ -213,7 +219,13 @@ export function SettingsHabitsSection({
   );
 
   if (embedded) {
-    return content;
+    return (
+      <>
+        {learningItem}
+        {privacyItem}
+        {diagnosticsItems}
+      </>
+    );
   }
 
   return (
@@ -223,8 +235,31 @@ export function SettingsHabitsSection({
       title={t('habits.settings.sectionTitle')}
       description={t('habits.settings.sectionDescription')}
       styles={controller.styles}
+      grouped
     >
-      {content}
+      <SettingsSectionGroup
+        id="habits-learning"
+        title={t('habits.settings.group.learning')}
+        styles={controller.styles}
+      >
+        {learningItem}
+      </SettingsSectionGroup>
+
+      <SettingsSectionGroup
+        id="habits-privacy-data"
+        title={t('habits.settings.group.privacyData')}
+        styles={controller.styles}
+      >
+        {privacyItem}
+      </SettingsSectionGroup>
+
+      <SettingsSectionGroup
+        id="habits-diagnostics"
+        title={t('habits.settings.group.diagnostics')}
+        styles={controller.styles}
+      >
+        {diagnosticsItems}
+      </SettingsSectionGroup>
     </SettingsSectionShell>
   );
 }

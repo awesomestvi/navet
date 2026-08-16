@@ -1,7 +1,7 @@
 import type { TranslateFn, TranslationKey } from '@navet/app/i18n';
 import type { Section } from '@navet/app/navigation/sections';
 import {
-  Clipboard,
+  ClipboardCheck,
   Fan,
   Home,
   Lightbulb,
@@ -29,7 +29,7 @@ const SECTION_NAVIGATION_CONFIG: Array<{
   { icon: Shield, labelKey: 'sidebar.security', section: 'security' },
   { icon: Lightbulb, labelKey: 'sidebar.lights', section: 'lights' },
   { icon: Speaker, labelKey: 'sidebar.media', section: 'media' },
-  { icon: Clipboard, labelKey: 'sidebar.tasks', section: 'tasks' },
+  { icon: ClipboardCheck, labelKey: 'sidebar.tasks', section: 'tasks' },
   { icon: Settings, labelKey: 'sidebar.settings', section: 'settings' },
 ];
 
@@ -46,17 +46,20 @@ export const MOBILE_SECTION_ORBIT_ORDER: Section[] = [
   'settings',
 ];
 
-export function getSectionNavigationItems(t: TranslateFn): SectionNavigationItem[] {
+export function getSectionNavigationItems(
+  t: TranslateFn,
+  choresEnabled = true
+): SectionNavigationItem[] {
   return SECTION_NAVIGATION_CONFIG.map(({ icon, labelKey, section }) => ({
     icon,
-    label: t(labelKey),
+    label: t(section === 'tasks' && !choresEnabled ? 'sections.tasks.title' : labelKey),
     section,
   }));
 }
 
-export function getSectionNavigationItemMap(t: TranslateFn) {
+export function getSectionNavigationItemMap(t: TranslateFn, choresEnabled = true) {
   return new Map<Section, SectionNavigationItem>(
-    getSectionNavigationItems(t).map(
+    getSectionNavigationItems(t, choresEnabled).map(
       (item) => [item.section, item] satisfies [Section, SectionNavigationItem]
     )
   );
@@ -64,9 +67,10 @@ export function getSectionNavigationItemMap(t: TranslateFn) {
 
 export function getOrderedSectionNavigationItems(
   t: TranslateFn,
-  order: Section[]
+  order: Section[],
+  choresEnabled = true
 ): SectionNavigationItem[] {
-  const itemMap = getSectionNavigationItemMap(t);
+  const itemMap = getSectionNavigationItemMap(t, choresEnabled);
   return order
     .map((section) => itemMap.get(section))
     .filter((item): item is SectionNavigationItem => item !== undefined);
@@ -75,9 +79,10 @@ export function getOrderedSectionNavigationItems(
 export function getRecentSectionNavigationItems(
   t: TranslateFn,
   recentSections: Section[],
-  lastNonHomeSection: Section | null
+  lastNonHomeSection: Section | null,
+  choresEnabled = true
 ): SectionNavigationItem[] {
-  const itemMap = getSectionNavigationItemMap(t);
+  const itemMap = getSectionNavigationItemMap(t, choresEnabled);
 
   if (recentSections.length > 0) {
     return recentSections

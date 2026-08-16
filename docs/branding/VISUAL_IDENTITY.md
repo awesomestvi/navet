@@ -434,7 +434,8 @@ Accessibility is part of the visual identity, not a separate compliance layer.
 - Use the shared readable-text helpers for tinted and artwork-led surfaces.
 - Preserve a visible 2 px focus indication with sufficient separation from the surface.
 - Do not rely on color, hover, or motion alone.
-- Keep product touch targets at least 44 px and prefer 48 px for primary controls.
+- Use Navet's 36 / 40 / 42 px interaction scale for focusable product controls: 36 px compact
+  minimum, 40 px standard, and 42 px only for exceptional touch-forward needs.
 - Provide useful alternative text for editorial images and empty `alt` text for decorative images.
 - Keep the logo's accessible name on the link or image, but do not announce both.
 - Review long names, translated copy, zoom, missing imagery, and high-contrast conditions.

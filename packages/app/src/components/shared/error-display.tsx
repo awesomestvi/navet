@@ -5,7 +5,7 @@ import { useI18n, useTheme } from '@navet/app/hooks';
 import { useErrorStore } from '@navet/app/stores';
 import { appErrorSelectors } from '@navet/app/stores/selectors';
 import { getPublicAssetUrl } from '@navet/app/utils/public-assets';
-import { LogIn, OctagonAlert, RefreshCw, X } from 'lucide-react';
+import { ChevronDown, LogIn, OctagonAlert, RefreshCw, X } from 'lucide-react';
 import { memo } from 'react';
 
 interface ErrorDisplayProps {
@@ -42,6 +42,15 @@ export const ErrorDisplay = memo(function ErrorDisplay({
 
   if (!error) return null;
 
+  const commonIssues = [
+    t('errorDisplay.issue.1'),
+    t('errorDisplay.issue.2'),
+    t('errorDisplay.issue.3'),
+    t('errorDisplay.issue.4'),
+    t('errorDisplay.issue.5'),
+    t('errorDisplay.issue.6'),
+  ];
+
   return (
     <div className={`fixed inset-0 z-50 overflow-y-auto ${pageBackground}`}>
       <style>{`
@@ -57,10 +66,10 @@ export const ErrorDisplay = memo(function ErrorDisplay({
       `}</style>
       <div className="pointer-events-none absolute left-1/2 top-[28%] h-80 w-80 -translate-x-1/2 rounded-full bg-orange-500/18 blur-3xl" />
 
-      <section className="relative mx-auto flex min-h-screen w-full max-w-3xl flex-col items-center justify-center px-4 py-5 text-center sm:px-6">
+      <section className="relative mx-auto flex min-h-[100dvh] w-full max-w-3xl flex-col items-center justify-start pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] text-center sm:pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] sm:pl-[calc(env(safe-area-inset-left,0px)+1.5rem)] sm:pr-[calc(env(safe-area-inset-right,0px)+1.5rem)] sm:pt-[calc(env(safe-area-inset-top,0px)+1.25rem)] lg:justify-center">
         <div className="w-full [animation:navet-error-rise_0.9s_ease-out_both]">
-          <div className="mx-auto flex min-h-20 w-full max-w-[18rem] items-center justify-center">
-            <div className="relative flex h-20 w-20 items-center justify-center">
+          <div className="mx-auto flex min-h-14 w-full max-w-[18rem] items-center justify-center sm:min-h-20">
+            <div className="relative flex h-14 w-14 items-center justify-center sm:h-20 sm:w-20">
               {[
                 '[animation:navet-error-ring_4.6s_ease-out_infinite]',
                 '[animation:navet-error-ring_4.6s_ease-out_0.72s_infinite]',
@@ -72,26 +81,30 @@ export const ErrorDisplay = memo(function ErrorDisplay({
                 />
               ))}
               <div className="absolute inset-0 rounded-full bg-orange-500/16 blur-2xl" />
-              <img src={logoSrc} alt="" className="relative z-10 h-20 w-20" />
+              <img src={logoSrc} alt="" className="relative z-10 h-14 w-14 sm:h-20 sm:w-20" />
             </div>
           </div>
 
-          <div className="mx-auto mt-4 h-px w-28 bg-[linear-gradient(90deg,transparent,#f97316,transparent)]" />
+          <div className="mx-auto mt-2 h-px w-20 bg-[linear-gradient(90deg,transparent,#f97316,transparent)] sm:mt-4 sm:w-28" />
 
-          <p className={`mt-5 text-xs font-semibold uppercase tracking-[0.24em] ${mutedColor}`}>
+          <p
+            className={`mt-3 text-[0.625rem] font-semibold uppercase tracking-[0.24em] sm:mt-5 sm:text-xs ${mutedColor}`}
+          >
             Navet
           </p>
           <h1
-            className={`mx-auto mt-2 max-w-xl text-3xl font-semibold tracking-tight md:text-4xl ${textColor}`}
+            className={`mx-auto mt-1.5 max-w-xl text-2xl font-semibold leading-tight tracking-tight sm:mt-2 sm:text-3xl md:text-4xl ${textColor}`}
           >
             {t('errorDisplay.title')}
           </h1>
-          <p className={`mx-auto mt-3 max-w-md text-sm leading-relaxed ${mutedColor}`}>
+          <p
+            className={`mx-auto mt-2 max-w-md text-sm leading-5 sm:mt-3 sm:leading-relaxed ${mutedColor}`}
+          >
             {error.message}
           </p>
 
           <div
-            className={`relative mx-auto mt-7 w-full max-w-md overflow-hidden rounded-[28px] border ${panelSurface} p-4 text-left backdrop-blur-2xl sm:p-5`}
+            className={`relative mx-auto mt-4 w-full max-w-md overflow-hidden rounded-3xl border ${panelSurface} p-3.5 text-left backdrop-blur-2xl sm:mt-7 sm:rounded-[28px] sm:p-5`}
           >
             <div
               aria-hidden="true"
@@ -102,36 +115,38 @@ export const ErrorDisplay = memo(function ErrorDisplay({
               }}
             />
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.09),rgba(255,255,255,0.025)_22%,transparent_58%)]" />
-            <div className="relative space-y-5">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-orange-300/18 bg-orange-500/14 text-orange-200">
-                    <OctagonAlert className="h-5 w-5" />
+            <div className="relative space-y-3.5 sm:space-y-5">
+              <div className="flex items-start justify-between gap-3 sm:gap-4">
+                <div className="flex min-w-0 items-start gap-2.5 sm:gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-orange-300/18 bg-orange-500/14 text-orange-200 sm:h-11 sm:w-11">
+                    <OctagonAlert className="h-4 w-4 sm:h-5 sm:w-5" />
                   </div>
                   <div className="min-w-0">
                     <p className={`text-sm font-semibold ${textColor}`}>
                       {t('errorDisplay.connectionInterrupted')}
                     </p>
-                    <p className={`mt-1 text-sm leading-6 ${mutedColor}`}>
+                    <p className={`mt-1 hidden text-sm leading-6 sm:block ${mutedColor}`}>
                       {t('errorDisplay.connectionInterruptedDescription')}
                     </p>
                   </div>
                 </div>
                 {showClose && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="compact"
+                    iconOnly
+                    label={t('common.close')}
                     onClick={dismissError}
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${surface.hoverBg} ${mutedColor} transition-colors hover:text-orange-200`}
-                    aria-label={t('common.close')}
+                    className={`shrink-0 ${surface.hoverBg} ${mutedColor} hover:text-orange-200`}
                   >
                     <X className="h-4 w-4" />
-                  </button>
+                  </Button>
                 )}
               </div>
 
               {error.details ? (
                 <p
-                  className={`rounded-2xl border border-orange-300/12 bg-black/10 p-3 font-mono text-xs leading-5 ${mutedColor}`}
+                  className={`hidden break-words rounded-2xl border border-orange-300/12 bg-black/10 p-3 font-mono text-xs leading-5 [overflow-wrap:anywhere] sm:block ${mutedColor}`}
                 >
                   {error.details}
                 </p>
@@ -144,12 +159,10 @@ export const ErrorDisplay = memo(function ErrorDisplay({
                       variant="secondary"
                       type="button"
                       onClick={onRetry}
-                      className="min-h-12 w-full rounded-full border-orange-300/20 bg-[linear-gradient(180deg,#fb923c,#f97316)] px-4 py-3 text-white shadow-[0_18px_42px_-24px_rgba(249,115,22,0.88)] transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                      leading={<RefreshCw className="h-4 w-4" />}
+                      className="w-full border-orange-300/20 bg-[linear-gradient(180deg,#fb923c,#f97316)] text-white shadow-[0_18px_42px_-24px_rgba(249,115,22,0.88)]"
                     >
-                      <span className="flex items-center justify-center gap-2">
-                        <RefreshCw className="h-5 w-5" />
-                        {t('errorDisplay.retry')}
-                      </span>
+                      {t('errorDisplay.retry')}
                     </Button>
                   )}
                   {onResetSession && (
@@ -157,28 +170,43 @@ export const ErrorDisplay = memo(function ErrorDisplay({
                       variant="secondary"
                       type="button"
                       onClick={onResetSession}
-                      className={`min-h-12 w-full rounded-full px-4 py-3 ${surface.inputBg} ${surface.border} ${textColor}`}
+                      leading={<LogIn className="h-4 w-4" />}
+                      className={`w-full ${surface.inputBg} ${surface.border} ${textColor}`}
                     >
-                      <span className="flex items-center justify-center gap-2">
-                        <LogIn className="h-5 w-5" />
-                        {t('errorDisplay.backToLogin')}
-                      </span>
+                      {t('errorDisplay.backToLogin')}
                     </Button>
                   )}
                 </div>
               )}
 
-              <div className={`${navetTypographyTokens.helper} ${mutedColor}`}>
+              <details className={`group sm:hidden ${navetTypographyTokens.helper} ${mutedColor}`}>
+                <summary className="flex min-h-9 cursor-pointer list-none items-center justify-between rounded-full px-3 font-medium outline-none transition-colors hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-orange-400/35 [&::-webkit-details-marker]:hidden">
+                  <span>{t('errorDisplay.commonIssues')}</span>
+                  <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="mt-2 px-1 pb-1">
+                  {error.details ? (
+                    <p
+                      className={`break-words rounded-2xl border border-orange-300/12 bg-black/10 p-3 font-mono text-xs leading-5 [overflow-wrap:anywhere] ${mutedColor}`}
+                    >
+                      {error.details}
+                    </p>
+                  ) : null}
+                  <div className={`${error.details ? 'mt-3' : ''} grid gap-2 text-left`}>
+                    {commonIssues.map((issue) => (
+                      <div key={issue} className="flex items-start gap-2">
+                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-orange-300/70" />
+                        <span>{issue}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </details>
+
+              <div className={`hidden sm:block ${navetTypographyTokens.helper} ${mutedColor}`}>
                 <p className="text-center font-medium">{t('errorDisplay.commonIssues')}</p>
                 <div className="mt-3 grid gap-2 text-left">
-                  {[
-                    t('errorDisplay.issue.1'),
-                    t('errorDisplay.issue.2'),
-                    t('errorDisplay.issue.3'),
-                    t('errorDisplay.issue.4'),
-                    t('errorDisplay.issue.5'),
-                    t('errorDisplay.issue.6'),
-                  ].map((issue) => (
+                  {commonIssues.map((issue) => (
                     <div key={issue} className="flex items-start gap-2">
                       <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-orange-300/70" />
                       <span>{issue}</span>

@@ -26,7 +26,7 @@ If rooms or devices are absent, do not rebuild them immediately. Follow
 Use the section navigation to move between:
 
 - **Home** for the editable room-first overview.
-- **Energy**, **Climate**, **Security**, **Lights**, **Media**, and **Tasks** for focused views.
+- **Energy**, **Climate**, **Security**, **Lights**, **Media**, and **Household** for focused views.
 - **Settings** for appearance, dashboard behavior, providers, connected screens, and backup.
 
 Not every provider supplies every advanced section. An empty or unavailable section can be a

@@ -65,12 +65,26 @@ vi.mock('@navet/app/services/integration-resource.service', () => ({
   normalizeResourceUrl: (url: string) => url,
 }));
 
-vi.mock('../camera-live-viewer', () => ({
-  CameraLiveViewer: (props: { preferredTransport: string }) => {
-    cameraLiveViewerRenderMock(props);
-    return <div data-testid="camera-live-viewer" />;
-  },
-}));
+vi.mock('../camera-live-viewer', async () => {
+  const { CameraStreamHostSlot } = await vi.importActual<
+    typeof import('../camera-stream-host-slot')
+  >('../camera-stream-host-slot');
+  return {
+    CameraLiveViewer: (props: {
+      preferredTransport: string;
+      retainedStreamHost?: HTMLDivElement | null;
+    }) => {
+      cameraLiveViewerRenderMock(props);
+      return (
+        <div data-testid="camera-live-viewer">
+          {props.retainedStreamHost ? (
+            <CameraStreamHostSlot host={props.retainedStreamHost} />
+          ) : null}
+        </div>
+      );
+    },
+  };
+});
 
 vi.mock('../camera-settings-dialog', () => ({
   CameraSettingsDialog: (props: {
@@ -356,7 +370,7 @@ describe('CameraCardContainer', () => {
     );
   });
 
-  it('releases the card stream while the fullscreen viewer owns playback', () => {
+  it('moves the same live stream into the fullscreen viewer without remounting it', () => {
     renderWithProviders(
       <CameraCardContainer
         id="home_assistant:camera.front"
@@ -373,12 +387,12 @@ describe('CameraCardContainer', () => {
     act(() => {
       MockIntersectionObserver.instances[0]?.emit(true);
     });
-    expect(screen.getByTestId('camera-stream-player')).toBeInTheDocument();
+    const streamPlayer = screen.getByTestId('camera-stream-player');
 
     fireEvent.click(screen.getByRole('button', { name: 'Open camera viewer: Front Door' }));
 
     expect(screen.getByTestId('camera-live-viewer')).toBeInTheDocument();
-    expect(screen.queryByTestId('camera-stream-player')).not.toBeInTheDocument();
+    expect(screen.getByTestId('camera-stream-player')).toBe(streamPlayer);
   });
 
   it('normalizes an unsupported saved stream preference back to auto for playback planning', () => {

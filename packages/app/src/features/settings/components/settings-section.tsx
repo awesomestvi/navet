@@ -56,6 +56,7 @@ export function SettingsSection({
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const [pendingSearchTarget, setPendingSearchTarget] = useState<string | null>(null);
   const settingsRootRef = useRef<HTMLDivElement | null>(null);
+
   const navItems = useMemo(
     () =>
       [

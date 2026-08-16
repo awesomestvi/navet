@@ -1,5 +1,6 @@
 import { BaseCardDialog } from '@navet/app/components/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { navetControlTokens, navetIconSizeTokens } from '@navet/app/components/system/tokens';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +35,7 @@ import {
   CAMERA_VIEW_MODE_OPTIONS,
 } from './camera-control-options';
 import { CameraSnapshotImage } from './camera-snapshot-image';
+import { CameraStreamHostSlot } from './camera-stream-host-slot';
 import { CameraStreamPlayer } from './camera-stream-player';
 import type { CameraImageSourceKind } from './camera-view-mode';
 import { isOpaqueGo2RtcStreamResource } from './go2rtc-viewer-presentation';
@@ -56,6 +58,9 @@ interface CameraLiveViewerProps {
   isStreamCapable: boolean;
   motionDetectionEnabled: boolean | null;
   initialStreamResource: ResolvedPlatformResource | null;
+  initialStreamTransport?: PlatformCameraTransport | null;
+  initialStreamReady?: boolean;
+  retainedStreamHost?: HTMLDivElement | null;
   onRefresh: () => void;
   onOpenSettings?: () => void;
   onCameraViewModeChange: (mode: CameraViewMode) => void;
@@ -63,8 +68,7 @@ interface CameraLiveViewerProps {
   onCameraFitModeChange: (mode: CameraFitMode) => void;
 }
 
-const CAMERA_VIEWER_ACTION_BUTTON_CLASS_NAME =
-  'flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/12 bg-black/45 text-white backdrop-blur-xl transition-colors hover:bg-white/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70';
+const CAMERA_VIEWER_ACTION_BUTTON_CLASS_NAME = `relative flex ${navetControlTokens.iconButton.sizes.compact.className} shrink-0 items-center justify-center rounded-full border border-white/12 bg-black/45 text-white backdrop-blur-xl transition-colors before:absolute before:-inset-0.5 before:content-[''] hover:bg-white/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70`;
 
 function CameraViewerDropdown<T extends string>({
   icon: Icon,
@@ -87,7 +91,7 @@ function CameraViewerDropdown<T extends string>({
         <button
           type="button"
           aria-label={`${label}: ${selectedLabel}`}
-          className="pointer-events-auto relative flex h-11 min-w-0 max-w-48 cursor-pointer items-center gap-2 rounded-full border border-white/12 bg-black/45 px-3 text-xs font-semibold text-white backdrop-blur-xl transition-colors before:absolute before:inset-0 before:content-[''] hover:bg-white/12 data-[state=open]:bg-white/14 [&>*]:pointer-events-none"
+          className={`pointer-events-auto relative flex ${navetControlTokens.button.apiSizes.default.heightClassName} min-w-0 max-w-48 cursor-pointer items-center gap-2 rounded-full border border-white/12 bg-black/45 px-3 text-xs font-semibold text-white backdrop-blur-xl transition-colors before:absolute before:inset-0 before:content-[''] hover:bg-white/12 data-[state=open]:bg-white/14 [&>*]:pointer-events-none`}
         >
           <Icon className="h-3.5 w-3.5 shrink-0 text-white/72" />
           <span className="min-w-0 truncate">{selectedLabel}</span>
@@ -128,6 +132,9 @@ export function CameraLiveViewer({
   isStreamCapable,
   motionDetectionEnabled,
   initialStreamResource,
+  initialStreamTransport = null,
+  initialStreamReady = false,
+  retainedStreamHost = null,
   onRefresh,
   onOpenSettings,
   onCameraViewModeChange,
@@ -263,8 +270,14 @@ export function CameraLiveViewer({
   const activeStreamIdentity = selectedTransport
     ? `${selectedTransport}:${activeStreamResource?.cacheKey ?? entityId}`
     : null;
-  const isStreamReady =
-    activeStreamIdentity !== null && readyStreamIdentity === activeStreamIdentity;
+  const canReuseInitialStream = Boolean(
+    retainedStreamHost &&
+      initialStreamTransport === selectedTransport &&
+      initialResourceMatchesSelectedTransport
+  );
+  const isStreamReady = canReuseInitialStream
+    ? initialStreamReady
+    : activeStreamIdentity !== null && readyStreamIdentity === activeStreamIdentity;
   const handleStreamLoad = useCallback(() => {
     if (activeStreamIdentity) {
       setReadyStreamIdentity(activeStreamIdentity);
@@ -342,17 +355,21 @@ export function CameraLiveViewer({
       <div className="relative isolate flex h-full min-h-0 flex-col bg-black text-white">
         <div className="absolute inset-0 z-0">
           {selectedTransport && cameraState !== 'unavailable' ? (
-            <CameraStreamPlayer
-              entityId={entityId}
-              kind={selectedTransport}
-              posterUrl={snapshotSourceUrl}
-              streamResource={activeStreamResource}
-              fitMode={cameraFitMode}
-              loadingLabel={t('camera.loadingFeed')}
-              webRtcTitle={t('camera.webRtcStreamTitle')}
-              onLoad={handleStreamLoad}
-              onError={handleStreamError}
-            />
+            canReuseInitialStream && retainedStreamHost ? (
+              <CameraStreamHostSlot host={retainedStreamHost} />
+            ) : (
+              <CameraStreamPlayer
+                entityId={entityId}
+                kind={selectedTransport}
+                posterUrl={snapshotSourceUrl}
+                streamResource={activeStreamResource}
+                fitMode={cameraFitMode}
+                loadingLabel={t('camera.loadingFeed')}
+                webRtcTitle={t('camera.webRtcStreamTitle')}
+                onLoad={handleStreamLoad}
+                onError={handleStreamError}
+              />
+            )
           ) : snapshotSourceUrl && cameraState !== 'unavailable' ? (
             <CameraSnapshotImage
               src={snapshotSourceUrl}
@@ -381,7 +398,10 @@ export function CameraLiveViewer({
           data-testid="camera-viewer-top-controls"
           className="pointer-events-none absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-black/85 via-black/45 to-transparent pb-4 pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-[calc(env(safe-area-inset-top,0px)+1rem)] md:pb-5 md:pl-[calc(env(safe-area-inset-left,0px)+1.25rem)] md:pr-[calc(env(safe-area-inset-right,0px)+1.25rem)] md:pt-[calc(env(safe-area-inset-top,0px)+1.25rem)]"
         >
-          <div className="pointer-events-auto flex items-start justify-between gap-3">
+          <div
+            data-testid="camera-viewer-header-layout"
+            className="pointer-events-auto grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 md:flex md:gap-3"
+          >
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-white/76">
                 <span>{room}</span>
@@ -393,33 +413,36 @@ export function CameraLiveViewer({
               </h2>
             </div>
 
-            <div className="flex shrink-0 items-center gap-2">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/45 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-xl">
-                <span
-                  className={`h-2 w-2 rounded-full ${
-                    isFeedRunning
-                      ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.68)]'
-                      : 'bg-white/45'
-                  }`}
-                />
-                <Video className="h-3.5 w-3.5 text-white/72" />
-                <span>
-                  {isStreamReadinessOpaque
-                    ? t('camera.settings.webRtcStreamSource.direct')
-                    : isFeedRunning
-                      ? t('camera.status.live')
-                      : isStreamPending
-                        ? t('camera.loadingFeed')
-                        : cameraState === 'off'
-                          ? t('common.off')
-                          : cameraState === 'unavailable'
-                            ? t('camera.status.unavailable')
-                            : t('common.on')}
-                </span>
-                {playbackModel?.isSnapshotFallback ? (
-                  <span className="text-white/58">{t('camera.viewer.snapshotFallback')}</span>
-                ) : null}
-              </div>
+            <div
+              data-testid="camera-viewer-status"
+              className="col-span-2 row-start-2 inline-flex w-fit items-center gap-2 rounded-full border border-white/12 bg-black/45 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-xl md:order-2 md:ml-auto"
+            >
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  isFeedRunning
+                    ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.68)]'
+                    : 'bg-white/45'
+                }`}
+              />
+              <Video className="h-3.5 w-3.5 text-white/72" />
+              <span>
+                {isStreamReadinessOpaque
+                  ? t('camera.settings.webRtcStreamSource.direct')
+                  : isFeedRunning
+                    ? t('camera.status.live')
+                    : isStreamPending
+                      ? t('camera.loadingFeed')
+                      : cameraState === 'off'
+                        ? t('common.off')
+                        : cameraState === 'unavailable'
+                          ? t('camera.status.unavailable')
+                          : t('common.on')}
+              </span>
+              {playbackModel?.isSnapshotFallback ? (
+                <span className="text-white/58">{t('camera.viewer.snapshotFallback')}</span>
+              ) : null}
+            </div>
+            <div className="col-start-2 row-start-1 flex shrink-0 items-center gap-3 md:order-3">
               {isShowingSnapshot ? (
                 <button
                   type="button"
@@ -427,7 +450,7 @@ export function CameraLiveViewer({
                   className={CAMERA_VIEWER_ACTION_BUTTON_CLASS_NAME}
                   aria-label={t('camera.actions.refreshSnapshot')}
                 >
-                  <RefreshCw className="h-4 w-4" />
+                  <RefreshCw className={navetIconSizeTokens.sm} />
                 </button>
               ) : null}
               {onOpenSettings ? (
@@ -437,7 +460,7 @@ export function CameraLiveViewer({
                   className={CAMERA_VIEWER_ACTION_BUTTON_CLASS_NAME}
                   aria-label={t('camera.actions.openSettings')}
                 >
-                  <Settings2 className="h-4 w-4" />
+                  <Settings2 className={navetIconSizeTokens.sm} />
                 </button>
               ) : null}
               <button
@@ -446,7 +469,7 @@ export function CameraLiveViewer({
                 className={CAMERA_VIEWER_ACTION_BUTTON_CLASS_NAME}
                 aria-label={t('common.close')}
               >
-                <X className="h-4 w-4" />
+                <X className={navetIconSizeTokens.sm} />
               </button>
             </div>
           </div>

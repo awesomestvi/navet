@@ -1,0 +1,66 @@
+claim:
+  name: Claim chore
+  description: Claim an available Navet chore occurrence.
+  fields: &chore_fields
+    occurrence_id:
+      name: Occurrence ID
+      required: true
+      selector:
+        text:
+    participant_id:
+      name: Household profile ID
+      required: true
+      selector:
+        text:
+complete:
+  name: Complete chore
+  description: Mark a Navet chore occurrence complete.
+  fields: *chore_fields
+approve:
+  name: Approve chore
+  description: Approve a completed Navet chore occurrence.
+  fields: *chore_fields
+reject:
+  name: Send chore back
+  description: Reject a completed Navet chore occurrence and reopen it.
+  fields:
+    <<: *chore_fields
+    reason:
+      name: Reason
+      selector:
+        text:
+skip:
+  name: Skip chore
+  description: Skip a Navet chore occurrence with an auditable reason.
+  fields:
+    <<: *chore_fields
+    reason:
+      name: Reason
+      required: true
+      selector:
+        text:
+reopen:
+  name: Reopen chore
+  description: Reopen a Navet chore occurrence with an auditable reason.
+  fields:
+    <<: *chore_fields
+    reason:
+      name: Reason
+      required: true
+      selector:
+        text:
+reassign:
+  name: Reassign chore
+  description: Replace the assignees for a Navet chore occurrence.
+  fields:
+    <<: *chore_fields
+    assignee_ids:
+      name: Assignee profile IDs
+      required: true
+      selector:
+        object:
+    reason:
+      name: Reason
+      required: true
+      selector:
+        text:

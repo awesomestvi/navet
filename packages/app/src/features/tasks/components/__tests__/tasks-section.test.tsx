@@ -1,4 +1,3 @@
-import { LOCAL_HABITS_FEATURE_STORAGE_KEY } from '@navet/app/features/habits';
 import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
 import { automationEntityFactory } from '@navet/app/test/fixtures/home-assistant/entities/automation';
 import { lightEntityFactory } from '@navet/app/test/fixtures/home-assistant/entities/light';
@@ -241,19 +240,13 @@ describe('TasksSection', () => {
     expect(screen.getAllByText('Needs attention').length).toBeGreaterThan(0);
   });
 
-  it('shows habit insights only after the experimental feature is enabled', () => {
+  it('keeps habit suggestions out of the full-width routines workspace', () => {
     setRoutineEntities();
 
-    const firstRender = renderWithProviders(<TasksSection />);
+    renderWithProviders(<TasksSection />);
 
     expect(screen.queryByText('Suggested routines')).not.toBeInTheDocument();
     expect(screen.getAllByText('Automations').length).toBeGreaterThan(0);
-
-    firstRender.unmount();
-    localStorage.setItem(LOCAL_HABITS_FEATURE_STORAGE_KEY, JSON.stringify(true));
-    renderWithProviders(<TasksSection />);
-
-    expect(screen.getByText('Suggested routines')).toBeInTheDocument();
   });
 
   it('filters automations with active and disabled pills', () => {

@@ -8,12 +8,13 @@ import { cn } from '@navet/app/components/ui/utils';
 import { useTheme } from '@navet/app/hooks/use-theme';
 import { forwardRef, type ReactNode, type SelectHTMLAttributes, useState } from 'react';
 
-type SelectSize = 'default' | 'small';
+type SelectSize = 'default' | 'small' | 'touch';
 type SelectVariant = 'default' | 'ghost';
 
 const SELECT_SIZE_CLASS_NAMES: Record<SelectSize, string> = {
-  default: 'px-4 py-3',
+  default: 'h-10 px-4 py-0 leading-5',
   small: 'h-9 pl-3.5 pr-10 py-0 leading-5',
+  touch: 'h-[42px] px-4 py-0 leading-5',
 };
 
 export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'size'> {
@@ -102,6 +103,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
       <div
         className={cn(
           'pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3',
+          theme === 'light' ? 'text-gray-700' : 'text-white',
           indicatorClassName
         )}
       >
@@ -112,7 +114,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className={`${navetIconSizeTokens.sm} text-current/60`}
+          className={`${navetIconSizeTokens.sm} opacity-70`}
           aria-hidden="true"
         >
           <path d="m6 9 6 6 6-6" />

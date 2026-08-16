@@ -39,6 +39,30 @@ still depend on the entity types a provider exposes and maps successfully.
 `No` means that Navet has no provider feature-service registration for that capability today. It
 does not mean the underlying platform itself lacks the feature.
 
+### Home Assistant
+
+Navet maps Home Assistant rooms and realtime entities for lights, switches, sensors, climate,
+media players, cameras, energy, calendars, weather, notifications, updates, and supported task or
+automation surfaces. Home Assistant also provides the advanced dashboard and administration
+services marked **Yes** in the matrix above.
+
+### Homey
+
+Navet currently maps Homey rooms and realtime entities for lights, switches, and sensors. Climate,
+media, cameras, energy, calendars, weather, notifications, and provider administration are not yet
+registered as Homey feature services in Navet.
+
+### openHAB
+
+Navet currently maps openHAB rooms and realtime items for lights, switches, and sensors. Climate,
+media, cameras, energy, calendars, weather, notifications, and provider administration are not yet
+registered as openHAB feature services in Navet.
+
+### Planned providers
+
+Hubitat and SmartThings have package and registration surfaces only. They are not available as
+runtime providers yet.
+
 ## Multiple Providers
 
 Navet can store more than one implemented provider session in runtimes that expose provider

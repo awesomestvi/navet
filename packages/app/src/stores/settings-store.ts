@@ -51,6 +51,7 @@ export interface UserSettings {
   showNotifications: boolean;
   showWeatherInHeader: boolean;
   showHomeSummaryBar: boolean;
+  choresEnabled: boolean;
   keepDeviceAwake: boolean;
   use24HourTime: boolean;
   temperatureUnit: 'celsius' | 'fahrenheit';
@@ -102,6 +103,7 @@ export const defaultSettings: UserSettings = {
   showNotifications: true,
   showWeatherInHeader: true,
   showHomeSummaryBar: true,
+  choresEnabled: true,
   keepDeviceAwake: false,
   use24HourTime: false,
   temperatureUnit: 'fahrenheit',

@@ -32,19 +32,19 @@ const SIZE_CLASSES: Record<
   }
 > = {
   small: {
-    shell: 'h-8 w-8',
+    shell: 'h-9 w-9',
     core: 'h-4 w-4',
     dot: 'h-2 w-2',
     icon: 'h-3.5 w-3.5',
   },
   medium: {
-    shell: 'h-10 w-10 md:h-12 md:w-12',
-    core: 'h-5 w-5 md:h-6 md:w-6',
-    dot: 'h-2.5 w-2.5 md:h-3 md:w-3',
+    shell: 'h-10 w-10',
+    core: 'h-5 w-5',
+    dot: 'h-2.5 w-2.5',
     icon: 'h-4 w-4',
   },
   large: {
-    shell: 'h-12 w-12',
+    shell: 'h-[42px] w-[42px]',
     core: 'h-6 w-6',
     dot: 'h-3 w-3',
     icon: 'h-4 w-4',

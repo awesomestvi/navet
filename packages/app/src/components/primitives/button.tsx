@@ -3,6 +3,7 @@ import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-col
 import {
   getButtonSizeTokens,
   getThemeFocusRingClassName,
+  type NavetButtonSize,
   navetControlTokens,
   navetIconSizeTokens,
   navetSpacingTokens,
@@ -13,7 +14,7 @@ import { type ButtonHTMLAttributes, forwardRef, type ReactNode } from 'react';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'subtle' | 'soft' | 'destructive';
-  size?: 'default' | 'small' | 'compact';
+  size?: NavetButtonSize;
   loading?: boolean;
   leading?: ReactNode;
   trailing?: ReactNode;

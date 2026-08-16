@@ -16,6 +16,14 @@ describe('SettingsAppearanceSection', () => {
     await resetAppStores();
   });
 
+  it('groups appearance controls by visual purpose', () => {
+    renderWithProviders(<TestSection />);
+
+    expect(screen.getByRole('heading', { name: 'Theme and background' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Layout' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Effects and performance' })).toBeInTheDocument();
+  });
+
   it('switches dashboard space mode between default and more space', () => {
     renderWithProviders(<TestSection />);
 

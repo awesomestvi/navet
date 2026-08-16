@@ -84,7 +84,7 @@ describe('KioskControlCenter', () => {
     const orbitMenu = within(screen.getByTestId('kiosk-orbit-menu'));
     expect(orbitMenu.getByRole('button', { name: 'Energy' })).toBeInTheDocument();
     expect(orbitMenu.getByRole('button', { name: 'Media' })).toBeInTheDocument();
-    expect(orbitMenu.getByRole('button', { name: 'Tasks' })).toBeInTheDocument();
+    expect(orbitMenu.getByRole('button', { name: 'Household' })).toBeInTheDocument();
   });
 
   it('shows dashboards above rooms only after a second dashboard exists', () => {

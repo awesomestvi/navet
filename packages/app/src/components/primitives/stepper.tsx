@@ -76,8 +76,8 @@ export function Stepper({
           isVertical
             ? 'min-h-16 w-full gap-3 px-3 py-2.5'
             : isCompact
-              ? 'min-h-11 w-full justify-center gap-1 px-1 py-1.5'
-              : 'min-h-11 gap-3 px-3 py-2',
+              ? 'min-h-10 w-full justify-center gap-1 px-1 py-1.5'
+              : 'min-h-10 gap-3 px-3 py-2',
           status === 'current' || !isVertical ? surface.borderStrong : 'border-transparent',
           status !== 'current' && interactive && !item.disabled ? surface.hoverBg : '',
           status === 'upcoming' ? surface.textMuted : surface.textPrimary,

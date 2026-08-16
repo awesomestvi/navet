@@ -1,0 +1,242 @@
+import { Button } from '@navet/app/components/primitives';
+import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@navet/app/components/ui/alert-dialog';
+import { useI18n, useTheme } from '@navet/app/hooks';
+import { loadChoreBackup } from '@navet/app/services/chore-workspace.service';
+import {
+  convertChoreOpsChores,
+  convertHomeAssistantTodoItems,
+  parseChoreInterchangeDocument,
+} from '@navet/core/chore-interchange';
+import type { ChoreParticipant } from '@navet/core/chores';
+import { Download, Upload } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { useChoreWorkspaceStore } from '../chore-workspace-store';
+
+export function ChoreDataRecovery({
+  managerActorId,
+  participants,
+}: {
+  managerActorId: string;
+  participants: ChoreParticipant[];
+}) {
+  const { t } = useI18n();
+  const { theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
+  const restoreBackup = useChoreWorkspaceStore((state) => state.restoreBackup);
+  const deleteAll = useChoreWorkspaceStore((state) => state.deleteAll);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pendingImport, setPendingImport] = useState<ReturnType<
+    typeof parseChoreInterchangeDocument
+  > | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const downloadBackup = async () => {
+    setFeedback(null);
+    const result = await loadChoreBackup();
+    if (!result.value) {
+      setFeedback(t('household.data.exportFailed'));
+      return;
+    }
+    const blob = new Blob([JSON.stringify(result.value, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `navet-chores-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setFeedback(t('household.data.exported'));
+  };
+
+  const readBackup = async (file: File | undefined) => {
+    if (!file) return;
+    setFeedback(null);
+    try {
+      const value: unknown = JSON.parse(await file.text());
+      try {
+        setPendingImport(parseChoreInterchangeDocument(value));
+        return;
+      } catch {
+        // Continue into the two documented legacy import shapes.
+      }
+      if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error();
+      const record = value as Record<string, unknown>;
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      const participant =
+        participants.find((item) => item.id === managerActorId) ?? participants[0];
+      if (!participant) throw new Error();
+      if (
+        Array.isArray(record.items) &&
+        record.items.every(
+          (item) =>
+            item &&
+            typeof item === 'object' &&
+            typeof (item as Record<string, unknown>).summary === 'string'
+        )
+      ) {
+        setPendingImport(
+          convertHomeAssistantTodoItems({
+            items: record.items as Parameters<typeof convertHomeAssistantTodoItems>[0]['items'],
+            participant,
+            timeZone,
+          })
+        );
+        return;
+      }
+      if (
+        Array.isArray(record.chores) &&
+        record.chores.every(
+          (chore) =>
+            chore &&
+            typeof chore === 'object' &&
+            typeof (chore as Record<string, unknown>).name === 'string'
+        )
+      ) {
+        setPendingImport(
+          convertChoreOpsChores({
+            chores: record.chores as Parameters<typeof convertChoreOpsChores>[0]['chores'],
+            participants,
+            timeZone,
+          })
+        );
+        return;
+      }
+      throw new Error();
+    } catch {
+      setFeedback(t('household.data.invalidBackup'));
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  return (
+    <>
+      <div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <Button
+            size="compact"
+            variant="secondary"
+            className="min-h-10"
+            leading={<Download className="h-4 w-4 shrink-0" />}
+            onClick={() => void downloadBackup()}
+          >
+            {t('household.data.export')}
+          </Button>
+          <Button
+            size="compact"
+            variant="secondary"
+            className="min-h-10"
+            leading={<Upload className="h-4 w-4 shrink-0" />}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {t('household.data.import')}
+          </Button>
+          <Button
+            size="compact"
+            variant="destructive"
+            className="min-h-10 sm:ml-auto"
+            onClick={() => setResetOpen(true)}
+          >
+            {t('household.data.reset')}
+          </Button>
+        </div>
+        <input
+          ref={fileInputRef}
+          className="sr-only"
+          type="file"
+          accept="application/json,.json"
+          aria-label={t('household.data.import')}
+          onChange={(event) => void readBackup(event.target.files?.[0])}
+        />
+        {feedback ? (
+          <p
+            className={`mt-3 rounded-xl px-3 py-2 text-xs ${surface.subtleBg} ${surface.textSecondary}`}
+            role="status"
+          >
+            {feedback}
+          </p>
+        ) : null}
+      </div>
+
+      <AlertDialog
+        open={pendingImport !== null}
+        onOpenChange={(open) => !open && setPendingImport(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('household.data.importTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('household.data.importDescription')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="min-h-10">{t('common.cancel')}</AlertDialogCancel>
+            <Button
+              variant="secondary"
+              className="min-h-10"
+              onClick={async () => {
+                if (!pendingImport) return;
+                const saved = await restoreBackup({
+                  actorParticipantId: managerActorId,
+                  document: pendingImport,
+                  mode: 'merge',
+                });
+                setPendingImport(null);
+                if (saved) setFeedback(t('household.data.imported'));
+              }}
+            >
+              {t('household.data.merge')}
+            </Button>
+            <Button
+              className="min-h-10"
+              onClick={async () => {
+                if (!pendingImport) return;
+                const saved = await restoreBackup({
+                  actorParticipantId: managerActorId,
+                  document: pendingImport,
+                  mode: 'replace',
+                });
+                setPendingImport(null);
+                if (saved) setFeedback(t('household.data.imported'));
+              }}
+            >
+              {t('household.data.replace')}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('household.data.resetTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('household.data.resetDescription')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="min-h-10">{t('common.cancel')}</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              className="min-h-10"
+              onClick={async () => {
+                const saved = await deleteAll(managerActorId);
+                setResetOpen(false);
+                if (saved) setFeedback(t('household.data.resetDone'));
+              }}
+            >
+              {t('household.data.reset')}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}

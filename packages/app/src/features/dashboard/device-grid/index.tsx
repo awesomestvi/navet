@@ -1,4 +1,5 @@
-import type { CardSize } from '@navet/app/components/shared/card-size-selector';
+import { type CardSize, getCardSpanClass } from '@navet/app/components/shared/card-size-selector';
+import { cn } from '@navet/app/components/ui/utils';
 import { useSearch } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { type CSSProperties, memo, useCallback, useDeferredValue, useMemo } from 'react';
@@ -27,6 +28,7 @@ export const DeviceGrid = memo(function DeviceGrid({
   densePerformanceMode = false,
   optimizeOffscreenPaint = false,
   getDeviceHeaderSubtitle,
+  supplementalCards = [],
 }: DeviceGridProps) {
   const { isSearchActive, filteredDeviceIds } = useSearch();
   const breakpointCols = useBreakpointCols();
@@ -94,6 +96,16 @@ export const DeviceGrid = memo(function DeviceGrid({
           className="grid w-full grid-flow-row-dense gap-3 md:gap-3 lg:gap-4"
           style={gridStyle as CSSProperties}
         >
+          {!isSearchActive
+            ? supplementalCards.map((card) => (
+                <div
+                  key={`supplemental-${card.id}`}
+                  className={cn(getCardSpanClass(card.size), '[&>*]:h-full')}
+                >
+                  {card.content}
+                </div>
+              ))
+            : null}
           {allCards.map((item) => {
             if (item.type === 'device') {
               const device = deviceMap.get(item.id);

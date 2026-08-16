@@ -20,6 +20,9 @@ import {
 } from '@navet/app/constants/media-player-features';
 import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
 import { CalendarCard } from '@navet/app/features/calendar/components/calendar-card';
+import { createChoreDemoWorkspace } from '@navet/app/features/chores/chore-demo-fixture';
+import { useChoreWorkspaceStore } from '@navet/app/features/chores/chore-workspace-store';
+import { HouseholdSection } from '@navet/app/features/chores/components/household-section';
 import { ClimateCard } from '@navet/app/features/climate/components/climate-card';
 import { HumidifierCard } from '@navet/app/features/climate/components/humidifier-card';
 import { type CustomCard, DashboardLayout, WidgetCard } from '@navet/app/features/dashboard';
@@ -49,7 +52,6 @@ import { GroupedSensorCard } from '@navet/app/features/sensors/components/groupe
 import type { HomeStatusSummaryItem } from '@navet/app/features/sensors/components/home-status-summary-model';
 import { SensorCard } from '@navet/app/features/sensors/components/sensor-card';
 import { SettingsSection } from '@navet/app/features/settings/components/settings-section';
-import { TasksSection } from '@navet/app/features/tasks';
 import { VacuumCard } from '@navet/app/features/vacuum/components/vacuum-card';
 import { WeatherCard } from '@navet/app/features/weather/components/weather-card';
 import { useI18n, useTheme } from '@navet/app/hooks';
@@ -1497,7 +1499,36 @@ function MediaShot() {
 }
 
 function TasksShot() {
-  return <TasksSection />;
+  const { t } = useI18n();
+  useEffect(() => {
+    useChoreWorkspaceStore.getState().setPreviewDocument({
+      data: createChoreDemoWorkspace({
+        copy: {
+          dishwasher: t('household.demo.dishwasher'),
+          toys: t('household.demo.toys'),
+          hallway: t('household.demo.hallway'),
+          laundry: t('household.demo.laundry'),
+          plants: t('household.demo.plants'),
+          bins: t('household.demo.bins'),
+          missionTitle: t('household.demo.missionTitle'),
+          missionDescription: t('household.demo.missionDescription'),
+          upcomingMissionTitle: t('household.demo.upcomingMissionTitle'),
+          upcomingMissionDescription: t('household.demo.upcomingMissionDescription'),
+          rewardTitle: t('household.demo.rewardTitle'),
+          secondRewardTitle: t('household.demo.secondRewardTitle'),
+          childDishwasher: t('household.demo.childDishwasher'),
+          childToys: t('household.demo.childToys'),
+          childHallway: t('household.demo.childHallway'),
+          kitchen: t('household.demo.kitchen'),
+          bedroom: t('household.demo.bedroom'),
+          hallwayRoom: t('household.demo.hallwayRoom'),
+          livingRoom: t('household.demo.livingRoom'),
+        },
+      }),
+    });
+    return () => useChoreWorkspaceStore.getState().reset();
+  }, [t]);
+  return <HouseholdSection syncEnabled={false} />;
 }
 
 function HomeRoomShot({ activeRoom }: { activeRoom: string }) {

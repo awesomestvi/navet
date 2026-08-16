@@ -62,7 +62,10 @@ empty space.
 
 ## Interaction And Copy
 
-- Keep touch targets at least 44 px and prefer 48 px for primary controls.
+- Use Navet's shared interaction scale for focusable controls: 36 px compact minimum, 40 px
+  standard, and 42 px only when extra separation or emphasis is genuinely needed.
+- Treat 42 px as the ceiling for ordinary icon and single-line controls; content-rich rows and
+  gesture surfaces may be taller only when their interaction genuinely requires it.
 - Do not rely on hover, color alone, or motion alone to reveal state or affordance.
 - Keep focus-visible and reduced-motion behavior when extending shared controls.
 - Use progressive disclosure for configuration; do not hide useful live state behind it.

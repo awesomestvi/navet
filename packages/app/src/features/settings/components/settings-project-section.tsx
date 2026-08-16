@@ -8,7 +8,7 @@ import { useI18n } from '@navet/app/hooks';
 import { ExternalLink, FileText, Info, Scale } from 'lucide-react';
 import type { ReactNode, SVGProps } from 'react';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
-import { SettingsItem, SettingsSectionShell } from './settings-section-shell';
+import { SettingsItem, SettingsSectionGroup, SettingsSectionShell } from './settings-section-shell';
 
 interface SettingsProjectSectionProps {
   controller: SettingsSectionController;
@@ -36,7 +36,7 @@ function CompactMetaRow({
       className={`flex items-center justify-between gap-3 rounded-[16px] px-3 py-2.5 ${styles.softBg}`}
     >
       <div className="min-w-0">
-        <div className={`text-xs uppercase tracking-[0.16em] ${styles.subtleColor}`}>{label}</div>
+        <div className={`text-xs font-medium ${styles.subtleColor}`}>{label}</div>
         <div className={`mt-1 text-sm font-semibold ${styles.textColor}`}>{value}</div>
       </div>
     </div>
@@ -48,6 +48,7 @@ function SimpleDisclosure({
   onToggle,
   icon,
   label,
+  contentId,
   styles,
   children,
 }: {
@@ -55,6 +56,7 @@ function SimpleDisclosure({
   onToggle: () => void;
   icon: ReactNode;
   label: string;
+  contentId: string;
   styles: SettingsSectionController['styles'];
   children: ReactNode;
 }) {
@@ -63,14 +65,19 @@ function SimpleDisclosure({
       <button
         type="button"
         onClick={onToggle}
-        className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
+        aria-expanded={open}
+        aria-controls={contentId}
+        className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor} ${styles.ringClass}`}
       >
         {icon}
         <span>{label}</span>
       </button>
 
       {open ? (
-        <div className={`rounded-[18px] border p-4 ${styles.borderColor} ${styles.softBg}`}>
+        <div
+          id={contentId}
+          className={`rounded-[18px] border p-4 ${styles.borderColor} ${styles.softBg}`}
+        >
           <div className={`space-y-3 text-sm leading-relaxed ${styles.textColor}`}>{children}</div>
         </div>
       ) : null}
@@ -95,125 +102,140 @@ export function SettingsProjectSection({ controller }: SettingsProjectSectionPro
       title={t('settings.project.sectionTitle')}
       description={t('settings.project.sectionDescription')}
       styles={styles}
+      grouped
     >
-      <SettingsItem
-        title={t('settings.project.about.title')}
-        description={t('settings.project.about.description')}
+      <SettingsSectionGroup
+        id="project-information"
+        title={t('settings.project.group.projectInformation')}
         styles={styles}
       >
-        <div className="space-y-2.5">
-          <CompactMetaRow
-            label={t('settings.project.about.version')}
-            value={
-              <div className="flex flex-wrap items-center gap-2">
-                <span>{APP_VERSION}</span>
-                <AppReleaseBadge />
-              </div>
-            }
-            styles={styles}
-          />
-          <CompactMetaRow
-            label={t('settings.project.about.build')}
-            value={
-              <span className="font-mono text-[0.82rem]" title={APP_BUILD_METADATA.buildDate}>
-                {buildMeta}
-              </span>
-            }
-            styles={styles}
-          />
-        </div>
-      </SettingsItem>
-
-      <SettingsItem
-        title={t('settings.project.credits.title')}
-        description={t('settings.project.credits.description')}
-        styles={styles}
-      >
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <a
-              href="https://github.com/awesomestvi/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
-            >
-              <GithubMark className="h-4 w-4" />
-              <span>awesomestvi</span>
-              <ExternalLink className={`h-3.5 w-3.5 ${styles.subtleColor}`} />
-            </a>
-            <a
-              href="https://github.com/awesomestvi/navet/blob/main/docs/ATTRIBUTIONS.md"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
-            >
-              <span>{t('settings.project.credits.viewAttributions')}</span>
-              <ExternalLink className={`h-3.5 w-3.5 ${styles.subtleColor}`} />
-            </a>
-          </div>
-        </div>
-      </SettingsItem>
-
-      <SettingsItem
-        title={t('settings.project.license.title')}
-        description={t('settings.project.license.description')}
-        styles={styles}
-      >
-        <SimpleDisclosure
-          open={showLicense}
-          onToggle={() => setShowLicense(!showLicense)}
-          icon={<Scale className="h-4 w-4" />}
-          label={
-            showLicense ? t('settings.project.license.hide') : t('settings.project.license.show')
-          }
+        <SettingsItem
+          title={t('settings.project.about.title')}
+          description={t('settings.project.about.description')}
           styles={styles}
         >
-          <p>{t('settings.project.license.summary')}</p>
-          <p>{t('settings.project.license.networkUse')}</p>
-          <p>{t('settings.project.license.trademark')}</p>
-          <a
-            href="https://www.gnu.org/licenses/agpl-3.0-standalone.html"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-blue-500 hover:underline"
+          <div className="space-y-2.5">
+            <CompactMetaRow
+              label={t('settings.project.about.version')}
+              value={
+                <div className="flex flex-wrap items-center gap-2">
+                  <span>{APP_VERSION}</span>
+                  <AppReleaseBadge />
+                </div>
+              }
+              styles={styles}
+            />
+            <CompactMetaRow
+              label={t('settings.project.about.build')}
+              value={
+                <span className="font-mono text-[0.82rem]" title={APP_BUILD_METADATA.buildDate}>
+                  {buildMeta}
+                </span>
+              }
+              styles={styles}
+            />
+          </div>
+        </SettingsItem>
+
+        <SettingsItem
+          title={t('settings.project.credits.title')}
+          description={t('settings.project.credits.description')}
+          styles={styles}
+        >
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <a
+                href="https://github.com/awesomestvi/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor} ${styles.ringClass}`}
+              >
+                <GithubMark className="h-4 w-4" />
+                <span translate="no">awesomestvi</span>
+                <ExternalLink className={`h-3.5 w-3.5 ${styles.subtleColor}`} />
+              </a>
+              <a
+                href="https://github.com/awesomestvi/navet/blob/main/docs/ATTRIBUTIONS.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor} ${styles.ringClass}`}
+              >
+                <span>{t('settings.project.credits.viewAttributions')}</span>
+                <ExternalLink className={`h-3.5 w-3.5 ${styles.subtleColor}`} />
+              </a>
+            </div>
+          </div>
+        </SettingsItem>
+      </SettingsSectionGroup>
+
+      <SettingsSectionGroup
+        id="project-legal"
+        title={t('settings.project.group.legal')}
+        styles={styles}
+      >
+        <SettingsItem
+          title={t('settings.project.license.title')}
+          description={t('settings.project.license.description')}
+          styles={styles}
+        >
+          <SimpleDisclosure
+            open={showLicense}
+            onToggle={() => setShowLicense(!showLicense)}
+            icon={<Scale className="h-4 w-4" />}
+            contentId="project-license-details"
+            label={
+              showLicense ? t('settings.project.license.hide') : t('settings.project.license.show')
+            }
+            styles={styles}
           >
-            <span>{t('settings.project.license.readFull')}</span>
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-        </SimpleDisclosure>
-      </SettingsItem>
+            <p>{t('settings.project.license.summary')}</p>
+            <p>{t('settings.project.license.networkUse')}</p>
+            <p>{t('settings.project.license.trademark')}</p>
+            <a
+              href="https://www.gnu.org/licenses/agpl-3.0-standalone.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-blue-500 hover:underline"
+            >
+              <span>{t('settings.project.license.readFull')}</span>
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </SimpleDisclosure>
+        </SettingsItem>
 
-      <SettingsItem
-        title={t('settings.project.terms.title')}
-        description={t('settings.project.terms.description')}
-        styles={styles}
-      >
-        <SimpleDisclosure
-          open={showTerms}
-          onToggle={() => setShowTerms(!showTerms)}
-          icon={<FileText className="h-4 w-4" />}
-          label={showTerms ? t('settings.project.terms.hide') : t('settings.project.terms.show')}
+        <SettingsItem
+          title={t('settings.project.terms.title')}
+          description={t('settings.project.terms.description')}
           styles={styles}
         >
-          <div>
-            <p className="font-semibold">{t('settings.project.terms.allowedTitle')}</p>
-            <ul className="mt-2 ml-4 list-disc space-y-1">
-              <li>{t('settings.project.terms.allowed.1')}</li>
-              <li>{t('settings.project.terms.allowed.2')}</li>
-              <li>{t('settings.project.terms.allowed.3')}</li>
-            </ul>
-          </div>
-          <div>
-            <p className="font-semibold">{t('settings.project.terms.prohibitedTitle')}</p>
-            <ul className="mt-2 ml-4 list-disc space-y-1">
-              <li>{t('settings.project.terms.prohibited.1')}</li>
-              <li>{t('settings.project.terms.prohibited.2')}</li>
-              <li>{t('settings.project.terms.prohibited.3')}</li>
-            </ul>
-          </div>
-          <p className={styles.subtleColor}>{t('settings.project.terms.disclaimer')}</p>
-        </SimpleDisclosure>
-      </SettingsItem>
+          <SimpleDisclosure
+            open={showTerms}
+            onToggle={() => setShowTerms(!showTerms)}
+            icon={<FileText className="h-4 w-4" />}
+            contentId="project-terms-details"
+            label={showTerms ? t('settings.project.terms.hide') : t('settings.project.terms.show')}
+            styles={styles}
+          >
+            <div>
+              <p className="font-semibold">{t('settings.project.terms.allowedTitle')}</p>
+              <ul className="mt-2 ml-4 list-disc space-y-1">
+                <li>{t('settings.project.terms.allowed.1')}</li>
+                <li>{t('settings.project.terms.allowed.2')}</li>
+                <li>{t('settings.project.terms.allowed.3')}</li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-semibold">{t('settings.project.terms.prohibitedTitle')}</p>
+              <ul className="mt-2 ml-4 list-disc space-y-1">
+                <li>{t('settings.project.terms.prohibited.1')}</li>
+                <li>{t('settings.project.terms.prohibited.2')}</li>
+                <li>{t('settings.project.terms.prohibited.3')}</li>
+              </ul>
+            </div>
+            <p className={styles.subtleColor}>{t('settings.project.terms.disclaimer')}</p>
+          </SimpleDisclosure>
+        </SettingsItem>
+      </SettingsSectionGroup>
     </SettingsSectionShell>
   );
 }
