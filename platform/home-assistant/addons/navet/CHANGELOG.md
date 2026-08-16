@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.13.0
+
+## New features
+
+- Added shared household chores with recurring schedules, flexible assignments, approvals, reminders, and completion history.
+- Added guided setup, optional points and rewards, progress reviews, and backup and recovery tools.
+- Home Assistant now exposes chore summaries and actions for automations.
+
+## Improvements and bug fixes
+
+- Refined navigation, Settings, dashboard summaries, and controls for phones, tablets, and shared wall screens.
+
 ## 0.12.6
 
 ## Improvements and bug fixes
