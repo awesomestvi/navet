@@ -2,6 +2,7 @@ import type { IncomingMessage } from 'node:http';
 import {
   buildHomeAssistantProxyRequestHeaders,
   copyProxyRequestHeaders,
+  isHomeAssistantOAuthProxyBodyRequest,
 } from '@scripts/vite-proxy-request-headers';
 import { describe, expect, it } from 'vitest';
 
@@ -55,5 +56,24 @@ describe('copyProxyRequestHeaders', () => {
     expect(headers.get('authorization')).toBe('Bearer session-access-token');
     expect(headers.get('cookie')).toBeNull();
     expect(headers.get('accept')).toBe('application/json');
+  });
+
+  it('forwards the browser-generated multipart boundary only for OAuth body requests', () => {
+    const headers = buildHomeAssistantProxyRequestHeaders(
+      {
+        'content-type': 'multipart/form-data; boundary=navet-refresh-boundary',
+      },
+      'session-access-token',
+      { forwardContentType: true, includeAuthorization: false }
+    );
+
+    expect(headers.get('content-type')).toBe(
+      'multipart/form-data; boundary=navet-refresh-boundary'
+    );
+    expect(headers.get('authorization')).toBeNull();
+    expect(isHomeAssistantOAuthProxyBodyRequest('POST', '/auth/token')).toBe(true);
+    expect(isHomeAssistantOAuthProxyBodyRequest('POST', '/auth/revoke')).toBe(true);
+    expect(isHomeAssistantOAuthProxyBodyRequest('GET', '/auth/token')).toBe(false);
+    expect(isHomeAssistantOAuthProxyBodyRequest('POST', '/api/services/light/turn_on')).toBe(false);
   });
 });

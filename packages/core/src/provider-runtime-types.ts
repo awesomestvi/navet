@@ -8,6 +8,7 @@ import type {
   ProviderAdminFeatureService,
   ProviderCalendarFeatureService,
   ProviderCameraFeatureService,
+  ProviderChoreProjectionFeatureService,
   ProviderClimateFeatureService,
   ProviderEnergyFeatureService,
   ProviderEntityRuntimeService,
@@ -72,6 +73,7 @@ export interface IntegrationProviderRuntimeRegistration {
   ) => Promise<PlatformCameraStream>;
   adminFeatureService?: ProviderAdminFeatureService;
   calendarFeatureService?: ProviderCalendarFeatureService;
+  choreProjectionFeatureService?: ProviderChoreProjectionFeatureService;
   cameraFeatureService?: ProviderCameraFeatureService;
   climateFeatureService?: ProviderClimateFeatureService;
   energyFeatureService?: ProviderEnergyFeatureService;

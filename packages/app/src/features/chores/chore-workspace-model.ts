@@ -1,11 +1,14 @@
-import {
-  type ChoreActivity,
-  type ChoreActivityType,
-  type ChoreWorkspaceData,
-  materializeChoreOccurrences,
-} from '@navet/core/chores';
+import { type ChoreWorkspaceData, materializeChoreOccurrences } from '@navet/core/chores';
 
 const RETENTION_DAYS = 90;
+const MATERIALIZATION_DAYS = 45;
+
+export function getChoreMaterializationRange(now = new Date()) {
+  return {
+    rangeStart: new Date(now.getTime() - RETENTION_DAYS * 86_400_000).toISOString(),
+    rangeEnd: new Date(now.getTime() + MATERIALIZATION_DAYS * 86_400_000).toISOString(),
+  };
+}
 
 export function createChoreCommandId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -14,65 +17,11 @@ export function createChoreCommandId() {
   return `chore:${Date.now().toString(36)}:${Math.random().toString(36).slice(2)}`;
 }
 
-export function createChoreActivity(input: {
-  commandId: string;
-  type: ChoreActivityType;
-  timestamp: string;
-  actorParticipantId?: string;
-  participantId?: string;
-  definitionId?: string;
-  occurrenceId?: string;
-}): ChoreActivity {
-  return {
-    id: `activity:${input.commandId}`,
-    commandId: input.commandId,
-    type: input.type,
-    timestamp: input.timestamp,
-    actorParticipantId: input.actorParticipantId,
-    participantId: input.participantId,
-    definitionId: input.definitionId,
-    occurrenceId: input.occurrenceId,
-  };
-}
-
-export function archiveChoreDefinition(
-  data: ChoreWorkspaceData,
-  definitionId: string,
-  timestamp: string
-): ChoreWorkspaceData {
-  const definition = data.definitionsById[definitionId];
-  if (!definition) {
-    throw new Error('Chore is no longer available');
-  }
-
-  return {
-    ...data,
-    definitionsById: {
-      ...data.definitionsById,
-      [definitionId]: {
-        ...definition,
-        archivedAt: timestamp,
-        enabled: false,
-        updatedAt: timestamp,
-      },
-    },
-    occurrencesById: Object.fromEntries(
-      Object.entries(data.occurrencesById).filter(
-        ([, occurrence]) =>
-          occurrence.definitionId !== definitionId ||
-          occurrence.status === 'done' ||
-          occurrence.status === 'skipped'
-      )
-    ),
-  };
-}
-
 export function materializeChoreWorkspace(
   data: ChoreWorkspaceData,
   now = new Date()
 ): { changed: boolean; data: ChoreWorkspaceData } {
-  const rangeStart = new Date(now.getTime() - RETENTION_DAYS * 86_400_000).toISOString();
-  const rangeEnd = new Date(now.getTime() + 45 * 86_400_000).toISOString();
+  const { rangeStart, rangeEnd } = getChoreMaterializationRange(now);
   const occurrencesById = { ...data.occurrencesById };
   let changed = false;
 

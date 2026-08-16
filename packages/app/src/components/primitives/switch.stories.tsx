@@ -3,13 +3,22 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { Switch } from './switch';
 
-function SwitchStory({ defaultChecked = true, disabled = false }) {
+function SwitchStory({
+  defaultChecked = true,
+  disabled = false,
+  size = 'default',
+}: {
+  defaultChecked?: boolean;
+  disabled?: boolean;
+  size?: 'default' | 'compact';
+}) {
   const [checked, setChecked] = useState(defaultChecked);
   return (
     <div className="flex items-center gap-3 text-sm text-white/80">
       <span id="storybook-switch-label">Motion alerts</span>
       <Switch
         checked={checked}
+        size={size}
         onCheckedChange={setChecked}
         disabled={disabled}
         aria-labelledby="storybook-switch-label"
@@ -51,6 +60,7 @@ type Story = StoryObj<typeof meta>;
 export const On: Story = { args: { defaultChecked: true } };
 export const Off: Story = { args: { defaultChecked: false } };
 export const Disabled: Story = { args: { defaultChecked: true, disabled: true } };
+export const Compact: Story = { args: { defaultChecked: true, size: 'compact' } };
 
 export const Docs: Story = {
   parameters: {

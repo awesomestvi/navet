@@ -348,109 +348,111 @@ export function LoginPage({ initialError = '' }: { initialError?: string }) {
             />
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.09),rgba(255,255,255,0.025)_22%,transparent_58%)]" />
             <div className="relative space-y-5">
-              <ul
-                className="m-0 flex list-none flex-col gap-2 p-0"
-                aria-label={t('login.providerChooser.title')}
-              >
-                {selectableProviders.map((candidateId) => {
-                  const candidateContent = PROVIDER_OPTION_CONTENT[candidateId];
-                  const isSelected = candidateId === providerId;
-                  const candidate = INTEGRATION_PROVIDERS[candidateId];
-                  const isCollapsedOption = hasSelectedProvider && !isSelected;
+              <div>
+                <ul
+                  className="m-0 flex list-none flex-col gap-2 p-0"
+                  aria-label={t('login.providerChooser.title')}
+                >
+                  {selectableProviders.map((candidateId) => {
+                    const candidateContent = PROVIDER_OPTION_CONTENT[candidateId];
+                    const isSelected = candidateId === providerId;
+                    const candidate = INTEGRATION_PROVIDERS[candidateId];
+                    const isCollapsedOption = hasSelectedProvider && !isSelected;
 
-                  return (
-                    <li
-                      key={candidateId}
-                      className={cn('overflow-hidden', isCollapsedOption ? 'hidden' : 'block')}
-                      aria-hidden={isCollapsedOption}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProviderId(candidateId);
-                          setError('');
-                        }}
-                        aria-label={candidate.label}
-                        disabled={isCollapsedOption}
-                        className={cn(
-                          'group relative flex w-full items-center gap-3 rounded-[20px] border px-4 py-3 text-left transition-[background-color,border-color,box-shadow,transform] duration-300 ease-out',
-                          isSelected
-                            ? selectedProviderClassName
-                            : `border-white/10 ${textColor} hover:border-white/16 hover:bg-white/4`
-                        )}
-                        aria-pressed={isSelected}
+                    return (
+                      <li
+                        key={candidateId}
+                        className={cn('overflow-hidden', isCollapsedOption ? 'hidden' : 'block')}
+                        aria-hidden={isCollapsedOption}
                       >
-                        <span
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProviderId(candidateId);
+                            setError('');
+                          }}
+                          aria-label={candidate.label}
+                          disabled={isCollapsedOption}
                           className={cn(
-                            'ml-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/12 bg-black/15 text-white/80 transition-[background-color,border-color,transform] duration-300 ease-out'
+                            'group relative flex w-full items-center gap-3 rounded-[20px] border px-4 py-3 text-left transition-[background-color,border-color,box-shadow,transform] duration-300 ease-out',
+                            isSelected
+                              ? selectedProviderClassName
+                              : `border-white/10 ${textColor} hover:border-white/16 hover:bg-white/4`
                           )}
+                          aria-pressed={isSelected}
                         >
-                          {candidateContent.logoSrc ? (
-                            candidateContent.logoSources ? (
-                              <picture>
-                                {candidateContent.logoSources.map((source) => (
-                                  <source
-                                    key={`${source.type}-${source.srcSet}`}
-                                    srcSet={source.srcSet}
-                                    type={source.type}
+                          <span
+                            className={cn(
+                              'ml-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/12 bg-black/15 text-white/80 transition-[background-color,border-color,transform] duration-300 ease-out'
+                            )}
+                          >
+                            {candidateContent.logoSrc ? (
+                              candidateContent.logoSources ? (
+                                <picture>
+                                  {candidateContent.logoSources.map((source) => (
+                                    <source
+                                      key={`${source.type}-${source.srcSet}`}
+                                      srcSet={source.srcSet}
+                                      type={source.type}
+                                    />
+                                  ))}
+                                  <img
+                                    src={candidateContent.logoSrc}
+                                    alt=""
+                                    className="h-7 w-7 object-contain"
                                   />
-                                ))}
+                                </picture>
+                              ) : (
                                 <img
                                   src={candidateContent.logoSrc}
                                   alt=""
                                   className="h-7 w-7 object-contain"
                                 />
-                              </picture>
+                              )
                             ) : (
-                              <img
-                                src={candidateContent.logoSrc}
-                                alt=""
-                                className="h-7 w-7 object-contain"
-                              />
-                            )
-                          ) : (
-                            <span className="text-[0.7rem] font-semibold uppercase tracking-[0.14em]">
-                              {candidate.label.slice(0, 2)}
+                              <span className="text-[0.7rem] font-semibold uppercase tracking-[0.14em]">
+                                {candidate.label.slice(0, 2)}
+                              </span>
+                            )}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-base font-semibold">{candidate.label}</span>
+                            <span
+                              className={cn(
+                                'mt-1 block text-sm leading-5',
+                                isSelected ? 'text-white/72' : mutedColor
+                              )}
+                            >
+                              {t(candidateContent.detailKey)}
                             </span>
-                          )}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-base font-semibold">{candidate.label}</span>
+                          </span>
                           <span
                             className={cn(
-                              'mt-1 block text-sm leading-5',
-                              isSelected ? 'text-white/72' : mutedColor
+                              'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-[background-color,color,transform] duration-300 ease-out',
+                              isSelected
+                                ? 'scale-[1.03] bg-orange-500/14 text-orange-300'
+                                : 'bg-white/5 text-white/55 group-hover:bg-white/10 group-hover:text-white/80'
                             )}
+                            aria-hidden="true"
                           >
-                            {t(candidateContent.detailKey)}
+                            {isSelected ? (
+                              <CheckCircle2 className="h-4 w-4" />
+                            ) : (
+                              <ArrowRight className="h-4 w-4" />
+                            )}
                           </span>
-                        </span>
-                        <span
-                          className={cn(
-                            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-[background-color,color,transform] duration-300 ease-out',
-                            isSelected
-                              ? 'scale-[1.03] bg-orange-500/14 text-orange-300'
-                              : 'bg-white/5 text-white/55 group-hover:bg-white/10 group-hover:text-white/80'
-                          )}
-                          aria-hidden="true"
-                        >
-                          {isSelected ? (
-                            <CheckCircle2 className="h-4 w-4" />
-                          ) : (
-                            <ArrowRight className="h-4 w-4" />
-                          )}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-              {error ? (
-                <div className="flex items-start gap-3 rounded-2xl border border-red-400/22 bg-red-500/12 p-4">
-                  <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-300" />
-                  <p className="text-sm leading-6 text-red-100">{error}</p>
-                </div>
-              ) : null}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+                {error ? (
+                  <div className="flex items-start gap-3 rounded-2xl border border-red-400/22 bg-red-500/12 p-4">
+                    <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-300" />
+                    <p className="text-sm leading-6 text-red-100">{error}</p>
+                  </div>
+                ) : null}
+              </div>
               {hasSelectedProvider && provider ? (
                 <div className="space-y-5 pt-5">
                   {requiresUrl ? (

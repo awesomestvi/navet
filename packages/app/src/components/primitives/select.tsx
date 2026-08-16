@@ -103,6 +103,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
       <div
         className={cn(
           'pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3',
+          theme === 'light' ? 'text-gray-700' : 'text-white',
           indicatorClassName
         )}
       >
@@ -113,7 +114,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className={`${navetIconSizeTokens.sm} text-current/60`}
+          className={`${navetIconSizeTokens.sm} opacity-70`}
           aria-hidden="true"
         >
           <path d="m6 9 6 6 6-6" />

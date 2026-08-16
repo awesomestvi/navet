@@ -6,16 +6,20 @@ import ipaddress
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from aiohttp import web
+import voluptuous as vol
 from homeassistant.components import panel_custom
 from homeassistant.components.frontend import async_remove_panel
 from homeassistant.components.http import HomeAssistantView, StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.const import Platform
+from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-
-from aiohttp import web
+import homeassistant.helpers.config_validation as cv
 
 from .const import (
+    CHORE_ACTION_REQUEST_EVENT,
+    CHORE_ACTIONS,
     DOMAIN,
     FRONTEND_MODULE_URL,
     HA_PROXY_PATH,
@@ -214,10 +218,45 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         config={"integration": DOMAIN},
     )
 
+    if not domain_data.get("chore_services_registered"):
+        async def async_handle_chore_action(call: ServiceCall) -> None:
+            """Forward an authenticated Home Assistant action to the active Navet authority."""
+            data = {
+                "action": call.service,
+                "occurrenceId": call.data.get("occurrence_id"),
+                "participantId": call.data.get("participant_id"),
+            }
+            if call.data.get("reason"):
+                data["reason"] = call.data["reason"]
+            if call.data.get("assignee_ids"):
+                data["assigneeIds"] = call.data["assignee_ids"]
+            hass.bus.async_fire(CHORE_ACTION_REQUEST_EVENT, data, context=call.context)
+
+        base_fields = {
+            vol.Required("occurrence_id"): cv.string,
+            vol.Required("participant_id"): cv.string,
+        }
+        for action in CHORE_ACTIONS:
+            fields = dict(base_fields)
+            if action in ("reject", "skip", "reopen", "reassign"):
+                fields[vol.Required("reason")] = cv.string
+            if action == "reassign":
+                fields[vol.Required("assignee_ids")] = vol.All(cv.ensure_list, [cv.string])
+            hass.services.async_register(
+                DOMAIN,
+                action,
+                async_handle_chore_action,
+                schema=vol.Schema(fields),
+            )
+        domain_data["chore_services_registered"] = True
+
+    await hass.config_entries.async_forward_entry_setups(entry, [Platform.SENSOR])
+
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload Navet."""
+    unloaded = await hass.config_entries.async_unload_platforms(entry, [Platform.SENSOR])
     async_remove_panel(hass, PANEL_FRONTEND_PATH, warn_if_unknown=False)
-    return True
+    return unloaded

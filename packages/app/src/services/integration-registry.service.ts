@@ -223,6 +223,12 @@ export function getIntegrationProviderHistoryFeatureService(providerId: Integrat
   return getIntegrationProviderAdapter(providerId).historyFeatureService ?? null;
 }
 
+export function getIntegrationProviderChoreProjectionFeatureService(
+  providerId: IntegrationProviderId
+) {
+  return getIntegrationProviderAdapter(providerId).choreProjectionFeatureService ?? null;
+}
+
 export function getIntegrationProviderNotificationFeatureService(
   providerId: IntegrationProviderId
 ) {

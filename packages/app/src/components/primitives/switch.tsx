@@ -5,12 +5,13 @@ import { type ButtonHTMLAttributes, forwardRef } from 'react';
 export interface SwitchProps
   extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'role' | 'aria-checked' | 'onChange'> {
   checked: boolean;
+  size?: 'default' | 'compact';
   onCheckedChange?: (checked: boolean) => void;
 }
 
 // Status: proposed. Minimal switch primitive for boolean settings where checkbox semantics read awkwardly.
 export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch(
-  { checked, onCheckedChange, className, disabled, style, ...props },
+  { checked, size = 'default', onCheckedChange, className, disabled, style, ...props },
   ref
 ) {
   const { theme, accentColor } = useTheme();
@@ -30,7 +31,8 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
         }
       }}
       className={cn(
-        'inline-flex h-9 w-14 items-center rounded-full border px-1 outline-none transition-[background-color,border-color,box-shadow,opacity] focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+        'inline-flex items-center rounded-full border outline-none transition-[background-color,border-color,box-shadow,opacity] focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+        size === 'compact' ? 'h-7 w-11 px-[5px]' : 'h-9 w-14 px-1',
         theme === 'light'
           ? 'focus-visible:ring-gray-400 focus-visible:ring-offset-white'
           : 'focus-visible:ring-white/30 focus-visible:ring-offset-transparent',
@@ -49,8 +51,9 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
     >
       <span
         className={cn(
-          'h-7 w-7 rounded-full bg-white transition-transform',
-          checked ? 'translate-x-5' : 'translate-x-0'
+          'rounded-full bg-white transition-transform',
+          size === 'compact' ? 'h-5 w-5' : 'h-7 w-7',
+          checked ? (size === 'compact' ? 'translate-x-[14px]' : 'translate-x-5') : 'translate-x-0'
         )}
       />
     </button>

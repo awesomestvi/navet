@@ -30,9 +30,32 @@ export function copyProxyRequestHeaders(sourceHeaders: IncomingMessage['headers'
 
 export function buildHomeAssistantProxyRequestHeaders(
   sourceHeaders: IncomingMessage['headers'],
-  sessionAccessToken: string
+  sessionAccessToken: string,
+  options: { forwardContentType?: boolean; includeAuthorization?: boolean } = {}
 ) {
   const headers = copyProxyRequestHeaders(sourceHeaders)
-  headers.set('Authorization', `Bearer ${sessionAccessToken}`)
+  if (options.forwardContentType) {
+    const contentType = sourceHeaders['content-type']
+    if (typeof contentType === 'string' && contentType.length > 0) {
+      headers.set('Content-Type', contentType)
+    } else if (Array.isArray(contentType) && contentType.length > 0) {
+      headers.set('Content-Type', contentType[0] ?? '')
+    }
+  }
+  if (options.includeAuthorization !== false) {
+    headers.set('Authorization', `Bearer ${sessionAccessToken}`)
+  }
   return headers
+}
+
+export function isHomeAssistantOAuthProxyBodyRequest(
+  method: string | undefined,
+  targetPath: string
+) {
+  if ((method ?? 'GET').toUpperCase() !== 'POST') {
+    return false
+  }
+
+  const pathname = targetPath.split('?', 1)[0]
+  return pathname === '/auth/token' || pathname === '/auth/revoke'
 }

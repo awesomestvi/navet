@@ -1,8 +1,6 @@
 import { DashboardEmptyState, SectionCard } from '@navet/app/components/patterns';
 import { Badge, InteractivePill, MessageBar, Panel } from '@navet/app/components/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { HabitInsightsPanel } from '@navet/app/features/habits/components/habit-insights-panel';
-import { useLocalHabitsFeature } from '@navet/app/features/habits/local-habits-feature';
 import type { HomeStatusSummaryItem } from '@navet/app/features/sensors/components/home-status-summary-model';
 import {
   SummaryBar,
@@ -58,7 +56,6 @@ function TasksLoadingState() {
 export function TasksSection() {
   const { locale, t } = useI18n();
   const { theme, accentColor } = useTheme();
-  const [habitsVisible] = useLocalHabitsFeature();
   const surface = getThemeSurfaceTokens(theme);
   const controller = useAutomationDashboardController();
   const [routineView, setRoutineView] = useState<RoutineView>('automations');
@@ -177,207 +174,201 @@ export function TasksSection() {
 
         <SummaryBar items={summaryItems} ariaLabel={t('tasks.summary.title')} />
 
-        <div className="grid items-start gap-4 md:gap-5 xl:grid-cols-2">
-          <SectionCard
-            title={t('sections.tasks.title')}
-            description={t('sections.tasks.description')}
-            contentClassName="px-4 py-5 md:px-8 md:py-8"
-            padding="none"
-          >
-            <div className="space-y-4">
-              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 scrollbar-hide md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
-                <InteractivePill
-                  active={routineView === 'automations'}
-                  aria-pressed={routineView === 'automations'}
-                  className={routineViewPillClassName}
-                  icon={Bot}
-                  intent="navigation"
-                  size="small"
-                  onClick={() => setRoutineView('automations')}
-                >
-                  <span className="inline-flex items-center gap-2">
-                    {t('sections.tasks.automations.title')}
-                    <Badge tone="neutral" size="small">
-                      {controller.automations.length}
-                    </Badge>
-                  </span>
-                </InteractivePill>
-                <InteractivePill
-                  active={routineView === 'scripts'}
-                  aria-pressed={routineView === 'scripts'}
-                  className={routineViewPillClassName}
-                  icon={Sparkles}
-                  intent="navigation"
-                  size="small"
-                  onClick={() => setRoutineView('scripts')}
-                >
-                  <span className="inline-flex items-center gap-2">
-                    {t('tasks.quickActions.title')}
-                    <Badge tone="neutral" size="small">
-                      {controller.quickActions.length}
-                    </Badge>
-                  </span>
-                </InteractivePill>
-              </div>
+        <SectionCard
+          title={t('sections.tasks.title')}
+          description={t('sections.tasks.description')}
+          contentClassName="px-4 py-5 md:px-8 md:py-8"
+          padding="none"
+        >
+          <div className="space-y-4">
+            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 scrollbar-hide md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
+              <InteractivePill
+                active={routineView === 'automations'}
+                aria-pressed={routineView === 'automations'}
+                className={routineViewPillClassName}
+                icon={Bot}
+                intent="navigation"
+                size="small"
+                onClick={() => setRoutineView('automations')}
+              >
+                <span className="inline-flex items-center gap-2">
+                  {t('sections.tasks.automations.title')}
+                  <Badge tone="neutral" size="small">
+                    {controller.automations.length}
+                  </Badge>
+                </span>
+              </InteractivePill>
+              <InteractivePill
+                active={routineView === 'scripts'}
+                aria-pressed={routineView === 'scripts'}
+                className={routineViewPillClassName}
+                icon={Sparkles}
+                intent="navigation"
+                size="small"
+                onClick={() => setRoutineView('scripts')}
+              >
+                <span className="inline-flex items-center gap-2">
+                  {t('tasks.quickActions.title')}
+                  <Badge tone="neutral" size="small">
+                    {controller.quickActions.length}
+                  </Badge>
+                </span>
+              </InteractivePill>
+            </div>
 
-              {routineView === 'automations' ? (
-                <>
+            {routineView === 'automations' ? (
+              <>
+                <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 scrollbar-hide md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
+                  <InteractivePill
+                    active={automationFilter === 'all'}
+                    aria-pressed={automationFilter === 'all'}
+                    className={automationFilterPillClassName}
+                    icon={Bot}
+                    intent="navigation"
+                    size="compact"
+                    onClick={() => setAutomationFilter('all')}
+                  >
+                    {t('tasks.filters.all')}
+                  </InteractivePill>
+                  <InteractivePill
+                    active={automationFilter === 'active'}
+                    aria-pressed={automationFilter === 'active'}
+                    className={automationFilterPillClassName}
+                    icon={Power}
+                    intent="navigation"
+                    size="compact"
+                    onClick={() => toggleAutomationFilter('active')}
+                  >
+                    {t('tasks.filters.active')}
+                  </InteractivePill>
+                  <InteractivePill
+                    active={automationFilter === 'disabled'}
+                    aria-pressed={automationFilter === 'disabled'}
+                    className={automationFilterPillClassName}
+                    icon={PowerOff}
+                    intent="navigation"
+                    size="compact"
+                    onClick={() => toggleAutomationFilter('disabled')}
+                  >
+                    {t('tasks.filters.disabled')}
+                  </InteractivePill>
+                  <InteractivePill
+                    active={automationFilter === 'recent'}
+                    aria-pressed={automationFilter === 'recent'}
+                    className={automationFilterPillClassName}
+                    icon={Sparkles}
+                    intent="navigation"
+                    size="compact"
+                    onClick={() => toggleAutomationFilter('recent')}
+                  >
+                    {t('tasks.filters.recent')}
+                  </InteractivePill>
+                  <InteractivePill
+                    active={automationFilter === 'attention'}
+                    aria-pressed={automationFilter === 'attention'}
+                    className={automationFilterPillClassName}
+                    icon={AlertTriangle}
+                    intent="navigation"
+                    size="compact"
+                    onClick={() => toggleAutomationFilter('attention')}
+                  >
+                    {t('tasks.filters.attention')}
+                  </InteractivePill>
+                </div>
+
+                {showRoomFilters ? (
                   <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 scrollbar-hide md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
                     <InteractivePill
-                      active={automationFilter === 'all'}
-                      aria-pressed={automationFilter === 'all'}
+                      active={automationRoomFilter === 'all'}
+                      aria-pressed={automationRoomFilter === 'all'}
                       className={automationFilterPillClassName}
-                      icon={Bot}
                       intent="navigation"
                       size="compact"
-                      onClick={() => setAutomationFilter('all')}
+                      onClick={() => setAutomationRoomFilter('all')}
                     >
-                      {t('tasks.filters.all')}
+                      {t('tasks.filters.allRooms')}
                     </InteractivePill>
-                    <InteractivePill
-                      active={automationFilter === 'active'}
-                      aria-pressed={automationFilter === 'active'}
-                      className={automationFilterPillClassName}
-                      icon={Power}
-                      intent="navigation"
-                      size="compact"
-                      onClick={() => toggleAutomationFilter('active')}
-                    >
-                      {t('tasks.filters.active')}
-                    </InteractivePill>
-                    <InteractivePill
-                      active={automationFilter === 'disabled'}
-                      aria-pressed={automationFilter === 'disabled'}
-                      className={automationFilterPillClassName}
-                      icon={PowerOff}
-                      intent="navigation"
-                      size="compact"
-                      onClick={() => toggleAutomationFilter('disabled')}
-                    >
-                      {t('tasks.filters.disabled')}
-                    </InteractivePill>
-                    <InteractivePill
-                      active={automationFilter === 'recent'}
-                      aria-pressed={automationFilter === 'recent'}
-                      className={automationFilterPillClassName}
-                      icon={Sparkles}
-                      intent="navigation"
-                      size="compact"
-                      onClick={() => toggleAutomationFilter('recent')}
-                    >
-                      {t('tasks.filters.recent')}
-                    </InteractivePill>
-                    <InteractivePill
-                      active={automationFilter === 'attention'}
-                      aria-pressed={automationFilter === 'attention'}
-                      className={automationFilterPillClassName}
-                      icon={AlertTriangle}
-                      intent="navigation"
-                      size="compact"
-                      onClick={() => toggleAutomationFilter('attention')}
-                    >
-                      {t('tasks.filters.attention')}
-                    </InteractivePill>
-                  </div>
-
-                  {showRoomFilters ? (
-                    <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 scrollbar-hide md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
+                    {controller.automationRooms.map((room) => (
                       <InteractivePill
-                        active={automationRoomFilter === 'all'}
-                        aria-pressed={automationRoomFilter === 'all'}
+                        key={room}
+                        active={automationRoomFilter === room}
+                        aria-pressed={automationRoomFilter === room}
                         className={automationFilterPillClassName}
                         intent="navigation"
                         size="compact"
-                        onClick={() => setAutomationRoomFilter('all')}
+                        onClick={() =>
+                          setAutomationRoomFilter((current) => (current === room ? 'all' : room))
+                        }
                       >
-                        {t('tasks.filters.allRooms')}
+                        {room}
                       </InteractivePill>
-                      {controller.automationRooms.map((room) => (
-                        <InteractivePill
-                          key={room}
-                          active={automationRoomFilter === room}
-                          aria-pressed={automationRoomFilter === room}
-                          className={automationFilterPillClassName}
-                          intent="navigation"
-                          size="compact"
-                          onClick={() =>
-                            setAutomationRoomFilter((current) => (current === room ? 'all' : room))
-                          }
-                        >
-                          {room}
-                        </InteractivePill>
-                      ))}
-                    </div>
-                  ) : null}
+                    ))}
+                  </div>
+                ) : null}
 
-                  {visibleAutomations.length > 0 ? (
+                {visibleAutomations.length > 0 ? (
+                  <div
+                    className={`@container/automation-table overflow-hidden rounded-[22px] border ${surface.border} ${surface.panelMuted}`}
+                  >
                     <div
-                      className={`@container/automation-table overflow-hidden rounded-[22px] border ${surface.border} ${surface.panelMuted}`}
+                      className={`hidden grid-cols-[minmax(0,1fr)_10rem_7rem_15rem] items-center gap-3 px-4 pt-3 pb-2 text-xs font-medium @4xl/automation-table:grid ${surface.textMuted}`}
                     >
-                      <div
-                        className={`hidden grid-cols-[minmax(0,1fr)_10rem_7rem_15rem] items-center gap-3 px-4 pt-3 pb-2 text-xs font-medium @4xl/automation-table:grid ${surface.textMuted}`}
-                      >
-                        <SortableTableHeader
-                          label={t('sections.tasks.automations.title')}
-                          direction={
-                            automationSort?.key === 'name' ? automationSort.direction : undefined
-                          }
-                          onToggle={() =>
-                            setAutomationSort((current) => toggleTableSort(current, 'name'))
-                          }
-                        />
-                        <SortableTableHeader
-                          label={t('tasks.automation.category')}
-                          direction={
-                            automationSort?.key === 'category'
-                              ? automationSort.direction
-                              : undefined
-                          }
-                          onToggle={() =>
-                            setAutomationSort((current) => toggleTableSort(current, 'category'))
-                          }
-                        />
-                        <SortableTableHeader
-                          label={t('dashboard.zones.status')}
-                          direction={
-                            automationSort?.key === 'status' ? automationSort.direction : undefined
-                          }
-                          onToggle={() =>
-                            setAutomationSort((current) => toggleTableSort(current, 'status'))
-                          }
-                        />
-                        <div aria-hidden="true" />
-                      </div>
-                      {visibleAutomations.map((automation, index) => (
-                        <AutomationTaskRow
-                          key={automation.id}
-                          automation={automation}
-                          shouldReduceMotion={controller.shouldReduceMotion}
-                          striped={index % 2 === 0}
-                        />
-                      ))}
+                      <SortableTableHeader
+                        label={t('sections.tasks.automations.title')}
+                        direction={
+                          automationSort?.key === 'name' ? automationSort.direction : undefined
+                        }
+                        onToggle={() =>
+                          setAutomationSort((current) => toggleTableSort(current, 'name'))
+                        }
+                      />
+                      <SortableTableHeader
+                        label={t('tasks.automation.category')}
+                        direction={
+                          automationSort?.key === 'category' ? automationSort.direction : undefined
+                        }
+                        onToggle={() =>
+                          setAutomationSort((current) => toggleTableSort(current, 'category'))
+                        }
+                      />
+                      <SortableTableHeader
+                        label={t('dashboard.zones.status')}
+                        direction={
+                          automationSort?.key === 'status' ? automationSort.direction : undefined
+                        }
+                        onToggle={() =>
+                          setAutomationSort((current) => toggleTableSort(current, 'status'))
+                        }
+                      />
+                      <div aria-hidden="true" />
                     </div>
-                  ) : (
-                    <Panel muted padded={false} className="p-5 text-sm leading-6">
-                      <p className={surface.textSecondary}>{filteredEmptyMessage}</p>
-                    </Panel>
-                  )}
-                </>
-              ) : controller.quickActions.length > 0 ? (
-                <QuickActionGrid
-                  actions={controller.quickActions}
-                  shouldReduceMotion={controller.shouldReduceMotion}
-                />
-              ) : (
-                <Panel muted padded={false} className="p-5 text-sm leading-6">
-                  <p className={surface.textSecondary}>{t('tasks.quickActions.empty')}</p>
-                </Panel>
-              )}
-            </div>
-          </SectionCard>
-
-          {habitsVisible ? <HabitInsightsPanel /> : null}
-        </div>
+                    {visibleAutomations.map((automation, index) => (
+                      <AutomationTaskRow
+                        key={automation.id}
+                        automation={automation}
+                        shouldReduceMotion={controller.shouldReduceMotion}
+                        striped={index % 2 === 0}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <Panel muted padded={false} className="p-5 text-sm leading-6">
+                    <p className={surface.textSecondary}>{filteredEmptyMessage}</p>
+                  </Panel>
+                )}
+              </>
+            ) : controller.quickActions.length > 0 ? (
+              <QuickActionGrid
+                actions={controller.quickActions}
+                shouldReduceMotion={controller.shouldReduceMotion}
+              />
+            ) : (
+              <Panel muted padded={false} className="p-5 text-sm leading-6">
+                <p className={surface.textSecondary}>{t('tasks.quickActions.empty')}</p>
+              </Panel>
+            )}
+          </div>
+        </SectionCard>
       </SummaryBarStack>
     </div>
   );

@@ -1,18 +1,14 @@
-import { DashboardEmptyState, SectionCard } from '@navet/app/components/patterns';
+import { DashboardEmptyState } from '@navet/app/components/patterns';
 import {
-  Badge,
   Button,
   LoadingSpinner,
   MessageBar,
   Panel,
-  Select,
   TabList,
   TabPanel,
   Tabs,
   TabTrigger,
 } from '@navet/app/components/primitives';
-import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { navetTypographyTokens } from '@navet/app/components/system/tokens';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -22,62 +18,63 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@navet/app/components/ui/alert-dialog';
+import { HabitInsightsPanel } from '@navet/app/features/habits/components/habit-insights-panel';
+import { useLocalHabitsFeature } from '@navet/app/features/habits/local-habits-feature';
 import { TasksSection } from '@navet/app/features/tasks/components/tasks-section';
-import { useI18n, useTheme } from '@navet/app/hooks';
+import { useI18n } from '@navet/app/hooks';
 import {
-  applyChoreOccurrenceCommand,
+  publishIntegrationChoreProjection,
+  subscribeIntegrationChoreActionRequests,
+} from '@navet/app/services/integration-chore-projection.service';
+import { integrationStore } from '@navet/app/stores/integration-store';
+import {
+  type ChoreExperienceState,
+  type ChoreGamificationMode,
+  type ChoreMission,
+  type ChorePresentationMetadata,
+  type ChoreRewardGoal,
+  normalizeChoreExperienceState,
+} from '@navet/core/chore-experience';
+import {
   type ChoreDefinition,
-  type ChoreOccurrence,
   type ChoreParticipant,
-  getChoreTiming,
+  type ChoreWorkspaceAction,
+  getChoreExperiencePointBalances,
 } from '@navet/core/chores';
-import {
-  AlertTriangle,
-  CalendarCheck,
-  Check,
-  ClipboardList,
-  Plus,
-  RotateCcw,
-  Trash2,
-  Users,
-} from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import {
-  archiveChoreDefinition,
-  createChoreActivity,
-  materializeChoreWorkspace,
-} from '../chore-workspace-model';
+import { AlertTriangle, ClipboardList, Plus, RotateCcw, ShieldCheck, Users } from 'lucide-react';
+import { type ReactNode, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { getChoreMaterializationRange, materializeChoreWorkspace } from '../chore-workspace-model';
 import { useChoreWorkspaceStore } from '../chore-workspace-store';
+import { useChoreReminderDelivery } from '../use-chore-reminder-delivery';
 import { useChoreWorkspaceSync } from '../use-chore-workspace-sync';
-import { AddChoreDialog, AddPersonDialog } from './chore-setup-dialogs';
+import { ChoreDataRecovery } from './chore-data-recovery';
+import { MissionDialog, RewardDialog } from './chore-experience-dialogs';
+import {
+  AllChoresView,
+  ChoreSettingsView,
+  MissionsView,
+  ProgressView,
+  RewardsView,
+} from './chore-management-views';
+import { ChoreOnboardingDialog, ChoreOnboardingWelcome } from './chore-onboarding';
+import { AddChoreDialog, AddPersonDialog, ChoreManagementPinDialog } from './chore-setup-dialogs';
+import { ChoreTodayView } from './chore-today-view';
 
-type HouseholdView = 'today' | 'chores' | 'routines';
+type HouseholdView =
+  | 'today'
+  | 'chores'
+  | 'missions'
+  | 'rewards'
+  | 'progress'
+  | 'settings'
+  | 'routines'
+  | 'habits';
 
-function assignmentLabel(
-  definition: ChoreDefinition,
-  participantsById: Record<string, ChoreParticipant>,
-  t: ReturnType<typeof useI18n>['t']
-) {
-  if (definition.assignment.mode === 'anyone') return t('household.assignment.anyone');
-  if (definition.assignment.mode === 'everyone') return t('household.assignment.everyone');
-  if (definition.assignment.mode === 'rotation') return t('household.assignment.rotation');
-  return (
-    participantsById[definition.assignment.participantIds[0] ?? '']?.displayName ??
-    t('household.assignment.person')
-  );
-}
-
-function scheduleLabel(definition: ChoreDefinition, t: ReturnType<typeof useI18n>['t']) {
-  const frequency = definition.schedule.frequency;
-  return frequency === 'once'
-    ? t('household.schedule.once')
-    : frequency === 'daily'
-      ? t('household.schedule.daily')
-      : frequency === 'weekly'
-        ? t('household.schedule.weekly')
-        : frequency === 'monthly'
-          ? t('household.schedule.monthly')
-          : t('household.schedule.afterCompletion');
+function createId(prefix: string) {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `${prefix}:${crypto.randomUUID()}`;
+  }
+  return `${prefix}:${Date.now().toString(36)}:${Math.random().toString(36).slice(2)}`;
 }
 
 function HouseholdUnavailable({
@@ -88,427 +85,124 @@ function HouseholdUnavailable({
   retry: () => void;
 }) {
   const { t } = useI18n();
+  const error = useChoreWorkspaceStore((state) => state.error);
+  const recovery = useChoreWorkspaceStore((state) => state.recovery);
+  const recover = useChoreWorkspaceStore((state) => state.recover);
+  const managementUnlocked = useChoreWorkspaceStore((state) => state.managementUnlocked);
+  const managementError = useChoreWorkspaceStore((state) => state.managementError);
+  const unlockManagement = useChoreWorkspaceStore((state) => state.unlockManagement);
+  const [pinOpen, setPinOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'repair' | 'reset' | null>(null);
   const unauthorized = status === 'unauthorized';
   const unavailable = status === 'unavailable';
-  return (
-    <DashboardEmptyState
-      icon={unavailable ? ClipboardList : AlertTriangle}
-      title={
-        unavailable
-          ? t('household.unavailable.title')
-          : unauthorized
-            ? t('household.unauthorized.title')
-            : t('household.error.title')
-      }
-      description={
-        unavailable
-          ? t('household.unavailable.description')
-          : unauthorized
-            ? t('household.unauthorized.description')
-            : t('household.error.description')
-      }
-      actionLabel={unavailable ? undefined : t('household.retry')}
-      onAction={unavailable ? undefined : retry}
-      actionIcon={RotateCcw}
-      className="mx-auto max-w-xl"
-    />
-  );
-}
 
-function TodayChoreRow({
-  occurrence,
-  definition,
-  participantsById,
-  selectedParticipantId,
-}: {
-  occurrence: ChoreOccurrence;
-  definition: ChoreDefinition;
-  participantsById: Record<string, ChoreParticipant>;
-  selectedParticipantId: string;
-}) {
-  const { formatTime, t } = useI18n();
-  const { theme, accentColor } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
-  const mutate = useChoreWorkspaceStore((state) => state.mutate);
-  const timing = getChoreTiming(occurrence);
-  const participantNames = occurrence.assigneeIds
-    .map((id) => participantsById[id]?.displayName)
-    .filter(Boolean)
-    .join(', ');
-  const selectedParticipant = participantsById[selectedParticipantId];
-  const canApprove =
-    occurrence.status === 'awaiting_approval' &&
-    definition.approval.approverIds.includes(selectedParticipantId);
-  const canComplete =
-    (occurrence.status === 'available' ||
-      (occurrence.status === 'claimed' && occurrence.claimedBy === selectedParticipantId)) &&
-    occurrence.assigneeIds.includes(selectedParticipantId);
-  const runCommand = (type: 'complete' | 'approve' | 'reject') =>
-    mutate(({ commandId, data, timestamp }) => {
-      const current = data.occurrencesById[occurrence.id];
-      const currentDefinition = data.definitionsById[definition.id];
-      if (!current || !currentDefinition || !selectedParticipant) {
-        throw new Error('Chore is no longer available');
-      }
-      const result = applyChoreOccurrenceCommand({
-        commandId,
-        command: { type, participantId: selectedParticipant.id },
-        definition: currentDefinition,
-        occurrence: current,
-        timestamp,
-      });
-      return {
-        activity: result.activity,
-        data: {
-          ...data,
-          occurrencesById: { ...data.occurrencesById, [result.occurrence.id]: result.occurrence },
-        },
-      };
-    });
-  const statusLabel =
-    occurrence.status === 'done'
-      ? t('household.today.done')
-      : occurrence.status === 'awaiting_approval'
-        ? t('household.today.awaitingApproval')
-        : timing === 'overdue'
-          ? t('household.today.overdue')
-          : timing === 'due'
-            ? t('household.today.due')
-            : t('household.today.upcoming');
-  const tone =
-    occurrence.status === 'done'
-      ? 'success'
-      : occurrence.status === 'awaiting_approval'
-        ? 'warning'
-        : timing === 'overdue'
-          ? 'danger'
-          : 'neutral';
+  const continueRecovery = (action: 'repair' | 'reset') => {
+    if (recovery?.pinConfigured && !managementUnlocked) {
+      setPendingAction(action);
+      setPinOpen(true);
+      return;
+    }
+    if (action === 'reset') {
+      setResetOpen(true);
+      return;
+    }
+    void recover('restore_backup');
+  };
 
   return (
-    <div className="relative pl-9 before:absolute before:top-7 before:bottom-[-1.25rem] before:left-[0.72rem] before:w-px before:bg-current before:opacity-15 last:before:hidden">
-      <span
-        className="absolute top-6 left-1.5 h-3 w-3 rounded-full border-2 border-white/70"
-        style={{ backgroundColor: accentColor }}
-        aria-hidden="true"
+    <div className="mx-auto grid max-w-xl gap-3">
+      <DashboardEmptyState
+        icon={unavailable ? ClipboardList : AlertTriangle}
+        title={
+          recovery
+            ? t('household.recovery.title')
+            : unavailable
+              ? t('household.unavailable.title')
+              : unauthorized
+                ? t('household.unauthorized.title')
+                : t('household.error.title')
+        }
+        description={
+          recovery
+            ? t('household.recovery.description')
+            : unavailable
+              ? t('household.unavailable.description')
+              : unauthorized
+                ? t('household.unauthorized.description')
+                : t('household.error.description')
+        }
+        actionLabel={t('household.retry')}
+        onAction={retry}
+        actionIcon={RotateCcw}
       />
-      <Panel
-        muted
-        className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"
-      >
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <time
-              className={`text-sm font-semibold ${surface.textPrimary}`}
-              dateTime={occurrence.scheduledAt}
-            >
-              {formatTime(new Date(occurrence.scheduledAt))}
-            </time>
-            <Badge tone={tone} size="small">
-              {statusLabel}
-            </Badge>
-          </div>
-          <h3 className={`mt-2 text-base font-semibold ${surface.textPrimary}`}>
-            {definition.title}
-          </h3>
-          <p className={`mt-1 text-sm ${surface.textSecondary}`}>{participantNames}</p>
-        </div>
-        {canApprove ? (
-          <div className="flex shrink-0 gap-2">
-            <Button size="small" variant="secondary" onClick={() => void runCommand('reject')}>
-              {t('household.actions.reject')}
-            </Button>
-            <Button
-              size="small"
-              leading={<Check className="h-4 w-4" />}
-              onClick={() => void runCommand('approve')}
-            >
-              {t('household.actions.approve')}
+
+      {recovery ? (
+        <Panel muted className="grid gap-3 p-4">
+          {error ? (
+            <MessageBar tone="error" title={t('household.recovery.problem')}>
+              {error}
+            </MessageBar>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            {recovery.backupAvailable ? (
+              <Button
+                variant="secondary"
+                leading={<ShieldCheck aria-hidden="true" className="h-4 w-4" />}
+                onClick={() => continueRecovery('repair')}
+              >
+                {t('household.recovery.repair')}
+              </Button>
+            ) : null}
+            <Button variant="ghost" onClick={() => continueRecovery('reset')}>
+              {t('household.recovery.startOver')}
             </Button>
           </div>
-        ) : canComplete ? (
-          <Button
-            size="small"
-            leading={<Check className="h-4 w-4" />}
-            onClick={() => void runCommand('complete')}
-          >
-            {t('household.actions.complete')}
-          </Button>
-        ) : null}
-      </Panel>
-    </div>
-  );
-}
-
-function TodayView({
-  participants,
-  selectedParticipantId,
-  onSelectedParticipantChange,
-}: {
-  participants: ChoreParticipant[];
-  selectedParticipantId: string;
-  onSelectedParticipantChange: (id: string) => void;
-}) {
-  const { t } = useI18n();
-  const data = useChoreWorkspaceStore((state) => state.data);
-  const now = Date.now();
-  const endOfTomorrow = now + 36 * 60 * 60 * 1000;
-  const visibleOccurrences = useMemo(() => {
-    if (!data) return [];
-    return Object.values(data.occurrencesById)
-      .filter((occurrence) => {
-        const scheduled = Date.parse(occurrence.scheduledAt);
-        const relevantToPerson =
-          selectedParticipantId === 'all' ||
-          occurrence.assigneeIds.includes(selectedParticipantId) ||
-          data.definitionsById[occurrence.definitionId]?.approval.approverIds.includes(
-            selectedParticipantId
-          );
-        const definition = data.definitionsById[occurrence.definitionId];
-        return (
-          Boolean(definition && !definition.archivedAt) &&
-          relevantToPerson &&
-          (getChoreTiming(occurrence) === 'overdue' || scheduled <= endOfTomorrow)
-        );
-      })
-      .sort((left, right) => {
-        const doneDelta = Number(left.status === 'done') - Number(right.status === 'done');
-        return doneDelta || Date.parse(left.scheduledAt) - Date.parse(right.scheduledAt);
-      });
-  }, [data, endOfTomorrow, selectedParticipantId]);
-
-  return (
-    <SectionCard
-      title={t('household.tabs.today')}
-      description={t('household.description')}
-      action={
-        <div className="flex items-center gap-2 text-sm">
-          <span className="sr-only">{t('household.personPicker.label')}</span>
-          <Users className="h-4 w-4" aria-hidden="true" />
-          <Select
-            size="small"
-            value={selectedParticipantId}
-            aria-label={t('household.personPicker.label')}
-            onChange={(event) => onSelectedParticipantChange(event.target.value)}
-          >
-            <option value="all">{t('household.personPicker.all')}</option>
-            {participants.map((participant) => (
-              <option key={participant.id} value={participant.id}>
-                {participant.displayName}
-              </option>
-            ))}
-          </Select>
-        </div>
-      }
-    >
-      {visibleOccurrences.length === 0 || !data ? (
-        <DashboardEmptyState
-          compact
-          variant="inline"
-          icon={CalendarCheck}
-          title={t('household.today.emptyTitle')}
-          description={t('household.today.emptyDescription')}
-        />
-      ) : (
-        <div className="space-y-5">
-          {visibleOccurrences.map((occurrence) => {
-            const definition = data.definitionsById[occurrence.definitionId];
-            return definition ? (
-              <TodayChoreRow
-                key={occurrence.id}
-                occurrence={occurrence}
-                definition={definition}
-                participantsById={data.participantsById}
-                selectedParticipantId={selectedParticipantId}
-              />
-            ) : null;
-          })}
-        </div>
-      )}
-    </SectionCard>
-  );
-}
-
-function ChoresView({
-  participants,
-  onAddChore,
-  onAddPerson,
-}: {
-  participants: ChoreParticipant[];
-  onAddChore: () => void;
-  onAddPerson: () => void;
-}) {
-  const { t } = useI18n();
-  const { theme } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
-  const data = useChoreWorkspaceStore((state) => state.data);
-  const mutate = useChoreWorkspaceStore((state) => state.mutate);
-  const [definitionPendingDelete, setDefinitionPendingDelete] = useState<ChoreDefinition | null>(
-    null
-  );
-  const definitions = data
-    ? Object.values(data.definitionsById).filter((item) => !item.archivedAt)
-    : [];
-  const toggleDefinition = (definition: ChoreDefinition) =>
-    mutate(({ commandId, data: current, timestamp }) => {
-      const currentDefinition = current.definitionsById[definition.id];
-      if (!currentDefinition) throw new Error('Chore is no longer available');
-      return {
-        activity: createChoreActivity({
-          commandId,
-          definitionId: definition.id,
-          timestamp,
-          type: 'definition_updated',
-        }),
-        data: {
-          ...current,
-          definitionsById: {
-            ...current.definitionsById,
-            [definition.id]: {
-              ...currentDefinition,
-              enabled: !currentDefinition.enabled,
-              updatedAt: timestamp,
-            },
-          },
-        },
-      };
-    });
-  const deleteDefinition = (definition: ChoreDefinition) =>
-    mutate(({ commandId, data: current, timestamp }) => ({
-      activity: createChoreActivity({
-        commandId,
-        definitionId: definition.id,
-        timestamp,
-        type: 'definition_archived',
-      }),
-      data: archiveChoreDefinition(current, definition.id, timestamp),
-    }));
-
-  return (
-    <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(18rem,0.75fr)]">
-      <SectionCard
-        title={t('household.chores.title')}
-        description={t('household.chores.description')}
-        action={
-          <Button size="small" leading={<Plus className="h-4 w-4" />} onClick={onAddChore}>
-            {t('household.chores.add')}
-          </Button>
-        }
-      >
-        {definitions.length === 0 ? (
-          <p className={`py-8 text-center text-sm ${surface.textSecondary}`}>
-            {t('household.chores.empty')}
+          <p className="text-xs text-muted-foreground">
+            {recovery.backupAvailable
+              ? t('household.recovery.backupAvailable')
+              : t('household.recovery.noBackup')}
           </p>
-        ) : (
-          <div className="divide-y divide-current/10">
-            {definitions.map((definition) => (
-              <div
-                key={definition.id}
-                className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0"
-              >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className={`${navetTypographyTokens.titleMd} ${surface.textPrimary}`}>
-                      {definition.title}
-                    </h3>
-                    {!definition.enabled ? (
-                      <Badge size="small">{t('household.chores.paused')}</Badge>
-                    ) : null}
-                  </div>
-                  <p className={`mt-1 ${navetTypographyTokens.helper} ${surface.textSecondary}`}>
-                    {assignmentLabel(definition, data?.participantsById ?? {}, t)} ·{' '}
-                    {scheduleLabel(definition, t)}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  <Button
-                    size="compact"
-                    variant="ghost"
-                    className="min-h-11"
-                    onClick={() => void toggleDefinition(definition)}
-                  >
-                    {definition.enabled
-                      ? t('household.chores.pause')
-                      : t('household.chores.resume')}
-                  </Button>
-                  <Button
-                    size="compact"
-                    variant="ghost"
-                    className={`min-h-11 ${
-                      theme === 'light'
-                        ? 'text-red-700 hover:bg-red-50'
-                        : 'text-red-300 hover:bg-red-500/10'
-                    }`}
-                    leading={<Trash2 className="h-3.5 w-3.5" />}
-                    aria-label={t('household.chores.deleteNamed', { name: definition.title })}
-                    onClick={() => setDefinitionPendingDelete(definition)}
-                  >
-                    {t('household.chores.delete')}
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </SectionCard>
-      <SectionCard
-        title={t('household.members.title')}
-        description={t('household.members.description')}
-        action={
-          <Button
-            size="small"
-            variant="secondary"
-            leading={<Plus className="h-4 w-4" />}
-            onClick={onAddPerson}
-          >
-            {t('household.people.add')}
-          </Button>
-        }
-      >
-        <div className="space-y-3">
-          {participants.map((participant) => (
-            <div key={participant.id} className="flex items-center gap-3">
-              <span
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-current/8 text-sm font-semibold"
-                style={{ color: participant.color }}
-              >
-                {participant.displayName.slice(0, 1).toUpperCase()}
-              </span>
-              <span className={`text-sm font-medium ${surface.textPrimary}`}>
-                {participant.displayName}
-              </span>
-            </div>
-          ))}
-        </div>
-      </SectionCard>
-      <AlertDialog
-        open={definitionPendingDelete !== null}
+        </Panel>
+      ) : null}
+
+      <ChoreManagementPinDialog
+        isOpen={pinOpen}
+        error={managementError}
         onOpenChange={(open) => {
-          if (!open) setDefinitionPendingDelete(null);
+          setPinOpen(open);
+          if (!open) setPendingAction(null);
         }}
-      >
+        onUnlock={async (pin) => {
+          const unlocked = await unlockManagement(pin);
+          if (unlocked && pendingAction) {
+            const nextAction = pendingAction;
+            setPendingAction(null);
+            if (nextAction === 'reset') setResetOpen(true);
+            else void recover('restore_backup');
+          }
+          return unlocked;
+        }}
+      />
+
+      <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t('household.chores.deleteTitle', {
-                name: definitionPendingDelete?.title ?? '',
-              })}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{t('household.recovery.resetTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('household.chores.deleteDescription')}
+              {t('household.recovery.resetDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="min-h-11">{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <Button
               variant="destructive"
-              className="min-h-11"
-              onClick={() => {
-                if (!definitionPendingDelete) return;
-                void deleteDefinition(definitionPendingDelete);
-                setDefinitionPendingDelete(null);
+              onClick={async () => {
+                const recovered = await recover('reset');
+                if (recovered) setResetOpen(false);
               }}
             >
-              {t('household.chores.delete')}
+              {t('household.recovery.startOver')}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -519,23 +213,109 @@ function ChoresView({
 
 export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean }) {
   const { t } = useI18n();
+  const [habitsVisible] = useLocalHabitsFeature();
   const [view, setView] = useState<HouseholdView>('today');
-  const [selectedParticipantId, setSelectedParticipantId] = useState('');
+  const [selectedParticipantId, setSelectedParticipantId] = useState('all');
+  const [roomFilterId, setRoomFilterId] = useState<string>();
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
   const [choreDialogOpen, setChoreDialogOpen] = useState(false);
+  const [missionDialogOpen, setMissionDialogOpen] = useState(false);
+  const [rewardDialogOpen, setRewardDialogOpen] = useState(false);
+  const [setupDialogOpen, setSetupDialogOpen] = useState(false);
+  const [managementPinDialogOpen, setManagementPinDialogOpen] = useState(false);
+  const [participantToEdit, setParticipantToEdit] = useState<ChoreParticipant | null>(null);
+  const [definitionToEdit, setDefinitionToEdit] = useState<ChoreDefinition | null>(null);
+  const [missionToEdit, setMissionToEdit] = useState<ChoreMission | null>(null);
+  const [rewardToEdit, setRewardToEdit] = useState<ChoreRewardGoal | null>(null);
   const data = useChoreWorkspaceStore((state) => state.data);
+  const revision = useChoreWorkspaceStore((state) => state.revision);
+  const error = useChoreWorkspaceStore((state) => state.error);
   const status = useChoreWorkspaceStore((state) => state.status);
   const load = useChoreWorkspaceStore((state) => state.load);
-  const mutate = useChoreWorkspaceStore((state) => state.mutate);
-  useChoreWorkspaceSync(syncEnabled);
-  const participants = useMemo(
-    () => (data ? Object.values(data.participantsById).filter((item) => !item.pausedAt) : []),
-    [data]
+  const execute = useChoreWorkspaceStore((state) => state.execute);
+  const managementPinConfigured = useChoreWorkspaceStore((state) => state.managementPinConfigured);
+  const managementUnlocked = useChoreWorkspaceStore((state) => state.managementUnlocked);
+  const managementError = useChoreWorkspaceStore((state) => state.managementError);
+  const configureManagementPin = useChoreWorkspaceStore((state) => state.configureManagementPin);
+  const unlockManagement = useChoreWorkspaceStore((state) => state.unlockManagement);
+  const pendingManagementActionRef = useRef<(() => void) | null>(null);
+  const roomDescriptors = useSyncExternalStore(
+    integrationStore.subscribe,
+    () => integrationStore.getState().roomDescriptors,
+    () => integrationStore.getState().roomDescriptors
   );
 
   useEffect(() => {
-    if (!selectedParticipantId && participants[0]) {
-      setSelectedParticipantId(participants[0].id);
+    if (!habitsVisible && view === 'habits') {
+      setView('routines');
+    }
+  }, [habitsVisible, view]);
+  const roomOptions = useMemo(
+    () =>
+      roomDescriptors.map((room) => ({
+        canonicalId: room.canonicalId,
+        label: room.name,
+      })),
+    [roomDescriptors]
+  );
+
+  useChoreWorkspaceSync(syncEnabled);
+  useChoreReminderDelivery(syncEnabled);
+
+  useEffect(() => {
+    if (!syncEnabled || !data) return;
+    void publishIntegrationChoreProjection({
+      workspace: data,
+      revision: revision ?? undefined,
+    }).catch(() => undefined);
+  }, [data, revision, syncEnabled]);
+
+  useEffect(() => {
+    if (!syncEnabled) return;
+    let active = true;
+    let unsubscribe = () => {};
+    void subscribeIntegrationChoreActionRequests((request) => {
+      const reason = request.reason?.trim() || 'Home Assistant automation';
+      const action =
+        request.action === 'reassign'
+          ? {
+              type: 'reassign' as const,
+              participantId: request.participantId,
+              assigneeIds: request.assigneeIds ?? [],
+              reason,
+            }
+          : request.action === 'skip' || request.action === 'reopen'
+            ? { type: request.action, participantId: request.participantId, reason }
+            : request.action === 'reject'
+              ? { type: 'reject' as const, participantId: request.participantId, reason }
+              : { type: request.action, participantId: request.participantId };
+      void execute({
+        type: 'occurrence_action',
+        occurrenceId: request.occurrenceId,
+        action,
+      });
+    }).then((dispose) => {
+      if (active) unsubscribe = dispose;
+      else dispose();
+    });
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [execute, syncEnabled]);
+
+  const allParticipants = useMemo(() => (data ? Object.values(data.participantsById) : []), [data]);
+  const participants = useMemo(
+    () => allParticipants.filter((participant) => !participant.pausedAt),
+    [allParticipants]
+  );
+
+  useEffect(() => {
+    if (
+      selectedParticipantId !== 'all' &&
+      !participants.some((participant) => participant.id === selectedParticipantId)
+    ) {
+      setSelectedParticipantId('all');
     }
   }, [participants, selectedParticipantId]);
 
@@ -545,55 +325,356 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
       status !== 'ready' ||
       !data ||
       Object.keys(data.definitionsById).length === 0
-    )
+    ) {
       return;
+    }
     const materialized = materializeChoreWorkspace(data);
     if (!materialized.changed) return;
-    void mutate(({ commandId, data: current, timestamp }) => ({
-      activity: createChoreActivity({ commandId, timestamp, type: 'workspace_materialized' }),
-      data: materializeChoreWorkspace(current, new Date(timestamp)).data,
-    }));
-  }, [data, mutate, status, syncEnabled]);
+    void execute({ type: 'materialize_occurrences', ...getChoreMaterializationRange() });
+  }, [data, execute, status, syncEnabled]);
 
-  const addParticipant = (participant: ChoreParticipant) =>
-    mutate(({ commandId, data: current, timestamp }) => ({
-      activity: createChoreActivity({
-        commandId,
-        participantId: participant.id,
-        timestamp,
-        type: 'participant_created',
-      }),
-      data: {
-        ...current,
-        participantsById: { ...current.participantsById, [participant.id]: participant },
+  const managerActorId =
+    participants.find(
+      (participant) =>
+        participant.id === selectedParticipantId && participant.capabilities.includes('manage')
+    )?.id ?? participants.find((participant) => participant.capabilities.includes('manage'))?.id;
+
+  const saveParticipant = (participant: ChoreParticipant) => {
+    const current = useChoreWorkspaceStore.getState().data;
+    const existing = current?.participantsById[participant.id];
+    const currentParticipants = Object.values(current?.participantsById ?? {});
+    const currentManagerActorId =
+      currentParticipants.find(
+        (candidate) =>
+          candidate.id === selectedParticipantId && candidate.capabilities.includes('manage')
+      )?.id ??
+      currentParticipants.find((candidate) => candidate.capabilities.includes('manage'))?.id;
+    const action: ChoreWorkspaceAction = existing
+      ? {
+          type: 'participant_update',
+          participant,
+          actorParticipantId: currentManagerActorId ?? participant.id,
+        }
+      : {
+          type: 'participant_create',
+          participant,
+          actorParticipantId: currentParticipants.length > 0 ? currentManagerActorId : undefined,
+        };
+    return execute(action);
+  };
+
+  const saveSetupParticipant = async (participant: ChoreParticipant) => {
+    const saved = await saveParticipant(participant);
+    if (!saved) return false;
+    const current = useChoreWorkspaceStore.getState().data;
+    if (!current) return false;
+    const currentExperience = normalizeChoreExperienceState(current.experience);
+    if (currentExperience.setupStartedAt) return true;
+    const setupManager = Object.values(current.participantsById).find(
+      (candidate) => candidate.capabilities.includes('manage') && !candidate.pausedAt
+    );
+    if (!setupManager) return false;
+    return execute({
+      type: 'experience_update',
+      actorParticipantId: setupManager.id,
+      experience: {
+        ...currentExperience,
+        setupStartedAt: new Date().toISOString(),
+      },
+    });
+  };
+
+  const updateExperience = async (
+    change: (experience: ChoreExperienceState) => ChoreExperienceState
+  ) => {
+    const current = useChoreWorkspaceStore.getState().data;
+    if (!current || !managerActorId) return false;
+    const experience = normalizeChoreExperienceState(current.experience);
+    const changed = change(experience);
+    const persistedBalances = experience.earnedPointsByParticipant;
+    const earnedPointsByParticipant =
+      persistedBalances && Object.keys(persistedBalances).length > 0
+        ? persistedBalances
+        : experience.gamificationMode === 'off' && changed.gamificationMode !== 'off'
+          ? Object.fromEntries(Object.keys(current.participantsById).map((id) => [id, 0]))
+          : experience.gamificationMode !== 'off'
+            ? getChoreExperiencePointBalances(current)
+            : persistedBalances;
+    return execute({
+      type: 'experience_update',
+      actorParticipantId: managerActorId,
+      experience: { ...changed, earnedPointsByParticipant },
+    });
+  };
+
+  const saveDefinition = async (
+    definition: ChoreDefinition,
+    presentation: ChorePresentationMetadata
+  ) => {
+    if (!managerActorId) return false;
+    const current = useChoreWorkspaceStore.getState().data;
+    const saved = await execute(
+      current?.definitionsById[definition.id]
+        ? { type: 'definition_update', actorParticipantId: managerActorId, definition }
+        : { type: 'definition_create', actorParticipantId: managerActorId, definition }
+    );
+    if (!saved) return false;
+    return updateExperience((experience) => ({
+      ...experience,
+      presentationByDefinitionId: {
+        ...experience.presentationByDefinitionId,
+        [definition.id]: presentation,
       },
     }));
-  const addDefinition = (definition: ChoreDefinition) =>
-    mutate(({ commandId, data: current, timestamp }) => {
-      const next = {
-        ...current,
-        definitionsById: { ...current.definitionsById, [definition.id]: definition },
-      };
-      return {
-        activity: createChoreActivity({
-          commandId,
-          definitionId: definition.id,
-          timestamp,
-          type: 'definition_created',
-        }),
-        data: materializeChoreWorkspace(next, new Date(timestamp)).data,
-      };
+  };
+
+  const duplicateDefinition = async (definition: ChoreDefinition) => {
+    if (!managerActorId) return;
+    const timestamp = new Date().toISOString();
+    const duplicate: ChoreDefinition = {
+      ...definition,
+      id: createId('chore'),
+      title: t('household.chores.copyName', { name: definition.title }),
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      archivedAt: undefined,
+    };
+    const currentExperience = normalizeChoreExperienceState(
+      useChoreWorkspaceStore.getState().data?.experience
+    );
+    const saved = await execute({
+      type: 'definition_create',
+      actorParticipantId: managerActorId,
+      definition: duplicate,
     });
+    if (!saved) return;
+    const presentation = currentExperience.presentationByDefinitionId[definition.id];
+    if (presentation) {
+      await updateExperience((experience) => ({
+        ...experience,
+        presentationByDefinitionId: {
+          ...experience.presentationByDefinitionId,
+          [duplicate.id]: presentation,
+        },
+      }));
+    }
+  };
+
+  const saveMission = (mission: ChoreMission) =>
+    updateExperience((experience) => ({
+      ...experience,
+      missionsById: { ...experience.missionsById, [mission.id]: mission },
+    }));
+  const saveReward = (reward: ChoreRewardGoal) =>
+    updateExperience((experience) => ({
+      ...experience,
+      rewardGoalsById: { ...experience.rewardGoalsById, [reward.id]: reward },
+    }));
+
+  const markSetupStarted = async () => {
+    const current = useChoreWorkspaceStore.getState().data;
+    if (!current) return false;
+    const actor = Object.values(current.participantsById).find((participant) =>
+      participant.capabilities.includes('manage')
+    );
+    if (!actor) return false;
+    const currentExperience = normalizeChoreExperienceState(current.experience);
+    if (currentExperience.setupStartedAt) return true;
+    return execute({
+      type: 'experience_update',
+      actorParticipantId: actor.id,
+      experience: { ...currentExperience, setupStartedAt: new Date().toISOString() },
+    });
+  };
+
+  const saveSetupRewards = async (
+    gamificationMode: ChoreGamificationMode,
+    reward?: ChoreRewardGoal
+  ) => {
+    const current = useChoreWorkspaceStore.getState().data;
+    if (!current) return false;
+    const actor = Object.values(current.participantsById).find((participant) =>
+      participant.capabilities.includes('manage')
+    );
+    if (!actor) return false;
+    const currentExperience = normalizeChoreExperienceState(current.experience);
+    return execute({
+      type: 'experience_update',
+      actorParticipantId: actor.id,
+      experience: {
+        ...currentExperience,
+        gamificationMode,
+        rewardGoalsById: reward
+          ? { ...currentExperience.rewardGoalsById, [reward.id]: reward }
+          : currentExperience.rewardGoalsById,
+      },
+    });
+  };
+
+  const completeSetup = async () => {
+    const current = useChoreWorkspaceStore.getState().data;
+    if (!current) return false;
+    const actor = Object.values(current.participantsById).find((participant) =>
+      participant.capabilities.includes('manage')
+    );
+    if (!actor || Object.keys(current.definitionsById).length === 0) return false;
+    const currentExperience = normalizeChoreExperienceState(current.experience);
+    const timestamp = new Date().toISOString();
+    return execute({
+      type: 'experience_update',
+      actorParticipantId: actor.id,
+      experience: {
+        ...currentExperience,
+        setupStartedAt: currentExperience.setupStartedAt ?? timestamp,
+        setupCompletedAt: timestamp,
+      },
+    });
+  };
 
   const choreStatus = status === 'saving' && data ? 'ready' : status;
+  const workspaceUnavailable =
+    choreStatus === 'unavailable' || choreStatus === 'unauthorized' || choreStatus === 'error';
+  const loading = choreStatus === 'loading' || choreStatus === 'idle';
+  const withManagementAccess = (action: () => void) => {
+    if (managementPinConfigured && !managementUnlocked) {
+      pendingManagementActionRef.current = action;
+      setManagementPinDialogOpen(true);
+      return;
+    }
+    action();
+  };
+  const openAddChore = () => {
+    withManagementAccess(() => {
+      setDefinitionToEdit(null);
+      setChoreDialogOpen(true);
+    });
+  };
+
+  const renderWorkspace = (content: ReactNode) => {
+    if (loading) {
+      return (
+        <div
+          className="flex min-h-64 items-center justify-center"
+          role="status"
+          aria-label={t('household.loading')}
+        >
+          <LoadingSpinner />
+        </div>
+      );
+    }
+    if (workspaceUnavailable) {
+      return (
+        <HouseholdUnavailable
+          status={choreStatus as 'unavailable' | 'unauthorized' | 'error'}
+          retry={() => void load({ force: true })}
+        />
+      );
+    }
+    if (!data || participants.length === 0) {
+      return (
+        <DashboardEmptyState
+          icon={Users}
+          title={t('household.people.emptyTitle')}
+          description={t('household.people.emptyDescription')}
+          actionLabel={t('household.people.add')}
+          onAction={() => setPersonDialogOpen(true)}
+          actionIcon={Plus}
+          className="mx-auto max-w-xl"
+        />
+      );
+    }
+    return content;
+  };
+
+  const experience = normalizeChoreExperienceState(data?.experience);
+  const activeDefinitions = Object.values(data?.definitionsById ?? {}).filter(
+    (definition) => !definition.archivedAt
+  );
+  const legacySetupComplete =
+    !experience.setupStartedAt && participants.length > 0 && activeDefinitions.length > 0;
+  const setupComplete = Boolean(experience.setupCompletedAt) || legacySetupComplete;
+
+  if (loading) {
+    return (
+      <div
+        className="flex min-h-64 items-center justify-center"
+        role="status"
+        aria-label={t('household.loading')}
+      >
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (workspaceUnavailable) {
+    return (
+      <HouseholdUnavailable
+        status={choreStatus as 'unavailable' | 'unauthorized' | 'error'}
+        retry={() => void load({ force: true })}
+      />
+    );
+  }
+
+  if (!setupComplete) {
+    return (
+      <div className="h-full min-w-0 overflow-x-hidden overflow-y-auto pb-24 md:pb-0">
+        {error && data ? (
+          <MessageBar tone="error" title={t('household.error.title')} className="mb-4">
+            {error}
+          </MessageBar>
+        ) : null}
+        <ChoreOnboardingWelcome
+          onStart={() => {
+            setSetupDialogOpen(true);
+            if (participants.length > 0) void markSetupStarted();
+          }}
+        />
+        <ChoreOnboardingDialog
+          isOpen={setupDialogOpen}
+          error={error}
+          onOpenChange={setSetupDialogOpen}
+          participants={participants}
+          definitions={activeDefinitions}
+          experience={experience}
+          rooms={roomOptions}
+          onSaveParticipant={saveSetupParticipant}
+          onSaveChore={saveDefinition}
+          onRemoveChore={async (definition) => {
+            if (!managerActorId) return false;
+            return execute({
+              type: 'definition_archive',
+              actorParticipantId: managerActorId,
+              definitionId: definition.id,
+            });
+          }}
+          onSaveRewards={saveSetupRewards}
+          onConfigurePin={configureManagementPin}
+          onComplete={completeSetup}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="h-full min-w-0 overflow-x-hidden overflow-y-auto pb-24 md:pb-0">
+      {error && data ? (
+        <MessageBar tone="error" title={t('household.error.title')} className="mb-4">
+          {error}
+        </MessageBar>
+      ) : null}
       <Tabs
         value={view}
         defaultValue="today"
-        onValueChange={(value) => setView(value as HouseholdView)}
+        onValueChange={(value) => {
+          const nextView = value as HouseholdView;
+          if (['chores', 'missions', 'rewards', 'settings'].includes(nextView)) {
+            withManagementAccess(() => setView(nextView));
+            return;
+          }
+          setView(nextView);
+        }}
       >
-        <div className="mb-4 flex items-center justify-between gap-3 md:mb-5">
+        <div className="mb-4 overflow-x-auto pb-1 md:mb-5">
           <TabList size="small">
             <TabTrigger value="today" size="small">
               {t('household.tabs.today')}
@@ -601,84 +682,251 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
             <TabTrigger value="chores" size="small">
               {t('household.tabs.chores')}
             </TabTrigger>
+            <TabTrigger value="missions" size="small">
+              {t('household.tabs.missions')}
+            </TabTrigger>
+            <TabTrigger value="rewards" size="small">
+              {t('household.tabs.rewards')}
+            </TabTrigger>
+            <TabTrigger value="progress" size="small">
+              {t('household.tabs.progress')}
+            </TabTrigger>
+            <TabTrigger value="settings" size="small">
+              {t('household.tabs.settings')}
+            </TabTrigger>
             <TabTrigger value="routines" size="small">
               {t('household.tabs.routines')}
             </TabTrigger>
+            {habitsVisible ? (
+              <TabTrigger value="habits" size="small">
+                {t('settings.nav.habits')}
+              </TabTrigger>
+            ) : null}
           </TabList>
         </div>
+
         <TabPanel value="today">
-          {choreStatus === 'loading' || choreStatus === 'idle' ? (
-            <div
-              className="flex min-h-64 items-center justify-center"
-              role="status"
-              aria-label={t('household.loading')}
-            >
-              <LoadingSpinner />
-            </div>
-          ) : choreStatus === 'unavailable' ||
-            choreStatus === 'unauthorized' ||
-            choreStatus === 'error' ? (
-            <HouseholdUnavailable status={choreStatus} retry={() => void load({ force: true })} />
-          ) : participants.length === 0 ? (
-            <DashboardEmptyState
-              icon={Users}
-              title={t('household.people.emptyTitle')}
-              description={t('household.people.emptyDescription')}
-              actionLabel={t('household.people.add')}
-              onAction={() => setPersonDialogOpen(true)}
-              actionIcon={Plus}
-              className="mx-auto max-w-xl"
-            />
-          ) : (
-            <TodayView
-              participants={participants}
-              selectedParticipantId={selectedParticipantId}
-              onSelectedParticipantChange={setSelectedParticipantId}
-            />
+          {renderWorkspace(
+            data ? (
+              <ChoreTodayView
+                data={data}
+                participants={participants}
+                selectedParticipantId={selectedParticipantId}
+                onSelectedParticipantChange={setSelectedParticipantId}
+                execute={execute}
+                onAddChore={openAddChore}
+                onOpenRoom={(canonicalId) => {
+                  setRoomFilterId(canonicalId);
+                  setView('chores');
+                }}
+              />
+            ) : null
           )}
         </TabPanel>
         <TabPanel value="chores">
-          {choreStatus === 'unavailable' ||
-          choreStatus === 'unauthorized' ||
-          choreStatus === 'error' ? (
-            <HouseholdUnavailable status={choreStatus} retry={() => void load({ force: true })} />
-          ) : participants.length === 0 ? (
-            <DashboardEmptyState
-              icon={Users}
-              title={t('household.people.emptyTitle')}
-              description={t('household.people.emptyDescription')}
-              actionLabel={t('household.people.add')}
-              onAction={() => setPersonDialogOpen(true)}
-              actionIcon={Plus}
-              className="mx-auto max-w-xl"
-            />
-          ) : (
-            <ChoresView
-              participants={participants}
-              onAddChore={() => setChoreDialogOpen(true)}
-              onAddPerson={() => setPersonDialogOpen(true)}
-            />
+          {renderWorkspace(
+            data ? (
+              <AllChoresView
+                data={data}
+                initialRoomId={roomFilterId}
+                onAdd={openAddChore}
+                onEdit={(definition) => {
+                  setDefinitionToEdit(definition);
+                  setChoreDialogOpen(true);
+                }}
+                onDuplicate={(definition) => void duplicateDefinition(definition)}
+                onToggleEnabled={(definition) => {
+                  if (!managerActorId) return;
+                  void execute({
+                    type: 'definition_update',
+                    actorParticipantId: managerActorId,
+                    definition: {
+                      ...definition,
+                      enabled: !definition.enabled,
+                      updatedAt: new Date().toISOString(),
+                    },
+                  });
+                }}
+                onArchive={(definition) => {
+                  if (!managerActorId) return;
+                  void execute({
+                    type: 'definition_archive',
+                    actorParticipantId: managerActorId,
+                    definitionId: definition.id,
+                  });
+                }}
+                onRestore={(definition) => {
+                  if (!managerActorId) return;
+                  void execute({
+                    type: 'definition_restore',
+                    actorParticipantId: managerActorId,
+                    definitionId: definition.id,
+                  });
+                }}
+              />
+            ) : null
+          )}
+        </TabPanel>
+        <TabPanel value="missions">
+          {renderWorkspace(
+            data ? (
+              <MissionsView
+                data={data}
+                onAdd={() => {
+                  setMissionToEdit(null);
+                  setMissionDialogOpen(true);
+                }}
+                onEdit={(mission) => {
+                  setMissionToEdit(mission);
+                  setMissionDialogOpen(true);
+                }}
+                onDelete={(mission) =>
+                  void updateExperience((current) => {
+                    const missionsById = { ...current.missionsById };
+                    delete missionsById[mission.id];
+                    return { ...current, missionsById };
+                  })
+                }
+              />
+            ) : null
+          )}
+        </TabPanel>
+        <TabPanel value="rewards">
+          {renderWorkspace(
+            data ? (
+              <RewardsView
+                data={data}
+                onAdd={() => {
+                  setRewardToEdit(null);
+                  setRewardDialogOpen(true);
+                }}
+                onEdit={(reward) => {
+                  setRewardToEdit(reward);
+                  setRewardDialogOpen(true);
+                }}
+                onDelete={(reward) =>
+                  void updateExperience((current) => {
+                    const rewardGoalsById = { ...current.rewardGoalsById };
+                    delete rewardGoalsById[reward.id];
+                    return { ...current, rewardGoalsById };
+                  })
+                }
+              />
+            ) : null
+          )}
+        </TabPanel>
+        <TabPanel value="progress">
+          {renderWorkspace(
+            data ? (
+              <ProgressView
+                data={data}
+                onEditPerson={(participant) => {
+                  setParticipantToEdit(participant);
+                  setPersonDialogOpen(true);
+                }}
+              />
+            ) : null
+          )}
+        </TabPanel>
+        <TabPanel value="settings">
+          {renderWorkspace(
+            data ? (
+              <ChoreSettingsView
+                data={data}
+                onModeChange={(gamificationMode) =>
+                  void updateExperience((current) => ({ ...current, gamificationMode }))
+                }
+                onAddPerson={() => {
+                  setParticipantToEdit(null);
+                  setPersonDialogOpen(true);
+                }}
+                onEditPerson={(participant) => {
+                  setParticipantToEdit(participant);
+                  setPersonDialogOpen(true);
+                }}
+                recoveryContent={
+                  managerActorId ? (
+                    <ChoreDataRecovery
+                      managerActorId={managerActorId}
+                      participants={allParticipants}
+                    />
+                  ) : null
+                }
+              />
+            ) : null
           )}
         </TabPanel>
         <TabPanel value="routines">
-          <MessageBar tone="info" title={t('household.tabs.routines')}>
-            {t('tasks.dashboard.sourceNote')}
-          </MessageBar>
-          <div className="mt-4">
-            <TasksSection />
-          </div>
+          <TasksSection />
         </TabPanel>
+        {habitsVisible ? (
+          <TabPanel value="habits">
+            <HabitInsightsPanel />
+          </TabPanel>
+        ) : null}
       </Tabs>
+
       <AddPersonDialog
         isOpen={personDialogOpen}
-        onOpenChange={setPersonDialogOpen}
-        onSave={addParticipant}
+        error={error}
+        participant={participantToEdit}
+        managerRequired={allParticipants.length === 0}
+        onOpenChange={(open) => {
+          setPersonDialogOpen(open);
+          if (!open) setParticipantToEdit(null);
+        }}
+        onSave={saveParticipant}
+      />
+      <ChoreManagementPinDialog
+        isOpen={managementPinDialogOpen}
+        error={managementError}
+        onOpenChange={(open) => {
+          setManagementPinDialogOpen(open);
+          if (!open) pendingManagementActionRef.current = null;
+        }}
+        onUnlock={async (pin) => {
+          const unlocked = await unlockManagement(pin);
+          if (unlocked) {
+            const pendingAction = pendingManagementActionRef.current;
+            pendingManagementActionRef.current = null;
+            pendingAction?.();
+          }
+          return unlocked;
+        }}
       />
       <AddChoreDialog
+        definition={definitionToEdit}
+        presentation={
+          definitionToEdit ? experience.presentationByDefinitionId[definitionToEdit.id] : undefined
+        }
         isOpen={choreDialogOpen}
-        onOpenChange={setChoreDialogOpen}
+        onOpenChange={(open) => {
+          setChoreDialogOpen(open);
+          if (!open) setDefinitionToEdit(null);
+        }}
         participants={participants}
-        onSave={addDefinition}
+        rooms={roomOptions}
+        onSave={saveDefinition}
+      />
+      <MissionDialog
+        isOpen={missionDialogOpen}
+        mission={missionToEdit}
+        definitions={activeDefinitions}
+        onOpenChange={(open) => {
+          setMissionDialogOpen(open);
+          if (!open) setMissionToEdit(null);
+        }}
+        onSave={saveMission}
+      />
+      <RewardDialog
+        isOpen={rewardDialogOpen}
+        reward={rewardToEdit}
+        participants={participants}
+        onOpenChange={(open) => {
+          setRewardDialogOpen(open);
+          if (!open) setRewardToEdit(null);
+        }}
+        onSave={saveReward}
       />
     </div>
   );

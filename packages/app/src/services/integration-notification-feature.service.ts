@@ -54,4 +54,16 @@ export const integrationNotificationFeatureService: ProviderNotificationFeatureS
     });
     await service.restartSystem();
   },
+  sendNotification: async (request) => {
+    const { service } = resolveCurrentProviderService({
+      feature: 'notifications',
+      getService: (registration) => registration.notificationFeatureService,
+      unsupportedMessage: 'Notifications are not supported for the current integration yet',
+      missingMessage: 'Notifications are not implemented yet for the current integration',
+    });
+    if (!service.sendNotification) {
+      throw new Error('Sending notifications is not supported for the current integration yet');
+    }
+    await service.sendNotification(request);
+  },
 };

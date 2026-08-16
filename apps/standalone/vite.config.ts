@@ -95,7 +95,10 @@ import {
   isBlockedRSSHostname,
   isPrivateIpAddress,
 } from '../../packages/app/src/utils/rss-proxy-security'
-import { buildHomeAssistantProxyRequestHeaders } from '../../scripts/vite-proxy-request-headers'
+import {
+  buildHomeAssistantProxyRequestHeaders,
+  isHomeAssistantOAuthProxyBodyRequest,
+} from '../../scripts/vite-proxy-request-headers'
 
 const repoRoot = path.resolve(__dirname, '../..')
 type VitePwaManifestTransform = NonNullable<
@@ -127,6 +130,7 @@ const publicWebManifest = JSON.parse(
   categories: string[]
 }
 const SPOTIFY_TRACK_ID_PATTERN = /^[a-zA-Z0-9]{22}$/
+const HOME_ASSISTANT_OAUTH_BODY_MAX_BYTES = 16 * 1024
 const DISABLED_INSTALLATION_AUTHORITY: ViteInstallationAuthority = {
   authorizeHomeAssistant: () => ({
     allowed: false,
@@ -811,10 +815,49 @@ function homeAssistantProxyPlugin(
         return
       }
 
-      const headers = buildHomeAssistantProxyRequestHeaders(
-        req.headers,
-        authSession.access_token
-      )
+      const forwardsOAuthBody = isHomeAssistantOAuthProxyBodyRequest(req.method, targetPath)
+      const headers = buildHomeAssistantProxyRequestHeaders(req.headers, authSession.access_token, {
+        forwardContentType: forwardsOAuthBody,
+        includeAuthorization: !forwardsOAuthBody,
+      })
+      let body: Uint8Array<ArrayBuffer> | undefined
+      if (forwardsOAuthBody) {
+        const contentType = headers.get('content-type')?.toLowerCase() ?? ''
+        if (
+          !contentType.startsWith('multipart/form-data;') &&
+          contentType !== 'application/x-www-form-urlencoded'
+        ) {
+          res.statusCode = 415
+          res.end('Unsupported Home Assistant OAuth request content type')
+          return
+        }
+
+        const declaredLength = Number.parseInt(String(req.headers['content-length'] ?? ''), 10)
+        if (
+          Number.isFinite(declaredLength) &&
+          declaredLength > HOME_ASSISTANT_OAUTH_BODY_MAX_BYTES
+        ) {
+          res.statusCode = 413
+          res.end('Home Assistant OAuth request is too large')
+          return
+        }
+
+        const chunks: Buffer[] = []
+        let size = 0
+        for await (const chunk of req) {
+          const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+          size += buffer.byteLength
+          if (size > HOME_ASSISTANT_OAUTH_BODY_MAX_BYTES) {
+            res.statusCode = 413
+            res.end('Home Assistant OAuth request is too large')
+            return
+          }
+          chunks.push(buffer)
+        }
+        const payload = Buffer.concat(chunks)
+        body = new Uint8Array(payload.byteLength)
+        body.set(payload)
+      }
 
       const abortController = new AbortController()
       const isRawCameraStream = targetPath.startsWith('/api/camera_proxy_stream/')
@@ -833,6 +876,7 @@ function homeAssistantProxyPlugin(
         method: req.method,
         redirect: 'manual',
         headers,
+        body,
         signal: abortController.signal,
       })
 

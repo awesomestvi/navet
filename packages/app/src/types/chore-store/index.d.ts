@@ -17,6 +17,7 @@ declare module '@docker/njs/chore-store.js' {
   }
 
   interface ChoreStoreModule {
+    getNjsTimeZoneOffsetMinutesForTests(timestamp: number, timeZone: string): number;
     handle(request: NjsChoreRequest): void;
     handleIngress(request: NjsChoreRequest): void;
     isValidChoreWorkspaceData(value: unknown): boolean;

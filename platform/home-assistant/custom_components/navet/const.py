@@ -4,6 +4,18 @@ from pathlib import Path
 
 DOMAIN = "navet"
 
+CHORE_PROJECTION_EVENT = "navet_chore_projection"
+CHORE_ACTION_REQUEST_EVENT = "navet_chore_action_requested"
+CHORE_ACTIONS = (
+    "claim",
+    "complete",
+    "approve",
+    "reject",
+    "skip",
+    "reopen",
+    "reassign",
+)
+
 PANEL_COMPONENT_NAME = "navet-panel"
 PANEL_FRONTEND_PATH = "navet"
 PANEL_ICON = "mdi:hub"

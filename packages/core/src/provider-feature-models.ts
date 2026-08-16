@@ -303,6 +303,13 @@ export interface PlatformNotificationSnapshot {
   repairIssues: PlatformRepairIssue[];
 }
 
+export interface PlatformNotificationDeliveryRequest {
+  title: string;
+  message: string;
+  target?: string;
+  data?: Record<string, unknown>;
+}
+
 export interface PlatformUpdateNotificationCandidate {
   entityId: string;
   state: string;

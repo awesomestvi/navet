@@ -133,4 +133,25 @@ export const homeAssistantNotificationFeatureService: ProviderNotificationFeatur
     await callHomeAssistantService('update', 'install', {}, { entityId: entityId }),
   restartSystem: async () =>
     await callHomeAssistantService('homeassistant', 'restart', {}, undefined),
+  sendNotification: async (request) => {
+    if (request.target) {
+      await callHomeAssistantService(
+        'notify',
+        request.target,
+        {
+          title: request.title,
+          message: request.message,
+          ...(request.data ? { data: request.data } : {}),
+        },
+        undefined
+      );
+      return;
+    }
+    await callHomeAssistantService(
+      'persistent_notification',
+      'create',
+      { title: request.title, message: request.message },
+      undefined
+    );
+  },
 };
