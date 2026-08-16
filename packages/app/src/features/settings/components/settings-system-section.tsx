@@ -2,6 +2,7 @@ import homeAssistantLogo from '@navet/app/assets/providers/home-assistant.svg';
 import homeyLogo from '@navet/app/assets/providers/homey.svg';
 import openhabLogo from '@navet/app/assets/providers/openhab.svg';
 import { Badge, Button, Input, ModalSurface } from '@navet/app/components/primitives';
+import { themeColorValues } from '@navet/app/components/shared/theme/theme-colors';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,6 +16,7 @@ import {
 import { useI18n } from '@navet/app/hooks';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import {
+  BookOpen,
   ChevronDown,
   ChevronUp,
   ExternalLink,
@@ -30,27 +32,19 @@ import {
 import { useState } from 'react';
 import type { SettingsSectionController } from '../hooks/use-settings-section-controller';
 import { SettingsDashboardClients } from './settings-dashboard-clients';
-import { SettingsItem, SettingsSectionShell } from './settings-section-shell';
+import { SettingsItem, SettingsSectionGroup, SettingsSectionShell } from './settings-section-shell';
 
 interface SettingsSystemSectionProps {
   controller: SettingsSectionController;
 }
 
-const PROVIDER_FEATURE_LABELS = {
-  rooms: 'settings.system.providers.features.rooms',
-  lighting: 'settings.system.providers.features.lighting',
-  sensors: 'settings.system.providers.features.sensors',
-  climate: 'settings.system.providers.features.climate',
-  mediaControls: 'settings.system.providers.features.media',
-  mediaBrowse: 'settings.system.providers.features.browse',
-  mediaArtwork: 'settings.system.providers.features.artwork',
-  cameraSnapshot: 'settings.system.providers.features.snapshots',
-  cameraStreams: 'settings.system.providers.features.streams',
-  energyNow: 'settings.system.providers.features.energy',
-  calendar: 'settings.system.providers.features.calendar',
-  weather: 'settings.system.providers.features.weather',
-  notifications: 'settings.system.providers.features.notifications',
-} as const;
+const PROVIDER_SUPPORT_URLS: Record<IntegrationProviderId, string> = {
+  home_assistant: 'https://docs.navet.app/integrations/#home-assistant',
+  homey: 'https://docs.navet.app/integrations/#homey',
+  openhab: 'https://docs.navet.app/integrations/#openhab',
+  hubitat: 'https://docs.navet.app/integrations/#planned-providers',
+  smartthings: 'https://docs.navet.app/integrations/#planned-providers',
+};
 
 type ProviderCardStatus =
   | 'connected'
@@ -98,17 +92,6 @@ function getProviderStatusLabel(t: ReturnType<typeof useI18n>['t'], status: Prov
   }
 }
 
-function getSupportedProviderFeatureLabels(
-  t: ReturnType<typeof useI18n>['t'],
-  featureMatrix: {
-    [K in keyof typeof PROVIDER_FEATURE_LABELS]: boolean;
-  }
-) {
-  return Object.entries(PROVIDER_FEATURE_LABELS)
-    .filter(([feature]) => featureMatrix[feature as keyof typeof PROVIDER_FEATURE_LABELS])
-    .map(([, key]) => t(key));
-}
-
 function getProviderInitials(provider: ProviderCard) {
   if (provider.id === 'home_assistant') return 'HA';
   if (provider.id === 'openhab') return 'OH';
@@ -125,7 +108,7 @@ function ProviderLogoMark({ provider }: { provider: ProviderCard }) {
       className={`relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_30%_25%,rgba(255,255,255,0.18),transparent_58%),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] ring-1 ${accentClassName}`}
     >
       {logoSrc ? (
-        <img src={logoSrc} alt="" className="h-7 w-7 object-contain" />
+        <img src={logoSrc} alt="" width={28} height={28} className="h-7 w-7 object-contain" />
       ) : (
         <span className="text-xs font-semibold tracking-[0.2em] text-white/90">
           {getProviderInitials(provider)}
@@ -153,7 +136,7 @@ function ProviderManagementToggle({
       type="button"
       onClick={onToggle}
       aria-expanded={expanded}
-      className={`inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
+      className={`inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor} ${styles.ringClass}`}
     >
       <Settings2 className="h-4 w-4" />
       <span>
@@ -205,26 +188,33 @@ function ProviderCardView({
   t: ReturnType<typeof useI18n>['t'];
   configUrl: string | null;
 }) {
-  const featureLabels = getSupportedProviderFeatureLabels(t, provider.featureMatrix);
   const usesUrlConnect = provider.loginMode === 'url_oauth' || provider.loginMode === 'url_session';
   const openUrl = getProviderOpenUrl(provider, configUrl);
+  const displayUrl =
+    provider.baseUrl ??
+    (provider.id === 'home_assistant' && provider.isConnected ? configUrl : null);
 
   return (
     <div
       className={`rounded-[22px] border p-4 md:p-5 ${styles.insetBorderColor} ${styles.insetBg}`}
     >
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-8">
+      <div className="min-w-0">
         <div className="min-w-0">
           <div className="flex items-start gap-3">
             <ProviderLogoMark provider={provider} />
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <p className={`text-sm font-semibold ${styles.textColor}`}>{provider.label}</p>
+                <p className={`truncate text-sm font-medium ${styles.textColor}`}>
+                  {provider.label}
+                </p>
                 {provider.status === 'connected' ? (
                   <>
-                    <Badge tone="success" className="text-[10px]">
+                    <span
+                      className="shrink-0 text-[11px] font-medium leading-[14px]"
+                      style={{ color: themeColorValues.green }}
+                    >
                       {t('settings.system.providers.status.connected')}
-                    </Badge>
+                    </span>
                     {showActiveControls && provider.isActive ? (
                       <Badge tone="accent" className="text-[10px]">
                         {t('settings.system.providers.active')}
@@ -235,8 +225,11 @@ function ProviderCardView({
                   <ProviderStatusBadge label={getProviderStatusLabel(t, provider.status)} />
                 ) : null}
               </div>
-              <p className={`mt-2 text-sm leading-relaxed ${styles.subtleColor}`}>
-                {provider.baseUrl ?? t('settings.system.providers.notConnected')}
+              <p
+                className={`mt-1 truncate text-xs ${styles.subtleColor}`}
+                title={displayUrl ?? t('settings.system.providers.notConnected')}
+              >
+                {displayUrl ?? t('settings.system.providers.notConnected')}
               </p>
               {provider.error ? (
                 <p className="mt-2 text-sm leading-relaxed text-red-400">{provider.error}</p>
@@ -244,28 +237,28 @@ function ProviderCardView({
             </div>
           </div>
 
-          {featureLabels.length > 0 ? (
-            <div className="mt-4 flex flex-wrap gap-1.5">
-              {featureLabels.map((label) => (
-                <Badge key={label} tone="neutral" className={`text-[11px] ${styles.subtleColor}`}>
-                  {label}
-                </Badge>
-              ))}
-            </div>
-          ) : (
-            <p className={`mt-4 text-sm leading-relaxed ${styles.subtleColor}`}>
-              {t('settings.system.providers.plannedDescription')}
-            </p>
-          )}
+          <a
+            href={PROVIDER_SUPPORT_URLS[provider.id]}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`mt-3 inline-flex h-9 items-center gap-2 rounded-full px-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${styles.mutedColor} ${styles.hoverBg} ${styles.ringClass}`}
+          >
+            <BookOpen className="h-4 w-4" aria-hidden="true" />
+            <span>{t('settings.system.providers.supportedEntities')}</span>
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+          </a>
         </div>
 
-        <div className="flex w-full flex-col items-stretch gap-2 md:w-auto md:min-w-[12rem]">
+        <div
+          className="mt-3 flex w-full flex-wrap items-center gap-2"
+          data-provider-actions={provider.id}
+        >
           {openUrl ? (
             <a
               href={openUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className={`inline-flex h-9 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
+              className={`inline-flex h-9 min-w-32 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none sm:flex-none ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor} ${styles.ringClass}`}
             >
               <ExternalLink className="h-4 w-4" />
               <span>{t('common.open')}</span>
@@ -278,7 +271,7 @@ function ProviderCardView({
               variant="secondary"
               size="small"
               leading={<LocateFixed className="h-4 w-4" />}
-              className="w-full rounded-full"
+              className="min-w-32 flex-1 rounded-full sm:flex-none"
               onClick={() => setActiveProvider(provider.id)}
             >
               {t('settings.system.providers.makeActive')}
@@ -291,7 +284,7 @@ function ProviderCardView({
               variant="secondary"
               size="small"
               leading={<Link2 className="h-4 w-4" />}
-              className="w-full rounded-full"
+              className="min-w-32 flex-1 rounded-full sm:flex-none"
               onClick={() => void handleConnectProvider('homey')}
             >
               {t('settings.system.providers.connect')}
@@ -304,7 +297,7 @@ function ProviderCardView({
               variant="secondary"
               size="small"
               leading={<Link2 className="h-4 w-4" />}
-              className="w-full rounded-full"
+              className="min-w-32 flex-1 rounded-full sm:flex-none"
               onClick={() => openConnectDialog(provider.id)}
             >
               {t('settings.system.providers.connect')}
@@ -317,7 +310,7 @@ function ProviderCardView({
               variant="destructive"
               size="small"
               leading={<Unplug className="h-4 w-4" />}
-              className="w-full rounded-full"
+              className="min-w-32 flex-1 rounded-full sm:flex-none"
               onClick={() => void handleDisconnectProvider(provider.id)}
             >
               {t('settings.system.providers.disconnect')}
@@ -380,62 +373,69 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
       title={t('settings.system.sectionTitle')}
       description={t('settings.system.sectionDescription')}
       styles={styles}
+      grouped
     >
-      <SettingsItem
-        title={t('settings.system.providers.title')}
-        description={t('settings.system.providers.description')}
+      <SettingsSectionGroup
+        id="system-smart-home"
+        title={t('settings.system.group.smartHome')}
         styles={styles}
       >
-        <div className="space-y-3">
-          {connectedProviders.length > 0 ? (
-            <div className="grid gap-3">
-              {connectedProviders.map((provider) => (
-                <ProviderCardView
-                  key={provider.id}
-                  provider={provider}
-                  styles={styles}
-                  openConnectDialog={openConnectDialog}
-                  showActiveControls={showActiveControls}
-                  setActiveProvider={setActiveProvider}
-                  handleConnectProvider={handleConnectProvider}
-                  handleDisconnectProvider={handleDisconnectProvider}
-                  t={t}
-                  configUrl={config?.url ?? null}
-                />
-              ))}
-            </div>
-          ) : null}
+        <SettingsItem
+          title={t('settings.system.providers.title')}
+          description={t('settings.system.providers.description')}
+          styles={styles}
+        >
+          <div className="space-y-3">
+            {connectedProviders.length > 0 ? (
+              <div className="grid gap-3">
+                {connectedProviders.map((provider) => (
+                  <ProviderCardView
+                    key={provider.id}
+                    provider={provider}
+                    styles={styles}
+                    openConnectDialog={openConnectDialog}
+                    showActiveControls={showActiveControls}
+                    setActiveProvider={setActiveProvider}
+                    handleConnectProvider={handleConnectProvider}
+                    handleDisconnectProvider={handleDisconnectProvider}
+                    t={t}
+                    configUrl={config?.url ?? null}
+                  />
+                ))}
+              </div>
+            ) : null}
 
-          {managedProviders.length > 0 ? (
-            <ProviderManagementToggle
-              expanded={showProviderManagement}
-              onToggle={() => setShowProviderManagement((current) => !current)}
-              styles={styles}
-              totalProviders={managedProviders.length}
-              t={t}
-            />
-          ) : null}
+            {managedProviders.length > 0 ? (
+              <ProviderManagementToggle
+                expanded={showProviderManagement}
+                onToggle={() => setShowProviderManagement((current) => !current)}
+                styles={styles}
+                totalProviders={managedProviders.length}
+                t={t}
+              />
+            ) : null}
 
-          {showProviderManagement && managedProviders.length > 0 ? (
-            <div className="grid gap-3">
-              {managedProviders.map((provider) => (
-                <ProviderCardView
-                  key={provider.id}
-                  provider={provider}
-                  styles={styles}
-                  openConnectDialog={openConnectDialog}
-                  showActiveControls={showActiveControls}
-                  setActiveProvider={setActiveProvider}
-                  handleConnectProvider={handleConnectProvider}
-                  handleDisconnectProvider={handleDisconnectProvider}
-                  t={t}
-                  configUrl={config?.url ?? null}
-                />
-              ))}
-            </div>
-          ) : null}
-        </div>
-      </SettingsItem>
+            {showProviderManagement && managedProviders.length > 0 ? (
+              <div className="grid gap-3">
+                {managedProviders.map((provider) => (
+                  <ProviderCardView
+                    key={provider.id}
+                    provider={provider}
+                    styles={styles}
+                    openConnectDialog={openConnectDialog}
+                    showActiveControls={showActiveControls}
+                    setActiveProvider={setActiveProvider}
+                    handleConnectProvider={handleConnectProvider}
+                    handleDisconnectProvider={handleDisconnectProvider}
+                    t={t}
+                    configUrl={config?.url ?? null}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </SettingsItem>
+      </SettingsSectionGroup>
 
       {connectDialogProvider ? (
         <ModalSurface
@@ -482,14 +482,14 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
 
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <label
-                  htmlFor="provider-connect-url"
-                  className="text-xs font-medium uppercase tracking-[0.16em] text-white/55"
-                >
+                <label htmlFor="provider-connect-url" className="text-xs font-medium text-white/55">
                   {t('settings.system.providers.url')}
                 </label>
                 <Input
                   id="provider-connect-url"
+                  name="provider-url"
+                  type="url"
+                  autoComplete="off"
                   value={providerUrls[connectDialogProvider.id] ?? ''}
                   onChange={(event) =>
                     setProviderUrls((current) => ({
@@ -508,12 +508,15 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                   <div className="space-y-1.5">
                     <label
                       htmlFor="provider-connect-username"
-                      className="text-xs font-medium uppercase tracking-[0.16em] text-white/55"
+                      className="text-xs font-medium text-white/55"
                     >
                       {t('settings.system.providers.username')}
                     </label>
                     <Input
                       id="provider-connect-username"
+                      name="provider-username"
+                      autoComplete="username"
+                      spellCheck={false}
                       value={providerUsernames[connectDialogProvider.id] ?? ''}
                       onChange={(event) =>
                         setProviderUsernames((current) => ({
@@ -528,13 +531,15 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
                   <div className="space-y-1.5">
                     <label
                       htmlFor="provider-connect-password"
-                      className="text-xs font-medium uppercase tracking-[0.16em] text-white/55"
+                      className="text-xs font-medium text-white/55"
                     >
                       {t('settings.system.providers.password')}
                     </label>
                     <Input
                       id="provider-connect-password"
+                      name="provider-password"
                       type="password"
+                      autoComplete="current-password"
                       value={providerPasswords[connectDialogProvider.id] ?? ''}
                       onChange={(event) =>
                         setProviderPasswords((current) => ({
@@ -574,60 +579,72 @@ export function SettingsSystemSection({ controller }: SettingsSystemSectionProps
         </ModalSurface>
       ) : null}
 
-      <SettingsItem
-        title={t('settings.system.clients.title')}
-        description={t('settings.system.clients.description')}
+      <SettingsSectionGroup
+        id="system-devices-sync"
+        title={t('settings.system.group.devicesSync')}
         styles={styles}
       >
-        <SettingsDashboardClients styles={styles} />
-      </SettingsItem>
-
-      <SettingsItem
-        title={t('settings.project.localData.title')}
-        description={t('settings.project.localData.description')}
-        styles={styles}
-      >
-        <button
-          type="button"
-          onClick={handleResetLocalSettings}
-          className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor}`}
+        <SettingsItem
+          title={t('settings.system.clients.title')}
+          description={t('settings.system.clients.description')}
+          styles={styles}
         >
-          <RotateCcw className="h-4 w-4" />
-          <span>{t('settings.project.localData.reset')}</span>
-        </button>
-      </SettingsItem>
+          <SettingsDashboardClients styles={styles} />
+        </SettingsItem>
+      </SettingsSectionGroup>
 
-      <SettingsItem
-        title={t('settings.project.logout')}
-        description={t('settings.system.logout.description')}
+      <SettingsSectionGroup
+        id="system-device-data-session"
+        title={t('settings.system.group.deviceDataSession')}
         styles={styles}
       >
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="inline-flex h-9 items-center gap-2 rounded-full border border-red-500/20 bg-red-500/8 px-3.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-500/12"
+        <SettingsItem
+          title={t('settings.project.localData.title')}
+          description={t('settings.project.localData.description')}
+          styles={styles}
         >
-          <LogOut className="h-4 w-4" />
-          <span>{t('settings.project.logout')}</span>
-        </button>
+          <button
+            type="button"
+            onClick={handleResetLocalSettings}
+            className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor} ${styles.ringClass}`}
+          >
+            <RotateCcw className="h-4 w-4" />
+            <span>{t('settings.project.localData.reset')}</span>
+          </button>
+        </SettingsItem>
 
-        <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t('settings.feedback.logoutConfirm')}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {t('settings.system.logout.description')}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-              <AlertDialogAction onClick={confirmLogout}>
-                {t('settings.project.logout')}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </SettingsItem>
+        <SettingsItem
+          title={t('settings.project.logout')}
+          description={t('settings.system.logout.description')}
+          styles={styles}
+        >
+          <button
+            type="button"
+            onClick={handleLogout}
+            className={`inline-flex h-9 items-center gap-2 rounded-full border border-red-500/20 bg-red-500/8 px-3.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-500/12 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${styles.ringClass}`}
+          >
+            <LogOut className="h-4 w-4" />
+            <span>{t('settings.project.logout')}</span>
+          </button>
+
+          <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t('settings.feedback.logoutConfirm')}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t('settings.system.logout.description')}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmLogout}>
+                  {t('settings.project.logout')}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </SettingsItem>
+      </SettingsSectionGroup>
     </SettingsSectionShell>
   );
 }

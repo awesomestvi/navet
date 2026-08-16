@@ -1,5 +1,6 @@
 import { NavigationWorkspace } from '@navet/app/components/patterns';
 import { Input } from '@navet/app/components/primitives/input';
+import { OverlayScrollArea } from '@navet/app/components/primitives/overlay-scroll-area';
 import { navetIconSizeTokens, navetTypographyTokens } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
 import { ArrowLeft, ChevronRight, type LucideIcon, Search } from 'lucide-react';
@@ -383,11 +384,15 @@ export function SettingsNavigationShell({
             </div>
           </NavigationWorkspace.Sidebar>
 
-          <NavigationWorkspace.Content
-            className="overflow-x-hidden overflow-y-auto"
-            aria-label={activeItem?.label}
-          >
-            {children}
+          <NavigationWorkspace.Content aria-label={activeItem?.label}>
+            <OverlayScrollArea
+              className="h-full"
+              viewportProps={{ 'data-settings-detail-scroll': 'true' }}
+              scrollbarStartInset={8}
+              scrollbarEndInset={8}
+            >
+              {children}
+            </OverlayScrollArea>
           </NavigationWorkspace.Content>
         </NavigationWorkspace.Body>
       </NavigationWorkspace.Frame>

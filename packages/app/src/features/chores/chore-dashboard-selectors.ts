@@ -25,9 +25,11 @@ export interface ChoreHousePulse {
   completed: number;
   total: number;
   remaining: number;
+  overdue: number;
   percent: number;
   pointsEarned: number;
   strongDays: number;
+  streakDays: number;
 }
 
 export interface ChoreMissionProgress {
@@ -168,6 +170,27 @@ function getStrongDayCount(data: ChoreWorkspaceData, now: Date) {
   return strongDays;
 }
 
+function getCompletionStreak(data: ChoreWorkspaceData, now: Date) {
+  const completionDays = new Set(
+    Object.values(data.occurrencesById)
+      .filter((occurrence) => definitionFor(data, occurrence) && isFinal(occurrence))
+      .map((occurrence) =>
+        startOfLocalDay(new Date(occurrence.completedAt ?? occurrence.scheduledAt))
+      )
+  );
+  const latestDay = Math.max(...completionDays);
+  const today = startOfLocalDay(now);
+  if (!Number.isFinite(latestDay) || latestDay < offsetLocalDay(today, -1)) return 0;
+
+  let streakDays = 0;
+  let cursor = latestDay;
+  while (completionDays.has(cursor)) {
+    streakDays += 1;
+    cursor = offsetLocalDay(cursor, -1);
+  }
+  return streakDays;
+}
+
 export function getHousePulse(data: ChoreWorkspaceData, now = new Date()): ChoreHousePulse {
   const occurrences = getHouseholdTodayOccurrences(data, now);
   const completed = occurrences.filter(isFinal).length;
@@ -176,9 +199,13 @@ export function getHousePulse(data: ChoreWorkspaceData, now = new Date()): Chore
     completed,
     total,
     remaining: Math.max(0, total - completed),
+    overdue: occurrences.filter(
+      (occurrence) => !isFinal(occurrence) && getChoreTiming(occurrence, now) === 'overdue'
+    ).length,
     percent: total === 0 ? 100 : Math.round((completed / total) * 100),
     pointsEarned: getCompletedPoints(data, occurrences),
     strongDays: getStrongDayCount(data, now),
+    streakDays: getCompletionStreak(data, now),
   };
 }
 
@@ -206,6 +233,24 @@ export function getRoomChoreSummaries(
   return [...summaries.values()].sort(
     (left, right) => right.remaining - left.remaining || left.label.localeCompare(right.label)
   );
+}
+
+export function getRoomTodayChores(
+  data: ChoreWorkspaceData,
+  room: { label: string; canonicalIds?: readonly string[] },
+  now = new Date()
+) {
+  const normalizedLabel = room.label.trim().toLowerCase();
+  const canonicalIds = new Set(room.canonicalIds ?? []);
+
+  return getHouseholdTodayOccurrences(data, now).filter((occurrence) => {
+    const roomRef = definitionFor(data, occurrence)?.roomRef;
+    if (!roomRef) return false;
+    return (
+      canonicalIds.has(roomRef.canonicalId) ||
+      roomRef.label.trim().toLowerCase() === normalizedLabel
+    );
+  });
 }
 
 function occurrencesForMission(data: ChoreWorkspaceData, mission: ChoreMission, now: Date) {

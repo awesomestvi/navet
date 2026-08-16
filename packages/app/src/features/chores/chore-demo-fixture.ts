@@ -226,6 +226,16 @@ export function createChoreDemoWorkspace({
   const definitionsById = Object.fromEntries(definitions.map((item) => [item.id, item]));
   const completeAll = mode === 'complete';
   const occurrences = [
+    ...[-4, -3, -2, -1].map((dayOffset) =>
+      occurrence({
+        id: `history-bins-${Math.abs(dayOffset)}`,
+        definitionId: 'bins',
+        assigneeIds: ['alex'],
+        scheduledAt: atHour(now, 20, dayOffset),
+        status: 'done',
+        completedBy: 'alex',
+      })
+    ),
     occurrence({
       id: 'today-dishwasher',
       definitionId: 'dishwasher',
@@ -291,12 +301,27 @@ export function createChoreDemoWorkspace({
     version: 1,
     gamificationMode: mode === 'adventure' ? 'adventure' : 'family',
     presentationByDefinitionId: {
-      dishwasher: { estimatedMinutes: 4, points: 15, childTitle: copy.childDishwasher },
-      toys: { estimatedMinutes: 5, points: 10, childTitle: copy.childToys },
-      hallway: { estimatedMinutes: 2, points: 5, childTitle: copy.childHallway },
-      laundry: { estimatedMinutes: 12, points: 20 },
-      plants: { estimatedMinutes: 6, points: 10 },
-      bins: { estimatedMinutes: 5, points: 10 },
+      dishwasher: {
+        estimatedMinutes: 4,
+        points: 15,
+        childTitle: copy.childDishwasher,
+        icon: 'Utensils',
+      },
+      toys: {
+        estimatedMinutes: 5,
+        points: 10,
+        childTitle: copy.childToys,
+        icon: 'Blocks',
+      },
+      hallway: {
+        estimatedMinutes: 2,
+        points: 5,
+        childTitle: copy.childHallway,
+        icon: 'Footprints',
+      },
+      laundry: { estimatedMinutes: 12, points: 20, icon: 'Shirt' },
+      plants: { estimatedMinutes: 6, points: 10, icon: 'Leaf' },
+      bins: { estimatedMinutes: 5, points: 10, icon: 'Trash2' },
     },
     missionsById: {
       'saturday-reset': {

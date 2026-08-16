@@ -46,7 +46,10 @@ export const enMessages = {
   'settings.nav.project': 'About Navet',
   'settings.appearance.sectionTitle': 'Appearance',
   'settings.appearance.sectionDescription':
-    'Theme, wallpaper, glass intensity, and lighting ambience that shape Navet’s visual identity.',
+    'Choose Navet’s visual style, layout, and rendering quality for this display.',
+  'settings.appearance.group.themeBackground': 'Theme and background',
+  'settings.appearance.group.layout': 'Layout',
+  'settings.appearance.group.effectsPerformance': 'Effects and performance',
   'settings.appearance.systemTheme.title': 'Follow system appearance',
   'settings.appearance.systemTheme.description':
     'Automatically switch between Dark and Light based on your device appearance setting.',
@@ -93,6 +96,10 @@ export const enMessages = {
   'settings.dashboard.sectionTitle': 'Dashboard',
   'settings.dashboard.sectionDescription':
     'Manage what appears on the board and how this local setup is backed up.',
+  'settings.dashboard.group.setup': 'Dashboard setup',
+  'settings.dashboard.group.homeContent': 'Home content',
+  'settings.dashboard.group.wallDisplay': 'Wall display',
+  'settings.dashboard.group.maintenance': 'Maintenance',
   'dashboard.multiple.open': 'Open dashboards',
   'dashboard.multiple.title': 'Dashboards',
   'dashboard.multiple.new': 'New dashboard',
@@ -183,6 +190,9 @@ export const enMessages = {
   'settings.dashboard.homeSummaryBar.title': 'Summary bar',
   'settings.dashboard.homeSummaryBar.description':
     'Show compact energy, climate, lights, security, media, and routine summaries above dashboards.',
+  'settings.dashboard.chores.title': 'Household chores',
+  'settings.dashboard.chores.description':
+    'Show chores in Household, Home summaries, and room dashboards. Turning this off keeps your chore data.',
   'settings.dashboard.kioskMode.title': 'Kiosk mode',
   'settings.dashboard.kioskMode.description':
     'Hide the header and navigation chrome so the dashboard can fill a wall display.',
@@ -337,6 +347,9 @@ export const enMessages = {
   'habits.settings.sectionTitle': 'Local habits',
   'habits.settings.sectionDescription':
     'Private, explainable routine suggestions that can become provider automations or local Navet rules when you approve them.',
+  'habits.settings.group.learning': 'Learning',
+  'habits.settings.group.privacyData': 'Privacy and data',
+  'habits.settings.group.diagnostics': 'Diagnostics',
   'habits.settings.enable.title': 'Enable local habits',
   'habits.settings.enable.description':
     'Let Navet learn from repeated manual light and switch actions on this device and suggest calm routines.',
@@ -355,6 +368,7 @@ export const enMessages = {
   'habits.settings.rules.description':
     'A quick summary of what Navet has learned and which suggestions have become routines.',
   'habits.settings.rules.events': 'Journal events',
+  'habits.settings.rules.eventLimit': 'Stores up to {count} events',
   'habits.settings.rules.suggestions': 'Suggestions',
   'habits.settings.rules.activeRules': 'Created routines',
   'habits.settings.rules.empty':
@@ -382,6 +396,9 @@ export const enMessages = {
   'settings.system.sectionTitle': 'System',
   'settings.system.sectionDescription':
     'Connection details, provider management, and recovery actions for this Navet device.',
+  'settings.system.group.smartHome': 'Smart home',
+  'settings.system.group.devicesSync': 'Devices and sync',
+  'settings.system.group.deviceDataSession': 'Device data and session',
   'settings.system.animations.title': 'Disable animations',
   'settings.system.animations.description':
     'Useful for slower devices like Raspberry Pis. Turns off transitions and animated effects across the app.',
@@ -412,6 +429,7 @@ export const enMessages = {
   'settings.system.providers.disconnect': 'Disconnect',
   'settings.system.providers.makeActive': 'Make active',
   'settings.system.providers.notConnected': 'Not connected on this device',
+  'settings.system.providers.supportedEntities': 'View supported entities',
   'settings.system.providers.homeAssistantUrlPlaceholder': 'https://homeassistant.local:8123',
   'settings.system.providers.openhabLater': 'openHAB connects through the standalone URL flow.',
   'settings.system.providers.status.connected': 'Connected',
@@ -507,6 +525,8 @@ export const enMessages = {
   'settings.project.sectionTitle': 'About Navet',
   'settings.project.sectionDescription':
     'Version details, maintainer links, and the legal basics for using Navet.',
+  'settings.project.group.projectInformation': 'Project information',
+  'settings.project.group.legal': 'Legal',
   'settings.project.about.title': 'About',
   'settings.project.about.description': 'Quick project information.',
   'settings.project.about.version': 'Version',
@@ -1677,7 +1697,8 @@ export const enMessages = {
   'household.today.greeting': 'Today for {name}',
   'household.today.householdGreeting': 'Today at home',
   'household.today.prompt': 'Start with what needs attention, then let the rest wait.',
-  'household.today.supporting': 'Household goals and upcoming chores',
+  'household.today.supporting': 'Missions and rewards',
+  'household.today.seeRewards': 'See rewards',
   'household.focus.title': 'Needs attention',
   'household.remaining.title': 'Still to do',
   'household.upcoming.title': 'Coming up',
@@ -1688,13 +1709,15 @@ export const enMessages = {
   'household.pulse.progress': 'Household chore progress',
   'household.pulse.balance': 'Balance',
   'household.pulse.completed': 'Completed',
-  'household.pulse.rhythm': 'Strong days',
+  'household.pulse.rhythm': 'Day streak',
   'household.rooms.title': 'Around the house',
   'household.rooms.allDone': 'All done today',
   'household.rooms.remaining': '{count} remaining',
   'household.rooms.open': 'Show chores in {room}',
   'household.card.minutes': 'About {count} min',
+  'household.card.compactMinutes': '{count} min',
   'household.card.points': '{count} points',
+  'household.card.earned': 'Earned',
   'household.actions.duplicate': 'Duplicate',
   'household.chores.copyName': '{name} copy',
   'household.filters.room': 'Filter by room',
@@ -2052,6 +2075,8 @@ export const enMessages = {
   'household.schedule.once': 'Once',
   'household.schedule.daily': 'Every day',
   'household.schedule.weekly': 'Every week',
+  'household.schedule.biweekly': 'Bi-weekly',
+  'household.schedule.triweekly': 'Tri-weekly',
   'household.schedule.monthly': 'Every month',
   'household.schedule.afterCompletion': 'After completion',
   'tasks.hero.eyebrow': 'Routines',

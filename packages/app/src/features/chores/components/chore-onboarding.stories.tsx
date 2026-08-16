@@ -86,7 +86,15 @@ const meta = {
   title: 'Pages/Household/Chore Onboarding',
   component: OnboardingWelcomeStory,
   tags: ['autodocs'],
-  parameters: { layout: 'fullscreen' },
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        component:
+          'Guided first-run flow for creating household profiles, choosing their appearance and reminder preferences, adding the first chores, selecting an optional motivation style, and protecting management changes with a PIN. It uses the shared navigation-workspace and dialog patterns at desktop and phone widths.',
+      },
+    },
+  },
 } satisfies Meta<typeof OnboardingWelcomeStory>;
 
 export default meta;
@@ -99,6 +107,14 @@ export const Mobile: Story = {
 };
 
 export const CompleteGuidedSetup: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Interaction contract for the complete six-step setup, including the requirement that the household keeps at least one manager.',
+      },
+    },
+  },
   play: async ({ canvas, canvasElement }) => {
     const welcome = await canvas.findByRole('region', {
       name: 'Set chores once. Keep the house moving.',

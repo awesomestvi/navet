@@ -1,6 +1,13 @@
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import type { DeviceWithType } from '@navet/app/types/device.types';
+import type { ReactNode } from 'react';
 import type { CustomCard } from '../stores/custom-cards-store';
+
+export interface DeviceGridSupplementalCard {
+  id: string;
+  size: CardSize;
+  content: ReactNode;
+}
 
 export interface DeviceGridProps {
   orderedCardIds: string[];
@@ -17,4 +24,5 @@ export interface DeviceGridProps {
   densePerformanceMode?: boolean;
   optimizeOffscreenPaint?: boolean;
   getDeviceHeaderSubtitle?: (device: DeviceWithType) => string | undefined;
+  supplementalCards?: readonly DeviceGridSupplementalCard[];
 }

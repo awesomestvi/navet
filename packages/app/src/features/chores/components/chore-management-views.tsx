@@ -1,9 +1,15 @@
 import { DashboardEmptyState, NavigationWorkspace } from '@navet/app/components/patterns';
-import { Badge, BaseCard, Button, Input, Panel, Select } from '@navet/app/components/primitives';
+import { Button, Input, Panel, Select } from '@navet/app/components/primitives';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { navetIconSizeTokens, navetTypographyTokens } from '@navet/app/components/system/tokens';
 import { Avatar, AvatarFallback, AvatarImage } from '@navet/app/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@navet/app/components/ui/dropdown-menu';
 import { cn } from '@navet/app/components/ui/utils';
 import { isEmojiLightIcon, resolveLightIconComponent } from '@navet/app/constants/icon-map';
 import {
@@ -26,10 +32,12 @@ import {
 import {
   Archive,
   ClipboardList,
+  Clock3,
   Copy,
   DatabaseBackup,
   Gift,
   HeartHandshake,
+  MoreHorizontal,
   Pause,
   Pencil,
   Play,
@@ -42,6 +50,7 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { getMissionProgressList, getRewardProgressList } from '../chore-dashboard-selectors';
+import { ChoreBaseCard } from './chore-base-card';
 import { ChoreDashboardGrid } from './chore-dashboard-grid';
 import { resolveChoreIconComponent } from './chore-icon';
 import { ChorePointsToken } from './chore-points-token';
@@ -121,6 +130,58 @@ function ProgressParticipantAvatar({ participant }: { participant: ChoreParticip
         )}
       </AvatarFallback>
     </Avatar>
+  );
+}
+
+function choreScheduleLabel(definition: ChoreDefinition, t: ReturnType<typeof useI18n>['t']) {
+  if (definition.schedule.frequency === 'once') return t('household.schedule.once');
+  if (definition.schedule.frequency === 'daily') return t('household.schedule.daily');
+  if (definition.schedule.frequency === 'weekly') {
+    if (definition.schedule.intervalWeeks === 2) return t('household.schedule.biweekly');
+    if (definition.schedule.intervalWeeks === 3) return t('household.schedule.triweekly');
+    return t('household.schedule.weekly');
+  }
+  if (definition.schedule.frequency === 'monthly') return t('household.schedule.monthly');
+  return t('household.schedule.afterCompletion');
+}
+
+function LibraryAssignmentSummary({
+  definition,
+  participants,
+}: {
+  definition: ChoreDefinition;
+  participants: Record<string, ChoreParticipant>;
+}) {
+  const { t } = useI18n();
+  const { theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
+  const assignedParticipants = definition.assignment.participantIds
+    .map((id) => participants[id])
+    .filter((participant): participant is ChoreParticipant => Boolean(participant));
+
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      {assignedParticipants.length > 0 ? (
+        <div className="flex shrink-0 -space-x-2" aria-hidden="true">
+          {assignedParticipants.slice(0, 3).map((participant) => (
+            <ProgressParticipantAvatar key={participant.id} participant={participant} />
+          ))}
+        </div>
+      ) : (
+        <span
+          className={cn(
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-current/10 bg-current/[0.08]',
+            surface.textSecondary
+          )}
+          aria-hidden="true"
+        >
+          <Users className="h-3.5 w-3.5" />
+        </span>
+      )}
+      <span className={cn('min-w-0 truncate text-sm font-semibold', surface.textPrimary)}>
+        {assignmentLabel(definition, participants, t)}
+      </span>
+    </div>
   );
 }
 
@@ -282,102 +343,115 @@ export function AllChoresView({
           {definitions.map((definition) => {
             const presentation = experience.presentationByDefinitionId[definition.id];
             const ChoreIcon = resolveChoreIconComponent(presentation?.icon);
+            const scheduleLabel = choreScheduleLabel(definition, t);
             return (
-              <Panel as="article" muted key={definition.id} className="flex flex-col p-4">
-                <div className="flex items-start gap-3">
+              <ChoreBaseCard
+                key={definition.id}
+                title={definition.title}
+                eyebrow={
+                  <>
+                    {definition.roomRef?.label ? (
+                      <>
+                        <span>{definition.roomRef.label}</span>
+                        <span aria-hidden="true"> · </span>
+                      </>
+                    ) : null}
+                    <span className={cn(!definition.enabled && 'text-amber-400')}>
+                      {definition.enabled ? scheduleLabel : t('household.chores.paused')}
+                    </span>
+                  </>
+                }
+                leading={
                   <EntityCardHeaderIcon
                     IconComponent={ChoreIcon}
                     isActive={definition.enabled}
                     size="small"
                     tone="primary"
                   />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2
-                        className={cn('text-xs font-semibold leading-[18px]', surface.textPrimary)}
+                }
+                metrics={
+                  <>
+                    {presentation?.estimatedMinutes ? (
+                      <span
+                        className="inline-flex h-6 shrink-0 items-center gap-1 rounded-full border border-current/20 bg-current/[0.06] px-2 text-xs font-semibold tabular-nums"
+                        title={t('household.card.minutes', {
+                          count: presentation.estimatedMinutes,
+                        })}
                       >
-                        {definition.title}
-                      </h2>
-                      {!definition.enabled ? (
-                        <Badge size="small">{t('household.chores.paused')}</Badge>
-                      ) : null}
-                    </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-2">
-                      <p className={cn('text-[11px] leading-[14px]', surface.textSecondary)}>
-                        {[
-                          definition.roomRef?.label,
-                          assignmentLabel(definition, data.participantsById, t),
-                        ]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </p>
-                      <Badge size="small">
-                        {definition.schedule.frequency === 'once'
-                          ? t('household.schedule.once')
-                          : definition.schedule.frequency === 'daily'
-                            ? t('household.schedule.daily')
-                            : definition.schedule.frequency === 'weekly'
-                              ? t('household.schedule.weekly')
-                              : definition.schedule.frequency === 'monthly'
-                                ? t('household.schedule.monthly')
-                                : t('household.schedule.afterCompletion')}
-                      </Badge>
-                      {presentation?.estimatedMinutes ? (
-                        <Badge size="small">
-                          {t('household.card.minutes', { count: presentation.estimatedMinutes })}
-                        </Badge>
-                      ) : null}
-                    </div>
+                        <Clock3 className="h-3 w-3" aria-hidden="true" />
+                        <span>
+                          {t('household.card.compactMinutes', {
+                            count: presentation.estimatedMinutes,
+                          })}
+                        </span>
+                      </span>
+                    ) : null}
+                    {presentation?.points ? (
+                      <ChorePointsToken points={presentation.points} />
+                    ) : null}
+                  </>
+                }
+                instructions={
+                  definition.description ? (
+                    <p className={cn('line-clamp-2 text-xs leading-5', surface.textSecondary)}>
+                      {definition.description}
+                    </p>
+                  ) : undefined
+                }
+                footerLeading={
+                  <LibraryAssignmentSummary
+                    definition={definition}
+                    participants={data.participantsById}
+                  />
+                }
+                footerAction={
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      size="compact"
+                      variant="secondary"
+                      className="min-w-20 justify-center px-3"
+                      leading={<Pencil className="h-4 w-4" aria-hidden="true" />}
+                      onClick={() => onEdit(definition)}
+                    >
+                      {t('household.actions.edit')}
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="compact"
+                          variant="secondary"
+                          className="h-9 w-9 justify-center p-0"
+                          aria-label={t('common.moreActions')}
+                        >
+                          <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" sideOffset={8}>
+                        <DropdownMenuItem onSelect={() => onDuplicate(definition)}>
+                          <Copy className="h-4 w-4 stroke-[2.25]" aria-hidden="true" />
+                          {t('household.actions.duplicate')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => onToggleEnabled(definition)}>
+                          {definition.enabled ? (
+                            <Pause className="h-4 w-4" aria-hidden="true" />
+                          ) : (
+                            <Play className="h-4 w-4" aria-hidden="true" />
+                          )}
+                          {definition.enabled
+                            ? t('household.chores.pause')
+                            : t('household.chores.resume')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => onArchive(definition)}>
+                          <Archive className="h-4 w-4" aria-hidden="true" />
+                          {t('household.chores.archive')}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                  {presentation?.points ? <ChorePointsToken points={presentation.points} /> : null}
-                </div>
-                <footer className="mt-auto grid grid-cols-2 gap-2 border-t border-current/10 pt-3 sm:flex sm:flex-nowrap sm:items-center sm:justify-start">
-                  <Button
-                    size="compact"
-                    variant="secondary"
-                    className="min-h-10 w-full sm:w-auto"
-                    leading={<Pencil className="h-4 w-4 min-h-4 min-w-4 shrink-0" />}
-                    onClick={() => onEdit(definition)}
-                  >
-                    {t('household.actions.edit')}
-                  </Button>
-                  <Button
-                    size="compact"
-                    variant="secondary"
-                    className="min-h-10 w-full sm:w-auto"
-                    leading={<Copy className="h-4 w-4 min-h-4 min-w-4 shrink-0 stroke-[2.25]" />}
-                    onClick={() => onDuplicate(definition)}
-                  >
-                    {t('household.actions.duplicate')}
-                  </Button>
-                  <Button
-                    size="compact"
-                    variant="secondary"
-                    className="min-h-10 w-full sm:w-auto"
-                    leading={
-                      definition.enabled ? (
-                        <Pause className="h-4 w-4 min-h-4 min-w-4 shrink-0" />
-                      ) : (
-                        <Play className="h-4 w-4 min-h-4 min-w-4 shrink-0" />
-                      )
-                    }
-                    onClick={() => onToggleEnabled(definition)}
-                  >
-                    {definition.enabled
-                      ? t('household.chores.pause')
-                      : t('household.chores.resume')}
-                  </Button>
-                  <Button
-                    size="compact"
-                    variant="secondary"
-                    className="min-h-10 w-full sm:w-auto"
-                    leading={<Archive className="h-4 w-4 min-h-4 min-w-4 shrink-0" />}
-                    onClick={() => onArchive(definition)}
-                  >
-                    {t('household.chores.archive')}
-                  </Button>
-                </footer>
-              </Panel>
+                }
+                surfaceVariant={definition.enabled ? 'default' : 'muted'}
+                className={cn(!definition.enabled && 'opacity-75')}
+              />
             );
           })}
         </ChoreDashboardGrid>
@@ -464,29 +538,38 @@ export function MissionsView({
               key={progress.mission.id}
               progress={progress}
               footer={
-                <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-1.5">
                   <Button
                     size="compact"
                     variant="secondary"
-                    className="min-h-10 w-full"
+                    className="min-w-20 justify-center px-3"
                     leading={<Pencil className="h-4 w-4" />}
                     aria-label={t('household.missions.editNamed', { name: progress.mission.title })}
                     onClick={() => onEdit(progress.mission)}
                   >
                     {t('household.actions.edit')}
                   </Button>
-                  <Button
-                    size="compact"
-                    variant="destructive"
-                    className="min-h-10 w-full"
-                    leading={<Trash2 className="h-4 w-4" />}
-                    aria-label={t('household.missions.deleteNamed', {
-                      name: progress.mission.title,
-                    })}
-                    onClick={() => onDelete(progress.mission)}
-                  >
-                    {t('household.chores.delete')}
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="compact"
+                        variant="secondary"
+                        className="h-9 w-9 justify-center p-0"
+                        aria-label={t('common.moreActions')}
+                      >
+                        <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" sideOffset={8}>
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onSelect={() => onDelete(progress.mission)}
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
+                        {t('household.chores.delete')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               }
             />
@@ -539,27 +622,38 @@ export function RewardsView({
               key={progress.goal.id}
               progress={progress}
               footer={
-                <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-1.5">
                   <Button
                     size="compact"
                     variant="secondary"
-                    className="min-h-10 w-full"
+                    className="min-w-20 justify-center px-3"
                     leading={<Pencil className="h-4 w-4" />}
                     aria-label={t('household.rewards.editNamed', { name: progress.goal.title })}
                     onClick={() => onEdit(progress.goal)}
                   >
                     {t('household.actions.edit')}
                   </Button>
-                  <Button
-                    size="compact"
-                    variant="destructive"
-                    className="min-h-10 w-full"
-                    leading={<Trash2 className="h-4 w-4" />}
-                    aria-label={t('household.rewards.deleteNamed', { name: progress.goal.title })}
-                    onClick={() => onDelete(progress.goal)}
-                  >
-                    {t('household.chores.delete')}
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="compact"
+                        variant="secondary"
+                        className="h-9 w-9 justify-center p-0"
+                        aria-label={t('common.moreActions')}
+                      >
+                        <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" sideOffset={8}>
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onSelect={() => onDelete(progress.goal)}
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
+                        {t('household.chores.delete')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               }
             />
@@ -602,32 +696,28 @@ export function ProgressView({
       />
       <ChoreDashboardGrid>
         {people.map(({ participant, completions, points }) => (
-          <BaseCard
+          <ChoreBaseCard
             key={participant.id}
             size="medium"
             surfaceVariant="muted"
             title={participant.displayName}
-            subtitle={t('household.progress.completedCount', { count: completions })}
-            headerLayout="title-first"
-            headerLeading={<ProgressParticipantAvatar participant={participant} />}
-            headerTrailing={
+            eyebrow={t('household.progress.completedCount', { count: completions })}
+            leading={<ProgressParticipantAvatar participant={participant} />}
+            metrics={
               gamificationEnabled ? <ChorePointsToken points={points} showPlus={false} /> : null
             }
-            footer={
+            footerAction={
               <Button
                 size="compact"
                 variant="secondary"
-                className="min-h-10 w-full"
+                className="min-w-20 justify-center px-3"
                 leading={<Pencil className="h-4 w-4" />}
                 onClick={() => onEditPerson(participant)}
               >
                 {t('household.actions.edit')}
               </Button>
             }
-            footerClassName="border-t border-current/10 pt-3"
-          >
-            <span aria-hidden="true" />
-          </BaseCard>
+          />
         ))}
       </ChoreDashboardGrid>
     </div>

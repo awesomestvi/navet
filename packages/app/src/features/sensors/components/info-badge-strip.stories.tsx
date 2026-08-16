@@ -1,6 +1,6 @@
 import { SummaryBar } from '@navet/app/features/sensors';
 import type { Meta, StoryObj } from '@storybook/react';
-import { Clipboard, Fan, Lightbulb, Lock, Speaker, Zap } from 'lucide-react';
+import { Clipboard, ClipboardCheck, Fan, Lightbulb, Lock, Speaker, Zap } from 'lucide-react';
 import type { HomeStatusSummaryItem } from './home-status-summary-model';
 
 const items: HomeStatusSummaryItem[] = [
@@ -52,6 +52,14 @@ const items: HomeStatusSummaryItem[] = [
     iconColor: '#a78bfa',
     targetSection: 'tasks',
   },
+  {
+    id: 'chores',
+    title: 'Chores',
+    value: '4 remaining',
+    icon: ClipboardCheck,
+    iconColor: '#fb923c',
+    targetSection: 'tasks',
+  },
 ];
 
 function SummaryBarStory({ items: storyItems }: { items: HomeStatusSummaryItem[] }) {
@@ -88,22 +96,42 @@ export const Summary: Story = {
 
 export const RoomSummary: Story = {
   args: {
-    items: items
-      .slice(0, 3)
-      .map((item) =>
-        item.id === 'climate'
-          ? { ...item, value: '23°' }
-          : item.id === 'lights'
-            ? { ...item, value: '2 On' }
-            : item
-      ),
+    items: [
+      ...items
+        .slice(0, 3)
+        .map((item) =>
+          item.id === 'climate'
+            ? { ...item, value: '23°' }
+            : item.id === 'lights'
+              ? { ...item, value: '2 On' }
+              : item
+        ),
+      items.find((item) => item.id === 'chores'),
+    ].filter((item): item is HomeStatusSummaryItem => Boolean(item)),
   },
 };
 
 export const SecurityAlert: Story = {
   args: {
     items: items.map((item) =>
-      item.id === 'security' ? { ...item, value: '2 Alerts', iconColor: '#f87171' } : item
+      item.id === 'security'
+        ? { ...item, value: '2 Alerts', iconColor: '#f87171', tone: 'danger' }
+        : item
+    ),
+  },
+};
+
+export const OverdueChores: Story = {
+  args: {
+    items: items.map((item) =>
+      item.id === 'chores'
+        ? {
+            ...item,
+            value: 'Overdue · 4 remaining',
+            iconColor: '#f87171',
+            tone: 'danger',
+          }
+        : item
     ),
   },
 };

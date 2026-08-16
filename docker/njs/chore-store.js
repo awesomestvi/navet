@@ -379,7 +379,9 @@ function isValidChoreExperience(value) {
       !isOptionalBoundedInteger(metadata.points, 10000) ||
       (metadata.childTitle !== undefined && typeof metadata.childTitle !== 'string') ||
       (metadata.category !== undefined && typeof metadata.category !== 'string') ||
-      (metadata.icon !== undefined && typeof metadata.icon !== 'string')
+      (metadata.icon !== undefined && typeof metadata.icon !== 'string') ||
+      (metadata.color !== undefined &&
+        (typeof metadata.color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(metadata.color)))
     ) return false;
   }
   for (const missionId in value.missionsById) {

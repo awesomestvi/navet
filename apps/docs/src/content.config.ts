@@ -11,6 +11,7 @@ const routeIds = new Map([
   ["docs/HOMEY.md", "install/homey"],
   ["docs/OPENHAB.md", "install/openhab"],
   ["docs/user-guide.md", "guide/index"],
+  ["docs/chores.md", "guide/chores"],
   ["docs/WIDGETS.md", "guide/widgets"],
   ["docs/integrations.md", "integrations"],
   ["docs/help.md", "help"],

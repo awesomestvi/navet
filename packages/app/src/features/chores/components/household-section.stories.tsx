@@ -112,7 +112,15 @@ const meta = {
   title: 'Pages/Household/Today',
   component: HouseholdStory,
   tags: ['autodocs'],
-  parameters: { layout: 'fullscreen' },
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        component:
+          'The complete provider-neutral Household workspace. Today combines a compact house pulse, visible ownership and effort, an always-available Add chore action, and mission and reward cards aligned to the dashboard grid. Household views use the same independent navigation pills as Room Nav, alongside shared BaseCard geometry, themes, and progressive disclosure.',
+      },
+    },
+  },
 } satisfies Meta<typeof HouseholdStory>;
 
 export default meta;
@@ -122,13 +130,53 @@ export const Desktop: Story = {};
 
 export const IpadProLandscape: Story = {
   globals: { viewport: { value: 'ipadPro', isRotated: true } },
-  parameters: { viewport: { defaultViewport: 'ipadPro' } },
-  play: async ({ canvas }) => {
+  parameters: {
+    viewport: { defaultViewport: 'ipadPro' },
+    docs: {
+      description: {
+        story:
+          'Primary tablet and wall-display state keeps missions and rewards out of the chore flow until the household opens them from House pulse.',
+      },
+    },
+  },
+  play: async ({ canvas, userEvent }) => {
     await canvas.findByText('Today at home');
-    const panel = within(canvas.getByRole('tabpanel'));
+    const panel = within(canvas.getByRole('region', { name: 'Today' }));
+    const addChore = panel.getByRole('button', { name: 'Add chore' });
+    await expect(addChore).toHaveClass('h-10');
+    await expect(panel.getByRole('button', { name: 'Using this screen' })).toHaveClass('h-10');
     await expect(panel.getByText('House pulse')).toBeInTheDocument();
     await expect(panel.getByRole('heading', { name: 'Needs attention' })).toBeInTheDocument();
+    await expect(
+      panel.queryByRole('heading', { name: 'Missions and rewards' })
+    ).not.toBeInTheDocument();
+    await expect(panel.getByText('Earned')).toBeVisible();
+    const seeRewards = panel.getByRole('button', {
+      name: 'See rewards, Missions and rewards',
+    });
+    await expect(seeRewards).toHaveClass('-my-3', 'rounded-none');
+    await expect(seeRewards.querySelector('[data-pulse-metric-icon]')).toHaveClass(
+      'sm:h-11',
+      'sm:w-11'
+    );
+    await expect(within(seeRewards).getByText('Missions and rewards')).toBeVisible();
+    await expect(seeRewards).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(seeRewards);
+    await expect(seeRewards).toHaveAttribute('aria-expanded', 'true');
+    await expect(panel.getByRole('heading', { name: 'Missions and rewards' })).toBeVisible();
     await expect(panel.getByText('Saturday reset')).toBeInTheDocument();
+    await expect(panel.getByText('Choose our next family outing')).toBeInTheDocument();
+    await expect(
+      panel.queryByRole('heading', { name: 'Around the house' })
+    ).not.toBeInTheDocument();
+    const doneSection = panel.getByRole('heading', { name: 'Done' }).closest('section');
+    await expect(doneSection).not.toBeNull();
+    await expect(doneSection?.querySelectorAll('[data-chore-card-size="small"]')).toHaveLength(2);
+    await expect(doneSection?.querySelectorAll('[data-chore-earned-points]')).toHaveLength(2);
+    await expect(doneSection?.querySelector('[title^="About"]')).not.toBeInTheDocument();
+    const focusSection = panel.getByRole('heading', { name: 'Needs attention' }).closest('section');
+    await expect(focusSection).not.toBeNull();
+    await expect(focusSection?.querySelector('[data-chore-artwork]')).not.toBeInTheDocument();
     await expect(panel.getAllByText('Kitchen').length).toBeGreaterThan(0);
   },
 };
@@ -139,10 +187,18 @@ export const WideDesktop: Story = {
 };
 
 export const Mobile: Story = {
-  parameters: { viewport: { defaultViewport: 'mobile1' } },
+  parameters: {
+    viewport: { defaultViewport: 'mobile1' },
+    docs: {
+      description: {
+        story:
+          'Phone composition keeps the active household profile and next useful chore action ahead of secondary summaries.',
+      },
+    },
+  },
   play: async ({ canvas }) => {
     await canvas.findByText('Today at home');
-    const panel = within(canvas.getByRole('tabpanel'));
+    const panel = within(canvas.getByRole('region', { name: 'Today' }));
     await expect(panel.getByLabelText('Using this screen')).toBeInTheDocument();
     await expect(
       panel.getAllByRole('heading', { name: 'Unload dishwasher' }).length
@@ -152,6 +208,16 @@ export const Mobile: Story = {
 
 export const LightTheme: Story = {
   globals: { theme: 'light', viewport: { value: 'ipadPro', isRotated: true } },
+  parameters: { viewport: { defaultViewport: 'ipadPro' } },
+};
+
+export const DarkTheme: Story = {
+  globals: { theme: 'dark', viewport: { value: 'ipadPro', isRotated: true } },
+  parameters: { viewport: { defaultViewport: 'ipadPro' } },
+};
+
+export const BlackTheme: Story = {
+  globals: { theme: 'black', viewport: { value: 'ipadPro', isRotated: true } },
   parameters: { viewport: { defaultViewport: 'ipadPro' } },
 };
 
@@ -167,6 +233,14 @@ export const ReducedMotionKiosk: Story = {
 
 export const EmptyHousehold: Story = {
   args: { mode: 'empty' },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'First-run state and the start of the six-step guided setup. The welcome surface keeps one primary action and explains ownership, repetition, and optional motivation without exposing advanced scheduling first.',
+      },
+    },
+  },
   play: async ({ canvas, canvasElement }) => {
     const welcome = await canvas.findByRole('region', {
       name: 'Set chores once. Keep the house moving.',
@@ -190,6 +264,14 @@ export const EmptyHousehold: Story = {
 
 export const DamagedWorkspaceRecovery: Story = {
   render: () => <HouseholdRecoveryStory />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Recovery state for an unreadable workspace. Existing data remains untouched while retry, backup repair, and explicit start-over paths are presented.',
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await expect(canvas.getByText('Chores need attention')).toBeInTheDocument();
     await expect(canvas.getByRole('button', { name: 'Repair chores' })).toBeInTheDocument();
@@ -207,7 +289,9 @@ export const HouseSettled: Story = {
   play: async ({ canvas }) => {
     await canvas.findByText('The house is settled');
     await expect(
-      within(canvas.getByRole('tabpanel')).getByText('Everything due today is complete.')
+      within(canvas.getByRole('region', { name: 'Today' })).getByText(
+        'Everything due today is complete.'
+      )
     ).toBeInTheDocument();
   },
 };
@@ -216,10 +300,9 @@ export const ChildFriendlyAdventure: Story = {
   args: { mode: 'adventure' },
   parameters: { viewport: { defaultViewport: 'mobile1' } },
   play: async ({ canvas }) => {
-    await canvas.findByText('Dishwasher rescue');
-    await expect(
-      within(canvas.getByRole('tabpanel')).getByText('Toys back to base')
-    ).toBeInTheDocument();
+    const today = within(canvas.getByRole('region', { name: 'Today' }));
+    await expect((await today.findAllByText('Dishwasher rescue')).length).toBeGreaterThan(0);
+    await expect(today.getByText('Toys back to base')).toBeInTheDocument();
   },
 };
 
@@ -227,7 +310,7 @@ export const LongNameManyPeopleNoRoomAnyone: Story = {
   render: () => <HouseholdEdgeCaseStory />,
   parameters: { viewport: { defaultViewport: 'mobile1' } },
   play: async ({ canvas, canvasElement, userEvent }) => {
-    const panel = within(canvas.getByRole('tabpanel'));
+    const panel = within(canvas.getByRole('region', { name: 'Today' }));
     await expect(
       (
         await panel.findAllByText(
@@ -248,7 +331,7 @@ export const ApprovalQueue: Story = {
   args: { mode: 'approval' },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findAllByText('Needs approval');
-    const panel = within(canvas.getByRole('tabpanel'));
+    const panel = within(canvas.getByRole('region', { name: 'Today' }));
     await userEvent.click(panel.getByLabelText('Using this screen'));
     await userEvent.click(
       within(canvasElement.ownerDocument.body).getByRole('menuitemradio', { name: 'Alex' })
@@ -258,23 +341,64 @@ export const ApprovalQueue: Story = {
 };
 
 export const ChoreLibrary: Story = {
-  play: async ({ canvas, userEvent }) => {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Management view for searching, filtering, pausing, and editing recurring chores without crowding the operational Today view.',
+      },
+    },
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByText('Today at home');
-    await userEvent.click(canvas.getByRole('tab', { name: 'Chores' }));
-    const panel = within(canvas.getByRole('tabpanel'));
+    const choresNavigation = canvas.getByRole('navigation', { name: 'Household' });
+    await expect(within(choresNavigation).queryByRole('tablist')).not.toBeInTheDocument();
+    await userEvent.click(within(choresNavigation).getByRole('button', { name: 'Chores' }));
+    await expect(within(choresNavigation).getByRole('button', { name: 'Chores' })).toHaveAttribute(
+      'aria-current',
+      'page'
+    );
+    const panel = within(canvas.getByRole('region', { name: 'Chores' }));
     await expect(panel.getByText('Chore library')).toBeInTheDocument();
     await expect(panel.getByRole('button', { name: 'Add chore' })).toBeInTheDocument();
-    await expect(panel.getByRole('heading', { name: 'Unload dishwasher' })).toBeInTheDocument();
-    await expect(panel.getAllByRole('button', { name: 'Pause' }).length).toBeGreaterThan(0);
+    const dishwasherCard = panel
+      .getByRole('heading', { name: 'Unload dishwasher' })
+      .closest('[data-chore-base-card]');
+    await expect(dishwasherCard).not.toBeNull();
+    await expect(within(dishwasherCard as HTMLElement).getByText('Kitchen')).toBeVisible();
+    await expect(within(dishwasherCard as HTMLElement).getByTitle('About 4 min')).toBeVisible();
+    await expect(within(dishwasherCard as HTMLElement).getByTitle('15 points')).toBeVisible();
+    await expect(
+      within(dishwasherCard as HTMLElement).getByRole('button', { name: 'Edit' })
+    ).toBeVisible();
+    const moreActions = within(dishwasherCard as HTMLElement).getByRole('button', {
+      name: 'More actions',
+    });
+    await expect(moreActions).toBeVisible();
+    await userEvent.click(moreActions);
+    await expect(
+      within(canvasElement.ownerDocument.body).getByRole('menuitem', { name: 'Pause' })
+    ).toBeVisible();
   },
 };
 
 export const MissionManagement: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByText('Today at home');
-    await userEvent.click(canvas.getByRole('tab', { name: 'Missions' }));
-    const panel = within(canvas.getByRole('tabpanel'));
+    await userEvent.click(canvas.getByRole('button', { name: 'Missions' }));
+    const panel = within(canvas.getByRole('region', { name: 'Missions' }));
     await expect(panel.getByText('Household missions')).toBeInTheDocument();
+    const missionCard = panel
+      .getByRole('heading', { name: 'Saturday reset' })
+      .closest('[data-chore-base-card]');
+    await expect(missionCard).not.toBeNull();
+    await expect(within(missionCard as HTMLElement).getByText('Active')).toBeVisible();
+    await expect(
+      within(missionCard as HTMLElement).getByRole('button', { name: /Edit/ })
+    ).toBeVisible();
+    await expect(
+      within(missionCard as HTMLElement).getByRole('button', { name: 'More actions' })
+    ).toBeVisible();
     await userEvent.click(panel.getByRole('button', { name: 'Add mission' }));
     const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
       name: 'Create mission',
@@ -283,11 +407,54 @@ export const MissionManagement: Story = {
   },
 };
 
-export const SettingsAndRecovery: Story = {
+export const RewardManagement: Story = {
   play: async ({ canvas, userEvent }) => {
     await canvas.findByText('Today at home');
-    await userEvent.click(canvas.getByRole('tab', { name: 'Settings' }));
-    const panel = within(canvas.getByRole('tabpanel'));
+    await userEvent.click(canvas.getByRole('button', { name: 'Rewards' }));
+    const panel = within(canvas.getByRole('region', { name: 'Rewards' }));
+    const rewardCard = panel
+      .getByRole('heading', { name: 'Choose our next family outing' })
+      .closest('[data-chore-base-card]');
+    await expect(rewardCard).not.toBeNull();
+    await expect(within(rewardCard as HTMLElement).getByText('Family goal')).toBeVisible();
+    await expect(
+      within(rewardCard as HTMLElement).getByRole('button', { name: /Edit/ })
+    ).toBeVisible();
+    await expect(
+      within(rewardCard as HTMLElement).getByRole('button', { name: 'More actions' })
+    ).toBeVisible();
+  },
+};
+
+export const ProgressManagement: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByText('Today at home');
+    await userEvent.click(canvas.getByRole('button', { name: 'Progress' }));
+    const panel = within(canvas.getByRole('region', { name: 'Progress' }));
+    const personCard = panel
+      .getByRole('heading', { name: 'Alex' })
+      .closest('[data-chore-base-card]');
+    await expect(personCard).not.toBeNull();
+    await expect(within(personCard as HTMLElement).getByText(/completed chores/)).toBeVisible();
+    await expect(
+      within(personCard as HTMLElement).getByRole('button', { name: 'Edit' })
+    ).toBeVisible();
+  },
+};
+
+export const SettingsAndRecovery: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Responsive settings workspace covering optional motivation, people, and installation-owned data and recovery controls.',
+      },
+    },
+  },
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByText('Today at home');
+    await userEvent.click(canvas.getByRole('button', { name: 'Settings' }));
+    const panel = within(canvas.getByRole('region', { name: 'Settings' }));
     const workspace = panel.getByRole('region', { name: 'Chore settings' });
     const navigation = within(workspace).getByRole('navigation', { name: 'Chore settings' });
     await expect(workspace).toHaveAttribute('data-chore-settings-workspace');
@@ -296,10 +463,6 @@ export const SettingsAndRecovery: Story = {
     ).toHaveAttribute('aria-current', 'page');
     const motivationPanel = within(workspace).getByRole('main', { name: 'Motivation style' });
     await expect(within(motivationPanel).getByText(/Example:/)).toBeVisible();
-    await userEvent.selectOptions(
-      within(motivationPanel).getByRole('combobox', { name: 'Motivation style' }),
-      'family'
-    );
     await expect(
       within(motivationPanel).getByText(
         'Puts everyone’s points toward a shared reward. Example: reach 500 points to choose the next family outing.'

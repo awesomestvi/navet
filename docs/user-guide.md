@@ -28,8 +28,9 @@ provider. The first screen is designed for glanceable state and common household
 - **Climate** collects thermostats, HVAC devices, water heaters, humidifiers, and dehumidifiers
   with the controls their normalized capabilities expose.
 - **Security** brings together alarms, locks, covers, cameras, and security-state summaries.
-- **Household** puts native chores into a focused Today list, keeps chore schedules and people in a
-  management view, and preserves provider automations and scripts under Routines.
+- **Household** puts native chores into an attention-first Today list, keeps completed cards visible,
+  exposes optional missions and rewards from House pulse, manages recurring work and people in
+  dedicated views, and preserves provider automations and scripts under Routines.
 - **Settings** controls appearance, dashboard profiles, kiosk behavior, interactions, providers,
   extensions, import/export, and project information.
 
@@ -76,6 +77,15 @@ PWA and offers keep-awake and wall-display settings for tablet and kiosk use.
 
 The [widget guide](/guide/widgets/) documents the available widget types, supported sizes, and
 placement limits.
+
+## Household chores
+
+The [Household chores guide](/guide/chores/) explains availability, profiles, assignments,
+one-time through tri-weekly schedules, ID-based card colours and edit-time overrides, optional
+motivation, Home and room summaries, shared history, backups, and the Home Assistant projection
+boundary. Use the task-oriented guides to
+[set up and complete chores](/guide/everyday-control/household-chores/) or
+[manage and recover the workspace](/guide/everyday-control/manage-household-chores/).
 
 ## Step-by-step help
 

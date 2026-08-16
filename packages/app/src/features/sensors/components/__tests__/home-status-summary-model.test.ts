@@ -74,6 +74,45 @@ describe('home status summary model', () => {
     ]);
   });
 
+  it('summarizes pending chores and links to Household', () => {
+    const items = buildHomeStatusSummaryItems(new Map(), { pendingChoreCount: 4 });
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        id: 'chores',
+        value: '4 remaining',
+        targetSection: 'tasks',
+      }),
+    ]);
+  });
+
+  it('marks overdue chores as a danger summary with visible overdue copy', () => {
+    const items = buildHomeStatusSummaryItems(new Map(), {
+      pendingChoreCount: 4,
+      overdueChoreCount: 1,
+    });
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        id: 'chores',
+        value: 'Overdue · 4 remaining',
+        tone: 'danger',
+      }),
+    ]);
+  });
+
+  it('adds a chore summary to a room that has chores today', () => {
+    const items = buildRoomStatusSummaryItems(new Map(), 'Kitchen', { pendingChoreCount: 2 });
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        id: 'chores',
+        value: '2 remaining',
+        targetSection: 'tasks',
+      }),
+    ]);
+  });
+
   it('appends validated custom summary pills and hides missing entity pills', () => {
     const items = buildHomeStatusSummaryItems(
       new Map(
@@ -167,6 +206,7 @@ describe('home status summary model', () => {
           id: 'security',
           value: '1 Alert',
           icon: Shield,
+          tone: 'danger',
           targetSection: 'security',
         }),
         expect.objectContaining({ id: 'media', value: '1 Playing', targetSection: 'media' }),

@@ -32,6 +32,7 @@ describe('chore experience state', () => {
       points: 15,
       childTitle: 'Dishwasher dash',
       icon: 'Utensils',
+      color: '#2563eb',
     };
     state.missionsById.reset = {
       id: 'reset',
@@ -61,6 +62,17 @@ describe('chore experience state', () => {
       isChoreExperienceState({
         ...createChoreExperienceState(),
         setupStartedAt: 'not-a-date',
+      })
+    ).toBe(false);
+  });
+
+  it('rejects malformed chore color overrides', () => {
+    expect(
+      isChoreExperienceState({
+        ...createChoreExperienceState(),
+        presentationByDefinitionId: {
+          dishes: { color: 'blue' },
+        },
       })
     ).toBe(false);
   });

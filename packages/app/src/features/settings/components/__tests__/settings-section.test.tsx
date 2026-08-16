@@ -7,6 +7,7 @@ import { SettingsSection } from '../settings-section';
 describe('SettingsSection', () => {
   beforeEach(() => {
     localStorage.clear();
+    document.documentElement.style.scrollbarGutter = '';
   });
 
   it('shows the habits tab after enabling the production-safe experimental feature', () => {
@@ -54,6 +55,18 @@ describe('SettingsSection', () => {
       'page'
     );
     expect(screen.queryByText('A calmer place to tune Navet.')).not.toBeInTheDocument();
+  });
+
+  it('uses an overlay detail scrollbar without reserving permanent layout space', () => {
+    document.documentElement.style.scrollbarGutter = 'auto';
+
+    renderWithProviders(<SettingsSection />);
+
+    const detailScroll = document.querySelector('[data-settings-detail-scroll]');
+    expect(detailScroll).toHaveClass('scrollbar-hide');
+    expect(detailScroll?.closest('.overlay-scroll-area')).toBeInTheDocument();
+    expect(document.documentElement.style.scrollbarGutter).toBe('auto');
+    expect((detailScroll as HTMLElement).style.scrollbarGutter).toBe('');
   });
 
   it('filters settings destinations from the sidebar search', () => {

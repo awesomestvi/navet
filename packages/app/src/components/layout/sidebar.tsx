@@ -113,8 +113,9 @@ export const Sidebar = memo(function Sidebar({
       setActiveCustomSidebarAction: state.setActiveCustomSidebarAction,
     }))
   );
-  const { effectsQuality, lowPowerMode } = useSettingsStore(
+  const { choresEnabled, effectsQuality, lowPowerMode } = useSettingsStore(
     useShallow((state) => ({
+      choresEnabled: state.choresEnabled,
       effectsQuality: state.effectsQuality,
       lowPowerMode: state.lowPowerMode,
     }))
@@ -179,12 +180,12 @@ export const Sidebar = memo(function Sidebar({
 
   const menuItems = useMemo(
     () =>
-      getSectionNavigationItems(t).map((item) => ({
+      getSectionNavigationItems(t, choresEnabled).map((item) => ({
         id: item.section,
         ...item,
         onClick: () => setActiveSection(item.section),
       })),
-    [setActiveSection, t]
+    [choresEnabled, setActiveSection, t]
   );
   const customMenuItems = useMemo(
     () =>
@@ -244,11 +245,11 @@ export const Sidebar = memo(function Sidebar({
     isShortDesktopViewport || customMenuItems.length + (canAddCustomSidebarAction ? 1 : 0) >= 4;
   const dockItems = useMemo(
     () =>
-      getOrderedSectionNavigationItems(t, MOBILE_SECTION_DOCK_ORDER).map((item) => ({
+      getOrderedSectionNavigationItems(t, MOBILE_SECTION_DOCK_ORDER, choresEnabled).map((item) => ({
         ...item,
         onClick: () => setActiveSection(item.section),
       })),
-    [setActiveSection, t]
+    [choresEnabled, setActiveSection, t]
   );
   const HomeAssistantSidebarIcon =
     homeAssistantShell.isKioskEnabled === true ? PanelLeftOpen : PanelLeftClose;
@@ -596,6 +597,7 @@ export const Sidebar = memo(function Sidebar({
 
       <MobileSectionOrbitSheet
         activeSection={activeSection}
+        choresEnabled={choresEnabled}
         hasCustomActiveDestination={activeCustomSidebarActionId !== null}
         customItems={customMenuItems}
         homeAssistantAction={

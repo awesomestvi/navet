@@ -43,6 +43,7 @@ export function ChoreIconPicker({
   const invalidIconName = Boolean(
     draftIconName.trim() && !resolveLightIconComponent(normalizedDraftName)
   );
+  const PreviewIcon = resolveLightIconComponent(value);
 
   return (
     <div className="grid gap-3">
@@ -90,6 +91,18 @@ export function ChoreIconPicker({
         })}
       </div>
       <div className="flex items-start gap-2">
+        <div
+          role="img"
+          aria-label={value}
+          title={value}
+          className={cn(
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-white',
+            surface.borderStrong
+          )}
+          style={{ backgroundColor: accentColor, borderColor: accentColor }}
+        >
+          {PreviewIcon ? <PreviewIcon aria-hidden="true" className="h-[18px] w-[18px]" /> : null}
+        </div>
         <div className="min-w-0 flex-1">
           <Input
             type="text"

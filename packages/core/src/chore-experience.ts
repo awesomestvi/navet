@@ -8,6 +8,7 @@ export interface ChorePresentationMetadata {
   childTitle?: string;
   category?: string;
   icon?: string;
+  color?: string;
 }
 
 export type ChoreMissionStatus = 'upcoming' | 'active' | 'complete';
@@ -74,7 +75,9 @@ function isPresentationMetadata(value: unknown): value is ChorePresentationMetad
     isOptionalBoundedInteger(value.points, 10_000) &&
     (value.childTitle === undefined || typeof value.childTitle === 'string') &&
     (value.category === undefined || typeof value.category === 'string') &&
-    (value.icon === undefined || typeof value.icon === 'string')
+    (value.icon === undefined || typeof value.icon === 'string') &&
+    (value.color === undefined ||
+      (typeof value.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(value.color)))
   );
 }
 

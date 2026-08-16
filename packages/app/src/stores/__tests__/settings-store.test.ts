@@ -20,6 +20,7 @@ describe('useSettingsStore', () => {
       kioskMode: true,
       keepDeviceAwake: true,
       showHomeSummaryBar: false,
+      choresEnabled: false,
       temperatureUnit: 'celsius',
     });
 
@@ -31,6 +32,7 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().kioskMode).toBe(true);
     expect(useSettingsStore.getState().keepDeviceAwake).toBe(true);
     expect(useSettingsStore.getState().showHomeSummaryBar).toBe(false);
+    expect(useSettingsStore.getState().choresEnabled).toBe(false);
     expect(useSettingsStore.getState().temperatureUnit).toBe('celsius');
   });
 
@@ -58,6 +60,7 @@ describe('useSettingsStore', () => {
       kioskMode: true,
       keepDeviceAwake: true,
       lowPowerMode: true,
+      choresEnabled: false,
     });
     useSettingsStore.getState().updateCameraViewMode('camera.front_door', 'snapshot');
     useSettingsStore.getState().updateCameraStreamPreference('camera.front_door', 'hls');
@@ -79,6 +82,7 @@ describe('useSettingsStore', () => {
     );
     expect(useSettingsStore.getState().keepDeviceAwake).toBe(defaultSettings.keepDeviceAwake);
     expect(useSettingsStore.getState().showHomeSummaryBar).toBe(defaultSettings.showHomeSummaryBar);
+    expect(useSettingsStore.getState().choresEnabled).toBe(defaultSettings.choresEnabled);
     expect(useSettingsStore.getState().headerCustomText).toBe(defaultSettings.headerCustomText);
     expect(useSettingsStore.getState().headerTitleMode).toBe(defaultSettings.headerTitleMode);
     expect(useSettingsStore.getState().username).toBe(defaultSettings.username);

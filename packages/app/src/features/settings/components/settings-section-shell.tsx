@@ -11,11 +11,19 @@ interface SettingsSectionShellProps {
   description: string;
   styles: SettingsSectionStyles;
   children: ReactNode;
+  grouped?: boolean;
 }
 
 interface SettingsItemProps {
   title: string;
   description: string;
+  styles: SettingsSectionStyles;
+  children: ReactNode;
+}
+
+interface SettingsSectionGroupProps {
+  id: string;
+  title: string;
   styles: SettingsSectionStyles;
   children: ReactNode;
 }
@@ -37,6 +45,7 @@ export function SettingsSectionShell({
   description,
   styles,
   children,
+  grouped = false,
 }: SettingsSectionShellProps) {
   const embedded = useContext(SettingsEmbeddedSurfaceContext);
 
@@ -83,17 +92,52 @@ export function SettingsSectionShell({
           </div>
         </div>
 
-        <div
-          className={cn(
-            'mt-5 overflow-hidden rounded-[22px] border divide-y',
-            styles.insetBorderColor,
-            styles.insetBg,
-            styles.dividerColor
-          )}
-          data-settings-detail-group
-        >
-          {children}
-        </div>
+        {grouped ? (
+          <div className="mt-6 grid gap-6" data-settings-detail-groups>
+            {children}
+          </div>
+        ) : (
+          <div
+            className={cn(
+              'mt-5 overflow-hidden rounded-[22px] border divide-y',
+              styles.insetBorderColor,
+              styles.insetBg,
+              styles.dividerColor
+            )}
+            data-settings-detail-group
+          >
+            {children}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+export function SettingsSectionGroup({ id, title, styles, children }: SettingsSectionGroupProps) {
+  return (
+    <section aria-labelledby={`${id}-settings-group-title`}>
+      <h3
+        id={`${id}-settings-group-title`}
+        className={cn(
+          'mb-2 px-1',
+          navetTypographyTokens.caption,
+          'font-semibold',
+          styles.subtleColor
+        )}
+      >
+        {title}
+      </h3>
+      <div
+        className={cn(
+          'overflow-hidden rounded-[22px] border divide-y',
+          styles.insetBorderColor,
+          styles.insetBg,
+          styles.dividerColor
+        )}
+        data-settings-detail-group={id}
+      >
+        {children}
       </div>
     </section>
   );

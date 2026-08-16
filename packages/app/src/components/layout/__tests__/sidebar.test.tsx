@@ -153,7 +153,7 @@ describe('Sidebar mobile navigation', () => {
     };
   }
 
-  it('renders a more launcher that exposes tasks, climate, lights, and media', () => {
+  it('renders a more launcher that exposes household, climate, lights, and media', () => {
     const { container } = renderWithProviders(
       <Sidebar mobileRoomNavigation={mobileRoomNavigation} />
     );
@@ -163,15 +163,28 @@ describe('Sidebar mobile navigation', () => {
 
     const dialog = screen.getByRole('dialog');
 
-    expect(within(dialog).getByRole('button', { name: /^Tasks/ })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /^Household/ })).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: /^Climate/ })).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: /^Lights/ })).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: /^Media/ })).toBeInTheDocument();
 
-    fireEvent.click(within(dialog).getByRole('button', { name: /^Tasks/ }));
+    fireEvent.click(within(dialog).getByRole('button', { name: /^Household/ }));
 
     expect(useNavigationStore.getState().activeSection).toBe('tasks');
     expect(screen.queryByText('Recent sections')).not.toBeInTheDocument();
+  });
+
+  it('labels the household destination as tasks when chores are disabled', () => {
+    useSettingsStore.getState().updateSettings({ choresEnabled: false });
+    const { container } = renderWithProviders(
+      <Sidebar mobileRoomNavigation={mobileRoomNavigation} />
+    );
+
+    fireEvent.click(within(getMobileDock(container)).getByRole('button', { name: 'More' }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByRole('button', { name: /^Tasks/ })).toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: /^Household/ })).not.toBeInTheDocument();
   });
 
   it('renders home, more, and search in the centered dock', () => {

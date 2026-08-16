@@ -9,6 +9,8 @@ device. An unavailable control is not replaced with a provider-specific command.
 
 ## Main sections
 
+- [Set up and complete household chores](/guide/everyday-control/household-chores/)
+- [Manage and recover household chores](/guide/everyday-control/manage-household-chores/)
 - [Control lights and scenes](/guide/everyday-control/lights-and-scenes/)
 - [Control climate devices](/guide/everyday-control/climate/)
 - [Play and manage media](/guide/everyday-control/media/)

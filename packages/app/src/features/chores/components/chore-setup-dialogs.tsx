@@ -9,6 +9,7 @@ import {
 import {
   BaseCardDialog,
   Button,
+  ColorInputSwatch,
   IconButton,
   Input,
   InteractivePill,
@@ -39,6 +40,7 @@ import {
   X,
 } from 'lucide-react';
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { resolveChoreColorPalette } from '../chore-color-palette';
 import { ChoreIconPicker } from './chore-icon-picker';
 import { ChoreProfileAppearanceEditor } from './chore-profile-appearance-editor';
 
@@ -596,6 +598,7 @@ export function AddChoreDialog({
   const surface = getThemeSurfaceTokens(theme);
   const [title, setTitle] = useState('');
   const [choreIcon, setChoreIcon] = useState('ListChecks');
+  const [choreColor, setChoreColor] = useState('');
   const [description, setDescription] = useState('');
   const [assignmentMode, setAssignmentMode] = useState<ChoreAssignmentMode>('person');
   const [participantId, setParticipantId] = useState('');
@@ -628,6 +631,7 @@ export function AddChoreDialog({
   const [editorSection, setEditorSection] = useState<
     'details' | 'assignment' | 'schedule' | 'options'
   >('details');
+  const [furthestEditorSection, setFurthestEditorSection] = useState(0);
   const completers = useMemo(
     () => participants.filter((participant) => participant.capabilities.includes('complete')),
     [participants]
@@ -651,8 +655,10 @@ export function AddChoreDialog({
   useEffect(() => {
     if (isOpen) {
       setEditorSection('details');
+      setFurthestEditorSection(0);
       setTitle(definition?.title ?? '');
       setChoreIcon(presentation?.icon ?? 'ListChecks');
+      setChoreColor(presentation?.color ?? '');
       setDescription(definition?.description ?? '');
       setAssignmentMode(definition?.assignment.mode ?? 'person');
       setParticipantId(definition?.assignment.participantIds[0] ?? completers[0]?.id ?? '');
@@ -714,6 +720,7 @@ export function AddChoreDialog({
     if (!isOpen) {
       setTitle('');
       setChoreIcon('ListChecks');
+      setChoreColor('');
       setDescription('');
       setAssignmentMode('person');
       setParticipantId('');
@@ -744,6 +751,7 @@ export function AddChoreDialog({
       setOverdueEveryMinutes(60);
       setSaving(false);
       setEditorSection('details');
+      setFurthestEditorSection(0);
     }
   }, [completers, definition, isOpen, presentation]);
 
@@ -751,6 +759,14 @@ export function AddChoreDialog({
     event.preventDefault();
     const normalizedTitle = title.trim();
     if (!normalizedTitle || completers.length === 0) return;
+    const activeEditorIndex = editorSections.findIndex((section) => section.id === editorSection);
+    if (editorSection === 'assignment' && assignmentMode === 'person' && !participantId) return;
+    if (!definition && activeEditorIndex < editorSections.length - 1) {
+      const nextIndex = activeEditorIndex + 1;
+      setEditorSection(editorSections[nextIndex].id);
+      setFurthestEditorSection((current) => Math.max(current, nextIndex));
+      return;
+    }
     const timestamp = new Date().toISOString();
     const startDate = scheduleStartDate || localDateKey();
     const timeZone =
@@ -892,6 +908,7 @@ export function AddChoreDialog({
         points: points > 0 ? Math.round(points) : undefined,
         childTitle: childTitle.trim() || undefined,
         icon: choreIcon,
+        color: choreColor || undefined,
       }
     );
     setSaving(false);
@@ -928,6 +945,34 @@ export function AddChoreDialog({
   ];
   const activeSection =
     editorSections.find((section) => section.id === editorSection) ?? editorSections[0];
+  const activeEditorIndex = editorSections.findIndex((section) => section.id === editorSection);
+  const isCreationStepper = !definition;
+  const canContinue =
+    title.trim().length > 0 &&
+    completers.length > 0 &&
+    (editorSection !== 'assignment' || assignmentMode !== 'person' || participantId.length > 0);
+  const repeatValue =
+    frequency === 'weekly' && scheduleInterval === 2
+      ? 'biweekly'
+      : frequency === 'weekly' && scheduleInterval === 3
+        ? 'triweekly'
+        : frequency;
+
+  const selectEditorSection = (index: number) => {
+    if (isCreationStepper && index > furthestEditorSection) return;
+    setEditorSection(editorSections[index].id);
+  };
+
+  const selectRepeat = (value: ChoreSchedule['frequency'] | 'biweekly' | 'triweekly') => {
+    if (value === 'biweekly' || value === 'triweekly') {
+      setFrequency('weekly');
+      setScheduleInterval(value === 'biweekly' ? 2 : 3);
+      return;
+    }
+
+    setFrequency(value);
+    setScheduleInterval(1);
+  };
 
   return (
     <BaseCardDialog
@@ -969,10 +1014,14 @@ export function AddChoreDialog({
           </NavigationWorkspace.Header>
           <NavigationWorkspace.Body className="grid-rows-[auto_minmax(0,1fr)] md:grid-cols-[16rem_minmax(0,1fr)] md:grid-rows-1">
             <NavigationWorkspace.Sidebar className="scrollbar-hide overflow-x-auto border-r-0 border-b p-3 md:overflow-y-auto md:border-r md:border-b-0 md:p-4">
-              <nav className="flex min-w-max gap-1 md:grid md:min-w-0" aria-label={dialogTitle}>
-                {editorSections.map((section) => {
+              <nav
+                className="flex min-w-max gap-1 md:grid md:min-w-0"
+                aria-label={isCreationStepper ? t('household.setup.progressLabel') : dialogTitle}
+              >
+                {editorSections.map((section, index) => {
                   const Icon = section.icon;
                   const active = section.id === editorSection;
+                  const disabled = isCreationStepper && index > furthestEditorSection;
                   return (
                     <NavigationWorkspace.Item
                       key={section.id}
@@ -981,8 +1030,10 @@ export function AddChoreDialog({
                       className="w-[10.5rem] md:w-auto"
                     >
                       <NavigationWorkspace.ItemButton
-                        aria-current={active ? 'page' : undefined}
-                        onClick={() => setEditorSection(section.id)}
+                        aria-current={active ? (isCreationStepper ? 'step' : 'page') : undefined}
+                        disabled={disabled}
+                        className="disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={() => selectEditorSection(index)}
                       >
                         <NavigationWorkspace.ItemIcon>
                           <Icon className={navetIconSizeTokens.sm} />
@@ -998,6 +1049,14 @@ export function AddChoreDialog({
               <NavigationWorkspace.ScrollArea className="scrollbar-hide">
                 <div className="flex min-h-full flex-col">
                   <div className="w-full flex-1 px-4 py-6 sm:px-7 sm:py-8 lg:px-10">
+                    {isCreationStepper ? (
+                      <p className={cn('mb-2 text-xs font-semibold', surface.textSecondary)}>
+                        {t('household.setup.stepCount', {
+                          current: activeEditorIndex + 1,
+                          total: editorSections.length,
+                        })}
+                      </p>
+                    ) : null}
                     <h2 className={cn(navetTypographyTokens.pageHeading, surface.textPrimary)}>
                       {activeSection.label}
                     </h2>
@@ -1032,6 +1091,34 @@ export function AddChoreDialog({
                           label={t('household.personDialog.avatarModeIcon')}
                         >
                           <ChoreIconPicker value={choreIcon} onChange={setChoreIcon} />
+                        </CardDialogSection>
+                        <CardDialogSection label={t('widgets.customCard.color')}>
+                          <div className="flex min-h-10 items-center gap-2">
+                            <ColorInputSwatch
+                              mode="picker"
+                              size="medium"
+                              value={
+                                choreColor ||
+                                resolveChoreColorPalette(
+                                  definition?.id ?? (title.trim() || 'new-chore')
+                                ).primary
+                              }
+                              visual={choreColor ? 'color' : 'rainbow'}
+                              selected={Boolean(choreColor)}
+                              ariaLabel={t('widgets.customCard.colorPicker')}
+                              onChange={setChoreColor}
+                            />
+                            {choreColor ? (
+                              <Button
+                                type="button"
+                                size="compact"
+                                variant="ghost"
+                                onClick={() => setChoreColor('')}
+                              >
+                                {t('common.reset')}
+                              </Button>
+                            ) : null}
+                          </div>
                         </CardDialogSection>
                         <CardDialogSection
                           className="sm:col-span-2"
@@ -1232,14 +1319,21 @@ export function AddChoreDialog({
                           <Select
                             aria-label={t('household.choreDialog.schedule')}
                             name="chore-schedule"
-                            value={frequency}
+                            value={repeatValue}
                             onChange={(event) =>
-                              setFrequency(event.target.value as ChoreSchedule['frequency'])
+                              selectRepeat(
+                                event.target.value as
+                                  | ChoreSchedule['frequency']
+                                  | 'biweekly'
+                                  | 'triweekly'
+                              )
                             }
                           >
                             <option value="once">{t('household.schedule.once')}</option>
                             <option value="daily">{t('household.schedule.daily')}</option>
                             <option value="weekly">{t('household.schedule.weekly')}</option>
+                            <option value="biweekly">{t('household.schedule.biweekly')}</option>
+                            <option value="triweekly">{t('household.schedule.triweekly')}</option>
                             <option value="monthly">{t('household.schedule.monthly')}</option>
                             <option value="after_completion">
                               {t('household.schedule.afterCompletion')}
@@ -1446,18 +1540,34 @@ export function AddChoreDialog({
                     )}
                   >
                     <div className="flex w-full items-center justify-between gap-3">
-                      <Button variant="secondary" onClick={() => onOpenChange(false)}>
-                        {t('common.cancel')}
-                      </Button>
-                      <Button
-                        type="submit"
-                        loading={saving}
-                        disabled={!title.trim() || !participantId}
-                      >
-                        {definition
-                          ? t('household.choreDialog.saveChanges')
-                          : t('household.choreDialog.save')}
-                      </Button>
+                      {isCreationStepper && activeEditorIndex > 0 ? (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => selectEditorSection(activeEditorIndex - 1)}
+                        >
+                          {t('login.actions.back')}
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => onOpenChange(false)}
+                        >
+                          {t('common.cancel')}
+                        </Button>
+                      )}
+                      {isCreationStepper && activeEditorIndex < editorSections.length - 1 ? (
+                        <Button type="submit" disabled={!canContinue}>
+                          {t('dashboard.multiple.create.next')}
+                        </Button>
+                      ) : (
+                        <Button type="submit" loading={saving} disabled={!canContinue}>
+                          {definition
+                            ? t('household.choreDialog.saveChanges')
+                            : t('household.choreDialog.save')}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

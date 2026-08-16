@@ -4,7 +4,13 @@ import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { Children, type CSSProperties, type ReactNode } from 'react';
 
-export function ChoreDashboardGrid({ children }: { children: ReactNode }) {
+export function ChoreDashboardGrid({
+  children,
+  cardSize = 'medium',
+}: {
+  children: ReactNode;
+  cardSize?: 'small' | 'medium';
+}) {
   const breakpointCols = useBreakpointCols();
   const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
     useFitDashboardGrid(breakpointCols);
@@ -22,7 +28,7 @@ export function ChoreDashboardGrid({ children }: { children: ReactNode }) {
         >
           {Children.map(children, (child) =>
             child ? (
-              <div className={cn(getCardSpanClass('medium'), '[&>*]:h-full')}>{child}</div>
+              <div className={cn(getCardSpanClass(cardSize), '[&>*]:h-full')}>{child}</div>
             ) : null
           )}
         </div>

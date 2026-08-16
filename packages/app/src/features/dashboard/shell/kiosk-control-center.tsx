@@ -560,9 +560,10 @@ export const KioskControlCenter = memo(function KioskControlCenter({
   const advancedCustomizationEnabled = useSettingsStore(
     settingsSelectors.advancedCustomizationEnabled
   );
+  const choresEnabled = useSettingsStore(settingsSelectors.choresEnabled);
   const customSidebarActions = useSettingsStore(settingsSelectors.customSidebarActions);
   const updateSettings = useSettingsStore(settingsSelectors.updateSettings);
-  const sectionItems = getSectionNavigationItems(t);
+  const sectionItems = getSectionNavigationItems(t, choresEnabled);
   const customActionItems = (advancedCustomizationEnabled ? customSidebarActions : [])
     .filter((item) => isSidebarActionVisible(item, true))
     .map((item) => ({

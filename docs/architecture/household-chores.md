@@ -19,7 +19,8 @@ tab is a navigation composition boundary, not a merge of the two command models.
 
 ## Scheduling
 
-Definitions support once, daily, weekly, monthly, and after-completion schedules. A schedule stores an
+Definitions support once, daily, weekly, monthly, and after-completion schedules. Bi-weekly and
+tri-weekly choices are weekly schedules with an interval of two or three. A schedule stores an
 IANA time zone and local due time. Date ranges, exclusions, every-N-day or every-N-week intervals,
 multiple due times, nth-weekday monthly rules, and per-participant weekday/time variants deepen that
 same model. Rotation can preserve its cursor indefinitely or reset within a week or month.
@@ -163,8 +164,14 @@ unattended automations, the authenticated Navet HTTP action API is the dependabl
 ## Optional Motivation Domain
 
 The workspace's versioned experience state owns the optional `off`, `light`, `family`, and
-`adventure` presentation modes, per-chore time/point/child labels, missions, reward goals, and earned
-participant balances. Balances are awarded only when an occurrence first becomes final (after
+`adventure` presentation modes, per-chore time/point/child labels, optional icon and colour
+overrides, missions, reward goals, and earned participant balances. Without an override, the UI
+uses a stable hash of the chore definition ID to choose from twelve non-semantic card palettes;
+category, icon, and dashboard accent do not affect that choice. Overdue red and completed green
+remain semantic UI state and take priority over presentation metadata. Stored colour overrides are
+validated six-digit hex values and travel with the versioned experience document and chores backup.
+
+Balances are awarded only when an occurrence first becomes final (after
 approval when required), reverse when final work is reopened, and remain durable when old occurrence
 rows are pruned. Existing experience documents without balances derive their starting snapshot from
 retained final occurrences before the next experience mutation. A mission's shared bonus is awarded

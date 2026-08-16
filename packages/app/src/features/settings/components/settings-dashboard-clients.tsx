@@ -1,4 +1,5 @@
 import { Badge, Button, Input } from '@navet/app/components/primitives';
+import { themeColorValues } from '@navet/app/components/shared/theme/theme-colors';
 import {
   type DashboardClientKind,
   getDashboardClientIdentity,
@@ -258,14 +259,18 @@ export function SettingsDashboardClients({
                   <p className={`truncate text-sm font-medium ${styles.textColor}`}>
                     {resolvedClient.name}
                   </p>
-                  <Badge
-                    tone={
-                      status === 'error' ? 'danger' : status === 'synced' ? 'success' : 'neutral'
-                    }
-                    className="text-[10px]"
-                  >
-                    {t(getStatusTranslationKey(status))}
-                  </Badge>
+                  {status === 'synced' ? (
+                    <span
+                      className="shrink-0 text-[11px] font-medium leading-[14px]"
+                      style={{ color: themeColorValues.green }}
+                    >
+                      {t(getStatusTranslationKey(status))}
+                    </span>
+                  ) : (
+                    <Badge tone={status === 'error' ? 'danger' : 'neutral'} className="text-[10px]">
+                      {t(getStatusTranslationKey(status))}
+                    </Badge>
+                  )}
                 </div>
                 <p className={`mt-1 text-xs ${styles.subtleColor}`}>
                   {t('settings.system.clients.thisDashboard')}

@@ -170,6 +170,24 @@ making architecture changes.
 - [Code of conduct](CODE_OF_CONDUCT.md)
 - [Trademark policy](docs/branding/TRADEMARK_POLICY.md)
 
+## Disclaimers
+
+Navet is an independent community project. It is not affiliated with, sponsored by, or endorsed
+by Home Assistant, Homey, openHAB, or the organizations behind them. Use Navet at your own risk,
+and review the installation and security guidance before connecting it to your home.
+
+### AI-assisted development
+
+AI tools support parts of Navet's design, implementation, documentation, review, and testing
+workflow. They give maintainers more leverage across a complex codebase, but they do not set the
+architecture or replace maintainer judgment. Human maintainers remain responsible for product
+decisions, technical direction, and what is merged.
+
+AI-assisted changes are held to the same review, testing, compatibility, and security expectations
+as any other contribution. Provider-specific work must follow the relevant platform documentation
+and behavior while preserving Navet's provider-neutral architecture. AI output can still be wrong;
+please report anything that does not work as documented.
+
 ## License
 
 Navet is licensed under the [GNU Affero General Public License v3.0](LICENSE.md). If you run a modified

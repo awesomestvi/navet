@@ -52,6 +52,7 @@ export default defineConfig({
           label: "User guide",
           items: [
             { label: "Using Navet", link: "/guide/" },
+            { label: "Household chores", link: "/guide/chores/" },
             { label: "Widgets", link: "/guide/widgets/" },
           ],
         },
@@ -123,8 +124,12 @@ export default defineConfig({
                 { label: "Security", link: "/guide/everyday-control/security/" },
                 { label: "Energy", link: "/guide/everyday-control/energy/" },
                 {
-                  label: "Household chores",
+                  label: "Set up household chores",
                   link: "/guide/everyday-control/household-chores/",
+                },
+                {
+                  label: "Manage household chores",
+                  link: "/guide/everyday-control/manage-household-chores/",
                 },
                 {
                   label: "Automations and scripts",

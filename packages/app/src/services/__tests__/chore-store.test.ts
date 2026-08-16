@@ -780,14 +780,22 @@ describe('NJS chore workspace store', () => {
     const mockFs = createMockFs();
     choreStore.setChoreStoreFsForTests(mockFs);
     choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
+    const source = seededData('setup-definition');
     choreStore.handle(
       createActionRequest('setup-manager', 0, {
         type: 'participant_create',
         participant: managerParticipant(),
       })
     );
+    choreStore.handle(
+      createActionRequest('setup-definition', 1, {
+        type: 'definition_create',
+        actorParticipantId: 'maya',
+        definition: source.definitionsById.dishes,
+      })
+    );
 
-    const setupProgress = createActionRequest('setup-progress', 1, {
+    const setupProgress = createActionRequest('setup-progress', 2, {
       type: 'experience_update',
       actorParticipantId: 'maya',
       experience: {
@@ -795,7 +803,7 @@ describe('NJS chore workspace store', () => {
         setupStartedAt: '2026-08-15T08:00:00.000Z',
         setupCompletedAt: '2026-08-15T08:10:00.000Z',
         gamificationMode: 'off',
-        presentationByDefinitionId: {},
+        presentationByDefinitionId: { dishes: { color: '#2563eb' } },
         missionsById: {},
         rewardGoalsById: {},
         earnedPointsByParticipant: {},
@@ -809,6 +817,7 @@ describe('NJS chore workspace store', () => {
     expect(parseResponse(setupProgress).data.experience).toMatchObject({
       setupStartedAt: '2026-08-15T08:00:00.000Z',
       setupCompletedAt: '2026-08-15T08:10:00.000Z',
+      presentationByDefinitionId: { dishes: { color: '#2563eb' } },
     });
   });
 

@@ -117,6 +117,30 @@ describe('chores domain', () => {
     expect(laterOccurrence[0]?.assigneeIds).toEqual(['alice']);
   });
 
+  it.each([
+    [2, ['2026-08-03T09:00:00.000Z', '2026-08-17T09:00:00.000Z']],
+    [3, ['2026-08-03T09:00:00.000Z', '2026-08-24T09:00:00.000Z']],
+  ])('materializes every %s week schedules', (intervalWeeks, expected) => {
+    const occurrences = materializeChoreOccurrences({
+      definition: makeDefinition({
+        assignment: { mode: 'person', participantIds: ['alice'] },
+        schedule: {
+          frequency: 'weekly',
+          startDate: '2026-08-01',
+          time: '09:00',
+          timeZone: 'UTC',
+          daysOfWeek: [1],
+          intervalWeeks,
+        },
+      }),
+      participantsById: { alice },
+      rangeStart: '2026-08-01T00:00:00.000Z',
+      rangeEnd: '2026-08-31T00:00:00.000Z',
+    });
+
+    expect(occurrences.map((occurrence) => occurrence.scheduledAt)).toEqual(expected);
+  });
+
   it('creates one occurrence per active participant for everyone assignments', () => {
     const occurrences = materializeChoreOccurrences({
       definition: makeDefinition({

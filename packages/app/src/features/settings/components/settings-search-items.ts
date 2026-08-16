@@ -147,6 +147,12 @@ const SETTINGS: SearchSettingDefinition[] = [
     descriptionKey: 'settings.dashboard.homeSummaryBar.description',
   },
   {
+    id: 'dashboard-chores',
+    sectionId: 'dashboard',
+    labelKey: 'settings.dashboard.chores.title',
+    descriptionKey: 'settings.dashboard.chores.description',
+  },
+  {
     id: 'dashboard-kiosk-mode',
     sectionId: 'dashboard',
     labelKey: 'settings.dashboard.kioskMode.title',

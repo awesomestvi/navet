@@ -2,16 +2,11 @@ import {
   getHousePulse,
   getMissionProgressList,
   getRewardProgressList,
-  getRoomChoreSummaries,
 } from '@navet/app/features/chores/chore-dashboard-selectors';
 import { createChoreDemoWorkspace } from '@navet/app/features/chores/chore-demo-fixture';
 import type { Meta, StoryObj } from '@storybook/react';
-import {
-  HousePulse,
-  MissionCard,
-  RewardGoalCard,
-  RoomChoreSummaryCard,
-} from './chore-support-cards';
+import { expect, within } from 'storybook/test';
+import { HousePulse, MissionCard, RewardGoalCard } from './chore-support-cards';
 
 const copy = {
   dishwasher: 'Unload dishwasher',
@@ -35,7 +30,6 @@ const copy = {
   livingRoom: 'Living room',
 };
 const workspace = createChoreDemoWorkspace({ copy });
-const rooms = getRoomChoreSummaries(workspace);
 const mission = getMissionProgressList(workspace)[0];
 const reward = getRewardProgressList(workspace)[0];
 if (!mission || !reward) throw new Error('Chore support story fixture is incomplete');
@@ -44,27 +38,48 @@ const meta = {
   title: 'Cards/Household/Support',
   component: HousePulse,
   tags: ['autodocs'],
-  args: { pulse: getHousePulse(workspace), rooms },
-  parameters: { layout: 'padded' },
+  args: { pulse: getHousePulse(workspace) },
+  parameters: {
+    layout: 'padded',
+    docs: {
+      description: {
+        component:
+          'Operational Household support cards. House pulse keeps identity, points, streak, completion, and the optional rewards disclosure in one row; mission and reward cards stay hidden from Today until requested and use compact milestones instead of repeated progress bars.',
+      },
+    },
+  },
 } satisfies Meta<typeof HousePulse>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Pulse: Story = {};
+export const Pulse: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText('20 points')).toBeInTheDocument();
+    await expect(canvas.getByText('Earned')).toBeInTheDocument();
+    await expect(canvas.getByText('Day streak')).toBeInTheDocument();
+    await expect(canvas.queryByRole('progressbar')).not.toBeInTheDocument();
+    await expect(
+      canvasElement.querySelector('[data-house-pulse-layout="single-row"]')
+    ).toBeVisible();
+
+    const metrics = canvasElement.querySelectorAll('[data-pulse-metric="true"]');
+    await expect(metrics).toHaveLength(3);
+    for (const metric of metrics) {
+      await expect(metric).toHaveClass('-my-3', 'h-[calc(100%+1.5rem)]');
+      await expect(metric.querySelector('[data-pulse-metric-icon]')).toHaveClass(
+        'h-7',
+        'w-7',
+        'sm:h-11',
+        'sm:w-11'
+      );
+    }
+  },
+};
 
 export const PulseComplete: Story = {
   args: { pulse: getHousePulse(createChoreDemoWorkspace({ copy, mode: 'complete' })) },
-};
-
-export const RoomSummary: Story = {
-  render: () => (
-    <div className="grid max-w-3xl gap-3 sm:grid-cols-3">
-      {rooms.slice(0, 3).map((room) => (
-        <RoomChoreSummaryCard key={room.canonicalId} summary={room} onSelect={() => {}} />
-      ))}
-    </div>
-  ),
 };
 
 export const Mission: Story = {
@@ -73,6 +88,12 @@ export const Mission: Story = {
       <MissionCard progress={mission} />
     </div>
   ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const title = canvas.getByRole('heading', { name: 'Saturday reset' });
+    await expect(title.closest('[data-chore-base-card]')).toBeVisible();
+    await expect(title.previousElementSibling).toHaveTextContent('Active');
+  },
 };
 
 export const Reward: Story = {
@@ -81,8 +102,18 @@ export const Reward: Story = {
       <RewardGoalCard progress={reward} />
     </div>
   ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const title = canvas.getByRole('heading', { name: 'Choose a family outing' });
+    await expect(title.closest('[data-chore-base-card]')).toBeVisible();
+    await expect(title.previousElementSibling).toHaveTextContent('Family goal');
+  },
 };
 
 export const LightTheme: Story = {
   globals: { theme: 'light' },
+};
+
+export const BlackTheme: Story = {
+  globals: { theme: 'black' },
 };

@@ -1,5 +1,8 @@
 import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
+import { createChoreDemoWorkspace } from '@navet/app/features/chores/chore-demo-fixture';
+import { useChoreWorkspaceStore } from '@navet/app/features/chores/chore-workspace-store';
 import type { DashboardController } from '@navet/app/features/dashboard/hooks/use-dashboard-controller';
+import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import type { DeviceWithType } from '@navet/app/types/device.types';
@@ -13,6 +16,28 @@ const roomNavMock = vi.fn();
 const dashboardLayoutMock = vi.fn();
 const deviceGridPropsMock = vi.fn();
 let deviceGridMountCount = 0;
+
+const choreCopy = {
+  dishwasher: 'Unload dishwasher',
+  toys: 'Toys back home',
+  hallway: 'Shoes and jackets',
+  laundry: 'Fold clean laundry',
+  plants: 'Water the plants',
+  bins: 'Take out recycling',
+  missionTitle: 'Saturday reset',
+  missionDescription: 'Reset the shared spaces.',
+  upcomingMissionTitle: 'Evening tidy up',
+  upcomingMissionDescription: 'A quick reset before bedtime.',
+  rewardTitle: 'Choose a family outing',
+  secondRewardTitle: 'Build a new LEGO set',
+  childDishwasher: 'Dishwasher rescue',
+  childToys: 'Toys back to base',
+  childHallway: 'Clear the launch pad',
+  kitchen: 'Kitchen',
+  bedroom: 'Bedroom',
+  hallwayRoom: 'Hallway',
+  livingRoom: 'Living room',
+};
 
 vi.mock('@navet/app/components/layout/room-nav', () => ({
   RoomNav: (props: unknown) => {
@@ -30,6 +55,14 @@ vi.mock('@navet/app/features/dashboard/shell', () => ({
 
 vi.mock('../home-dashboard-overview', () => ({
   HomeDashboardOverview: () => <main>Home dashboard</main>,
+}));
+
+vi.mock('@navet/app/features/chores/components/household-section', () => ({
+  HouseholdSection: () => <main>Household dashboard</main>,
+}));
+
+vi.mock('@navet/app/features/tasks/components/tasks-section', () => ({
+  TasksSection: () => <main>Tasks dashboard</main>,
 }));
 
 vi.mock('../../device-grid', () => ({
@@ -122,6 +155,50 @@ describe('DashboardSectionRouter home controls', () => {
       isEditMode: false,
       optimizeOffscreenPaint: true,
     });
+  });
+
+  it('adds pending chores to their room grid', () => {
+    useChoreWorkspaceStore.getState().setPreviewDocument({
+      data: createChoreDemoWorkspace({ copy: choreCopy }),
+    });
+    const controller = createController();
+    controller.activeRoom = 'Kitchen';
+
+    renderWithProviders(<DashboardSectionRouter controller={controller} />);
+
+    expect(deviceGridPropsMock.mock.calls.at(-1)?.[0]).toMatchObject({
+      supplementalCards: [
+        expect.objectContaining({ id: 'room-chore-today-dishwasher', size: 'medium' }),
+      ],
+    });
+    expect(screen.getByText(/1 remaining/)).toBeInTheDocument();
+  });
+
+  it('hides room chore summaries and cards when chores are disabled', () => {
+    useChoreWorkspaceStore.getState().setPreviewDocument({
+      data: createChoreDemoWorkspace({ copy: choreCopy }),
+    });
+    useSettingsStore.getState().updateSettings({ choresEnabled: false });
+    const controller = createController();
+    controller.activeRoom = 'Kitchen';
+
+    renderWithProviders(<DashboardSectionRouter controller={controller} />);
+
+    expect(deviceGridPropsMock.mock.calls.at(-1)?.[0]).toMatchObject({
+      supplementalCards: [],
+    });
+    expect(screen.queryByText(/1 remaining/)).not.toBeInTheDocument();
+  });
+
+  it('keeps the tasks workspace available when chores are disabled', async () => {
+    useSettingsStore.getState().updateSettings({ choresEnabled: false });
+    const controller = createController();
+    controller.activeSection = 'tasks';
+
+    renderWithProviders(<DashboardSectionRouter controller={controller} />);
+
+    expect(await screen.findByText('Tasks dashboard')).toBeInTheDocument();
+    expect(screen.queryByText('Household dashboard')).not.toBeInTheDocument();
   });
 
   it('rerenders when independently consumed controller inputs change', async () => {

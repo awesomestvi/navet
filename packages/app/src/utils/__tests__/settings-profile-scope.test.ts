@@ -22,6 +22,7 @@ describe('settings profile scope', () => {
     );
     expect(SETTINGS_PROFILE_CLASSIFICATION).toMatchObject({
       showHomeSummaryBar: 'shared',
+      choresEnabled: 'shared',
       language: 'account',
       keepDeviceAwake: 'device',
       disableAnimations: 'device',
@@ -39,6 +40,7 @@ describe('settings profile scope', () => {
       email: 'vishal@example.com',
       language: 'sv' as const,
       showHomeSummaryBar: false,
+      choresEnabled: false,
       keepDeviceAwake: true,
       cameraDirectStreamUrls: {
         'camera.front': 'https://user:secret@example.com/live?token=private',
@@ -61,7 +63,7 @@ describe('settings profile scope', () => {
     const account = projectSettingsPreferenceLayer(settings, 'account');
     const device = projectSettingsPreferenceLayer(settings, 'device');
 
-    expect(shared.settings).toMatchObject({ showHomeSummaryBar: false });
+    expect(shared.settings).toMatchObject({ choresEnabled: false, showHomeSummaryBar: false });
     expect(account.settings).toMatchObject({ language: 'sv' });
     expect(device.settings).toMatchObject({ keepDeviceAwake: true });
     for (const projection of [shared, account, device]) {

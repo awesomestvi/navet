@@ -1,13 +1,10 @@
 import { DashboardEmptyState } from '@navet/app/components/patterns';
 import {
   Button,
+  InteractivePill,
   LoadingSpinner,
   MessageBar,
   Panel,
-  TabList,
-  TabPanel,
-  Tabs,
-  TabTrigger,
 } from '@navet/app/components/primitives';
 import {
   AlertDialog,
@@ -69,6 +66,28 @@ type HouseholdView =
   | 'settings'
   | 'routines'
   | 'habits';
+
+function HouseholdViewPanel({
+  value,
+  activeValue,
+  children,
+}: {
+  value: HouseholdView;
+  activeValue: HouseholdView;
+  children: ReactNode;
+}) {
+  const isActive = value === activeValue;
+  return (
+    <section
+      id={`household-${value}-panel`}
+      aria-labelledby={`household-${value}-navigation`}
+      hidden={!isActive}
+      className={isActive ? 'block' : 'hidden'}
+    >
+      {children}
+    </section>
+  );
+}
 
 function createId(prefix: string) {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -216,7 +235,6 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
   const [habitsVisible] = useLocalHabitsFeature();
   const [view, setView] = useState<HouseholdView>('today');
   const [selectedParticipantId, setSelectedParticipantId] = useState('all');
-  const [roomFilterId, setRoomFilterId] = useState<string>();
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
   const [choreDialogOpen, setChoreDialogOpen] = useState(false);
   const [missionDialogOpen, setMissionDialogOpen] = useState(false);
@@ -662,209 +680,200 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
           {error}
         </MessageBar>
       ) : null}
-      <Tabs
-        value={view}
-        defaultValue="today"
-        onValueChange={(value) => {
-          const nextView = value as HouseholdView;
-          if (['chores', 'missions', 'rewards', 'settings'].includes(nextView)) {
-            withManagementAccess(() => setView(nextView));
-            return;
-          }
-          setView(nextView);
-        }}
-      >
-        <div className="mb-4 overflow-x-auto pb-1 md:mb-5">
-          <TabList size="small">
-            <TabTrigger value="today" size="small">
-              {t('household.tabs.today')}
-            </TabTrigger>
-            <TabTrigger value="chores" size="small">
-              {t('household.tabs.chores')}
-            </TabTrigger>
-            <TabTrigger value="missions" size="small">
-              {t('household.tabs.missions')}
-            </TabTrigger>
-            <TabTrigger value="rewards" size="small">
-              {t('household.tabs.rewards')}
-            </TabTrigger>
-            <TabTrigger value="progress" size="small">
-              {t('household.tabs.progress')}
-            </TabTrigger>
-            <TabTrigger value="settings" size="small">
-              {t('household.tabs.settings')}
-            </TabTrigger>
-            <TabTrigger value="routines" size="small">
-              {t('household.tabs.routines')}
-            </TabTrigger>
-            {habitsVisible ? (
-              <TabTrigger value="habits" size="small">
-                {t('settings.nav.habits')}
-              </TabTrigger>
-            ) : null}
-          </TabList>
+      <nav aria-label={t('household.title')} className="mb-4 md:mb-5">
+        <div className="flex min-w-0 items-center gap-1 overflow-x-auto scrollbar-hide md:flex-wrap md:overflow-visible">
+          {[
+            { value: 'today' as const, label: t('household.tabs.today') },
+            { value: 'chores' as const, label: t('household.tabs.chores') },
+            { value: 'missions' as const, label: t('household.tabs.missions') },
+            { value: 'rewards' as const, label: t('household.tabs.rewards') },
+            { value: 'progress' as const, label: t('household.tabs.progress') },
+            { value: 'settings' as const, label: t('household.tabs.settings') },
+            { value: 'routines' as const, label: t('household.tabs.routines') },
+            ...(habitsVisible
+              ? [{ value: 'habits' as const, label: t('settings.nav.habits') }]
+              : []),
+          ].map((item) => {
+            const isActive = view === item.value;
+            return (
+              <InteractivePill
+                key={item.value}
+                id={`household-${item.value}-navigation`}
+                active={isActive}
+                aria-current={isActive ? 'page' : undefined}
+                aria-controls={`household-${item.value}-panel`}
+                size="small"
+                variant="ghost"
+                className="room-nav-item shrink-0 whitespace-nowrap rounded-[22px] transition-colors"
+                onClick={() => {
+                  if (['chores', 'missions', 'rewards', 'settings'].includes(item.value)) {
+                    withManagementAccess(() => setView(item.value));
+                    return;
+                  }
+                  setView(item.value);
+                }}
+              >
+                {item.label}
+              </InteractivePill>
+            );
+          })}
         </div>
+      </nav>
 
-        <TabPanel value="today">
-          {renderWorkspace(
-            data ? (
-              <ChoreTodayView
-                data={data}
-                participants={participants}
-                selectedParticipantId={selectedParticipantId}
-                onSelectedParticipantChange={setSelectedParticipantId}
-                execute={execute}
-                onAddChore={openAddChore}
-                onOpenRoom={(canonicalId) => {
-                  setRoomFilterId(canonicalId);
-                  setView('chores');
-                }}
-              />
-            ) : null
-          )}
-        </TabPanel>
-        <TabPanel value="chores">
-          {renderWorkspace(
-            data ? (
-              <AllChoresView
-                data={data}
-                initialRoomId={roomFilterId}
-                onAdd={openAddChore}
-                onEdit={(definition) => {
-                  setDefinitionToEdit(definition);
-                  setChoreDialogOpen(true);
-                }}
-                onDuplicate={(definition) => void duplicateDefinition(definition)}
-                onToggleEnabled={(definition) => {
-                  if (!managerActorId) return;
-                  void execute({
-                    type: 'definition_update',
-                    actorParticipantId: managerActorId,
-                    definition: {
-                      ...definition,
-                      enabled: !definition.enabled,
-                      updatedAt: new Date().toISOString(),
-                    },
-                  });
-                }}
-                onArchive={(definition) => {
-                  if (!managerActorId) return;
-                  void execute({
-                    type: 'definition_archive',
-                    actorParticipantId: managerActorId,
-                    definitionId: definition.id,
-                  });
-                }}
-                onRestore={(definition) => {
-                  if (!managerActorId) return;
-                  void execute({
-                    type: 'definition_restore',
-                    actorParticipantId: managerActorId,
-                    definitionId: definition.id,
-                  });
-                }}
-              />
-            ) : null
-          )}
-        </TabPanel>
-        <TabPanel value="missions">
-          {renderWorkspace(
-            data ? (
-              <MissionsView
-                data={data}
-                onAdd={() => {
-                  setMissionToEdit(null);
-                  setMissionDialogOpen(true);
-                }}
-                onEdit={(mission) => {
-                  setMissionToEdit(mission);
-                  setMissionDialogOpen(true);
-                }}
-                onDelete={(mission) =>
-                  void updateExperience((current) => {
-                    const missionsById = { ...current.missionsById };
-                    delete missionsById[mission.id];
-                    return { ...current, missionsById };
-                  })
-                }
-              />
-            ) : null
-          )}
-        </TabPanel>
-        <TabPanel value="rewards">
-          {renderWorkspace(
-            data ? (
-              <RewardsView
-                data={data}
-                onAdd={() => {
-                  setRewardToEdit(null);
-                  setRewardDialogOpen(true);
-                }}
-                onEdit={(reward) => {
-                  setRewardToEdit(reward);
-                  setRewardDialogOpen(true);
-                }}
-                onDelete={(reward) =>
-                  void updateExperience((current) => {
-                    const rewardGoalsById = { ...current.rewardGoalsById };
-                    delete rewardGoalsById[reward.id];
-                    return { ...current, rewardGoalsById };
-                  })
-                }
-              />
-            ) : null
-          )}
-        </TabPanel>
-        <TabPanel value="progress">
-          {renderWorkspace(
-            data ? (
-              <ProgressView
-                data={data}
-                onEditPerson={(participant) => {
-                  setParticipantToEdit(participant);
-                  setPersonDialogOpen(true);
-                }}
-              />
-            ) : null
-          )}
-        </TabPanel>
-        <TabPanel value="settings">
-          {renderWorkspace(
-            data ? (
-              <ChoreSettingsView
-                data={data}
-                onModeChange={(gamificationMode) =>
-                  void updateExperience((current) => ({ ...current, gamificationMode }))
-                }
-                onAddPerson={() => {
-                  setParticipantToEdit(null);
-                  setPersonDialogOpen(true);
-                }}
-                onEditPerson={(participant) => {
-                  setParticipantToEdit(participant);
-                  setPersonDialogOpen(true);
-                }}
-                recoveryContent={
-                  managerActorId ? (
-                    <ChoreDataRecovery
-                      managerActorId={managerActorId}
-                      participants={allParticipants}
-                    />
-                  ) : null
-                }
-              />
-            ) : null
-          )}
-        </TabPanel>
-        <TabPanel value="routines">
-          <TasksSection />
-        </TabPanel>
-        {habitsVisible ? (
-          <TabPanel value="habits">
-            <HabitInsightsPanel />
-          </TabPanel>
-        ) : null}
-      </Tabs>
+      <HouseholdViewPanel value="today" activeValue={view}>
+        {renderWorkspace(
+          data ? (
+            <ChoreTodayView
+              data={data}
+              participants={participants}
+              selectedParticipantId={selectedParticipantId}
+              onSelectedParticipantChange={setSelectedParticipantId}
+              execute={execute}
+              onAddChore={openAddChore}
+            />
+          ) : null
+        )}
+      </HouseholdViewPanel>
+      <HouseholdViewPanel value="chores" activeValue={view}>
+        {renderWorkspace(
+          data ? (
+            <AllChoresView
+              data={data}
+              onAdd={openAddChore}
+              onEdit={(definition) => {
+                setDefinitionToEdit(definition);
+                setChoreDialogOpen(true);
+              }}
+              onDuplicate={(definition) => void duplicateDefinition(definition)}
+              onToggleEnabled={(definition) => {
+                if (!managerActorId) return;
+                void execute({
+                  type: 'definition_update',
+                  actorParticipantId: managerActorId,
+                  definition: {
+                    ...definition,
+                    enabled: !definition.enabled,
+                    updatedAt: new Date().toISOString(),
+                  },
+                });
+              }}
+              onArchive={(definition) => {
+                if (!managerActorId) return;
+                void execute({
+                  type: 'definition_archive',
+                  actorParticipantId: managerActorId,
+                  definitionId: definition.id,
+                });
+              }}
+              onRestore={(definition) => {
+                if (!managerActorId) return;
+                void execute({
+                  type: 'definition_restore',
+                  actorParticipantId: managerActorId,
+                  definitionId: definition.id,
+                });
+              }}
+            />
+          ) : null
+        )}
+      </HouseholdViewPanel>
+      <HouseholdViewPanel value="missions" activeValue={view}>
+        {renderWorkspace(
+          data ? (
+            <MissionsView
+              data={data}
+              onAdd={() => {
+                setMissionToEdit(null);
+                setMissionDialogOpen(true);
+              }}
+              onEdit={(mission) => {
+                setMissionToEdit(mission);
+                setMissionDialogOpen(true);
+              }}
+              onDelete={(mission) =>
+                void updateExperience((current) => {
+                  const missionsById = { ...current.missionsById };
+                  delete missionsById[mission.id];
+                  return { ...current, missionsById };
+                })
+              }
+            />
+          ) : null
+        )}
+      </HouseholdViewPanel>
+      <HouseholdViewPanel value="rewards" activeValue={view}>
+        {renderWorkspace(
+          data ? (
+            <RewardsView
+              data={data}
+              onAdd={() => {
+                setRewardToEdit(null);
+                setRewardDialogOpen(true);
+              }}
+              onEdit={(reward) => {
+                setRewardToEdit(reward);
+                setRewardDialogOpen(true);
+              }}
+              onDelete={(reward) =>
+                void updateExperience((current) => {
+                  const rewardGoalsById = { ...current.rewardGoalsById };
+                  delete rewardGoalsById[reward.id];
+                  return { ...current, rewardGoalsById };
+                })
+              }
+            />
+          ) : null
+        )}
+      </HouseholdViewPanel>
+      <HouseholdViewPanel value="progress" activeValue={view}>
+        {renderWorkspace(
+          data ? (
+            <ProgressView
+              data={data}
+              onEditPerson={(participant) => {
+                setParticipantToEdit(participant);
+                setPersonDialogOpen(true);
+              }}
+            />
+          ) : null
+        )}
+      </HouseholdViewPanel>
+      <HouseholdViewPanel value="settings" activeValue={view}>
+        {renderWorkspace(
+          data ? (
+            <ChoreSettingsView
+              data={data}
+              onModeChange={(gamificationMode) =>
+                void updateExperience((current) => ({ ...current, gamificationMode }))
+              }
+              onAddPerson={() => {
+                setParticipantToEdit(null);
+                setPersonDialogOpen(true);
+              }}
+              onEditPerson={(participant) => {
+                setParticipantToEdit(participant);
+                setPersonDialogOpen(true);
+              }}
+              recoveryContent={
+                managerActorId ? (
+                  <ChoreDataRecovery
+                    managerActorId={managerActorId}
+                    participants={allParticipants}
+                  />
+                ) : null
+              }
+            />
+          ) : null
+        )}
+      </HouseholdViewPanel>
+      <HouseholdViewPanel value="routines" activeValue={view}>
+        <TasksSection />
+      </HouseholdViewPanel>
+      {habitsVisible ? (
+        <HouseholdViewPanel value="habits" activeValue={view}>
+          <HabitInsightsPanel />
+        </HouseholdViewPanel>
+      ) : null}
 
       <AddPersonDialog
         isOpen={personDialogOpen}

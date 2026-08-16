@@ -17,7 +17,7 @@ import {
   type TemperatureUnit,
 } from '@navet/app/utils/temperature';
 import type { LucideIcon } from 'lucide-react';
-import { Fan, Lightbulb, Shield, Speaker, Zap } from 'lucide-react';
+import { ClipboardCheck, Fan, Lightbulb, Shield, Speaker, Zap } from 'lucide-react';
 
 export interface HomeStatusSummaryItem {
   id: string;
@@ -25,6 +25,7 @@ export interface HomeStatusSummaryItem {
   value: string;
   icon: LucideIcon;
   iconColor: string;
+  tone?: 'danger';
   targetSection?: Section;
   targetUrl?: string;
 }
@@ -34,6 +35,8 @@ export interface StatusSummaryOptions {
   gridImportTodayKWh?: number;
   routineCount?: number;
   securityAlertCount?: number;
+  pendingChoreCount?: number;
+  overdueChoreCount?: number;
   temperatureUnit?: TemperatureUnit;
   customSummaryPills?: CustomSummaryPill[];
 }
@@ -200,6 +203,7 @@ function getSecuritySummary(
           }),
     icon: Shield,
     iconColor: alertCount === 0 ? '#22c55e' : '#f87171',
+    tone: alertCount > 0 ? 'danger' : undefined,
     targetSection: 'security',
   };
 }
@@ -235,6 +239,32 @@ function getMediaSummary(devices: DeviceWithType[], t: TranslateFn): HomeStatusS
     icon: Speaker,
     iconColor: activeCount > 0 ? '#60a5fa' : '#cbd5e1',
     targetSection: 'media',
+  };
+}
+
+function getChoreSummary(
+  pendingChoreCount: number | undefined,
+  overdueChoreCount: number | undefined,
+  t: TranslateFn
+): HomeStatusSummaryItem | null {
+  if (pendingChoreCount === undefined) {
+    return null;
+  }
+
+  return {
+    id: 'chores',
+    title: t('household.tabs.chores'),
+    value:
+      (overdueChoreCount ?? 0) > 0
+        ? `${t('household.today.overdue')} · ${t('household.rooms.remaining', { count: pendingChoreCount })}`
+        : pendingChoreCount === 0
+          ? t('household.rooms.allDone')
+          : t('household.rooms.remaining', { count: pendingChoreCount }),
+    icon: ClipboardCheck,
+    iconColor:
+      (overdueChoreCount ?? 0) > 0 ? '#f87171' : pendingChoreCount === 0 ? '#22c55e' : '#fb923c',
+    tone: (overdueChoreCount ?? 0) > 0 ? 'danger' : undefined,
+    targetSection: 'tasks',
   };
 }
 
@@ -472,6 +502,7 @@ function buildStatusSummaryItems(
                 }),
           icon: Shield,
           iconColor: options.securityAlertCount === 0 ? '#22c55e' : '#f87171',
+          tone: options.securityAlertCount > 0 ? ('danger' as const) : undefined,
           targetSection: 'security' as const,
         }
       : getSecuritySummary(devices, t);
@@ -482,6 +513,7 @@ function buildStatusSummaryItems(
     securitySummary,
     getLightSummary(devices, t),
     getMediaSummary(devices, t),
+    getChoreSummary(options.pendingChoreCount, options.overdueChoreCount, t),
     ...buildCustomSummaryItems(deviceMap, options.customSummaryPills, t),
   ].filter((item): item is HomeStatusSummaryItem => item !== null);
 }

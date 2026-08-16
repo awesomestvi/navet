@@ -79,6 +79,7 @@ interface UserSettings {
   showNotifications: boolean;
   showWeatherInHeader: boolean;
   showHomeSummaryBar: boolean;
+  choresEnabled: boolean;
   keepDeviceAwake: boolean;
   use24HourTime: boolean;
   temperatureUnit: 'celsius' | 'fahrenheit';

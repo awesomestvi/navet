@@ -1,4 +1,5 @@
 import { DashboardEmptyState } from '@navet/app/components/patterns';
+import { Button } from '@navet/app/components/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import {
   getThemeFocusRingClassName,
@@ -19,80 +20,25 @@ import { useI18n, useTheme } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { normalizeChoreExperienceState } from '@navet/core/chore-experience';
 import type {
-  ChoreDefinition,
   ChoreOccurrence,
   ChoreParticipant,
   ChoreWorkspaceAction,
   ChoreWorkspaceData,
 } from '@navet/core/chores';
 import { CalendarCheck, ChevronDown, Plus, Users } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { getChoreCardAction } from '../chore-card-action';
 import {
   getDefinition,
   getHousePulse,
   getMissionProgressList,
   getRewardProgressList,
-  getRoomChoreSummaries,
   getTodayChoresForParticipant,
   getUpcomingChores,
 } from '../chore-dashboard-selectors';
-import { type ChoreCardAction, ChoreFocusCard, ChoreListItem } from './chore-card';
+import { ChoreFocusCard } from './chore-card';
 import { ChoreDashboardGrid } from './chore-dashboard-grid';
-import {
-  HousePulse,
-  MissionCard,
-  RewardGoalCard,
-  RoomChoreSummaryCard,
-} from './chore-support-cards';
-
-function getAction(
-  occurrence: ChoreOccurrence,
-  definition: ChoreDefinition,
-  participantId: string,
-  execute: (action: ChoreWorkspaceAction) => Promise<boolean>,
-  t: ReturnType<typeof useI18n>['t']
-): ChoreCardAction | undefined {
-  if (occurrence.status === 'done' || occurrence.status === 'missed') {
-    return undefined;
-  }
-  const actionParticipantId =
-    participantId === 'all' && occurrence.assigneeIds.length === 1
-      ? occurrence.assigneeIds[0]
-      : participantId;
-  if (!actionParticipantId || actionParticipantId === 'all') return undefined;
-  const run = (type: 'claim' | 'complete' | 'approve') => () => {
-    void execute({
-      type: 'occurrence_action',
-      occurrenceId: occurrence.id,
-      action: { type, participantId: actionParticipantId },
-    });
-  };
-  if (
-    occurrence.status === 'awaiting_approval' &&
-    definition.approval.approverIds.includes(actionParticipantId)
-  ) {
-    return {
-      label: t('household.actions.approve'),
-      kind: 'approve',
-      onSelect: run('approve'),
-    };
-  }
-  if (!occurrence.assigneeIds.includes(actionParticipantId)) return undefined;
-  if (definition.claimPolicy?.required && occurrence.status === 'available') {
-    return { label: t('household.actions.claim'), kind: 'claim', onSelect: run('claim') };
-  }
-  if (
-    occurrence.status === 'available' ||
-    (occurrence.status === 'claimed' && occurrence.claimedBy === actionParticipantId)
-  ) {
-    return {
-      label: t('household.actions.complete'),
-      kind: 'complete',
-      onSelect: run('complete'),
-    };
-  }
-  return undefined;
-}
+import { HousePulse, MissionCard, RewardGoalCard } from './chore-support-cards';
 
 function SectionHeading({ id, title, count }: { id?: string; title: string; count?: number }) {
   const { theme } = useTheme();
@@ -175,6 +121,7 @@ function ParticipantPicker({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
+          data-chore-toolbar-control="participant-picker"
           className={cn(
             'flex h-10 shrink-0 items-center gap-2 rounded-full border p-1 pr-1.5 transition-colors sm:pr-3',
             surface.inputBg,
@@ -227,7 +174,6 @@ export function ChoreTodayView({
   onSelectedParticipantChange,
   execute,
   onAddChore,
-  onOpenRoom,
 }: {
   data: ChoreWorkspaceData;
   participants: ChoreParticipant[];
@@ -235,11 +181,11 @@ export function ChoreTodayView({
   onSelectedParticipantChange: (id: string) => void;
   execute: (action: ChoreWorkspaceAction) => Promise<boolean>;
   onAddChore: () => void;
-  onOpenRoom: (canonicalId: string) => void;
 }) {
   const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const [rewardsVisible, setRewardsVisible] = useState(false);
   const breakpointCols = useBreakpointCols();
   const cardsPerRow = Math.max(1, Math.floor(breakpointCols / 2));
   const now = useMemo(() => new Date(), []);
@@ -254,7 +200,6 @@ export function ChoreTodayView({
   const completed = occurrences.filter((occurrence) => occurrence.status === 'done');
   const focus = active.slice(0, cardsPerRow);
   const remaining = active.slice(cardsPerRow);
-  const rooms = useMemo(() => getRoomChoreSummaries(data, now), [data, now]);
   const pulse = useMemo(() => getHousePulse(data, now), [data, now]);
   const missions = useMemo(() => getMissionProgressList(data, now), [data, now]);
   const rewards = useMemo(() => getRewardProgressList(data), [data]);
@@ -264,31 +209,24 @@ export function ChoreTodayView({
   );
   const activeMission =
     missions.find((mission) => mission.mission.status === 'active') ?? missions[0];
+  const rewardGoal = experience.gamificationMode !== 'off' ? rewards[0] : undefined;
+  const hasRewardsSection = Boolean(activeMission || rewardGoal);
   const selectedParticipant = participants.find((item) => item.id === selectedParticipantId);
   const childMode = experience.gamificationMode === 'adventure';
 
-  const renderChore = (occurrence: ChoreOccurrence, compact = false) => {
+  const renderChore = (occurrence: ChoreOccurrence, size: 'small' | 'medium' = 'medium') => {
     const definition = getDefinition(data, occurrence);
     if (!definition) return null;
-    const action = getAction(occurrence, definition, selectedParticipantId, execute, t);
+    const action = getChoreCardAction(occurrence, definition, selectedParticipantId, execute, t);
     const storedPresentation = experience.presentationByDefinitionId[definition.id];
     const presentation =
       experience.gamificationMode === 'off' && storedPresentation
         ? { ...storedPresentation, points: undefined, childTitle: undefined }
         : storedPresentation;
-    return compact ? (
-      <ChoreListItem
-        key={occurrence.id}
-        definition={definition}
-        occurrence={occurrence}
-        participantsById={data.participantsById}
-        presentation={presentation}
-        action={action}
-        now={now}
-      />
-    ) : (
+    return (
       <ChoreFocusCard
         key={occurrence.id}
+        size={size}
         definition={definition}
         occurrence={occurrence}
         participantsById={data.participantsById}
@@ -313,7 +251,16 @@ export function ChoreTodayView({
             {t('household.today.prompt')}
           </p>
         </div>
-        <div className="self-start sm:self-auto">
+        <div className="flex self-start items-center gap-2 sm:self-auto">
+          <Button
+            size="default"
+            variant="secondary"
+            leading={<Plus className="h-4 w-4" aria-hidden="true" />}
+            data-chore-toolbar-control="add-chore"
+            onClick={onAddChore}
+          >
+            {t('household.chores.add')}
+          </Button>
           <ParticipantPicker
             participants={participants}
             selectedParticipantId={selectedParticipantId}
@@ -322,7 +269,25 @@ export function ChoreTodayView({
         </div>
       </header>
 
-      <HousePulse pulse={pulse} rooms={rooms} />
+      <HousePulse
+        pulse={pulse}
+        onSeeRewards={hasRewardsSection ? () => setRewardsVisible(true) : undefined}
+        rewardsExpanded={rewardsVisible}
+      />
+
+      {hasRewardsSection && rewardsVisible ? (
+        <section id="chores-rewards-section" aria-labelledby="chores-supporting-title">
+          <SectionHeading
+            id="chores-supporting-title"
+            title={t('household.today.supporting')}
+            count={Number(Boolean(activeMission)) + Number(Boolean(rewardGoal))}
+          />
+          <ChoreDashboardGrid>
+            {activeMission ? <MissionCard progress={activeMission} /> : null}
+            {rewardGoal ? <RewardGoalCard progress={rewardGoal} /> : null}
+          </ChoreDashboardGrid>
+        </section>
+      ) : null}
 
       <div className="space-y-5">
         {focus.length === 0 ? (
@@ -358,28 +323,7 @@ export function ChoreTodayView({
               title={t('household.upcoming.title')}
               count={upcoming.length}
             />
-            <ChoreDashboardGrid>
-              {upcoming.map((item) => renderChore(item, true))}
-            </ChoreDashboardGrid>
-          </section>
-        ) : null}
-
-        {rooms.length > 0 ? (
-          <section aria-labelledby="chores-rooms-title">
-            <SectionHeading
-              id="chores-rooms-title"
-              title={t('household.rooms.title')}
-              count={rooms.length}
-            />
-            <ChoreDashboardGrid>
-              {rooms.map((summary) => (
-                <RoomChoreSummaryCard
-                  key={summary.canonicalId}
-                  summary={summary}
-                  onSelect={() => onOpenRoom(summary.canonicalId)}
-                />
-              ))}
-            </ChoreDashboardGrid>
+            <ChoreDashboardGrid>{upcoming.map((item) => renderChore(item))}</ChoreDashboardGrid>
           </section>
         ) : null}
 
@@ -390,58 +334,19 @@ export function ChoreTodayView({
               title={t('household.remaining.title')}
               count={remaining.length}
             />
-            <ChoreDashboardGrid>
-              {remaining.map((item) => renderChore(item, true))}
-            </ChoreDashboardGrid>
+            <ChoreDashboardGrid>{remaining.map((item) => renderChore(item))}</ChoreDashboardGrid>
           </section>
         ) : null}
 
         {completed.length > 0 ? (
-          <details className="group">
-            <summary
-              className={cn(
-                'mb-3 flex min-h-10 cursor-pointer list-none items-center gap-3 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden',
-                surface.textPrimary
-              )}
-            >
-              <h2 className={navetTypographyTokens.sectionHeading}>{t('household.today.done')}</h2>
-              <span className={cn('text-xs font-medium', surface.textSecondary)}>
-                {completed.length}
-              </span>
-              <ChevronDown
-                className="h-4 w-4 transition-transform group-open:rotate-180 motion-reduce:transition-none"
-                aria-hidden="true"
-              />
-              <div className={cn('h-px flex-1', surface.borderStrong)} />
-            </summary>
-            <ChoreDashboardGrid>
-              {completed.map((item) => renderChore(item, true))}
-            </ChoreDashboardGrid>
-          </details>
-        ) : null}
-
-        {activeMission ? (
-          <section aria-labelledby="chores-mission-title">
+          <section aria-labelledby="chores-done-title">
             <SectionHeading
-              id="chores-mission-title"
-              title={t('household.missions.title')}
-              count={1}
+              id="chores-done-title"
+              title={t('household.today.done')}
+              count={completed.length}
             />
-            <ChoreDashboardGrid>
-              <MissionCard progress={activeMission} compact />
-            </ChoreDashboardGrid>
-          </section>
-        ) : null}
-
-        {experience.gamificationMode !== 'off' && rewards[0] ? (
-          <section aria-labelledby="chores-reward-title">
-            <SectionHeading
-              id="chores-reward-title"
-              title={t('household.rewards.title')}
-              count={1}
-            />
-            <ChoreDashboardGrid>
-              <RewardGoalCard progress={rewards[0]} compact />
+            <ChoreDashboardGrid cardSize="small">
+              {completed.map((item) => renderChore(item, 'small'))}
             </ChoreDashboardGrid>
           </section>
         ) : null}

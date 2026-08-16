@@ -6,6 +6,7 @@ import {
   getMissionProgressList,
   getRewardProgressList,
   getRoomChoreSummaries,
+  getRoomTodayChores,
   getTodayChoresForParticipant,
 } from './chore-dashboard-selectors';
 
@@ -113,9 +114,18 @@ describe('chore dashboard selectors', () => {
       completed: 1,
       total: 3,
       remaining: 2,
+      overdue: 0,
       percent: 33,
       pointsEarned: 15,
       strongDays: 0,
+      streakDays: 1,
+    });
+  });
+
+  it('counts overdue unfinished chores in the household pulse', () => {
+    expect(getHousePulse(workspace(), new Date('2026-08-15T10:01:00.000Z'))).toMatchObject({
+      remaining: 2,
+      overdue: 2,
     });
   });
 
@@ -133,6 +143,16 @@ describe('chore dashboard selectors', () => {
       },
       { canonicalId: 'room:Kitchen', label: 'Kitchen', total: 1, remaining: 0, completed: 1 },
     ]);
+  });
+
+  it('matches room chores by canonical room id when the dashboard room has a custom name', () => {
+    expect(
+      getRoomTodayChores(
+        workspace(),
+        { label: 'Cooking', canonicalIds: ['room:Kitchen'] },
+        now
+      ).map((item) => item.id)
+    ).toEqual(['dishes']);
   });
 
   it('derives cooperative mission and saving-goal progress without a leaderboard', () => {

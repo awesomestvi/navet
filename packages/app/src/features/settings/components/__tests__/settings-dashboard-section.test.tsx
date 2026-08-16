@@ -40,6 +40,15 @@ describe('SettingsDashboardSection', () => {
     });
   });
 
+  it('groups dashboard controls by task', () => {
+    renderWithProviders(<TestSection />);
+
+    expect(screen.getByRole('heading', { name: 'Dashboard setup' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Home content' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Wall display' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Maintenance' })).toBeInTheDocument();
+  });
+
   it('updates the keep-awake setting from dashboard settings', () => {
     renderWithProviders(<TestSection />);
 
@@ -47,6 +56,17 @@ describe('SettingsDashboardSection', () => {
     fireEvent.click(within(keepAwakeGroup).getByRole('button', { name: 'On' }));
 
     expect(useSettingsStore.getState().keepDeviceAwake).toBe(true);
+  });
+
+  it('disables chores without changing its default-on behavior', () => {
+    renderWithProviders(<TestSection />);
+
+    const choresGroup = screen.getByRole('group', { name: 'Household chores' });
+    expect(useSettingsStore.getState().choresEnabled).toBe(true);
+
+    fireEvent.click(within(choresGroup).getByRole('button', { name: 'Off' }));
+
+    expect(useSettingsStore.getState().choresEnabled).toBe(false);
   });
 
   it('renders the pending keep-awake fallback action when needed', () => {

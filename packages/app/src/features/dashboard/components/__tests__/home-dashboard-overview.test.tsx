@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HomeDashboardOverview } from '../home-dashboard-overview';
 
 const overviewMocks = vi.hoisted(() => ({
+  choresEnabled: true,
   showHomeSummaryBar: true,
   useHomeEnergySummary: vi.fn(() => ({
     gridImportTodayKWh: undefined,
@@ -34,6 +35,7 @@ vi.mock('@navet/app/stores', async () => {
     useSettingsStore: (
       selector: (state: {
         showHomeSummaryBar: boolean;
+        choresEnabled: boolean;
         temperatureUnit: 'C';
         advancedCustomizationEnabled: boolean;
         customSummaryPills: [];
@@ -41,6 +43,7 @@ vi.mock('@navet/app/stores', async () => {
     ) =>
       selector({
         showHomeSummaryBar: overviewMocks.showHomeSummaryBar,
+        choresEnabled: overviewMocks.choresEnabled,
         temperatureUnit: 'C',
         advancedCustomizationEnabled: false,
         customSummaryPills: [],
@@ -88,6 +91,7 @@ function device(overrides: Partial<DeviceWithType> & Pick<DeviceWithType, 'id' |
 describe('HomeDashboardOverview', () => {
   beforeEach(() => {
     overviewMocks.showHomeSummaryBar = true;
+    overviewMocks.choresEnabled = true;
     overviewMocks.useHomeEnergySummary.mockClear();
   });
 

@@ -200,13 +200,27 @@ describe('SettingsSystemSection', () => {
   });
 
   it('shows connected providers immediately and keeps disconnected ones in provider management', () => {
-    renderWithProviders(<SettingsSystemSection controller={controller} />);
+    const { container } = renderWithProviders(<SettingsSystemSection controller={controller} />);
 
     expect(screen.getByText('Providers')).toBeInTheDocument();
     expect(screen.getByText('Home Assistant')).toBeInTheDocument();
+    const providerActions = container.querySelector<HTMLElement>(
+      '[data-provider-actions="home_assistant"]'
+    );
+    expect(providerActions).not.toBeNull();
+    if (providerActions) {
+      expect(within(providerActions).getByRole('link', { name: 'Open' })).toBeInTheDocument();
+      expect(
+        within(providerActions).getByRole('button', { name: 'Disconnect' })
+      ).toBeInTheDocument();
+    }
     expect(screen.getByRole('button', { name: 'Manage 2 other providers' })).toBeInTheDocument();
     expect(screen.queryByText('openHAB')).not.toBeInTheDocument();
     expect(screen.queryByText('Camera live streams')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View supported entities' })).toHaveAttribute(
+      'href',
+      'https://docs.navet.app/integrations/#home-assistant'
+    );
 
     fireEvent.click(screen.getByRole('button', { name: 'Manage 2 other providers' }));
 
@@ -216,8 +230,27 @@ describe('SettingsSystemSection', () => {
     expect(screen.getAllByText('Connected')[0]).toBeInTheDocument();
     expect(screen.queryByText('Active')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Make active' })).not.toBeInTheDocument();
-    expect(screen.getAllByText('Lighting').length).toBeGreaterThan(0);
-    expect(screen.getByText('Notifications')).toBeInTheDocument();
+    expect(screen.queryByText('Lighting')).not.toBeInTheDocument();
+    expect(screen.queryByText('Notifications')).not.toBeInTheDocument();
+    expect(
+      screen
+        .getAllByRole('link', { name: 'View supported entities' })
+        .map((link) => link.getAttribute('href'))
+    ).toEqual([
+      'https://docs.navet.app/integrations/#home-assistant',
+      'https://docs.navet.app/integrations/#homey',
+      'https://docs.navet.app/integrations/#openhab',
+    ]);
+  });
+
+  it('uses the configured Home Assistant URL when the connected provider omits its base URL', () => {
+    controller.providerCards = controller.providerCards.map((provider) =>
+      provider.id === 'home_assistant' ? { ...provider, baseUrl: null } : provider
+    );
+
+    renderWithProviders(<SettingsSystemSection controller={controller} />);
+
+    expect(screen.getByText('https://ha.example.com')).toBeInTheDocument();
   });
 
   it('shows all connected providers without hiding them behind provider management', () => {

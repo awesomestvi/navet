@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { expect, userEvent, within } from 'storybook/test';
 import { useSettingsSectionController } from '../hooks/use-settings-section-controller';
 import { SettingsProjectSection } from './settings-project-section';
 
@@ -14,14 +15,14 @@ function ProjectStory() {
 }
 
 const meta = {
-  title: 'Pages/Settings/Project',
+  title: 'Pages/Settings/About Navet',
   component: ProjectStory,
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: 'Project settings tab — version info, credits, license, and terms of use.',
+        component: 'About Navet settings grouped into project information and legal references.',
       },
     },
   },
@@ -31,4 +32,14 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvasElement.querySelectorAll('[data-settings-detail-group]')).toHaveLength(2);
+    const licenseButton = canvas.getByRole('button', { name: 'View license details' });
+    await expect(licenseButton).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(licenseButton);
+    await expect(licenseButton).toHaveAttribute('aria-expanded', 'true');
+    await expect(canvasElement.querySelector('#project-license-details')).toBeVisible();
+  },
+};
