@@ -151,16 +151,23 @@ export function NavigationWorkspaceItemIcon({
 export function NavigationWorkspaceItemText({
   className,
   description,
+  descriptionClassName,
   title,
   ...props
-}: Omit<ComponentPropsWithRef<'span'>, 'title'> & { description?: ReactNode; title: ReactNode }) {
+}: Omit<ComponentPropsWithRef<'span'>, 'title'> & {
+  description?: ReactNode;
+  descriptionClassName?: string;
+  title: ReactNode;
+}) {
   const { textMuted, textPrimary } = useNavigationWorkspace();
 
   return (
     <span className={cn('min-w-0 flex-1', className)} {...props}>
       <span className={cn('block truncate text-sm font-semibold', textPrimary)}>{title}</span>
       {description ? (
-        <span className={cn('mt-0.5 block truncate text-xs', textMuted)}>{description}</span>
+        <span className={cn('mt-0.5 block truncate text-xs', textMuted, descriptionClassName)}>
+          {description}
+        </span>
       ) : null}
     </span>
   );

@@ -7,7 +7,13 @@ import type {
   ChoreWorkspaceData,
 } from '@navet/core/chores';
 
-export type ChoreDemoFixtureMode = 'default' | 'empty' | 'approval' | 'complete' | 'adventure';
+export type ChoreDemoFixtureMode =
+  | 'default'
+  | 'empty'
+  | 'approval'
+  | 'complete'
+  | 'adventure'
+  | 'off';
 
 export interface ChoreDemoCopy {
   dishwasher: string;
@@ -299,7 +305,7 @@ export function createChoreDemoWorkspace({
   ];
   const experience: ChoreExperienceState = {
     version: 1,
-    gamificationMode: mode === 'adventure' ? 'adventure' : 'family',
+    gamificationMode: mode === 'adventure' ? 'adventure' : mode === 'off' ? 'off' : 'family',
     presentationByDefinitionId: {
       dishwasher: {
         estimatedMinutes: 4,

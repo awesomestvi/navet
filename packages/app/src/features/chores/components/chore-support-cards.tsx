@@ -2,22 +2,10 @@ import { Badge, Panel } from '@navet/app/components/primitives';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { themeColorValues } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import {
-  getThemeFocusRingClassName,
-  navetTypographyTokens,
-} from '@navet/app/components/system/tokens';
+import { getThemeFocusRingClassName } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
 import { useI18n, useTheme } from '@navet/app/hooks';
-import {
-  Check,
-  ChevronRight,
-  Flame,
-  Gift,
-  HeartHandshake,
-  Home,
-  type LucideIcon,
-  Sparkles,
-} from 'lucide-react';
+import { Check, Flame, Gift, HeartHandshake, Home, type LucideIcon, Sparkles } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type {
   ChoreHousePulse,
@@ -34,22 +22,30 @@ const blackThemeCardEdge = {
 
 export function HousePulse({
   pulse,
+  showPoints = true,
   onSeeRewards,
   rewardsExpanded = false,
+  actions,
+  headingLevel = 'h2',
 }: {
   pulse: ChoreHousePulse;
+  showPoints?: boolean;
   onSeeRewards?: () => void;
   rewardsExpanded?: boolean;
+  actions?: ReactNode;
+  headingLevel?: 'h1' | 'h2';
 }) {
   const { formatNumber, t } = useI18n();
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const settled = pulse.remaining === 0;
+  const metricCount = 2 + Number(showPoints) + Number(Boolean(onSeeRewards));
+  const Heading = headingLevel;
 
   return (
     <Panel
       as="section"
-      className="relative overflow-hidden px-3 py-3 sm:px-4 md:px-5"
+      className="relative overflow-hidden p-3"
       style={theme === 'black' ? blackThemeCardEdge : undefined}
     >
       <div
@@ -61,66 +57,128 @@ export function HousePulse({
       />
       <div
         className={cn(
-          'relative grid min-h-14 items-center',
-          onSeeRewards
-            ? 'grid-cols-[minmax(6.25rem,1.2fr)_repeat(4,minmax(3.5rem,0.7fr))]'
-            : 'grid-cols-[minmax(6.25rem,1.2fr)_repeat(3,minmax(3.5rem,0.7fr))]'
+          'relative',
+          !showPoints && 'lg:landscape:flex lg:landscape:items-center xl:flex xl:items-center'
         )}
-        data-house-pulse-layout="single-row"
+        data-house-pulse-layout="responsive"
+        data-house-pulse-density={showPoints ? 'standard' : 'inline-metrics'}
       >
-        <div className="flex min-w-0 items-center gap-3 pr-2 sm:pr-4 md:pr-6">
-          <span
-            className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border sm:flex"
-            style={{
-              color: accentColor,
-              borderColor: `${accentColor}42`,
-              backgroundColor: `${accentColor}14`,
-            }}
+        <div
+          className={cn(
+            'flex min-w-0 flex-col gap-2.5 pb-3 sm:flex-row sm:items-center sm:justify-between',
+            !showPoints && 'lg:landscape:contents xl:contents'
+          )}
+          data-house-pulse-header="true"
+        >
+          <div
+            className={cn(
+              'flex min-w-0 items-center gap-2.5',
+              !showPoints && 'lg:landscape:order-1 lg:landscape:mr-2 xl:order-1 xl:mr-3'
+            )}
           >
-            <Home className="h-4 w-4" aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <h2 className={cn('truncate', navetTypographyTokens.titleMd, surface.textPrimary)}>
-              {settled ? t('household.pulse.settled') : t('household.pulse.title')}
-            </h2>
-            <p className={cn('mt-0.5 hidden truncate text-sm sm:block', surface.textSecondary)}>
-              {settled
-                ? t('household.pulse.complete')
-                : t('household.pulse.remaining', { count: pulse.remaining })}
-            </p>
+            <span
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border xl:h-9 xl:w-9"
+              data-house-pulse-icon="true"
+              style={{
+                color: accentColor,
+                borderColor: `${accentColor}42`,
+                backgroundColor: `${accentColor}14`,
+              }}
+            >
+              <Home className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <Heading
+                className={cn('truncate text-sm font-semibold leading-tight', surface.textPrimary)}
+              >
+                {settled ? t('household.pulse.settled') : t('household.pulse.title')}
+              </Heading>
+              <p className={cn('mt-0.5 truncate text-[11px] leading-tight', surface.textSecondary)}>
+                {settled
+                  ? t('household.pulse.complete')
+                  : t('household.pulse.remaining', { count: pulse.remaining })}
+              </p>
+            </div>
           </div>
+          {actions ? (
+            <div
+              className={cn(
+                'flex w-full shrink-0 items-center gap-2 sm:w-auto',
+                !showPoints &&
+                  'lg:landscape:order-3 lg:landscape:ml-3 lg:landscape:border-l lg:landscape:pl-4 xl:order-3 xl:ml-3 xl:border-l xl:pl-4',
+                !showPoints && surface.borderStrong
+              )}
+              data-house-pulse-actions="true"
+            >
+              {actions}
+            </div>
+          ) : null}
         </div>
-        <PulseMetric
-          Icon={Sparkles}
-          color={themeColorValues.pink}
-          value={t('household.card.points', { count: pulse.pointsEarned })}
-          mobileValue={formatNumber(pulse.pointsEarned)}
-          label={t('household.card.earned')}
-        />
-        <PulseMetric
-          Icon={Flame}
-          color={themeColorValues.orange}
-          value={formatNumber(pulse.streakDays)}
-          label={t('household.pulse.rhythm')}
-        />
-        <PulseMetric
-          Icon={Check}
-          color={themeColorValues.teal}
-          value={`${pulse.completed}/${pulse.total}`}
-          label={t('household.pulse.completed')}
-        />
-        {onSeeRewards ? (
+        <div
+          className={cn(
+            '-mx-3 -mb-3 grid',
+            showPoints
+              ? 'grid-cols-1 sm:grid-cols-2'
+              : onSeeRewards
+                ? 'grid-cols-2 sm:grid-cols-3'
+                : 'grid-cols-2 sm:grid-cols-2',
+            metricCount === 4
+              ? 'lg:landscape:grid-cols-4 xl:grid-cols-4'
+              : metricCount === 3
+                ? 'lg:landscape:grid-cols-3 xl:grid-cols-3'
+                : 'lg:landscape:grid-cols-2 xl:grid-cols-2',
+            !showPoints && 'lg:landscape:contents xl:contents'
+          )}
+          data-house-pulse-metrics="true"
+        >
+          {showPoints ? (
+            <PulseMetric
+              Icon={Sparkles}
+              color={themeColorValues.pink}
+              value={t('household.card.points', { count: pulse.pointsEarned })}
+              mobileValue={formatNumber(pulse.pointsEarned)}
+              label={t('household.card.earned')}
+              alignStart
+            />
+          ) : null}
           <PulseMetric
-            Icon={Gift}
-            color={themeColorValues.purple}
-            value={t('household.today.seeRewards')}
-            mobileValue={t('household.tabs.rewards')}
-            label={t('household.today.supporting')}
-            onClick={onSeeRewards}
-            expanded={rewardsExpanded}
-            controls="chores-rewards-section"
+            Icon={Flame}
+            color={themeColorValues.orange}
+            value={formatNumber(pulse.streakDays)}
+            label={t('household.pulse.rhythm')}
+            compactDivider={showPoints}
+            wideDivider={showPoints}
+            inlineWithHeader={!showPoints}
+            inlineStart={!showPoints}
           />
-        ) : null}
+          <PulseMetric
+            Icon={Check}
+            color={themeColorValues.teal}
+            value={`${pulse.completed}/${pulse.total}`}
+            label={t('household.pulse.completed')}
+            mobileDivider={!showPoints}
+            compactSpanFull={!onSeeRewards && metricCount % 2 === 1}
+            wideDivider
+            inlineWithHeader={!showPoints}
+          />
+          {onSeeRewards ? (
+            <PulseMetric
+              Icon={Gift}
+              color={themeColorValues.purple}
+              value={t('household.today.seeRewards')}
+              mobileValue={t('household.tabs.rewards')}
+              label={t('household.today.supporting')}
+              compactMobileValue
+              onClick={onSeeRewards}
+              expanded={rewardsExpanded}
+              controls="chores-rewards-section"
+              compactDivider
+              mobileSpanFull={!showPoints}
+              wideDivider
+              inlineWithHeader={!showPoints}
+            />
+          ) : null}
+        </div>
       </div>
     </Panel>
   );
@@ -131,19 +189,37 @@ function PulseMetric({
   color,
   value,
   mobileValue,
+  compactMobileValue = false,
   label,
   onClick,
   expanded,
   controls,
+  compactDivider = false,
+  mobileDivider = false,
+  mobileSpanFull = false,
+  compactSpanFull = false,
+  wideDivider = false,
+  alignStart = false,
+  inlineWithHeader = false,
+  inlineStart = false,
 }: {
   Icon?: LucideIcon;
   color: string;
   value: string;
   mobileValue?: string;
+  compactMobileValue?: boolean;
   label?: string;
   onClick?: () => void;
   expanded?: boolean;
   controls?: string;
+  compactDivider?: boolean;
+  mobileDivider?: boolean;
+  mobileSpanFull?: boolean;
+  compactSpanFull?: boolean;
+  wideDivider?: boolean;
+  alignStart?: boolean;
+  inlineWithHeader?: boolean;
+  inlineStart?: boolean;
 }) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
@@ -153,16 +229,17 @@ function PulseMetric({
       {Icon ? (
         <span
           data-pulse-metric-icon="true"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full sm:h-11 sm:w-11"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full xl:h-9 xl:w-9"
           style={{ color, backgroundColor: `${color}14` }}
         >
-          <Icon className="h-3.5 w-3.5 sm:h-5 sm:w-5" aria-hidden="true" />
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
         </span>
       ) : null}
       <div className="min-w-0">
         <p
           className={cn(
-            'truncate text-sm font-semibold tabular-nums sm:text-lg',
+            'truncate text-sm font-semibold tabular-nums',
+            compactMobileValue && 'text-xs sm:text-sm',
             surface.textPrimary
           )}
         >
@@ -170,27 +247,28 @@ function PulseMetric({
           <span className="hidden sm:inline">{value}</span>
         </p>
         {label ? (
-          <p className={cn('mt-0.5 hidden truncate text-xs sm:block', surface.textSecondary)}>
+          <p className={cn('mt-0.5 truncate text-[11px] leading-tight', surface.textSecondary)}>
             {label}
           </p>
         ) : null}
       </div>
-      {onClick ? (
-        <ChevronRight
-          className={cn(
-            'ml-auto h-3.5 w-3.5 shrink-0 transition-transform sm:h-4 sm:w-4',
-            expanded && 'rotate-90'
-          )}
-          aria-hidden="true"
-        />
-      ) : null}
     </>
   );
 
   const className = cn(
-    '-my-3 flex h-[calc(100%+1.5rem)] min-w-0 self-stretch items-center gap-1 border-l border-current/10 px-1.5 sm:gap-2.5 sm:px-4 md:px-6',
+    'flex min-h-14 min-w-0 items-center gap-2 border-t border-current/10 px-3 py-3.5 sm:px-4 md:px-5',
+    mobileDivider && 'border-l',
+    mobileSpanFull && 'col-span-2 sm:col-span-1',
+    compactDivider && 'sm:border-l',
+    compactSpanFull && 'sm:col-span-2',
+    'lg:landscape:col-span-1 lg:landscape:min-h-14 lg:landscape:px-3 lg:landscape:py-3.5 xl:col-span-1 xl:min-h-14 xl:px-4 xl:py-3.5 2xl:px-6',
+    alignStart && 'lg:landscape:pl-5 xl:pl-5',
+    inlineWithHeader &&
+      'px-3 py-3 sm:px-3 md:px-3 lg:landscape:order-2 lg:landscape:min-h-0 lg:landscape:w-auto lg:landscape:flex-none lg:landscape:border-0 lg:landscape:px-4 lg:landscape:py-0 xl:order-2 xl:min-h-0 xl:w-auto xl:flex-none xl:border-0 xl:px-5 xl:py-0',
+    wideDivider && 'lg:landscape:border-l xl:border-l',
+    inlineStart && 'lg:landscape:ml-auto xl:ml-auto',
     onClick &&
-      `-mr-3 w-[calc(100%+0.75rem)] rounded-none text-left transition-colors sm:-mr-4 sm:w-[calc(100%+1rem)] md:-mr-5 md:w-[calc(100%+1.25rem)] ${surface.hoverBg} ${getThemeFocusRingClassName(theme)}`
+      `w-full rounded-none text-left transition-colors ${surface.hoverBg} ${getThemeFocusRingClassName(theme)}`
   );
 
   return onClick ? (

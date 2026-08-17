@@ -17,16 +17,22 @@ export interface CameraImageSource {
 
 export function resolveDashboardCameraViewMode({
   cameraDashboardViewMode,
+  hasCameraViewModeOverride,
   lowPowerMode,
   effectsQuality = 'high',
   hasSnapshot,
 }: {
   cameraDashboardViewMode: CameraViewMode;
+  hasCameraViewModeOverride: boolean;
   lowPowerMode: boolean;
   effectsQuality?: EffectsQuality;
   hasSnapshot: boolean;
 }): CameraViewMode {
-  if (resolveEffectsQuality(effectsQuality, lowPowerMode) === 'low' && hasSnapshot) {
+  if (
+    resolveEffectsQuality(effectsQuality, lowPowerMode) === 'low' &&
+    hasSnapshot &&
+    !(hasCameraViewModeOverride && cameraDashboardViewMode === 'live')
+  ) {
     return 'snapshot';
   }
 

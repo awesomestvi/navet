@@ -164,6 +164,9 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const cameraDashboardViewMode = useSettingsStore(
     settingsSelectors.cameraDashboardViewModeForEntity(id)
   );
+  const hasCameraViewModeOverride = useSettingsStore(
+    settingsSelectors.hasCameraViewModeOverrideForEntity(id)
+  );
   const cameraStreamPreference = useSettingsStore(
     settingsSelectors.cameraStreamPreferenceForEntity(id)
   );
@@ -245,6 +248,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   );
   const effectiveDashboardCameraViewMode = resolveDashboardCameraViewMode({
     cameraDashboardViewMode,
+    hasCameraViewModeOverride,
     lowPowerMode,
     effectsQuality,
     hasSnapshot,
@@ -633,7 +637,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
           isOpen={isSettingsOpen}
           onOpenChange={setIsSettingsOpen}
           siblingEntities={siblingEntities}
-          cameraViewMode={cameraDashboardViewMode}
+          cameraViewMode={effectiveDashboardCameraViewMode}
           cameraStreamPreference={effectiveCameraStreamPreference}
           cameraWebRtcStreamSource={cameraWebRtcStreamSource}
           cameraDirectStreamUrl={cameraDirectStreamUrl}

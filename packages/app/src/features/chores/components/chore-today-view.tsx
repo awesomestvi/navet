@@ -34,7 +34,6 @@ import {
   getMissionProgressList,
   getRewardProgressList,
   getTodayChoresForParticipant,
-  getUpcomingChores,
 } from '../chore-dashboard-selectors';
 import { ChoreFocusCard } from './chore-card';
 import { ChoreDashboardGrid } from './chore-dashboard-grid';
@@ -44,7 +43,7 @@ function SectionHeading({ id, title, count }: { id?: string; title: string; coun
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   return (
-    <div className="mb-3 flex min-h-10 items-center gap-3">
+    <div className="mb-3 flex min-h-10 items-center gap-3 lg:landscape:mb-2 lg:landscape:min-h-8 xl:mb-3 xl:min-h-10">
       <h2 id={id} className={cn(navetTypographyTokens.sectionHeading, surface.textPrimary)}>
         {title}
       </h2>
@@ -123,7 +122,7 @@ function ParticipantPicker({
           type="button"
           data-chore-toolbar-control="participant-picker"
           className={cn(
-            'flex h-10 shrink-0 items-center gap-2 rounded-full border p-1 pr-1.5 transition-colors sm:pr-3',
+            'flex h-9 shrink-0 items-center gap-1.5 rounded-full border p-1 pr-1.5 transition-colors sm:pr-2.5',
             surface.inputBg,
             surface.border,
             surface.hoverBg,
@@ -132,8 +131,8 @@ function ParticipantPicker({
           )}
           aria-label={t('household.personPicker.label')}
         >
-          <ParticipantAvatar participant={selectedParticipant} />
-          <span className="hidden max-w-32 truncate text-sm font-semibold sm:block">
+          <ParticipantAvatar participant={selectedParticipant} className="h-7 w-7" />
+          <span className="max-w-20 truncate text-xs font-semibold sm:max-w-32">
             {selectedLabel}
           </span>
           <ChevronDown className={cn('h-3.5 w-3.5', surface.textSecondary)} aria-hidden="true" />
@@ -183,8 +182,6 @@ export function ChoreTodayView({
   onAddChore: () => void;
 }) {
   const { t } = useI18n();
-  const { theme } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
   const [rewardsVisible, setRewardsVisible] = useState(false);
   const breakpointCols = useBreakpointCols();
   const cardsPerRow = Math.max(1, Math.floor(breakpointCols / 2));
@@ -203,15 +200,10 @@ export function ChoreTodayView({
   const pulse = useMemo(() => getHousePulse(data, now), [data, now]);
   const missions = useMemo(() => getMissionProgressList(data, now), [data, now]);
   const rewards = useMemo(() => getRewardProgressList(data), [data]);
-  const upcoming = useMemo(
-    () => getUpcomingChores(data, selectedParticipantId, now).slice(0, cardsPerRow),
-    [cardsPerRow, data, now, selectedParticipantId]
-  );
   const activeMission =
     missions.find((mission) => mission.mission.status === 'active') ?? missions[0];
   const rewardGoal = experience.gamificationMode !== 'off' ? rewards[0] : undefined;
   const hasRewardsSection = Boolean(activeMission || rewardGoal);
-  const selectedParticipant = participants.find((item) => item.id === selectedParticipantId);
   const childMode = experience.gamificationMode === 'adventure';
 
   const renderChore = (occurrence: ChoreOccurrence, size: 'small' | 'medium' = 'medium') => {
@@ -239,40 +231,33 @@ export function ChoreTodayView({
   };
 
   return (
-    <div className="space-y-5 md:space-y-6">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h1 className={cn(navetTypographyTokens.pageHeading, surface.textPrimary)}>
-            {selectedParticipant
-              ? t('household.today.greeting', { name: selectedParticipant.displayName })
-              : t('household.today.householdGreeting')}
-          </h1>
-          <p className={cn('mt-1 max-w-2xl', navetTypographyTokens.body, surface.textSecondary)}>
-            {t('household.today.prompt')}
-          </p>
-        </div>
-        <div className="flex self-start items-center gap-2 sm:self-auto">
-          <Button
-            size="default"
-            variant="secondary"
-            leading={<Plus className="h-4 w-4" aria-hidden="true" />}
-            data-chore-toolbar-control="add-chore"
-            onClick={onAddChore}
-          >
-            {t('household.chores.add')}
-          </Button>
-          <ParticipantPicker
-            participants={participants}
-            selectedParticipantId={selectedParticipantId}
-            onSelectedParticipantChange={onSelectedParticipantChange}
-          />
-        </div>
-      </header>
-
+    <div className="space-y-5 md:space-y-6 lg:landscape:space-y-4 xl:space-y-6">
       <HousePulse
         pulse={pulse}
-        onSeeRewards={hasRewardsSection ? () => setRewardsVisible(true) : undefined}
+        showPoints={experience.gamificationMode !== 'off'}
+        onSeeRewards={
+          hasRewardsSection ? () => setRewardsVisible((visible) => !visible) : undefined
+        }
         rewardsExpanded={rewardsVisible}
+        headingLevel="h1"
+        actions={
+          <>
+            <Button
+              size="compact"
+              variant="secondary"
+              leading={<Plus className="h-3.5 w-3.5" aria-hidden="true" />}
+              data-chore-toolbar-control="add-chore"
+              onClick={onAddChore}
+            >
+              {t('household.chores.add')}
+            </Button>
+            <ParticipantPicker
+              participants={participants}
+              selectedParticipantId={selectedParticipantId}
+              onSelectedParticipantChange={onSelectedParticipantChange}
+            />
+          </>
+        }
       />
 
       {hasRewardsSection && rewardsVisible ? (
@@ -315,17 +300,6 @@ export function ChoreTodayView({
             </ChoreDashboardGrid>
           </section>
         )}
-
-        {upcoming.length > 0 ? (
-          <section aria-labelledby="chores-upcoming-title">
-            <SectionHeading
-              id="chores-upcoming-title"
-              title={t('household.upcoming.title')}
-              count={upcoming.length}
-            />
-            <ChoreDashboardGrid>{upcoming.map((item) => renderChore(item))}</ChoreDashboardGrid>
-          </section>
-        ) : null}
 
         {remaining.length > 0 ? (
           <section aria-labelledby="chores-remaining-title">

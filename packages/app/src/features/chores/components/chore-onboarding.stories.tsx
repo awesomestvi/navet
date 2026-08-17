@@ -117,9 +117,9 @@ export const CompleteGuidedSetup: Story = {
   },
   play: async ({ canvas, canvasElement }) => {
     const welcome = await canvas.findByRole('region', {
-      name: 'Set chores once. Keep the house moving.',
+      name: 'Make household work easier to share.',
     });
-    await userEvent.click(within(welcome).getByRole('button', { name: 'Set up chores' }));
+    await userEvent.click(within(welcome).getByRole('button', { name: 'Create your chore list' }));
 
     const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
       name: 'Set up household chores',
@@ -127,38 +127,54 @@ export const CompleteGuidedSetup: Story = {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Add person' }));
     let name = within(dialog).getByLabelText('Name');
     await userEvent.type(name, 'Alex');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
-    await expect(within(dialog).getByLabelText('Role: Alex')).toHaveValue('member');
-    await expect(
-      within(dialog).getByText('Choose at least one manager before continuing.')
-    ).toBeInTheDocument();
-    await expect(within(dialog).getByRole('button', { name: 'Continue · 1 added' })).toBeDisabled();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Add person' }));
+    await expect(within(dialog).getByLabelText('Role: Alex')).toHaveValue('manager');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Add person' }));
     name = within(dialog).getByLabelText('Name');
-    await userEvent.selectOptions(within(dialog).getByLabelText('Role'), 'manager');
     await userEvent.type(name, 'Maya');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
-    await expect(within(dialog).getByLabelText('Role: Maya')).toHaveValue('manager');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Continue · 2 added' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Add person' }));
+    await expect(within(dialog).getByLabelText('Role: Maya')).toHaveValue('member');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Add person' }));
+    name = within(dialog).getByLabelText('Name');
+    await userEvent.type(name, 'Sam');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Add person' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Remove Sam' }));
+    await expect(within(dialog).queryByLabelText('Role: Sam')).not.toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Continue to profiles' }));
     await expect(within(dialog).getAllByLabelText('Profile colour')[0]).toBeVisible();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Icon' }));
     const profileSymbol = within(dialog).getByLabelText('UserRound');
     await userEvent.click(profileSymbol);
     await expect(profileSymbol).toBeChecked();
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: /Maya$/ }));
+    await userEvent.click(within(dialog).getByRole('button', { name: /Alex$/ }));
+    await expect(within(dialog).getByLabelText('UserRound')).toBeChecked();
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'Save profiles and continue' })
+    );
 
     await expect(within(dialog).queryByLabelText('Chore name')).not.toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Add chore' }));
     await expect(within(dialog).getByLabelText('Chore name')).toBeVisible();
+    await expect(within(dialog).getByRole('heading', { name: 'The chore' })).toBeVisible();
+    await expect(within(dialog).getByRole('heading', { name: 'Who does it' })).toBeVisible();
+    await expect(within(dialog).getByRole('heading', { name: 'When it repeats' })).toBeVisible();
     await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Unload dishwasher');
     await userEvent.click(within(dialog).getByLabelText('Utensils'));
+    await userEvent.selectOptions(within(dialog).getByLabelText('Assignment'), 'everyone');
+    await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'after_completion');
+    await expect(within(dialog).getByLabelText('Days after completion')).toBeVisible();
+    await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'biweekly');
+    await expect(within(dialog).queryByLabelText('Days after completion')).not.toBeInTheDocument();
+    await userEvent.type(within(dialog).getByLabelText('End date'), '2026-12-31');
+    await userEvent.type(within(dialog).getByLabelText('Dates to skip'), '2026-12-24');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Add this chore' }));
     await expect(within(dialog).queryByLabelText('Chore name')).not.toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Delete Unload dishwasher' }));
     await userEvent.click(within(dialog).getByRole('button', { name: 'Add chore' }));
     await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Unload dishwasher');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Add this chore' }));
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Continue · 1 added' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Continue to motivation' }));
 
     await userEvent.selectOptions(within(dialog).getByLabelText('Motivation style'), 'family');
     await expect(
@@ -167,12 +183,12 @@ export const CompleteGuidedSetup: Story = {
       )
     ).toBeVisible();
     await userEvent.type(within(dialog).getByLabelText('Reward name'), 'Choose movie night');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Review setup' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Continue to protection' }));
 
     await userEvent.click(within(dialog).getByRole('button', { name: 'Skip for now' }));
 
-    await expect(within(dialog).getByText('Your household is ready')).toBeVisible();
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Finish setup' }));
+    await expect(within(dialog).getByText('Your shared chore list is ready')).toBeVisible();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Open Today' }));
     await expect(canvas.getByText('Setup completed')).toBeInTheDocument();
   },
 };

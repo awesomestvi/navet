@@ -22,7 +22,12 @@ import type {
   ChorePresentationMetadata,
   ChoreRewardGoal,
 } from '@navet/core/chore-experience';
-import type { ChoreDefinition, ChoreParticipant, ChoreSchedule } from '@navet/core/chores';
+import type {
+  ChoreAssignmentMode,
+  ChoreDefinition,
+  ChoreParticipant,
+  ChoreSchedule,
+} from '@navet/core/chores';
 import {
   ArrowLeft,
   ArrowRight,
@@ -37,23 +42,24 @@ import {
   SlidersHorizontal,
   Sparkles,
   Trash2,
-  Trophy,
   UserPlus,
   UserRound,
   UsersRound,
   X,
 } from 'lucide-react';
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { ChoreCreationFormGroups, type ChoreCreationRepeat } from './chore-creation-form-groups';
 import { resolveChoreIconComponent } from './chore-icon';
-import { ChoreIconPicker } from './chore-icon-picker';
 import { ChoreProfileAppearanceEditor } from './chore-profile-appearance-editor';
 
 type SetupStepId = 'person' | 'customize' | 'chores' | 'rewards' | 'security' | 'ready';
 type SetupParticipantRole = 'member' | 'manager';
+type SetupRepeat = ChoreCreationRepeat;
 
 interface SetupStep {
   id: SetupStepId;
   label: string;
+  description: string;
   icon: LucideIcon;
 }
 
@@ -162,7 +168,7 @@ export function ChoreOnboardingWelcome({ onStart }: { onStart: () => void }) {
     {
       title: t('household.setup.featureRewardTitle'),
       description: t('household.setup.featureRewardDescription'),
-      icon: Trophy,
+      icon: ListChecks,
     },
   ];
 
@@ -181,7 +187,7 @@ export function ChoreOnboardingWelcome({ onStart }: { onStart: () => void }) {
         className="pointer-events-none absolute -top-24 -right-20 h-72 w-72 rounded-full opacity-10 blur-3xl"
         style={{ backgroundColor: accentColor }}
       />
-      <div className="relative grid w-full gap-9 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)] lg:items-center lg:gap-14">
+      <div className="relative grid w-full gap-9 lg:grid-cols-[minmax(0,0.95fr)_minmax(24rem,1.05fr)] lg:items-center lg:gap-12">
         <div className="min-w-0">
           <span
             className={cn(
@@ -220,14 +226,19 @@ export function ChoreOnboardingWelcome({ onStart }: { onStart: () => void }) {
         </div>
         <div
           className={cn(
-            'grid gap-5 rounded-[24px] border p-5 sm:p-6',
+            'rounded-[24px] border p-5 sm:p-7 lg:p-8',
             surface.subtleBg,
             surface.borderStrong
           )}
         >
-          {features.map((feature) => (
-            <SetupFeature key={feature.title} {...feature} />
-          ))}
+          <h2 className={cn(navetTypographyTokens.titleSm, surface.textPrimary)}>
+            {t('household.setup.benefitsTitle')}
+          </h2>
+          <div className="mt-6 grid gap-6">
+            {features.map((feature) => (
+              <SetupFeature key={feature.title} {...feature} />
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -257,7 +268,7 @@ function StepPanel({
         <h2 className={cn('mt-2', navetTypographyTokens.pageHeading, surface.textPrimary)}>
           {title}
         </h2>
-        <p className={cn('mt-2 max-w-xl', navetTypographyTokens.body, surface.textSecondary)}>
+        <p className={cn('mt-2 max-w-2xl', navetTypographyTokens.body, surface.textSecondary)}>
           {description}
         </p>
         <div className="mt-7">{children}</div>
@@ -316,32 +327,38 @@ export function ChoreOnboardingDialog({
     () => [
       {
         id: 'person',
-        label: t('household.personDialog.stepProfile'),
+        label: t('household.members.title'),
+        description: t('household.setup.stepPeopleDescription'),
         icon: UserRound,
       },
       {
         id: 'customize',
-        label: t('household.personDialog.stepCustomize'),
+        label: t('household.setup.stepProfiles'),
+        description: t('household.setup.stepProfilesDescription'),
         icon: SlidersHorizontal,
       },
       {
         id: 'chores',
         label: t('household.tabs.chores'),
+        description: t('household.setup.stepChoresDescription'),
         icon: ListChecks,
       },
       {
         id: 'rewards',
-        label: t('household.tabs.rewards'),
+        label: t('household.setup.stepMotivation'),
+        description: t('household.setup.stepMotivationDescription'),
         icon: Gift,
       },
       {
         id: 'security',
-        label: t('household.personDialog.stepAccess'),
+        label: t('household.setup.stepProtection'),
+        description: t('household.setup.stepProtectionDescription'),
         icon: ShieldCheck,
       },
       {
         id: 'ready',
         label: t('household.setup.stepReady'),
+        description: t('household.setup.stepReadyDescription'),
         icon: Check,
       },
     ],
@@ -354,7 +371,7 @@ export function ChoreOnboardingDialog({
   const [furthestStep, setFurthestStep] = useState(0);
   const [setupRoster, setSetupRoster] = useState<ChoreParticipant[]>([]);
   const [addingPerson, setAddingPerson] = useState(false);
-  const [newPersonRole, setNewPersonRole] = useState<SetupParticipantRole>('member');
+  const [newPersonRole, setNewPersonRole] = useState<SetupParticipantRole>('manager');
   const [participantId, setParticipantId] = useState('');
   const [name, setName] = useState('');
   const [color, setColor] = useState(themeColorValues.orange);
@@ -368,9 +385,14 @@ export function ChoreOnboardingDialog({
   const [choreTitle, setChoreTitle] = useState('');
   const [choreIcon, setChoreIcon] = useState('ListChecks');
   const [addingChore, setAddingChore] = useState(false);
+  const [choreAssignmentMode, setChoreAssignmentMode] = useState<ChoreAssignmentMode>('person');
   const [choreParticipantId, setChoreParticipantId] = useState('');
-  const [frequency, setFrequency] = useState<'daily' | 'weekly'>('daily');
+  const [repeat, setRepeat] = useState<SetupRepeat>('daily');
   const [dueTime, setDueTime] = useState('18:00');
+  const [scheduleStartDate, setScheduleStartDate] = useState(localDateKey());
+  const [scheduleEndDate, setScheduleEndDate] = useState('');
+  const [scheduleInterval, setScheduleInterval] = useState(1);
+  const [excludedDates, setExcludedDates] = useState('');
   const [roomId, setRoomId] = useState('');
   const [points, setPoints] = useState(10);
   const [mode, setMode] = useState<ChoreGamificationMode>('off');
@@ -398,9 +420,9 @@ export function ChoreOnboardingDialog({
     setSetupRoster(participants);
     setAddingPerson(false);
     setAddingChore(false);
-    setNewPersonRole('member');
+    setNewPersonRole(participants.length === 0 ? 'manager' : 'member');
     setParticipantId(firstManager?.id ?? '');
-    setName('');
+    setName(firstManager?.displayName ?? '');
     setColor(firstManager?.color ?? themeColorValues.orange);
     setAvatarUrl(firstManager?.avatarUrl ?? '');
     setAvatarIcon(firstManager?.avatarIcon ?? '');
@@ -410,6 +432,13 @@ export function ChoreOnboardingDialog({
     setQuietStart(firstManager?.reminderPreferences?.quietHours?.start ?? '21:00');
     setQuietEnd(firstManager?.reminderPreferences?.quietHours?.end ?? '07:00');
     setChoreParticipantId(firstManager?.id ?? '');
+    setChoreAssignmentMode('person');
+    setRepeat('daily');
+    setDueTime('18:00');
+    setScheduleStartDate(localDateKey());
+    setScheduleEndDate('');
+    setScheduleInterval(1);
+    setExcludedDates('');
     setMode(experience.gamificationMode);
     setRewardTitle(existingReward?.title ?? '');
     setRewardTarget(existingReward?.targetPoints ?? 100);
@@ -427,10 +456,10 @@ export function ChoreOnboardingDialog({
   }, [stepIndex]);
 
   useEffect(() => {
-    if (!choreParticipantId && participants[0]) {
-      setChoreParticipantId(participants[0].id);
+    if (!choreParticipantId && setupRoster[0]) {
+      setChoreParticipantId(setupRoster[0].id);
     }
-  }, [choreParticipantId, participants]);
+  }, [choreParticipantId, setupRoster]);
 
   const moveTo = (index: number) => {
     setStepIndex(index);
@@ -447,6 +476,31 @@ export function ChoreOnboardingDialog({
     setRemindersEnabled(participant.reminderPreferences?.enabled ?? true);
     setQuietStart(participant.reminderPreferences?.quietHours?.start ?? '21:00');
     setQuietEnd(participant.reminderPreferences?.quietHours?.end ?? '07:00');
+  };
+
+  const applyCurrentCustomization = (roster: ChoreParticipant[]) =>
+    roster.map((participant) =>
+      participant.id === participantId
+        ? {
+            ...participant,
+            color,
+            avatarUrl: avatarUrl.trim() || undefined,
+            avatarIcon: avatarIcon.trim() || undefined,
+            reminderPreferences: {
+              enabled: remindersEnabled,
+              quietHours: { start: quietStart, end: quietEnd },
+              destination: { type: 'in_app' as const },
+            },
+            updatedAt: new Date().toISOString(),
+          }
+        : participant
+    );
+
+  const selectParticipantForCustomization = (id: string) => {
+    const nextRoster = applyCurrentCustomization(setupRoster);
+    const nextParticipant = nextRoster.find((participant) => participant.id === id);
+    setSetupRoster(nextRoster);
+    if (nextParticipant) loadParticipantForCustomization(nextParticipant);
   };
 
   const uploadAvatar = async (file?: File) => {
@@ -492,18 +546,17 @@ export function ChoreOnboardingDialog({
     setAddingPerson(false);
     setNewPersonRole('member');
     setParticipantId(id);
-    setChoreParticipantId((current) => current || id);
   };
 
   const startAddingPerson = () => {
     setName('');
-    setNewPersonRole('member');
+    setNewPersonRole(setupRoster.length === 0 ? 'manager' : 'member');
     setAddingPerson(true);
   };
 
   const cancelAddingPerson = () => {
     setName('');
-    setNewPersonRole('member');
+    setNewPersonRole(setupRoster.length === 0 ? 'manager' : 'member');
     setAddingPerson(false);
   };
 
@@ -520,6 +573,14 @@ export function ChoreOnboardingDialog({
           : participant
       )
     );
+  };
+
+  const removeSetupPerson = (id: string) => {
+    const nextRoster = setupRoster.filter((participant) => participant.id !== id);
+    const fallbackId = nextRoster[0]?.id ?? '';
+
+    setSetupRoster(nextRoster);
+    if (participantId === id) setParticipantId(fallbackId);
   };
 
   const saveSetupRosterAndContinue = async () => {
@@ -557,34 +618,38 @@ export function ChoreOnboardingDialog({
   };
 
   const savePersonCustomization = async () => {
-    const participant = participants.find((candidate) => candidate.id === participantId);
-    const displayName = name.trim();
-    if (!participant || !displayName) return false;
+    const nextRoster = applyCurrentCustomization(setupRoster);
+    if (!nextRoster.some((participant) => participant.id === participantId)) return false;
+    setSetupRoster(nextRoster);
     setSaving(true);
-    const saved = await onSaveParticipant({
-      ...participant,
-      displayName,
-      color,
-      avatarUrl: avatarUrl.trim() || undefined,
-      avatarIcon: avatarIcon.trim() || undefined,
-      reminderPreferences: {
-        enabled: remindersEnabled,
-        quietHours: { start: quietStart, end: quietEnd },
-        destination: { type: 'in_app' },
-      },
-      updatedAt: new Date().toISOString(),
-    });
+    for (const participant of nextRoster) {
+      const saved = await onSaveParticipant(participant);
+      if (!saved) {
+        setSaving(false);
+        return false;
+      }
+    }
     setSaving(false);
-    return saved;
+    return true;
   };
 
   const resetChoreForm = () => {
     setChoreTitle('');
     setChoreIcon('ListChecks');
-    setFrequency('daily');
+    setChoreAssignmentMode('person');
+    setRepeat('daily');
     setDueTime('18:00');
+    setScheduleStartDate(localDateKey());
+    setScheduleEndDate('');
+    setScheduleInterval(1);
+    setExcludedDates('');
     setRoomId('');
     setPoints(10);
+  };
+
+  const selectSetupRepeat = (value: SetupRepeat) => {
+    setRepeat(value);
+    setScheduleInterval(value === 'biweekly' ? 2 : value === 'triweekly' ? 3 : 1);
   };
 
   const saveChore = async () => {
@@ -592,26 +657,73 @@ export function ChoreOnboardingDialog({
     if (!title) return;
     const timestamp = new Date().toISOString();
     const selectedRoom = rooms.find((room) => room.canonicalId === roomId);
+    const completers = setupRoster.filter((participant) =>
+      participant.capabilities.includes('complete')
+    );
     const selectedParticipant =
-      participants.find((participant) => participant.id === choreParticipantId) ?? participants[0];
+      completers.find((participant) => participant.id === choreParticipantId) ?? completers[0];
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const startDate = scheduleStartDate || localDateKey();
+    const startDateValue = new Date(`${startDate}T12:00:00`);
+    const scheduleOptions = {
+      endDate: repeat === 'once' ? undefined : scheduleEndDate || undefined,
+      excludedDates:
+        repeat === 'once'
+          ? undefined
+          : excludedDates
+              .split(',')
+              .map((value) => value.trim())
+              .filter((value) => /^\d{4}-\d{2}-\d{2}$/.test(value)),
+    };
     const schedule: ChoreSchedule =
-      frequency === 'weekly'
+      repeat === 'once'
         ? {
-            frequency: 'weekly',
-            startDate: localDateKey(),
+            frequency: 'once',
+            date: startDate,
             time: dueTime,
             timeZone,
-            daysOfWeek: [new Date().getDay()],
-            intervalWeeks: 1,
           }
-        : {
-            frequency: 'daily',
-            startDate: localDateKey(),
-            time: dueTime,
-            timeZone,
-            intervalDays: 1,
-          };
+        : repeat === 'weekly' || repeat === 'biweekly' || repeat === 'triweekly'
+          ? {
+              frequency: 'weekly',
+              startDate,
+              time: dueTime,
+              timeZone,
+              daysOfWeek: [startDateValue.getDay()],
+              intervalWeeks:
+                repeat === 'biweekly'
+                  ? 2
+                  : repeat === 'triweekly'
+                    ? 3
+                    : Math.max(1, scheduleInterval),
+              ...scheduleOptions,
+            }
+          : repeat === 'monthly'
+            ? {
+                frequency: 'monthly',
+                startDate,
+                time: dueTime,
+                timeZone,
+                dayOfMonth: startDateValue.getDate(),
+                ...scheduleOptions,
+              }
+            : repeat === 'after_completion'
+              ? {
+                  frequency: 'after_completion',
+                  startDate,
+                  time: dueTime,
+                  timeZone,
+                  intervalDays: Math.max(1, scheduleInterval),
+                  ...scheduleOptions,
+                }
+              : {
+                  frequency: 'daily',
+                  startDate,
+                  time: dueTime,
+                  timeZone,
+                  intervalDays: Math.max(1, scheduleInterval),
+                  ...scheduleOptions,
+                };
     setSaving(true);
     const saved = await onSaveChore(
       {
@@ -619,9 +731,15 @@ export function ChoreOnboardingDialog({
         title,
         roomRef: selectedRoom,
         enabled: true,
-        assignment: selectedParticipant
-          ? { mode: 'person', participantIds: [selectedParticipant.id] }
-          : { mode: 'anyone', participantIds: [] },
+        assignment: {
+          mode: selectedParticipant ? choreAssignmentMode : 'anyone',
+          participantIds:
+            selectedParticipant && choreAssignmentMode === 'person'
+              ? [selectedParticipant.id]
+              : completers.map((participant) => participant.id),
+          rotationReset: choreAssignmentMode === 'rotation' ? 'never' : undefined,
+          rotationCursor: choreAssignmentMode === 'rotation' ? 0 : undefined,
+        },
         schedule,
         dueWindowMinutes: 120,
         approval: { required: false, approverIds: [] },
@@ -710,130 +828,318 @@ export function ChoreOnboardingDialog({
   const currentStep = steps[stepIndex] ?? steps[0];
 
   return (
-    <BaseCardDialog
-      variant="fullscreen"
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      title={t('household.setup.dialogTitle')}
-      description={t('household.setup.dialogDescription')}
-      theme={theme}
-      contentClassName={cn(
-        'md:left-1/2 md:right-auto md:w-[calc(100%-4rem)] md:max-w-[1200px] md:-translate-x-1/2',
-        'backdrop-blur-2xl',
-        surface.shellPanel,
-        surface.border
-      )}
-      shellBodyClassName="h-full min-h-0"
-    >
-      <NavigationWorkspace.Frame
-        aria-label={t('household.setup.dialogTitle')}
-        className="h-full min-h-0 rounded-none border-0 bg-transparent shadow-none"
+    <Fragment key="chore-onboarding-dialog">
+      <BaseCardDialog
+        variant="fullscreen"
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        title={t('household.setup.dialogTitle')}
+        description={t('household.setup.dialogDescription')}
+        theme={theme}
+        contentClassName={cn(
+          'md:left-1/2 md:right-auto md:w-[calc(100%-4rem)] md:max-w-[1200px] md:-translate-x-1/2',
+          'backdrop-blur-2xl',
+          surface.shellPanel,
+          surface.border
+        )}
+        shellBodyClassName="h-full min-h-0"
       >
-        <NavigationWorkspace.Header className="flex items-start justify-between gap-4 px-4 py-4 sm:px-5">
-          <div className="min-w-0">
-            <h1 className={cn(navetTypographyTokens.pageHeading, surface.textPrimary)}>
-              {t('household.setup.dialogTitle')}
-            </h1>
-            <p className={cn('mt-1', navetTypographyTokens.body, surface.textSecondary)}>
-              {t('household.setup.dialogDescription')}
-            </p>
-          </div>
-          <IconButton
-            variant="ghost"
-            label={t('common.close')}
-            icon={<X aria-hidden="true" className={navetIconSizeTokens.sm} />}
-            className={cn('min-h-10 min-w-10 shrink-0', surface.subtleBg, surface.hoverBg)}
-            onClick={() => onOpenChange(false)}
-          />
-        </NavigationWorkspace.Header>
-        <NavigationWorkspace.Body className="grid-rows-[auto_minmax(0,1fr)] md:grid-cols-[16rem_minmax(0,1fr)] md:grid-rows-1">
-          <NavigationWorkspace.Sidebar className="scrollbar-hide overflow-x-auto border-r-0 border-b p-3 md:overflow-y-auto md:border-r md:border-b-0 md:p-4">
-            <nav
-              aria-label={t('household.setup.progressLabel')}
-              className="flex min-w-max gap-1 md:grid md:min-w-0"
-            >
-              {steps.map((step, index) => {
-                const Icon = step.icon;
-                const active = index === stepIndex;
-                const disabled = index > furthestStep;
-                return (
-                  <NavigationWorkspace.Item
-                    key={step.id}
-                    active={active}
-                    accentColor={accentColor}
-                    className="w-[10.5rem] md:w-auto"
-                  >
-                    <NavigationWorkspace.ItemButton
-                      ref={active ? activeStepButtonRef : undefined}
-                      aria-current={active ? 'step' : undefined}
-                      disabled={disabled}
-                      className="disabled:cursor-not-allowed disabled:opacity-50"
-                      onClick={() => setStepIndex(index)}
+        <NavigationWorkspace.Frame
+          aria-label={t('household.setup.dialogTitle')}
+          className="h-full min-h-0 rounded-none border-0 bg-transparent shadow-none"
+        >
+          <NavigationWorkspace.Header className="flex items-start justify-between gap-4 px-4 py-4 sm:px-5">
+            <div className="min-w-0">
+              <h1 className={cn(navetTypographyTokens.pageHeading, surface.textPrimary)}>
+                {t('household.setup.dialogTitle')}
+              </h1>
+              <p className={cn('mt-1', navetTypographyTokens.body, surface.textSecondary)}>
+                {t('household.setup.dialogDescription')}
+              </p>
+            </div>
+            <IconButton
+              variant="ghost"
+              label={t('common.close')}
+              icon={<X aria-hidden="true" className={navetIconSizeTokens.sm} />}
+              className={cn('min-h-10 min-w-10 shrink-0', surface.subtleBg, surface.hoverBg)}
+              onClick={() => onOpenChange(false)}
+            />
+          </NavigationWorkspace.Header>
+          <NavigationWorkspace.Body className="grid-rows-[auto_minmax(0,1fr)] md:grid-cols-[16rem_minmax(0,1fr)] md:grid-rows-1">
+            <NavigationWorkspace.Sidebar className="scrollbar-hide overflow-x-auto border-r-0 border-b p-3 md:overflow-y-auto md:border-r md:border-b-0 md:p-4">
+              <nav
+                aria-label={t('household.setup.progressLabel')}
+                className="flex min-w-max gap-1 md:grid md:min-w-0"
+              >
+                {steps.map((step, index) => {
+                  const Icon = step.icon;
+                  const active = index === stepIndex;
+                  const disabled = index > furthestStep;
+                  return (
+                    <NavigationWorkspace.Item
+                      key={step.id}
+                      active={active}
+                      accentColor={accentColor}
+                      className="w-[10.5rem] md:w-auto"
                     >
-                      <NavigationWorkspace.ItemIcon>
-                        <Icon className={navetIconSizeTokens.sm} />
-                      </NavigationWorkspace.ItemIcon>
-                      <NavigationWorkspace.ItemText title={step.label} />
-                    </NavigationWorkspace.ItemButton>
-                  </NavigationWorkspace.Item>
-                );
-              })}
-            </nav>
-          </NavigationWorkspace.Sidebar>
-          <NavigationWorkspace.Content>
-            <NavigationWorkspace.ScrollArea className="scrollbar-hide">
-              {error ? (
-                <div className="px-5 pt-5 md:px-8 md:pt-8">
-                  <MessageBar tone="error" title={t('household.error.title')}>
-                    {error}
-                  </MessageBar>
-                </div>
-              ) : null}
-              {currentStep.id === 'person' ? (
-                <StepPanel
-                  eyebrow={t('household.setup.stepCount', { current: 1, total: steps.length })}
-                  title={t('household.setup.personTitle')}
-                  description={t('household.setup.personDescription')}
-                  footer={
-                    <>
-                      <span />
-                      <Button
-                        loading={saving}
-                        disabled={
-                          setupRoster.length === 0 ||
-                          !setupRoster.some((participant) =>
-                            participant.capabilities.includes('manage')
-                          )
-                        }
-                        trailing={
-                          <ArrowRight aria-hidden="true" className={navetIconSizeTokens.sm} />
-                        }
-                        onClick={saveSetupRosterAndContinue}
+                      <NavigationWorkspace.ItemButton
+                        ref={active ? activeStepButtonRef : undefined}
+                        aria-current={active ? 'step' : undefined}
+                        disabled={disabled}
+                        className="!items-start py-2.5 disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={() => setStepIndex(index)}
                       >
-                        {t('household.setup.continueWithCount', { count: setupRoster.length })}
-                      </Button>
-                    </>
-                  }
-                >
-                  <div className="grid gap-5">
-                    {setupRoster.length > 0 ? (
-                      <ul className="grid gap-2" aria-label={t('household.members.title')}>
+                        <NavigationWorkspace.ItemIcon>
+                          <Icon className={navetIconSizeTokens.sm} />
+                        </NavigationWorkspace.ItemIcon>
+                        <NavigationWorkspace.ItemText
+                          title={step.label}
+                          description={step.description}
+                          descriptionClassName="!overflow-visible !text-clip !whitespace-normal break-words leading-4"
+                        />
+                      </NavigationWorkspace.ItemButton>
+                    </NavigationWorkspace.Item>
+                  );
+                })}
+              </nav>
+            </NavigationWorkspace.Sidebar>
+            <NavigationWorkspace.Content>
+              <NavigationWorkspace.ScrollArea className="scrollbar-hide">
+                {error ? (
+                  <div className="px-5 pt-5 md:px-8 md:pt-8">
+                    <MessageBar tone="error" title={t('household.error.title')}>
+                      {error}
+                    </MessageBar>
+                  </div>
+                ) : null}
+                {currentStep.id === 'person' ? (
+                  <StepPanel
+                    eyebrow={t('household.setup.stepCount', { current: 1, total: steps.length })}
+                    title={t('household.setup.personTitle')}
+                    description={t('household.setup.personDescription')}
+                    footer={
+                      <>
+                        <span />
+                        <Button
+                          loading={saving}
+                          disabled={
+                            setupRoster.length === 0 ||
+                            !setupRoster.some((participant) =>
+                              participant.capabilities.includes('manage')
+                            )
+                          }
+                          trailing={
+                            <ArrowRight aria-hidden="true" className={navetIconSizeTokens.sm} />
+                          }
+                          onClick={saveSetupRosterAndContinue}
+                        >
+                          {t('household.setup.continueToProfiles')}
+                        </Button>
+                      </>
+                    }
+                  >
+                    <div className="grid gap-5">
+                      {setupRoster.length > 0 ? (
+                        <ul className="grid gap-2" aria-label={t('household.members.title')}>
+                          {setupRoster.map((participant) => (
+                            <li
+                              key={participant.id}
+                              className={cn(
+                                'flex min-h-14 items-center gap-3 rounded-[20px] border px-3 py-2.5',
+                                surface.subtleBg,
+                                surface.borderStrong,
+                                surface.textPrimary
+                              )}
+                            >
+                              <Avatar
+                                className="h-9 w-9 border"
+                                style={{
+                                  backgroundColor: participant.color ?? accentColor,
+                                  borderColor: participant.color ?? accentColor,
+                                }}
+                              >
+                                {participant.avatarUrl ? (
+                                  <AvatarImage src={participant.avatarUrl} alt="" />
+                                ) : null}
+                                <AvatarFallback className="bg-transparent text-xs font-semibold text-white">
+                                  <AvatarFallbackIdentity
+                                    avatarIcon={participant.avatarIcon}
+                                    displayName={participant.displayName}
+                                    iconClassName={navetIconSizeTokens.sm}
+                                  />
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-semibold">
+                                  {participant.displayName}
+                                </p>
+                                <p className={cn('text-xs', surface.textSecondary)}>
+                                  {participant.capabilities.includes('manage')
+                                    ? t('household.personDialog.manager')
+                                    : t('household.personDialog.member')}
+                                </p>
+                              </div>
+                              <Select
+                                size="small"
+                                aria-label={`${t('household.personDialog.role')}: ${participant.displayName}`}
+                                containerClassName="w-36 shrink-0 sm:w-52"
+                                value={
+                                  participant.capabilities.includes('manage') ? 'manager' : 'member'
+                                }
+                                onChange={(event) =>
+                                  setSetupParticipantRole(
+                                    participant.id,
+                                    event.target.value as SetupParticipantRole
+                                  )
+                                }
+                              >
+                                <option value="member">{t('household.personDialog.member')}</option>
+                                <option value="manager">
+                                  {t('household.personDialog.roleManager')}
+                                </option>
+                              </Select>
+                              {!participants.some(
+                                (candidate) => candidate.id === participant.id
+                              ) ? (
+                                <IconButton
+                                  variant="ghost"
+                                  label={t('household.setup.removePerson', {
+                                    name: participant.displayName,
+                                  })}
+                                  icon={
+                                    <Trash2 aria-hidden="true" className={navetIconSizeTokens.sm} />
+                                  }
+                                  className="min-h-9 min-w-9 shrink-0"
+                                  onClick={() => removeSetupPerson(participant.id)}
+                                />
+                              ) : null}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                      {setupRoster.length > 0 &&
+                      !setupRoster.some((participant) =>
+                        participant.capabilities.includes('manage')
+                      ) ? (
+                        <MessageBar tone="warning">
+                          {t('household.setup.managerRequired')}
+                        </MessageBar>
+                      ) : null}
+                      {addingPerson ? (
+                        <section
+                          className={cn(
+                            'rounded-[24px] border p-4 sm:p-5',
+                            surface.subtleBg,
+                            surface.borderStrong
+                          )}
+                          aria-label={t('household.people.add')}
+                        >
+                          <div className="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_13rem_auto]">
+                            <CardDialogSection
+                              className="mb-0 min-w-0"
+                              label={t('household.personDialog.name')}
+                            >
+                              <Input
+                                autoFocus
+                                aria-label={t('household.personDialog.name')}
+                                autoComplete="name"
+                                value={name}
+                                placeholder={t('household.personDialog.namePlaceholder')}
+                                onChange={(event) => setName(event.target.value)}
+                                onKeyDown={(event) => {
+                                  if (event.key === 'Escape') cancelAddingPerson();
+                                  if (event.key === 'Enter' && name.trim()) addPerson();
+                                }}
+                              />
+                            </CardDialogSection>
+                            <CardDialogSection
+                              className="mb-0 min-w-0"
+                              label={t('household.personDialog.role')}
+                            >
+                              <Select
+                                aria-label={t('household.personDialog.role')}
+                                value={newPersonRole}
+                                onChange={(event) =>
+                                  setNewPersonRole(event.target.value as SetupParticipantRole)
+                                }
+                              >
+                                <option value="member">{t('household.personDialog.member')}</option>
+                                <option value="manager">
+                                  {t('household.personDialog.roleManager')}
+                                </option>
+                              </Select>
+                            </CardDialogSection>
+                            <div className="flex items-center justify-end gap-2">
+                              <Button variant="secondary" onClick={cancelAddingPerson}>
+                                {t('common.cancel')}
+                              </Button>
+                              <Button
+                                className="shrink-0"
+                                variant={name.trim() ? 'primary' : 'secondary'}
+                                disabled={!name.trim()}
+                                leading={
+                                  <UserPlus aria-hidden="true" className={navetIconSizeTokens.sm} />
+                                }
+                                onClick={addPerson}
+                              >
+                                {t('household.personDialog.save')}
+                              </Button>
+                            </div>
+                          </div>
+                        </section>
+                      ) : (
+                        <Button
+                          variant="secondary"
+                          leading={
+                            <UserPlus aria-hidden="true" className={navetIconSizeTokens.sm} />
+                          }
+                          onClick={startAddingPerson}
+                        >
+                          {t('household.people.add')}
+                        </Button>
+                      )}
+                    </div>
+                  </StepPanel>
+                ) : null}
+
+                {currentStep.id === 'customize' ? (
+                  <StepPanel
+                    eyebrow={t('household.setup.stepCount', { current: 2, total: steps.length })}
+                    title={t('household.setup.customizeTitle')}
+                    description={t('household.setup.customizeDescription')}
+                    footer={
+                      <>
+                        <BackButton onClick={() => setStepIndex(0)} />
+                        <Button
+                          loading={saving}
+                          disabled={!participantId || !name.trim()}
+                          onClick={async () => {
+                            if (await savePersonCustomization()) moveTo(2);
+                          }}
+                        >
+                          {t('household.setup.savePersonContinue')}
+                        </Button>
+                      </>
+                    }
+                  >
+                    <div className="grid gap-5">
+                      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                         {setupRoster.map((participant) => (
-                          <li
+                          <button
                             key={participant.id}
+                            type="button"
+                            aria-pressed={participant.id === participantId}
                             className={cn(
-                              'flex min-h-14 items-center gap-3 rounded-[20px] border px-3 py-2.5',
-                              surface.subtleBg,
+                              'flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-2.5 py-1.5 text-sm font-semibold',
                               surface.borderStrong,
+                              participant.id === participantId ? surface.iconBg : surface.hoverBg,
                               surface.textPrimary
                             )}
+                            onClick={() => selectParticipantForCustomization(participant.id)}
                           >
                             <Avatar
-                              className="h-9 w-9 border"
-                              style={{
-                                backgroundColor: participant.color ?? accentColor,
-                                borderColor: participant.color ?? accentColor,
-                              }}
+                              className="h-7 w-7"
+                              style={{ backgroundColor: participant.color ?? accentColor }}
                             >
                               {participant.avatarUrl ? (
                                 <AvatarImage src={participant.avatarUrl} alt="" />
@@ -846,666 +1152,451 @@ export function ChoreOnboardingDialog({
                                 />
                               </AvatarFallback>
                             </Avatar>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-semibold">
-                                {participant.displayName}
-                              </p>
-                              <p className={cn('text-xs', surface.textSecondary)}>
-                                {participant.capabilities.includes('manage')
-                                  ? t('household.personDialog.manager')
-                                  : t('household.personDialog.member')}
-                              </p>
-                            </div>
-                            <Select
-                              size="small"
-                              aria-label={`${t('household.personDialog.role')}: ${participant.displayName}`}
-                              containerClassName="w-52 shrink-0"
-                              value={
-                                participant.capabilities.includes('manage') ? 'manager' : 'member'
-                              }
-                              onChange={(event) =>
-                                setSetupParticipantRole(
-                                  participant.id,
-                                  event.target.value as SetupParticipantRole
-                                )
-                              }
-                            >
-                              <option value="member">{t('household.personDialog.member')}</option>
-                              <option value="manager">
-                                {t('household.personDialog.roleManager')}
-                              </option>
-                            </Select>
-                          </li>
+                            {participant.displayName}
+                          </button>
                         ))}
-                      </ul>
-                    ) : null}
-                    {setupRoster.length > 0 &&
-                    !setupRoster.some((participant) =>
-                      participant.capabilities.includes('manage')
-                    ) ? (
-                      <MessageBar tone="warning">{t('household.setup.managerRequired')}</MessageBar>
-                    ) : null}
-                    {addingPerson ? (
-                      <section
+                      </div>
+                      <ChoreProfileAppearanceEditor
+                        displayName={name}
+                        color={color}
+                        avatarUrl={avatarUrl}
+                        avatarIcon={avatarIcon}
+                        avatarProcessing={avatarProcessing}
+                        avatarUploadError={avatarUploadError}
+                        avatarInputRef={avatarInputRef}
+                        onUploadAvatar={(file) => void uploadAvatar(file)}
+                        onRemoveAvatar={() => {
+                          setAvatarUrl('');
+                          setAvatarUploadError('');
+                        }}
+                        onIconChange={(iconName) => {
+                          setAvatarIcon(iconName);
+                          setAvatarUrl('');
+                          setAvatarUploadError('');
+                        }}
+                        onColorChange={setColor}
+                      />
+                      <div
                         className={cn(
-                          'rounded-[24px] border p-4 sm:p-5',
+                          'rounded-[22px] border p-4',
                           surface.subtleBg,
-                          surface.borderStrong
+                          surface.borderStrong,
+                          surface.textPrimary
                         )}
-                        aria-label={t('household.people.add')}
                       >
-                        <div className="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_13rem_auto]">
-                          <CardDialogSection
-                            className="mb-0 min-w-0"
-                            label={t('household.personDialog.name')}
-                          >
-                            <Input
-                              autoFocus
-                              aria-label={t('household.personDialog.name')}
-                              autoComplete="name"
-                              value={name}
-                              placeholder={t('household.personDialog.namePlaceholder')}
-                              onChange={(event) => setName(event.target.value)}
-                              onKeyDown={(event) => {
-                                if (event.key === 'Escape') cancelAddingPerson();
-                                if (event.key === 'Enter' && name.trim()) addPerson();
-                              }}
-                            />
-                          </CardDialogSection>
-                          <CardDialogSection
-                            className="mb-0 min-w-0"
-                            label={t('household.personDialog.role')}
-                          >
-                            <Select
-                              aria-label={t('household.personDialog.role')}
-                              value={newPersonRole}
-                              onChange={(event) =>
-                                setNewPersonRole(event.target.value as SetupParticipantRole)
-                              }
+                        <div className="flex items-center justify-between gap-5">
+                          <div>
+                            <p className={navetTypographyTokens.label}>
+                              {t('household.personDialog.reminders')}
+                            </p>
+                            <p
+                              className={cn(
+                                'mt-1 max-w-xl',
+                                navetTypographyTokens.compactHelper,
+                                surface.textSecondary
+                              )}
                             >
-                              <option value="member">{t('household.personDialog.member')}</option>
-                              <option value="manager">
-                                {t('household.personDialog.roleManager')}
-                              </option>
-                            </Select>
-                          </CardDialogSection>
-                          <div className="flex items-center justify-end gap-2">
-                            <Button variant="secondary" onClick={cancelAddingPerson}>
+                              {t('household.setup.remindersHelper')}
+                            </p>
+                          </div>
+                          <Switch
+                            aria-label={t('household.personDialog.reminders')}
+                            checked={remindersEnabled}
+                            size="compact"
+                            onCheckedChange={setRemindersEnabled}
+                          />
+                        </div>
+                        {remindersEnabled ? (
+                          <div className="mt-4 grid grid-cols-2 gap-3">
+                            <CardDialogSection
+                              className="mb-0"
+                              label={t('household.personDialog.quietStart')}
+                            >
+                              <Input
+                                aria-label={t('household.personDialog.quietStart')}
+                                type="time"
+                                value={quietStart}
+                                onChange={(event) => setQuietStart(event.target.value)}
+                              />
+                            </CardDialogSection>
+                            <CardDialogSection
+                              className="mb-0"
+                              label={t('household.personDialog.quietEnd')}
+                            >
+                              <Input
+                                aria-label={t('household.personDialog.quietEnd')}
+                                type="time"
+                                value={quietEnd}
+                                onChange={(event) => setQuietEnd(event.target.value)}
+                              />
+                            </CardDialogSection>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  </StepPanel>
+                ) : null}
+
+                {currentStep.id === 'chores' ? (
+                  <StepPanel
+                    eyebrow={t('household.setup.stepCount', { current: 3, total: steps.length })}
+                    title={t('household.setup.choresTitle')}
+                    description={t('household.setup.choresDescription')}
+                    footer={
+                      <>
+                        <BackButton onClick={() => setStepIndex(1)} />
+                        <Button
+                          disabled={definitions.length === 0 || addingChore}
+                          trailing={
+                            <ArrowRight aria-hidden="true" className={navetIconSizeTokens.sm} />
+                          }
+                          onClick={() => moveTo(3)}
+                        >
+                          {t('household.setup.continueToMotivation')}
+                        </Button>
+                      </>
+                    }
+                  >
+                    <div className="grid gap-6">
+                      {definitions.length > 0 ? (
+                        <ul className="grid gap-2" aria-label={t('household.chores.title')}>
+                          {definitions.map((definition) => {
+                            const Icon = resolveChoreIconComponent(
+                              experience.presentationByDefinitionId[definition.id]?.icon
+                            );
+                            return (
+                              <li
+                                key={definition.id}
+                                className={cn(
+                                  'flex min-h-12 items-center gap-3 rounded-[20px] border px-3 py-2',
+                                  surface.subtleBg,
+                                  surface.borderStrong,
+                                  surface.textPrimary
+                                )}
+                              >
+                                <span
+                                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+                                  style={{
+                                    backgroundColor: `${accentColor}18`,
+                                    color: accentColor,
+                                  }}
+                                >
+                                  <Icon aria-hidden="true" className={navetIconSizeTokens.sm} />
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-semibold">
+                                    {definition.title}
+                                  </p>
+                                  <p className={cn('truncate text-xs', surface.textSecondary)}>
+                                    {definition.roomRef?.label ?? t('household.choreDialog.noRoom')}
+                                  </p>
+                                </div>
+                                <IconButton
+                                  variant="ghost"
+                                  label={t('household.chores.deleteNamed', {
+                                    name: definition.title,
+                                  })}
+                                  icon={
+                                    <Trash2 aria-hidden="true" className={navetIconSizeTokens.sm} />
+                                  }
+                                  className="min-h-9 min-w-9 shrink-0"
+                                  disabled={saving}
+                                  onClick={() => void removeChore(definition)}
+                                />
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : null}
+                      {!addingChore ? (
+                        <Button
+                          className="justify-self-start"
+                          variant="secondary"
+                          leading={<Plus aria-hidden="true" className={navetIconSizeTokens.sm} />}
+                          onClick={() => setAddingChore(true)}
+                        >
+                          {t('household.chores.add')}
+                        </Button>
+                      ) : (
+                        <section className="grid gap-6" aria-label={t('household.chores.add')}>
+                          <ChoreCreationFormGroups
+                            title={choreTitle}
+                            icon={choreIcon}
+                            roomId={roomId}
+                            rooms={rooms}
+                            assignmentMode={choreAssignmentMode}
+                            participantId={choreParticipantId}
+                            participants={setupRoster}
+                            repeat={repeat}
+                            dueTime={dueTime}
+                            startDate={scheduleStartDate}
+                            endDate={scheduleEndDate}
+                            interval={scheduleInterval}
+                            excludedDates={excludedDates}
+                            onTitleChange={setChoreTitle}
+                            onIconChange={setChoreIcon}
+                            onRoomChange={setRoomId}
+                            onAssignmentModeChange={setChoreAssignmentMode}
+                            onParticipantChange={setChoreParticipantId}
+                            onRepeatChange={selectSetupRepeat}
+                            onDueTimeChange={setDueTime}
+                            onStartDateChange={setScheduleStartDate}
+                            onEndDateChange={setScheduleEndDate}
+                            onIntervalChange={setScheduleInterval}
+                            onExcludedDatesChange={setExcludedDates}
+                          />
+                          <div className="flex flex-wrap justify-end gap-2 border-t border-current/10 pt-4">
+                            <Button
+                              variant="secondary"
+                              onClick={() => {
+                                resetChoreForm();
+                                setAddingChore(false);
+                              }}
+                            >
                               {t('common.cancel')}
                             </Button>
                             <Button
-                              className="shrink-0"
-                              variant={name.trim() ? 'primary' : 'secondary'}
-                              disabled={!name.trim()}
-                              leading={
-                                <UserPlus aria-hidden="true" className={navetIconSizeTokens.sm} />
-                              }
-                              onClick={addPerson}
+                              loading={saving}
+                              disabled={!choreTitle.trim()}
+                              onClick={saveChore}
                             >
-                              {t('common.save')}
+                              {t('household.setup.addThisChore')}
                             </Button>
                           </div>
-                        </div>
-                      </section>
-                    ) : (
-                      <Button
-                        variant="secondary"
-                        leading={<UserPlus aria-hidden="true" className={navetIconSizeTokens.sm} />}
-                        onClick={startAddingPerson}
-                      >
-                        {t('household.people.add')}
-                      </Button>
-                    )}
-                  </div>
-                </StepPanel>
-              ) : null}
-
-              {currentStep.id === 'customize' ? (
-                <StepPanel
-                  eyebrow={t('household.setup.stepCount', { current: 2, total: steps.length })}
-                  title={t('household.setup.customizeTitle')}
-                  description={t('household.setup.customizeDescription')}
-                  footer={
-                    <>
-                      <BackButton onClick={() => setStepIndex(0)} />
-                      <Button
-                        loading={saving}
-                        disabled={!participantId || !name.trim()}
-                        onClick={async () => {
-                          if (await savePersonCustomization()) moveTo(2);
-                        }}
-                      >
-                        {t('dashboard.multiple.create.next')}
-                      </Button>
-                    </>
-                  }
-                >
-                  <div className="grid gap-5">
-                    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                      {participants.map((participant) => (
-                        <button
-                          key={participant.id}
-                          type="button"
-                          aria-pressed={participant.id === participantId}
-                          className={cn(
-                            'flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-2.5 py-1.5 text-sm font-semibold',
-                            surface.borderStrong,
-                            participant.id === participantId ? surface.iconBg : surface.hoverBg,
-                            surface.textPrimary
-                          )}
-                          onClick={() => loadParticipantForCustomization(participant)}
-                        >
-                          <Avatar
-                            className="h-7 w-7"
-                            style={{ backgroundColor: participant.color ?? accentColor }}
-                          >
-                            {participant.avatarUrl ? (
-                              <AvatarImage src={participant.avatarUrl} alt="" />
-                            ) : null}
-                            <AvatarFallback className="bg-transparent text-xs font-semibold text-white">
-                              <AvatarFallbackIdentity
-                                avatarIcon={participant.avatarIcon}
-                                displayName={participant.displayName}
-                                iconClassName={navetIconSizeTokens.sm}
-                              />
-                            </AvatarFallback>
-                          </Avatar>
-                          {participant.displayName}
-                        </button>
-                      ))}
-                    </div>
-                    <ChoreProfileAppearanceEditor
-                      displayName={name}
-                      color={color}
-                      avatarUrl={avatarUrl}
-                      avatarIcon={avatarIcon}
-                      avatarProcessing={avatarProcessing}
-                      avatarUploadError={avatarUploadError}
-                      avatarInputRef={avatarInputRef}
-                      onUploadAvatar={(file) => void uploadAvatar(file)}
-                      onRemoveAvatar={() => {
-                        setAvatarUrl('');
-                        setAvatarUploadError('');
-                      }}
-                      onIconChange={(iconName) => {
-                        setAvatarIcon(iconName);
-                        setAvatarUrl('');
-                        setAvatarUploadError('');
-                      }}
-                      onColorChange={setColor}
-                    />
-                    <div
-                      className={cn(
-                        'rounded-[22px] border p-4',
-                        surface.subtleBg,
-                        surface.borderStrong,
-                        surface.textPrimary
+                        </section>
                       )}
-                    >
-                      <div className="flex items-center justify-between gap-5">
-                        <div>
-                          <p className={navetTypographyTokens.label}>
-                            {t('household.personDialog.reminders')}
-                          </p>
-                        </div>
-                        <Switch
-                          aria-label={t('household.personDialog.reminders')}
-                          checked={remindersEnabled}
-                          size="compact"
-                          onCheckedChange={setRemindersEnabled}
+                    </div>
+                  </StepPanel>
+                ) : null}
+
+                {currentStep.id === 'rewards' ? (
+                  <StepPanel
+                    eyebrow={t('household.setup.stepCount', { current: 4, total: steps.length })}
+                    title={t('household.setup.rewardsTitle')}
+                    description={t('household.setup.rewardsDescription')}
+                    footer={
+                      <>
+                        <BackButton onClick={() => setStepIndex(2)} />
+                        <Button loading={saving} onClick={saveRewardsAndContinue}>
+                          {t('household.setup.continueToProtection')}
+                        </Button>
+                      </>
+                    }
+                  >
+                    <div className="grid gap-5">
+                      <CardDialogSection
+                        className="mb-0"
+                        label={t('household.settings.gamification')}
+                      >
+                        <Select
+                          aria-label={t('household.settings.gamification')}
+                          value={mode}
+                          onChange={(event) => setMode(event.target.value as ChoreGamificationMode)}
+                        >
+                          <option value="off">{t('household.settings.mode.off')}</option>
+                          <option value="light">{t('household.settings.mode.light')}</option>
+                          <option value="family">{t('household.settings.mode.family')}</option>
+                          <option value="adventure">
+                            {t('household.settings.mode.adventure')}
+                          </option>
+                        </Select>
+                      </CardDialogSection>
+                      <div
+                        className={cn(
+                          'flex items-start gap-3 rounded-[22px] border p-4',
+                          surface.subtleBg,
+                          surface.borderStrong,
+                          surface.textSecondary
+                        )}
+                      >
+                        <Sparkles
+                          aria-hidden="true"
+                          className={cn('mt-0.5 shrink-0', navetIconSizeTokens.sm)}
                         />
+                        <p className={navetTypographyTokens.body}>
+                          {motivationModeDescriptions[mode]}
+                        </p>
                       </div>
-                      {remindersEnabled ? (
-                        <div className="mt-4 grid grid-cols-2 gap-3">
+                      {mode !== 'off' ? (
+                        <div
+                          className={cn(
+                            'grid gap-4 rounded-[22px] border p-4 sm:grid-cols-[minmax(0,1fr)_9rem]',
+                            surface.subtleBg,
+                            surface.borderStrong
+                          )}
+                        >
                           <CardDialogSection
                             className="mb-0"
-                            label={t('household.personDialog.quietStart')}
+                            label={t('household.rewardDialog.name')}
                           >
                             <Input
-                              aria-label={t('household.personDialog.quietStart')}
-                              type="time"
-                              value={quietStart}
-                              onChange={(event) => setQuietStart(event.target.value)}
+                              aria-label={t('household.rewardDialog.name')}
+                              value={rewardTitle}
+                              placeholder={t('household.demo.rewardTitle')}
+                              onChange={(event) => setRewardTitle(event.target.value)}
                             />
                           </CardDialogSection>
                           <CardDialogSection
                             className="mb-0"
-                            label={t('household.personDialog.quietEnd')}
+                            label={t('household.rewardDialog.target')}
                           >
                             <Input
-                              aria-label={t('household.personDialog.quietEnd')}
-                              type="time"
-                              value={quietEnd}
-                              onChange={(event) => setQuietEnd(event.target.value)}
+                              aria-label={t('household.rewardDialog.target')}
+                              type="number"
+                              min={1}
+                              max={1000000}
+                              value={rewardTarget}
+                              onChange={(event) => setRewardTarget(Number(event.target.value))}
                             />
                           </CardDialogSection>
                         </div>
                       ) : null}
                     </div>
-                  </div>
-                </StepPanel>
-              ) : null}
+                  </StepPanel>
+                ) : null}
 
-              {currentStep.id === 'chores' ? (
-                <StepPanel
-                  eyebrow={t('household.setup.stepCount', { current: 3, total: steps.length })}
-                  title={t('household.setup.choresTitle')}
-                  description={t('household.setup.choresDescription')}
-                  footer={
-                    <>
-                      <BackButton onClick={() => setStepIndex(1)} />
-                      <Button
-                        disabled={definitions.length === 0 || addingChore}
-                        trailing={
-                          <ArrowRight aria-hidden="true" className={navetIconSizeTokens.sm} />
-                        }
-                        onClick={() => moveTo(3)}
-                      >
-                        {t('household.setup.continueWithCount', { count: definitions.length })}
-                      </Button>
-                    </>
-                  }
-                >
-                  <div className="grid gap-6">
-                    {definitions.length > 0 ? (
-                      <ul className="grid gap-2" aria-label={t('household.chores.title')}>
-                        {definitions.map((definition) => {
-                          const Icon = resolveChoreIconComponent(
-                            experience.presentationByDefinitionId[definition.id]?.icon
-                          );
-                          return (
-                            <li
-                              key={definition.id}
-                              className={cn(
-                                'flex min-h-12 items-center gap-3 rounded-[20px] border px-3 py-2',
-                                surface.subtleBg,
-                                surface.borderStrong,
-                                surface.textPrimary
-                              )}
-                            >
-                              <span
-                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-                                style={{ backgroundColor: `${accentColor}18`, color: accentColor }}
-                              >
-                                <Icon aria-hidden="true" className={navetIconSizeTokens.sm} />
-                              </span>
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-semibold">{definition.title}</p>
-                                <p className={cn('truncate text-xs', surface.textSecondary)}>
-                                  {definition.roomRef?.label ?? t('household.choreDialog.noRoom')}
-                                </p>
-                              </div>
-                              <IconButton
-                                variant="ghost"
-                                label={t('household.chores.deleteNamed', {
-                                  name: definition.title,
-                                })}
-                                icon={
-                                  <Trash2 aria-hidden="true" className={navetIconSizeTokens.sm} />
-                                }
-                                className="min-h-9 min-w-9 shrink-0"
-                                disabled={saving}
-                                onClick={() => void removeChore(definition)}
-                              />
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    ) : null}
-                    {!addingChore ? (
-                      <Button
-                        className="justify-self-start"
-                        variant="secondary"
-                        leading={<Plus aria-hidden="true" className={navetIconSizeTokens.sm} />}
-                        onClick={() => setAddingChore(true)}
-                      >
-                        {t('household.chores.add')}
-                      </Button>
-                    ) : (
-                      <section
-                        className={cn(
-                          'grid gap-5 rounded-[24px] border p-4 sm:p-5',
-                          surface.subtleBg,
-                          surface.borderStrong
-                        )}
-                        aria-label={t('household.chores.add')}
-                      >
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          <CardDialogSection
-                            className="mb-0 sm:col-span-2"
-                            label={t('household.choreDialog.name')}
-                          >
-                            <Input
-                              aria-label={t('household.choreDialog.name')}
-                              value={choreTitle}
-                              placeholder={t('household.choreDialog.namePlaceholder')}
-                              onChange={(event) => setChoreTitle(event.target.value)}
-                            />
-                          </CardDialogSection>
-                          <CardDialogSection
-                            className="mb-0 sm:col-span-2"
-                            label={t('household.personDialog.avatarModeIcon')}
-                          >
-                            <ChoreIconPicker value={choreIcon} onChange={setChoreIcon} />
-                          </CardDialogSection>
-                          <CardDialogSection
-                            className="mb-0"
-                            label={t('household.choreDialog.person')}
-                          >
-                            <Select
-                              aria-label={t('household.choreDialog.person')}
-                              value={choreParticipantId}
-                              onChange={(event) => setChoreParticipantId(event.target.value)}
-                            >
-                              {participants.map((participant) => (
-                                <option key={participant.id} value={participant.id}>
-                                  {participant.displayName}
-                                </option>
-                              ))}
-                            </Select>
-                          </CardDialogSection>
-                          <CardDialogSection
-                            className="mb-0"
-                            label={t('household.choreDialog.schedule')}
-                          >
-                            <Select
-                              aria-label={t('household.choreDialog.schedule')}
-                              value={frequency}
-                              onChange={(event) =>
-                                setFrequency(event.target.value as 'daily' | 'weekly')
-                              }
-                            >
-                              <option value="daily">{t('household.schedule.daily')}</option>
-                              <option value="weekly">{t('household.schedule.weekly')}</option>
-                            </Select>
-                          </CardDialogSection>
-                          <CardDialogSection
-                            className="mb-0"
-                            label={t('household.choreDialog.time')}
-                          >
-                            <Input
-                              aria-label={t('household.choreDialog.time')}
-                              type="time"
-                              value={dueTime}
-                              onChange={(event) => setDueTime(event.target.value)}
-                            />
-                          </CardDialogSection>
-                          <CardDialogSection
-                            className="mb-0"
-                            label={t('household.choreDialog.room')}
-                          >
-                            <Select
-                              aria-label={t('household.choreDialog.room')}
-                              value={roomId}
-                              onChange={(event) => setRoomId(event.target.value)}
-                            >
-                              <option value="">{t('household.choreDialog.noRoom')}</option>
-                              {rooms.map((room) => (
-                                <option key={room.canonicalId} value={room.canonicalId}>
-                                  {room.label}
-                                </option>
-                              ))}
-                            </Select>
-                          </CardDialogSection>
-                          <CardDialogSection
-                            className="mb-0"
-                            label={t('household.choreDialog.points')}
-                          >
-                            <Input
-                              aria-label={t('household.choreDialog.points')}
-                              min={0}
-                              max={10000}
-                              type="number"
-                              value={points}
-                              onChange={(event) => setPoints(Number(event.target.value))}
-                            />
-                          </CardDialogSection>
-                        </div>
-                        <div className="flex flex-wrap justify-end gap-2 border-t border-current/10 pt-4">
-                          <Button
-                            variant="secondary"
-                            onClick={() => {
-                              resetChoreForm();
-                              setAddingChore(false);
-                            }}
-                          >
-                            {t('common.cancel')}
+                {currentStep.id === 'security' ? (
+                  <StepPanel
+                    eyebrow={t('household.setup.stepCount', { current: 5, total: steps.length })}
+                    title={t('household.setup.securityTitle')}
+                    description={t('household.setup.securityDescription')}
+                    footer={
+                      <>
+                        <BackButton onClick={() => setStepIndex(3)} />
+                        <div className="flex flex-col-reverse items-stretch gap-2 sm:flex-row sm:items-center">
+                          <Button variant="secondary" onClick={() => moveTo(5)}>
+                            {t('household.setup.skipPin')}
                           </Button>
                           <Button
                             loading={saving}
-                            disabled={!choreTitle.trim()}
-                            onClick={saveChore}
+                            disabled={!managementPin || !managementPinConfirmation}
+                            leading={
+                              <ShieldCheck aria-hidden="true" className={navetIconSizeTokens.sm} />
+                            }
+                            onClick={saveManagementPin}
                           >
-                            {t('household.setup.addThisChore')}
+                            {t('household.setup.savePin')}
                           </Button>
                         </div>
-                      </section>
-                    )}
-                  </div>
-                </StepPanel>
-              ) : null}
-
-              {currentStep.id === 'rewards' ? (
-                <StepPanel
-                  eyebrow={t('household.setup.stepCount', { current: 4, total: steps.length })}
-                  title={t('household.setup.rewardsTitle')}
-                  description={t('household.setup.rewardsDescription')}
-                  footer={
-                    <>
-                      <BackButton onClick={() => setStepIndex(2)} />
-                      <Button loading={saving} onClick={saveRewardsAndContinue}>
-                        {t('household.setup.reviewSetup')}
-                      </Button>
-                    </>
-                  }
-                >
-                  <div className="grid gap-5">
-                    <CardDialogSection
-                      className="mb-0"
-                      label={t('household.settings.gamification')}
-                    >
-                      <Select
-                        aria-label={t('household.settings.gamification')}
-                        value={mode}
-                        onChange={(event) => setMode(event.target.value as ChoreGamificationMode)}
-                      >
-                        <option value="off">{t('household.settings.mode.off')}</option>
-                        <option value="light">{t('household.settings.mode.light')}</option>
-                        <option value="family">{t('household.settings.mode.family')}</option>
-                        <option value="adventure">{t('household.settings.mode.adventure')}</option>
-                      </Select>
-                    </CardDialogSection>
-                    <div
-                      className={cn(
-                        'flex items-start gap-3 rounded-[22px] border p-4',
-                        surface.subtleBg,
-                        surface.borderStrong,
-                        surface.textSecondary
-                      )}
-                    >
-                      <Sparkles
-                        aria-hidden="true"
-                        className={cn('mt-0.5 shrink-0', navetIconSizeTokens.sm)}
-                      />
-                      <p className={navetTypographyTokens.body}>
-                        {motivationModeDescriptions[mode]}
-                      </p>
-                    </div>
-                    {mode !== 'off' ? (
+                      </>
+                    }
+                  >
+                    <div className="grid gap-4">
                       <div
                         className={cn(
-                          'grid gap-4 rounded-[22px] border p-4 sm:grid-cols-[minmax(0,1fr)_9rem]',
+                          'flex items-start gap-3 rounded-[22px] border p-4',
                           surface.subtleBg,
-                          surface.borderStrong
+                          surface.borderStrong,
+                          surface.textSecondary
                         )}
                       >
-                        <CardDialogSection
-                          className="mb-0"
-                          label={t('household.rewardDialog.name')}
-                        >
-                          <Input
-                            aria-label={t('household.rewardDialog.name')}
-                            value={rewardTitle}
-                            placeholder={t('household.demo.rewardTitle')}
-                            onChange={(event) => setRewardTitle(event.target.value)}
-                          />
-                        </CardDialogSection>
-                        <CardDialogSection
-                          className="mb-0"
-                          label={t('household.rewardDialog.target')}
-                        >
-                          <Input
-                            aria-label={t('household.rewardDialog.target')}
-                            type="number"
-                            min={1}
-                            max={1000000}
-                            value={rewardTarget}
-                            onChange={(event) => setRewardTarget(Number(event.target.value))}
-                          />
-                        </CardDialogSection>
+                        <ShieldCheck
+                          aria-hidden="true"
+                          className={cn('mt-0.5 shrink-0', navetIconSizeTokens.sm)}
+                        />
+                        <p className={navetTypographyTokens.body}>
+                          {t('household.setup.pinHelper')}
+                        </p>
                       </div>
-                    ) : null}
-                  </div>
-                </StepPanel>
-              ) : null}
+                      <CardDialogSection className="mb-0" label={t('household.setup.pinLabel')}>
+                        <Input
+                          aria-label={t('household.setup.pinLabel')}
+                          autoComplete="new-password"
+                          inputMode="numeric"
+                          maxLength={8}
+                          pattern="[0-9]*"
+                          type="password"
+                          value={managementPin}
+                          onChange={(event) => {
+                            setPinError('');
+                            setManagementPin(event.target.value.replace(/\D/g, ''));
+                          }}
+                        />
+                      </CardDialogSection>
+                      <CardDialogSection
+                        className="mb-0"
+                        label={t('household.setup.pinConfirmLabel')}
+                      >
+                        <Input
+                          aria-label={t('household.setup.pinConfirmLabel')}
+                          autoComplete="new-password"
+                          inputMode="numeric"
+                          maxLength={8}
+                          pattern="[0-9]*"
+                          type="password"
+                          value={managementPinConfirmation}
+                          onChange={(event) => {
+                            setPinError('');
+                            setManagementPinConfirmation(event.target.value.replace(/\D/g, ''));
+                          }}
+                        />
+                      </CardDialogSection>
+                      {pinError ? (
+                        <p className="text-sm text-red-500" role="alert">
+                          {pinError}
+                        </p>
+                      ) : null}
+                    </div>
+                  </StepPanel>
+                ) : null}
 
-              {currentStep.id === 'security' ? (
-                <StepPanel
-                  eyebrow={t('household.setup.stepCount', { current: 5, total: steps.length })}
-                  title={t('household.setup.securityTitle')}
-                  description={t('household.setup.securityDescription')}
-                  footer={
-                    <>
-                      <BackButton onClick={() => setStepIndex(3)} />
-                      <div className="flex flex-col-reverse items-stretch gap-2 sm:flex-row sm:items-center">
-                        <Button variant="secondary" onClick={() => moveTo(5)}>
-                          {t('household.setup.skipPin')}
-                        </Button>
+                {currentStep.id === 'ready' ? (
+                  <StepPanel
+                    eyebrow={t('household.setup.stepCount', { current: 6, total: steps.length })}
+                    title={t('household.setup.readyTitle')}
+                    description={t('household.setup.readyDescription')}
+                    footer={
+                      <>
+                        <BackButton onClick={() => setStepIndex(4)} />
                         <Button
                           loading={saving}
-                          disabled={!managementPin || !managementPinConfirmation}
                           leading={
-                            <ShieldCheck aria-hidden="true" className={navetIconSizeTokens.sm} />
+                            <Sparkles aria-hidden="true" className={navetIconSizeTokens.sm} />
                           }
-                          onClick={saveManagementPin}
+                          onClick={finishSetup}
                         >
-                          {t('household.setup.savePin')}
+                          {t('household.setup.finish')}
                         </Button>
-                      </div>
-                    </>
-                  }
-                >
-                  <div className="grid gap-4">
-                    <div
-                      className={cn(
-                        'flex items-start gap-3 rounded-[22px] border p-4',
-                        surface.subtleBg,
-                        surface.borderStrong,
-                        surface.textSecondary
-                      )}
-                    >
-                      <ShieldCheck
-                        aria-hidden="true"
-                        className={cn('mt-0.5 shrink-0', navetIconSizeTokens.sm)}
-                      />
-                      <p className={navetTypographyTokens.body}>{t('household.setup.pinHelper')}</p>
+                      </>
+                    }
+                  >
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      {[
+                        [UserRound, t('household.members.title'), participants.length],
+                        [ListChecks, t('household.tabs.chores'), definitions.length],
+                        [
+                          Gift,
+                          t('household.tabs.rewards'),
+                          Object.keys(experience.rewardGoalsById).length,
+                        ],
+                      ].map(([Icon, label, value]) => {
+                        const SummaryIcon = Icon as LucideIcon;
+                        return (
+                          <div
+                            key={String(label)}
+                            className={cn(
+                              'rounded-[22px] border p-4',
+                              surface.subtleBg,
+                              surface.borderStrong,
+                              surface.textPrimary
+                            )}
+                          >
+                            <SummaryIcon aria-hidden="true" className={navetIconSizeTokens.md} />
+                            <p className="mt-5 text-2xl font-semibold">{String(value)}</p>
+                            <p className={cn('mt-1 text-xs', surface.textSecondary)}>
+                              {String(label)}
+                            </p>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <CardDialogSection className="mb-0" label={t('household.setup.pinLabel')}>
-                      <Input
-                        aria-label={t('household.setup.pinLabel')}
-                        autoComplete="new-password"
-                        inputMode="numeric"
-                        maxLength={8}
-                        pattern="[0-9]*"
-                        type="password"
-                        value={managementPin}
-                        onChange={(event) => {
-                          setPinError('');
-                          setManagementPin(event.target.value.replace(/\D/g, ''));
-                        }}
-                      />
-                    </CardDialogSection>
-                    <CardDialogSection
-                      className="mb-0"
-                      label={t('household.setup.pinConfirmLabel')}
-                    >
-                      <Input
-                        aria-label={t('household.setup.pinConfirmLabel')}
-                        autoComplete="new-password"
-                        inputMode="numeric"
-                        maxLength={8}
-                        pattern="[0-9]*"
-                        type="password"
-                        value={managementPinConfirmation}
-                        onChange={(event) => {
-                          setPinError('');
-                          setManagementPinConfirmation(event.target.value.replace(/\D/g, ''));
-                        }}
-                      />
-                    </CardDialogSection>
-                    {pinError ? (
-                      <p className="text-sm text-red-500" role="alert">
-                        {pinError}
-                      </p>
-                    ) : null}
-                  </div>
-                </StepPanel>
-              ) : null}
-
-              {currentStep.id === 'ready' ? (
-                <StepPanel
-                  eyebrow={t('household.setup.stepCount', { current: 6, total: steps.length })}
-                  title={t('household.setup.readyTitle')}
-                  description={t('household.setup.readyDescription')}
-                  footer={
-                    <>
-                      <BackButton onClick={() => setStepIndex(4)} />
-                      <Button
-                        loading={saving}
-                        leading={<Sparkles aria-hidden="true" className={navetIconSizeTokens.sm} />}
-                        onClick={finishSetup}
-                      >
-                        {t('household.setup.finish')}
-                      </Button>
-                    </>
-                  }
-                >
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    {[
-                      [UserRound, t('household.members.title'), participants.length],
-                      [ListChecks, t('household.tabs.chores'), definitions.length],
-                      [
-                        Gift,
-                        t('household.tabs.rewards'),
-                        Object.keys(experience.rewardGoalsById).length,
-                      ],
-                    ].map(([Icon, label, value]) => {
-                      const SummaryIcon = Icon as LucideIcon;
-                      return (
-                        <div
-                          key={String(label)}
-                          className={cn(
-                            'rounded-[22px] border p-4',
-                            surface.subtleBg,
-                            surface.borderStrong,
-                            surface.textPrimary
-                          )}
-                        >
-                          <SummaryIcon aria-hidden="true" className={navetIconSizeTokens.md} />
-                          <p className="mt-5 text-2xl font-semibold">{String(value)}</p>
-                          <p className={cn('mt-1 text-xs', surface.textSecondary)}>
-                            {String(label)}
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </StepPanel>
-              ) : null}
-            </NavigationWorkspace.ScrollArea>
-          </NavigationWorkspace.Content>
-        </NavigationWorkspace.Body>
-      </NavigationWorkspace.Frame>
-    </BaseCardDialog>
+                  </StepPanel>
+                ) : null}
+              </NavigationWorkspace.ScrollArea>
+            </NavigationWorkspace.Content>
+          </NavigationWorkspace.Body>
+        </NavigationWorkspace.Frame>
+      </BaseCardDialog>
+    </Fragment>
   );
 }

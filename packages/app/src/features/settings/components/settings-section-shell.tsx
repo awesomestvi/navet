@@ -86,7 +86,9 @@ export function SettingsSectionShell({
             >
               {title}
             </h2>
-            <p className={cn('mt-1 max-w-2xl text-sm leading-5 md:leading-6', styles.subtleColor)}>
+            <p
+              className={cn('mt-0.5 max-w-2xl text-sm leading-5 md:leading-6', styles.subtleColor)}
+            >
               {description}
             </p>
           </div>

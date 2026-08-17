@@ -140,13 +140,14 @@ export const IpadProLandscape: Story = {
     },
   },
   play: async ({ canvas, userEvent }) => {
-    await canvas.findByText('Today at home');
+    await canvas.findByText('House pulse');
     const panel = within(canvas.getByRole('region', { name: 'Today' }));
     const addChore = panel.getByRole('button', { name: 'Add chore' });
-    await expect(addChore).toHaveClass('h-10');
-    await expect(panel.getByRole('button', { name: 'Using this screen' })).toHaveClass('h-10');
+    await expect(addChore).toHaveClass('h-9');
+    await expect(panel.getByRole('button', { name: 'Using this screen' })).toHaveClass('h-9');
     await expect(panel.getByText('House pulse')).toBeInTheDocument();
     await expect(panel.getByRole('heading', { name: 'Needs attention' })).toBeInTheDocument();
+    await expect(panel.queryByRole('heading', { name: 'Coming up' })).not.toBeInTheDocument();
     await expect(
       panel.queryByRole('heading', { name: 'Missions and rewards' })
     ).not.toBeInTheDocument();
@@ -154,10 +155,10 @@ export const IpadProLandscape: Story = {
     const seeRewards = panel.getByRole('button', {
       name: 'See rewards, Missions and rewards',
     });
-    await expect(seeRewards).toHaveClass('-my-3', 'rounded-none');
+    await expect(seeRewards).toHaveClass('xl:min-h-14', 'rounded-none');
     await expect(seeRewards.querySelector('[data-pulse-metric-icon]')).toHaveClass(
-      'sm:h-11',
-      'sm:w-11'
+      'xl:h-9',
+      'xl:w-9'
     );
     await expect(within(seeRewards).getByText('Missions and rewards')).toBeVisible();
     await expect(seeRewards).toHaveAttribute('aria-expanded', 'false');
@@ -166,6 +167,11 @@ export const IpadProLandscape: Story = {
     await expect(panel.getByRole('heading', { name: 'Missions and rewards' })).toBeVisible();
     await expect(panel.getByText('Saturday reset')).toBeInTheDocument();
     await expect(panel.getByText('Choose our next family outing')).toBeInTheDocument();
+    await userEvent.click(seeRewards);
+    await expect(seeRewards).toHaveAttribute('aria-expanded', 'false');
+    await expect(
+      panel.queryByRole('heading', { name: 'Missions and rewards' })
+    ).not.toBeInTheDocument();
     await expect(
       panel.queryByRole('heading', { name: 'Around the house' })
     ).not.toBeInTheDocument();
@@ -181,9 +187,64 @@ export const IpadProLandscape: Story = {
   },
 };
 
+export const IpadMiniLandscape: Story = {
+  globals: { viewport: { value: 'ipadMini', isRotated: true } },
+  parameters: {
+    viewport: { defaultViewport: 'ipadMini' },
+    docs: {
+      description: {
+        story:
+          'Short landscape tablets move Add chore and assignment into House pulse, remove the redundant Today introduction, and keep the metrics in one compact row so the first actionable chore stays above the fold.',
+      },
+    },
+  },
+  play: async ({ canvas }) => {
+    await canvas.findByText('House pulse');
+    const panel = within(canvas.getByRole('region', { name: 'Today' }));
+    await expect(panel.queryByText('Today at home')).not.toBeInTheDocument();
+    await expect(
+      panel.queryByText('Start with what needs attention, then let the rest wait.')
+    ).not.toBeInTheDocument();
+    await expect(panel.getByText('House pulse')).toBeVisible();
+    const pulse = panel.getByText('House pulse').closest('[data-house-pulse-layout="responsive"]');
+    await expect(pulse).not.toBeNull();
+    await expect(
+      within(pulse as HTMLElement).getByRole('button', { name: 'Add chore' })
+    ).toBeVisible();
+    await expect(
+      within(pulse as HTMLElement).getByRole('button', { name: 'Using this screen' })
+    ).toBeVisible();
+    await expect(panel.getByRole('heading', { name: 'Needs attention' })).toBeVisible();
+    await expect(panel.getByRole('heading', { name: 'Take out recycling' })).toBeVisible();
+  },
+};
+
 export const WideDesktop: Story = {
   globals: { viewport: { value: 'desktop1440p', isRotated: false } },
   parameters: { viewport: { defaultViewport: 'desktop1440p' } },
+};
+
+export const IpadProPortrait: Story = {
+  globals: { viewport: { value: 'ipadPro', isRotated: false } },
+  parameters: {
+    viewport: { defaultViewport: 'ipadPro' },
+    docs: {
+      description: {
+        story:
+          'Portrait tablets use the compact House pulse composition so each metric and the rewards action remains readable and touchable.',
+      },
+    },
+  },
+  play: async ({ canvas }) => {
+    await canvas.findByText('House pulse');
+    const panel = within(canvas.getByRole('region', { name: 'Today' }));
+    const metrics = panel
+      .getByText('House pulse')
+      .closest('[data-house-pulse-layout="responsive"]')
+      ?.querySelectorAll('[data-pulse-metric="true"]');
+    await expect(metrics).toHaveLength(4);
+    await expect(panel.getByText('Missions and rewards')).toBeVisible();
+  },
 };
 
 export const Mobile: Story = {
@@ -197,9 +258,16 @@ export const Mobile: Story = {
     },
   },
   play: async ({ canvas }) => {
-    await canvas.findByText('Today at home');
+    await canvas.findByText('House pulse');
     const panel = within(canvas.getByRole('region', { name: 'Today' }));
-    await expect(panel.getByLabelText('Using this screen')).toBeInTheDocument();
+    const participantPicker = panel.getByLabelText('Using this screen');
+    await expect(participantPicker).toBeInTheDocument();
+    await expect(within(participantPicker).getByText('Everyone')).toBeVisible();
+    await expect(panel.getByText('House pulse')).toBeVisible();
+    await expect(
+      panel.getByText('House pulse').closest('[data-house-pulse-layout="responsive"]')
+    ).toBeVisible();
+    await expect(panel.getByText('Missions and rewards')).toBeVisible();
     await expect(
       panel.getAllByRole('heading', { name: 'Unload dishwasher' }).length
     ).toBeGreaterThan(0);
@@ -237,17 +305,20 @@ export const EmptyHousehold: Story = {
     docs: {
       description: {
         story:
-          'First-run state and the start of the six-step guided setup. The welcome surface keeps one primary action and explains ownership, repetition, and optional motivation without exposing advanced scheduling first.',
+          'First-run state and the start of the guided setup. The welcome surface defines chores in everyday language, explains why a household would use them, and keeps one clear primary action.',
       },
     },
   },
   play: async ({ canvas, canvasElement }) => {
     const welcome = await canvas.findByRole('region', {
-      name: 'Set chores once. Keep the house moving.',
+      name: 'Make household work easier to share.',
     });
-    await expect(within(welcome).getByText('Clear ownership')).toBeInTheDocument();
-    await expect(within(welcome).getByText('Useful repetition')).toBeInTheDocument();
-    await expect(within(welcome).getByText('Progress your way')).toBeInTheDocument();
+    await expect(within(welcome).getByText('Why use chores?')).toBeInTheDocument();
+    await expect(within(welcome).getByText('No more asking who is doing what')).toBeInTheDocument();
+    await expect(
+      within(welcome).getByText('Routine jobs are harder to forget')
+    ).toBeInTheDocument();
+    await expect(within(welcome).getByText('See progress without checking in')).toBeInTheDocument();
     const actions = within(welcome).getAllByRole('button');
     await expect(actions).toHaveLength(1);
     await userEvent.click(actions[0]);
@@ -293,6 +364,45 @@ export const HouseSettled: Story = {
         'Everything due today is complete.'
       )
     ).toBeInTheDocument();
+  },
+};
+
+export const MotivationOff: Story = {
+  args: { mode: 'off' },
+  play: async ({ canvas }) => {
+    const today = within(canvas.getByRole('region', { name: 'Today' }));
+    const pulseHeading = await today.findByText('House pulse');
+    const pulse = pulseHeading.closest('[data-house-pulse-layout="responsive"]');
+    await expect(pulse).toHaveAttribute('data-house-pulse-density', 'inline-metrics');
+    await expect(pulse).toHaveClass('lg:landscape:flex', 'xl:flex');
+    await expect(pulse?.querySelector('[data-house-pulse-metrics="true"]')).toHaveClass(
+      'grid-cols-2',
+      'sm:grid-cols-3',
+      'lg:landscape:contents',
+      'xl:contents'
+    );
+    const inlineMetrics = pulse?.querySelectorAll('[data-pulse-metric="true"]') ?? [];
+    await expect(inlineMetrics).toHaveLength(3);
+    await expect(inlineMetrics[1]).toHaveClass('border-l');
+    await expect(inlineMetrics[2]).toHaveClass('col-span-2', 'sm:col-span-1', 'sm:border-l');
+    await expect(inlineMetrics[0]).toHaveClass('lg:landscape:ml-auto', 'xl:ml-auto');
+    await expect(pulse?.querySelector('[data-house-pulse-actions="true"]')).toHaveClass(
+      'lg:landscape:ml-3',
+      'lg:landscape:border-l',
+      'lg:landscape:pl-4',
+      'xl:ml-3',
+      'xl:border-l',
+      'xl:pl-4'
+    );
+    await expect(inlineMetrics[0]).toHaveClass('lg:landscape:border-0', 'xl:border-0');
+    for (const metric of inlineMetrics) {
+      await expect(metric).toHaveClass('lg:landscape:px-4', 'xl:px-5');
+    }
+    for (const metric of Array.from(inlineMetrics).slice(1)) {
+      await expect(metric).toHaveClass('lg:landscape:border-l', 'xl:border-l');
+    }
+    await expect(today.queryByText('Earned')).not.toBeInTheDocument();
+    await expect(today.queryByTitle(/points$/)).not.toBeInTheDocument();
   },
 };
 
@@ -350,7 +460,7 @@ export const ChoreLibrary: Story = {
     },
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await canvas.findByText('Today at home');
+    await canvas.findByText('House pulse');
     const choresNavigation = canvas.getByRole('navigation', { name: 'Household' });
     await expect(within(choresNavigation).queryByRole('tablist')).not.toBeInTheDocument();
     await userEvent.click(within(choresNavigation).getByRole('button', { name: 'Chores' }));
@@ -359,8 +469,10 @@ export const ChoreLibrary: Story = {
       'page'
     );
     const panel = within(canvas.getByRole('region', { name: 'Chores' }));
-    await expect(panel.getByText('Chore library')).toBeInTheDocument();
-    await expect(panel.getByRole('button', { name: 'Add chore' })).toBeInTheDocument();
+    await expect(panel.queryByText('Chore library')).not.toBeInTheDocument();
+    const toolbar = within(panel.getByRole('region', { name: 'Chore library' }));
+    await expect(toolbar.getByRole('searchbox')).toBeInTheDocument();
+    await expect(toolbar.getByRole('button', { name: 'Add chore' })).toBeInTheDocument();
     const dishwasherCard = panel
       .getByRole('heading', { name: 'Unload dishwasher' })
       .closest('[data-chore-base-card]');
@@ -384,10 +496,18 @@ export const ChoreLibrary: Story = {
 
 export const MissionManagement: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await canvas.findByText('Today at home');
+    await canvas.findByText('House pulse');
     await userEvent.click(canvas.getByRole('button', { name: 'Missions' }));
     const panel = within(canvas.getByRole('region', { name: 'Missions' }));
-    await expect(panel.getByText('Household missions')).toBeInTheDocument();
+    await expect(panel.queryByText('Household missions')).not.toBeInTheDocument();
+    await expect(
+      panel.queryByText('Bring a few chores together around a shared outcome.')
+    ).not.toBeInTheDocument();
+    const toolbar = within(panel.getByRole('region', { name: 'Household missions' }));
+    await expect(toolbar.getByRole('searchbox')).toBeInTheDocument();
+    const statusFilter = toolbar.getByLabelText('Filter by status');
+    await expect(statusFilter).toBeInTheDocument();
+    await expect(toolbar.getByRole('button', { name: 'Add mission' })).toBeInTheDocument();
     const missionCard = panel
       .getByRole('heading', { name: 'Saturday reset' })
       .closest('[data-chore-base-card]');
@@ -399,7 +519,10 @@ export const MissionManagement: Story = {
     await expect(
       within(missionCard as HTMLElement).getByRole('button', { name: 'More actions' })
     ).toBeVisible();
-    await userEvent.click(panel.getByRole('button', { name: 'Add mission' }));
+    await userEvent.selectOptions(statusFilter, 'complete');
+    await expect(panel.queryByRole('heading', { name: 'Saturday reset' })).not.toBeInTheDocument();
+    await userEvent.selectOptions(statusFilter, 'all');
+    await userEvent.click(toolbar.getByRole('button', { name: 'Add mission' }));
     const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
       name: 'Create mission',
     });
@@ -409,9 +532,18 @@ export const MissionManagement: Story = {
 
 export const RewardManagement: Story = {
   play: async ({ canvas, userEvent }) => {
-    await canvas.findByText('Today at home');
+    await canvas.findByText('House pulse');
     await userEvent.click(canvas.getByRole('button', { name: 'Rewards' }));
     const panel = within(canvas.getByRole('region', { name: 'Rewards' }));
+    await expect(panel.queryByText('Reward goals')).not.toBeInTheDocument();
+    await expect(
+      panel.queryByText('Keep motivation optional, visible, and kind.')
+    ).not.toBeInTheDocument();
+    const toolbar = within(panel.getByRole('region', { name: 'Reward goals' }));
+    await expect(toolbar.getByRole('searchbox')).toBeInTheDocument();
+    const typeFilter = toolbar.getByLabelText('Goal type');
+    await expect(typeFilter).toBeInTheDocument();
+    await expect(toolbar.getByRole('button', { name: 'Add reward' })).toBeInTheDocument();
     const rewardCard = panel
       .getByRole('heading', { name: 'Choose our next family outing' })
       .closest('[data-chore-base-card]');
@@ -423,14 +555,22 @@ export const RewardManagement: Story = {
     await expect(
       within(rewardCard as HTMLElement).getByRole('button', { name: 'More actions' })
     ).toBeVisible();
+    await userEvent.selectOptions(typeFilter, 'instant');
+    await expect(
+      panel.queryByRole('heading', { name: 'Choose our next family outing' })
+    ).not.toBeInTheDocument();
   },
 };
 
 export const ProgressManagement: Story = {
   play: async ({ canvas, userEvent }) => {
-    await canvas.findByText('Today at home');
+    await canvas.findByText('House pulse');
     await userEvent.click(canvas.getByRole('button', { name: 'Progress' }));
     const panel = within(canvas.getByRole('region', { name: 'Progress' }));
+    await expect(panel.queryByText('Household progress')).not.toBeInTheDocument();
+    await expect(
+      panel.queryByText('See each person’s contribution without ranking the family.')
+    ).not.toBeInTheDocument();
     const personCard = panel
       .getByRole('heading', { name: 'Alex' })
       .closest('[data-chore-base-card]');
@@ -452,7 +592,7 @@ export const SettingsAndRecovery: Story = {
     },
   },
   play: async ({ canvas, userEvent }) => {
-    await canvas.findByText('Today at home');
+    await canvas.findByText('House pulse');
     await userEvent.click(canvas.getByRole('button', { name: 'Settings' }));
     const panel = within(canvas.getByRole('region', { name: 'Settings' }));
     const workspace = panel.getByRole('region', { name: 'Chore settings' });

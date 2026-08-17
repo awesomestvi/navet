@@ -25,6 +25,27 @@ function formatEntityType(type: string) {
     .join(' ');
 }
 
+function resolveEntityType(type: string, ...entityIds: Array<string | undefined>) {
+  if (type !== 'unknown') {
+    return type;
+  }
+
+  for (const entityId of entityIds) {
+    if (!entityId) {
+      continue;
+    }
+
+    const nativeId = entityId.includes(':')
+      ? entityId.slice(entityId.lastIndexOf(':') + 1)
+      : entityId;
+    if (nativeId.includes('.')) {
+      return nativeId.slice(0, nativeId.indexOf('.'));
+    }
+  }
+
+  return type;
+}
+
 function getCustomEntityIds(customCards: CustomCard[], placedCardIds: Set<string>) {
   const entityIds = new Set<string>();
 
@@ -75,13 +96,22 @@ export function buildManualEntityCardCatalog({
       getDeviceTypeLabel(device.type, t);
     const providerTypeLabel =
       getProviderEntityTypeLabel(device.id, typeLabel, providerCount > 1) ?? typeLabel;
+    const entityType = resolveEntityType(
+      entityView?.type ?? 'unknown',
+      entityView?.externalId,
+      device.nativeId,
+      device.id
+    );
 
     cards.push({
       id: device.id,
       title,
       subtitle: room,
+      room,
       meta: providerTypeLabel,
       kind: 'device',
+      entityType,
+      entityTypeLabel: getDeviceTypeLabel(device.type, t),
       icon: getDeviceTypeIcon(
         device.type,
         'deviceClass' in device && typeof device.deviceClass === 'string'
@@ -122,14 +152,18 @@ export function buildManualEntityCardCatalog({
     }
 
     const room = entity.room ?? 'Unknown';
-    const typeLabel = formatEntityType(entity.type);
+    const entityType = resolveEntityType(entity.type, entity.externalId);
+    const typeLabel = formatEntityType(entityType);
     cards.push({
       id: entity.canonicalId,
       title: entity.name,
       subtitle: room,
+      room,
       meta: typeLabel,
       kind: 'device',
-      icon: Box,
+      entityType,
+      entityTypeLabel: typeLabel,
+      icon: entity.type === 'unknown' ? Box : getDeviceTypeIcon(entity.type),
       idSearchText: buildSearchText([entity.canonicalId, entity.id, entity.externalId]),
     });
   }

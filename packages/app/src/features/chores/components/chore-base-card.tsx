@@ -46,7 +46,7 @@ export function ChoreBaseCard({
   const surface = getThemeSurfaceTokens(theme);
   const footer =
     footerLeading || footerAction ? (
-      <footer className="@container/chore-footer flex min-w-0 items-center justify-between gap-3">
+      <footer className="@container/chore-footer flex min-h-9 min-w-0 items-center justify-between gap-3">
         {footerLeading ? <div className="min-w-0">{footerLeading}</div> : <span />}
         {footerAction ? <div className="shrink-0">{footerAction}</div> : null}
       </footer>
