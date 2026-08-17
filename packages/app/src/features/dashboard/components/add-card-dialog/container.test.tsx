@@ -1,5 +1,5 @@
 import { renderWithProviders } from '@navet/app/test/render';
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { AddCardDialogContainer } from './container';
 
@@ -8,13 +8,26 @@ const demoLibraryCards = [
     id: 'light.kitchen',
     title: 'Kitchen Light',
     subtitle: 'Kitchen',
+    room: 'Kitchen',
     meta: 'Light',
     kind: 'device' as const,
+    entityType: 'light',
+    entityTypeLabel: 'Light',
+  },
+  {
+    id: 'sensor.kitchen_temperature',
+    title: 'Kitchen Temperature',
+    subtitle: 'Kitchen',
+    room: 'Kitchen',
+    meta: 'Sensor',
+    kind: 'device' as const,
+    entityType: 'sensor',
+    entityTypeLabel: 'Sensor',
   },
 ];
 
 describe('AddCardDialogContainer', () => {
-  it('renders the add card header with interactive pill tabs', () => {
+  it('renders the expanded workspace with responsive card navigation', () => {
     renderWithProviders(
       <AddCardDialogContainer
         open
@@ -27,8 +40,148 @@ describe('AddCardDialogContainer', () => {
     );
 
     expect(screen.getAllByText('Add Card').length).toBeGreaterThan(0);
-    expect(screen.getByText('Cards')).toBeInTheDocument();
-    expect(screen.getByText('Custom card')).toBeInTheDocument();
+    const sidebar = screen.getByRole('navigation', { name: 'Add Card' });
+    const allCardsButton = within(sidebar).getByRole('button', { name: /All cards/ });
+    expect(allCardsButton).toHaveAttribute('aria-current', 'page');
+    expect(within(allCardsButton).getByText('2 entities')).toBeInTheDocument();
+    expect(within(sidebar).getByRole('button', { name: 'Custom card' })).toBeInTheDocument();
+    expect(within(sidebar).getByRole('button', { name: /Light/ })).toBeInTheDocument();
+    expect(within(sidebar).getByRole('button', { name: /Sensor/ })).toBeInTheDocument();
+    const separator = sidebar.querySelector('[data-navigation-workspace-separator]');
+    const customCardButton = within(sidebar).getByRole('button', { name: 'Custom card' });
+    expect(separator).toBeInTheDocument();
+    expect(
+      (separator?.compareDocumentPosition(customCardButton) ?? 0) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'Add Card' })).toHaveClass('md:max-w-[1200px]');
+  });
+
+  it('filters normal cards from the entity-type sidebar', () => {
+    renderWithProviders(
+      <AddCardDialogContainer
+        open
+        onClose={() => {}}
+        onAddCard={vi.fn()}
+        onAddLibraryCard={() => {}}
+        currentRoom="Kitchen"
+        libraryCards={demoLibraryCards}
+      />
+    );
+
+    const sidebar = screen.getByRole('navigation', { name: 'Add Card' });
+    fireEvent.click(within(sidebar).getByRole('button', { name: /Sensor/ }));
+
+    expect(screen.getByText('Kitchen Temperature')).toBeInTheDocument();
+    expect(screen.queryByText('Kitchen Light')).not.toBeInTheDocument();
+  });
+
+  it('filters cards by room beside search', () => {
+    renderWithProviders(
+      <AddCardDialogContainer
+        open
+        onClose={() => {}}
+        onAddCard={vi.fn()}
+        onAddLibraryCard={() => {}}
+        currentRoom="Kitchen"
+        libraryCards={[
+          ...demoLibraryCards,
+          {
+            id: 'light.living_room',
+            title: 'Living Room Light',
+            subtitle: 'Living Room',
+            room: 'Living Room',
+            meta: 'Light',
+            kind: 'device',
+            entityType: 'light',
+            entityTypeLabel: 'Light',
+          },
+        ]}
+      />
+    );
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Filter' }), {
+      target: { value: 'Living Room' },
+    });
+
+    expect(screen.getByText('Living Room Light')).toBeInTheDocument();
+    expect(screen.queryByText('Kitchen Light')).not.toBeInTheDocument();
+    expect(screen.queryByText('Kitchen Temperature')).not.toBeInTheDocument();
+  });
+
+  it('cycles entity-card sorting through ascending, descending, and default order', () => {
+    renderWithProviders(
+      <AddCardDialogContainer
+        open
+        onClose={() => {}}
+        onAddCard={vi.fn()}
+        onAddLibraryCard={() => {}}
+        currentRoom="Kitchen"
+        libraryCards={[
+          {
+            id: 'light.zebra',
+            title: 'Zebra Light',
+            subtitle: 'Kitchen',
+            room: 'Kitchen',
+            meta: 'Light',
+            kind: 'device',
+          },
+          {
+            id: 'light.alpha',
+            title: 'Alpha Light',
+            subtitle: 'Kitchen',
+            room: 'Kitchen',
+            meta: 'Light',
+            kind: 'device',
+          },
+        ]}
+      />
+    );
+
+    const alphaCard = screen.getByText('Alpha Light').closest('button') as HTMLButtonElement;
+    const zebraCard = screen.getByText('Zebra Light').closest('button') as HTMLButtonElement;
+    expect(
+      zebraCard.compareDocumentPosition(alphaCard) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+
+    const sortButton = screen.getByRole('button', { name: 'Sort: Default' });
+    expect(sortButton).toHaveAttribute('data-sort-direction', 'none');
+
+    fireEvent.click(sortButton);
+    expect(sortButton).toHaveAttribute('data-sort-direction', 'asc');
+    expect(
+      alphaCard.compareDocumentPosition(zebraCard) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+
+    fireEvent.click(sortButton);
+    expect(sortButton).toHaveAttribute('data-sort-direction', 'desc');
+    expect(
+      zebraCard.compareDocumentPosition(alphaCard) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+
+    fireEvent.click(sortButton);
+    expect(sortButton).toHaveAttribute('data-sort-direction', 'none');
+    expect(
+      zebraCard.compareDocumentPosition(alphaCard) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it('closes the expanded add card workspace from its header', () => {
+    const onClose = vi.fn();
+
+    renderWithProviders(
+      <AddCardDialogContainer
+        open
+        onClose={onClose}
+        onAddCard={vi.fn()}
+        onAddLibraryCard={() => {}}
+        currentRoom="Living Room"
+        libraryCards={demoLibraryCards}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+    expect(onClose).toHaveBeenCalledOnce();
   });
 
   it('shows the scene template and forwards its preset data when added', () => {
@@ -132,6 +285,42 @@ describe('AddCardDialogContainer', () => {
     expect(screen.queryByText('Media Stack')).not.toBeInTheDocument();
   });
 
+  it('sorts custom cards by translated name in ascending order', () => {
+    renderWithProviders(
+      <AddCardDialogContainer
+        open
+        onClose={() => {}}
+        onAddCard={vi.fn()}
+        onAddLibraryCard={() => {}}
+        currentRoom="Living Room"
+        libraryCards={demoLibraryCards}
+        showCardsTab={false}
+      />
+    );
+
+    const names = [
+      'Action',
+      'Battery Overview',
+      'Energy Metric',
+      'Energy Now',
+      'Info',
+      'Map',
+      'Photo',
+      'Quick Note',
+      'RSS Feed',
+      'Scene',
+      'UPS Monitor',
+    ];
+    const options = names.map((name) => screen.getByText(name).closest('button'));
+
+    for (let index = 0; index < options.length - 1; index += 1) {
+      expect(
+        (options[index]?.compareDocumentPosition(options[index + 1] as Node) ?? 0) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+    }
+  });
+
   it('does not match hidden entity ids for plain entity search terms', () => {
     renderWithProviders(
       <AddCardDialogContainer
@@ -164,14 +353,14 @@ describe('AddCardDialogContainer', () => {
     });
 
     expect(screen.queryByText('Battery')).not.toBeInTheDocument();
-    expect(screen.getByText('Home')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Home.*Weather/ })).toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText('Search entities'), {
       target: { value: 'sensor.basement_weather_station_battery' },
     });
 
     expect(screen.getByText('Battery')).toBeInTheDocument();
-    expect(screen.queryByText('Home')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Home.*Weather/ })).not.toBeInTheDocument();
   });
 
   it('matches native entity ids supplied by the manual entity catalog', () => {

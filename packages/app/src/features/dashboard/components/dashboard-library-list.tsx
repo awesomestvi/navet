@@ -10,17 +10,26 @@ export type DashboardLibraryCard = {
   id: string;
   title: string;
   subtitle: string;
+  room?: string;
   meta: string;
   kind: 'device' | 'widget';
   icon?: LucideIcon;
+  entityType?: string;
+  entityTypeLabel?: string;
   idSearchText?: string;
+};
+
+export type DashboardLibraryEntityType = {
+  key: string;
+  label: string;
+  count: number;
+  icon?: LucideIcon;
 };
 
 const DashboardLibraryRow = memo(function DashboardLibraryRow({
   card,
   surface,
   accentColor,
-  iconBackground,
   tileBackground,
   tileBorder,
   onAdd,
@@ -28,7 +37,6 @@ const DashboardLibraryRow = memo(function DashboardLibraryRow({
   card: DashboardLibraryCard;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
   accentColor: string;
-  iconBackground: string;
   tileBackground: string;
   tileBorder: string;
   onAdd: () => void;
@@ -46,13 +54,12 @@ const DashboardLibraryRow = memo(function DashboardLibraryRow({
       }}
     >
       <div
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-        style={{ backgroundColor: iconBackground }}
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[14px] border ${surface.borderStrong} ${surface.iconBg} ${surface.textPrimary}`}
       >
         {IconComponent ? (
-          <IconComponent className={`h-3.5 w-3.5 ${surface.textMuted}`} aria-hidden="true" />
+          <IconComponent className="h-4 w-4" aria-hidden="true" />
         ) : (
-          <div className={`h-2 w-2 rounded-full ${surface.textMuted}`} />
+          <div className="h-2 w-2 rounded-full bg-current" />
         )}
       </div>
       <div className="min-w-0 flex-1">
@@ -77,26 +84,43 @@ export const DashboardLibraryList = memo(function DashboardLibraryList({
   cards,
   surface,
   accentColor,
-  iconBackground,
   tileBackground,
   tileBorder,
   emptyText,
   onAdd,
   height = LIST_HEIGHT,
+  fillAvailable = false,
 }: {
   cards: DashboardLibraryCard[];
   surface: ReturnType<typeof getThemeSurfaceTokens>;
   accentColor: string;
-  iconBackground: string;
   tileBackground: string;
   tileBorder: string;
   emptyText: string;
   onAdd: (cardId: string) => void;
   height?: number;
+  fillAvailable?: boolean;
 }) {
   const [scrollTop, setScrollTop] = useState(0);
+  const [measuredHeight, setMeasuredHeight] = useState(height);
   const listRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const element = listRef.current;
+    if (!fillAvailable || !element || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+
+    const observer = new ResizeObserver(([entry]) => {
+      const nextHeight = Math.floor(entry?.contentRect.height ?? 0);
+      if (nextHeight > 0) {
+        setMeasuredHeight(nextHeight);
+      }
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [fillAvailable]);
 
   useEffect(() => {
     return () => {
@@ -106,7 +130,8 @@ export const DashboardLibraryList = memo(function DashboardLibraryList({
     };
   }, []);
 
-  const visibleCount = Math.ceil(height / ROW_HEIGHT);
+  const resolvedHeight = fillAvailable ? measuredHeight : height;
+  const visibleCount = Math.ceil(resolvedHeight / ROW_HEIGHT);
   const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
   const endIndex = Math.min(cards.length, startIndex + visibleCount + OVERSCAN * 2);
   const virtualCards = cards.slice(startIndex, endIndex);
@@ -117,8 +142,10 @@ export const DashboardLibraryList = memo(function DashboardLibraryList({
     <div
       ref={listRef}
       data-library-interactive="true"
-      className="mt-3 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      style={{ height: `${height}px` }}
+      className={`overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+        fillAvailable ? 'h-full min-h-0' : 'mt-3'
+      }`}
+      style={fillAvailable ? undefined : { height: `${height}px` }}
       onScroll={(event) => {
         const next = event.currentTarget.scrollTop;
         if (rafRef.current !== null) {
@@ -143,7 +170,6 @@ export const DashboardLibraryList = memo(function DashboardLibraryList({
                 card={card}
                 surface={surface}
                 accentColor={accentColor}
-                iconBackground={iconBackground}
                 tileBackground={tileBackground}
                 tileBorder={tileBorder}
                 onAdd={() => onAdd(card.id)}

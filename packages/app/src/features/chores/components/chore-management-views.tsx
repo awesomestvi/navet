@@ -56,30 +56,6 @@ import { resolveChoreIconComponent } from './chore-icon';
 import { ChorePointsToken } from './chore-points-token';
 import { MissionCard, RewardGoalCard } from './chore-support-cards';
 
-function ViewHeader({
-  title,
-  description,
-  action,
-}: {
-  title: string;
-  description: string;
-  action?: ReactNode;
-}) {
-  const { theme } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
-  return (
-    <header className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div className="min-w-0">
-        <h1 className={cn(navetTypographyTokens.pageHeading, surface.textPrimary)}>{title}</h1>
-        <p className={cn('mt-1 max-w-2xl', navetTypographyTokens.body, surface.textSecondary)}>
-          {description}
-        </p>
-      </div>
-      {action ? <div className="shrink-0 self-start sm:self-auto">{action}</div> : null}
-    </header>
-  );
-}
-
 function assignmentLabel(
   definition: ChoreDefinition,
   participants: Record<string, ChoreParticipant>,
@@ -252,18 +228,11 @@ export function AllChoresView({
 
   return (
     <div>
-      <ViewHeader
-        title={t('household.chores.title')}
-        description={t('household.chores.description')}
-        action={
-          <Button size="small" leading={<Plus className="h-4 w-4" />} onClick={onAdd}>
-            {t('household.chores.add')}
-          </Button>
-        }
-      />
       <Panel
+        as="section"
+        aria-label={t('household.chores.title')}
         muted
-        className="mb-4 grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-[minmax(15rem,1fr)_repeat(4,minmax(8rem,0.4fr))]"
+        className="mb-4 grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-[minmax(15rem,1fr)_repeat(4,minmax(8rem,0.4fr))_auto]"
       >
         <Input
           type="search"
@@ -324,6 +293,14 @@ export function AllChoresView({
           <option value="paused">{t('household.chores.paused')}</option>
           <option value="archived">{t('household.chores.archived')}</option>
         </Select>
+        <Button
+          size="small"
+          className="w-full xl:w-auto"
+          leading={<Plus className="h-4 w-4" aria-hidden="true" />}
+          onClick={onAdd}
+        >
+          {t('household.chores.add')}
+        </Button>
       </Panel>
       {statusFilter === 'archived' ? null : definitions.length === 0 ? (
         <DashboardEmptyState
@@ -508,27 +485,71 @@ export function MissionsView({
   onDelete: (mission: ChoreMission) => void;
 }) {
   const { t } = useI18n();
-  const missions = getMissionProgressList(data);
+  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | ChoreMission['status']>('all');
+  const allMissions = getMissionProgressList(data);
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const missions = allMissions
+    .filter(
+      ({ mission }) =>
+        !normalizedQuery ||
+        [mission.title, mission.description]
+          .filter(Boolean)
+          .some((value) => value?.toLocaleLowerCase().includes(normalizedQuery))
+    )
+    .filter(({ mission }) => statusFilter === 'all' || mission.status === statusFilter);
   return (
     <div>
-      <ViewHeader
-        title={t('household.missions.title')}
-        description={t('household.missions.description')}
-        action={
-          <Button size="small" leading={<Plus className="h-4 w-4" />} onClick={onAdd}>
-            {t('household.missions.add')}
-          </Button>
-        }
-      />
+      <Panel
+        as="section"
+        aria-label={t('household.missions.title')}
+        muted
+        className="mb-4 grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-[minmax(15rem,1fr)_minmax(10rem,0.4fr)_auto]"
+      >
+        <Input
+          type="search"
+          size="small"
+          aria-label={t('household.filters.search')}
+          placeholder={t('household.filters.search')}
+          leading={<Search className="h-4 w-4" aria-hidden="true" />}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+        <Select
+          size="small"
+          aria-label={t('household.filters.status')}
+          value={statusFilter}
+          onChange={(event) =>
+            setStatusFilter(event.target.value as 'all' | ChoreMission['status'])
+          }
+        >
+          <option value="all">{t('household.filters.allStatuses')}</option>
+          <option value="active">{t('household.missions.active')}</option>
+          <option value="upcoming">{t('household.missions.upcoming')}</option>
+          <option value="complete">{t('household.missions.complete')}</option>
+        </Select>
+        <Button
+          size="small"
+          className="w-full sm:col-span-2 xl:col-span-1 xl:w-auto"
+          leading={<Plus className="h-4 w-4" aria-hidden="true" />}
+          onClick={onAdd}
+        >
+          {t('household.missions.add')}
+        </Button>
+      </Panel>
       {missions.length === 0 ? (
         <DashboardEmptyState
           compact
           variant="inline"
           icon={HeartHandshake}
           title={t('household.missions.emptyTitle')}
-          description={t('household.missions.emptyDescription')}
-          actionLabel={t('household.missions.add')}
-          onAction={onAdd}
+          description={
+            allMissions.length > 0
+              ? t('household.filters.tryAgain')
+              : t('household.missions.emptyDescription')
+          }
+          actionLabel={allMissions.length === 0 ? t('household.missions.add') : undefined}
+          onAction={allMissions.length === 0 ? onAdd : undefined}
           actionIcon={Plus}
         />
       ) : (
@@ -592,27 +613,66 @@ export function RewardsView({
   onDelete: (reward: ChoreRewardGoal) => void;
 }) {
   const { t } = useI18n();
-  const rewards = getRewardProgressList(data);
+  const [query, setQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | ChoreRewardGoal['type']>('all');
+  const allRewards = getRewardProgressList(data);
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const rewards = allRewards
+    .filter(
+      ({ goal }) => !normalizedQuery || goal.title.toLocaleLowerCase().includes(normalizedQuery)
+    )
+    .filter(({ goal }) => typeFilter === 'all' || goal.type === typeFilter);
   return (
     <div>
-      <ViewHeader
-        title={t('household.rewards.title')}
-        description={t('household.rewards.description')}
-        action={
-          <Button size="small" leading={<Plus className="h-4 w-4" />} onClick={onAdd}>
-            {t('household.rewards.add')}
-          </Button>
-        }
-      />
+      <Panel
+        as="section"
+        aria-label={t('household.rewards.title')}
+        muted
+        className="mb-4 grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-[minmax(15rem,1fr)_minmax(10rem,0.4fr)_auto]"
+      >
+        <Input
+          type="search"
+          size="small"
+          aria-label={t('household.filters.search')}
+          placeholder={t('household.filters.search')}
+          leading={<Search className="h-4 w-4" aria-hidden="true" />}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+        <Select
+          size="small"
+          aria-label={t('household.rewardDialog.type')}
+          value={typeFilter}
+          onChange={(event) => setTypeFilter(event.target.value as 'all' | ChoreRewardGoal['type'])}
+        >
+          <option value="all">{t('household.rewards.allTypes')}</option>
+          <option value="instant">{t('household.rewards.type.instant')}</option>
+          <option value="saving">{t('household.rewards.type.saving')}</option>
+          <option value="family">{t('household.rewards.type.family')}</option>
+          <option value="experience">{t('household.rewards.type.experience')}</option>
+        </Select>
+        <Button
+          size="small"
+          className="w-full sm:col-span-2 xl:col-span-1 xl:w-auto"
+          leading={<Plus className="h-4 w-4" aria-hidden="true" />}
+          onClick={onAdd}
+        >
+          {t('household.rewards.add')}
+        </Button>
+      </Panel>
       {rewards.length === 0 ? (
         <DashboardEmptyState
           compact
           variant="inline"
           icon={Gift}
           title={t('household.rewards.emptyTitle')}
-          description={t('household.rewards.emptyDescription')}
-          actionLabel={t('household.rewards.add')}
-          onAction={onAdd}
+          description={
+            allRewards.length > 0
+              ? t('household.filters.tryAgain')
+              : t('household.rewards.emptyDescription')
+          }
+          actionLabel={allRewards.length === 0 ? t('household.rewards.add') : undefined}
+          onAction={allRewards.length === 0 ? onAdd : undefined}
           actionIcon={Plus}
         />
       ) : (
@@ -690,10 +750,6 @@ export function ProgressView({
   });
   return (
     <div>
-      <ViewHeader
-        title={t('household.progress.title')}
-        description={t('household.progress.description')}
-      />
       <ChoreDashboardGrid>
         {people.map(({ participant, completions, points }) => (
           <ChoreBaseCard

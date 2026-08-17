@@ -41,6 +41,7 @@ import {
 } from 'lucide-react';
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { resolveChoreColorPalette } from '../chore-color-palette';
+import { ChoreFormGroup } from './chore-creation-form-groups';
 import { ChoreIconPicker } from './chore-icon-picker';
 import { ChoreProfileAppearanceEditor } from './chore-profile-appearance-editor';
 
@@ -1071,464 +1072,458 @@ export function AddChoreDialog({
                     </p>
 
                     {editorSection === 'details' ? (
-                      <div className="mt-7 grid gap-4 sm:grid-cols-2">
-                        <CardDialogSection
-                          className="sm:col-span-2"
-                          label={t('household.choreDialog.name')}
-                        >
-                          <Input
-                            autoFocus
-                            aria-label={t('household.choreDialog.name')}
-                            autoComplete="off"
-                            name="chore-name"
-                            value={title}
-                            placeholder={t('household.choreDialog.namePlaceholder')}
-                            onChange={(event) => setTitle(event.target.value)}
-                          />
-                        </CardDialogSection>
-                        <CardDialogSection
-                          className="sm:col-span-2"
-                          label={t('household.personDialog.avatarModeIcon')}
-                        >
-                          <ChoreIconPicker value={choreIcon} onChange={setChoreIcon} />
-                        </CardDialogSection>
-                        <CardDialogSection label={t('widgets.customCard.color')}>
-                          <div className="flex min-h-10 items-center gap-2">
-                            <ColorInputSwatch
-                              mode="picker"
-                              size="medium"
-                              value={
-                                choreColor ||
-                                resolveChoreColorPalette(
-                                  definition?.id ?? (title.trim() || 'new-chore')
-                                ).primary
-                              }
-                              visual={choreColor ? 'color' : 'rainbow'}
-                              selected={Boolean(choreColor)}
-                              ariaLabel={t('widgets.customCard.colorPicker')}
-                              onChange={setChoreColor}
-                            />
-                            {choreColor ? (
-                              <Button
-                                type="button"
-                                size="compact"
-                                variant="ghost"
-                                onClick={() => setChoreColor('')}
-                              >
-                                {t('common.reset')}
-                              </Button>
-                            ) : null}
-                          </div>
-                        </CardDialogSection>
-                        <CardDialogSection
-                          className="sm:col-span-2"
-                          label={t('household.choreDialog.instructions')}
-                        >
-                          <Textarea
-                            aria-label={t('household.choreDialog.instructions')}
-                            value={description}
-                            onChange={(event) => setDescription(event.target.value)}
-                          />
-                        </CardDialogSection>
-                        <CardDialogSection label={t('household.choreDialog.room')}>
-                          <Select
-                            aria-label={t('household.choreDialog.room')}
-                            value={roomLabel}
-                            onChange={(event) => setRoomLabel(event.target.value)}
+                      <div className="mt-7">
+                        <ChoreFormGroup title={t('household.setup.choreGroupDetails')}>
+                          <CardDialogSection
+                            className="sm:col-span-2"
+                            label={t('household.choreDialog.name')}
                           >
-                            <option value="">{t('household.choreDialog.noRoom')}</option>
-                            {roomChoices.map((room) => (
-                              <option key={room.canonicalId} value={room.canonicalId}>
-                                {room.label}
-                              </option>
-                            ))}
-                          </Select>
-                        </CardDialogSection>
-                        <CardDialogSection label={t('household.choreDialog.estimatedTime')}>
-                          <Input
-                            aria-label={t('household.choreDialog.estimatedTime')}
-                            min={0}
-                            max={1440}
-                            type="number"
-                            value={estimatedMinutes}
-                            onChange={(event) => setEstimatedMinutes(Number(event.target.value))}
-                          />
-                        </CardDialogSection>
-                        <CardDialogSection label={t('household.choreDialog.points')}>
-                          <Input
-                            aria-label={t('household.choreDialog.points')}
-                            min={0}
-                            max={10000}
-                            type="number"
-                            value={points}
-                            onChange={(event) => setPoints(Number(event.target.value))}
-                          />
-                        </CardDialogSection>
-                        <CardDialogSection label={t('household.choreDialog.childTitle')}>
-                          <Input
-                            aria-label={t('household.choreDialog.childTitle')}
-                            value={childTitle}
-                            onChange={(event) => setChildTitle(event.target.value)}
-                          />
-                        </CardDialogSection>
+                            <Input
+                              autoFocus
+                              aria-label={t('household.choreDialog.name')}
+                              autoComplete="off"
+                              name="chore-name"
+                              value={title}
+                              placeholder={t('household.choreDialog.namePlaceholder')}
+                              onChange={(event) => setTitle(event.target.value)}
+                            />
+                          </CardDialogSection>
+                          <CardDialogSection
+                            className="sm:col-span-2"
+                            label={t('household.personDialog.avatarModeIcon')}
+                          >
+                            <ChoreIconPicker value={choreIcon} onChange={setChoreIcon} />
+                          </CardDialogSection>
+                          <CardDialogSection label={t('widgets.customCard.color')}>
+                            <div className="flex min-h-10 items-center gap-2">
+                              <ColorInputSwatch
+                                mode="picker"
+                                size="medium"
+                                value={
+                                  choreColor ||
+                                  resolveChoreColorPalette(
+                                    definition?.id ?? (title.trim() || 'new-chore')
+                                  ).primary
+                                }
+                                visual={choreColor ? 'color' : 'rainbow'}
+                                selected={Boolean(choreColor)}
+                                ariaLabel={t('widgets.customCard.colorPicker')}
+                                onChange={setChoreColor}
+                              />
+                              {choreColor ? (
+                                <Button
+                                  type="button"
+                                  size="compact"
+                                  variant="ghost"
+                                  onClick={() => setChoreColor('')}
+                                >
+                                  {t('common.reset')}
+                                </Button>
+                              ) : null}
+                            </div>
+                          </CardDialogSection>
+                          <CardDialogSection
+                            className="sm:col-span-2"
+                            label={t('household.choreDialog.instructions')}
+                          >
+                            <Textarea
+                              aria-label={t('household.choreDialog.instructions')}
+                              value={description}
+                              onChange={(event) => setDescription(event.target.value)}
+                            />
+                          </CardDialogSection>
+                          <CardDialogSection label={t('household.choreDialog.room')}>
+                            <Select
+                              aria-label={t('household.choreDialog.room')}
+                              value={roomLabel}
+                              onChange={(event) => setRoomLabel(event.target.value)}
+                            >
+                              <option value="">{t('household.choreDialog.noRoom')}</option>
+                              {roomChoices.map((room) => (
+                                <option key={room.canonicalId} value={room.canonicalId}>
+                                  {room.label}
+                                </option>
+                              ))}
+                            </Select>
+                          </CardDialogSection>
+                          <CardDialogSection label={t('household.choreDialog.estimatedTime')}>
+                            <Input
+                              aria-label={t('household.choreDialog.estimatedTime')}
+                              min={0}
+                              max={1440}
+                              type="number"
+                              value={estimatedMinutes}
+                              onChange={(event) => setEstimatedMinutes(Number(event.target.value))}
+                            />
+                          </CardDialogSection>
+                          <CardDialogSection label={t('household.choreDialog.points')}>
+                            <Input
+                              aria-label={t('household.choreDialog.points')}
+                              min={0}
+                              max={10000}
+                              type="number"
+                              value={points}
+                              onChange={(event) => setPoints(Number(event.target.value))}
+                            />
+                          </CardDialogSection>
+                          <CardDialogSection label={t('household.choreDialog.childTitle')}>
+                            <Input
+                              aria-label={t('household.choreDialog.childTitle')}
+                              value={childTitle}
+                              onChange={(event) => setChildTitle(event.target.value)}
+                            />
+                          </CardDialogSection>
+                        </ChoreFormGroup>
                       </div>
                     ) : null}
 
                     {editorSection === 'assignment' ? (
-                      <div className="mt-7 grid gap-4 sm:grid-cols-2">
-                        <CardDialogSection label={t('household.choreDialog.assignment')}>
-                          <Select
-                            aria-label={t('household.choreDialog.assignment')}
-                            name="chore-assignment"
-                            value={assignmentMode}
-                            onChange={(event) =>
-                              setAssignmentMode(event.target.value as ChoreAssignmentMode)
-                            }
-                          >
-                            <option value="person">{t('household.assignment.person')}</option>
-                            <option value="anyone">{t('household.assignment.anyone')}</option>
-                            <option value="everyone">{t('household.assignment.everyone')}</option>
-                            <option value="rotation">{t('household.assignment.rotation')}</option>
-                          </Select>
-                        </CardDialogSection>
-                        <CardDialogSection label={t('household.choreDialog.person')}>
-                          <Select
-                            aria-label={t('household.choreDialog.person')}
-                            value={participantId}
-                            disabled={assignmentMode !== 'person'}
-                            name="chore-person"
-                            onChange={(event) => setParticipantId(event.target.value)}
-                          >
-                            {completers.map((participant) => (
-                              <option key={participant.id} value={participant.id}>
-                                {participant.displayName}
-                              </option>
-                            ))}
-                          </Select>
-                        </CardDialogSection>
-                        <div
-                          className={cn(
-                            'flex min-h-12 items-center justify-between gap-4 rounded-2xl border px-4 sm:col-span-2',
-                            surface.borderStrong,
-                            surface.subtleBg,
-                            surface.textPrimary
-                          )}
-                        >
-                          <span className="text-sm font-medium">
-                            {t('household.choreDialog.approval')}
-                          </span>
-                          <Switch
-                            aria-label={t('household.choreDialog.approval')}
-                            checked={approvalRequired}
-                            size="compact"
-                            disabled={approverIds.length === 0}
-                            onCheckedChange={setApprovalRequired}
-                          />
-                        </div>
-                        {assignmentMode === 'rotation' ? (
-                          <>
-                            <CardDialogSection label={t('household.choreDialog.rotationReset')}>
-                              <Select
-                                aria-label={t('household.choreDialog.rotationReset')}
-                                value={rotationReset}
-                                onChange={(event) =>
-                                  setRotationReset(
-                                    event.target.value as 'never' | 'weekly' | 'monthly'
-                                  )
-                                }
-                              >
-                                <option value="never">
-                                  {t('household.choreDialog.rotationNever')}
+                      <div className="mt-7">
+                        <ChoreFormGroup title={t('household.setup.choreGroupAssignment')}>
+                          <CardDialogSection label={t('household.choreDialog.assignment')}>
+                            <Select
+                              aria-label={t('household.choreDialog.assignment')}
+                              name="chore-assignment"
+                              value={assignmentMode}
+                              onChange={(event) =>
+                                setAssignmentMode(event.target.value as ChoreAssignmentMode)
+                              }
+                            >
+                              <option value="person">{t('household.assignment.person')}</option>
+                              <option value="anyone">{t('household.assignment.anyone')}</option>
+                              <option value="everyone">{t('household.assignment.everyone')}</option>
+                              <option value="rotation">{t('household.assignment.rotation')}</option>
+                            </Select>
+                          </CardDialogSection>
+                          <CardDialogSection label={t('household.choreDialog.person')}>
+                            <Select
+                              aria-label={t('household.choreDialog.person')}
+                              value={participantId}
+                              disabled={assignmentMode !== 'person'}
+                              name="chore-person"
+                              onChange={(event) => setParticipantId(event.target.value)}
+                            >
+                              {completers.map((participant) => (
+                                <option key={participant.id} value={participant.id}>
+                                  {participant.displayName}
                                 </option>
-                                <option value="weekly">{t('household.schedule.weekly')}</option>
-                                <option value="monthly">{t('household.schedule.monthly')}</option>
-                              </Select>
-                            </CardDialogSection>
-                            <CardDialogSection label={t('household.choreDialog.rotationOffset')}>
-                              <Input
-                                aria-label={t('household.choreDialog.rotationOffset')}
-                                min={0}
-                                type="number"
-                                value={rotationOffset}
-                                onChange={(event) => setRotationOffset(Number(event.target.value))}
-                              />
-                            </CardDialogSection>
-                          </>
-                        ) : null}
-                        {assignmentMode === 'rotation' || assignmentMode === 'everyone'
-                          ? completers.map((participant) => (
-                              <CardDialogSection
-                                key={participant.id}
-                                label={t('household.choreDialog.personTimes', {
-                                  name: participant.displayName,
-                                })}
-                              >
-                                <Input
-                                  aria-label={t('household.choreDialog.personTimes', {
-                                    name: participant.displayName,
-                                  })}
-                                  placeholder="08:00, 20:00"
-                                  value={participantTimes[participant.id] ?? ''}
+                              ))}
+                            </Select>
+                          </CardDialogSection>
+                          <div
+                            className={cn(
+                              'flex min-h-12 items-center justify-between gap-4 rounded-2xl border px-4 sm:col-span-2',
+                              surface.borderStrong,
+                              surface.subtleBg,
+                              surface.textPrimary
+                            )}
+                          >
+                            <span className="text-sm font-medium">
+                              {t('household.choreDialog.approval')}
+                            </span>
+                            <Switch
+                              aria-label={t('household.choreDialog.approval')}
+                              checked={approvalRequired}
+                              size="compact"
+                              disabled={approverIds.length === 0}
+                              onCheckedChange={setApprovalRequired}
+                            />
+                          </div>
+                          {assignmentMode === 'rotation' ? (
+                            <>
+                              <CardDialogSection label={t('household.choreDialog.rotationReset')}>
+                                <Select
+                                  aria-label={t('household.choreDialog.rotationReset')}
+                                  value={rotationReset}
                                   onChange={(event) =>
-                                    setParticipantTimes((current) => ({
-                                      ...current,
-                                      [participant.id]: event.target.value,
-                                    }))
+                                    setRotationReset(
+                                      event.target.value as 'never' | 'weekly' | 'monthly'
+                                    )
+                                  }
+                                >
+                                  <option value="never">
+                                    {t('household.choreDialog.rotationNever')}
+                                  </option>
+                                  <option value="weekly">{t('household.schedule.weekly')}</option>
+                                  <option value="monthly">{t('household.schedule.monthly')}</option>
+                                </Select>
+                              </CardDialogSection>
+                              <CardDialogSection label={t('household.choreDialog.rotationOffset')}>
+                                <Input
+                                  aria-label={t('household.choreDialog.rotationOffset')}
+                                  min={0}
+                                  type="number"
+                                  value={rotationOffset}
+                                  onChange={(event) =>
+                                    setRotationOffset(Number(event.target.value))
                                   }
                                 />
                               </CardDialogSection>
-                            ))
-                          : null}
-                        <div
-                          className={cn(
-                            'flex min-h-12 items-center justify-between gap-4 rounded-2xl border px-4 sm:col-span-2',
-                            surface.borderStrong,
-                            surface.subtleBg,
-                            surface.textPrimary
-                          )}
-                        >
-                          <span className="text-sm font-medium">
-                            {t('household.choreDialog.claimRequired')}
-                          </span>
-                          <Switch
-                            aria-label={t('household.choreDialog.claimRequired')}
-                            checked={claimRequired}
-                            size="compact"
-                            onCheckedChange={setClaimRequired}
-                          />
-                        </div>
-                        {claimRequired ? (
-                          <CardDialogSection label={t('household.choreDialog.claimExpiry')}>
-                            <Input
-                              aria-label={t('household.choreDialog.claimExpiry')}
-                              min={1}
-                              type="number"
-                              value={claimExpiryMinutes}
-                              onChange={(event) =>
-                                setClaimExpiryMinutes(Number(event.target.value))
-                              }
+                            </>
+                          ) : null}
+                          {assignmentMode === 'rotation' || assignmentMode === 'everyone'
+                            ? completers.map((participant) => (
+                                <CardDialogSection
+                                  key={participant.id}
+                                  label={t('household.choreDialog.personTimes', {
+                                    name: participant.displayName,
+                                  })}
+                                >
+                                  <Input
+                                    aria-label={t('household.choreDialog.personTimes', {
+                                      name: participant.displayName,
+                                    })}
+                                    placeholder="08:00, 20:00"
+                                    value={participantTimes[participant.id] ?? ''}
+                                    onChange={(event) =>
+                                      setParticipantTimes((current) => ({
+                                        ...current,
+                                        [participant.id]: event.target.value,
+                                      }))
+                                    }
+                                  />
+                                </CardDialogSection>
+                              ))
+                            : null}
+                          <div
+                            className={cn(
+                              'flex min-h-12 items-center justify-between gap-4 rounded-2xl border px-4 sm:col-span-2',
+                              surface.borderStrong,
+                              surface.subtleBg,
+                              surface.textPrimary
+                            )}
+                          >
+                            <span className="text-sm font-medium">
+                              {t('household.choreDialog.claimRequired')}
+                            </span>
+                            <Switch
+                              aria-label={t('household.choreDialog.claimRequired')}
+                              checked={claimRequired}
+                              size="compact"
+                              onCheckedChange={setClaimRequired}
                             />
-                          </CardDialogSection>
-                        ) : null}
+                          </div>
+                          {claimRequired ? (
+                            <CardDialogSection label={t('household.choreDialog.claimExpiry')}>
+                              <Input
+                                aria-label={t('household.choreDialog.claimExpiry')}
+                                min={1}
+                                type="number"
+                                value={claimExpiryMinutes}
+                                onChange={(event) =>
+                                  setClaimExpiryMinutes(Number(event.target.value))
+                                }
+                              />
+                            </CardDialogSection>
+                          ) : null}
+                        </ChoreFormGroup>
                       </div>
                     ) : null}
 
                     {editorSection === 'schedule' ? (
-                      <div className="mt-7 grid gap-4 sm:grid-cols-2">
-                        <CardDialogSection label={t('household.choreDialog.schedule')}>
-                          <Select
-                            aria-label={t('household.choreDialog.schedule')}
-                            name="chore-schedule"
-                            value={repeatValue}
-                            onChange={(event) =>
-                              selectRepeat(
-                                event.target.value as
-                                  | ChoreSchedule['frequency']
-                                  | 'biweekly'
-                                  | 'triweekly'
-                              )
-                            }
-                          >
-                            <option value="once">{t('household.schedule.once')}</option>
-                            <option value="daily">{t('household.schedule.daily')}</option>
-                            <option value="weekly">{t('household.schedule.weekly')}</option>
-                            <option value="biweekly">{t('household.schedule.biweekly')}</option>
-                            <option value="triweekly">{t('household.schedule.triweekly')}</option>
-                            <option value="monthly">{t('household.schedule.monthly')}</option>
-                            <option value="after_completion">
-                              {t('household.schedule.afterCompletion')}
-                            </option>
-                          </Select>
-                        </CardDialogSection>
-                        <CardDialogSection label={t('household.choreDialog.time')}>
-                          <Input
-                            aria-label={t('household.choreDialog.time')}
-                            name="chore-time"
-                            type="time"
-                            value={time}
-                            onChange={(event) => setTime(event.target.value)}
-                          />
-                        </CardDialogSection>
-                        <CardDialogSection label={t('household.choreDialog.startDate')}>
-                          <Input
-                            aria-label={t('household.choreDialog.startDate')}
-                            type="date"
-                            value={scheduleStartDate}
-                            onChange={(event) => setScheduleStartDate(event.target.value)}
-                          />
-                        </CardDialogSection>
-                        {frequency !== 'once' ? (
-                          <CardDialogSection label={t('household.choreDialog.endDate')}>
+                      <div className="mt-7">
+                        <ChoreFormGroup title={t('household.setup.choreGroupSchedule')}>
+                          <CardDialogSection label={t('household.choreDialog.schedule')}>
+                            <Select
+                              aria-label={t('household.choreDialog.schedule')}
+                              name="chore-schedule"
+                              value={repeatValue}
+                              onChange={(event) =>
+                                selectRepeat(
+                                  event.target.value as
+                                    | ChoreSchedule['frequency']
+                                    | 'biweekly'
+                                    | 'triweekly'
+                                )
+                              }
+                            >
+                              <option value="once">{t('household.schedule.once')}</option>
+                              <option value="daily">{t('household.schedule.daily')}</option>
+                              <option value="weekly">{t('household.schedule.weekly')}</option>
+                              <option value="biweekly">{t('household.schedule.biweekly')}</option>
+                              <option value="triweekly">{t('household.schedule.triweekly')}</option>
+                              <option value="monthly">{t('household.schedule.monthly')}</option>
+                              <option value="after_completion">
+                                {t('household.schedule.afterCompletion')}
+                              </option>
+                            </Select>
+                          </CardDialogSection>
+                          <CardDialogSection label={t('household.choreDialog.time')}>
                             <Input
-                              aria-label={t('household.choreDialog.endDate')}
+                              aria-label={t('household.choreDialog.time')}
+                              name="chore-time"
+                              type="time"
+                              value={time}
+                              onChange={(event) => setTime(event.target.value)}
+                            />
+                          </CardDialogSection>
+                          <CardDialogSection label={t('household.choreDialog.startDate')}>
+                            <Input
+                              aria-label={t('household.choreDialog.startDate')}
                               type="date"
-                              value={scheduleEndDate}
-                              onChange={(event) => setScheduleEndDate(event.target.value)}
+                              value={scheduleStartDate}
+                              onChange={(event) => setScheduleStartDate(event.target.value)}
                             />
                           </CardDialogSection>
-                        ) : null}
-                        {frequency === 'daily' ||
-                        frequency === 'weekly' ||
-                        frequency === 'after_completion' ? (
-                          <CardDialogSection label={t('household.choreDialog.repeatEvery')}>
+                          {frequency !== 'once' ? (
+                            <CardDialogSection label={t('household.choreDialog.endDate')}>
+                              <Input
+                                aria-label={t('household.choreDialog.endDate')}
+                                type="date"
+                                value={scheduleEndDate}
+                                onChange={(event) => setScheduleEndDate(event.target.value)}
+                              />
+                            </CardDialogSection>
+                          ) : null}
+                          {frequency === 'daily' ||
+                          frequency === 'weekly' ||
+                          frequency === 'after_completion' ? (
+                            <CardDialogSection label={t('household.choreDialog.repeatEvery')}>
+                              <Input
+                                aria-label={t('household.choreDialog.repeatEvery')}
+                                min={1}
+                                type="number"
+                                value={scheduleInterval}
+                                onChange={(event) =>
+                                  setScheduleInterval(Number(event.target.value))
+                                }
+                              />
+                            </CardDialogSection>
+                          ) : null}
+                          {frequency === 'daily' || frequency === 'weekly' ? (
+                            <CardDialogSection
+                              className="sm:col-span-2"
+                              label={t('household.choreDialog.weekdays')}
+                            >
+                              <div className="flex flex-wrap gap-1.5">
+                                {Array.from({ length: 7 }, (_, day) => {
+                                  const selected = weeklyDays.includes(day);
+                                  const label = new Intl.DateTimeFormat(undefined, {
+                                    weekday: 'short',
+                                  }).format(new Date(Date.UTC(2026, 7, 2 + day)));
+                                  return (
+                                    <Button
+                                      key={day}
+                                      type="button"
+                                      size="compact"
+                                      variant={selected ? 'secondary' : 'ghost'}
+                                      className="min-h-9 min-w-9 px-2"
+                                      aria-pressed={selected}
+                                      onClick={() =>
+                                        setWeeklyDays((current) =>
+                                          selected
+                                            ? current.filter((candidate) => candidate !== day)
+                                            : [...current, day].sort()
+                                        )
+                                      }
+                                    >
+                                      {label}
+                                    </Button>
+                                  );
+                                })}
+                              </div>
+                            </CardDialogSection>
+                          ) : null}
+                          {frequency !== 'once' ? (
+                            <CardDialogSection label={t('household.choreDialog.excludedDates')}>
+                              <Input
+                                aria-label={t('household.choreDialog.excludedDates')}
+                                placeholder="2026-12-24, 2026-12-25"
+                                value={excludedDates}
+                                onChange={(event) => setExcludedDates(event.target.value)}
+                              />
+                            </CardDialogSection>
+                          ) : null}
+                          <CardDialogSection label={t('household.choreDialog.dueWindow')}>
                             <Input
-                              aria-label={t('household.choreDialog.repeatEvery')}
-                              min={1}
+                              aria-label={t('household.choreDialog.dueWindow')}
+                              min={0}
+                              step={15}
                               type="number"
-                              value={scheduleInterval}
-                              onChange={(event) => setScheduleInterval(Number(event.target.value))}
+                              value={dueWindowMinutes}
+                              onChange={(event) => setDueWindowMinutes(Number(event.target.value))}
                             />
                           </CardDialogSection>
-                        ) : null}
-                        {frequency === 'daily' || frequency === 'weekly' ? (
-                          <CardDialogSection
-                            className="sm:col-span-2"
-                            label={t('household.choreDialog.weekdays')}
-                          >
-                            <div className="flex flex-wrap gap-1.5">
-                              {Array.from({ length: 7 }, (_, day) => {
-                                const selected = weeklyDays.includes(day);
-                                const label = new Intl.DateTimeFormat(undefined, {
-                                  weekday: 'short',
-                                }).format(new Date(Date.UTC(2026, 7, 2 + day)));
-                                return (
-                                  <Button
-                                    key={day}
-                                    type="button"
-                                    size="compact"
-                                    variant={selected ? 'secondary' : 'ghost'}
-                                    className="min-h-9 min-w-9 px-2"
-                                    aria-pressed={selected}
-                                    onClick={() =>
-                                      setWeeklyDays((current) =>
-                                        selected
-                                          ? current.filter((candidate) => candidate !== day)
-                                          : [...current, day].sort()
-                                      )
-                                    }
-                                  >
-                                    {label}
-                                  </Button>
-                                );
-                              })}
-                            </div>
-                          </CardDialogSection>
-                        ) : null}
-                        {frequency === 'monthly' ? (
-                          <CardDialogSection label={t('household.choreDialog.dayOfMonth')}>
-                            <Input
-                              aria-label={t('household.choreDialog.dayOfMonth')}
-                              min={1}
-                              max={31}
-                              type="number"
-                              value={dayOfMonth}
-                              onChange={(event) => setDayOfMonth(Number(event.target.value))}
-                            />
-                          </CardDialogSection>
-                        ) : null}
-                        <CardDialogSection label={t('household.choreDialog.extraTimes')}>
-                          <Input
-                            aria-label={t('household.choreDialog.extraTimes')}
-                            placeholder="08:00, 20:00"
-                            value={extraTimes}
-                            onChange={(event) => setExtraTimes(event.target.value)}
-                          />
-                        </CardDialogSection>
-                        {frequency !== 'once' ? (
-                          <CardDialogSection label={t('household.choreDialog.excludedDates')}>
-                            <Input
-                              aria-label={t('household.choreDialog.excludedDates')}
-                              placeholder="2026-12-24, 2026-12-25"
-                              value={excludedDates}
-                              onChange={(event) => setExcludedDates(event.target.value)}
-                            />
-                          </CardDialogSection>
-                        ) : null}
-                        <CardDialogSection label={t('household.choreDialog.dueWindow')}>
-                          <Input
-                            aria-label={t('household.choreDialog.dueWindow')}
-                            min={0}
-                            step={15}
-                            type="number"
-                            value={dueWindowMinutes}
-                            onChange={(event) => setDueWindowMinutes(Number(event.target.value))}
-                          />
-                        </CardDialogSection>
+                        </ChoreFormGroup>
                       </div>
                     ) : null}
 
                     {editorSection === 'options' ? (
-                      <div className="mt-7 grid gap-4 sm:grid-cols-2">
-                        <CardDialogSection label={t('household.choreDialog.missedGrace')}>
-                          <Input
-                            aria-label={t('household.choreDialog.missedGrace')}
-                            min={0}
-                            type="number"
-                            value={missedGraceMinutes}
-                            onChange={(event) => setMissedGraceMinutes(Number(event.target.value))}
-                          />
-                        </CardDialogSection>
-                        <CardDialogSection label={t('household.choreDialog.missedAction')}>
-                          <Select
-                            aria-label={t('household.choreDialog.missedAction')}
-                            value={missedAction}
-                            onChange={(event) =>
-                              setMissedAction(
-                                event.target.value as 'none' | 'skip' | 'carry_forward'
-                              )
-                            }
+                      <div className="mt-7">
+                        <ChoreFormGroup title={t('household.choreDialog.moreOptions')}>
+                          <CardDialogSection label={t('household.choreDialog.missedGrace')}>
+                            <Input
+                              aria-label={t('household.choreDialog.missedGrace')}
+                              min={0}
+                              type="number"
+                              value={missedGraceMinutes}
+                              onChange={(event) =>
+                                setMissedGraceMinutes(Number(event.target.value))
+                              }
+                            />
+                          </CardDialogSection>
+                          <CardDialogSection label={t('household.choreDialog.missedAction')}>
+                            <Select
+                              aria-label={t('household.choreDialog.missedAction')}
+                              value={missedAction}
+                              onChange={(event) =>
+                                setMissedAction(
+                                  event.target.value as 'none' | 'skip' | 'carry_forward'
+                                )
+                              }
+                            >
+                              <option value="none">{t('household.choreDialog.missedNone')}</option>
+                              <option value="skip">{t('household.choreDialog.missedSkip')}</option>
+                              <option value="carry_forward">
+                                {t('household.choreDialog.missedCarryForward')}
+                              </option>
+                            </Select>
+                          </CardDialogSection>
+                          <div
+                            className={cn(
+                              'flex min-h-12 items-center justify-between gap-4 rounded-2xl border px-4 sm:col-span-2',
+                              surface.borderStrong,
+                              surface.subtleBg,
+                              surface.textPrimary
+                            )}
                           >
-                            <option value="none">{t('household.choreDialog.missedNone')}</option>
-                            <option value="skip">{t('household.choreDialog.missedSkip')}</option>
-                            <option value="carry_forward">
-                              {t('household.choreDialog.missedCarryForward')}
-                            </option>
-                          </Select>
-                        </CardDialogSection>
-                        <div
-                          className={cn(
-                            'flex min-h-12 items-center justify-between gap-4 rounded-2xl border px-4 sm:col-span-2',
-                            surface.borderStrong,
-                            surface.subtleBg,
-                            surface.textPrimary
-                          )}
-                        >
-                          <span className="text-sm font-medium">
-                            {t('household.choreDialog.reminders')}
-                          </span>
-                          <Switch
-                            aria-label={t('household.choreDialog.reminders')}
-                            checked={remindersEnabled}
-                            size="compact"
-                            onCheckedChange={setRemindersEnabled}
-                          />
-                        </div>
-                        {remindersEnabled ? (
-                          <>
-                            <CardDialogSection label={t('household.choreDialog.remindBefore')}>
-                              <Input
-                                aria-label={t('household.choreDialog.remindBefore')}
-                                min={1}
-                                type="number"
-                                value={remindBeforeMinutes}
-                                onChange={(event) =>
-                                  setRemindBeforeMinutes(Number(event.target.value))
-                                }
-                              />
-                            </CardDialogSection>
-                            <CardDialogSection label={t('household.choreDialog.overdueEvery')}>
-                              <Input
-                                aria-label={t('household.choreDialog.overdueEvery')}
-                                min={1}
-                                type="number"
-                                value={overdueEveryMinutes}
-                                onChange={(event) =>
-                                  setOverdueEveryMinutes(Number(event.target.value))
-                                }
-                              />
-                            </CardDialogSection>
-                          </>
-                        ) : null}
+                            <span className="text-sm font-medium">
+                              {t('household.choreDialog.reminders')}
+                            </span>
+                            <Switch
+                              aria-label={t('household.choreDialog.reminders')}
+                              checked={remindersEnabled}
+                              size="compact"
+                              onCheckedChange={setRemindersEnabled}
+                            />
+                          </div>
+                          {remindersEnabled ? (
+                            <>
+                              <CardDialogSection label={t('household.choreDialog.remindBefore')}>
+                                <Input
+                                  aria-label={t('household.choreDialog.remindBefore')}
+                                  min={1}
+                                  type="number"
+                                  value={remindBeforeMinutes}
+                                  onChange={(event) =>
+                                    setRemindBeforeMinutes(Number(event.target.value))
+                                  }
+                                />
+                              </CardDialogSection>
+                              <CardDialogSection label={t('household.choreDialog.overdueEvery')}>
+                                <Input
+                                  aria-label={t('household.choreDialog.overdueEvery')}
+                                  min={1}
+                                  type="number"
+                                  value={overdueEveryMinutes}
+                                  onChange={(event) =>
+                                    setOverdueEveryMinutes(Number(event.target.value))
+                                  }
+                                />
+                              </CardDialogSection>
+                            </>
+                          ) : null}
+                        </ChoreFormGroup>
                       </div>
                     ) : null}
                   </div>

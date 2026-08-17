@@ -44,7 +44,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Operational Household support cards. House pulse keeps identity, points, streak, completion, and the optional rewards disclosure in one row; mission and reward cards stay hidden from Today until requested and use compact milestones instead of repeated progress bars.',
+          'Operational Household support cards. House pulse pairs identity with primary actions, then keeps metrics in a dedicated row on landscape displays and a safer wrapped grid on portrait tablets and phones; mission and reward cards stay hidden from Today until requested and use compact milestones instead of repeated progress bars.',
       },
     },
   },
@@ -61,20 +61,91 @@ export const Pulse: Story = {
     await expect(canvas.getByText('Day streak')).toBeInTheDocument();
     await expect(canvas.queryByRole('progressbar')).not.toBeInTheDocument();
     await expect(
-      canvasElement.querySelector('[data-house-pulse-layout="single-row"]')
+      canvasElement.querySelector('[data-house-pulse-layout="responsive"]')
     ).toBeVisible();
+    await expect(canvas.getByRole('heading', { name: 'House pulse' })).toHaveClass(
+      'text-sm',
+      'leading-tight'
+    );
+    await expect(canvasElement.querySelector('[data-house-pulse-icon="true"]')).toHaveClass(
+      'h-8',
+      'w-8',
+      'xl:h-9',
+      'xl:w-9'
+    );
+    await expect(canvasElement.querySelector('[data-house-pulse-header="true"]')).toHaveClass(
+      'pb-3'
+    );
+    await expect(canvasElement.querySelector('[data-house-pulse-metrics="true"]')).toHaveClass(
+      'grid-cols-1',
+      'sm:grid-cols-2',
+      'lg:landscape:grid-cols-3',
+      'xl:grid-cols-3'
+    );
 
     const metrics = canvasElement.querySelectorAll('[data-pulse-metric="true"]');
     await expect(metrics).toHaveLength(3);
     for (const metric of metrics) {
-      await expect(metric).toHaveClass('-my-3', 'h-[calc(100%+1.5rem)]');
+      await expect(metric).toHaveClass('min-h-14', 'py-3.5', 'xl:py-3.5');
       await expect(metric.querySelector('[data-pulse-metric-icon]')).toHaveClass(
-        'h-7',
-        'w-7',
-        'sm:h-11',
-        'sm:w-11'
+        'h-8',
+        'w-8',
+        'xl:h-9',
+        'xl:w-9'
       );
     }
+    await expect(metrics[0]).toHaveClass('lg:landscape:pl-5', 'xl:pl-5');
+    await expect(metrics[2]).toHaveClass('sm:col-span-2', 'xl:col-span-1');
+  },
+};
+
+export const LandscapeTablet: Story = {
+  args: { onSeeRewards: () => undefined },
+  globals: { viewport: { value: 'ipadMini', isRotated: true } },
+  parameters: {
+    viewport: { defaultViewport: 'ipadMini' },
+    docs: {
+      description: {
+        story:
+          'Short landscape tablets keep all metrics in one compact second row so the first chore remains visible without scrolling.',
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const metrics = canvasElement.querySelectorAll('[data-pulse-metric="true"]');
+    await expect(metrics).toHaveLength(4);
+    await expect(canvasElement.querySelector('[data-house-pulse-metrics="true"]')).toHaveClass(
+      'lg:landscape:grid-cols-4'
+    );
+    for (const metric of metrics) {
+      await expect(metric).toHaveClass('lg:landscape:min-h-14');
+    }
+  },
+};
+
+export const PortraitTablet: Story = {
+  args: { onSeeRewards: () => undefined },
+  globals: { viewport: { value: 'ipadPro', isRotated: false } },
+  parameters: {
+    viewport: { defaultViewport: 'ipadPro' },
+    docs: {
+      description: {
+        story:
+          'At portrait tablet width, House pulse keeps its identity separate and gives each summary metric enough room in a balanced two-column grid.',
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const metrics = canvasElement.querySelectorAll('[data-pulse-metric="true"]');
+    await expect(metrics).toHaveLength(4);
+    await expect(canvasElement.querySelector('[data-house-pulse-metrics="true"]')).toHaveClass(
+      'grid-cols-1',
+      'sm:grid-cols-2',
+      'lg:landscape:grid-cols-4',
+      'xl:grid-cols-4'
+    );
+    await expect(metrics[1]).toHaveClass('sm:border-l');
+    await expect(metrics[3]).toHaveClass('sm:border-l');
   },
 };
 

@@ -70,7 +70,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Progressive creation dialogs for household chores and profiles. The first step asks only for the decision needed now; assignment, schedule, reminders, account links, and appearance remain available without turning the initial form into a control wall.',
+          'Add and Edit Chore share the same four-section sidebar and advanced controls. Each section uses the grouped surface language from onboarding, while onboarding keeps its shorter inline creation flow.',
       },
     },
   },
@@ -81,34 +81,34 @@ type Story = StoryObj<typeof meta>;
 
 export const DesktopDetails: Story = {};
 
-export const MobileProgressiveCreation: Story = {
+export const MobileGroupedStepper: Story = {
   parameters: { viewport: { defaultViewport: 'mobile1' } },
   play: async ({ canvasElement }) => {
     saveChore.mockClear();
     const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
       name: 'Add a chore',
     });
-    await expect(within(dialog).queryByText('Start with a template')).not.toBeInTheDocument();
     await expect(within(dialog).getByText('Step 1 of 4')).toBeInTheDocument();
-    await expect(within(dialog).getByLabelText('Chore name')).toHaveValue('');
-    await expect(within(dialog).getByText('More options')).toBeInTheDocument();
-    await expect(within(dialog).getByLabelText('Room')).toBeInTheDocument();
-    await expect(within(dialog).getByLabelText('Estimated minutes')).toBeInTheDocument();
+    await expect(within(dialog).getByRole('heading', { name: 'The chore' })).toBeInTheDocument();
     await expect(within(dialog).getByRole('button', { name: 'Assignment' })).toBeDisabled();
+    await expect(within(dialog).getByLabelText('Chore name')).toHaveValue('');
+    await expect(within(dialog).getByLabelText('Room')).toBeInTheDocument();
     await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Water the plants');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     await expect(within(dialog).getByText('Step 2 of 4')).toBeInTheDocument();
-    await expect(within(dialog).getByLabelText('Assignment')).toBeInTheDocument();
+    await expect(within(dialog).getByRole('heading', { name: 'Who does it' })).toBeInTheDocument();
+    await userEvent.selectOptions(within(dialog).getByLabelText('Assignment'), 'everyone');
   },
 };
 
-export const DesktopProgressiveCreation: Story = {
+export const DesktopGroupedSidebarCreation: Story = {
   play: async ({ canvasElement }) => {
     saveChore.mockClear();
     const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
       name: 'Add a chore',
     });
-    await expect(within(dialog).queryByText('Start with a template')).not.toBeInTheDocument();
+    await expect(within(dialog).getByText('Step 1 of 4')).toBeInTheDocument();
+    await expect(within(dialog).getByRole('heading', { name: 'The chore' })).toBeInTheDocument();
     const iconSearch = within(dialog).getByLabelText('Paste Lucide icon name');
     await userEvent.clear(iconSearch);
     await userEvent.type(iconSearch, 'Telescope');
@@ -119,24 +119,36 @@ export const DesktopProgressiveCreation: Story = {
     await expect(within(dialog).getByRole('alert')).toHaveTextContent('Icon name not found');
     await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Clean the hallway');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
-    await expect(within(dialog).getByLabelText('Assignment')).toBeInTheDocument();
+    await expect(within(dialog).getByRole('heading', { name: 'Who does it' })).toBeInTheDocument();
+    await userEvent.selectOptions(within(dialog).getByLabelText('Assignment'), 'everyone');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
+    await expect(
+      within(dialog).getByRole('heading', { name: 'When it repeats' })
+    ).toBeInTheDocument();
     const repeatSelect = within(dialog).getByLabelText('Repeat');
     await expect(repeatSelect).toBeInTheDocument();
     await userEvent.selectOptions(repeatSelect, 'biweekly');
     await expect(repeatSelect).toHaveValue('biweekly');
-    await expect(within(dialog).getByLabelText('Repeat every')).toHaveValue(2);
     await userEvent.selectOptions(repeatSelect, 'triweekly');
     await expect(repeatSelect).toHaveValue('triweekly');
     await expect(within(dialog).getByLabelText('Repeat every')).toHaveValue(3);
+    fireEvent.change(within(dialog).getByLabelText('Start date'), {
+      target: { value: '2026-12-07' },
+    });
+    await userEvent.type(within(dialog).getByLabelText('End date'), '2026-12-31');
+    await userEvent.type(within(dialog).getByLabelText('Dates to skip'), '2026-12-24');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
-    await expect(within(dialog).getByText('Step 4 of 4')).toBeInTheDocument();
+    await expect(
+      within(dialog).getByRole('heading', { level: 2, name: 'More options' })
+    ).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Add chore' }));
     await expect(saveChore).toHaveBeenCalledWith(
       expect.objectContaining({
         schedule: expect.objectContaining({
           frequency: 'weekly',
           intervalWeeks: 3,
+          endDate: '2026-12-31',
+          excludedDates: ['2026-12-24'],
         }),
       }),
       expect.any(Object)

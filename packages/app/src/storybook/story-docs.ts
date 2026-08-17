@@ -1279,7 +1279,7 @@ const ADDITIONAL_STORY_DOCS: Record<string, string> = {
   'Pages/Household/Today': doc(
     'Complete Household workspace for daily chores, planning, progress, settings, and the neighboring provider-routine surface.',
     [
-      'Attention-first ordering across overdue, due, remaining, and upcoming chores.',
+      'Attention-first ordering across overdue, due, remaining, and completed chores for today.',
       'Responsive tablet, phone, wide-screen, empty, approval, completion, and recovery states.',
       'Independent room-nav-style destinations for Today, Chores, Missions, Rewards, Progress, Settings, and Routines.',
       'Missions and rewards stay out of Today until See rewards is opened from the House pulse banner.',

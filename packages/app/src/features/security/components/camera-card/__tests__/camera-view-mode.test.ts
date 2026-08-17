@@ -9,10 +9,11 @@ import {
 } from '../camera-view-mode';
 
 describe('camera-view-mode', () => {
-  it('forces snapshot mode in low-power mode when a snapshot exists', () => {
+  it('uses a snapshot for the inherited live default in low-power mode', () => {
     expect(
       resolveDashboardCameraViewMode({
         cameraDashboardViewMode: 'live',
+        hasCameraViewModeOverride: false,
         lowPowerMode: true,
         effectsQuality: 'high',
         hasSnapshot: true,
@@ -20,15 +21,28 @@ describe('camera-view-mode', () => {
     ).toBe('snapshot');
   });
 
-  it('forces snapshot mode in low visual quality when a snapshot exists', () => {
+  it('uses a snapshot for auto mode in low visual quality when a snapshot exists', () => {
     expect(
       resolveDashboardCameraViewMode({
-        cameraDashboardViewMode: 'live',
+        cameraDashboardViewMode: 'auto',
+        hasCameraViewModeOverride: true,
         lowPowerMode: false,
         effectsQuality: 'low',
         hasSnapshot: true,
       })
     ).toBe('snapshot');
+  });
+
+  it('keeps an explicit live choice in low-power mode', () => {
+    expect(
+      resolveDashboardCameraViewMode({
+        cameraDashboardViewMode: 'live',
+        hasCameraViewModeOverride: true,
+        lowPowerMode: true,
+        effectsQuality: 'low',
+        hasSnapshot: true,
+      })
+    ).toBe('live');
   });
 
   it('opens the viewer in live mode when the camera supports streaming', () => {

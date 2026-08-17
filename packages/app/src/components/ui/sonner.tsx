@@ -51,7 +51,7 @@ function getToastToneSurfaceClasses(
   }
 }
 
-const Toaster = ({ ...props }: ToasterProps) => {
+const Toaster = ({ className, style, ...props }: ToasterProps) => {
   const { theme, accentColor } = useTheme();
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const surface = getThemeSurfaceTokens(theme);
@@ -87,7 +87,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       expand={!isMobileViewport}
       visibleToasts={isMobileViewport ? 2 : 4}
       closeButton
-      className="toaster group"
+      className={cn('toaster group pointer-events-auto z-[1100]', className)}
       icons={{
         success: <CheckCircle2 className="h-4 w-4" />,
         info: <Info className="h-4 w-4" />,
@@ -176,6 +176,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
       style={
         {
           '--width': isMobileViewport ? 'calc(100vw - 1rem)' : '356px',
+          pointerEvents: 'auto',
+          zIndex: 1100,
+          ...style,
         } as CSSProperties
       }
       {...props}

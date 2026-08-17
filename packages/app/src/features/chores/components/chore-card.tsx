@@ -3,6 +3,13 @@ import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-ca
 import { themeColorValues } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { Avatar, AvatarFallback, AvatarImage } from '@navet/app/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@navet/app/components/ui/dropdown-menu';
 import { cn } from '@navet/app/components/ui/utils';
 import { isEmojiLightIcon, resolveLightIconComponent } from '@navet/app/constants/icon-map';
 import { useI18n, useTheme } from '@navet/app/hooks';
@@ -16,6 +23,7 @@ import {
 import {
   Check,
   CheckCircle2,
+  ChevronDown,
   Circle,
   CircleDashed,
   Clock3,
@@ -31,9 +39,61 @@ import { ChorePointsToken } from './chore-points-token';
 
 export interface ChoreCardAction {
   label: string;
-  onSelect: () => void;
+  onSelect?: () => void;
+  participantIds?: string[];
+  onSelectParticipant?: (participantId: string) => void;
   kind: 'complete' | 'claim' | 'approve' | 'reopen';
   disabled?: boolean;
+}
+
+function ChoreActionControl({
+  action,
+  participantsById,
+}: {
+  action: ChoreCardAction;
+  participantsById: Record<string, ChoreParticipant>;
+}) {
+  const choices = (action.participantIds ?? [])
+    .map((id) => participantsById[id])
+    .filter((participant): participant is ChoreParticipant => Boolean(participant));
+  const ActionIcon =
+    action.kind === 'approve' ? ShieldCheck : action.kind === 'claim' ? Sparkles : Check;
+  const chooseParticipant = choices.length > 0 && Boolean(action.onSelectParticipant);
+  const button = (
+    <Button
+      size="compact"
+      variant={action.kind === 'approve' ? 'primary' : 'secondary'}
+      className="min-w-28 justify-center px-4"
+      leading={<ActionIcon className="h-4 w-4" aria-hidden="true" />}
+      trailing={
+        chooseParticipant ? <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" /> : null
+      }
+      disabled={action.disabled}
+      onClick={chooseParticipant ? undefined : action.onSelect}
+    >
+      {action.label}
+    </Button>
+  );
+
+  if (!chooseParticipant) return button;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{button}</DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={8} className="min-w-52">
+        <DropdownMenuLabel>{action.label}</DropdownMenuLabel>
+        {choices.map((participant) => (
+          <DropdownMenuItem
+            key={participant.id}
+            onSelect={() => action.onSelectParticipant?.(participant.id)}
+          >
+            <ChoreAssigneeAvatar participant={participant} />
+            <span className="min-w-0 flex-1 truncate">{participant.displayName}</span>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 const blackThemeCardEdge = {
@@ -41,7 +101,38 @@ const blackThemeCardEdge = {
   boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.055)',
 } as const;
 
-function statusDetails(occurrence: ChoreOccurrence, now: Date, t: ReturnType<typeof useI18n>['t']) {
+function isSameLocalDay(left: Date, right: Date) {
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  );
+}
+
+function localDayNumber(value: Date) {
+  return Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()) / 86_400_000;
+}
+
+function upcomingScheduleLabel(
+  occurrence: ChoreOccurrence,
+  now: Date,
+  i18n: ReturnType<typeof useI18n>
+) {
+  const scheduledAt = new Date(occurrence.scheduledAt);
+  if (Number.isNaN(scheduledAt.getTime())) return i18n.t('household.today.upcoming');
+
+  const daysAway = localDayNumber(scheduledAt) - localDayNumber(now);
+  const day = isSameLocalDay(scheduledAt, now)
+    ? i18n.t('household.tabs.today')
+    : daysAway > 0 && daysAway < 7
+      ? i18n.formatDate(scheduledAt, { weekday: 'short' })
+      : i18n.formatDate(scheduledAt, { month: 'short', day: 'numeric' });
+
+  return `${day} · ${i18n.formatTime(scheduledAt)}`;
+}
+
+function statusDetails(occurrence: ChoreOccurrence, now: Date, i18n: ReturnType<typeof useI18n>) {
+  const { t } = i18n;
   const timing = getChoreTiming(occurrence, now);
   if (occurrence.status === 'done') {
     return { label: t('household.today.done'), tone: 'success' as const, Icon: CheckCircle2 };
@@ -63,7 +154,8 @@ function statusDetails(occurrence: ChoreOccurrence, now: Date, t: ReturnType<typ
     return { label: t('household.today.overdue'), tone: 'danger' as const, Icon: Clock3 };
   }
   return {
-    label: timing === 'due' ? t('household.today.due') : t('household.today.upcoming'),
+    label:
+      timing === 'due' ? t('household.today.due') : upcomingScheduleLabel(occurrence, now, i18n),
     tone: 'neutral' as const,
     Icon: Circle,
   };
@@ -211,10 +303,11 @@ export function ChoreFocusCard({
   childMode?: boolean;
   now?: Date;
 }) {
-  const { t } = useI18n();
+  const i18n = useI18n();
+  const { t } = i18n;
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const status = statusDetails(occurrence, now, t);
+  const status = statusDetails(occurrence, now, i18n);
   const completed = occurrence.status === 'done';
   const title = childMode && presentation?.childTitle ? presentation.childTitle : definition.title;
   const ChoreIcon = resolveChoreIconComponent(presentation?.icon);
@@ -232,8 +325,6 @@ export function ChoreFocusCard({
         : theme === 'black'
           ? { primary: '14', secondary: '10', bridge: '06' }
           : { primary: '16', secondary: '12', bridge: '07' };
-  const ActionIcon =
-    action?.kind === 'approve' ? ShieldCheck : action?.kind === 'claim' ? Sparkles : Check;
   const isOverdue =
     occurrence.status === 'available' && getChoreTiming(occurrence, now) === 'overdue';
   const statusColor =
@@ -324,16 +415,7 @@ export function ChoreFocusCard({
         completed && presentation?.points ? (
           <ChoreEarnedPoints points={presentation.points} />
         ) : action ? (
-          <Button
-            size="compact"
-            variant={action.kind === 'approve' ? 'primary' : 'secondary'}
-            className="min-w-28 justify-center px-4"
-            leading={<ActionIcon className="h-4 w-4" aria-hidden="true" />}
-            disabled={action.disabled}
-            onClick={action.onSelect}
-          >
-            {action.label}
-          </Button>
+          <ChoreActionControl action={action} participantsById={participantsById} />
         ) : undefined
       }
       surfaceVariant={completed ? 'muted' : 'default'}

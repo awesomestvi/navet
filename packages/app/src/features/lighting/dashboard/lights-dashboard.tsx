@@ -49,6 +49,8 @@ interface LightsDashboardProps {
   onRemoveEntity?: (entityId: string) => void;
 }
 
+const LIGHT_ROOM_DEFAULT_EXPANDED = true;
+
 function showBatchIssue(result: LightBatchActionResult, t: ReturnType<typeof useI18n>['t']) {
   if (result.failed === 0 && result.skippedUnavailable === 0) return;
 
@@ -154,7 +156,7 @@ const LightsRoomSection = memo(function LightsRoomSection({
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const expanded = manualExpanded ?? isEditMode;
+  const expanded = manualExpanded ?? LIGHT_ROOM_DEFAULT_EXPANDED;
   const [pendingPower, setPendingPower] = useState(false);
   const displayName =
     room.room === UNKNOWN_ROOM_LABEL ? t('lighting.dashboard.otherLights') : room.room;
@@ -234,6 +236,7 @@ const LightsRoomSection = memo(function LightsRoomSection({
             variant="neutral"
             onClick={() => onExpandedChange(room.room, !expanded)}
             aria-expanded={expanded}
+            data-lights-room-toggle="true"
             aria-label={roomSummary}
             title={roomSummary}
           >
@@ -368,8 +371,8 @@ export const LightsDashboard = memo(function LightsDashboard({
   const allRoomsCollapsed = useMemo(
     () =>
       model.rooms.length > 0 &&
-      model.rooms.every((room) => !(expandedRooms[room.room] ?? isEditMode)),
-    [expandedRooms, isEditMode, model.rooms]
+      model.rooms.every((room) => !(expandedRooms[room.room] ?? LIGHT_ROOM_DEFAULT_EXPANDED)),
+    [expandedRooms, model.rooms]
   );
   const toggleAllRooms = useCallback(() => {
     setExpandedRooms(Object.fromEntries(model.rooms.map((room) => [room.room, allRoomsCollapsed])));

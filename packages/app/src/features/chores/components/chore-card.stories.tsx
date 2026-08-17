@@ -56,7 +56,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Canonical chores task card built on ChoreBaseCard. Today and Coming up tasks share the same reading order: room and timing status, title, compact effort and reward tokens, optional instructions, then ownership and one compact footer action.',
+          'Canonical chores task card built on ChoreBaseCard. Today tasks share one reading order: room and timing status, title, compact effort and reward tokens, optional instructions, then ownership and one compact footer action.',
       },
     },
   },
@@ -66,6 +66,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const DueNow: Story = {
+  args: {
+    now: new Date(Date.parse(occurrence.dueAt) + 1),
+  },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvasElement.querySelector('[data-chore-base-card]')).toBeVisible();
@@ -87,6 +90,7 @@ export const DueNow: Story = {
       borderColor: '#ef4444',
     });
     const action = canvas.getByRole('button', { name: 'Mark done' });
+    await expect(action.closest('footer')).toHaveClass('min-h-9');
     await expect(action.closest('footer')).not.toHaveClass('border-t');
     await expect(action).not.toHaveClass('border-transparent');
     await expect(action).not.toHaveClass('w-full');
@@ -102,6 +106,38 @@ export const Overdue: Story = {
       scheduledAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
       dueAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     },
+  },
+};
+
+export const ScheduledLaterToday: Story = {
+  args: {
+    now: new Date('2026-08-17T12:00:00'),
+    occurrence: {
+      ...occurrence,
+      scheduledAt: '2026-08-17T18:00:00',
+      dueAt: '2026-08-17T20:00:00',
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const status = canvasElement.querySelector('[data-chore-status]');
+    await expect(status).toHaveTextContent(/^Today · /);
+    await expect(status).not.toHaveTextContent('Later');
+  },
+};
+
+export const ScheduledOnAnotherDay: Story = {
+  args: {
+    now: new Date('2026-08-17T12:00:00'),
+    occurrence: {
+      ...occurrence,
+      scheduledAt: '2026-08-19T18:00:00',
+      dueAt: '2026-08-19T20:00:00',
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const status = canvasElement.querySelector('[data-chore-status]');
+    await expect(status).toHaveTextContent(/^Wed · /);
+    await expect(status).not.toHaveTextContent('Later');
   },
 };
 
@@ -201,13 +237,25 @@ export const SharedAssignment: Story = {
     definition: sharedDefinition,
     occurrence: sharedOccurrence,
     presentation: sharedPresentation,
-    action: undefined,
+    action: {
+      label: 'Mark done',
+      kind: 'complete',
+      participantIds: sharedOccurrence.assigneeIds,
+      onSelectParticipant: fn(),
+    },
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByTitle('Alex')).toBeInTheDocument();
     await expect(canvas.getByTitle('Maya')).toBeInTheDocument();
     await expect(canvas.getByTitle('Sam')).toBeInTheDocument();
+    await expect(
+      canvasElement.querySelector('[data-chore-assignment]')?.closest('footer')
+    ).toHaveClass('min-h-9');
+    await userEvent.click(canvas.getByRole('button', { name: 'Mark done' }));
+    const menu = within(canvasElement.ownerDocument.body).getByRole('menu');
+    await userEvent.click(within(menu).getByRole('menuitem', { name: 'Maya' }));
+    await expect(args.action?.onSelectParticipant).toHaveBeenCalledWith('maya');
   },
 };
 

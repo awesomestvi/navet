@@ -141,6 +141,7 @@ describe('CameraCardContainer', () => {
     resetCameraLiveStreamBudgetForTests();
     vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
     useSettingsStore.setState({
+      cameraViewModes: {},
       cameraStreamPreferences: {},
       cameraWebRtcStreamSources: {},
       cameraDirectStreamUrls: {},
@@ -324,6 +325,8 @@ describe('CameraCardContainer', () => {
       effectsQuality: 'low',
       lowPowerMode: true,
     });
+    useSettingsStore.getState().updateCameraViewMode('home_assistant:camera.front', 'live');
+    useSettingsStore.getState().updateCameraViewMode('home_assistant:camera.garden', 'live');
 
     renderWithProviders(
       <>
@@ -521,6 +524,53 @@ describe('CameraCardContainer', () => {
     expect(useCameraPlaybackPlanMock).toHaveBeenLastCalledWith(
       expect.objectContaining({
         preferredMode: 'live',
+      })
+    );
+  });
+
+  it('lets an explicit per-camera live choice bypass the low-power snapshot fallback', () => {
+    useSettingsStore.getState().updateSettings({
+      effectsQuality: 'low',
+      lowPowerMode: true,
+    });
+
+    renderWithProviders(
+      <CameraCardContainer
+        id="home_assistant:camera.front"
+        name="Front Door"
+        room="Entrance"
+        entityPicture="/api/camera_proxy/camera.front"
+        isStreamCapable
+        size="large"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(useCameraPlaybackPlanMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        preferredMode: 'snapshot',
+      })
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Camera settings' }));
+    expect(cameraSettingsDialogRenderMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        cameraViewMode: 'snapshot',
+      })
+    );
+
+    act(() => {
+      useSettingsStore.getState().updateCameraViewMode('home_assistant:camera.front', 'live');
+    });
+
+    expect(useCameraPlaybackPlanMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        preferredMode: 'live',
+      })
+    );
+    expect(cameraSettingsDialogRenderMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        cameraViewMode: 'live',
       })
     );
   });

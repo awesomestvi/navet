@@ -199,7 +199,16 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const SeveralActiveRooms: Story = {};
+export const SeveralActiveRooms: Story = {
+  play: async ({ canvasElement }) => {
+    const roomToggles = canvasElement.querySelectorAll('[data-lights-room-toggle="true"]');
+
+    await expect(roomToggles.length).toBeGreaterThan(0);
+    for (const toggle of roomToggles) {
+      await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    }
+  },
+};
 
 export const AllLightsOff: Story = {
   args: {
