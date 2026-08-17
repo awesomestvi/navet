@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.13.1
+
+## New features
+
+- Added entity navigation, room filtering, and sorting to the redesigned Add Card library.
+- Camera cards can now bypass low-power snapshots when live streaming is needed.
+
+## Improvements and bug fixes
+
+- Improved chores onboarding with clearer guidance, consistent forms, flexible assignments, and complete recurring schedules.
+- Made chore summaries and daily tasks denser and easier to use on phones and tablets.
+- Kept light cards expanded by default and dashboard-change alerts dismissible above dialogs.
+
 ## 0.13.0
 
 ## New features
