@@ -50,6 +50,7 @@ export const SETTINGS_PROFILE_CLASSIFICATION = {
   cameraDirectStreamUrls: 'secret',
   cameraFitMode: 'device',
   cameraFitModes: 'device',
+  cameraFullscreenHiddenAccessoryIds: 'device',
   ambientLightBleed: 'device',
   weatherForecastMode: 'shared',
   weatherMetricIds: 'shared',
@@ -205,6 +206,20 @@ function sanitizeSettingValue(key: keyof UserSettings, value: unknown): unknown 
   if (key === 'cameraFitModes') {
     const sanitized = sanitizeRecordValues(value, CAMERA_FIT_MODES);
     return sanitized ? normalizePersistedEntityRecord(sanitized) : undefined;
+  }
+  if (key === 'cameraFullscreenHiddenAccessoryIds') {
+    if (!isRecord(value)) return undefined;
+    return normalizePersistedEntityRecord(
+      Object.fromEntries(
+        Object.entries(value).flatMap(([cameraEntityId, accessoryIds]) => {
+          if (!Array.isArray(accessoryIds)) return [];
+          const validIds = accessoryIds.filter(
+            (entry): entry is string => typeof entry === 'string' && entry.length > 0
+          );
+          return validIds.length > 0 ? [[cameraEntityId, validIds]] : [];
+        })
+      )
+    );
   }
   if (key === 'cameraDirectStreamUrls') {
     if (!isRecord(value)) {

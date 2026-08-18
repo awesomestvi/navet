@@ -69,8 +69,10 @@ vi.mock('@navet/app/stores/settings-store', async () => {
         cameraDirectStreamUrls: Record<string, string>;
         cameraFitModes: Record<string, 'cover'>;
         cameraFitMode: 'cover';
+        cameraFullscreenHiddenAccessoryIds: Record<string, string[]>;
         updateCameraStreamPreference: () => void;
         updateCameraFitMode: () => void;
+        updateCameraFullscreenAccessoryVisibility: () => void;
       }) => unknown
     ) =>
       selector({
@@ -80,8 +82,10 @@ vi.mock('@navet/app/stores/settings-store', async () => {
         cameraDirectStreamUrls: {},
         cameraFitModes: {},
         cameraFitMode: 'cover',
+        cameraFullscreenHiddenAccessoryIds: {},
         updateCameraStreamPreference: vi.fn(),
         updateCameraFitMode: vi.fn(),
+        updateCameraFullscreenAccessoryVisibility: vi.fn(),
       }),
   };
 });

@@ -19,6 +19,7 @@ import {
 import { useDashboardProfileRuntimeStore } from '@navet/app/features/dashboard/clients/dashboard-profile-runtime-store';
 import { emptyDeviceDisplayProfilePolicy } from '@navet/app/features/dashboard/clients/device-display-profile';
 import { useDeviceDisplayProfileRuntimeStore } from '@navet/app/features/dashboard/clients/device-display-profile-runtime-store';
+import { createLegacyDashboardCollection } from '@navet/app/features/dashboard/dashboards';
 import {
   DASHBOARD_PROFILE_REFRESH_EVENT,
   useDashboardProfileSync,
@@ -738,6 +739,44 @@ describe('useDashboardProfileSync', () => {
     });
   });
 
+  it('does not report a conflict for different legacy projections of the same dashboard collection', async () => {
+    const dashboards = createLegacyDashboardCollection({
+      homeLayout: {
+        mode: 'flow',
+        showHero: true,
+        cardIds: ['home_assistant:light.kitchen'],
+        sections: [],
+        cardSectionAssignments: {},
+      },
+    });
+    const remote = buildProfile({
+      dashboards,
+      homeDashboardLayout: dashboards.dashboardsById.home?.homeLayout,
+    });
+    currentProfile = buildProfile({
+      dashboards,
+      homeDashboardLayout: {
+        ...dashboards.dashboardsById.home?.homeLayout,
+        cardIds: ['home_assistant:light.kitchen', 'home_assistant:sensor.office_temperature'],
+      },
+    });
+    loadDashboardProfile.mockResolvedValueOnce(activeResult(remote));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    expect(saveDashboardProfile).not.toHaveBeenCalled();
+    expect(importDashboardConfig).not.toHaveBeenCalled();
+    expect(toast).not.toHaveBeenCalledWith(
+      'Dashboard changes detected on another device',
+      expect.anything()
+    );
+    expect(useDashboardProfileRuntimeStore.getState()).toMatchObject({
+      conflict: null,
+      status: 'synced',
+    });
+  });
+
   it('applies a newer remote profile after reload when the local profile has a clean receipt', async () => {
     const previouslySynced = buildProfile();
     const remote = buildProfile({
@@ -1353,7 +1392,7 @@ describe('useDashboardProfileSync', () => {
     expect(loadDashboardProfile).toHaveBeenCalledTimes(2);
   });
 
-  it('applies and attributes a clean update, then keeps polling', async () => {
+  it('applies and attributes a clean update silently, then keeps polling', async () => {
     const base = buildProfile();
     const remote = buildProfile({
       exportedAt: '2026-07-25T09:02:00.000Z',
@@ -1370,13 +1409,7 @@ describe('useDashboardProfileSync', () => {
 
     await advanceTime(60_000);
     expect(importDashboardConfig).toHaveBeenCalledWith(remote, { applyNavigation: false });
-    expect(toast).toHaveBeenCalledWith(
-      'Dashboard updated',
-      expect.objectContaining({
-        description: 'Kitchen panel updated the shared dashboard.',
-        duration: 6_000,
-      })
-    );
+    expect(toast).not.toHaveBeenCalledWith('Dashboard updated', expect.anything());
     expect(useDashboardProfileRuntimeStore.getState().lastActivity?.actor.clientName).toBe(
       'Kitchen panel'
     );

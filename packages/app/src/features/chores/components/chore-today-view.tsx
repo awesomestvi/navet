@@ -201,7 +201,9 @@ export function ChoreTodayView({
   const missions = useMemo(() => getMissionProgressList(data, now), [data, now]);
   const rewards = useMemo(() => getRewardProgressList(data), [data]);
   const activeMission =
-    missions.find((mission) => mission.mission.status === 'active') ?? missions[0];
+    experience.gamificationMode !== 'off'
+      ? (missions.find((mission) => mission.mission.status === 'active') ?? missions[0])
+      : undefined;
   const rewardGoal = experience.gamificationMode !== 'off' ? rewards[0] : undefined;
   const hasRewardsSection = Boolean(activeMission || rewardGoal);
   const childMode = experience.gamificationMode === 'adventure';

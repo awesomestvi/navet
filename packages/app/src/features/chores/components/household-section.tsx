@@ -605,6 +605,12 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
   };
 
   const experience = normalizeChoreExperienceState(data?.experience);
+  const motivationEnabled = experience.gamificationMode !== 'off';
+  useEffect(() => {
+    if (!motivationEnabled && (view === 'missions' || view === 'rewards')) {
+      setView('today');
+    }
+  }, [motivationEnabled, view]);
   const activeDefinitions = Object.values(data?.definitionsById ?? {}).filter(
     (definition) => !definition.archivedAt
   );
@@ -685,8 +691,12 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
           {[
             { value: 'today' as const, label: t('household.tabs.today') },
             { value: 'chores' as const, label: t('household.tabs.chores') },
-            { value: 'missions' as const, label: t('household.tabs.missions') },
-            { value: 'rewards' as const, label: t('household.tabs.rewards') },
+            ...(motivationEnabled
+              ? [
+                  { value: 'missions' as const, label: t('household.tabs.missions') },
+                  { value: 'rewards' as const, label: t('household.tabs.rewards') },
+                ]
+              : []),
             { value: 'progress' as const, label: t('household.tabs.progress') },
             { value: 'settings' as const, label: t('household.tabs.settings') },
             { value: 'routines' as const, label: t('household.tabs.routines') },
@@ -777,54 +787,58 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
           ) : null
         )}
       </HouseholdViewPanel>
-      <HouseholdViewPanel value="missions" activeValue={view}>
-        {renderWorkspace(
-          data ? (
-            <MissionsView
-              data={data}
-              onAdd={() => {
-                setMissionToEdit(null);
-                setMissionDialogOpen(true);
-              }}
-              onEdit={(mission) => {
-                setMissionToEdit(mission);
-                setMissionDialogOpen(true);
-              }}
-              onDelete={(mission) =>
-                void updateExperience((current) => {
-                  const missionsById = { ...current.missionsById };
-                  delete missionsById[mission.id];
-                  return { ...current, missionsById };
-                })
-              }
-            />
-          ) : null
-        )}
-      </HouseholdViewPanel>
-      <HouseholdViewPanel value="rewards" activeValue={view}>
-        {renderWorkspace(
-          data ? (
-            <RewardsView
-              data={data}
-              onAdd={() => {
-                setRewardToEdit(null);
-                setRewardDialogOpen(true);
-              }}
-              onEdit={(reward) => {
-                setRewardToEdit(reward);
-                setRewardDialogOpen(true);
-              }}
-              onDelete={(reward) =>
-                void updateExperience((current) => {
-                  const rewardGoalsById = { ...current.rewardGoalsById };
-                  delete rewardGoalsById[reward.id];
-                  return { ...current, rewardGoalsById };
-                })
-              }
-            />
-          ) : null
-        )}
-      </HouseholdViewPanel>
+      {motivationEnabled ? (
+        <>
+          <HouseholdViewPanel value="missions" activeValue={view}>
+            {renderWorkspace(
+              data ? (
+                <MissionsView
+                  data={data}
+                  onAdd={() => {
+                    setMissionToEdit(null);
+                    setMissionDialogOpen(true);
+                  }}
+                  onEdit={(mission) => {
+                    setMissionToEdit(mission);
+                    setMissionDialogOpen(true);
+                  }}
+                  onDelete={(mission) =>
+                    void updateExperience((current) => {
+                      const missionsById = { ...current.missionsById };
+                      delete missionsById[mission.id];
+                      return { ...current, missionsById };
+                    })
+                  }
+                />
+              ) : null
+            )}
+          </HouseholdViewPanel>
+          <HouseholdViewPanel value="rewards" activeValue={view}>
+            {renderWorkspace(
+              data ? (
+                <RewardsView
+                  data={data}
+                  onAdd={() => {
+                    setRewardToEdit(null);
+                    setRewardDialogOpen(true);
+                  }}
+                  onEdit={(reward) => {
+                    setRewardToEdit(reward);
+                    setRewardDialogOpen(true);
+                  }}
+                  onDelete={(reward) =>
+                    void updateExperience((current) => {
+                      const rewardGoalsById = { ...current.rewardGoalsById };
+                      delete rewardGoalsById[reward.id];
+                      return { ...current, rewardGoalsById };
+                    })
+                  }
+                />
+              ) : null
+            )}
+          </HouseholdViewPanel>
+        </>
+      ) : null}
       <HouseholdViewPanel value="progress" activeValue={view}>
         {renderWorkspace(
           data ? (

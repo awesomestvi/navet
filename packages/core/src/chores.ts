@@ -1512,10 +1512,18 @@ export function applyChoreOccurrenceCommand(
     }
     case 'complete': {
       assertAssigned(occurrence, participantId);
-      if (occurrence.status !== 'available' && occurrence.status !== 'claimed') {
-        throw new Error('Only available or claimed chores can be completed');
+      if (
+        occurrence.status !== 'available' &&
+        occurrence.status !== 'claimed' &&
+        occurrence.status !== 'missed'
+      ) {
+        throw new Error('Only available, claimed, or missed chores can be completed');
       }
-      if (occurrence.status === 'claimed' && occurrence.claimedBy !== participantId) {
+      if (
+        (occurrence.status === 'claimed' || occurrence.status === 'missed') &&
+        occurrence.claimedBy &&
+        occurrence.claimedBy !== participantId
+      ) {
         throw new Error('A claimed chore can only be completed by its claimant');
       }
       if (occurrence.status === 'available' && definition.claimPolicy?.required) {
@@ -1528,6 +1536,7 @@ export function applyChoreOccurrenceCommand(
         claimedAt: occurrence.claimedAt ?? timestamp,
         completedBy: participantId,
         completedAt: timestamp,
+        missedAt: undefined,
         updatedAt: timestamp,
       };
       break;

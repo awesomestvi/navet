@@ -1,13 +1,19 @@
 import type { PlatformCameraPlaybackModel } from '@navet/app/platform/provider-feature-models';
 import { cameraEntityFixtures } from '@navet/app/test/fixtures/home-assistant/entities/camera';
 import { renderWithProviders } from '@navet/app/test/render';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CameraLiveViewer } from '../camera-live-viewer';
 
-const { autoLoadStreamPlayerMock, getCameraPlaybackPlanMock } = vi.hoisted(() => ({
-  autoLoadStreamPlayerMock: { current: false },
-  getCameraPlaybackPlanMock: vi.fn(),
+const { autoLoadStreamPlayerMock, dispatchEntityCommandMock, getCameraPlaybackPlanMock } =
+  vi.hoisted(() => ({
+    autoLoadStreamPlayerMock: { current: false },
+    dispatchEntityCommandMock: vi.fn().mockResolvedValue({ accepted: true }),
+    getCameraPlaybackPlanMock: vi.fn(),
+  }));
+
+vi.mock('@navet/app/commands', () => ({
+  dispatchEntityCommand: dispatchEntityCommandMock,
 }));
 
 vi.mock('../camera-stream-player', async () => {
@@ -66,9 +72,108 @@ const defaultProps = {
 
 beforeEach(() => {
   autoLoadStreamPlayerMock.current = false;
+  dispatchEntityCommandMock.mockClear();
 });
 
 describe('CameraLiveViewer', () => {
+  it('shows camera accessory information and controls in fullscreen', async () => {
+    getCameraPlaybackPlanMock.mockResolvedValue({
+      cameraState: 'streaming',
+      snapshotResource: null,
+      supportsSnapshot: false,
+      liveTransports: [],
+      fallbackTransports: [],
+      selectedTransport: null,
+      selectedStreamResource: null,
+      supportsStreaming: false,
+      isSnapshotFallback: false,
+      shouldStartWithSnapshot: false,
+      motionDetectionEnabled: true,
+      refreshPolicy: { retryDelaysMs: [1_000] },
+    });
+
+    renderWithProviders(
+      <CameraLiveViewer
+        {...defaultProps}
+        motionDetected
+        accessoryEntities={[
+          {
+            id: 'home_assistant:binary_sensor.front_door_scenario',
+            entity: {
+              entityId: 'binary_sensor.front_door_scenario',
+              state: 'off',
+              attributes: { friendly_name: 'Object analytics scenario 1', device_class: 'motion' },
+            },
+          },
+          {
+            id: 'home_assistant:light.front_door_ir',
+            entity: {
+              entityId: 'light.front_door_ir',
+              state: 'on',
+              attributes: { friendly_name: 'Front Door IR light', brightness: 255 },
+            },
+          },
+          {
+            id: 'home_assistant:binary_sensor.front_door_daynight',
+            entity: {
+              entityId: 'binary_sensor.front_door_daynight',
+              state: 'off',
+              attributes: { friendly_name: 'Front Door DayNight', device_class: 'light' },
+            },
+          },
+          {
+            id: 'home_assistant:binary_sensor.front_door_vmd',
+            entity: {
+              entityId: 'binary_sensor.front_door_vmd',
+              state: 'unavailable',
+              attributes: { friendly_name: 'Front Door VMD 0', device_class: 'motion' },
+            },
+          },
+          {
+            id: 'home_assistant:scene.front_door_night',
+            entity: {
+              entityId: 'scene.front_door_night',
+              state: '2026-08-19T20:00:00.000Z',
+              attributes: { friendly_name: 'Night scene' },
+            },
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByText('Motion')).toBeInTheDocument();
+    expect(screen.getByText('Day Night')).toBeInTheDocument();
+    expect(screen.queryByText('Object analytics scenario 1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Front Door VMD 0')).not.toBeInTheDocument();
+
+    const lightControl = screen.getByRole('button', { name: 'IR light: On' });
+    expect(lightControl).toHaveClass('h-10');
+    expect(lightControl).toHaveTextContent('IR light');
+    fireEvent.click(lightControl);
+    expect(screen.getAllByText('IR light')).toHaveLength(2);
+    expect(screen.getByText('100%')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: 'IR light: On' })[1] as HTMLElement);
+    });
+    expect(dispatchEntityCommandMock).toHaveBeenCalledWith({
+      type: 'turn_off',
+      entityId: 'home_assistant:light.front_door_ir',
+    });
+
+    expect(screen.getByRole('slider', { name: 'IR light Brightness' })).toHaveAttribute(
+      'aria-valuenow',
+      '100'
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Night scene: Activate' }));
+    });
+    expect(dispatchEntityCommandMock).toHaveBeenCalledWith({
+      type: 'turn_on',
+      entityId: 'home_assistant:scene.front_door_night',
+    });
+  });
+
   it('lets the viewer switch camera view modes', async () => {
     const onCameraViewModeChange = vi.fn();
     getCameraPlaybackPlanMock.mockResolvedValue({
@@ -285,12 +390,18 @@ describe('CameraLiveViewer', () => {
     expect(screen.getByText('HLS')).toBeInTheDocument();
     expect(screen.getByTestId('camera-viewer-top-controls')).toHaveClass('z-20');
     expect(screen.getByTestId('camera-viewer-bottom-controls')).toHaveClass('z-20');
+    expect(screen.getByRole('button', { name: 'Camera view: Auto' }).parentElement).toHaveClass(
+      'ml-auto'
+    );
     expect(screen.getByTestId('camera-viewer-header-layout')).toHaveClass(
       'grid',
       'grid-cols-[minmax(0,1fr)_auto]',
       'gap-y-2'
     );
+    expect(screen.getByTestId('camera-viewer-eyebrow')).toHaveTextContent('Front DoorEntranceHLS');
+    expect(document.querySelector('h2:not(.sr-only)')).not.toBeInTheDocument();
     expect(screen.getByTestId('camera-viewer-status')).toHaveClass('col-span-2', 'row-start-2');
+    expect(screen.getByTestId('camera-viewer-live-status')).toHaveClass('h-9');
     expect(screen.getByRole('button', { name: 'Close' })).toHaveClass('h-9', 'w-9');
     expect(
       screen.queryByRole('button', { name: 'Refresh camera snapshot' })

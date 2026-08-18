@@ -65,7 +65,7 @@ describe('LightSettingsDialog', () => {
         isOpen
         onOpenChange={vi.fn()}
         name="Porch Light"
-        isOn
+        isOn={false}
         supportsBrightness={false}
         supportsColorTemperature={false}
         supportsColorControl={false}
@@ -101,5 +101,13 @@ describe('LightSettingsDialog', () => {
     expect(screen.queryByText('Presets')).not.toBeInTheDocument();
     expect(screen.queryByText('Brightness Presets')).not.toBeInTheDocument();
     expect(screen.queryByRole('slider', { name: 'Brightness' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Done' })).toHaveStyle({
+      backgroundColor: 'rgba(107, 114, 128, 0.14)',
+      borderColor: 'rgba(107, 114, 128, 0.24)',
+    });
+    expect(screen.getByRole('combobox', { name: 'Room' }).previousElementSibling).toHaveStyle({
+      backgroundColor: 'rgba(107, 114, 128, 0.14)',
+      borderColor: 'rgba(107, 114, 128, 0.24)',
+    });
   });
 });

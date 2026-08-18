@@ -103,6 +103,7 @@ interface UserSettings {
   cameraDirectStreamUrls: Record<string, string>;
   cameraFitMode: CameraFitMode;
   cameraFitModes: Record<string, CameraFitMode>;
+  cameraFullscreenHiddenAccessoryIds: Record<string, string[]>;
   ambientLightBleed: boolean;
   weatherForecastMode: WeatherForecastMode;
   weatherMetricIds: WeatherMetricId[];
@@ -118,6 +119,11 @@ export interface SettingsState extends UserSettings {
   updateCameraWebRtcStreamSource: (entityId: string, source: CameraWebRtcStreamSource) => void;
   updateCameraDirectStreamUrl: (entityId: string, url: string) => void;
   updateCameraFitMode: (entityId: string, mode: CameraFitMode) => void;
+  updateCameraFullscreenAccessoryVisibility: (
+    cameraEntityId: string,
+    accessoryEntityId: string,
+    visible: boolean
+  ) => void;
   applyImportedSettings: (settings: UserSettings) => void;
   resetSettings: () => void;
 }

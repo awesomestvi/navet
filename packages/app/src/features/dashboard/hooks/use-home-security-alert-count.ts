@@ -4,6 +4,7 @@ import {
   getExpandedHiddenDashboardEntityIds,
 } from '@navet/app/hooks/use-dashboard-devices';
 import type { BaseDevice, DeviceCollection, SecurityKind } from '@navet/app/types/device.types';
+import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
 import { useEffect, useMemo, useRef } from 'react';
 
 type HomeSecurityAlertDevices = Pick<
@@ -67,7 +68,7 @@ export function selectHomeSecurityAlertDevices(
   hiddenEntityIds: string[]
 ): HomeSecurityAlertDevices {
   const expandedHiddenIds = new Set(getExpandedHiddenDashboardEntityIds(devices, hiddenEntityIds));
-  const absorbedIds = new Set(getAbsorbedDashboardEntityIds(devices, [...expandedHiddenIds]));
+  const absorbedIds = new Set(getAbsorbedDashboardEntityIds(devices, []));
 
   return {
     cameras: devices.cameras.filter((device) => !expandedHiddenIds.has(device.id)),
@@ -86,6 +87,21 @@ export function selectHomeSecurityAlertDevices(
         isSupplementalSecurityAlertDevice(device)
     ),
   };
+}
+
+export function getRoomSecurityAlertCount(
+  devices: DeviceCollection,
+  hiddenEntityIds: string[],
+  room: string
+) {
+  const selectedDevices = selectHomeSecurityAlertDevices(devices, hiddenEntityIds);
+  return getSecurityDashboardAlertCount({
+    cameras: selectedDevices.cameras.filter((device) => getDeviceRoomLabel(device) === room),
+    covers: selectedDevices.covers.filter((device) => getDeviceRoomLabel(device) === room),
+    helpers: selectedDevices.helpers.filter((device) => getDeviceRoomLabel(device) === room),
+    locks: selectedDevices.locks.filter((device) => getDeviceRoomLabel(device) === room),
+    sensors: selectedDevices.sensors.filter((device) => getDeviceRoomLabel(device) === room),
+  });
 }
 
 export function useHomeSecurityAlertCount({

@@ -80,7 +80,10 @@ import { useDashboardRoomNavigation } from './use-dashboard-room-navigation';
 import { useEditModeBeforeUnload } from './use-edit-mode-beforeunload';
 import { useHomeDashboardLayout } from './use-home-dashboard-layout';
 import { useHomeLayoutHydrated } from './use-home-layout-hydrated';
-import { useHomeSecurityAlertCount } from './use-home-security-alert-count';
+import {
+  getRoomSecurityAlertCount,
+  useHomeSecurityAlertCount,
+} from './use-home-security-alert-count';
 import { useOnboardingController } from './use-onboarding-controller';
 
 const DASHBOARD_DEVICE_SECTION_IDS = new Set(['home', 'lights', 'climate']);
@@ -501,6 +504,13 @@ export function useDashboardController(): DashboardController {
     enabled: showHomeSummaryBar && sectionData.isOverviewSection,
     hiddenEntityIds,
   });
+  const activeRoomSecurityAlertCount = useMemo(
+    () =>
+      isAllRooms(activeRoom)
+        ? securityAlertCount
+        : getRoomSecurityAlertCount(allDevices, hiddenEntityIds, activeRoom),
+    [activeRoom, allDevices, hiddenEntityIds, securityAlertCount]
+  );
 
   const resetDashboard = useResetDashboard(resetHomeLayout);
   const onboarding = useOnboardingController({ allEntityIds, changeRoom, resetDashboard });
@@ -636,6 +646,7 @@ export function useDashboardController(): DashboardController {
     rooms,
     sectionData,
     securityAlertCount,
+    activeRoomSecurityAlertCount,
     setActiveSection,
     updateCardSize,
     updateCardZone,

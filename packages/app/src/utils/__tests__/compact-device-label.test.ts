@@ -26,6 +26,14 @@ describe('compactRepeatedDeviceLabel', () => {
     ).toBe('Boost Mode');
   });
 
+  it('removes a camera model prefix when punctuation differs between labels', () => {
+    expect(
+      compactRepeatedDeviceLabel('AXIS M2048-LE IR Light 0', 'AXIS M2048 LE Dome Camera', [
+        'AXIS M2048-LE IR Light 0',
+      ])
+    ).toBe('IR Light 0');
+  });
+
   it('keeps the original label when trimming would empty it', () => {
     expect(compactRepeatedDeviceLabel('Pax Calima', 'Pax Calima', ['Pax Calima Boost mode'])).toBe(
       'Pax Calima'

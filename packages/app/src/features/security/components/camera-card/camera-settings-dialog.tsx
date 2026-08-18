@@ -1,4 +1,8 @@
-import { CardDialogChoicePill, FieldBlock } from '@navet/app/components/patterns';
+import {
+  CardDialogChoicePill,
+  FieldBlock,
+  SelectableCheckboxRow,
+} from '@navet/app/components/patterns';
 import {
   BaseCardDialogWithState,
   Input,
@@ -7,6 +11,7 @@ import {
   Switch,
 } from '@navet/app/components/primitives';
 import { DialogSectionRow } from '@navet/app/components/shared/device-editor';
+import { NEUTRAL_DIALOG_CONTROL_ACCENT } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
 import type { TranslationKey } from '@navet/app/i18n';
@@ -22,20 +27,27 @@ import type {
   CameraWebRtcStreamSource,
 } from '@navet/app/stores/settings-store';
 import { isDirectCameraStreamSource } from '@navet/app/stores/settings-store';
+import {
+  compactRepeatedDeviceLabel,
+  compactRepeatedLabelGroup,
+} from '@navet/app/utils/compact-device-label';
 import { getEntityTypeLabel } from '@navet/app/utils/entity-type-label';
 import * as Popover from '@radix-ui/react-popover';
-import { Info, Settings2 } from 'lucide-react';
+import { Info, Settings2, Sliders, SlidersHorizontal } from 'lucide-react';
 import { memo, type ReactNode, useCallback, useEffect, useState } from 'react';
+import {
+  getCameraAccessoryDisplayName,
+  getCameraAccessoryDomain,
+  isCameraFullscreenTelemetryAccessory,
+} from './camera-accessory-visibility';
 import {
   CAMERA_STREAM_PREFERENCE_OPTIONS,
   CAMERA_VIEW_MODE_OPTIONS,
 } from './camera-control-options';
 import { getGo2RtcViewerPresentation } from './go2rtc-viewer-presentation';
+import type { CameraAccessoryEntity } from './types';
 
-export interface SiblingEntity {
-  id: string;
-  entity: PlatformEntitySnapshot;
-}
+export type SiblingEntity = CameraAccessoryEntity;
 
 interface CameraSettingsDialogProps {
   entityId: string;
@@ -49,6 +61,7 @@ interface CameraSettingsDialogProps {
   cameraDirectStreamUrl: string;
   cameraDirectStreamUrlError: boolean;
   cameraFitMode: CameraFitMode;
+  fullscreenHiddenAccessoryIds: string[];
   supportedStreamPreferences: readonly PlatformCameraTransport[];
   supportsStreaming: boolean;
   hasSnapshot: boolean;
@@ -58,6 +71,7 @@ interface CameraSettingsDialogProps {
   onCameraWebRtcStreamSourceChange: (source: CameraWebRtcStreamSource) => void;
   onCameraDirectStreamUrlChange: (url: string) => void;
   onCameraFitModeChange: (mode: CameraFitMode) => void;
+  onFullscreenAccessoryVisibilityChange: (accessoryEntityId: string, visible: boolean) => void;
 }
 
 function getDisplayName(entityId: string, entity: PlatformEntitySnapshot): string {
@@ -540,6 +554,62 @@ function CameraFitModeRow({
   );
 }
 
+function CameraFullscreenInformationRow({
+  cameraName,
+  accessories,
+  hiddenAccessoryIds,
+  onVisibilityChange,
+}: {
+  cameraName: string;
+  accessories: CameraAccessoryEntity[];
+  hiddenAccessoryIds: string[];
+  onVisibilityChange: (accessoryEntityId: string, visible: boolean) => void;
+}) {
+  const { t } = useI18n();
+  const { theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
+  const labels = accessories.map(getCameraAccessoryDisplayName);
+  const hiddenIds = new Set(hiddenAccessoryIds);
+
+  return (
+    <ul className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
+      {accessories.map((accessory, index) => {
+        const label = compactRepeatedLabelGroup(
+          compactRepeatedDeviceLabel(labels[index] ?? '', cameraName, labels),
+          labels
+        );
+        const domain = getCameraAccessoryDomain(accessory);
+        const state =
+          domain === 'binary_sensor' || domain === 'switch'
+            ? accessory.entity.state === 'on'
+              ? t('common.on')
+              : t('common.off')
+            : accessory.entity.state;
+        const unit = accessory.entity.attributes?.unit_of_measurement;
+        const description = `${state}${typeof unit === 'string' ? ` ${unit}` : ''}`;
+        const isVisible = !hiddenIds.has(accessory.id);
+
+        return (
+          <li key={accessory.id}>
+            <SelectableCheckboxRow
+              checked={isVisible}
+              onCheckedChange={(checked) => onVisibilityChange(accessory.id, checked)}
+              label={<span className="block truncate">{label}</span>}
+              description={description}
+              rowClassName={`${surface.panelMuted} ${surface.border} ${surface.textPrimary}`}
+              descriptionClassName={surface.textSecondary}
+              selectedClassName={`${surface.panel} ${surface.borderStrong}`}
+              checkboxAppearance="secondary"
+              checkboxPalette="custom"
+              checkboxPaletteColor={NEUTRAL_DIALOG_CONTROL_ACCENT}
+            />
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   entityId,
   name,
@@ -552,6 +622,7 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   cameraDirectStreamUrl,
   cameraDirectStreamUrlError,
   cameraFitMode,
+  fullscreenHiddenAccessoryIds,
   supportedStreamPreferences,
   supportsStreaming,
   hasSnapshot,
@@ -561,11 +632,15 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
   onCameraWebRtcStreamSourceChange,
   onCameraDirectStreamUrlChange,
   onCameraFitModeChange,
+  onFullscreenAccessoryVisibilityChange,
 }: CameraSettingsDialogProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
   const isMobileViewport = useMediaQuery('(max-width: 767px)');
   const entityType = getEntityTypeLabel(entityId);
+  const fullscreenInformationAccessories = siblingEntities.filter(
+    isCameraFullscreenTelemetryAccessory
+  );
 
   const switches = siblingEntities.filter((s) => s.id.startsWith('switch.'));
   const selects = siblingEntities.filter((s) => s.id.startsWith('select.'));
@@ -608,6 +683,18 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
       ) : null}
     </div>
   );
+
+  const informationTabContent =
+    fullscreenInformationAccessories.length > 0 ? (
+      <div className="space-y-6">
+        <CameraFullscreenInformationRow
+          cameraName={name}
+          accessories={fullscreenInformationAccessories}
+          hiddenAccessoryIds={fullscreenHiddenAccessoryIds}
+          onVisibilityChange={onFullscreenAccessoryVisibilityChange}
+        />
+      </div>
+    ) : undefined;
 
   const moreControlsTabContent = hasControls ? (
     <div className="space-y-6">
@@ -673,16 +760,28 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
     </div>
   ) : undefined;
 
-  const extraTabs = moreControlsTabContent
-    ? [
-        {
-          key: 'more-controls',
-          label: t('common.moreActions'),
-          icon: Settings2,
-          content: moreControlsTabContent,
-        },
-      ]
-    : [];
+  const extraTabs = [
+    ...(informationTabContent
+      ? [
+          {
+            key: 'metrics',
+            label: t('common.metrics'),
+            icon: Sliders,
+            content: informationTabContent,
+          },
+        ]
+      : []),
+    ...(moreControlsTabContent
+      ? [
+          {
+            key: 'more-controls',
+            label: t('common.moreActions'),
+            icon: Settings2,
+            content: moreControlsTabContent,
+          },
+        ]
+      : []),
+  ];
 
   return (
     <BaseCardDialogWithState
@@ -692,8 +791,10 @@ export const CameraSettingsDialog = memo(function CameraSettingsDialog({
       entityId={entityId}
       description={entityType}
       controlsTabContent={controlsTabContent}
+      controlsTabIcon={SlidersHorizontal}
       extraTabs={extraTabs}
       theme={theme}
+      tintColor={NEUTRAL_DIALOG_CONTROL_ACCENT}
       disableOpenAutoFocus
       maxWidth="md"
       height="capped"

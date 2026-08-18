@@ -788,18 +788,28 @@ export const RoomDetails: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const page = within(canvasElement.ownerDocument.body);
-    await expect(canvas.getByRole('button', { name: 'Devices' })).toHaveAttribute(
+    await expect(canvas.getByRole('button', { name: 'Room settings' })).toHaveAttribute(
       'aria-pressed',
       'true'
     );
     await expect(
       canvas
-        .getByRole('button', { name: 'Devices' })
+        .getByRole('button', { name: 'Room settings' })
         .closest('[data-room-workspace-panel-content="manage"]')
     ).not.toBeNull();
+    const navigationCheckbox = canvas.getByRole('checkbox', { name: 'Show in navigation' });
+    await expect(navigationCheckbox).toBeVisible();
+    await expect(canvas.getAllByText('Show in navigation')).toHaveLength(2);
+    await userEvent.click(navigationCheckbox);
+    await expect(navigationCheckbox).not.toBeChecked();
+    await userEvent.click(navigationCheckbox);
+    await expect(navigationCheckbox).toBeChecked();
+    await expect(canvas.queryByRole('button', { name: 'Add devices' })).toBeNull();
+    await userEvent.selectOptions(canvas.getByRole('combobox', { name: 'Group' }), 'upper-floor');
+    await expect(canvas.getByRole('combobox', { name: 'Group' })).toHaveValue('upper-floor');
+    await expect(canvas.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+    await userEvent.click(canvas.getByRole('button', { name: 'Devices' }));
     await expect(canvas.getByRole('button', { name: 'Add devices' })).toBeVisible();
-    await expect(canvas.queryByRole('heading', { name: 'Devices' })).toBeNull();
-    await expect(canvas.queryByText('Review assigned devices or add another device.')).toBeNull();
     await userEvent.click(canvas.getByRole('button', { name: 'Actions: Ceiling lights' }));
     await expect(page.getByRole('menuitem', { name: 'Hide' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Move' })).toBeVisible();
@@ -809,14 +819,10 @@ export const RoomDetails: Story = {
     await expect(page.getByRole('menuitem', { name: 'Show' })).toBeVisible();
     await userEvent.keyboard('{Escape}');
     await userEvent.click(canvas.getByRole('button', { name: 'Room settings' }));
-    await expect(canvas.queryByRole('button', { name: 'Add devices' })).toBeNull();
     await expect(canvas.queryByRole('button', { name: 'More actions' })).toBeNull();
     await expect(canvas.getByRole('button', { name: /^Merge room/ })).toBeVisible();
     await expect(canvas.getByRole('button', { name: /^Split room/ })).toBeVisible();
     await expect(canvas.getByRole('button', { name: /^Delete room/ })).toBeVisible();
-    await userEvent.selectOptions(canvas.getByRole('combobox', { name: 'Group' }), 'upper-floor');
-    await expect(canvas.getByRole('combobox', { name: 'Group' })).toHaveValue('upper-floor');
-    await expect(canvas.getByRole('button', { name: 'Save changes' })).toBeEnabled();
   },
 };
 
@@ -832,11 +838,11 @@ export const DeviceSelection: Story = {
     const canvas = within(canvasElement);
     const page = within(canvasElement.ownerDocument.body);
 
-    await expect(canvas.getByRole('button', { name: 'Devices' })).toHaveAttribute(
+    await expect(canvas.getByRole('button', { name: 'Room settings' })).toHaveAttribute(
       'aria-pressed',
       'true'
     );
-    await expect(canvas.queryByRole('combobox', { name: 'Group' })).toBeNull();
+    await userEvent.click(canvas.getByRole('button', { name: 'Devices' }));
     await userEvent.click(canvas.getByRole('button', { name: 'Add devices' }));
     await expect(await page.findByRole('dialog', { name: 'Add devices' })).toBeInTheDocument();
     await expect(page.getByRole('searchbox', { name: 'Search devices' })).toBeInTheDocument();
@@ -974,7 +980,6 @@ export const PhoneRoomEditor: Story = {
     await expect(canvas.getByRole('heading', { name: 'Living Room' })).toBeVisible();
     await expect(canvas.getByRole('button', { name: 'Back' })).toBeVisible();
     await expect(canvas.getByRole('button', { name: 'Save changes' })).toBeDisabled();
-    await userEvent.click(canvas.getByRole('button', { name: 'Room settings' }));
     const roomNameInput = canvas.getByRole('textbox', { name: 'Room name' });
     await expect(roomNameInput).toHaveValue('Living Room');
     await userEvent.clear(roomNameInput);

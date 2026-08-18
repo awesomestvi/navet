@@ -201,6 +201,19 @@ describe('DashboardSectionRouter home controls', () => {
     expect(screen.queryByText('Household dashboard')).not.toBeInTheDocument();
   });
 
+  it('does not expose dashboard customize actions in the household workspace', async () => {
+    const controller = createController();
+    controller.activeSection = 'tasks';
+
+    renderWithProviders(<DashboardSectionRouter controller={controller} />);
+
+    expect(await screen.findByText('Household dashboard')).toBeInTheDocument();
+    const layoutProps = dashboardLayoutMock.mock.calls[0]?.[0] as {
+      mobileEditActions?: Record<string, unknown>;
+    };
+    expect(layoutProps.mobileEditActions).toBeUndefined();
+  });
+
   it('rerenders when independently consumed controller inputs change', async () => {
     const controller = createController();
     const { rerender } = renderWithProviders(<DashboardSectionRouter controller={controller} />);
@@ -235,6 +248,7 @@ describe('DashboardSectionRouter home controls', () => {
     nextController = {
       ...nextController,
       securityAlertCount: 1,
+      activeRoomSecurityAlertCount: 1,
     };
     rerender(<DashboardSectionRouter controller={nextController} />);
     expect(dashboardLayoutMock).toHaveBeenCalled();
@@ -404,6 +418,7 @@ function createController(): DashboardController {
     roomItemCounts: new Map(),
     rooms: [ALL_ROOMS_ID, 'Kitchen'],
     securityAlertCount: 0,
+    activeRoomSecurityAlertCount: 0,
     sectionData: {
       isOverviewSection: true,
       energyCustomCards: [],

@@ -3,6 +3,8 @@ import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { darkenColor, darkenColorPreserveHue } from '@navet/app/utils/color-utils';
 import type { CSSProperties } from 'react';
 
+export const NEUTRAL_DIALOG_CONTROL_ACCENT = '#6b7280';
+
 function isValidHexColor(value: string | null | undefined): value is string {
   return typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value);
 }

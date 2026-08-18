@@ -8,6 +8,7 @@ import {
   CustomCardTintPicker,
   IconPicker,
 } from '@navet/app/components/shared/device-editor';
+import { NEUTRAL_DIALOG_CONTROL_ACCENT } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import {
   getAccentDialogSurface,
   resolvePrimaryColorToken,
@@ -95,7 +96,7 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
   onIconChange,
   onTintColorChange,
 }: LightSettingsDialogProps) {
-  const { primaryColor, theme } = useTheme();
+  const { accentColor, primaryColor, theme } = useTheme();
   const { t } = useI18n();
   const entityType = getEntityTypeLabel(entityId) || t('lighting.type.light');
 
@@ -213,6 +214,8 @@ export const LightSettingsDialog = memo(function LightSettingsDialog({
       description={entityType}
       tabs={tabs}
       theme={theme}
+      tintColor={isOn ? tintColor : NEUTRAL_DIALOG_CONTROL_ACCENT}
+      defaultTintAccent={accentColor}
       contentSurface={dialogSurface}
       disableOpenAutoFocus
       maxWidth="md"

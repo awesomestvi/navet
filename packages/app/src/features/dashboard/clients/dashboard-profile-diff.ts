@@ -11,6 +11,20 @@ export interface DashboardProfileMergeResult {
 
 const IGNORED_ROOT_KEYS = new Set(['cardOrders', 'exportedAt', 'navigation']);
 
+function shouldIgnoreRootKey(key: string, base: JsonRecord, next: JsonRecord) {
+  if (IGNORED_ROOT_KEYS.has(key)) {
+    return true;
+  }
+
+  // Multi-dashboard profiles own Home layout inside `dashboardsById`. The old
+  // top-level projection can legitimately differ between clients assigned to
+  // different dashboards, so it is import compatibility data rather than
+  // shared sync state once both profiles contain a dashboard collection.
+  return (
+    key === 'homeDashboardLayout' && isJsonRecord(base.dashboards) && isJsonRecord(next.dashboards)
+  );
+}
+
 function isJsonRecord(value: unknown): value is JsonRecord {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
@@ -71,7 +85,7 @@ function collectChangedPaths(
   if (isJsonRecord(base) && isJsonRecord(next)) {
     const keys = new Set([...Object.keys(base), ...Object.keys(next)]);
     for (const key of Array.from(keys).sort()) {
-      if (segments.length === 0 && IGNORED_ROOT_KEYS.has(key)) {
+      if (segments.length === 0 && shouldIgnoreRootKey(key, base, next)) {
         continue;
       }
       collectChangedPaths(base[key], next[key], [...segments, key], changedPaths);

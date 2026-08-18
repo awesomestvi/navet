@@ -112,6 +112,24 @@ Order content by user value:
 4. primary household action
 5. secondary detail and configuration
 
+Visual hierarchy is functional, not decorative. A person should be able to scan a surface and tell
+what the section contains, what each control changes, and which supporting text explains it before
+reading every word.
+
+- Keep hierarchy levels distinct: a section heading names the group, a control title names the
+  setting or action, and a description explains its consequence.
+- Do not use a section heading as a silent replacement for the first control's title. Every control
+  row needs its own visible title when adjacent rows have titles, even when that wording repeats the
+  group context.
+- Never leave helper or description text visually orphaned. It must sit beneath or beside the title
+  it explains, with visibly lower emphasis.
+- Use typography, spacing, alignment, and grouping before adding more borders, backgrounds, badges,
+  or decorative containers.
+- Give sibling controls parallel anatomy. If one option has an icon, title, description, and state
+  control, comparable options in the same group should preserve that reading order.
+- Check the hierarchy at a glance, in every supported theme and at narrow widths. It must remain
+  understandable without relying on color, hover, or prior knowledge of the screen.
+
 Do not add labels, badges, descriptions, or calls to action solely to fill space. Section headings
 organize operational content; they should not become marketing-style hero blocks.
 

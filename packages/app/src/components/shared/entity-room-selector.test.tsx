@@ -1,6 +1,6 @@
 import type { ProviderEntityRoomContext } from '@navet/app/hooks';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EntityRoomSelector } from './entity-room-selector';
 
 const { updateEntityRoomMock, setRoomOverrideMock, clearRoomOverrideMock } = vi.hoisted(() => ({
@@ -25,6 +25,7 @@ function createRoomContext(areaId: string | null): ProviderEntityRoomContext {
 let mockRoomContext: ProviderEntityRoomContext = {
   ...createRoomContext('bathroom'),
 };
+let mockProviderEntity: { room?: string; roomId?: string } | null = null;
 
 vi.mock('@navet/app/hooks', () => ({
   useI18n: () => ({
@@ -55,6 +56,7 @@ vi.mock('@navet/app/hooks', () => ({
       },
     }),
   useProviderEntityRoomContext: () => mockRoomContext,
+  useProviderEntityModel: () => mockProviderEntity,
 }));
 
 vi.mock('@navet/app/stores/entity-room-overrides-store', () => ({
@@ -74,6 +76,10 @@ vi.mock('@navet/app/services/integration-admin.service', () => ({
 }));
 
 describe('EntityRoomSelector', () => {
+  beforeEach(() => {
+    mockProviderEntity = null;
+  });
+
   it('uses neutral native popup classes for compact selectors', () => {
     mockRoomContext = createRoomContext('bathroom');
     render(<EntityRoomSelector entityId="home_assistant:media_player.bathroom" compact />);
@@ -141,6 +147,25 @@ describe('EntityRoomSelector', () => {
         fallbackRoomName="Bathroom"
       />
     );
+
+    expect(screen.getAllByText('Bathroom')).toHaveLength(2);
+    expect(screen.getByRole('combobox', { name: 'Room' })).toHaveValue('home_assistant:bathroom');
+  });
+
+  it('matches an already-scoped registry room id without double-scoping it', () => {
+    mockRoomContext = createRoomContext('home_assistant:bathroom');
+
+    render(<EntityRoomSelector entityId="home_assistant:media_player.bathroom" compact />);
+
+    expect(screen.getAllByText('Bathroom')).toHaveLength(2);
+    expect(screen.getByRole('combobox', { name: 'Room' })).toHaveValue('home_assistant:bathroom');
+  });
+
+  it('uses the normalized entity room when registry context is unavailable', () => {
+    mockRoomContext = { entry: null, deviceAreaId: null };
+    mockProviderEntity = { room: 'Bathroom', roomId: 'bathroom' };
+
+    render(<EntityRoomSelector entityId="home_assistant:media_player.bathroom" compact />);
 
     expect(screen.getAllByText('Bathroom')).toHaveLength(2);
     expect(screen.getByRole('combobox', { name: 'Room' })).toHaveValue('home_assistant:bathroom');

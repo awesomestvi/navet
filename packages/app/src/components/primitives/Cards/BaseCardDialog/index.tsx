@@ -12,9 +12,10 @@ import { TabPanel, Tabs } from '@navet/app/components/primitives/tabs';
 import { CustomCardTintPicker, CustomScrollbar } from '@navet/app/components/shared/device-editor';
 import { CompactRoomSelector } from '@navet/app/components/shared/device-editor/compact-room-selector';
 import { getBaseCardDialogSurface } from '@navet/app/components/shared/theme/base-card-dialog-surface';
+import { getInheritedDialogSectionStyle } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@navet/app/components/ui/utils';
-import { useI18n } from '@navet/app/hooks';
+import { useI18n, useTheme } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import * as Dialog from '@radix-ui/react-dialog';
 import { type LucideIcon, Palette, Sliders } from 'lucide-react';
@@ -429,31 +430,22 @@ function BaseCardDialogRoot({
   );
 }
 
-function getWidgetRoomSelector(roomSelector: BaseCardDialogRoomSelector, theme: ThemeType) {
+function getWidgetRoomSelector(
+  roomSelector: BaseCardDialogRoomSelector,
+  theme: ThemeType,
+  controlStyle?: CSSProperties
+) {
   const isLightTheme = theme === 'light';
 
   return (
     <div className="relative inline-flex items-center">
-      {roomSelector.onChange ? (
-        <select
-          aria-label={roomSelector.label}
-          value={roomSelector.value}
-          onChange={(event) => roomSelector.onChange?.(event.target.value)}
-          className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none opacity-0 disabled:cursor-not-allowed"
-        >
-          {roomSelector.options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      ) : null}
       <div
         className={`inline-flex h-9 min-w-0 items-center rounded-full border px-2.5 ${
           isLightTheme
             ? 'border-slate-300/80 bg-slate-100/90 text-slate-700'
             : 'border-white/12 bg-white/8 text-white/82'
         }`}
+        style={controlStyle}
       >
         <CompactRoomSelector
           value={roomSelector.value}
@@ -478,6 +470,8 @@ function BaseCardDialogCardVariant({
   description,
   tabs,
   theme,
+  tintColor,
+  defaultTintAccent,
   footerContent,
   footerActionLabel,
   roomSelector,
@@ -504,6 +498,7 @@ function BaseCardDialogCardVariant({
   onActiveTabChange,
 }: BaseCardDialogCardProps) {
   const { t } = useI18n();
+  const { accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const dialogSurface = contentSurface ?? getBaseCardDialogSurface(theme);
   const firstTabKey = tabs[0]?.key;
@@ -527,9 +522,13 @@ function BaseCardDialogCardVariant({
     onActiveTabChange?.(nextTab);
   };
 
+  const paletteControlStyle = useMemo(
+    () => getInheritedDialogSectionStyle(theme, tintColor, defaultTintAccent ?? accentColor),
+    [accentColor, defaultTintAccent, theme, tintColor]
+  );
   const widgetRoomSelector = useMemo(
-    () => (roomSelector ? getWidgetRoomSelector(roomSelector, theme) : null),
-    [roomSelector, theme]
+    () => (roomSelector ? getWidgetRoomSelector(roomSelector, theme, paletteControlStyle) : null),
+    [paletteControlStyle, roomSelector, theme]
   );
   const headerRoomSelectorStyle = useMemo<CSSProperties>(
     () => ({
@@ -537,8 +536,9 @@ function BaseCardDialogCardVariant({
       paddingInline: '10px',
       fontSize: '0.75rem',
       lineHeight: '1rem',
+      ...paletteControlStyle,
     }),
-    []
+    [paletteControlStyle]
   );
 
   const resolvedContentClassName = cn(
@@ -617,7 +617,7 @@ function BaseCardDialogCardVariant({
           ) : (
             <CardDialogFooter>
               <Dialog.Close asChild>
-                <Button variant="secondary" size="small">
+                <Button variant="soft" size="small" style={paletteControlStyle}>
                   {footerActionLabel ?? t('common.done')}
                 </Button>
               </Dialog.Close>
@@ -916,12 +916,14 @@ export function BaseCardDialog(props: BaseCardDialogProps) {
 export interface BaseCardDialogWithStateProps
   extends Omit<BaseCardDialogCardProps, 'tabs' | 'variant'> {
   controlsTabContent: ReactNode;
+  controlsTabIcon?: LucideIcon;
   customizeTabContent?: ReactNode;
   extraTabs?: BaseCardDialogTab[];
 }
 
 export function BaseCardDialogWithState({
   controlsTabContent,
+  controlsTabIcon = Sliders,
   customizeTabContent,
   extraTabs = [],
   ...props
@@ -932,7 +934,7 @@ export function BaseCardDialogWithState({
     {
       key: 'controls',
       label: t('common.controls'),
-      icon: Sliders,
+      icon: controlsTabIcon,
       content: controlsTabContent,
     },
     ...(customizeTabContent || props.onTintColorChange

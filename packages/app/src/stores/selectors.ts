@@ -26,6 +26,8 @@ function getEntitySetting<T>(record: Record<string, T>, entityId: string): T | u
   return record[canonicalEntityId] ?? record[entityId];
 }
 
+const EMPTY_STRING_ARRAY: string[] = [];
+
 /**
  * Global app error overlay (`ErrorDisplay`) — distinct from HA connection errors.
  */
@@ -155,6 +157,8 @@ export const settingsSelectors = {
   cameraFitMode: (state: SettingsState) => state.cameraFitMode,
   cameraFitModeForEntity: (entityId: string) => (state: SettingsState) =>
     getEntitySetting(state.cameraFitModes, entityId) ?? state.cameraFitMode,
+  cameraFullscreenHiddenAccessoryIdsForEntity: (entityId: string) => (state: SettingsState) =>
+    getEntitySetting(state.cameraFullscreenHiddenAccessoryIds, entityId) ?? EMPTY_STRING_ARRAY,
   ambientLightBleed: (state: SettingsState) => state.ambientLightBleed,
   weatherForecastMode: (state: SettingsState) => state.weatherForecastMode,
   weatherMetricIds: (state: SettingsState) => state.weatherMetricIds,
@@ -169,6 +173,8 @@ export const settingsSelectors = {
   updateCameraWebRtcStreamSource: (state: SettingsState) => state.updateCameraWebRtcStreamSource,
   updateCameraDirectStreamUrl: (state: SettingsState) => state.updateCameraDirectStreamUrl,
   updateCameraFitMode: (state: SettingsState) => state.updateCameraFitMode,
+  updateCameraFullscreenAccessoryVisibility: (state: SettingsState) =>
+    state.updateCameraFullscreenAccessoryVisibility,
   resetSettings: (state: SettingsState) => state.resetSettings,
 
   // Combined selectors
