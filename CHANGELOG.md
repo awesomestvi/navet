@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.13.2 - 2026-08-19
+
+## New features
+
+- Expanded fullscreen camera views with configurable sensor details, motion state, and connected-light controls.
+- Missed chores can now be completed late while preserving approvals and completion history.
+
+## Improvements and bug fixes
+
+- Dashboard sync now respects independent device layouts and keeps routine updates unobtrusive.
+- Chores now hide points, missions, and rewards when motivation is off, with clearer add and edit forms.
+- Improved room and card settings with palette-aware controls, easier navigation visibility, and resolved alerts from hidden unavailable cameras.
+
 ## 0.13.1 - 2026-08-17
 
 ## New features
