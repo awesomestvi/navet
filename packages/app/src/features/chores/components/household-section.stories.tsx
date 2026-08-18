@@ -369,22 +369,22 @@ export const HouseSettled: Story = {
 
 export const MotivationOff: Story = {
   args: { mode: 'off' },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, userEvent }) => {
     const today = within(canvas.getByRole('region', { name: 'Today' }));
+    const navigation = within(canvas.getByRole('navigation', { name: 'Household' }));
     const pulseHeading = await today.findByText('House pulse');
     const pulse = pulseHeading.closest('[data-house-pulse-layout="responsive"]');
     await expect(pulse).toHaveAttribute('data-house-pulse-density', 'inline-metrics');
     await expect(pulse).toHaveClass('lg:landscape:flex', 'xl:flex');
     await expect(pulse?.querySelector('[data-house-pulse-metrics="true"]')).toHaveClass(
       'grid-cols-2',
-      'sm:grid-cols-3',
+      'sm:grid-cols-2',
       'lg:landscape:contents',
       'xl:contents'
     );
     const inlineMetrics = pulse?.querySelectorAll('[data-pulse-metric="true"]') ?? [];
-    await expect(inlineMetrics).toHaveLength(3);
+    await expect(inlineMetrics).toHaveLength(2);
     await expect(inlineMetrics[1]).toHaveClass('border-l');
-    await expect(inlineMetrics[2]).toHaveClass('col-span-2', 'sm:col-span-1', 'sm:border-l');
     await expect(inlineMetrics[0]).toHaveClass('lg:landscape:ml-auto', 'xl:ml-auto');
     await expect(pulse?.querySelector('[data-house-pulse-actions="true"]')).toHaveClass(
       'lg:landscape:ml-3',
@@ -403,6 +403,19 @@ export const MotivationOff: Story = {
     }
     await expect(today.queryByText('Earned')).not.toBeInTheDocument();
     await expect(today.queryByTitle(/points$/)).not.toBeInTheDocument();
+    await expect(navigation.queryByRole('button', { name: 'Missions' })).not.toBeInTheDocument();
+    await expect(navigation.queryByRole('button', { name: 'Rewards' })).not.toBeInTheDocument();
+    await expect(today.queryByText('Missions and rewards')).not.toBeInTheDocument();
+
+    await userEvent.click(navigation.getByRole('button', { name: 'Chores' }));
+    const chores = within(canvas.getByRole('region', { name: 'Chores' }));
+    const dishwasherCard = chores
+      .getByRole('heading', { name: 'Unload dishwasher' })
+      .closest('[data-chore-base-card]');
+    await expect(dishwasherCard).not.toBeNull();
+    await expect(
+      within(dishwasherCard as HTMLElement).queryByTitle('15 points')
+    ).not.toBeInTheDocument();
   },
 };
 

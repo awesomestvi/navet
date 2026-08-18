@@ -1,9 +1,17 @@
 import { createEmptyDeviceCollection } from '@navet/app/core/navet-device-collections';
 import * as securityDashboardModel from '@navet/app/features/security/utils/security-camera-dashboard-model';
-import type { DeviceCollection, LockDevice, SensorDevice } from '@navet/app/types/device.types';
+import type {
+  CameraDevice,
+  DeviceCollection,
+  LockDevice,
+  SensorDevice,
+} from '@navet/app/types/device.types';
 import { renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { useHomeSecurityAlertCount } from '../use-home-security-alert-count';
+import {
+  getRoomSecurityAlertCount,
+  useHomeSecurityAlertCount,
+} from '../use-home-security-alert-count';
 
 const EMPTY_HIDDEN_ENTITY_IDS: string[] = [];
 
@@ -84,7 +92,7 @@ describe('useHomeSecurityAlertCount', () => {
     expect(fullModelSpy).not.toHaveBeenCalled();
   });
 
-  it('preserves hidden-parent and absorbed-child alert behavior', () => {
+  it('keeps an absorbed child hidden when its parent card is hidden', () => {
     const parentLock = lock({
       securitySeverity: 'normal',
       state: true,
@@ -119,6 +127,27 @@ describe('useHomeSecurityAlertCount', () => {
 
     rerender({ hiddenEntityIds: [parentLock.id] });
 
-    expect(result.current).toBe(1);
+    expect(result.current).toBe(0);
+  });
+
+  it('excludes a hidden unavailable camera from its room alert count', () => {
+    const unavailableCamera: CameraDevice = {
+      id: 'camera.bedroom',
+      name: 'Bedroom Camera',
+      room: 'Bedroom',
+      size: 'medium',
+      state: 'unavailable',
+      securitySeverity: 'unknown',
+      supportedFeatures: 2,
+      isStreamCapable: true,
+      isStillImageOnly: false,
+    };
+    const devices: DeviceCollection = {
+      ...createEmptyDeviceCollection(),
+      cameras: [unavailableCamera],
+    };
+
+    expect(getRoomSecurityAlertCount(devices, [], 'Bedroom')).toBe(1);
+    expect(getRoomSecurityAlertCount(devices, [unavailableCamera.id], 'Bedroom')).toBe(0);
   });
 });

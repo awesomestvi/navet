@@ -296,12 +296,23 @@ function canonicalizeProfileValue(value: unknown, root = false): unknown {
     return value.map((entry) => canonicalizeProfileValue(entry));
   }
   if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    const hasDashboardCollection =
+      root &&
+      record.dashboards !== null &&
+      typeof record.dashboards === 'object' &&
+      !Array.isArray(record.dashboards);
     return Object.fromEntries(
       Object.keys(value)
-        .filter((key) => !root || !PROFILE_FINGERPRINT_IGNORED_ROOT_KEYS.has(key))
+        .filter(
+          (key) =>
+            !root ||
+            (!PROFILE_FINGERPRINT_IGNORED_ROOT_KEYS.has(key) &&
+              !(key === 'homeDashboardLayout' && hasDashboardCollection))
+        )
         .sort()
         .flatMap((key) => {
-          const entry = (value as Record<string, unknown>)[key];
+          const entry = record[key];
           return entry === undefined ? [] : ([[key, canonicalizeProfileValue(entry)]] as const);
         })
     );

@@ -1,4 +1,5 @@
 import { DASHBOARD_CONFIG_VERSION } from '@navet/app/constants/dashboard-config-version';
+import { createLegacyDashboardCollection } from '@navet/app/features/dashboard/dashboards';
 import type { DashboardConfigPayload } from '@navet/app/utils/dashboard-config';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -231,6 +232,35 @@ describe('dashboard profile base cache', () => {
     );
     expect(getDashboardProfileFingerprint(changedProfile)).not.toBe(
       getDashboardProfileFingerprint(profile)
+    );
+  });
+
+  it('ignores the legacy Home projection when fingerprinting a multi-dashboard profile', () => {
+    const dashboards = createLegacyDashboardCollection({
+      homeLayout: {
+        mode: 'flow',
+        showHero: true,
+        cardIds: ['home_assistant:light.kitchen'],
+        sections: [],
+        cardSectionAssignments: {},
+      },
+    });
+    const raspberryPiProfile = {
+      ...profile,
+      version: DASHBOARD_CONFIG_VERSION,
+      dashboards,
+      homeDashboardLayout: dashboards.dashboardsById.home?.homeLayout,
+    } satisfies DashboardConfigPayload;
+    const computerProfile = {
+      ...raspberryPiProfile,
+      homeDashboardLayout: {
+        ...dashboards.dashboardsById.home?.homeLayout,
+        cardIds: ['home_assistant:light.kitchen', 'home_assistant:sensor.office_temperature'],
+      },
+    } satisfies DashboardConfigPayload;
+
+    expect(getDashboardProfileFingerprint(computerProfile)).toBe(
+      getDashboardProfileFingerprint(raspberryPiProfile)
     );
   });
 

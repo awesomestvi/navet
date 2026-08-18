@@ -70,7 +70,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Add and Edit Chore share the same four-section sidebar and advanced controls. Each section uses the grouped surface language from onboarding, while onboarding keeps its shorter inline creation flow.',
+          'Add and Edit Chore use the same continuous three-part flow as onboarding, with a compact identity preview and contextual More options disclosures inside each section.',
       },
     },
   },
@@ -81,34 +81,46 @@ type Story = StoryObj<typeof meta>;
 
 export const DesktopDetails: Story = {};
 
-export const MobileGroupedStepper: Story = {
+export const MobileContinuousEditor: Story = {
   parameters: { viewport: { defaultViewport: 'mobile1' } },
   play: async ({ canvasElement }) => {
     saveChore.mockClear();
     const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
       name: 'Add a chore',
     });
-    await expect(within(dialog).getByText('Step 1 of 4')).toBeInTheDocument();
-    await expect(within(dialog).getByRole('heading', { name: 'The chore' })).toBeInTheDocument();
-    await expect(within(dialog).getByRole('button', { name: 'Assignment' })).toBeDisabled();
+    await expect(
+      within(dialog).getAllByRole('heading', { name: 'The chore' })[0]
+    ).toBeInTheDocument();
+    await expect(within(dialog).getByRole('heading', { name: 'Who does it' })).toBeInTheDocument();
+    await expect(
+      within(dialog).getByRole('heading', { name: 'When it repeats' })
+    ).toBeInTheDocument();
     await expect(within(dialog).getByLabelText('Chore name')).toHaveValue('');
     await expect(within(dialog).getByLabelText('Room')).toBeInTheDocument();
+    await expect(within(dialog).getAllByLabelText('Repeat every')).toHaveLength(1);
     await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Water the plants');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
-    await expect(within(dialog).getByText('Step 2 of 4')).toBeInTheDocument();
-    await expect(within(dialog).getByRole('heading', { name: 'Who does it' })).toBeInTheDocument();
+    await expect(dialog.querySelector('[aria-live="polite"]')).toHaveTextContent(
+      'Water the plants'
+    );
     await userEvent.selectOptions(within(dialog).getByLabelText('Assignment'), 'everyone');
+    await expect(within(dialog).getByLabelText('Person')).toBeDisabled();
+    await expect(within(dialog).getAllByText('More options')).toHaveLength(3);
+    await expect(within(dialog).getByLabelText('Instructions')).not.toBeVisible();
+    await userEvent.click(within(dialog).getByLabelText('More options: The chore'));
+    await expect(within(dialog).getByLabelText('Instructions')).toBeVisible();
+    await expect(within(dialog).getByLabelText('Require approval')).not.toBeVisible();
   },
 };
 
-export const DesktopGroupedSidebarCreation: Story = {
+export const DesktopContinuousCreation: Story = {
   play: async ({ canvasElement }) => {
     saveChore.mockClear();
     const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
       name: 'Add a chore',
     });
-    await expect(within(dialog).getByText('Step 1 of 4')).toBeInTheDocument();
-    await expect(within(dialog).getByRole('heading', { name: 'The chore' })).toBeInTheDocument();
+    await expect(
+      within(dialog).getAllByRole('heading', { name: 'The chore' })[0]
+    ).toBeInTheDocument();
     const iconSearch = within(dialog).getByLabelText('Paste Lucide icon name');
     await userEvent.clear(iconSearch);
     await userEvent.type(iconSearch, 'Telescope');
@@ -118,10 +130,8 @@ export const DesktopGroupedSidebarCreation: Story = {
     await expect(within(dialog).getByRole('img', { name: 'Telescope' })).toBeInTheDocument();
     await expect(within(dialog).getByRole('alert')).toHaveTextContent('Icon name not found');
     await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Clean the hallway');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     await expect(within(dialog).getByRole('heading', { name: 'Who does it' })).toBeInTheDocument();
     await userEvent.selectOptions(within(dialog).getByLabelText('Assignment'), 'everyone');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
     await expect(
       within(dialog).getByRole('heading', { name: 'When it repeats' })
     ).toBeInTheDocument();
@@ -131,16 +141,17 @@ export const DesktopGroupedSidebarCreation: Story = {
     await expect(repeatSelect).toHaveValue('biweekly');
     await userEvent.selectOptions(repeatSelect, 'triweekly');
     await expect(repeatSelect).toHaveValue('triweekly');
-    await expect(within(dialog).getByLabelText('Repeat every')).toHaveValue(3);
     fireEvent.change(within(dialog).getByLabelText('Start date'), {
       target: { value: '2026-12-07' },
     });
     await userEvent.type(within(dialog).getByLabelText('End date'), '2026-12-31');
     await userEvent.type(within(dialog).getByLabelText('Dates to skip'), '2026-12-24');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }));
-    await expect(
-      within(dialog).getByRole('heading', { level: 2, name: 'More options' })
-    ).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByLabelText('More options: The chore'));
+    await userEvent.click(within(dialog).getByLabelText('More options: When it repeats'));
+    await expect(within(dialog).queryByLabelText('Repeat every')).toBeNull();
+    await expect(dialog.querySelectorAll('input[type="color"]')).toHaveLength(1);
+    await expect(within(dialog).getByLabelText('Instructions')).toBeInTheDocument();
+    await expect(within(dialog).getByLabelText('When missed')).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Add chore' }));
     await expect(saveChore).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -163,6 +174,7 @@ export const EditColorOverride: Story = {
     const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
       name: 'Edit chore',
     });
+    await expect(within(dialog).queryByText('Start with a template')).toBeNull();
     const colorInput = dialog.querySelector('input[type="color"]');
     await expect(colorInput).not.toBeNull();
     fireEvent.change(colorInput as HTMLInputElement, { target: { value: '#2563eb' } });
@@ -172,6 +184,10 @@ export const EditColorOverride: Story = {
       expect.objectContaining({ color: '#2563eb' })
     );
   },
+};
+
+export const LightTheme: Story = {
+  globals: { theme: 'light' },
 };
 
 export const PersonStepperCreation: Story = {

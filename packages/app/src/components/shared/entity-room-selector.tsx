@@ -4,6 +4,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import {
   useI18n,
   useIntegrationStore,
+  useProviderEntityModel,
   useProviderEntityRoomContext,
   useTheme,
 } from '@navet/app/hooks';
@@ -18,7 +19,7 @@ import {
 } from '@navet/app/utils/provider-ids';
 import { Loader2 } from 'lucide-react';
 import type { CSSProperties } from 'react';
-import { memo, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 interface EntityRoomSelectorProps {
@@ -52,6 +53,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
   const { t } = useI18n();
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const roomRegistry = useProviderEntityRoomContext(entityId);
+  const providerEntity = useProviderEntityModel(entityId);
   const roomIdsByEntityId = useEntityRoomOverridesStore((state) => state.roomIdsByEntityId);
   const setRoomOverride = useEntityRoomOverridesStore((state) => state.setRoomOverride);
   const clearRoomOverride = useEntityRoomOverridesStore((state) => state.clearRoomOverride);
@@ -77,8 +79,22 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
   const localRoomOverrideId = roomIdsByEntityId[resolvedEntityId] ?? null;
   const canManageRoom = assignableRooms.length > 0;
   const usesProviderRoomAssignment = roomRegistry.entry != null;
+  const findAssignableRoom = useCallback(
+    (roomId: string | null | undefined) => {
+      if (!roomId) return null;
+      const nativeRoomId = getProviderNativeId(roomId);
+      return (
+        assignableRooms.find(
+          (room) => room.id === roomId || getProviderNativeId(room.id) === nativeRoomId
+        ) ?? null
+      );
+    },
+    [assignableRooms]
+  );
   const fallbackManagedRoom = useMemo(() => {
-    const normalizedFallbackRoomName = fallbackRoomName?.trim().toLowerCase();
+    const normalizedFallbackRoomName = (fallbackRoomName ?? providerEntity?.room)
+      ?.trim()
+      .toLowerCase();
     if (!normalizedFallbackRoomName) {
       return null;
     }
@@ -88,32 +104,29 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
         (room) => room.name.trim().toLowerCase() === normalizedFallbackRoomName
       ) ?? null
     );
-  }, [assignableRooms, fallbackRoomName]);
+  }, [assignableRooms, fallbackRoomName, providerEntity?.room]);
   const selectedRoomId = useMemo(() => {
     if (localRoomOverrideId) {
-      return localRoomOverrideId;
+      return findAssignableRoom(localRoomOverrideId)?.id ?? localRoomOverrideId;
     }
 
     const entityEntry = roomRegistry.entry;
-    if (!entityEntry) {
-      return fallbackManagedRoom?.id ?? '';
+    if (entityEntry?.area_id) {
+      const registryRoom = findAssignableRoom(entityEntry.area_id);
+      if (registryRoom) return registryRoom.id;
     }
 
-    if (entityEntry.area_id) {
-      return createProviderScopedId(entityProviderId, entityEntry.area_id);
+    if (entityEntry?.device_id && roomRegistry.deviceAreaId) {
+      const deviceRoom = findAssignableRoom(roomRegistry.deviceAreaId);
+      if (deviceRoom) return deviceRoom.id;
     }
 
-    if (!entityEntry.device_id) {
-      return fallbackManagedRoom?.id ?? '';
-    }
-
-    return roomRegistry.deviceAreaId
-      ? createProviderScopedId(entityProviderId, roomRegistry.deviceAreaId)
-      : (fallbackManagedRoom?.id ?? '');
+    return findAssignableRoom(providerEntity?.roomId)?.id ?? fallbackManagedRoom?.id ?? '';
   }, [
-    entityProviderId,
     fallbackManagedRoom?.id,
+    findAssignableRoom,
     localRoomOverrideId,
+    providerEntity?.roomId,
     roomRegistry.deviceAreaId,
     roomRegistry.entry,
   ]);
@@ -121,6 +134,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
     assignableRooms.find((room) => room.id === selectedRoomId)?.name ??
     fallbackManagedRoom?.name ??
     fallbackRoomName?.trim() ??
+    providerEntity?.room?.trim() ??
     t('common.noRoom');
   const baseSelectClassName = compact
     ? `h-9 rounded-xl px-3 py-0 pr-8 text-xs leading-none ${surface.textPrimary}`

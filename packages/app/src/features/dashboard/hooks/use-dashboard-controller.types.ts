@@ -105,6 +105,7 @@ export type DashboardController = OnboardingController &
     rooms: string[];
     sectionData: DashboardSectionData;
     securityAlertCount: number;
+    activeRoomSecurityAlertCount: number;
     setActiveSection: (section: Section) => void;
     updateCardSize: ReturnType<typeof useCardState>['updateCardSize'];
     updateCardZone: (id: string, zone: ZoneName) => void;

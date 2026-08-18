@@ -73,9 +73,9 @@ function stripSharedPrefix(label: string, prefixWords: readonly string[]) {
   }
 
   const humanizedLabel = humanizeLabel(label);
-  const prefixText = humanizeLabel(prefixWords.join(' '));
+  const escapedPrefixWords = prefixWords.map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   const prefixPattern = new RegExp(
-    `^${prefixText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:[\\s:/_-]+|(?=[A-Z][a-z])|$)`,
+    `^${escapedPrefixWords.join('[\\s:/_-]+')}(?:[\\s:/_-]+|(?=[A-Z][a-z])|$)`,
     'i'
   );
   const strippedLabel = humanizedLabel.replace(prefixPattern, '').trim();

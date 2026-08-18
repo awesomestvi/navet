@@ -413,6 +413,44 @@ describe('NJS chore workspace store', () => {
     expect(parseResponse(retry).revision).toBe(4);
   });
 
+  it('records a missed occurrence as completed late', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-11T08:00:00.000Z'));
+    const mockFs = createMockFs();
+    choreStore.setChoreStoreFsForTests(mockFs);
+    choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
+    seedOccurrenceWorkspace();
+
+    const stored = JSON.parse(mockFs.getFile(CHORE_PATH) ?? '{}');
+    stored.data.definitionsById.dishes.claimPolicy = { required: true };
+    stored.data.occurrencesById[OCCURRENCE_ID] = {
+      ...stored.data.occurrencesById[OCCURRENCE_ID],
+      status: 'missed',
+      missedAt: '2026-08-10T13:00:00.000Z',
+    };
+    mockFs.writeFileSync(CHORE_PATH, JSON.stringify(stored));
+
+    const complete = createActionRequest('complete-missed', 3, {
+      type: 'occurrence_action',
+      occurrenceId: OCCURRENCE_ID,
+      action: { type: 'complete', participantId: 'maya' },
+    });
+    choreStore.handle(complete);
+
+    expect(complete.return).toHaveBeenCalledWith(200, expect.any(String));
+    const document = parseResponse(complete);
+    expect(document.data.occurrencesById[OCCURRENCE_ID]).toMatchObject({
+      status: 'done',
+      completedBy: 'maya',
+      completedAt: '2026-08-11T08:00:00.000Z',
+    });
+    expect(document.data.occurrencesById[OCCURRENCE_ID].missedAt).toBeUndefined();
+    expect(document.data.activity.at(-1)).toMatchObject({
+      commandId: 'complete-missed',
+      type: 'completed',
+    });
+  });
+
   it('serves definitions, filtered occurrences, and cursor-based lifecycle events', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-08-11T13:00:00.000Z'));

@@ -38,6 +38,7 @@ const defaultProps = {
   cameraDirectStreamUrl: '',
   cameraDirectStreamUrlError: false,
   cameraFitMode: 'cover' as const,
+  fullscreenHiddenAccessoryIds: [],
   supportedStreamPreferences: ['web_rtc', 'mse', 'hls', 'mjpeg'] as const,
   supportsStreaming: true,
   hasSnapshot: true,
@@ -47,6 +48,7 @@ const defaultProps = {
   onCameraWebRtcStreamSourceChange: vi.fn(),
   onCameraDirectStreamUrlChange: vi.fn(),
   onCameraFitModeChange: vi.fn(),
+  onFullscreenAccessoryVisibilityChange: vi.fn(),
 };
 
 describe('CameraSettingsDialog', () => {
@@ -57,6 +59,19 @@ describe('CameraSettingsDialog', () => {
     setCameraAccessoryValueMock.mockResolvedValue(undefined);
     toggleCameraAccessoryMock.mockReset();
     toggleCameraAccessoryMock.mockResolvedValue(undefined);
+  });
+
+  it('uses the neutral camera shell palette for room and Done controls', () => {
+    renderWithProviders(<CameraSettingsDialog {...defaultProps} />);
+
+    expect(screen.getByRole('button', { name: 'Done' })).toHaveStyle({
+      backgroundColor: 'rgba(107, 114, 128, 0.14)',
+      borderColor: 'rgba(107, 114, 128, 0.24)',
+    });
+    expect(screen.getByRole('combobox', { name: 'Room' }).previousElementSibling).toHaveStyle({
+      backgroundColor: 'rgba(107, 114, 128, 0.14)',
+      borderColor: 'rgba(107, 114, 128, 0.24)',
+    });
   });
 
   it('shows snapshot-backed camera view modes for snapshot-only cameras', () => {
@@ -361,6 +376,80 @@ describe('CameraSettingsDialog', () => {
     await waitFor(() =>
       expect(selectCameraAccessoryOptionMock).toHaveBeenCalledWith('select.camera_ir_mode', 'on')
     );
+  });
+
+  it('lets users choose which available sensor details appear in fullscreen', () => {
+    const onVisibilityChange = vi.fn();
+    renderWithProviders(
+      <CameraSettingsDialog
+        {...defaultProps}
+        fullscreenHiddenAccessoryIds={['home_assistant:sensor.front_door_humidity']}
+        onFullscreenAccessoryVisibilityChange={onVisibilityChange}
+        siblingEntities={[
+          {
+            id: 'home_assistant:sensor.front_door_temperature',
+            entity: {
+              state: '21',
+              attributes: { friendly_name: 'Front Door Temperature', unit_of_measurement: '°C' },
+            } as never,
+          },
+          {
+            id: 'home_assistant:sensor.front_door_humidity',
+            entity: {
+              state: '48',
+              attributes: { friendly_name: 'Front Door Humidity', unit_of_measurement: '%' },
+            } as never,
+          },
+          {
+            id: 'home_assistant:binary_sensor.front_door_motion',
+            entity: {
+              state: 'off',
+              attributes: { friendly_name: 'Front Door Motion', device_class: 'motion' },
+            } as never,
+          },
+          {
+            id: 'home_assistant:sensor.front_door_signal',
+            entity: {
+              state: 'unavailable',
+              attributes: { friendly_name: 'Front Door Signal' },
+            } as never,
+          },
+        ]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Metrics' }));
+
+    expect(screen.getByRole('checkbox', { name: /Temperature/ })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /Humidity/ })).not.toBeChecked();
+    expect(screen.queryByRole('checkbox', { name: /Motion/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /Signal/ })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /Temperature/ }));
+    expect(onVisibilityChange).toHaveBeenCalledWith(
+      'home_assistant:sensor.front_door_temperature',
+      false
+    );
+  });
+
+  it('shows icons in the controls and metrics tab pills', () => {
+    renderWithProviders(
+      <CameraSettingsDialog
+        {...defaultProps}
+        siblingEntities={[
+          {
+            id: 'home_assistant:sensor.front_door_temperature',
+            entity: {
+              state: '21',
+              attributes: { friendly_name: 'Front Door Temperature' },
+            } as never,
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'Controls' }).querySelector('svg')).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Metrics' }).querySelector('svg')).not.toBeNull();
   });
 
   it('routes sibling number controls through the camera provider service', async () => {

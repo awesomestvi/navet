@@ -1510,10 +1510,18 @@ function applyOccurrenceAction(data, commandId, workspaceAction, timestamp) {
     activityType = 'claimed';
   } else if (action.type === 'complete') {
     assertOccurrenceAssigned(occurrence, action.participantId);
-    if (occurrence.status !== 'available' && occurrence.status !== 'claimed') {
-      throw new Error('Only available or claimed chores can be completed');
+    if (
+      occurrence.status !== 'available' &&
+      occurrence.status !== 'claimed' &&
+      occurrence.status !== 'missed'
+    ) {
+      throw new Error('Only available, claimed, or missed chores can be completed');
     }
-    if (occurrence.status === 'claimed' && occurrence.claimedBy !== action.participantId) {
+    if (
+      (occurrence.status === 'claimed' || occurrence.status === 'missed') &&
+      occurrence.claimedBy &&
+      occurrence.claimedBy !== action.participantId
+    ) {
       throw new Error('A claimed chore can only be completed by its claimant');
     }
     const claimPolicy = isRecord(definition.claimPolicy) ? definition.claimPolicy : {};
@@ -1526,6 +1534,7 @@ function applyOccurrenceAction(data, commandId, workspaceAction, timestamp) {
     nextOccurrence.claimedAt = occurrence.claimedAt || timestamp;
     nextOccurrence.completedBy = action.participantId;
     nextOccurrence.completedAt = timestamp;
+    delete nextOccurrence.missedAt;
     activityType = 'completed';
   } else if (action.type === 'approve' || action.type === 'reject') {
     const approval = isRecord(definition.approval) ? definition.approval : {};

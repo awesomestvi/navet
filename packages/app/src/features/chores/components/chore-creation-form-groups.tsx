@@ -1,14 +1,25 @@
 import { CardDialogSection } from '@navet/app/components/patterns';
 import { Input, Select } from '@navet/app/components/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { navetTypographyTokens } from '@navet/app/components/system/tokens';
+import { navetIconSizeTokens, navetTypographyTokens } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import type { ChoreAssignmentMode, ChoreParticipant, ChoreSchedule } from '@navet/core/chores';
-import type { ReactNode } from 'react';
+import { ChevronDown, SlidersHorizontal } from 'lucide-react';
+import { Children, isValidElement, type ReactNode } from 'react';
 import { ChoreIconPicker } from './chore-icon-picker';
 
 export type ChoreCreationRepeat = ChoreSchedule['frequency'] | 'biweekly' | 'triweekly';
+export type ChoreCreationSection = 'details' | 'assignment' | 'schedule';
+
+interface ChoreCreationSectionOptionsProps {
+  section: ChoreCreationSection;
+  children: ReactNode;
+}
+
+export function ChoreCreationSectionOptions({ children }: ChoreCreationSectionOptionsProps) {
+  return <>{children}</>;
+}
 
 interface ChoreCreationFormGroupsProps {
   title: string;
@@ -24,6 +35,9 @@ interface ChoreCreationFormGroupsProps {
   endDate: string;
   interval: number;
   excludedDates: string;
+  showTemplates?: boolean;
+  showCustomInterval?: boolean;
+  children?: ReactNode;
   onTitleChange: (value: string) => void;
   onIconChange: (value: string) => void;
   onRoomChange: (value: string) => void;
@@ -37,7 +51,16 @@ interface ChoreCreationFormGroupsProps {
   onExcludedDatesChange: (value: string) => void;
 }
 
-export function ChoreFormGroup({ title, children }: { title: string; children: ReactNode }) {
+export function ChoreFormGroup({
+  title,
+  children,
+  moreOptions,
+}: {
+  title: string;
+  children: ReactNode;
+  moreOptions?: ReactNode;
+}) {
+  const { t } = useI18n();
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
 
@@ -60,6 +83,30 @@ export function ChoreFormGroup({ title, children }: { title: string; children: R
         )}
       >
         {children}
+        {moreOptions ? (
+          <details className={cn('group border-t pt-2 sm:col-span-2', surface.border)}>
+            <summary
+              aria-label={`${t('household.choreDialog.moreOptions')}: ${title}`}
+              className={cn(
+                '-mx-1 flex min-h-10 cursor-pointer list-none items-center gap-2 rounded-xl px-2 py-1.5 text-sm font-semibold select-none focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden',
+                surface.hoverBg,
+                surface.textPrimary
+              )}
+            >
+              <SlidersHorizontal aria-hidden="true" className={navetIconSizeTokens.sm} />
+              <span className="min-w-0 flex-1">{t('household.choreDialog.moreOptions')}</span>
+              <ChevronDown
+                aria-hidden="true"
+                className={cn(
+                  navetIconSizeTokens.sm,
+                  'transition-transform group-open:rotate-180 motion-reduce:transition-none',
+                  surface.textSecondary
+                )}
+              />
+            </summary>
+            <div className="grid gap-4 pt-4 sm:grid-cols-2">{moreOptions}</div>
+          </details>
+        ) : null}
       </div>
     </section>
   );
@@ -79,6 +126,9 @@ export function ChoreCreationFormGroups({
   endDate,
   interval,
   excludedDates,
+  showTemplates = true,
+  showCustomInterval = false,
+  children,
   onTitleChange,
   onIconChange,
   onRoomChange,
@@ -99,36 +149,53 @@ export function ChoreCreationFormGroups({
     [t('household.demo.plants'), 'Sprout'],
     [t('household.demo.bins'), 'Recycle'],
   ] as const;
+  const sectionOptions = (section: ChoreCreationSection) => {
+    for (const child of Children.toArray(children)) {
+      if (
+        isValidElement<ChoreCreationSectionOptionsProps>(child) &&
+        child.type === ChoreCreationSectionOptions &&
+        child.props.section === section
+      ) {
+        return child.props.children;
+      }
+    }
+    return undefined;
+  };
 
   return (
     <div className="grid gap-6">
-      <ChoreFormGroup title={t('household.setup.choreGroupDetails')}>
-        <div className="sm:col-span-2">
-          <p className={cn(navetTypographyTokens.label, surface.textPrimary)}>
-            {t('household.choreDialog.quickStart')}
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {templates.map(([templateTitle, templateIcon]) => (
-              <button
-                key={templateTitle}
-                type="button"
-                aria-pressed={title === templateTitle}
-                className={cn(
-                  'min-h-9 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2',
-                  surface.borderStrong,
-                  title === templateTitle ? surface.iconBg : surface.hoverBg,
-                  surface.textPrimary
-                )}
-                onClick={() => {
-                  onTitleChange(templateTitle);
-                  onIconChange(templateIcon);
-                }}
-              >
-                {templateTitle}
-              </button>
-            ))}
+      <ChoreFormGroup
+        title={t('household.setup.choreGroupDetails')}
+        moreOptions={sectionOptions('details')}
+      >
+        {showTemplates ? (
+          <div className="sm:col-span-2">
+            <p className={cn(navetTypographyTokens.label, surface.textPrimary)}>
+              {t('household.choreDialog.quickStart')}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {templates.map(([templateTitle, templateIcon]) => (
+                <button
+                  key={templateTitle}
+                  type="button"
+                  aria-pressed={title === templateTitle}
+                  className={cn(
+                    'min-h-9 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2',
+                    surface.borderStrong,
+                    title === templateTitle ? surface.iconBg : surface.hoverBg,
+                    surface.textPrimary
+                  )}
+                  onClick={() => {
+                    onTitleChange(templateTitle);
+                    onIconChange(templateIcon);
+                  }}
+                >
+                  {templateTitle}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
         <CardDialogSection className="mb-0" label={t('household.choreDialog.name')}>
           <Input
             aria-label={t('household.choreDialog.name')}
@@ -159,7 +226,10 @@ export function ChoreCreationFormGroups({
         </CardDialogSection>
       </ChoreFormGroup>
 
-      <ChoreFormGroup title={t('household.setup.choreGroupAssignment')}>
+      <ChoreFormGroup
+        title={t('household.setup.choreGroupAssignment')}
+        moreOptions={sectionOptions('assignment')}
+      >
         <CardDialogSection className="mb-0" label={t('household.choreDialog.assignment')}>
           <Select
             aria-label={t('household.choreDialog.assignment')}
@@ -188,7 +258,10 @@ export function ChoreCreationFormGroups({
         </CardDialogSection>
       </ChoreFormGroup>
 
-      <ChoreFormGroup title={t('household.setup.choreGroupSchedule')}>
+      <ChoreFormGroup
+        title={t('household.setup.choreGroupSchedule')}
+        moreOptions={sectionOptions('schedule')}
+      >
         <CardDialogSection className="mb-0" label={t('household.choreDialog.schedule')}>
           <Select
             aria-label={t('household.choreDialog.schedule')}
@@ -239,6 +312,17 @@ export function ChoreCreationFormGroups({
           >
             <Input
               aria-label={t('household.setup.scheduleAfterCompletionLabel')}
+              min={1}
+              type="number"
+              value={interval}
+              onChange={(event) => onIntervalChange(Math.max(1, Number(event.target.value)))}
+            />
+          </CardDialogSection>
+        ) : null}
+        {showCustomInterval && (repeat === 'daily' || repeat === 'weekly') ? (
+          <CardDialogSection className="mb-0" label={t('household.choreDialog.repeatEvery')}>
+            <Input
+              aria-label={t('household.choreDialog.repeatEvery')}
               min={1}
               type="number"
               value={interval}

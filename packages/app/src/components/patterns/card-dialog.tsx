@@ -78,6 +78,7 @@ interface CardDialogChoicePillProps
 interface CardDialogDoneFooterProps {
   label: string;
   className?: string;
+  style?: CSSProperties;
 }
 
 export const CardDialogHeader = memo(function CardDialogHeader({
@@ -283,7 +284,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
           <Dialog.Description asChild>
             <div
               className={cn(
-                '-mt-0.5 flex min-w-0 flex-wrap items-start gap-1.5',
+                '-mt-0.5 flex min-w-0 flex-wrap items-baseline gap-1.5',
                 'text-sm font-medium',
                 descriptionClassName
               )}
@@ -468,11 +469,11 @@ export function CardDialogFooter({
   );
 }
 
-export function CardDialogDoneFooter({ label, className }: CardDialogDoneFooterProps) {
+export function CardDialogDoneFooter({ label, className, style }: CardDialogDoneFooterProps) {
   return (
     <CardDialogFooter>
       <Dialog.Close asChild>
-        <Button variant="soft" size="small" className={className}>
+        <Button variant="soft" size="small" className={className} style={style}>
           {label}
         </Button>
       </Dialog.Close>

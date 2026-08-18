@@ -19,10 +19,10 @@ import {
   DashboardEmptyState,
   NavigationWorkspace,
   NavigationWorkspaceHeader,
-  SelectableCheckboxRow,
 } from '@navet/app/components/patterns';
 import {
   Button,
+  Checkbox,
   IconButton,
   Input,
   InteractivePill,
@@ -97,6 +97,91 @@ interface WorkspacePanelProps extends RoomWorkspaceComponentProps {
   surface: SurfaceTokens;
   accentColor: string;
   showInlineSaveBar?: boolean;
+}
+
+function RoomSettingsGroup({
+  title,
+  children,
+  surface,
+}: {
+  title: string;
+  children: ReactNode;
+  surface: SurfaceTokens;
+}) {
+  return (
+    <section>
+      <h3
+        className={cn(
+          'mb-2 px-1 font-semibold',
+          navetTypographyTokens.caption,
+          surface.textSecondary
+        )}
+      >
+        {title}
+      </h3>
+      <div
+        className={cn('rounded-[22px] border p-4 sm:p-5', surface.subtleBg, surface.borderStrong)}
+      >
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function RoomSettingsToggle({
+  checked,
+  disabled,
+  label,
+  description,
+  icon: Icon,
+  onCheckedChange,
+  surface,
+  accentColor,
+}: {
+  checked: boolean;
+  disabled: boolean;
+  label: string;
+  description: string;
+  icon: LucideIcon;
+  onCheckedChange: (checked: boolean) => void;
+  surface: SurfaceTokens;
+  accentColor: string;
+}) {
+  const inputId = useId();
+
+  return (
+    <label
+      htmlFor={inputId}
+      className={cn(
+        'flex min-h-11 cursor-pointer items-center gap-3',
+        disabled && 'cursor-not-allowed opacity-50'
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className={cn(
+          'flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border',
+          surface.iconBg,
+          surface.borderStrong,
+          surface.textSecondary
+        )}
+      >
+        <Icon className={navetIconSizeTokens.sm} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className={cn('block text-sm font-semibold', surface.textPrimary)}>{label}</span>
+        <span className={cn('block text-xs leading-5', surface.textMuted)}>{description}</span>
+      </span>
+      <Checkbox
+        id={inputId}
+        checked={checked}
+        disabled={disabled}
+        aria-label={label}
+        paletteColor={accentColor}
+        onCheckedChange={(value) => onCheckedChange(Boolean(value))}
+      />
+    </label>
+  );
 }
 
 function RoomDeviceIcon({
@@ -475,14 +560,20 @@ function RoomActionsSection({
   }
 
   return (
-    <section aria-label={labels.roomActionsTitle} className={cn('border-t pt-5', surface.border)}>
-      <h3 className={cn(navetTypographyTokens.titleSm, surface.textPrimary)}>
+    <section aria-label={labels.roomActionsTitle}>
+      <h3
+        className={cn(
+          'mb-2 px-1 font-semibold',
+          navetTypographyTokens.caption,
+          surface.textSecondary
+        )}
+      >
         {labels.roomActionsTitle}
       </h3>
       <div
         className={cn(
-          'mt-3 overflow-hidden rounded-[24px] border',
-          surface.border,
+          'overflow-hidden rounded-[22px] border',
+          surface.borderStrong,
           surface.subtleBg
         )}
       >
@@ -1308,7 +1399,7 @@ export function RoomDetailsPanel({
   accentColor,
   showInlineSaveBar = false,
 }: WorkspacePanelProps) {
-  const [activeSection, setActiveSection] = useState<'settings' | 'devices'>('devices');
+  const [activeSection, setActiveSection] = useState<'settings' | 'devices'>('settings');
   const settingsPanelId = useId();
   const devicesPanelId = useId();
   const room = viewModel.rooms.find((candidate) => candidate.id === viewModel.selectedRoomId);
@@ -1344,18 +1435,6 @@ export function RoomDetailsPanel({
       >
         <CardDialogTabList className="mt-0 flex w-full flex-wrap gap-2">
           <InteractivePill
-            active={activeSection === 'devices'}
-            accentColor={accentColor}
-            size="compact"
-            icon={Layers3}
-            aria-pressed={activeSection === 'devices'}
-            aria-controls={devicesPanelId}
-            onClick={() => setActiveSection('devices')}
-            className="motion-reduce:transition-none"
-          >
-            {labels.devicesTitle}
-          </InteractivePill>
-          <InteractivePill
             active={activeSection === 'settings'}
             accentColor={accentColor}
             size="compact"
@@ -1366,6 +1445,18 @@ export function RoomDetailsPanel({
             className="motion-reduce:transition-none"
           >
             {labels.roomDetailsTitle}
+          </InteractivePill>
+          <InteractivePill
+            active={activeSection === 'devices'}
+            accentColor={accentColor}
+            size="compact"
+            icon={Layers3}
+            aria-pressed={activeSection === 'devices'}
+            aria-controls={devicesPanelId}
+            onClick={() => setActiveSection('devices')}
+            className="motion-reduce:transition-none"
+          >
+            {labels.devicesTitle}
           </InteractivePill>
           {activeSection === 'devices' && actions.onDeviceSelectionChange ? (
             <Button
@@ -1380,129 +1471,130 @@ export function RoomDetailsPanel({
         </CardDialogTabList>
 
         {activeSection === 'settings' ? (
-          <section id={settingsPanelId} aria-label={labels.roomDetailsTitle} className="space-y-5">
-            <div>
-              <label
-                htmlFor={`room-name-${room.id}`}
-                className={cn(navetTypographyTokens.label, surface.textPrimary)}
-              >
-                {labels.roomNameLabel}
-              </label>
-              <Input
-                id={`room-name-${room.id}`}
-                name={`room-name-${room.id}`}
-                value={room.nameDraft ?? room.name}
-                placeholder={labels.roomNamePlaceholder}
-                onChange={(event) => actions.onRoomNameChange?.(room.id, event.currentTarget.value)}
-                disabled={!actions.onRoomNameChange}
-                invalid={Boolean(room.nameValidationMessage)}
-                aria-describedby={
-                  room.nameValidationMessage ? `room-name-error-${room.id}` : undefined
-                }
-                containerClassName="mt-2"
-                inputClassName="min-h-11 motion-reduce:transition-none"
-              />
-              {room.nameValidationMessage ? (
-                <p
-                  id={`room-name-error-${room.id}`}
-                  role="alert"
-                  className={cn('mt-2 text-sm', navetSemanticColorTokens.error)}
-                >
-                  {room.nameValidationMessage}
-                </p>
-              ) : null}
-            </div>
-
-            <div>
-              <label
-                htmlFor={`room-group-${room.id}`}
-                className={cn(navetTypographyTokens.label, surface.textPrimary)}
-              >
-                {labels.groupLabel}
-              </label>
-              <Select
-                id={`room-group-${room.id}`}
-                name={`room-group-${room.id}`}
-                value={room.groupId ?? ''}
-                onChange={(event) =>
-                  actions.onRoomGroupChange?.(room.id, event.currentTarget.value || null)
-                }
-                disabled={!actions.onRoomGroupChange}
-                containerClassName="mt-2"
-                selectClassName="min-h-11 motion-reduce:transition-none"
-              >
-                <option value="">{labels.ungroupedGroup}</option>
-                {viewModel.groups.map((group) => (
-                  <option key={group.id} value={group.id}>
-                    {group.name}
-                  </option>
-                ))}
-              </Select>
-            </div>
-
-            <div className="space-y-3">
-              <SelectableCheckboxRow
+          <section id={settingsPanelId} aria-label={labels.roomDetailsTitle} className="grid gap-6">
+            <RoomSettingsGroup title={labels.visibilityLabel} surface={surface}>
+              <RoomSettingsToggle
                 checked={room.isVisible}
-                onCheckedChange={(visible) => actions.onRoomVisibilityChange?.(room.id, visible)}
                 disabled={!actions.onRoomVisibilityChange}
                 label={labels.visibilityLabel}
                 description={labels.visibilityDescription}
-                leading={<Eye className={cn(navetIconSizeTokens.sm, surface.textSecondary)} />}
-                rowClassName={cn('min-h-14', surface.subtleBg, surface.border)}
-                selectedClassName={surface.borderStrong}
-                labelClassName={surface.textPrimary}
-                descriptionClassName={surface.textMuted}
-                checkboxPaletteColor={accentColor}
+                icon={room.isVisible ? Eye : EyeOff}
+                onCheckedChange={(visible) => actions.onRoomVisibilityChange?.(room.id, visible)}
+                surface={surface}
+                accentColor={accentColor}
               />
-              <SelectableCheckboxRow
-                checked={room.isFavorite}
-                onCheckedChange={(favorite) => actions.onRoomFavoriteChange?.(room.id, favorite)}
-                disabled={!actions.onRoomFavoriteChange}
-                label={labels.favoriteLabel}
-                description={labels.favoriteDescription}
-                leading={<Heart className={cn(navetIconSizeTokens.sm, surface.textSecondary)} />}
-                rowClassName={cn('min-h-14', surface.subtleBg, surface.border)}
-                selectedClassName={surface.borderStrong}
-                labelClassName={surface.textPrimary}
-                descriptionClassName={surface.textMuted}
-                checkboxPaletteColor={accentColor}
-              />
-            </div>
+              <div className={cn('mt-4 border-t pt-4', surface.border)}>
+                <RoomSettingsToggle
+                  checked={room.isFavorite}
+                  disabled={!actions.onRoomFavoriteChange}
+                  label={labels.favoriteLabel}
+                  description={labels.favoriteDescription}
+                  icon={Heart}
+                  onCheckedChange={(favorite) => actions.onRoomFavoriteChange?.(room.id, favorite)}
+                  surface={surface}
+                  accentColor={accentColor}
+                />
+              </div>
+            </RoomSettingsGroup>
 
-            <div
-              className={cn(
-                'grid gap-4 rounded-[24px] border p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center',
-                surface.border,
-                surface.subtleBg
-              )}
-            >
-              <div className="flex min-w-0 items-center gap-4">
-                <RoomSymbol room={room} surface={surface} />
-                <div className="min-w-0 flex-1">
-                  <p className={cn(navetTypographyTokens.titleSm, surface.textPrimary)}>
-                    {labels.appearanceLabel}
-                  </p>
-                  <p className={cn('mt-1 text-sm', surface.textMuted)}>
-                    {labels.appearanceDescription}
-                  </p>
+            <RoomSettingsGroup title={labels.roomDetailsTitle} surface={surface}>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor={`room-name-${room.id}`}
+                    className={cn(navetTypographyTokens.label, surface.textPrimary)}
+                  >
+                    {labels.roomNameLabel}
+                  </label>
+                  <Input
+                    id={`room-name-${room.id}`}
+                    name={`room-name-${room.id}`}
+                    value={room.nameDraft ?? room.name}
+                    placeholder={labels.roomNamePlaceholder}
+                    onChange={(event) =>
+                      actions.onRoomNameChange?.(room.id, event.currentTarget.value)
+                    }
+                    disabled={!actions.onRoomNameChange}
+                    invalid={Boolean(room.nameValidationMessage)}
+                    aria-describedby={
+                      room.nameValidationMessage ? `room-name-error-${room.id}` : undefined
+                    }
+                    containerClassName="mt-2"
+                    inputClassName="min-h-11 motion-reduce:transition-none"
+                  />
+                  {room.nameValidationMessage ? (
+                    <p
+                      id={`room-name-error-${room.id}`}
+                      role="alert"
+                      className={cn('mt-2 text-sm', navetSemanticColorTokens.error)}
+                    >
+                      {room.nameValidationMessage}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div>
+                  <label
+                    htmlFor={`room-group-${room.id}`}
+                    className={cn(navetTypographyTokens.label, surface.textPrimary)}
+                  >
+                    {labels.groupLabel}
+                  </label>
+                  <Select
+                    id={`room-group-${room.id}`}
+                    name={`room-group-${room.id}`}
+                    value={room.groupId ?? ''}
+                    onChange={(event) =>
+                      actions.onRoomGroupChange?.(room.id, event.currentTarget.value || null)
+                    }
+                    disabled={!actions.onRoomGroupChange}
+                    containerClassName="mt-2"
+                    selectClassName="min-h-11 motion-reduce:transition-none"
+                  >
+                    <option value="">{labels.ungroupedGroup}</option>
+                    {viewModel.groups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+
+                <div
+                  className={cn(
+                    'grid gap-4 border-t pt-4 sm:col-span-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center',
+                    surface.border
+                  )}
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <RoomSymbol room={room} surface={surface} />
+                    <div className="min-w-0 flex-1">
+                      <p className={cn(navetTypographyTokens.titleSm, surface.textPrimary)}>
+                        {labels.appearanceLabel}
+                      </p>
+                      <p className={cn('mt-0.5 text-xs leading-5', surface.textMuted)}>
+                        {labels.appearanceDescription}
+                      </p>
+                    </div>
+                  </div>
+                  {actions.onChooseRoomAppearance ? (
+                    <Button
+                      variant="secondary"
+                      onClick={() => actions.onChooseRoomAppearance?.(room.id)}
+                      leading={<Sparkles className={navetIconSizeTokens.sm} />}
+                      className="min-h-10 shrink-0 motion-reduce:transition-none"
+                    >
+                      {labels.chooseAppearance}
+                    </Button>
+                  ) : null}
+                  <RoomImagePreview
+                    room={room}
+                    surface={surface}
+                    className="sm:col-span-2 sm:aspect-[16/5]"
+                  />
                 </div>
               </div>
-              {actions.onChooseRoomAppearance ? (
-                <Button
-                  variant="secondary"
-                  onClick={() => actions.onChooseRoomAppearance?.(room.id)}
-                  leading={<Sparkles className={navetIconSizeTokens.sm} />}
-                  className="min-h-11 shrink-0 motion-reduce:transition-none"
-                >
-                  {labels.chooseAppearance}
-                </Button>
-              ) : null}
-              <RoomImagePreview
-                room={room}
-                surface={surface}
-                className="sm:col-span-2 sm:aspect-[16/5]"
-              />
-            </div>
+            </RoomSettingsGroup>
 
             <RoomActionsSection room={room} labels={labels} actions={actions} surface={surface} />
           </section>

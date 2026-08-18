@@ -9,7 +9,7 @@ export function getChoreCardAction(
   execute: (action: ChoreWorkspaceAction) => Promise<boolean>,
   t: TranslateFn
 ): ChoreCardAction | undefined {
-  if (occurrence.status === 'done' || occurrence.status === 'missed') {
+  if (occurrence.status === 'done') {
     return undefined;
   }
 
@@ -52,6 +52,12 @@ export function getChoreCardAction(
     if (occurrence.status === 'awaiting_approval') {
       return buildAction('approve', definition.approval.approverIds);
     }
+    if (occurrence.status === 'missed') {
+      return buildAction(
+        'complete',
+        occurrence.claimedBy ? [occurrence.claimedBy] : occurrence.assigneeIds
+      );
+    }
     if (occurrence.status === 'claimed') {
       return occurrence.claimedBy ? buildAction('complete', [occurrence.claimedBy]) : undefined;
     }
@@ -89,6 +95,8 @@ export function getChoreCardAction(
   }
   if (
     occurrence.status === 'available' ||
+    (occurrence.status === 'missed' &&
+      (!occurrence.claimedBy || occurrence.claimedBy === actionParticipantId)) ||
     (occurrence.status === 'claimed' && occurrence.claimedBy === actionParticipantId)
   ) {
     return {

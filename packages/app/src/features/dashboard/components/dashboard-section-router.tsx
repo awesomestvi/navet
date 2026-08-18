@@ -273,6 +273,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
         pendingChoreCount: roomTodayChores.length > 0 ? pendingRoomChores.length : undefined,
         overdueChoreCount: overdueRoomChoreCount,
         routineCount,
+        securityAlertCount: controller.activeRoomSecurityAlertCount,
         temperatureUnit,
       },
       t
@@ -283,6 +284,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     pendingRoomChores.length,
     overdueRoomChoreCount,
     roomClimateEntityIds,
+    controller.activeRoomSecurityAlertCount,
     roomTodayChores.length,
     routines.automations,
     routines.quickActions,
@@ -684,7 +686,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     <DashboardLayout
       densePerformanceMode={controller.densePerformanceMode}
       mobileEditActions={
-        isEditMode
+        isEditMode || activeSection === 'tasks'
           ? undefined
           : {
               isEditMode,
@@ -785,6 +787,8 @@ function areDashboardSectionRouterPropsEqual(
     previousController.roomItemCounts === nextController.roomItemCounts &&
     previousController.rooms === nextController.rooms &&
     previousController.securityAlertCount === nextController.securityAlertCount &&
+    previousController.activeRoomSecurityAlertCount ===
+      nextController.activeRoomSecurityAlertCount &&
     previousController.sectionData === nextController.sectionData &&
     previousController.setActiveSection === nextController.setActiveSection &&
     previousController.updateCardSize === nextController.updateCardSize &&

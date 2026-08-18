@@ -72,6 +72,13 @@ describe('useSettingsStore', () => {
       );
     useSettingsStore.getState().updateCameraWebRtcStreamSource('camera.front_door', 'direct');
     useSettingsStore.getState().updateCameraFitMode('camera.front_door', 'contain');
+    useSettingsStore
+      .getState()
+      .updateCameraFullscreenAccessoryVisibility(
+        'camera.front_door',
+        'sensor.front_door_temperature',
+        false
+      );
     useSettingsStore.getState().resetSettings();
 
     expect(useSettingsStore.getState().lowPowerMode).toBe(defaultSettings.lowPowerMode);
@@ -95,6 +102,7 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().cameraDirectStreamUrls).toEqual({});
     expect(useSettingsStore.getState().cameraFitMode).toBe('cover');
     expect(useSettingsStore.getState().cameraFitModes).toEqual({});
+    expect(useSettingsStore.getState().cameraFullscreenHiddenAccessoryIds).toEqual({});
     expect(localStorage.getItem(STORE_STORAGE_KEYS.settings)).toContain('"compactMode":false');
     expect(localStorage.getItem('ha-dashboard-settings')).toBeNull();
   });
@@ -182,6 +190,47 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().cameraFitModes).toEqual({
       'home_assistant:camera.front_door': 'contain',
       'home_assistant:camera.garage': 'cover',
+    });
+  });
+
+  it('stores fullscreen camera information visibility per camera', () => {
+    const state = useSettingsStore.getState();
+    state.updateCameraFullscreenAccessoryVisibility(
+      'camera.front_door',
+      'sensor.front_door_temperature',
+      false
+    );
+    state.updateCameraFullscreenAccessoryVisibility(
+      'camera.front_door',
+      'binary_sensor.front_door_sound',
+      false
+    );
+
+    expect(useSettingsStore.getState().cameraFullscreenHiddenAccessoryIds).toEqual({
+      'home_assistant:camera.front_door': [
+        'home_assistant:sensor.front_door_temperature',
+        'home_assistant:binary_sensor.front_door_sound',
+      ],
+    });
+    expect(
+      settingsSelectors.cameraFullscreenHiddenAccessoryIdsForEntity('camera.front_door')(
+        useSettingsStore.getState()
+      )
+    ).toEqual([
+      'home_assistant:sensor.front_door_temperature',
+      'home_assistant:binary_sensor.front_door_sound',
+    ]);
+
+    useSettingsStore
+      .getState()
+      .updateCameraFullscreenAccessoryVisibility(
+        'camera.front_door',
+        'sensor.front_door_temperature',
+        true
+      );
+
+    expect(useSettingsStore.getState().cameraFullscreenHiddenAccessoryIds).toEqual({
+      'home_assistant:camera.front_door': ['home_assistant:binary_sensor.front_door_sound'],
     });
   });
 

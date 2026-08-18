@@ -22,6 +22,11 @@ import {
   useSettingsStore,
 } from '@navet/app/stores/settings-store';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
+import {
+  createProviderScopedId,
+  getProviderNativeId,
+  parseProviderScopedId,
+} from '@navet/app/utils/provider-ids';
 import { subscribeVisibilityAwareTask } from '@navet/app/utils/visibility-aware-scheduler';
 import {
   memo,
@@ -180,6 +185,9 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     isDirectCameraStreamSource(cameraWebRtcStreamSource) &&
     normalizeCameraDirectStreamUrl(cameraDirectStreamUrl) !== null;
   const cameraFitMode = useSettingsStore(settingsSelectors.cameraFitModeForEntity(id));
+  const cameraFullscreenHiddenAccessoryIds = useSettingsStore(
+    settingsSelectors.cameraFullscreenHiddenAccessoryIdsForEntity(id)
+  );
   const updateCameraViewMode = useSettingsStore(settingsSelectors.updateCameraViewMode);
   const updateCameraStreamPreference = useSettingsStore(
     settingsSelectors.updateCameraStreamPreference
@@ -191,6 +199,9 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     settingsSelectors.updateCameraDirectStreamUrl
   );
   const updateCameraFitMode = useSettingsStore(settingsSelectors.updateCameraFitMode);
+  const updateCameraFullscreenAccessoryVisibility = useSettingsStore(
+    settingsSelectors.updateCameraFullscreenAccessoryVisibility
+  );
   const { siblingIds: deviceEntityIds } = useProviderCameraTopology(id);
   const { cameraState, companionStates, deviceEntities, liveEntity, liveState } =
     useProviderCameraLiveData(id, deviceEntityIds);
@@ -367,18 +378,33 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   const siblingEntities = useMemo(() => {
     return deviceEntityIds
       .filter((eid) => {
-        const domain = eid.split('.')[0];
-        return domain === 'switch' || domain === 'select' || domain === 'number';
+        const domain = getProviderNativeId(eid).split('.')[0];
+        return (
+          domain === 'sensor' ||
+          domain === 'binary_sensor' ||
+          domain === 'switch' ||
+          domain === 'light' ||
+          domain === 'select' ||
+          domain === 'number' ||
+          domain === 'scene'
+        );
       })
       .map((eid) => {
-        const entity = deviceEntities[eid];
-        return entity ? { id: eid, entity } : null;
+        const nativeEntityId = getProviderNativeId(eid);
+        const entity = deviceEntities[nativeEntityId];
+        const cameraProviderId = parseProviderScopedId(id)?.providerId;
+        const accessoryEntityId =
+          parseProviderScopedId(eid) || !cameraProviderId
+            ? eid
+            : createProviderScopedId(cameraProviderId, nativeEntityId);
+        return entity ? { id: accessoryEntityId, entity } : null;
       })
       .filter((entry): entry is { id: string; entity: PlatformEntitySnapshot } => entry !== null);
-  }, [deviceEntities, deviceEntityIds]);
+  }, [deviceEntities, deviceEntityIds, id]);
 
-  const motionState = companionStates.find((state) => state.type === 'motion') ?? null;
-  const motionDetected = motionState?.detected ?? false;
+  const motionStates = companionStates.filter((state) => state.type === 'motion');
+  const motionDetected = motionStates.some((state) => state.detected);
+  const motionState = motionStates.find((state) => state.detected) ?? motionStates[0] ?? null;
   const motionChangedAt = parseTimestamp(motionState?.changedAt);
   const statusChangedAt =
     parseTimestamp(liveEntity?.lastChanged) ?? parseTimestamp(liveEntity?.lastUpdated);
@@ -447,6 +473,18 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     },
     [id, updateCameraFitMode]
   );
+
+  const handleFullscreenAccessoryVisibilityChange = useCallback(
+    (accessoryEntityId: string, visible: boolean) => {
+      updateCameraFullscreenAccessoryVisibility(id, accessoryEntityId, visible);
+    },
+    [id, updateCameraFullscreenAccessoryVisibility]
+  );
+
+  const fullscreenAccessoryEntities = useMemo(() => {
+    const hiddenIds = new Set(cameraFullscreenHiddenAccessoryIds);
+    return siblingEntities.filter((accessory) => !hiddenIds.has(accessory.id));
+  }, [cameraFullscreenHiddenAccessoryIds, siblingEntities]);
 
   const handleStreamError = useCallback(
     (kind: PlatformCameraTransport | 'snapshot', options?: { retryable?: boolean }) => {
@@ -618,10 +656,12 @@ export const CameraCardContainer = memo(function CameraCardContainer({
           motionDetectionEnabled={
             playbackModel?.motionDetectionEnabled ?? liveState.motionDetectionEnabled
           }
+          motionDetected={motionDetected}
           initialStreamResource={playbackModel?.selectedStreamResource ?? null}
           initialStreamTransport={shouldRenderLiveStream}
           initialStreamReady={isStreamReady}
           retainedStreamHost={streamPortalHost}
+          accessoryEntities={fullscreenAccessoryEntities}
           onRefresh={handleRefresh}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onCameraViewModeChange={setViewerCameraViewMode}
@@ -647,11 +687,13 @@ export const CameraCardContainer = memo(function CameraCardContainer({
           hasSnapshot={hasSnapshot}
           lowPowerMode={lowPowerMode}
           cameraFitMode={cameraFitMode}
+          fullscreenHiddenAccessoryIds={cameraFullscreenHiddenAccessoryIds}
           onCameraViewModeChange={handleCameraViewModeChange}
           onCameraStreamPreferenceChange={handleCameraStreamPreferenceChange}
           onCameraWebRtcStreamSourceChange={handleCameraWebRtcStreamSourceChange}
           onCameraDirectStreamUrlChange={handleCameraDirectStreamUrlChange}
           onCameraFitModeChange={handleCameraFitModeChange}
+          onFullscreenAccessoryVisibilityChange={handleFullscreenAccessoryVisibilityChange}
         />
       )}
 

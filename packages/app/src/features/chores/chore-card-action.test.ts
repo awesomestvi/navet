@@ -73,4 +73,30 @@ describe('getChoreCardAction', () => {
       action: { type: 'complete', participantId: 'sam' },
     });
   });
+
+  it('offers Mark done for a missed chore and attributes the late completion', () => {
+    const execute = vi
+      .fn<(action: ChoreWorkspaceAction) => Promise<boolean>>()
+      .mockResolvedValue(true);
+    const action = getChoreCardAction(
+      { ...occurrence, status: 'missed', missedAt: '2026-08-18T08:00:00.000Z' },
+      definition,
+      'all',
+      execute,
+      t
+    );
+
+    expect(action).toMatchObject({
+      label: 'household.actions.complete',
+      kind: 'complete',
+      participantIds: ['alex', 'maya', 'sam'],
+    });
+
+    action?.onSelectParticipant?.('maya');
+    expect(execute).toHaveBeenCalledWith({
+      type: 'occurrence_action',
+      occurrenceId: occurrence.id,
+      action: { type: 'complete', participantId: 'maya' },
+    });
+  });
 });

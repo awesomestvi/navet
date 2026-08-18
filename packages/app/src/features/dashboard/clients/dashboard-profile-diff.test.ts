@@ -124,6 +124,40 @@ describe('dashboard profile diff and merge', () => {
     ]);
   });
 
+  it('ignores legacy Home projections when the dashboard collection is authoritative', () => {
+    const dashboards = createLegacyDashboardCollection({
+      homeLayout: {
+        mode: 'flow',
+        showHero: true,
+        cardIds: ['home_assistant:light.kitchen'],
+        sections: [],
+        cardSectionAssignments: {},
+      },
+    });
+    const base = buildProfile({
+      dashboards,
+      homeDashboardLayout: {
+        mode: 'flow',
+        showHero: true,
+        cardIds: ['home_assistant:light.kitchen'],
+        sections: [],
+        cardSectionAssignments: {},
+      },
+    });
+    const next = buildProfile({
+      dashboards,
+      homeDashboardLayout: {
+        mode: 'flow',
+        showHero: true,
+        cardIds: ['home_assistant:light.kitchen', 'home_assistant:sensor.office_temperature'],
+        sections: [],
+        cardSectionAssignments: {},
+      },
+    });
+
+    expect(getDashboardProfileChangedPaths(base, next)).toEqual([]);
+  });
+
   it('reports only overlapping field edits as conflicts', () => {
     const base = buildProfile();
     const local = buildProfile({

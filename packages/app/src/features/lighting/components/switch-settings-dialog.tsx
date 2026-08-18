@@ -8,6 +8,7 @@ import {
 } from '@navet/app/components/shared/device-editor';
 import {
   getInheritedDialogSectionStyle,
+  NEUTRAL_DIALOG_CONTROL_ACCENT,
   normalizeCustomCardTint,
 } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import {
@@ -218,6 +219,7 @@ export const SwitchSettingsDialog = memo(function SwitchSettingsDialog({
       description={entityType}
       tabs={tabs}
       theme={theme}
+      tintColor={isOn ? tintColor : NEUTRAL_DIALOG_CONTROL_ACCENT}
       contentSurface={dialogSurface}
       contentClassName={dialogSurfaceOverrideClassName}
       contentStyle={resolvedDialogSurfaceStyle}

@@ -76,6 +76,7 @@ const meta = {
     cameraDirectStreamUrl: '',
     cameraDirectStreamUrlError: false,
     cameraFitMode: 'cover',
+    fullscreenHiddenAccessoryIds: [],
     supportedStreamPreferences: ['web_rtc', 'mse', 'hls', 'mjpeg'],
     supportsStreaming: true,
     hasSnapshot: true,
@@ -85,6 +86,7 @@ const meta = {
     onCameraWebRtcStreamSourceChange: () => undefined,
     onCameraDirectStreamUrlChange: () => undefined,
     onCameraFitModeChange: () => undefined,
+    onFullscreenAccessoryVisibilityChange: () => undefined,
   },
 } satisfies Meta<typeof CameraSettingsDialogStory>;
 

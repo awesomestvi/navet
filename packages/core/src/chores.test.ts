@@ -401,6 +401,33 @@ describe('chores domain', () => {
     expect(approved.activity.type).toBe('approved');
   });
 
+  it('allows an assigned participant to record a missed chore as completed late', () => {
+    const completed = applyChoreOccurrenceCommand({
+      commandId: 'command-complete-missed',
+      command: { type: 'complete', participantId: 'bob' },
+      definition: makeDefinition({
+        assignment: { mode: 'person', participantIds: ['bob'] },
+        approval: { required: true, approverIds: ['alice'] },
+        claimPolicy: { required: true, allowSteal: false },
+      }),
+      occurrence: makeOccurrence({
+        assigneeIds: ['bob'],
+        assignmentSlot: 'bob',
+        status: 'missed',
+        missedAt: '2026-08-10T20:00:00.000Z',
+      }),
+      timestamp: '2026-08-11T08:00:00.000Z',
+    });
+
+    expect(completed.occurrence).toMatchObject({
+      status: 'awaiting_approval',
+      completedBy: 'bob',
+      completedAt: '2026-08-11T08:00:00.000Z',
+    });
+    expect(completed.occurrence.missedAt).toBeUndefined();
+    expect(completed.activity.type).toBe('completed');
+  });
+
   it('does not let another participant complete a claimed occurrence', () => {
     expect(() =>
       applyChoreOccurrenceCommand({

@@ -363,7 +363,7 @@ export function AllChoresView({
                         </span>
                       </span>
                     ) : null}
-                    {presentation?.points ? (
+                    {experience.gamificationMode !== 'off' && presentation?.points ? (
                       <ChorePointsToken points={presentation.points} />
                     ) : null}
                   </>
