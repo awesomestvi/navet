@@ -41,6 +41,11 @@ const SCREENSHOT_SCENARIOS = [
     viewport: { width: 1536, height: 1024 },
   },
   {
+    name: 'navet-ipad-landscape-climate',
+    pathname: '/demo/climate',
+    viewport: { width: 1536, height: 1024 },
+  },
+  {
     name: 'navet-ipad-landscape-security',
     pathname: '/demo/security',
     viewport: { width: 1536, height: 1024 },
@@ -59,6 +64,19 @@ const SCREENSHOT_SCENARIOS = [
     name: 'navet-iphone-media',
     pathname: '/demo/media',
     viewport: { width: 430, height: 932 },
+  },
+  {
+    name: 'navet-ipad-landscape-household',
+    pathname: '/demo/tasks',
+    viewport: { width: 1536, height: 1024 },
+  },
+  {
+    name: 'navet-ipad-landscape-routines',
+    pathname: '/demo/tasks',
+    viewport: { width: 1536, height: 1024 },
+    prepare: async (page) => {
+      await page.getByRole('button', { name: 'Routines', exact: true }).click();
+    },
   },
 ];
 
@@ -252,6 +270,10 @@ async function captureScreenshots(browser, baseUrl) {
     const outputBasePath = resolve(assetPaths.marketingScreenshots, scenario.name);
 
     await stabilizePage(page, baseUrl, scenario.pathname);
+    if (scenario.prepare) {
+      await scenario.prepare(page);
+      await page.waitForTimeout(500);
+    }
     await page.screenshot({
       path: pngPath,
       animations: 'disabled',

@@ -33,3 +33,18 @@ export const WithYAxisMarks: Story = {
     showYAxisMarks: true,
   },
 };
+
+export const HourlyEnergy: Story = {
+  args: {
+    valueKind: 'energy',
+    showYAxisMarks: true,
+    data: [
+      { value: 0.9, timestampMs: now - 5 * 60 * 60_000 },
+      { value: 1.2, timestampMs: now - 4 * 60 * 60_000 },
+      { value: 0.8, timestampMs: now - 3 * 60 * 60_000 },
+      { value: 1.6, timestampMs: now - 2 * 60 * 60_000 },
+      { value: 1.1, timestampMs: now - 60 * 60_000 },
+      { value: 0.7, timestampMs: now },
+    ],
+  },
+};

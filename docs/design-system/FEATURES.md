@@ -71,6 +71,8 @@ The dashboard feature owns:
 - room-driven Home dashboard behavior
 - custom-card templates and placement
 - card sizing and ordering
+- responsive card sizing, including compatibility for saved six-column `extra-wide` cards and
+  their narrower fallbacks
 - Home overview layout state
 - add-card and add-entity flows
 - Home edit command bar behavior, including undo/redo, section add controls, and room management
@@ -129,10 +131,11 @@ store.
 
 ## Energy Dashboard
 
-The energy feature owns its dashboard model, data-coverage state, live-flow presentation, and
-explanations for what is driving the current load. Explanations are derived from normalized energy
-overview data and should identify affected consumer IDs when the explanation points at tracked
-devices.
+The energy feature owns its dashboard model, data-coverage state, live-flow presentation,
+configurable KPI row, and detailed usage workspace. History is normalized through the provider
+history feature service and can be grouped by device, room, or source across day, week, month,
+year, and custom ranges. Explanations are derived from normalized energy overview data and should
+identify affected consumer IDs when the explanation points at tracked devices.
 
 ## Settings Profiles
 

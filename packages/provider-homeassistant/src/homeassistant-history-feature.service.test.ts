@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { callHomeAssistantApiMock, getHomeAssistantConnectionMock } = vi.hoisted(() => ({
   callHomeAssistantApiMock: vi.fn(),
-  getHomeAssistantConnectionMock: vi.fn(() => null),
+  getHomeAssistantConnectionMock: vi.fn<
+    () => { sendMessagePromise: ReturnType<typeof vi.fn> } | null
+  >(() => null),
 }));
 
 vi.mock('./homeassistant-service-bridge', () => ({
@@ -15,7 +17,8 @@ import { homeAssistantHistoryFeatureService } from './homeassistant-history-feat
 describe('homeAssistantHistoryFeatureService', () => {
   beforeEach(() => {
     callHomeAssistantApiMock.mockReset();
-    getHomeAssistantConnectionMock.mockClear();
+    getHomeAssistantConnectionMock.mockReset();
+    getHomeAssistantConnectionMock.mockReturnValue(null);
   });
 
   it('loads bounded entity history through the documented REST endpoint', async () => {
@@ -110,5 +113,61 @@ describe('homeAssistantHistoryFeatureService', () => {
       })
     ).rejects.toThrow('valid start time before the end time');
     expect(callHomeAssistantApiMock).not.toHaveBeenCalled();
+  });
+
+  it('normalizes recorder statistics without exposing Home Assistant response fields', async () => {
+    const sendMessagePromise = vi.fn().mockResolvedValue({
+      'sensor.house_power': [
+        { start: 1_787_040_000_000, end: 1_787_043_600_000, mean: 437, min: 147, max: 3764 },
+        { start: '2026-08-20T01:00:00Z', end: '2026-08-20T02:00:00Z', mean: 512 },
+        { start: 'invalid', end: 1_787_050_800_000, mean: 900 },
+      ],
+    });
+    getHomeAssistantConnectionMock.mockReturnValue({ sendMessagePromise });
+
+    await expect(
+      homeAssistantHistoryFeatureService.getStatisticsHistory?.({
+        entityIds: ['sensor.house_power'],
+        startTime: '2026-08-20T00:00:00Z',
+        endTime: '2026-08-20T03:00:00Z',
+        period: 'hour',
+        types: ['mean', 'min', 'max'],
+      })
+    ).resolves.toEqual({
+      'sensor.house_power': [
+        {
+          startMs: 1_787_040_000_000,
+          endMs: 1_787_043_600_000,
+          mean: 437,
+          min: 147,
+          max: 3764,
+        },
+        {
+          startMs: Date.parse('2026-08-20T01:00:00Z'),
+          endMs: Date.parse('2026-08-20T02:00:00Z'),
+          mean: 512,
+        },
+      ],
+    });
+    expect(sendMessagePromise).toHaveBeenCalledWith({
+      type: 'recorder/statistics_during_period',
+      start_time: '2026-08-20T00:00:00Z',
+      end_time: '2026-08-20T03:00:00Z',
+      statistic_ids: ['sensor.house_power'],
+      period: 'hour',
+      types: ['mean', 'min', 'max'],
+    });
+  });
+
+  it('rejects statistics requests when there is no active provider connection', async () => {
+    await expect(
+      homeAssistantHistoryFeatureService.getStatisticsHistory?.({
+        entityIds: ['sensor.house_power'],
+        startTime: '2026-08-20T00:00:00Z',
+        endTime: '2026-08-20T01:00:00Z',
+        period: 'hour',
+        types: ['mean'],
+      })
+    ).rejects.toThrow('requires an active connection');
   });
 });

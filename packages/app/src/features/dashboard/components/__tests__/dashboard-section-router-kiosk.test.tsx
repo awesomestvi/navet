@@ -68,17 +68,17 @@ describe('DashboardSectionRouter kiosk mode', () => {
     expect(screen.queryByTestId('room-nav')).not.toBeInTheDocument();
   });
 
-  it('renders the climate dashboard route', () => {
+  it('renders the climate dashboard route', async () => {
     const controller = createController();
     controller.activeSection = 'climate';
 
     renderWithProviders(<DashboardSectionRouter controller={controller} />);
 
-    expect(screen.getByText('No Climate Devices')).toBeInTheDocument();
+    expect(await screen.findByText('No Climate Devices')).toBeInTheDocument();
     expect(screen.queryByTestId('room-nav')).not.toBeInTheDocument();
   });
 
-  it('groups climate dashboard cards by type', () => {
+  it('groups climate controls by room and keeps environmental detail by type', async () => {
     const controller = createController();
     const livingRoomClimate = createDevice({
       id: 'climate.living_room',
@@ -140,10 +140,11 @@ describe('DashboardSectionRouter kiosk mode', () => {
 
     renderWithProviders(<DashboardSectionRouter controller={controller} />);
 
-    expect(screen.getByRole('heading', { name: 'Climate' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Fans' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Living Room' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Hallway' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Humidity' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Living Room' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Climate' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Fans' })).not.toBeInTheDocument();
   });
 
   it('does not rerender the lights section for unrelated home-layout controller churn', async () => {

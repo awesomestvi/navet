@@ -1,3 +1,4 @@
+import { CompactMeterListItem } from '@navet/app/components/patterns';
 import { OverlayScrollArea } from '@navet/app/components/primitives';
 import type { CSSProperties } from 'react';
 import { memo, useId, useState } from 'react';
@@ -79,40 +80,22 @@ export const BatteryListItem = memo(function BatteryListItem({
   textSecondaryStyle,
   getLevelColor,
 }: BatteryListItemProps) {
+  const color = getLevelColor(device.level);
+
   return (
-    <div className="flex min-w-0 items-center gap-2">
-      <BatteryLevelIcon
-        level={device.level}
-        color={getLevelColor(device.level)}
-        className="h-3.5 w-3.5 shrink-0"
-      />
-      <span
-        className={`min-w-0 flex-1 truncate text-xs ${textSecondary}`}
-        style={textSecondaryStyle}
-      >
-        {device.name}
-      </span>
-      {!isCompact && (
-        <div
-          className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full"
-          style={{ background: subtleFill }}
-        >
-          <div
-            className="h-full rounded-full transition-[width,background-color]"
-            style={{
-              width: `${device.level}%`,
-              backgroundColor: getLevelColor(device.level),
-            }}
-          />
-        </div>
-      )}
-      <span
-        className="w-10 shrink-0 text-right text-xs font-medium tabular-nums"
-        style={{ color: getLevelColor(device.level) }}
-      >
-        {device.level}%
-      </span>
-    </div>
+    <CompactMeterListItem
+      label={device.name}
+      value={`${device.level}%`}
+      level={device.level}
+      color={color}
+      subtleFill={subtleFill}
+      textSecondary={textSecondary}
+      textSecondaryStyle={textSecondaryStyle}
+      isCompact={isCompact}
+      leading={
+        <BatteryLevelIcon level={device.level} color={color} className="h-3.5 w-3.5 shrink-0" />
+      }
+    />
   );
 });
 

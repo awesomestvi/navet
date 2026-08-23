@@ -80,9 +80,9 @@ export const SpeakerDialog: Story = {
       await expect(dialog).toBeInTheDocument();
       const inDialog = within(dialog);
       await expect(
-        inDialog.getByRole('heading', { name: /smells like teen spirit/i })
+        inDialog.getByRole('img', { name: /smells like teen spirit/i })
       ).toBeInTheDocument();
-      await expect(inDialog.getByText(/nirvana/i)).toBeInTheDocument();
+      await expect(inDialog.getByRole('button', { name: /pause playback/i })).toBeInTheDocument();
     });
   },
 };

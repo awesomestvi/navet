@@ -48,7 +48,7 @@ export const CardEditActionButton = forwardRef<HTMLButtonElement, CardEditAction
         className={`${inline ? '' : `absolute ${positionClass} z-500`} ${layout.buttonSize} ${getEditControlButtonClass(variant, theme)} ${className}`}
         {...props}
       >
-        <Icon className={`${layout.iconSize} text-white`} />
+        <Icon className={`${layout.iconSize} text-white`} aria-hidden="true" />
       </button>
     );
   }

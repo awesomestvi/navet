@@ -1,5 +1,6 @@
 import { dispatchEntityCommand } from '@navet/app/commands';
 import { BaseCardDialog, Slider } from '@navet/app/components/primitives';
+import { SheetSurface, SheetSurfaceHeader } from '@navet/app/components/primitives/sheet-surface';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { navetControlTokens, navetIconSizeTokens } from '@navet/app/components/system/tokens';
 import {
@@ -10,7 +11,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@navet/app/components/ui/dropdown-menu';
-import { useEntityProviderFeatureMatrix, useI18n, useTheme } from '@navet/app/hooks';
+import { useEntityProviderFeatureMatrix, useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
 import type { TranslationKey } from '@navet/app/i18n';
 import type {
   PlatformCameraState,
@@ -235,6 +236,8 @@ function CameraLightControl({
   lights: CameraAccessoryEntity[];
 }) {
   const { t } = useI18n();
+  const isPhone = useMediaQuery('(max-width: 639px)');
+  const [isOpen, setIsOpen] = useState(false);
   const [pendingEntityId, setPendingEntityId] = useState<string | null>(null);
   const [brightnessByEntityId, setBrightnessByEntityId] = useState<Record<string, number>>({});
   const labels = useMemo(() => lights.map(getCameraAccessoryDisplayName), [lights]);
@@ -272,85 +275,121 @@ function CameraLightControl({
     }
   };
 
+  const controls = (
+    <div className="space-y-4">
+      {lights.map((light, index) => {
+        const label = compactRepeatedDeviceLabel(labels[index] ?? '', cameraName, labels);
+        const isOn = light.entity.state === 'on';
+        const brightness = brightnessByEntityId[light.id] ?? 100;
+        return (
+          <div key={light.id} className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className="min-w-0 truncate text-sm font-medium">{label}</span>
+              <button
+                type="button"
+                disabled={pendingEntityId === light.id}
+                aria-label={`${label}: ${isOn ? t('common.on') : t('common.off')}`}
+                aria-pressed={isOn}
+                onClick={() => void toggleLight(light)}
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/60 disabled:opacity-50 ${
+                  isOn
+                    ? 'border-amber-300/35 bg-amber-400/18 text-amber-200'
+                    : 'border-current/15 bg-current/8 text-current/72'
+                }`}
+              >
+                <Lightbulb className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+            <div className="flex items-center gap-3">
+              <Slider
+                value={brightness}
+                min={1}
+                max={100}
+                ariaLabel={`${label} ${t('lighting.brightness')}`}
+                onValueChange={(value) =>
+                  setBrightnessByEntityId((current) => ({ ...current, [light.id]: value }))
+                }
+                onValueCommit={(value) =>
+                  void dispatchEntityCommand({
+                    type: 'set_brightness',
+                    entityId: light.id,
+                    brightness: value,
+                  })
+                }
+                rootClassName="relative flex h-9 min-w-0 flex-1 touch-none items-center select-none"
+                trackClassName="relative h-1.5 grow rounded-full bg-current/15"
+                rangeClassName="absolute h-full rounded-full bg-amber-400"
+                thumbClassName="block h-4 w-4 rounded-full border-2 border-white bg-amber-400 shadow-md outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              />
+              <span className="w-10 text-right text-xs font-semibold tabular-nums">
+                {brightness}%
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+  const trigger = (
+    <button
+      type="button"
+      className={CAMERA_VIEWER_PILL_TRIGGER_CLASS_NAME}
+      aria-label={`${controlLabel}: ${isAnyLightOn ? t('common.on') : t('common.off')}`}
+      aria-expanded={isOpen}
+      aria-haspopup="dialog"
+      onClick={isPhone ? () => setIsOpen(true) : undefined}
+    >
+      <Lightbulb
+        className={`h-3.5 w-3.5 shrink-0 ${isAnyLightOn ? 'text-amber-300' : 'text-white/72'}`}
+        aria-hidden="true"
+      />
+      <span className="min-w-0 truncate">{controlLabel}</span>
+      <ChevronDown className="h-3.5 w-3.5 shrink-0 text-white/58" aria-hidden="true" />
+    </button>
+  );
+
   return (
-    <Popover.Root>
-      <Popover.Trigger asChild>
-        <button
-          type="button"
-          className={CAMERA_VIEWER_PILL_TRIGGER_CLASS_NAME}
-          aria-label={`${controlLabel}: ${isAnyLightOn ? t('common.on') : t('common.off')}`}
-        >
-          <Lightbulb
-            className={`h-3.5 w-3.5 shrink-0 ${isAnyLightOn ? 'text-amber-300' : 'text-white/72'}`}
-          />
-          <span className="min-w-0 truncate">{controlLabel}</span>
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-white/58" />
-        </button>
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content
-          side="top"
-          align="end"
-          sideOffset={8}
-          className="z-50 w-72 rounded-2xl border border-white/12 bg-zinc-950/95 p-3 text-white shadow-2xl backdrop-blur-xl"
+    <>
+      {isPhone ? (
+        trigger
+      ) : (
+        <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
+          <Popover.Trigger asChild>{trigger}</Popover.Trigger>
+          <Popover.Portal>
+            <Popover.Content
+              side="top"
+              align="end"
+              sideOffset={8}
+              className="z-50 w-72 rounded-2xl border border-white/12 bg-zinc-950/95 p-3 text-white shadow-2xl backdrop-blur-xl"
+            >
+              {controls}
+              <Popover.Arrow className="fill-zinc-950" />
+            </Popover.Content>
+          </Popover.Portal>
+        </Popover.Root>
+      )}
+      {isPhone ? (
+        <SheetSurface
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          title={controlLabel}
+          description={cameraName}
+          accentColor="#f59e0b"
+          contentClassName="border-white/12 bg-zinc-950 text-white"
+          bodyClassName="px-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
         >
           <div className="space-y-4">
-            {lights.map((light, index) => {
-              const label = compactRepeatedDeviceLabel(labels[index] ?? '', cameraName, labels);
-              const isOn = light.entity.state === 'on';
-              const brightness = brightnessByEntityId[light.id] ?? 100;
-              return (
-                <div key={light.id} className="space-y-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="min-w-0 truncate text-sm font-medium">{label}</span>
-                    <button
-                      type="button"
-                      disabled={pendingEntityId === light.id}
-                      aria-label={`${label}: ${isOn ? t('common.on') : t('common.off')}`}
-                      aria-pressed={isOn}
-                      onClick={() => void toggleLight(light)}
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/60 disabled:opacity-50 ${
-                        isOn
-                          ? 'border-amber-300/35 bg-amber-400/18 text-amber-200'
-                          : 'border-current/15 bg-current/8 text-current/72'
-                      }`}
-                    >
-                      <Lightbulb className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Slider
-                      value={brightness}
-                      min={1}
-                      max={100}
-                      ariaLabel={`${label} ${t('lighting.brightness')}`}
-                      onValueChange={(value) =>
-                        setBrightnessByEntityId((current) => ({ ...current, [light.id]: value }))
-                      }
-                      onValueCommit={(value) =>
-                        void dispatchEntityCommand({
-                          type: 'set_brightness',
-                          entityId: light.id,
-                          brightness: value,
-                        })
-                      }
-                      rootClassName="relative flex h-9 min-w-0 flex-1 touch-none items-center select-none"
-                      trackClassName="relative h-1.5 grow rounded-full bg-current/15"
-                      rangeClassName="absolute h-full rounded-full bg-amber-400"
-                      thumbClassName="block h-4 w-4 rounded-full border-2 border-white bg-amber-400 shadow-md outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-                    />
-                    <span className="w-10 text-right text-xs font-semibold tabular-nums">
-                      {brightness}%
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+            <SheetSurfaceHeader
+              title={controlLabel}
+              description={cameraName}
+              closeLabel={t('common.closeDialog')}
+              onClose={() => setIsOpen(false)}
+            />
+            {controls}
           </div>
-          <Popover.Arrow className="fill-zinc-950" />
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+        </SheetSurface>
+      ) : null}
+    </>
   );
 }
 

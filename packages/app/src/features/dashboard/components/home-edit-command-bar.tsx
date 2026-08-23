@@ -19,6 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@navet/app/components/ui/dropdown-menu';
+import type { EnergyOverviewTemplate } from '@navet/app/features/energy/components/dashboard/energy-overview-layout';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import {
   Columns2,
@@ -46,6 +47,8 @@ interface HomeEditCommandBarProps {
   onAddColumn?: () => void;
   onAddRow?: () => void;
   onApplyPack?: (packId: DashboardPackId) => void;
+  onApplyEnergyLayout?: (template: EnergyOverviewTemplate) => void;
+  onConfigureKpis?: () => void;
   onManageRooms?: () => void;
   onRedo?: () => void;
   onSetLayoutMode?: (mode: HomeLayoutMode) => void;
@@ -102,6 +105,8 @@ export function HomeEditCommandBar({
   onAddColumn,
   onAddRow,
   onApplyPack,
+  onApplyEnergyLayout,
+  onConfigureKpis,
   onManageRooms,
   onRedo,
   onSetLayoutMode,
@@ -127,6 +132,8 @@ export function HomeEditCommandBar({
   const { activeDashboard } = useDashboardSwitcher();
   const pendingPack = DASHBOARD_PACKS.find((pack) => pack.id === pendingPackId);
   const hasMobileOverflowActions =
+    Boolean(onConfigureKpis) ||
+    Boolean(onApplyEnergyLayout) ||
     Boolean(onManageRooms) ||
     Boolean(onApplyPack) ||
     showHomeLayoutControls ||
@@ -164,6 +171,28 @@ export function HomeEditCommandBar({
                     />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" sideOffset={10} className="w-64">
+                    {onConfigureKpis ? (
+                      <DropdownMenuItem onClick={onConfigureKpis}>
+                        <SlidersHorizontal className="h-4 w-4" />
+                        KPIs
+                      </DropdownMenuItem>
+                    ) : null}
+
+                    {onApplyEnergyLayout ? (
+                      <>
+                        {onConfigureKpis ? <DropdownMenuSeparator /> : null}
+                        <DropdownMenuLabel>Energy layout</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => onApplyEnergyLayout('essentials')}>
+                          <LayoutTemplate className="h-4 w-4" />
+                          Essentials
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onApplyEnergyLayout('balanced')}>
+                          <LayoutDashboard className="h-4 w-4" />
+                          Balanced
+                        </DropdownMenuItem>
+                      </>
+                    ) : null}
+
                     {onManageRooms ? (
                       <DropdownMenuItem onClick={onManageRooms}>
                         <SlidersHorizontal className="h-4 w-4" />
@@ -429,6 +458,41 @@ export function HomeEditCommandBar({
 
             {showHomeLayoutControls ? (
               <div className={`hidden h-6 w-px md:block ${dividerClass}`} />
+            ) : null}
+
+            {onConfigureKpis ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="small"
+                leading={<SlidersHorizontal className="h-4 w-4" />}
+                onClick={onConfigureKpis}
+                className="h-9 rounded-full px-3 text-xs md:text-sm"
+              >
+                KPIs
+              </Button>
+            ) : null}
+
+            {onApplyEnergyLayout ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <CommandBarMenuButton
+                    icon={<LayoutTemplate className="h-4 w-4" />}
+                    label="Layout"
+                  />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" sideOffset={8}>
+                  <DropdownMenuLabel>Energy layout</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => onApplyEnergyLayout('essentials')}>
+                    <LayoutTemplate className="h-4 w-4" />
+                    Essentials
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onApplyEnergyLayout('balanced')}>
+                    <LayoutDashboard className="h-4 w-4" />
+                    Balanced
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : null}
 
             {onAddCard ? (

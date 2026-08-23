@@ -4,6 +4,7 @@ import type {
   BaseCardSettingsActionProps,
 } from '@navet/app/components/primitives/base-card';
 import { BaseCard } from '@navet/app/components/primitives/base-card';
+import { ModalSurface } from '@navet/app/components/primitives/modal-surface';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { CardSizeSelector } from '@navet/app/components/shared/card-size-selector';
 import { useI18n } from '@navet/app/hooks';
@@ -143,26 +144,16 @@ export function CardShell({
       )}
 
       {isSettingsOpen && onSettingsOpenChange && settingsDialog ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-[1000] flex items-center justify-center"
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') {
-              onSettingsOpenChange(false);
-            }
-          }}
+        <ModalSurface
+          isOpen={isSettingsOpen}
+          onOpenChange={onSettingsOpenChange}
+          title={title ?? t('settings.hero.eyebrow')}
+          description={subtitle}
+          contentClassName="max-w-lg max-h-[90vh] max-sm:max-h-[calc(100dvh-1rem)]"
+          bodyClassName="max-h-[90vh] overflow-y-auto overscroll-contain p-4 max-sm:max-h-[calc(100dvh-4rem)]"
         >
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => onSettingsOpenChange(false)}
-            aria-label={t('common.closeDialog')}
-          />
-          <div className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto p-4">
-            {settingsDialog}
-          </div>
-        </div>
+          {settingsDialog}
+        </ModalSurface>
       ) : null}
     </>
   );

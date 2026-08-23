@@ -1,4 +1,8 @@
-import { type CardSize, getCardSpanClass } from '@navet/app/components/shared/card-size-selector';
+import {
+  type CardSize,
+  getCardSpanClass,
+  getResponsiveCardSize,
+} from '@navet/app/components/shared/card-size-selector';
 import { cn } from '@navet/app/components/ui/utils';
 import { useSearch } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
@@ -100,7 +104,10 @@ export const DeviceGrid = memo(function DeviceGrid({
             ? supplementalCards.map((card) => (
                 <div
                   key={`supplemental-${card.id}`}
-                  className={cn(getCardSpanClass(card.size), '[&>*]:h-full')}
+                  className={cn(
+                    getCardSpanClass(getResponsiveCardSize(card.size, breakpointCols)),
+                    '[&>*]:h-full'
+                  )}
                 >
                   {card.content}
                 </div>

@@ -18,6 +18,7 @@ const SIZES: CardSize[] = [
   'medium-vertical',
   'large',
   'extra-large',
+  'extra-wide',
 ];
 
 function BaseCardStory(args: ComponentProps<typeof BaseCard>) {

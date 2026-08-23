@@ -7,6 +7,7 @@ import { getSecurityAlertCount } from '@navet/app/features/security/utils/securi
 import { defaultTranslate, type TranslateFn } from '@navet/app/i18n';
 import type { Section } from '@navet/app/navigation/sections';
 import type { DeviceWithType } from '@navet/app/types/device.types';
+import type { OperationalPriority, OperationalTone } from '@navet/app/types/operational-signal';
 import { getCustomExtensionIcon } from '@navet/app/utils/custom-extension-icons';
 import type { CustomSummaryPill } from '@navet/app/utils/custom-extensions';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
@@ -25,7 +26,8 @@ export interface HomeStatusSummaryItem {
   value: string;
   icon: LucideIcon;
   iconColor: string;
-  tone?: 'danger';
+  priority?: OperationalPriority;
+  tone?: OperationalTone;
   targetSection?: Section;
   targetUrl?: string;
 }
@@ -203,6 +205,7 @@ function getSecuritySummary(
           }),
     icon: Shield,
     iconColor: alertCount === 0 ? '#22c55e' : '#f87171',
+    priority: alertCount > 0 ? 'attention' : 'current',
     tone: alertCount > 0 ? 'danger' : undefined,
     targetSection: 'security',
   };
@@ -263,6 +266,7 @@ function getChoreSummary(
     icon: ClipboardCheck,
     iconColor:
       (overdueChoreCount ?? 0) > 0 ? '#f87171' : pendingChoreCount === 0 ? '#22c55e' : '#fb923c',
+    priority: (overdueChoreCount ?? 0) > 0 ? 'attention' : 'current',
     tone: (overdueChoreCount ?? 0) > 0 ? 'danger' : undefined,
     targetSection: 'tasks',
   };
@@ -502,6 +506,7 @@ function buildStatusSummaryItems(
                 }),
           icon: Shield,
           iconColor: options.securityAlertCount === 0 ? '#22c55e' : '#f87171',
+          priority: options.securityAlertCount > 0 ? ('attention' as const) : ('current' as const),
           tone: options.securityAlertCount > 0 ? ('danger' as const) : undefined,
           targetSection: 'security' as const,
         }

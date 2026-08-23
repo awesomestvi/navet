@@ -73,6 +73,9 @@ export const PhoneSheet: Story = {
     const dialog = await page.findByRole('dialog', { name: 'Create dashboard' });
     const workspace = within(dialog);
 
+    await expect(dialog).toHaveClass('max-sm:!rounded-[30px]', 'max-sm:!bottom-2');
+    await expect(page.getByRole('button', { name: 'Close dialog' })).toBeInTheDocument();
+
     await userEvent.type(workspace.getByLabelText('Name'), 'Upstairs');
     await userEvent.click(workspace.getByRole('button', { name: 'Next' }));
     await expect(workspace.getByRole('button', { name: 'Choose rooms' })).toBeInTheDocument();

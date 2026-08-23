@@ -5,6 +5,31 @@ import { describe, expect, it, vi } from 'vitest';
 import { BaseCardDialog } from '.';
 
 describe('BaseCardDialog', () => {
+  it('presents fullscreen workspaces as cover sheets on phones', () => {
+    renderWithProviders(
+      <BaseCardDialog
+        variant="fullscreen"
+        isOpen
+        onOpenChange={vi.fn()}
+        title="Add card"
+        description="Choose a card"
+        theme="dark"
+      >
+        <div>Add card workspace</div>
+      </BaseCardDialog>
+    );
+
+    const dialog = screen.getByRole('dialog', { name: 'Add card' });
+    expect(dialog).toHaveClass(
+      'max-sm:!right-2',
+      'max-sm:!bottom-2',
+      'max-sm:!left-2',
+      'max-sm:!rounded-[30px]'
+    );
+    expect(dialog.style.getPropertyValue('--mobile-cover-sheet-top')).toBe('0.5rem');
+    expect(screen.getByRole('button', { name: 'Close dialog' })).toBeInTheDocument();
+  });
+
   it('keeps header actions aligned and inherits the card palette for room and Done controls', () => {
     renderWithProviders(
       <BaseCardDialog

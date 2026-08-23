@@ -44,12 +44,39 @@ The canonical scenarios live in `scripts/capture-marketing-media.mjs`:
 - Home: 1448x1012 framed iPad landscape, 1024x1366 portrait tablet, and a 390x766
   safe-area-aware phone viewport exported at 2x
 - Energy: 1536x1024 landscape
+- Climate: 1536x1024 landscape
 - Security: 1536x1024 landscape
 - Lights: 430x932 phone
 - Media: 1366x1024 iPad Pro landscape and 430x932 iPhone portrait
+- Household and Routines: 1536x1024 landscape
 
 Each screenshot is written to `screenshots/` with matching `.jpg`, `.webp`, and `.avif` filenames.
 Website code should prefer AVIF and WebP sources with JPG as the fallback.
+
+## Public docs reuse
+
+The public how-to guides reuse the canonical WebP captures for full dashboard views. After
+refreshing the scenarios, copy the matching files into `assets/public/docs/how-to/`:
+
+| Scenario | Public docs image |
+|---|---|
+| `navet-ipad-landscape-home` | `quick-start/first-15-minutes-overview.webp` |
+| `navet-ipad-landscape-energy` | `everyday-control/energy-dashboard.webp` |
+| `navet-ipad-landscape-climate` | `everyday-control/climate-dashboard.webp` |
+| `navet-ipad-landscape-security` | `everyday-control/security-dashboard.webp` |
+| `navet-mobile-pwa-media-or-lights` | `everyday-control/lights-dashboard.webp` |
+| `navet-ipad-pro-landscape-media` | `everyday-control/media-dashboard.webp` |
+| `navet-ipad-landscape-household` | `everyday-control/household-today.webp` |
+| `navet-ipad-landscape-routines` | `everyday-control/tasks-dashboard.webp` |
+
+Dialog screenshots should come from the exact Storybook story. The Add Card guide uses
+`Pages/Dashboard/Add Card Dialog / Phone Cover Sheet`, including its search state, rather than a
+hand-drawn dialog or a real household dashboard. Other branch-sensitive guide images use:
+
+- `Pages/Dashboard/Multiple Dashboards/Create Dialog / Phone Sheet` for dashboard creation;
+- `Components/Shared/Card Size Selector / Phone Sheet` for responsive resizing;
+- `Cards/Entity/Alarm Panel / All Supported Modes` with **Emergency Trigger** open for the alarm
+  confirmation sheet.
 
 ## Walkthrough set
 

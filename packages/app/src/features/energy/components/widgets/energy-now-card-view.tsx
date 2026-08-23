@@ -6,6 +6,7 @@ import { getCardStateSurfaceTokens } from '@navet/app/components/shared/theme/ca
 import { getCustomCardTintSurface } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import type { EnergySeriesPoint } from '@navet/app/features/energy/types/energy.types';
+import { formatEnergyValue } from '@navet/app/features/energy/utils/energy-formatters';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import { Zap } from 'lucide-react';
 import { memo } from 'react';
@@ -47,6 +48,7 @@ export const EnergyNowCardView = memo(function EnergyNowCardView({
   const isSmall = size === 'small';
   const isMedium = size === 'medium';
   const hasSparklineData = trend.length >= 2;
+  const todayUsageDigits = todayUsageKWh > 0 && todayUsageKWh < 1 ? 2 : 1;
   const headerSize: CardSize = isSmall ? 'small' : size;
   const emptyStateStyle = {
     paddingTop: isSmall ? '3.5rem' : isMedium ? '4.75rem' : '5.5rem',
@@ -108,6 +110,8 @@ export const EnergyNowCardView = memo(function EnergyNowCardView({
             accentColor={accentColor}
             height={isSmall ? 126 : isMedium ? 152 : 176}
             className="h-full w-full opacity-95"
+            showYAxisMarks
+            showYAxisLabels={false}
             padX={0}
           />
         ) : (
@@ -121,12 +125,6 @@ export const EnergyNowCardView = memo(function EnergyNowCardView({
       </div>
 
       <EnergyNowGradientOverlays theme={theme} isSmall={isSmall} />
-
-      {hasSparklineData ? (
-        <div
-          className={`pointer-events-none absolute inset-x-0 border-t border-dashed ${theme === 'light' ? 'border-slate-400/70' : 'border-white/65'} ${isSmall ? 'top-[48%]' : 'top-[45%]'}`}
-        />
-      ) : null}
 
       <div className="pointer-events-none relative z-10 flex h-full flex-col p-3">
         <div className="flex items-start justify-between gap-4">
@@ -162,7 +160,7 @@ export const EnergyNowCardView = memo(function EnergyNowCardView({
           )}
           <CardMetric
             value={`${Math.round(currentLoadW)}W`}
-            label={`${todayUsageKWh.toFixed(1)} kWh`}
+            label={`${formatEnergyValue(todayUsageKWh, todayUsageDigits)} kWh`}
             size={isSmall ? 'sm' : isMedium ? 'lg' : 'xl'}
             isActive
             accentClassName={tintSurface.textPrimaryColor ? '' : surface.textPrimary}

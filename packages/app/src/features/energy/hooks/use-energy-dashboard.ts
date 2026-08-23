@@ -14,6 +14,7 @@ export function useEnergyDashboard() {
   const {
     batteryDevices,
     currentLoadStatisticId,
+    haSourceConfig,
     dashboard,
     hasEnergyStatisticsLoaded,
     isLoading,
@@ -121,5 +122,6 @@ export function useEnergyDashboard() {
     periodTotals,
     todayTotalUsageKWh,
     batteryDevices,
+    haSourceConfig,
   };
 }

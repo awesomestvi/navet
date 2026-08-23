@@ -44,7 +44,7 @@ export function EntityCardTitleBlock({
     return (
       <>
         {formattedSubtitle ? (
-          <p className={subtitleClassName} style={subtitleStyle}>
+          <p className={`mb-px ${subtitleClassName}`} style={subtitleStyle}>
             {formattedSubtitle}
           </p>
         ) : null}

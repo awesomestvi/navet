@@ -1,4 +1,5 @@
-import { useI18n, useTheme } from '@navet/app/hooks';
+import { SheetSurface, SheetSurfaceHeader } from '@navet/app/components/primitives/sheet-surface';
+import { useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
 import type { TranslationKey } from '@navet/app/i18n';
 import * as Popover from '@radix-ui/react-popover';
 import { Maximize2 } from 'lucide-react';
@@ -101,6 +102,14 @@ const sizes: {
     cols: 3,
     rows: 2,
   },
+  {
+    value: 'extra-wide',
+    labelKey: 'cardSize.extraWide.label',
+    description: '6 × 2',
+    dimensionsKey: 'cardSize.extraWide.description',
+    cols: 6,
+    rows: 2,
+  },
 ];
 
 export const CardSizeSelector = memo(function CardSizeSelector({
@@ -115,6 +124,7 @@ export const CardSizeSelector = memo(function CardSizeSelector({
   const { theme, primaryColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const [open, setOpen] = useState(false);
+  const isPhone = useMediaQuery('(max-width: 639px)');
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const accentColor = getThemeColorValue(primaryColor);
 
@@ -136,6 +146,80 @@ export const CardSizeSelector = memo(function CardSizeSelector({
   const selectedSize =
     availableSizes.find((size) => size.value === currentSize) ?? availableSizes[0];
 
+  const selectorContent = (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        {availableSizes.map((size) => {
+          const isActive = currentSize === size.value;
+
+          return (
+            <button
+              type="button"
+              key={size.value}
+              aria-label={`${size.label} (${size.description})`}
+              title={size.label}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSizeChange(size.value);
+                setOpen(false);
+              }}
+              className="flex h-16 w-16 items-center justify-center rounded-[20px] border transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-200"
+              style={{
+                borderColor: isActive ? `${accentColor}80` : inactiveButtonBorderColor,
+                backgroundColor: isActive
+                  ? theme === 'light'
+                    ? '#ffffff'
+                    : `${accentColor}${activeAccentBgAlpha}`
+                  : 'transparent',
+                boxShadow:
+                  isActive && theme === 'light'
+                    ? '0 1px 2px rgba(15,23,42,0.04)'
+                    : isActive
+                      ? `inset 0 0 0 1px ${accentColor}28`
+                      : 'none',
+              }}
+            >
+              <SizePreviewGlyph
+                size={size}
+                active={isActive}
+                accentColor={accentColor}
+                theme={theme}
+              />
+            </button>
+          );
+        })}
+      </div>
+
+      {selectedSize ? (
+        <div className="px-1 text-center">
+          <div className={`text-sm font-semibold ${surface.textPrimary}`}>{selectedSize.label}</div>
+          <div className={`mt-1 text-xs ${surface.textSecondary}`}>
+            {selectedSize.description} • {selectedSize.dimensions}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+  const trigger = (
+    <CardEditActionButton
+      ref={triggerRef}
+      cardSize={triggerSize ?? currentSize}
+      Icon={Maximize2}
+      theme={theme}
+      placement="top-right"
+      variant="accent"
+      inline={triggerInline}
+      aria-label={t('dashboard.edit.resizeCard')}
+      aria-expanded={open}
+      aria-haspopup="dialog"
+      className="z-500 group cursor-pointer"
+      onClick={(event) => {
+        event.stopPropagation();
+        if (isPhone) setOpen(true);
+      }}
+    />
+  );
+
   useEffect(() => {
     const draggableCard = triggerRef.current?.closest('[data-draggable-card="true"]');
     if (!draggableCard) {
@@ -154,83 +238,43 @@ export const CardSizeSelector = memo(function CardSizeSelector({
   }, [open]);
 
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
-      <Popover.Trigger asChild>
-        <CardEditActionButton
-          ref={triggerRef}
-          cardSize={triggerSize ?? currentSize}
-          Icon={Maximize2}
-          theme={theme}
-          placement="top-right"
-          variant="accent"
-          inline={triggerInline}
-          className="z-500 group cursor-pointer"
-          onClick={(e) => e.stopPropagation()}
-        />
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content
-          className={`z-[920] rounded-[30px] border p-3 shadow-2xl backdrop-blur-xl ${surface.panel} ${surface.border}`}
-          sideOffset={8}
+    <>
+      {isPhone ? (
+        trigger
+      ) : (
+        <Popover.Root open={open} onOpenChange={setOpen}>
+          <Popover.Trigger asChild>{trigger}</Popover.Trigger>
+          <Popover.Portal>
+            <Popover.Content
+              className={`z-[920] rounded-[30px] border p-3 shadow-2xl backdrop-blur-xl ${surface.panel} ${surface.border}`}
+              sideOffset={8}
+            >
+              {selectorContent}
+              <Popover.Arrow className={arrowFillClass} />
+            </Popover.Content>
+          </Popover.Portal>
+        </Popover.Root>
+      )}
+      {isPhone ? (
+        <SheetSurface
+          isOpen={open}
+          onOpenChange={setOpen}
+          title={t('dashboard.edit.resizeCard')}
+          description={t('dashboard.edit.resizeCard')}
+          accentColor={accentColor}
+          bodyClassName="px-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
         >
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {availableSizes.map((size) => {
-                const isActive = currentSize === size.value;
-
-                return (
-                  <button
-                    type="button"
-                    key={size.value}
-                    aria-label={`${size.label} (${size.description})`}
-                    title={size.label}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSizeChange(size.value);
-                      setOpen(false);
-                    }}
-                    className="flex h-16 w-16 items-center justify-center rounded-[20px] border transition-[color,background-color,border-color,box-shadow,opacity,transform,filter] duration-200"
-                    style={{
-                      borderColor: isActive ? `${accentColor}80` : inactiveButtonBorderColor,
-                      backgroundColor: isActive
-                        ? theme === 'light'
-                          ? '#ffffff'
-                          : `${accentColor}${activeAccentBgAlpha}`
-                        : 'transparent',
-                      boxShadow:
-                        isActive && theme === 'light'
-                          ? '0 1px 2px rgba(15,23,42,0.04)'
-                          : isActive
-                            ? `inset 0 0 0 1px ${accentColor}28`
-                            : 'none',
-                    }}
-                  >
-                    <SizePreviewGlyph
-                      size={size}
-                      active={isActive}
-                      accentColor={accentColor}
-                      theme={theme}
-                    />
-                  </button>
-                );
-              })}
-            </div>
-
-            {selectedSize ? (
-              <div className="px-1 text-center">
-                <div className={`text-sm font-semibold ${surface.textPrimary}`}>
-                  {selectedSize.label}
-                </div>
-                <div className={`mt-1 text-xs ${surface.textSecondary}`}>
-                  {selectedSize.description} • {selectedSize.dimensions}
-                </div>
-              </div>
-            ) : null}
+          <div className="space-y-4">
+            <SheetSurfaceHeader
+              title={t('dashboard.edit.resizeCard')}
+              closeLabel={t('common.closeDialog')}
+              onClose={() => setOpen(false)}
+            />
+            {selectorContent}
           </div>
-          <Popover.Arrow className={arrowFillClass} />
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+        </SheetSurface>
+      ) : null}
+    </>
   );
 });
 
@@ -300,7 +344,11 @@ function SizePreviewGlyph({
   const w = size.cols * glyphUnit;
   const h = size.rows * glyphUnit;
   const chipSize =
-    size.value === 'extra-large' ? 5 : size.value === 'large' || size.value === 'medium' ? 5 : 4;
+    size.value === 'extra-large' || size.value === 'extra-wide'
+      ? 5
+      : size.value === 'large' || size.value === 'medium'
+        ? 5
+        : 4;
 
   if (size.value === 'extra-small') {
     return (
@@ -361,12 +409,19 @@ export function getCardSpanClass(size: CardSize): string {
       return 'col-span-4 row-span-4'; // 2 logical columns × 2 rows
     case 'extra-large':
       return 'col-span-4 row-span-4 md:col-span-6'; // Large on mobile, 3 logical columns × 2 rows otherwise
+    case 'extra-wide':
+      return 'col-span-12 row-span-4'; // 6 logical columns × 2 rows
     default:
       return 'col-span-2 row-span-2';
   }
 }
 
 export function getResponsiveCardSize(size: CardSize, logicalColumns: number): CardSize {
+  if (size === 'extra-wide') {
+    if (logicalColumns <= 2) return 'large';
+    if (logicalColumns <= 4) return 'extra-large';
+  }
+
   return size === 'extra-large' && logicalColumns <= 2 ? 'large' : size;
 }
 

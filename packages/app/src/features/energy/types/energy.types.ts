@@ -1,5 +1,6 @@
 export type EnergyRange = 'now' | 'today' | 'week' | 'month';
 export type LegacyEnergyRange = 'live' | 'day';
+export type EnergyHistoryRange = 'today' | 'week' | 'month' | 'year' | 'custom';
 
 export type EnergyNodeId = 'home' | 'solar' | 'grid' | 'battery' | 'gas' | 'renewable';
 export type EnergyDashboardMode = 'eco' | 'normal' | 'peak' | 'battery_saver';
@@ -132,14 +133,89 @@ export interface EnergyStat {
   tone?: 'default' | 'good' | 'warn' | 'critical';
 }
 
+export interface EnergyProviderKpiMetric {
+  id: string;
+  sourceEntityId: string;
+  label: string;
+  value: string;
+  unit: string;
+  kind: 'energy' | 'power' | 'cost' | 'prepaid';
+  availability: 'available' | 'unavailable' | 'unknown';
+  room?: string;
+  lastUpdated?: string;
+}
+
 export interface EnergySeriesPoint {
   label: string;
   value: number;
   secondaryValue?: number;
+  hasData?: boolean;
   timestampMs?: number;
   endTimestampMs?: number;
   minValue?: number;
   maxValue?: number;
+}
+
+export interface EnergyHistoryWindow {
+  startMs: number;
+  endMs: number;
+  displayEndMs?: number;
+  previousStartMs: number;
+  previousEndMs: number;
+  period: 'hour' | 'day' | 'month';
+}
+
+export interface EnergyHistorySource {
+  id: 'home' | 'grid' | 'solar';
+  label: string;
+  entityId: string;
+  color: string;
+  valueKind: 'power' | 'energy';
+}
+
+export interface EnergyHistoryBucket {
+  id: string;
+  label: string;
+  startMs: number;
+  endMs: number;
+  energyKWh: number;
+  averagePowerW: number;
+  lowPowerW: number;
+  peakPowerW: number;
+  hasData: boolean;
+}
+
+export interface EnergyHistoryContribution {
+  id: string;
+  name: string;
+  room?: string;
+  energyKWh: number;
+  averagePowerW: number;
+  share: number;
+}
+
+export interface EnergyHistoryRoomBreakdown {
+  id: string;
+  name: string;
+  energyKWh: number;
+  share: number;
+  devices: EnergyHistoryContribution[];
+}
+
+export interface EnergyHistoryWorkspaceModel {
+  buckets: EnergyHistoryBucket[];
+  totalEnergyKWh: number;
+  averagePowerW: number;
+  lowPowerW: number;
+  peakPowerW: number;
+  peakStartMs?: number;
+  peakEndMs?: number;
+  comparisonPercent?: number;
+  selectedBucket: EnergyHistoryBucket | null;
+  deviceBreakdown: EnergyHistoryContribution[];
+  roomBreakdown: EnergyHistoryRoomBreakdown[];
+  trackedEnergyKWh: number;
+  untrackedEnergyKWh: number;
 }
 
 export interface EnergyFlowDatum {

@@ -80,13 +80,20 @@ const AlertDialogContent = React.forwardRef<
         ref={ref}
         data-slot="alert-dialog-content"
         className={cn(
-          'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-5 overflow-hidden rounded-[32px] border p-6 shadow-2xl backdrop-blur-xl duration-200 sm:max-w-lg sm:p-8',
+          'fixed z-50 grid gap-5 overflow-y-auto border shadow-2xl backdrop-blur-xl duration-200 overscroll-contain sm:overflow-hidden',
+          'right-2 bottom-2 left-2 max-h-[calc(100dvh-1rem)] rounded-[30px] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]',
+          'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-4 data-[state=open]:slide-in-from-bottom-4',
+          'sm:top-[50%] sm:left-[50%] sm:right-auto sm:bottom-auto sm:w-full sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-[32px] sm:p-8 sm:pb-8 sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95 sm:data-[state=closed]:slide-out-to-bottom-0 sm:data-[state=open]:slide-in-from-bottom-0',
           surfaceClass,
           className
         )}
         style={{ background }}
         {...props}
       >
+        <div
+          aria-hidden="true"
+          className="relative z-10 mx-auto -mt-2 h-1 w-16 rounded-full bg-current/15 sm:hidden"
+        />
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 opacity-90"
@@ -107,7 +114,7 @@ function AlertDialogHeader({ className, ...props }: React.ComponentProps<'div'>)
   return (
     <div
       data-slot="alert-dialog-header"
-      className={cn('flex flex-col gap-2 text-center sm:text-left', className)}
+      className={cn('flex flex-col gap-2 text-left', className)}
       {...props}
     />
   );

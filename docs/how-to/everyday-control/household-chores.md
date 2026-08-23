@@ -5,9 +5,9 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-con
 ---
 
 Open **Household** to keep ordinary home work beside the routines that already run your smart
-home. **Today** leads with overdue and due work, then shows what can wait.
+home. **Today** leads with overdue and due work, then remaining work and completed chores.
 
-![Household Today with the one-row House pulse, overdue and upcoming chore cards, assignees, time, points, and See rewards.](/docs/how-to/everyday-control/household-today.webp)
+![The current Household Today dashboard with House pulse, needs-attention chores, remaining work, and completed chores.](/docs/how-to/everyday-control/household-today.webp)
 
 Native chores are currently available in the Home Assistant add-on and in standalone Navet when it
 is paired with a trusted Home Assistant installation. The Home Assistant custom panel does not have
@@ -58,7 +58,7 @@ Navet schedules dates in the chore's local time zone, including daylight-saving 
 ## Work through Today
 
 Use **Using this screen** to choose the person currently completing or approving work. The Today
-list shows **Needs attention** first, followed by upcoming and remaining work. Completed chores stay
+list shows **Needs attention** first, followed by remaining work. Completed chores stay
 visible as smaller cards, without a time tag, and show the points that were earned.
 
 - Choose **Mark done** to complete assigned work.
@@ -71,7 +71,9 @@ and retries against the newest household list when another screen saves first.
 
 ## Read House pulse and rewards
 
-House pulse keeps the daily summary in one row: earned points, current streak, and completed chores.
+House pulse keeps the daily summary in one row. When work is overdue, it leads with **Needs
+attention**, the overdue count, remaining work, and completed chores. Otherwise it shows earned
+points, current streak, and completed chores.
 Choose **See rewards** to reveal the supporting mission and reward cards below the banner. They stay
 hidden from Today until requested, while **Missions** and **Rewards** remain available as separate
 management destinations.

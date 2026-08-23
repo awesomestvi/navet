@@ -121,6 +121,7 @@ interface BaseCardDialogRootProps {
   contentDescription?: string;
   disableOpenAutoFocus?: boolean;
   mobileCoverSheet?: boolean;
+  mobileCoverSheetInitialFullscreen?: boolean;
   contentStyle?: CSSProperties;
   contentGlowClassName?: string;
   contentGlowStyle?: CSSProperties;
@@ -133,6 +134,7 @@ interface BaseCardDialogRootProps {
 const mobileCoverSheetClassName = [
   'max-sm:!top-[var(--mobile-cover-sheet-top)] max-sm:!right-2 max-sm:!bottom-2 max-sm:!left-2',
   'max-sm:!mx-0 max-sm:!max-h-[calc(100dvh-1rem)] max-sm:!w-auto max-sm:!max-w-none',
+  'max-sm:!flex max-sm:!flex-col',
   'max-sm:![translate:0_var(--mobile-cover-sheet-drag-y)] max-sm:!rounded-[30px]',
   'max-sm:!transition-[height,top,translate] max-sm:!duration-200 max-sm:!ease-out',
 ].join(' ');
@@ -178,6 +180,7 @@ function BaseCardDialogRoot({
   contentDescription,
   disableOpenAutoFocus = false,
   mobileCoverSheet = true,
+  mobileCoverSheetInitialFullscreen = false,
   contentStyle,
   contentGlowClassName,
   contentGlowStyle,
@@ -187,9 +190,13 @@ function BaseCardDialogRoot({
   children,
 }: BaseCardDialogRootProps) {
   const generatedDescriptionId = useId();
-  const [isMobileCoverSheetFullscreen, setIsMobileCoverSheetFullscreen] = useState(false);
+  const [isMobileCoverSheetFullscreen, setIsMobileCoverSheetFullscreen] = useState(
+    mobileCoverSheetInitialFullscreen
+  );
   const [mobileCoverSheetDragOffset, setMobileCoverSheetDragOffset] = useState(0);
-  const [mobileCoverSheetTopInset, setMobileCoverSheetTopInset] = useState('auto');
+  const [mobileCoverSheetTopInset, setMobileCoverSheetTopInset] = useState(
+    mobileCoverSheetInitialFullscreen ? '0.5rem' : 'auto'
+  );
   const [isMobileCoverSheetDragging, setIsMobileCoverSheetDragging] = useState(false);
   const mobileCoverSheetContentRef = useRef<HTMLDivElement | null>(null);
   const mobileCoverSheetDragStartYRef = useRef(0);
@@ -201,7 +208,12 @@ function BaseCardDialogRoot({
   const hasDecoratedContent = Boolean(
     contentGlowClassName || contentGlowStyle || contentOverlayClassName
   );
-  const resolvedBodyClassName = bodyClassName ?? (mobileCoverSheet ? 'min-h-0' : '');
+  const resolvedBodyClassName = [
+    bodyClassName,
+    mobileCoverSheet ? 'max-sm:min-h-0 max-sm:flex-1' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
   const resolvedAriaDescribedBy = contentDescription
     ? generatedDescriptionId
     : contentAriaDescribedBy;
@@ -217,15 +229,14 @@ function BaseCardDialogRoot({
     mobileCoverSheetPointerIdRef.current = null;
     suppressMobileCoverSheetHandleClickRef.current = false;
     setMobileCoverSheetDragOffset(0);
-    setMobileCoverSheetTopInset(isMobileCoverSheetFullscreen ? '0.5rem' : 'auto');
+    setMobileCoverSheetTopInset(mobileCoverSheetInitialFullscreen ? '0.5rem' : 'auto');
+    setIsMobileCoverSheetFullscreen(mobileCoverSheetInitialFullscreen);
     setIsMobileCoverSheetDragging(false);
-  }, [isMobileCoverSheetFullscreen]);
+  }, [mobileCoverSheetInitialFullscreen]);
 
   useEffect(() => {
     if (!isOpen) {
       resetMobileCoverSheetDragState();
-      setMobileCoverSheetTopInset('auto');
-      setIsMobileCoverSheetFullscreen(false);
     }
   }, [isOpen, resetMobileCoverSheetDragState]);
 
@@ -881,7 +892,8 @@ function BaseCardDialogFullscreenVariant({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       disableOpenAutoFocus={disableOpenAutoFocus}
-      mobileCoverSheet={false}
+      mobileCoverSheet
+      mobileCoverSheetInitialFullscreen
       overlayClassName={overlayClassName ?? `animate-in fade-in ${surface.dialogBackdrop}`}
       contentTitle={contentTitle ?? title}
       contentDescription={contentDescription ?? description}

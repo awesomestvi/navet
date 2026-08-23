@@ -9,7 +9,12 @@ export interface CardShellSurfaceTokens {
 }
 
 function isTallGlassCard(size?: CardSize) {
-  return size === 'medium-vertical' || size === 'large' || size === 'extra-large';
+  return (
+    size === 'medium-vertical' ||
+    size === 'large' ||
+    size === 'extra-large' ||
+    size === 'extra-wide'
+  );
 }
 
 export function getCardShellSurfaceTokens(

@@ -1,4 +1,5 @@
 import type { PlatformCameraPlaybackModel } from '@navet/app/platform/provider-feature-models';
+import { setMediaQueryMatch } from '@navet/app/test/browser-mocks';
 import { cameraEntityFixtures } from '@navet/app/test/fixtures/home-assistant/entities/camera';
 import { renderWithProviders } from '@navet/app/test/render';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
@@ -71,11 +72,53 @@ const defaultProps = {
 };
 
 beforeEach(() => {
+  setMediaQueryMatch('(max-width: 639px)', false);
   autoLoadStreamPlayerMock.current = false;
   dispatchEntityCommandMock.mockClear();
 });
 
 describe('CameraLiveViewer', () => {
+  it('opens camera accessory controls as a cover sheet on phones', async () => {
+    setMediaQueryMatch('(max-width: 639px)', true);
+    getCameraPlaybackPlanMock.mockResolvedValue({
+      cameraState: 'streaming',
+      snapshotResource: null,
+      supportsSnapshot: false,
+      liveTransports: [],
+      fallbackTransports: [],
+      selectedTransport: null,
+      selectedStreamResource: null,
+      supportsStreaming: false,
+      isSnapshotFallback: false,
+      shouldStartWithSnapshot: false,
+      motionDetectionEnabled: true,
+      refreshPolicy: { retryDelaysMs: [1_000] },
+    });
+
+    renderWithProviders(
+      <CameraLiveViewer
+        {...defaultProps}
+        accessoryEntities={[
+          {
+            id: 'home_assistant:light.front_door_ir',
+            entity: {
+              entityId: 'light.front_door_ir',
+              state: 'on',
+              attributes: { friendly_name: 'Front Door IR light', brightness: 255 },
+            },
+          },
+        ]}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'IR light: On' }));
+    });
+
+    expect(screen.getByRole('dialog', { name: 'IR light' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Close IR light' })).toBeInTheDocument();
+  });
+
   it('shows camera accessory information and controls in fullscreen', async () => {
     getCameraPlaybackPlanMock.mockResolvedValue({
       cameraState: 'streaming',

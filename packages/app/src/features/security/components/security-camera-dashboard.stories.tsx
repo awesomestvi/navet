@@ -170,6 +170,34 @@ const securitySensors: SensorDevice[] = [
   },
 ];
 
+const criticalSmokeSensor: SensorDevice = {
+  id: 'binary_sensor.kitchen_smoke',
+  nativeId: 'binary_sensor.kitchen_smoke',
+  name: 'Kitchen Smoke',
+  room: 'Kitchen',
+  size: 'small',
+  value: 'Smoke detected',
+  unit: '',
+  deviceClass: 'smoke',
+  status: 'active',
+  securityKind: 'smoke',
+  securitySeverity: 'critical',
+};
+
+const unavailableDoorSensor: SensorDevice = {
+  id: 'binary_sensor.side_door',
+  nativeId: 'binary_sensor.side_door',
+  name: 'Side Door',
+  room: 'Garden',
+  size: 'small',
+  value: 'Unavailable',
+  unit: '',
+  deviceClass: 'door',
+  status: 'unavailable',
+  securityKind: 'door',
+  securitySeverity: 'unknown',
+};
+
 interface SecurityDashboardStoryProps {
   cameras: CameraDevice[];
   locks: LockDevice[];
@@ -182,7 +210,7 @@ function SecurityDashboardStory({ cameras, locks, sensors }: SecurityDashboardSt
   const model = buildSecurityCameraDashboardModel({ cameras, locks, sensors });
 
   return (
-    <div className="min-h-screen bg-[#050608] p-4 md:p-6">
+    <div className={`min-h-screen p-4 md:p-6 ${surface.appBg}`}>
       <SecurityCameraDashboard
         model={model}
         isEditMode={false}
@@ -236,6 +264,34 @@ export const NoSecurityIssues: Story = {
         : { ...sensor, value: 'off', status: 'clear' }
     ),
   },
+};
+
+export const CriticalAlert: Story = {
+  args: {
+    cameras: [liveCamera, idleCamera],
+    locks,
+    sensors: [criticalSmokeSensor, ...securitySensors],
+  },
+};
+
+export const UnavailableOnly: Story = {
+  args: {
+    cameras: [unavailableCamera],
+    locks: [],
+    sensors: [unavailableDoorSensor],
+  },
+};
+
+export const WallTablet: Story = {
+  parameters: { viewport: { defaultViewport: 'tabletLandscape' } },
+};
+
+export const Phone: Story = {
+  parameters: { viewport: { defaultViewport: 'iphone14' } },
+};
+
+export const LightTheme: Story = {
+  decorators: [withTheme('light')],
 };
 
 export const BlackTheme: Story = {

@@ -71,4 +71,17 @@ describe('SummaryBar', () => {
     );
     expect(screen.queryByTestId('info-badge-strip-pulse-security')).not.toBeInTheDocument();
   });
+
+  it('keeps the summary lane available for trailing controls without summary items', () => {
+    renderWithProviders(
+      <SummaryBar
+        items={[]}
+        ariaLabel="Energy"
+        trailingContent={<button type="button">Week</button>}
+      />
+    );
+
+    expect(screen.getByRole('navigation', { name: 'Energy' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Week' })).toBeInTheDocument();
+  });
 });

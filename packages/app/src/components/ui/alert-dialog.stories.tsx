@@ -13,10 +13,10 @@ import {
   AlertDialogTrigger,
 } from './alert-dialog';
 
-function AlertDialogStory() {
+function AlertDialogStory({ defaultOpen = false }: { defaultOpen?: boolean }) {
   return (
     <div className="flex items-center justify-center p-12">
-      <AlertDialog>
+      <AlertDialog defaultOpen={defaultOpen}>
         <AlertDialogTrigger asChild>
           <button
             type="button"
@@ -90,6 +90,13 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+export const PhoneCoverSheet: Story = {
+  render: () => <AlertDialogStory defaultOpen />,
+  parameters: {
+    viewport: { defaultViewport: 'mobile1' },
+  },
+};
 
 export const Docs: Story = {
   parameters: {

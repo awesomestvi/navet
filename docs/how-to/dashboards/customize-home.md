@@ -27,7 +27,11 @@ While editing, you can:
 - Delete a Navet widget or manually added card.
 
 Card sizes are intentional per card type. A size that is unavailable would not provide a useful
-version of that card.
+version of that card. Saved or imported layouts that contain a compatible extra-wide card fall
+back to Extra-Large or Large on narrower screens so the dashboard remains usable on tablets and
+phones.
+
+![The current phone card-size sheet with footprint choices and the selected size identified.](/docs/how-to/dashboards/card-size-selector.webp)
 
 ![Home edit mode showing the full layout, row, column, undo, redo, Add card, and Done command bar.](/docs/how-to/dashboards/customize-home-edit-mode.webp)
 

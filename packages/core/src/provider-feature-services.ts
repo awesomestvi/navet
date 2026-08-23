@@ -24,6 +24,8 @@ import type {
   PlatformPersistentNotificationEvent,
   PlatformResolvedMediaSource,
   PlatformRoomReference,
+  PlatformStatisticsHistoryRequest,
+  PlatformStatisticsHistorySeries,
   PlatformTaskRuntimeSnapshot,
   PlatformWeatherForecastEntry,
   PlatformWeatherRequestOptions,
@@ -173,6 +175,9 @@ export interface ProviderHistoryFeatureService {
   getEntityHistory?: (
     request: PlatformEntityHistoryRequest
   ) => Promise<PlatformEntityHistorySeries>;
+  getStatisticsHistory?: (
+    request: PlatformStatisticsHistoryRequest
+  ) => Promise<PlatformStatisticsHistorySeries>;
   supportsStatisticsHistory?: (entityId: string) => boolean;
   supportsEnergyStatistics?: (entityId: string) => boolean;
 }

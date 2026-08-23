@@ -25,7 +25,10 @@ Enter a short household name such as **Upstairs**, **Kitchen**, or **Wall panel*
 - **Copy current** to duplicate the active dashboard before editing it.
 - **Blank** to start without cards.
 
-![The Create dashboard flow showing Details, Content, and Displays.](/docs/how-to/dashboards/create-dashboard-dialog.webp)
+![The current Create dashboard phone cover sheet on Start with, showing room groups, content choices, Back, Next, and Cancel.](/docs/how-to/dashboards/create-dashboard-dialog.webp)
+
+On phones, the flow opens as a full-height cover sheet. **Name**, **Start with**, and **Use on**
+remain visible as progress steps while Back and Next stay anchored at the bottom.
 
 When choosing rooms, select the content you want:
 

@@ -105,6 +105,32 @@ export interface PlatformEntityHistorySeries {
   points: PlatformEntityHistoryPoint[];
 }
 
+export type PlatformStatisticsPeriod = '5minute' | 'hour' | 'day' | 'week' | 'month' | 'year';
+
+export type PlatformStatisticsType = 'change' | 'max' | 'mean' | 'min' | 'state' | 'sum';
+
+export interface PlatformStatisticsHistoryRequest {
+  entityIds: string[];
+  startTime: string;
+  endTime?: string;
+  period: PlatformStatisticsPeriod;
+  types: PlatformStatisticsType[];
+  units?: Record<string, string>;
+}
+
+export interface PlatformStatisticsHistoryPoint {
+  startMs: number;
+  endMs: number;
+  change?: number;
+  max?: number;
+  mean?: number;
+  min?: number;
+  state?: number;
+  sum?: number;
+}
+
+export type PlatformStatisticsHistorySeries = Record<string, PlatformStatisticsHistoryPoint[]>;
+
 export interface PlatformEntityRegistryEntry {
   entityId: string;
   deviceId?: string | null;

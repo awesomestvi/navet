@@ -14,7 +14,9 @@ interface EnergySectionProps {
   energyCustomCards?: CustomCard[];
   energyOrderedCardIds?: string[];
   isEditMode?: boolean;
+  isKpiCustomizationOpen?: boolean;
   onDeleteCard?: (cardId: string) => void;
+  onKpiCustomizationOpenChange?: (open: boolean) => void;
   onUpdateCard?: (cardId: string, updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>) => void;
 }
 
@@ -22,11 +24,13 @@ export const EnergySection = memo(function EnergySection({
   energyCustomCards = [],
   energyOrderedCardIds = [],
   isEditMode = false,
+  isKpiCustomizationOpen = false,
   onDeleteCard,
+  onKpiCustomizationOpenChange,
   onUpdateCard,
 }: EnergySectionProps) {
   const { t } = useI18n();
-  const { theme } = useTheme();
+  const { accentColor, theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const providerLabel = INTEGRATION_PROVIDERS[currentProviderId].label;
@@ -37,6 +41,9 @@ export const EnergySection = memo(function EnergySection({
     isLoading,
     isConnected,
     isConfigured,
+    setRange,
+    currentLoadStatisticId,
+    haSourceConfig,
   } = useEnergyDashboard();
 
   if (isLoading) {
@@ -116,8 +123,55 @@ export const EnergySection = memo(function EnergySection({
       energyCustomCards={energyCustomCards}
       energyOrderedCardIds={energyOrderedCardIds}
       isEditMode={isEditMode}
+      isKpiCustomizationOpen={isKpiCustomizationOpen}
       onDeleteCard={onDeleteCard}
+      onKpiCustomizationOpenChange={onKpiCustomizationOpenChange}
       onUpdateCard={onUpdateCard}
+      onRangeChange={setRange}
+      currentLoadStatisticId={currentLoadStatisticId}
+      historySources={[
+        ...(currentLoadStatisticId
+          ? [
+              {
+                id: 'home' as const,
+                label: t('energy.model.home'),
+                entityId: currentLoadStatisticId,
+                color: accentColor,
+                valueKind: 'power' as const,
+              },
+            ]
+          : []),
+        ...(haSourceConfig?.gridImportEnergyEntityId || haSourceConfig?.gridImportPowerEntityId
+          ? [
+              {
+                id: 'grid' as const,
+                label: t('energy.stats.gridImport'),
+                entityId:
+                  haSourceConfig.gridImportEnergyEntityId ??
+                  (haSourceConfig.gridImportPowerEntityId as string),
+                color: '#60a5fa',
+                valueKind: haSourceConfig.gridImportEnergyEntityId
+                  ? ('energy' as const)
+                  : ('power' as const),
+              },
+            ]
+          : []),
+        ...(haSourceConfig?.solarEnergyEntityId || haSourceConfig?.solarPowerEntityId
+          ? [
+              {
+                id: 'solar' as const,
+                label: t('energy.model.solar'),
+                entityId:
+                  haSourceConfig.solarEnergyEntityId ??
+                  (haSourceConfig.solarPowerEntityId as string),
+                color: '#facc15',
+                valueKind: haSourceConfig.solarEnergyEntityId
+                  ? ('energy' as const)
+                  : ('power' as const),
+              },
+            ]
+          : []),
+      ]}
     />
   );
 });

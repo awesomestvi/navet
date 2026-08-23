@@ -1,6 +1,7 @@
+import { setMediaQueryMatch } from '@navet/app/test/browser-mocks';
 import { renderWithProviders } from '@navet/app/test/render';
 import { fireEvent, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HomeEditCommandBar } from '../home-edit-command-bar';
 
 function openMenu(name: string | RegExp) {
@@ -11,11 +12,17 @@ function openMenu(name: string | RegExp) {
 }
 
 describe('HomeEditCommandBar', () => {
+  beforeEach(() => {
+    setMediaQueryMatch('(max-width: 767px)', false);
+  });
+
   it('keeps primary edit actions on the fixed command strip', () => {
     const onAddCard = vi.fn();
     const onAddColumn = vi.fn();
     const onAddRow = vi.fn();
     const onApplyPack = vi.fn();
+    const onApplyEnergyLayout = vi.fn();
+    const onConfigureKpis = vi.fn();
     const onManageRooms = vi.fn();
     const onRedo = vi.fn();
     const onSetLayoutMode = vi.fn();
@@ -31,6 +38,8 @@ describe('HomeEditCommandBar', () => {
         onAddColumn={onAddColumn}
         onAddRow={onAddRow}
         onApplyPack={onApplyPack}
+        onApplyEnergyLayout={onApplyEnergyLayout}
+        onConfigureKpis={onConfigureKpis}
         onManageRooms={onManageRooms}
         onRedo={onRedo}
         onSetLayoutMode={onSetLayoutMode}
@@ -52,17 +61,23 @@ describe('HomeEditCommandBar', () => {
     expect(
       screen
         .getAllByRole('button')
-        .slice(-2)
+        .slice(-4)
         .map((button) => button.textContent)
-    ).toEqual(['Add Card', 'Done']);
+    ).toEqual(['KPIs', 'Layout', 'Add Card', 'Done']);
 
+    fireEvent.click(screen.getByRole('button', { name: 'KPIs' }));
     fireEvent.click(screen.getByRole('button', { name: /Add Card/i }));
     fireEvent.click(screen.getByRole('button', { name: /Add row/i }));
     fireEvent.click(screen.getByRole('button', { name: /Add column/i }));
 
+    expect(onConfigureKpis).toHaveBeenCalledTimes(1);
     expect(onAddCard).toHaveBeenCalledTimes(1);
     expect(onAddRow).toHaveBeenCalledTimes(1);
     expect(onAddColumn).toHaveBeenCalledTimes(1);
+
+    openMenu('Layout');
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Essentials' }));
+    expect(onApplyEnergyLayout).toHaveBeenCalledWith('essentials');
 
     openMenu('Presets');
     fireEvent.click(screen.getByRole('menuitem', { name: /Command Center/i }));
@@ -106,5 +121,31 @@ describe('HomeEditCommandBar', () => {
     expect(screen.getByRole('button', { name: /Add Card/i })).toBeEnabled();
     expect(screen.queryByRole('button', { name: /Add row/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Add column/i })).not.toBeInTheDocument();
+  });
+
+  it('moves Energy configuration into the phone overflow menu', () => {
+    setMediaQueryMatch('(max-width: 767px)', true);
+    const onApplyEnergyLayout = vi.fn();
+    const onConfigureKpis = vi.fn();
+
+    renderWithProviders(
+      <HomeEditCommandBar
+        onAddCard={vi.fn()}
+        onApplyEnergyLayout={onApplyEnergyLayout}
+        onConfigureKpis={onConfigureKpis}
+        onToggleEditMode={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'KPIs' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Layout' })).not.toBeInTheDocument();
+    openMenu('More actions');
+    fireEvent.click(screen.getByRole('menuitem', { name: 'KPIs' }));
+
+    expect(onConfigureKpis).toHaveBeenCalledTimes(1);
+
+    openMenu('More actions');
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Balanced' }));
+    expect(onApplyEnergyLayout).toHaveBeenCalledWith('balanced');
   });
 });

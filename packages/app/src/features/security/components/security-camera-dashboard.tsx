@@ -1,10 +1,4 @@
-import { DashboardHeroSection } from '@navet/app/components/patterns';
-import {
-  Badge,
-  BaseCard,
-  InteractivePill,
-  OverlayScrollArea,
-} from '@navet/app/components/primitives';
+import { BaseCard, InteractivePill, OverlayScrollArea } from '@navet/app/components/primitives';
 import { type CardSize, getCardSpanClass } from '@navet/app/components/shared/card-size-selector';
 import type { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { getDeviceTypeIcon } from '@navet/app/constants/device-type-icons';
@@ -14,6 +8,8 @@ import { DashboardResizeTrigger } from '@navet/app/features/dashboard/components
 import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit-dashboard-grid';
 import { useProgressiveBatching } from '@navet/app/features/dashboard/hooks/use-progressive-batching';
 import { normalizeCameraDirectStreamUrl } from '@navet/app/features/security/hooks/use-camera-playback-plan';
+import type { HomeStatusSummaryItem } from '@navet/app/features/sensors/components/home-status-summary-model';
+import { SummaryBar } from '@navet/app/features/sensors/components/info-badge-strip';
 import { useProviderCameraTopology } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { usePersistedState } from '@navet/app/hooks/use-persisted-state';
@@ -33,7 +29,14 @@ import {
 import type { CameraDevice, DeviceWithType, SecuritySeverity } from '@navet/app/types/device.types';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import type { NavetAlarmEntity } from '@navet/core/alarm-types';
-import { ChevronDown } from 'lucide-react';
+import {
+  ChevronDown,
+  CircleAlert,
+  CircleOff,
+  Radio,
+  ShieldCheck,
+  TriangleAlert,
+} from 'lucide-react';
 import {
   type CSSProperties,
   type ReactNode,
@@ -467,68 +470,10 @@ function resolveHomeAssistantImageUrl(imageUrl: string | undefined) {
   return normalizeResourceUrl(imageUrl, 'home_assistant') ?? imageUrl;
 }
 
-function StatusBanner({
-  model,
-  surface,
-}: {
-  model: CameraDashboardModel['summary'];
-  surface: ReturnType<typeof getThemeSurfaceTokens>;
-}) {
-  const { accentColor } = useTheme();
-  const { t } = useI18n();
-  const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
-
-  return kioskMode ? null : (
-    <DashboardHeroSection
-      accentColor={accentColor}
-      surface={surface}
-      title={model.title}
-      description={t('security.overview.description')}
-    />
-  );
-}
-
-function NowStatusBadges({ model }: { model: CameraDashboardModel['summary'] }) {
-  const { theme } = useTheme();
-  const { t } = useI18n();
-  const needsAttention = model.attentionEntityCount;
-  const primaryBadge =
-    needsAttention > 0 ? (
-      <Badge tone="danger">{t('security.overview.toCheck', { count: needsAttention })}</Badge>
-    ) : needsAttention === 0 && model.secureItems.length > 0 ? (
-      <Badge
-        tone="success"
-        className={
-          theme === 'light' ? 'border-emerald-300/90 bg-emerald-100/95 text-emerald-800' : ''
-        }
-      >
-        {t('security.overview.secure', { count: model.secureItems.length })}
-      </Badge>
-    ) : null;
-  const liveBadge =
-    model.liveItems.length > 0 ? (
-      <Badge
-        className={
-          theme === 'light'
-            ? 'border-sky-300/90 bg-sky-100/95 text-sky-800'
-            : 'border-sky-400/30 bg-sky-500/10 text-sky-100'
-        }
-      >
-        {t('security.overview.live', { count: model.liveItems.length })}
-      </Badge>
-    ) : null;
-
-  return (
-    <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
-      <div className="flex min-w-0 items-center gap-2">{primaryBadge}</div>
-      <div className="flex shrink-0 items-center justify-end gap-2">{liveBadge}</div>
-    </div>
-  );
-}
-
 function FlatSection({
   id,
   title,
+  description,
   count,
   headerSuffix,
   children,
@@ -538,6 +483,7 @@ function FlatSection({
 }: {
   id: string;
   title: string;
+  description?: string;
   count?: number;
   headerSuffix?: ReactNode;
   children: ReactNode;
@@ -547,28 +493,35 @@ function FlatSection({
 }) {
   const { t } = useI18n();
   const headerContent = (
-    <div className="flex min-w-0 flex-wrap items-center gap-1.5 md:gap-2">
-      <div className="flex min-w-0 items-center gap-1.5">
-        <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>{title}</h2>
-        {onToggleCollapse ? (
-          <span
-            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-transparent bg-transparent transition-colors ${surface.hoverBg}`}
-          >
-            <ChevronDown
-              className={`h-4 w-4 transition-transform ${surface.textMuted} ${
-                isCollapsed ? '' : 'rotate-180'
-              }`}
-              aria-hidden="true"
-            />
+    <div className="min-w-0 flex-1">
+      <div className="flex min-w-0 flex-wrap items-center gap-1.5 md:gap-2">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>{title}</h2>
+          {onToggleCollapse ? (
+            <span
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-transparent bg-transparent transition-colors ${surface.hoverBg}`}
+            >
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${surface.textMuted} ${
+                  isCollapsed ? '' : 'rotate-180'
+                }`}
+                aria-hidden="true"
+              />
+            </span>
+          ) : null}
+        </div>
+        {typeof count === 'number' ? (
+          <span className={`text-xs md:text-sm ${surface.textSecondary}`}>
+            {t('security.overview.items', { count })}
           </span>
         ) : null}
+        {headerSuffix ? (
+          <div className="flex min-w-0 flex-1 items-center">{headerSuffix}</div>
+        ) : null}
       </div>
-      {typeof count === 'number' ? (
-        <span className={`text-xs md:text-sm ${surface.textSecondary}`}>
-          {t('security.overview.items', { count })}
-        </span>
+      {description ? (
+        <p className={`mt-1 max-w-3xl text-sm leading-5 ${surface.textSecondary}`}>{description}</p>
       ) : null}
-      {headerSuffix ? <div className="flex min-w-0 flex-1 items-center">{headerSuffix}</div> : null}
     </div>
   );
 
@@ -1203,6 +1156,63 @@ export function SecurityCameraDashboard({
     {}
   );
   const attentionCount = model.summary.attentionEntityCount;
+  const summaryItems = useMemo<HomeStatusSummaryItem[]>(() => {
+    const items: HomeStatusSummaryItem[] = [];
+    if (model.summary.liveItems.length > 0) {
+      items.push({
+        id: 'security-live',
+        title: t('security.dashboard.live'),
+        value: t('security.summary.live', { count: model.summary.liveItems.length }),
+        icon: Radio,
+        iconColor: '#38bdf8',
+        tone: 'active',
+      });
+    }
+    if (model.summary.criticalCount > 0) {
+      items.push({
+        id: 'security-critical',
+        title: t('security.severity.critical'),
+        value: String(model.summary.criticalCount),
+        icon: TriangleAlert,
+        iconColor: '#ef4444',
+        priority: 'critical',
+        tone: 'danger',
+      });
+    }
+    if (model.summary.warningCount > 0) {
+      items.push({
+        id: 'security-attention',
+        title: t('security.severity.attention'),
+        value: t('security.summary.alerts', { count: model.summary.warningCount }),
+        icon: CircleAlert,
+        iconColor: '#f59e0b',
+        priority: 'attention',
+        tone: 'warning',
+      });
+    }
+    if (model.summary.unknownCount > 0) {
+      items.push({
+        id: 'security-unavailable',
+        title: t('security.dashboard.unavailable'),
+        value: t('security.summary.unavailable', { count: model.summary.unknownCount }),
+        icon: CircleOff,
+        iconColor: '#94a3b8',
+        priority: 'attention',
+        tone: 'neutral',
+      });
+    }
+    if (model.summary.normalCount > 0) {
+      items.push({
+        id: 'security-secure',
+        title: t('security.severity.normal'),
+        value: String(model.summary.normalCount),
+        icon: ShieldCheck,
+        iconColor: '#34d399',
+        tone: 'success',
+      });
+    }
+    return items;
+  }, [model.summary, t]);
   const attentionCardSize = cardSizes[ATTENTION_NOW_CARD_ID] ?? 'large';
   const secureCardSize = cardSizes[SECURE_NOW_CARD_ID] ?? 'large';
   const liveCardSize = cardSizes[LIVE_NOW_CARD_ID] ?? 'large';
@@ -1314,12 +1324,11 @@ export function SecurityCameraDashboard({
           }
         }
       `}</style>
-      <StatusBanner model={model.summary} surface={surface} />
-
+      <SummaryBar items={summaryItems} ariaLabel={t('homeSummary.security')} />
       <FlatSection
         id="now"
-        title={t('security.overview.now')}
-        headerSuffix={<NowStatusBadges model={model.summary} />}
+        title={model.summary.title}
+        description={model.summary.subtitle}
         isCollapsed={collapsedSections.now ?? false}
         onToggleCollapse={toggleSectionCollapse}
         surface={surface}

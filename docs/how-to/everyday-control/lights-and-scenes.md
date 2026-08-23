@@ -1,19 +1,24 @@
 ---
 title: Control lights and scenes
-description: Use room lighting, brightness, color, scenes, and responsive card or table layouts.
+description: Read whole-home lighting status, run scenes, and control room or individual lights.
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/lights-and-scenes.md
 ---
 
 The Lights section groups supported lights and switches by room while keeping common actions close
 to the current state.
 
-![The Lights dashboard with room summaries and scene shortcuts.](/docs/how-to/everyday-control/lights-dashboard.webp)
+![The current phone Lights dashboard with status, quick scenes, whole-home actions, and expandable room groups.](/docs/how-to/everyday-control/lights-dashboard.webp)
+
+The summary strip shows how many lights are on, average brightness when available, and unavailable
+lights that need attention. Quick scenes and **Expand all**, **Collapse all**, or whole-home power
+actions stay beside that summary.
 
 ## Control a room
 
 1. Open **Lights**.
-2. Choose a room.
-3. Use the room power action for the visible room group.
+2. Choose a room group. Rooms needing attention appear first, followed by active and inactive
+   rooms.
+3. Use the room icon to turn the available room lights on or off.
 4. Adjust room brightness when supported.
 
 Expand a group to work with individual lights.
@@ -34,11 +39,6 @@ The card only shows controls supported by the entity.
 
 Choose a scene shortcut to ask the owning provider to activate it. Scene behavior comes from the
 provider; Navet does not rewrite the scene actions.
-
-## Change the presentation
-
-Use the Lights customization controls to choose the responsive card or table presentation and to
-show or hide scene shortcuts.
 
 ## If a light is missing
 

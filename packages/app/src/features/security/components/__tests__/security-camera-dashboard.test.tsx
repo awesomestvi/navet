@@ -8,7 +8,7 @@ import type {
   SecuritySeverity,
   SensorDevice,
 } from '@navet/app/types/device.types';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildSecurityCameraDashboardModel } from '../../utils/security-camera-dashboard-model';
@@ -239,13 +239,12 @@ describe('SecurityCameraDashboard', () => {
     renderDashboard();
 
     expect(screen.getByRole('heading', { name: 'Critical alert' })).toBeInTheDocument();
-    expect(screen.getByText('Now')).toBeInTheDocument();
     expect(screen.getByTestId('security-now-lane-list-danger')).toBeInTheDocument();
     expect(screen.getByTestId('security-now-lane-list-accent')).toBeInTheDocument();
     expect(screen.getByText('All Security')).toBeInTheDocument();
 
     const headings = screen.getAllByRole('heading').map((heading) => heading.textContent);
-    expect(headings.indexOf('Now')).toBeLessThan(headings.indexOf('All Security'));
+    expect(headings.indexOf('Critical alert')).toBeLessThan(headings.indexOf('All Security'));
 
     expect(screen.getByRole('button', { name: /Hazards/i })).toBeInTheDocument();
     expect(screen.getAllByText('Entry Motion').length).toBeGreaterThan(0);
@@ -310,12 +309,12 @@ describe('SecurityCameraDashboard', () => {
       />
     );
 
-    expect(screen.getByText('Now')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'All secure' })).toBeInTheDocument();
     expect(screen.getByText('Home Alarm')).toBeInTheDocument();
     expect(screen.queryByText('All Security')).not.toBeInTheDocument();
   });
 
-  it('keeps the hero attention count aligned with visible attention items', () => {
+  it('keeps the operational summary aligned with visible attention items', () => {
     const model = buildSecurityCameraDashboardModel({
       cameras: [],
       locks: [lock({ id: 'lock.front', name: 'Front Door', state: false })],
@@ -359,7 +358,7 @@ describe('SecurityCameraDashboard', () => {
       />
     );
 
-    expect(screen.getByText(/3 to check/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Critical alert' })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /Hazards|Locks|Doors & windows/i })).toHaveLength(
       3
     );
@@ -390,7 +389,7 @@ describe('SecurityCameraDashboard', () => {
       />
     );
 
-    expect(screen.getByText('Now')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '2 things need attention' })).toBeInTheDocument();
     expect(screen.getByText('No live activity.')).toBeInTheDocument();
     expect(screen.queryByText('Entry Motion')).not.toBeInTheDocument();
     expect(screen.queryByText('Secure')).not.toBeInTheDocument();
@@ -429,8 +428,10 @@ describe('SecurityCameraDashboard', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: /now/i })).toBeInTheDocument();
-    expect(screen.getByText('1 secure')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /security active/i })).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('navigation', { name: 'Security' })).getByText('Normal')
+    ).toBeInTheDocument();
     expect(screen.queryByText('Nothing needs attention.')).not.toBeInTheDocument();
     expect(screen.getAllByText('Garage Camera').length).toBeGreaterThan(0);
     const secureRow = screen.getByRole('button', { name: /Locks/i });
@@ -444,7 +445,7 @@ describe('SecurityCameraDashboard', () => {
     expect(secureCard?.className).toContain('to-green-950/95');
   });
 
-  it('keeps entity actions out of the hero and shows status badges in the now header', () => {
+  it('keeps entity actions out of the summary and shows status in the summary bar', () => {
     const model = buildSecurityCameraDashboardModel({
       cameras: [camera({ id: 'camera.garage', name: 'Garage Camera', state: 'idle' })],
       locks: [lock({ id: 'lock.front', name: 'Front Door', state: true })],
@@ -466,9 +467,11 @@ describe('SecurityCameraDashboard', () => {
     expect(screen.queryByRole('button', { name: /done editing/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId('security-hero-actions-divider')).not.toBeInTheDocument();
 
-    const nowHeaderButton = screen.getByRole('button', { name: /now/i });
-    expect(nowHeaderButton).toHaveTextContent('1 live');
-    expect(nowHeaderButton).toHaveTextContent('1 secure');
+    const nowHeaderButton = screen.getByRole('button', { name: /all secure/i });
+    expect(nowHeaderButton).not.toHaveTextContent('1 live');
+    const summary = within(screen.getByRole('navigation', { name: 'Security' }));
+    expect(summary.getByText('1 live')).toBeInTheDocument();
+    expect(summary.getByText('Normal')).toBeInTheDocument();
   });
 
   it('renders attention, live, and secure lanes with overlay scroll wrappers', () => {
@@ -516,7 +519,7 @@ describe('SecurityCameraDashboard', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: /Locks/i }));
     fireEvent.click(screen.getByRole('button', { name: /All Security/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Now/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Critical alert/i }));
 
     await waitFor(() =>
       expect(localStorage.getItem('navet-security-dashboard-selected-group')).toBe(
@@ -536,7 +539,10 @@ describe('SecurityCameraDashboard', () => {
       'aria-expanded',
       'false'
     );
-    expect(screen.getByRole('button', { name: /Now/i })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('button', { name: /Critical alert/i })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    );
 
     fireEvent.click(screen.getByRole('button', { name: /All Security/i }));
 
@@ -1077,7 +1083,11 @@ describe('SecurityCameraDashboard', () => {
 
     expect(screen.queryByText('Viewer:Driveway Camera')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /Driveway Camera/i }));
+    fireEvent.click(
+      within(screen.getByTestId('security-now-lane-list-accent')).getByRole('button', {
+        name: /Driveway Camera/i,
+      })
+    );
 
     expect(screen.getByText('Viewer:Driveway Camera')).toBeInTheDocument();
     expect(cameraLiveViewerRenderMock).toHaveBeenLastCalledWith(
@@ -1114,7 +1124,10 @@ describe('SecurityCameraDashboard', () => {
       />
     );
 
-    const liveRow = screen.getByRole('button', { name: /Driveway Camera/i });
+    const liveRow = within(screen.getByTestId('security-now-lane-list-accent')).getByRole(
+      'button',
+      { name: /Driveway Camera/i }
+    );
 
     expect(liveRow).toHaveTextContent('Streaming');
     expect(liveRow).not.toHaveTextContent('Active');
@@ -1162,7 +1175,10 @@ describe('SecurityCameraDashboard', () => {
       />
     );
 
-    const liveRow = screen.getByRole('button', { name: /Movement Backyard/i });
+    const liveRow = within(screen.getByTestId('security-now-lane-list-accent')).getByRole(
+      'button',
+      { name: /Movement Backyard/i }
+    );
 
     expect(liveRow).toHaveTextContent('Motion detected');
     expect(liveRow.innerHTML).toContain('bg-amber-300');

@@ -2,6 +2,8 @@ import type {
   PlatformEntityHistoryRequest,
   PlatformEntityHistorySeries,
   PlatformMessageClient,
+  PlatformStatisticsHistoryRequest,
+  PlatformStatisticsHistorySeries,
 } from '@navet/app/platform/provider-feature-models';
 import type { ProviderHistoryFeatureService } from '@navet/app/platform/provider-feature-services';
 import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
@@ -40,6 +42,52 @@ export async function getIntegrationEntityHistory(
   const nativeEntityId = request.entityId.replace(/^[^:]+:/, '');
   const result = await service.getEntityHistory({ ...request, entityId: nativeEntityId });
   return { ...result, entityId: request.entityId };
+}
+
+export async function getIntegrationStatisticsHistory(
+  request: PlatformStatisticsHistoryRequest
+): Promise<PlatformStatisticsHistorySeries | null> {
+  if (request.entityIds.length === 0) {
+    return {};
+  }
+
+  const providerId = resolveIntegrationProviderId(request.entityIds[0]);
+  if (request.entityIds.some((entityId) => resolveIntegrationProviderId(entityId) !== providerId)) {
+    throw new Error('Statistics history entities must belong to the same provider');
+  }
+
+  const service = getProviderRuntimeRegistration(providerId).historyFeatureService;
+  if (!service?.getStatisticsHistory) {
+    return null;
+  }
+
+  const nativeToCanonical = new Map<string, string>();
+  for (const entityId of request.entityIds) {
+    nativeToCanonical.set(entityId.replace(/^[^:]+:/, ''), entityId);
+  }
+  const nativeEntityIds = [...nativeToCanonical.keys()];
+  const nativeUnits = request.units
+    ? Object.fromEntries(
+        [...nativeToCanonical.entries()].flatMap(([nativeEntityId, canonicalEntityId]) => {
+          const unit = request.units?.[canonicalEntityId];
+          return unit ? [[nativeEntityId, unit]] : [];
+        })
+      )
+    : undefined;
+  const result = await service.getStatisticsHistory({
+    ...request,
+    entityIds: nativeEntityIds,
+    ...(nativeUnits && Object.keys(nativeUnits).length > 0 ? { units: nativeUnits } : {}),
+  });
+
+  const normalized: PlatformStatisticsHistorySeries = {};
+  for (const nativeEntityId of nativeEntityIds) {
+    const canonicalEntityId = nativeToCanonical.get(nativeEntityId);
+    if (canonicalEntityId) {
+      normalized[canonicalEntityId] = result[nativeEntityId] ?? [];
+    }
+  }
+  return normalized;
 }
 
 export function supportsIntegrationStatisticsHistory(

@@ -3,15 +3,22 @@ import {
   getMockEnergySourceDiagnostics,
 } from '@navet/app/features/energy/data/mock-energy-dashboard';
 import type {
+  EnergyDashboardModel,
+  EnergyHistorySource,
   EnergyOverview,
   EnergySourceDiagnostic,
 } from '@navet/app/features/energy/types/energy.types';
 import { buildEnergyDashboardModel } from '@navet/app/features/energy/utils/build-energy-dashboard-model';
+import type {
+  PlatformStatisticsHistoryRequest,
+  PlatformStatisticsHistorySeries,
+} from '@navet/app/platform/provider-feature-models';
 import { defaultSettings, useSettingsStore } from '@navet/app/stores/settings-store';
 import type { ThemeMode } from '@navet/app/stores/theme-store';
 import { useThemeStore } from '@navet/app/stores/theme-store';
 import type { Decorator, Meta, StoryObj } from '@storybook/react';
 import { type ReactNode, useEffect } from 'react';
+import { expect, within } from 'storybook/test';
 import { EnergyDashboardPage } from './energy-dashboard-page';
 
 function ThemeDecorator({ theme, children }: { theme: ThemeMode; children: ReactNode }) {
@@ -172,6 +179,91 @@ const gridOnlyDiagnostics: EnergySourceDiagnostic[] = [
   },
 ];
 
+async function loadStoryEnergyHistory(
+  request: PlatformStatisticsHistoryRequest
+): Promise<PlatformStatisticsHistorySeries> {
+  const startMs = Date.parse(request.startTime);
+  const endMs = request.endTime ? Date.parse(request.endTime) : Date.now();
+  const bucketMs =
+    request.period === 'hour'
+      ? 60 * 60 * 1000
+      : request.period === 'day'
+        ? 24 * 60 * 60 * 1000
+        : 30 * 24 * 60 * 60 * 1000;
+  const bucketCount = Math.max(1, Math.min(31, Math.ceil((endMs - startMs) / bucketMs)));
+  return Object.fromEntries(
+    request.entityIds.map((entityId, entityIndex) => [
+      entityId,
+      Array.from({ length: bucketCount }, (_, index) => {
+        const pointStart = startMs + index * bucketMs;
+        const baseMean = storyHistoryBaseMean(entityId, entityIndex);
+        const mean = Math.max(
+          0,
+          baseMean +
+            Math.sin(index * 1.2) * baseMean * 0.32 +
+            (bucketCount > 1 && index === Math.floor(bucketCount * 0.65) ? baseMean * 0.8 : 0)
+        );
+        return {
+          startMs: pointStart,
+          endMs: Math.min(endMs, pointStart + bucketMs),
+          mean,
+          min: mean * 0.42,
+          max: mean * 1.68,
+        };
+      }),
+    ])
+  );
+}
+
+function storyHistoryBaseMean(entityId: string, entityIndex: number): number {
+  if (entityId === homeHistorySource.entityId) return 920;
+  if (entityId === gridHistorySource.entityId) return 640;
+  if (entityId === solarHistorySource.entityId) return 520;
+
+  const consumerMeans: Record<string, number> = {
+    'sensor.hvac_power': 260,
+    'sensor.water_heater_power': 150,
+    'sensor.ev_power': 115,
+    'sensor.kitchen_power': 80,
+    'sensor.floor_heating_power': 65,
+    'sensor.laundry_power': 45,
+  };
+  return consumerMeans[entityId] ?? 35 + entityIndex * 12;
+}
+
+const homeHistorySource: EnergyHistorySource = {
+  id: 'home',
+  label: 'Home use',
+  entityId: 'sensor.whole_home_power',
+  color: '#f97316',
+  valueKind: 'power',
+};
+
+const gridHistorySource: EnergyHistorySource = {
+  id: 'grid',
+  label: 'Grid import',
+  entityId: 'sensor.grid_import_power',
+  color: '#60a5fa',
+  valueKind: 'power',
+};
+
+const solarHistorySource: EnergyHistorySource = {
+  id: 'solar',
+  label: 'Solar production',
+  entityId: 'sensor.solar_power',
+  color: '#facc15',
+  valueKind: 'power',
+};
+
+function getStoryHistorySources(dashboard: EnergyDashboardModel): EnergyHistorySource[] {
+  const sources = [homeHistorySource];
+  if (dashboard.dataCoverage.hasGridImport || dashboard.dataCoverage.hasGridExport) {
+    sources.push(gridHistorySource);
+  }
+  if (dashboard.dataCoverage.hasSolar) sources.push(solarHistorySource);
+  return sources;
+}
+
 const meta = {
   title: 'Pages/Energy/Dashboard/Page',
   component: EnergyDashboardPage,
@@ -187,6 +279,9 @@ const meta = {
     sourceDiagnostics: [],
     energyCustomCards: [],
     energyOrderedCardIds: [],
+    currentLoadStatisticId: 'sensor.whole_home_power',
+    historyStatisticsLoader: loadStoryEnergyHistory,
+    historySources: getStoryHistorySources(defaultScenario.dashboard),
   },
 } satisfies Meta<typeof EnergyDashboardPage>;
 
@@ -200,11 +295,176 @@ function buildScenarioStory(id: string): Story {
     args: {
       dashboard: scenario.dashboard,
       sourceDiagnostics: getMockEnergySourceDiagnostics(scenario.dashboard),
+      historySources: getStoryHistorySources(scenario.dashboard),
     },
   };
 }
 
-export const Default: Story = buildScenarioStory('default');
+export const Default: Story = {
+  ...buildScenarioStory('normal-household'),
+  name: 'Normal household',
+  parameters: {
+    docs: {
+      description: {
+        story: 'A grid-powered home with ordinary household loads and no solar, battery, or EV.',
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const summary = canvas.getByRole('navigation', { name: 'Energy' });
+    await expect(within(summary).queryByText('Grid import')).not.toBeInTheDocument();
+    await expect(canvas.getByTestId('energy-usage-metric-grid')).toHaveTextContent('Grid import');
+    await expect(within(summary).queryByText('Solar')).not.toBeInTheDocument();
+    await expect(within(summary).queryByText('Battery')).not.toBeInTheDocument();
+    await expect(canvas.queryByText('EV charger')).not.toBeInTheDocument();
+  },
+};
+
+export const SolarAndBatteryHousehold: Story = {
+  ...buildScenarioStory('solar-battery-household'),
+  name: 'Solar + battery',
+  parameters: {
+    docs: {
+      description: {
+        story: 'The normal household loads with active solar production and home battery storage.',
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const summary = canvas.getByRole('navigation', { name: 'Energy' });
+    await expect(within(summary).queryByText('Solar')).not.toBeInTheDocument();
+    await expect(within(summary).queryByText('Battery')).not.toBeInTheDocument();
+    await expect(canvas.getByTestId('energy-usage-metric-grid')).toHaveTextContent('Grid import');
+    await expect(canvas.getByTestId('energy-usage-metric-solar')).toHaveTextContent(
+      'Solar production'
+    );
+    await expect(canvas.getByTestId('energy-usage-metric-battery')).toHaveTextContent('Battery');
+    await expect(canvas.queryByText('EV charger')).not.toBeInTheDocument();
+  },
+};
+
+export const SolarBatteryAndEvHousehold: Story = {
+  ...buildScenarioStory('solar-battery-ev-household'),
+  name: 'Solar + battery + EV',
+  parameters: {
+    docs: {
+      description: {
+        story: 'The equipped household while a 7.2 kW garage EV charger is actively drawing power.',
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const summary = canvas.getByRole('navigation', { name: 'Energy' });
+    await expect(within(summary).queryByText('Solar')).not.toBeInTheDocument();
+    await expect(within(summary).queryByText('Battery')).not.toBeInTheDocument();
+    await expect(canvas.getByTestId('energy-usage-metric-grid')).toHaveTextContent('Grid import');
+    await expect(canvas.getByTestId('energy-usage-metric-solar')).toHaveTextContent(
+      'Solar production'
+    );
+    await expect(canvas.getByTestId('energy-usage-metric-battery')).toHaveTextContent('Battery');
+    await expect(canvas.getAllByText('EV charger')[0]).toBeInTheDocument();
+  },
+};
+export const LiveRange: Story = {
+  args: {
+    dashboard: {
+      ...defaultScenario.dashboard,
+      selectedRange: 'now',
+    },
+    sourceDiagnostics: getMockEnergySourceDiagnostics(defaultScenario.dashboard),
+  },
+};
+export const WeekRange: Story = {
+  args: {
+    dashboard: {
+      ...defaultScenario.dashboard,
+      selectedRange: 'week',
+    },
+    sourceDiagnostics: getMockEnergySourceDiagnostics(defaultScenario.dashboard),
+  },
+};
+export const WeekRangeSelectedPeriod: Story = {
+  args: {
+    dashboard: {
+      ...defaultScenario.dashboard,
+      selectedRange: 'week',
+    },
+    sourceDiagnostics: getMockEnergySourceDiagnostics(defaultScenario.dashboard),
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const chart = await canvas.findByRole('slider', { name: 'Energy usage by period' });
+    chart.focus();
+    await userEvent.keyboard('{ArrowRight}');
+
+    await expect(canvas.getByRole('heading', { name: 'Selected day' })).toBeInTheDocument();
+    await expect(canvas.getByTestId('energy-selected-period-details')).toHaveTextContent(
+      'What used the most'
+    );
+    await expect(canvas.getByRole('button', { name: 'Back to chart' })).toBeInTheDocument();
+    await expect(
+      canvas.queryByRole('slider', { name: 'Energy usage by period' })
+    ).not.toBeInTheDocument();
+    await expect(canvas.getByTestId('energy-usage-metric-energy')).toHaveTextContent('Week total');
+  },
+};
+export const WeekRangeSelectedUntrackedOnly: Story = {
+  args: {
+    dashboard: {
+      ...defaultScenario.dashboard,
+      selectedRange: 'week',
+      topConsumers: [],
+      dataCoverage: {
+        ...defaultScenario.dashboard.dataCoverage,
+        hasTrackedDevices: false,
+      },
+    },
+    sourceDiagnostics: getMockEnergySourceDiagnostics(defaultScenario.dashboard),
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const chart = await canvas.findByRole('slider', { name: 'Energy usage by period' });
+    chart.focus();
+    await userEvent.keyboard('{ArrowRight}');
+
+    await expect(canvas.getByRole('heading', { name: 'Selected day' })).toBeInTheDocument();
+    await expect(canvas.getByTestId('energy-selected-period-details')).toHaveTextContent(
+      '1 contributor'
+    );
+    await expect(canvas.getByTestId('energy-selected-period-details')).toHaveTextContent(
+      'Untracked'
+    );
+    await expect(canvas.queryByRole('img', { name: /identified/ })).not.toBeInTheDocument();
+  },
+};
+export const MonthRange: Story = {
+  args: {
+    dashboard: {
+      ...defaultScenario.dashboard,
+      selectedRange: 'month',
+    },
+    sourceDiagnostics: getMockEnergySourceDiagnostics(defaultScenario.dashboard),
+  },
+};
+export const SparseMonthRange: Story = {
+  args: {
+    dashboard: {
+      ...defaultScenario.dashboard,
+      selectedRange: 'month',
+      ranges: {
+        ...defaultScenario.dashboard.ranges,
+        month: {
+          ...defaultScenario.dashboard.ranges.month,
+          liveConsumption: defaultScenario.dashboard.ranges.month.liveConsumption.slice(-11),
+        },
+      },
+    },
+    sourceDiagnostics: getMockEnergySourceDiagnostics(defaultScenario.dashboard),
+  },
+};
 export const SolarProducing: Story = buildScenarioStory('solar-producing');
 export const GridImporting: Story = buildScenarioStory('grid-importing');
 export const BatteryCharging: Story = buildScenarioStory('battery-charging');
@@ -216,6 +476,23 @@ export const GridOnlyCurrentHaData: Story = {
   args: {
     dashboard: gridOnlyDashboard,
     sourceDiagnostics: gridOnlyDiagnostics,
+  },
+};
+
+export const SourceNeedsAttention: Story = {
+  ...buildScenarioStory('grid-importing'),
+  args: {
+    ...buildScenarioStory('grid-importing').args,
+    sourceDiagnostics: [
+      ...getMockEnergySourceDiagnostics(getEnergyDashboardScenario('grid-importing').dashboard),
+      {
+        id: 'device:gym-heater',
+        label: 'Gym heater',
+        entityId: 'sensor.gym_heater_energy',
+        liveEntityId: 'sensor.gym_heater_power',
+        status: 'configured_unavailable',
+      },
+    ],
   },
 };
 
@@ -236,6 +513,36 @@ export const LiquidGlassTheme: Story = {
   parameters: {
     backgrounds: { default: 'canvas-glass' },
   },
+};
+
+export const WallTablet: Story = {
+  ...buildScenarioStory('solar-producing'),
+  parameters: { viewport: { defaultViewport: 'tabletLandscape' } },
+};
+
+export const WallTabletPortrait: Story = {
+  ...buildScenarioStory('normal-household'),
+  name: 'Wall tablet portrait',
+  parameters: {
+    viewport: { defaultViewport: 'ipadMini' },
+    docs: {
+      description: {
+        story:
+          'Portrait composition: Live Energy uses a compact split card, metrics share one row, and Energy usage receives the full dashboard width.',
+      },
+    },
+  },
+};
+
+export const Phone: Story = {
+  ...buildScenarioStory('grid-importing'),
+  parameters: { viewport: { defaultViewport: 'iphone14' } },
+};
+
+export const LightTheme: Story = {
+  ...buildScenarioStory('default'),
+  decorators: [withTheme('light')],
+  parameters: { backgrounds: { default: 'canvas-light' } },
 };
 
 export const BlackTheme: Story = {

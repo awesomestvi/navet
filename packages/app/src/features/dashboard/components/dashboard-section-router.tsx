@@ -6,7 +6,6 @@ import { SectionCustomizeShell } from '@navet/app/components/layout/section-cust
 import { DashboardEmptyState } from '@navet/app/components/patterns';
 import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner';
 import { RenderProfiler } from '@navet/app/components/shared/render-profiler';
-import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
 import { getRoomTodayChores } from '@navet/app/features/chores/chore-dashboard-selectors';
 import { useChoreWorkspaceStore } from '@navet/app/features/chores/chore-workspace-store';
@@ -14,13 +13,17 @@ import { useChoreWorkspaceSync } from '@navet/app/features/chores/use-chore-work
 import { getClimateDashboardGroup } from '@navet/app/features/climate/utils/climate-dashboard-group';
 import { useRoomWorkspaceStore } from '@navet/app/features/dashboard/rooms/room-workspace-store';
 import { getRoomWorkspaceSectionsV2 } from '@navet/app/features/dashboard/rooms/room-workspace-v2';
+import {
+  getEnergyOverviewTemplateLayout,
+  useEnergyOverviewLayout,
+} from '@navet/app/features/energy/components/dashboard/energy-overview-layout';
 import { buildRoomStatusSummaryItems } from '@navet/app/features/sensors/components/home-status-summary-model';
 import {
   SummaryBar,
   SummaryBarStack,
 } from '@navet/app/features/sensors/components/info-badge-strip';
 import { useTaskRoutines } from '@navet/app/features/tasks/hooks/use-task-automation-groups';
-import { useI18n, useIntegrationStore, useTheme } from '@navet/app/hooks';
+import { useI18n, useIntegrationStore } from '@navet/app/hooks';
 import { useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { integrationSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
@@ -75,6 +78,10 @@ const LightsDashboard = lazy(async () => {
   const module = await import('@navet/app/features/lighting/dashboard/lights-dashboard');
   return { default: module.LightsDashboard };
 });
+const ClimateDashboard = lazy(async () => {
+  const module = await import('@navet/app/features/climate');
+  return { default: module.ClimateDashboard };
+});
 const AddEntityDialog = lazy(async () => {
   const module = await import('./add-entity-dialog');
   return { default: module.AddEntityDialog };
@@ -100,8 +107,6 @@ export function shouldSubscribeTaskRoutines(
 
 function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterProps) {
   const { t } = useI18n();
-  const { theme } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
   const manageableRoomsByProviderId = useIntegrationStore(
     integrationSelectors.manageableRoomsByProviderId
   );
@@ -122,6 +127,8 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   const [isAddLightEntityDialogOpen, setIsAddLightEntityDialogOpen] = useState(false);
   const [isAddClimateEntityDialogOpen, setIsAddClimateEntityDialogOpen] = useState(false);
   const [isRoomManagementOpen, setIsRoomManagementOpen] = useState(false);
+  const [isEnergyKpiCustomizationOpen, setIsEnergyKpiCustomizationOpen] = useState(false);
+  const [, setEnergyOverviewLayout] = useEnergyOverviewLayout();
   const [securityAddEntityRequestKey, setSecurityAddEntityRequestKey] = useState(0);
   const {
     activeRoom,
@@ -149,6 +156,11 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     sectionData,
     updateCardSize,
   } = controller;
+  useEffect(() => {
+    if (activeSection !== 'energy' || !isEditMode) {
+      setIsEnergyKpiCustomizationOpen(false);
+    }
+  }, [activeSection, isEditMode]);
   useChoreWorkspaceSync(choresEnabled && activeSection === 'home' && !isAllRooms(activeRoom));
   const activeRoomWorkspace = useMemo(
     () => roomWorkspace?.rooms.find((room) => room.displayName === activeRoom),
@@ -388,7 +400,9 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
               energyCustomCards={sectionData.energyCustomCards}
               energyOrderedCardIds={sectionData.energyOrderedCardIds}
               isEditMode={isEditMode}
+              isKpiCustomizationOpen={isEnergyKpiCustomizationOpen}
               onDeleteCard={handleDeleteCard}
+              onKpiCustomizationOpenChange={setIsEnergyKpiCustomizationOpen}
               onUpdateCard={handleUpdateCard}
             />
           </div>
@@ -413,36 +427,19 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
             showCustomizeButton={false}
           >
             <RenderProfiler id="ClimateSection">
-              <div className="space-y-8">
-                {sectionData.climateSections.map((section) => (
-                  <section key={section.key} className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>
-                        {t(section.titleKey)}
-                      </h2>
-                      <span className={`text-xs md:text-sm ${surface.textSecondary}`}>
-                        {section.orderedIds.length}{' '}
-                        {section.orderedIds.length === 1
-                          ? t('sections.climate.singular')
-                          : t('sections.climate.plural')}
-                      </span>
-                    </div>
-                    <DeviceGrid
-                      orderedCardIds={section.orderedIds}
-                      deviceMap={sectionData.climateDeviceMap}
-                      isEditMode={isEditMode}
-                      cardSizes={cardSizes}
-                      updateCardSize={updateCardSize}
-                      onRemoveEntity={handleRemoveEntity}
-                      allowEntityRemoval
-                      usesHideAction
-                      densePerformanceMode={controller.densePerformanceMode}
-                      optimizeOffscreenPaint={controller.optimizeOffscreenPaint}
-                      getDeviceHeaderSubtitle={getDeviceRoomLabel}
-                    />
-                  </section>
-                ))}
-              </div>
+              <Suspense fallback={<LoadingSpinner message={t('common.loading')} />}>
+                <ClimateDashboard
+                  deviceMap={sectionData.climateDeviceMap}
+                  sections={sectionData.climateSections}
+                  temperatureUnit={temperatureUnit}
+                  cardSizes={cardSizes}
+                  updateCardSize={updateCardSize}
+                  isEditMode={isEditMode}
+                  onRemoveEntity={handleRemoveEntity}
+                  densePerformanceMode={controller.densePerformanceMode}
+                  optimizeOffscreenPaint={controller.optimizeOffscreenPaint}
+                />
+              </Suspense>
             </RenderProfiler>
           </SectionCustomizeShell>
         ) : (
@@ -723,6 +720,14 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
                 : undefined
             }
             onApplyPack={isHomeOverviewEditMode ? controller.handleApplyDashboardPack : undefined}
+            onApplyEnergyLayout={
+              activeSection === 'energy'
+                ? (template) => setEnergyOverviewLayout(getEnergyOverviewTemplateLayout(template))
+                : undefined
+            }
+            onConfigureKpis={
+              activeSection === 'energy' ? () => setIsEnergyKpiCustomizationOpen(true) : undefined
+            }
             onManageRooms={roomManagement ? () => setIsRoomManagementOpen(true) : undefined}
             onRedo={isHomeOverviewEditMode ? controller.redoHomeLayout : undefined}
             onSetLayoutMode={isHomeOverviewEditMode ? controller.setHomeLayoutMode : undefined}

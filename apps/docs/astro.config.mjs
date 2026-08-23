@@ -122,7 +122,7 @@ export default defineConfig({
                 { label: "Climate", link: "/guide/everyday-control/climate/" },
                 { label: "Media", link: "/guide/everyday-control/media/" },
                 { label: "Security", link: "/guide/everyday-control/security/" },
-                { label: "Energy", link: "/guide/everyday-control/energy/" },
+                { label: "Energy usage and KPIs", link: "/guide/everyday-control/energy/" },
                 {
                   label: "Set up household chores",
                   link: "/guide/everyday-control/household-chores/",
@@ -145,7 +145,7 @@ export default defineConfig({
                 },
                 { label: "Local Habits", link: "/guide/everyday-control/local-habits/" },
                 {
-                  label: "Manual Energy setup",
+                  label: "Home Assistant Energy sources",
                   link: "/guide/everyday-control/manual-energy-setup/",
                 },
               ],

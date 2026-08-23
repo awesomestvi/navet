@@ -56,7 +56,7 @@ without making every household member navigate a configuration interface.
 
 ## Focused controls when you need them
 
-Open focused controls for lighting, climate, media, energy, security, and tasks when your connected
+Open focused controls for lighting, climate, media, energy, security, and routines when your connected
 platform supports them.
 
 Shape the Home view around your household with editable layouts, dashboard profiles, widgets,

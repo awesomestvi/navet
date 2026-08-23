@@ -177,7 +177,7 @@ describe('TasksSection', () => {
 
     renderWithProviders(<TasksSection />);
 
-    expect(screen.getByText('No Tasks')).toBeInTheDocument();
+    expect(screen.getByText('No routines')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Create routine' })).not.toBeInTheDocument();
   });
 
@@ -186,17 +186,17 @@ describe('TasksSection', () => {
 
     renderWithProviders(<TasksSection />);
 
-    expect(screen.getAllByRole('heading', { name: 'Tasks' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('heading', { name: 'Routines' }).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Automations').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Brew coffee').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Laundry done').length).toBeGreaterThan(0);
     expect(screen.getByText('Night mode')).toBeInTheDocument();
-    expect(screen.getByText('Garden lights')).toBeInTheDocument();
+    expect(screen.getAllByText('Garden lights').length).toBeGreaterThan(0);
     expect(screen.getByText('Morning')).toBeInTheDocument();
     expect(screen.getAllByText('Needs attention').length).toBeGreaterThan(0);
     expect(
-      screen.getByText('This automation is unavailable from the provider.')
-    ).toBeInTheDocument();
+      screen.getAllByText('This automation is unavailable from the provider.').length
+    ).toBeGreaterThan(0);
     expect(screen.getAllByText('Scripts').length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: /Scripts/ }));
     expect(screen.getByText('Movie time')).toBeInTheDocument();
@@ -261,13 +261,13 @@ describe('TasksSection', () => {
     expect(screen.getByRole('button', { name: 'Run Brew coffee' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Run Laundry done' })).toBeInTheDocument();
     expect(screen.queryByText('Night mode')).not.toBeInTheDocument();
-    expect(screen.queryByText('Garden lights')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Run Garden lights' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Disabled automations' }));
 
     expect(screen.queryByRole('button', { name: 'Run Brew coffee' })).not.toBeInTheDocument();
     expect(screen.getByText('Night mode')).toBeInTheDocument();
-    expect(screen.queryByText('Garden lights')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Run Garden lights' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Recently triggered' }));
 
@@ -278,13 +278,13 @@ describe('TasksSection', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Needs attention' }));
 
     expect(screen.queryByRole('button', { name: 'Run Laundry done' })).not.toBeInTheDocument();
-    expect(screen.getByText('Garden lights')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Run Garden lights' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'All' }));
 
     expect(screen.getByRole('button', { name: 'Run Brew coffee' })).toBeInTheDocument();
     expect(screen.getByText('Night mode')).toBeInTheDocument();
-    expect(screen.getByText('Garden lights')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Run Garden lights' })).toBeInTheDocument();
   });
 
   it('sorts every headed Tasks table in both directions', () => {

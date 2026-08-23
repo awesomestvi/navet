@@ -1,13 +1,20 @@
 ---
 title: Control climate devices
-description: Adjust thermostats, HVAC modes, humidifiers, dehumidifiers, fans, and water heaters.
+description: Read the climate overview and adjust thermostats, humidity, fans, and water heaters.
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/climate.md
 ---
 
-The Climate section collects normalized climate devices and shows controls based on each device's
-reported capabilities.
+The Climate section collects normalized climate devices, summarizes current conditions, and shows
+only the controls reported by each device.
 
-![The Climate dashboard with thermostat and humidity devices.](/docs/how-to/everyday-control/climate-dashboard.webp)
+![The current Climate dashboard grouped into room controls and environmental details.](/docs/how-to/everyday-control/climate-dashboard.webp)
+
+## Read the overview
+
+The summary strip puts exceptions first, followed by the current temperature range, active
+heating or cooling, humidity, air quality, and unavailable-device counts when those readings exist.
+Room control groups come next. Environmental sensor-only cards follow under **Humidity**, **Air
+Quality**, or **Pressure** instead of being mixed into the control grid.
 
 ## Adjust a thermostat
 

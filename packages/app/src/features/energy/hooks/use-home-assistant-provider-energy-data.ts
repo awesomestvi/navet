@@ -66,7 +66,8 @@ export function useHomeAssistantProviderEnergyData(
   const recentLoadTrend = useEnergyLoadHistory(
     currentLoadStatisticId,
     overview.totals.currentLoadW,
-    enabled
+    enabled,
+    range
   );
   const periodTotals = useEnergyStatisticsPeriods(
     haSourceConfig?.gridImportEnergyEntityId,

@@ -136,6 +136,44 @@ export const OverdueChores: Story = {
   },
 };
 
+export const PriorityOrdering: Story = {
+  args: {
+    items: [
+      items[0],
+      {
+        ...items[5],
+        value: '1 unavailable',
+        priority: 'attention',
+        tone: 'warning',
+      },
+      items[1],
+      {
+        ...items[2],
+        value: 'Smoke detected',
+        priority: 'critical',
+        tone: 'danger',
+      },
+      items[3],
+    ] satisfies HomeStatusSummaryItem[],
+  },
+};
+
+export const SemanticTones: Story = {
+  args: {
+    items: [
+      { ...items[0], tone: 'warning', value: 'Higher than usual' },
+      { ...items[1], tone: 'active', value: 'Heating 2 rooms' },
+      { ...items[2], tone: 'success', value: 'Home secure' },
+      { ...items[4], tone: 'neutral', value: 'None playing' },
+    ] satisfies HomeStatusSummaryItem[],
+  },
+};
+
+export const PhoneOverflow: Story = {
+  args: { items },
+  parameters: { viewport: { defaultViewport: 'iphone14' } },
+};
+
 export const LongLabel: Story = {
   args: {
     items: [

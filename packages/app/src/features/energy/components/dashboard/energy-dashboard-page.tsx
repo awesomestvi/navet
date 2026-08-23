@@ -1,5 +1,10 @@
 import { useAuthBaseUrl } from '@navet/app/auth/AuthProvider';
-import { BaseCard, InteractivePill } from '@navet/app/components/primitives';
+import {
+  BaseCard,
+  InteractivePill,
+  SheetSurface,
+  SheetSurfaceHeader,
+} from '@navet/app/components/primitives';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { CardEditActionButton } from '@navet/app/components/shared/card-edit-action-button';
 import { type CardSize, getCardSpanClass } from '@navet/app/components/shared/card-size-selector';
@@ -11,8 +16,9 @@ import { themeColorValues } from '@navet/app/components/shared/theme/theme-color
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import {
   getBaseCardRadiusClassName,
-  navetTypographyTokens,
+  getThemeFocusRingClassName,
 } from '@navet/app/components/system/tokens';
+import { cn } from '@navet/app/components/ui/utils';
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { DashboardCardItem } from '@navet/app/features/dashboard/components/dashboard-card-item';
 import { DashboardResizeTrigger } from '@navet/app/features/dashboard/components/dashboard-edit-actions';
@@ -23,6 +29,9 @@ import { useEnergyLoadHistory } from '@navet/app/features/energy/hooks/use-energ
 import type {
   EnergyConsumer,
   EnergyDashboardModel,
+  EnergyHistoryRange,
+  EnergyHistorySource,
+  EnergyRange,
   EnergySeriesPoint,
   EnergySourceDiagnostic,
 } from '@navet/app/features/energy/types/energy.types';
@@ -30,23 +39,31 @@ import {
   formatEnergyPercent,
   formatEnergyValue,
 } from '@navet/app/features/energy/utils/energy-formatters';
-import { useI18n, useTheme } from '@navet/app/hooks';
+import type { HomeStatusSummaryItem } from '@navet/app/features/sensors/components/home-status-summary-model';
+import { SummaryBar } from '@navet/app/features/sensors/components/info-badge-strip';
+import { useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { useDeferredVisibility } from '@navet/app/hooks/use-deferred-visibility';
 import { usePersistedState } from '@navet/app/hooks/use-persisted-state';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
+import type {
+  PlatformStatisticsHistoryRequest,
+  PlatformStatisticsHistorySeries,
+} from '@navet/app/platform/provider-feature-models';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
+import * as Popover from '@radix-ui/react-popover';
 import {
   AlertTriangle,
+  ArrowDown,
+  ArrowUp,
   ExternalLink,
   EyeOff,
   Flame,
   Leaf,
   PlugZap,
   Sun,
-  SunMedium,
-  UtilityPole,
+  X,
   Zap,
 } from 'lucide-react';
 import {
@@ -55,11 +72,17 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useState,
 } from 'react';
 import { EnergyNowCardView } from '../widgets/energy-now-card-view';
-import { EnergyInsightCard } from './energy-insight-card';
+import { EnergyDetailedHistoryWorkspace } from './energy-detailed-history-workspace';
+import {
+  type EnergyOverviewModuleId,
+  normalizeEnergyOverviewLayout,
+  useEnergyOverviewLayout,
+} from './energy-overview-layout';
 
 interface EnergyDashboardPageProps {
   dashboard: EnergyDashboardModel;
@@ -67,8 +90,16 @@ interface EnergyDashboardPageProps {
   energyCustomCards?: CustomCard[];
   energyOrderedCardIds?: string[];
   isEditMode?: boolean;
+  isKpiCustomizationOpen?: boolean;
   onDeleteCard?: (cardId: string) => void;
+  onKpiCustomizationOpenChange?: (open: boolean) => void;
   onUpdateCard?: (cardId: string, updates: Partial<Omit<CustomCard, 'id' | 'createdAt'>>) => void;
+  onRangeChange?: (range: EnergyRange) => void;
+  currentLoadStatisticId?: string;
+  historyStatisticsLoader?: (
+    request: PlatformStatisticsHistoryRequest
+  ) => Promise<PlatformStatisticsHistorySeries | null>;
+  historySources?: EnergyHistorySource[];
 }
 const ENERGY_CONSUMER_COLORS = [
   '#3b82f6',
@@ -83,6 +114,19 @@ const ENERGY_CONSUMER_COLORS = [
   '#14b8a6',
 ] as const;
 const UNTRACKED_CONSUMPTION_COLOR = '#94a3b8';
+const ENERGY_INSIGHTS_RANGES: EnergyHistoryRange[] = ['today', 'week', 'month', 'year', 'custom'];
+const ENERGY_INSIGHTS_RANGE_LABELS: Record<EnergyHistoryRange, string> = {
+  today: 'Day',
+  week: 'Week',
+  month: 'Month',
+  year: 'Year',
+  custom: 'Custom',
+};
+const EMPTY_ENERGY_SUMMARY_ITEMS: HomeStatusSummaryItem[] = [];
+interface EnergyCustomRange {
+  start: string;
+  end: string;
+}
 const ENERGY_WHOLE_HOME_SPARKLINE_CARD_ID = 'energy:whole-home-sparkline';
 const ENERGY_SPARKLINE_ALLOWED_SIZES: CardSize[] = ['small', 'medium', 'large'];
 const LOAD_ORB_DRIFT_BASE_DURATION_S = 8.5;
@@ -109,10 +153,9 @@ const LOAD_ORB_RIPPLE_KEYFRAMES = `
     0%, 100% {
       opacity: var(--load-orb-dot-opacity);
       transform:
-        translate(-50%, -50%)
         translate(
-          calc(var(--load-orb-dot-x) - var(--load-orb-drift-x)),
-          calc(var(--load-orb-dot-y) - var(--load-orb-drift-y))
+          var(--load-orb-drift-x-negative),
+          var(--load-orb-drift-y-negative)
         )
         scale(0.97);
     }
@@ -120,20 +163,24 @@ const LOAD_ORB_RIPPLE_KEYFRAMES = `
     50% {
       opacity: calc(var(--load-orb-dot-opacity) * 0.9);
       transform:
-        translate(-50%, -50%)
         translate(
-          calc(var(--load-orb-dot-x) + var(--load-orb-drift-x)),
-          calc(var(--load-orb-dot-y) + var(--load-orb-drift-y))
+          var(--load-orb-drift-x),
+          var(--load-orb-drift-y)
         )
         scale(1.03);
     }
+  }
+
+  .navet-load-orb-dot {
+    transform-box: fill-box;
+    transform-origin: center;
   }
 
   @media (prefers-reduced-motion: reduce) {
     .navet-load-orb-dot {
       animation: none !important;
       opacity: var(--load-orb-dot-opacity) !important;
-      transform: translate(-50%, -50%) translate(var(--load-orb-dot-x), var(--load-orb-dot-y)) scale(1) !important;
+      transform: none !important;
     }
   }
 `;
@@ -144,8 +191,14 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
   energyCustomCards = [],
   energyOrderedCardIds = [],
   isEditMode: controlledEditMode,
+  isKpiCustomizationOpen = false,
   onDeleteCard,
+  onKpiCustomizationOpenChange,
   onUpdateCard,
+  onRangeChange,
+  currentLoadStatisticId,
+  historyStatisticsLoader,
+  historySources,
 }: EnergyDashboardPageProps) {
   const { t } = useI18n();
   const haBaseUrl = useAuthBaseUrl();
@@ -159,7 +212,14 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
     STORAGE_KEYS.energySparklineCardSizes,
     {}
   );
+  const [overviewLayout, setOverviewLayout] = useEnergyOverviewLayout();
+  const [insightsRange, setInsightsRange] = useState<EnergyHistoryRange>(
+    dashboard.selectedRange === 'now' ? 'today' : dashboard.selectedRange
+  );
+  const [insightsReferenceDateMs, setInsightsReferenceDateMs] = useState(() => Date.now());
+  const [customRange, setCustomRange] = useState<EnergyCustomRange>(createDefaultEnergyCustomRange);
   const surface = getThemeSurfaceTokens(theme);
+  const isPortraitTablet = useMediaQuery('(orientation: portrait) and (min-width: 768px)');
   const homeAssistantEnergyUrl = resolveHomeAssistantEnergyUrl(haBaseUrl);
   const isEditMode =
     typeof controlledEditMode === 'boolean' ? controlledEditMode : uncontrolledEditMode;
@@ -190,8 +250,19 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
     [dashboard, visibleConsumers]
   );
   const liveWatts = Math.round(filteredDashboard.totals.currentLoadW);
-  const importedTodayLabel = `${formatEnergyValue(dashboard.totals.importTodayKWh)} kWh`;
-  const generatedTodayLabel = `${formatEnergyValue(dashboard.totals.solarTodayKWh)} kWh`;
+  useEffect(() => {
+    if (dashboard.selectedRange !== 'now') {
+      setInsightsRange(dashboard.selectedRange);
+      setInsightsReferenceDateMs(Date.now());
+    }
+  }, [dashboard.selectedRange]);
+  const handleInsightsRangeChange = (range: EnergyHistoryRange) => {
+    setInsightsRange(range);
+    setInsightsReferenceDateMs(Date.now());
+    if (range === 'today' || range === 'week' || range === 'month') {
+      onRangeChange?.(range);
+    }
+  };
   const handleConsumerVisibilityChange = (consumerId: string, visible: boolean) => {
     setHiddenConsumerIds((previous) => {
       const nextSet = new Set(previous);
@@ -206,67 +277,559 @@ export const EnergyDashboardPage = memo(function EnergyDashboardPage({
   const updateSparklineCardSize = (cardId: string, size: CardSize) => {
     setSparklineCardSizes((previous) => ({ ...previous, [cardId]: size }));
   };
-  return (
-    <div className="space-y-5">
-      <section>
+  const availableOverviewModules = useMemo(
+    () => new Set<EnergyOverviewModuleId>(['live', 'devices']),
+    []
+  );
+  const normalizedOverviewLayout = normalizeEnergyOverviewLayout(overviewLayout);
+  const visibleOverviewModules = normalizedOverviewLayout.order.filter(
+    (moduleId) =>
+      availableOverviewModules.has(moduleId) && !normalizedOverviewLayout.hidden.includes(moduleId)
+  );
+  const overviewBreakpointCols = useBreakpointCols();
+  const {
+    gridStyle: overviewGridStyle,
+    innerContainerStyle: overviewInnerContainerStyle,
+    innerRef: overviewInnerRef,
+    isAutoScaled: isOverviewAutoScaled,
+    outerContainerStyle: overviewOuterContainerStyle,
+    outerRef: overviewOuterRef,
+    renderedGridCols: overviewRenderedGridCols,
+  } = useFitDashboardGrid(overviewBreakpointCols, false);
+  const overviewLiveSpan = isPortraitTablet
+    ? overviewRenderedGridCols
+    : Math.min(4, overviewRenderedGridCols);
+  const overviewUsageSpan =
+    isPortraitTablet || overviewRenderedGridCols <= 4
+      ? overviewRenderedGridCols
+      : overviewRenderedGridCols - overviewLiveSpan;
+  const moveOverviewModule = (moduleId: EnergyOverviewModuleId, direction: -1 | 1) => {
+    if (moduleId === 'live') return;
+    setOverviewLayout((current) => {
+      const normalized = normalizeEnergyOverviewLayout(current);
+      const index = normalized.order.indexOf(moduleId);
+      const nextIndex = Math.max(0, Math.min(normalized.order.length - 1, index + direction));
+      if (index < 0 || index === nextIndex) return normalized;
+      const order = [...normalized.order];
+      const [moved] = order.splice(index, 1);
+      if (moved) order.splice(nextIndex, 0, moved);
+      return { ...normalized, order };
+    });
+  };
+  const hideOverviewModule = (moduleId: EnergyOverviewModuleId) => {
+    if (moduleId === 'live') return;
+    setOverviewLayout((current) => {
+      const normalized = normalizeEnergyOverviewLayout(current);
+      return { ...normalized, hidden: [...new Set([...normalized.hidden, moduleId])] };
+    });
+  };
+  const showOverviewModule = (moduleId: EnergyOverviewModuleId) => {
+    setOverviewLayout((current) => {
+      const normalized = normalizeEnergyOverviewLayout(current);
+      return { ...normalized, hidden: normalized.hidden.filter((id) => id !== moduleId) };
+    });
+  };
+  const renderOverviewModule = (moduleId: EnergyOverviewModuleId) => {
+    if (moduleId === 'live') {
+      return (
         <DeviceTable
           accentColor={accentColor}
           consumers={filteredDashboard.topConsumers}
-          generatedTodayKWh={dashboard.totals.solarTodayKWh}
           homeAssistantEnergyUrl={homeAssistantEnergyUrl}
           loadW={liveWatts}
           openLabel={t('common.open')}
-          importedTodayLabel={importedTodayLabel}
-          generatedTodayLabel={generatedTodayLabel}
           sourceDiagnostics={sourceDiagnostics}
           surface={surface}
-          totalConsumptionTodayKWh={dashboard.ranges[dashboard.selectedRange].totalUsageKWh}
+          totalConsumptionTodayKWh={dashboard.ranges.today.totalUsageKWh}
+          usePortraitLayout={isPortraitTablet}
         />
-      </section>
+      );
+    }
+    return (
+      <CompactLoadSparklines
+        accentColor={accentColor}
+        cardSizes={sparklineCardSizes}
+        consumers={filteredDashboard.topConsumers}
+        customCards={orderedEnergyCustomCards}
+        isEditMode={isEditMode}
+        onHideConsumer={(consumerId) => handleConsumerVisibilityChange(consumerId, false)}
+        onDeleteCard={onDeleteCard}
+        onSizeChange={updateSparklineCardSize}
+        onUpdateCard={onUpdateCard}
+        theme={theme}
+        wholeHomeCurrentW={dashboard.totals.currentLoadW}
+        wholeHomePoints={dashboard.ranges.now.liveConsumption}
+        wholeHomeTodayKWh={dashboard.ranges.today.totalUsageKWh}
+        embedded={!isEditMode}
+      />
+    );
+  };
+  const renderOverviewModuleFrame = (moduleId: EnergyOverviewModuleId) => {
+    const index = visibleOverviewModules.indexOf(moduleId);
+    return (
+      <EnergyOverviewModuleFrame
+        key={moduleId}
+        moduleId={moduleId}
+        index={index}
+        count={visibleOverviewModules.length}
+        isEditMode={isEditMode}
+        onMove={moveOverviewModule}
+        onHide={hideOverviewModule}
+        className={undefined}
+        style={
+          moduleId === 'live'
+            ? {
+                gridColumn: `span ${overviewLiveSpan} / span ${overviewLiveSpan}`,
+                gridRow: isPortraitTablet ? 'span 5 / span 5' : 'span 8 / span 8',
+              }
+            : moduleId === 'devices' && !isEditMode
+              ? undefined
+              : { gridColumn: `span ${overviewRenderedGridCols}` }
+        }
+      >
+        {renderOverviewModule(moduleId)}
+      </EnergyOverviewModuleFrame>
+    );
+  };
+  return (
+    <div className="space-y-3">
+      <SummaryBar
+        items={EMPTY_ENERGY_SUMMARY_ITEMS}
+        ariaLabel={t('homeSummary.energy')}
+        leadingContent={
+          <EnergyInsightsRangeControl
+            range={insightsRange}
+            onRangeChange={handleInsightsRangeChange}
+            customRange={customRange}
+            onApplyCustomRange={(nextRange) => {
+              setCustomRange(nextRange);
+              handleInsightsRangeChange('custom');
+            }}
+            onClearCustomRange={() => handleInsightsRangeChange('today')}
+          />
+        }
+      />
 
-      {dashboard.explanations.length > 0 ? (
-        <section className="space-y-3" aria-label={t('energy.explainability.title')}>
-          <div className="flex flex-col gap-1">
-            <h2 className={`text-base font-semibold ${surface.textPrimary}`}>
-              {t('energy.explainability.title')}
-            </h2>
-            <p className={`text-sm ${surface.textSecondary}`}>
-              {t('energy.explainability.description')}
-            </p>
+      <div ref={overviewOuterRef} className="relative w-full" style={overviewOuterContainerStyle}>
+        <div
+          ref={overviewInnerRef}
+          className={`w-full${isOverviewAutoScaled ? ' absolute left-0 top-0 origin-top-left' : ''}`}
+          style={overviewInnerContainerStyle}
+        >
+          <div
+            data-testid="energy-overview-grid"
+            data-orientation-layout={isPortraitTablet ? 'portrait' : 'landscape'}
+            className="grid w-full grid-flow-row-dense gap-3 lg:gap-4"
+            style={overviewGridStyle}
+          >
+            {visibleOverviewModules
+              .filter((moduleId) => moduleId === 'live')
+              .map(renderOverviewModuleFrame)}
+            <EnergyDetailedHistoryWorkspace
+              currentLoadStatisticId={currentLoadStatisticId}
+              accentColor={accentColor}
+              currentLoadW={dashboard.totals.currentLoadW}
+              livePoints={dashboard.ranges.now.liveConsumption}
+              consumers={filteredDashboard.topConsumers}
+              priorityData={{
+                dataCoverage: dashboard.dataCoverage,
+                totals: dashboard.totals,
+              }}
+              insightsRange={insightsRange}
+              referenceDateMs={insightsReferenceDateMs}
+              onReferenceDateChange={setInsightsReferenceDateMs}
+              mainCardStyle={{
+                gridColumn: `span ${overviewUsageSpan} / span ${overviewUsageSpan}`,
+              }}
+              metricRowSpan={overviewUsageSpan}
+              customStart={customRange.start}
+              customEnd={customRange.end}
+              statisticsLoader={historyStatisticsLoader}
+              sources={historySources}
+              useBentoLayout
+              isKpiCustomizationOpen={isKpiCustomizationOpen}
+              onKpiCustomizationOpenChange={onKpiCustomizationOpenChange}
+            />
+            {visibleOverviewModules
+              .filter((moduleId) => moduleId !== 'live')
+              .map(renderOverviewModuleFrame)}
+            {isEditMode && normalizedOverviewLayout.hidden.length > 0 ? (
+              <div
+                className={cn(
+                  'flex flex-wrap items-center gap-2 rounded-2xl border border-dashed p-3',
+                  surface.border
+                )}
+                style={{ gridColumn: '1 / -1' }}
+              >
+                <span className={`text-xs ${surface.textSecondary}`}>Hidden Energy modules</span>
+                {normalizedOverviewLayout.hidden
+                  .filter((moduleId) => availableOverviewModules.has(moduleId))
+                  .map((moduleId) => (
+                    <InteractivePill
+                      key={moduleId}
+                      size="compact"
+                      onClick={() => showOverviewModule(moduleId)}
+                    >
+                      Add {energyOverviewModuleLabel(moduleId)}
+                    </InteractivePill>
+                  ))}
+              </div>
+            ) : null}
           </div>
-          <div className="grid gap-3 md:grid-cols-3">
-            {dashboard.explanations.map((explanation) => (
-              <EnergyInsightCard
-                key={explanation.id}
-                title={explanation.title}
-                description={explanation.description}
-                severity={explanation.tone === 'warn' ? 'warning' : 'default'}
-              />
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      <section>
-        <CompactLoadSparklines
-          accentColor={accentColor}
-          cardSizes={sparklineCardSizes}
-          consumers={filteredDashboard.topConsumers}
-          customCards={orderedEnergyCustomCards}
-          isEditMode={isEditMode}
-          onHideConsumer={(consumerId) => handleConsumerVisibilityChange(consumerId, false)}
-          onDeleteCard={onDeleteCard}
-          onSizeChange={updateSparklineCardSize}
-          onUpdateCard={onUpdateCard}
-          theme={theme}
-          wholeHomeCurrentW={dashboard.totals.currentLoadW}
-          wholeHomePoints={dashboard.ranges[dashboard.selectedRange].liveConsumption}
-          wholeHomeTodayKWh={dashboard.ranges[dashboard.selectedRange].totalUsageKWh}
-        />
-      </section>
+        </div>
+      </div>
     </div>
   );
 });
+
+function EnergyInsightsRangeControl({
+  customRange,
+  onApplyCustomRange,
+  onClearCustomRange,
+  onRangeChange,
+  range,
+}: {
+  customRange: EnergyCustomRange;
+  onApplyCustomRange: (range: EnergyCustomRange) => void;
+  onClearCustomRange: () => void;
+  onRangeChange: (range: EnergyHistoryRange) => void;
+  range: EnergyHistoryRange;
+}) {
+  const { theme, accentColor } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
+  const isPhone = useMediaQuery('(max-width: 639px)');
+  const [isCustomRangeOpen, setIsCustomRangeOpen] = useState(false);
+  const [draftRange, setDraftRange] = useState(customRange);
+  const today = toDateInputValue(new Date());
+  const isDraftRangeValid =
+    Boolean(draftRange.start) &&
+    Boolean(draftRange.end) &&
+    draftRange.start <= draftRange.end &&
+    draftRange.end <= today;
+  const openCustomRange = () => {
+    setDraftRange(customRange);
+    setIsCustomRangeOpen(true);
+  };
+  const closeCustomRange = () => setIsCustomRangeOpen(false);
+  const applyCustomRange = () => {
+    if (!isDraftRangeValid) return;
+    onApplyCustomRange(draftRange);
+    closeCustomRange();
+  };
+  const customRangeForm = (
+    <EnergyCustomRangeForm
+      draftRange={draftRange}
+      isValid={isDraftRangeValid}
+      maxDate={today}
+      showHeading={!isPhone}
+      onCancel={closeCustomRange}
+      onApply={applyCustomRange}
+      onChange={setDraftRange}
+    />
+  );
+
+  return (
+    <div
+      className="flex min-w-0 shrink-0 items-center"
+      data-testid="energy-insights-period-control"
+    >
+      <fieldset className="flex min-w-0 gap-1.5" aria-label="Insights period">
+        {ENERGY_INSIGHTS_RANGES.filter((rangeId) => rangeId !== 'custom').map((rangeId) => (
+          <InteractivePill
+            key={rangeId}
+            active={range === rangeId}
+            aria-pressed={range === rangeId}
+            size="small"
+            onClick={() => onRangeChange(rangeId)}
+          >
+            {ENERGY_INSIGHTS_RANGE_LABELS[rangeId]}
+          </InteractivePill>
+        ))}
+        {isPhone ? (
+          <InteractivePill
+            active={isCustomRangeOpen}
+            aria-expanded={isCustomRangeOpen}
+            aria-haspopup="dialog"
+            size="small"
+            onClick={openCustomRange}
+          >
+            Custom
+          </InteractivePill>
+        ) : (
+          <Popover.Root
+            open={isCustomRangeOpen}
+            onOpenChange={(open) => {
+              if (open) openCustomRange();
+              else closeCustomRange();
+            }}
+          >
+            <Popover.Trigger asChild>
+              <InteractivePill
+                active={isCustomRangeOpen}
+                aria-expanded={isCustomRangeOpen}
+                aria-haspopup="dialog"
+                size="small"
+              >
+                Custom
+              </InteractivePill>
+            </Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Content
+                align="start"
+                side="bottom"
+                sideOffset={8}
+                collisionPadding={12}
+                className={cn(
+                  'z-[920] w-[min(22rem,calc(100vw-1.5rem))] rounded-[24px] border p-4 outline-none',
+                  surface.panel,
+                  surface.border,
+                  surface.cardShadow
+                )}
+              >
+                {customRangeForm}
+              </Popover.Content>
+            </Popover.Portal>
+          </Popover.Root>
+        )}
+        {range === 'custom' ? (
+          <InteractivePill
+            active
+            aria-label={`Clear custom range ${formatCustomRangeLabel(customRange)}`}
+            size="small"
+            onClick={onClearCustomRange}
+          >
+            <span>{formatCustomRangeLabel(customRange)}</span>
+            <X className="h-4 w-4" aria-hidden="true" />
+          </InteractivePill>
+        ) : null}
+      </fieldset>
+      {isPhone ? (
+        <SheetSurface
+          isOpen={isCustomRangeOpen}
+          onOpenChange={setIsCustomRangeOpen}
+          title="Custom range"
+          description="Choose the dates used across Energy insights."
+          accentColor={accentColor}
+          overlayClassName={`animate-in fade-in bg-black/45 backdrop-blur-[2px] sm:hidden ${surface.dialogBackdrop}`}
+          contentClassName={`${surface.panel} ${surface.border}`}
+          bodyClassName="px-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
+        >
+          <div className="space-y-4">
+            <SheetSurfaceHeader
+              title="Custom range"
+              description="Choose the dates used across Energy insights."
+              closeLabel="Close custom range"
+              onClose={closeCustomRange}
+            />
+            {customRangeForm}
+          </div>
+        </SheetSurface>
+      ) : null}
+    </div>
+  );
+}
+
+function EnergyCustomRangeForm({
+  draftRange,
+  isValid,
+  maxDate,
+  showHeading,
+  onApply,
+  onCancel,
+  onChange,
+}: {
+  draftRange: EnergyCustomRange;
+  isValid: boolean;
+  maxDate: string;
+  showHeading: boolean;
+  onApply: () => void;
+  onCancel: () => void;
+  onChange: (range: EnergyCustomRange) => void;
+}) {
+  const { theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
+
+  return (
+    <div className="space-y-4">
+      {showHeading ? (
+        <div>
+          <div className={`text-sm font-semibold ${surface.textPrimary}`}>Custom range</div>
+          <div className={`mt-0.5 text-xs ${surface.textSecondary}`}>
+            Choose the dates used across Energy insights.
+          </div>
+        </div>
+      ) : null}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label className={`space-y-1.5 text-xs font-medium ${surface.textSecondary}`}>
+          <span>From</span>
+          <input
+            type="date"
+            value={draftRange.start}
+            max={draftRange.end || maxDate}
+            onChange={(event) => onChange({ ...draftRange, start: event.target.value })}
+            className={cn(
+              'h-10 w-full min-w-0 rounded-xl border px-3 text-sm outline-none',
+              surface.inputBg,
+              surface.border,
+              surface.textPrimary,
+              getThemeFocusRingClassName(theme)
+            )}
+          />
+        </label>
+        <label className={`space-y-1.5 text-xs font-medium ${surface.textSecondary}`}>
+          <span>To</span>
+          <input
+            type="date"
+            value={draftRange.end}
+            min={draftRange.start}
+            max={maxDate}
+            onChange={(event) => onChange({ ...draftRange, end: event.target.value })}
+            className={cn(
+              'h-10 w-full min-w-0 rounded-xl border px-3 text-sm outline-none',
+              surface.inputBg,
+              surface.border,
+              surface.textPrimary,
+              getThemeFocusRingClassName(theme)
+            )}
+          />
+        </label>
+      </div>
+      <div className="flex justify-end gap-2">
+        <InteractivePill size="small" onClick={onCancel}>
+          Cancel
+        </InteractivePill>
+        <InteractivePill active size="small" disabled={!isValid} onClick={onApply}>
+          Apply
+        </InteractivePill>
+      </div>
+    </div>
+  );
+}
+
+function createDefaultEnergyCustomRange(): EnergyCustomRange {
+  const end = new Date();
+  const start = new Date(end);
+  start.setDate(start.getDate() - 6);
+  return { start: toDateInputValue(start), end: toDateInputValue(end) };
+}
+
+function toDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatCustomRangeLabel(range: EnergyCustomRange) {
+  const start = parseDateInputValue(range.start);
+  const end = parseDateInputValue(range.end);
+  if (!start || !end) return 'Custom range';
+
+  const sameYear = start.getFullYear() === end.getFullYear();
+  const sameMonth = sameYear && start.getMonth() === end.getMonth();
+  const currentYear = new Date().getFullYear();
+  const monthDay = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
+
+  if (sameMonth) {
+    const month = new Intl.DateTimeFormat(undefined, { month: 'short' }).format(start);
+    const year = sameYear && start.getFullYear() !== currentYear ? `, ${start.getFullYear()}` : '';
+    return `${month} ${start.getDate()}–${end.getDate()}${year}`;
+  }
+
+  const startLabel = monthDay.format(start);
+  const endLabel = monthDay.format(end);
+  return sameYear && start.getFullYear() === currentYear
+    ? `${startLabel}–${endLabel}`
+    : `${startLabel}, ${start.getFullYear()}–${endLabel}, ${end.getFullYear()}`;
+}
+
+function parseDateInputValue(value: string) {
+  const [year, month, day] = value.split('-').map(Number);
+  return year && month && day ? new Date(year, month - 1, day) : null;
+}
+
+function EnergyOverviewModuleFrame({
+  moduleId,
+  index,
+  count,
+  isEditMode,
+  onMove,
+  onHide,
+  className,
+  style,
+  children,
+}: {
+  moduleId: EnergyOverviewModuleId;
+  index: number;
+  count: number;
+  isEditMode: boolean;
+  onMove: (moduleId: EnergyOverviewModuleId, direction: -1 | 1) => void;
+  onHide: (moduleId: EnergyOverviewModuleId) => void;
+  className?: string;
+  style?: CSSProperties;
+  children: ReactNode;
+}) {
+  const { theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
+  return (
+    <section
+      data-overview-module={moduleId}
+      style={style}
+      className={cn(moduleId === 'devices' && !isEditMode ? 'contents' : 'min-w-0', className)}
+    >
+      {isEditMode && moduleId !== 'live' ? (
+        <div
+          data-overview-edit-banner={moduleId}
+          className={cn(
+            'mb-2 flex items-center justify-between rounded-2xl border border-dashed px-3 py-2',
+            surface.border,
+            surface.subtleBg
+          )}
+        >
+          <span className={`text-xs font-semibold ${surface.textSecondary}`}>
+            {energyOverviewModuleLabel(moduleId)}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              disabled={index <= 1}
+              onClick={() => onMove(moduleId, -1)}
+              className={cn('rounded-full p-2 disabled:opacity-30', surface.hoverBg)}
+              aria-label={`Move ${energyOverviewModuleLabel(moduleId)} earlier`}
+            >
+              <ArrowUp className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              disabled={index === count - 1}
+              onClick={() => onMove(moduleId, 1)}
+              className={cn('rounded-full p-2 disabled:opacity-30', surface.hoverBg)}
+              aria-label={`Move ${energyOverviewModuleLabel(moduleId)} later`}
+            >
+              <ArrowDown className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => onHide(moduleId)}
+              className={cn('rounded-full p-2', surface.hoverBg)}
+              aria-label={`Hide ${energyOverviewModuleLabel(moduleId)}`}
+            >
+              <EyeOff className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {children}
+    </section>
+  );
+}
+
+function energyOverviewModuleLabel(moduleId: EnergyOverviewModuleId) {
+  return {
+    live: 'Live Energy',
+    devices: 'Device cards',
+  }[moduleId];
+}
 
 function CompactLoadSparklines({
   accentColor,
@@ -282,6 +845,7 @@ function CompactLoadSparklines({
   wholeHomeCurrentW,
   wholeHomePoints,
   wholeHomeTodayKWh,
+  embedded = false,
 }: {
   accentColor: string;
   cardSizes: Record<string, CardSize>;
@@ -296,11 +860,16 @@ function CompactLoadSparklines({
   wholeHomeCurrentW: number;
   wholeHomePoints: EnergySeriesPoint[];
   wholeHomeTodayKWh: number;
+  embedded?: boolean;
 }) {
   const { t } = useI18n();
   const breakpointCols = useBreakpointCols();
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
+  const cardConsumers = useMemo(
+    () => consumers.filter((consumer) => consumer.powerW > 0 || consumer.energyKWh > 0),
+    [consumers]
+  );
   const supportsDeferredVisibility = typeof IntersectionObserver !== 'undefined';
   const { ref: viewportRef, isVisible } = useDeferredVisibility<HTMLDivElement>({
     disabled: isEditMode || !supportsDeferredVisibility,
@@ -310,22 +879,23 @@ function CompactLoadSparklines({
   const shouldRenderCards = isEditMode || isVisible;
   const shouldBatchCustomCards = lowPowerMode || effectsQuality === 'low';
   const progressiveBatchSize = !supportsDeferredVisibility
-    ? Math.max(1, consumers.length)
+    ? Math.max(1, cardConsumers.length)
     : lowPowerMode || effectsQuality === 'low'
       ? 1
       : effectsQuality === 'medium'
         ? 2
         : 3;
-  const progressiveCardCount = consumers.length + (shouldBatchCustomCards ? customCards.length : 0);
+  const progressiveCardCount =
+    cardConsumers.length + (shouldBatchCustomCards ? customCards.length : 0);
   const visibleProgressiveCardCount = useProgressiveBatching(progressiveCardCount, isEditMode, {
     enabled: shouldRenderCards,
     initialBatch: progressiveBatchSize,
     batchSize: progressiveBatchSize,
     timeoutFallbackMs: lowPowerMode || effectsQuality === 'low' ? 128 : 96,
   });
-  const visibleConsumerCount = Math.min(consumers.length, visibleProgressiveCardCount);
+  const visibleConsumerCount = Math.min(cardConsumers.length, visibleProgressiveCardCount);
   const visibleCustomCardCount = shouldBatchCustomCards
-    ? Math.max(0, visibleProgressiveCardCount - consumers.length)
+    ? Math.max(0, visibleProgressiveCardCount - cardConsumers.length)
     : customCards.length;
   const [consumerTrends, setConsumerTrends] = useState<Record<string, EnergySeriesPoint[]>>({});
   const handleConsumerTrendChange = useCallback(
@@ -360,19 +930,35 @@ function CompactLoadSparklines({
 
   return (
     <div
-      ref={viewportRef}
-      className={shouldRenderCards ? undefined : 'min-h-48'}
+      ref={embedded ? undefined : viewportRef}
+      className={embedded ? 'contents' : shouldRenderCards ? undefined : 'min-h-48'}
       data-energy-sparklines-ready={shouldRenderCards ? 'true' : 'false'}
     >
-      <div ref={outerRef} className="relative w-full" style={outerContainerStyle}>
+      {embedded && !isVisible ? (
+        <div
+          ref={viewportRef}
+          className="h-px min-w-0"
+          style={{ gridColumn: '1 / -1' }}
+          aria-hidden="true"
+        />
+      ) : null}
+      <div
+        ref={outerRef}
+        className={embedded ? 'contents' : 'relative w-full'}
+        style={embedded ? undefined : outerContainerStyle}
+      >
         <div
           ref={innerRef}
-          className={`w-full${isAutoScaled ? ' absolute left-0 top-0 origin-top-left' : ''}`}
-          style={innerContainerStyle}
+          className={
+            embedded
+              ? 'contents'
+              : `w-full${isAutoScaled ? ' absolute left-0 top-0 origin-top-left' : ''}`
+          }
+          style={embedded ? undefined : innerContainerStyle}
         >
           <div
-            className="grid w-full grid-flow-row-dense gap-3 lg:gap-4"
-            style={gridStyle as CSSProperties}
+            className={embedded ? 'contents' : 'grid w-full grid-flow-row-dense gap-3 lg:gap-4'}
+            style={embedded ? undefined : (gridStyle as CSSProperties)}
           >
             {shouldRenderCards && untrackedTodayKWh > 0 ? (
               <SparklineCardFrame
@@ -392,7 +978,7 @@ function CompactLoadSparklines({
                 />
               </SparklineCardFrame>
             ) : null}
-            {consumers.slice(0, visibleConsumerCount).map((consumer) => (
+            {cardConsumers.slice(0, visibleConsumerCount).map((consumer) => (
               <DeviceSparklineRow
                 key={consumer.id}
                 accentColor={accentColor}
@@ -628,28 +1214,6 @@ export function buildUntrackedTrend({
   });
 }
 
-function MinimalStat({
-  icon,
-  label,
-  value,
-  className = '',
-  surfaceText,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-  className?: string;
-  surfaceText: string;
-}) {
-  return (
-    <div className={`flex items-center gap-2 text-sm ${surfaceText} ${className}`}>
-      {icon}
-      <span className="font-semibold tabular-nums">{value}</span>
-      <span>{label}</span>
-    </div>
-  );
-}
-
 function LoadOrb({
   consumerColors,
   consumers,
@@ -666,6 +1230,7 @@ function LoadOrb({
   untrackedTodayKWh: number;
 }) {
   const { t } = useI18n();
+  const { theme } = useTheme();
   const disableAnimations = useSettingsStore(settingsSelectors.disableAnimations);
   const effectsQuality = useSettingsStore(settingsSelectors.effectsQuality);
   const lowPowerMode = useSettingsStore(settingsSelectors.lowPowerMode);
@@ -682,57 +1247,199 @@ function LoadOrb({
       getLoadOrbSegments({
         consumerColors,
         consumers,
+        untrackedLabel: t('energy.dashboard.untracked'),
         untrackedPowerW,
       }),
-    [consumerColors, consumers, untrackedPowerW]
+    [consumerColors, consumers, t, untrackedPowerW]
+  );
+  const [activeSegmentState, setActiveSegmentState] = useState<{
+    id: string;
+    leftPercent: number;
+    topPercent: number;
+  } | null>(null);
+  const tooltipId = useId();
+  const activeSegment =
+    activeSegmentState === null
+      ? null
+      : (orbSegments.find((segment) => segment.id === activeSegmentState.id) ?? null);
+  const tooltipClassName = `border ${surface.border} ${surface.panel} ${
+    theme !== 'light' ? 'shadow-2xl' : 'shadow-[0_18px_38px_-24px_rgba(15,23,42,0.22)]'
+  }`;
+  const selectSegment = useCallback((segment: LoadOrbSegment) => {
+    const position = getLoadOrbSegmentTooltipPosition(segment);
+    setActiveSegmentState({ id: segment.id, ...position });
+  }, []);
+  const updateActiveSegmentFromPointer = useCallback(
+    (clientX: number, clientY: number, rect: DOMRect) => {
+      const drawSize = Math.min(rect.width, rect.height);
+      const dx = clientX - (rect.left + rect.width / 2);
+      const dy = clientY - (rect.top + rect.height / 2);
+      const distance = Math.hypot(dx, dy);
+
+      if (drawSize <= 0 || distance < drawSize * 0.18 || distance > drawSize * 0.5) {
+        setActiveSegmentState(null);
+        return;
+      }
+
+      const segment = getLoadOrbSegmentAtAngle(Math.atan2(dy, dx), orbSegments);
+      if (!segment) {
+        setActiveSegmentState(null);
+        return;
+      }
+
+      setActiveSegmentState({
+        id: segment.id,
+        leftPercent: Math.max(22, Math.min(78, ((clientX - rect.left) / rect.width) * 100)),
+        topPercent: Math.max(30, Math.min(88, ((clientY - rect.top) / rect.height) * 100)),
+      });
+    },
+    [orbSegments]
   );
   const consumedTodayKWh =
     consumers.reduce((total, consumer) => total + Math.max(0, consumer.energyKWh), 0) +
     untrackedTodayKWh;
 
   return (
-    <div className="relative flex min-h-[24rem] min-w-0 items-center justify-center overflow-visible px-2 py-4">
+    <div
+      className={cn(
+        'relative flex min-h-[17rem] w-full min-w-0 items-center justify-center rounded-3xl px-2 py-3 md:min-h-[20rem]',
+        getThemeFocusRingClassName(theme)
+      )}
+      data-testid="load-orb"
+      role="img"
+      tabIndex={orbSegments.length > 0 ? 0 : -1}
+      aria-describedby={activeSegment ? tooltipId : undefined}
+      aria-label={`${t('energy.dashboard.liveEnergy')}. ${orbSegments
+        .map((segment) => `${segment.label}: ${formatPowerValue(segment.value)}`)
+        .join(', ')}`}
+      onBlur={() => setActiveSegmentState(null)}
+      onKeyDown={(event) => {
+        if (orbSegments.length === 0) return;
+        const currentIndex = activeSegment
+          ? orbSegments.findIndex((segment) => segment.id === activeSegment.id)
+          : -1;
+        let nextIndex = currentIndex;
+
+        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+          nextIndex = (Math.max(currentIndex, -1) + 1) % orbSegments.length;
+        } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+          nextIndex = (currentIndex - 1 + orbSegments.length) % orbSegments.length;
+        } else if (event.key === 'Home') {
+          nextIndex = 0;
+        } else if (event.key === 'End') {
+          nextIndex = orbSegments.length - 1;
+        } else if (event.key === 'Escape') {
+          setActiveSegmentState(null);
+          return;
+        } else {
+          return;
+        }
+
+        event.preventDefault();
+        const nextSegment = orbSegments[nextIndex];
+        if (nextSegment) selectSegment(nextSegment);
+      }}
+      onPointerDown={(event) => {
+        updateActiveSegmentFromPointer(
+          event.clientX,
+          event.clientY,
+          event.currentTarget.getBoundingClientRect()
+        );
+        if (event.pointerType !== 'mouse') event.currentTarget.focus();
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType === 'mouse') setActiveSegmentState(null);
+      }}
+      onPointerMove={(event) => {
+        updateActiveSegmentFromPointer(
+          event.clientX,
+          event.clientY,
+          event.currentTarget.getBoundingClientRect()
+        );
+      }}
+    >
       {animateDots ? <style>{LOAD_ORB_RIPPLE_KEYFRAMES}</style> : null}
-      <div className="absolute inset-0" aria-hidden="true">
+      <svg
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 h-full w-full overflow-hidden rounded-3xl"
+        preserveAspectRatio="xMidYMid meet"
+        viewBox="-180 -180 360 360"
+      >
         {orbSegments.length > 0
-          ? dots.map((dot) => (
-              <span
-                key={dot.id}
-                className="navet-load-orb-dot absolute rounded-full"
-                data-ring={dot.ring}
-                data-testid="load-orb-dot"
-                style={{
-                  ['--load-orb-dot-opacity' as string]: String(dot.opacity),
-                  ['--load-orb-dot-x' as string]: `${dot.x}px`,
-                  ['--load-orb-dot-y' as string]: `${dot.y}px`,
-                  ...(animateDots
-                    ? {
-                        ['--load-orb-drift-x' as string]: `${dot.driftX}px`,
-                        ['--load-orb-drift-y' as string]: `${dot.driftY}px`,
-                        animationDelay: `${dot.delayS}s`,
-                        animationDuration: `${dot.durationS}s`,
-                        animationIterationCount: 'infinite',
-                        animationName: 'navet-load-orb-water-drift',
-                        animationTimingFunction: 'ease-in-out',
-                      }
-                    : {
-                        opacity: dot.opacity,
-                        transform: `translate(-50%, -50%) translate(${dot.x}px, ${dot.y}px)`,
-                      }),
-                  backgroundColor: getLoadOrbDotColor({
-                    angle: dot.angle,
-                    segments: orbSegments,
-                  }),
-                  height: dot.size,
-                  left: '50%',
-                  top: '50%',
-                  ...(animateDots ? { transform: 'translate(-50%, -50%)' } : {}),
-                  width: dot.size,
-                }}
-              />
-            ))
+          ? dots.map((dot) => {
+              const segment = getLoadOrbSegmentAtAngle(dot.angle, orbSegments);
+              const opacity = activeSegment
+                ? segment?.id === activeSegment.id
+                  ? 1
+                  : 0.22
+                : dot.opacity;
+
+              return (
+                <circle
+                  key={dot.id}
+                  className="navet-load-orb-dot"
+                  cx={dot.x}
+                  cy={dot.y}
+                  data-ring={dot.ring}
+                  data-segment-id={segment?.id}
+                  data-testid="load-orb-dot"
+                  fill={segment?.color ?? 'transparent'}
+                  r={dot.size / 2}
+                  style={{
+                    ['--load-orb-dot-opacity' as string]: String(opacity),
+                    ...(animateDots
+                      ? {
+                          ['--load-orb-drift-x' as string]: `${dot.driftX}px`,
+                          ['--load-orb-drift-x-negative' as string]: `${-dot.driftX}px`,
+                          ['--load-orb-drift-y' as string]: `${dot.driftY}px`,
+                          ['--load-orb-drift-y-negative' as string]: `${-dot.driftY}px`,
+                          animationDelay: `${dot.delayS}s`,
+                          animationDuration: `${dot.durationS}s`,
+                          animationIterationCount: 'infinite',
+                          animationName: 'navet-load-orb-water-drift',
+                          animationTimingFunction: 'ease-in-out',
+                        }
+                      : {
+                          opacity,
+                        }),
+                  }}
+                />
+              );
+            })
           : null}
-      </div>
+      </svg>
+      {activeSegment && activeSegmentState ? (
+        <div className="pointer-events-none absolute inset-0 z-30">
+          <div
+            className="absolute"
+            style={{
+              left: `${activeSegmentState.leftPercent}%`,
+              top: `${activeSegmentState.topPercent}%`,
+              transform: 'translate(-50%, calc(-100% - 10px))',
+            }}
+          >
+            <div
+              id={tooltipId}
+              role="tooltip"
+              className={`w-max max-w-52 rounded-xl px-3 py-2 text-left backdrop-blur-md ${tooltipClassName}`}
+            >
+              <div className={`flex items-center gap-2 text-xs ${surface.textPrimary}`}>
+                <span
+                  className="h-2 w-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: activeSegment.color }}
+                  aria-hidden="true"
+                />
+                <span className="max-w-40 truncate font-medium">{activeSegment.label}</span>
+              </div>
+              <div className={`mt-1 text-[11px] tabular-nums ${surface.textSecondary}`}>
+                {formatPowerValue(activeSegment.value)} ·{' '}
+                {formatEnergyPercent(activeSegment.share * 100)}%{' '}
+                {t('energy.widgets.storage.ofCurrentLoad')}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <div className="relative z-10 flex flex-col items-center justify-center text-center">
         <div className={`text-4xl font-semibold tracking-tight ${surface.textPrimary}`}>
           {loadW}
@@ -751,31 +1458,25 @@ function LoadOrb({
 function DeviceTable({
   accentColor,
   consumers,
-  generatedTodayKWh,
   homeAssistantEnergyUrl,
-  importedTodayLabel,
   loadW,
   openLabel,
-  generatedTodayLabel,
   sourceDiagnostics,
   surface,
   totalConsumptionTodayKWh,
+  usePortraitLayout = false,
 }: {
   accentColor: string;
   consumers: EnergyConsumer[];
-  generatedTodayKWh: number;
   homeAssistantEnergyUrl: string | null;
-  importedTodayLabel: string;
   loadW: number;
   openLabel: string;
-  generatedTodayLabel: string;
   sourceDiagnostics: EnergySourceDiagnostic[];
   surface: ReturnType<typeof getThemeSurfaceTokens>;
   totalConsumptionTodayKWh: number;
+  usePortraitLayout?: boolean;
 }) {
   const { t } = useI18n();
-  const { theme } = useTheme();
-  const dashboardSpaceMode = useSettingsStore(settingsSelectors.dashboardSpaceMode);
   const unavailableDevices = getUnavailableDeviceDiagnostics(consumers, sourceDiagnostics);
   const consumerColors = useMemo(() => buildEnergyConsumerColorMap(consumers), [consumers]);
   const trackedConsumptionTodayKWh = useMemo(
@@ -788,41 +1489,52 @@ function DeviceTable({
     0
   );
   const untrackedPowerW = Math.max(0, loadW - trackedPowerW);
-  const [contentView, setContentView] = useState<'devices' | 'sources'>('devices');
-  const useSplitOrbLayout = dashboardSpaceMode === 'more_space';
-  const contentLayoutClassName = useSplitOrbLayout
-    ? 'grid gap-8 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)]'
-    : 'grid gap-8 p-5 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)]';
-  const rowDividerClassName =
-    theme === 'light'
-      ? 'bg-slate-300/90'
-      : theme === 'glass'
-        ? 'bg-white/20'
-        : theme === 'black'
-          ? 'bg-white/10'
-          : 'bg-white/14';
+  const roomUsage = useMemo(
+    () => buildLiveRoomUsage(consumers, t('dashboard.multiple.manager.unassigned')),
+    [consumers, t]
+  );
+  const [contentView, setContentView] = useState<'devices' | 'rooms' | 'sources'>('devices');
 
   return (
-    <BaseCard size="medium" fullBleed className="min-w-0 w-full" surfaceVariant="muted">
+    <BaseCard
+      size="medium"
+      fullBleed
+      className={cn('h-full min-w-0 w-full', usePortraitLayout ? 'min-h-[26rem]' : 'min-h-[32rem]')}
+      surfaceVariant="muted"
+      title={t('energy.dashboard.liveEnergy')}
+      subtitle={t('energy.dashboard.wattsNow')}
+      headerLayout="title-first"
+      headerLeading={
+        <EntityCardHeaderIcon IconComponent={Zap} isActive size="medium" baseColor={accentColor} />
+      }
+      headerClassName="px-4 pt-4"
+      headerMarginBottomClassName="mb-3"
+    >
       <div
         data-testid="energy-live-layout"
-        data-space-mode={dashboardSpaceMode}
-        className={contentLayoutClassName}
+        data-layout={usePortraitLayout ? 'split' : 'stacked'}
+        className={cn(
+          'h-full min-h-0 gap-4 px-4 pb-4',
+          usePortraitLayout
+            ? 'grid grid-cols-[minmax(15rem,0.85fr)_minmax(0,1.15fr)]'
+            : 'flex flex-col'
+        )}
       >
         <div className="flex min-w-0 flex-col">
-          <div className="mb-4 flex items-start justify-between gap-4">
-            <div>
-              <h2 className={`${navetTypographyTokens.sectionHeading} ${surface.textPrimary}`}>
-                {t('energy.dashboard.liveEnergy')}
-              </h2>
-              <p
-                className={`mt-1 max-w-xl ${navetTypographyTokens.bodyCompact} ${surface.textSecondary}`}
-              >
-                {t('energy.dashboard.liveEnergyDescription')}
-              </p>
-            </div>
+          <div className="mx-auto flex w-full max-w-[20rem] justify-center">
+            <LoadOrb
+              consumerColors={consumerColors}
+              consumers={consumers}
+              loadW={loadW}
+              surface={surface}
+              untrackedPowerW={untrackedPowerW}
+              untrackedTodayKWh={untrackedTodayKWh}
+            />
           </div>
-          <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+        </div>
+
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <InteractivePill
                 active={contentView === 'devices'}
@@ -833,6 +1545,14 @@ function DeviceTable({
                 {t('energy.dashboard.devices')}
               </InteractivePill>
               <InteractivePill
+                active={contentView === 'rooms'}
+                aria-pressed={contentView === 'rooms'}
+                size="compact"
+                onClick={() => setContentView('rooms')}
+              >
+                {t('dashboard.multiple.group.rooms')}
+              </InteractivePill>
+              <InteractivePill
                 active={contentView === 'sources'}
                 aria-pressed={contentView === 'sources'}
                 size="compact"
@@ -841,26 +1561,9 @@ function DeviceTable({
                 {t('energy.dashboard.sources')}
               </InteractivePill>
             </div>
-            <div className={`hidden h-6 w-px shrink-0 md:block ${rowDividerClassName}`} />
-            <MinimalStat
-              icon={<UtilityPole aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />}
-              label={t('energy.dashboard.importedToday')}
-              value={importedTodayLabel}
-              className="min-w-[12.5rem]"
-              surfaceText={surface.textSecondary}
-            />
-            {generatedTodayKWh > 0 ? (
-              <MinimalStat
-                icon={<SunMedium aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />}
-                label={t('energy.dashboard.generatedToday')}
-                value={generatedTodayLabel}
-                className="min-w-[13rem]"
-                surfaceText={surface.textSecondary}
-              />
-            ) : null}
           </div>
           <div
-            className={`min-h-0 flex-1 overflow-hidden rounded-[22px] border ${surface.border} ${surface.panelMuted}`}
+            className={`min-h-0 flex-1 touch-pan-y overflow-auto overscroll-contain rounded-[22px] border [-webkit-overflow-scrolling:touch] ${surface.border} ${surface.panelMuted}`}
           >
             {contentView === 'devices' ? (
               consumers.length === 0 && untrackedTodayKWh <= 0 ? (
@@ -870,82 +1573,97 @@ function DeviceTable({
               ) : (
                 <>
                   <div
-                    className={`hidden grid-cols-[minmax(0,1fr)_5rem_5rem_4rem] items-center gap-3 px-4 pt-3 pb-2 text-xs font-medium sm:grid ${surface.textMuted}`}
+                    className={`grid min-w-[18rem] grid-cols-[minmax(max-content,1fr)_3.5rem_4.5rem] items-center gap-2 px-3 pt-3 pb-2 text-xs font-medium ${surface.textMuted}`}
                   >
                     <div>{t('energy.dashboard.device')}</div>
                     <div className="text-right">{t('energy.dashboard.now')}</div>
                     <div className="text-right">{t('energy.stats.today')}</div>
-                    <div className="text-right">{t('dashboard.zones.status')}</div>
                   </div>
                   {consumers.map((consumer, index) => (
                     <div
                       key={consumer.id}
-                      className={`grid gap-3 px-4 py-3 text-sm sm:grid-cols-[minmax(0,1fr)_5rem_5rem_4rem] sm:items-center ${
+                      className={`grid min-h-12 min-w-[18rem] grid-cols-[minmax(max-content,1fr)_3.5rem_4.5rem] items-center gap-2 px-3 py-2 text-xs ${
                         index % 2 === 0 ? surface.subtleBg : ''
                       }`}
                     >
-                      <div className="flex min-w-0 items-center justify-between gap-3 sm:block">
-                        <div className="min-w-0">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <span
-                              aria-hidden="true"
-                              className="h-2.5 w-2.5 shrink-0 rounded-full"
-                              style={{ backgroundColor: consumerColors.get(consumer.id) }}
-                            />
-                            <div className={`truncate font-medium ${surface.textPrimary}`}>
-                              {consumer.name}
-                            </div>
-                          </div>
-                          <div className={`truncate text-xs sm:block ${surface.textMuted}`}>
-                            {getDeviceUsageSubtitle(consumer, trackedConsumptionTodayKWh, t)}
-                          </div>
-                        </div>
-                        <div className="flex shrink-0 justify-end sm:hidden">
-                          <DeviceStatusSwitch accentColor={accentColor} status={consumer.status} />
+                      <div className="min-w-max whitespace-nowrap">
+                        <div className={`font-medium ${surface.textPrimary}`}>{consumer.name}</div>
+                        <div
+                          data-testid={`energy-device-status-${consumer.id}`}
+                          className={`text-[11px] leading-[14px] ${surface.textMuted}`}
+                        >
+                          {getConsumerShareStatusLabel(consumer, totalConsumptionTodayKWh, t)}
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-3 sm:contents">
-                        <div className="min-w-0">
-                          <div className={`text-xs font-medium sm:hidden ${surface.textMuted}`}>
-                            {t('energy.dashboard.now')}
-                          </div>
-                          <div className={`font-medium sm:text-right ${surface.textPrimary}`}>
-                            {formatPowerValue(consumer.powerW)}
-                          </div>
-                        </div>
-                        <div className="min-w-0">
-                          <div className={`text-xs font-medium sm:hidden ${surface.textMuted}`}>
-                            {t('energy.stats.today')}
-                          </div>
-                          <div className={`sm:text-right ${surface.textSecondary}`}>
-                            {formatTrackedEnergyValue(consumer.energyKWh)}
-                          </div>
-                        </div>
+                      <div
+                        className={`whitespace-nowrap text-right font-medium tabular-nums ${surface.textPrimary}`}
+                      >
+                        {formatPowerValue(consumer.powerW)}
                       </div>
-                      <div className="hidden justify-end sm:flex">
-                        <DeviceStatusSwitch accentColor={accentColor} status={consumer.status} />
+                      <div
+                        className={`whitespace-nowrap text-right tabular-nums ${surface.textSecondary}`}
+                      >
+                        {formatTrackedEnergyValue(consumer.energyKWh)}
                       </div>
                     </div>
                   ))}
                   {untrackedTodayKWh > 0 ? (
                     <div
-                      className={`grid gap-3 px-4 py-3 text-sm sm:grid-cols-[minmax(0,1fr)_5rem_5rem_4rem] sm:items-center ${
+                      className={`grid min-h-12 min-w-[18rem] grid-cols-[minmax(max-content,1fr)_3.5rem_4.5rem] items-center gap-2 px-3 py-2 text-xs ${
                         consumers.length % 2 === 0 ? surface.subtleBg : ''
                       }`}
                     >
-                      <div className="min-w-0">
-                        <div className="flex min-w-0 items-center gap-2">
-                          <span
-                            aria-hidden="true"
-                            className="h-2.5 w-2.5 shrink-0 rounded-full"
-                            style={{ backgroundColor: UNTRACKED_CONSUMPTION_COLOR }}
-                          />
-                          <div className={`truncate font-medium ${surface.textPrimary}`}>
-                            {t('energy.dashboard.untracked')}
-                          </div>
+                      <div className="min-w-max whitespace-nowrap">
+                        <div className={`font-medium ${surface.textPrimary}`}>
+                          {t('energy.dashboard.untracked')}
                         </div>
-                        <div className={`truncate text-xs ${surface.textMuted}`}>
-                          {t('energy.dashboard.untrackedDescription')}
+                        <div className={`text-[11px] leading-[14px] ${surface.textMuted}`}>
+                          {getConsumptionShareLabel(untrackedTodayKWh, totalConsumptionTodayKWh, t)}
+                        </div>
+                      </div>
+                      <div
+                        className={`whitespace-nowrap text-right font-medium tabular-nums ${surface.textPrimary}`}
+                      >
+                        {formatPowerValue(untrackedPowerW)}
+                      </div>
+                      <div
+                        className={`whitespace-nowrap text-right tabular-nums ${surface.textSecondary}`}
+                      >
+                        {formatTrackedEnergyValue(untrackedTodayKWh)}
+                      </div>
+                    </div>
+                  ) : null}
+                </>
+              )
+            ) : contentView === 'rooms' ? (
+              roomUsage.length === 0 && untrackedTodayKWh <= 0 ? (
+                <div className={`px-4 py-5 text-sm ${surface.textMuted}`}>
+                  {t('energy.dashboard.noDeviceUsage')}
+                </div>
+              ) : (
+                <>
+                  <div
+                    className={`hidden grid-cols-[minmax(0,1fr)_5rem_5rem_4rem] items-center gap-3 px-4 pt-3 pb-2 text-xs font-medium sm:grid ${surface.textMuted}`}
+                  >
+                    <div>{t('dashboard.addEntity.roomLabel')}</div>
+                    <div className="text-right">{t('energy.dashboard.now')}</div>
+                    <div className="text-right">{t('energy.stats.today')}</div>
+                    <div className="text-right">{t('energy.dashboard.devices')}</div>
+                  </div>
+                  {roomUsage.map((room, index) => (
+                    <div
+                      key={room.id}
+                      data-testid="energy-room-row"
+                      className={`grid gap-3 px-4 py-3 text-xs sm:grid-cols-[minmax(0,1fr)_5rem_5rem_4rem] sm:items-center ${
+                        index % 2 === 0 ? surface.subtleBg : ''
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <div className={`truncate font-medium ${surface.textPrimary}`}>
+                          {room.name}
+                        </div>
+                        <div className={`truncate text-[11px] leading-[14px] ${surface.textMuted}`}>
+                          {room.deviceNames.join(', ')}
                         </div>
                       </div>
                       <div className="min-w-0">
@@ -953,7 +1671,7 @@ function DeviceTable({
                           {t('energy.dashboard.now')}
                         </div>
                         <div className={`font-medium sm:text-right ${surface.textPrimary}`}>
-                          {formatPowerValue(untrackedPowerW)}
+                          {formatPowerValue(room.powerW)}
                         </div>
                       </div>
                       <div className="min-w-0">
@@ -961,12 +1679,42 @@ function DeviceTable({
                           {t('energy.stats.today')}
                         </div>
                         <div className={`sm:text-right ${surface.textSecondary}`}>
-                          {formatTrackedEnergyValue(untrackedTodayKWh)}
+                          {formatTrackedEnergyValue(room.energyKWh)}
                         </div>
                       </div>
-                      <div className={`text-xs font-medium sm:text-right ${surface.textMuted}`}>
-                        {t('energy.dashboard.untracked')}
+                      <div className="min-w-0">
+                        <div className={`text-xs font-medium sm:hidden ${surface.textMuted}`}>
+                          {t('energy.dashboard.devices')}
+                        </div>
+                        <div
+                          className={`font-medium tabular-nums sm:text-right ${surface.textSecondary}`}
+                        >
+                          {room.deviceCount}
+                        </div>
                       </div>
+                    </div>
+                  ))}
+                  {untrackedTodayKWh > 0 || untrackedPowerW > 0 ? (
+                    <div
+                      className={`grid gap-3 px-4 py-3 text-xs sm:grid-cols-[minmax(0,1fr)_5rem_5rem_4rem] sm:items-center ${
+                        roomUsage.length % 2 === 0 ? surface.subtleBg : ''
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <div className={`truncate font-medium ${surface.textPrimary}`}>
+                          {t('energy.dashboard.untracked')}
+                        </div>
+                        <div className={`truncate text-[11px] leading-[14px] ${surface.textMuted}`}>
+                          {t('energy.dashboard.untrackedDescription')}
+                        </div>
+                      </div>
+                      <div className={`font-medium sm:text-right ${surface.textPrimary}`}>
+                        {formatPowerValue(untrackedPowerW)}
+                      </div>
+                      <div className={`sm:text-right ${surface.textSecondary}`}>
+                        {formatTrackedEnergyValue(untrackedTodayKWh)}
+                      </div>
+                      <div className={`font-medium sm:text-right ${surface.textMuted}`}>—</div>
                     </div>
                   ) : null}
                 </>
@@ -987,51 +1735,23 @@ function DeviceTable({
                 {unavailableDevices.map((device, index) => (
                   <div
                     key={device.id}
-                    className={`grid gap-3 px-4 py-3 text-sm sm:grid-cols-[minmax(0,1fr)_5rem_5rem_4rem] sm:items-center ${
+                    className={`grid min-h-12 min-w-[18rem] grid-cols-[minmax(max-content,1fr)_3.5rem_4.5rem] items-center gap-2 px-3 py-2 text-xs ${
                       consumers.length === 0 && index % 2 === 0 ? surface.subtleBg : ''
                     }`}
                   >
-                    <div className="min-w-0 sm:col-span-2">
-                      <div className={`truncate font-medium ${surface.textSecondary}`}>
-                        {device.label}
-                      </div>
-                      <div className={`truncate text-xs ${surface.textMuted}`}>
-                        {t('common.unavailable')}
-                      </div>
+                    <div className="flex min-w-max items-center gap-1.5 whitespace-nowrap">
+                      <span className={`font-medium ${surface.textSecondary}`}>{device.label}</span>
+                      <span aria-hidden="true" className={surface.textMuted}>
+                        ·
+                      </span>
+                      <span className={surface.textMuted}>{t('common.unavailable')}</span>
                     </div>
-                    <div className={`hidden text-right text-sm sm:block ${surface.textMuted}`}>
-                      -
-                    </div>
-                    <div className={`text-xs font-medium sm:text-right ${surface.textMuted}`}>
-                      {t('common.unavailable')}
-                    </div>
+                    <div className={`text-right ${surface.textMuted}`}>—</div>
+                    <div className={`text-right ${surface.textMuted}`}>—</div>
                   </div>
                 ))}
               </div>
             ) : null}
-          </div>
-          <div
-            className={`mt-4 flex items-start gap-2 text-xs leading-relaxed ${surface.textMuted}`}
-          >
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <p>
-              {contentView === 'devices'
-                ? t('energy.dashboard.sensorHelp')
-                : t('energy.dashboard.sourceHelp')}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex min-w-0 items-center justify-center">
-          <div className="flex w-full max-w-[24rem] justify-center">
-            <LoadOrb
-              consumerColors={consumerColors}
-              consumers={consumers}
-              loadW={loadW}
-              surface={surface}
-              untrackedPowerW={untrackedPowerW}
-              untrackedTodayKWh={untrackedTodayKWh}
-            />
           </div>
         </div>
       </div>
@@ -1039,30 +1759,34 @@ function DeviceTable({
   );
 }
 
-function getDeviceUsageSubtitle(
+function getConsumerStatusLabel(consumer: EnergyConsumer, t: ReturnType<typeof useI18n>['t']) {
+  if (consumer.status === 'active') return t('energy.dashboard.status.active');
+  if (consumer.status === 'standby') return t('energy.dashboard.status.standby');
+  return t('energy.dashboard.status.idle');
+}
+
+function getConsumerShareStatusLabel(
   consumer: EnergyConsumer,
-  trackedConsumptionTodayKWh: number,
+  totalConsumptionTodayKWh: number,
   t: ReturnType<typeof useI18n>['t']
 ) {
-  const statusLabel =
-    consumer.status === 'active'
-      ? t('energy.dashboard.status.active')
-      : t('energy.dashboard.status.idle');
+  const share =
+    totalConsumptionTodayKWh > 0 ? (consumer.energyKWh / totalConsumptionTodayKWh) * 100 : 0;
+  return t('energy.dashboard.usageShareStatus', {
+    value: formatEnergyPercent(share),
+    status: getConsumerStatusLabel(consumer, t),
+  });
+}
 
-  if (consumer.energyKWh > 0) {
-    const consumptionShare =
-      trackedConsumptionTodayKWh > 0
-        ? formatEnergyPercent((consumer.energyKWh / trackedConsumptionTodayKWh) * 100)
-        : null;
-    return consumptionShare
-      ? t('energy.dashboard.usageShare', { status: statusLabel, value: consumptionShare })
-      : t('energy.dashboard.usageToday', {
-          status: statusLabel,
-          value: formatTrackedEnergyValue(consumer.energyKWh),
-        });
-  }
-
-  return t('energy.dashboard.noConsumptionToday', { status: statusLabel });
+function getConsumptionShareLabel(
+  energyKWh: number,
+  totalConsumptionTodayKWh: number,
+  t: ReturnType<typeof useI18n>['t']
+) {
+  const share = totalConsumptionTodayKWh > 0 ? (energyKWh / totalConsumptionTodayKWh) * 100 : 0;
+  return t('energy.dashboard.usageShareDetail', {
+    value: formatEnergyPercent(share),
+  });
 }
 
 function formatPowerValue(powerW: number) {
@@ -1071,10 +1795,44 @@ function formatPowerValue(powerW: number) {
 
 function formatTrackedEnergyValue(energyKWh: number) {
   if (energyKWh > 0 && energyKWh < 1) {
-    return `${Math.round(energyKWh * 1000)} Wh`;
+    return `${formatEnergyValue(energyKWh, 2)} kWh`;
   }
 
   return `${formatEnergyValue(energyKWh)} kWh`;
+}
+
+function buildLiveRoomUsage(consumers: EnergyConsumer[], unassignedRoomLabel: string) {
+  const rooms = new Map<
+    string,
+    {
+      id: string;
+      name: string;
+      powerW: number;
+      energyKWh: number;
+      deviceCount: number;
+      deviceNames: string[];
+    }
+  >();
+
+  consumers.forEach((consumer) => {
+    const roomName = consumer.room?.trim() || unassignedRoomLabel;
+    const current = rooms.get(roomName);
+    rooms.set(roomName, {
+      id: current?.id ?? roomName,
+      name: roomName,
+      powerW: (current?.powerW ?? 0) + Math.max(0, consumer.powerW),
+      energyKWh: (current?.energyKWh ?? 0) + Math.max(0, consumer.energyKWh),
+      deviceCount: (current?.deviceCount ?? 0) + 1,
+      deviceNames: [...(current?.deviceNames ?? []), consumer.name],
+    });
+  });
+
+  return [...rooms.values()].sort(
+    (left, right) =>
+      right.powerW - left.powerW ||
+      right.energyKWh - left.energyKWh ||
+      left.name.localeCompare(right.name)
+  );
 }
 
 function getUnavailableDeviceDiagnostics(
@@ -1088,27 +1846,6 @@ function getUnavailableDeviceDiagnostics(
       source.status === 'configured_unavailable' &&
       source.entityId &&
       !visibleConsumerIds.has(source.entityId)
-  );
-}
-
-function DeviceStatusSwitch({
-  accentColor,
-  status,
-}: {
-  accentColor: string;
-  status: EnergyConsumer['status'];
-}) {
-  return (
-    <span
-      className="inline-flex h-5 w-9 items-center rounded-full bg-white/18 p-0.5"
-      style={status === 'active' ? { backgroundColor: `${accentColor}cc` } : undefined}
-    >
-      <span
-        className={`h-4 w-4 rounded-full bg-white transition-transform ${
-          status === 'active' ? 'translate-x-4' : ''
-        }`}
-      />
-    </span>
   );
 }
 
@@ -1194,13 +1931,17 @@ function SourceDiagnostics({
         {sourceRows.map((source) => (
           <div
             key={source.id}
-            className={`flex min-w-0 items-center justify-between gap-3 border-t pt-2 first:border-t-0 first:pt-0 text-sm ${rowDividerClassName}`}
+            className={`flex min-w-0 items-center justify-between gap-3 border-t pt-2 first:border-t-0 first:pt-0 ${
+              compact ? 'text-xs' : 'text-sm'
+            } ${rowDividerClassName}`}
           >
             <div className="flex min-w-0 items-center gap-2">
               <SourceIcon source={source} accentColor={accentColor} />
               <div className="min-w-0">
                 <div className={`truncate font-medium ${surface.textPrimary}`}>{source.label}</div>
-                <div className={`truncate text-xs ${surface.textMuted}`}>
+                <div
+                  className={`truncate ${compact ? 'text-[11px] leading-[14px]' : 'text-xs'} ${surface.textMuted}`}
+                >
                   {source.entityId ?? source.liveEntityId}
                 </div>
               </div>
@@ -1402,30 +2143,48 @@ function buildOrbDots(motionIntensity = 1, density: LoadOrbDensity = LOAD_ORB_DE
   return dots;
 }
 
-function getLoadOrbDotColor({ angle, segments }: { angle: number; segments: LoadOrbSegment[] }) {
-  const progress = (angle + Math.PI) / (Math.PI * 2);
+function getLoadOrbSegmentAtAngle(angle: number, segments: LoadOrbSegment[]) {
+  const fullTurn = Math.PI * 2;
+  const progress = ((((angle + Math.PI) % fullTurn) + fullTurn) % fullTurn) / fullTurn;
 
   for (const segment of segments) {
     if (progress <= segment.end) {
-      return segment.color;
+      return segment;
     }
   }
 
-  return segments.at(-1)?.color ?? 'transparent';
+  return segments.at(-1) ?? null;
+}
+
+function getLoadOrbSegmentTooltipPosition(segment: LoadOrbSegment) {
+  const progress = segment.start + (segment.end - segment.start) / 2;
+  const angle = progress * Math.PI * 2 - Math.PI;
+
+  return {
+    leftPercent: Math.max(22, Math.min(78, 50 + Math.cos(angle) * 34)),
+    topPercent: Math.max(30, Math.min(88, 50 + Math.sin(angle) * 34)),
+  };
 }
 
 interface LoadOrbSegment {
   color: string;
   end: number;
+  id: string;
+  label: string;
+  share: number;
+  start: number;
+  value: number;
 }
 
 function getLoadOrbSegments({
   consumerColors,
   consumers,
+  untrackedLabel,
   untrackedPowerW,
 }: {
   consumerColors: ReadonlyMap<string, string>;
   consumers: EnergyConsumer[];
+  untrackedLabel: string;
   untrackedPowerW: number;
 }): LoadOrbSegment[] {
   const trackedConsumers = consumers
@@ -1440,12 +2199,16 @@ function getLoadOrbSegments({
 
   const segmentInputs: Array<{
     color: string;
+    id: string;
+    label: string;
     value: number;
   }> = [];
 
   if (untrackedPowerW > 0) {
     segmentInputs.push({
       color: UNTRACKED_CONSUMPTION_COLOR,
+      id: 'untracked',
+      label: untrackedLabel,
       value: untrackedPowerW,
     });
   }
@@ -1453,6 +2216,8 @@ function getLoadOrbSegments({
   for (const consumer of trackedConsumers) {
     segmentInputs.push({
       color: consumerColors.get(consumer.id) ?? ENERGY_CONSUMER_COLORS[0],
+      id: consumer.id,
+      label: consumer.name,
       value: consumer.powerW,
     });
   }
@@ -1463,11 +2228,14 @@ function getLoadOrbSegments({
   let cursor = 0;
 
   return segmentInputs.map((segment) => {
+    const start = cursor;
     const share = minVisibleShare + (segment.value / totalConsumption) * flexible;
     cursor += share;
     return {
-      color: segment.color,
+      ...segment,
       end: Math.min(1, cursor),
+      share: segment.value / totalConsumption,
+      start,
     };
   });
 }

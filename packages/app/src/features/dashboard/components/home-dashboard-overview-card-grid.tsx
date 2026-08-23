@@ -1,6 +1,10 @@
 import { useDroppable } from '@dnd-kit/core';
 import { rectSortingStrategy, SortableContext } from '@dnd-kit/sortable';
-import { type CardSize, getCardSpanClass } from '@navet/app/components/shared/card-size-selector';
+import {
+  type CardSize,
+  getCardSpanClass,
+  getResponsiveCardSize,
+} from '@navet/app/components/shared/card-size-selector';
 import type { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n } from '@navet/app/hooks';
 import type { DeviceWithType } from '@navet/app/types/device.types';
@@ -136,6 +140,7 @@ export const CardGrid = memo(function CardGrid({
   const { t } = useI18n();
   const hasTrailingAddCardSlot = isEditMode && Boolean(onOpenAddCardDialog);
   const {
+    breakpointCols,
     gridStyle,
     innerContainerStyle,
     innerRef,
@@ -189,7 +194,7 @@ export const CardGrid = memo(function CardGrid({
             }
 
             const size = cardSizes[cardId] ?? entry.size;
-            const spanClass = getCardSpanClass(size);
+            const spanClass = getCardSpanClass(getResponsiveCardSize(size, breakpointCols));
 
             return (
               <HomeCardSlot

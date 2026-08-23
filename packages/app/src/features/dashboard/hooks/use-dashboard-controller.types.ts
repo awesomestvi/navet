@@ -3,6 +3,7 @@ import type { useCardState, useDeviceMap } from '@navet/app/hooks';
 import type { Section } from '@navet/app/navigation/sections';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import type { DashboardEntityView } from '@navet/ui/dashboard-entity-view';
+import type { ClimateDashboardSection } from '../../climate/types/climate-dashboard';
 import type { AllViewGrouping } from '../all-view-grid';
 import type { CardTemplate } from '../components/add-card-dialog';
 import type { DashboardPackId } from '../packs/dashboard-packs';
@@ -14,17 +15,7 @@ import type { DashboardDialogs } from './use-dashboard-dialogs';
 import type { useHomeDashboardLayout } from './use-home-dashboard-layout';
 import type { OnboardingController } from './use-onboarding-controller';
 
-export interface DashboardClimateSectionGroup {
-  key: 'climate' | 'fans' | 'temperature' | 'humidity' | 'airQuality' | 'pressure';
-  titleKey:
-    | 'sections.climate.title'
-    | 'sections.climate.fans.title'
-    | 'sections.climate.temperature.title'
-    | 'sections.climate.humidity.title'
-    | 'sections.climate.airQuality.title'
-    | 'sections.climate.pressure.title';
-  orderedIds: string[];
-}
+export type DashboardClimateSectionGroup = ClimateDashboardSection;
 
 export interface DashboardSectionData {
   isOverviewSection: boolean;
