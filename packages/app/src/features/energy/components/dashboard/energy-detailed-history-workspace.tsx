@@ -1,19 +1,3 @@
-import {
-  DndContext,
-  type DragEndEvent,
-  KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
 import { CardDialogSection, NavigationWorkspace } from '@navet/app/components/patterns';
 import {
   BaseCard,
@@ -24,8 +8,6 @@ import {
   SheetSurfaceHeader,
 } from '@navet/app/components/primitives';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
-import { LoadingSpinner } from '@navet/app/components/primitives/loading-spinner';
-import { getDndTransformStyle } from '@navet/app/components/shared/dnd-transform-style';
 import { withTintAlpha } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@navet/app/components/ui/utils';
@@ -68,13 +50,28 @@ import {
   WalletCards,
   Zap,
 } from 'lucide-react';
-import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { EnergyHistoryBarChart } from '../charts/energy-history-bar-chart';
 import { EnergySparkline } from '../charts/energy-sparkline';
 
 type EnergyUsageRange = 'live' | EnergyHistoryRange;
 
-interface EnergyUsageMetric {
+function EnergyLoadingIndicator() {
+  return (
+    <div
+      role="status"
+      className="flex items-center justify-center"
+      aria-label="Loading energy data"
+    >
+      <span
+        aria-hidden="true"
+        className="h-5 w-5 animate-spin rounded-full border-2 border-current border-r-transparent opacity-60"
+      />
+    </div>
+  );
+}
+
+export interface EnergyUsageMetric {
   id: string;
   label: string;
   period: string;
@@ -101,6 +98,11 @@ const DEFAULT_ENERGY_KPI_PREFERENCES: EnergyKpiPreferences = {
   version: 1,
   byProvider: {},
 };
+
+const EnergyKpiOrderEditor = lazy(async () => {
+  const module = await import('./energy-kpi-order-editor');
+  return { default: module.EnergyKpiOrderEditor };
+});
 
 const RANGE_LABELS: Record<EnergyUsageRange, string> = {
   live: 'Live',
@@ -740,7 +742,7 @@ export function EnergyDetailedHistoryWorkspace({
               </>
             ) : isLoading ? (
               <div className="flex min-h-64 flex-1 items-center justify-center">
-                <LoadingSpinner />
+                <EnergyLoadingIndicator />
               </div>
             ) : error ? (
               <div
@@ -1110,14 +1112,22 @@ function EnergyKpiPicker({
                       Order dashboard KPIs
                     </p>
                     <p className={`mt-2 text-sm leading-relaxed ${surface.textSecondary}`}>
-                      Drag the selected metrics into the order they should appear on the dashboard.
+                      Use the arrow controls to arrange metrics in dashboard order.
                     </p>
                   </div>
-                  <EnergyKpiOrderEditor
-                    metrics={resolveSelectedUsageMetrics(draftMetricIds, metrics)}
-                    orderedMetricIds={draftMetricIds}
-                    onOrderChange={setDraftMetricIds}
-                  />
+                  <Suspense
+                    fallback={
+                      <div className="flex min-h-32 items-center justify-center">
+                        <EnergyLoadingIndicator />
+                      </div>
+                    }
+                  >
+                    <EnergyKpiOrderEditor
+                      metrics={resolveSelectedUsageMetrics(draftMetricIds, metrics)}
+                      orderedMetricIds={draftMetricIds}
+                      onOrderChange={setDraftMetricIds}
+                    />
+                  </Suspense>
                 </div>
               ) : (
                 <div className="w-full">
@@ -1169,92 +1179,6 @@ function EnergyKpiPicker({
         </div>
       </NavigationWorkspace.Frame>
     </BaseCardDialog>
-  );
-}
-
-function EnergyKpiOrderEditor({
-  metrics,
-  onOrderChange,
-  orderedMetricIds,
-}: {
-  metrics: EnergyUsageMetric[];
-  onOrderChange: (metricIds: string[]) => void;
-  orderedMetricIds: string[];
-}) {
-  const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 10 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-  const handleDragEnd = ({ active, over }: DragEndEvent) => {
-    if (!over || active.id === over.id) return;
-    const currentIndex = orderedMetricIds.indexOf(String(active.id));
-    const nextIndex = orderedMetricIds.indexOf(String(over.id));
-    if (currentIndex < 0 || nextIndex < 0) return;
-    onOrderChange(arrayMove(orderedMetricIds, currentIndex, nextIndex));
-  };
-
-  return (
-    <CardDialogSection>
-      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-        <SortableContext items={orderedMetricIds} strategy={verticalListSortingStrategy}>
-          <div className="grid gap-1.5">
-            {metrics.map((metric) => (
-              <EnergyKpiOrderRow key={metric.id} metric={metric} />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
-    </CardDialogSection>
-  );
-}
-
-function EnergyKpiOrderRow({ metric }: { metric: EnergyUsageMetric }) {
-  const { theme } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
-    id: metric.id,
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={getDndTransformStyle(transform, transition)}
-      className={cn(
-        'flex min-h-12 items-center gap-3 rounded-2xl border px-2.5 py-2',
-        surface.border,
-        surface.subtleBg
-      )}
-    >
-      <button
-        type="button"
-        aria-label={`Reorder ${metric.label}`}
-        className={cn(
-          'flex h-8 w-8 shrink-0 touch-none items-center justify-center rounded-xl',
-          surface.hoverBg,
-          surface.textMuted
-        )}
-        {...attributes}
-        {...listeners}
-      >
-        <GripVertical className="h-4 w-4" aria-hidden="true" />
-      </button>
-      <EntityCardHeaderIcon
-        IconComponent={metric.icon}
-        isActive={false}
-        size="small"
-        baseColor={metric.color}
-      />
-      <span className="min-w-0 flex-1">
-        <span className={`block truncate text-sm font-semibold ${surface.textPrimary}`}>
-          {metric.label}
-        </span>
-        <span className={`block truncate text-xs ${surface.textSecondary}`}>{metric.detail}</span>
-      </span>
-      <span className={`shrink-0 text-sm font-semibold ${surface.textPrimary}`}>
-        {metric.value}
-      </span>
-    </div>
   );
 }
 
@@ -1689,7 +1613,7 @@ function SelectedPeriodDeviceBreakdown({
       >
         {isLoading ? (
           <div className="flex h-full min-h-20 items-center justify-center">
-            <LoadingSpinner />
+            <EnergyLoadingIndicator />
           </div>
         ) : !isAvailable ? (
           <p className={`py-4 text-xs leading-5 ${surface.textSecondary}`}>

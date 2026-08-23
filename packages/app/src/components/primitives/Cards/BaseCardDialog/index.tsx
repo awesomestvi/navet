@@ -9,8 +9,9 @@ import {
 import { Button } from '@navet/app/components/primitives/button';
 import { settingsDialogContentClass } from '@navet/app/components/primitives/dialog-primitives';
 import { TabPanel, Tabs } from '@navet/app/components/primitives/tabs';
-import { CustomCardTintPicker, CustomScrollbar } from '@navet/app/components/shared/device-editor';
 import { CompactRoomSelector } from '@navet/app/components/shared/device-editor/compact-room-selector';
+import { CustomCardTintPicker } from '@navet/app/components/shared/device-editor/custom-card-tint-picker';
+import { CustomScrollbar } from '@navet/app/components/shared/device-editor/custom-scrollbar';
 import { getBaseCardDialogSurface } from '@navet/app/components/shared/theme/base-card-dialog-surface';
 import { getInheritedDialogSectionStyle } from '@navet/app/components/shared/theme/custom-card-tint-surface';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';

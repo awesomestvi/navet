@@ -9,11 +9,7 @@ import { getRegisteredProviderContract } from '@navet/app/provider-contract-regi
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import type { NavetProviderSession } from '@navet/core/provider-contract';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import { LoadingSpinner } from './components/primitives/loading-spinner';
-import { ErrorDisplay } from './components/shared/error-display';
-import { NetworkStatusBanner } from './components/shared/network-status-banner';
 import { PwaUpdatePrompt } from './components/shared/pwa-update-prompt';
-import { Toaster } from './components/ui/sonner';
 import { useLocalHabitsFeature } from './features/habits/local-habits-feature';
 import {
   useAccentColor,
@@ -45,6 +41,34 @@ const HomeySelectionPage = lazy(async () => {
   const module = await import('./features/auth/homey-selection-page');
   return { default: module.HomeySelectionPage };
 });
+const ErrorDisplay = lazy(async () => {
+  const module = await import('./components/shared/error-display');
+  return { default: module.ErrorDisplay };
+});
+const NetworkStatusBanner = lazy(async () => {
+  const module = await import('./components/shared/network-status-banner');
+  return { default: module.NetworkStatusBanner };
+});
+const Toaster = lazy(async () => {
+  const module = await import('./components/ui/sonner');
+  return { default: module.Toaster };
+});
+
+function AuthenticatedLoadingScreen({ message }: { message: string }) {
+  return (
+    <div
+      role="status"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background text-foreground"
+    >
+      <span
+        aria-hidden="true"
+        className="h-8 w-8 animate-spin rounded-full border-2 border-current border-r-transparent"
+        style={{ color: 'var(--navet-accent)' }}
+      />
+      <p className="text-sm text-muted-foreground">{message}</p>
+    </div>
+  );
+}
 
 function getConnectionAttemptKey(session: AuthSession) {
   return `${session.providerId}\n${session.runtime}\n${session.hassUrl}\n${session.expiresAt ?? ''}`;
@@ -484,30 +508,36 @@ function AppContent() {
 
   return (
     <>
-      <ErrorDisplay
-        onRetry={isAuthenticated && session ? retryConnect : undefined}
-        onResetSession={
-          isAuthenticated && canResetSessionFromError ? resetSessionToLogin : undefined
-        }
-      />
+      <Suspense fallback={null}>
+        <ErrorDisplay
+          onRetry={isAuthenticated && session ? retryConnect : undefined}
+          onResetSession={
+            isAuthenticated && canResetSessionFromError ? resetSessionToLogin : undefined
+          }
+        />
+      </Suspense>
       <PwaUpdatePrompt />
       {isAuthenticated && !appError && !needsHomeySelection ? (
-        <NetworkStatusBanner
-          connected={connected}
-          connecting={connecting}
-          reconnecting={reconnecting}
-          isOnline={isOnline}
-          providerLabel={provider.label}
-          lastError={providerHealth.lastError}
-        />
+        <Suspense fallback={null}>
+          <NetworkStatusBanner
+            connected={connected}
+            connecting={connecting}
+            reconnecting={reconnecting}
+            isOnline={isOnline}
+            providerLabel={provider.label}
+            lastError={providerHealth.lastError}
+          />
+        </Suspense>
       ) : null}
-      <Toaster />
+      <Suspense fallback={null}>
+        <Toaster />
+      </Suspense>
       {needsHomeySelection ? (
-        <Suspense fallback={<LoadingSpinner message={t('common.loading')} fullScreen />}>
+        <Suspense fallback={<AuthenticatedLoadingScreen message={t('common.loading')} />}>
           <HomeySelectionPage />
         </Suspense>
       ) : (
-        <Suspense fallback={<LoadingSpinner message={t('common.loading')} fullScreen />}>
+        <Suspense fallback={<AuthenticatedLoadingScreen message={t('common.loading')} />}>
           <DashboardPage />
         </Suspense>
       )}
