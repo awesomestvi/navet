@@ -15,7 +15,7 @@ device. An unavailable control is not replaced with a provider-specific command.
 - [Control climate devices](/guide/everyday-control/climate/)
 - [Play and manage media](/guide/everyday-control/media/)
 - [Use the Security dashboard](/guide/everyday-control/security/)
-- [Set up and understand Energy](/guide/everyday-control/energy/)
+- [Understand Energy usage and KPIs](/guide/everyday-control/energy/)
 - [Run automations and scripts](/guide/everyday-control/automations-and-scripts/)
 - [Use notifications and provider actions](/guide/everyday-control/notifications/)
 
@@ -24,4 +24,4 @@ device. An unavailable control is not replaced with a provider-specific command.
 - [Add notes, photos, and RSS feeds](/guide/everyday-control/notes-photos-rss/)
 - [Create actions, maps, and status widgets](/guide/everyday-control/actions-maps-status/)
 - [Use Local Habits](/guide/everyday-control/local-habits/)
-- [Configure Energy manually](/guide/everyday-control/manual-energy-setup/)
+- [Configure Home Assistant Energy sources](/guide/everyday-control/manual-energy-setup/)

@@ -7,12 +7,13 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-con
 Security brings together provider-backed alarms, locks, covers, openings, and cameras. Risky
 actions require deliberate confirmation.
 
-![The Security overview grouped by attention, secure state, and live cameras.](/docs/how-to/everyday-control/security-dashboard.webp)
+![The current Security dashboard with priority summary, needs-attention surface, alarm controls, and filtered security cards.](/docs/how-to/everyday-control/security-dashboard.webp)
 
 ## Review the overview
 
-Start with **To check** for unlocked, open, unavailable, or triggered items. **Secure** and **Live**
-group the remaining state.
+The summary strip orders critical, attention, unavailable, live, and secure counts by priority.
+The first section names what needs attention and keeps the current alarm and live-camera state
+close by. Use **All Security** to filter doors and windows, locks, motion and occupancy, or cameras.
 
 ## Control a lock or cover
 
@@ -28,12 +29,15 @@ be required for lock state changes.
 
 The emergency trigger requires a separate confirmation.
 
-![An alarm action confirmation with the code entry separated from the action.](/docs/how-to/everyday-control/alarm-confirmation.webp)
+![The current phone confirmation sheet for intentionally triggering an alarm remotely.](/docs/how-to/everyday-control/alarm-confirmation.webp)
 
 ## View cameras
 
 Use the live camera area for current streams. Kiosk mode can hide configuration controls while
 leaving the live surface visible.
+
+When a camera exposes linked lights, desktop uses a compact popover and phones use a bottom sheet
+for power and brightness so the controls remain touch-friendly.
 
 If video does not play, use [Camera does not play live video](/guide/troubleshooting/camera-playback/).
 

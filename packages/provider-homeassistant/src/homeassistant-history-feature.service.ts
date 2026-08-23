@@ -1,3 +1,7 @@
+import type {
+  PlatformStatisticsHistoryPoint,
+  PlatformStatisticsHistorySeries,
+} from '@navet/core/provider-feature-models';
 import type { ProviderHistoryFeatureService } from '@navet/core/provider-feature-services';
 import { callHomeAssistantApi, getHomeAssistantConnection } from './homeassistant-service-bridge';
 
@@ -10,6 +14,10 @@ interface HomeAssistantHistoryState {
 }
 
 type HomeAssistantHistoryResponse = HomeAssistantHistoryState[][];
+
+type HomeAssistantStatisticsResponse = Record<string, unknown>;
+
+const STATISTIC_VALUE_KEYS = ['change', 'max', 'mean', 'min', 'state', 'sum'] as const;
 
 function parseTimestamp(value: unknown): string | null {
   if (typeof value !== 'string' || !Number.isFinite(Date.parse(value))) {
@@ -25,6 +33,42 @@ function validatePeriod(startTime: string, endTime: string) {
   if (!Number.isFinite(start) || !Number.isFinite(end) || start >= end) {
     throw new Error('Entity history requires a valid start time before the end time');
   }
+}
+
+function parseStatisticsTimestamp(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value < 10_000_000_000 ? value * 1000 : value;
+  }
+  if (typeof value === 'string') {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric) && value.trim() !== '') {
+      return numeric < 10_000_000_000 ? numeric * 1000 : numeric;
+    }
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function parseStatisticsPoint(value: unknown): PlatformStatisticsHistoryPoint | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+
+  const row = value as Record<string, unknown>;
+  const startMs = parseStatisticsTimestamp(row.start);
+  const endMs = parseStatisticsTimestamp(row.end);
+  if (startMs === null || endMs === null || startMs >= endMs) {
+    return null;
+  }
+
+  const point: PlatformStatisticsHistoryPoint = { startMs, endMs };
+  for (const key of STATISTIC_VALUE_KEYS) {
+    if (typeof row[key] === 'number' && Number.isFinite(row[key])) {
+      point[key] = row[key];
+    }
+  }
+  return point;
 }
 
 export const homeAssistantHistoryFeatureService: ProviderHistoryFeatureService = {
@@ -74,6 +118,37 @@ export const homeAssistantHistoryFeatureService: ProviderHistoryFeatureService =
       .filter((point): point is NonNullable<typeof point> => point !== null);
 
     return { entityId: request.entityId, points };
+  },
+  async getStatisticsHistory(request) {
+    const endTime = request.endTime ?? new Date().toISOString();
+    validatePeriod(request.startTime, endTime);
+    if (request.entityIds.length === 0) {
+      return {};
+    }
+
+    const connection = getHomeAssistantConnection();
+    if (!connection) {
+      throw new Error('Home Assistant statistics history requires an active connection');
+    }
+
+    const response = await connection.sendMessagePromise<HomeAssistantStatisticsResponse>({
+      type: 'recorder/statistics_during_period',
+      start_time: request.startTime,
+      end_time: endTime,
+      statistic_ids: request.entityIds,
+      period: request.period,
+      types: request.types,
+      ...(request.units ? { units: request.units } : {}),
+    });
+
+    const series: PlatformStatisticsHistorySeries = {};
+    for (const entityId of request.entityIds) {
+      const rows = response?.[entityId];
+      series[entityId] = (Array.isArray(rows) ? rows : [])
+        .map(parseStatisticsPoint)
+        .filter((point): point is PlatformStatisticsHistoryPoint => point !== null);
+    }
+    return series;
   },
   supportsStatisticsHistory: (entityId) => entityId.startsWith('sensor.'),
   supportsEnergyStatistics: (entityId) => entityId.startsWith('sensor.'),

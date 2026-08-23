@@ -12,6 +12,7 @@ vi.mock('@navet/app/provider-runtime-registry', () => ({
 import {
   getIntegrationEntityHistory,
   getIntegrationHistoryMessageClient,
+  getIntegrationStatisticsHistory,
   integrationHistoryService,
   supportsIntegrationEnergyStatistics,
   supportsIntegrationStatisticsHistory,
@@ -118,5 +119,53 @@ describe('integrationHistoryService', () => {
     expect(supportsIntegrationStatisticsHistory('home_assistant:binary_sensor.motion')).toBe(false);
     expect(supportsIntegrationEnergyStatistics('home_assistant:sensor.energy')).toBe(true);
     expect(supportsIntegrationEnergyStatistics('home_assistant:sensor.power')).toBe(false);
+  });
+
+  it('delegates normalized statistics with native ids and restores canonical ids', async () => {
+    const getStatisticsHistory = vi.fn(async () => ({
+      'sensor.house_power': [{ startMs: 1_787_040_000_000, endMs: 1_787_043_600_000, mean: 437 }],
+      'sensor.kitchen_power': [],
+    }));
+    getProviderRuntimeRegistrationMock.mockReturnValue({
+      historyFeatureService: {
+        getMessageClient: () => null,
+        getStatisticsHistory,
+      },
+    });
+
+    await expect(
+      getIntegrationStatisticsHistory({
+        entityIds: ['home_assistant:sensor.house_power', 'home_assistant:sensor.kitchen_power'],
+        startTime: '2026-08-20T00:00:00Z',
+        endTime: '2026-08-20T02:00:00Z',
+        period: 'hour',
+        types: ['mean'],
+        units: { 'home_assistant:sensor.house_power': 'W' },
+      })
+    ).resolves.toEqual({
+      'home_assistant:sensor.house_power': [
+        { startMs: 1_787_040_000_000, endMs: 1_787_043_600_000, mean: 437 },
+      ],
+      'home_assistant:sensor.kitchen_power': [],
+    });
+    expect(getStatisticsHistory).toHaveBeenCalledWith({
+      entityIds: ['sensor.house_power', 'sensor.kitchen_power'],
+      startTime: '2026-08-20T00:00:00Z',
+      endTime: '2026-08-20T02:00:00Z',
+      period: 'hour',
+      types: ['mean'],
+      units: { 'sensor.house_power': 'W' },
+    });
+  });
+
+  it('rejects statistics queries that mix providers', async () => {
+    await expect(
+      getIntegrationStatisticsHistory({
+        entityIds: ['home_assistant:sensor.house_power', 'homey:sensor.office_power'],
+        startTime: '2026-08-20T00:00:00Z',
+        period: 'hour',
+        types: ['mean'],
+      })
+    ).rejects.toThrow('same provider');
   });
 });

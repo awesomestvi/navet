@@ -75,15 +75,13 @@ export const Playground: Story = {
       await expect(canvas.getByText(/locked/i)).toBeInTheDocument();
     });
 
-    await step('toggles to unlocked when pressed', async () => {
+    await step('enters the provider-confirmed unlock state when pressed', async () => {
       actionButton.focus();
       await userEvent.keyboard('[Space]');
       await expect(
-        canvas.findByText(/unlocked/i, {}, { timeout: 2000 })
+        canvas.findByText(/unlocking/i, {}, { timeout: 2000 })
       ).resolves.toBeInTheDocument();
-      await expect(
-        canvas.findByRole('button', { name: /slide to lock/i }, { timeout: 2000 })
-      ).resolves.toBeInTheDocument();
+      await expect(actionButton).toBeDisabled();
     });
   },
 };

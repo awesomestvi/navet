@@ -7,7 +7,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/quick-start/
 This guide starts after Navet has connected to a provider. In about 15 minutes you will confirm that
 your home loaded, learn the main navigation, and make one useful change to Home.
 
-![Navet Home with the section navigation, room navigation, summary bar, and cards identified.](/docs/how-to/quick-start/first-15-minutes-overview.webp)
+![The current Navet Home dashboard with section navigation, room navigation, status summary, and responsive cards.](/docs/how-to/quick-start/first-15-minutes-overview.webp)
 
 ## 1. Check that your home loaded
 

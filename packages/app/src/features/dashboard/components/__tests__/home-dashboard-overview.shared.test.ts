@@ -1,5 +1,6 @@
 import {
   getDashboardCardFootprint,
+  getResponsiveCardSize,
   PHONE_SMALL_CARD_TARGET_WIDTH_PX,
 } from '@navet/app/components/shared/card-size-selector';
 import type { HomeDashboardLayoutState } from '@navet/app/features/dashboard/hooks/use-home-dashboard-layout';
@@ -148,6 +149,17 @@ describe('home dashboard overview collections', () => {
       widthPx: PHONE_SMALL_CARD_TARGET_WIDTH_PX,
       heightPx: PHONE_SMALL_CARD_TARGET_WIDTH_PX,
     });
+  });
+
+  it('keeps extra-wide cards two rows tall and scales their width down responsively', () => {
+    const large = getDashboardCardFootprint('large', 8);
+    const extraWide = getDashboardCardFootprint('extra-wide', 8);
+
+    expect(extraWide.heightPx).toBe(large.heightPx);
+    expect(extraWide.widthPx).toBeGreaterThan(getDashboardCardFootprint('extra-large', 8).widthPx);
+    expect(getResponsiveCardSize('extra-wide', 8)).toBe('extra-wide');
+    expect(getResponsiveCardSize('extra-wide', 4)).toBe('extra-large');
+    expect(getResponsiveCardSize('extra-wide', 2)).toBe('large');
   });
 
   it('derives phone grid target widths from the shared footprint metrics', () => {

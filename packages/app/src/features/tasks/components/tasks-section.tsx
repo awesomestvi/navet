@@ -1,5 +1,9 @@
-import { DashboardEmptyState, SectionCard } from '@navet/app/components/patterns';
-import { Badge, InteractivePill, MessageBar, Panel } from '@navet/app/components/primitives';
+import {
+  AttentionBand,
+  type AttentionBandItem,
+  DashboardEmptyState,
+} from '@navet/app/components/patterns';
+import { Badge, InteractivePill, Panel } from '@navet/app/components/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import type { HomeStatusSummaryItem } from '@navet/app/features/sensors/components/home-status-summary-model';
 import {
@@ -131,10 +135,39 @@ export function TasksSection() {
         value: String(controller.automationSummary.attention),
         icon: AlertTriangle,
         iconColor: controller.automationSummary.attention > 0 ? '#f59e0b' : '#94a3b8',
+        priority: controller.automationSummary.attention > 0 ? 'attention' : 'current',
+        tone: controller.automationSummary.attention > 0 ? 'warning' : 'neutral',
       },
     ],
     [accentColor, controller.automationSummary, t]
   );
+  const attentionItems = useMemo<AttentionBandItem[]>(() => {
+    const providerItem: AttentionBandItem[] = controller.hasError
+      ? [
+          {
+            id: 'routines-provider-error',
+            title: t('tasks.dashboard.partialErrorTitle'),
+            detail: t('tasks.dashboard.partialErrorDescription'),
+            priority: 'attention',
+            icon: AlertTriangle,
+            actionLabel: t('tasks.filters.attention'),
+          },
+        ]
+      : [];
+    return [
+      ...providerItem,
+      ...controller.attentionAutomations.map((automation) => ({
+        id: `routine:${automation.id}`,
+        title: automation.name,
+        detail: automation.attentionReason
+          ? t(`tasks.automation.attention.${automation.attentionReason}`)
+          : t('tasks.summary.attentionCaption'),
+        priority: 'attention' as const,
+        icon: AlertTriangle,
+        actionLabel: t('common.open'),
+      })),
+    ];
+  }, [controller.attentionAutomations, controller.hasError, t]);
   const filteredEmptyMessage =
     automationFilter === 'attention'
       ? t('tasks.automation.empty.noAttention')
@@ -166,20 +199,26 @@ export function TasksSection() {
   return (
     <div className="h-full min-w-0 overflow-x-hidden overflow-y-auto">
       <SummaryBarStack className="w-full min-w-0">
-        {controller.hasError ? (
-          <MessageBar tone="warning" title={t('tasks.dashboard.partialErrorTitle')}>
-            {t('tasks.dashboard.partialErrorDescription')}
-          </MessageBar>
-        ) : null}
+        <AttentionBand
+          items={attentionItems}
+          ariaLabel={t('tasks.filters.attention')}
+          onSelect={() => {
+            setRoutineView('automations');
+            setAutomationFilter('attention');
+          }}
+        />
 
         <SummaryBar items={summaryItems} ariaLabel={t('tasks.summary.title')} />
 
-        <SectionCard
-          title={t('sections.tasks.title')}
-          description={t('sections.tasks.description')}
-          contentClassName="px-4 py-5 md:px-8 md:py-8"
-          padding="none"
-        >
+        <section className="min-w-0 space-y-4 py-1 md:space-y-5">
+          <header>
+            <h1 className={`text-xl font-semibold md:text-2xl ${surface.textPrimary}`}>
+              {t('sections.tasks.title')}
+            </h1>
+            <p className={`mt-1 max-w-3xl text-sm leading-6 ${surface.textSecondary}`}>
+              {t('sections.tasks.description')}
+            </p>
+          </header>
           <div className="space-y-4">
             <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 scrollbar-hide md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
               <InteractivePill
@@ -368,7 +407,7 @@ export function TasksSection() {
               </Panel>
             )}
           </div>
-        </SectionCard>
+        </section>
       </SummaryBarStack>
     </div>
   );

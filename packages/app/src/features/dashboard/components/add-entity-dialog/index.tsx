@@ -1,5 +1,6 @@
 import { DashboardEmptyState } from '@navet/app/components/patterns';
 import { Input } from '@navet/app/components/primitives';
+import { ModalSurface } from '@navet/app/components/primitives/modal-surface';
 import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { getDeviceTypeIcon } from '@navet/app/constants/device-type-icons';
@@ -178,18 +179,30 @@ export function AddEntityDialog({
   const topSpacerHeight = startIndex * ENTITY_ROW_HEIGHT;
   const totalHeight = availableDevices.length * ENTITY_ROW_HEIGHT;
 
-  if (!open) return null;
-
   return (
-    <div
-      className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 ${surface.dialogBackdrop}`}
+    <ModalSurface
+      isOpen={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) onClose();
+      }}
+      title={title}
+      description={
+        description ??
+        (isAllRooms(currentRoom)
+          ? t('dashboard.addEntity.defaultDescriptionAll')
+          : t('dashboard.addEntity.defaultDescriptionRoom', { room: currentRoom }))
+      }
+      contentClassName="max-w-2xl max-h-[80vh] max-sm:max-h-[calc(100dvh-1rem)]"
+      shellBodyClassName="max-h-[80vh] min-h-0 max-sm:max-h-[calc(100dvh-4rem)]"
+      bodyClassName="flex max-h-[80vh] min-h-0 flex-col max-sm:max-h-[calc(100dvh-4rem)]"
+      disableOpenAutoFocus
     >
       <div
-        className={`${bgColor} rounded-2xl border ${borderColor} w-full max-w-2xl max-h-[80vh] overflow-hidden`}
+        className={`${bgColor} flex min-h-0 flex-col overflow-hidden`}
         style={{ boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)' }}
       >
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
-          <div>
+        <div className="flex items-start justify-between gap-3 border-b border-white/10 p-6 max-sm:p-4 max-sm:pt-2">
+          <div className="min-w-0">
             <h2 className={`text-xl font-semibold ${textColor}`}>{title}</h2>
             <p className={`text-sm ${mutedColor} mt-1`}>
               {description ??
@@ -201,15 +214,17 @@ export function AddEntityDialog({
           <button
             type="button"
             onClick={onClose}
-            className={`w-8 h-8 rounded-full ${cardBg} ${hoverBg} flex items-center justify-center transition-colors`}
+            aria-label={t('common.closeDialog')}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] ${cardBg} ${hoverBg} transition-colors`}
           >
-            <X className={`w-4 h-4 ${mutedColor}`} />
+            <X className={`h-4 w-4 ${mutedColor}`} aria-hidden="true" />
           </button>
         </div>
 
-        <div className="p-6 border-b border-white/10">
+        <div className="border-b border-white/10 p-6 max-sm:p-4">
           <Input
             type="text"
+            aria-label={t('dashboard.addEntity.searchPlaceholder')}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t('dashboard.addEntity.searchPlaceholder')}
@@ -221,7 +236,7 @@ export function AddEntityDialog({
 
         <div
           ref={listRef}
-          className="overflow-y-auto p-6 pt-4"
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 pt-4 max-sm:p-4 max-sm:pt-3"
           style={{ maxHeight: `${ENTITY_LIST_HEIGHT}px` }}
           onScroll={(event) => {
             const nextScrollTop = event.currentTarget.scrollTop;
@@ -271,6 +286,6 @@ export function AddEntityDialog({
           )}
         </div>
       </div>
-    </div>
+    </ModalSurface>
   );
 }

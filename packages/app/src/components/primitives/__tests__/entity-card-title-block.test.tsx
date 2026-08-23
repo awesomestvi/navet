@@ -9,7 +9,7 @@ describe('EntityCardTitleBlock', () => {
       <EntityCardTitleBlock title="Desk Power" subtitle="switch" layout="eyebrow-first" />
     );
 
-    expect(screen.getByText('Switch')).toBeInTheDocument();
+    expect(screen.getByText('Switch')).toHaveClass('mb-px');
   });
 
   it('preserves subtitles that already use display casing', () => {
@@ -18,5 +18,23 @@ describe('EntityCardTitleBlock', () => {
     );
 
     expect(screen.getByText('TV')).toBeInTheDocument();
+  });
+
+  it('adds optical separation only when the eyebrow precedes the title', () => {
+    const { rerender } = renderWithProviders(
+      <EntityCardTitleBlock
+        title="Energy usage"
+        subtitle="Live power demand"
+        layout="title-first"
+      />
+    );
+
+    expect(screen.getByText('Live power demand')).not.toHaveClass('mb-px');
+
+    rerender(
+      <EntityCardTitleBlock title="Heating loop" subtitle="Energy" layout="eyebrow-first" />
+    );
+
+    expect(screen.getByText('Energy')).toHaveClass('mb-px');
   });
 });

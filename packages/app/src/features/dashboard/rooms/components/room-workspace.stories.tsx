@@ -12,7 +12,7 @@ import type {
   RoomWorkspaceLayout,
   RoomWorkspaceViewModel,
 } from './room-workspace.types';
-import { RoomDeviceSelectionSheet } from './room-workspace-overlays';
+import { RoomDeviceSelectionSheet, RoomsWorkspaceDialog } from './room-workspace-overlays';
 
 export const roomWorkspaceEnglishLabels: RoomWorkspaceLabels = {
   title: 'Rooms',
@@ -317,9 +317,15 @@ interface WorkspaceStoryProps {
   layout: RoomWorkspaceLayout;
   initialViewModel: RoomWorkspaceViewModel;
   phoneFrame?: boolean;
+  renderDialog?: boolean;
 }
 
-function WorkspaceStory({ layout, initialViewModel, phoneFrame = false }: WorkspaceStoryProps) {
+function WorkspaceStory({
+  layout,
+  initialViewModel,
+  phoneFrame = false,
+  renderDialog = false,
+}: WorkspaceStoryProps) {
   const [model, setModel] = useState(initialViewModel);
   const sourceRooms = model.rooms;
   const sourceGroups = model.groups;
@@ -604,6 +610,19 @@ function WorkspaceStory({ layout, initialViewModel, phoneFrame = false }: Worksp
       : undefined,
   };
 
+  if (renderDialog) {
+    return (
+      <RoomsWorkspaceDialog
+        isOpen
+        onOpenChange={() => undefined}
+        viewModel={filteredModel}
+        labels={roomWorkspaceEnglishLabels}
+        actions={actions}
+        layout={layout}
+      />
+    );
+  }
+
   return (
     <>
       <div className={phoneFrame ? 'mx-auto w-full max-w-[430px]' : 'w-full'}>
@@ -652,6 +671,7 @@ const meta = {
     layout: 'desktop',
     initialViewModel: roomWorkspaceBaseViewModel,
     phoneFrame: false,
+    renderDialog: false,
   },
 } satisfies Meta<typeof WorkspaceStory>;
 
@@ -953,6 +973,27 @@ export const PhoneFullScreen: Story = {
     await expect(header?.className).toContain('safe-area-inset-top');
     await expect(header?.className).toContain('safe-area-inset-left');
     await expect(header?.className).toContain('safe-area-inset-right');
+  },
+};
+
+export const PhoneCoverSheetDialog: Story = {
+  args: {
+    layout: 'responsive',
+    renderDialog: true,
+    initialViewModel: {
+      ...roomWorkspaceBaseViewModel,
+      mode: 'manage',
+      stage: 'structure',
+    },
+  },
+  parameters: {
+    viewport: { defaultViewport: 'mobile1' },
+  },
+  play: async ({ canvasElement }) => {
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = await page.findByRole('dialog', { name: 'Rooms' });
+    await expect(dialog).toHaveClass('max-sm:!rounded-[30px]', 'max-sm:!bottom-2');
+    await expect(page.getByRole('button', { name: 'Close dialog' })).toBeInTheDocument();
   },
 };
 

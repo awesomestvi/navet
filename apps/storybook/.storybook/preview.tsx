@@ -4,7 +4,6 @@ import {
   Description,
   Markdown,
   Primary,
-  Stories,
   Subtitle,
   Title,
   useOf,
@@ -276,7 +275,6 @@ function NavetDocsPage() {
       <main className="navet-docs-reference">
         <Primary />
         <Controls />
-        <Stories includePrimary={false} />
       </main>
     </>
   );

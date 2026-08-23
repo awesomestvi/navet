@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { expect, within } from 'storybook/test';
 import { AddCardDialogContainer } from './container';
 
 const demoLibraryCards = [
@@ -59,6 +60,16 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+export const PhoneCoverSheet: Story = {
+  parameters: { viewport: { defaultViewport: 'mobile1' } },
+  play: async ({ canvasElement }) => {
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = await page.findByRole('dialog', { name: 'Add Card' });
+    await expect(dialog).toHaveClass('max-sm:!rounded-[30px]', 'max-sm:!bottom-2');
+    await expect(page.getByRole('button', { name: 'Close dialog' })).toBeInTheDocument();
+  },
+};
 
 export const WidgetsOnly: Story = {
   args: {

@@ -2,7 +2,7 @@ import { InteractivePill } from '@navet/app/components/primitives/interactive-pi
 import type { ElementType } from 'react';
 
 export { CardGrid, EmptyCanvas, FlowCanvas } from './home-dashboard-overview-card-grid';
-export { HomePresentation, SectionCanvasGrid } from './home-dashboard-overview-sections';
+export { SectionCanvasGrid } from './home-dashboard-overview-sections';
 
 export function ModeChip({
   active,

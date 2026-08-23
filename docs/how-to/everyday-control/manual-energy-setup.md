@@ -1,22 +1,20 @@
 ---
-title: Configure Energy manually
-description: Map required and optional sensors when Home Assistant Energy auto-detection is incomplete.
+title: Configure Home Assistant Energy sources
+description: Configure required and optional sensors in Home Assistant when Energy discovery is incomplete.
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-control/manual-energy-setup.md
 ---
 
-Use manual setup when auto-detection cannot identify the live power and cumulative energy sensors
-needed for your installation.
-
-![Energy setup showing the required quick-start sensor fields.](/docs/how-to/everyday-control/energy-manual-required.webp)
+Use Home Assistant's Energy configuration when Navet cannot discover the live power and cumulative
+energy sensors needed for your installation.
 
 ## Start with the required readings
 
-Open **Energy → Reconfigure** and fill the quick-start fields available for your setup. Use the
-entity identifiers reported by Home Assistant.
+Open Home Assistant's **Settings → Dashboards → Energy** and configure the sources available for
+your setup. Use sensors with the device class, state class, and units expected by Home Assistant.
 
 ## Add optional sources
 
-Choose **Show optional sensors** to map:
+Add optional sources in Home Assistant for:
 
 - Solar power and cumulative solar energy.
 - Battery state of charge and battery power.
@@ -29,15 +27,13 @@ produce a misleading flow.
 
 ## Map individual devices
 
-Add a power sensor for each device you want included in device-level totals and top-consumer views.
-Remove mappings that no longer exist.
-
-![Optional Energy sensors and individual device mappings.](/docs/how-to/everyday-control/energy-manual-advanced.webp)
+Add individual device energy sensors in Home Assistant for each device you want included in
+device-level totals and top-consumer views. Remove mappings that no longer exist.
 
 ## Save and verify
 
-1. Choose **Save configuration**.
-2. Return to **Live**.
+1. Save the Energy configuration in Home Assistant.
+2. Return to Navet and open **Energy → Live**.
 3. Compare current home load, grid flow, solar, and battery direction with Home Assistant.
 4. Check **Day** after history has accumulated.
 

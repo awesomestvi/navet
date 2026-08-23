@@ -7,7 +7,7 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/dashboards/a
 The Add Card library combines provider-backed entities with Navet-owned widgets. It excludes cards
 already present in the target area where duplicates would not be useful.
 
-![The Add Card library with Cards and Widgets available.](/docs/how-to/dashboards/add-card-library.webp)
+![The Add Card phone cover sheet with All cards, Custom card, search, filters, and available entities.](/docs/how-to/dashboards/add-card-library.webp)
 
 ## Open Add Card
 
@@ -17,13 +17,16 @@ already present in the target area where duplicates would not be useful.
 
 ## Find what you need
 
-- Use **Cards** for devices and other normalized provider entities.
-- Use **Widgets** for Navet content such as notes, RSS, photos, actions, maps, battery summaries,
+- Use **All cards** for devices and other normalized provider entities.
+- Use **Custom card** for Navet content such as notes, RSS, photos, actions, maps, battery summaries,
   UPS status, and energy summaries.
 - Search by the visible device or room name.
 - Use an explicit native identifier when you need to find one exact provider entity.
 
-![Add Card search results for a device and a generic entity card.](/docs/how-to/dashboards/add-card-search.webp)
+![The Add Card phone cover sheet filtered to a matching Kitchen entity.](/docs/how-to/dashboards/add-card-search.webp)
+
+On phones, Add Card opens as a full-height cover sheet with its own close action. On larger
+screens, the same library keeps the navigation and results visible side by side.
 
 Generic entity cards are available when Navet recognizes an entity but has no richer dedicated
 card for it.

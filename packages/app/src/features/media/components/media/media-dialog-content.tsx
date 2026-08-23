@@ -1,7 +1,8 @@
 import { CardDialogTabList, CardDialogTabTrigger } from '@navet/app/components/patterns';
 import { ModalSurface } from '@navet/app/components/primitives/modal-surface';
+import { SheetSurface, SheetSurfaceHeader } from '@navet/app/components/primitives/sheet-surface';
 import { TabPanel, Tabs } from '@navet/app/components/primitives/tabs';
-import { useEntityProviderFeature, useI18n } from '@navet/app/hooks';
+import { useEntityProviderFeature, useI18n, useMediaQuery } from '@navet/app/hooks';
 import * as Popover from '@radix-ui/react-popover';
 import { Layers3, ListMusic, Sliders, Speaker, Tv2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -139,6 +140,7 @@ export function MediaDialogContent({
   volume,
 }: MediaDialogContentProps) {
   const { t } = useI18n();
+  const isPhone = useMediaQuery('(max-width: 639px)');
   const groupingTriggerRef = useRef<HTMLButtonElement | null>(null);
   const isTvDevice = deviceClass?.trim().toLowerCase() === 'tv';
   const defaultTvDialogMode = useMemo(
@@ -166,6 +168,7 @@ export function MediaDialogContent({
       aria-label={groupingLabel}
       aria-pressed={isGroupingPickerOpen}
       aria-expanded={isGroupingPickerOpen}
+      aria-haspopup="dialog"
       onClick={() => setIsGroupingPickerOpen((current) => !current)}
       className={`relative inline-flex h-[38px] items-center justify-center gap-2 rounded-full border px-3 transition-colors ${
         controller.surface.border
@@ -290,41 +293,63 @@ export function MediaDialogContent({
     !isTvDevice && !mediaStackSettings ? (
       <div className="flex items-center justify-center gap-2 pt-6 pb-2">
         {hasGroupingControls ? (
-          <Popover.Root open={isGroupingPickerOpen} onOpenChange={setIsGroupingPickerOpen}>
-            <Popover.Anchor asChild>{groupingTrigger}</Popover.Anchor>
-            {groupingPanel ? (
-              <Popover.Portal>
-                <Popover.Content
-                  side="top"
-                  align="center"
-                  sideOffset={10}
-                  className="z-[920] w-[min(19.5rem,calc(100vw-2.5rem))] outline-none"
-                  onWheel={(event) => event.stopPropagation()}
-                  onTouchMove={(event) => event.stopPropagation()}
-                  onInteractOutside={(event) => {
-                    if (
-                      groupingTriggerRef.current &&
-                      event.target instanceof Node &&
-                      groupingTriggerRef.current.contains(event.target)
-                    ) {
-                      event.preventDefault();
-                    }
-                  }}
-                >
-                  {groupingPanel}
-                  <Popover.Arrow
-                    width={18}
-                    height={10}
-                    className={
-                      controller.isGlass
-                        ? 'fill-slate-700/90 stroke-white/22 [stroke-width:1.25] drop-shadow-[0_-2px_6px_rgba(0,0,0,0.22)]'
-                        : 'fill-[rgba(24,24,27,0.96)] stroke-[rgba(161,161,170,0.18)] [stroke-width:1.25] drop-shadow-[0_-2px_6px_rgba(0,0,0,0.28)]'
-                    }
+          <>
+            <Popover.Root open={isGroupingPickerOpen} onOpenChange={setIsGroupingPickerOpen}>
+              <Popover.Anchor asChild>{groupingTrigger}</Popover.Anchor>
+              {groupingPanel && !isPhone ? (
+                <Popover.Portal>
+                  <Popover.Content
+                    side="top"
+                    align="center"
+                    sideOffset={10}
+                    className="z-[920] w-[min(19.5rem,calc(100vw-2.5rem))] outline-none"
+                    onWheel={(event) => event.stopPropagation()}
+                    onTouchMove={(event) => event.stopPropagation()}
+                    onInteractOutside={(event) => {
+                      if (
+                        groupingTriggerRef.current &&
+                        event.target instanceof Node &&
+                        groupingTriggerRef.current.contains(event.target)
+                      ) {
+                        event.preventDefault();
+                      }
+                    }}
+                  >
+                    {groupingPanel}
+                    <Popover.Arrow
+                      width={18}
+                      height={10}
+                      className={
+                        controller.isGlass
+                          ? 'fill-slate-700/90 stroke-white/22 [stroke-width:1.25] drop-shadow-[0_-2px_6px_rgba(0,0,0,0.22)]'
+                          : 'fill-[rgba(24,24,27,0.96)] stroke-[rgba(161,161,170,0.18)] [stroke-width:1.25] drop-shadow-[0_-2px_6px_rgba(0,0,0,0.28)]'
+                      }
+                    />
+                  </Popover.Content>
+                </Popover.Portal>
+              ) : null}
+            </Popover.Root>
+            {groupingPanel && isPhone ? (
+              <SheetSurface
+                isOpen={isGroupingPickerOpen}
+                onOpenChange={setIsGroupingPickerOpen}
+                title={t('media.group.title')}
+                description={entityName}
+                accentColor={controller.palette.vibrant}
+                bodyClassName="px-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
+              >
+                <div className="space-y-4">
+                  <SheetSurfaceHeader
+                    title={t('media.group.title')}
+                    description={entityName}
+                    closeLabel={t('common.closeDialog')}
+                    onClose={() => setIsGroupingPickerOpen(false)}
                   />
-                </Popover.Content>
-              </Popover.Portal>
+                  {groupingPanel}
+                </div>
+              </SheetSurface>
             ) : null}
-          </Popover.Root>
+          </>
         ) : null}
         {browserPanel ? (
           <button

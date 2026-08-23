@@ -19,6 +19,24 @@ describe('buildEnergyDashboardModel', () => {
     expect(normalizeEnergyRange('week')).toBe('week');
   });
 
+  it('places recorder trend data on the selected historical range', () => {
+    const overview = getMockEnergyOverview('today');
+    const trend = [
+      { label: 'Mon', value: 420, timestampMs: 1 },
+      { label: 'Tue', value: 680, timestampMs: 2 },
+    ];
+
+    const dashboard = buildEnergyDashboardModel({
+      overview,
+      range: 'week',
+      trend,
+      periodTotals: { today: 14.2, week: 102.3, month: 441.2 },
+      sourceConfig: { homeLoadPowerEntityId: 'sensor.home_load', devices: [] },
+    });
+
+    expect(dashboard.ranges.week.liveConsumption).toEqual(trend);
+  });
+
   it('derives export flow when the house is pushing back to the grid', () => {
     const overview = getMockEnergyOverview('today');
     overview.totals.importW = 0;

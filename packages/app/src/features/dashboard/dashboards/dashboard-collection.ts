@@ -94,6 +94,7 @@ const CARD_SIZES = new Set<CardSize>([
   'medium-vertical',
   'large',
   'extra-large',
+  'extra-wide',
 ]);
 const VALID_ZONES = new Set<ZoneName>(ZONE_ORDERED);
 const COMMON_DASHBOARD_DEVICE_TYPES = new Set([

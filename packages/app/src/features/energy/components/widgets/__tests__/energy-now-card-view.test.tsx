@@ -12,6 +12,15 @@ const baseProps = {
 };
 
 describe('EnergyNowCardView', () => {
+  it('preserves sub-kWh precision in the card metric', () => {
+    renderWithProviders(
+      <EnergyNowCardView {...baseProps} todayUsageKWh={0.18} trend={[]} size="medium" />
+    );
+
+    expect(screen.getByText('0.18 kWh')).toBeInTheDocument();
+    expect(screen.queryByText('0.2 kWh')).not.toBeInTheDocument();
+  });
+
   it('centers the empty sparkline state within the full card body', () => {
     renderWithProviders(<EnergyNowCardView {...baseProps} trend={[]} size="medium" />);
 
@@ -42,5 +51,8 @@ describe('EnergyNowCardView', () => {
     expect(chartLayer.className).toContain('absolute inset-x-0');
     expect(chartLayer.className).toContain('top-20');
     expect(screen.getByRole('img', { name: 'Power sparkline' })).toBeInTheDocument();
+    expect(chartLayer.querySelectorAll('.border-dashed')).toHaveLength(2);
+    expect(screen.queryByText('3,000')).not.toBeInTheDocument();
+    expect(screen.queryByText('2,000')).not.toBeInTheDocument();
   });
 });

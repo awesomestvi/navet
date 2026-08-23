@@ -506,7 +506,7 @@ function buildNowSnapshot(
         : [
             {
               label: t('energy.model.now'),
-              value: roundEnergyValue(overview.totals.currentLoadW / 1000, 1),
+              value: roundEnergyValue(overview.totals.currentLoadW, 1),
             },
           ],
     energyBreakdown: buildEnergyBreakdown(
@@ -606,17 +606,23 @@ function buildMonthSnapshot(
 function buildRangeSnapshots(
   overview: EnergyOverview,
   trend: EnergySeriesPoint[],
+  selectedRange: EnergyRange,
   periodTotals: BuildEnergyDashboardModelParams['periodTotals'],
   t: TranslateFn
 ): Record<EnergyRange, EnergyRangeSnapshot> {
   const day = buildDaySnapshotBase(overview, periodTotals);
-
-  return {
+  const ranges = {
     now: buildNowSnapshot(overview, trend, day, t),
     today: buildTodaySnapshot(overview, trend, day, t),
     week: buildWeekSnapshot(periodTotals, day, t),
     month: buildMonthSnapshot(periodTotals, day, t),
   };
+
+  if (selectedRange !== 'now') {
+    ranges[selectedRange].liveConsumption = trend;
+  }
+
+  return ranges;
 }
 
 function deriveWhatChanged(
@@ -832,7 +838,7 @@ export function buildEnergyDashboardModel(
   const mode = resolveMode(overview);
   const modeSummary = getEnergyModeSummary(mode, overview, renewableSharePct, t);
   const summary = buildSummary(overview, dataCoverage, t);
-  const ranges = buildRangeSnapshots(overview, trend, periodTotals, t);
+  const ranges = buildRangeSnapshots(overview, trend, selectedRange, periodTotals, t);
   const whatChanged = deriveWhatChanged(overview, overview.topConsumers, t);
   const explanations = buildEnergyExplanations(overview, dataCoverage, renewableSharePct, t);
   const totals = buildTotals(overview, renewableSharePct);

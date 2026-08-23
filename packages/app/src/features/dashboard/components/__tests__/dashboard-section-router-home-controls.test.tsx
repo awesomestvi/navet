@@ -6,7 +6,7 @@ import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import type { DeviceWithType } from '@navet/app/types/device.types';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -254,7 +254,7 @@ describe('DashboardSectionRouter home controls', () => {
     expect(dashboardLayoutMock).toHaveBeenCalled();
   });
 
-  it('passes the offscreen paint signal to climate grids', () => {
+  it('passes the offscreen paint signal to climate grids', async () => {
     const controller = createController();
     const climateDevice = {
       id: 'climate.living_room',
@@ -282,10 +282,12 @@ describe('DashboardSectionRouter home controls', () => {
 
     renderWithProviders(<DashboardSectionRouter controller={controller} />);
 
-    expect(deviceGridPropsMock.mock.calls.at(-1)?.[0]).toMatchObject({
-      isEditMode: false,
-      optimizeOffscreenPaint: true,
-    });
+    await waitFor(() =>
+      expect(deviceGridPropsMock.mock.calls.at(-1)?.[0]).toMatchObject({
+        isEditMode: false,
+        optimizeOffscreenPaint: true,
+      })
+    );
   });
 
   it('suppresses duplicated edit actions for the energy dashboard header controls', async () => {
@@ -300,6 +302,8 @@ describe('DashboardSectionRouter home controls', () => {
     };
 
     expect(layoutProps.mobileEditActions).toBeUndefined();
+    expect(screen.getByRole('button', { name: 'KPIs' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Layout' })).toBeInTheDocument();
   });
 
   it('suppresses duplicated edit actions for security without manage rooms', async () => {

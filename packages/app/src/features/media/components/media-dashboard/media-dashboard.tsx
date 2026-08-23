@@ -1972,6 +1972,9 @@ export function MediaDashboard({
       ? 1
       : selectedDeclaredGroup.physicalKeys.size;
   const selectedDeviceIsGrouped = selectedGroupSize > 1;
+  const hasActiveMediaSession =
+    (nowPlayingDevice.state === 'playing' || nowPlayingDevice.state === 'paused') &&
+    hasCurrentMedia(nowPlayingDevice);
   const hasPromotedNowPlayingDevice = liveNowPlayingDevice !== undefined || usingRememberedSession;
   const promotedEntityIdKey = [
     ...(hasPromotedNowPlayingDevice ? [nowPlayingDevice.id, nowPlayingTransportDevice.id] : []),
@@ -1991,8 +1994,9 @@ export function MediaDashboard({
     selectedDeviceIsGrouped || nowPlayingDevice.deviceClass?.toLowerCase() === 'speaker'
       ? t('media.type.speaker').toLowerCase()
       : t('media.type.player').toLowerCase();
-  const largeCardFootprint = getDashboardCardFootprint('large', breakpointCols);
-  const nowPlayingColumnSpan = Math.min(4, renderedGridCols);
+  const nowPlayingCardSize = hasActiveMediaSession && !isSingleRowMediaLayout ? 'large' : 'medium';
+  const nowPlayingCardFootprint = getDashboardCardFootprint(nowPlayingCardSize, breakpointCols);
+  const nowPlayingColumnSpan = Math.min(hasActiveMediaSession ? 4 : 3, renderedGridCols);
   const browserColumnSpan = isSingleRowMediaLayout
     ? renderedGridCols
     : Math.max(2, renderedGridCols - nowPlayingColumnSpan);
@@ -2244,7 +2248,7 @@ export function MediaDashboard({
   const useCompactFolderGrid = browseHistory.length > 0;
   const compactBrowserHeight = isSingleRowMediaLayout
     ? COMPACT_MOBILE_BROWSER_HEIGHT
-    : largeCardFootprint.heightPx;
+    : nowPlayingCardFootprint.heightPx;
   const handleCardSizeChange = useCallback(() => undefined, []);
   const quietPanelClassName = `rounded-xl border p-4 ${surface.border} ${
     theme === 'light'
@@ -2291,8 +2295,8 @@ export function MediaDashboard({
         data-testid="media-now-playing-card"
         className="w-full"
         style={{
-          minHeight: `${largeCardFootprint.heightPx}px`,
-          height: `${largeCardFootprint.heightPx}px`,
+          minHeight: `${nowPlayingCardFootprint.heightPx}px`,
+          height: `${nowPlayingCardFootprint.heightPx}px`,
         }}
       >
         <MediaCard
@@ -2320,7 +2324,7 @@ export function MediaDashboard({
           groupMembers={nowPlayingDevice.groupMembers}
           mediaStackAppearance={selectedDeviceIsGrouped}
           mediaStackCount={selectedDeviceIsGrouped ? selectedGroupSize - 1 : undefined}
-          size="large"
+          size={nowPlayingCardSize}
           onSizeChange={handleCardSizeChange}
           isEditMode={false}
           hideTransportControls={isSpotifyAccountDevice(nowPlayingDevice)}
@@ -2333,7 +2337,7 @@ export function MediaDashboard({
   const browserPanel = (
     <section
       data-testid="media-browser-panel"
-      className="min-w-0 space-y-4"
+      className={`min-w-0 space-y-4 ${hasActiveMediaSession ? 'order-2' : 'order-1'}`}
       style={{ gridColumn: `span ${browserColumnSpan} / span ${browserColumnSpan}` }}
     >
       {canBrowseMedia ? (
@@ -2494,14 +2498,15 @@ export function MediaDashboard({
               style={{ gridTemplateColumns: dashboardGridStyle.gridTemplateColumns }}
             >
               <section
-                className="min-w-0 space-y-4"
+                className={`min-w-0 space-y-4 ${hasActiveMediaSession ? 'order-1 max-[899px]:sticky max-[899px]:top-2 max-[899px]:z-20' : 'order-2'}`}
                 style={{
                   gridColumn: `span ${nowPlayingColumnSpan} / span ${nowPlayingColumnSpan}`,
                 }}
               >
                 <div className="flex h-9 items-center gap-3">
                   <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>
-                    {playbackProviderLabel ?? t(dashboardTitleKey)}
+                    {playbackProviderLabel ??
+                      t(hasActiveMediaSession ? dashboardTitleKey : 'sections.media.audio.title')}
                   </h2>
                   <span className={`text-xs md:text-sm ${surface.textSecondary}`}>
                     {selectedGroupSize} {nowPlayingTypeLabel}

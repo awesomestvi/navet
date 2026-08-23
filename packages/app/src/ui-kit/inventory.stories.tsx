@@ -21,7 +21,7 @@ const exportDescriptions: Record<string, string> = {
   ColorInputSwatch: 'theme-aware color preview and selection trigger',
   Combobox: 'searchable single-select field',
   DashboardEmptyState: 'dashboard-level zero-state composition',
-  DashboardHeroSection: 'hero layout for summary and primary actions',
+  DashboardHeroSection: 'introductory layout for setup, editing, and other orientation-heavy flows',
   FieldBlock: 'form field label, helper, and content wrapper',
   getAccentCardShellTokens: 'accent-aware card shell treatment',
   getCardShellSurfaceTokens: 'card shell surface recipe selection',

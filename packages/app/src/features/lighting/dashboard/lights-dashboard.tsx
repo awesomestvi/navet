@@ -49,7 +49,9 @@ interface LightsDashboardProps {
   onRemoveEntity?: (entityId: string) => void;
 }
 
-const LIGHT_ROOM_DEFAULT_EXPANDED = true;
+function isLightRoomExpandedByDefault(room: LightRoomSummary) {
+  return room.activeCount > 0 || room.unavailableCount > 0;
+}
 
 function showBatchIssue(result: LightBatchActionResult, t: ReturnType<typeof useI18n>['t']) {
   if (result.failed === 0 && result.skippedUnavailable === 0) return;
@@ -156,7 +158,7 @@ const LightsRoomSection = memo(function LightsRoomSection({
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
-  const expanded = manualExpanded ?? LIGHT_ROOM_DEFAULT_EXPANDED;
+  const expanded = manualExpanded ?? isLightRoomExpandedByDefault(room);
   const [pendingPower, setPendingPower] = useState(false);
   const displayName =
     room.room === UNKNOWN_ROOM_LABEL ? t('lighting.dashboard.otherLights') : room.room;
@@ -203,6 +205,9 @@ const LightsRoomSection = memo(function LightsRoomSection({
         subtitle={roomStateSummary}
         headerLayout="title-first"
         headerVariant="large"
+        isActive={room.activeCount > 0}
+        activeColor={accentColor}
+        accentColor={accentColor}
         headerMarginBottomClassName={expanded ? undefined : 'mb-0'}
         headerLeading={
           <EntityCardHeaderIcon
@@ -340,6 +345,7 @@ export const LightsDashboard = memo(function LightsDashboard({
         }),
         icon: Lightbulb,
         iconColor: '#facc15',
+        tone: 'neutral',
       },
     ];
 
@@ -359,19 +365,35 @@ export const LightsDashboard = memo(function LightsDashboard({
         title: t('lighting.dashboard.unavailable'),
         value: t('lighting.dashboard.unavailableCount', { count: model.unavailableCount }),
         icon: CircleAlert,
-        iconColor: '#f87171',
+        iconColor: '#f59e0b',
+        priority: 'attention',
+        tone: 'warning',
       });
     }
 
     return items;
   }, [averageBrightness, model.activeCount, model.totalCount, model.unavailableCount, t]);
+  const displayRooms = useMemo(
+    () =>
+      model.rooms
+        .map((room, index) => ({ room, index }))
+        .sort((left, right) => {
+          const priority = (room: LightRoomSummary) =>
+            room.unavailableCount > 0 ? 0 : room.activeCount > 0 ? 1 : 2;
+          return priority(left.room) - priority(right.room) || left.index - right.index;
+        })
+        .map(({ room }) => room),
+    [model.rooms]
+  );
   const handleExpandedChange = useCallback((roomName: string, expanded: boolean) => {
     setExpandedRooms((current) => ({ ...current, [roomName]: expanded }));
   }, []);
   const allRoomsCollapsed = useMemo(
     () =>
       model.rooms.length > 0 &&
-      model.rooms.every((room) => !(expandedRooms[room.room] ?? LIGHT_ROOM_DEFAULT_EXPANDED)),
+      model.rooms.every(
+        (room) => !(expandedRooms[room.room] ?? isLightRoomExpandedByDefault(room))
+      ),
     [expandedRooms, model.rooms]
   );
   const toggleAllRooms = useCallback(() => {
@@ -484,16 +506,17 @@ export const LightsDashboard = memo(function LightsDashboard({
         }
       />
 
-      <div className="grid w-full grid-cols-1 items-start gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 lg:gap-4">
-        {model.rooms.map((room) => (
-          <LightsRoomSection
-            key={room.room}
-            room={room}
-            manualExpanded={expandedRooms[room.room]}
-            onExpandedChange={handleExpandedChange}
-            isEditMode={isEditMode}
-            onRemoveEntity={onRemoveEntity}
-          />
+      <div className="grid w-full grid-cols-1 items-start gap-3 sm:grid-cols-2 xl:grid-cols-3 lg:gap-4">
+        {displayRooms.map((room) => (
+          <div key={room.room} data-lights-room-id={room.room} className="scroll-mt-4">
+            <LightsRoomSection
+              room={room}
+              manualExpanded={expandedRooms[room.room]}
+              onExpandedChange={handleExpandedChange}
+              isEditMode={isEditMode}
+              onRemoveEntity={onRemoveEntity}
+            />
+          </div>
         ))}
       </div>
     </SummaryBarStack>

@@ -2,6 +2,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { cn } from '@navet/app/components/ui/utils';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import type { Section } from '@navet/app/navigation/sections';
+import { sortOperationalItems } from '@navet/app/types/operational-signal';
 import { darkenColor } from '@navet/app/utils/color-utils';
 import { openCustomExtensionUrl } from '@navet/app/utils/custom-extensions';
 import { type HTMLAttributes, memo, type ReactNode } from 'react';
@@ -27,18 +28,22 @@ export const SummaryBar = memo(function SummaryBar({
   const { theme } = useTheme();
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
+  const orderedItems = sortOperationalItems(items);
 
-  if (items.length === 0) {
+  if (items.length === 0 && !leadingContent && !trailingContent) {
     return null;
   }
 
   return (
     <nav className={`min-w-0 ${className}`} aria-label={ariaLabel}>
-      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 md:mx-0 md:flex-wrap md:gap-2 md:overflow-visible md:px-0 md:pb-0">
+      <div className="scrollbar-hide -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 md:mx-0 md:flex-wrap md:gap-2 md:overflow-visible md:px-0 md:pb-0">
         {leadingContent}
-        {items.map((item) => {
+        {orderedItems.map((item) => {
           const IconComponent = item.icon;
           const isDanger = item.tone === 'danger';
+          const isWarning = item.tone === 'warning';
+          const isSuccess = item.tone === 'success';
+          const isActive = item.tone === 'active';
           const iconColor = isDanger
             ? theme === 'light'
               ? '#dc2626'
@@ -50,16 +55,30 @@ export const SummaryBar = memo(function SummaryBar({
           const contentGridClassName = 'grid-cols-[auto_minmax(0,1fr)]';
           const focusClassName = isDanger
             ? 'focus-visible:outline-red-400/60'
-            : 'focus-visible:outline-white/25';
+            : isWarning
+              ? 'focus-visible:outline-amber-400/60'
+              : 'focus-visible:outline-white/25';
           const chipClassName = isDanger
             ? theme === 'light'
               ? 'border-red-300/80 bg-red-50/88 text-red-800 hover:bg-red-100/92'
               : 'border-red-500/30 bg-red-500/10 text-red-100 hover:bg-red-500/16'
-            : theme === 'light'
-              ? 'border-slate-200/70 bg-white/55 text-slate-900 shadow-[0_12px_28px_-24px_rgba(15,23,42,0.28)] hover:bg-white/75'
-              : theme === 'black'
-                ? 'border-white/10 bg-white/[0.035] text-white/88 hover:bg-white/[0.065]'
-                : 'border-white/10 bg-white/[0.055] text-white/88 backdrop-blur-xl hover:bg-white/[0.085]';
+            : isWarning
+              ? theme === 'light'
+                ? 'border-amber-300/80 bg-amber-50/88 text-amber-900 hover:bg-amber-100/92'
+                : 'border-amber-500/30 bg-amber-500/10 text-amber-100 hover:bg-amber-500/16'
+              : isSuccess
+                ? theme === 'light'
+                  ? 'border-emerald-300/80 bg-emerald-50/88 text-emerald-900 hover:bg-emerald-100/92'
+                  : 'border-emerald-500/28 bg-emerald-500/9 text-emerald-100 hover:bg-emerald-500/14'
+                : isActive
+                  ? theme === 'light'
+                    ? 'border-sky-300/80 bg-sky-50/88 text-sky-900 hover:bg-sky-100/92'
+                    : 'border-sky-500/28 bg-sky-500/9 text-sky-100 hover:bg-sky-500/14'
+                  : theme === 'light'
+                    ? 'border-slate-200/70 bg-white/55 text-slate-900 shadow-[0_12px_28px_-24px_rgba(15,23,42,0.28)] hover:bg-white/75'
+                    : theme === 'black'
+                      ? 'border-white/10 bg-white/[0.035] text-white/88 hover:bg-white/[0.065]'
+                      : 'border-white/10 bg-white/[0.055] text-white/88 backdrop-blur-xl hover:bg-white/[0.085]';
           const content = (
             <>
               <span
@@ -68,7 +87,9 @@ export const SummaryBar = memo(function SummaryBar({
                   'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-transform group-hover:scale-[1.03] md:h-6 md:w-6',
                   isDanger
                     ? 'relative border-red-400/45 bg-red-500/22'
-                    : 'border-current/10 bg-current/[0.08]'
+                    : isWarning
+                      ? 'border-amber-400/38 bg-amber-500/16'
+                      : 'border-current/10 bg-current/[0.08]'
                 )}
                 style={{ color: iconColor }}
                 aria-hidden="true"
@@ -92,7 +113,11 @@ export const SummaryBar = memo(function SummaryBar({
                       ? theme === 'light'
                         ? 'text-red-700/80'
                         : 'text-red-200/80'
-                      : surface.textMuted
+                      : isWarning
+                        ? theme === 'light'
+                          ? 'text-amber-800/80'
+                          : 'text-amber-200/80'
+                        : surface.textMuted
                   )}
                 >
                   {item.value}

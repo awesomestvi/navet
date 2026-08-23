@@ -1,10 +1,13 @@
 import artworksOriginal from '@assets/reference/media/artworks-original.jpg';
+import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import {
   getMediaPlayerCapabilities,
   MEDIA_PLAYER_FEATURES,
 } from '@navet/app/constants/media-player-features';
+import { type ThemeMode, useThemeStore } from '@navet/app/stores/theme-store';
 import type { MediaDevice } from '@navet/app/types/device.types';
 import type { Meta, StoryObj } from '@storybook/react';
+import { type ComponentProps, useEffect } from 'react';
 import { MediaDashboard } from './media-dashboard';
 
 type StoryDevice = MediaDevice & { type: 'media' };
@@ -154,13 +157,33 @@ const unavailablePlayer = {
   mediaCapabilities: getMediaPlayerCapabilities(0),
 } satisfies StoryDevice;
 
+function MediaDashboardStory(props: ComponentProps<typeof MediaDashboard> & { theme: ThemeMode }) {
+  const { theme, ...dashboardProps } = props;
+  const surface = getThemeSurfaceTokens(theme);
+
+  useEffect(() => {
+    const previousTheme = useThemeStore.getState();
+    useThemeStore.setState({ ...previousTheme, theme, followSystemTheme: false, wallpaper: null });
+    return () => {
+      useThemeStore.setState(previousTheme);
+    };
+  }, [theme]);
+
+  return (
+    <div className={`min-h-screen p-3 md:p-6 ${surface.appBg}`}>
+      <MediaDashboard {...dashboardProps} />
+    </div>
+  );
+}
+
 const meta = {
   title: 'Pages/Media/Media Dashboard',
-  component: MediaDashboard,
+  component: MediaDashboardStory,
   tags: ['autodocs'],
   args: {
     devices: [baseSpotify, kitchenSpeaker, livingRoomTv],
     initialDeviceId: baseSpotify.id,
+    theme: 'glass',
   },
   parameters: {
     layout: 'fullscreen',
@@ -172,7 +195,7 @@ const meta = {
       },
     },
   },
-} satisfies Meta<typeof MediaDashboard>;
+} satisfies Meta<typeof MediaDashboardStory>;
 
 export default meta;
 
@@ -302,3 +325,15 @@ export const MobileMediaLibrary: Story = {
     },
   },
 };
+
+export const TabletMediaSession: Story = {
+  parameters: { viewport: { defaultViewport: 'tabletLandscape' } },
+};
+
+export const IdlePhone: Story = {
+  ...SpotifyIdleNoSelectedSource,
+  parameters: { viewport: { defaultViewport: 'iphone14' } },
+};
+
+export const LightTheme: Story = { args: { theme: 'light' } };
+export const BlackTheme: Story = { args: { theme: 'black' } };

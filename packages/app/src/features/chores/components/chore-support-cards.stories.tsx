@@ -56,14 +56,15 @@ type Story = StoryObj<typeof meta>;
 export const Pulse: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText('20 points')).toBeInTheDocument();
-    await expect(canvas.getByText('Earned')).toBeInTheDocument();
+    await expect(canvas.getByRole('region', { name: '1, Overdue' })).toBeInTheDocument();
+    await expect(canvas.queryByText('20 points')).not.toBeInTheDocument();
+    await expect(canvas.queryByText('Earned')).not.toBeInTheDocument();
     await expect(canvas.getByText('Day streak')).toBeInTheDocument();
     await expect(canvas.queryByRole('progressbar')).not.toBeInTheDocument();
     await expect(
       canvasElement.querySelector('[data-house-pulse-layout="responsive"]')
     ).toBeVisible();
-    await expect(canvas.getByRole('heading', { name: 'House pulse' })).toHaveClass(
+    await expect(canvas.getByRole('heading', { name: 'Needs attention' })).toHaveClass(
       'text-sm',
       'leading-tight'
     );
@@ -96,6 +97,21 @@ export const Pulse: Story = {
     }
     await expect(metrics[0]).toHaveClass('lg:landscape:pl-5', 'xl:pl-5');
     await expect(metrics[2]).toHaveClass('sm:col-span-2', 'xl:col-span-1');
+  },
+};
+
+export const PulseCurrent: Story = {
+  args: {
+    pulse: {
+      ...getHousePulse(workspace),
+      overdue: 0,
+    },
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('heading', { name: 'House pulse' })).toBeInTheDocument();
+    await expect(canvas.getByText('20 points')).toBeInTheDocument();
+    await expect(canvas.getByText('Earned')).toBeInTheDocument();
+    await expect(canvas.queryByText('Overdue')).not.toBeInTheDocument();
   },
 };
 

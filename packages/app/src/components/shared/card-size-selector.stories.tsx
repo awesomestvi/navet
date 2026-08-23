@@ -1,20 +1,27 @@
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
+import { expect, within } from 'storybook/test';
 import type { CardSize } from './card-size-selector';
 import { CardSizeSelector } from './card-size-selector';
 
-function CardSizeSelectorStory({ initialSize = 'medium' }: { initialSize?: CardSize }) {
+function CardSizeSelectorStory({
+  initialSize = 'medium',
+  allowedSizes,
+}: {
+  initialSize?: CardSize;
+  allowedSizes?: CardSize[];
+}) {
   const [size, setSize] = useState<CardSize>(initialSize);
   return (
-    <div className="flex items-center justify-center p-12">
-      <div className="relative h-48 w-96 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl">
+    <div className="flex items-center justify-center p-4 sm:p-12">
+      <div className="relative h-48 w-full max-w-96 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl">
         <div className="flex h-full items-center justify-center">
           <span className="text-sm text-white/60">
             Current size: <span className="font-semibold text-white">{size}</span>
           </span>
         </div>
-        <CardSizeSelector currentSize={size} onSizeChange={setSize} />
+        <CardSizeSelector currentSize={size} onSizeChange={setSize} allowedSizes={allowedSizes} />
       </div>
     </div>
   );
@@ -77,6 +84,16 @@ export const StartingLarge: Story = {
 
 export const RestrictedSizes: Story = {
   render: () => <RestrictedSizesStory />,
+};
+
+export const PhoneSheet: Story = {
+  args: { allowedSizes: ['small', 'medium', 'large', 'extra-large'] },
+  parameters: { viewport: { defaultViewport: 'mobile1' } },
+  play: async ({ canvasElement, userEvent }) => {
+    const page = within(canvasElement.ownerDocument.body);
+    await userEvent.click(page.getByRole('button', { name: 'Resize card' }));
+    await expect(page.getByRole('dialog', { name: 'Resize card' })).toBeInTheDocument();
+  },
 };
 
 export const Docs: Story = {

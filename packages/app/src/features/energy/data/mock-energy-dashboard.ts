@@ -14,9 +14,20 @@ import type {
 } from '../types/energy.types';
 
 function cloneRangeSnapshot(snapshot: EnergyRangeSnapshot): EnergyRangeSnapshot {
+  const historicalWeight = snapshot.liveConsumption.reduce(
+    (total, point) => total + Math.max(0, point.value),
+    0
+  );
   return {
     ...snapshot,
-    liveConsumption: snapshot.liveConsumption.map((point) => ({ ...point })),
+    liveConsumption: snapshot.liveConsumption.map((point) => ({
+      ...point,
+      ...(snapshot.id !== 'now' && point.secondaryValue === undefined && historicalWeight > 0
+        ? {
+            secondaryValue: (snapshot.totalUsageKWh * Math.max(0, point.value)) / historicalWeight,
+          }
+        : {}),
+    })),
     energyBreakdown: snapshot.energyBreakdown.map((item) => ({ ...item })),
     costBreakdown: snapshot.costBreakdown.map((item) => ({ ...item })),
     batteryForecast: snapshot.batteryForecast.map((point) => ({ ...point })),
@@ -45,6 +56,7 @@ function cloneDashboard(dashboard: EnergyDashboardModel): EnergyDashboardModel {
     })),
     topConsumers: dashboard.topConsumers.map((consumer) => ({ ...consumer })),
     whatChanged: { ...dashboard.whatChanged },
+    dataCoverage: { ...dashboard.dataCoverage },
     totals: { ...dashboard.totals },
   };
 }
@@ -202,10 +214,10 @@ const nowRange: EnergyRangeSnapshot = {
   gridExportKWh: 3.9,
   estimatedCost: 10.84,
   liveConsumption: [
-    { label: '-45m', value: 4.8 },
-    { label: '-30m', value: 5.2 },
-    { label: '-15m', value: 5.6 },
-    { label: 'Now', value: 5.1 },
+    { label: '-45m', value: 4800 },
+    { label: '-30m', value: 5200 },
+    { label: '-15m', value: 5600 },
+    { label: 'Now', value: 5100 },
   ],
   energyBreakdown: [
     { id: 'solar', label: 'Solar', value: 3.4, unit: 'kWh', tone: 'solar' },
@@ -234,12 +246,21 @@ const todayRange: EnergyRangeSnapshot = {
   gridExportKWh: 3.9,
   estimatedCost: 10.84,
   liveConsumption: [
-    { label: '00', value: 1.8 },
-    { label: '04', value: 1.5 },
-    { label: '08', value: 3.6 },
-    { label: '12', value: 5.7 },
-    { label: '16', value: 5.1 },
-    { label: '20', value: 4.2 },
+    { label: '00:00', value: 920 },
+    { label: '01:00', value: 780 },
+    { label: '02:00', value: 710 },
+    { label: '03:00', value: 740 },
+    { label: '04:00', value: 860 },
+    { label: '05:00', value: 1180 },
+    { label: '06:00', value: 2260 },
+    { label: '07:00', value: 3180 },
+    { label: '08:00', value: 2840 },
+    { label: '09:00', value: 1720 },
+    { label: '10:00', value: 1460 },
+    { label: '11:00', value: 1920 },
+    { label: '12:00', value: 2580 },
+    { label: '13:00', value: 2140 },
+    { label: '14:00', value: 1760 },
   ],
   energyBreakdown: [
     { id: 'solar', label: 'Solar', value: 31.8, unit: 'kWh', tone: 'solar' },
@@ -268,13 +289,13 @@ const weekRange: EnergyRangeSnapshot = {
   gridExportKWh: 26.5,
   estimatedCost: 76.24,
   liveConsumption: [
-    { label: 'Mon', value: 24.8 },
-    { label: 'Tue', value: 22.1 },
-    { label: 'Wed', value: 23.9 },
-    { label: 'Thu', value: 21.6 },
-    { label: 'Fri', value: 25.2 },
-    { label: 'Sat', value: 23.4 },
-    { label: 'Sun', value: 23.8 },
+    { label: 'Fri', value: 1480 },
+    { label: 'Sat', value: 1320 },
+    { label: 'Sun', value: 1260 },
+    { label: 'Mon', value: 1560 },
+    { label: 'Tue', value: 1410 },
+    { label: 'Wed', value: 1620 },
+    { label: 'Thu', value: 1510 },
   ],
   energyBreakdown: [
     { id: 'solar', label: 'Solar', value: 188.4, unit: 'kWh', tone: 'solar' },
@@ -304,10 +325,36 @@ const monthRange: EnergyRangeSnapshot = {
   gridExportKWh: 98.4,
   estimatedCost: 294.2,
   liveConsumption: [
-    { label: 'W1', value: 151 },
-    { label: 'W2', value: 158 },
-    { label: 'W3', value: 164 },
-    { label: 'W4', value: 169 },
+    { label: '22 Jul', value: 1260 },
+    { label: '23 Jul', value: 1380 },
+    { label: '24 Jul', value: 1420 },
+    { label: '25 Jul', value: 1190 },
+    { label: '26 Jul', value: 1320 },
+    { label: '27 Jul', value: 1540 },
+    { label: '28 Jul', value: 1460 },
+    { label: '29 Jul', value: 1370 },
+    { label: '30 Jul', value: 1290 },
+    { label: '31 Jul', value: 1430 },
+    { label: '1 Aug', value: 1580 },
+    { label: '2 Aug', value: 1620 },
+    { label: '3 Aug', value: 1470 },
+    { label: '4 Aug', value: 1390 },
+    { label: '5 Aug', value: 1510 },
+    { label: '6 Aug', value: 1680 },
+    { label: '7 Aug', value: 1720 },
+    { label: '8 Aug', value: 1490 },
+    { label: '9 Aug', value: 1360 },
+    { label: '10 Aug', value: 1440 },
+    { label: '11 Aug', value: 1590 },
+    { label: '12 Aug', value: 1660 },
+    { label: '13 Aug', value: 1530 },
+    { label: '14 Aug', value: 1410 },
+    { label: '15 Aug', value: 1350 },
+    { label: '16 Aug', value: 1480 },
+    { label: '17 Aug', value: 1640 },
+    { label: '18 Aug', value: 1710 },
+    { label: '19 Aug', value: 1570 },
+    { label: '20 Aug', value: 1510 },
   ],
   energyBreakdown: [
     { id: 'solar', label: 'Solar', value: 774.9, unit: 'kWh', tone: 'solar' },
@@ -558,8 +605,137 @@ function findDashboardFlow(dashboard: EnergyDashboardModel, flowId: string) {
   return dashboard.flows.find((flow) => flow.id === flowId);
 }
 
+function removeEvFromDashboard(dashboard: EnergyDashboardModel) {
+  dashboard.topConsumers = dashboard.topConsumers.filter((consumer) => consumer.id !== 'ev');
+  for (const snapshot of Object.values(dashboard.ranges)) {
+    snapshot.costBreakdown = snapshot.costBreakdown.filter((item) => item.id !== 'ev');
+  }
+}
+
+function removeSolarAndBatteryFromDashboard(dashboard: EnergyDashboardModel) {
+  const removedNodeIds = new Set(['solar', 'battery', 'renewable']);
+  dashboard.nodes = dashboard.nodes.filter((node) => !removedNodeIds.has(node.id));
+  dashboard.flows = dashboard.flows.filter(
+    (flow) => !removedNodeIds.has(flow.from) && !removedNodeIds.has(flow.to)
+  );
+  dashboard.summary = dashboard.summary.filter(
+    (item) => item.id !== 'solar' && item.id !== 'battery' && item.id !== 'renewable'
+  );
+  dashboard.insights = dashboard.insights.filter((insight) => insight.id !== 'solar-cover');
+  dashboard.explanations = dashboard.explanations.filter(
+    (explanation) => explanation.id !== 'solar-offset'
+  );
+  dashboard.dataCoverage.hasSolar = false;
+  dashboard.dataCoverage.hasBattery = false;
+  dashboard.dataCoverage.hasGridExport = false;
+  dashboard.totals.solarW = 0;
+  dashboard.totals.solarTodayKWh = 0;
+  dashboard.totals.batteryPercent = 0;
+  dashboard.totals.batteryPowerW = 0;
+  dashboard.totals.exportW = 0;
+  dashboard.totals.exportTodayKWh = 0;
+  for (const snapshot of Object.values(dashboard.ranges)) {
+    snapshot.solarProductionKWh = 0;
+    snapshot.gridExportKWh = 0;
+    snapshot.gridImportKWh = snapshot.totalUsageKWh;
+    snapshot.energyBreakdown = snapshot.energyBreakdown.filter(
+      (item) => item.id !== 'solar' && item.id !== 'battery'
+    );
+    snapshot.batteryForecast = [];
+  }
+}
+
 export const energyDashboardScenarios: EnergyDashboardScenario[] = [
   makeScenario('default', 'Default', (dashboard) => dashboard),
+  makeScenario('normal-household', 'Normal household', (dashboard) => {
+    removeEvFromDashboard(dashboard);
+    removeSolarAndBatteryFromDashboard(dashboard);
+    dashboard.mode = 'normal';
+    dashboard.modeSummary = 'Household demand is supplied by the grid.';
+    dashboard.totals.currentLoadW = 7400;
+    dashboard.totals.importW = 7400;
+    dashboard.totals.importTodayKWh = dashboard.ranges.today.totalUsageKWh;
+    const homeNode = findDashboardNode(dashboard, 'home');
+    if (homeNode) homeNode.value = 7.4;
+    const gridNode = findDashboardNode(dashboard, 'grid');
+    if (gridNode) gridNode.value = 7.4;
+    const gridHomeFlow = findDashboardFlow(dashboard, 'grid-home');
+    if (gridHomeFlow) {
+      gridHomeFlow.valueKw = 7.4;
+      gridHomeFlow.valueKwhToday = dashboard.ranges.today.totalUsageKWh;
+    }
+    const loadSummary = dashboard.summary.find((item) => item.id === 'load');
+    if (loadSummary) loadSummary.value = '7.4';
+    const gridSummary = dashboard.summary.find((item) => item.id === 'grid');
+    if (gridSummary) {
+      gridSummary.value = '7.4';
+      gridSummary.caption = 'kW import';
+      gridSummary.tone = undefined;
+    }
+    return dashboard;
+  }),
+  makeScenario('solar-battery-household', 'Solar and battery household', (dashboard) => {
+    removeEvFromDashboard(dashboard);
+    return dashboard;
+  }),
+  makeScenario('solar-battery-ev-household', 'Solar, battery, and EV household', (dashboard) => {
+    const ev = dashboard.topConsumers.find((consumer) => consumer.id === 'ev');
+    if (ev) {
+      ev.powerW = 7200;
+      ev.energyKWh = 14.8;
+      ev.shareOfLoad = 0.4;
+      ev.costToday = 3.62;
+      ev.status = 'active';
+    }
+    dashboard.mode = 'peak';
+    dashboard.modeSummary = 'The EV is charging while solar and battery support the home.';
+    dashboard.totals.currentLoadW = 12300;
+    dashboard.totals.solarW = 4200;
+    dashboard.totals.batteryPercent = 72;
+    dashboard.totals.batteryPowerW = -300;
+    dashboard.totals.importW = 7800;
+    dashboard.totals.importTodayKWh = 21.8;
+    const homeNode = findDashboardNode(dashboard, 'home');
+    if (homeNode) homeNode.value = 12.3;
+    const gridNode = findDashboardNode(dashboard, 'grid');
+    if (gridNode) gridNode.value = 7.8;
+    const batteryNode = findDashboardNode(dashboard, 'battery');
+    if (batteryNode) batteryNode.value = 72;
+    const gridHomeFlow = findDashboardFlow(dashboard, 'grid-home');
+    if (gridHomeFlow) {
+      gridHomeFlow.valueKw = 7.8;
+      gridHomeFlow.valueKwhToday = 21.8;
+    }
+    const loadSummary = dashboard.summary.find((item) => item.id === 'load');
+    if (loadSummary) loadSummary.value = '12.3';
+    const gridSummary = dashboard.summary.find((item) => item.id === 'grid');
+    if (gridSummary) {
+      gridSummary.value = '7.8';
+      gridSummary.caption = 'kW import';
+      gridSummary.tone = 'warn';
+    }
+    const batterySummary = dashboard.summary.find((item) => item.id === 'battery');
+    if (batterySummary) {
+      batterySummary.value = '72';
+      batterySummary.caption = '% at 0.3 kW discharge';
+    }
+    dashboard.ranges.now.totalUsageKWh = 37.4;
+    dashboard.ranges.now.gridImportKWh = 21.8;
+    dashboard.ranges.now.liveConsumption = [
+      { label: '-45m', value: 4700 },
+      { label: '-30m', value: 5200 },
+      { label: '-15m', value: 11800 },
+      { label: 'Now', value: 12300 },
+    ];
+    dashboard.ranges.today.totalUsageKWh = 37.4;
+    dashboard.ranges.today.gridImportKWh = 21.8;
+    dashboard.whatChanged = {
+      title: 'EV charging raised household demand',
+      description: 'The garage charger is the largest live load at 7.2 kW.',
+      tone: 'warn',
+    };
+    return dashboard;
+  }),
   makeScenario('solar-producing', 'Solar producing', (dashboard) => {
     dashboard.mode = 'eco';
     dashboard.summary[1] = { ...dashboard.summary[1], value: '5.4', caption: 'kW now' };

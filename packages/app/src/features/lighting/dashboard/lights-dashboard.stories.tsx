@@ -201,11 +201,13 @@ type Story = StoryObj<typeof meta>;
 
 export const SeveralActiveRooms: Story = {
   play: async ({ canvasElement }) => {
-    const roomToggles = canvasElement.querySelectorAll('[data-lights-room-toggle="true"]');
+    const roomSections = canvasElement.querySelectorAll('[data-lights-room-section]');
 
-    await expect(roomToggles.length).toBeGreaterThan(0);
-    for (const toggle of roomToggles) {
-      await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(roomSections.length).toBeGreaterThan(0);
+    for (const roomSection of roomSections) {
+      const toggle = roomSection.querySelector('[data-lights-room-toggle="true"]');
+      const hasActiveLight = roomSection.querySelector('[data-light-state="on"]') !== null;
+      await expect(toggle).toHaveAttribute('aria-expanded', hasActiveLight ? 'true' : 'false');
     }
   },
 };

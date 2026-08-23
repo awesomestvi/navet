@@ -2,14 +2,12 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { navetRadiusTokens, navetSpacingTokens } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
 import { useTheme } from '@navet/app/hooks';
-import type { CSSProperties, ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 
-export interface PanelProps {
+export interface PanelProps extends Omit<HTMLAttributes<HTMLElement>, 'children'> {
   as?: 'div' | 'section' | 'article';
   muted?: boolean;
   padded?: boolean;
-  className?: string;
-  style?: CSSProperties;
   children: ReactNode;
 }
 
@@ -22,12 +20,14 @@ export function Panel({
   className,
   style,
   children,
+  ...props
 }: PanelProps) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
 
   return (
     <Component
+      {...props}
       style={style}
       className={cn(
         'border backdrop-blur-xl',

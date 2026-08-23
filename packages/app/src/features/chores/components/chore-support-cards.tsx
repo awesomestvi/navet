@@ -5,7 +5,16 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { getThemeFocusRingClassName } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
 import { useI18n, useTheme } from '@navet/app/hooks';
-import { Check, Flame, Gift, HeartHandshake, Home, type LucideIcon, Sparkles } from 'lucide-react';
+import {
+  Check,
+  Clock3,
+  Flame,
+  Gift,
+  HeartHandshake,
+  Home,
+  type LucideIcon,
+  Sparkles,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import type {
   ChoreHousePulse,
@@ -39,6 +48,7 @@ export function HousePulse({
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const settled = pulse.remaining === 0;
+  const needsAttention = pulse.overdue > 0;
   const metricCount = 2 + Number(showPoints) + Number(Boolean(onSeeRewards));
   const Heading = headingLevel;
 
@@ -91,12 +101,20 @@ export function HousePulse({
               <Heading
                 className={cn('truncate text-sm font-semibold leading-tight', surface.textPrimary)}
               >
-                {settled ? t('household.pulse.settled') : t('household.pulse.title')}
+                {needsAttention
+                  ? t('household.focus.title')
+                  : settled
+                    ? t('household.pulse.settled')
+                    : t('household.pulse.title')}
               </Heading>
               <p className={cn('mt-0.5 truncate text-[11px] leading-tight', surface.textSecondary)}>
-                {settled
-                  ? t('household.pulse.complete')
-                  : t('household.pulse.remaining', { count: pulse.remaining })}
+                {needsAttention
+                  ? `${t('household.today.overdue')} · ${t('household.pulse.remaining', {
+                      count: pulse.remaining,
+                    })}`
+                  : settled
+                    ? t('household.pulse.complete')
+                    : t('household.pulse.remaining', { count: pulse.remaining })}
               </p>
             </div>
           </div>
@@ -132,14 +150,24 @@ export function HousePulse({
           data-house-pulse-metrics="true"
         >
           {showPoints ? (
-            <PulseMetric
-              Icon={Sparkles}
-              color={themeColorValues.pink}
-              value={t('household.card.points', { count: pulse.pointsEarned })}
-              mobileValue={formatNumber(pulse.pointsEarned)}
-              label={t('household.card.earned')}
-              alignStart
-            />
+            needsAttention ? (
+              <PulseMetric
+                Icon={Clock3}
+                color={themeColorValues.red}
+                value={formatNumber(pulse.overdue)}
+                label={t('household.today.overdue')}
+                alignStart
+              />
+            ) : (
+              <PulseMetric
+                Icon={Sparkles}
+                color={themeColorValues.pink}
+                value={t('household.card.points', { count: pulse.pointsEarned })}
+                mobileValue={formatNumber(pulse.pointsEarned)}
+                label={t('household.card.earned')}
+                alignStart
+              />
+            )
           ) : null}
           <PulseMetric
             Icon={Flame}

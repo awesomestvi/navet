@@ -1,15 +1,33 @@
+import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { createPreviewStoryScenario } from '@navet/app/preview/runtime';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
+import { type ThemeMode, useThemeStore } from '@navet/app/stores/theme-store';
 import type { Meta, StoryObj } from '@storybook/react';
 import { useEffect } from 'react';
-import { expect } from 'storybook/test';
+import { expect, within } from 'storybook/test';
 import { TasksSection } from './tasks-section';
 
 type TasksStoryMode = 'default' | 'empty' | 'many' | 'reconnecting' | 'low-power';
 
-function TasksSectionStory({ mode = 'default' }: { mode?: TasksStoryMode }) {
+function TasksSectionStory({
+  mode = 'default',
+  theme = 'glass',
+}: {
+  mode?: TasksStoryMode;
+  theme?: ThemeMode;
+}) {
+  const surface = getThemeSurfaceTokens(theme);
+
   useEffect(() => {
     const previousSettingsState = useSettingsStore.getState();
+    const previousThemeState = useThemeStore.getState();
+
+    useThemeStore.setState({
+      ...previousThemeState,
+      theme,
+      followSystemTheme: false,
+      wallpaper: null,
+    });
 
     if (mode === 'low-power') {
       useSettingsStore.setState({
@@ -21,11 +39,12 @@ function TasksSectionStory({ mode = 'default' }: { mode?: TasksStoryMode }) {
 
     return () => {
       useSettingsStore.setState(previousSettingsState);
+      useThemeStore.setState(previousThemeState);
     };
-  }, [mode]);
+  }, [mode, theme]);
 
   return (
-    <div className="h-full min-w-0 overflow-x-hidden overflow-y-auto">
+    <div className={`h-full min-w-0 overflow-x-hidden overflow-y-auto p-3 md:p-6 ${surface.appBg}`}>
       <TasksSection />
     </div>
   );
@@ -167,13 +186,17 @@ export const AccordionDetails: Story = {
     },
   },
   play: async ({ canvas, userEvent, step }) => {
-    await step('shows generated summary only while details are open', async () => {
-      const detailButton = canvas.getAllByRole('button', { name: 'View' }).at(-1);
-      await expect(detailButton).toBeDefined();
-      await userEvent.click(detailButton as HTMLElement);
-      await expect(await canvas.findByText(/turn on kitchen and living room/i)).toBeInTheDocument();
-      await userEvent.click(canvas.getByRole('button', { name: 'Hide' }));
-      await expect(canvas.queryByText(/turn on kitchen and living room/i)).not.toBeInTheDocument();
+    await step('reveals and hides the routine detail sequence', async () => {
+      const automationRow = canvas.getByText('Detail-only automation').closest('article');
+      await expect(automationRow).not.toBeNull();
+      const row = within(automationRow as HTMLElement);
+      await expect(row.queryByRole('heading', { name: 'When' })).not.toBeInTheDocument();
+      await userEvent.click(row.getByRole('button', { name: 'View' }));
+      await expect(await row.findByRole('heading', { name: 'When' })).toBeInTheDocument();
+      await expect(row.getByRole('heading', { name: 'If' })).toBeInTheDocument();
+      await expect(row.getByRole('heading', { name: 'Then' })).toBeInTheDocument();
+      await userEvent.click(row.getByRole('button', { name: 'Hide' }));
+      await expect(row.queryByRole('heading', { name: 'When' })).not.toBeInTheDocument();
     });
   },
 };
@@ -370,4 +393,12 @@ export const DisabledRoutines: Story = {
 
 export const LowPower: Story = {
   args: { mode: 'low-power' },
+};
+
+export const LightTheme: Story = {
+  args: { theme: 'light' },
+};
+
+export const BlackTheme: Story = {
+  args: { theme: 'black' },
 };

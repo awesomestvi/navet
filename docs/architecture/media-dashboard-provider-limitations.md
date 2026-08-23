@@ -35,9 +35,9 @@ payloads directly.
 - `MediaDashboard` is the non-edit-mode media surface for normalized `MediaDevice` snapshots. It
   keeps provider-specific behavior behind `integrationMediaFeatureService` and provider feature
   hooks instead of importing provider packages.
-- The dashboard is intentionally compact: a now-playing section reuses the large `MediaCard`, a
-  browser panel lists playable or expandable media items, and a Spotify Connect panel handles output
-  recovery.
+- The dashboard changes its reading order with session state. Active playback promotes a large
+  `MediaCard` before the browser; idle playback uses a medium card and promotes browsing so a new
+  session takes fewer steps. A Spotify Connect panel handles output recovery.
 - Existing compact media cards remain the per-entity surface below the dashboard and continue to use
   their own controller/dialog flow. Spotify account entities are hidden from this compact list
   outside edit mode because the dashboard already represents them.

@@ -12,8 +12,8 @@ function DashboardHeroSectionStory() {
     <DashboardHeroSection
       accentColor={accentColor}
       surface={surface}
-      title="Shared hero chrome for dashboard and settings entry sections."
-      description="Use the pattern instead of duplicating rounded bordered hero containers in feature modules."
+      title="Introductory chrome for setup and editing surfaces."
+      description="Use only when a task needs orientation before live content. Operational dashboards should lead with current state."
       actions={
         <>
           <InteractivePill active intent="action">

@@ -20,7 +20,11 @@ interface EnergySparklineProps {
   height?: number;
   className?: string;
   showYAxisMarks?: boolean;
+  showYAxisLabels?: boolean;
   padX?: number;
+  fillOpacity?: number;
+  strokeWidth?: number;
+  valueKind?: 'power' | 'energy';
 }
 
 const VB_W = 200;
@@ -50,8 +54,10 @@ function smoothPath(pts: { x: number; y: number }[]): string {
 }
 
 function roundYAxisMark(value: number): number {
-  const step = value >= 1000 ? 1000 : 100;
-  return Math.max(step, Math.round(value / step) * step);
+  const absoluteValue = Math.abs(value);
+  const step =
+    absoluteValue >= 1000 ? 1000 : absoluteValue >= 100 ? 100 : absoluteValue >= 10 ? 10 : 1;
+  return Math.max(0, Math.round(value / step) * step);
 }
 
 export const EnergySparkline = memo(function EnergySparkline({
@@ -60,7 +66,11 @@ export const EnergySparkline = memo(function EnergySparkline({
   height = 40,
   className,
   showYAxisMarks = false,
+  showYAxisLabels = true,
   padX = 1,
+  fillOpacity = 0.28,
+  strokeWidth = 1.1,
+  valueKind = 'power',
 }: EnergySparklineProps) {
   const { locale, t } = useI18n();
   const { theme } = useTheme();
@@ -97,9 +107,9 @@ export const EnergySparkline = memo(function EnergySparkline({
   const yAxisNumberFormatter = useMemo(
     () =>
       new Intl.NumberFormat(locale, {
-        maximumFractionDigits: 0,
+        maximumFractionDigits: valueKind === 'energy' ? 2 : 0,
       }),
-    [locale]
+    [locale, valueKind]
   );
 
   const { baseline, line, pts, chartHeight, minVal, maxVal } = useMemo(() => {
@@ -154,10 +164,14 @@ export const EnergySparkline = memo(function EnergySparkline({
   );
 
   const tooltipTimestamp = formatTooltipTimestamp(activePoint?.timestampMs);
+  const activeLeftPercent =
+    activeCoords === null ? null : Math.max(0, Math.min(100, (activeCoords.x / VB_W) * 100));
+  const activeTopPercent =
+    activeCoords === null ? null : Math.max(0, Math.min(100, (activeCoords.y / height) * 100));
   const tooltipLeftPercent =
-    activeCoords === null ? null : Math.max(18, Math.min(82, (activeCoords.x / VB_W) * 100));
+    activeLeftPercent === null ? null : Math.max(18, Math.min(82, activeLeftPercent));
   const tooltipTopPercent =
-    activeCoords === null ? null : Math.max(14, Math.min(84, (activeCoords.y / height) * 100));
+    activeTopPercent === null ? null : Math.max(14, Math.min(84, activeTopPercent));
   const yAxisMarks = useMemo(() => {
     if (!showYAxisMarks) {
       return [];
@@ -165,16 +179,19 @@ export const EnergySparkline = memo(function EnergySparkline({
 
     const span = Math.max(maxVal - minVal, 1);
     const values = [maxVal, minVal + span * 0.5];
-    return values.map((value) => {
-      const roundedValue = roundYAxisMark(value);
+    const seenLabels = new Set<string>();
+    return values.flatMap((value) => {
+      const label = yAxisNumberFormatter.format(
+        valueKind === 'energy' ? Math.max(0, value) : roundYAxisMark(value)
+      );
+      if (seenLabels.has(label)) {
+        return [];
+      }
+      seenLabels.add(label);
       const y = PAD_TOP + (1 - (value - minVal) / span) * chartHeight;
-      return {
-        key: value,
-        label: yAxisNumberFormatter.format(roundedValue),
-        topPercent: (y / height) * 100,
-      };
+      return [{ key: value, label, topPercent: (y / height) * 100 }];
     });
-  }, [chartHeight, height, maxVal, minVal, showYAxisMarks, yAxisNumberFormatter]);
+  }, [chartHeight, height, maxVal, minVal, showYAxisMarks, valueKind, yAxisNumberFormatter]);
 
   if (data.length < 2) {
     return null;
@@ -196,11 +213,13 @@ export const EnergySparkline = memo(function EnergySparkline({
         >
           <div className="relative -translate-y-1/2">
             <div className={`border-t border-dashed ${axisLineClassName}`} />
-            <div
-              className={`absolute top-1/2 right-2 -translate-y-1/2 text-xs font-medium ${axisLabelClassName}`}
-            >
-              {mark.label}
-            </div>
+            {showYAxisLabels ? (
+              <div
+                className={`absolute top-1/2 right-2 -translate-y-1/2 text-xs font-medium ${axisLabelClassName}`}
+              >
+                {mark.label}
+              </div>
+            ) : null}
           </div>
         </div>
       ))}
@@ -225,7 +244,17 @@ export const EnergySparkline = memo(function EnergySparkline({
               <div className={`mt-1 flex items-center gap-2 text-xs ${tokens.surface.textPrimary}`}>
                 <span className="h-2 w-2 rounded-full" style={{ backgroundColor: tokens.accent }} />
                 <span>
-                  {t('charts.powerSparkline.useLabel', { value: Math.round(activePoint.value) })}
+                  {t(
+                    valueKind === 'energy'
+                      ? 'charts.energySparkline.useLabel'
+                      : 'charts.powerSparkline.useLabel',
+                    {
+                      value:
+                        valueKind === 'energy'
+                          ? yAxisNumberFormatter.format(activePoint.value)
+                          : Math.round(activePoint.value),
+                    }
+                  )}
                 </span>
               </div>
             </div>
@@ -239,7 +268,11 @@ export const EnergySparkline = memo(function EnergySparkline({
         height="100%"
         className={`block ${className ?? 'w-full'}`}
         role="img"
-        aria-label={t('charts.powerSparkline.ariaLabel')}
+        aria-label={t(
+          valueKind === 'energy'
+            ? 'charts.energySparkline.ariaLabel'
+            : 'charts.powerSparkline.ariaLabel'
+        )}
         preserveAspectRatio="none"
         onMouseLeave={() => setHoverIndex(null)}
         onMouseMove={(event) => {
@@ -258,8 +291,8 @@ export const EnergySparkline = memo(function EnergySparkline({
       >
         <defs>
           <linearGradient id={`${id}-sg`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={tokens.accent} stopOpacity="0.28" />
-            <stop offset="100%" stopColor={tokens.accent} stopOpacity="0.03" />
+            <stop offset="0%" stopColor={tokens.accent} stopOpacity={fillOpacity} />
+            <stop offset="100%" stopColor={tokens.accent} stopOpacity={fillOpacity * 0.1} />
           </linearGradient>
         </defs>
 
@@ -268,9 +301,10 @@ export const EnergySparkline = memo(function EnergySparkline({
           d={line}
           fill="none"
           stroke={tokens.accent}
-          strokeWidth="1.1"
+          strokeWidth={strokeWidth}
           strokeLinejoin="round"
           strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
         />
         {hoverIndex !== null && activeCoords ? (
           <line
@@ -282,15 +316,23 @@ export const EnergySparkline = memo(function EnergySparkline({
             strokeOpacity="0.45"
             strokeDasharray="2 2"
             strokeWidth="1"
+            vectorEffect="non-scaling-stroke"
           />
         ) : null}
-        {activeCoords ? (
-          <circle cx={activeCoords.x} cy={activeCoords.y} r="4" fill={tokens.accentGlow} />
-        ) : null}
-        {activeCoords ? (
-          <circle cx={activeCoords.x} cy={activeCoords.y} r="2.2" fill={tokens.accent} />
-        ) : null}
       </svg>
+      {activeLeftPercent !== null && activeTopPercent !== null ? (
+        <span
+          className="pointer-events-none absolute z-20 flex h-3 w-3 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full"
+          style={{
+            left: `${activeLeftPercent}%`,
+            top: `${activeTopPercent}%`,
+            backgroundColor: tokens.accentGlow,
+          }}
+          aria-hidden="true"
+        >
+          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tokens.accent }} />
+        </span>
+      ) : null}
     </div>
   );
 });

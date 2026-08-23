@@ -88,6 +88,10 @@ export const MobileContinuousEditor: Story = {
     const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
       name: 'Add a chore',
     });
+    await expect(dialog).toHaveClass('max-sm:!rounded-[30px]', 'max-sm:!bottom-2');
+    await expect(
+      within(canvasElement.ownerDocument.body).getByRole('button', { name: 'Close dialog' })
+    ).toBeInTheDocument();
     await expect(
       within(dialog).getAllByRole('heading', { name: 'The chore' })[0]
     ).toBeInTheDocument();
