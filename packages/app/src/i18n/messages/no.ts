@@ -1044,6 +1044,7 @@ export const noMessages = {
   'dashboard.addCard.size.medium-vertical': 'middels-vertikal',
   'dashboard.addCard.size.large': 'store',
   'dashboard.addCard.size.extra-large': 'ekstra stor',
+  'dashboard.addCard.size.extra-wide': 'ekstra bred',
   'dashboard.addCard.size.tiny': 'bittesmå',
   'dashboard.addCard.templates.rss.name': 'RSS-feed',
   'dashboard.addCard.templates.rss.description': 'Følg artikler fra de valgte feedleverandørene',

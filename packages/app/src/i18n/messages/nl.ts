@@ -1052,6 +1052,7 @@ export const nlMessages = {
   'dashboard.addCard.size.medium-vertical': 'medium-verticaal',
   'dashboard.addCard.size.large': 'groot',
   'dashboard.addCard.size.extra-large': 'extra groot',
+  'dashboard.addCard.size.extra-wide': 'extra breed',
   'dashboard.addCard.size.tiny': 'klein',
   'dashboard.addCard.templates.rss.name': 'RSS-feed',
   'dashboard.addCard.templates.rss.description':

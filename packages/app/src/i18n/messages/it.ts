@@ -994,6 +994,7 @@ export const itMessages = {
   'dashboard.addCard.size.medium-vertical': 'media verticale',
   'dashboard.addCard.size.large': 'grande',
   'dashboard.addCard.size.extra-large': 'molto grande',
+  'dashboard.addCard.size.extra-wide': 'molto larga',
   'dashboard.addCard.size.tiny': 'minuscola',
   'dashboard.addCard.templates.rss.name': 'Feed RSS',
   'dashboard.addCard.templates.rss.description':

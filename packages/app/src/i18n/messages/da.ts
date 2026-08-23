@@ -1047,6 +1047,7 @@ export const daMessages = {
   'dashboard.addCard.size.medium-vertical': 'medium-lodret',
   'dashboard.addCard.size.large': 'store',
   'dashboard.addCard.size.extra-large': 'ekstra stor',
+  'dashboard.addCard.size.extra-wide': 'ekstra bred',
   'dashboard.addCard.size.tiny': 'lillebitte',
   'dashboard.addCard.templates.rss.name': 'RSS-feed',
   'dashboard.addCard.templates.rss.description': 'Følg artikler fra dine valgte feedudbydere',

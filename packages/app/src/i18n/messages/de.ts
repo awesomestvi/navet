@@ -963,6 +963,7 @@ export const deMessages = {
   'dashboard.addCard.size.medium-vertical': 'medium-vertical',
   'dashboard.addCard.size.large': 'large',
   'dashboard.addCard.size.extra-large': 'extra-large',
+  'dashboard.addCard.size.extra-wide': 'extra-breit',
   'dashboard.addCard.size.tiny': 'tiny',
   'dashboard.addCard.templates.rss.name': 'RSS-Feed',
   'dashboard.addCard.templates.rss.description':

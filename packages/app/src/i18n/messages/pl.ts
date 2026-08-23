@@ -1044,6 +1044,7 @@ export const plMessages = {
   'dashboard.addCard.size.medium-vertical': 'średni pionowy',
   'dashboard.addCard.size.large': 'duży',
   'dashboard.addCard.size.extra-large': 'bardzo duży',
+  'dashboard.addCard.size.extra-wide': 'bardzo szeroki',
   'dashboard.addCard.size.tiny': 'malutki',
   'dashboard.addCard.templates.rss.name': 'Kanał RSS',
   'dashboard.addCard.templates.rss.description': 'Śledź artykuły z wybranych źródeł',

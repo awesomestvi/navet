@@ -690,6 +690,7 @@ export const zhMessages = {
   'dashboard.addCard.size.medium-vertical': '中号竖版',
   'dashboard.addCard.size.large': '大',
   'dashboard.addCard.size.extra-large': '特大',
+  'dashboard.addCard.size.extra-wide': '超宽',
   'dashboard.addCard.size.tiny': '迷你',
   'dashboard.addCard.templates.rss.name': 'RSS 订阅',
   'dashboard.addCard.templates.photo.name': '照片',

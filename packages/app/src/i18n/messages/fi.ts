@@ -1047,6 +1047,7 @@ export const fiMessages = {
   'dashboard.addCard.size.medium-vertical': 'keski-pysty',
   'dashboard.addCard.size.large': 'suuri',
   'dashboard.addCard.size.extra-large': 'erittäin suuri',
+  'dashboard.addCard.size.extra-wide': 'erittäin leveä',
   'dashboard.addCard.size.tiny': 'pieni',
   'dashboard.addCard.templates.rss.name': 'RSS-syöte',
   'dashboard.addCard.templates.rss.description':

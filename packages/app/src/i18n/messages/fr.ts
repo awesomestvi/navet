@@ -960,6 +960,7 @@ export const frMessages = {
   'dashboard.addCard.size.medium-vertical': 'medium-vertical',
   'dashboard.addCard.size.large': 'large',
   'dashboard.addCard.size.extra-large': 'extra-large',
+  'dashboard.addCard.size.extra-wide': 'très large',
   'dashboard.addCard.size.tiny': 'tiny',
   'dashboard.addCard.templates.rss.name': 'Flux RSS',
   'dashboard.addCard.templates.rss.description':

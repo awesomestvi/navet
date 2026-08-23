@@ -953,6 +953,7 @@ export const ptMessages = {
   'dashboard.addCard.size.medium-vertical': 'médio-vertical',
   'dashboard.addCard.size.large': 'grande',
   'dashboard.addCard.size.extra-large': 'extra-grande',
+  'dashboard.addCard.size.extra-wide': 'extra-largo',
   'dashboard.addCard.size.tiny': 'minúsculo',
   'dashboard.addCard.templates.rss.name': 'Feed RSS',
   'dashboard.addCard.templates.rss.description':
