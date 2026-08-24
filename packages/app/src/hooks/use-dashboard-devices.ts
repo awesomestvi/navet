@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { BaseDevice, DeviceCollection } from '../types/device.types';
+import { ensureCanonicalEntityId } from '../utils/provider-entity-id';
 
 const EMPTY_DEVICES: [] = [];
 const ABSORBING_PARENT_KEYS = [
@@ -33,16 +34,34 @@ function readSecurityCameraGroupKey(camera: DeviceCollection['cameras'][number])
   return `${camera.providerId ?? ''}:${normalizedBaseId}:${camera.room.toLowerCase()}:${camera.name.toLowerCase()}`;
 }
 
-function filterVisibleDevices<T extends { id: string }>(devices: T[], hiddenIds: Set<string>): T[] {
+type DashboardEntityIdentity = Pick<BaseDevice, 'id' | 'nativeId' | 'canonicalId'>;
+
+export function isDashboardEntityHidden(
+  device: DashboardEntityIdentity,
+  hiddenIds: ReadonlySet<string>
+): boolean {
+  const identityIds = [device.id, device.canonicalId, device.nativeId];
+
+  return identityIds.some(
+    (identityId) =>
+      typeof identityId === 'string' &&
+      (hiddenIds.has(identityId) || hiddenIds.has(ensureCanonicalEntityId(identityId)))
+  );
+}
+
+function filterVisibleDevices<T extends DashboardEntityIdentity>(
+  devices: T[],
+  hiddenIds: Set<string>
+): T[] {
   if (devices.length === 0 || hiddenIds.size === 0) {
     return devices;
   }
 
-  const visibleDevices = devices.filter((device) => !hiddenIds.has(device.id));
+  const visibleDevices = devices.filter((device) => !isDashboardEntityHidden(device, hiddenIds));
   return visibleDevices.length === devices.length ? devices : visibleDevices;
 }
 
-function filterVisibleSensors<T extends { id: string }>(
+function filterVisibleSensors<T extends DashboardEntityIdentity>(
   devices: T[],
   hiddenIds: Set<string>,
   shownSensorIds: Set<string>
@@ -56,7 +75,7 @@ function filterVisibleSensors<T extends { id: string }>(
   }
 
   const visibleSensors = devices.filter(
-    (device) => shownSensorIds.has(device.id) && !hiddenIds.has(device.id)
+    (device) => shownSensorIds.has(device.id) && !isDashboardEntityHidden(device, hiddenIds)
   );
   return visibleSensors.length === devices.length ? devices : visibleSensors;
 }
@@ -69,7 +88,10 @@ function collectVisibleParentDeviceIds(
 
   for (const key of ABSORBING_PARENT_KEYS) {
     for (const device of devices[key]) {
-      if (hiddenIds.has(device.id) || typeof device.underlyingDeviceId !== 'string') {
+      if (
+        isDashboardEntityHidden(device, hiddenIds) ||
+        typeof device.underlyingDeviceId !== 'string'
+      ) {
         continue;
       }
 
@@ -123,7 +145,7 @@ export function getExpandedHiddenDashboardEntityIds(
   const hiddenIds = new Set(hiddenEntityIds);
   const hiddenCameraGroupKeys = new Set(
     devices.cameras
-      .filter((camera) => hiddenIds.has(camera.id))
+      .filter((camera) => isDashboardEntityHidden(camera, hiddenIds))
       .map((camera) => readSecurityCameraGroupKey(camera))
   );
 

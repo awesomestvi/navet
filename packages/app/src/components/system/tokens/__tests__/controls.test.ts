@@ -31,8 +31,8 @@ describe('system tokens', () => {
     expect(getInputSizeTokens('default').heightPx).toBe(40);
     expect(getInputSizeTokens('small').leadingPaddingClassName).toBe('pl-10');
     expect(getInputSizeTokens('touch').heightPx).toBe(42);
-    expect(getCardActionControlSizes('tiny').button).toBe('h-9 w-9');
-    expect(getCardActionControlSizes('large').button).toBe('h-10 w-10');
+    expect(getCardActionControlSizes('tiny').button).toBe('navet-card-action-control');
+    expect(getCardActionControlSizes('large').button).toBe('navet-card-action-control');
   });
 
   it('maps dialog helper options to shared class names', () => {

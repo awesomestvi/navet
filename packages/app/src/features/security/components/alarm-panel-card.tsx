@@ -35,6 +35,7 @@ import {
   Home,
   Loader2,
   MoonStar,
+  MoreHorizontal,
   Plane,
   Shield,
   ShieldAlert,
@@ -58,6 +59,7 @@ import {
 interface SecurityPanelCardProps {
   alarms: NavetAlarmEntity[];
   size?: Extract<CardSize, 'medium' | 'large' | 'extra-large'>;
+  presentation?: 'card' | 'compact';
 }
 
 type PendingActionState = {
@@ -524,7 +526,11 @@ function isPostSubmitArmTransitionSatisfied(
   }
 }
 
-export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardProps) {
+export function SecurityPanelCard({
+  alarms,
+  size = 'large',
+  presentation = 'card',
+}: SecurityPanelCardProps) {
   const { t } = useI18n();
   const sortedAlarms = useMemo(() => [...alarms].sort(compareAlarms), [alarms]);
   const [selectedAlarmId, setSelectedAlarmId] = useState<string | null>(
@@ -535,6 +541,7 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
   const [pendingAction, setPendingAction] = useState<PendingActionState>(null);
   const [postSubmitAction, setPostSubmitAction] = useState<PendingActionState>(null);
   const [triggerAction, setTriggerAction] = useState<{ alarmId: string } | null>(null);
+  const [moreActionsOpen, setMoreActionsOpen] = useState(false);
   const { theme, colors, accentColor } = useTheme();
   const securitySurface = getSecurityCardSurfaceTokens(theme);
 
@@ -672,6 +679,13 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
         ? 'border-white/18 bg-white/10 text-white hover:bg-white/14'
         : 'border-white/14 bg-white/8 text-white/92 hover:bg-white/12';
   const nonTriggerActions = supportedActions.filter((action) => action !== 'trigger');
+  const primaryAction =
+    selectedAlarm.state === 'disarmed'
+      ? (supportedActions.find((action) => action === 'arm_away') ??
+        supportedActions.find(isArmAction) ??
+        null)
+      : (supportedActions.find((action) => action === 'disarm') ?? null);
+  const secondaryActions = supportedActions.filter((action) => action !== primaryAction);
   const mediumActionRows = isMedium
     ? nonTriggerActions.reduce<NavetAlarmAction[][]>((rows, action, index) => {
         if (index % 3 === 0) {
@@ -762,6 +776,15 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
     );
   };
 
+  const compactStateTone =
+    selectedAlarm.state === 'triggered'
+      ? 'red'
+      : selectedAlarm.state === 'pending' ||
+          selectedAlarm.state === 'arming' ||
+          selectedAlarm.state === 'disarming'
+        ? 'yellow'
+        : 'neutral';
+
   return (
     <>
       <style>{`
@@ -774,123 +797,221 @@ export function SecurityPanelCard({ alarms, size = 'large' }: SecurityPanelCardP
           }
         }
       `}</style>
-      <BaseCard
-        size={size}
-        title={selectedAlarm.name}
-        subtitle={getAlarmStateLabel(selectedAlarm.state, t)}
-        headerLeading={
-          <EntityCardHeaderIcon
-            IconComponent={AlarmIcon}
-            isActive
-            size={size}
-            tone={getAlarmStateTone(selectedAlarm.state)}
-          />
-        }
-        headerTrailing={
-          selectedAlarm.state === 'triggered' ? (
-            <InteractivePill
-              active
-              intent="navigation"
-              size="compact"
-              icon={ShieldAlert}
-              className={emergencyTriggerClassName}
-              style={emergencyTriggerPalette.pillStyle}
-              disabled
+      {presentation === 'compact' ? (
+        <BaseCard
+          size="large"
+          fullBleed
+          aria-label={t('security.alarm.controls')}
+          className="h-auto"
+          data-testid="security-alarm-compact"
+        >
+          {sortedAlarms.length > 1 ? (
+            <fieldset
+              className={`flex flex-wrap gap-2 border-b p-2.5 ${themeSurface.border}`}
+              aria-label={t('security.alarm.selector')}
             >
-              {t('security.alarm.triggeredBadge')}
-            </InteractivePill>
-          ) : supportedActions.includes('trigger') ? (
-            <InteractivePill
-              intent="action"
-              size="compact"
-              icon={BellRing}
-              className={emergencyTriggerClassName}
-              style={emergencyTriggerPalette.pillStyle}
-              disabled={unavailable || Boolean(pendingForSelectedAlarm)}
-              onClick={() => void handleAction('trigger')}
-            >
-              {t('security.alarm.action.trigger')}
-            </InteractivePill>
-          ) : undefined
-        }
-        tone={getAlarmStateTone(selectedAlarm.state)}
-        frameClassName={cardSurface.frameClassName}
-        style={cardSurface.frameStyle}
-        overlay={cardSurface.overlay}
-        disableDefaultSheen={cardSurface.disableDefaultSheen}
-      >
-        <div className="relative h-full w-full overflow-hidden rounded-[inherit]">
-          <div
-            className={`flex h-full flex-col gap-3 ${
-              unavailable ? 'pointer-events-none opacity-45 saturate-50' : ''
-            }`}
-          >
-            {sortedAlarms.length > 1 ? (
-              <fieldset className="flex flex-wrap gap-2" aria-label={t('security.alarm.selector')}>
-                {sortedAlarms.map((alarm) => (
-                  <InteractivePill
-                    key={alarm.id}
-                    active={alarm.id === selectedAlarm.id}
-                    intent="navigation"
-                    size={selectorPillSize}
-                    onClick={() => {
-                      setSelectedAlarmId(alarm.id);
-                      clearCode();
-                    }}
-                  >
-                    {alarm.name}
-                  </InteractivePill>
-                ))}
-              </fieldset>
-            ) : null}
-
-            {selectedAlarm.changedBy ? (
-              <div
-                className={`flex flex-wrap gap-x-4 gap-y-1 text-sm ${securitySurface.secondaryTextClassName}`}
-              >
-                {selectedAlarm.changedBy ? (
-                  <span>{t('security.alarm.changedBy', { name: selectedAlarm.changedBy })}</span>
-                ) : null}
-              </div>
-            ) : null}
-
-            <div className="mt-auto flex flex-1 flex-col justify-end pt-2">
-              {isMedium ? (
-                <div className="flex w-full flex-col gap-2">
-                  {mediumActionRows.map((row, rowIndex) => (
-                    <CardActionRow
-                      key={`alarm-action-row-${rowIndex}`}
-                      theme={theme}
-                      size="medium"
-                      leftContent={
-                        <div className="flex min-w-0 flex-1 items-center gap-2">
-                          {row.map((action) => renderActionButton(action, true))}
-                        </div>
-                      }
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className={`grid w-full gap-2 ${actionGridClassName}`}>
-                  {nonTriggerActions.map((action) => renderActionButton(action))}
-                </div>
-              )}
+              {sortedAlarms.map((alarm) => (
+                <InteractivePill
+                  key={alarm.id}
+                  active={alarm.id === selectedAlarm.id}
+                  intent="navigation"
+                  size={selectorPillSize}
+                  onClick={() => {
+                    setSelectedAlarmId(alarm.id);
+                    clearCode();
+                  }}
+                >
+                  {alarm.name}
+                </InteractivePill>
+              ))}
+            </fieldset>
+          ) : null}
+          <div className="flex min-h-16 items-center gap-3 p-3">
+            <EntityCardHeaderIcon
+              IconComponent={AlarmIcon}
+              isActive={selectedAlarm.state === 'triggered'}
+              size="small"
+              tone={compactStateTone}
+            />
+            <div className="min-w-0 flex-1">
+              <h3 className={`truncate text-xs font-semibold ${themeSurface.textPrimary}`}>
+                {selectedAlarm.name}
+              </h3>
+              <p className={`mt-0.5 truncate text-[11px] ${themeSurface.textSecondary}`}>
+                {getAlarmStateLabel(selectedAlarm.state, t)}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {primaryAction ? (
+                <Button
+                  size="small"
+                  variant={selectedAlarm.state === 'triggered' ? 'destructive' : 'soft'}
+                  loading={pendingForSelectedAlarm?.action === primaryAction}
+                  disabled={unavailable || Boolean(pendingForSelectedAlarm)}
+                  onClick={() => void handleAction(primaryAction)}
+                >
+                  {getActionLabel(primaryAction, t)}
+                </Button>
+              ) : null}
+              {secondaryActions.length > 0 ? (
+                <Button
+                  iconOnly
+                  label={t('common.moreActions')}
+                  size="small"
+                  variant="ghost"
+                  disabled={unavailable || Boolean(pendingForSelectedAlarm)}
+                  onClick={() => setMoreActionsOpen(true)}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              ) : null}
             </div>
           </div>
-          {unavailable ? (
-            <>
-              <div className="pointer-events-none absolute inset-0 z-10 rounded-[inherit] bg-black/18 backdrop-blur-[1px]" />
-              <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-                <div
-                  className={`inline-flex max-w-[calc(100%-1rem)] items-center justify-center truncate rounded-full border border-white/12 bg-black/45 font-semibold text-white/92 backdrop-blur-md ${unavailableOverlayLabelClassName}`}
+        </BaseCard>
+      ) : (
+        <BaseCard
+          size={size}
+          title={selectedAlarm.name}
+          subtitle={getAlarmStateLabel(selectedAlarm.state, t)}
+          headerLeading={
+            <EntityCardHeaderIcon
+              IconComponent={AlarmIcon}
+              isActive
+              size={size}
+              tone={getAlarmStateTone(selectedAlarm.state)}
+            />
+          }
+          headerTrailing={
+            selectedAlarm.state === 'triggered' ? (
+              <InteractivePill
+                active
+                intent="navigation"
+                size="compact"
+                icon={ShieldAlert}
+                className={emergencyTriggerClassName}
+                style={emergencyTriggerPalette.pillStyle}
+                disabled
+              >
+                {t('security.alarm.triggeredBadge')}
+              </InteractivePill>
+            ) : supportedActions.includes('trigger') ? (
+              <InteractivePill
+                intent="action"
+                size="compact"
+                icon={BellRing}
+                className={emergencyTriggerClassName}
+                style={emergencyTriggerPalette.pillStyle}
+                disabled={unavailable || Boolean(pendingForSelectedAlarm)}
+                onClick={() => void handleAction('trigger')}
+              >
+                {t('security.alarm.action.trigger')}
+              </InteractivePill>
+            ) : undefined
+          }
+          tone={getAlarmStateTone(selectedAlarm.state)}
+          frameClassName={cardSurface.frameClassName}
+          style={cardSurface.frameStyle}
+          overlay={cardSurface.overlay}
+          disableDefaultSheen={cardSurface.disableDefaultSheen}
+        >
+          <div className="relative h-full w-full overflow-hidden rounded-[inherit]">
+            <div
+              className={`flex h-full flex-col gap-3 ${
+                unavailable ? 'pointer-events-none opacity-45 saturate-50' : ''
+              }`}
+            >
+              {sortedAlarms.length > 1 ? (
+                <fieldset
+                  className="flex flex-wrap gap-2"
+                  aria-label={t('security.alarm.selector')}
                 >
-                  {t('common.unavailable')}
+                  {sortedAlarms.map((alarm) => (
+                    <InteractivePill
+                      key={alarm.id}
+                      active={alarm.id === selectedAlarm.id}
+                      intent="navigation"
+                      size={selectorPillSize}
+                      onClick={() => {
+                        setSelectedAlarmId(alarm.id);
+                        clearCode();
+                      }}
+                    >
+                      {alarm.name}
+                    </InteractivePill>
+                  ))}
+                </fieldset>
+              ) : null}
+
+              {selectedAlarm.changedBy ? (
+                <div
+                  className={`flex flex-wrap gap-x-4 gap-y-1 text-sm ${securitySurface.secondaryTextClassName}`}
+                >
+                  <span>{t('security.alarm.changedBy', { name: selectedAlarm.changedBy })}</span>
                 </div>
+              ) : null}
+
+              <div className="mt-auto flex flex-1 flex-col justify-end pt-2">
+                {isMedium ? (
+                  <div className="flex w-full flex-col gap-2">
+                    {mediumActionRows.map((row, rowIndex) => (
+                      <CardActionRow
+                        key={`alarm-action-row-${rowIndex}`}
+                        theme={theme}
+                        size="medium"
+                        leftContent={
+                          <div className="flex min-w-0 flex-1 items-center gap-2">
+                            {row.map((action) => renderActionButton(action, true))}
+                          </div>
+                        }
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className={`grid w-full gap-2 ${actionGridClassName}`}>
+                    {nonTriggerActions.map((action) => renderActionButton(action))}
+                  </div>
+                )}
               </div>
-            </>
-          ) : null}
-        </div>
-      </BaseCard>
+            </div>
+            {unavailable ? (
+              <>
+                <div className="pointer-events-none absolute inset-0 z-10 rounded-[inherit] bg-black/18 backdrop-blur-[1px]" />
+                <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+                  <div
+                    className={`inline-flex max-w-[calc(100%-1rem)] items-center justify-center truncate rounded-full border border-white/12 bg-black/45 font-semibold text-white/92 backdrop-blur-md ${unavailableOverlayLabelClassName}`}
+                  >
+                    {t('common.unavailable')}
+                  </div>
+                </div>
+              </>
+            ) : null}
+          </div>
+        </BaseCard>
+      )}
+
+      <BaseCardDialog
+        variant="modal"
+        isOpen={moreActionsOpen}
+        onOpenChange={setMoreActionsOpen}
+        title={t('security.alarm.controls')}
+        description={`${selectedAlarm.name} · ${getAlarmStateLabel(selectedAlarm.state, t)}`}
+        theme={theme}
+        overlayClassName={themeSurface.dialogBackdrop}
+        maxWidth="sm"
+        bodyPadding={false}
+      >
+        <CardDialogBody>
+          <CardDialogHeader
+            title={t('security.alarm.controls')}
+            description={`${selectedAlarm.name} · ${getAlarmStateLabel(selectedAlarm.state, t)}`}
+            showRoomSelector={false}
+            editableTitle={false}
+          />
+          <div className="grid gap-2 sm:grid-cols-2">
+            {secondaryActions.map((action) => renderActionButton(action))}
+          </div>
+        </CardDialogBody>
+      </BaseCardDialog>
 
       <BaseCardDialog
         variant="modal"

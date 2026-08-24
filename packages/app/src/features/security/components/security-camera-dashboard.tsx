@@ -1,21 +1,29 @@
-import { BaseCard, InteractivePill, OverlayScrollArea } from '@navet/app/components/primitives';
-import { type CardSize, getCardSpanClass } from '@navet/app/components/shared/card-size-selector';
+import { InteractivePill } from '@navet/app/components/primitives';
+import {
+  type CardSize,
+  getCardGridAutoRowsStyle,
+  getCardSpanClass,
+  getResponsiveCardSize,
+} from '@navet/app/components/shared/card-size-selector';
 import type { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { getDeviceTypeIcon } from '@navet/app/constants/device-type-icons';
+import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { readNavetCameraState } from '@navet/app/core/navet-device-state';
 import { DashboardCardItem, DashboardEditActions } from '@navet/app/features/dashboard';
-import { DashboardResizeTrigger } from '@navet/app/features/dashboard/components/dashboard-edit-actions';
+import { packDashboardGridItems } from '@navet/app/features/dashboard/device-grid/device-grid-layout';
 import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit-dashboard-grid';
 import { useProgressiveBatching } from '@navet/app/features/dashboard/hooks/use-progressive-batching';
 import { normalizeCameraDirectStreamUrl } from '@navet/app/features/security/hooks/use-camera-playback-plan';
 import type { HomeStatusSummaryItem } from '@navet/app/features/sensors/components/home-status-summary-model';
-import { SummaryBar } from '@navet/app/features/sensors/components/info-badge-strip';
+import {
+  SummaryBar,
+  SummaryBarStack,
+} from '@navet/app/features/sensors/components/info-badge-strip';
 import { useProviderCameraTopology } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { usePersistedState } from '@navet/app/hooks/use-persisted-state';
 import { useProviderEntityModel } from '@navet/app/hooks/use-provider-device';
 import { type ThemeType, useTheme } from '@navet/app/hooks/use-theme';
-import { type TranslateFn, useI18n } from '@navet/app/i18n';
+import { useI18n } from '@navet/app/i18n';
 import { integrationCameraFeatureService } from '@navet/app/services/integration-camera-feature.service';
 import { normalizeResourceUrl } from '@navet/app/services/integration-resource.service';
 import { settingsSelectors } from '@navet/app/stores/selectors';
@@ -26,20 +34,14 @@ import {
   isDirectCameraStreamSource,
   useSettingsStore,
 } from '@navet/app/stores/settings-store';
-import type { CameraDevice, DeviceWithType, SecuritySeverity } from '@navet/app/types/device.types';
+import type { CameraDevice, DeviceWithType } from '@navet/app/types/device.types';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import type { NavetAlarmEntity } from '@navet/core/alarm-types';
-import {
-  ChevronDown,
-  CircleAlert,
-  CircleOff,
-  Radio,
-  ShieldCheck,
-  TriangleAlert,
-} from 'lucide-react';
+import { CircleAlert, CircleOff, Radio, ShieldCheck, TriangleAlert } from 'lucide-react';
 import {
   type CSSProperties,
-  type ReactNode,
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -52,7 +54,12 @@ import type {
   CameraDashboardModel,
   SecurityGroupSummary,
 } from '../utils/security-camera-dashboard-model';
-import { SecurityPanelCard } from './alarm-panel-card';
+import {
+  DEFAULT_SECURITY_OVERVIEW_PREFERENCE,
+  getAutomaticSecurityOverviewEntityIds,
+  normalizeSecurityOverviewPreference,
+  resolveSecurityOverviewEntities,
+} from '../utils/security-overview-preferences';
 import { CameraLiveViewer } from './camera-card/camera-live-viewer';
 import {
   appendCameraCacheBuster,
@@ -60,7 +67,12 @@ import {
   resolveViewerInitialCameraViewMode,
 } from './camera-card/camera-view-mode';
 import { useProviderCameraLiveData } from './camera-card/use-provider-camera-live-data';
-import { getSecurityStateSurfaceProps } from './security-card-surface-tokens';
+import { SecurityCommandCenter } from './security-command-center';
+
+const SecurityOverviewCustomizationDialog = lazy(async () => {
+  const module = await import('./security-overview-customization-dialog');
+  return { default: module.SecurityOverviewCustomizationDialog };
+});
 
 interface SecurityCameraDashboardProps {
   model: CameraDashboardModel;
@@ -72,244 +84,11 @@ interface SecurityCameraDashboardProps {
   updateCardSize: (id: string, size: CardSize) => void;
   onRemoveEntity?: (entityId: string) => void;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
+  isOverviewCustomizationOpen?: boolean;
+  onOverviewCustomizationOpenChange?: (open: boolean) => void;
 }
 
-const ATTENTION_NOW_CARD_ID = 'security.now.attention';
-const SECURE_NOW_CARD_ID = 'security.now.secure';
-const LIVE_NOW_CARD_ID = 'security.now.live';
-const ALARM_NOW_CARD_ID = 'security.now.alarm';
-const NOW_LANE_ALLOWED_SIZES: CardSize[] = ['medium', 'large', 'extra-large'];
-const NOW_ALARM_ALLOWED_SIZES: CardSize[] = ['medium', 'large'];
-const SECURITY_DASHBOARD_COLLAPSED_SECTIONS_KEY = 'navet-security-dashboard-collapsed-sections';
 const SECURITY_DASHBOARD_SELECTED_GROUP_KEY = 'navet-security-dashboard-selected-group';
-
-function getSeverityLabel(severity: SecuritySeverity, t: TranslateFn): string {
-  switch (severity) {
-    case 'critical':
-      return t('security.severity.critical');
-    case 'warning':
-      return t('security.severity.attention');
-    case 'active':
-      return t('security.severity.active');
-    case 'unknown':
-      return t('common.unavailable');
-    default:
-      return t('security.severity.normal');
-  }
-}
-
-function readDeviceStatusLabel(device: DeviceWithType, t: TranslateFn): string {
-  switch (device.type) {
-    case 'locks':
-      return device.state ? t('security.status.locked') : t('security.status.unlocked');
-    case 'cameras':
-      return device.state.replace(/\b\w/g, (segment) => segment.toUpperCase());
-    case 'persons':
-      return device.state === 'home' ? t('security.status.home') : t('security.status.away');
-    case 'helpers':
-      return device.serviceAction === 'press'
-        ? t('security.status.action')
-        : device.state
-          ? t('common.on')
-          : t('common.off');
-    case 'sensors':
-      if (
-        device.securityKind === 'door' ||
-        device.securityKind === 'window' ||
-        device.securityKind === 'garageDoor' ||
-        device.securityKind === 'opening'
-      ) {
-        if (device.status === 'active') {
-          return t('common.open');
-        }
-        if (device.status === 'clear') {
-          return t('security.status.closed');
-        }
-        if (device.status === 'unavailable') {
-          return t('common.unavailable');
-        }
-      }
-      return device.value;
-    default:
-      return t('security.severity.active');
-  }
-}
-
-function getSeverityAccentClassName(device: DeviceWithType, severity: SecuritySeverity) {
-  if (device.type === 'locks' && device.state === false) {
-    return 'bg-red-400';
-  }
-
-  if (severity === 'critical' && device.securityKind === 'siren') {
-    return 'bg-red-500';
-  }
-
-  if (severity === 'active') {
-    if (device.type === 'cameras' || device.securityKind === 'camera') {
-      return 'bg-emerald-400';
-    }
-
-    if (
-      device.securityKind === 'motion' ||
-      device.securityKind === 'occupancy' ||
-      device.securityKind === 'presence' ||
-      device.securityKind === 'vibration' ||
-      device.securityKind === 'sound'
-    ) {
-      return 'bg-amber-300';
-    }
-  }
-
-  switch (severity) {
-    case 'critical':
-      return 'bg-rose-500';
-    case 'warning':
-      return 'bg-red-400';
-    case 'active':
-      return 'bg-sky-300';
-    case 'unknown':
-      return 'bg-zinc-400';
-    default:
-      return 'bg-emerald-300';
-  }
-}
-
-function getSeverityStatusClassName(
-  device: DeviceWithType,
-  severity: SecuritySeverity,
-  theme: ThemeType
-) {
-  if (device.type === 'locks' && device.state === false) {
-    return theme === 'light' ? 'text-red-700' : 'text-red-300';
-  }
-
-  if (severity === 'critical' && device.securityKind === 'siren') {
-    return theme === 'light' ? 'text-red-700' : 'text-red-400';
-  }
-
-  switch (severity) {
-    case 'critical':
-      return theme === 'light' ? 'text-rose-700' : 'text-rose-300';
-    case 'warning':
-      return theme === 'light' ? 'text-red-700' : 'text-red-300';
-    case 'unknown':
-      return theme === 'light' ? 'text-slate-600' : 'text-zinc-300';
-    default:
-      return '';
-  }
-}
-
-function getSecureStatusClassName(theme: ThemeType) {
-  return theme === 'light' ? 'text-emerald-800' : 'text-green-300';
-}
-
-function getLiveStatusClassName(device: DeviceWithType, theme: ThemeType) {
-  if (device.type === 'cameras' || device.securityKind === 'camera') {
-    return theme === 'light' ? 'text-emerald-800' : 'text-emerald-300';
-  }
-
-  if (
-    device.securityKind === 'motion' ||
-    device.securityKind === 'occupancy' ||
-    device.securityKind === 'presence' ||
-    device.securityKind === 'vibration' ||
-    device.securityKind === 'sound'
-  ) {
-    return theme === 'light' ? 'text-amber-900' : 'text-amber-200';
-  }
-
-  return '';
-}
-
-function getRowIconSurfaceClassName(
-  device: DeviceWithType,
-  severity: SecuritySeverity,
-  theme: ThemeType,
-  emphasizeStatusBySeverity: boolean,
-  emphasizeStatusByActivity: boolean,
-  emphasizeStatusBySecure: boolean
-) {
-  if (emphasizeStatusBySeverity) {
-    if (device.type === 'locks' && device.state === false) {
-      return theme === 'light' ? 'bg-red-100' : 'bg-red-400/16';
-    }
-
-    if (severity === 'critical' && device.securityKind === 'siren') {
-      return theme === 'light' ? 'bg-red-100' : 'bg-red-500/18';
-    }
-
-    if (severity === 'critical') {
-      return theme === 'light' ? 'bg-rose-100' : 'bg-rose-400/16';
-    }
-
-    if (severity === 'warning') {
-      return theme === 'light' ? 'bg-red-100' : 'bg-red-400/16';
-    }
-
-    if (severity === 'unknown') {
-      return theme === 'light' ? 'bg-slate-100' : 'bg-zinc-400/12';
-    }
-  }
-
-  if (emphasizeStatusByActivity) {
-    if (device.securityKind === 'motion' || device.securityKind === 'occupancy') {
-      return theme === 'light' ? 'bg-amber-100' : 'bg-amber-300/16';
-    }
-
-    return theme === 'light' ? 'bg-sky-100' : 'bg-sky-400/16';
-  }
-
-  if (emphasizeStatusBySecure) {
-    return theme === 'light' ? 'bg-green-100' : 'bg-green-400/16';
-  }
-
-  return theme === 'light' ? 'bg-slate-100' : 'bg-zinc-900';
-}
-
-function getRowIconClassName(
-  device: DeviceWithType,
-  severity: SecuritySeverity,
-  theme: ThemeType,
-  emphasizeStatusBySeverity: boolean,
-  emphasizeStatusByActivity: boolean,
-  emphasizeStatusBySecure: boolean
-) {
-  if (emphasizeStatusBySeverity) {
-    if (device.type === 'locks' && device.state === false) {
-      return theme === 'light' ? 'text-red-700' : 'text-red-200';
-    }
-
-    if (severity === 'critical' && device.securityKind === 'siren') {
-      return theme === 'light' ? 'text-red-700' : 'text-red-100';
-    }
-
-    if (severity === 'critical') {
-      return theme === 'light' ? 'text-rose-700' : 'text-rose-200';
-    }
-
-    if (severity === 'warning') {
-      return theme === 'light' ? 'text-red-700' : 'text-red-200';
-    }
-
-    if (severity === 'unknown') {
-      return theme === 'light' ? 'text-slate-500' : 'text-zinc-300';
-    }
-  }
-
-  if (emphasizeStatusByActivity) {
-    if (device.securityKind === 'motion' || device.securityKind === 'occupancy') {
-      return theme === 'light' ? 'text-amber-700' : 'text-amber-200';
-    }
-
-    return theme === 'light' ? 'text-sky-700' : 'text-sky-200';
-  }
-
-  if (emphasizeStatusBySecure) {
-    return theme === 'light' ? 'text-green-700' : 'text-green-100';
-  }
-
-  return theme === 'light' ? 'text-slate-600' : 'text-zinc-300';
-}
 
 function getIndicatorDotClassName(group: SecurityGroupSummary, theme: ThemeType) {
   const isLightTheme = theme === 'light';
@@ -321,7 +100,7 @@ function getIndicatorDotClassName(group: SecurityGroupSummary, theme: ThemeType)
   }
 
   if (usesLockAlertColor) {
-    return isLightTheme ? 'bg-red-500' : 'bg-red-400';
+    return isLightTheme ? 'bg-amber-500' : 'bg-amber-400';
   }
 
   if (group.critical > 0) {
@@ -329,7 +108,7 @@ function getIndicatorDotClassName(group: SecurityGroupSummary, theme: ThemeType)
   }
 
   if (group.warning > 0) {
-    return isLightTheme ? 'bg-red-500' : 'bg-red-400';
+    return isLightTheme ? 'bg-amber-500' : 'bg-amber-400';
   }
 
   if (group.unknown > 0) {
@@ -338,7 +117,7 @@ function getIndicatorDotClassName(group: SecurityGroupSummary, theme: ThemeType)
 
   if (group.active > 0) {
     if (group.id === 'cameras') {
-      return isLightTheme ? 'bg-emerald-500' : 'bg-emerald-400';
+      return isLightTheme ? 'bg-sky-500' : 'bg-sky-400';
     }
 
     if (group.id === 'motion-occupancy') {
@@ -387,72 +166,6 @@ function getDetailsPillClassName(
   return 'border-transparent bg-transparent hover:bg-zinc-800/82 text-zinc-300';
 }
 
-function AttentionPulseDot({
-  device,
-  severity,
-  animated = false,
-}: {
-  device: DeviceWithType;
-  severity: SecuritySeverity;
-  animated?: boolean;
-}) {
-  const accentClassName = getSeverityAccentClassName(device, severity);
-  const pulseClassName =
-    severity === 'critical'
-      ? 'motion-safe:animate-[navet-security-critical-pulse_1.4s_ease-out_infinite]'
-      : severity === 'warning'
-        ? 'motion-safe:animate-[navet-security-warning-pulse_2s_ease-out_infinite]'
-        : '';
-
-  if (!animated || pulseClassName.length === 0) {
-    return <span className={`h-2 w-2 shrink-0 rounded-full ${accentClassName}`} />;
-  }
-
-  return (
-    <span className="relative flex h-2.5 w-2.5 shrink-0 items-center justify-center">
-      <span
-        aria-hidden="true"
-        className={`absolute inset-0 rounded-full ${accentClassName} opacity-70 ${pulseClassName}`}
-      />
-      <span className={`relative h-2 w-2 rounded-full ${accentClassName}`} />
-    </span>
-  );
-}
-
-function readCompactThumbnailUrl(
-  device: DeviceWithType,
-  allEntities: DeviceWithType[]
-): string | undefined {
-  if (device.type === 'cameras') {
-    const snapshotUrl = readImageUrl(device.entityPicture);
-    if (!snapshotUrl) {
-      return undefined;
-    }
-
-    return normalizeResourceUrl(snapshotUrl, device.providerId) ?? snapshotUrl;
-  }
-
-  const relatedSourceDeviceId = 'sourceDeviceId' in device ? device.sourceDeviceId : undefined;
-  if (!relatedSourceDeviceId) {
-    return undefined;
-  }
-
-  const relatedCamera = allEntities.find(
-    (entity): entity is Extract<DeviceWithType, { type: 'cameras' }> =>
-      entity.type === 'cameras' && entity.sourceDeviceId === relatedSourceDeviceId
-  );
-  if (!relatedCamera) {
-    return undefined;
-  }
-
-  const snapshotUrl = readImageUrl(relatedCamera.entityPicture);
-  if (!snapshotUrl) {
-    return undefined;
-  }
-
-  return normalizeResourceUrl(snapshotUrl, relatedCamera.providerId) ?? snapshotUrl;
-}
-
 function readImageUrl(value: unknown): string | undefined {
   if (typeof value !== 'string') {
     return undefined;
@@ -468,286 +181,6 @@ function resolveHomeAssistantImageUrl(imageUrl: string | undefined) {
   }
 
   return normalizeResourceUrl(imageUrl, 'home_assistant') ?? imageUrl;
-}
-
-function FlatSection({
-  id,
-  title,
-  description,
-  count,
-  headerSuffix,
-  children,
-  isCollapsed = false,
-  onToggleCollapse,
-  surface,
-}: {
-  id: string;
-  title: string;
-  description?: string;
-  count?: number;
-  headerSuffix?: ReactNode;
-  children: ReactNode;
-  isCollapsed?: boolean;
-  onToggleCollapse?: (id: string) => void;
-  surface: ReturnType<typeof getThemeSurfaceTokens>;
-}) {
-  const { t } = useI18n();
-  const headerContent = (
-    <div className="min-w-0 flex-1">
-      <div className="flex min-w-0 flex-wrap items-center gap-1.5 md:gap-2">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>{title}</h2>
-          {onToggleCollapse ? (
-            <span
-              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-transparent bg-transparent transition-colors ${surface.hoverBg}`}
-            >
-              <ChevronDown
-                className={`h-4 w-4 transition-transform ${surface.textMuted} ${
-                  isCollapsed ? '' : 'rotate-180'
-                }`}
-                aria-hidden="true"
-              />
-            </span>
-          ) : null}
-        </div>
-        {typeof count === 'number' ? (
-          <span className={`text-xs md:text-sm ${surface.textSecondary}`}>
-            {t('security.overview.items', { count })}
-          </span>
-        ) : null}
-        {headerSuffix ? (
-          <div className="flex min-w-0 flex-1 items-center">{headerSuffix}</div>
-        ) : null}
-      </div>
-      {description ? (
-        <p className={`mt-1 max-w-3xl text-sm leading-5 ${surface.textSecondary}`}>{description}</p>
-      ) : null}
-    </div>
-  );
-
-  return (
-    <section className="space-y-3">
-      {onToggleCollapse ? (
-        <button
-          type="button"
-          aria-expanded={!isCollapsed}
-          aria-controls={`security-section-panel-${id}`}
-          onClick={() => onToggleCollapse(id)}
-          className="flex w-full items-center gap-3 text-left"
-        >
-          {headerContent}
-        </button>
-      ) : (
-        <div className="flex items-center gap-3">{headerContent}</div>
-      )}
-      {!isCollapsed ? <div id={`security-section-panel-${id}`}>{children}</div> : null}
-    </section>
-  );
-}
-
-function CompactEntityRow({
-  device,
-  onClick,
-  animateAttention = false,
-  trailingLabelMode = 'severity',
-  showInlineStatus = true,
-  emphasizeStatusBySeverity = false,
-  emphasizeStatusByActivity = false,
-  emphasizeStatusBySecure = false,
-  preferThumbnail = false,
-  allEntities = [],
-  surface,
-}: {
-  device: DeviceWithType;
-  onClick?: () => void;
-  animateAttention?: boolean;
-  trailingLabelMode?: 'severity' | 'status';
-  showInlineStatus?: boolean;
-  emphasizeStatusBySeverity?: boolean;
-  emphasizeStatusByActivity?: boolean;
-  emphasizeStatusBySecure?: boolean;
-  preferThumbnail?: boolean;
-  allEntities?: DeviceWithType[];
-  surface: ReturnType<typeof getThemeSurfaceTokens>;
-}) {
-  const { theme } = useTheme();
-  const { t } = useI18n();
-  const Icon = getDeviceTypeIcon(
-    device.type,
-    'deviceClass' in device && typeof device.deviceClass === 'string'
-      ? device.deviceClass
-      : undefined
-  );
-  const severity =
-    device.type === 'covers'
-      ? device.position > 0
-        ? 'warning'
-        : 'normal'
-      : (device.securitySeverity ?? 'normal');
-  const statusLabel = readDeviceStatusLabel(device, t);
-  const trailingLabel =
-    trailingLabelMode === 'status' ? statusLabel : getSeverityLabel(severity, t);
-  const thumbnailUrl = preferThumbnail ? readCompactThumbnailUrl(device, allEntities) : undefined;
-  const content = (
-    <>
-      <AttentionPulseDot device={device} severity={severity} animated={animateAttention} />
-      {thumbnailUrl ? (
-        <div
-          className={`h-8 w-12 shrink-0 overflow-hidden rounded-xl border ${
-            theme === 'light' ? 'border-slate-300/70 bg-white/45' : 'border-white/10 bg-black/20'
-          }`}
-        >
-          <img
-            src={thumbnailUrl}
-            alt=""
-            data-testid={`live-thumbnail:${device.id}`}
-            className="h-full w-full object-cover"
-            loading="lazy"
-          />
-        </div>
-      ) : (
-        <div
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${getRowIconSurfaceClassName(
-            device,
-            severity,
-            theme,
-            emphasizeStatusBySeverity,
-            emphasizeStatusByActivity,
-            emphasizeStatusBySecure
-          )}`}
-        >
-          <Icon
-            className={`h-3 w-3 ${getRowIconClassName(
-              device,
-              severity,
-              theme,
-              emphasizeStatusBySeverity,
-              emphasizeStatusByActivity,
-              emphasizeStatusBySecure
-            )}`}
-            aria-hidden="true"
-          />
-        </div>
-      )}
-      <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
-          <p className={`truncate text-[13px] font-semibold ${surface.textPrimary}`}>
-            {device.name}
-          </p>
-          {showInlineStatus ? (
-            <span className={`text-[13px] ${surface.textMuted}`}>{statusLabel}</span>
-          ) : null}
-        </div>
-      </div>
-      <span
-        className={`shrink-0 text-[10px] font-medium uppercase tracking-[0.14em] ${
-          emphasizeStatusBySeverity
-            ? getSeverityStatusClassName(device, severity, theme)
-            : emphasizeStatusByActivity
-              ? getLiveStatusClassName(device, theme)
-              : emphasizeStatusBySecure
-                ? getSecureStatusClassName(theme)
-                : surface.textMuted
-        }`}
-      >
-        {trailingLabel}
-      </span>
-    </>
-  );
-
-  if (onClick) {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        className={`flex w-full items-center gap-2 border-b py-2 text-left last:border-b-0 ${surface.border}`}
-      >
-        {content}
-      </button>
-    );
-  }
-
-  return (
-    <div className={`flex items-center gap-2 border-b py-2 last:border-b-0 ${surface.border}`}>
-      {content}
-    </div>
-  );
-}
-
-function NowLane({
-  items,
-  tone,
-  emptyLabel,
-  animateAttention = false,
-  trailingLabelMode = 'severity',
-  showInlineStatus = true,
-  emphasizeStatusBySeverity = false,
-  emphasizeStatusByActivity = false,
-  emphasizeStatusBySecure = false,
-  preferThumbnail = false,
-  allEntities = [],
-  onItemClick,
-  surface,
-}: {
-  items: DeviceWithType[];
-  tone: 'neutral' | 'warning' | 'danger' | 'accent' | 'success';
-  emptyLabel: string;
-  animateAttention?: boolean;
-  trailingLabelMode?: 'severity' | 'status';
-  showInlineStatus?: boolean;
-  emphasizeStatusBySeverity?: boolean;
-  emphasizeStatusByActivity?: boolean;
-  emphasizeStatusBySecure?: boolean;
-  preferThumbnail?: boolean;
-  allEntities?: DeviceWithType[];
-  onItemClick?: (device: DeviceWithType) => void;
-  surface: ReturnType<typeof getThemeSurfaceTokens>;
-}) {
-  const { theme, colors, accentColor } = useTheme();
-  const laneSurface = getSecurityStateSurfaceProps(tone, theme, colors, accentColor);
-  const laneListId = `security-now-lane-list-${tone}`;
-
-  return (
-    <BaseCard
-      size="small"
-      surfaceVariant="muted"
-      className="min-w-0"
-      frameClassName={laneSurface.frameClassName}
-      style={laneSurface.frameStyle}
-      overlay={laneSurface.overlay}
-      disableDefaultSheen={laneSurface.disableDefaultSheen}
-      contentClassName="min-h-0"
-    >
-      <div className="flex h-full min-h-0 flex-col">
-        {items.length > 0 ? (
-          <OverlayScrollArea
-            className="min-h-0 flex-1"
-            contentClassName="px-3 md:px-3.5"
-            viewportProps={{ 'data-testid': laneListId }}
-          >
-            {items.map((device) => (
-              <CompactEntityRow
-                key={device.id}
-                device={device}
-                animateAttention={animateAttention}
-                trailingLabelMode={trailingLabelMode}
-                showInlineStatus={showInlineStatus}
-                emphasizeStatusBySeverity={emphasizeStatusBySeverity}
-                emphasizeStatusByActivity={emphasizeStatusByActivity}
-                emphasizeStatusBySecure={emphasizeStatusBySecure}
-                preferThumbnail={preferThumbnail}
-                allEntities={allEntities}
-                surface={surface}
-                onClick={onItemClick ? () => onItemClick(device) : undefined}
-              />
-            ))}
-          </OverlayScrollArea>
-        ) : (
-          <p className={`py-1 text-sm ${surface.textMuted}`}>{emptyLabel}</p>
-        )}
-      </div>
-    </BaseCard>
-  );
 }
 
 function SummaryCameraViewer({
@@ -859,64 +292,6 @@ function SummaryCameraViewer({
   );
 }
 
-function SecureLane({
-  items,
-  onItemClick,
-  surface,
-}: {
-  items: DeviceWithType[];
-  onItemClick?: (device: DeviceWithType) => void;
-  surface: ReturnType<typeof getThemeSurfaceTokens>;
-}) {
-  const { t } = useI18n();
-  return (
-    <NowLane
-      items={items}
-      tone="success"
-      emptyLabel={t('security.overview.noSecureDevices')}
-      trailingLabelMode="status"
-      showInlineStatus={false}
-      emphasizeStatusBySecure
-      allEntities={items}
-      onItemClick={onItemClick}
-      surface={surface}
-    />
-  );
-}
-
-function NowLaneCard({
-  cardId,
-  size,
-  isEditMode,
-  allowedSizes = NOW_LANE_ALLOWED_SIZES,
-  onSizeChange,
-  children,
-}: {
-  cardId: string;
-  size: CardSize;
-  isEditMode: boolean;
-  allowedSizes?: CardSize[];
-  onSizeChange: (size: CardSize) => void;
-  children: ReactNode;
-}) {
-  return (
-    <div
-      data-testid={`security-now-card:${cardId}`}
-      data-draggable-card="true"
-      className={`${getCardSpanClass(size)} relative min-w-0`}
-    >
-      {isEditMode ? (
-        <DashboardResizeTrigger
-          cardSize={size}
-          allowedSizes={allowedSizes}
-          onSizeChange={onSizeChange}
-        />
-      ) : null}
-      {children}
-    </div>
-  );
-}
-
 function readSecureSummaryGroupId(device: DeviceWithType): string | null {
   switch (device.id) {
     case 'security.aggregate.attention.alarms':
@@ -954,12 +329,16 @@ function DetailsGrid({
   updateCardSize,
   isEditMode,
   onRemoveEntity,
+  allowEntityRemoval = true,
+  embeddedColumnCount,
 }: {
   devices: DeviceWithType[];
   cardSizes: Record<string, CardSize>;
   updateCardSize: (id: string, size: CardSize) => void;
   isEditMode: boolean;
   onRemoveEntity?: (entityId: string) => void;
+  allowEntityRemoval?: boolean;
+  embeddedColumnCount?: number;
 }) {
   const breakpointCols = useBreakpointCols();
   const { disableAnimations, effectsQuality, lowPowerMode } = useSettingsStore(
@@ -969,8 +348,15 @@ function DetailsGrid({
       lowPowerMode: settingsSelectors.lowPowerMode(state),
     }))
   );
-  const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
-    useFitDashboardGrid(breakpointCols);
+  const {
+    outerRef,
+    innerRef,
+    outerContainerStyle,
+    innerContainerStyle,
+    isAutoScaled,
+    gridStyle,
+    renderedGridCols,
+  } = useFitDashboardGrid(breakpointCols, embeddedColumnCount === undefined);
   const performanceProfile = useMemo(
     () =>
       resolveDashboardPerformanceProfile({
@@ -993,6 +379,36 @@ function DetailsGrid({
   });
   const visibleDevices = shouldBatch ? devices.slice(0, batchedVisibleCount) : devices;
   const optimizeOffscreenPaint = performanceProfile.optimizeOffscreenPaint;
+  const columnCount = embeddedColumnCount ?? renderedGridCols;
+  const resolvedCards = useMemo(
+    () =>
+      visibleDevices.map((device) => {
+        const defaultSize = device.type === 'cameras' ? 'large' : device.size;
+        const size = cardSizes[device.id] ?? defaultSize;
+
+        return {
+          device,
+          size,
+          gridSize: getResponsiveCardSize(size, breakpointCols),
+        };
+      }),
+    [breakpointCols, cardSizes, visibleDevices]
+  );
+  const gridPlacements = useMemo(
+    () =>
+      packDashboardGridItems(
+        resolvedCards.map(({ device, gridSize: size }) => ({ id: device.id, size })),
+        columnCount
+      ),
+    [columnCount, resolvedCards]
+  );
+  const resolvedGridStyle =
+    embeddedColumnCount === undefined
+      ? gridStyle
+      : {
+          ...getCardGridAutoRowsStyle(breakpointCols),
+          gridTemplateColumns: `repeat(${embeddedColumnCount}, minmax(0, 1fr))`,
+        };
 
   return (
     <DashboardEditActions isEditMode={isEditMode} onRemoveEntity={onRemoveEntity}>
@@ -1003,22 +419,27 @@ function DetailsGrid({
           style={innerContainerStyle}
         >
           <div
+            data-testid="security-card-grid"
             className="grid w-full grid-flow-row-dense gap-3 lg:gap-4"
-            style={gridStyle as CSSProperties}
+            style={resolvedGridStyle as CSSProperties}
           >
-            {visibleDevices.map((device) => {
-              const defaultSize = device.type === 'cameras' ? 'large' : device.size;
-              const size = cardSizes[device.id] ?? defaultSize;
-              const spanClassName = getCardSpanClass(size);
+            {resolvedCards.map(({ device, size, gridSize }) => {
+              const placement = gridPlacements.get(device.id);
 
               return (
                 <div
                   key={device.id}
-                  className={`${spanClassName}${
+                  data-security-entity-id={device.id}
+                  tabIndex={-1}
+                  className={`${getCardSpanClass(gridSize)} [&>*]:h-full${
                     optimizeOffscreenPaint
                       ? ' [content-visibility:auto] [contain-intrinsic-block-size:22rem]'
                       : ''
-                  }`}
+                  } rounded-[22px] focus:outline-none focus:ring-2 focus:ring-sky-400/70 focus:ring-offset-2 focus:ring-offset-transparent`}
+                  style={{
+                    gridColumnStart: placement?.column,
+                    gridRowStart: placement?.row,
+                  }}
                 >
                   <DashboardCardItem
                     id={device.id}
@@ -1027,7 +448,7 @@ function DetailsGrid({
                     isEditMode={isEditMode}
                     handleSizeChange={updateCardSize}
                     onRemoveEntity={onRemoveEntity}
-                    allowEntityRemoval
+                    allowEntityRemoval={allowEntityRemoval}
                     usesHideAction
                   />
                 </div>
@@ -1040,6 +461,57 @@ function DetailsGrid({
   );
 }
 
+function MobileOverviewCarousel({
+  devices,
+  cardSizes,
+  updateCardSize,
+  isEditMode,
+}: {
+  devices: DeviceWithType[];
+  cardSizes: Record<string, CardSize>;
+  updateCardSize: (id: string, size: CardSize) => void;
+  isEditMode: boolean;
+}) {
+  const { t } = useI18n();
+  const hasMultipleCards = devices.length > 1;
+
+  return (
+    <section
+      aria-label={t('security.overview.customize.previewLabel')}
+      className="-mx-1 snap-x snap-mandatory overflow-x-auto overscroll-x-contain px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      data-testid="security-overview-carousel"
+    >
+      <div className="flex gap-3">
+        {devices.map((device) => {
+          const defaultSize = device.type === 'cameras' ? 'large' : device.size;
+          const size = cardSizes[device.id] ?? defaultSize;
+
+          return (
+            <div
+              key={device.id}
+              className={`h-44 min-w-0 flex-none snap-start scroll-ml-1 [contain-intrinsic-size:auto_11rem] [content-visibility:auto] [&>*]:h-full ${
+                hasMultipleCards ? 'w-[84%] max-w-96' : 'w-full'
+              }`}
+              data-security-entity-id={device.id}
+              data-testid="security-overview-carousel-item"
+            >
+              <DashboardCardItem
+                id={device.id}
+                device={device}
+                size={size}
+                isEditMode={isEditMode}
+                handleSizeChange={updateCardSize}
+                allowEntityRemoval={false}
+                usesHideAction
+              />
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function DetailsSection({
   groupSummaries,
   selectedGroupId,
@@ -1049,6 +521,7 @@ function DetailsSection({
   isEditMode,
   onRemoveEntity,
   surface,
+  embeddedColumnCount,
 }: {
   groupSummaries: SecurityGroupSummary[];
   selectedGroupId: string;
@@ -1058,6 +531,7 @@ function DetailsSection({
   isEditMode: boolean;
   onRemoveEntity?: (entityId: string) => void;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
+  embeddedColumnCount?: number;
 }) {
   const { theme } = useTheme();
   const { t } = useI18n();
@@ -1124,6 +598,7 @@ function DetailsSection({
           updateCardSize={updateCardSize}
           isEditMode={isEditMode}
           onRemoveEntity={onRemoveEntity}
+          embeddedColumnCount={embeddedColumnCount}
         />
       </div>
     </div>
@@ -1138,24 +613,29 @@ export function SecurityCameraDashboard({
   updateCardSize,
   onRemoveEntity,
   surface,
+  isOverviewCustomizationOpen = false,
+  onOverviewCustomizationOpenChange,
 }: SecurityCameraDashboardProps) {
   const { t } = useI18n();
-  const breakpointCols = useBreakpointCols();
-  const {
-    outerRef: nowOuterRef,
-    innerRef: nowInnerRef,
-    outerContainerStyle: nowOuterContainerStyle,
-    innerContainerStyle: nowInnerContainerStyle,
-    isAutoScaled: isNowAutoScaled,
-    gridStyle: nowGridStyle,
-  } = useFitDashboardGrid(breakpointCols);
   const [viewerCamera, setViewerCamera] = useState<CameraDevice | null>(null);
   const detailsRef = useRef<HTMLDivElement | null>(null);
-  const [collapsedSections, setCollapsedSections] = usePersistedState<Record<string, boolean>>(
-    SECURITY_DASHBOARD_COLLAPSED_SECTIONS_KEY,
-    {}
+  const [pendingNavigationEntityId, setPendingNavigationEntityId] = useState<string | null>(null);
+  const [storedOverviewPreference, setStoredOverviewPreference] = usePersistedState(
+    STORAGE_KEYS.securityOverviewPreferences,
+    DEFAULT_SECURITY_OVERVIEW_PREFERENCE
   );
-  const attentionCount = model.summary.attentionEntityCount;
+  const overviewPreference = useMemo(
+    () => normalizeSecurityOverviewPreference(storedOverviewPreference),
+    [storedOverviewPreference]
+  );
+  const automaticOverviewEntityIds = useMemo(
+    () => getAutomaticSecurityOverviewEntityIds(model.allEntities),
+    [model.allEntities]
+  );
+  const overviewEntities = useMemo(
+    () => resolveSecurityOverviewEntities(overviewPreference, model.allEntities),
+    [model.allEntities, overviewPreference]
+  );
   const summaryItems = useMemo<HomeStatusSummaryItem[]>(() => {
     const items: HomeStatusSummaryItem[] = [];
     if (model.summary.liveItems.length > 0) {
@@ -1164,8 +644,7 @@ export function SecurityCameraDashboard({
         title: t('security.dashboard.live'),
         value: t('security.summary.live', { count: model.summary.liveItems.length }),
         icon: Radio,
-        iconColor: '#38bdf8',
-        tone: 'active',
+        iconColor: '#94a3b8',
       });
     }
     if (model.summary.criticalCount > 0) {
@@ -1207,17 +686,11 @@ export function SecurityCameraDashboard({
         title: t('security.severity.normal'),
         value: String(model.summary.normalCount),
         icon: ShieldCheck,
-        iconColor: '#34d399',
-        tone: 'success',
+        iconColor: '#94a3b8',
       });
     }
     return items;
   }, [model.summary, t]);
-  const attentionCardSize = cardSizes[ATTENTION_NOW_CARD_ID] ?? 'large';
-  const secureCardSize = cardSizes[SECURE_NOW_CARD_ID] ?? 'large';
-  const liveCardSize = cardSizes[LIVE_NOW_CARD_ID] ?? 'large';
-  const alarmCardSize: Extract<CardSize, 'medium' | 'large'> =
-    cardSizes[ALARM_NOW_CARD_ID] === 'medium' ? 'medium' : 'large';
   const defaultGroupId = useMemo(
     () =>
       model.summary.groupSummaries.find((group) => group.defaultExpanded)?.id ??
@@ -1240,17 +713,34 @@ export function SecurityCameraDashboard({
     });
   }, [defaultGroupId, model.summary.groupSummaries]);
 
+  useEffect(() => {
+    if (!pendingNavigationEntityId) return;
+
+    const frame = requestAnimationFrame(() => {
+      const detailCards = detailsRef.current?.querySelectorAll<HTMLElement>(
+        '[data-security-entity-id]'
+      );
+      const target = Array.from(detailCards ?? []).find(
+        (card) => card.dataset.securityEntityId === pendingNavigationEntityId
+      );
+
+      if (target) {
+        target.focus({ preventScroll: true });
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      setPendingNavigationEntityId(null);
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [pendingNavigationEntityId, selectedGroupId]);
+
   const navigateToEntity = (device: DeviceWithType) => {
     const secureSummaryGroupId = readSecureSummaryGroupId(device);
     if (secureSummaryGroupId) {
       setSelectedGroupId(secureSummaryGroupId);
-
-      requestAnimationFrame(() => {
-        detailsRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        });
-      });
+      setPendingNavigationEntityId(device.id);
       return;
     }
 
@@ -1262,177 +752,63 @@ export function SecurityCameraDashboard({
     }
 
     setSelectedGroupId(targetGroup.id);
-
-    requestAnimationFrame(() => {
-      detailsRef.current?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    });
+    setPendingNavigationEntityId(device.id);
   };
 
   const handleAttentionItemClick = (device: DeviceWithType) => {
     navigateToEntity(device);
   };
 
-  const handleLiveItemClick = (device: DeviceWithType) => {
-    if (device.type === 'cameras') {
-      setViewerCamera(device);
-      return;
-    }
-
-    navigateToEntity(device);
-  };
-
-  const toggleSectionCollapse = (sectionId: string) => {
-    setCollapsedSections((current) => ({
-      ...current,
-      [sectionId]: !current[sectionId],
-    }));
-  };
-
   return (
     <div className="space-y-7">
-      <style>{`
-        @keyframes navet-security-critical-pulse {
-          0% {
-            transform: scale(1);
-            opacity: 0.86;
-          }
-          68% {
-            transform: scale(3.1);
-            opacity: 0;
-          }
-          100% {
-            transform: scale(3.1);
-            opacity: 0;
-          }
-        }
-
-        @keyframes navet-security-warning-pulse {
-          0% {
-            transform: scale(1);
-            opacity: 0.58;
-          }
-          72% {
-            transform: scale(2.25);
-            opacity: 0;
-          }
-          100% {
-            transform: scale(2.25);
-            opacity: 0;
-          }
-        }
-      `}</style>
-      <SummaryBar items={summaryItems} ariaLabel={t('homeSummary.security')} />
-      <FlatSection
-        id="now"
-        title={model.summary.title}
-        description={model.summary.subtitle}
-        isCollapsed={collapsedSections.now ?? false}
-        onToggleCollapse={toggleSectionCollapse}
-        surface={surface}
-      >
-        <div ref={nowOuterRef} className="relative w-full" style={nowOuterContainerStyle}>
-          <div
-            ref={nowInnerRef}
-            className={`w-full${isNowAutoScaled ? ' absolute left-0 top-0 origin-top-left' : ''}`}
-            style={nowInnerContainerStyle}
-          >
-            <div
-              className="grid w-full grid-flow-row-dense gap-3 lg:gap-4"
-              style={nowGridStyle as CSSProperties}
-            >
-              <NowLaneCard
-                cardId={attentionCount > 0 ? ATTENTION_NOW_CARD_ID : SECURE_NOW_CARD_ID}
-                size={attentionCount > 0 ? attentionCardSize : secureCardSize}
-                isEditMode={isEditMode}
-                onSizeChange={(size) =>
-                  updateCardSize(
-                    attentionCount > 0 ? ATTENTION_NOW_CARD_ID : SECURE_NOW_CARD_ID,
-                    size
-                  )
-                }
-              >
-                {attentionCount > 0 ? (
-                  <NowLane
-                    items={model.summary.attentionItems}
-                    tone="danger"
-                    emptyLabel={t('security.overview.nothingNeedsAttention')}
-                    animateAttention
-                    trailingLabelMode="status"
-                    showInlineStatus={false}
-                    emphasizeStatusBySeverity
-                    allEntities={model.allEntities}
-                    onItemClick={handleAttentionItemClick}
-                    surface={surface}
-                  />
-                ) : (
-                  <SecureLane
-                    items={model.summary.secureItems}
-                    onItemClick={handleAttentionItemClick}
-                    surface={surface}
-                  />
-                )}
-              </NowLaneCard>
-              <NowLaneCard
-                cardId={LIVE_NOW_CARD_ID}
-                size={liveCardSize}
-                isEditMode={isEditMode}
-                onSizeChange={(size) => updateCardSize(LIVE_NOW_CARD_ID, size)}
-              >
-                <NowLane
-                  items={model.summary.liveItems}
-                  tone="accent"
-                  emptyLabel={t('security.overview.noLiveActivity')}
-                  trailingLabelMode="status"
-                  showInlineStatus={false}
-                  emphasizeStatusByActivity
-                  preferThumbnail
-                  allEntities={model.allEntities}
-                  onItemClick={handleLiveItemClick}
-                  surface={surface}
-                />
-              </NowLaneCard>
-              {alarms.length > 0 ? (
-                <NowLaneCard
-                  cardId={ALARM_NOW_CARD_ID}
-                  size={alarmCardSize}
-                  isEditMode={isEditMode}
-                  allowedSizes={NOW_ALARM_ALLOWED_SIZES}
-                  onSizeChange={(size) => updateCardSize(ALARM_NOW_CARD_ID, size)}
-                >
-                  <SecurityPanelCard alarms={alarms} size={alarmCardSize} />
-                </NowLaneCard>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      </FlatSection>
-
-      {model.summary.totalEntities > 0 ? (
-        <FlatSection
-          id="details"
-          title={t('security.overview.allSecurity')}
-          count={model.summary.totalEntities}
-          isCollapsed={collapsedSections.details ?? false}
-          onToggleCollapse={toggleSectionCollapse}
+      <SummaryBarStack>
+        <SummaryBar items={summaryItems} ariaLabel={t('homeSummary.security')} />
+        <SecurityCommandCenter
+          model={model}
+          alarms={alarms}
           surface={surface}
-        >
-          <div ref={detailsRef}>
-            <DetailsSection
-              groupSummaries={model.summary.groupSummaries}
-              selectedGroupId={selectedGroupId}
-              onSelectGroup={setSelectedGroupId}
-              cardSizes={cardSizes}
-              updateCardSize={updateCardSize}
-              isEditMode={isEditMode}
-              onRemoveEntity={onRemoveEntity}
-              surface={surface}
-            />
-          </div>
-        </FlatSection>
-      ) : null}
+          renderOverviewContent={(columnCount, isMobile) =>
+            isMobile ? (
+              <MobileOverviewCarousel
+                devices={overviewEntities}
+                cardSizes={cardSizes}
+                updateCardSize={updateCardSize}
+                isEditMode={isEditMode}
+              />
+            ) : (
+              <DetailsGrid
+                devices={overviewEntities}
+                cardSizes={cardSizes}
+                updateCardSize={updateCardSize}
+                isEditMode={isEditMode}
+                allowEntityRemoval={false}
+                embeddedColumnCount={columnCount}
+              />
+            )
+          }
+          renderDetailsContent={
+            model.summary.totalEntities > 0
+              ? (columnCount) => (
+                  <div ref={detailsRef}>
+                    <DetailsSection
+                      groupSummaries={model.summary.groupSummaries}
+                      selectedGroupId={selectedGroupId}
+                      onSelectGroup={setSelectedGroupId}
+                      cardSizes={cardSizes}
+                      updateCardSize={updateCardSize}
+                      isEditMode={isEditMode}
+                      onRemoveEntity={onRemoveEntity}
+                      surface={surface}
+                      embeddedColumnCount={columnCount}
+                    />
+                  </div>
+                )
+              : undefined
+          }
+          onSelectEntity={handleAttentionItemClick}
+          onSelectCamera={setViewerCamera}
+        />
+      </SummaryBarStack>
 
       {viewerCamera ? (
         <SummaryCameraViewer
@@ -1444,6 +820,19 @@ export function SecurityCameraDashboard({
             }
           }}
         />
+      ) : null}
+
+      {isOverviewCustomizationOpen ? (
+        <Suspense fallback={null}>
+          <SecurityOverviewCustomizationDialog
+            automaticEntityIds={automaticOverviewEntityIds}
+            entities={model.allEntities}
+            isOpen={isOverviewCustomizationOpen}
+            onOpenChange={(open) => onOverviewCustomizationOpenChange?.(open)}
+            onSave={setStoredOverviewPreference}
+            preference={overviewPreference}
+          />
+        </Suspense>
       ) : null}
     </div>
   );

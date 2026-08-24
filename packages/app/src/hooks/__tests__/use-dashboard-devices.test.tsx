@@ -252,4 +252,26 @@ describe('useDashboardDevices', () => {
 
     expect(visibility.visibleDevices.cameras).toEqual([]);
   });
+
+  it('matches canonical hidden IDs against legacy runtime entity IDs', () => {
+    const devices: DeviceCollection = {
+      ...createEmptyDeviceCollection(),
+      locks: [
+        {
+          id: 'lock.side_door',
+          nativeId: 'lock.side_door',
+          name: 'Side Door',
+          room: 'Hallway',
+          size: 'small',
+          state: false,
+          securityKind: 'lock',
+          securitySeverity: 'unknown',
+        },
+      ],
+    };
+
+    const visibility = buildDashboardVisibilityResult(devices, ['home_assistant:lock.side_door']);
+
+    expect(visibility.visibleDevices.locks).toEqual([]);
+  });
 });

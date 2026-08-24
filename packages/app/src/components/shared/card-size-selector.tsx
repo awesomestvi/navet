@@ -16,6 +16,7 @@ export {
   getDashboardCardFootprint,
   getDashboardCardGridGapPx,
   getDashboardCardGridMetrics,
+  getDashboardCardGridSpan,
   getStandardCardPadding,
   PHONE_SMALL_CARD_TARGET_HEIGHT_PX,
   PHONE_SMALL_CARD_TARGET_WIDTH_PX,

@@ -213,6 +213,55 @@ describe('CameraCardContainer', () => {
     vi.unstubAllGlobals();
   });
 
+  it('prioritizes a detected person over generic motion', () => {
+    useProviderCameraLiveDataMock.mockReturnValue({
+      cameraState: 'streaming',
+      companionStates: [
+        {
+          entityId: 'binary_sensor.front_motion',
+          type: 'motion',
+          detectionTarget: 'motion',
+          detected: true,
+          changedAt: '2026-08-19T20:00:00.000Z',
+        },
+        {
+          entityId: 'binary_sensor.front_human',
+          type: 'motion',
+          detectionTarget: 'person',
+          detected: true,
+          changedAt: '2026-08-19T20:00:01.000Z',
+        },
+      ],
+      connected: true,
+      deviceEntities: {},
+      liveEntity: {
+        state: 'streaming',
+        attributes: { entity_picture: '/api/camera_proxy/camera.front' },
+      },
+      liveState: {
+        isStreamCapable: true,
+        isStillImageOnly: false,
+        motionDetectionEnabled: null,
+      },
+    });
+
+    renderWithProviders(
+      <CameraCardContainer
+        id="home_assistant:camera.front"
+        name="Front Door"
+        room="Entrance"
+        entityPicture="/api/camera_proxy/camera.front"
+        isStreamCapable
+        size="large"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.getByTestId('camera-person-motion-icon')).toBeInTheDocument();
+    expect(screen.queryByTestId('camera-motion-icon')).not.toBeInTheDocument();
+  });
+
   it('passes device sensor and light siblings to the fullscreen viewer', () => {
     useProviderCameraTopologyMock.mockReturnValue({
       siblingIds: ['binary_sensor.front_scenario', 'light.front_ir', 'sensor.front_temperature'],

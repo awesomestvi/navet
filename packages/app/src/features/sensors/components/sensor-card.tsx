@@ -167,6 +167,7 @@ export const InfoCard = memo(function InfoCard({
       iconText={headerIconText}
       isActive={displayModel.status !== 'unavailable'}
       size={chromeSize}
+      variant={isExtraSmall ? 'dense' : 'default'}
       tone={displayModel.tone === 'neutral' ? 'neutral' : 'primary'}
       baseColor={displayModel.baseColor}
       ariaLabel={t('entityCardInteraction.openSettings', { name })}
@@ -280,6 +281,7 @@ export const InfoCard = memo(function InfoCard({
           title={displayModel.title}
           subtitle={subtitleText}
           headerCompact={isExtraSmall}
+          headerVariant={isExtraSmall ? 'dense' : 'default'}
           headerLayout="eyebrow-first"
           headerTone="neutral"
           headerLeading={headerIconNode}

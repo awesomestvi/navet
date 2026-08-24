@@ -167,7 +167,6 @@ export function DirectGo2RtcCameraPlayer({
   const [hasLoadedFrame, setHasLoadedFrame] = useState(false);
   const hasLoadedFrameRef = useRef(false);
   const markReadyRef = useRef<() => void>(() => undefined);
-  const posterUrlRef = useRef(posterUrl);
   const resourceUrl = streamResource.url;
   const resourceMode = streamResource.metadata?.mode;
   const endpoint = useMemo(
@@ -183,20 +182,6 @@ export function DirectGo2RtcCameraPlayer({
     setHasLoadedFrame(true);
     onLoad?.();
   };
-  posterUrlRef.current = posterUrl;
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) {
-      return;
-    }
-    if (posterUrl) {
-      video.poster = posterUrl;
-    } else {
-      video.removeAttribute('poster');
-    }
-  }, [posterUrl]);
-
   useEffect(() => {
     const video = videoRef.current;
     if (!endpoint || !video || typeof WebSocket === 'undefined') {
@@ -223,12 +208,8 @@ export function DirectGo2RtcCameraPlayer({
       video.disableRemotePlayback = false;
       video.srcObject = null;
       video.removeAttribute('src');
+      video.removeAttribute('poster');
       video.load();
-      if (posterUrlRef.current) {
-        video.poster = posterUrlRef.current;
-      } else {
-        video.removeAttribute('poster');
-      }
     };
 
     const startWebRtcAttempt = (generation: number, fail: () => void): DirectGo2RtcAttempt => {
@@ -806,9 +787,7 @@ export function DirectGo2RtcCameraPlayer({
     video.muted = true;
     video.autoplay = true;
     video.playsInline = true;
-    if (posterUrlRef.current) {
-      video.poster = posterUrlRef.current;
-    }
+    video.removeAttribute('poster');
     document.addEventListener('visibilitychange', handleVisibilityChange);
     if (!document.hidden) {
       startAttempt(0);

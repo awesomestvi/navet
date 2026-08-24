@@ -68,7 +68,12 @@ export const EntityCardHeaderIcon = memo(function EntityCardHeaderIcon({
   const icon = IconComponent ? (
     <IconComponent
       aria-hidden="true"
-      className={cn(iconClassName, variant === 'large' && 'h-[18px] w-[18px]', glyphClassName)}
+      className={cn(
+        iconClassName,
+        variant === 'large' && 'h-[18px] w-[18px]',
+        variant === 'dense' && 'h-3.5 w-3.5',
+        glyphClassName
+      )}
       style={iconStyle}
     />
   ) : iconText ? (
@@ -88,7 +93,11 @@ export const EntityCardHeaderIcon = memo(function EntityCardHeaderIcon({
   if (!isInteractive) {
     return (
       <div
-        className={cn(badgeClassName, variant === 'large' && 'h-9 w-9', badgeClassNameOverride)}
+        className={cn(
+          badgeClassName,
+          variant === 'dense' && 'navet-card-header-control-dense',
+          badgeClassNameOverride
+        )}
         style={badgeStyle}
       >
         {icon}
@@ -102,7 +111,11 @@ export const EntityCardHeaderIcon = memo(function EntityCardHeaderIcon({
       aria-label={ariaLabel}
       onClick={onClick}
       onPointerDown={onPointerDown}
-      className={cn(badgeClassName, variant === 'large' && 'h-9 w-9', badgeClassNameOverride)}
+      className={cn(
+        badgeClassName,
+        variant === 'dense' && 'navet-card-header-control-dense',
+        badgeClassNameOverride
+      )}
       style={badgeStyle}
     >
       {icon}

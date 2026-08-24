@@ -474,6 +474,53 @@ describe('LightCard', () => {
     expect(screen.queryByRole('button', { name: 'Choose light effect' })).not.toBeInTheDocument();
   });
 
+  it('removes the brightness slider only from extra-small light cards', () => {
+    homeAssistantStore.setState({
+      connected: true,
+      connection: {} as never,
+      entities: {
+        'light.desk_lamp': createLightEntity('on'),
+      },
+    });
+
+    const { rerender } = renderWithProviders(
+      <LightCard
+        id="light.desk_lamp"
+        name="Desk Lamp"
+        room="Office"
+        initialState
+        initialBrightness={65}
+        initialTemp={3000}
+        size="extra-small"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.queryByRole('slider', { name: 'Brightness' })).not.toBeInTheDocument();
+    expect(
+      screen
+        .getByRole('button', { name: 'Open settings for Desk Lamp' })
+        .closest('.navet-entity-card-header')
+    ).not.toBeNull();
+
+    rerender(
+      <LightCard
+        id="light.desk_lamp"
+        name="Desk Lamp"
+        room="Office"
+        initialState
+        initialBrightness={65}
+        initialTemp={3000}
+        size="small"
+        onSizeChange={vi.fn()}
+        isEditMode={false}
+      />
+    );
+
+    expect(screen.getByRole('slider', { name: 'Brightness' })).toBeInTheDocument();
+  });
+
   it('routes Homey light toggles through the integration action dispatcher', () => {
     renderWithProviders(
       <LightCard

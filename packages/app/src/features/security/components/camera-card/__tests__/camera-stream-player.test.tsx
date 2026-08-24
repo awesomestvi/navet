@@ -322,6 +322,7 @@ describe('CameraStreamPlayer', () => {
     );
 
     expect(container.querySelector('video')).toBeTruthy();
+    expect(container.querySelector('video')).not.toHaveAttribute('poster');
     await waitFor(() =>
       expect(getCameraStreamUrlMock).toHaveBeenCalledWith(
         cameraEntityFixtures.normal.entity_id,

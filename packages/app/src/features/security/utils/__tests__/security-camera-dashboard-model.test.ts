@@ -30,6 +30,7 @@ function camera(
     nativeId: overrides.nativeId,
     canonicalId: overrides.canonicalId,
     sourceDeviceId: overrides.sourceDeviceId,
+    underlyingDeviceId: overrides.underlyingDeviceId,
     state: overrides.state ?? 'idle',
     supportedFeatures: overrides.supportedFeatures ?? 0,
     isStreamCapable: overrides.isStreamCapable ?? false,
@@ -99,6 +100,7 @@ function sensor(
     canonicalId: overrides.canonicalId,
     nativeId: overrides.nativeId,
     groupMembers: overrides.groupMembers,
+    underlyingDeviceId: overrides.underlyingDeviceId,
     status: overrides.status ?? 'active',
     securityKind: overrides.securityKind,
     securitySeverity: overrides.securitySeverity ?? 'active',
@@ -401,10 +403,7 @@ describe('security camera dashboard model', () => {
     expect(activeModel.summary.highestSeverity).toBe('active');
     expect(activeModel.summary.title).toBe('Security active');
     expect(activeModel.summary.attentionItems).toHaveLength(0);
-    expect(activeModel.summary.liveItems.map((device) => device.id)).toEqual([
-      'camera.driveway',
-      'binary_sensor.entry_motion',
-    ]);
+    expect(activeModel.summary.liveItems.map((device) => device.id)).toEqual(['camera.driveway']);
     expect(activeModel.summary.activityItems.map((device) => device.id)).toEqual([
       'camera.driveway',
       'binary_sensor.entry_motion',
@@ -468,7 +467,7 @@ describe('security camera dashboard model', () => {
     });
 
     expect(model.summary.highestSeverity).toBe('normal');
-    expect(model.summary.title).toBe('All secure');
+    expect(model.summary.title).toBe('The house is secure');
     expect(model.summary.securedCounts).toEqual({
       openingsClosed: 2,
       locksLocked: 1,
@@ -556,6 +555,54 @@ describe('security camera dashboard model', () => {
         value: '2 clear',
       },
     ]);
+  });
+
+  it('keeps camera analytics motion channels individually visible', () => {
+    const model = buildSecurityCameraDashboardModel({
+      cameras: [
+        camera({
+          id: 'camera.outside_axis',
+          name: 'AXIS M2048-LE',
+          underlyingDeviceId: 'device-axis-outside',
+        }),
+      ],
+      covers: [],
+      locks: [],
+      sensors: [
+        sensor({
+          id: 'binary_sensor.outside_axis_object_analytics_human',
+          name: 'AXIS M2048-LE Object Analytics Human',
+          securityKind: 'motion',
+          securitySeverity: 'normal',
+          status: 'clear',
+          value: 'Clear',
+          underlyingDeviceId: 'device-axis-outside',
+        }),
+        sensor({
+          id: 'binary_sensor.outside_axis_object_analytics_motion',
+          name: 'AXIS M2048-LE Object Analytics Motion',
+          securityKind: 'motion',
+          securitySeverity: 'unknown',
+          status: 'unavailable',
+          value: 'Unavailable',
+          underlyingDeviceId: 'device-axis-outside',
+        }),
+      ],
+    });
+
+    const motionEntities = model.summary.groupSummaries.find(
+      (group) => group.id === 'motion-occupancy'
+    )?.entities;
+
+    expect(motionEntities).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'binary_sensor.outside_axis_object_analytics_human' }),
+        expect.objectContaining({ id: 'binary_sensor.outside_axis_object_analytics_motion' }),
+      ])
+    );
+    expect(motionEntities).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 'security.aggregate.motion.secure' })])
+    );
   });
 
   it('treats streaming cameras as live even if upstream securitySeverity is stale', () => {
@@ -704,6 +751,9 @@ describe('security camera dashboard model', () => {
 
     expect(model.summary.attentionItems).toHaveLength(0);
     expect(model.summary.activityItems).toHaveLength(0);
+    expect(model.summary.unknownItems).toHaveLength(0);
+    expect(model.summary.unknownCount).toBe(0);
+    expect(model.summary.highestSeverity).toBe('normal');
     expect(model.summary.groupSummaries.find((group) => group.id === 'presence')).toMatchObject({
       summaryText: '1 unavailable',
       total: 1,
@@ -881,9 +931,16 @@ describe('security camera dashboard model', () => {
 
     expect(model.summary.attentionItems.map((device) => device.id)).toEqual([
       'security.aggregate.attention.sirens',
-      'security.aggregate.attention.doors-windows',
       'security.aggregate.attention.locks',
+      'security.aggregate.attention.doors-windows',
       'security.aggregate.attention.cameras',
+    ]);
+    expect(model.summary.attentionEntities.map((device) => device.id)).toEqual([
+      'siren.entry',
+      'lock.kitchen_door',
+      'binary_sensor.hall_window',
+      'cover.pergola_roof',
+      'camera.driveway',
     ]);
   });
 });

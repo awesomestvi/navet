@@ -45,6 +45,7 @@ export interface PlatformCameraLiveState {
 export interface PlatformCameraCompanionState {
   entityId: string;
   type: 'motion';
+  detectionTarget?: 'motion' | 'person';
   detected: boolean;
   changedAt: string | null;
 }
@@ -91,6 +92,15 @@ export interface PlatformEntityHistoryRequest {
   endTime?: string;
   includeAttributes?: boolean;
   significantChangesOnly?: boolean;
+}
+
+export interface PlatformEntityHistoriesRequest {
+  entityIds: string[];
+  startTime: string;
+  endTime?: string;
+  includeAttributes?: boolean;
+  significantChangesOnly?: boolean;
+  signal?: AbortSignal;
 }
 
 export interface PlatformEntityHistoryPoint {

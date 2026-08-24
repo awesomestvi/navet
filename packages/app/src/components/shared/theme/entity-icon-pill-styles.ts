@@ -1,9 +1,4 @@
-import {
-  type CardSize,
-  isCompactCardSize,
-  isExtraSmallCardSize,
-  isTinyCardSize,
-} from '@navet/app/components/shared/card-size-selector';
+import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import {
   type CardTextTone,
   getCardReadableTextTokens,
@@ -22,39 +17,11 @@ type EntityIconPillStyles = {
   iconStyle?: CSSProperties;
 };
 
-function getBadgeSizeClass(size: CardSize, isInteractive: boolean) {
-  if (isInteractive) {
-    return 'h-9 w-9';
-  }
-
-  if (isTinyCardSize(size)) {
-    return 'h-6 w-6';
-  }
-
-  if (isExtraSmallCardSize(size)) {
-    return 'h-7 w-7';
-  }
-
-  if (isCompactCardSize(size) || size === 'medium' || size === 'medium-vertical') {
-    return 'h-8 w-8';
-  }
-
-  return 'h-8 w-8';
+function getBadgeSizeClass() {
+  return 'navet-card-header-control';
 }
 
-function getIconSizeClass(size: CardSize) {
-  if (isTinyCardSize(size)) {
-    return 'h-3 w-3';
-  }
-
-  if (isExtraSmallCardSize(size)) {
-    return 'h-3.5 w-3.5';
-  }
-
-  if (isCompactCardSize(size) || size === 'medium' || size === 'medium-vertical') {
-    return 'h-4 w-4';
-  }
-
+function getIconSizeClass() {
   return 'h-4 w-4';
 }
 
@@ -64,7 +31,6 @@ export function getEntityIconPillStyles({
   primaryColor,
   accentColor,
   baseColor,
-  size,
   theme,
   tone,
   inverseSurface = false,
@@ -106,8 +72,8 @@ export function getEntityIconPillStyles({
             ? '#000000'
             : '#09090b',
   });
-  const badgeSizeClass = getBadgeSizeClass(size, isInteractive);
-  const iconSizeClass = getIconSizeClass(size);
+  const badgeSizeClass = getBadgeSizeClass();
+  const iconSizeClass = getIconSizeClass();
   const interactiveClass = isInteractive
     ? 'cursor-pointer hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2'
     : '';

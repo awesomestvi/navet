@@ -13,6 +13,19 @@ interface EnergyHistoryBarChartProps {
   onSelectedIndexChange?: (index: number | null) => void;
 }
 
+function getEvenlySpacedTickIndexes(pointCount: number, maximumLabels: number) {
+  const labelCount = Math.min(pointCount, maximumLabels);
+
+  if (labelCount <= 0) return new Set<number>();
+  if (labelCount === 1) return new Set([0]);
+
+  return new Set(
+    Array.from({ length: labelCount }, (_, index) =>
+      Math.round((index * (pointCount - 1)) / (labelCount - 1))
+    )
+  );
+}
+
 export const EnergyHistoryBarChart = memo(function EnergyHistoryBarChart({
   accentColor,
   data,
@@ -37,7 +50,8 @@ export const EnergyHistoryBarChart = memo(function EnergyHistoryBarChart({
   const tooltipLeftPercent =
     activeLeftPercent === null ? null : Math.max(10, Math.min(90, activeLeftPercent));
   const compactBars = data.length > 14;
-  const labelStride = compactBars ? Math.ceil(data.length / 7) : 1;
+  const desktopTickIndexes = getEvenlySpacedTickIndexes(data.length, compactBars ? 7 : data.length);
+  const mobileTickIndexes = getEvenlySpacedTickIndexes(data.length, compactBars ? 4 : data.length);
   const tooltipClassName =
     theme === 'light'
       ? `border ${tokens.surface.border} ${tokens.surface.panel} text-slate-900 shadow-[0_18px_38px_-24px_rgba(15,23,42,0.22)]`
@@ -136,7 +150,9 @@ export const EnergyHistoryBarChart = memo(function EnergyHistoryBarChart({
           const height = barValue > 0 ? Math.max(3, (Math.max(0, barValue) / maxValue) * 100) : 0;
           const isActive = displayedIndex === index;
           const showValue = point.hasData !== false && (!compactBars || isActive);
-          const showLabel = index % labelStride === 0 || index === data.length - 1;
+          const showDesktopLabel = desktopTickIndexes.has(index);
+          const showLabel = !compactBars || showDesktopLabel;
+          const labelVisibilityClassName = compactBars ? 'hidden sm:block' : '';
           const valueLabel = `${barValue.toLocaleString(locale, {
             maximumFractionDigits: barValue >= 10 ? 0 : barValue >= 1 ? 1 : 2,
           })}kWh`;
@@ -170,7 +186,7 @@ export const EnergyHistoryBarChart = memo(function EnergyHistoryBarChart({
               ) : null}
               {showLabel ? (
                 <span
-                  className={`absolute inset-x-0 top-[calc(100%+0.35rem)] whitespace-nowrap text-xs ${
+                  className={`absolute inset-x-0 top-[calc(100%+0.35rem)] whitespace-nowrap text-xs ${labelVisibilityClassName} ${
                     compactBars && index === 0
                       ? 'text-left'
                       : compactBars && index === data.length - 1
@@ -185,6 +201,36 @@ export const EnergyHistoryBarChart = memo(function EnergyHistoryBarChart({
           );
         })}
       </div>
+
+      {compactBars ? (
+        <div
+          className={`pointer-events-none absolute inset-x-2 bottom-0 h-4 text-xs sm:hidden ${tokens.surface.textSecondary}`}
+          aria-hidden="true"
+        >
+          {Array.from(mobileTickIndexes).map((index) => {
+            const point = data[index];
+            if (!point) return null;
+
+            const leftPercent = (index / Math.max(data.length - 1, 1)) * 100;
+            const transform =
+              index === 0
+                ? undefined
+                : index === data.length - 1
+                  ? 'translateX(-100%)'
+                  : 'translateX(-50%)';
+
+            return (
+              <span
+                key={`${point.timestampMs ?? point.label}-mobile-axis-${index}`}
+                className="absolute top-0 whitespace-nowrap"
+                style={{ left: `${leftPercent}%`, transform }}
+              >
+                {point.label}
+              </span>
+            );
+          })}
+        </div>
+      ) : null}
 
       {activePoint && activeLeftPercent !== null && tooltipLeftPercent !== null ? (
         <>

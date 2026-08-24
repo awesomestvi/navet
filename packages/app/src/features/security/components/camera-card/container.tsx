@@ -404,7 +404,12 @@ export const CameraCardContainer = memo(function CameraCardContainer({
 
   const motionStates = companionStates.filter((state) => state.type === 'motion');
   const motionDetected = motionStates.some((state) => state.detected);
-  const motionState = motionStates.find((state) => state.detected) ?? motionStates[0] ?? null;
+  const motionState =
+    motionStates.find((state) => state.detected && state.detectionTarget === 'person') ??
+    motionStates.find((state) => state.detected) ??
+    motionStates[0] ??
+    null;
+  const motionDetectionTarget = motionState?.detectionTarget ?? 'motion';
   const motionChangedAt = parseTimestamp(motionState?.changedAt);
   const statusChangedAt =
     parseTimestamp(liveEntity?.lastChanged) ?? parseTimestamp(liveEntity?.lastUpdated);
@@ -614,6 +619,7 @@ export const CameraCardContainer = memo(function CameraCardContainer({
         cameraState={cameraState}
         statusChangedAt={statusChangedAt}
         motionDetected={motionDetected}
+        motionDetectionTarget={motionDetectionTarget}
         motionChangedAt={motionChangedAt}
         motionDetectionEnabled={
           playbackModel?.motionDetectionEnabled ?? liveState.motionDetectionEnabled

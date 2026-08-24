@@ -26,7 +26,13 @@ import type {
   EnergySeriesPoint,
 } from '@navet/app/features/energy/types/energy.types';
 import { formatEnergyValue } from '@navet/app/features/energy/utils/energy-formatters';
-import { useI18n, useIntegrationStore, usePersistedState, useTheme } from '@navet/app/hooks';
+import {
+  useI18n,
+  useIntegrationStore,
+  useMediaQuery,
+  usePersistedState,
+  useTheme,
+} from '@navet/app/hooks';
 import type {
   PlatformStatisticsHistoryRequest,
   PlatformStatisticsHistorySeries,
@@ -158,6 +164,7 @@ export function EnergyDetailedHistoryWorkspace({
 }) {
   const { theme } = useTheme();
   const { locale } = useI18n();
+  const isPhone = useMediaQuery('(max-width: 639px)');
   const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
   const providerKpiMetrics = useProviderEnergyKpiMetrics();
   const [kpiPreferences, setKpiPreferences] = usePersistedState<EnergyKpiPreferences>(
@@ -543,6 +550,7 @@ export function EnergyDetailedHistoryWorkspace({
                 key={metric.id}
                 metric={metric}
                 gridColumnSpan={metricCardSpans[index]}
+                compactHeader={isPhone}
               />
             ))
           : null}
@@ -1305,9 +1313,11 @@ function EnergyKpiPickerGroup({
 function EnergyUsageMetricCard({
   metric,
   gridColumnSpan,
+  compactHeader,
 }: {
   metric: EnergyUsageMetric;
   gridColumnSpan?: number;
+  compactHeader: boolean;
 }) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
@@ -1319,12 +1329,13 @@ function EnergyUsageMetricCard({
       className="col-span-2 row-span-2 min-w-0"
       title={metric.label}
       subtitle={metric.period}
+      headerCompact={compactHeader}
       headerLayout="title-first"
       headerLeading={
         <EntityCardHeaderIcon
           IconComponent={metric.icon}
           isActive
-          size="small"
+          size={compactHeader ? 'extra-small' : 'small'}
           baseColor={metric.color}
         />
       }

@@ -7,7 +7,7 @@ import { useTheme } from '@navet/app/hooks/use-theme';
 import type { TranslationKey } from '@navet/app/i18n';
 import type { PlatformCameraState } from '@navet/app/platform/provider-feature-models';
 import type { CameraFitMode, CameraViewMode } from '@navet/app/stores/settings-store';
-import { Camera, Eye, RefreshCw, Settings2 } from 'lucide-react';
+import { Camera, Eye, Radio, RefreshCw, ScanFace, Settings2 } from 'lucide-react';
 import { type KeyboardEvent, type RefObject, useEffect, useState } from 'react';
 import { CameraSnapshotImage } from './camera-snapshot-image';
 import { CameraStreamHostSlot } from './camera-stream-host-slot';
@@ -25,6 +25,7 @@ interface CameraCardViewProps {
   cameraState: PlatformCameraState;
   statusChangedAt: number | null;
   motionDetected: boolean;
+  motionDetectionTarget: 'motion' | 'person';
   motionChangedAt: number | null;
   motionDetectionEnabled: boolean | null;
   now: number;
@@ -101,6 +102,7 @@ export function CameraCardView({
   cameraState,
   statusChangedAt,
   motionDetected,
+  motionDetectionTarget,
   motionChangedAt,
   motionDetectionEnabled,
   now,
@@ -142,6 +144,7 @@ export function CameraCardView({
     (cameraViewMode === 'snapshot' || isStreamFallback || !isStreamCapable);
   const hasLiveStream = Boolean(streamHost) && !isUnavailable;
   const motionLabel = motionDetected ? t('camera.motion.detected') : null;
+  const MotionDetectedIcon = motionDetectionTarget === 'person' ? ScanFace : Radio;
   const statusElapsed = formatElapsedCompact(now, statusChangedAt);
   const motionElapsed = formatElapsedCompact(now, motionChangedAt);
   let streamLabel = isStreamCapable
@@ -206,6 +209,14 @@ export function CameraCardView({
     : 'absolute inset-0 flex flex-col items-center justify-center gap-1';
   const emptyStateIconClassName = isLightTheme ? 'h-8 w-8 text-slate-400' : 'h-8 w-8 text-zinc-500';
   const emptyStateTextClassName = isLightTheme ? 'text-xs text-slate-500' : 'text-xs text-zinc-500';
+  const snapshotFallback = (
+    <div className={emptyStateClassName} data-testid="camera-snapshot-fallback">
+      <Camera className={emptyStateIconClassName} />
+      <span className={emptyStateTextClassName}>
+        {isUnavailable ? t('camera.status.unavailable') : t('camera.status.noSnapshot')}
+      </span>
+    </div>
+  );
 
   return (
     <div ref={cardRef} className="h-full w-full" data-entity-id={id}>
@@ -241,6 +252,7 @@ export function CameraCardView({
                 sources={imageSources}
                 alt={name}
                 className={`absolute inset-0 h-full w-full ${snapshotFitClassName}`}
+                fallback={snapshotFallback}
                 onError={() => {
                   setSnapshotFailed(true);
                   onImageError();
@@ -251,14 +263,7 @@ export function CameraCardView({
             {hasLiveStream && streamHost ? (
               <CameraStreamHostSlot host={streamHost} />
             ) : (
-              !effectiveImageUrl && (
-                <div className={emptyStateClassName}>
-                  <Camera className={emptyStateIconClassName} />
-                  <span className={emptyStateTextClassName}>
-                    {isUnavailable ? t('camera.status.unavailable') : t('camera.status.noSignal')}
-                  </span>
-                </div>
-              )
+              !effectiveImageUrl && snapshotFallback
             )}
           </div>
         }
@@ -285,7 +290,7 @@ export function CameraCardView({
               onRefresh();
             }}
             aria-label={t('camera.actions.refreshSnapshot')}
-            className={`absolute top-3 left-3 z-30 flex h-11 w-11 items-center justify-center rounded-full ${overlayButtonClassName}`}
+            className={`absolute top-3 left-3 z-30 flex h-8 w-8 items-center justify-center rounded-full ${overlayButtonClassName}`}
           >
             <RefreshCw className="h-4 w-4" />
           </button>
@@ -312,8 +317,21 @@ export function CameraCardView({
           {motionLabel ? (
             <>
               <span className={statusSubtleTextClassName}>/</span>
-              <span className={motionTextClassName}>
-                {motionLabel}
+              <span
+                className={`inline-flex items-center gap-1 ${motionTextClassName}`}
+                data-testid="camera-motion-indicator"
+                data-motion-target={motionDetectionTarget}
+              >
+                <MotionDetectedIcon
+                  aria-hidden="true"
+                  className="h-3 w-3 shrink-0 opacity-80"
+                  data-testid={
+                    motionDetectionTarget === 'person'
+                      ? 'camera-person-motion-icon'
+                      : 'camera-motion-icon'
+                  }
+                />
+                <span>{motionLabel}</span>
                 {motionElapsed ? <span className="text-current/62"> {motionElapsed}</span> : null}
               </span>
             </>
@@ -369,7 +387,7 @@ export function CameraCardView({
                     onOpenSettings();
                   }}
                   aria-label={t('camera.actions.openSettings')}
-                  className={`flex h-7 w-7 items-center justify-center rounded-full ${overlayButtonClassName}`}
+                  className={`flex h-8 w-8 items-center justify-center rounded-full ${overlayButtonClassName}`}
                 >
                   <Settings2 className="h-3.5 w-3.5" />
                 </button>

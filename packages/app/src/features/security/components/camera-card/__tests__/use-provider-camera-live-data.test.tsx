@@ -40,6 +40,17 @@ describe('useProviderCameraLiveData', () => {
           last_updated: '2026-05-29T07:02:00.000Z',
           context: { id: 'ctx-motion', parent_id: null, user_id: null },
         },
+        'binary_sensor.outside_axis_human': {
+          entity_id: 'binary_sensor.outside_axis_human',
+          state: 'on',
+          attributes: {
+            friendly_name: 'AXIS M2048-LE Object Analytics Human',
+            device_class: 'motion',
+          },
+          last_changed: '2026-05-29T07:03:00.000Z',
+          last_updated: '2026-05-29T07:03:00.000Z',
+          context: { id: 'ctx-human', parent_id: null, user_id: null },
+        },
       },
     });
     vi.mocked(useProviderEntityModel).mockReturnValue({
@@ -102,9 +113,26 @@ describe('useProviderCameraLiveData', () => {
       {
         entityId: 'binary_sensor.front_door_motion',
         type: 'motion',
+        detectionTarget: 'motion',
         detected: true,
         changedAt: '2026-05-29T07:02:00.000Z',
       },
+    ]);
+  });
+
+  it('classifies camera human analytics as person detection', () => {
+    const { result } = renderHookWithProviders(() =>
+      useProviderCameraLiveData('home_assistant:camera.front_door', [
+        'home_assistant:binary_sensor.outside_axis_human',
+      ])
+    );
+
+    expect(result.current.companionStates).toEqual([
+      expect.objectContaining({
+        entityId: 'binary_sensor.outside_axis_human',
+        detectionTarget: 'person',
+        detected: true,
+      }),
     ]);
   });
 

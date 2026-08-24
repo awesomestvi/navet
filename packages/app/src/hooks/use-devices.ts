@@ -12,7 +12,7 @@ import { useCallback, useMemo } from 'react';
 import { useEntityRoomOverridesStore } from '../stores/entity-room-overrides-store';
 import type { IntegrationStore } from '../stores/integration-store';
 import { integrationSelectors } from '../stores/selectors';
-import type { DeviceCollection, SensorDevice } from '../types/device.types';
+import type { Device, DeviceCollection, SensorDevice } from '../types/device.types';
 import type { IntegrationProviderId } from '../types/provider';
 import { getAllRooms } from '../utils/device-location';
 import { createProviderScopedId } from '../utils/provider-ids';
@@ -52,6 +52,7 @@ export type DeviceCollectionKey = (typeof DEVICE_COLLECTION_KEYS)[number];
 interface UseDevicesOptions {
   enabled?: boolean;
   includeFeatureCollections?: boolean;
+  deviceFilter?: (device: Device, key: DeviceCollectionKey) => boolean;
 }
 
 interface RoomPlacementLookup {
@@ -441,6 +442,7 @@ export const useDeviceCollectionsByKeys = (
 ): DeviceCollection => {
   const enabled = options?.enabled ?? true;
   const includeFeatureCollections = options?.includeFeatureCollections ?? true;
+  const deviceFilter = options?.deviceFilter;
   const selectedProviderIds = useIntegrationStore(
     (state) =>
       enabled ? integrationSelectors.selectedProviderIds(state) : EMPTY_SELECTED_PROVIDER_IDS,
@@ -456,10 +458,22 @@ export const useDeviceCollectionsByKeys = (
         const collection =
           integrationSelectors.providerDeviceCollectionById(providerId)(state) ??
           EMPTY_DEVICE_COLLECTION;
-        return keys.map((key) => collection[key]);
+        return keys.map((key) => {
+          const devices = collection[key];
+          return deviceFilter ? devices.filter((device) => deviceFilter(device, key)) : devices;
+        });
       });
     },
-    (left, right) => areArraysEqual(left, right, Object.is)
+    (left, right) =>
+      areArraysEqual(
+        left,
+        right,
+        (leftSlice, rightSlice) =>
+          Object.is(leftSlice, rightSlice) ||
+          (Array.isArray(leftSlice) &&
+            Array.isArray(rightSlice) &&
+            areArraysEqual(leftSlice, rightSlice, Object.is))
+      )
   );
   const normalizedRoomsByCanonicalId = useIntegrationStore(
     integrationSelectors.normalizedRoomsByCanonicalId
@@ -507,6 +521,7 @@ export const useDeviceCollectionsByKeys = (
     return collection;
   }, [
     calendars,
+    deviceFilter,
     enabled,
     keys,
     providerGroupSlices,

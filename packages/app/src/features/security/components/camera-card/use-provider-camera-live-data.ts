@@ -60,14 +60,41 @@ function isMotionCompanionEntity(
   entityId: string,
   entity: { attributes?: Record<string, unknown> } | undefined
 ) {
+  const deviceClass =
+    typeof entity?.attributes?.device_class === 'string'
+      ? entity.attributes.device_class.toLowerCase()
+      : '';
   const searchText = `${entityId} ${
     typeof entity?.attributes?.friendly_name === 'string' ? entity.attributes.friendly_name : ''
   }`.toLowerCase();
 
   return (
     entityId.startsWith('binary_sensor.') &&
-    ['motion', 'occupancy', 'presence', 'pir'].some((token) => searchText.includes(token))
+    (['motion', 'occupancy', 'presence'].includes(deviceClass) ||
+      ['motion', 'occupancy', 'presence', 'pir', 'human', 'person', 'pedestrian'].some((token) =>
+        searchText.includes(token)
+      ))
   );
+}
+
+function getMotionDetectionTarget(
+  entityId: string,
+  entity: { attributes?: Record<string, unknown> }
+): 'motion' | 'person' {
+  const attributes = entity.attributes;
+  const searchText = [
+    entityId,
+    attributes?.friendly_name,
+    attributes?.name,
+    attributes?.translation_key,
+  ]
+    .filter((value): value is string => typeof value === 'string')
+    .join(' ')
+    .toLowerCase();
+
+  return ['human', 'person', 'people', 'pedestrian'].some((token) => searchText.includes(token))
+    ? 'person'
+    : 'motion';
 }
 
 export function useProviderCameraLiveData(
@@ -127,6 +154,7 @@ export function useProviderCameraLiveData(
         {
           entityId: nativeEntityId,
           type: 'motion',
+          detectionTarget: getMotionDetectionTarget(nativeEntityId, entity),
           detected: entity.state === 'on' || entity.state === 'home' || entity.state === 'detected',
           changedAt: entity.lastChanged ?? entity.lastUpdated ?? null,
         },

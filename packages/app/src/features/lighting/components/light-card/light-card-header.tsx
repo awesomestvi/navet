@@ -8,7 +8,7 @@ import { getCardStateSurfaceTokens } from '@navet/app/components/shared/theme/ca
 import { useI18n, useTheme } from '@navet/app/hooks';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { LucideIcon } from 'lucide-react';
-import { type ButtonHTMLAttributes, memo } from 'react';
+import { type ButtonHTMLAttributes, memo, type ReactNode } from 'react';
 import { formatLightEffectLabel } from './light-card-effect-utils';
 
 interface LightCardHeaderProps {
@@ -23,6 +23,7 @@ interface LightCardHeaderProps {
   iconAriaLabel?: string;
   activeColor?: string | null;
   themeOverride?: ThemeType;
+  trailing?: ReactNode;
 }
 
 export const LightCardHeader = memo(function LightCardHeader({
@@ -37,6 +38,7 @@ export const LightCardHeader = memo(function LightCardHeader({
   iconAriaLabel,
   activeColor,
   themeOverride,
+  trailing,
 }: LightCardHeaderProps) {
   const { theme: activeTheme } = useTheme();
   const { t } = useI18n();
@@ -80,6 +82,7 @@ export const LightCardHeader = memo(function LightCardHeader({
         titleStyle={useInverseForeground ? { color: '#ffffff' } : undefined}
         subtitleStyle={useInverseForeground ? { color: 'rgba(255,255,255,0.76)' } : undefined}
         leading={headerIcon}
+        trailing={trailing}
       />
     );
   }
