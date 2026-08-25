@@ -22,6 +22,7 @@ const defaultProps = {
   cameraState: 'streaming' as const,
   statusChangedAt: null,
   motionDetected: false,
+  motionDetectionTarget: 'motion' as const,
   motionChangedAt: null,
   motionDetectionEnabled: null,
   now: baseNow,
@@ -72,6 +73,16 @@ describe('CameraCardView', () => {
     expect(onOpenViewer).not.toHaveBeenCalled();
   });
 
+  it('uses 32px camera-card utility controls', () => {
+    renderWithProviders(<CameraCardView {...defaultProps} cameraViewMode="snapshot" />);
+
+    expect(screen.getByRole('button', { name: 'Refresh camera snapshot' })).toHaveClass(
+      'h-8',
+      'w-8'
+    );
+    expect(screen.getByRole('button', { name: 'Camera settings' })).toHaveClass('h-8', 'w-8');
+  });
+
   it('does not claim decoded live playback from provider state alone', () => {
     renderWithProviders(
       <CameraCardView
@@ -89,10 +100,35 @@ describe('CameraCardView', () => {
 
   it('shows motion text only when motion is detected', () => {
     renderWithProviders(
-      <CameraCardView {...defaultProps} motionDetected motionChangedAt={baseNow - 30_000} />
+      <CameraCardView
+        {...defaultProps}
+        motionDetected
+        statusChangedAt={baseNow - 30_000}
+        motionChangedAt={baseNow - 30_000}
+      />
     );
 
     expect(screen.getByText('Motion')).toBeInTheDocument();
+    expect(screen.getByTestId('camera-motion-icon')).toBeInTheDocument();
+    expect(screen.getAllByText('30s')).toHaveLength(1);
+  });
+
+  it('uses a person icon when the detected motion target is human', () => {
+    renderWithProviders(
+      <CameraCardView
+        {...defaultProps}
+        motionDetected
+        motionDetectionTarget="person"
+        motionChangedAt={baseNow - 30_000}
+      />
+    );
+
+    expect(screen.getByTestId('camera-motion-indicator')).toHaveAttribute(
+      'data-motion-target',
+      'person'
+    );
+    expect(screen.getByTestId('camera-person-motion-icon')).toBeInTheDocument();
+    expect(screen.queryByTestId('camera-motion-icon')).not.toBeInTheDocument();
   });
 
   it('shows a snapshot label when the dashboard card is rendering a still image', () => {
@@ -201,6 +237,33 @@ describe('CameraCardView', () => {
 
     expect(screen.getByRole('img', { name: 'Front Door' })).toHaveClass('object-contain');
     expect(screen.getByRole('img', { name: 'Front Door' })).not.toHaveClass('object-cover');
+  });
+
+  it('hides the native snapshot until it loads and uses the Navet fallback', () => {
+    renderWithProviders(<CameraCardView {...defaultProps} cameraViewMode="snapshot" />);
+
+    const image = screen.getByRole('img', { name: 'Front Door' });
+    expect(image).toHaveClass('opacity-0');
+    expect(screen.getByText('No snapshot')).toBeInTheDocument();
+
+    fireEvent.load(image);
+
+    expect(image).toHaveClass('opacity-100');
+    expect(screen.queryByText('No snapshot')).not.toBeInTheDocument();
+  });
+
+  it('shows No snapshot when the snapshot resource fails', () => {
+    const onImageError = vi.fn();
+
+    renderWithProviders(
+      <CameraCardView {...defaultProps} cameraViewMode="snapshot" onImageError={onImageError} />
+    );
+
+    fireEvent.error(screen.getByRole('img', { name: 'Front Door' }));
+
+    expect(onImageError).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('img', { name: 'Front Door' })).not.toBeInTheDocument();
+    expect(screen.getByText('No snapshot')).toBeInTheDocument();
   });
 
   it('falls back to the empty unavailable state when the snapshot image fails', () => {

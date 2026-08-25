@@ -66,6 +66,18 @@ const devicesFixture: DeviceCollection = {
       underlyingDeviceId: 'device.garage_camera',
     },
     {
+      id: 'binary_sensor.garage_human_motion',
+      name: 'Garage Object Analytics Human',
+      room: 'Garage',
+      size: 'small',
+      value: 'Unavailable',
+      unit: '',
+      status: 'unavailable',
+      securityKind: 'motion',
+      securitySeverity: 'unknown',
+      underlyingDeviceId: 'device.garage_camera',
+    },
+    {
       id: 'binary_sensor.smoke',
       name: 'Kitchen Smoke',
       room: 'Kitchen',
@@ -211,7 +223,7 @@ describe('SecuritySection', () => {
 
   it('passes only visible security entities into the dashboard summary', () => {
     useDashboardEntitiesStore.setState({
-      hiddenEntityIds: ['camera.garage'],
+      hiddenEntityIds: ['home_assistant:camera.garage'],
       shownSensorEntityIds: [],
       lockedCardIds: [],
       onboardingCompleted: false,
@@ -220,14 +232,23 @@ describe('SecuritySection', () => {
     renderWithProviders(<SecuritySection />);
 
     expect(screen.getByTestId('security-alarm-panel')).toHaveTextContent('1');
-    expect(screen.getByTestId('security-dashboard')).toHaveTextContent('3');
+    expect(screen.getByTestId('security-dashboard')).toHaveTextContent('5');
     expect(securityDashboardMock).toHaveBeenCalledWith(
       expect.objectContaining({
         model: expect.objectContaining({
           allEntities: expect.not.arrayContaining([
             expect.objectContaining({ id: 'camera.garage' }),
             expect.objectContaining({ id: 'camera.garage_2' }),
+          ]),
+        }),
+      })
+    );
+    expect(securityDashboardMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: expect.objectContaining({
+          allEntities: expect.arrayContaining([
             expect.objectContaining({ id: 'binary_sensor.garage_motion' }),
+            expect.objectContaining({ id: 'binary_sensor.garage_human_motion' }),
           ]),
         }),
       })
@@ -287,11 +308,16 @@ describe('SecuritySection', () => {
     fireEvent.click(screen.getByRole('button', { name: /dashboard.addEntity.title/i }));
 
     expect(await screen.findByTestId('add-entity-dialog')).toHaveTextContent(
-      'cover.entry_shutter,camera.garage,camera.garage_2'
+      'cover.entry_shutter,binary_sensor.garage_motion,camera.garage,camera.garage_2'
     );
     expect(addEntityDialogMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        visibleEntityIds: ['cover.entry_shutter', 'camera.garage', 'camera.garage_2'],
+        visibleEntityIds: [
+          'cover.entry_shutter',
+          'binary_sensor.garage_motion',
+          'camera.garage',
+          'camera.garage_2',
+        ],
       })
     );
   });
@@ -302,6 +328,8 @@ describe('SecuritySection', () => {
         'camera.garage',
         'cover.entry_shutter',
         'lock.front',
+        'binary_sensor.garage_motion',
+        'binary_sensor.garage_human_motion',
         'binary_sensor.smoke',
         'home_assistant:alarm_control_panel.home',
       ],
@@ -317,7 +345,7 @@ describe('SecuritySection', () => {
     expect(screen.getByText('dashboard.addEntity.descriptionWithHidden')).toBeInTheDocument();
   });
 
-  it('prefers parent security devices over child sub-entities in the dashboard model', () => {
+  it('keeps available and unavailable camera motion sensors visible alongside their parent camera', () => {
     renderWithProviders(<SecuritySection />);
 
     expect(securityDashboardMock).toHaveBeenCalledWith(
@@ -330,8 +358,17 @@ describe('SecuritySection', () => {
     expect(securityDashboardMock).toHaveBeenCalledWith(
       expect.objectContaining({
         model: expect.objectContaining({
-          allEntities: expect.not.arrayContaining([
-            expect.objectContaining({ id: 'binary_sensor.garage_motion' }),
+          allEntities: expect.arrayContaining([
+            expect.objectContaining({
+              id: 'binary_sensor.garage_motion',
+              securityKind: 'motion',
+            }),
+            expect.objectContaining({
+              id: 'binary_sensor.garage_human_motion',
+              securityKind: 'motion',
+              securitySeverity: 'unknown',
+              status: 'unavailable',
+            }),
           ]),
         }),
       })

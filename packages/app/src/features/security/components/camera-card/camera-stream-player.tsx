@@ -56,15 +56,11 @@ function isHomeAssistantCameraStreamUnsupportedError(error: unknown) {
   );
 }
 
-function applyVideoBaseAttributes(video: HTMLVideoElement, posterUrl: string | undefined) {
+function applyVideoBaseAttributes(video: HTMLVideoElement) {
   video.muted = true;
   video.autoplay = true;
   video.playsInline = true;
-  if (posterUrl) {
-    video.poster = posterUrl;
-  } else {
-    video.removeAttribute('poster');
-  }
+  video.removeAttribute('poster');
 }
 
 function shouldUseNativeHlsPlayback(video: HTMLVideoElement) {
@@ -490,8 +486,8 @@ function HlsCameraPlayer({
       return;
     }
 
-    applyVideoBaseAttributes(video, posterUrl);
-  }, [posterUrl]);
+    applyVideoBaseAttributes(video);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -821,8 +817,8 @@ function WebRtcCameraPlayer({
       return;
     }
 
-    applyVideoBaseAttributes(video, posterUrl);
-  }, [posterUrl]);
+    applyVideoBaseAttributes(video);
+  }, [streamResourceUrl]);
 
   useEffect(() => {
     if (!streamResourceUrl) {

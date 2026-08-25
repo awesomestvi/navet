@@ -1,20 +1,39 @@
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { renderWithProviders } from '@navet/app/test/render';
 import type {
   CameraDevice,
   LockDevice,
-  PersonDevice,
   SecurityKind,
   SecuritySeverity,
   SensorDevice,
 } from '@navet/app/types/device.types';
+import type { NavetAlarmEntity } from '@navet/core/alarm-types';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { SecurityActivityKind } from '../../utils/security-activity-history';
 import { buildSecurityCameraDashboardModel } from '../../utils/security-camera-dashboard-model';
 import { SecurityCameraDashboard } from '../security-camera-dashboard';
 
-const cameraLiveViewerRenderMock = vi.hoisted(() => vi.fn());
+const activityEventsMock = vi.hoisted(() => ({
+  breakpointCols: 4,
+  events: [] as Array<{
+    id: string;
+    entityId: string;
+    device: CameraDevice & { type: 'cameras' };
+    kind: SecurityActivityKind;
+    source: 'current';
+    state: string;
+    timestampMs: number | null;
+  }>,
+  historyAvailable: false,
+  hasMore: false,
+  isLoading: false,
+  isLoadingMore: false,
+  loadMore: vi.fn(async () => {}),
+}));
+const scrollIntoViewMock = vi.fn();
 
 vi.mock('@navet/app/features/dashboard', () => ({
   DashboardCardItem: ({ device }: { device: { id: string; name: string } }) => (
@@ -24,83 +43,30 @@ vi.mock('@navet/app/features/dashboard', () => ({
 }));
 
 vi.mock('@navet/app/hooks/use-breakpoint-cols', () => ({
-  useBreakpointCols: () => 4,
+  useBreakpointCols: () => activityEventsMock.breakpointCols,
+}));
+
+vi.mock('../camera-card', () => ({
+  CameraCard: ({ id, name }: { id: string; name: string }) => (
+    <button type="button" data-testid={`camera-card:${id}`}>
+      {name}
+    </button>
+  ),
 }));
 
 vi.mock('../camera-card/camera-live-viewer', () => ({
-  CameraLiveViewer: (props: { initialStreamResource: unknown; isOpen: boolean; name: string }) => {
-    cameraLiveViewerRenderMock(props);
-    return props.isOpen ? <div>Viewer:{props.name}</div> : null;
-  },
+  CameraLiveViewer: ({ isOpen, name }: { isOpen: boolean; name: string }) =>
+    isOpen ? <div>Viewer:{name}</div> : null,
 }));
 
-vi.mock('@navet/app/hooks', async () => {
-  const actual = await vi.importActual<object>('@navet/app/hooks');
-  return {
-    ...actual,
-    useProviderCameraTopology: () => ({ siblingIds: [] }),
-  };
-});
-
-vi.mock('@navet/app/hooks/use-provider-device', () => ({
-  useProviderEntityModel: () => null,
-}));
-
-vi.mock('../camera-card/use-provider-camera-live-data', () => ({
-  useProviderCameraLiveData: () => ({
-    cameraState: 'streaming',
-    liveEntity: null,
-    liveState: {
-      isStreamCapable: true,
-      motionDetectionEnabled: null,
-    },
-  }),
-}));
-
-vi.mock('@navet/app/stores/settings-store', async () => {
-  const actual = await vi.importActual<object>('@navet/app/stores/settings-store');
-  return {
-    ...actual,
-    useSettingsStore: (
-      selector: (state: {
-        cameraStreamPreferences: Record<string, 'auto'>;
-        cameraStreamPreference: 'auto';
-        cameraWebRtcStreamSources: Record<string, 'provider'>;
-        cameraDirectStreamUrls: Record<string, string>;
-        cameraFitModes: Record<string, 'cover'>;
-        cameraFitMode: 'cover';
-        cameraFullscreenHiddenAccessoryIds: Record<string, string[]>;
-        updateCameraStreamPreference: () => void;
-        updateCameraFitMode: () => void;
-        updateCameraFullscreenAccessoryVisibility: () => void;
-      }) => unknown
-    ) =>
-      selector({
-        cameraStreamPreferences: {},
-        cameraStreamPreference: 'auto',
-        cameraWebRtcStreamSources: {},
-        cameraDirectStreamUrls: {},
-        cameraFitModes: {},
-        cameraFitMode: 'cover',
-        cameraFullscreenHiddenAccessoryIds: {},
-        updateCameraStreamPreference: vi.fn(),
-        updateCameraFitMode: vi.fn(),
-        updateCameraFullscreenAccessoryVisibility: vi.fn(),
-      }),
-  };
-});
-
-vi.mock('@navet/app/services/integration-camera-feature.service', () => ({
-  integrationCameraFeatureService: {
-    refreshCameraSnapshot: vi.fn(),
-  },
+vi.mock('../../hooks/use-security-activity-history', () => ({
+  SECURITY_ACTIVITY_EVENT_LIMIT: 200,
+  useSecurityActivityHistory: () => activityEventsMock,
 }));
 
 function camera(
   overrides: Partial<CameraDevice> &
-    Pick<CameraDevice, 'id' | 'name'> & {
-      securitySeverity?: SecuritySeverity;
-    }
+    Pick<CameraDevice, 'id' | 'name'> & { securitySeverity?: SecuritySeverity }
 ): CameraDevice {
   return {
     id: overrides.id,
@@ -108,12 +74,13 @@ function camera(
     room: overrides.room ?? 'Outside',
     size: overrides.size ?? 'medium',
     providerId: overrides.providerId ?? 'home_assistant',
-    sourceDeviceId: overrides.sourceDeviceId,
     state: overrides.state ?? 'idle',
     supportedFeatures: overrides.supportedFeatures ?? 0,
-    isStreamCapable: overrides.isStreamCapable ?? false,
+    isStreamCapable: overrides.isStreamCapable ?? true,
     isStillImageOnly: overrides.isStillImageOnly ?? false,
     entityPicture: overrides.entityPicture,
+    motionDetected: overrides.motionDetected,
+    motionChangedAt: overrides.motionChangedAt,
     securityKind: 'camera',
     securitySeverity: overrides.securitySeverity ?? 'normal',
   };
@@ -121,9 +88,7 @@ function camera(
 
 function lock(
   overrides: Partial<LockDevice> &
-    Pick<LockDevice, 'id' | 'name'> & {
-      securitySeverity?: SecuritySeverity;
-    }
+    Pick<LockDevice, 'id' | 'name'> & { securitySeverity?: SecuritySeverity }
 ): LockDevice {
   return {
     id: overrides.id,
@@ -154,170 +119,116 @@ function sensor(
     status: overrides.status ?? 'active',
     securityKind: overrides.securityKind,
     securitySeverity: overrides.securitySeverity ?? 'active',
-    sourceDeviceId: overrides.sourceDeviceId,
   };
 }
 
-function person(
-  overrides: Partial<PersonDevice> & Pick<PersonDevice, 'id' | 'name'>
-): PersonDevice {
-  return {
-    id: overrides.id,
-    name: overrides.name,
-    room: overrides.room ?? 'Home',
-    size: overrides.size ?? 'small',
-    location: overrides.location ?? 'Away',
-    state: overrides.state ?? 'away',
-    entityPicture: overrides.entityPicture,
-    securityKind: overrides.securityKind ?? 'person',
-    securitySeverity: overrides.securitySeverity ?? 'normal',
+function renderDashboard(
+  overrides: Partial<Parameters<typeof buildSecurityCameraDashboardModel>[0]> = {},
+  alarms: NavetAlarmEntity[] = []
+) {
+  const devices = {
+    cameras: overrides.cameras ?? [],
+    locks: overrides.locks ?? [],
+    sensors: overrides.sensors ?? [],
+    covers: overrides.covers ?? [],
+    persons: overrides.persons ?? [],
+    helpers: overrides.helpers ?? [],
   };
-}
-
-function renderDashboard() {
-  const model = renderDashboardModelWithAlerts();
-
   return renderWithProviders(
     <SecurityCameraDashboard
-      model={model}
+      model={buildSecurityCameraDashboardModel(devices)}
+      alarms={alarms}
       isEditMode={false}
       cardSizes={{}}
       updateCardSize={vi.fn()}
-      surface={getThemeSurfaceTokens('glass')}
+      surface={getThemeSurfaceTokens('dark')}
     />
   );
 }
 
-function renderDashboardModelWithAlerts() {
-  return buildSecurityCameraDashboardModel({
-    cameras: [
-      camera({
-        id: 'camera.garage',
-        name: 'Garage Camera',
-        room: 'Garage',
-        securitySeverity: 'normal',
-      }),
-    ],
-    locks: [lock({ id: 'lock.front', name: 'Front Door', state: false })],
-    sensors: [
-      sensor({
-        id: 'binary_sensor.smoke',
-        name: 'Kitchen Smoke',
-        room: 'Kitchen',
-        securityKind: 'smoke',
-        securitySeverity: 'critical',
-        value: 'Smoke detected',
-      }),
-      sensor({
-        id: 'binary_sensor.entry_motion',
-        name: 'Entry Motion',
-        room: 'Entrance',
-        securityKind: 'motion',
-        securitySeverity: 'active',
-        value: 'Motion detected',
-      }),
-      sensor({
-        id: 'binary_sensor.side_door',
-        name: 'Side Door',
-        room: 'Side Entry',
-        securityKind: 'door',
-        securitySeverity: 'unknown',
-        status: 'unavailable',
-        value: 'Unavailable',
-      }),
-    ],
-  });
+function selectOverviewEntities(entityIds: string[]) {
+  localStorage.setItem(
+    STORAGE_KEYS.securityOverviewPreferences,
+    JSON.stringify({ mode: 'custom', entityIds })
+  );
 }
 
 describe('SecurityCameraDashboard', () => {
   beforeEach(() => {
     localStorage.clear();
-    cameraLiveViewerRenderMock.mockClear();
+    activityEventsMock.breakpointCols = 4;
+    activityEventsMock.events = [];
+    activityEventsMock.historyAvailable = false;
+    activityEventsMock.hasMore = false;
+    activityEventsMock.isLoading = false;
+    activityEventsMock.isLoadingMore = false;
+    activityEventsMock.loadMore.mockClear();
+    scrollIntoViewMock.mockClear();
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoViewMock,
+    });
   });
 
-  it('renders the summary and top-priority sections before details', () => {
-    renderDashboard();
-
-    expect(screen.getByRole('heading', { name: 'Critical alert' })).toBeInTheDocument();
-    expect(screen.getByTestId('security-now-lane-list-danger')).toBeInTheDocument();
-    expect(screen.getByTestId('security-now-lane-list-accent')).toBeInTheDocument();
-    expect(screen.getByText('All Security')).toBeInTheDocument();
-
-    const headings = screen.getAllByRole('heading').map((heading) => heading.textContent);
-    expect(headings.indexOf('Critical alert')).toBeLessThan(headings.indexOf('All Security'));
-
-    expect(screen.getByRole('button', { name: /Hazards/i })).toBeInTheDocument();
-    expect(screen.getAllByText('Entry Motion').length).toBeGreaterThan(0);
-    expect(screen.queryByText('Secure')).not.toBeInTheDocument();
-    expect(screen.queryByText(/secure$/i)).not.toBeInTheDocument();
-  });
-
-  it('renders the alarm panel inside the now lane when alarm entities are provided', () => {
-    const model = renderDashboardModelWithAlerts();
-
-    renderWithProviders(
-      <SecurityCameraDashboard
-        model={model}
-        alarms={[
-          {
-            id: 'home_assistant:alarm_control_panel.home',
-            name: 'Home Alarm',
-            state: 'disarmed',
-            supportedActions: ['arm_away', 'disarm'],
-            codeFormat: 'none',
-            provider: 'home_assistant',
-            availability: 'available',
-          },
-        ]}
-        isEditMode={false}
-        cardSizes={{}}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
-
-    expect(screen.getByTestId('security-now-card:security.now.alarm')).toBeInTheDocument();
-    expect(screen.getByText('Home Alarm')).toBeInTheDocument();
-  });
-
-  it('keeps alarm-only dashboards inside the now section without rendering all-security details', () => {
-    const model = buildSecurityCameraDashboardModel({
-      cameras: [],
-      locks: [],
-      sensors: [],
-      persons: [],
+  it('uses a camera-first command center without the retired All Security row', () => {
+    selectOverviewEntities(['camera.front']);
+    renderDashboard({
+      cameras: [camera({ id: 'camera.front', name: 'Front Door' })],
+      locks: [lock({ id: 'lock.front', name: 'Front Door Lock' })],
     });
 
-    renderWithProviders(
-      <SecurityCameraDashboard
-        model={model}
-        alarms={[
-          {
-            id: 'home_assistant:alarm_control_panel.home',
-            name: 'Home Alarm',
-            state: 'disarmed',
-            supportedActions: ['arm_away', 'disarm'],
-            codeFormat: 'none',
-            provider: 'home_assistant',
-            availability: 'available',
-          },
-        ]}
-        isEditMode={false}
-        cardSizes={{}}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
-
-    expect(screen.getByRole('heading', { name: 'All secure' })).toBeInTheDocument();
-    expect(screen.getByText('Home Alarm')).toBeInTheDocument();
+    const overview = within(screen.getByTestId('security-overview-grid'));
+    expect(screen.getByTestId('security-command-center')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Live cameras' })).not.toBeInTheDocument();
+    expect(overview.getByTestId('detail-card:camera.front')).toBeInTheDocument();
+    expect(overview.queryByTestId('detail-card:lock.front')).not.toBeInTheDocument();
     expect(screen.queryByText('All Security')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('security-status-card')).not.toBeInTheDocument();
   });
 
-  it('keeps the operational summary aligned with visible attention items', () => {
-    const model = buildSecurityCameraDashboardModel({
-      cameras: [],
-      locks: [lock({ id: 'lock.front', name: 'Front Door', state: false })],
+  it('automatically shows the first two available camera feeds', () => {
+    renderDashboard({
+      cameras: [
+        camera({ id: 'camera.front', name: 'Front Door' }),
+        camera({ id: 'camera.garden', name: 'Garden' }),
+        camera({ id: 'camera.side', name: 'Side Gate' }),
+      ],
+    });
+
+    const overview = within(screen.getByTestId('security-overview-grid'));
+    expect(overview.getAllByTestId(/^detail-card:/)).toHaveLength(2);
+    expect(overview.getByTestId('detail-card:camera.front')).toBeInTheDocument();
+    expect(overview.getByTestId('detail-card:camera.garden')).toBeInTheDocument();
+    expect(overview.queryByTestId('detail-card:camera.side')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Choose camera feeds' })).not.toBeInTheDocument();
+    const outcome = screen.getByTestId('security-outcome-panel');
+    expect(within(outcome).getByRole('heading')).toHaveClass('text-lg', 'font-bold');
+    expect(outcome).toHaveTextContent(/normal/i);
+  });
+
+  it('renders camera feeds as a snap carousel with a next-card peek on mobile', () => {
+    activityEventsMock.breakpointCols = 2;
+    renderDashboard({
+      cameras: [
+        camera({ id: 'camera.front', name: 'Front Door' }),
+        camera({ id: 'camera.garden', name: 'Garden' }),
+      ],
+    });
+
+    const overview = within(screen.getByTestId('security-overview-grid'));
+    const carousel = overview.getByTestId('security-overview-carousel');
+    const items = overview.getAllByTestId('security-overview-carousel-item');
+
+    expect(carousel).toHaveClass('snap-x', 'snap-mandatory', 'overflow-x-auto');
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveClass('snap-start', 'w-[84%]');
+    expect(overview.queryByTestId('security-card-grid')).not.toBeInTheDocument();
+  });
+
+  it('groups critical hazards inside the Security sidebar', () => {
+    renderDashboard({
+      cameras: [camera({ id: 'camera.front', name: 'Front Door' })],
+      locks: [lock({ id: 'lock.patio', name: 'Patio Door', room: 'Patio', state: false })],
       sensors: [
         sensor({
           id: 'binary_sensor.smoke',
@@ -327,902 +238,324 @@ describe('SecurityCameraDashboard', () => {
           securitySeverity: 'critical',
           value: 'Smoke detected',
         }),
+      ],
+    });
+
+    const alert = screen.getByTestId('security-alerts-panel');
+    const sidebar = screen.getByTestId('security-command-sidebar');
+    expect(alert).toHaveAttribute('role', 'alert');
+    expect(alert).toHaveAttribute('data-alert-tone', 'red');
+    expect(alert).toHaveTextContent('Needs attention');
+    expect(alert).toHaveTextContent(/2 critical/i);
+    expect(within(alert).queryByTestId('security-alert-count')).not.toBeInTheDocument();
+    expect(alert).toHaveTextContent('Kitchen Smoke');
+    expect(alert).toHaveTextContent('Smoke detected');
+    expect(alert).toHaveTextContent('Kitchen');
+    expect(alert).toHaveTextContent('Patio Door');
+    expect(within(alert).getAllByTestId('security-alert-row')).toHaveLength(2);
+    expect(sidebar).toContainElement(alert);
+    expect(alert.parentElement).toHaveClass('order-1');
+  });
+
+  it('keeps grouped alerts as the first item in the two-column Home-grid sidebar', () => {
+    renderDashboard({
+      cameras: [camera({ id: 'camera.front', name: 'Front Door' })],
+      locks: [lock({ id: 'lock.front', name: 'Front Door Lock', state: false })],
+    });
+
+    const alerts = screen.getByTestId('security-alerts-panel');
+    expect(alerts).toHaveAttribute('data-alert-tone', 'red');
+    expect(alerts).toHaveTextContent(/1 critical/i);
+    expect(within(alerts).queryByTestId('security-alert-count')).not.toBeInTheDocument();
+    expect(within(alerts).getByRole('heading', { name: 'Needs attention' })).toHaveClass(
+      'text-lg',
+      'font-bold'
+    );
+    const alertRows = within(alerts).getAllByTestId('security-alert-row');
+    expect(alertRows).toHaveLength(1);
+    expect(alertRows[0]).toHaveAttribute('data-alert-tone', 'red');
+    expect(screen.getByTestId('security-command-sidebar')).toContainElement(alerts);
+    expect(alerts.parentElement).toHaveClass('order-1');
+    expect(screen.queryByTestId('security-exception-panel')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('security-outcome-panel')).not.toBeInTheDocument();
+    expect(screen.getByTestId('security-overview-grid')).toHaveClass('order-4');
+    expect(screen.getByTestId('security-command-main')).toHaveClass(
+      'contents',
+      'md:flex',
+      'md:flex-col'
+    );
+    expect(screen.getByTestId('security-command-main')).toHaveStyle({
+      gridColumn: 'span 4 / span 4',
+    });
+    expect(screen.getByTestId('security-command-main')).toContainElement(
+      screen.getByTestId('security-command-main-details')
+    );
+    expect(screen.getByTestId('security-command-sidebar')).toHaveClass(
+      'contents',
+      'md:block',
+      'md:order-2'
+    );
+    expect(screen.getByTestId('security-command-sidebar')).toHaveStyle({
+      gridColumn: 'span 4 / span 4',
+    });
+    expect(screen.getByTestId('security-command-grid').style.gridTemplateColumns).toContain(
+      'repeat(8'
+    );
+    expect(
+      within(screen.getByTestId('security-overview-grid')).getByTestId('security-card-grid').style
+        .gridTemplateColumns
+    ).toBe('repeat(4, minmax(0, 1fr))');
+    expect(
+      within(screen.getByTestId('security-command-main-details')).getByTestId('security-card-grid')
+        .style.gridTemplateColumns
+    ).toBe('repeat(4, minmax(0, 1fr))');
+  });
+
+  it('identifies each unavailable device in its actionable alert row', () => {
+    renderDashboard({
+      sensors: [
         sensor({
           id: 'binary_sensor.side_door',
           name: 'Side Door',
-          room: 'Side Entry',
           securityKind: 'door',
           securitySeverity: 'unknown',
           status: 'unavailable',
           value: 'Unavailable',
         }),
       ],
-      persons: [
-        person({
-          id: 'person.vishal',
-          name: 'Vishal',
-          state: 'away',
-          location: 'Away',
-          securitySeverity: 'unknown',
-        }),
-      ],
     });
 
-    renderWithProviders(
-      <SecurityCameraDashboard
-        model={model}
-        isEditMode={false}
-        cardSizes={{}}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
-
-    expect(screen.getByRole('heading', { name: 'Critical alert' })).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /Hazards|Locks|Doors & windows/i })).toHaveLength(
-      3
-    );
+    expect(screen.getByRole('button', { name: 'Side Door: Unavailable' })).toBeInTheDocument();
   });
 
-  it('keeps the now section focused on problems when there is no active item', () => {
-    const model = buildSecurityCameraDashboardModel({
-      cameras: [],
-      locks: [lock({ id: 'lock.front', name: 'Front Door', state: false })],
-      sensors: [
-        sensor({
-          id: 'binary_sensor.side_door',
-          name: 'Side Door',
-          securityKind: 'door',
-          securitySeverity: 'warning',
-          value: 'Open',
-        }),
-      ],
+  it('renders a manually ordered mix of security entity types', () => {
+    selectOverviewEntities(['lock.front', 'camera.a', 'binary_sensor.smoke']);
+    renderDashboard({
+      cameras: [camera({ id: 'camera.a', name: 'A Camera' })],
+      locks: [lock({ id: 'lock.front', name: 'Front Door Lock' })],
+      sensors: [sensor({ id: 'binary_sensor.smoke', name: 'Smoke', securityKind: 'smoke' })],
     });
 
-    renderWithProviders(
-      <SecurityCameraDashboard
-        model={model}
-        isEditMode={false}
-        cardSizes={{}}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
+    const cards = within(screen.getByTestId('security-overview-grid')).getAllByTestId(
+      /^detail-card:/
     );
-
-    expect(screen.getByRole('heading', { name: '2 things need attention' })).toBeInTheDocument();
-    expect(screen.getByText('No live activity.')).toBeInTheDocument();
-    expect(screen.queryByText('Entry Motion')).not.toBeInTheDocument();
-    expect(screen.queryByText('Secure')).not.toBeInTheDocument();
+    expect(cards.map((item) => item.textContent)).toEqual(['Front Door Lock', 'A Camera', 'Smoke']);
   });
 
-  it('shows the secure section only when there are no attention items', () => {
-    const model = buildSecurityCameraDashboardModel({
-      cameras: [
-        camera({
-          id: 'camera.garage',
-          name: 'Garage Camera',
-          room: 'Garage',
-          securitySeverity: 'normal',
-        }),
-      ],
-      locks: [lock({ id: 'lock.front', name: 'Front Door', state: true })],
-      sensors: [
-        sensor({
-          id: 'binary_sensor.entry_motion',
-          name: 'Entry Motion',
-          room: 'Entrance',
-          securityKind: 'motion',
-          securitySeverity: 'active',
-          value: 'Motion detected',
-        }),
-      ],
+  it('keeps alarm controls prominent before camera feeds on mobile', () => {
+    renderDashboard({ cameras: [camera({ id: 'camera.front', name: 'Front Door' })] }, [
+      {
+        id: 'home_assistant:alarm_control_panel.home',
+        name: 'Home Alarm',
+        state: 'disarmed',
+        supportedActions: ['arm_home', 'arm_away', 'disarm'],
+        codeFormat: 'none',
+        provider: 'home_assistant',
+        availability: 'available',
+      },
+    ]);
+
+    const alarm = screen.getByTestId('security-alarm-compact');
+    expect(alarm).toHaveAttribute('aria-label', 'Alarm controls');
+    expect(within(alarm).queryByText('Alarm controls')).not.toBeInTheDocument();
+    expect(alarm.querySelector('.navet-entity-card-header')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Arm Away' })).toBeInTheDocument();
+    expect(alarm.parentElement).toHaveClass('order-3');
+    expect(screen.getByTestId('security-overview-grid')).toHaveClass('order-4');
+  });
+
+  it('navigates alert rows to their existing entity card and activity rows to camera details', async () => {
+    const motionCamera = camera({
+      id: 'camera.garden',
+      name: 'Garden Camera',
+      motionDetected: true,
+      motionChangedAt: new Date().toISOString(),
+      securitySeverity: 'active',
+    });
+    activityEventsMock.events = [
+      {
+        id: 'current:camera.garden:motion',
+        entityId: motionCamera.id,
+        device: { ...motionCamera, type: 'cameras' },
+        kind: 'motion',
+        source: 'current',
+        state: 'detected',
+        timestampMs: Date.now(),
+      },
+    ];
+    renderDashboard({
+      cameras: [motionCamera],
+      locks: [lock({ id: 'lock.front', name: 'Front Door Lock', state: false })],
     });
 
-    renderWithProviders(
-      <SecurityCameraDashboard
-        model={model}
-        isEditMode={false}
-        cardSizes={{}}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Front Door Lock unlocked' }));
+    const lockCard = screen.getByTestId('detail-card:lock.front');
+    const lockCardAnchor = lockCard.closest<HTMLElement>('[data-security-entity-id]');
+    expect(lockCardAnchor).toHaveAttribute('data-security-entity-id', 'lock.front');
+    await waitFor(() => expect(lockCardAnchor).toHaveFocus());
+    expect(scrollIntoViewMock).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
 
-    expect(screen.getByRole('button', { name: /security active/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Motion at Garden Camera/i }));
+    expect(screen.getByText('Viewer:Garden Camera')).toBeInTheDocument();
+  });
+
+  it('does not offer older history when the activity state is empty', () => {
+    activityEventsMock.hasMore = true;
+    renderDashboard({ cameras: [camera({ id: 'camera.garden', name: 'Garden Camera' })] });
+
+    const activity = within(screen.getByTestId('security-activity-panel'));
+    expect(activity.getByRole('heading', { name: 'Recent activity' })).toBeInTheDocument();
+    expect(activity.getByText('No recent activity.')).toBeInTheDocument();
+    expect(activity.queryByRole('button', { name: 'Load older activity' })).not.toBeInTheDocument();
+  });
+
+  it('uses semantic marker tones for secure, attention, and insecure activity', () => {
+    const motionCamera = camera({ id: 'camera.garden', name: 'Garden Camera' });
+    const kinds: SecurityActivityKind[] = [
+      'locked',
+      'closed',
+      'hazard-cleared',
+      'motion',
+      'unlocked',
+      'opened',
+      'hazard',
+      'alarm',
+      'system',
+    ];
+    activityEventsMock.events = kinds.map((kind, index) => ({
+      id: `history:camera.garden:${kind}`,
+      entityId: motionCamera.id,
+      device: { ...motionCamera, type: 'cameras' as const },
+      kind,
+      source: 'current' as const,
+      state: kind,
+      timestampMs: Date.now() - index * 60_000,
+    }));
+
+    renderDashboard({ cameras: [motionCamera] });
+
     expect(
-      within(screen.getByRole('navigation', { name: 'Security' })).getByText('Normal')
-    ).toBeInTheDocument();
-    expect(screen.queryByText('Nothing needs attention.')).not.toBeInTheDocument();
-    expect(screen.getAllByText('Garage Camera').length).toBeGreaterThan(0);
-    const secureRow = screen.getByRole('button', { name: /Locks/i });
-    const secureCard = screen.getByTestId(
-      'security-now-card:security.now.secure'
-    ).firstElementChild;
-    expect(secureRow).toHaveTextContent('1 locked');
-    expect(secureRow.innerHTML).toContain('bg-green-400');
-    expect(secureRow.innerHTML).toContain('text-green-300');
-    expect(secureCard?.className).toContain('from-emerald-900/90');
-    expect(secureCard?.className).toContain('to-green-950/95');
+      screen.getAllByTestId('security-activity-marker').map((marker) => marker.dataset.activityTone)
+    ).toEqual(['green', 'green', 'green', 'yellow', 'red', 'red', 'red', 'red', 'amber']);
   });
 
-  it('keeps entity actions out of the summary and shows status in the summary bar', () => {
-    const model = buildSecurityCameraDashboardModel({
-      cameras: [camera({ id: 'camera.garage', name: 'Garage Camera', state: 'idle' })],
-      locks: [lock({ id: 'lock.front', name: 'Front Door', state: true })],
-      sensors: [],
-    });
+  it('groups activity by day and minute and only fetches older events explicitly', () => {
+    const motionCamera = camera({ id: 'camera.garden', name: 'Garden Camera' });
+    const newestTimestamp = new Date(2026, 7, 24, 10, 15).getTime();
+    activityEventsMock.historyAvailable = true;
+    activityEventsMock.hasMore = true;
+    activityEventsMock.events = Array.from({ length: 7 }, (_, index) => ({
+      id: `history:camera.garden:motion:${index}`,
+      entityId: motionCamera.id,
+      device: { ...motionCamera, type: 'cameras' as const },
+      kind: 'motion' as const,
+      source: 'current' as const,
+      state: 'detected',
+      timestampMs:
+        index < 2 ? newestTimestamp : newestTimestamp - 24 * 60 * 60 * 1_000 - (index - 2) * 60_000,
+    }));
 
-    renderWithProviders(
-      <SecurityCameraDashboard
-        model={model}
-        isEditMode
-        onAddEntity={vi.fn()}
-        cardSizes={{}}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
+    renderDashboard({ cameras: [motionCamera] });
 
-    expect(screen.queryByRole('button', { name: /add entity/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /done editing/i })).not.toBeInTheDocument();
-    expect(screen.queryByTestId('security-hero-actions-divider')).not.toBeInTheDocument();
-
-    const nowHeaderButton = screen.getByRole('button', { name: /all secure/i });
-    expect(nowHeaderButton).not.toHaveTextContent('1 live');
-    const summary = within(screen.getByRole('navigation', { name: 'Security' }));
-    expect(summary.getByText('1 live')).toBeInTheDocument();
-    expect(summary.getByText('Normal')).toBeInTheDocument();
-  });
-
-  it('renders attention, live, and secure lanes with overlay scroll wrappers', () => {
-    renderDashboard();
-
-    expect(screen.getByTestId('security-now-lane-list-danger').className).toContain(
-      'overflow-y-auto'
-    );
+    const activity = within(screen.getByTestId('security-activity-panel'));
+    const activityRows = activity.getAllByRole('button', { name: /Motion at Garden Camera/i });
+    expect(activityRows).toHaveLength(7);
+    for (const activityRow of activityRows) {
+      expect(activityRow).toHaveClass('w-full', 'items-start', 'pt-3');
+      expect(activityRow).not.toHaveClass('border-b');
+      expect(activityRow).toHaveClass('min-h-14', '[contain-intrinsic-size:auto_56px]');
+    }
+    expect(activity.getAllByTestId('security-activity-day')).toHaveLength(2);
+    const dayLabels = activity.getAllByTestId('security-activity-day-label');
+    for (const dayLabel of dayLabels) {
+      expect(dayLabel.tagName).toBe('H4');
+      expect(dayLabel.parentElement?.tagName).toBe('HEADER');
+      expect(dayLabel.parentElement).toHaveClass('flex', 'items-center', 'justify-center');
+      expect(dayLabel.parentElement).toHaveClass('sticky', 'top-0');
+      expect(dayLabel.firstElementChild).toHaveClass(
+        'inline-flex',
+        'rounded-full',
+        'px-2',
+        'py-0.5',
+        'font-semibold'
+      );
+    }
+    expect(activity.queryByTestId('security-activity-floating-day-label')).not.toBeInTheDocument();
+    expect(activity.getAllByTestId('security-activity-time')).toHaveLength(6);
+    for (const timestamp of activity.getAllByTestId('security-activity-time')) {
+      expect(timestamp).toHaveClass('pt-2', 'text-right', 'tabular-nums');
+    }
+    expect(activity.queryByText('Recent activity')).not.toBeInTheDocument();
+    expect(activity.queryByText('24 hours')).not.toBeInTheDocument();
     expect(
-      screen.getByTestId('security-now-lane-list-danger').parentElement?.className ?? ''
-    ).toContain('overlay-scroll-area');
-    expect(screen.getByTestId('security-now-lane-list-accent').className).toContain(
-      'overflow-y-auto'
+      screen.getByTestId('security-activity-panel').querySelector('.navet-entity-card-header')
+    ).not.toBeInTheDocument();
+    expect(activity.getByTestId('security-activity-scroll')).toHaveClass(
+      'overflow-y-auto',
+      'overscroll-contain',
+      'touch-pan-y'
     );
-    expect(
-      screen.getByTestId('security-now-lane-list-accent').parentElement?.className ?? ''
-    ).toContain('overlay-scroll-area');
-
-    const secureModel = buildSecurityCameraDashboardModel({
-      cameras: [camera({ id: 'camera.garage', name: 'Garage Camera', state: 'idle' })],
-      locks: [lock({ id: 'lock.front', name: 'Front Door', state: true })],
-      sensors: [],
+    expect(activity.getByTestId('security-activity-scroll').parentElement).toHaveClass(
+      'h-[21rem]',
+      'md:h-96'
+    );
+    expect(activity.getByTestId('security-activity-content')).toHaveClass('relative', 'isolate');
+    expect(activity.getByTestId('security-activity-content')).not.toHaveClass(
+      'border',
+      'rounded-xl',
+      'mx-3',
+      'mb-3',
+      'overflow-hidden'
+    );
+    expect(activity.queryByTestId('security-activity-timeline-gutter')).not.toBeInTheDocument();
+    for (const marker of activity.getAllByTestId('security-activity-marker')) {
+      expect(marker).toHaveClass('h-8', 'w-8');
+      expect(marker.firstElementChild).toHaveClass(
+        'rounded-full',
+        '!h-8',
+        '!w-8',
+        '!shadow-none',
+        '!drop-shadow-none'
+      );
+      expect(marker.firstElementChild?.firstElementChild).toHaveClass('!drop-shadow-none');
+    }
+    const eventContent = activity.getAllByTestId('security-activity-event-content');
+    for (const content of eventContent) {
+      expect(content).toHaveClass('self-stretch', 'pb-3');
+    }
+    expect(eventContent.filter((content) => content.classList.contains('border-b'))).toHaveLength(
+      4
+    );
+    expect(eventContent[0]).not.toHaveClass('border-b');
+    const sameTimeDividers = activity.getAllByTestId('security-activity-same-time-divider');
+    expect(sameTimeDividers).toHaveLength(1);
+    expect(sameTimeDividers[0]).toHaveClass(
+      'left-[7.25rem]',
+      'right-3',
+      'top-0',
+      'border-t',
+      'opacity-50'
+    );
+    for (const timelineLine of activity.getAllByTestId('security-activity-timeline-line')) {
+      expect(timelineLine).toHaveClass('border-l', 'top-11', 'bottom-0', 'left-[5.5rem]');
+      expect(timelineLine).not.toHaveClass('border-dashed');
+    }
+    for (const timelineLine of activity.getAllByTestId(
+      'security-activity-timeline-line-incoming'
+    )) {
+      expect(timelineLine).toHaveClass('border-l', 'top-0', 'h-3', 'left-[5.5rem]');
+      expect(timelineLine).not.toHaveClass('border-dashed');
+    }
+    expect(activity.getByTestId('security-activity-scroll')).toHaveAttribute('tabindex', '0');
+    const scrollViewport = activity.getByTestId('security-activity-scroll');
+    Object.defineProperties(scrollViewport, {
+      clientHeight: { configurable: true, value: 384 },
+      scrollHeight: { configurable: true, value: 900 },
+      scrollTop: { configurable: true, value: 440 },
     });
-
-    renderWithProviders(
-      <SecurityCameraDashboard
-        model={secureModel}
-        isEditMode={false}
-        cardSizes={{}}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
-
-    expect(screen.getByTestId('security-now-lane-list-success').className).toContain(
-      'overflow-y-auto'
-    );
-    expect(
-      screen.getByTestId('security-now-lane-list-success').parentElement?.className ?? ''
-    ).toContain('overlay-scroll-area');
-  });
-
-  it('restores collapsed sections and the selected detail group after remounting', async () => {
-    const firstRender = renderDashboard();
-
-    fireEvent.click(screen.getByRole('tab', { name: /Locks/i }));
-    fireEvent.click(screen.getByRole('button', { name: /All Security/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Critical alert/i }));
-
-    await waitFor(() =>
-      expect(localStorage.getItem('navet-security-dashboard-selected-group')).toBe(
-        JSON.stringify('locks')
-      )
-    );
-    await waitFor(() =>
-      expect(localStorage.getItem('navet-security-dashboard-collapsed-sections')).toBe(
-        JSON.stringify({ details: true, now: true })
-      )
-    );
-
-    firstRender.unmount();
-    renderDashboard();
-
-    expect(screen.getByRole('button', { name: /All Security/i })).toHaveAttribute(
-      'aria-expanded',
-      'false'
-    );
-    expect(screen.getByRole('button', { name: /Critical alert/i })).toHaveAttribute(
-      'aria-expanded',
-      'false'
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: /All Security/i }));
-
-    expect(screen.getByRole('tab', { name: /Locks/i })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByTestId('detail-card:lock.front')).toBeInTheDocument();
-  });
-
-  it('applies configured size spans to attention or secure and live now cards', () => {
-    const model = buildSecurityCameraDashboardModel({
-      cameras: [camera({ id: 'camera.garage', name: 'Garage Camera', state: 'idle' })],
-      locks: [lock({ id: 'lock.front', name: 'Front Door', state: true })],
-      sensors: [],
-    });
-
-    const { rerender } = renderWithProviders(
-      <SecurityCameraDashboard
-        model={model}
-        isEditMode
-        cardSizes={{
-          'security.now.secure': 'medium',
-          'security.now.live': 'extra-large',
-        }}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
-
-    expect(screen.getByTestId('security-now-card:security.now.secure').className).toContain(
-      'col-span-4 row-span-2'
-    );
-    expect(screen.getByTestId('security-now-card:security.now.live').className).toContain(
-      'col-span-4 row-span-4 md:col-span-6'
-    );
-
-    rerender(
-      <SecurityCameraDashboard
-        model={renderDashboardModelWithAlerts()}
-        isEditMode
-        cardSizes={{
-          'security.now.attention': 'medium',
-          'security.now.live': 'extra-large',
-        }}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
-
-    expect(screen.getByTestId('security-now-card:security.now.attention').className).toContain(
-      'col-span-4 row-span-2'
-    );
-  });
-
-  it('limits the now-lane alarm card to medium and large spans', () => {
-    const model = renderDashboardModelWithAlerts();
-
-    const { rerender } = renderWithProviders(
-      <SecurityCameraDashboard
-        model={model}
-        alarms={[
-          {
-            id: 'home_assistant:alarm_control_panel.home',
-            name: 'Home Alarm',
-            state: 'disarmed',
-            supportedActions: ['arm_away', 'disarm'],
-            codeFormat: 'none',
-            provider: 'home_assistant',
-            availability: 'available',
-          },
-        ]}
-        isEditMode
-        cardSizes={{
-          'security.now.alarm': 'medium',
-        }}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
-
-    expect(screen.getByTestId('security-now-card:security.now.alarm').className).toContain(
-      'col-span-4 row-span-2'
-    );
-
-    rerender(
-      <SecurityCameraDashboard
-        model={model}
-        alarms={[
-          {
-            id: 'home_assistant:alarm_control_panel.home',
-            name: 'Home Alarm',
-            state: 'disarmed',
-            supportedActions: ['arm_away', 'disarm'],
-            codeFormat: 'none',
-            provider: 'home_assistant',
-            availability: 'available',
-          },
-        ]}
-        isEditMode
-        cardSizes={{
-          'security.now.alarm': 'large',
-        }}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
-
-    expect(screen.getByTestId('security-now-card:security.now.alarm').className).toContain(
-      'col-span-4 row-span-4'
-    );
-  });
-
-  it('shows idle cameras in the live lane without marking the dashboard as active', () => {
-    const model = buildSecurityCameraDashboardModel({
-      cameras: [
-        camera({
-          id: 'camera.garage',
-          name: 'Garage Camera',
-          room: 'Garage',
-          state: 'idle',
-          securitySeverity: 'normal',
-        }),
-      ],
-      locks: [lock({ id: 'lock.front', name: 'Front Door', state: true })],
-      sensors: [],
-    });
-
-    renderWithProviders(
-      <SecurityCameraDashboard
-        model={model}
-        isEditMode={false}
-        cardSizes={{}}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
-
-    expect(screen.getByRole('heading', { name: 'All secure' })).toBeInTheDocument();
-    const liveRow = screen.getByRole('button', { name: /Garage Camera/i });
-    expect(liveRow).toHaveTextContent('Idle');
-    expect(screen.getByText('1 live')).toBeInTheDocument();
-  });
-
-  it('uses severity-weighted pulse markers only for critical and warning rows', () => {
-    const { container } = renderDashboard();
-
-    const pulseMarkers = container.querySelectorAll(
-      '[class*="navet-security-critical-pulse"], [class*="navet-security-warning-pulse"]'
-    );
-
-    expect(pulseMarkers.length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: /Hazards/i }).innerHTML).toContain(
-      'navet-security-critical-pulse'
-    );
-    expect(screen.getByRole('button', { name: /Locks/i }).innerHTML).toContain(
-      'navet-security-warning-pulse'
-    );
-    expect(screen.getByRole('button', { name: /Entry Motion/i }).innerHTML).not.toContain(
-      'navet-security-critical-pulse'
-    );
-    expect(screen.getByRole('button', { name: /Entry Motion/i }).innerHTML).not.toContain(
-      'navet-security-warning-pulse'
-    );
-    expect(screen.getByRole('button', { name: /Doors & windows/i }).innerHTML).not.toContain(
-      'navet-security-critical-pulse'
-    );
-    expect(screen.getByRole('button', { name: /Doors & windows/i }).innerHTML).not.toContain(
-      'navet-security-warning-pulse'
-    );
-  });
-
-  it('shows device status instead of generic severity label in the attention lane', () => {
-    renderDashboard();
-
-    const attentionRow = screen.getByRole('button', { name: /Hazards/i });
-    const unlockedLockRow = screen.getByRole('button', { name: /Locks/i });
-    const openingRow = screen.getByRole('button', { name: /Doors & windows/i });
-
-    expect(attentionRow).toHaveTextContent('1 alerts');
-    expect(attentionRow).not.toHaveTextContent('Critical');
-    expect(attentionRow.innerHTML).toContain('text-rose-300');
-    expect(unlockedLockRow).toHaveTextContent('1 unlocked');
-    expect(unlockedLockRow.innerHTML).toContain('text-red-300');
-    expect(unlockedLockRow.innerHTML).toContain('bg-red-400');
-    expect(openingRow).toHaveTextContent('Unavailable');
-    expect(openingRow).not.toHaveTextContent('Active');
-  });
-
-  it('matches critical siren status text color to its alert dot color', () => {
-    const model = buildSecurityCameraDashboardModel({
-      cameras: [],
-      locks: [],
-      sensors: [
-        sensor({
-          id: 'siren.garage',
-          name: 'Garage Siren',
-          room: 'Garage',
-          securityKind: 'siren',
-          securitySeverity: 'critical',
-          value: 'On',
-        }),
-      ],
-    });
-
-    renderWithProviders(
-      <SecurityCameraDashboard
-        model={model}
-        isEditMode={false}
-        cardSizes={{}}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
-
-    const sirenRow = screen.getByRole('button', { name: /Sirens/i });
-
-    expect(sirenRow).toHaveTextContent('1 on');
-    expect(sirenRow.innerHTML).toContain('text-red-400');
-    expect(sirenRow.innerHTML).toContain('bg-red-500');
-  });
-
-  it('shows detail groups as tabs and defaults to the first problem group', () => {
-    renderDashboard();
-
-    const locksTab = screen.getByRole('tab', { name: /Locks/i });
-    const camerasTab = screen.getByRole('tab', { name: /Cameras/i });
-    const motionTab = screen.getByRole('tab', { name: /Motion & occupancy/i });
-
-    expect(locksTab).toHaveAttribute('aria-selected', 'true');
-    expect(camerasTab).toHaveAttribute('aria-selected', 'false');
-    expect(locksTab.innerHTML).toContain('bg-red-400');
-    expect(motionTab.innerHTML).toContain('bg-amber-');
-    expect(screen.getByTestId('detail-card:lock.front')).toBeInTheDocument();
-    expect(screen.queryByTestId('detail-card:camera.garage')).not.toBeInTheDocument();
-
-    fireEvent.click(camerasTab);
-
-    expect(camerasTab).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByTestId('detail-card:camera.garage')).toBeInTheDocument();
-  });
-
-  it('combines clear motion sensors into one all-security detail card', () => {
-    const model = buildSecurityCameraDashboardModel({
-      cameras: [],
-      locks: [lock({ id: 'lock.front', name: 'Front Door', state: true })],
-      sensors: [
-        sensor({
-          id: 'binary_sensor.hall_motion',
-          name: 'Hall Motion',
-          room: 'Hall',
-          securityKind: 'motion',
-          securitySeverity: 'normal',
-          status: 'clear',
-          value: 'Clear',
-        }),
-        sensor({
-          id: 'binary_sensor.garage_motion',
-          name: 'Garage Motion',
-          room: 'Garage',
-          securityKind: 'motion',
-          securitySeverity: 'normal',
-          status: 'clear',
-          value: 'Clear',
-        }),
-        sensor({
-          id: 'binary_sensor.garage_motion',
-          name: 'Garage Motion',
-          room: 'Garage',
-          securityKind: 'motion',
-          securitySeverity: 'normal',
-          status: 'clear',
-          value: 'Clear',
-        }),
-      ],
-    });
-
-    renderWithProviders(
-      <SecurityCameraDashboard
-        model={model}
-        isEditMode={false}
-        cardSizes={{}}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
-
-    fireEvent.click(screen.getByRole('tab', { name: /Motion & occupancy/i }));
-
-    expect(screen.getByTestId('detail-card:security.aggregate.motion.secure')).toHaveTextContent(
-      'Motion sensors'
-    );
-    expect(screen.queryByTestId('detail-card:binary_sensor.hall_motion')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('detail-card:binary_sensor.garage_motion')).not.toBeInTheDocument();
-  });
-
-  it('applies the configured card span classes to security detail cards', () => {
-    const model = buildSecurityCameraDashboardModel({
-      cameras: [
-        camera({
-          id: 'camera.garage',
-          name: 'Garage Camera',
-          room: 'Garage',
-          securitySeverity: 'normal',
-          size: 'medium',
-        }),
-      ],
-      locks: [lock({ id: 'lock.front', name: 'Front Door', state: false, size: 'small' })],
-      sensors: [],
-    });
-
-    renderWithProviders(
-      <SecurityCameraDashboard
-        model={model}
-        isEditMode={false}
-        cardSizes={{ 'camera.garage': 'large', 'lock.front': 'small' }}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
-
-    const lockCard = screen.getByTestId('detail-card:lock.front').parentElement;
-
-    expect(lockCard?.className).toContain('col-span-2');
-    expect(lockCard?.className).toContain('row-span-2');
-
-    fireEvent.click(screen.getByRole('tab', { name: /Cameras/i }));
-
-    const cameraCard = screen.getByTestId('detail-card:camera.garage').parentElement;
-
-    expect(cameraCard?.className).toContain('col-span-4');
-    expect(cameraCard?.className).toContain('row-span-4');
-  });
-
-  it('allows top-level sections to collapse and expand', () => {
-    renderDashboard();
-
-    const detailsToggle = screen.getByRole('button', { name: /All Security/i });
-
-    expect(detailsToggle).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('tab', { name: /Locks/i })).toBeInTheDocument();
-
-    fireEvent.click(detailsToggle);
-
-    expect(detailsToggle).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('tab', { name: /Locks/i })).not.toBeInTheDocument();
-
-    fireEvent.click(detailsToggle);
-
-    expect(detailsToggle).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('tab', { name: /Locks/i })).toBeInTheDocument();
-  });
-
-  it('uses the richer red badge tint for critical siren detail tabs', () => {
-    const model = buildSecurityCameraDashboardModel({
-      cameras: [],
-      locks: [],
-      sensors: [
-        sensor({
-          id: 'siren.garage',
-          name: 'Garage Siren',
-          room: 'Garage',
-          securityKind: 'siren',
-          securitySeverity: 'critical',
-          value: 'Sounding',
-        }),
-      ],
-    });
-
-    renderWithProviders(
-      <SecurityCameraDashboard
-        model={model}
-        isEditMode={false}
-        cardSizes={{}}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
-
-    const sirensTab = screen.getByRole('tab', { name: /Sirens/i });
-
-    expect(sirensTab.innerHTML).toContain('bg-red-');
-  });
-
-  it('uses a neutral grey detail dot for cameras when availability is unknown', () => {
-    const model = buildSecurityCameraDashboardModel({
-      cameras: [
-        camera({
-          id: 'camera.driveway',
-          name: 'Driveway Camera',
-          room: 'Outside',
-          state: 'streaming',
-          isStreamCapable: true,
-          securitySeverity: 'active',
-        }),
-        camera({
-          id: 'camera.garage',
-          name: 'Garage Camera',
-          room: 'Garage',
-          securitySeverity: 'unknown',
-        }),
-      ],
-      locks: [],
-      sensors: [],
-    });
-
-    renderWithProviders(
-      <SecurityCameraDashboard
-        model={model}
-        isEditMode={false}
-        cardSizes={{}}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
-
-    const camerasTab = screen.getByRole('tab', { name: /Cameras/i });
-
-    expect(camerasTab.innerHTML).toContain('bg-zinc-400');
-    expect(camerasTab.innerHTML).not.toContain('bg-emerald-400');
-  });
-
-  it('does not show a presence tab dot in details', () => {
-    const model = buildSecurityCameraDashboardModel({
-      cameras: [],
-      locks: [],
-      sensors: [
-        sensor({
-          id: 'binary_sensor.entry_motion',
-          name: 'Entry Motion',
-          room: 'Entrance',
-          securityKind: 'motion',
-          securitySeverity: 'active',
-          value: 'Motion detected',
-        }),
-        sensor({
-          id: 'binary_sensor.presence_unavailable',
-          name: 'Presence Sensor',
-          room: 'Hall',
-          securityKind: 'deviceTracker',
-          securitySeverity: 'unknown',
-          value: 'Unavailable',
-        }),
-      ],
-      persons: [person({ id: 'person.vishal', name: 'Vishal', state: 'away', location: 'Away' })],
-    });
-
-    renderWithProviders(
-      <SecurityCameraDashboard
-        model={model}
-        isEditMode={false}
-        cardSizes={{}}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
-
-    const presenceTab = screen.getByRole('tab', { name: /Presence/i });
-
-    expect(presenceTab.innerHTML).not.toContain('rounded-full');
-  });
-
-  it('switches to the matching detail tab when an attention row is clicked', () => {
-    renderDashboard();
-
-    const accessTab = screen.getByRole('tab', { name: /Doors & windows/i });
-    expect(accessTab).toHaveAttribute('aria-selected', 'false');
-
-    fireEvent.click(screen.getByRole('button', { name: /Doors & windows/i }));
-
-    expect(screen.getByRole('tab', { name: /Doors & windows/i })).toHaveAttribute(
-      'aria-selected',
-      'true'
-    );
-    expect(screen.getByTestId('detail-card:binary_sensor.side_door')).toBeInTheDocument();
-  });
-
-  it('switches to the matching detail tab when a grouped secure row is clicked', () => {
-    const model = buildSecurityCameraDashboardModel({
-      cameras: [camera({ id: 'camera.garage', name: 'Garage Camera', state: 'idle' })],
-      locks: [lock({ id: 'lock.front', name: 'Front Door', state: true })],
-      sensors: [
-        sensor({
-          id: 'binary_sensor.hall_motion',
-          name: 'Hall Motion',
-          room: 'Hall',
-          securityKind: 'motion',
-          securitySeverity: 'normal',
-          status: 'clear',
-          value: 'Clear',
-        }),
-      ],
-    });
-
-    renderWithProviders(
-      <SecurityCameraDashboard
-        model={model}
-        isEditMode={false}
-        cardSizes={{}}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
-
-    const motionTab = screen.getByRole('tab', { name: /Motion & occupancy/i });
-    expect(motionTab).toHaveAttribute('aria-selected', 'false');
-
-    fireEvent.click(screen.getByRole('button', { name: /Motion & occupancy/i }));
-
-    expect(screen.getByRole('tab', { name: /Motion & occupancy/i })).toHaveAttribute(
-      'aria-selected',
-      'true'
-    );
-  });
-
-  it('opens the live camera viewer when a live camera row is clicked', () => {
-    const model = buildSecurityCameraDashboardModel({
-      cameras: [
-        camera({
-          id: 'camera.driveway',
-          name: 'Driveway Camera',
-          room: 'Outside',
-          state: 'streaming',
-          isStreamCapable: true,
-          securitySeverity: 'active',
-        }),
-      ],
-      locks: [],
-      sensors: [],
-    });
-
-    renderWithProviders(
-      <SecurityCameraDashboard
-        model={model}
-        isEditMode={false}
-        cardSizes={{}}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
-
-    expect(screen.queryByText('Viewer:Driveway Camera')).not.toBeInTheDocument();
-
-    fireEvent.click(
-      within(screen.getByTestId('security-now-lane-list-accent')).getByRole('button', {
-        name: /Driveway Camera/i,
-      })
-    );
-
-    expect(screen.getByText('Viewer:Driveway Camera')).toBeInTheDocument();
-    expect(cameraLiveViewerRenderMock).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        initialStreamResource: null,
-      })
-    );
-  });
-
-  it('shows device status instead of generic active label in the live lane', () => {
-    const model = buildSecurityCameraDashboardModel({
-      cameras: [
-        camera({
-          id: 'camera.driveway',
-          name: 'Driveway Camera',
-          room: 'Outside',
-          state: 'streaming',
-          isStreamCapable: true,
-          securitySeverity: 'active',
-          entityPicture: '/api/camera_proxy/camera.driveway',
-        }),
-      ],
-      locks: [],
-      sensors: [],
-    });
-
-    renderWithProviders(
-      <SecurityCameraDashboard
-        model={model}
-        isEditMode={false}
-        cardSizes={{}}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
-
-    const liveRow = within(screen.getByTestId('security-now-lane-list-accent')).getByRole(
-      'button',
-      { name: /Driveway Camera/i }
-    );
-
-    expect(liveRow).toHaveTextContent('Streaming');
-    expect(liveRow).not.toHaveTextContent('Active');
-    expect(liveRow.innerHTML).toContain('bg-emerald-400');
-    expect(liveRow.innerHTML).toContain('text-emerald-300');
-    expect(screen.getByTestId('live-thumbnail:camera.driveway')).toHaveAttribute(
-      'src',
-      expect.stringContaining('/api/camera_proxy/camera.driveway')
-    );
-  });
-
-  it('uses a related camera snapshot for live motion rows when sourceDeviceId matches', () => {
-    const model = buildSecurityCameraDashboardModel({
-      cameras: [
-        camera({
-          id: 'camera.backyard',
-          name: 'Backyard Camera',
-          room: 'Backyard',
-          entityPicture: '/api/camera_proxy/camera.backyard',
-          sourceDeviceId: 'device-backyard-cam',
-          securitySeverity: 'normal',
-        }),
-      ],
-      locks: [],
-      sensors: [
-        sensor({
-          id: 'binary_sensor.movement_backyard',
-          name: 'Movement Backyard',
-          room: 'Backyard',
-          securityKind: 'motion',
-          securitySeverity: 'active',
-          value: 'Motion detected',
-          sourceDeviceId: 'device-backyard-cam',
-        }),
-      ],
-    });
-
-    renderWithProviders(
-      <SecurityCameraDashboard
-        model={model}
-        isEditMode={false}
-        cardSizes={{}}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
-
-    const liveRow = within(screen.getByTestId('security-now-lane-list-accent')).getByRole(
-      'button',
-      { name: /Movement Backyard/i }
-    );
-
-    expect(liveRow).toHaveTextContent('Motion detected');
-    expect(liveRow.innerHTML).toContain('bg-amber-300');
-    expect(liveRow.innerHTML).toContain('text-amber-200');
-    expect(screen.getByTestId('live-thumbnail:binary_sensor.movement_backyard')).toHaveAttribute(
-      'src',
-      expect.stringContaining('/api/camera_proxy/camera.backyard')
-    );
-  });
-
-  it('uses red warning styling for open opening rows and their detail tab', () => {
-    const model = buildSecurityCameraDashboardModel({
-      cameras: [],
-      locks: [],
-      sensors: [
-        sensor({
-          id: 'binary_sensor.side_door',
-          name: 'Side Door',
-          room: 'Side Entry',
-          securityKind: 'door',
-          securitySeverity: 'warning',
-          status: 'active',
-          value: 'Open',
-        }),
-      ],
-    });
-
-    renderWithProviders(
-      <SecurityCameraDashboard
-        model={model}
-        isEditMode={false}
-        cardSizes={{}}
-        updateCardSize={vi.fn()}
-        surface={getThemeSurfaceTokens('glass')}
-      />
-    );
-
-    const openingRow = screen.getByRole('button', { name: /Doors & windows/i });
-    const openingsTab = screen.getByRole('tab', { name: /Doors & windows/i });
-
-    expect(openingRow).toHaveTextContent('Open');
-    expect(openingRow).not.toHaveTextContent('Active');
-    expect(openingRow.innerHTML).toContain('text-red-300');
-    expect(openingRow.innerHTML).toContain('bg-red-400');
-    expect(openingsTab.innerHTML).toContain('bg-red-400');
+    fireEvent.scroll(scrollViewport);
+    expect(activityEventsMock.loadMore).not.toHaveBeenCalled();
+    fireEvent.click(activity.getByRole('button', { name: 'Load older activity' }));
+    expect(activityEventsMock.loadMore).toHaveBeenCalledTimes(1);
   });
 });

@@ -12,6 +12,7 @@ import type {
   PlatformCameraStreamType,
   PlatformEnergyEntityMap,
   PlatformEnergyEntityRegistryEntry,
+  PlatformEntityHistoriesRequest,
   PlatformEntityHistoryRequest,
   PlatformEntityHistorySeries,
   PlatformEntityRegistryEntry,
@@ -172,6 +173,9 @@ export interface ProviderAdminFeatureService extends ProviderRoomAdminFeatureSer
 
 export interface ProviderHistoryFeatureService {
   getMessageClient: () => PlatformMessageClient | null;
+  getEntityHistories?: (
+    request: PlatformEntityHistoriesRequest
+  ) => Promise<PlatformEntityHistorySeries[]>;
   getEntityHistory?: (
     request: PlatformEntityHistoryRequest
   ) => Promise<PlatformEntityHistorySeries>;

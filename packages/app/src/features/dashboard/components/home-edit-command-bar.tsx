@@ -49,6 +49,7 @@ interface HomeEditCommandBarProps {
   onApplyPack?: (packId: DashboardPackId) => void;
   onApplyEnergyLayout?: (template: EnergyOverviewTemplate) => void;
   onConfigureKpis?: () => void;
+  onConfigureSecurityOverview?: () => void;
   onManageRooms?: () => void;
   onRedo?: () => void;
   onSetLayoutMode?: (mode: HomeLayoutMode) => void;
@@ -107,6 +108,7 @@ export function HomeEditCommandBar({
   onApplyPack,
   onApplyEnergyLayout,
   onConfigureKpis,
+  onConfigureSecurityOverview,
   onManageRooms,
   onRedo,
   onSetLayoutMode,
@@ -133,6 +135,7 @@ export function HomeEditCommandBar({
   const pendingPack = DASHBOARD_PACKS.find((pack) => pack.id === pendingPackId);
   const hasMobileOverflowActions =
     Boolean(onConfigureKpis) ||
+    Boolean(onConfigureSecurityOverview) ||
     Boolean(onApplyEnergyLayout) ||
     Boolean(onManageRooms) ||
     Boolean(onApplyPack) ||
@@ -175,6 +178,13 @@ export function HomeEditCommandBar({
                       <DropdownMenuItem onClick={onConfigureKpis}>
                         <SlidersHorizontal className="h-4 w-4" />
                         KPIs
+                      </DropdownMenuItem>
+                    ) : null}
+
+                    {onConfigureSecurityOverview ? (
+                      <DropdownMenuItem onClick={onConfigureSecurityOverview}>
+                        <SlidersHorizontal className="h-4 w-4" />
+                        {t('security.overview.customize.action')}
                       </DropdownMenuItem>
                     ) : null}
 
@@ -470,6 +480,19 @@ export function HomeEditCommandBar({
                 className="h-9 rounded-full px-3 text-xs md:text-sm"
               >
                 KPIs
+              </Button>
+            ) : null}
+
+            {onConfigureSecurityOverview ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="small"
+                leading={<SlidersHorizontal className="h-4 w-4" />}
+                onClick={onConfigureSecurityOverview}
+                className="h-9 rounded-full px-3 text-xs md:text-sm"
+              >
+                {t('security.overview.customize.action')}
               </Button>
             ) : null}
 

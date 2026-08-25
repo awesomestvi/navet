@@ -1,4 +1,3 @@
-import { navetSizeTokens } from '../system/tokens/foundations';
 import type { CardSize } from './card-size-selector';
 
 export interface CardActionControlSizes {
@@ -11,7 +10,7 @@ export interface CardActionControlSizes {
 export function getCardActionControlSizes(size: CardSize | 'large'): CardActionControlSizes {
   if (size === 'tiny') {
     return {
-      button: navetSizeTokens.iconButton.sm,
+      button: 'navet-card-action-control',
       icon: 'h-3 w-3',
       inner: 'h-3 w-3',
       dot: 'h-1.5 w-1.5',
@@ -20,7 +19,7 @@ export function getCardActionControlSizes(size: CardSize | 'large'): CardActionC
 
   if (size === 'extra-small') {
     return {
-      button: navetSizeTokens.iconButton.sm,
+      button: 'navet-card-action-control',
       icon: 'h-3.5 w-3.5',
       inner: 'h-3.5 w-3.5',
       dot: 'h-1.5 w-1.5',
@@ -29,7 +28,7 @@ export function getCardActionControlSizes(size: CardSize | 'large'): CardActionC
 
   if (size === 'small') {
     return {
-      button: navetSizeTokens.iconButton.sm,
+      button: 'navet-card-action-control',
       icon: 'h-3.5 w-3.5',
       inner: 'h-3.5 w-3.5',
       dot: 'h-1.5 w-1.5',
@@ -38,7 +37,7 @@ export function getCardActionControlSizes(size: CardSize | 'large'): CardActionC
 
   if (size === 'medium') {
     return {
-      button: navetSizeTokens.iconButton.sm,
+      button: 'navet-card-action-control',
       icon: 'h-4 w-4',
       inner: 'h-4 w-4',
       dot: 'h-2 w-2',
@@ -47,7 +46,7 @@ export function getCardActionControlSizes(size: CardSize | 'large'): CardActionC
 
   if (size === 'large') {
     return {
-      button: navetSizeTokens.iconButton.md,
+      button: 'navet-card-action-control',
       icon: 'h-4 w-4',
       inner: 'h-4 w-4',
       dot: 'h-2 w-2',
@@ -55,7 +54,7 @@ export function getCardActionControlSizes(size: CardSize | 'large'): CardActionC
   }
 
   return {
-    button: navetSizeTokens.iconButton.sm,
+    button: 'navet-card-action-control',
     icon: 'h-4 w-4',
     inner: 'h-4 w-4',
     dot: 'h-2 w-2',

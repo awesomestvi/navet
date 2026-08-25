@@ -36,7 +36,7 @@ export const SummaryBar = memo(function SummaryBar({
 
   return (
     <nav className={`min-w-0 ${className}`} aria-label={ariaLabel}>
-      <div className="scrollbar-hide -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 md:mx-0 md:flex-wrap md:gap-2 md:overflow-visible md:px-0 md:pb-0">
+      <div className="scrollbar-hide flex gap-1.5 overflow-x-auto md:flex-wrap md:gap-2 md:overflow-visible">
         {leadingContent}
         {orderedItems.map((item) => {
           const IconComponent = item.icon;
@@ -131,7 +131,7 @@ export const SummaryBar = memo(function SummaryBar({
               <div
                 key={item.id}
                 className={cn(
-                  'group inline-grid min-h-8 shrink-0 items-center gap-1 rounded-full border px-1.5 py-1 pr-2 text-left md:min-h-9 md:gap-1.5 md:px-2 md:py-1.5 md:pr-3',
+                  'group inline-grid min-h-9 shrink-0 items-center gap-1 rounded-full border px-1.5 py-1 pr-2 text-left md:gap-1.5 md:px-2 md:py-1.5 md:pr-3',
                   contentGridClassName,
                   chipClassName
                 )}
@@ -156,7 +156,7 @@ export const SummaryBar = memo(function SummaryBar({
                 }
               }}
               className={cn(
-                'group inline-grid min-h-8 shrink-0 items-center gap-1 rounded-full border px-1.5 py-1 pr-2 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 md:min-h-9 md:gap-1.5 md:px-2 md:py-1.5 md:pr-3',
+                'group inline-grid min-h-9 shrink-0 items-center gap-1 rounded-full border px-1.5 py-1 pr-2 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 md:gap-1.5 md:px-2 md:py-1.5 md:pr-3',
                 contentGridClassName,
                 focusClassName,
                 chipClassName

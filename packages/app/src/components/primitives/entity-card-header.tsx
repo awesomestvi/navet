@@ -12,7 +12,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { useTheme } from '@navet/app/hooks';
 import type { CSSProperties, ReactNode } from 'react';
 
-export type EntityCardHeaderVariant = 'default' | 'large';
+export type EntityCardHeaderVariant = 'default' | 'dense' | 'large';
 
 interface EntityCardHeaderProps {
   title: string;
@@ -70,43 +70,50 @@ export function EntityCardHeader({
   const isExtraSmall = isExtraSmallCardSize(size);
   const useCompactLayout = compact && !isTiny;
   const useLargeVariant = variant === 'large';
+  const useDenseVariant = variant === 'dense';
   const isStandardCompact = size === 'small' || size === 'medium' || size === 'medium-vertical';
   const marginBottom =
     marginBottomClassName ??
     (useLargeVariant
       ? 'mb-3'
-      : isTiny || isExtraSmall || useCompactLayout
+      : isTiny || isExtraSmall || useCompactLayout || useDenseVariant
         ? 'mb-1'
         : isStandardCompact
           ? 'mb-2'
           : 'mb-2');
-  const headerGap = useLargeVariant ? 'gap-3' : isTiny || useCompactLayout ? 'gap-1.5' : 'gap-2';
+  const headerGap = useLargeVariant
+    ? 'gap-3'
+    : isTiny || useCompactLayout || useDenseVariant
+      ? 'gap-1.5'
+      : 'gap-2';
   const subtitleClassBase = useLargeVariant
     ? 'truncate text-[11px] leading-[15px] tracking-normal'
-    : useCompactLayout
+    : useDenseVariant
       ? 'truncate text-[10px] leading-[12px] tracking-normal'
       : layout === 'eyebrow-first'
         ? 'truncate text-[11px] leading-[14px] tracking-normal'
         : 'truncate text-[11px] leading-[14px]';
   const titleClassBase = useLargeVariant
     ? 'truncate text-[14px] font-semibold leading-[18px]'
-    : useCompactLayout
+    : useDenseVariant
       ? 'truncate text-[11px] font-semibold leading-[13px]'
       : 'truncate text-[12px] font-semibold leading-[18px]';
   const crossAxisAlignment = align === 'center' || useLargeVariant ? 'items-center' : 'items-start';
   const contentFrameClassName = useLargeVariant
     ? 'flex min-h-10 items-center'
-    : isTiny || isExtraSmall || useCompactLayout
+    : useDenseVariant || isTiny || (isExtraSmall && !useCompactLayout)
       ? ''
       : 'flex min-h-8 items-center';
   const titleStackClassName = useLargeVariant
     ? 'flex min-h-10 min-w-0 flex-col justify-center overflow-hidden'
-    : isTiny || isExtraSmall || useCompactLayout
+    : useDenseVariant || isTiny || (isExtraSmall && !useCompactLayout)
       ? ''
       : 'flex h-8 min-w-0 flex-col justify-center overflow-hidden';
 
   return (
-    <div className={`flex ${crossAxisAlignment} ${headerGap} ${marginBottom} ${className}`}>
+    <div
+      className={`navet-entity-card-header flex ${crossAxisAlignment} ${headerGap} ${marginBottom} ${className}`}
+    >
       {leading ? <div className="shrink-0">{leading}</div> : null}
       <div
         className={`${contentFrameClassName} min-w-0 flex-1 overflow-hidden ${contentClassName}`}

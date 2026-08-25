@@ -78,6 +78,7 @@ const meta = {
           '',
           'What this story proves:',
           '- Density variants (`small`, `default`, `large`) mapped to card size and interaction context.',
+          '- A consistent 32 px circular control frame that expands to 36 px on touch-capable devices.',
           '- Mixed-content row composition (preset controls + settings action + overflow commands).',
           '- Themed control tokens for selected and unselected round-control states.',
           '',

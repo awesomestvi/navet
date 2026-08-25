@@ -17,6 +17,7 @@ export {
   buildDashboardVisibilityResult,
   getAbsorbedDashboardEntityIds,
   getExpandedHiddenDashboardEntityIds,
+  isDashboardEntityHidden,
   useDashboardDevices,
 } from './use-dashboard-devices';
 export { useDashboardWidgetRoomOptions } from './use-dashboard-widget-room-options';

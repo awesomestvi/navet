@@ -40,13 +40,15 @@ export function OverlayScrollArea({
 }: OverlayScrollAreaProps) {
   const [hasOverflow, setHasOverflow] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [scrollbarStyle, setScrollbarStyle] = useState<OverlayScrollAreaStyle>({
+  const scrollbarStyle: OverlayScrollAreaStyle = {
     '--overlay-scrollbar-size': '0px',
     '--overlay-scrollbar-start': '0px',
     '--overlay-scrollbar-track-end': `${scrollbarEndInset}px`,
     '--overlay-scrollbar-track-start': `${scrollbarStartInset}px`,
-  });
+  };
+  const rootRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
+  const scrollFrameRef = useRef<number | null>(null);
   const dragStateRef = useRef<{
     maxScrollTop: number;
     maxThumbTop: number;
@@ -54,43 +56,43 @@ export function OverlayScrollArea({
     startY: number;
   } | null>(null);
 
-  const updateScrollbarMetrics = useCallback(() => {
-    const viewport = viewportRef.current;
+  const updateScrollbarMetrics = useCallback(
+    (updateOverflowState = true) => {
+      const viewport = viewportRef.current;
+      const root = rootRef.current;
 
-    if (!viewport) {
-      return;
-    }
+      if (!viewport || !root) {
+        return;
+      }
 
-    const { clientHeight, scrollHeight, scrollTop } = viewport;
-    const maxScrollTop = scrollHeight - clientHeight;
-    const trackHeight = Math.max(0, clientHeight - scrollbarStartInset - scrollbarEndInset);
+      const { clientHeight, scrollHeight, scrollTop } = viewport;
+      const maxScrollTop = scrollHeight - clientHeight;
+      const trackHeight = Math.max(0, clientHeight - scrollbarStartInset - scrollbarEndInset);
 
-    if (maxScrollTop <= 1 || trackHeight <= 0) {
-      setHasOverflow(false);
-      setScrollbarStyle({
-        '--overlay-scrollbar-size': '0px',
-        '--overlay-scrollbar-start': '0px',
-        '--overlay-scrollbar-track-end': `${scrollbarEndInset}px`,
-        '--overlay-scrollbar-track-start': `${scrollbarStartInset}px`,
-      });
-      return;
-    }
+      if (maxScrollTop <= 1 || trackHeight <= 0) {
+        if (updateOverflowState) setHasOverflow(false);
+        root.style.setProperty('--overlay-scrollbar-size', '0px');
+        root.style.setProperty('--overlay-scrollbar-start', '0px');
+        return;
+      }
 
-    const thumbHeight = Math.max(28, (clientHeight / scrollHeight) * trackHeight);
-    const maxThumbTop = trackHeight - thumbHeight;
-    const thumbTop = (scrollTop / maxScrollTop) * maxThumbTop;
+      const thumbHeight = Math.max(28, (clientHeight / scrollHeight) * trackHeight);
+      const maxThumbTop = trackHeight - thumbHeight;
+      const thumbTop = (scrollTop / maxScrollTop) * maxThumbTop;
 
-    setHasOverflow(true);
-    setScrollbarStyle({
-      '--overlay-scrollbar-size': `${thumbHeight}px`,
-      '--overlay-scrollbar-start': `${thumbTop}px`,
-      '--overlay-scrollbar-track-end': `${scrollbarEndInset}px`,
-      '--overlay-scrollbar-track-start': `${scrollbarStartInset}px`,
-    });
-  }, [scrollbarEndInset, scrollbarStartInset]);
+      if (updateOverflowState) setHasOverflow(true);
+      root.style.setProperty('--overlay-scrollbar-size', `${thumbHeight}px`);
+      root.style.setProperty('--overlay-scrollbar-start', `${thumbTop}px`);
+    },
+    [scrollbarEndInset, scrollbarStartInset]
+  );
 
   const handleScroll = useCallback(() => {
-    updateScrollbarMetrics();
+    if (scrollFrameRef.current !== null) return;
+    scrollFrameRef.current = window.requestAnimationFrame(() => {
+      scrollFrameRef.current = null;
+      updateScrollbarMetrics(false);
+    });
   }, [updateScrollbarMetrics]);
 
   const handleThumbPointerDown = useCallback(
@@ -153,16 +155,17 @@ export function OverlayScrollArea({
     }
 
     updateScrollbarMetrics();
+    const handleResize = () => updateScrollbarMetrics();
 
     if (typeof ResizeObserver === 'undefined') {
-      window.addEventListener('resize', updateScrollbarMetrics);
+      window.addEventListener('resize', handleResize);
 
       return () => {
-        window.removeEventListener('resize', updateScrollbarMetrics);
+        window.removeEventListener('resize', handleResize);
       };
     }
 
-    const resizeObserver = new ResizeObserver(updateScrollbarMetrics);
+    const resizeObserver = new ResizeObserver(handleResize);
     resizeObserver.observe(viewport);
 
     if (viewport.firstElementChild) {
@@ -174,8 +177,18 @@ export function OverlayScrollArea({
     };
   }, [updateScrollbarMetrics]);
 
+  useEffect(
+    () => () => {
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
+      }
+    },
+    []
+  );
+
   return (
     <div
+      ref={rootRef}
       className={cn(
         'overlay-scroll-area relative min-h-0 min-w-0',
         isDragging && 'is-dragging',

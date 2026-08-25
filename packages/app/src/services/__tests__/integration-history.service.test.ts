@@ -10,6 +10,7 @@ vi.mock('@navet/app/provider-runtime-registry', () => ({
 }));
 
 import {
+  getIntegrationEntityHistories,
   getIntegrationEntityHistory,
   getIntegrationHistoryMessageClient,
   getIntegrationStatisticsHistory,
@@ -104,6 +105,35 @@ describe('integrationHistoryService', () => {
         startTime: '2026-07-14T08:00:00Z',
       })
     ).resolves.toBeNull();
+  });
+
+  it('groups entity history into one request per provider and restores canonical ids', async () => {
+    const getEntityHistories = vi.fn(async ({ entityIds }: { entityIds: string[] }) =>
+      entityIds.map((entityId) => ({
+        entityId,
+        points: [{ state: 'on', changedAt: '2026-07-14T08:30:00Z' }],
+      }))
+    );
+    getProviderRuntimeRegistrationMock.mockImplementation(() => ({
+      historyFeatureService: { getMessageClient: () => null, getEntityHistories },
+    }));
+
+    await expect(
+      getIntegrationEntityHistories({
+        entityIds: [
+          'home_assistant:binary_sensor.motion',
+          'home_assistant:binary_sensor.door',
+          'homey:alarm.motion',
+        ],
+        startTime: '2026-07-14T08:00:00Z',
+      })
+    ).resolves.toHaveLength(3);
+    expect(getEntityHistories).toHaveBeenCalledTimes(2);
+    expect(getEntityHistories.mock.calls[0]?.[0].entityIds).toEqual([
+      'binary_sensor.motion',
+      'binary_sensor.door',
+    ]);
+    expect(getEntityHistories.mock.calls[1]?.[0].entityIds).toEqual(['alarm.motion']);
   });
 
   it('uses provider-owned history support gates instead of provider identity checks', () => {

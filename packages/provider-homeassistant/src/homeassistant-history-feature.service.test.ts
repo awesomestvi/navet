@@ -104,6 +104,28 @@ describe('homeAssistantHistoryFeatureService', () => {
     expect(query.has('significant_changes_only')).toBe(true);
   });
 
+  it('loads multiple entity histories in one REST request', async () => {
+    callHomeAssistantApiMock.mockResolvedValueOnce([
+      [{ entity_id: 'binary_sensor.motion', state: 'on', last_changed: '2026-07-14T08:10:00Z' }],
+      [{ entity_id: 'lock.front_door', state: 'locked', last_changed: '2026-07-14T08:20:00Z' }],
+    ]);
+
+    const result = await homeAssistantHistoryFeatureService.getEntityHistories?.({
+      entityIds: ['binary_sensor.motion', 'lock.front_door'],
+      startTime: '2026-07-14T08:00:00Z',
+      endTime: '2026-07-14T09:00:00Z',
+    });
+
+    expect(result?.map((series) => series.entityId)).toEqual([
+      'binary_sensor.motion',
+      'lock.front_door',
+    ]);
+    expect(callHomeAssistantApiMock).toHaveBeenCalledTimes(1);
+    const path = callHomeAssistantApiMock.mock.calls[0]?.[1] as string;
+    const query = new URLSearchParams(path.split('?')[1]);
+    expect(query.get('filter_entity_id')).toBe('binary_sensor.motion,lock.front_door');
+  });
+
   it('rejects invalid or reversed periods before making a request', async () => {
     await expect(
       homeAssistantHistoryFeatureService.getEntityHistory?.({

@@ -43,6 +43,10 @@ const CARD_SIZE_RENDERED_SPANS: Record<CardSize, { cols: number; rows: number }>
   'extra-wide': { cols: 12, rows: 4 },
 };
 
+export function getDashboardCardGridSpan(size: CardSize): { cols: number; rows: number } {
+  return CARD_SIZE_RENDERED_SPANS[size];
+}
+
 export function getDashboardCardGridGapPx(logicalColumns: number) {
   if (logicalColumns >= 6) {
     return 16;

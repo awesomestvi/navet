@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import type { CameraCardImageSource } from './types';
 
 interface CameraSnapshotImageProps {
@@ -6,6 +6,7 @@ interface CameraSnapshotImageProps {
   sources?: readonly CameraCardImageSource[];
   alt: string;
   className: string;
+  fallback?: ReactNode;
   onError: () => void;
 }
 
@@ -18,26 +19,33 @@ export function CameraSnapshotImage({
   sources,
   alt,
   className,
+  fallback,
   onError,
 }: CameraSnapshotImageProps) {
   const [displayedSrc, setDisplayedSrc] = useState(src);
+  const [isDisplayedLoaded, setIsDisplayedLoaded] = useState(false);
   const [pendingSrc, setPendingSrc] = useState<string | null>(null);
 
   useEffect(() => {
     if (!src) {
       setDisplayedSrc(src);
+      setIsDisplayedLoaded(false);
       setPendingSrc(null);
       return;
     }
 
     if (!displayedSrc) {
       setDisplayedSrc(src);
+      setIsDisplayedLoaded(false);
       setPendingSrc(null);
       return;
     }
 
     if (isVersionedCameraProxySnapshot(src)) {
-      setDisplayedSrc(src);
+      if (src !== displayedSrc) {
+        setDisplayedSrc(src);
+        setIsDisplayedLoaded(false);
+      }
       setPendingSrc(null);
       return;
     }
@@ -52,6 +60,7 @@ export function CameraSnapshotImage({
 
   return (
     <>
+      {!isDisplayedLoaded ? fallback : null}
       {displayedSrc ? (
         <picture>
           {sources?.map((source) => (
@@ -64,10 +73,14 @@ export function CameraSnapshotImage({
           <img
             src={displayedSrc}
             alt={alt}
-            className={`${className} [backface-visibility:hidden] [transform:translateZ(0)]`}
+            className={`${className} ${isDisplayedLoaded ? 'opacity-100' : 'opacity-0'} [backface-visibility:hidden] [transform:translateZ(0)]`}
             style={{ imageRendering: 'auto' }}
             draggable={false}
-            onError={onError}
+            onLoad={() => setIsDisplayedLoaded(true)}
+            onError={() => {
+              setIsDisplayedLoaded(false);
+              onError();
+            }}
           />
         </picture>
       ) : null}
@@ -89,6 +102,7 @@ export function CameraSnapshotImage({
             draggable={false}
             onLoad={() => {
               setDisplayedSrc(pendingSrc);
+              setIsDisplayedLoaded(true);
               setPendingSrc(null);
             }}
             onError={onError}

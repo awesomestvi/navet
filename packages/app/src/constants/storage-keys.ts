@@ -23,6 +23,7 @@ export const STORAGE_KEYS = {
   energyHiddenConsumerIds: 'navet-energy-hidden-consumer-ids',
   energyOverviewLayout: 'navet-energy-overview-layout-v1',
   energyKpiPreferences: 'navet-energy-kpi-preferences-v1',
+  securityOverviewPreferences: 'navet-security-overview-preferences-v1',
   rssFeedProviders: 'navet-rss-feed-providers',
   rssCardProviders: 'navet-rss-card-providers',
   rssCardArticleCount: 'navet-rss-card-article-count',

@@ -19,6 +19,8 @@ describe('CameraSnapshotImage', () => {
       'src',
       'https://cdn.example.test/camera/front-door.jpg?version=0'
     );
+    fireEvent.load(screen.getByRole('img', { name: 'Front Door' }));
+    expect(screen.getByRole('img', { name: 'Front Door' })).toHaveClass('opacity-100');
 
     rerender(
       <CameraSnapshotImage
@@ -33,6 +35,7 @@ describe('CameraSnapshotImage', () => {
       'src',
       'https://cdn.example.test/camera/front-door.jpg?version=0'
     );
+    expect(screen.getByRole('img', { name: 'Front Door' })).toHaveClass('opacity-100');
 
     const pendingImage = container.querySelector('img[aria-hidden="true"]');
     expect(pendingImage).not.toBeNull();

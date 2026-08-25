@@ -1,4 +1,7 @@
 import type {
+  PlatformEntityHistoriesRequest,
+  PlatformEntityHistoryPoint,
+  PlatformEntityHistorySeries,
   PlatformStatisticsHistoryPoint,
   PlatformStatisticsHistorySeries,
 } from '@navet/core/provider-feature-models';
@@ -33,6 +36,94 @@ function validatePeriod(startTime: string, endTime: string) {
   if (!Number.isFinite(start) || !Number.isFinite(end) || start >= end) {
     throw new Error('Entity history requires a valid start time before the end time');
   }
+}
+
+function throwIfHistoryRequestAborted(signal?: AbortSignal) {
+  if (!signal?.aborted) {
+    return;
+  }
+
+  throw signal.reason ?? new DOMException('History request aborted', 'AbortError');
+}
+
+function parseEntityHistoryPoints(
+  entries: HomeAssistantHistoryState[],
+  includeAttributes: boolean
+): PlatformEntityHistoryPoint[] {
+  return entries
+    .map((entry) => {
+      const changedAt = parseTimestamp(entry.last_changed ?? entry.last_updated);
+      if (typeof entry.state !== 'string' || !changedAt) {
+        return null;
+      }
+
+      const updatedAt = parseTimestamp(entry.last_updated);
+      const attributes =
+        includeAttributes &&
+        entry.attributes &&
+        typeof entry.attributes === 'object' &&
+        !Array.isArray(entry.attributes)
+          ? (entry.attributes as Record<string, unknown>)
+          : undefined;
+
+      return {
+        state: entry.state,
+        changedAt,
+        ...(updatedAt ? { updatedAt } : {}),
+        ...(attributes ? { attributes } : {}),
+      };
+    })
+    .filter((point): point is PlatformEntityHistoryPoint => point !== null);
+}
+
+async function loadEntityHistories(
+  request: PlatformEntityHistoriesRequest
+): Promise<PlatformEntityHistorySeries[]> {
+  if (request.entityIds.length === 0) {
+    return [];
+  }
+
+  throwIfHistoryRequestAborted(request.signal);
+  const endTime = request.endTime ?? new Date().toISOString();
+  validatePeriod(request.startTime, endTime);
+
+  const query = new URLSearchParams({
+    filter_entity_id: request.entityIds.join(','),
+    end_time: endTime,
+  });
+  if (!request.includeAttributes) {
+    query.set('minimal_response', '');
+    query.set('no_attributes', '');
+  }
+  if (request.significantChangesOnly) {
+    query.set('significant_changes_only', '');
+  }
+
+  const response = await callHomeAssistantApi<HomeAssistantHistoryResponse>(
+    'GET',
+    `history/period/${encodeURIComponent(request.startTime)}?${query.toString()}`
+  );
+  throwIfHistoryRequestAborted(request.signal);
+
+  const entriesByEntityId = new Map<string, HomeAssistantHistoryState[]>();
+  const requestedEntityIds = new Set(request.entityIds);
+  for (const entries of Array.isArray(response) ? response : []) {
+    if (!Array.isArray(entries)) {
+      continue;
+    }
+    const entityId = entries.find((entry) => typeof entry.entity_id === 'string')?.entity_id;
+    if (typeof entityId === 'string' && requestedEntityIds.has(entityId)) {
+      entriesByEntityId.set(entityId, entries);
+    }
+  }
+
+  return request.entityIds.map((entityId) => ({
+    entityId,
+    points: parseEntityHistoryPoints(
+      entriesByEntityId.get(entityId) ?? [],
+      request.includeAttributes === true
+    ),
+  }));
 }
 
 function parseStatisticsTimestamp(value: unknown): number | null {
@@ -73,51 +164,13 @@ function parseStatisticsPoint(value: unknown): PlatformStatisticsHistoryPoint | 
 
 export const homeAssistantHistoryFeatureService: ProviderHistoryFeatureService = {
   getMessageClient: () => getHomeAssistantConnection(),
+  getEntityHistories: loadEntityHistories,
   async getEntityHistory(request) {
-    const endTime = request.endTime ?? new Date().toISOString();
-    validatePeriod(request.startTime, endTime);
-
-    const query = new URLSearchParams({
-      filter_entity_id: request.entityId,
-      end_time: endTime,
+    const [series] = await loadEntityHistories({
+      ...request,
+      entityIds: [request.entityId],
     });
-    if (!request.includeAttributes) {
-      query.set('minimal_response', '');
-      query.set('no_attributes', '');
-    }
-    if (request.significantChangesOnly) {
-      query.set('significant_changes_only', '');
-    }
-
-    const response = await callHomeAssistantApi<HomeAssistantHistoryResponse>(
-      'GET',
-      `history/period/${encodeURIComponent(request.startTime)}?${query.toString()}`
-    );
-    const points = (Array.isArray(response?.[0]) ? response[0] : [])
-      .map((entry) => {
-        const changedAt = parseTimestamp(entry.last_changed ?? entry.last_updated);
-        if (typeof entry.state !== 'string' || !changedAt) {
-          return null;
-        }
-
-        const updatedAt = parseTimestamp(entry.last_updated);
-        const attributes =
-          entry.attributes &&
-          typeof entry.attributes === 'object' &&
-          !Array.isArray(entry.attributes)
-            ? (entry.attributes as Record<string, unknown>)
-            : undefined;
-
-        return {
-          state: entry.state,
-          changedAt,
-          ...(updatedAt ? { updatedAt } : {}),
-          ...(attributes ? { attributes } : {}),
-        };
-      })
-      .filter((point): point is NonNullable<typeof point> => point !== null);
-
-    return { entityId: request.entityId, points };
+    return series ?? { entityId: request.entityId, points: [] };
   },
   async getStatisticsHistory(request) {
     const endTime = request.endTime ?? new Date().toISOString();

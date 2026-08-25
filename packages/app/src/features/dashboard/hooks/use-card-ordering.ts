@@ -48,9 +48,11 @@ export const useCardOrdering = (
   const deviceIdRoomPairs = useMemo(() => {
     const pairs: { id: string; room: string }[] = [];
     Object.values(devices).forEach((deviceArray) => {
-      (deviceArray as Device[]).forEach((device: Device) => {
-        pairs.push({ id: device.id, room: getDeviceRoomLabel(device) });
-      });
+      [...(deviceArray as Device[])]
+        .sort((left, right) => left.id.localeCompare(right.id))
+        .forEach((device: Device) => {
+          pairs.push({ id: device.id, room: getDeviceRoomLabel(device) });
+        });
     });
     return pairs;
   }, [devices]);
@@ -94,10 +96,6 @@ export const useCardOrdering = (
   const [cardOrders, setCardOrders] = useState<Record<string, string[]>>(() => {
     const stored = storage.get<Record<string, string[]> | null>(STORAGE_KEYS.cardOrders, null);
     if (stored) {
-      const allDeviceIds = new Set(stableDeviceIdRoomPairs.map((pair) => pair.id));
-      safeCustomCards.forEach((card) => {
-        allDeviceIds.add(card.id);
-      });
       const normalizedStored = Object.fromEntries(
         Object.entries(stored).map(([room, orderArray]) => [
           room,
@@ -107,9 +105,7 @@ export const useCardOrdering = (
       const isValid = Object.values(stored).every(
         (orderArray) =>
           Array.isArray(orderArray) &&
-          normalizeOrderIds(orderArray).every(
-            (id) => typeof id === 'string' && allDeviceIds.has(id)
-          )
+          normalizeOrderIds(orderArray).every((id) => typeof id === 'string')
       );
       if (isValid) {
         return normalizedStored;
@@ -139,7 +135,10 @@ export const useCardOrdering = (
 
         const roomOrder = next[room] ?? [];
         const validRoomIds = new Set(roomOrder);
-        const preserved = order.filter((id) => allDeviceIds.has(id) && validRoomIds.has(id));
+        // A provider can hydrate its entities after this hook initializes. Keep unknown IDs in
+        // their saved positions so a partial startup snapshot cannot scramble and overwrite the
+        // room order. Once an ID is known, a room move is still reconciled normally.
+        const preserved = order.filter((id) => !allDeviceIds.has(id) || validRoomIds.has(id));
         const additions = roomOrder.filter((id) => !preserved.includes(id));
         mergedOrders[room] = [...preserved, ...additions];
       });

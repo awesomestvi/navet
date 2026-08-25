@@ -1,12 +1,15 @@
 import cameraSampleImageAvif from '@assets/reference/media/camera-sample.avif';
 import cameraSampleImageWebp from '@assets/reference/media/camera-sample.webp';
 import { CameraCard } from '@navet/app/features/security';
+import { createPreviewStoryScenario } from '@navet/app/preview/runtime';
 import { type CameraViewMode, useSettingsStore } from '@navet/app/stores/settings-store';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { EntityCardStoryFrame, noopCardSizeChange } from '@navet/app/storybook/story-frames';
+import type { NavetEntity } from '@navet/core/types';
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentProps } from 'react';
 import { useEffect } from 'react';
+import { expect } from 'storybook/test';
 
 type CameraCardStoryArgs = Omit<ComponentProps<typeof CameraCard>, 'onSizeChange'> & {
   cameraViewMode?: CameraViewMode;
@@ -16,6 +19,63 @@ const sampleCameraSources = [
   { srcSet: cameraSampleImageAvif, type: 'image/avif' },
   { srcSet: cameraSampleImageWebp, type: 'image/webp' },
 ] as const;
+
+function createMotionDetectedCameraScenario() {
+  const scenario = createPreviewStoryScenario();
+  const externalId = 'binary_sensor.front_door_motion';
+  const changedAt = new Date().toISOString();
+  const motionEntity: NavetEntity = {
+    id: `home_assistant:${externalId}`,
+    canonicalId: `home_assistant:${externalId}`,
+    providerId: 'home_assistant',
+    externalId,
+    type: 'sensor',
+    name: 'Front Door Motion',
+    room: 'Outside',
+    primaryState: 'on',
+    availability: 'available',
+    attributes: {
+      value: 'on',
+      securityKind: 'motion',
+      securitySeverity: 'warning',
+      deviceId: 'device-outside-camera',
+      room: 'Outside',
+    },
+    capabilities: ['numeric_sensor'],
+    lastUpdated: changedAt,
+  };
+
+  return {
+    ...scenario,
+    id: 'camera-motion-detected',
+    entities: [...scenario.entities, motionEntity],
+    homeAssistant: {
+      ...scenario.homeAssistant,
+      entities: {
+        ...(scenario.homeAssistant.entities ?? {}),
+        [externalId]: {
+          entity_id: externalId,
+          state: 'on',
+          attributes: {
+            friendly_name: motionEntity.name,
+            ...motionEntity.attributes,
+          },
+          last_changed: changedAt,
+          last_updated: changedAt,
+          context: { id: 'story-motion', parent_id: null, user_id: null },
+        },
+      },
+      entityRegistry: [
+        ...scenario.homeAssistant.entityRegistry,
+        {
+          entity_id: externalId,
+          device_id: 'device-outside-camera',
+          area_id: 'outside',
+        },
+      ],
+    },
+  };
+}
 
 function CameraCardStory({ cameraViewMode = 'snapshot', ...args }: CameraCardStoryArgs) {
   useEffect(() => {
@@ -105,6 +165,20 @@ export const AutoSnapshot: Story = {
     entityPictureSources: sampleCameraSources,
     cameraViewMode: 'auto',
     isStreamCapable: true,
+  },
+};
+
+export const MotionDetected: Story = {
+  args: {
+    cameraViewMode: 'snapshot',
+  },
+  parameters: {
+    previewRuntime: {
+      scenario: createMotionDetectedCameraScenario(),
+    },
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.findByText('Motion')).resolves.toBeVisible();
   },
 };
 

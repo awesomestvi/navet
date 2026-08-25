@@ -4,10 +4,14 @@ import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
 import { useDashboardEntitiesStore } from '@navet/app/features/dashboard/stores/dashboard-entities-store';
 import { SecurityCameraDashboard } from '@navet/app/features/security/components/security-camera-dashboard';
 import { useSecurityAlarmEntities } from '@navet/app/features/security/hooks/use-security-alarm-entities';
-import { buildSecurityCameraDashboardModel } from '@navet/app/features/security/utils/security-camera-dashboard-model';
+import {
+  buildSecurityCameraDashboardModel,
+  isSecurityDashboardDevice,
+} from '@navet/app/features/security/utils/security-camera-dashboard-model';
 import {
   getAbsorbedDashboardEntityIds,
   getExpandedHiddenDashboardEntityIds,
+  isDashboardEntityHidden,
   useCardState,
   useDeviceCollectionsByKeys,
   useEditMode,
@@ -40,28 +44,66 @@ function filterSecuritySectionDevices(
 ) {
   return {
     ...devices,
-    cameras: devices.cameras.filter((device) => !filteredEntityIds.has(device.id)),
-    covers: devices.covers.filter((device) => !filteredEntityIds.has(device.id)),
-    locks: devices.locks.filter((device) => !filteredEntityIds.has(device.id)),
-    sensors: devices.sensors.filter((device) => !filteredEntityIds.has(device.id)),
-    persons: devices.persons.filter((device) => !filteredEntityIds.has(device.id)),
-    helpers: devices.helpers.filter((device) => !filteredEntityIds.has(device.id)),
+    cameras: devices.cameras.filter(
+      (device) => !isDashboardEntityHidden(device, filteredEntityIds)
+    ),
+    covers: devices.covers.filter((device) => !isDashboardEntityHidden(device, filteredEntityIds)),
+    locks: devices.locks.filter((device) => !isDashboardEntityHidden(device, filteredEntityIds)),
+    sensors: devices.sensors.filter(
+      (device) => !isDashboardEntityHidden(device, filteredEntityIds)
+    ),
+    persons: devices.persons.filter(
+      (device) => !isDashboardEntityHidden(device, filteredEntityIds)
+    ),
+    helpers: devices.helpers.filter(
+      (device) => !isDashboardEntityHidden(device, filteredEntityIds)
+    ),
   };
+}
+
+function getSecuritySectionAbsorbedEntityIds(
+  devices: ReturnType<typeof useDeviceCollectionsByKeys>
+) {
+  const cameraDeviceIds = new Set(
+    devices.cameras
+      .map((camera) => camera.underlyingDeviceId)
+      .filter((deviceId): deviceId is string => typeof deviceId === 'string')
+  );
+  const cameraDetectionSensorIds = new Set(
+    devices.sensors
+      .filter(
+        (sensor) =>
+          (sensor.securityKind === 'motion' || sensor.securityKind === 'occupancy') &&
+          typeof sensor.underlyingDeviceId === 'string' &&
+          cameraDeviceIds.has(sensor.underlyingDeviceId)
+      )
+      .map((sensor) => sensor.id)
+  );
+
+  return getAbsorbedDashboardEntityIds(devices, []).filter(
+    (entityId) => !cameraDetectionSensorIds.has(entityId)
+  );
 }
 
 interface SecuritySectionProps {
   openAddEntityRequestKey?: number;
   suppressEditActions?: boolean;
+  isOverviewCustomizationOpen?: boolean;
+  onOverviewCustomizationOpenChange?: (open: boolean) => void;
 }
 
 export function SecuritySection({
   openAddEntityRequestKey = 0,
   suppressEditActions = false,
+  isOverviewCustomizationOpen = false,
+  onOverviewCustomizationOpenChange,
 }: SecuritySectionProps) {
   const { t } = useI18n();
   const theme = useThemeMode();
   const surface = getThemeSurfaceTokens(theme);
-  const devices = useDeviceCollectionsByKeys(SECURITY_SECTION_DEVICE_KEYS);
+  const devices = useDeviceCollectionsByKeys(SECURITY_SECTION_DEVICE_KEYS, {
+    deviceFilter: isSecurityDashboardDevice,
+  });
   const alarms = useSecurityAlarmEntities();
   const { isEditMode, toggleEditMode } = useEditMode();
   const [isAddEntityDialogOpen, setIsAddEntityDialogOpen] = useState(false);
@@ -76,7 +118,7 @@ export function SecuritySection({
     () => new Set(getExpandedHiddenDashboardEntityIds(devices, hiddenEntityIds)),
     [devices, hiddenEntityIds]
   );
-  const absorbedEntityIds = useMemo(() => getAbsorbedDashboardEntityIds(devices, []), [devices]);
+  const absorbedEntityIds = useMemo(() => getSecuritySectionAbsorbedEntityIds(devices), [devices]);
   const absorbedEntityIdSet = useMemo(() => new Set(absorbedEntityIds), [absorbedEntityIds]);
   const availableDevices = useMemo(
     () => filterSecuritySectionDevices(devices, absorbedEntityIdSet),
@@ -102,7 +144,7 @@ export function SecuritySection({
   const hiddenSecurityEntityIds = useMemo(
     () =>
       allSecurityDevices
-        .filter((device) => hiddenEntityIdSet.has(device.id))
+        .filter((device) => isDashboardEntityHidden(device, hiddenEntityIdSet))
         .map((device) => device.id),
     [allSecurityDevices, hiddenEntityIdSet]
   );
@@ -172,6 +214,8 @@ export function SecuritySection({
             updateCardSize={updateCardSize}
             onRemoveEntity={handleRemoveEntity}
             surface={surface}
+            isOverviewCustomizationOpen={isOverviewCustomizationOpen}
+            onOverviewCustomizationOpenChange={onOverviewCustomizationOpenChange}
           />
         ) : null}
         {model.summary.totalEntities === 0 &&

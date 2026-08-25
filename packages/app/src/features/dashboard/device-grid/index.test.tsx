@@ -39,6 +39,7 @@ vi.mock('../hooks/use-fit-dashboard-grid', () => ({
     isAutoScaled: false,
     outerContainerStyle: {},
     outerRef: { current: null },
+    renderedGridCols: 8,
   }),
 }));
 

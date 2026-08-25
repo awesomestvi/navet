@@ -10,12 +10,15 @@ import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { iconMap } from './sensors';
 
-function normalizeStoredIcon(value: unknown, fallback: string) {
+function normalizeStoredIcon(value: unknown, fallback: string, defaultIcon: SensorIconType) {
   if (typeof value !== 'string') {
     return fallback;
   }
 
   const normalized = value.trim();
+  if (defaultIcon === 'motion' && normalized === 'PersonStanding') {
+    return fallback;
+  }
   return normalized.length > 0 ? normalized : fallback;
 }
 
@@ -30,14 +33,22 @@ export function useSensorCardAppearance({
     iconMap[defaultIcon]?.displayName ?? iconMap[defaultIcon]?.name ?? 'Gauge';
   const iconStorageKey = `${STORAGE_KEYS.sensorCardIcons}:${id}`;
   const [selectedIcon, setSelectedIconState] = useState(() =>
-    normalizeStoredIcon(storage.get<unknown>(iconStorageKey, defaultIconName), defaultIconName)
+    normalizeStoredIcon(
+      storage.get<unknown>(iconStorageKey, defaultIconName),
+      defaultIconName,
+      defaultIcon
+    )
   );
 
   useEffect(() => {
     setSelectedIconState(
-      normalizeStoredIcon(storage.get<unknown>(iconStorageKey, defaultIconName), defaultIconName)
+      normalizeStoredIcon(
+        storage.get<unknown>(iconStorageKey, defaultIconName),
+        defaultIconName,
+        defaultIcon
+      )
     );
-  }, [defaultIconName, iconStorageKey]);
+  }, [defaultIcon, defaultIconName, iconStorageKey]);
 
   useEffect(() => {
     storage.set(iconStorageKey, selectedIcon);

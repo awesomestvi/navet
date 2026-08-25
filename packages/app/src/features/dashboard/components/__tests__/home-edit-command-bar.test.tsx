@@ -148,4 +148,30 @@ describe('HomeEditCommandBar', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: 'Balanced' }));
     expect(onApplyEnergyLayout).toHaveBeenCalledWith('balanced');
   });
+
+  it('opens Security overview customization from desktop and phone command bars', () => {
+    const onConfigureSecurityOverview = vi.fn();
+    const { unmount } = renderWithProviders(
+      <HomeEditCommandBar
+        onConfigureSecurityOverview={onConfigureSecurityOverview}
+        onToggleEditMode={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Overview' }));
+    expect(onConfigureSecurityOverview).toHaveBeenCalledTimes(1);
+
+    unmount();
+    setMediaQueryMatch('(max-width: 767px)', true);
+    renderWithProviders(
+      <HomeEditCommandBar
+        onConfigureSecurityOverview={onConfigureSecurityOverview}
+        onToggleEditMode={vi.fn()}
+      />
+    );
+
+    openMenu('More actions');
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Overview' }));
+    expect(onConfigureSecurityOverview).toHaveBeenCalledTimes(2);
+  });
 });

@@ -5,13 +5,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@navet/app/hooks/use-provider-device', () => ({
   useProviderEntityModel: vi.fn(),
+  useProviderEntityModels: vi.fn(),
 }));
 
 vi.mock('@navet/app/hooks/use-provider-health', () => ({
   useProviderHealth: vi.fn(),
 }));
 
-import { useProviderEntityModel } from '@navet/app/hooks/use-provider-device';
+import {
+  useProviderEntityModel,
+  useProviderEntityModels,
+} from '@navet/app/hooks/use-provider-device';
 import { useProviderHealth } from '@navet/app/hooks/use-provider-health';
 import { useProviderCameraLiveData } from '../use-provider-camera-live-data';
 
@@ -40,6 +44,17 @@ describe('useProviderCameraLiveData', () => {
           last_updated: '2026-05-29T07:02:00.000Z',
           context: { id: 'ctx-motion', parent_id: null, user_id: null },
         },
+        'binary_sensor.outside_axis_human': {
+          entity_id: 'binary_sensor.outside_axis_human',
+          state: 'on',
+          attributes: {
+            friendly_name: 'AXIS M2048-LE Object Analytics Human',
+            device_class: 'motion',
+          },
+          last_changed: '2026-05-29T07:03:00.000Z',
+          last_updated: '2026-05-29T07:03:00.000Z',
+          context: { id: 'ctx-human', parent_id: null, user_id: null },
+        },
       },
     });
     vi.mocked(useProviderEntityModel).mockReturnValue({
@@ -57,6 +72,32 @@ describe('useProviderCameraLiveData', () => {
         isStreamCapable: true,
         isStillImageOnly: false,
         motionDetectionEnabled: true,
+      },
+    });
+    vi.mocked(useProviderEntityModels).mockReturnValue({
+      'home_assistant:binary_sensor.front_door_motion': {
+        id: 'home_assistant:binary_sensor.front_door_motion',
+        canonicalId: 'home_assistant:binary_sensor.front_door_motion',
+        providerId: 'home_assistant',
+        externalId: 'binary_sensor.front_door_motion',
+        type: 'sensor',
+        name: 'Front Door Motion',
+        primaryState: 'on',
+        availability: 'available',
+        attributes: { securityKind: 'motion' },
+        capabilities: ['numeric_sensor'],
+      },
+      'home_assistant:binary_sensor.outside_axis_human': {
+        id: 'home_assistant:binary_sensor.outside_axis_human',
+        canonicalId: 'home_assistant:binary_sensor.outside_axis_human',
+        providerId: 'home_assistant',
+        externalId: 'binary_sensor.outside_axis_human',
+        type: 'sensor',
+        name: 'AXIS M2048-LE Object Analytics Human',
+        primaryState: 'on',
+        availability: 'available',
+        attributes: { securityKind: 'motion' },
+        capabilities: ['numeric_sensor'],
       },
     });
     mockUseProviderHealth.mockReturnValue({
@@ -102,9 +143,26 @@ describe('useProviderCameraLiveData', () => {
       {
         entityId: 'binary_sensor.front_door_motion',
         type: 'motion',
+        detectionTarget: 'motion',
         detected: true,
         changedAt: '2026-05-29T07:02:00.000Z',
       },
+    ]);
+  });
+
+  it('classifies camera human analytics as person detection', () => {
+    const { result } = renderHookWithProviders(() =>
+      useProviderCameraLiveData('home_assistant:camera.front_door', [
+        'home_assistant:binary_sensor.outside_axis_human',
+      ])
+    );
+
+    expect(result.current.companionStates).toEqual([
+      expect.objectContaining({
+        entityId: 'binary_sensor.outside_axis_human',
+        detectionTarget: 'person',
+        detected: true,
+      }),
     ]);
   });
 
@@ -130,6 +188,7 @@ describe('useProviderCameraLiveData', () => {
       implementationStatus: 'implemented',
       lastError: null,
     });
+    vi.mocked(useProviderEntityModels).mockReturnValue({});
 
     const { result } = renderHookWithProviders(() =>
       useProviderCameraLiveData('homey:camera.front_door', ['homey:camera.front_door'])

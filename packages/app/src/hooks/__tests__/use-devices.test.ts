@@ -449,6 +449,52 @@ describe('useDevices', () => {
     expect(result.current.lights).toBe(previousLights);
   });
 
+  it('keeps filtered device groups stable when an excluded entity updates', async () => {
+    await resetAppStores();
+    const motion = {
+      id: 'home_assistant:binary_sensor.motion',
+      name: 'Hall motion',
+      room: 'Hall',
+      size: 'small' as const,
+      state: true,
+      value: 'Detected',
+      unit: '',
+      securityKind: 'motion' as const,
+    };
+    const temperature = {
+      id: 'home_assistant:sensor.temperature',
+      name: 'Temperature',
+      room: 'Hall',
+      size: 'small' as const,
+      state: '21',
+      value: '21 °C',
+      unit: '',
+    };
+    const setSensors = (nextTemperature: typeof temperature) =>
+      integrationStore.setState({
+        providerDeviceCollectionsByProviderId: {
+          home_assistant: {
+            ...createEmptyDeviceCollection(),
+            sensors: [motion, nextTemperature],
+          },
+        },
+        selectedProviderIds: ['home_assistant'],
+      });
+    setSensors(temperature);
+
+    const { result } = renderHookWithProviders(() =>
+      useDeviceCollectionsByKeys(['sensors'], {
+        deviceFilter: (device) => device.securityKind === 'motion',
+      })
+    );
+    const previousSensors = result.current.sensors;
+
+    act(() => setSensors({ ...temperature, state: '22', value: '22 °C' }));
+
+    expect(result.current.sensors).toBe(previousSensors);
+    expect(result.current.sensors).toEqual([motion]);
+  });
+
   it('returns an empty device collection when disabled', async () => {
     await resetAppStores();
 

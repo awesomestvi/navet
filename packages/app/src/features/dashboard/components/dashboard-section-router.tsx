@@ -128,6 +128,8 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   const [isAddClimateEntityDialogOpen, setIsAddClimateEntityDialogOpen] = useState(false);
   const [isRoomManagementOpen, setIsRoomManagementOpen] = useState(false);
   const [isEnergyKpiCustomizationOpen, setIsEnergyKpiCustomizationOpen] = useState(false);
+  const [isSecurityOverviewCustomizationOpen, setIsSecurityOverviewCustomizationOpen] =
+    useState(false);
   const [, setEnergyOverviewLayout] = useEnergyOverviewLayout();
   const [securityAddEntityRequestKey, setSecurityAddEntityRequestKey] = useState(0);
   const {
@@ -159,6 +161,11 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   useEffect(() => {
     if (activeSection !== 'energy' || !isEditMode) {
       setIsEnergyKpiCustomizationOpen(false);
+    }
+  }, [activeSection, isEditMode]);
+  useEffect(() => {
+    if (activeSection !== 'security' || !isEditMode) {
+      setIsSecurityOverviewCustomizationOpen(false);
     }
   }, [activeSection, isEditMode]);
   useChoreWorkspaceSync(choresEnabled && activeSection === 'home' && !isAllRooms(activeRoom));
@@ -388,6 +395,8 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
         <SecuritySection
           openAddEntityRequestKey={securityAddEntityRequestKey}
           suppressEditActions={isEditMode}
+          isOverviewCustomizationOpen={isSecurityOverviewCustomizationOpen}
+          onOverviewCustomizationOpenChange={setIsSecurityOverviewCustomizationOpen}
         />
       </Suspense>
     );
@@ -727,6 +736,11 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
             }
             onConfigureKpis={
               activeSection === 'energy' ? () => setIsEnergyKpiCustomizationOpen(true) : undefined
+            }
+            onConfigureSecurityOverview={
+              activeSection === 'security'
+                ? () => setIsSecurityOverviewCustomizationOpen(true)
+                : undefined
             }
             onManageRooms={roomManagement ? () => setIsRoomManagementOpen(true) : undefined}
             onRedo={isHomeOverviewEditMode ? controller.redoHomeLayout : undefined}

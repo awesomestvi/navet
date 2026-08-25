@@ -395,6 +395,29 @@
 }
 
 @layer utilities {
+  .navet-card-header-control,
+  .navet-card-action-control {
+    height: 2rem;
+    width: 2rem;
+  }
+
+  @media (any-pointer: coarse) {
+    .navet-card-header-control,
+    .navet-card-action-control {
+      height: 2.25rem;
+      width: 2.25rem;
+    }
+
+    .navet-entity-card-header {
+      align-items: center;
+    }
+  }
+
+  .navet-card-header-control-dense {
+    height: 1.75rem;
+    width: 1.75rem;
+  }
+
   .sbdocs-content {
     /* biome-ignore lint/complexity/noImportantStyles: overrides Storybook's own .sbdocs-content max-width */
     max-width: 1200px !important;

@@ -113,41 +113,24 @@ export const LightCardSmall = memo(function LightCardSmall({
         iconAriaLabel={iconButtonProps['aria-label']}
         onIconClick={iconButtonProps.onClick}
         onIconPointerDown={iconButtonProps.onPointerDown}
+        trailing={
+          isExtraSmall && showSettingsButton ? (
+            <CardSettingsActionButton
+              {...settingsButtonProps}
+              theme={effectiveTheme}
+              size="extra-small"
+              tone={isOn ? 'default' : 'muted'}
+              variant="soft"
+              accentColor={activeColor ?? undefined}
+            />
+          ) : undefined
+        }
       />
 
       <div
         className={`flex-1 flex flex-col ${isExtraSmall ? 'justify-end gap-2' : 'justify-end gap-4'}`}
       >
-        {isExtraSmall ? (
-          (supportsBrightness || showSettingsButton) && (
-            <div className="flex min-h-5 items-center gap-1.5">
-              {supportsBrightness && (
-                <div className="min-w-0 flex-1">
-                  <BrightnessSlider
-                    value={brightness}
-                    onChange={onBrightnessChange}
-                    onCommit={onBrightnessCommit}
-                    isOn={isOn}
-                    size="extra-small"
-                    showLabel={false}
-                    activeColor={activeColor}
-                  />
-                </div>
-              )}
-
-              {showSettingsButton && (
-                <CardSettingsActionButton
-                  {...settingsButtonProps}
-                  theme={effectiveTheme}
-                  size="extra-small"
-                  tone={isOn ? 'default' : 'muted'}
-                  variant="soft"
-                  accentColor={activeColor ?? undefined}
-                />
-              )}
-            </div>
-          )
-        ) : isKelvinMode && supportsColorTemperature ? (
+        {!isExtraSmall && isKelvinMode && supportsColorTemperature ? (
           <KelvinSlider
             value={colorTemp}
             currentTempColor={currentTempColor}
@@ -160,7 +143,7 @@ export const LightCardSmall = memo(function LightCardSmall({
             showLabel
             activeColor={activeColor}
           />
-        ) : supportsBrightness ? (
+        ) : !isExtraSmall && supportsBrightness ? (
           <BrightnessSlider
             value={brightness}
             onChange={onBrightnessChange}
