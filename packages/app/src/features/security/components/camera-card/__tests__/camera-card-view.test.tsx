@@ -100,11 +100,17 @@ describe('CameraCardView', () => {
 
   it('shows motion text only when motion is detected', () => {
     renderWithProviders(
-      <CameraCardView {...defaultProps} motionDetected motionChangedAt={baseNow - 30_000} />
+      <CameraCardView
+        {...defaultProps}
+        motionDetected
+        statusChangedAt={baseNow - 30_000}
+        motionChangedAt={baseNow - 30_000}
+      />
     );
 
     expect(screen.getByText('Motion')).toBeInTheDocument();
     expect(screen.getByTestId('camera-motion-icon')).toBeInTheDocument();
+    expect(screen.getAllByText('30s')).toHaveLength(1);
   });
 
   it('uses a person icon when the detected motion target is human', () => {

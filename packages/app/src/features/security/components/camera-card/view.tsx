@@ -313,7 +313,9 @@ export function CameraCardView({
             />
             {statusLabel ? <span>{statusLabel}</span> : null}
           </div>
-          {statusElapsed ? <span className={statusMutedTextClassName}>{statusElapsed}</span> : null}
+          {!motionDetected && statusElapsed ? (
+            <span className={statusMutedTextClassName}>{statusElapsed}</span>
+          ) : null}
           {motionLabel ? (
             <>
               <span className={statusSubtleTextClassName}>/</span>
