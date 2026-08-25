@@ -46,12 +46,14 @@ describe('LoginPage', () => {
     chooseDiscoveryMock.mockReturnValue(null);
 
     renderWithProviders(
-      <LoginPage initialError="Home Assistant sign-in could not be completed. Please try again." />
+      <LoginPage initialError="Navet could not reach Home Assistant to finish sign-in. Check that Home Assistant is reachable from this Navet server, then try again." />
     );
 
-    expect(
-      screen.getByText('Home Assistant sign-in could not be completed. Please try again.')
-    ).toBeInTheDocument();
+    const errorAlert = screen.getByRole('alert');
+    expect(errorAlert).toHaveTextContent(
+      'Navet could not reach Home Assistant to finish sign-in. Check that Home Assistant is reachable from this Navet server, then try again.'
+    );
+    expect(errorAlert).toHaveClass('mt-3');
   });
 
   it('prefills a discovered Home Assistant URL while keeping the field editable', async () => {

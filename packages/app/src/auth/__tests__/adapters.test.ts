@@ -701,7 +701,7 @@ describe('auth adapters', () => {
     expect(window.location.search).toBe('');
   });
 
-  it('maps a server callback failure back to a retryable login message', async () => {
+  it('maps an unavailable Home Assistant callback back to an actionable login message', async () => {
     window.history.replaceState(
       {},
       '',
@@ -710,7 +710,19 @@ describe('auth adapters', () => {
     const fetchMock = mockStandaloneSessionFetch({ authenticated: false });
 
     await expect(standaloneOAuthAuth.init()).rejects.toThrow(
-      'Home Assistant sign-in could not be completed. Please try again.'
+      'Navet could not reach Home Assistant to finish sign-in. Check that Home Assistant is reachable from this Navet server, then try again.'
+    );
+
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
+    expect(window.location.search).toBe('');
+  });
+
+  it('distinguishes an invalid Home Assistant callback response from reachability failures', async () => {
+    window.history.replaceState({}, '', '/?navet_oauth_error=invalid_response');
+    const fetchMock = mockStandaloneSessionFetch({ authenticated: false });
+
+    await expect(standaloneOAuthAuth.init()).rejects.toThrow(
+      'Home Assistant returned an invalid sign-in response. Please start a fresh sign-in.'
     );
 
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);

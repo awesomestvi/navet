@@ -165,6 +165,13 @@ If you leave the setting out, Navet tries common local Home Assistant addresses.
 installation requires the one-time pairing link shown in the container log before it can approve
 the first server. Existing installations with saved `navet-data` do not need to do this again.
 
+If the remembered upstream becomes permanently unreachable, recover the installation key with
+`docker exec navet cat /data/navet-installation-key`, reopen Navet once with
+`#navet_pairing=<key>`, and complete a fresh Home Assistant sign-in in that same tab using the new
+route. This changes the trusted route only after Home Assistant accepts the sign-in. Keep the key
+private. When `NAVET_HASS_URL` is configured, update the pinned value and recreate the container
+instead.
+
 ### Update the Docker installation
 
 Run these commands from the same folder:
@@ -237,8 +244,8 @@ create a second `frontend:` section.
 3. Keep the VPN connected if it is how you reach Navet itself. A VPN route to Home Assistant is
    needed in the browser only when opening its authorization page or when you configured a custom
    camera direct-stream URL.
-4. If the screen changes to a recovery message, use **Retry** before disconnecting the saved
-   session.
+4. If the screen changes to a recovery message, use **Retry connection** for a temporary outage.
+   Choose **Back to login** when you need to clear the current browser session and sign in again.
 
 ### Login returns to the wrong page
 

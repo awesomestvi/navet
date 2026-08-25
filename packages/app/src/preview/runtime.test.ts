@@ -69,4 +69,33 @@ describe('preview runtime', () => {
       ])
     );
   });
+
+  it('provides staggered security history for realistic activity previews', async () => {
+    installPreviewRuntime(getPreviewRuntimeScenario('demo'));
+
+    const historyService = getProviderRuntimeRegistration('home_assistant').historyFeatureService;
+    const histories = await historyService?.getEntityHistories?.({
+      entityIds: ['binary_sensor.driveway_motion', 'lock.front_door', 'sensor.temperature'],
+      startTime: '2026-08-25T10:00:00.000Z',
+      endTime: '2026-08-25T12:00:00.000Z',
+    });
+
+    expect(histories).toEqual([
+      {
+        entityId: 'binary_sensor.driveway_motion',
+        points: [
+          { state: 'off', changedAt: '2026-08-25T11:50:00.000Z' },
+          { state: 'on', changedAt: '2026-08-25T11:52:00.000Z' },
+        ],
+      },
+      {
+        entityId: 'lock.front_door',
+        points: [
+          { state: 'unlocked', changedAt: '2026-08-25T10:38:00.000Z' },
+          { state: 'locked', changedAt: '2026-08-25T10:48:00.000Z' },
+        ],
+      },
+      { entityId: 'sensor.temperature', points: [] },
+    ]);
+  });
 });

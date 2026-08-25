@@ -7,13 +7,29 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/everyday-con
 Security brings together provider-backed alarms, locks, covers, openings, and cameras. Risky
 actions require deliberate confirmation.
 
-![The current Security dashboard with priority summary, needs-attention surface, alarm controls, and filtered security cards.](/docs/how-to/everyday-control/security-dashboard.webp)
+![The current Security dashboard with camera feeds, needs-attention actions, alarm controls, recent activity, and grouped security cards.](/docs/how-to/everyday-control/security-dashboard.webp)
 
 ## Review the overview
 
-The summary strip orders critical, attention, unavailable, live, and secure counts by priority.
-The first section names what needs attention and keeps the current alarm and live-camera state
-close by. Use **All Security** to filter doors and windows, locks, motion and occupancy, or cameras.
+The summary strip orders attention, unavailable, live, and normal counts by priority. The command
+center keeps the selected camera feeds prominent while **Needs attention**, alarm controls, and
+**Recent activity** stay together beside them on larger screens and stack into the same reading
+order on phones.
+
+- Select an attention row to jump to that entity's card.
+- Select a camera activity row to open the matching camera.
+- Choose **Load older activity** when provider history is available and you need earlier events.
+- Use the group buttons below the overview to inspect doors and windows, locks, motion and
+  occupancy, cameras, and other available security groups.
+
+## Customize the overview
+
+1. Choose **Customize** while Security is open.
+2. Choose **Overview**.
+3. Keep **Automatic** to prioritize up to two available cameras, or choose **Manual**.
+4. In Manual mode, select and order the cameras, locks, sensors, people, or other security
+   entities you want at the top.
+5. Save the overview and choose **Done** to leave edit mode.
 
 ## Control a lock or cover
 
@@ -33,8 +49,8 @@ The emergency trigger requires a separate confirmation.
 
 ## View cameras
 
-Use the live camera area for current streams. Kiosk mode can hide configuration controls while
-leaving the live surface visible.
+Select an overview camera to open its live viewer. Kiosk mode can hide configuration controls
+while leaving the camera surface visible.
 
 When a camera exposes linked lights, desktop uses a compact popover and phones use a bottom sheet
 for power and brightness so the controls remain touch-friendly.

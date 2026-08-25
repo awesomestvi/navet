@@ -447,7 +447,10 @@ export function LoginPage({ initialError = '' }: { initialError?: string }) {
                   })}
                 </ul>
                 {error ? (
-                  <div className="flex items-start gap-3 rounded-2xl border border-red-400/22 bg-red-500/12 p-4">
+                  <div
+                    role="alert"
+                    className="mt-3 flex items-start gap-3 rounded-2xl border border-red-400/22 bg-red-500/12 p-4"
+                  >
                     <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-300" />
                     <p className="text-sm leading-6 text-red-100">{error}</p>
                   </div>

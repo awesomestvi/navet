@@ -6,7 +6,8 @@ import { AUTH_SESSION_REFRESHED_EVENT } from '../session-events';
 
 const INVALID_HOME_ASSISTANT_AUTH_ERROR = 2;
 
-const { integrationSessionRuntimeMock } = vi.hoisted(() => ({
+const { integrationSessionRuntimeMock, invalidateStandaloneOAuthSessionMock } = vi.hoisted(() => ({
+  invalidateStandaloneOAuthSessionMock: vi.fn(),
   integrationSessionRuntimeMock: {
     getAuthRuntime: vi.fn(),
     getSnapshot: vi.fn(),
@@ -27,6 +28,7 @@ vi.mock('../integration-session-runtime', () => ({
 }));
 
 vi.mock('../adapters/standaloneOAuthAuth', () => ({
+  invalidateStandaloneOAuthSession: invalidateStandaloneOAuthSessionMock,
   isInvalidStandaloneOAuthAuthError: (error: unknown) => error === 2,
 }));
 
@@ -186,6 +188,8 @@ describe('AuthProvider OAuth refresh durability', () => {
     integrationSessionRuntimeMock.invalidatePersistedSession.mockResolvedValue(undefined);
     integrationSessionRuntimeMock.replaceSession.mockReset();
     integrationSessionRuntimeMock.setActiveProvider.mockReset();
+    invalidateStandaloneOAuthSessionMock.mockReset();
+    invalidateStandaloneOAuthSessionMock.mockResolvedValue(undefined);
   });
 
   afterEach(() => {

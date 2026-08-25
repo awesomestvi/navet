@@ -375,8 +375,9 @@ function getOAuthCallbackErrorMessage(): string | null {
     case 'callback_incomplete':
       return 'Home Assistant returned an incomplete sign-in response. Please try again.';
     case 'invalid_response':
+      return 'Home Assistant returned an invalid sign-in response. Please start a fresh sign-in.';
     case 'temporarily_unavailable':
-      return 'Home Assistant sign-in could not be completed. Please try again.';
+      return 'Navet could not reach Home Assistant to finish sign-in. Check that Home Assistant is reachable from this Navet server, then try again.';
     default:
       return code ? 'Home Assistant sign-in failed. Please try again.' : null;
   }

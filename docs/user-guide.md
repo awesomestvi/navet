@@ -30,8 +30,8 @@ provider. The first screen is designed for glanceable state and common household
 - **Climate** summarizes current conditions, then groups controllable thermostats, HVAC devices,
   fans, humidifiers, dehumidifiers, and water heaters by room. Environmental sensor details such
   as air quality and pressure follow in their own sections.
-- **Security** places critical, attention, unavailable, live, and secure state in a priority-ordered
-  summary before the current alarm, lock, opening, and camera surfaces.
+- **Security** combines a camera-first command center with actionable alerts, alarm controls,
+  provider-backed activity history, a customizable overview, and grouped security entity cards.
 - **Household** puts native chores into an attention-first Today list, keeps completed cards visible,
   exposes optional missions and rewards from House pulse, manages recurring work and people in
   dedicated views, and preserves provider automations and scripts under Routines.

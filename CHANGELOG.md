@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.14.0 - 2026-08-25
+
+## New features
+
+- Redesigned the Energy dashboard with live demand, historical trends, period comparisons, and breakdowns by source, room, and device.
+- Redesigned the Security dashboard with a status command center, activity history, customizable overview, and responsive camera browsing.
+
+## Improvements and bug fixes
+
+- Improved camera alerts with clearer motion and person detection, status timing, and activity details.
+- Improved dashboard layouts and controls across phones, tablets, and large displays, with more flexible card sizes.
+- Improved Home Assistant sign-in recovery with specific connection errors and a **Back to login** action.
+
 ## 0.13.2 - 2026-08-19
 
 ## New features

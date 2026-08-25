@@ -101,7 +101,8 @@ panel's Home Assistant login for another phone or panel. Signing out removes onl
 session; shared dashboard settings remain a separate concern from provider credentials. After the
 Home Assistant authorization page closes, dashboard requests, token renewal, and provider-managed
 HTTP camera resources use Navet's same-origin proxy instead of requiring every browser to reach
-the container's Home Assistant address.
+the container's Home Assistant address. If startup cannot restore that browser session, the
+recovery screen can retry the connection or return to login for a fresh sign-in.
 
 The Home Assistant add-on is Ingress-only so its trusted Home Assistant user headers are never
 accepted from a directly exposed add-on port. Use standalone Docker for direct browser access and

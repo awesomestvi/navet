@@ -7,7 +7,7 @@ import { useTheme } from '@navet/app/hooks/use-theme';
 import type { TranslationKey } from '@navet/app/i18n';
 import type { PlatformCameraState } from '@navet/app/platform/provider-feature-models';
 import type { CameraFitMode, CameraViewMode } from '@navet/app/stores/settings-store';
-import { Camera, Eye, Radio, RefreshCw, ScanFace, Settings2 } from 'lucide-react';
+import { Camera, Eye, PersonStanding, Radio, RefreshCw, Settings2 } from 'lucide-react';
 import { type KeyboardEvent, type RefObject, useEffect, useState } from 'react';
 import { CameraSnapshotImage } from './camera-snapshot-image';
 import { CameraStreamHostSlot } from './camera-stream-host-slot';
@@ -144,7 +144,7 @@ export function CameraCardView({
     (cameraViewMode === 'snapshot' || isStreamFallback || !isStreamCapable);
   const hasLiveStream = Boolean(streamHost) && !isUnavailable;
   const motionLabel = motionDetected ? t('camera.motion.detected') : null;
-  const MotionDetectedIcon = motionDetectionTarget === 'person' ? ScanFace : Radio;
+  const MotionDetectedIcon = motionDetectionTarget === 'person' ? PersonStanding : Radio;
   const statusElapsed = formatElapsedCompact(now, statusChangedAt);
   const motionElapsed = formatElapsedCompact(now, motionChangedAt);
   let streamLabel = isStreamCapable

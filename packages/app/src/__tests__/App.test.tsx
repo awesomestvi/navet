@@ -408,6 +408,40 @@ describe('App Home Assistant connection recovery', () => {
     expect(screen.queryByText('login')).not.toBeInTheDocument();
     expect(screen.getByText('Starting your dashboard...')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Back to login' })).toBeInTheDocument();
+  });
+
+  it('returns to login when a saved Home Assistant session cannot be restored', async () => {
+    vi.useRealTimers();
+    let sessionCleared = false;
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.includes('/__navet_auth__/session/credentials')) {
+        return new Response(null, { status: 500 });
+      }
+      if (url.includes('/__navet_auth__/session')) {
+        if (init?.method === 'DELETE') {
+          sessionCleared = true;
+          return new Response(null, { status: 204 });
+        }
+        return sessionCleared ? new Response(null, { status: 204 }) : authMetadataResponse(true);
+      }
+      return new Response(null, { status: 204 });
+    });
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    expect(
+      await screen.findByText('Unable to restore the Home Assistant session')
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /retry connection/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back to login' }));
+
+    await waitFor(() => expect(screen.getByText('login')).toBeInTheDocument());
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(true);
   });
 
   it('completes OAuth callback startup without returning to the URL login form', async () => {

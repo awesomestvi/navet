@@ -13,7 +13,10 @@ import {
   useState,
 } from 'react';
 import { removeLocalStorageItem } from '../utils/storage';
-import { isInvalidStandaloneOAuthAuthError } from './adapters/standaloneOAuthAuth';
+import {
+  invalidateStandaloneOAuthSession,
+  isInvalidStandaloneOAuthAuthError,
+} from './adapters/standaloneOAuthAuth';
 import {
   type IntegrationSessionSnapshot,
   integrationSessionRuntime,
@@ -51,6 +54,7 @@ interface AuthContextValue {
   logout: (providerId?: IntegrationProviderId) => Promise<void>;
   refresh: (providerId?: IntegrationProviderId) => Promise<AuthSession | null>;
   retryInitialization: () => void;
+  returnToLogin: () => Promise<void>;
   replaceSession: (session: AuthSession | null) => void;
   setActiveProvider: (providerId: IntegrationProviderId) => void;
 }
@@ -77,9 +81,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [initializationAttempt, setInitializationAttempt] = useState(0);
+  const [initializationSkipped, setInitializationSkipped] = useState(false);
   const retryInitialization = useCallback(() => {
+    setInitializationSkipped(false);
     setInitializationAttempt((attempt) => attempt + 1);
   }, []);
+  const returnToLogin = useCallback(async () => {
+    setInitializationSkipped(true);
+    const failedProviderId = integrationSessionRuntime.getSnapshot().providerId;
+
+    try {
+      if (runtime === 'standalone-oauth' && failedProviderId === 'home_assistant') {
+        await invalidateStandaloneOAuthSession();
+      } else {
+        await integrationSessionRuntime.logout(failedProviderId);
+      }
+    } catch {
+      // A broken session service must not trap the user on startup. A fresh
+      // sign-in can replace any server-side session that could not be cleared.
+    }
+
+    const nextSnapshot = integrationSessionRuntime.replaceSession(null);
+    setSnapshot(nextSnapshot);
+    setSession(null);
+    setError(null);
+    setReady(true);
+  }, [runtime]);
   const refreshProviderSession = useCallback((providerId: IntegrationProviderId) => {
     const existingRequest = refreshRequests.current[providerId];
     if (existingRequest) {
@@ -155,6 +182,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (initializationSkipped) {
+      return;
+    }
+
     let cancelled = false;
     let initInFlight = false;
     let retryAttempt = 0;
@@ -253,7 +284,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener('online', recoverInitialization);
       document.removeEventListener('visibilitychange', recoverInitialization);
     };
-  }, [initializationAttempt]);
+  }, [initializationAttempt, initializationSkipped]);
 
   const retainedHomeAssistantSession = fromProviderSessionInput(snapshot.sessions.home_assistant);
 
@@ -392,6 +423,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return await refreshProviderSession(targetProviderId);
       },
       retryInitialization,
+      returnToLogin,
       replaceSession: (nextSession) => {
         const nextSnapshot = integrationSessionRuntime.replaceSession(
           toAuthCompatibleSession(nextSession)
@@ -405,7 +437,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(fromProviderSessionInput(integrationSessionRuntime.getSession()));
       },
     }),
-    [runtime, snapshot, session, ready, error, retryInitialization, refreshProviderSession]
+    [
+      runtime,
+      snapshot,
+      session,
+      ready,
+      error,
+      retryInitialization,
+      returnToLogin,
+      refreshProviderSession,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
