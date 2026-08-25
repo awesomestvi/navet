@@ -2,5 +2,5 @@
 
 ## In Progress
 
-- Current Navet Dev scope since `v0.12.5`.
-- Recover stalled WebRTC playback
+- Current Navet Dev scope since `v0.13.2`.
+- Redesign Energy dashboard and refine dashboard UX (#153)
