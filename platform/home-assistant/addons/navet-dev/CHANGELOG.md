@@ -2,5 +2,5 @@
 
 ## In Progress
 
-- Current Navet Dev scope since `v0.13.2`.
-- Redesign Energy dashboard and refine dashboard UX (#153)
+- Current Navet Dev scope since `navet-dev-0.13.2-dev.20260823020548`.
+- Refine Security dashboard and responsive card UX (#154)
