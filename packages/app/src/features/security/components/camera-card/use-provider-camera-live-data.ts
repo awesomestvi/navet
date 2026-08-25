@@ -1,5 +1,8 @@
 import { readNavetCameraState } from '@navet/app/core/navet-device-state';
-import { useProviderEntityModel } from '@navet/app/hooks/use-provider-device';
+import {
+  useProviderEntityModel,
+  useProviderEntityModels,
+} from '@navet/app/hooks/use-provider-device';
 import {
   useProviderEntitySnapshot,
   useProviderEntitySnapshotRecord,
@@ -13,6 +16,7 @@ import type {
   PlatformEntitySnapshotMap,
 } from '@navet/app/platform/provider-feature-models';
 import { getProviderNativeId, parseProviderScopedId } from '@navet/app/utils/provider-ids';
+import type { NavetEntity } from '@navet/core/types';
 import { useMemo } from 'react';
 
 const EMPTY_DEVICE_RECORD: PlatformEntitySnapshotMap = {};
@@ -58,19 +62,23 @@ function normalizeCameraState(
 
 function isMotionCompanionEntity(
   entityId: string,
-  entity: { attributes?: Record<string, unknown> } | undefined
+  entity: { attributes?: Record<string, unknown> } | undefined,
+  providerEntity: NavetEntity | undefined
 ) {
-  const deviceClass =
-    typeof entity?.attributes?.device_class === 'string'
-      ? entity.attributes.device_class.toLowerCase()
-      : '';
+  const securityKind = providerEntity?.attributes.securityKind;
+  const isSensorEntity = providerEntity
+    ? providerEntity.type === 'sensor' || providerEntity.type === 'binary_sensor'
+    : entityId.startsWith('binary_sensor.');
   const searchText = `${entityId} ${
-    typeof entity?.attributes?.friendly_name === 'string' ? entity.attributes.friendly_name : ''
+    providerEntity?.name ??
+    (typeof entity?.attributes?.friendly_name === 'string' ? entity.attributes.friendly_name : '')
   }`.toLowerCase();
 
   return (
-    entityId.startsWith('binary_sensor.') &&
-    (['motion', 'occupancy', 'presence'].includes(deviceClass) ||
+    isSensorEntity &&
+    (securityKind === 'motion' ||
+      securityKind === 'occupancy' ||
+      securityKind === 'presence' ||
       ['motion', 'occupancy', 'presence', 'pir', 'human', 'person', 'pedestrian'].some((token) =>
         searchText.includes(token)
       ))
@@ -79,15 +87,11 @@ function isMotionCompanionEntity(
 
 function getMotionDetectionTarget(
   entityId: string,
-  entity: { attributes?: Record<string, unknown> }
+  entity: { attributes?: Record<string, unknown> },
+  providerEntity: NavetEntity | undefined
 ): 'motion' | 'person' {
   const attributes = entity.attributes;
-  const searchText = [
-    entityId,
-    attributes?.friendly_name,
-    attributes?.name,
-    attributes?.translation_key,
-  ]
+  const searchText = [entityId, providerEntity?.name, attributes?.friendly_name, attributes?.name]
     .filter((value): value is string => typeof value === 'string')
     .join(' ')
     .toLowerCase();
@@ -102,6 +106,7 @@ export function useProviderCameraLiveData(
   deviceEntityIds: string[]
 ): ProviderCameraLiveData {
   const providerEntity = useProviderEntityModel(entityId);
+  const providerDeviceEntities = useProviderEntityModels(deviceEntityIds);
   const resolvedProviderId =
     providerEntity?.providerId ?? parseProviderScopedId(entityId)?.providerId;
   const runtimeEntityId = useMemo(
@@ -129,6 +134,17 @@ export function useProviderCameraLiveData(
     );
   }, [deviceEntityIds, deviceEntityRecord, runtimeEntityId]);
 
+  const providerDeviceEntitiesByNativeId = useMemo(
+    () =>
+      Object.fromEntries(
+        deviceEntityIds.flatMap((providerScopedEntityId) => {
+          const entity = providerDeviceEntities[providerScopedEntityId];
+          return entity ? [[getProviderNativeId(providerScopedEntityId), entity]] : [];
+        })
+      ),
+    [deviceEntityIds, providerDeviceEntities]
+  );
+
   const liveState = useMemo<PlatformCameraLiveState>(() => {
     return {
       isStreamCapable: providerState?.isStreamCapable === true,
@@ -146,7 +162,9 @@ export function useProviderCameraLiveData(
 
   const companionStates = useMemo<PlatformCameraCompanionState[]>(() => {
     return Object.entries(deviceEntities).flatMap(([nativeEntityId, entity]) => {
-      if (!entity || !isMotionCompanionEntity(nativeEntityId, entity)) {
+      const providerDeviceEntity = providerDeviceEntitiesByNativeId[nativeEntityId];
+
+      if (!entity || !isMotionCompanionEntity(nativeEntityId, entity, providerDeviceEntity)) {
         return [];
       }
 
@@ -154,13 +172,13 @@ export function useProviderCameraLiveData(
         {
           entityId: nativeEntityId,
           type: 'motion',
-          detectionTarget: getMotionDetectionTarget(nativeEntityId, entity),
+          detectionTarget: getMotionDetectionTarget(nativeEntityId, entity, providerDeviceEntity),
           detected: entity.state === 'on' || entity.state === 'home' || entity.state === 'detected',
           changedAt: entity.lastChanged ?? entity.lastUpdated ?? null,
         },
       ];
     });
-  }, [deviceEntities]);
+  }, [deviceEntities, providerDeviceEntitiesByNativeId]);
 
   const cameraState = useMemo(
     () => normalizeCameraState(liveEntity, providerState),
