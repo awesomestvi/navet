@@ -51,6 +51,7 @@ export const SETTINGS_PROFILE_CLASSIFICATION = {
   cameraFitMode: 'device',
   cameraFitModes: 'device',
   cameraFullscreenHiddenAccessoryIds: 'device',
+  cameraFullscreenVisibleAccessoryIds: 'device',
   ambientLightBleed: 'device',
   weatherForecastMode: 'shared',
   weatherMetricIds: 'shared',
@@ -208,6 +209,20 @@ function sanitizeSettingValue(key: keyof UserSettings, value: unknown): unknown 
     return sanitized ? normalizePersistedEntityRecord(sanitized) : undefined;
   }
   if (key === 'cameraFullscreenHiddenAccessoryIds') {
+    if (!isRecord(value)) return undefined;
+    return normalizePersistedEntityRecord(
+      Object.fromEntries(
+        Object.entries(value).flatMap(([cameraEntityId, accessoryIds]) => {
+          if (!Array.isArray(accessoryIds)) return [];
+          const validIds = accessoryIds.filter(
+            (entry): entry is string => typeof entry === 'string' && entry.length > 0
+          );
+          return validIds.length > 0 ? [[cameraEntityId, validIds]] : [];
+        })
+      )
+    );
+  }
+  if (key === 'cameraFullscreenVisibleAccessoryIds') {
     if (!isRecord(value)) return undefined;
     return normalizePersistedEntityRecord(
       Object.fromEntries(

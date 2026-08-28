@@ -10,6 +10,9 @@ const packageJson = JSON.parse(
 };
 
 export default defineConfig({
+  optimizeDeps: {
+    exclude: ['maplibre-gl'],
+  },
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version ?? '0.0.0'),
     __APP_GIT_SHA__: JSON.stringify('storybook'),

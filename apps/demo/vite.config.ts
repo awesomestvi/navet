@@ -20,6 +20,9 @@ const REACT_COMPILER_EXCLUDE = [/[\\/]node_modules[\\/]/, /[\\/]\.cache[\\/]vite
 
 export default defineConfig({
   root: __dirname,
+  optimizeDeps: {
+    exclude: ['maplibre-gl'],
+  },
   publicDir: path.resolve(repoRoot, 'assets/public'),
   cacheDir: path.resolve(repoRoot, '.cache/vite-demo'),
   // The public demo is deployed at the root of demo.navet.app.

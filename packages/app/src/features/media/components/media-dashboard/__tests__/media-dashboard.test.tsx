@@ -387,7 +387,7 @@ describe('MediaDashboard', () => {
     );
 
     expect(await screen.findByText('Music Assistant')).toBeVisible();
-    expect(screen.getByText('2 speakers')).toBeVisible();
+    expect(screen.queryByText('2 speakers')).not.toBeInTheDocument();
     expect(screen.getByText('Bathroom +1')).toBeVisible();
     await waitFor(() =>
       expect(onPromotedEntitiesChange).toHaveBeenCalledWith([
@@ -774,12 +774,17 @@ describe('MediaDashboard', () => {
 
     renderWithProviders(<MediaDashboard devices={[createMediaDevice()]} />);
 
-    expect(screen.getByTestId('media-dashboard-layout')).toHaveStyle({
+    expect(screen.getByRole('heading', { name: 'Now playing' })).toBeInTheDocument();
+    expect(screen.queryByText('1 media player')).not.toBeInTheDocument();
+    const dashboardLayout = screen.getByTestId('media-dashboard-layout');
+    expect(dashboardLayout).toHaveStyle({
       gridTemplateColumns: 'repeat(16, minmax(80px, 1fr))',
     });
+    expect(dashboardLayout.children[0]).toHaveClass('order-1');
     expect(screen.getByTestId('media-browser-panel')).toHaveStyle({
       gridColumn: 'span 12 / span 12',
     });
+    expect(screen.getByTestId('media-browser-panel')).toHaveClass('order-2');
     expect(screen.getByTestId('media-now-playing-card')).toHaveStyle({ height: '368px' });
     const directoryGrid = await screen.findByTestId('media-browser-directory-grid');
     expect(directoryGrid).toHaveClass('grid-cols-[repeat(auto-fill,100px)]');

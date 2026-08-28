@@ -13,6 +13,7 @@ export const DASHBOARD_PROFILE_ENDPOINTS = {
   displayProfiles: '/__navet_profile__/display-profiles',
   copyDisplaySettings: '/__navet_profile__/display-profiles/copy',
   clients: '/__navet_profile__/clients',
+  rebindWorkspace: '/__navet_profile__/workspace/rebind',
 } as const;
 
 export const DASHBOARD_PROFILE_HEADERS = {

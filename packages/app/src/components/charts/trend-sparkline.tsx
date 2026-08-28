@@ -1,4 +1,6 @@
+import { useTheme } from '@navet/app/hooks';
 import { memo, useId, useMemo } from 'react';
+import { getChartSurfaceTokens } from './chart-surface-tokens';
 
 export interface TrendSparklinePoint {
   value: number;
@@ -12,6 +14,7 @@ interface TrendSparklineProps {
   fillOpacity?: number;
   height?: number;
   padX?: number;
+  showYAxisMarks?: boolean;
   strokeWidth?: number;
 }
 
@@ -47,9 +50,12 @@ export const TrendSparkline = memo(function TrendSparkline({
   fillOpacity = 0.24,
   height = 72,
   padX = 0,
+  showYAxisMarks = false,
   strokeWidth = 1.5,
 }: TrendSparklineProps) {
+  const { theme } = useTheme();
   const gradientId = useId();
+  const chartSurface = getChartSurfaceTokens(theme);
   const chart = useMemo(() => {
     if (data.length < 2) return null;
 
@@ -75,38 +81,55 @@ export const TrendSparkline = memo(function TrendSparkline({
       `M ${points[0].x} ${baseline} L ${points[0].x} ${points[0].y}` +
       line.slice(line.indexOf(' ')) +
       ` L ${points[points.length - 1].x} ${baseline} Z`;
+    const span = Math.max(paddedMaximum - minimum, 1);
+    const referenceLineTopPercents = [paddedMaximum, minimum + span * 0.5].map((value) => {
+      const y = PAD_TOP + (1 - (value - minimum) / span) * chartHeight;
+      return (y / height) * 100;
+    });
 
-    return { area, line };
+    return { area, line, referenceLineTopPercents };
   }, [data, height, padX]);
 
   if (!chart) return null;
 
   return (
-    <svg
-      viewBox={`0 0 ${VIEWBOX_WIDTH} ${height}`}
-      width="100%"
-      height="100%"
-      className={className}
-      role="img"
-      aria-label={ariaLabel}
-      preserveAspectRatio="none"
-    >
-      <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={accentColor} stopOpacity={fillOpacity} />
-          <stop offset="100%" stopColor={accentColor} stopOpacity={fillOpacity * 0.08} />
-        </linearGradient>
-      </defs>
-      <path d={chart.area} fill={`url(#${gradientId})`} />
-      <path
-        d={chart.line}
-        fill="none"
-        stroke={accentColor}
-        strokeWidth={strokeWidth}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
+    <div className="relative h-full w-full">
+      {showYAxisMarks
+        ? chart.referenceLineTopPercents.map((topPercent) => (
+            <div
+              key={topPercent}
+              data-chart-reference-line="true"
+              className={`pointer-events-none absolute inset-x-0 z-0 border-t border-dashed ${chartSurface.axisLineColor}`}
+              style={{ top: `${topPercent}%` }}
+            />
+          ))
+        : null}
+      <svg
+        viewBox={`0 0 ${VIEWBOX_WIDTH} ${height}`}
+        width="100%"
+        height="100%"
+        className={`relative z-10 ${className ?? ''}`.trim()}
+        role="img"
+        aria-label={ariaLabel}
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={accentColor} stopOpacity={fillOpacity} />
+            <stop offset="100%" stopColor={accentColor} stopOpacity={fillOpacity * 0.08} />
+          </linearGradient>
+        </defs>
+        <path d={chart.area} fill={`url(#${gradientId})`} />
+        <path
+          d={chart.line}
+          fill="none"
+          stroke={accentColor}
+          strokeWidth={strokeWidth}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+    </div>
   );
 });

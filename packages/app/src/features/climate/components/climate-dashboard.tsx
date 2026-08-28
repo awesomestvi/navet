@@ -1,25 +1,17 @@
-import {
-  AttentionBand,
-  type AttentionBandItem,
-} from '@navet/app/components/patterns/attention-band';
+import { DashboardGroupingNavigation } from '@navet/app/components/patterns';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
-import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { DeviceGrid } from '@navet/app/features/dashboard/device-grid';
 import {
   SummaryBar,
   SummaryBarStack,
 } from '@navet/app/features/sensors/components/info-badge-strip';
-import { useI18n, useTheme } from '@navet/app/hooks';
+import { useI18n } from '@navet/app/hooks';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
 import type { TemperatureUnit } from '@navet/app/utils/temperature';
-import { CircleAlert, Thermometer, TriangleAlert } from 'lucide-react';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import type { ClimateDashboardSection } from '../types/climate-dashboard';
-import {
-  buildClimateDashboardOverview,
-  type ClimateDashboardAttentionItem,
-} from '../utils/climate-dashboard-overview';
+import { buildClimateDashboardOverview } from '../utils/climate-dashboard-overview';
 import { ClimateComfortBanner } from './climate-comfort-banner';
 
 interface ClimateDashboardProps {
@@ -34,25 +26,40 @@ interface ClimateDashboardProps {
   optimizeOffscreenPaint: boolean;
 }
 
-const CONTROL_GROUPS = new Set<ClimateDashboardSection['key']>(['climate', 'fans', 'humidity']);
+type ClimateGroupingMode = 'type' | 'room';
+type ClimateGroupPriority = 'critical' | 'attention' | null;
 
-function getAttentionIcon(kind: ClimateDashboardAttentionItem['kind']) {
-  if (kind === 'temperature') return Thermometer;
-  if (kind === 'provider') return TriangleAlert;
-  return CircleAlert;
+interface ClimateCardGroup {
+  id: string;
+  label: string;
+  orderedIds: string[];
+  priority: ClimateGroupPriority;
 }
 
-function focusDashboardTarget(targetId: string) {
-  const target = document.getElementById(targetId);
-  if (!target) return;
+function getGroupPriority(
+  orderedIds: string[],
+  attentionByDeviceId: ReadonlyMap<string, Exclude<ClimateGroupPriority, null>>
+): ClimateGroupPriority {
+  let hasAttention = false;
+  for (const id of orderedIds) {
+    const priority = attentionByDeviceId.get(id);
+    if (priority === 'critical') return 'critical';
+    if (priority === 'attention') hasAttention = true;
+  }
+  return hasAttention ? 'attention' : null;
+}
 
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
-  const focusTarget =
-    (target.matches('[role="button"], button, [tabindex="0"]') ? target : null) ??
-    target.querySelector<HTMLElement>('[role="button"], button, [tabindex="0"]') ??
-    target;
-  focusTarget.focus({ preventScroll: true });
+function sortIdsByAttention(
+  orderedIds: string[],
+  attentionByDeviceId: ReadonlyMap<string, Exclude<ClimateGroupPriority, null>>
+) {
+  const rank = (id: string) => {
+    const priority = attentionByDeviceId.get(id);
+    if (priority === 'critical') return 0;
+    if (priority === 'attention') return 1;
+    return 2;
+  };
+  return [...orderedIds].sort((left, right) => rank(left) - rank(right));
 }
 
 export const ClimateDashboard = memo(function ClimateDashboard({
@@ -67,67 +74,74 @@ export const ClimateDashboard = memo(function ClimateDashboard({
   optimizeOffscreenPaint,
 }: ClimateDashboardProps) {
   const { t } = useI18n();
-  const { theme } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
   const overview = useMemo(
     () => buildClimateDashboardOverview(deviceMap.values(), temperatureUnit, t),
     [deviceMap, t, temperatureUnit]
   );
-  const controlRooms = useMemo(() => {
-    const roomIds = new Map<string, string[]>();
+  const [groupingMode, setGroupingMode] = useState<ClimateGroupingMode>('type');
+  const [selectedGroupIds, setSelectedGroupIds] = useState<Record<ClimateGroupingMode, string>>({
+    type: '',
+    room: '',
+  });
+  const attentionByDeviceId = useMemo(
+    () => new Map(overview.attentionItems.map((item) => [item.deviceId, item.priority] as const)),
+    [overview.attentionItems]
+  );
+  const typeGroups = useMemo<ClimateCardGroup[]>(() => {
+    const seenIds = new Set<string>();
+    return sections.flatMap((section) => {
+      const orderedIds = section.orderedIds.filter((entityId) => {
+        if (!deviceMap.has(entityId) || seenIds.has(entityId)) return false;
+        seenIds.add(entityId);
+        return true;
+      });
+      if (orderedIds.length === 0) return [];
+      const sortedIds = sortIdsByAttention(orderedIds, attentionByDeviceId);
+      return [
+        {
+          id: `type-${section.key}`,
+          label: t(section.titleKey),
+          orderedIds: sortedIds,
+          priority: getGroupPriority(sortedIds, attentionByDeviceId),
+        },
+      ];
+    });
+  }, [attentionByDeviceId, deviceMap, sections, t]);
+  const roomGroups = useMemo<ClimateCardGroup[]>(() => {
+    const idsByRoom = new Map<string, string[]>();
+    const seenIds = new Set<string>();
     for (const section of sections) {
-      if (!CONTROL_GROUPS.has(section.key)) continue;
       for (const entityId of section.orderedIds) {
         const device = deviceMap.get(entityId);
-        if (!device || (section.key === 'humidity' && device.type === 'sensors')) continue;
+        if (!device || seenIds.has(entityId)) continue;
+        seenIds.add(entityId);
         const room = getDeviceRoomLabel(device);
-        const ids = roomIds.get(room) ?? [];
+        const ids = idsByRoom.get(room) ?? [];
         ids.push(entityId);
-        roomIds.set(room, ids);
+        idsByRoom.set(room, ids);
       }
     }
-    return [...roomIds.entries()]
+    return [...idsByRoom.entries()]
       .sort(([left], [right]) => left.localeCompare(right))
-      .map(([room, orderedIds]) => ({ room, orderedIds }));
-  }, [deviceMap, sections]);
-  const environmentIds = useMemo(() => {
-    const attentionIds = new Set(overview.attentionItems.map((item) => item.deviceId));
-    return sections
-      .flatMap((section) =>
-        section.orderedIds.filter((entityId) => {
-          const device = deviceMap.get(entityId);
-          if (!device) return false;
-          return !CONTROL_GROUPS.has(section.key) || device.type === 'sensors';
-        })
-      )
-      .sort((left, right) => Number(attentionIds.has(right)) - Number(attentionIds.has(left)));
-  }, [deviceMap, overview.attentionItems, sections]);
-  const controlIds = useMemo(
-    () => controlRooms.flatMap(({ orderedIds }) => orderedIds),
-    [controlRooms]
-  );
-  const attentionBandItems = useMemo<AttentionBandItem[]>(
-    () =>
-      overview.attentionItems.map((item) => ({
-        id: item.id,
-        title: item.title,
-        detail: item.detail,
-        priority: item.priority,
-        icon: getAttentionIcon(item.kind),
-        actionLabel: t('dashboard.roomNav.view'),
-      })),
-    [overview.attentionItems, t]
-  );
-  const handleAttentionSelect = useCallback(
-    (selectedItem: AttentionBandItem) => {
-      const attentionItem = overview.attentionItems.find((item) => item.id === selectedItem.id);
-      const device = attentionItem ? deviceMap.get(attentionItem.deviceId) : undefined;
-      if (!device) return;
-
-      focusDashboardTarget(`dashboard-entity-${encodeURIComponent(device.id)}`);
-    },
-    [deviceMap, overview.attentionItems]
-  );
+      .map(([room, orderedIds]) => {
+        const sortedIds = sortIdsByAttention(orderedIds, attentionByDeviceId);
+        return {
+          id: `room-${encodeURIComponent(room)}`,
+          label: room,
+          orderedIds: sortedIds,
+          priority: getGroupPriority(sortedIds, attentionByDeviceId),
+        };
+      });
+  }, [attentionByDeviceId, deviceMap, sections]);
+  const groups = groupingMode === 'type' ? typeGroups : roomGroups;
+  const requestedGroupId = selectedGroupIds[groupingMode];
+  const selectedGroup = groups.find((group) => group.id === requestedGroupId) ?? groups[0] ?? null;
+  const handleGroupingModeChange = (mode: ClimateGroupingMode) => {
+    setGroupingMode(mode);
+  };
+  const handleGroupChange = (groupId: string) => {
+    setSelectedGroupIds((current) => ({ ...current, [groupingMode]: groupId }));
+  };
   const renderGrid = (orderedIds: string[]) => (
     <DeviceGrid
       orderedCardIds={orderedIds}
@@ -145,13 +159,8 @@ export const ClimateDashboard = memo(function ClimateDashboard({
   );
 
   return (
-    <div className="space-y-6 md:space-y-8" data-testid="climate-dashboard">
+    <div className="space-y-6 md:space-y-7" data-testid="climate-dashboard">
       <SummaryBarStack>
-        <AttentionBand
-          items={attentionBandItems}
-          ariaLabel={t('dashboard.packs.section.needsAttention')}
-          onSelect={handleAttentionSelect}
-        />
         <SummaryBar
           items={overview.summaryItems}
           ariaLabel={t('homeSummary.climate')}
@@ -159,45 +168,37 @@ export const ClimateDashboard = memo(function ClimateDashboard({
         />
         <ClimateComfortBanner overview={overview} />
       </SummaryBarStack>
-      {controlRooms.length > 0 ? (
-        <section
-          id="climate-rooms"
-          tabIndex={-1}
-          className="scroll-mt-4 space-y-3 outline-none md:space-y-4"
-          data-climate-control-rooms
-        >
-          <div className="flex items-center gap-3">
-            <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>
-              {t('dashboard.roomNav.openRooms')}
-            </h2>
-            <span className={`text-xs md:text-sm ${surface.textSecondary}`}>
-              {controlIds.length} {t('sections.climate.plural')}
-            </span>
-          </div>
-          {renderGrid(controlIds)}
-        </section>
-      ) : null}
-
-      {environmentIds.length > 0 ? (
-        <section
-          id="climate-environment"
-          tabIndex={-1}
-          className="scroll-mt-4 space-y-3 outline-none md:space-y-4"
-          data-climate-environment-details
-        >
-          <div className="flex items-center gap-3">
-            <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>
-              {t('sensors.category.environmental')}
-            </h2>
-            <span className={`text-xs md:text-sm ${surface.textSecondary}`}>
-              {environmentIds.length}{' '}
-              {environmentIds.length === 1
-                ? t('sections.climate.singular')
-                : t('sections.climate.plural')}
-            </span>
-          </div>
-          {renderGrid(environmentIds)}
-        </section>
+      {selectedGroup ? (
+        <div className="space-y-4">
+          <DashboardGroupingNavigation
+            ariaLabel={t('homeSummary.climate')}
+            groupingLabel={t('dashboard.roomNav.grouping.label')}
+            idPrefix="climate-group"
+            items={groups.map((group) => ({
+              id: group.id,
+              label: group.label,
+              indicatorTone: group.priority ?? undefined,
+            }))}
+            modes={[
+              { id: 'type', label: t('dashboard.roomNav.grouping.type') },
+              { id: 'room', label: t('dashboard.roomNav.grouping.room') },
+            ]}
+            selectedItemId={selectedGroup.id}
+            selectedModeId={groupingMode}
+            onModeChange={(modeId) => {
+              if (modeId === 'type' || modeId === 'room') handleGroupingModeChange(modeId);
+            }}
+            onItemChange={handleGroupChange}
+          />
+          <section
+            role="tabpanel"
+            id={`climate-group-panel-${selectedGroup.id}`}
+            aria-labelledby={`climate-group-tab-${selectedGroup.id}`}
+            data-climate-group-panel={selectedGroup.id}
+          >
+            {renderGrid(selectedGroup.orderedIds)}
+          </section>
+        </div>
       ) : null}
     </div>
   );

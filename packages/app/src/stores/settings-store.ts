@@ -76,6 +76,7 @@ export interface UserSettings {
   cameraFitMode: CameraFitMode;
   cameraFitModes: Record<string, CameraFitMode>;
   cameraFullscreenHiddenAccessoryIds: Record<string, string[]>;
+  cameraFullscreenVisibleAccessoryIds: Record<string, string[]>;
   ambientLightBleed: boolean;
   weatherForecastMode: WeatherForecastMode;
   weatherMetricIds: WeatherMetricId[];
@@ -134,6 +135,7 @@ export const defaultSettings: UserSettings = {
   cameraFitMode: 'cover',
   cameraFitModes: {},
   cameraFullscreenHiddenAccessoryIds: {},
+  cameraFullscreenVisibleAccessoryIds: {},
   ambientLightBleed: true,
   weatherForecastMode: 'weekly',
   weatherMetricIds: ['precipitation', 'humidity', 'wind'],
@@ -335,6 +337,8 @@ function normalizeCameraFullscreenHiddenAccessoryIds(value: unknown): Record<str
   );
 }
 
+const normalizeCameraFullscreenVisibleAccessoryIds = normalizeCameraFullscreenHiddenAccessoryIds;
+
 const knownSettingsKeys = new Set<keyof UserSettings>(
   Object.keys(defaultSettings) as Array<keyof UserSettings>
 );
@@ -426,6 +430,12 @@ export const useSettingsStore = create<SettingsState>()(
                   newSettings.cameraFullscreenHiddenAccessoryIds
                 )
               : state.cameraFullscreenHiddenAccessoryIds,
+          cameraFullscreenVisibleAccessoryIds:
+            newSettings.cameraFullscreenVisibleAccessoryIds !== undefined
+              ? normalizeCameraFullscreenVisibleAccessoryIds(
+                  newSettings.cameraFullscreenVisibleAccessoryIds
+                )
+              : state.cameraFullscreenVisibleAccessoryIds,
           customSidebarActions:
             newSettings.customSidebarActions !== undefined
               ? normalizeCustomSidebarActions(newSettings.customSidebarActions)
@@ -483,17 +493,17 @@ export const useSettingsStore = create<SettingsState>()(
         set((state) => {
           const cameraId = ensureCanonicalEntityId(cameraEntityId);
           const accessoryId = ensureCanonicalEntityId(accessoryEntityId);
-          const currentHiddenIds = state.cameraFullscreenHiddenAccessoryIds[cameraId] ?? [];
-          const nextHiddenIds = visible
-            ? currentHiddenIds.filter((id) => id !== accessoryId)
-            : Array.from(new Set([...currentHiddenIds, accessoryId]));
-          const nextByCamera = { ...state.cameraFullscreenHiddenAccessoryIds };
-          if (nextHiddenIds.length > 0) {
-            nextByCamera[cameraId] = nextHiddenIds;
+          const currentVisibleIds = state.cameraFullscreenVisibleAccessoryIds[cameraId] ?? [];
+          const nextVisibleIds = visible
+            ? Array.from(new Set([...currentVisibleIds, accessoryId]))
+            : currentVisibleIds.filter((id) => id !== accessoryId);
+          const nextByCamera = { ...state.cameraFullscreenVisibleAccessoryIds };
+          if (nextVisibleIds.length > 0) {
+            nextByCamera[cameraId] = nextVisibleIds;
           } else {
             delete nextByCamera[cameraId];
           }
-          return { cameraFullscreenHiddenAccessoryIds: nextByCamera };
+          return { cameraFullscreenVisibleAccessoryIds: nextByCamera };
         }),
       applyImportedSettings: (importedSettings) => {
         const supportedSettings = pickKnownSettings(importedSettings);
@@ -537,6 +547,9 @@ export const useSettingsStore = create<SettingsState>()(
           cameraFitModes: normalizeCameraFitModes(supportedSettings.cameraFitModes),
           cameraFullscreenHiddenAccessoryIds: normalizeCameraFullscreenHiddenAccessoryIds(
             supportedSettings.cameraFullscreenHiddenAccessoryIds
+          ),
+          cameraFullscreenVisibleAccessoryIds: normalizeCameraFullscreenVisibleAccessoryIds(
+            supportedSettings.cameraFullscreenVisibleAccessoryIds
           ),
           customSidebarActions: normalizeCustomSidebarActions(
             supportedSettings.customSidebarActions
@@ -606,6 +619,9 @@ export const useSettingsStore = create<SettingsState>()(
           cameraFitModes: normalizeCameraFitModes(next.cameraFitModes),
           cameraFullscreenHiddenAccessoryIds: normalizeCameraFullscreenHiddenAccessoryIds(
             next.cameraFullscreenHiddenAccessoryIds
+          ),
+          cameraFullscreenVisibleAccessoryIds: normalizeCameraFullscreenVisibleAccessoryIds(
+            next.cameraFullscreenVisibleAccessoryIds
           ),
           customSidebarActions: normalizeCustomSidebarActions(next.customSidebarActions),
           customSummaryPills: normalizeCustomSummaryPills(next.customSummaryPills),

@@ -6,7 +6,7 @@ import type {
   ChoreWorkspaceAction,
   ChoreActivity,
   ChoreWorkspaceData,
-} from '../packages/core/src/chores'
+} from '../packages/core/src/chores.ts'
 import {
   applyChoreWorkspaceAction,
   createChoreOutboxItem,
@@ -14,14 +14,14 @@ import {
   DEFAULT_CHORE_HISTORY_RETENTION,
   migrateChoreWorkspaceData,
   runChoreWorkspaceScheduler,
-} from '../packages/core/src/chores'
-import { applyChoreHistoryRetention } from '../packages/core/src/chore-insights'
-import { isChoreExperienceState } from '../packages/core/src/chore-experience'
-import { createChoreInterchangeDocument } from '../packages/core/src/chore-interchange'
+} from '../packages/core/src/chores.ts'
+import { applyChoreHistoryRetention } from '../packages/core/src/chore-insights.ts'
+import { isChoreExperienceState } from '../packages/core/src/chore-experience.ts'
+import { createChoreInterchangeDocument } from '../packages/core/src/chore-interchange.ts'
 import {
   mergeChoreInterchange,
   parseChoreInterchangeDocument,
-} from '../packages/core/src/chore-interchange'
+} from '../packages/core/src/chore-interchange.ts'
 import {
   CHORE_AUTOMATION_EVENT_TYPES,
   CHORE_WORKSPACE_HEADERS,
@@ -29,9 +29,9 @@ import {
   type ChoreWorkspaceDocument,
   type ChoreWorkspaceResetRequest,
   type ChoreWorkspaceRestoreRequest,
-} from '../packages/app/src/services/chore-workspace.contract'
-import type { ViteDashboardProfilePrincipal } from './vite-dashboard-profile-store'
-import { isViteStrictSameOriginMutation } from './vite-provider-session-store'
+} from '../packages/app/src/services/chore-workspace.contract.ts'
+import type { ViteDashboardProfilePrincipal } from './vite-dashboard-profile-store.ts'
+import { isViteStrictSameOriginMutation } from './vite-provider-session-store.ts'
 
 const CONTRACT_VERSION = 1
 const MAX_DOCUMENT_BYTES = 2 * 1024 * 1024

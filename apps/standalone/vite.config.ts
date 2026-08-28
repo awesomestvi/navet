@@ -30,18 +30,18 @@ import {
   resolveViteAuthenticatedPrincipal,
   resolveViteAuthSession,
   type ViteAuthenticatedPrincipal,
-} from '../../scripts/vite-auth-session-store'
+} from '../../scripts/vite-auth-session-store.ts'
 import {
   createViteDashboardProfileRequestHandler,
   type ViteDashboardProfilePrincipal,
-} from '../../scripts/vite-dashboard-profile-store'
-import { createViteChoreStoreRequestHandler } from '../../scripts/vite-chore-store'
+} from '../../scripts/vite-dashboard-profile-store.ts'
+import { createViteChoreStoreRequestHandler } from '../../scripts/vite-chore-store.ts'
 import {
   createViteInstallationAuthority,
   type ViteInstallationAuthority,
-} from '../../scripts/vite-installation-authority'
-import { createInstallationCookieNames } from '../../scripts/installation-cookie-scope'
-import { normalizeViteProxyTargetPath } from '../../scripts/vite-proxy-path'
+} from '../../scripts/vite-installation-authority.ts'
+import { createInstallationCookieNames } from '../../scripts/installation-cookie-scope.ts'
+import { normalizeViteProxyTargetPath } from '../../scripts/vite-proxy-path.ts'
 import {
   appendHomeyOAuthCallbackMarker,
   appendHomeyOAuthFailureMarker,
@@ -53,7 +53,7 @@ import {
   isConfirmedInvalidHomeyRefreshError,
   normalizeHomeyRefreshTokenPayload,
   type ViteStoredHomeySession,
-} from '../../scripts/vite-homey-session-store'
+} from '../../scripts/vite-homey-session-store.ts'
 import {
   createViteOpenHABSessionStore,
   OPENHAB_SESSION_COOKIE_NAME as OPENHAB_SESSION_COOKIE_BASE_NAME,
@@ -62,8 +62,8 @@ import {
   normalizeOpenHABSessionData,
   toOpenHABBasicAuthHeader,
   type ViteStoredOpenHABSession,
-} from '../../scripts/vite-openhab-session-store'
-import { createViteOpenHABLoginRateLimiter } from '../../scripts/vite-openhab-login-rate-limiter'
+} from '../../scripts/vite-openhab-session-store.ts'
+import { createViteOpenHABLoginRateLimiter } from '../../scripts/vite-openhab-login-rate-limiter.ts'
 import {
   clearViteProviderSessionCookie,
   createViteProviderRequestSession,
@@ -81,26 +81,26 @@ import {
   PROVIDER_SESSION_RECORD_TOO_LARGE_STATUS,
   rotateViteProviderRequestSession,
   setViteProviderSessionCookie,
-} from '../../scripts/vite-provider-session-store'
-import { getVendorChunkName, isLazyHtmlPreload } from '../../scripts/vite-chunking'
+} from '../../scripts/vite-provider-session-store.ts'
+import { getVendorChunkName, isLazyHtmlPreload } from '../../scripts/vite-chunking.ts'
 import {
   createVitePwaCachePolicy,
   deferVitePwaGenerationUntilWriteBundle,
   isNavetRuntimeAssetRequest,
   NAVET_PWA_INCLUDE_ASSETS,
-} from '../../scripts/vite-pwa-cache'
-import { NAVET_INTERNAL_NAVIGATION_PATH_PATTERN } from '../../scripts/vite-pwa-routing'
+} from '../../scripts/vite-pwa-cache.ts'
+import { NAVET_INTERNAL_NAVIGATION_PATH_PATTERN } from '../../scripts/vite-pwa-routing.ts'
 import {
   isAllowedRSSContentType,
   isBlockedRSSHostname,
   isPrivateIpAddress,
-} from '../../packages/app/src/utils/rss-proxy-security'
+} from '../../packages/app/src/utils/rss-proxy-security.ts'
 import {
   buildHomeAssistantProxyRequestHeaders,
   isHomeAssistantOAuthProxyBodyRequest,
-} from '../../scripts/vite-proxy-request-headers'
+} from '../../scripts/vite-proxy-request-headers.ts'
 
-const repoRoot = path.resolve(__dirname, '../..')
+const repoRoot = path.resolve(import.meta.dirname, '../..')
 type VitePwaManifestTransform = NonNullable<
   VitePWAOptions['workbox']['manifestTransforms']
 >[number]
@@ -3049,7 +3049,10 @@ export default defineConfig(({ command, mode }) => {
 
   function createSharedConfig(overrides: UserConfig): UserConfig {
     return {
-      root: __dirname,
+      root: import.meta.dirname,
+      optimizeDeps: {
+        exclude: ['maplibre-gl'],
+      },
       publicDir: path.resolve(repoRoot, 'assets/public'),
       base: './',
       envPrefix: ['VITE_'],
@@ -3078,7 +3081,7 @@ export default defineConfig(({ command, mode }) => {
       plugins: createAppPlugins(),
       build: {
         ...baseBuildConfig,
-        outDir: config.outDir ?? path.resolve(__dirname, 'dist'),
+        outDir: config.outDir ?? path.resolve(import.meta.dirname, 'dist'),
         emptyOutDir: config.emptyOutDir,
         rollupOptions: {
           ...baseBuildConfig.rollupOptions,

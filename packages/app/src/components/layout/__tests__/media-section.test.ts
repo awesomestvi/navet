@@ -1,6 +1,7 @@
 import type { MediaDevice } from '@navet/app/types/device.types';
 import { describe, expect, it } from 'vitest';
 import {
+  buildMediaRoomSections,
   buildMediaSections,
   collapseSameRoomMediaGroups,
   excludePromotedMediaDevices,
@@ -69,6 +70,26 @@ describe('buildMediaSections', () => {
     ]);
     expect(sections[1]?.devices.map((device) => device.id)).toEqual([
       'media_player.living_room_tv',
+    ]);
+  });
+});
+
+describe('buildMediaRoomSections', () => {
+  it('groups media cards by room without adding counts to the group label', () => {
+    const sections = buildMediaRoomSections(
+      [
+        createMediaDevice({ id: 'media_player.tv', room: 'Living Room' }),
+        createMediaDevice({ id: 'media_player.speaker', room: 'Kitchen' }),
+        createMediaDevice({ id: 'media_player.receiver', room: 'Living Room' }),
+      ],
+      'player',
+      'players'
+    );
+
+    expect(sections.map((section) => section.title)).toEqual(['Kitchen', 'Living Room']);
+    expect(sections[1]?.devices.map((device) => device.id)).toEqual([
+      'media_player.tv',
+      'media_player.receiver',
     ]);
   });
 });

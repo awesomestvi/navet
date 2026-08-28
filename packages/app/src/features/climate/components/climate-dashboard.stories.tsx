@@ -9,12 +9,12 @@ import type {
 } from '@navet/app/platform/provider-feature-services';
 import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
 import { integrationStore } from '@navet/app/stores/integration-store';
-import { type ThemeMode, useThemeStore } from '@navet/app/stores/theme-store';
+import { useThemeStore } from '@navet/app/stores/theme-store';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import type { NavetEntity } from '@navet/core/types';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { type ComponentProps, type ReactNode, useEffect, useMemo } from 'react';
-import { expect, waitFor, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { ClimateDashboard } from './climate-dashboard';
 
 const comfortableDevices: DeviceWithType[] = [
@@ -197,15 +197,8 @@ function createDeviceMap(
   return new Map(comfortableDevices.map((device) => [device.id, transform(device)] as const));
 }
 
-function ClimateFixture({
-  devices,
-  theme,
-  children,
-}: {
-  devices: DeviceWithType[];
-  theme: ThemeMode;
-  children: ReactNode;
-}) {
+function ClimateFixture({ devices, children }: { devices: DeviceWithType[]; children: ReactNode }) {
+  const theme = useThemeStore((state) => state.theme);
   const surface = getThemeSurfaceTokens(theme);
   const entitySnapshots = useMemo<PlatformEntitySnapshotMap>(
     () =>
@@ -271,7 +264,6 @@ function ClimateFixture({
 
   useEffect(() => {
     const previousIntegration = integrationStore.getState();
-    const previousTheme = useThemeStore.getState();
     const registration = getProviderRuntimeRegistration('home_assistant');
     const previousEntityRuntimeService = registration.entityRuntimeService;
     const previousHistoryFeatureService = registration.historyFeatureService;
@@ -286,25 +278,20 @@ function ClimateFixture({
         })
       ),
     });
-    useThemeStore.setState({ ...previousTheme, theme, followSystemTheme: false, wallpaper: null });
     return () => {
       integrationStore.setState(previousIntegration);
-      useThemeStore.setState(previousTheme);
       registration.entityRuntimeService = previousEntityRuntimeService;
       registration.historyFeatureService = previousHistoryFeatureService;
     };
-  }, [devices, entityRuntimeService, historyFeatureService, theme]);
+  }, [devices, entityRuntimeService, historyFeatureService]);
 
   return <div className={`min-h-screen p-3 md:p-6 ${surface.appBg}`}>{children}</div>;
 }
 
-function ClimateDashboardStory(
-  props: ComponentProps<typeof ClimateDashboard> & { theme: ThemeMode }
-) {
-  const { theme, ...dashboardProps } = props;
+function ClimateDashboardStory(props: ComponentProps<typeof ClimateDashboard>) {
   return (
-    <ClimateFixture devices={[...dashboardProps.deviceMap.values()]} theme={theme}>
-      <ClimateDashboard {...dashboardProps} />
+    <ClimateFixture devices={[...props.deviceMap.values()]}>
+      <ClimateDashboard {...props} />
     </ClimateFixture>
   );
 }
@@ -324,7 +311,6 @@ const meta = {
     onRemoveEntity: () => {},
     densePerformanceMode: false,
     optimizeOffscreenPaint: false,
-    theme: 'glass',
   },
 } satisfies Meta<typeof ClimateDashboardStory>;
 
@@ -334,15 +320,24 @@ type Story = StoryObj<typeof meta>;
 export const Comfortable: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+
+    await userEvent.click(canvas.getByRole('tab', { name: /Temperature/ }));
     await waitFor(() => {
       expect(canvas.getByTestId('sensor-history-sparkline')).toBeInTheDocument();
+    });
+    const sparkline = canvas.getByTestId('sensor-history-sparkline').querySelector('svg');
+    expect(sparkline?.getBoundingClientRect().height).toBeGreaterThan(0);
+
+    await userEvent.click(canvas.getByRole('tab', { name: /Humidity/ }));
+    await waitFor(() => {
       expect(canvas.getByRole('meter', { name: 'Bedroom humidity: 46 %' })).toBeInTheDocument();
-      expect(canvas.getByRole('meter', { name: 'Office CO2: 720 ppm' })).toBeInTheDocument();
     });
 
-    const sparkline = canvas.getByTestId('sensor-history-sparkline').querySelector('svg');
+    await userEvent.click(canvas.getByRole('tab', { name: /Air Quality/ }));
+    await waitFor(() => {
+      expect(canvas.getByRole('meter', { name: 'Office CO2: 720 ppm' })).toBeInTheDocument();
+    });
     const qualityFill = canvasElement.querySelector<HTMLElement>('[data-quality-bar-fill]');
-    expect(sparkline?.getBoundingClientRect().height).toBeGreaterThan(0);
     expect(qualityFill?.getBoundingClientRect().height).toBeGreaterThan(0);
   },
 };
@@ -364,8 +359,8 @@ export const HeatingAndCooling: Story = {
 export const NeedsAttention: Story = {
   args: {
     deviceMap: createDeviceMap((device) =>
-      device.id === 'climate.living_room' && device.type === 'climate'
-        ? { ...device, currentTemperature: 17, temperature: 21, mode: 'off' }
+      device.id === 'sensor.office_co2' && device.type === 'sensors'
+        ? { ...device, value: '1180', securitySeverity: 'warning' }
         : device
     ),
   },
@@ -429,6 +424,16 @@ export const MultipleDevicesInOneRoom: Story = {
         : device
     ),
   },
+  play: async ({ canvas, canvasElement }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Group cards by: Type' }));
+    await userEvent.click(
+      within(canvasElement.ownerDocument.body).getByRole('menuitemradio', { name: 'Room' })
+    );
+    const livingRoomTab = canvas.getByRole('tab', { name: /Living room/ });
+    await expect(livingRoomTab).toBeVisible();
+    await userEvent.click(livingRoomTab);
+    await expect(livingRoomTab).toHaveAttribute('aria-selected', 'true');
+  },
 };
 
 export const WallTablet: Story = {
@@ -449,6 +454,6 @@ export const Phone: Story = {
   },
 };
 
-export const LightTheme: Story = { args: { theme: 'light' } };
-export const DarkTheme: Story = { args: { theme: 'dark' } };
-export const BlackTheme: Story = { args: { theme: 'black' } };
+export const LightTheme: Story = { globals: { theme: 'light' } };
+export const DarkTheme: Story = { globals: { theme: 'dark' } };
+export const BlackTheme: Story = { globals: { theme: 'black' } };

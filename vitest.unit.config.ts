@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 import { getMarketingReleaseHighlights } from './scripts/marketing-release-highlights.mjs';
 
+const configDir = import.meta.dirname;
 const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
   version?: string;
 };
@@ -33,7 +34,7 @@ export default defineConfig({
       'assets/**/*.{test,spec}.{ts,tsx}',
       'scripts/**/*.{test,spec}.{js,mjs,ts}',
     ],
-    setupFiles: [path.resolve(__dirname, './packages/app/src/setupTests.ts')],
+    setupFiles: [path.resolve(configDir, './packages/app/src/setupTests.ts')],
     coverage: {
       provider: 'v8',
       include: ['packages/app/src/**/*.{ts,tsx}'],
@@ -47,27 +48,27 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@assets': path.resolve(__dirname, './assets'),
-      '@docs': path.resolve(__dirname, './docs'),
-      '@website': path.resolve(__dirname, './apps/website/src'),
-      '@navet/core': path.resolve(__dirname, './packages/core/src'),
-      '@navet/ui': path.resolve(__dirname, './packages/ui/src'),
-      '@navet/app': path.resolve(__dirname, './packages/app/src'),
+      '@assets': path.resolve(configDir, './assets'),
+      '@docs': path.resolve(configDir, './docs'),
+      '@website': path.resolve(configDir, './apps/website/src'),
+      '@navet/core': path.resolve(configDir, './packages/core/src'),
+      '@navet/ui': path.resolve(configDir, './packages/ui/src'),
+      '@navet/app': path.resolve(configDir, './packages/app/src'),
       '@navet/provider-homeassistant': path.resolve(
-        __dirname,
+        configDir,
         './packages/provider-homeassistant/src'
       ),
-      '@navet/provider-homey': path.resolve(__dirname, './packages/provider-homey/src'),
-      '@navet/provider-hubitat': path.resolve(__dirname, './packages/provider-hubitat/src'),
-      '@navet/provider-openhab': path.resolve(__dirname, './packages/provider-openhab/src'),
+      '@navet/provider-homey': path.resolve(configDir, './packages/provider-homey/src'),
+      '@navet/provider-hubitat': path.resolve(configDir, './packages/provider-hubitat/src'),
+      '@navet/provider-openhab': path.resolve(configDir, './packages/provider-openhab/src'),
       '@navet/provider-smartthings': path.resolve(
-        __dirname,
+        configDir,
         './packages/provider-smartthings/src'
       ),
-      '@docker': path.resolve(__dirname, './docker'),
-      '@scripts': path.resolve(__dirname, './scripts'),
+      '@docker': path.resolve(configDir, './docker'),
+      '@scripts': path.resolve(configDir, './scripts'),
       'virtual:pwa-register': path.resolve(
-        __dirname,
+        configDir,
         './packages/app/src/test/mocks/virtual-pwa-register.ts'
       ),
     },

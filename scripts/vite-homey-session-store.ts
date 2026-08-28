@@ -2,11 +2,11 @@ import path from 'node:path'
 import {
   createViteProviderSessionStore,
   type ViteProviderSessionStore,
-} from './vite-provider-session-store'
+} from './vite-provider-session-store.ts'
 import {
   createInstallationCookieNames,
   type InstallationCookieNames,
-} from './installation-cookie-scope'
+} from './installation-cookie-scope.ts'
 
 export const HOMEY_SESSION_COOKIE_NAME = 'navet_homey_session'
 export const HOMEY_OAUTH_PENDING_TTL_MS = 10 * 60 * 1000

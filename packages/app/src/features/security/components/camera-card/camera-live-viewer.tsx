@@ -34,7 +34,10 @@ import {
   Activity,
   Camera,
   ChevronDown,
+  Ellipsis,
+  Expand,
   Lightbulb,
+  Minimize,
   RefreshCw,
   Scaling,
   Settings2,
@@ -43,7 +46,7 @@ import {
   Video,
   X,
 } from 'lucide-react';
-import { type ElementType, useCallback, useEffect, useMemo, useState } from 'react';
+import { type ElementType, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   normalizeCameraDirectStreamUrl,
   useCameraPlaybackPlan,
@@ -94,7 +97,7 @@ interface CameraLiveViewerProps {
   onCameraFitModeChange: (mode: CameraFitMode) => void;
 }
 
-const CAMERA_VIEWER_ACTION_BUTTON_CLASS_NAME = `relative flex ${navetControlTokens.iconButton.sizes.compact.className} shrink-0 items-center justify-center rounded-full border border-white/12 bg-black/45 text-white backdrop-blur-xl transition-colors before:absolute before:-inset-0.5 before:content-[''] hover:bg-white/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70`;
+const CAMERA_VIEWER_ACTION_BUTTON_CLASS_NAME = `pointer-events-auto relative flex ${navetControlTokens.iconButton.sizes.compact.className} shrink-0 items-center justify-center rounded-full border border-white/12 bg-black/45 text-white backdrop-blur-xl transition-colors before:absolute before:-inset-0.5 before:content-[''] hover:bg-white/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70`;
 const CAMERA_VIEWER_PILL_TRIGGER_CLASS_NAME = `pointer-events-auto relative flex ${navetControlTokens.button.apiSizes.default.heightClassName} min-w-0 max-w-48 cursor-pointer items-center gap-2 rounded-full border border-white/12 bg-black/45 px-3 text-xs font-semibold text-white backdrop-blur-xl transition-colors before:absolute before:inset-0 before:content-[''] hover:bg-white/12 data-[state=open]:bg-white/14 [&>*]:pointer-events-none`;
 
 function CameraAccessoryRail({
@@ -231,9 +234,11 @@ function CameraAccessoryRail({
 function CameraLightControl({
   cameraName,
   lights,
+  embedded = false,
 }: {
   cameraName: string;
   lights: CameraAccessoryEntity[];
+  embedded?: boolean;
 }) {
   const { t } = useI18n();
   const isPhone = useMediaQuery('(max-width: 639px)');
@@ -348,6 +353,10 @@ function CameraLightControl({
     </button>
   );
 
+  if (embedded) {
+    return controls;
+  }
+
   return (
     <>
       {isPhone ? (
@@ -389,6 +398,146 @@ function CameraLightControl({
           </div>
         </SheetSurface>
       ) : null}
+    </>
+  );
+}
+
+function CameraViewerOptionGroup<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: readonly { value: T; label: string }[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <fieldset className="space-y-2 border-0 p-0">
+      <legend className="text-xs font-semibold text-white/58">{label}</legend>
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => {
+          const isSelected = option.value === value;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={isSelected}
+              onClick={() => onChange(option.value)}
+              className={`min-h-9 rounded-full border px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${
+                isSelected
+                  ? 'border-white/30 bg-white/18 text-white'
+                  : 'border-white/12 bg-white/6 text-white/72 hover:bg-white/12'
+              }`}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
+function CameraViewerMobileMoreControls({
+  cameraName,
+  lights,
+  showTransport,
+  transportLabel,
+  transportOptions,
+  transportValue,
+  onTransportChange,
+  showFitMode,
+  fitModeLabel,
+  fitModeOptions,
+  fitModeValue,
+  onFitModeChange,
+  viewModeLabel,
+  viewModeOptions,
+  viewModeValue,
+  onViewModeChange,
+}: {
+  cameraName: string;
+  lights: CameraAccessoryEntity[];
+  showTransport: boolean;
+  transportLabel: string;
+  transportOptions: readonly { value: CameraStreamPreference; label: string }[];
+  transportValue: CameraStreamPreference;
+  onTransportChange: (value: CameraStreamPreference) => void;
+  showFitMode: boolean;
+  fitModeLabel: string;
+  fitModeOptions: readonly { value: CameraFitMode; label: string }[];
+  fitModeValue: CameraFitMode;
+  onFitModeChange: (value: CameraFitMode) => void;
+  viewModeLabel: string;
+  viewModeOptions: readonly { value: CameraViewMode; label: string }[];
+  viewModeValue: CameraViewMode;
+  onViewModeChange: (value: CameraViewMode) => void;
+}) {
+  const { t } = useI18n();
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label={t('common.moreActions')}
+        aria-expanded={isOpen}
+        aria-haspopup="dialog"
+        onClick={() => setIsOpen(true)}
+        className={CAMERA_VIEWER_ACTION_BUTTON_CLASS_NAME}
+      >
+        <Ellipsis className={navetIconSizeTokens.sm} aria-hidden="true" />
+      </button>
+      <SheetSurface
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        title={t('common.moreActions')}
+        description={cameraName}
+        closeLabel={t('common.closeDialog')}
+        accentColor="#ffffff"
+        contentClassName="border-white/12 bg-zinc-950 text-white"
+        bodyClassName="pb-[max(1rem,env(safe-area-inset-bottom))]"
+      >
+        <SheetSurfaceHeader
+          title={t('common.moreActions')}
+          description={cameraName}
+          closeLabel={t('common.closeDialog')}
+          onClose={() => setIsOpen(false)}
+          className="border-b border-white/12"
+        />
+        <div className="space-y-5 px-4 pt-4">
+          {lights.length > 0 ? (
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-white/58">{t('lighting.type.light')}</div>
+              <CameraLightControl cameraName={cameraName} lights={lights} embedded />
+            </div>
+          ) : null}
+          {showTransport ? (
+            <CameraViewerOptionGroup
+              label={transportLabel}
+              options={transportOptions}
+              value={transportValue}
+              onChange={onTransportChange}
+            />
+          ) : null}
+          {showFitMode ? (
+            <CameraViewerOptionGroup
+              label={fitModeLabel}
+              options={fitModeOptions}
+              value={fitModeValue}
+              onChange={onFitModeChange}
+            />
+          ) : null}
+          <CameraViewerOptionGroup
+            label={viewModeLabel}
+            options={viewModeOptions}
+            value={viewModeValue}
+            onChange={onViewModeChange}
+          />
+        </div>
+      </SheetSurface>
     </>
   );
 }
@@ -468,7 +617,10 @@ export function CameraLiveViewer({
 }: CameraLiveViewerProps) {
   const { t } = useI18n();
   const { theme } = useTheme();
+  const isPhone = useMediaQuery('(max-width: 639px)');
   const surface = getThemeSurfaceTokens(theme);
+  const viewerRef = useRef<HTMLDivElement>(null);
+  const [isNativeFullscreen, setIsNativeFullscreen] = useState(false);
   const featureMatrix = useEntityProviderFeatureMatrix(entityId);
   const [failedStreamTypes, setFailedStreamTypes] = useState<PlatformCameraTransport[]>([]);
   const [directStreamFailed, setDirectStreamFailed] = useState(false);
@@ -672,6 +824,49 @@ export function CameraLiveViewer({
     t,
   ]);
 
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsNativeFullscreen(document.fullscreenElement === viewerRef.current);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const handleNativeFullscreen = useCallback(async () => {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+      return;
+    }
+
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+    if (viewer.requestFullscreen) {
+      try {
+        await viewer.requestFullscreen();
+        return;
+      } catch {
+        // iPhone Safari may only allow native fullscreen on the video element.
+      }
+    }
+
+    const video = viewer.querySelector('video') as
+      | (HTMLVideoElement & { webkitEnterFullscreen?: () => void })
+      | null;
+    video?.webkitEnterFullscreen?.();
+  }, []);
+
+  const viewerStatusLabel = isStreamReadinessOpaque
+    ? t('camera.settings.webRtcStreamSource.direct')
+    : isFeedRunning
+      ? t('camera.status.live')
+      : isStreamPending
+        ? t('camera.loadingFeed')
+        : cameraState === 'off'
+          ? t('common.off')
+          : cameraState === 'unavailable'
+            ? t('camera.status.unavailable')
+            : t('common.on');
+
   return (
     <BaseCardDialog
       variant="fullscreen"
@@ -687,7 +882,10 @@ export function CameraLiveViewer({
       overlayClassName={`animate-in fade-in ${surface.dialogBackdrop}`}
       shellBodyClassName="h-full"
     >
-      <div className="relative isolate flex h-full min-h-0 flex-col bg-black text-white">
+      <div
+        ref={viewerRef}
+        className="relative isolate flex h-full min-h-0 flex-col bg-black text-white"
+      >
         <div className="absolute inset-0 z-0">
           {selectedTransport && cameraState !== 'unavailable' ? (
             canReuseInitialStream && retainedStreamHost ? (
@@ -735,62 +933,9 @@ export function CameraLiveViewer({
         >
           <div
             data-testid="camera-viewer-header-layout"
-            className="pointer-events-auto grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 md:flex md:gap-3"
+            className="pointer-events-auto flex items-start justify-end gap-3"
           >
-            <div className="min-w-0">
-              <div
-                data-testid="camera-viewer-eyebrow"
-                className="flex min-w-0 items-center gap-2 text-xs font-medium text-white/76"
-              >
-                <span className="min-w-0 truncate font-semibold text-white/92">{name}</span>
-                <span className="h-1 w-1 shrink-0 rounded-full bg-white/35" />
-                <span className="shrink-0">{room}</span>
-                <span className="h-1 w-1 shrink-0 rounded-full bg-white/35" />
-                <span className="shrink-0">{streamTypeLabel}</span>
-              </div>
-            </div>
-
-            <div
-              data-testid="camera-viewer-status"
-              className="col-span-2 row-start-2 flex w-fit items-center gap-2 md:order-2 md:ml-auto"
-            >
-              <div
-                data-testid="camera-viewer-live-status"
-                className="inline-flex h-9 items-center gap-2 rounded-full border border-white/12 bg-black/45 px-3 text-xs font-medium text-white backdrop-blur-xl"
-              >
-                <span
-                  className={`h-2 w-2 rounded-full ${
-                    isFeedRunning
-                      ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.68)]'
-                      : 'bg-white/45'
-                  }`}
-                />
-                <Video className="h-3.5 w-3.5 text-white/72" />
-                <span>
-                  {isStreamReadinessOpaque
-                    ? t('camera.settings.webRtcStreamSource.direct')
-                    : isFeedRunning
-                      ? t('camera.status.live')
-                      : isStreamPending
-                        ? t('camera.loadingFeed')
-                        : cameraState === 'off'
-                          ? t('common.off')
-                          : cameraState === 'unavailable'
-                            ? t('camera.status.unavailable')
-                            : t('common.on')}
-                </span>
-                {playbackModel?.isSnapshotFallback ? (
-                  <span className="text-white/58">{t('camera.viewer.snapshotFallback')}</span>
-                ) : null}
-              </div>
-              {motionDetected ? (
-                <div className="inline-flex h-9 items-center gap-1.5 rounded-full border border-amber-300/25 bg-amber-400/16 px-3 text-xs font-semibold text-amber-100 backdrop-blur-xl">
-                  <Activity className="h-3.5 w-3.5" />
-                  <span>{t('camera.motion.detected')}</span>
-                </div>
-              ) : null}
-            </div>
-            <div className="col-start-2 row-start-1 flex shrink-0 items-center gap-3 md:order-3">
+            <div className="flex shrink-0 items-center gap-3">
               {isShowingSnapshot ? (
                 <button
                   type="button"
@@ -813,6 +958,20 @@ export function CameraLiveViewer({
               ) : null}
               <button
                 type="button"
+                onClick={() => void handleNativeFullscreen()}
+                className={CAMERA_VIEWER_ACTION_BUTTON_CLASS_NAME}
+                aria-label={`${t(isNativeFullscreen ? 'common.close' : 'common.open')} ${t(
+                  'camera.viewer.description'
+                )}`}
+              >
+                {isNativeFullscreen ? (
+                  <Minimize className={navetIconSizeTokens.sm} />
+                ) : (
+                  <Expand className={navetIconSizeTokens.sm} />
+                )}
+              </button>
+              <button
+                type="button"
                 onClick={() => onOpenChange(false)}
                 className={CAMERA_VIEWER_ACTION_BUTTON_CLASS_NAME}
                 aria-label={t('common.close')}
@@ -827,35 +986,96 @@ export function CameraLiveViewer({
           data-testid="camera-viewer-bottom-controls"
           className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/85 via-black/45 to-transparent pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] md:pl-[calc(env(safe-area-inset-left,0px)+1.25rem)] md:pr-[calc(env(safe-area-inset-right,0px)+1.25rem)] md:pt-5 md:pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)]"
         >
-          <div className="flex min-w-0 flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div className="flex min-w-0 flex-col gap-3">
             <CameraAccessoryRail accessories={accessoryEntities} cameraName={name} />
-            <div className="ml-auto flex max-w-full shrink-0 flex-wrap justify-end gap-2">
-              <CameraLightControl cameraName={name} lights={cameraLights} />
-              {!usesDirectStream && availableTransportPreferences.length > 1 ? (
-                <CameraViewerDropdown
-                  icon={Video}
-                  label={t('camera.settings.streamPreference')}
-                  options={transportOptions}
-                  value={effectivePreferredTransport}
-                  onChange={onPreferredTransportChange}
-                />
-              ) : null}
-              {!isStreamReadinessOpaque ? (
-                <CameraViewerDropdown
-                  icon={Scaling}
-                  label={t('camera.settings.fitMode')}
-                  options={fitModeOptions}
-                  value={cameraFitMode}
-                  onChange={onCameraFitModeChange}
-                />
-              ) : null}
-              <CameraViewerDropdown
-                icon={Camera}
-                label={t('camera.settings.viewMode')}
-                options={viewModeOptions}
-                value={effectiveViewMode}
-                onChange={onCameraViewModeChange}
-              />
+            <div className="flex min-w-0 items-end justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <span
+                  data-testid="camera-viewer-name"
+                  className="block truncate text-xs font-semibold text-white/92"
+                >
+                  {name}
+                </span>
+                <div
+                  data-testid="camera-viewer-eyebrow"
+                  className="mt-1 flex min-w-0 items-center gap-2 whitespace-nowrap text-xs font-medium text-white/76"
+                >
+                  <span className="min-w-0 truncate">{room}</span>
+                  <span className="h-1 w-1 shrink-0 rounded-full bg-white/35" />
+                  <span className="shrink-0">{streamTypeLabel}</span>
+                  <span className="h-1 w-1 shrink-0 rounded-full bg-white/35" />
+                  <span
+                    data-testid="camera-viewer-live-status"
+                    className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap font-semibold text-white/92"
+                  >
+                    <span
+                      className={`h-2 w-2 rounded-full ${
+                        isFeedRunning
+                          ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.68)]'
+                          : 'bg-white/45'
+                      }`}
+                    />
+                    {viewerStatusLabel}
+                  </span>
+                </div>
+                {motionDetected ? (
+                  <div className="mt-2 inline-flex h-8 items-center gap-1.5 rounded-full border border-amber-300/25 bg-amber-400/16 px-3 text-xs font-semibold text-amber-100 backdrop-blur-xl">
+                    <Activity className="h-3.5 w-3.5" />
+                    <span>{t('camera.motion.detected')}</span>
+                  </div>
+                ) : null}
+              </div>
+              <div className="ml-auto flex max-w-[60%] shrink-0 flex-wrap justify-end gap-2 sm:max-w-full">
+                {isPhone ? (
+                  <CameraViewerMobileMoreControls
+                    cameraName={name}
+                    lights={cameraLights}
+                    showTransport={!usesDirectStream && availableTransportPreferences.length > 1}
+                    transportLabel={t('camera.settings.streamPreference')}
+                    transportOptions={transportOptions}
+                    transportValue={effectivePreferredTransport}
+                    onTransportChange={onPreferredTransportChange}
+                    showFitMode={!isStreamReadinessOpaque}
+                    fitModeLabel={t('camera.settings.fitMode')}
+                    fitModeOptions={fitModeOptions}
+                    fitModeValue={cameraFitMode}
+                    onFitModeChange={onCameraFitModeChange}
+                    viewModeLabel={t('camera.settings.viewMode')}
+                    viewModeOptions={viewModeOptions}
+                    viewModeValue={effectiveViewMode}
+                    onViewModeChange={onCameraViewModeChange}
+                  />
+                ) : (
+                  <>
+                    <CameraLightControl cameraName={name} lights={cameraLights} />
+                    {!usesDirectStream && availableTransportPreferences.length > 1 ? (
+                      <CameraViewerDropdown
+                        icon={Video}
+                        label={t('camera.settings.streamPreference')}
+                        options={transportOptions}
+                        value={effectivePreferredTransport}
+                        onChange={onPreferredTransportChange}
+                      />
+                    ) : null}
+                    {!isStreamReadinessOpaque ? (
+                      <CameraViewerDropdown
+                        icon={Scaling}
+                        label={t('camera.settings.fitMode')}
+                        options={fitModeOptions}
+                        value={cameraFitMode}
+                        onChange={onCameraFitModeChange}
+                      />
+                    ) : null}
+                    <CameraViewerDropdown
+                      icon={Camera}
+                      label={t('camera.settings.viewMode')}
+                      options={viewModeOptions}
+                      value={effectiveViewMode}
+                      onChange={onCameraViewModeChange}
+                    />
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

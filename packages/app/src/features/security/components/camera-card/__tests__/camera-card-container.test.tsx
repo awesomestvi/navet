@@ -146,6 +146,7 @@ describe('CameraCardContainer', () => {
       cameraWebRtcStreamSources: {},
       cameraDirectStreamUrls: {},
       cameraFullscreenHiddenAccessoryIds: {},
+      cameraFullscreenVisibleAccessoryIds: {},
       disableAnimations: false,
       effectsQuality: 'high',
       lowPowerMode: false,
@@ -324,11 +325,15 @@ describe('CameraCardContainer', () => {
       expect.objectContaining({
         motionDetected: true,
         accessoryEntities: expect.arrayContaining([
-          expect.objectContaining({ id: 'home_assistant:binary_sensor.front_scenario' }),
           expect.objectContaining({ id: 'home_assistant:light.front_ir' }),
-          expect.objectContaining({ id: 'home_assistant:sensor.front_temperature' }),
         ]),
       })
+    );
+    expect(cameraLiveViewerRenderMock.mock.lastCall?.[0].accessoryEntities).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'home_assistant:binary_sensor.front_scenario' }),
+        expect.objectContaining({ id: 'home_assistant:sensor.front_temperature' }),
+      ])
     );
 
     act(() => {
@@ -337,14 +342,14 @@ describe('CameraCardContainer', () => {
         .updateCameraFullscreenAccessoryVisibility(
           'home_assistant:camera.front',
           'home_assistant:sensor.front_temperature',
-          false
+          true
         );
     });
 
     const latestViewerProps = cameraLiveViewerRenderMock.mock.lastCall?.[0] as {
       accessoryEntities: Array<{ id: string }>;
     };
-    expect(latestViewerProps.accessoryEntities).not.toEqual(
+    expect(latestViewerProps.accessoryEntities).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: 'home_assistant:sensor.front_temperature' }),
       ])

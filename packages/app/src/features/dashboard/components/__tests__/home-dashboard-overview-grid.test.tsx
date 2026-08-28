@@ -222,6 +222,37 @@ describe('home dashboard overview grid layout', () => {
     expect(screen.getByTestId('card-light.kitchen')).toBeInTheDocument();
   });
 
+  it('uses the shared micro-card packing block in the Home presentation grid', () => {
+    const cards = new Map([
+      ['switch.water_pump', createDevice('switch.water_pump', 'tiny')],
+      ['script.feed_mowgli', createDevice('script.feed_mowgli', 'extra-small')],
+      ['script.stop_music', createDevice('script.stop_music', 'tiny')],
+    ]);
+
+    const { container } = renderWithProviders(
+      <PresentationCardGrid
+        cardIds={['switch.water_pump', 'script.feed_mowgli', 'script.stop_music']}
+        gridCols={4}
+        allCards={cards}
+        cardSizes={{}}
+        updateCardSize={vi.fn()}
+        showHero
+      />
+    );
+
+    const waterPumpSlot = screen.getByTestId('card-switch.water_pump').parentElement;
+    const stopMusicSlot = screen.getByTestId('card-script.stop_music').parentElement;
+    const feedMowgliSlot = screen.getByTestId('card-script.feed_mowgli').parentElement;
+
+    expect(waterPumpSlot?.style.gridColumnStart).toBe('1');
+    expect(waterPumpSlot?.style.gridRowStart).toBe('1');
+    expect(stopMusicSlot?.style.gridColumnStart).toBe('2');
+    expect(stopMusicSlot?.style.gridRowStart).toBe('1');
+    expect(feedMowgliSlot?.style.gridColumnStart).toBe('1');
+    expect(feedMowgliSlot?.style.gridRowStart).toBe('2');
+    expect(getGridElement(container)).toBeInTheDocument();
+  });
+
   it('progressively mounts home cards and enables offscreen paint optimization in low-power mode', () => {
     mockSettingsState.lowPowerMode = true;
     progressiveBatchingMock.mockReturnValue(1);

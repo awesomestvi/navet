@@ -33,4 +33,21 @@ describe('packDashboardGridItems', () => {
 
     expect([...packDashboardGridItems(items, 8)]).toEqual([...packDashboardGridItems(items, 8)]);
   });
+
+  it('forms a complete small-card block from two tiny cards and one extra-small card', () => {
+    const placements = packDashboardGridItems(
+      [
+        { id: 'water-pump', size: 'tiny' },
+        { id: 'feed-mowgli', size: 'extra-small' },
+        { id: 'stop-music', size: 'tiny' },
+        { id: 'island-lights', size: 'extra-small' },
+      ],
+      8
+    );
+
+    expect(placements.get('water-pump')).toEqual({ column: 1, row: 1 });
+    expect(placements.get('stop-music')).toEqual({ column: 2, row: 1 });
+    expect(placements.get('feed-mowgli')).toEqual({ column: 1, row: 2 });
+    expect(placements.get('island-lights')).toEqual({ column: 3, row: 1 });
+  });
 });

@@ -25,6 +25,7 @@ export const EntityGrid = memo(function EntityGrid({
   sectionId,
   isCollapsed = false,
   onToggleCollapse,
+  showHeader = true,
 }: {
   devices: DeviceWithType[];
   rawDevices: DeviceCollection;
@@ -41,6 +42,7 @@ export const EntityGrid = memo(function EntityGrid({
   sectionId?: string;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  showHeader?: boolean;
 }) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
@@ -72,23 +74,25 @@ export const EntityGrid = memo(function EntityGrid({
   );
 
   return (
-    <section className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        {onToggleCollapse ? (
-          <button
-            type="button"
-            aria-expanded={!isCollapsed}
-            aria-controls={panelId}
-            onClick={onToggleCollapse}
-            className="flex min-w-0 flex-1 items-center text-left"
-          >
-            {headerContent}
-          </button>
-        ) : (
-          headerContent
-        )}
-        {headerAction}
-      </div>
+    <section className={showHeader ? 'space-y-4' : undefined}>
+      {showHeader ? (
+        <div className="flex items-center justify-between gap-3">
+          {onToggleCollapse ? (
+            <button
+              type="button"
+              aria-expanded={!isCollapsed}
+              aria-controls={panelId}
+              onClick={onToggleCollapse}
+              className="flex min-w-0 flex-1 items-center text-left"
+            >
+              {headerContent}
+            </button>
+          ) : (
+            headerContent
+          )}
+          {headerAction}
+        </div>
+      ) : null}
       {!isCollapsed ? (
         <div id={panelId}>
           <DashboardEditActions isEditMode={isEditMode} onRemoveEntity={onRemoveEntity}>

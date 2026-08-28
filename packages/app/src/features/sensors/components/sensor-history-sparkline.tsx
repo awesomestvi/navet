@@ -30,6 +30,7 @@ export const SensorHistorySparkline = memo(function SensorHistorySparkline({
         height={height}
         className={`h-full w-full ${className ?? ''}`.trim()}
         padX={0}
+        showYAxisMarks
       />
     </div>
   );

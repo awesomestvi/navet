@@ -36,6 +36,24 @@ describe('dashboard profile runtime store', () => {
     });
   });
 
+  it('retains a structured sync failure until recovery starts', () => {
+    useDashboardProfileRuntimeStore
+      .getState()
+      .markError('Wrong workspace', 'workspace-tenant-mismatch');
+    expect(useDashboardProfileRuntimeStore.getState()).toMatchObject({
+      status: 'error',
+      error: 'Wrong workspace',
+      failureCode: 'workspace-tenant-mismatch',
+    });
+
+    useDashboardProfileRuntimeStore.getState().markSaving();
+    expect(useDashboardProfileRuntimeStore.getState()).toMatchObject({
+      status: 'saving',
+      error: null,
+      failureCode: null,
+    });
+  });
+
   it('sorts registered clients by last-seen time', () => {
     useDashboardProfileRuntimeStore.getState().setClients([
       {

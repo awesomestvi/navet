@@ -22,5 +22,6 @@ describe('SensorHistorySparkline', () => {
 
     expect(sparkline).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Temperature trend' })).toBeInTheDocument();
+    expect(sparkline.querySelectorAll('[data-chart-reference-line="true"]')).toHaveLength(2);
   });
 });

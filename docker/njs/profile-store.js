@@ -3581,9 +3581,114 @@ function forgetClient(r, workspace, clientId, requestingClient) {
   });
 }
 
+function clientOwnsWorkspace(client) {
+  if (!client) {
+    return false;
+  }
+  const registry = readRegistry();
+  return registry.clients.some(function (entry) {
+    return entry.id === client.id && entry.bindingId === client.bindingId;
+  });
+}
+
+function rebindWorkspace(r, principal, client) {
+  if (
+    !principal ||
+    principal.providerId !== 'home_assistant' ||
+    typeof principal.tenantId !== 'string' ||
+    !TENANT_ID_PATTERN.test(principal.tenantId) ||
+    !clientOwnsWorkspace(client)
+  ) {
+    sendClientForbidden(r);
+    return;
+  }
+  const body = r.requestText || '';
+  if (!body) {
+    sendJson(r, 400, { error: 'Missing dashboard profile body' });
+    return;
+  }
+  if (Buffer.byteLength(body, 'utf8') > MAX_PROFILE_BYTES) {
+    sendJson(r, 413, { error: 'Dashboard profile is too large' });
+    return;
+  }
+
+  let profile = null;
+  try {
+    profile = JSON.parse(body);
+  } catch (_error) {
+    sendJson(r, 400, { error: 'Unsupported dashboard profile' });
+    return;
+  }
+  if (!isValidProfile(profile)) {
+    sendJson(r, 400, { error: 'Unsupported dashboard profile' });
+    return;
+  }
+
+  const workspace = readOrCreateWorkspace();
+  const state = readState(workspace);
+  const profileResult = readCommittedProfile(state);
+  const reboundWorkspace = Object.assign({}, workspace, {
+    tenantBinding: {
+      providerId: 'home_assistant',
+      tenantId: principal.tenantId,
+      enrolledAt: nowIso(),
+    },
+  });
+  writeJson(WORKSPACE_PATH, reboundWorkspace);
+  try {
+    const metadata = createRevisionMetadata(
+      reboundWorkspace,
+      state,
+      'update',
+      createAuthor(principal, client),
+      ['/'],
+      null
+    );
+    const nextState = persistRevision(
+      state,
+      profileResult.profile,
+      metadata,
+      sanitizeDashboardProfile(profile)
+    );
+    const recovery = resolveRecovery(nextState, {
+      status: 'present',
+      profile: profile,
+    });
+    applyStateHeaders(r, reboundWorkspace, nextState, recovery);
+    touchClientAfterCommit(
+      reboundWorkspace,
+      principal,
+      client,
+      nextState.revision
+    );
+    sendJson(r, 200, {
+      ok: true,
+      revision: nextState.revision,
+      updatedAt: metadata.updatedAt,
+    });
+  } catch (error) {
+    writeJson(WORKSPACE_PATH, workspace);
+    throw error;
+  }
+}
+
 function routeRequest(r, principal) {
   const uri = typeof r.uri === 'string' ? r.uri.replace(/\/+$/, '') : '';
   const normalizedUri = uri || '/__navet_profile__/default';
+  if (normalizedUri === '/__navet_profile__/workspace/rebind') {
+    if (r.method !== 'POST') {
+      r.headersOut.Allow = 'POST';
+      sendJson(r, 405, { error: 'Method not allowed' });
+      return;
+    }
+    if (!isStrictSameOriginMutation(r)) {
+      sendJson(r, 403, { error: 'Cross-origin profile mutation is not allowed' });
+      return;
+    }
+    const recoveryClient = readClient(r, false, principal);
+    rebindWorkspace(r, principal, recoveryClient);
+    return;
+  }
   const workspace = authorizeWorkspacePrincipal(principal);
   if (!workspace) {
     sendWorkspaceForbidden(r);

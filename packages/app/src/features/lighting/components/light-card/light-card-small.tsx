@@ -52,6 +52,49 @@ interface LightCardSmallProps {
   showSettingsButton: boolean;
 }
 
+// Three 36px controls plus compact gaps fit the narrow two-column mobile card.
+const SMALL_ACTION_SLOT_COUNT = 3;
+
+interface SmallLightActionLayoutParams {
+  brightnessPresetCount: number;
+  inlineControlCount: number;
+  showSettingsButton: boolean;
+}
+
+export function getSmallLightActionLayout({
+  brightnessPresetCount,
+  inlineControlCount,
+  showSettingsButton,
+}: SmallLightActionLayoutParams): {
+  presetMaxVisible: number;
+  presetOverflow: 'menu' | 'hide';
+} {
+  const availablePresetSlots = Math.max(
+    0,
+    SMALL_ACTION_SLOT_COUNT - inlineControlCount - (showSettingsButton ? 1 : 0)
+  );
+  const needsPresetOverflow = brightnessPresetCount > availablePresetSlots;
+
+  if (!needsPresetOverflow) {
+    return {
+      presetMaxVisible: availablePresetSlots,
+      presetOverflow: 'hide',
+    };
+  }
+
+  if (availablePresetSlots === 0) {
+    return {
+      presetMaxVisible: 0,
+      presetOverflow: 'hide',
+    };
+  }
+
+  return {
+    presetMaxVisible: availablePresetSlots - 1,
+    presetOverflow: 'menu',
+  };
+}
+
 export const LightCardSmall = memo(function LightCardSmall({
   name,
   size,
@@ -90,15 +133,15 @@ export const LightCardSmall = memo(function LightCardSmall({
   const { theme } = useTheme();
   const effectiveTheme = theme === 'light' && isOn ? 'dark' : theme;
   const isExtraSmall = isExtraSmallCardSize(size);
-  const inlineControlCount = (supportsColorTemperature ? 1 : 0) + (supportsColorControl ? 1 : 0);
-  const hasInlineControls = inlineControlCount > 0;
-  // When effects are available, the overflow affordance becomes the effect picker.
-  const presetMaxVisible = hasInlineControls ? Math.max(0, 2 - inlineControlCount) : undefined;
-  const presetOverflow: 'menu' | 'hide' = supportsEffects
-    ? 'hide'
-    : hasInlineControls
-      ? 'menu'
-      : 'hide';
+  const inlineControlCount =
+    (supportsColorTemperature ? 1 : 0) +
+    (supportsColorControl ? 1 : 0) +
+    (supportsEffects && effectOptions.length > 0 ? 1 : 0);
+  const { presetMaxVisible, presetOverflow } = getSmallLightActionLayout({
+    brightnessPresetCount: supportsBrightness ? brightnessPresets.length : 0,
+    inlineControlCount,
+    showSettingsButton,
+  });
 
   return (
     <>

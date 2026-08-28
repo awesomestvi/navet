@@ -1,3 +1,4 @@
+import type { DashboardProfileErrorCode } from '@navet/app/services/dashboard-profile.contract';
 import { create } from 'zustand';
 import type { DashboardClientIdentity, DashboardClientKind } from './dashboard-client-identity';
 
@@ -46,6 +47,7 @@ interface DashboardProfileRuntimeState {
   clients: DashboardProfileClientRecord[];
   conflict: DashboardProfileConflict | null;
   error: string | null;
+  failureCode: DashboardProfileErrorCode | null;
   lastActivity: DashboardProfileActivity | null;
   lastSyncedAt: string | null;
   profileId: string | null;
@@ -54,7 +56,7 @@ interface DashboardProfileRuntimeState {
   workspaceId: string | null;
   clearConflict: () => void;
   markDisabled: () => void;
-  markError: (error: string) => void;
+  markError: (error: string, failureCode?: DashboardProfileErrorCode | null) => void;
   markLoading: () => void;
   markOffline: () => void;
   markSaving: () => void;
@@ -76,6 +78,7 @@ const initialState = {
   clients: [] as DashboardProfileClientRecord[],
   conflict: null,
   error: null,
+  failureCode: null,
   lastActivity: null,
   lastSyncedAt: null,
   profileId: null,
@@ -87,14 +90,15 @@ const initialState = {
 export const useDashboardProfileRuntimeStore = create<DashboardProfileRuntimeState>((set) => ({
   ...initialState,
   clearConflict: () => set({ conflict: null }),
-  markDisabled: () => set({ conflict: null, error: null, status: 'disabled' }),
-  markError: (error) => set({ error, status: 'error' }),
-  markLoading: () => set({ error: null, status: 'loading' }),
+  markDisabled: () => set({ conflict: null, error: null, failureCode: null, status: 'disabled' }),
+  markError: (error, failureCode = null) => set({ error, failureCode, status: 'error' }),
+  markLoading: () => set({ error: null, failureCode: null, status: 'loading' }),
   markOffline: () => set({ status: 'offline' }),
-  markSaving: () => set({ error: null, status: 'saving' }),
+  markSaving: () => set({ error: null, failureCode: null, status: 'saving' }),
   markSynced: ({ activity, at = new Date().toISOString(), profileId, revision, workspaceId }) =>
     set((state) => ({
       error: null,
+      failureCode: null,
       lastActivity: activity === undefined ? state.lastActivity : activity,
       lastSyncedAt: at,
       profileId: profileId === undefined ? state.profileId : profileId,
@@ -110,5 +114,5 @@ export const useDashboardProfileRuntimeStore = create<DashboardProfileRuntimeSta
         (left, right) => Date.parse(right.lastSeenAt) - Date.parse(left.lastSeenAt)
       ),
     }),
-  setConflict: (conflict) => set({ conflict, error: null, status: 'error' }),
+  setConflict: (conflict) => set({ conflict, error: null, failureCode: null, status: 'error' }),
 }));

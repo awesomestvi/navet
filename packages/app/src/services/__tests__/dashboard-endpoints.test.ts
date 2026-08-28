@@ -4,6 +4,7 @@ import {
   forgetDashboardClient,
   loadDashboardPreferences,
   loadDashboardProfile,
+  rebindDashboardProfileWorkspace,
   saveDashboardPreferences,
   saveDashboardProfile,
 } from '../dashboard-profile.service';
@@ -330,6 +331,53 @@ describe('dashboard add-on endpoints', () => {
       failureCode: 'workspace-tenant-mismatch',
       profile: null,
     });
+  });
+
+  it('publishes the local dashboard through the registered-browser recovery endpoint', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: {
+          ETag: '"navet-workspace-8"',
+          'X-Navet-Profile-Revision': '8',
+          'X-Navet-Profile-Recovery': 'active',
+        },
+      })
+    );
+    const profile = {
+      version: 3 as const,
+      app: 'navet' as const,
+      exportedAt: '2026-07-25T09:00:00.000Z',
+      theme: { theme: 'glass' as const, primaryColor: 'blue' as const },
+      settings: {},
+      navigation: { currentRoom: 'all', activeSection: 'home' as const },
+    };
+    const client = {
+      id: 'client-panel-01',
+      name: 'Kitchen panel',
+      kind: 'wall_panel' as const,
+    };
+
+    await expect(rebindDashboardProfileWorkspace(profile, client)).resolves.toMatchObject({
+      saved: true,
+      revision: 8,
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${window.location.origin}/__navet_profile__/workspace/rebind`,
+      {
+        method: 'POST',
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers: expect.any(Headers),
+        body: JSON.stringify(profile),
+      }
+    );
+    const headers = getRequestHeaders(fetchMock.mock.calls[0]?.[1] as RequestInit | undefined);
+    expect(headers.get('Content-Type')).toBe('application/json');
+    expect(headers.get('X-Navet-Client-Id')).toBe(client.id);
+    expect(decodeURIComponent(headers.get('X-Navet-Client-Name') ?? '')).toBe(client.name);
+    expect(headers.get('X-Navet-Client-Kind')).toBe(client.kind);
   });
 
   it('parses workspace, revision, author, changed paths, and recovery metadata', async () => {

@@ -159,6 +159,8 @@ export const settingsSelectors = {
     getEntitySetting(state.cameraFitModes, entityId) ?? state.cameraFitMode,
   cameraFullscreenHiddenAccessoryIdsForEntity: (entityId: string) => (state: SettingsState) =>
     getEntitySetting(state.cameraFullscreenHiddenAccessoryIds, entityId) ?? EMPTY_STRING_ARRAY,
+  cameraFullscreenVisibleAccessoryIdsForEntity: (entityId: string) => (state: SettingsState) =>
+    getEntitySetting(state.cameraFullscreenVisibleAccessoryIds, entityId) ?? EMPTY_STRING_ARRAY,
   ambientLightBleed: (state: SettingsState) => state.ambientLightBleed,
   weatherForecastMode: (state: SettingsState) => state.weatherForecastMode,
   weatherMetricIds: (state: SettingsState) => state.weatherMetricIds,

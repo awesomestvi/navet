@@ -1,3 +1,7 @@
+import {
+  type ChartSurfaceTokens,
+  getChartSurfaceTokens,
+} from '@navet/app/components/charts/chart-surface-tokens';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import type { CSSProperties } from 'react';
 
@@ -171,27 +175,8 @@ export function getEnergyInsightSurfaceTokens(theme: ThemeType): EnergyInsightSu
   };
 }
 
-export interface EnergyChartSurfaceTokens {
-  axisLineColor: string;
-  axisLabelColor: string;
-  gridLineColor: string;
-  chartBackground: string;
-}
+export type EnergyChartSurfaceTokens = ChartSurfaceTokens;
 
 export function getEnergyChartSurfaceTokens(theme: ThemeType): EnergyChartSurfaceTokens {
-  if (theme === 'light') {
-    return {
-      axisLineColor: 'border-slate-300/70',
-      axisLabelColor: 'text-slate-600',
-      gridLineColor: 'rgba(15,23,42,0.06)',
-      chartBackground: 'rgba(255,255,255,0.5)',
-    };
-  }
-
-  return {
-    axisLineColor: 'border-white/6',
-    axisLabelColor: 'text-white/76',
-    gridLineColor: 'rgba(255,255,255,0.04)',
-    chartBackground: 'rgba(255,255,255,0.03)',
-  };
+  return getChartSurfaceTokens(theme);
 }

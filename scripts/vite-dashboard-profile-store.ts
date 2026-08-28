@@ -9,8 +9,8 @@ import {
 } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
-import type { InstallationCookieNames } from './installation-cookie-scope'
-import { isViteStrictSameOriginMutation } from './vite-provider-session-store'
+import type { InstallationCookieNames } from './installation-cookie-scope.ts'
+import { isViteStrictSameOriginMutation } from './vite-provider-session-store.ts'
 import {
   DASHBOARD_PROFILE_ERROR_CODES,
   DASHBOARD_PROFILE_CONTRACT_VERSION,
@@ -30,7 +30,7 @@ import {
   type DashboardProfileRecovery,
   type DashboardProfileRevisionMetadata,
   type DashboardWorkspaceIdentity,
-} from '../packages/app/src/services/dashboard-profile.contract'
+} from '../packages/app/src/services/dashboard-profile.contract.ts'
 
 export interface DashboardProfileData {
   app: 'navet'
@@ -2069,6 +2069,49 @@ export function createViteDashboardProfileStore(
     getPaths: () => paths,
     resolveRegisteredClientBinding,
     authorizePrincipal,
+    ownsClient(client: BoundDashboardProfileClient): boolean {
+      return readRegistry().clients.some(
+        (entry) => entry.id === client.id && entry.bindingId === client.bindingId
+      )
+    },
+    rebindWorkspace(
+      principal: ViteDashboardProfilePrincipal,
+      client: BoundDashboardProfileClient,
+      profile: DashboardProfileData
+    ) {
+      if (
+        principal.providerId !== 'home_assistant' ||
+        !TENANT_ID_PATTERN.test(principal.tenantId) ||
+        !readRegistry().clients.some(
+          (entry) => entry.id === client.id && entry.bindingId === client.bindingId
+        )
+      ) {
+        return null
+      }
+
+      const workspace = readOrCreateWorkspace()
+      const reboundWorkspace = {
+        ...workspace,
+        tenantBinding: {
+          providerId: 'home_assistant',
+          tenantId: principal.tenantId,
+          enrolledAt: new Date().toISOString(),
+        },
+      } satisfies PersistedDashboardWorkspace
+      writeJson(paths.workspace, reboundWorkspace)
+      try {
+        const state = persistRevision(
+          profile,
+          createAuthor(principal, client),
+          'update',
+          ['/']
+        )
+        return state
+      } catch (error) {
+        writeJson(paths.workspace, workspace)
+        throw error
+      }
+    },
     createPreferenceRequestContext(
       scope: DashboardPreferenceScope
     ): PreferenceRequestContext {
@@ -3096,6 +3139,67 @@ export function createViteDashboardProfileRequestHandler(options: {
       sendJson(res, 401, { error: 'Authentication required' })
       return
     }
+    const route = normalizedProfilePath(req)
+    const method = req.method ?? 'GET'
+    if (route === '/workspace/rebind') {
+      if (method !== 'POST') {
+        res.setHeader('Allow', 'POST')
+        sendJson(res, 405, { error: 'Method not allowed' })
+        return
+      }
+      if (!isViteStrictSameOriginMutation(req)) {
+        sendJson(res, 403, { error: 'Cross-origin profile mutation is not allowed' })
+        return
+      }
+      const recoveryClient = readClient(
+        req,
+        res,
+        principal,
+        store,
+        cookieNames,
+        false
+      )
+      if (!recoveryClient || !store.ownsClient(recoveryClient)) {
+        res.setHeader(
+          DASHBOARD_PROFILE_HEADERS.errorCode,
+          DASHBOARD_PROFILE_ERROR_CODES.clientBindingMismatch
+        )
+        sendJson(res, 403, {
+          error: 'This dashboard client cannot recover this workspace',
+        })
+        return
+      }
+      const serialized = await readBody(req, MAX_PROFILE_BYTES)
+      let profile: unknown = null
+      try {
+        profile = serialized ? JSON.parse(serialized) : null
+      } catch {
+        sendJson(res, 400, { error: 'Unable to recover dashboard sync' })
+        return
+      }
+      if (!isValidDashboardProfileData(profile)) {
+        sendJson(res, 400, { error: 'Unsupported dashboard profile' })
+        return
+      }
+      const state = store.rebindWorkspace(principal, recoveryClient, profile)
+      if (!state) {
+        res.setHeader(
+          DASHBOARD_PROFILE_HEADERS.errorCode,
+          DASHBOARD_PROFILE_ERROR_CODES.clientBindingMismatch
+        )
+        sendJson(res, 403, {
+          error: 'This dashboard client cannot recover this workspace',
+        })
+        return
+      }
+      applyStoreHeaders(res, store)
+      sendJson(res, 200, {
+        ok: true,
+        revision: state.revision,
+        updatedAt: state.metadata?.updatedAt ?? null,
+      })
+      return
+    }
     if (!store.authorizePrincipal(principal)) {
       res.setHeader(
         DASHBOARD_PROFILE_HEADERS.errorCode,
@@ -3108,8 +3212,6 @@ export function createViteDashboardProfileRequestHandler(options: {
       return
     }
 
-    const route = normalizedProfilePath(req)
-    const method = req.method ?? 'GET'
     if (method !== 'GET' && !isViteStrictSameOriginMutation(req)) {
       sendJson(res, 403, { error: 'Cross-origin profile mutation is not allowed' })
       return

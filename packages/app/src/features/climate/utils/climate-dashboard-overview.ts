@@ -16,7 +16,7 @@ export interface ClimateDashboardAttentionItem {
   title: string;
   detail: string;
   priority: 'critical' | 'attention';
-  kind: 'unavailable' | 'temperature' | 'provider';
+  kind: 'unavailable' | 'provider';
 }
 
 export interface ClimateDashboardOverview {
@@ -148,6 +148,9 @@ function getRoomComfort(device: DeviceWithType): boolean | null {
   if (device.type !== 'climate' && device.type !== 'hvac') return null;
   if (isUnavailable(device)) return false;
 
+  const mode = device.mode?.trim().toLowerCase() ?? '';
+  if (mode === 'off') return null;
+
   const current = getFiniteNumber(device.currentTemperature);
   const target = getFiniteNumber(device.temperature);
   if (current === null || target === null) return null;
@@ -155,42 +158,6 @@ function getRoomComfort(device: DeviceWithType): boolean | null {
   const sourceUnit = normalizeTemperatureUnit(device.temperatureUnit) ?? 'celsius';
   const allowedDeviation = sourceUnit === 'fahrenheit' ? 3.6 : 2;
   return Math.abs(current - target) < allowedDeviation;
-}
-
-function getTemperatureAttention(
-  device: DeviceWithType,
-  displayUnit: TemperatureUnit,
-  t: TranslateFn
-): ClimateDashboardAttentionItem | null {
-  if (device.type !== 'climate' && device.type !== 'hvac') return null;
-
-  const current = getFiniteNumber(device.currentTemperature);
-  const target = getFiniteNumber(device.temperature);
-  const sourceUnit = normalizeTemperatureUnit(device.temperatureUnit) ?? 'celsius';
-  const mode = device.mode?.trim().toLowerCase() ?? '';
-  const allowedDeviation = sourceUnit === 'fahrenheit' ? 3.6 : 2;
-
-  if (
-    current === null ||
-    target === null ||
-    mode !== 'off' ||
-    Math.abs(current - target) < allowedDeviation
-  ) {
-    return null;
-  }
-
-  const displayCurrent = convertTemperatureUnitValue(current, sourceUnit, displayUnit);
-  const displayTarget = convertTemperatureUnitValue(target, sourceUnit, displayUnit);
-  return {
-    id: `climate-temperature:${device.id}`,
-    deviceId: device.id,
-    title: device.name,
-    detail: `${getDeviceRoomLabel(device)} · ${t('climate.currentTemperature', {
-      temp: `${formatDisplayTemperature(displayCurrent)}°`,
-    })} · ${t('climate.target')} ${formatDisplayTemperature(displayTarget)}°`,
-    priority: 'attention',
-    kind: 'temperature',
-  };
 }
 
 function getProviderAttention(
@@ -274,11 +241,7 @@ export function buildClimateDashboardOverview(
     const providerAttention = getProviderAttention(device, t);
     if (providerAttention) {
       attentionItems.push(providerAttention);
-      continue;
     }
-
-    const temperatureAttention = getTemperatureAttention(device, displayUnit, t);
-    if (temperatureAttention) attentionItems.push(temperatureAttention);
   }
 
   attentionItems.sort((left, right) => {
@@ -293,18 +256,21 @@ export function buildClimateDashboardOverview(
       : null;
   const comparableRoomCount = roomComfort.size;
   const comfortableRoomCount = [...roomComfort.values()].filter(Boolean).length;
+  const hasCriticalAttention = attentionItems.some((item) => item.priority === 'critical');
   const summaryItems: HomeStatusSummaryItem[] = [];
   summaryItems.push({
     id: 'climate-overall',
     title: t('homeSummary.climate'),
     value:
-      attentionItems.length > 0
-        ? t('tasks.filters.attention')
-        : t('dashboard.packs.section.comfort'),
+      attentionItems.length > 0 ? attentionItems[0].title : t('dashboard.packs.section.comfort'),
     icon: Thermometer,
-    iconColor: attentionItems.length > 0 ? '#f59e0b' : '#22c55e',
-    tone: attentionItems.length > 0 ? 'warning' : 'neutral',
-    priority: attentionItems.length > 0 ? 'attention' : 'current',
+    iconColor: hasCriticalAttention ? '#f87171' : attentionItems.length > 0 ? '#f59e0b' : '#22c55e',
+    tone: hasCriticalAttention ? 'danger' : attentionItems.length > 0 ? 'warning' : 'neutral',
+    priority: hasCriticalAttention
+      ? 'critical'
+      : attentionItems.length > 0
+        ? 'attention'
+        : 'current',
   });
   if (temperatureRange) {
     summaryItems.push({
@@ -313,10 +279,8 @@ export function buildClimateDashboardOverview(
       value: temperatureRange,
       icon: Thermometer,
       iconColor: '#22d3ee',
-      tone: attentionItems.some((item) => item.kind === 'temperature') ? 'warning' : 'neutral',
-      priority: attentionItems.some((item) => item.kind === 'temperature')
-        ? 'attention'
-        : 'current',
+      tone: 'neutral',
+      priority: 'current',
     });
   }
   if (activeControlCount > 0) {
@@ -326,7 +290,7 @@ export function buildClimateDashboardOverview(
       value: String(activeControlCount),
       icon: Fan,
       iconColor: '#38bdf8',
-      tone: 'active',
+      tone: 'neutral',
     });
   }
   if (averageHumidity !== null) {

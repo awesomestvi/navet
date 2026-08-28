@@ -3,7 +3,14 @@ import { themeColorValues } from '@navet/app/components/shared/theme/theme-color
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@navet/app/components/ui/utils';
 import { useI18n, useTheme } from '@navet/app/hooks';
-import { CloudSun, Droplets, type LucideIcon, Thermometer } from 'lucide-react';
+import {
+  CloudSun,
+  Droplets,
+  House,
+  type LucideIcon,
+  Thermometer,
+  TriangleAlert,
+} from 'lucide-react';
 import type { ClimateDashboardOverview } from '../utils/climate-dashboard-overview';
 
 const blackThemeCardEdge = {
@@ -29,26 +36,20 @@ export function ClimateComfortBanner({ overview }: ClimateComfortBannerProps) {
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const hasAttention = overview.attentionItems.length > 0;
-  const statusColor = hasAttention ? themeColorValues.orange : accentColor;
-  const progress =
-    overview.comparableRoomCount > 0
-      ? overview.comfortableRoomCount / overview.comparableRoomCount
-      : 0;
-  const roomRatio =
-    overview.comparableRoomCount > 0
-      ? `${overview.comfortableRoomCount}/${overview.comparableRoomCount}`
-      : '—';
+  const hasCritical = overview.attentionItems.some((item) => item.priority === 'critical');
+  const statusColor = hasCritical
+    ? themeColorValues.red
+    : hasAttention
+      ? themeColorValues.orange
+      : accentColor;
+  const StatusIcon = hasAttention ? TriangleAlert : House;
+  const primaryAttention = overview.attentionItems[0];
   const detailParts = [
+    primaryAttention ? `${primaryAttention.title} · ${primaryAttention.detail}` : null,
     overview.activeControlCount > 0
       ? t('homeSummary.active', { count: overview.activeControlCount })
       : null,
-    overview.attentionItems.length > 0
-      ? t('security.summary.issues', { count: overview.attentionItems.length })
-      : null,
   ].filter(Boolean);
-  const roomDetail = `${roomRatio} ${
-    overview.comparableRoomCount === 1 ? t('common.room') : t('dashboard.roomNav.openRooms')
-  }`;
   const metrics: ClimateMetric[] = [];
 
   if (overview.temperatureRange) {
@@ -90,17 +91,16 @@ export function ClimateComfortBanner({ overview }: ClimateComfortBannerProps) {
 
   const metricGridClass =
     metrics.length === 1
-      ? 'sm:grid-cols-1 xl:grid-cols-[minmax(18rem,1.55fr)_minmax(0,0.85fr)]'
+      ? 'grid-cols-1'
       : metrics.length === 2
-        ? 'sm:grid-cols-2 xl:grid-cols-[minmax(18rem,1.55fr)_repeat(2,minmax(0,0.85fr))]'
-        : 'sm:grid-cols-3 xl:grid-cols-[minmax(18rem,1.55fr)_repeat(3,minmax(0,0.85fr))]';
+        ? 'grid-cols-1 sm:grid-cols-2'
+        : 'grid-cols-1 sm:grid-cols-3';
 
   return (
     <Panel
       as="section"
-      padded={false}
       aria-label={t('homeSummary.climate')}
-      className="relative overflow-hidden"
+      className="relative overflow-hidden p-3"
       style={theme === 'black' ? blackThemeCardEdge : undefined}
       data-climate-comfort-banner
     >
@@ -111,101 +111,76 @@ export function ClimateComfortBanner({ overview }: ClimateComfortBannerProps) {
           background: `radial-gradient(circle at 8% 0%, ${statusColor}18, transparent 34%), radial-gradient(circle at 88% 100%, ${themeColorValues.teal}0d, transparent 30%)`,
         }}
       />
-      <div className={cn('relative grid grid-cols-1', metricGridClass)}>
-        <div className="flex min-w-0 items-center gap-3 px-4 py-4 sm:gap-4 sm:px-5 xl:min-h-28 xl:px-6">
-          <ComfortRing value={roomRatio} progress={progress} color={statusColor} />
+      <div className="relative lg:landscape:flex lg:landscape:items-center xl:flex xl:items-center">
+        <div className="flex min-w-0 items-center gap-2.5 sm:pb-3 lg:landscape:order-1 lg:landscape:mr-2 lg:landscape:pb-0 xl:order-1 xl:mr-3 xl:pb-0">
+          <span
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border xl:h-9 xl:w-9"
+            style={{
+              color: statusColor,
+              borderColor: `${statusColor}38`,
+              backgroundColor: `${statusColor}14`,
+            }}
+            aria-hidden="true"
+          >
+            <StatusIcon className="h-4 w-4" />
+          </span>
           <div className="min-w-0">
-            <h2 className={cn('text-sm font-semibold sm:text-base', surface.textPrimary)}>
-              {hasAttention ? t('tasks.filters.attention') : t('dashboard.packs.section.comfort')}
+            <h2 className={cn('truncate text-sm font-semibold leading-tight', surface.textPrimary)}>
+              {hasAttention ? t('tasks.filters.attention') : t('climate.comfort.mostlyComfortable')}
             </h2>
-            <p className={cn('mt-1 text-xs leading-relaxed', surface.textSecondary)}>
-              {detailParts.length > 0 ? `${roomDetail} · ${detailParts.join(' · ')}` : roomDetail}
-            </p>
+            {detailParts.length > 0 ? (
+              <p className={cn('mt-0.5 truncate text-[11px] leading-tight', surface.textSecondary)}>
+                {detailParts.join(' · ')}
+              </p>
+            ) : null}
           </div>
         </div>
-        {metrics.map((metric) => (
-          <ClimateMetricCell key={metric.id} metric={metric} />
-        ))}
+        <div
+          className={cn(
+            '-mx-3 -mb-3 hidden sm:grid lg:landscape:contents xl:contents',
+            metricGridClass
+          )}
+        >
+          {metrics.map((metric, index) => (
+            <ClimateMetricCell key={metric.id} metric={metric} index={index} />
+          ))}
+        </div>
       </div>
     </Panel>
   );
 }
 
-function ComfortRing({
-  value,
-  progress,
-  color,
-}: {
-  value: string;
-  progress: number;
-  color: string;
-}) {
-  const { theme } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
-  const radius = 25;
-  const circumference = 2 * Math.PI * radius;
-
-  return (
-    <div className="relative h-16 w-16 shrink-0" aria-hidden="true">
-      <svg className="h-full w-full -rotate-90" viewBox="0 0 64 64">
-        <title>{value}</title>
-        <circle cx="32" cy="32" r={radius} fill="none" stroke={`${color}26`} strokeWidth="6" />
-        <circle
-          cx="32"
-          cy="32"
-          r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth="6"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={circumference * (1 - progress)}
-        />
-      </svg>
-      <span
-        className={cn(
-          'absolute inset-0 flex items-center justify-center text-sm font-bold tabular-nums',
-          surface.textPrimary
-        )}
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
-
-function ClimateMetricCell({ metric }: { metric: ClimateMetric }) {
+function ClimateMetricCell({ metric, index }: { metric: ClimateMetric; index: number }) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const Icon = metric.icon;
+  const supportingText = metric.detail ? `${metric.label} · ${metric.detail}` : metric.label;
 
   return (
     <section
       aria-label={`${metric.label}: ${metric.value}`}
       className={cn(
-        'flex min-w-0 items-center gap-3 border-t px-4 py-4 sm:min-h-24 sm:border-l sm:px-5 xl:min-h-28 xl:border-t-0 xl:px-6',
-        surface.dividerBorder
+        'flex min-h-14 min-w-0 items-center gap-2 border-t border-current/10 px-3 py-3.5 sm:px-4 md:px-5',
+        index > 0 && 'sm:border-l',
+        'lg:landscape:order-2 lg:landscape:min-h-0 lg:landscape:w-auto lg:landscape:flex-none lg:landscape:border-0 lg:landscape:px-4 lg:landscape:py-0 xl:order-2 xl:min-h-0 xl:w-auto xl:flex-none xl:border-0 xl:px-5 xl:py-0',
+        index === 0 && 'lg:landscape:ml-auto xl:ml-auto',
+        index > 0 && 'lg:landscape:border-l xl:border-l'
       )}
       data-climate-comfort-metric={metric.id}
     >
       <span
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full xl:h-9 xl:w-9"
         style={{ color: metric.color, backgroundColor: `${metric.color}14` }}
       >
         <Icon className="h-4 w-4" aria-hidden="true" />
       </span>
       <div className="min-w-0">
-        <p className={cn('truncate text-[11px] leading-tight', surface.textSecondary)}>
-          {metric.label}
-        </p>
-        <p className={cn('mt-1 truncate text-lg font-semibold tabular-nums', surface.textPrimary)}>
+        <p className={cn('truncate text-sm font-semibold tabular-nums', surface.textPrimary)}>
           {metric.value}
         </p>
-        {metric.detail ? (
-          <p className={cn('mt-0.5 truncate text-[11px] leading-tight', surface.textSecondary)}>
-            {metric.detail}
-          </p>
-        ) : null}
+        <p className={cn('mt-0.5 truncate text-[11px] leading-tight', surface.textSecondary)}>
+          {supportingText}
+        </p>
       </div>
     </section>
   );

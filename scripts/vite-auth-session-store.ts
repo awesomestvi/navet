@@ -10,11 +10,11 @@ import {
 } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
-import type { ViteInstallationAuthority } from './vite-installation-authority'
+import type { ViteInstallationAuthority } from './vite-installation-authority.ts'
 import {
   createInstallationCookieNames,
   type InstallationCookieNames,
-} from './installation-cookie-scope'
+} from './installation-cookie-scope.ts'
 
 export const AUTH_COOKIE_NAME = 'navet_auth_session'
 export const AUTH_BINDING_HEADER = 'X-Navet-OAuth-Binding'

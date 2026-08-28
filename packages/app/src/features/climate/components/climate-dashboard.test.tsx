@@ -108,8 +108,8 @@ describe('ClimateDashboard', () => {
     renderDashboard([climateDevice()]);
 
     expect(screen.queryByRole('status', { name: 'Needs Attention' })).not.toBeInTheDocument();
-    expect(screen.getAllByText('Comfort')).toHaveLength(2);
-    expect(screen.getByText('1/1 Room')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Mostly comfortable' })).toBeInTheDocument();
+    expect(screen.queryByText(/1\/1/)).not.toBeInTheDocument();
     expect(document.querySelector('[data-climate-comfort-banner]')).toBeInTheDocument();
     expect(
       document.querySelector('[data-climate-comfort-metric="temperature"]')
@@ -123,7 +123,7 @@ describe('ClimateDashboard', () => {
     expect(screen.queryByText('Environmental')).not.toBeInTheDocument();
   });
 
-  it('navigates the highest-priority room exception to its controls', () => {
+  it('shows an off room current temperature without presenting its target as an issue', () => {
     renderDashboard([
       climateDevice({ mode: 'off', currentTemperature: 16, temperature: 21 }),
       sensor({
@@ -136,13 +136,12 @@ describe('ClimateDashboard', () => {
       }),
     ]);
 
-    fireEvent.click(screen.getByRole('button', { name: /Living room thermostat/ }));
-
-    expect(scrollIntoViewMock).toHaveBeenCalledWith({ behavior: 'auto', block: 'start' });
-    expect(document.activeElement).toHaveAttribute('id', 'dashboard-entity-climate.living_room');
+    expect(screen.getByRole('heading', { name: 'Mostly comfortable' })).toBeInTheDocument();
+    expect(screen.queryByText(/Target 21°/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/0\/1/)).not.toBeInTheDocument();
   });
 
-  it('orders actionable environmental readings before routine readings', () => {
+  it('groups cards by type by default and can regroup them by room', () => {
     renderDashboard([
       climateDevice(),
       sensor({
@@ -162,7 +161,20 @@ describe('ClimateDashboard', () => {
       }),
     ]);
 
-    const environmentGrid = screen.getAllByTestId('device-grid').at(-1);
-    expect(environmentGrid?.textContent).toBe('sensor.office_air_qualitysensor.living_temperature');
+    const groupingTrigger = screen.getByRole('button', { name: 'Group cards by: Type' });
+    expect(groupingTrigger).toHaveTextContent('Type');
+    expect(screen.getByTestId('device-grid')).toHaveTextContent('climate.living_room');
+
+    const airQualityTab = screen.getByRole('tab', { name: 'Air Quality' });
+    expect(airQualityTab).toHaveTextContent(/^Air Quality$/);
+    fireEvent.click(airQualityTab);
+    expect(screen.getByTestId('device-grid')).toHaveTextContent('sensor.office_air_quality');
+
+    fireEvent.pointerDown(groupingTrigger, { button: 0, ctrlKey: false });
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Room' }));
+    expect(groupingTrigger).toHaveTextContent('Room');
+    fireEvent.click(screen.getByRole('tab', { name: /Office/ }));
+    expect(screen.getByTestId('device-grid')).toHaveTextContent('sensor.office_air_quality');
+    expect(screen.getByTestId('device-grid')).not.toHaveTextContent('sensor.living_temperature');
   });
 });

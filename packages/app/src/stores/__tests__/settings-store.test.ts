@@ -103,6 +103,7 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().cameraFitMode).toBe('cover');
     expect(useSettingsStore.getState().cameraFitModes).toEqual({});
     expect(useSettingsStore.getState().cameraFullscreenHiddenAccessoryIds).toEqual({});
+    expect(useSettingsStore.getState().cameraFullscreenVisibleAccessoryIds).toEqual({});
     expect(localStorage.getItem(STORE_STORAGE_KEYS.settings)).toContain('"compactMode":false');
     expect(localStorage.getItem('ha-dashboard-settings')).toBeNull();
   });
@@ -198,22 +199,22 @@ describe('useSettingsStore', () => {
     state.updateCameraFullscreenAccessoryVisibility(
       'camera.front_door',
       'sensor.front_door_temperature',
-      false
+      true
     );
     state.updateCameraFullscreenAccessoryVisibility(
       'camera.front_door',
       'binary_sensor.front_door_sound',
-      false
+      true
     );
 
-    expect(useSettingsStore.getState().cameraFullscreenHiddenAccessoryIds).toEqual({
+    expect(useSettingsStore.getState().cameraFullscreenVisibleAccessoryIds).toEqual({
       'home_assistant:camera.front_door': [
         'home_assistant:sensor.front_door_temperature',
         'home_assistant:binary_sensor.front_door_sound',
       ],
     });
     expect(
-      settingsSelectors.cameraFullscreenHiddenAccessoryIdsForEntity('camera.front_door')(
+      settingsSelectors.cameraFullscreenVisibleAccessoryIdsForEntity('camera.front_door')(
         useSettingsStore.getState()
       )
     ).toEqual([
@@ -226,10 +227,10 @@ describe('useSettingsStore', () => {
       .updateCameraFullscreenAccessoryVisibility(
         'camera.front_door',
         'sensor.front_door_temperature',
-        true
+        false
       );
 
-    expect(useSettingsStore.getState().cameraFullscreenHiddenAccessoryIds).toEqual({
+    expect(useSettingsStore.getState().cameraFullscreenVisibleAccessoryIds).toEqual({
       'home_assistant:camera.front_door': ['home_assistant:binary_sensor.front_door_sound'],
     });
   });
@@ -343,6 +344,7 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().cameraStreamPreferences).toEqual({});
     expect(useSettingsStore.getState().cameraFitMode).toBe('cover');
     expect(useSettingsStore.getState().cameraFitModes).toEqual({});
+    expect(useSettingsStore.getState().cameraFullscreenVisibleAccessoryIds).toEqual({});
   });
 
   it('rehydrates valid header title settings and trims imported custom text', async () => {

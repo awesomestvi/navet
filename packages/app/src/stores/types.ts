@@ -104,6 +104,7 @@ interface UserSettings {
   cameraFitMode: CameraFitMode;
   cameraFitModes: Record<string, CameraFitMode>;
   cameraFullscreenHiddenAccessoryIds: Record<string, string[]>;
+  cameraFullscreenVisibleAccessoryIds: Record<string, string[]>;
   ambientLightBleed: boolean;
   weatherForecastMode: WeatherForecastMode;
   weatherMetricIds: WeatherMetricId[];

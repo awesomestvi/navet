@@ -1,4 +1,9 @@
-import type { CardSize } from '@navet/app/components/shared/card-size-selector';
+import {
+  type CardSize,
+  getCardSpanClass,
+  getResponsiveCardSize,
+} from '@navet/app/components/shared/card-size-selector';
+import { cn } from '@navet/app/components/ui/utils';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import { memo } from 'react';
 import { useHomeGridRuntime } from '../hooks/use-home-grid-runtime';
@@ -28,6 +33,8 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
   densePerformanceMode = false,
 }: PresentationCardGridProps) {
   const {
+    breakpointCols,
+    gridPlacements,
     gridStyle,
     innerContainerStyle,
     innerRef,
@@ -60,32 +67,43 @@ export const PresentationCardGrid = memo(function PresentationCardGrid({
             }
 
             const size = cardSizes[cardId] ?? entry.size;
+            const resolvedGridSize = getResponsiveCardSize(size, breakpointCols);
+            const placement = gridPlacements.get(cardId);
 
-            return !isCustomCard(entry) ? (
-              <DashboardCardItem
+            return (
+              <div
                 key={cardId}
-                id={cardId}
-                device={entry}
-                size={size}
-                isEditMode={false}
-                handleSizeChange={updateCardSize}
-                allowExtraLargeSizes={showHero}
-                densePerformanceMode={densePerformanceMode}
-                optimizeOffscreenPaint={optimizeOffscreenPaint}
-              />
-            ) : (
-              <DashboardCardItem
-                key={cardId}
-                id={cardId}
-                card={entry}
-                size={size}
-                isEditMode={false}
-                handleSizeChange={updateCardSize}
-                onUpdateCard={onUpdateCard}
-                allowExtraLargeSizes={showHero}
-                densePerformanceMode={densePerformanceMode}
-                optimizeOffscreenPaint={optimizeOffscreenPaint}
-              />
+                className={cn(getCardSpanClass(resolvedGridSize), '[&>*]:h-full')}
+                style={{
+                  gridColumnStart: placement?.column,
+                  gridRowStart: placement?.row,
+                }}
+              >
+                {!isCustomCard(entry) ? (
+                  <DashboardCardItem
+                    id={cardId}
+                    device={entry}
+                    size={size}
+                    isEditMode={false}
+                    handleSizeChange={updateCardSize}
+                    allowExtraLargeSizes={showHero}
+                    densePerformanceMode={densePerformanceMode}
+                    optimizeOffscreenPaint={optimizeOffscreenPaint}
+                  />
+                ) : (
+                  <DashboardCardItem
+                    id={cardId}
+                    card={entry}
+                    size={size}
+                    isEditMode={false}
+                    handleSizeChange={updateCardSize}
+                    onUpdateCard={onUpdateCard}
+                    allowExtraLargeSizes={showHero}
+                    densePerformanceMode={densePerformanceMode}
+                    optimizeOffscreenPaint={optimizeOffscreenPaint}
+                  />
+                )}
+              </div>
             );
           })}
         </div>

@@ -3,19 +3,11 @@
  * Avoid hardcoded map tile URLs throughout the codebase
  */
 
-import { CARTO_ATTRIBUTION_URL, OPENSTREETMAP_COPYRIGHT_URL } from './urls';
+/** OpenFreeMap light theme style URL */
+export const OPENFREEMAP_LIGHT_STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';
 
-/** CartoDB light theme tile URL */
-export const CARTO_LIGHT_TILE_URL =
-  'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-
-/** CartoDB dark theme tile URL */
-export const CARTO_DARK_TILE_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-
-/** Map attribution HTML */
-export const MAP_ATTRIBUTION_HTML =
-  `&copy; <a href="${OPENSTREETMAP_COPYRIGHT_URL}">OpenStreetMap</a> contributors ` +
-  `&copy; <a href="${CARTO_ATTRIBUTION_URL}">CARTO</a>`;
+/** OpenFreeMap dark theme style URL */
+export const OPENFREEMAP_DARK_STYLE_URL = 'https://tiles.openfreemap.org/styles/dark';
 
 /** Default map zoom level */
 export const DEFAULT_MAP_ZOOM = 12;

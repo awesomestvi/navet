@@ -17,10 +17,16 @@ Representative libraries used by the current app and public surfaces include:
 - **Lucide React** - Icons
 - **Sonner** - Toast notifications
 - **hls.js** - HLS media playback
-- **Leaflet / React Leaflet** - Map rendering
+- **MapLibre GL JS** - Map rendering under the [BSD 3-Clause license](https://github.com/maplibre/maplibre-gl-js/blob/main/LICENSE.txt)
 - **Workbox** - PWA update and offline support
 - **Astro Starlight** - Public documentation site
 - **Storybook** - Isolated UI documentation and review
+
+## Map Services and Data
+
+- **OpenFreeMap** - Hosts Navet's keyless vector map styles and tiles. See the [OpenFreeMap project and license](https://openfreemap.org/).
+- **OpenMapTiles** - Provides the vector tile schema and cartographic design under BSD and CC BY terms. See the [OpenMapTiles license](https://github.com/openmaptiles/openmaptiles/blob/master/LICENSE.md).
+- **OpenStreetMap** - Provides map data under the [Open Database License](https://www.openstreetmap.org/copyright).
 
 ## Design Inspiration
 

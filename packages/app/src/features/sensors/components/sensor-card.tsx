@@ -268,20 +268,16 @@ export const InfoCard = memo(function InfoCard({
                 : 'bg-linear-to-b from-slate-950/22 via-slate-950/8 to-transparent'
             }`}
           />
-          <div
-            className={`pointer-events-none absolute inset-x-0 border-t border-dashed ${
-              theme === 'light' ? 'border-slate-400/70' : 'border-white/65'
-            } ${size === 'large' ? 'top-[45%]' : 'top-[43%]'}`}
-          />
-
           <div className="pointer-events-none relative z-10 flex h-full flex-col p-3">
-            <div className="flex items-start justify-between gap-4">
+            <div
+              className={`flex min-w-0 items-start justify-between ${isSmall ? 'gap-2' : 'gap-4'}`}
+            >
               <EntityCardHeader
                 title={displayModel.title}
                 subtitle={subtitleText}
                 size={size}
                 layout="eyebrow-first"
-                className="mb-0"
+                className="mb-0 min-w-0 flex-1"
                 marginBottomClassName="mb-0"
                 leading={headerIconNode}
               />
@@ -290,7 +286,14 @@ export const InfoCard = memo(function InfoCard({
                   <>
                     {displayModel.value}
                     {displayModel.unit ? (
-                      <span className="align-baseline text-xl">{unitText}</span>
+                      isSmall ? (
+                        <span className="align-baseline text-sm tracking-normal">
+                          {' '}
+                          {displayModel.unit.replace(/^°/, '')}
+                        </span>
+                      ) : (
+                        <span className="align-baseline text-xl">{unitText}</span>
+                      )
                     ) : null}
                   </>
                 }

@@ -39,28 +39,24 @@ describe('buildClimateDashboardOverview', () => {
       'climate-temperature-range',
       'climate-active-controls',
     ]);
+    expect(model.summaryItems.every((item) => item.tone === 'neutral')).toBe(true);
   });
 
   it('does not infer active HVAC action from the configured mode alone', () => {
     expect(buildClimateDashboardOverview([climateDevice()], 'celsius').activeControlCount).toBe(0);
   });
 
-  it('surfaces an off zone that is materially outside its configured target', () => {
+  it('keeps an off zone current reading without treating its configured target as active', () => {
     const model = buildClimateDashboardOverview(
       [climateDevice({ currentTemperature: 17, temperature: 21, mode: 'off' })],
       'celsius'
     );
 
-    expect(model.attentionItems).toMatchObject([
-      {
-        deviceId: 'climate.living_room',
-        kind: 'temperature',
-        priority: 'attention',
-      },
-    ]);
+    expect(model.attentionItems).toEqual([]);
+    expect(model.temperatureRange).toBe('17°');
     expect(model.comfortableRoomCount).toBe(0);
-    expect(model.comparableRoomCount).toBe(1);
-    expect(model.summaryItems[0]).toMatchObject({ priority: 'attention', tone: 'warning' });
+    expect(model.comparableRoomCount).toBe(0);
+    expect(model.summaryItems.every((item) => item.tone === 'neutral')).toBe(true);
   });
 
   it('does not infer numeric air-quality danger without provider severity', () => {
@@ -93,10 +89,13 @@ describe('buildClimateDashboardOverview', () => {
       securitySeverity: 'critical',
     } satisfies Extract<DeviceWithType, { type: 'sensors' }>;
 
-    expect(buildClimateDashboardOverview([sensor], 'celsius').attentionItems[0]).toMatchObject({
+    const model = buildClimateDashboardOverview([sensor], 'celsius');
+
+    expect(model.attentionItems[0]).toMatchObject({
       priority: 'critical',
       kind: 'provider',
     });
+    expect(model.summaryItems[0]).toMatchObject({ priority: 'critical', tone: 'danger' });
   });
 
   it('summarizes comparable humidity readings and ignores non-ambient temperatures', () => {

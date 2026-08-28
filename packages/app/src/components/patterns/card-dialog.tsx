@@ -288,7 +288,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
           <Dialog.Description asChild>
             <div
               className={cn(
-                '-mt-0.5 flex min-w-0 flex-wrap items-baseline gap-1.5',
+                '-mt-0.5 flex min-w-0 flex-wrap items-center gap-1.5',
                 'text-sm font-medium',
                 descriptionClassName
               )}
@@ -307,7 +307,7 @@ export const CardDialogHeader = memo(function CardDialogHeader({
                   <button
                     type="button"
                     className={cn(
-                      "relative -my-1 inline-flex shrink-0 items-center py-1 text-inherit [font:inherit] transition-colors after:absolute after:inset-x-0 after:-inset-y-2 after:content-['']",
+                      "relative inline-flex h-7 shrink-0 items-center text-inherit [font:inherit] transition-colors after:absolute after:inset-x-0 after:-inset-y-2 after:content-['']",
                       editLinkClassName
                     )}
                     aria-label={t('entityNameEditor.edit', { name: displayTitle })}

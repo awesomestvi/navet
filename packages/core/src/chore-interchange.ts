@@ -6,7 +6,7 @@ import {
   createEmptyChoreWorkspace,
   isChoreWorkspaceData,
   migrateChoreWorkspaceData,
-} from './chores';
+} from './chores.ts';
 
 export const CHORE_INTERCHANGE_VERSION = 1 as const;
 

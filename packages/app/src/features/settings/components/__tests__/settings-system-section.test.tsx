@@ -2,9 +2,13 @@ import { getDashboardClientIdentity } from '@navet/app/features/dashboard/client
 import { useDashboardProfileRuntimeStore } from '@navet/app/features/dashboard/clients/dashboard-profile-runtime-store';
 import { emptyDeviceDisplayProfilePolicy } from '@navet/app/features/dashboard/clients/device-display-profile';
 import { useDeviceDisplayProfileRuntimeStore } from '@navet/app/features/dashboard/clients/device-display-profile-runtime-store';
-import { DASHBOARD_PROFILE_REFRESH_EVENT } from '@navet/app/features/dashboard/hooks/use-dashboard-profile-sync';
+import {
+  DASHBOARD_PROFILE_REBIND_EVENT,
+  DASHBOARD_PROFILE_REFRESH_EVENT,
+} from '@navet/app/features/dashboard/hooks/use-dashboard-profile-sync';
 import { getSettingsSectionStyles } from '@navet/app/features/settings/hooks/settings-section-styles';
 import type { SettingsSectionController } from '@navet/app/features/settings/hooks/use-settings-section-controller';
+import { DASHBOARD_PROFILE_ERROR_CODES } from '@navet/app/services/dashboard-profile.contract';
 import { renderWithProviders } from '@navet/app/test/render';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -881,6 +885,29 @@ describe('SettingsSystemSection', () => {
     expect(refreshListener).toHaveBeenCalledTimes(1);
 
     window.removeEventListener(DASHBOARD_PROFILE_REFRESH_EVENT, refreshListener);
+  });
+
+  it('confirms before replacing a mismatched workspace with this local dashboard', () => {
+    useDashboardProfileRuntimeStore
+      .getState()
+      .markError(
+        'This shared dashboard belongs to a different Home Assistant address.',
+        DASHBOARD_PROFILE_ERROR_CODES.workspaceTenantMismatch
+      );
+    const rebindListener = vi.fn();
+    window.addEventListener(DASHBOARD_PROFILE_REBIND_EVENT, rebindListener);
+
+    renderWithProviders(<SettingsSystemSection controller={controller} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Use this dashboard' }));
+    const confirmation = screen.getByRole('group', { name: 'Start a new shared sync?' });
+    expect(
+      within(confirmation).getByText(/keeps this device’s current dashboard/i)
+    ).toBeInTheDocument();
+    fireEvent.click(within(confirmation).getByRole('button', { name: 'Start new sync' }));
+    expect(rebindListener).toHaveBeenCalledTimes(1);
+
+    window.removeEventListener(DASHBOARD_PROFILE_REBIND_EVENT, rebindListener);
   });
 
   it('lists another dashboard without exposing a cross-browser removal control', () => {
