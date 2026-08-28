@@ -6,7 +6,7 @@ import {
 } from '@navet/app/constants/media-player-features';
 import { type ThemeMode, useThemeStore } from '@navet/app/stores/theme-store';
 import type { MediaDevice } from '@navet/app/types/device.types';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { type ComponentProps, useEffect } from 'react';
 import { MediaDashboard } from './media-dashboard';
 
@@ -315,8 +315,8 @@ export const MobileMediaLibrary: Story = {
     ],
     initialDeviceId: kitchenSpeaker.id,
   },
+
   parameters: {
-    viewport: { defaultViewport: 'iphone14plus' },
     docs: {
       description: {
         story:
@@ -324,15 +324,32 @@ export const MobileMediaLibrary: Story = {
       },
     },
   },
+
+  globals: {
+    viewport: {
+      value: 'iphone14plus',
+      isRotated: false,
+    },
+  },
 };
 
 export const TabletMediaSession: Story = {
-  parameters: { viewport: { defaultViewport: 'tabletLandscape' } },
+  globals: {
+    viewport: {
+      value: 'tabletLandscape',
+      isRotated: false,
+    },
+  },
 };
 
 export const IdlePhone: Story = {
   ...SpotifyIdleNoSelectedSource,
-  parameters: { viewport: { defaultViewport: 'iphone14' } },
+  globals: {
+    viewport: {
+      value: 'iphone14',
+      isRotated: false,
+    },
+  },
 };
 
 export const LightTheme: Story = { args: { theme: 'light' } };

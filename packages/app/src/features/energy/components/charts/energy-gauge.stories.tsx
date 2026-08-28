@@ -1,8 +1,8 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { EnergyGauge } from './energy-gauge';
 
 const meta = {
-  title: 'Pages/Energy/Charts/Gauge',
+  title: 'Components/Charts/Gauge',
   component: EnergyGauge,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

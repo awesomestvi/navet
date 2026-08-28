@@ -1,7 +1,7 @@
 import { getDashboardClientIdentity } from '@navet/app/features/dashboard/clients/dashboard-client-identity';
 import { useDashboardProfileRuntimeStore } from '@navet/app/features/dashboard/clients/dashboard-profile-runtime-store';
 import { useDeviceDisplayProfileRuntimeStore } from '@navet/app/features/dashboard/clients/device-display-profile-runtime-store';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect } from 'react';
 import { expect } from 'storybook/test';
 import { useSettingsSectionController } from '../hooks/use-settings-section-controller';

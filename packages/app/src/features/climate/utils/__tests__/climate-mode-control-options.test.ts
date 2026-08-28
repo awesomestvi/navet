@@ -2,12 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { resolveClimateModeControlOptions } from '../climate-mode-control-options';
 
 describe('resolveClimateModeControlOptions', () => {
-  it('returns default cool, heat, and fan controls when supported modes are unknown', () => {
-    expect(resolveClimateModeControlOptions()).toEqual([
-      { key: 'cool', mode: 'cool' },
-      { key: 'heat', mode: 'heat' },
-      { key: 'fan', mode: 'fan' },
-    ]);
+  it('does not invent controls when supported modes are unknown', () => {
+    expect(resolveClimateModeControlOptions()).toEqual([]);
   });
 
   it('hides fan when only heat and cool are supported', () => {

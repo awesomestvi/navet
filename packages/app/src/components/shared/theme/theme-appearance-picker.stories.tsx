@@ -1,5 +1,5 @@
 import { useSettingsSectionController } from '@navet/app/features/settings/hooks/use-settings-section-controller';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ThemeAppearancePicker } from './theme-appearance-picker';
 
 function ThemeAppearancePickerStory() {

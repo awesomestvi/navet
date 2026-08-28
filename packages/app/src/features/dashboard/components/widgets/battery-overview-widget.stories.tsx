@@ -2,7 +2,7 @@ import { Button } from '@navet/app/components/primitives/button';
 import type { ProviderBatterySensorRow } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { BatterySettingsDialog } from './battery-settings-dialog';
 

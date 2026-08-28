@@ -230,7 +230,7 @@ export function RSSFeedSettingsDialog({
       headerClassName="max-sm:mb-3"
       footerContent={
         <CardDialogFooter className="px-0 max-sm:pb-[calc(env(safe-area-inset-bottom,0px)+0.5rem)]">
-          <Button variant="secondary" size="small" onClick={() => handleOpenChange(false)}>
+          <Button variant="secondary" onClick={() => handleOpenChange(false)}>
             {doneLabel}
           </Button>
         </CardDialogFooter>

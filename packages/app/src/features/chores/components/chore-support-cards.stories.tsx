@@ -4,7 +4,7 @@ import {
   getRewardProgressList,
 } from '@navet/app/features/chores/chore-dashboard-selectors';
 import { createChoreDemoWorkspace } from '@navet/app/features/chores/chore-demo-fixture';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { HousePulse, MissionCard, RewardGoalCard } from './chore-support-cards';
 
@@ -119,7 +119,6 @@ export const LandscapeTablet: Story = {
   args: { onSeeRewards: () => undefined },
   globals: { viewport: { value: 'ipadMini', isRotated: true } },
   parameters: {
-    viewport: { defaultViewport: 'ipadMini' },
     docs: {
       description: {
         story:
@@ -143,7 +142,6 @@ export const PortraitTablet: Story = {
   args: { onSeeRewards: () => undefined },
   globals: { viewport: { value: 'ipadPro', isRotated: false } },
   parameters: {
-    viewport: { defaultViewport: 'ipadPro' },
     docs: {
       description: {
         story:

@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { getNavetMotionProfile, navetMotionTokens } from './index';
 import { ThemeTokenShowcase } from './theme-token-showcase';
 

@@ -1,7 +1,7 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { Button } from './button';
-import { SheetSurface } from './sheet-surface';
+import { SheetSurface, SheetSurfaceHeader } from './sheet-surface';
 
 function SheetSurfaceStory() {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,7 +16,13 @@ function SheetSurfaceStory() {
         description="Shared bottom-sheet shell"
         accentColor="#f97316"
       >
-        <div className="px-4">
+        <SheetSurfaceHeader
+          title="UI Kit mobile sheet"
+          description="Shared bottom-sheet shell"
+          closeLabel="Close sheet"
+          onClose={() => setIsOpen(false)}
+        />
+        <div className="px-4 pt-4">
           <h2 className="text-sm font-semibold text-white">Shared mobile sheet chrome</h2>
           <p className="mt-2 text-sm text-white/76">
             Use this shell for bottom-docked mobile overlays instead of reauthoring the same fixed

@@ -1,5 +1,5 @@
 import { type ThemeMode, useThemeStore } from '@navet/app/stores/theme-store';
-import type { Decorator, Meta, StoryObj } from '@storybook/react';
+import type { Decorator, Meta, StoryObj } from '@storybook/react-vite';
 import { CircleAlert, Flame, ShieldAlert } from 'lucide-react';
 import { type ReactNode, useEffect } from 'react';
 import { AttentionBand, type AttentionBandItem } from './attention-band';
@@ -78,5 +78,10 @@ export const BlackTheme: Story = {
 };
 
 export const Phone: Story = {
-  parameters: { viewport: { defaultViewport: 'iphone14' } },
+  globals: {
+    viewport: {
+      value: 'iphone14',
+      isRotated: false,
+    },
+  },
 };

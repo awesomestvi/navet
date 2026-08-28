@@ -3,7 +3,7 @@ import {
   createChoreDemoWorkspace,
 } from '@navet/app/features/chores/chore-demo-fixture';
 import { useChoreWorkspaceStore } from '@navet/app/features/chores/chore-workspace-store';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect } from 'react';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { HouseholdSection } from './household-section';
@@ -131,7 +131,6 @@ export const Desktop: Story = {};
 export const IpadProLandscape: Story = {
   globals: { viewport: { value: 'ipadPro', isRotated: true } },
   parameters: {
-    viewport: { defaultViewport: 'ipadPro' },
     docs: {
       description: {
         story:
@@ -199,7 +198,6 @@ export const IpadProLandscape: Story = {
 export const IpadMiniLandscape: Story = {
   globals: { viewport: { value: 'ipadMini', isRotated: true } },
   parameters: {
-    viewport: { defaultViewport: 'ipadMini' },
     docs: {
       description: {
         story:
@@ -230,13 +228,11 @@ export const IpadMiniLandscape: Story = {
 
 export const WideDesktop: Story = {
   globals: { viewport: { value: 'desktop1440p', isRotated: false } },
-  parameters: { viewport: { defaultViewport: 'desktop1440p' } },
 };
 
 export const IpadProPortrait: Story = {
   globals: { viewport: { value: 'ipadPro', isRotated: false } },
   parameters: {
-    viewport: { defaultViewport: 'ipadPro' },
     docs: {
       description: {
         story:
@@ -257,7 +253,6 @@ export const IpadProPortrait: Story = {
 
 export const Mobile: Story = {
   parameters: {
-    viewport: { defaultViewport: 'mobile1' },
     docs: {
       description: {
         story:
@@ -265,6 +260,7 @@ export const Mobile: Story = {
       },
     },
   },
+
   play: async ({ canvas }) => {
     const panel = within(await canvas.findByRole('region', { name: 'Today' }));
     const participantPicker = panel.getByLabelText('Using this screen');
@@ -280,21 +276,25 @@ export const Mobile: Story = {
       panel.getAllByRole('heading', { name: 'Unload dishwasher' }).length
     ).toBeGreaterThan(0);
   },
+
+  globals: {
+    viewport: {
+      value: 'mobile1',
+      isRotated: false,
+    },
+  },
 };
 
 export const LightTheme: Story = {
   globals: { theme: 'light', viewport: { value: 'ipadPro', isRotated: true } },
-  parameters: { viewport: { defaultViewport: 'ipadPro' } },
 };
 
 export const DarkTheme: Story = {
   globals: { theme: 'dark', viewport: { value: 'ipadPro', isRotated: true } },
-  parameters: { viewport: { defaultViewport: 'ipadPro' } },
 };
 
 export const BlackTheme: Story = {
   globals: { theme: 'black', viewport: { value: 'ipadPro', isRotated: true } },
-  parameters: { viewport: { defaultViewport: 'ipadPro' } },
 };
 
 export const ReducedMotionKiosk: Story = {
@@ -304,7 +304,6 @@ export const ReducedMotionKiosk: Story = {
     effectsQuality: 'reduced',
     viewport: { value: 'desktop1440p', isRotated: false },
   },
-  parameters: { viewport: { defaultViewport: 'desktop1440p' } },
 };
 
 export const EmptyHousehold: Story = {
@@ -432,17 +431,21 @@ export const MotivationOff: Story = {
 
 export const ChildFriendlyAdventure: Story = {
   args: { mode: 'adventure' },
-  parameters: { viewport: { defaultViewport: 'mobile1' } },
   play: async ({ canvas }) => {
     const today = within(canvas.getByRole('region', { name: 'Today' }));
     await expect((await today.findAllByText('Dishwasher rescue')).length).toBeGreaterThan(0);
     await expect(today.getByText('Toys back to base')).toBeInTheDocument();
   },
+  globals: {
+    viewport: {
+      value: 'mobile1',
+      isRotated: false,
+    },
+  },
 };
 
 export const LongNameManyPeopleNoRoomAnyone: Story = {
   render: () => <HouseholdEdgeCaseStory />,
-  parameters: { viewport: { defaultViewport: 'mobile1' } },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const panel = within(canvas.getByRole('region', { name: 'Today' }));
     await expect(
@@ -458,6 +461,12 @@ export const LongNameManyPeopleNoRoomAnyone: Story = {
       within(canvasElement.ownerDocument.body).getAllByRole('menuitemradio')
     ).toHaveLength(8);
     await userEvent.keyboard('{Escape}');
+  },
+  globals: {
+    viewport: {
+      value: 'mobile1',
+      isRotated: false,
+    },
   },
 };
 

@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useSettingsSectionController } from '../hooks/use-settings-section-controller';
 import { SettingsInteractionSection } from './settings-interaction-section';
 

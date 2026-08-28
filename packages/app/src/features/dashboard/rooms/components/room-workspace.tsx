@@ -1,5 +1,5 @@
 import { NavigationWorkspace } from '@navet/app/components/patterns';
-import { Button } from '@navet/app/components/primitives';
+import { Button, coverSheetHeaderClassName } from '@navet/app/components/primitives';
 import {
   getThemeSurfaceTokens,
   navetIconSizeTokens,
@@ -7,7 +7,7 @@ import {
 } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
 import { useMediaQuery, useTheme } from '@navet/app/hooks';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Edit3 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { RoomWorkspaceComponentProps, RoomWorkspaceLayout } from './room-workspace.types';
 import {
@@ -50,7 +50,12 @@ function WorkspaceStatus({
       data-room-workspace
       data-room-workspace-layout="status"
     >
-      <NavigationWorkspace.Header className="flex min-w-0 items-start justify-between gap-3 pb-4 pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-[calc(env(safe-area-inset-top,0px)+1rem)] md:px-5 md:py-4">
+      <NavigationWorkspace.Header
+        className={cn(
+          coverSheetHeaderClassName,
+          'flex min-w-0 items-start justify-between gap-3 pb-3 pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] sm:gap-4 sm:px-5 sm:py-4'
+        )}
+      >
         <div className="min-w-0">
           <h1 className={cn(navetTypographyTokens.pageHeading, surface.textPrimary)}>
             {labels.title}
@@ -152,25 +157,7 @@ export function RoomsWorkspacePhone(props: RoomsWorkspaceProps) {
       data-room-workspace
       data-room-workspace-layout="phone"
     >
-      <RoomWorkspaceHeader {...panelProps} trailingAction={headerTrailing} />
-      {showBrowseBack || showManageBack ? (
-        <div className={cn('border-b px-3 py-2', surface.border)}>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              if (showManageBack) {
-                actions.onStageChange('structure');
-              } else {
-                actions.onSelectRoom(null);
-              }
-            }}
-            leading={<ArrowLeft className={navetIconSizeTokens.sm} />}
-            className="min-h-11 motion-reduce:transition-none"
-          >
-            {labels.back}
-          </Button>
-        </div>
-      ) : null}
+      <RoomWorkspaceHeader {...panelProps} trailingAction={headerTrailing} showModeAction={false} />
       <main className="min-h-0 flex-1">
         {showBrowseOutline || showManageOutline ? (
           <RoomOutline {...panelProps} />
@@ -178,6 +165,45 @@ export function RoomsWorkspacePhone(props: RoomsWorkspaceProps) {
           <RoomWorkspaceActivePanel {...panelProps} />
         )}
       </main>
+      <footer className={cn('border-t px-4 py-3', surface.border)} data-room-workspace-phone-footer>
+        <div
+          className={cn(
+            'flex items-center gap-3',
+            showBrowseBack || showManageBack ? 'justify-between' : 'justify-end'
+          )}
+        >
+          {showBrowseBack || showManageBack ? (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                if (showManageBack) {
+                  actions.onStageChange('structure');
+                } else {
+                  actions.onSelectRoom(null);
+                }
+              }}
+              leading={<ArrowLeft className={navetIconSizeTokens.sm} />}
+              className="shrink-0 motion-reduce:transition-none"
+            >
+              {labels.back}
+            </Button>
+          ) : null}
+          <Button
+            variant={viewModel.mode === 'manage' ? 'secondary' : 'primary'}
+            leading={
+              viewModel.mode === 'manage' ? (
+                <ArrowLeft className={navetIconSizeTokens.sm} aria-hidden="true" />
+              ) : (
+                <Edit3 className={navetIconSizeTokens.sm} aria-hidden="true" />
+              )
+            }
+            onClick={() => actions.onModeChange(viewModel.mode === 'manage' ? 'browse' : 'manage')}
+            className="shrink-0 motion-reduce:transition-none"
+          >
+            {viewModel.mode === 'manage' ? labels.browseMode : labels.manageMode}
+          </Button>
+        </div>
+      </footer>
     </NavigationWorkspace.Frame>
   );
 }

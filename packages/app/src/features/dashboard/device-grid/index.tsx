@@ -165,6 +165,8 @@ export const DeviceGrid = memo(function DeviceGrid({
               return (
                 <div
                   key={gridItemId}
+                  id={`dashboard-entity-${encodeURIComponent(device.id)}`}
+                  data-dashboard-entity-id={device.id}
                   className={cn(getCardSpanClass(resolvedGridSize), '[&>*]:h-full')}
                   style={{
                     gridColumnStart: gridPlacements.get(gridItemId)?.column,

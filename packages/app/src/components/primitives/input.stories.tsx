@@ -1,5 +1,5 @@
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Search, X } from 'lucide-react';
 import { IconButton } from './icon-button';
 import { Input } from './input';

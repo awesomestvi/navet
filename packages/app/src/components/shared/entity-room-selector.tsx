@@ -33,6 +33,7 @@ interface EntityRoomSelectorProps {
   selectStyle?: CSSProperties;
   compactContentClassName?: string;
   compactContentStyle?: CSSProperties;
+  compactVariant?: 'pill' | 'plain';
 }
 
 const CREATE_ROOM_VALUE = '__create_room__';
@@ -48,6 +49,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
   selectStyle,
   compactContentClassName,
   compactContentStyle,
+  compactVariant = 'pill',
 }: EntityRoomSelectorProps) {
   const { theme } = useTheme();
   const { t } = useI18n();
@@ -217,6 +219,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
           <div className={`relative inline-block min-w-0 ${compactContentClassName ?? ''}`}>
             <RoomEyebrow
               room={selectedRoomLabel}
+              variant={compactVariant}
               isLoading={isSaving}
               forceDark={forceDark}
               visualOnly

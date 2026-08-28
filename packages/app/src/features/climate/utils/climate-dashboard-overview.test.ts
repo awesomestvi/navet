@@ -27,15 +27,22 @@ describe('buildClimateDashboardOverview', () => {
   });
 
   it('keeps normal active climate calm and summarizes the whole-home temperature', () => {
-    const model = buildClimateDashboardOverview([climateDevice()], 'celsius');
+    const model = buildClimateDashboardOverview([climateDevice({ action: 'heating' })], 'celsius');
 
     expect(model.attentionItems).toEqual([]);
     expect(model.temperatureRange).toBe('21°');
+    expect(model.comfortableRoomCount).toBe(1);
+    expect(model.comparableRoomCount).toBe(1);
     expect(model.activeControlCount).toBe(1);
     expect(model.summaryItems.map((item) => item.id)).toEqual([
+      'climate-overall',
       'climate-temperature-range',
       'climate-active-controls',
     ]);
+  });
+
+  it('does not infer active HVAC action from the configured mode alone', () => {
+    expect(buildClimateDashboardOverview([climateDevice()], 'celsius').activeControlCount).toBe(0);
   });
 
   it('surfaces an off zone that is materially outside its configured target', () => {
@@ -51,6 +58,8 @@ describe('buildClimateDashboardOverview', () => {
         priority: 'attention',
       },
     ]);
+    expect(model.comfortableRoomCount).toBe(0);
+    expect(model.comparableRoomCount).toBe(1);
     expect(model.summaryItems[0]).toMatchObject({ priority: 'attention', tone: 'warning' });
   });
 
@@ -88,5 +97,85 @@ describe('buildClimateDashboardOverview', () => {
       priority: 'critical',
       kind: 'provider',
     });
+  });
+
+  it('summarizes comparable humidity readings and ignores non-ambient temperatures', () => {
+    const devices: DeviceWithType[] = [
+      {
+        id: 'sensor.living_humidity',
+        type: 'sensors',
+        name: 'Living humidity',
+        room: 'Living room',
+        size: 'small',
+        value: '44',
+        unit: '%',
+        deviceClass: 'humidity',
+      },
+      {
+        id: 'sensor.bedroom_humidity',
+        type: 'sensors',
+        name: 'Bedroom humidity',
+        room: 'Bedroom',
+        size: 'small',
+        value: '48',
+        unit: '%',
+        deviceClass: 'humidity',
+      },
+      {
+        id: 'sensor.boiler_supply_temperature',
+        type: 'sensors',
+        name: 'Boiler supply temperature',
+        room: 'Utility',
+        size: 'small',
+        value: '68',
+        unit: '°C',
+        deviceClass: 'temperature',
+      },
+    ];
+
+    const model = buildClimateDashboardOverview(devices, 'celsius');
+
+    expect(model.averageHumidity).toBe(46);
+    expect(model.temperatureRange).toBeNull();
+    expect(model.summaryItems).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 'climate-humidity', value: '46%' })])
+    );
+  });
+
+  it('includes normalized outdoor temperature when a weather source is available', () => {
+    const weather = {
+      id: 'weather.home',
+      type: 'weather',
+      name: 'Home weather',
+      room: 'Outside',
+      size: 'medium',
+      temperature: 8,
+      temperatureUnit: 'celsius',
+      feelsLikeTemperature: 6,
+      feelsLikeTemperatureUnit: 'celsius',
+      location: 'Home',
+      condition: 'cloudy',
+      humidity: 74,
+      windSpeed: 3,
+      pressure: 1012,
+      precipitation: 0,
+      precipitationUnit: 'mm',
+      sunrise: '',
+      sunset: '',
+      daylight: '',
+      rainForecast: '',
+      highTemp: 10,
+      lowTemp: 4,
+      forecastMode: 'hourly',
+      forecast: [],
+    } satisfies Extract<DeviceWithType, { type: 'weather' }>;
+
+    const model = buildClimateDashboardOverview([weather], 'fahrenheit');
+
+    expect(model.outdoorTemperature).toBe('46.4°');
+    expect(model.outdoorFeelsLike).toBe('42.8°');
+    expect(model.summaryItems).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 'climate-outdoor', value: '46.4°' })])
+    );
   });
 });

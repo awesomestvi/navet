@@ -1,6 +1,6 @@
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Clipboard, Lightbulb, Plus, Sparkles, Wand2 } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { DashboardEmptyState } from './dashboard-empty-state';

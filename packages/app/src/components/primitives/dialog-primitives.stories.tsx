@@ -3,8 +3,9 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import * as Dialog from '@radix-ui/react-dialog';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
+import { expect, within } from 'storybook/test';
 import { DialogDoneFooter, DialogFooter, settingsDialogContentClass } from './dialog-primitives';
 
 const meta = {
@@ -67,4 +68,22 @@ function DialogActionsStory() {
 
 export const Default: Story = {
   render: () => <DialogActionsStory />,
+};
+
+export const SplitActions: Story = {
+  render: () => (
+    <DialogFooter>
+      <Button variant="secondary">Back</Button>
+      <Button>Save</Button>
+    </DialogFooter>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const backButton = canvas.getByRole('button', { name: 'Back' });
+    const saveButton = canvas.getByRole('button', { name: 'Save' });
+    const footer = backButton.parentElement;
+    await expect(footer).toHaveClass('flex-nowrap', 'items-center', 'justify-end');
+    await expect(backButton).toHaveClass('h-10');
+    await expect(saveButton).toHaveClass('h-10');
+  },
 };

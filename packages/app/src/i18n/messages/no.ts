@@ -180,7 +180,7 @@ export const noMessages = {
     'Alle markerer oppgaver som ferdige på samme sted, så dere ser hva som er gjort og hva som fortsatt trenger oppmerksomhet.',
   'household.setup.dialogTitle': 'Sett opp husstandsoppgaver',
   'household.setup.dialogDescription':
-    'Vi hjelper deg med å legge til personene hjemme, lage én jobb som kommer tilbake og velge valgfrie påminnelser og beskyttelse. Alt kan endres senere.',
+    'Legg til personer og oppgaver. Tilpass innstillingene når som helst.',
   'household.setup.progressLabel': 'Fremdrift for oppsett av oppgaver',
   'household.setup.stepCount': 'Trinn {current} av {total}',
   'household.setup.stepProfiles': 'Profiler og påminnelser',
@@ -528,6 +528,15 @@ export const noMessages = {
   'dashboard.multiple.create.title': 'Opprett dashboard',
   'dashboard.multiple.create.description':
     'Velg hva som skal vises og hvor dashboardet skal brukes.',
+  'dashboard.multiple.create.nameTitle': 'Gi dashboardet et navn',
+  'dashboard.multiple.create.nameDescription':
+    'Velg et navn som gjør denne visningen enkel å kjenne igjen.',
+  'dashboard.multiple.create.contentTitle': 'Velg hva som skal være med',
+  'dashboard.multiple.create.contentDescription':
+    'Start med rom, kopier det nåværende dashboardet eller begynn tomt.',
+  'dashboard.multiple.create.displaysTitle': 'Velg hvor det åpnes',
+  'dashboard.multiple.create.displaysDescription':
+    'Tilordne det til denne enheten eller la det stå uten tilordning foreløpig.',
   'dashboard.multiple.create.name': 'Navn',
   'dashboard.multiple.create.namePlaceholder': 'Ovenpå',
   'dashboard.multiple.create.startWith': 'Start med',
@@ -1023,7 +1032,7 @@ export const noMessages = {
   'dashboard.addCard.sort.default': 'Standard',
   'dashboard.addCard.sort.ascending': 'Stigende',
   'dashboard.addCard.sort.descending': 'Synkende',
-  'dashboard.addCard.tab.widgets': 'Egendefinert kort',
+  'dashboard.addCard.tab.widgets': 'Egendefinerte kort',
   'dashboard.addCard.header.library': 'ENHETSBIBLIOTEK',
   'dashboard.addCard.header.widgets': 'TILPASSEDE WIDGETS',
   'dashboard.addCard.tab.cardsHint': 'Bla gjennom alle Home Assistant-enheter',

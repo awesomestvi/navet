@@ -1,0 +1,141 @@
+{
+  "materialization": [
+    {
+      "name": "weekly rotation across Stockholm DST fallback",
+      "participants": [
+        {
+          "id": "alice",
+          "displayName": "Alice",
+          "capabilities": ["complete", "approve", "manage"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        },
+        {
+          "id": "bob",
+          "displayName": "Bob",
+          "capabilities": ["complete"],
+          "createdAt": "2026-10-01T08:00:00.000Z",
+          "updatedAt": "2026-10-01T08:00:00.000Z"
+        }
+      ],
+      "definition": {
+        "id": "recycling",
+        "title": "Take out recycling",
+        "enabled": true,
+        "assignment": {
+          "mode": "rotation",
+          "participantIds": ["alice", "bob"]
+        },
+        "schedule": {
+          "frequency": "weekly",
+          "startDate": "2026-10-19",
+          "time": "18:00",
+          "timeZone": "Europe/Stockholm",
+          "daysOfWeek": [1]
+        },
+        "dueWindowMinutes": 120,
+        "approval": { "required": false, "approverIds": [] },
+        "createdAt": "2026-10-01T08:00:00.000Z",
+        "updatedAt": "2026-10-01T08:00:00.000Z"
+      },
+      "rangeStart": "2026-10-19T00:00:00.000Z",
+      "rangeEnd": "2026-11-02T00:00:00.000Z",
+      "expected": [
+        { "scheduledAt": "2026-10-19T16:00:00.000Z", "assigneeIds": ["alice"] },
+        { "scheduledAt": "2026-10-26T17:00:00.000Z", "assigneeIds": ["bob"] }
+      ]
+    },
+    {
+      "name": "everyone assignment creates one occurrence per participant",
+      "participants": [
+        {
+          "id": "alice",
+          "displayName": "Alice",
+          "capabilities": ["complete", "approve", "manage"],
+          "createdAt": "2026-08-28T00:00:00.000Z",
+          "updatedAt": "2026-08-28T00:00:00.000Z"
+        },
+        {
+          "id": "bob",
+          "displayName": "Bob",
+          "capabilities": ["complete"],
+          "createdAt": "2026-08-28T00:00:00.000Z",
+          "updatedAt": "2026-08-28T00:00:00.000Z"
+        }
+      ],
+      "definition": {
+        "id": "beds",
+        "title": "Make the bed",
+        "enabled": true,
+        "assignment": {
+          "mode": "everyone",
+          "participantIds": ["alice", "bob"]
+        },
+        "schedule": {
+          "frequency": "once",
+          "date": "2026-08-28",
+          "time": "08:00",
+          "timeZone": "UTC"
+        },
+        "dueWindowMinutes": 30,
+        "approval": { "required": false, "approverIds": [] },
+        "createdAt": "2026-08-28T00:00:00.000Z",
+        "updatedAt": "2026-08-28T00:00:00.000Z"
+      },
+      "rangeStart": "2026-08-28T00:00:00.000Z",
+      "rangeEnd": "2026-08-28T23:59:59.000Z",
+      "expected": [
+        { "scheduledAt": "2026-08-28T08:00:00.000Z", "assigneeIds": ["alice"] },
+        { "scheduledAt": "2026-08-28T08:00:00.000Z", "assigneeIds": ["bob"] }
+      ]
+    },
+    {
+      "name": "weekly rotation reset restarts participant order",
+      "participants": [
+        {
+          "id": "alice",
+          "displayName": "Alice",
+          "capabilities": ["complete", "approve", "manage"],
+          "createdAt": "2026-08-24T00:00:00.000Z",
+          "updatedAt": "2026-08-24T00:00:00.000Z"
+        },
+        {
+          "id": "bob",
+          "displayName": "Bob",
+          "capabilities": ["complete"],
+          "createdAt": "2026-08-24T00:00:00.000Z",
+          "updatedAt": "2026-08-24T00:00:00.000Z"
+        }
+      ],
+      "definition": {
+        "id": "plants",
+        "title": "Water plants",
+        "enabled": true,
+        "assignment": {
+          "mode": "rotation",
+          "participantIds": ["alice", "bob"],
+          "rotationReset": "weekly"
+        },
+        "schedule": {
+          "frequency": "daily",
+          "startDate": "2026-08-24",
+          "time": "08:00",
+          "timeZone": "UTC",
+          "daysOfWeek": [1, 2]
+        },
+        "dueWindowMinutes": 30,
+        "approval": { "required": false, "approverIds": [] },
+        "createdAt": "2026-08-24T00:00:00.000Z",
+        "updatedAt": "2026-08-24T00:00:00.000Z"
+      },
+      "rangeStart": "2026-08-24T00:00:00.000Z",
+      "rangeEnd": "2026-09-01T23:59:59.000Z",
+      "expected": [
+        { "scheduledAt": "2026-08-24T08:00:00.000Z", "assigneeIds": ["alice"] },
+        { "scheduledAt": "2026-08-25T08:00:00.000Z", "assigneeIds": ["bob"] },
+        { "scheduledAt": "2026-08-31T08:00:00.000Z", "assigneeIds": ["alice"] },
+        { "scheduledAt": "2026-09-01T08:00:00.000Z", "assigneeIds": ["bob"] }
+      ]
+    }
+  ]
+}

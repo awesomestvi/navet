@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { SensorHistorySparkline } from '../sensor-history-sparkline';
 
 describe('SensorHistorySparkline', () => {
-  it('renders the shared energy sparkline treatment for sensor history', () => {
+  it('renders the shared trend sparkline treatment for sensor history', () => {
     renderWithProviders(
       <SensorHistorySparkline
         data={[
@@ -14,12 +14,13 @@ describe('SensorHistorySparkline', () => {
         ]}
         accentColor="#10b981"
         height={120}
+        ariaLabel="Temperature trend"
       />
     );
 
     const sparkline = screen.getByTestId('sensor-history-sparkline');
 
     expect(sparkline).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'Power sparkline' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Temperature trend' })).toBeInTheDocument();
   });
 });

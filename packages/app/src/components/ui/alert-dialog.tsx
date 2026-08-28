@@ -81,7 +81,7 @@ const AlertDialogContent = React.forwardRef<
         data-slot="alert-dialog-content"
         className={cn(
           'fixed z-50 grid gap-5 overflow-y-auto border shadow-2xl backdrop-blur-xl duration-200 overscroll-contain sm:overflow-hidden',
-          'right-2 bottom-2 left-2 max-h-[calc(100dvh-1rem)] rounded-[30px] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]',
+          'right-0 bottom-0 left-0 max-h-[100dvh] rounded-t-[30px] rounded-b-none p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]',
           'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-4 data-[state=open]:slide-in-from-bottom-4',
           'sm:top-[50%] sm:left-[50%] sm:right-auto sm:bottom-auto sm:w-full sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-[32px] sm:p-8 sm:pb-8 sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95 sm:data-[state=closed]:slide-out-to-bottom-0 sm:data-[state=open]:slide-in-from-bottom-0',
           surfaceClass,
@@ -124,7 +124,10 @@ function AlertDialogFooter({ className, ...props }: React.ComponentProps<'div'>)
   return (
     <div
       data-slot="alert-dialog-footer"
-      className={cn('flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end', className)}
+      className={cn(
+        'flex flex-nowrap items-center justify-end gap-2 pt-1 [&>*:first-child:not(:only-child)]:mr-auto',
+        className
+      )}
       {...props}
     />
   );

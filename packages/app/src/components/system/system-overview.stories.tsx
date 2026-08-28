@@ -1,6 +1,6 @@
 import { useTheme } from '@navet/app/hooks';
 import { getThemeSurfaceTokens } from '@navet/app/ui-kit/tokens';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ArrowUpRight, Layers3, Paintbrush, Sparkles } from 'lucide-react';
 import { toId } from 'storybook/internal/csf';
 

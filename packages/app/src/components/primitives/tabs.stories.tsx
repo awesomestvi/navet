@@ -1,5 +1,5 @@
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Hand, Languages, Layers2, Palette, Sparkles } from 'lucide-react';
 import { Heading } from './heading';
 import { Panel } from './panel';

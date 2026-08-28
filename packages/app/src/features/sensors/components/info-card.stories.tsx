@@ -1,8 +1,9 @@
 import { InfoCard } from '@navet/app/features/sensors';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { EntityCardStoryFrame, noopCardSizeChange } from '@navet/app/storybook/story-frames';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps } from 'react';
+import { expect } from 'storybook/test';
 
 function InfoCardStory(args: Omit<ComponentProps<typeof InfoCard>, 'onSizeChange'>) {
   return (
@@ -44,6 +45,8 @@ const meta = {
     unit: 'ppm',
     icon: 'trend-down',
     subtitle: 'CO2',
+    deviceClass: 'carbon_dioxide',
+    securitySeverity: 'normal',
     size: 'medium',
     isEditMode: false,
   },
@@ -86,6 +89,22 @@ export const Temperature: Story = {
     subtitle: 'temperature',
     deviceClass: 'temperature',
     size: 'small',
+    sparklineData: [
+      { value: 20.5, timestampMs: 1, endTimestampMs: 2, minValue: 20.2, maxValue: 20.7 },
+      { value: 21.1, timestampMs: 2, endTimestampMs: 3, minValue: 20.8, maxValue: 21.3 },
+      { value: 20.8, timestampMs: 3, endTimestampMs: 4, minValue: 20.6, maxValue: 21 },
+      { value: 21.6, timestampMs: 4, endTimestampMs: 5, minValue: 21.2, maxValue: 21.8 },
+      { value: 21.2, timestampMs: 5, endTimestampMs: 6, minValue: 21, maxValue: 21.4 },
+      { value: 21.8, timestampMs: 6, endTimestampMs: 7, minValue: 21.5, maxValue: 22 },
+    ],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    expect(canvas.getByTestId('sensor-history-sparkline')).toBeInTheDocument();
+    expect(
+      canvasElement
+        .querySelector('[data-testid="sensor-history-sparkline"] svg')
+        ?.getBoundingClientRect().height
+    ).toBeGreaterThan(0);
   },
 };
 
@@ -101,6 +120,13 @@ export const Humidity: Story = {
     deviceClass: 'humidity',
     size: 'small',
   },
+  play: async ({ canvas, canvasElement }) => {
+    expect(canvas.getByRole('meter', { name: 'Humidity: 48 %' })).toBeInTheDocument();
+    expect(
+      canvasElement.querySelector<HTMLElement>('[data-quality-bar-fill]')?.getBoundingClientRect()
+        .height
+    ).toBeGreaterThan(0);
+  },
 };
 
 export const AirQuality: Story = {
@@ -108,12 +134,20 @@ export const AirQuality: Story = {
     id: 'sensor.bedroom_co2',
     name: 'Air Quality',
     room: 'Bedroom',
-    value: 'Excellent',
-    unit: '',
+    value: '1420',
+    unit: 'ppm',
     icon: 'wind',
     subtitle: 'carbon dioxide',
     deviceClass: 'carbon_dioxide',
+    securitySeverity: 'critical',
     size: 'small',
+  },
+  play: async ({ canvas, canvasElement }) => {
+    expect(canvas.getByRole('meter', { name: 'Air Quality: 1420 ppm' })).toBeInTheDocument();
+    expect(
+      canvasElement.querySelector<HTMLElement>('[data-quality-bar-fill]')?.getBoundingClientRect()
+        .width
+    ).toBeGreaterThan(0);
   },
 };
 

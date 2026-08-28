@@ -28,8 +28,41 @@ jobs:
       - name: Run Tier 1 release-critical tests
         run: pnpm test:tier1
 
+      - name: Test Home Assistant chore integration
+        run: pnpm test:ha-integration
+
       - name: Check provider boundaries
         run: node scripts/check-provider-boundaries.mjs
 
-      - name: Validate Docker build and config
+  addon-runtime:
+    name: Validate add-on runtime (${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, aarch64]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Enable multi-architecture containers
+        uses: docker/setup-qemu-action@v3
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate Docker build, Ingress chores, and persisted restart
         run: pnpm check:docker
+        env:
+          NAVET_ADDON_TEST_ARCH: ${{ matrix.arch }}

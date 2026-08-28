@@ -2,7 +2,7 @@ import { integrationStore } from '@navet/app/stores/integration-store';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import type { HabitInsight, HabitRule } from '@navet/core/habits';
 import type { NavetEntity } from '@navet/core/types';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useState } from 'react';
 import { useHabitStore } from '../habit-store';
 import { HabitInsightsPanel } from './habit-insights-panel';

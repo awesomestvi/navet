@@ -240,7 +240,7 @@ export function SecurityOverviewCustomizationDialog({
             description={t('security.overview.customize.description')}
             closeLabel={t('security.overview.customize.close')}
             onClose={() => onOpenChange(false)}
-            className="px-5 py-4 md:px-6"
+            className="md:px-6"
           />
         </NavigationWorkspace.Header>
 

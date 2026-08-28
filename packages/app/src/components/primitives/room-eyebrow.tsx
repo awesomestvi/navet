@@ -5,6 +5,7 @@ import type { CSSProperties } from 'react';
 
 interface RoomEyebrowProps {
   room: string;
+  variant?: 'pill' | 'plain';
   onClick?: () => void;
   isLoading?: boolean;
   /** Force white-muted text for dialogs that always have a dark background regardless of app theme */
@@ -19,6 +20,7 @@ interface RoomEyebrowProps {
 
 export function RoomEyebrow({
   room,
+  variant = 'pill',
   onClick,
   isLoading = false,
   forceDark = false,
@@ -33,7 +35,10 @@ export function RoomEyebrow({
   const shellClassName = forceDark
     ? 'border border-white/12 bg-white/8'
     : `${surface.border} ${surface.subtleBg}`;
-  const sharedClassName = `inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium capitalize tracking-normal ${textClassName} ${shellClassName} ${className}`;
+  const sharedClassName =
+    variant === 'plain'
+      ? `inline-flex items-center gap-1 text-xs font-medium capitalize tracking-normal ${textClassName} ${className}`
+      : `inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium capitalize tracking-normal ${textClassName} ${shellClassName} ${className}`;
   const content = (
     <>
       {room}
@@ -56,7 +61,7 @@ export function RoomEyebrow({
       <div
         aria-hidden="true"
         style={style}
-        className={`pointer-events-none rounded-full ${focusRingClassName} ${sharedClassName}`}
+        className={`pointer-events-none ${variant === 'pill' ? 'rounded-full' : 'rounded-sm'} ${focusRingClassName} ${sharedClassName}`}
       >
         {content}
       </div>

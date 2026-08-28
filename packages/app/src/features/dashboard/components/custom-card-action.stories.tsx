@@ -1,7 +1,7 @@
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { buildCustomCard, CustomWidgetStoryFrame } from '@navet/app/storybook/story-frames';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 
 type ActionStoryArgs = {
   size: Extract<CardSize, 'tiny' | 'extra-small' | 'small'>;

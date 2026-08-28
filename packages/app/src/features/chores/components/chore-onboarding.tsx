@@ -2,6 +2,7 @@ import { CardDialogSection, NavigationWorkspace } from '@navet/app/components/pa
 import {
   BaseCardDialog,
   Button,
+  coverSheetHeaderClassName,
   IconButton,
   Input,
   MessageBar,
@@ -848,7 +849,12 @@ export function ChoreOnboardingDialog({
           aria-label={t('household.setup.dialogTitle')}
           className="h-full min-h-0 rounded-none border-0 bg-transparent shadow-none"
         >
-          <NavigationWorkspace.Header className="flex items-start justify-between gap-4 px-4 py-4 sm:px-5">
+          <NavigationWorkspace.Header
+            className={cn(
+              coverSheetHeaderClassName,
+              'flex items-start justify-between gap-3 sm:gap-4'
+            )}
+          >
             <div className="min-w-0">
               <h1 className={cn(navetTypographyTokens.pageHeading, surface.textPrimary)}>
                 {t('household.setup.dialogTitle')}
@@ -858,6 +864,7 @@ export function ChoreOnboardingDialog({
               </p>
             </div>
             <IconButton
+              data-cover-sheet-inline-dismiss
               variant="ghost"
               label={t('common.close')}
               icon={<X aria-hidden="true" className={navetIconSizeTokens.sm} />}
@@ -865,12 +872,9 @@ export function ChoreOnboardingDialog({
               onClick={() => onOpenChange(false)}
             />
           </NavigationWorkspace.Header>
-          <NavigationWorkspace.Body className="grid-rows-[auto_minmax(0,1fr)] md:grid-cols-[16rem_minmax(0,1fr)] md:grid-rows-1">
-            <NavigationWorkspace.Sidebar className="scrollbar-hide overflow-x-auto border-r-0 border-b p-3 md:overflow-y-auto md:border-r md:border-b-0 md:p-4">
-              <nav
-                aria-label={t('household.setup.progressLabel')}
-                className="flex min-w-max gap-1 md:grid md:min-w-0"
-              >
+          <NavigationWorkspace.Body className="grid-rows-[minmax(0,1fr)] md:grid-cols-[16rem_minmax(0,1fr)] md:grid-rows-1">
+            <NavigationWorkspace.Sidebar className="scrollbar-hide hidden p-4 md:block md:overflow-y-auto">
+              <nav aria-label={t('household.setup.progressLabel')} className="grid min-w-0 gap-1">
                 {steps.map((step, index) => {
                   const Icon = step.icon;
                   const active = index === stepIndex;
@@ -880,7 +884,7 @@ export function ChoreOnboardingDialog({
                       key={step.id}
                       active={active}
                       accentColor={accentColor}
-                      className="w-[10.5rem] md:w-auto"
+                      className="w-auto"
                     >
                       <NavigationWorkspace.ItemButton
                         ref={active ? activeStepButtonRef : undefined}
@@ -945,7 +949,7 @@ export function ChoreOnboardingDialog({
                             <li
                               key={participant.id}
                               className={cn(
-                                'flex min-h-14 items-center gap-3 rounded-[20px] border px-3 py-2.5',
+                                'grid min-h-14 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2.5 rounded-[20px] border px-3 py-3 sm:flex sm:gap-3 sm:py-2.5',
                                 surface.subtleBg,
                                 surface.borderStrong,
                                 surface.textPrimary
@@ -973,7 +977,7 @@ export function ChoreOnboardingDialog({
                                 <p className="truncate text-sm font-semibold">
                                   {participant.displayName}
                                 </p>
-                                <p className={cn('text-xs', surface.textSecondary)}>
+                                <p className={cn('text-xs leading-4', surface.textSecondary)}>
                                   {participant.capabilities.includes('manage')
                                     ? t('household.personDialog.manager')
                                     : t('household.personDialog.member')}
@@ -982,7 +986,7 @@ export function ChoreOnboardingDialog({
                               <Select
                                 size="small"
                                 aria-label={`${t('household.personDialog.role')}: ${participant.displayName}`}
-                                containerClassName="w-36 shrink-0 sm:w-52"
+                                containerClassName="max-sm:col-start-2 max-sm:col-end-4 max-sm:row-start-2 w-full shrink-0 sm:w-52"
                                 value={
                                   participant.capabilities.includes('manage') ? 'manager' : 'member'
                                 }
@@ -1009,7 +1013,7 @@ export function ChoreOnboardingDialog({
                                   icon={
                                     <Trash2 aria-hidden="true" className={navetIconSizeTokens.sm} />
                                   }
-                                  className="min-h-9 min-w-9 shrink-0"
+                                  className="min-h-9 min-w-9 shrink-0 max-sm:col-start-3 max-sm:row-start-1 max-sm:self-start"
                                   onClick={() => removeSetupPerson(participant.id)}
                                 />
                               ) : null}
@@ -1463,7 +1467,7 @@ export function ChoreOnboardingDialog({
                     footer={
                       <>
                         <BackButton onClick={() => setStepIndex(3)} />
-                        <div className="flex flex-col-reverse items-stretch gap-2 sm:flex-row sm:items-center">
+                        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
                           <Button variant="secondary" onClick={() => moveTo(5)}>
                             {t('household.setup.skipPin')}
                           </Button>

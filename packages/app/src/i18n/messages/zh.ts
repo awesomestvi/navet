@@ -172,8 +172,7 @@ export const zhMessages = {
   'household.setup.featureRewardDescription':
     '每个人都在同一处把家务标记为完成，因此你能看到哪些已经完成、哪些仍需处理。',
   'household.setup.dialogTitle': '设置家庭家务',
-  'household.setup.dialogDescription':
-    '我们会帮助你添加家庭成员、创建一项会按计划再次出现的家务，并选择可选的提醒和保护。之后随时可以修改。',
+  'household.setup.dialogDescription': '添加家庭成员和家务。偏好设置可随时调整。',
   'household.setup.progressLabel': '家务设置进度',
   'household.setup.stepCount': '第 {current} 步，共 {total} 步',
   'household.setup.stepProfiles': '个人资料和提醒',
@@ -474,6 +473,12 @@ export const zhMessages = {
   'dashboard.multiple.group.rooms': '房间',
   'dashboard.multiple.create.title': '创建仪表板',
   'dashboard.multiple.create.description': '选择要显示的内容以及使用此仪表板的位置。',
+  'dashboard.multiple.create.nameTitle': '为仪表板命名',
+  'dashboard.multiple.create.nameDescription': '选择一个易于识别此视图的名称。',
+  'dashboard.multiple.create.contentTitle': '选择要包含的内容',
+  'dashboard.multiple.create.contentDescription': '从房间开始、复制当前仪表板，或从空白开始。',
+  'dashboard.multiple.create.displaysTitle': '选择打开位置',
+  'dashboard.multiple.create.displaysDescription': '将其分配给此设备，或暂时不分配。',
   'dashboard.multiple.create.name': '名称',
   'dashboard.multiple.create.namePlaceholder': '楼上',
   'dashboard.multiple.create.startWith': '开始方式',

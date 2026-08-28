@@ -183,7 +183,7 @@ export const frMessages = {
     'Chacun marque les tâches terminées au même endroit, pour voir ce qui est fait et ce qui demande encore de l’attention.',
   'household.setup.dialogTitle': 'Configurer les tâches du foyer',
   'household.setup.dialogDescription':
-    'Nous vous aidons à ajouter les personnes du foyer, créer une tâche qui revient et choisir des rappels et une protection facultatifs. Tout pourra être modifié plus tard.',
+    'Ajoutez les personnes et les tâches. Modifiez les préférences à tout moment.',
   'household.setup.progressLabel': 'Progression de la configuration des tâches',
   'household.setup.stepCount': 'Étape {current} sur {total}',
   'household.setup.stepProfiles': 'Profils et rappels',
@@ -534,6 +534,15 @@ export const frMessages = {
   'dashboard.multiple.create.title': 'Créer un tableau de bord',
   'dashboard.multiple.create.description':
     'Choisissez ce qui sera affiché et où utiliser le tableau de bord.',
+  'dashboard.multiple.create.nameTitle': 'Nommez votre tableau de bord',
+  'dashboard.multiple.create.nameDescription':
+    'Choisissez un nom qui permet de reconnaître facilement cette vue.',
+  'dashboard.multiple.create.contentTitle': 'Choisissez les éléments à inclure',
+  'dashboard.multiple.create.contentDescription':
+    'Commencez avec des pièces, copiez le tableau de bord actuel ou partez de zéro.',
+  'dashboard.multiple.create.displaysTitle': 'Choisissez où il s’ouvre',
+  'dashboard.multiple.create.displaysDescription':
+    'Attribuez-le à cet appareil ou laissez-le non attribué pour le moment.',
   'dashboard.multiple.create.name': 'Nom',
   'dashboard.multiple.create.namePlaceholder': 'Étage',
   'dashboard.multiple.create.startWith': 'Commencer avec',
@@ -939,7 +948,7 @@ export const frMessages = {
   'dashboard.addCard.sort.default': 'Par défaut',
   'dashboard.addCard.sort.ascending': 'Croissant',
   'dashboard.addCard.sort.descending': 'Décroissant',
-  'dashboard.addCard.tab.widgets': 'Carte personnalisée',
+  'dashboard.addCard.tab.widgets': 'Cartes personnalisées',
   'dashboard.addCard.header.library': 'BIBLIOTHEQUE D ENTITES',
   'dashboard.addCard.header.widgets': 'WIDGETS PERSONNALISES',
   'dashboard.addCard.tab.cardsHint': 'Parcourir toutes les entites Home Assistant',

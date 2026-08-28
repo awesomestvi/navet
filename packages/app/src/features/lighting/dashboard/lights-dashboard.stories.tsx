@@ -1,11 +1,16 @@
+import {
+  createPreviewLightEntity,
+  createPreviewStoryScenario,
+  replacePreviewEntity,
+} from '@navet/app/preview/runtime';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { type ThemeMode, useThemeStore } from '@navet/app/stores/theme-store';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import type { NavetEntity } from '@navet/core/types';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps, ReactNode } from 'react';
 import { useEffect } from 'react';
-import { expect } from 'storybook/test';
+import { expect, userEvent, within } from 'storybook/test';
 import { LightsDashboard } from './lights-dashboard';
 
 function device(
@@ -112,8 +117,22 @@ function LightDashboardFixture({
         return [next.canonicalId, next];
       })
     );
+    const entityLookup = Object.fromEntries(
+      Object.values(entities).flatMap((next) => [
+        [next.id, next.canonicalId],
+        [next.externalId, next.canonicalId],
+      ])
+    );
     integrationStore.setState({
       ...previousIntegration,
+      providerEntitiesByProviderId: {
+        ...previousIntegration.providerEntitiesByProviderId,
+        home_assistant: entities,
+      },
+      providerEntityLookupByProviderId: {
+        ...previousIntegration.providerEntityLookupByProviderId,
+        home_assistant: entityLookup,
+      },
       providerEntitiesByCanonicalId: entities,
     });
     useThemeStore.setState({
@@ -206,9 +225,18 @@ export const SeveralActiveRooms: Story = {
     await expect(roomSections.length).toBeGreaterThan(0);
     for (const roomSection of roomSections) {
       const toggle = roomSection.querySelector('[data-lights-room-toggle="true"]');
-      const hasActiveLight = roomSection.querySelector('[data-light-state="on"]') !== null;
-      await expect(toggle).toHaveAttribute('aria-expanded', hasActiveLight ? 'true' : 'false');
+      const power = roomSection.querySelector('[aria-pressed]');
+      await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      await expect(power).toBeInTheDocument();
     }
+
+    const firstToggle = roomSections[0]?.querySelector<HTMLButtonElement>(
+      '[data-lights-room-toggle="true"]'
+    );
+    if (!firstToggle) throw new Error('Expected a room disclosure control');
+    await userEvent.click(firstToggle);
+    await expect(firstToggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(roomSections[0]?.querySelector('[aria-pressed]')).toBeInTheDocument();
   },
 };
 
@@ -218,12 +246,25 @@ export const AllLightsOff: Story = {
       baseLights.map((light) => [light.id, { ...light, state: false } as DeviceWithType])
     ),
   },
+  play: async ({ canvasElement }) => {
+    await expect(
+      canvasElement.querySelector('[data-lights-whole-home-power="true"]')
+    ).not.toBeInTheDocument();
+  },
 };
 
 export const MixedRoomState: Story = {};
 
 export const UnavailableLight: Story = {
   args: { unavailableIds: ['light.kitchen_window'] },
+};
+
+export const FullyUnavailableRoom: Story = {
+  args: { unavailableIds: ['light.hall'] },
+  play: async ({ canvasElement }) => {
+    const hall = canvasElement.querySelector('[data-lights-room-id="Hall"]');
+    await expect(hall?.querySelector('[aria-pressed]')).toBeDisabled();
+  },
 };
 
 export const NonDimmableRoom: Story = {
@@ -235,10 +276,57 @@ export const NonDimmableRoom: Story = {
   },
 };
 
-export const RgbLights: Story = {};
+export const RgbLights: Story = {
+  parameters: {
+    previewRuntime: {
+      scenario: replacePreviewEntity(
+        createPreviewStoryScenario(),
+        createPreviewLightEntity('light.kitchen_island', {
+          state: 'on',
+          supportedColorModes: ['hs', 'brightness'],
+          hsColor: [38, 78],
+        })
+      ),
+    },
+  },
+};
 
 export const ColorTemperatureLights: Story = {
   args: { nonDimmableIds: [] },
+  parameters: {
+    previewRuntime: {
+      scenario: replacePreviewEntity(
+        createPreviewStoryScenario(),
+        createPreviewLightEntity('light.kitchen_island', {
+          state: 'on',
+          supportedColorModes: ['color_temp', 'brightness'],
+          colorTemperatureKelvin: 2700,
+        })
+      ),
+    },
+  },
+};
+
+export const NoScenes: Story = {
+  args: { scenes: [] },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('[data-lights-scene]')).not.toBeInTheDocument();
+  },
+};
+
+export const ManyScenes: Story = {
+  args: {
+    scenes: Array.from({ length: 12 }, (_, index) => ({
+      id: `scene.quick_${index}`,
+      type: 'scene' as const,
+      name: `Scene ${index + 1}`,
+      room: 'Unassigned',
+      state: 'off',
+    })),
+  },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelectorAll('[data-lights-scene]')).toHaveLength(12);
+  },
 };
 
 export const ManyRooms: Story = {
@@ -277,35 +365,74 @@ export const LongLightNames: Story = {
         device(
           'light.long',
           'Antique reading lamp beside the north-facing library window',
-          'Library',
+          'Combined library, reading room, and quiet evening workspace',
           true,
           61
         ),
       ],
     ]),
-    rooms: ['Library'],
+    rooms: ['Combined library, reading room, and quiet evening workspace'],
     cardOrders: {},
   },
 };
 
+export const EditMode: Story = {
+  args: { isEditMode: true },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('button', { name: /turn off all lights/i })).toBeDisabled();
+    for (const power of canvasElement.querySelectorAll('[aria-pressed]')) {
+      await expect(power).toBeDisabled();
+    }
+  },
+};
+
+export const EmptyDashboard: Story = {
+  args: {
+    deviceMap: new Map(),
+    rooms: [],
+    cardOrders: {},
+    scenes: [],
+  },
+};
+
 export const Desktop: Story = {
-  parameters: { viewport: { defaultViewport: 'desktop' } },
+  globals: {
+    viewport: {
+      value: 'desktop',
+      isRotated: false,
+    },
+  },
 };
 
 export const WallTablet: Story = {
-  parameters: { viewport: { defaultViewport: 'tabletLandscape' } },
+  globals: {
+    viewport: {
+      value: 'tabletLandscape',
+      isRotated: false,
+    },
+  },
 };
 
 export const IPadLandscape: Story = {
-  parameters: { viewport: { defaultViewport: 'ipad12p9' } },
+  globals: {
+    viewport: {
+      value: 'ipad12p9',
+      isRotated: false,
+    },
+  },
 };
 
 export const IPadPortrait: Story = {
-  parameters: { viewport: { defaultViewport: 'ipad' } },
+  globals: {
+    viewport: {
+      value: 'ipad',
+      isRotated: false,
+    },
+  },
 };
 
 export const IPhone: Story = {
-  parameters: { viewport: { defaultViewport: 'iphone14' } },
   play: async ({ canvasElement }) => {
     const summary = canvasElement.querySelector('nav');
     const roomSections = canvasElement.querySelectorAll('[data-lights-room-section]');
@@ -316,12 +443,26 @@ export const IPhone: Story = {
       await expect(roomSection).toHaveClass('ios-pwa-scroll-repaint');
     }
   },
+  globals: {
+    viewport: {
+      value: 'iphone14',
+      isRotated: false,
+    },
+  },
 };
 
 export const DarkWallpaper: Story = {};
 
+export const DarkTheme: Story = {
+  args: { theme: 'dark' },
+};
+
 export const LightWallpaper: Story = {
   args: { theme: 'light', wallpaper: 'light' },
+};
+
+export const BlackTheme: Story = {
+  args: { theme: 'black' },
 };
 
 export const ReducedMotion: Story = {

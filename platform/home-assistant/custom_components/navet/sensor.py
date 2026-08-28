@@ -9,6 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
+from .chore_store import ChoreAuthority
 from .const import CHORE_PROJECTION_EVENT, DOMAIN
 
 
@@ -61,8 +62,20 @@ class NavetChoresSensor(SensorEntity):
         }
 
     async def async_added_to_hass(self) -> None:
-        """Subscribe to projection updates from Navet."""
+        """Restore and subscribe to the durable authority projection."""
         await super().async_added_to_hass()
+
+        authority = self.hass.data.get(DOMAIN, {}).get("chore_authority")
+        if isinstance(authority, ChoreAuthority):
+            self._snapshot = authority.projection()
+
+            @callback
+            def authority_updated(_document: dict[str, Any]) -> None:
+                self._snapshot = authority.projection()
+                self.async_write_ha_state()
+
+            self.async_on_remove(authority.subscribe(authority_updated))
+            return
 
         @callback
         def async_projection_received(event: Event) -> None:

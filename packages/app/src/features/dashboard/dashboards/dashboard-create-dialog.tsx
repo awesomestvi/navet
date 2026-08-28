@@ -2,10 +2,10 @@ import { CardDialogTabList } from '@navet/app/components/patterns';
 import {
   BaseCardDialog,
   Button,
+  coverSheetHeaderClassName,
   IconButton,
   Input,
   InteractivePill,
-  Stepper,
 } from '@navet/app/components/primitives';
 import {
   getThemeSurfaceTokens,
@@ -218,53 +218,22 @@ function DashboardCreateForm({ isOpen, onOpenChange, onCreated }: DashboardCreat
     onCreated?.(result.dashboardId);
   };
 
-  const startModeLabel = t(
-    startMode === 'rooms'
-      ? 'dashboard.multiple.create.chooseRooms'
-      : startMode === 'copy'
-        ? 'dashboard.multiple.create.copyCurrent'
-        : 'dashboard.multiple.create.blank'
-  );
-  const assignmentSummary =
-    assignedClientIds.length === 0
-      ? t('dashboard.multiple.create.notYet')
-      : t(
-          assignedClientIds.length === 1
-            ? 'dashboard.multiple.manager.assignedOne'
-            : 'dashboard.multiple.manager.assigned',
-          { count: assignedClientIds.length }
-        );
-  const sections: Array<{
-    id: CreateSection;
-    label: string;
-    summary: string;
-  }> = [
-    {
-      id: 'details',
-      label: t('dashboard.multiple.create.name'),
-      summary: name.trim() || t('dashboard.multiple.create.notYet'),
+  const sections: CreateSection[] = ['details', 'content', 'displays'];
+  const currentSectionIndex = sections.indexOf(activeSection);
+  const activeSectionContent = {
+    details: {
+      title: t('dashboard.multiple.create.nameTitle'),
+      description: t('dashboard.multiple.create.nameDescription'),
     },
-    {
-      id: 'content',
-      label: t('dashboard.multiple.create.startWith'),
-      summary: startModeLabel,
+    content: {
+      title: t('dashboard.multiple.create.contentTitle'),
+      description: t('dashboard.multiple.create.contentDescription'),
     },
-    {
-      id: 'displays',
-      label: t('dashboard.multiple.create.useOn'),
-      summary: assignmentSummary,
+    displays: {
+      title: t('dashboard.multiple.create.displaysTitle'),
+      description: t('dashboard.multiple.create.displaysDescription'),
     },
-  ];
-  const currentSection = sections.find((section) => section.id === activeSection) ?? sections[0];
-  const currentSectionIndex = sections.findIndex((section) => section.id === activeSection);
-  const canOpenSection = (section: CreateSection) =>
-    section === 'details' || (section === 'content' ? hasName : hasName && hasContentSelection);
-  const stepperItems = sections.map((section) => ({
-    id: section.id,
-    label: section.label,
-    summary: section.summary,
-    disabled: !canOpenSection(section.id),
-  }));
+  }[activeSection];
   const canContinue =
     activeSection === 'details'
       ? hasName
@@ -274,13 +243,7 @@ function DashboardCreateForm({ isOpen, onOpenChange, onCreated }: DashboardCreat
   const goBack = () => {
     const previousSection = sections[currentSectionIndex - 1];
     if (previousSection) {
-      setActiveSection(previousSection.id);
-    }
-  };
-  const openSection = (step: number) => {
-    const section = sections[step];
-    if (section && canOpenSection(section.id)) {
-      setActiveSection(section.id);
+      setActiveSection(previousSection);
     }
   };
 
@@ -304,23 +267,20 @@ function DashboardCreateForm({ isOpen, onOpenChange, onCreated }: DashboardCreat
         className="flex h-full min-h-0 max-h-full w-full flex-col overflow-hidden rounded-none border-0 bg-transparent shadow-none"
         data-dashboard-create-workspace
       >
-        <header className={cn('border-b px-3 py-3 md:px-5 md:py-4', surface.border)}>
+        <header className={cn(coverSheetHeaderClassName, 'border-b', surface.border)}>
           <div className="flex min-w-0 items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <h1 className={cn(navetTypographyTokens.pageHeading, surface.textPrimary)}>
                 {t('dashboard.multiple.create.title')}
               </h1>
               <p
-                className={cn(
-                  'mt-1 max-w-2xl max-sm:sr-only',
-                  navetTypographyTokens.body,
-                  surface.textSecondary
-                )}
+                className={cn('mt-1 max-w-2xl', navetTypographyTokens.body, surface.textSecondary)}
               >
                 {t('dashboard.multiple.create.description')}
               </p>
             </div>
             <IconButton
+              data-cover-sheet-inline-dismiss
               variant="ghost"
               label={t('common.close')}
               icon={<X className={navetIconSizeTokens.sm} aria-hidden="true" />}
@@ -335,52 +295,27 @@ function DashboardCreateForm({ isOpen, onOpenChange, onCreated }: DashboardCreat
         </header>
 
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
-          <div className="grid min-h-0 flex-1 md:grid-cols-[minmax(15rem,0.64fr)_minmax(0,1.36fr)]">
-            <aside
-              className={cn('hidden min-h-0 overflow-y-auto p-3 md:block md:p-4', surface.subtleBg)}
+          <main className="flex min-h-0 flex-1 flex-col">
+            <div
+              id="dashboard-create-active-panel"
+              className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-6 sm:px-7 sm:py-8 lg:px-10"
             >
-              <Stepper
-                ariaLabel={t('dashboard.multiple.create.title')}
-                controlsId="dashboard-create-active-panel"
-                currentStep={currentSectionIndex}
-                items={stepperItems}
-                onStepChange={openSection}
-                orientation="vertical"
-              />
-            </aside>
-
-            <main className={cn('flex min-h-0 flex-col md:border-l', surface.border)}>
-              <div className={cn('border-b p-3 md:hidden', surface.border)}>
-                <Stepper
-                  ariaLabel={t('dashboard.multiple.create.title')}
-                  controlsId="dashboard-create-active-panel"
-                  currentStep={currentSectionIndex}
-                  items={stepperItems}
-                  onStepChange={openSection}
-                  size="compact"
-                />
-              </div>
-
-              <div className={cn('border-b p-4 md:p-5', surface.border)}>
-                <h2 className={cn(navetTypographyTokens.titleMd, surface.textPrimary)}>
-                  {currentSection.label}
-                </h2>
-                <p
-                  aria-live="polite"
-                  className={cn(
-                    'mt-1',
-                    navetTypographyTokens.compactMetadata,
-                    surface.textSecondary
-                  )}
-                >
-                  {currentSection.summary}
-                </p>
-              </div>
-
-              <div
-                id="dashboard-create-active-panel"
-                className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 md:p-6"
+              <p className={cn(navetTypographyTokens.eyebrow, surface.textMuted)}>
+                {t('household.setup.stepCount', {
+                  current: currentSectionIndex + 1,
+                  total: sections.length,
+                })}
+              </p>
+              <h2 className={cn('mt-2', navetTypographyTokens.pageHeading, surface.textPrimary)}>
+                {activeSectionContent.title}
+              </h2>
+              <p
+                className={cn('mt-2 max-w-2xl', navetTypographyTokens.body, surface.textSecondary)}
               >
+                {activeSectionContent.description}
+              </p>
+
+              <div className="mt-7">
                 {activeSection === 'details' ? (
                   <label htmlFor="dashboard-create-name" className="block max-w-xl space-y-2">
                     <span className={cn(navetTypographyTokens.label, surface.textPrimary)}>
@@ -587,60 +522,57 @@ function DashboardCreateForm({ isOpen, onOpenChange, onCreated }: DashboardCreat
                   </fieldset>
                 ) : null}
               </div>
+            </div>
 
-              <footer className={cn('border-t px-4 py-3 md:px-5 md:py-4', surface.border)}>
-                {collection.order.length >= MAX_DASHBOARD_COUNT ? (
-                  <p className="mb-3 text-sm text-red-400">
-                    {t('dashboard.multiple.create.limit', { count: MAX_DASHBOARD_COUNT })}
-                  </p>
-                ) : null}
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <footer className={cn('border-t px-4 py-3 md:px-5 md:py-4', surface.border)}>
+              {collection.order.length >= MAX_DASHBOARD_COUNT ? (
+                <p className="mb-3 text-sm text-red-400">
+                  {t('dashboard.multiple.create.limit', { count: MAX_DASHBOARD_COUNT })}
+                </p>
+              ) : null}
+              <div className="flex items-center justify-between gap-3">
+                {currentSectionIndex > 0 ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={goBack}
+                    leading={<ArrowLeft className={navetIconSizeTokens.sm} aria-hidden="true" />}
+                    className="shrink-0"
+                  >
+                    {t('dashboard.multiple.create.back')}
+                  </Button>
+                ) : (
                   <Button
                     type="button"
                     variant="ghost"
                     onClick={() => onOpenChange(false)}
-                    className="order-2 min-h-11 sm:order-1 sm:min-h-0"
+                    className="shrink-0"
                   >
                     {t('common.cancel')}
                   </Button>
-                  <div className="order-1 flex gap-2 sm:order-2">
-                    {currentSectionIndex > 0 ? (
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={goBack}
-                        leading={
-                          <ArrowLeft className={navetIconSizeTokens.sm} aria-hidden="true" />
-                        }
-                        className="min-h-11 flex-[0.9] sm:min-h-0 sm:flex-none"
-                      >
-                        {t('dashboard.multiple.create.back')}
-                      </Button>
-                    ) : null}
-                    <Button
-                      type="submit"
-                      disabled={!canContinue}
-                      leading={
-                        activeSection === 'displays' ? (
-                          <Plus className={navetIconSizeTokens.sm} aria-hidden="true" />
-                        ) : undefined
-                      }
-                      trailing={
-                        activeSection === 'displays' ? undefined : (
-                          <ArrowRight className={navetIconSizeTokens.sm} aria-hidden="true" />
-                        )
-                      }
-                      className="min-h-11 flex-[1.1] whitespace-nowrap sm:min-h-0 sm:flex-none"
-                    >
-                      {activeSection === 'displays'
-                        ? t('dashboard.multiple.create.action')
-                        : t('dashboard.multiple.create.next')}
-                    </Button>
-                  </div>
-                </div>
-              </footer>
-            </main>
-          </div>
+                )}
+                <Button
+                  type="submit"
+                  disabled={!canContinue}
+                  leading={
+                    activeSection === 'displays' ? (
+                      <Plus className={navetIconSizeTokens.sm} aria-hidden="true" />
+                    ) : undefined
+                  }
+                  trailing={
+                    activeSection === 'displays' ? undefined : (
+                      <ArrowRight className={navetIconSizeTokens.sm} aria-hidden="true" />
+                    )
+                  }
+                  className="shrink-0 whitespace-nowrap"
+                >
+                  {activeSection === 'displays'
+                    ? t('dashboard.multiple.create.action')
+                    : t('dashboard.multiple.create.next')}
+                </Button>
+              </div>
+            </footer>
+          </main>
         </form>
       </section>
     </BaseCardDialog>

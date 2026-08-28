@@ -208,6 +208,19 @@ export function assertHacsExport(exportRoot) {
     throw new Error(`HACS export is missing hacs.json: ${hacsFile}`);
   }
 
+  const requiredPanelFiles = [
+    'custom_components/navet/frontend/.vite/manifest.json',
+    'custom_components/navet/frontend/navet-panel.js',
+    'custom_components/navet/frontend/navet-ha-shell.js',
+    'custom_components/navet/frontend/logo.svg',
+    'custom_components/navet/frontend/wallpapers/generated/manifest.json',
+  ];
+  for (const entry of requiredPanelFiles) {
+    if (!fs.existsSync(resolve(exportRoot, entry))) {
+      throw new Error(`HACS export is missing generated panel asset: ${resolve(exportRoot, entry)}`);
+    }
+  }
+
   const forbiddenPaths = ['repository.yaml', 'platform'];
   for (const entry of forbiddenPaths) {
     if (fs.existsSync(resolve(exportRoot, entry))) {

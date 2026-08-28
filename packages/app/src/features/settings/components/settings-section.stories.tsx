@@ -1,5 +1,5 @@
 import { SettingsSection } from '@navet/app/features/settings';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 
 const meta = {
@@ -34,7 +34,12 @@ export const Default: Story = {
 
 export const TabletPortrait: Story = {
   args: { layout: 'desktop' },
-  parameters: { viewport: { defaultViewport: 'tablet' } },
+  globals: {
+    viewport: {
+      value: 'tablet',
+      isRotated: false,
+    },
+  },
 };
 
 export const DeepSearch: Story = {
@@ -52,7 +57,6 @@ export const DeepSearch: Story = {
 
 export const MobileIndex: Story = {
   args: { layout: 'mobile' },
-  parameters: { viewport: { defaultViewport: 'mobile1' } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const navigation = canvas.getByRole('navigation', { name: 'Settings' });
@@ -66,15 +70,26 @@ export const MobileIndex: Story = {
     await expect(rowHeights.every((height) => height === rowHeights[0])).toBe(true);
     await expect(canvas.queryByText('A calmer place to tune Navet.')).not.toBeInTheDocument();
   },
+  globals: {
+    viewport: {
+      value: 'mobile1',
+      isRotated: false,
+    },
+  },
 };
 
 export const MobileDetail: Story = {
   args: { layout: 'mobile' },
-  parameters: { viewport: { defaultViewport: 'mobile1' } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole('button', { name: 'Appearance' }));
     await expect(canvas.getByRole('button', { name: 'Settings' })).toBeVisible();
     await expect(canvas.getByRole('heading', { name: 'Appearance' })).toBeVisible();
+  },
+  globals: {
+    viewport: {
+      value: 'mobile1',
+      isRotated: false,
+    },
   },
 };

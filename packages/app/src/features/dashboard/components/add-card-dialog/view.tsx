@@ -3,17 +3,36 @@ import { CardDialogHeader, NavigationWorkspace } from '@navet/app/components/pat
 import {
   BaseCardDialog,
   Button,
+  coverSheetHeaderClassName,
   DialogFooter,
   IconButton,
   InteractivePill,
-  Select,
 } from '@navet/app/components/primitives';
 import { type CardSize, getCardSizeRatio } from '@navet/app/components/shared/card-size-selector';
 import { getAddCardDialogSurfaceTokens } from '@navet/app/components/shared/theme/add-card-dialog-surface-tokens';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { getThemeFocusRingClassName } from '@navet/app/components/system/tokens';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@navet/app/components/ui/dropdown-menu';
+import { cn } from '@navet/app/components/ui/utils';
 import { isAllRooms } from '@navet/app/constants/rooms';
 import { type ThemeType, useI18n } from '@navet/app/hooks';
-import { ArrowDownAZ, ArrowLeft, ArrowUpDown, ArrowUpZA, Layers2, Sparkles } from 'lucide-react';
+import {
+  ArrowDownAZ,
+  ArrowLeft,
+  ArrowUpDown,
+  ArrowUpZA,
+  ChevronRight,
+  Layers2,
+  ListFilter,
+  Sparkles,
+} from 'lucide-react';
 import { useState } from 'react';
 import {
   type DashboardLibraryCard,
@@ -146,9 +165,13 @@ export function AddCardDialogView({
         className="h-full max-h-full rounded-none border-0 bg-transparent shadow-none"
       >
         <NavigationWorkspace.Header
-          className={`z-10 shrink-0 border-b px-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-4 sm:px-5 sm:pt-5 ${borderColor} ${
+          data-add-card-header
+          className={cn(
+            coverSheetHeaderClassName,
+            'z-10 shrink-0 border-b pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]',
+            borderColor,
             theme === 'glass' ? 'bg-transparent' : 'bg-inherit/95 backdrop-blur-xl'
-          }`}
+          )}
         >
           <CardDialogHeader
             title={t('dashboard.addCard.title')}
@@ -172,7 +195,7 @@ export function AddCardDialogView({
                 }}
                 className="justify-start rounded-full px-3.5 text-left"
               >
-                <span className="text-sm font-semibold">{t('dashboard.addCard.tab.cards')}</span>
+                <span className="font-normal">{t('dashboard.addCard.tab.cards')}</span>
               </InteractivePill>
 
               <InteractivePill
@@ -183,7 +206,7 @@ export function AddCardDialogView({
                 onClick={() => setActiveTab('widgets')}
                 className="justify-start rounded-full px-3.5 text-left"
               >
-                <span className="text-sm font-semibold">{t('dashboard.addCard.tab.widgets')}</span>
+                <span className="font-normal">{t('dashboard.addCard.tab.widgets')}</span>
               </InteractivePill>
             </div>
           ) : null}
@@ -215,7 +238,9 @@ export function AddCardDialogView({
                         <Layers2 className="h-4 w-4" />
                       </NavigationWorkspace.ItemIcon>
                       <NavigationWorkspace.ItemText
-                        title={t('dashboard.addCard.tab.cards')}
+                        title={
+                          <span className="font-normal">{t('dashboard.addCard.tab.cards')}</span>
+                        }
                         description={t('dashboard.addCard.librarySummary.available', {
                           count: libraryEntityCount,
                         })}
@@ -264,7 +289,11 @@ export function AddCardDialogView({
                       <NavigationWorkspace.ItemIcon>
                         <Sparkles className="h-4 w-4" />
                       </NavigationWorkspace.ItemIcon>
-                      <NavigationWorkspace.ItemText title={t('dashboard.addCard.tab.widgets')} />
+                      <NavigationWorkspace.ItemText
+                        title={
+                          <span className="font-normal">{t('dashboard.addCard.tab.widgets')}</span>
+                        }
+                      />
                     </NavigationWorkspace.ItemButton>
                   </NavigationWorkspace.Item>
                 </nav>
@@ -292,7 +321,7 @@ export function AddCardDialogView({
                         query={libraryQuery}
                         textPrimary={textColor}
                         textSecondary={mutedColor}
-                        widthClassName={`rounded-[18px] sm:pr-40 ${borderColor}`}
+                        widthClassName={`rounded-[18px] !text-sm !font-normal placeholder:!font-normal sm:pr-40 ${borderColor}`}
                       />
                       {!hasLibraryQuery ? (
                         <span
@@ -322,31 +351,46 @@ export function AddCardDialogView({
                       className="shrink-0"
                     />
 
-                    <Select
-                      aria-label={t('dashboard.addCard.filter.label')}
-                      value={selectedLibraryRoom ?? ''}
-                      onChange={(event) => setSelectedLibraryRoom(event.target.value || null)}
-                      size="small"
-                      accentColorOverride={accent}
-                      containerClassName="w-[9.5rem] max-w-[42%] shrink-0 sm:w-44"
-                      selectClassName="rounded-[18px]"
-                    >
-                      <option value="">{t('dashboard.addCard.filter.label')}</option>
-                      {libraryRooms.map((room) => (
-                        <option key={room} value={room}>
-                          {room}
-                        </option>
-                      ))}
-                    </Select>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <IconButton
+                          label={
+                            selectedLibraryRoom
+                              ? `${t('dashboard.addCard.filter.label')}: ${selectedLibraryRoom}`
+                              : t('dashboard.addCard.filter.label')
+                          }
+                          icon={<ListFilter className="h-4 w-4" aria-hidden="true" />}
+                          size="small"
+                          variant={selectedLibraryRoom === null ? 'subtle' : 'secondary'}
+                          className="shrink-0"
+                        />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" sideOffset={8} className="min-w-48">
+                        <DropdownMenuLabel>{t('dashboard.addCard.filter.label')}</DropdownMenuLabel>
+                        <DropdownMenuRadioGroup
+                          value={selectedLibraryRoom ?? '__all__'}
+                          onValueChange={(room) =>
+                            setSelectedLibraryRoom(room === '__all__' ? null : room)
+                          }
+                        >
+                          <DropdownMenuRadioItem value="__all__">
+                            {t('dashboard.addCard.tab.cards')}
+                          </DropdownMenuRadioItem>
+                          {libraryRooms.map((room) => (
+                            <DropdownMenuRadioItem key={room} value={room}>
+                              {room}
+                            </DropdownMenuRadioItem>
+                          ))}
+                        </DropdownMenuRadioGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
 
                   <div className="min-h-0 flex-1 pt-3">
                     <DashboardLibraryList
                       cards={filteredLibraryCards}
                       surface={surface}
-                      accentColor={accent}
-                      tileBackground={cardBg}
-                      tileBorder={dialogSurface.tileBorder}
+                      addLabel={t('dashboard.addEntity.action')}
                       emptyText={t('dashboard.addCard.libraryEmpty')}
                       onAdd={handleAddFromLibrary}
                       fillAvailable
@@ -423,8 +467,11 @@ export function AddCardDialogView({
                       <h3 className={`mb-3 text-sm font-medium ${textColor}`}>
                         {t('dashboard.addCard.chooseType')}
                       </h3>
-                      <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-3">
-                        {cardTemplates.map((template) => (
+                      <div
+                        className={cn('overflow-hidden rounded-[24px] border', surface.border)}
+                        data-custom-card-list
+                      >
+                        {cardTemplates.map((template, index) => (
                           <button
                             type="button"
                             key={template.id}
@@ -432,23 +479,38 @@ export function AddCardDialogView({
                               setSelectedType(template.id);
                               setSelectedSize(template.defaultSize);
                             }}
-                            className={`flex w-full items-start gap-3.5 rounded-[18px] border px-3.5 py-3 text-left transition-colors ${hoverBg}`}
-                            style={{
-                              backgroundColor: cardBg,
-                              borderColor: dialogSurface.tileBorder,
-                            }}
+                            className={cn(
+                              'flex min-h-14 w-full items-start gap-3 px-4 py-3 text-left transition-colors motion-reduce:transition-none',
+                              hoverBg,
+                              getThemeFocusRingClassName(theme),
+                              index > 0 ? `border-t ${surface.border}` : ''
+                            )}
                           >
-                            <NavigationWorkspace.ItemIcon>
-                              <span className="[&_svg]:h-4 [&_svg]:w-4">{template.icon}</span>
-                            </NavigationWorkspace.ItemIcon>
+                            <span
+                              className={cn(
+                                'flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border [&_svg]:h-4 [&_svg]:w-4',
+                                surface.iconBg,
+                                surface.borderStrong,
+                                surface.textSecondary
+                              )}
+                              aria-hidden="true"
+                            >
+                              {template.icon}
+                            </span>
                             <div className="min-w-0 flex-1">
-                              <h4 className={`truncate text-sm font-semibold ${textColor}`}>
+                              <h4 className={`truncate text-sm font-medium ${textColor}`}>
                                 {t(template.nameKey)}
                               </h4>
-                              <p className={`mt-1.5 text-xs ${mutedColor}`}>
+                              <p
+                                className={`mt-1 whitespace-normal break-words text-xs leading-4 ${surface.textMuted}`}
+                              >
                                 {t(template.descriptionKey)}
                               </p>
                             </div>
+                            <ChevronRight
+                              className={cn('mt-2.5 h-4 w-4 shrink-0', surface.textMuted)}
+                              aria-hidden="true"
+                            />
                           </button>
                         ))}
                       </div>
@@ -460,22 +522,18 @@ export function AddCardDialogView({
 
             {activeTab === 'widgets' && selectedTemplate ? (
               <DialogFooter
-                className={`mt-4 shrink-0 !justify-between border-t pt-4 ${borderColor}`}
+                className={`mt-4 shrink-0 !flex-nowrap !justify-between border-t pt-4 ${borderColor}`}
               >
                 <Button
                   type="button"
                   variant="secondary"
                   leading={<ArrowLeft className="h-4 w-4" aria-hidden="true" />}
                   onClick={() => setSelectedType(null)}
-                  className="w-full sm:w-auto sm:min-w-[8rem]"
+                  className="shrink-0"
                 >
                   {t('dashboard.onboarding.back')}
                 </Button>
-                <Button
-                  type="button"
-                  onClick={handleAdd}
-                  className="w-full sm:w-auto sm:min-w-[10rem]"
-                >
+                <Button type="button" onClick={handleAdd} className="shrink-0">
                   {t('dashboard.addCard.action')}
                 </Button>
               </DialogFooter>

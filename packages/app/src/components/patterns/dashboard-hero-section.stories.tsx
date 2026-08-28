@@ -1,7 +1,7 @@
 import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@navet/app/hooks';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { DashboardHeroSection } from './dashboard-hero-section';
 
 function DashboardHeroSectionStory() {

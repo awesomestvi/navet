@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { cp, mkdir, rm } from 'node:fs/promises';
+import { cp, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import {
@@ -9,6 +9,7 @@ import {
   manifestPath,
   readJson,
 } from './release-surfaces.mjs';
+import { assembleHomeAssistantIntegration } from './assemble-ha-integration.mjs';
 import { appPaths, homeAssistantPaths } from './repo-paths.mjs';
 
 const exportRoot = process.env.NAVET_HACS_EXPORT_ROOT
@@ -55,12 +56,11 @@ if (sourceManifest.version !== packageVersion) {
 }
 
 await mkdir(resolve(exportRoot, 'custom_components'), { recursive: true });
-await rm(resolve(exportRoot, 'custom_components/navet'), { recursive: true, force: true });
-await cp(
-  homeAssistantPaths.platformNavetCustomComponent,
-  resolve(exportRoot, 'custom_components/navet'),
-  { recursive: true }
-);
+await assembleHomeAssistantIntegration({
+  sourceRoot: homeAssistantPaths.platformNavetCustomComponent,
+  panelDist: appPaths.haPanelDist,
+  destination: resolve(exportRoot, 'custom_components/navet'),
+});
 await cp(homeAssistantPaths.hacsMetadataTemplate, resolve(exportRoot, 'hacs.json'));
 await cp(homeAssistantPaths.hacsReadmeTemplate, resolve(exportRoot, 'README.md'));
 await cp(changelogPath, resolve(exportRoot, 'CHANGELOG.md'));

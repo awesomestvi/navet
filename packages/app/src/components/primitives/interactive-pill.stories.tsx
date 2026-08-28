@@ -1,5 +1,5 @@
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Circle, Droplets, Moon, Palette, Sliders, Star, Sun, Trash2 } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { useState } from 'react';

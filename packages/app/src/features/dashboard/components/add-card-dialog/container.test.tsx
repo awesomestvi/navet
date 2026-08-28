@@ -44,16 +44,31 @@ describe('AddCardDialogContainer', () => {
     const allCardsButton = within(sidebar).getByRole('button', { name: /All cards/ });
     expect(allCardsButton).toHaveAttribute('aria-current', 'page');
     expect(within(allCardsButton).getByText('2 entities')).toBeInTheDocument();
-    expect(within(sidebar).getByRole('button', { name: 'Custom card' })).toBeInTheDocument();
+    expect(within(allCardsButton).getByText('All cards')).toHaveClass('font-normal');
+    expect(within(sidebar).getByRole('button', { name: 'Custom cards' })).toBeInTheDocument();
     expect(within(sidebar).getByRole('button', { name: /Light/ })).toBeInTheDocument();
     expect(within(sidebar).getByRole('button', { name: /Sensor/ })).toBeInTheDocument();
     const separator = sidebar.querySelector('[data-navigation-workspace-separator]');
-    const customCardButton = within(sidebar).getByRole('button', { name: 'Custom card' });
+    const customCardButton = within(sidebar).getByRole('button', { name: 'Custom cards' });
+    expect(within(customCardButton).getByText('Custom cards')).toHaveClass('font-normal');
     expect(separator).toBeInTheDocument();
     expect(
       (separator?.compareDocumentPosition(customCardButton) ?? 0) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
     expect(screen.getByRole('dialog', { name: 'Add Card' })).toHaveClass('md:max-w-[1200px]');
+
+    fireEvent.click(customCardButton);
+    expect(screen.getByText('Info').closest('[data-custom-card-list]')).toHaveClass(
+      'rounded-[24px]',
+      'border'
+    );
+    expect(screen.getByText('Info').closest('button')).toHaveClass('min-h-14');
+    expect(
+      screen.getByText('Pin any sensor or binary sensor as a standalone info card.')
+    ).toHaveClass('whitespace-normal', 'break-words', 'leading-4');
+    expect(
+      screen.getByText('Pin any sensor or binary sensor as a standalone info card.')
+    ).not.toHaveClass('truncate');
   });
 
   it('filters normal cards from the entity-type sidebar', () => {
@@ -72,6 +87,26 @@ describe('AddCardDialogContainer', () => {
     fireEvent.click(within(sidebar).getByRole('button', { name: /Sensor/ }));
 
     expect(screen.getByText('Kitchen Temperature')).toBeInTheDocument();
+    expect(screen.queryByText('Kitchen Light')).not.toBeInTheDocument();
+  });
+
+  it('adds an entity from the dedicated row action', () => {
+    const onAddLibraryCard = vi.fn();
+
+    renderWithProviders(
+      <AddCardDialogContainer
+        open
+        onClose={() => {}}
+        onAddCard={vi.fn()}
+        onAddLibraryCard={onAddLibraryCard}
+        currentRoom="Kitchen"
+        libraryCards={demoLibraryCards}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add: Kitchen Light' }));
+
+    expect(onAddLibraryCard).toHaveBeenCalledWith('light.kitchen');
     expect(screen.queryByText('Kitchen Light')).not.toBeInTheDocument();
   });
 
@@ -99,9 +134,11 @@ describe('AddCardDialogContainer', () => {
       />
     );
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'Filter' }), {
-      target: { value: 'Living Room' },
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Filter' }), {
+      button: 0,
+      ctrlKey: false,
     });
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Living Room' }));
 
     expect(screen.getByText('Living Room Light')).toBeInTheDocument();
     expect(screen.queryByText('Kitchen Light')).not.toBeInTheDocument();
@@ -137,10 +174,13 @@ describe('AddCardDialogContainer', () => {
       />
     );
 
-    const alphaCard = screen.getByText('Alpha Light').closest('button') as HTMLButtonElement;
-    const zebraCard = screen.getByText('Zebra Light').closest('button') as HTMLButtonElement;
+    const alphaCard = screen.getByText('Alpha Light').closest('[data-dashboard-library-row]');
+    const zebraCard = screen.getByText('Zebra Light').closest('[data-dashboard-library-row]');
+    expect(alphaCard).not.toBeNull();
+    expect(zebraCard).not.toBeNull();
     expect(
-      zebraCard.compareDocumentPosition(alphaCard) & Node.DOCUMENT_POSITION_FOLLOWING
+      (zebraCard?.compareDocumentPosition(alphaCard as Node) ?? 0) &
+        Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
 
     const sortButton = screen.getByRole('button', { name: 'Sort: Default' });
@@ -149,19 +189,22 @@ describe('AddCardDialogContainer', () => {
     fireEvent.click(sortButton);
     expect(sortButton).toHaveAttribute('data-sort-direction', 'asc');
     expect(
-      alphaCard.compareDocumentPosition(zebraCard) & Node.DOCUMENT_POSITION_FOLLOWING
+      (alphaCard?.compareDocumentPosition(zebraCard as Node) ?? 0) &
+        Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
 
     fireEvent.click(sortButton);
     expect(sortButton).toHaveAttribute('data-sort-direction', 'desc');
     expect(
-      zebraCard.compareDocumentPosition(alphaCard) & Node.DOCUMENT_POSITION_FOLLOWING
+      (zebraCard?.compareDocumentPosition(alphaCard as Node) ?? 0) &
+        Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
 
     fireEvent.click(sortButton);
     expect(sortButton).toHaveAttribute('data-sort-direction', 'none');
     expect(
-      zebraCard.compareDocumentPosition(alphaCard) & Node.DOCUMENT_POSITION_FOLLOWING
+      (zebraCard?.compareDocumentPosition(alphaCard as Node) ?? 0) &
+        Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
   });
 
@@ -179,7 +222,8 @@ describe('AddCardDialogContainer', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    const dialog = screen.getByRole('dialog', { name: 'Add Card' });
+    fireEvent.click(dialog.querySelector('[data-mobile-cover-sheet-dismiss]') as HTMLButtonElement);
 
     expect(onClose).toHaveBeenCalledOnce();
   });
@@ -353,14 +397,15 @@ describe('AddCardDialogContainer', () => {
     });
 
     expect(screen.queryByText('Battery')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Home.*Weather/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add: Home' })).toBeInTheDocument();
+    expect(screen.getByText('Weather')).toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText('Search entities'), {
       target: { value: 'sensor.basement_weather_station_battery' },
     });
 
     expect(screen.getByText('Battery')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Home.*Weather/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add: Home' })).not.toBeInTheDocument();
   });
 
   it('matches native entity ids supplied by the manual entity catalog', () => {

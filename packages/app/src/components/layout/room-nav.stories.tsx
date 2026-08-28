@@ -7,7 +7,7 @@ import {
 } from '@navet/app/features/dashboard/dashboards/dashboard-collection';
 import { useDashboardCollectionStore } from '@navet/app/features/dashboard/dashboards/dashboard-collection-store';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useState } from 'react';
 import { expect, userEvent, within } from 'storybook/test';
 

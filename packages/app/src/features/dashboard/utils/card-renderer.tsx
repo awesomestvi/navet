@@ -18,7 +18,7 @@ import { useI18n, useIntegrationStore } from '@navet/app/hooks';
 import type { IntegrationStore } from '@navet/app/stores/integration-store';
 import { integrationSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
-import type { DeviceMetric } from '@navet/app/types/device.types';
+import type { DeviceMetric, SecuritySeverity } from '@navet/app/types/device.types';
 import { type IntegrationProviderId, isIntegrationProviderId } from '@navet/app/types/provider';
 import { resolveEffectsQuality } from '@navet/app/utils/effects-quality';
 import { parseProviderScopedId } from '@navet/app/utils/provider-ids';
@@ -29,6 +29,7 @@ import { lazy, type ReactElement, type ReactNode, Suspense, useCallback, useMemo
 interface DeviceData {
   id: string;
   type: string;
+  securitySeverity?: SecuritySeverity;
   [key: string]: string | number | boolean | string[] | object | undefined;
 }
 
@@ -659,6 +660,7 @@ const cardRegistry: Partial<Record<string, CardRenderFn>> = {
           subtitle={headerSubtitleOverride ?? (device.entityType as string | undefined)}
           deviceClass={device.deviceClass as string | undefined}
           status={device.status as 'measurement' | 'active' | 'clear' | 'unavailable' | undefined}
+          securitySeverity={device.securitySeverity}
           lastUpdated={device.lastUpdated as string | undefined}
           size={size}
           onSizeChange={handleSizeChange}

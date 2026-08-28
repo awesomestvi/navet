@@ -19,6 +19,11 @@ import { HabitInsightsPanel } from '@navet/app/features/habits/components/habit-
 import { useLocalHabitsFeature } from '@navet/app/features/habits/local-habits-feature';
 import { TasksSection } from '@navet/app/features/tasks/components/tasks-section';
 import { useI18n } from '@navet/app/hooks';
+import { isHomeAssistantPanelMode } from '@navet/app/runtime/app-mode';
+import {
+  type ChoreRuntimeCapabilities,
+  getChoreWorkspaceTransport,
+} from '@navet/app/services/chore-workspace.service';
 import {
   publishIntegrationChoreProjection,
   subscribeIntegrationChoreActionRequests,
@@ -262,6 +267,30 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
     () => integrationStore.getState().roomDescriptors,
     () => integrationStore.getState().roomDescriptors
   );
+  const [runtimeCapabilities, setRuntimeCapabilities] = useState<ChoreRuntimeCapabilities | null>(
+    null
+  );
+
+  useEffect(() => {
+    if (!syncEnabled) return;
+    let active = true;
+    void getChoreWorkspaceTransport()
+      .loadCapabilities()
+      .then((capabilities) => {
+        if (active) setRuntimeCapabilities(capabilities);
+      });
+    return () => {
+      active = false;
+    };
+  }, [syncEnabled]);
+
+  const panelAuthority = isHomeAssistantPanelMode();
+  const authoritySchedules = panelAuthority || runtimeCapabilities?.backgroundScheduling === true;
+  const authorityDeliversNotifications =
+    panelAuthority || runtimeCapabilities?.backgroundNotifications === true;
+  const authorityPublishesProjection =
+    panelAuthority || runtimeCapabilities?.projectionOwnedByAuthority === true;
+  const authorityHandlesActions = panelAuthority || runtimeCapabilities?.actionServices === true;
 
   useEffect(() => {
     if (!habitsVisible && view === 'habits') {
@@ -278,18 +307,18 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
   );
 
   useChoreWorkspaceSync(syncEnabled);
-  useChoreReminderDelivery(syncEnabled);
+  useChoreReminderDelivery(syncEnabled && !authorityDeliversNotifications);
 
   useEffect(() => {
-    if (!syncEnabled || !data) return;
+    if (!syncEnabled || !data || authorityPublishesProjection) return;
     void publishIntegrationChoreProjection({
       workspace: data,
       revision: revision ?? undefined,
     }).catch(() => undefined);
-  }, [data, revision, syncEnabled]);
+  }, [authorityPublishesProjection, data, revision, syncEnabled]);
 
   useEffect(() => {
-    if (!syncEnabled) return;
+    if (!syncEnabled || authorityHandlesActions) return;
     let active = true;
     let unsubscribe = () => {};
     void subscribeIntegrationChoreActionRequests((request) => {
@@ -320,7 +349,7 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
       active = false;
       unsubscribe();
     };
-  }, [execute, syncEnabled]);
+  }, [authorityHandlesActions, execute, syncEnabled]);
 
   const allParticipants = useMemo(() => (data ? Object.values(data.participantsById) : []), [data]);
   const participants = useMemo(
@@ -340,6 +369,7 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
   useEffect(() => {
     if (
       !syncEnabled ||
+      authoritySchedules ||
       status !== 'ready' ||
       !data ||
       Object.keys(data.definitionsById).length === 0
@@ -349,7 +379,7 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
     const materialized = materializeChoreWorkspace(data);
     if (!materialized.changed) return;
     void execute({ type: 'materialize_occurrences', ...getChoreMaterializationRange() });
-  }, [data, execute, status, syncEnabled]);
+  }, [authoritySchedules, data, execute, status, syncEnabled]);
 
   const managerActorId =
     participants.find(

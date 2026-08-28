@@ -182,7 +182,7 @@ export const ptMessages = {
     'Todos marcam as tarefas concluídas no mesmo lugar, para ver o que está feito e o que ainda precisa de atenção.',
   'household.setup.dialogTitle': 'Configurar tarefas domésticas',
   'household.setup.dialogDescription':
-    'Vamos ajudar a adicionar as pessoas de casa, criar um trabalho que regressa e escolher lembretes e proteção opcionais. Pode alterar tudo mais tarde.',
+    'Adicione pessoas e tarefas. Ajuste as preferências quando quiser.',
   'household.setup.progressLabel': 'Progresso da configuração de tarefas',
   'household.setup.stepCount': 'Passo {current} de {total}',
   'household.setup.stepProfiles': 'Perfis e lembretes',
@@ -531,6 +531,15 @@ export const ptMessages = {
   'dashboard.multiple.group.rooms': 'Divisões',
   'dashboard.multiple.create.title': 'Criar painel',
   'dashboard.multiple.create.description': 'Escolha o que mostrar e onde o painel será utilizado.',
+  'dashboard.multiple.create.nameTitle': 'Dê um nome ao painel',
+  'dashboard.multiple.create.nameDescription':
+    'Escolha um nome que torne esta vista fácil de reconhecer.',
+  'dashboard.multiple.create.contentTitle': 'Escolha o que incluir',
+  'dashboard.multiple.create.contentDescription':
+    'Comece com divisões, copie o painel atual ou comece do zero.',
+  'dashboard.multiple.create.displaysTitle': 'Escolha onde será aberto',
+  'dashboard.multiple.create.displaysDescription':
+    'Atribua-o a este dispositivo ou deixe-o sem atribuição por agora.',
   'dashboard.multiple.create.name': 'Nome',
   'dashboard.multiple.create.namePlaceholder': 'Andar de cima',
   'dashboard.multiple.create.startWith': 'Começar com',
@@ -932,7 +941,7 @@ export const ptMessages = {
   'dashboard.addCard.sort.default': 'Predefinido',
   'dashboard.addCard.sort.ascending': 'Crescente',
   'dashboard.addCard.sort.descending': 'Decrescente',
-  'dashboard.addCard.tab.widgets': 'Card personalizado',
+  'dashboard.addCard.tab.widgets': 'Cards personalizados',
   'dashboard.addCard.header.library': 'BIBLIOTECA DE ENTIDADES',
   'dashboard.addCard.header.widgets': 'WIDGETS PERSONALIZADOS',
   'dashboard.addCard.tab.cardsHint': 'Navegue por toda entidade do Home Assistant',

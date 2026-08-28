@@ -1,7 +1,7 @@
 import { GroupedSensorCard } from '@navet/app/features/sensors';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { EntityCardStoryFrame, noopCardSizeChange } from '@navet/app/storybook/story-frames';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps } from 'react';
 
 function GroupedSensorCardStory(

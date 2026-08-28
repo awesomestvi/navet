@@ -66,4 +66,20 @@ describe('BatteryOverviewWidget', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText('Phone Battery')).not.toBeInTheDocument();
   });
+
+  it('keeps the mobile battery list in the whole-sheet scroll flow', async () => {
+    homeAssistantStore.setState({
+      ...homeAssistantStore.getInitialState(),
+      entities: batteryEntities,
+    });
+
+    renderWithProviders(<BatteryOverviewWidget isEditMode onUpdate={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /settings/i }));
+
+    const dialog = await screen.findByRole('dialog');
+    const batteryList = within(dialog).getByRole('list');
+    expect(batteryList).not.toHaveClass('max-h-72', 'overflow-y-auto');
+    expect(batteryList).toHaveClass('sm:max-h-72', 'sm:overflow-y-auto');
+  });
 });

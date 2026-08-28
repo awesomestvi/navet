@@ -1,5 +1,5 @@
 import { useTheme } from '@navet/app/hooks';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { navetRadiusTokens } from './foundations';
 import { ThemeTokenShowcase } from './theme-token-showcase';
 

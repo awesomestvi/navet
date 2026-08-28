@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { DashboardEditActions, DashboardResizeTrigger } from './dashboard-edit-actions';

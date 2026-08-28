@@ -1,7 +1,7 @@
 import { FieldBlock } from '@navet/app/components/patterns';
 import { Input } from '@navet/app/components/primitives';
 import { useTheme } from '@navet/app/hooks';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Search } from 'lucide-react';
 
 function FieldBlockStory({

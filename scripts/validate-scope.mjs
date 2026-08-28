@@ -30,6 +30,7 @@ const SCOPE_COMMANDS = {
   release: [
     ['pnpm', ['release:check']],
     ['pnpm', ['check:provider-boundaries']],
+    ['pnpm', ['test:ha-integration']],
     ['pnpm', ['check:docker']],
   ],
 };
@@ -145,7 +146,6 @@ function inferScopes(files) {
       file.startsWith('platform/home-assistant/addons/navet/') ||
       file.startsWith('platform/home-assistant/addons/navet-dev/') ||
       file.startsWith('platform/home-assistant/custom_components/navet/brand/') ||
-      file === 'platform/home-assistant/custom_components/navet/frontend/logo.svg' ||
       file === 'scripts/brand-assets.mjs' ||
       file === 'scripts/generate-brand-reference-visuals.mjs' ||
       file === 'apps/website/scripts/generate-social-card.mjs'
@@ -197,6 +197,7 @@ function inferScopes(files) {
       file.startsWith('apps/ha-panel/') ||
       file.startsWith('hacs/') ||
       file.startsWith('custom_components/') ||
+      (file.startsWith('platform/home-assistant/custom_components/') && file.endsWith('.py')) ||
       file.includes('release')
     ) {
       scopes.add('release');

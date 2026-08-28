@@ -1,4 +1,5 @@
 import choreStore from '@docker/njs/chore-store.js';
+import conformanceVectors from '@navet/core/chore-conformance-vectors.json';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const WORKSPACE_PATH = '/data/navet-dashboard-workspace.json';
@@ -180,11 +181,121 @@ function seedOccurrenceWorkspace() {
 
 afterEach(() => {
   choreStore.resetChoreStoreForTests();
+  delete process.env.SUPERVISOR_TOKEN;
+  vi.unstubAllGlobals();
   vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
 describe('NJS chore workspace store', () => {
+  for (const vector of conformanceVectors.materialization) {
+    it(`matches shared conformance: ${vector.name}`, () => {
+      const participantsById = Object.fromEntries(
+        vector.participants.map((participant) => [participant.id, participant])
+      );
+      const occurrences = choreStore.materializeDefinitionForTests(
+        vector.definition,
+        participantsById,
+        vector.rangeStart,
+        vector.rangeEnd,
+        {},
+        undefined
+      );
+      expect(
+        occurrences.map((occurrence: { scheduledAt: string; assigneeIds: string[] }) => ({
+          scheduledAt: occurrence.scheduledAt,
+          assigneeIds: occurrence.assigneeIds,
+        }))
+      ).toEqual(vector.expected);
+    });
+  }
+
+  it('reports runtime capabilities without enabling browser background work in standalone mode', () => {
+    choreStore.setChoreStoreFsForTests(createMockFs());
+    choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
+
+    const standalone = createRequest({ uri: '/__navet_chores__/capabilities' });
+    choreStore.handle(standalone);
+    expect(parseResponse(standalone)).toMatchObject({
+      contractVersion: 1,
+      schemaVersion: 2,
+      authority: 'standalone',
+      backgroundScheduling: false,
+      backgroundNotifications: false,
+    });
+
+    const ingress = createRequest({ uri: '/__navet_chores__/capabilities' });
+    choreStore.handleIngress(ingress);
+    expect(parseResponse(ingress)).toMatchObject({
+      authority: 'navet_addon',
+      backgroundScheduling: true,
+      backgroundNotifications: true,
+    });
+  });
+
+  it('periodically materializes and delivers reminders without losing concurrent UI writes', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-09T08:00:00.000Z'));
+    const mockFs = createMockFs();
+    choreStore.setChoreStoreFsForTests(mockFs);
+    choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
+    choreStore.handle(
+      createActionRequest('periodic-manager', 0, {
+        type: 'participant_create',
+        participant: {
+          ...managerParticipant(),
+          reminderPreferences: {
+            enabled: true,
+            destination: { type: 'home_assistant', target: 'mobile_app_phone' },
+          },
+        },
+      })
+    );
+    const definition = seededData('periodic').definitionsById.dishes;
+    choreStore.handle(
+      createActionRequest('periodic-definition', 1, {
+        type: 'definition_create',
+        actorParticipantId: 'maya',
+        definition: {
+          ...definition,
+          reminderPolicy: { enabled: true, beforeDueMinutes: [], atDue: true },
+        },
+      })
+    );
+
+    await choreStore.runPeriodic({});
+    expect(JSON.parse(mockFs.getFile(CHORE_PATH) ?? '{}').data.occurrencesById).toHaveProperty(
+      OCCURRENCE_ID
+    );
+
+    vi.setSystemTime(new Date('2026-08-10T12:00:00.000Z'));
+    process.env.SUPERVISOR_TOKEN = 'supervisor-token';
+    const fetchMock = vi.fn(async () => {
+      const current = JSON.parse(mockFs.getFile(CHORE_PATH) ?? '{}');
+      choreStore.handle(
+        createActionRequest('concurrent-sofia', current.revision, {
+          type: 'participant_create',
+          actorParticipantId: 'maya',
+          participant: managerParticipant('sofia'),
+        })
+      );
+      return { ok: true, status: 200 };
+    });
+    vi.stubGlobal('ngx', { fetch: fetchMock });
+
+    await choreStore.runPeriodic({});
+
+    const stored = JSON.parse(mockFs.getFile(CHORE_PATH) ?? '{}');
+    expect(stored.data.participantsById).toHaveProperty('sofia');
+    expect(
+      stored.data.outbox.find((item: { eventType: string }) => item.eventType === 'reminder_due')
+    ).toMatchObject({ status: 'delivered', attempts: 1 });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://supervisor/core/api/services/notify/mobile_app_phone',
+      expect.objectContaining({ method: 'POST' })
+    );
+  });
+
   it('resolves daylight-saving offsets without unavailable packaged APIs', () => {
     expect(
       choreStore.getNjsTimeZoneOffsetMinutesForTests(

@@ -94,7 +94,7 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
             title={t('notifications.title')}
             closeLabel={t('common.close')}
             onClose={onClose}
-            className="px-4 pb-3"
+            className={`border-b max-sm:pt-2 ${surface.borderClassName}`}
             titleAccessory={
               unreadCount > 0 ? (
                 <span
@@ -131,7 +131,13 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
         />
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
+      <div
+        className={
+          isMobile
+            ? ''
+            : 'min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]'
+        }
+      >
         {notifications.length === 0 ? (
           <NotificationEmptyState />
         ) : (
@@ -183,7 +189,6 @@ export function NotificationPanel({ isOpen, onClose, triggerRefs = [] }: Notific
           accentColor={getColorValue(primaryColor)}
           overlayClassName={`animate-in fade-in bg-black/45 backdrop-blur-[2px] md:hidden ${surface.dialogBackdrop}`}
           contentClassName={surface.sheetClassName}
-          bodyClassName="flex max-h-[min(78vh,42rem)] flex-col"
         >
           {content}
         </SheetSurface>

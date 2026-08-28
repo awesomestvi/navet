@@ -32,10 +32,6 @@ export const homeAssistantPaths = {
   addonNavetDev: resolve(repoRoot, 'platform/home-assistant/addons/navet-dev'),
   platformCustomComponentsRoot: resolve(repoRoot, 'platform/home-assistant/custom_components'),
   platformNavetCustomComponent: resolve(repoRoot, 'platform/home-assistant/custom_components/navet'),
-  platformNavetFrontend: resolve(
-    repoRoot,
-    'platform/home-assistant/custom_components/navet/frontend'
-  ),
   platformNavetManifest: resolve(
     repoRoot,
     'platform/home-assistant/custom_components/navet/manifest.json'

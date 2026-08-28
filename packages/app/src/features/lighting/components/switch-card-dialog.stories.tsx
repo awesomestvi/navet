@@ -1,7 +1,7 @@
 import { Button } from '@navet/app/components/primitives/button';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { SwitchSettingsDialog } from './switch-settings-dialog';
 

@@ -2,7 +2,7 @@ import { Input } from '@navet/app/components/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { navetIconSizeTokens, navetTypographyTokens } from '@navet/app/components/system/tokens';
 import { useTheme } from '@navet/app/hooks';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
   ChevronRight,
   CircleUserRound,
@@ -167,7 +167,6 @@ export const MobileGrouped: Story = {
           'The mobile composition uses equal-height Navet rows inside iOS-inspired grouped surfaces, with label-aligned separators and a compact single-row group.',
       },
     },
-    viewport: { defaultViewport: 'iphone14' },
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

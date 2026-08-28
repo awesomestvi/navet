@@ -8,7 +8,7 @@ import type { PrimaryColor, ThemeMode } from '@navet/app/stores/theme-store';
 import { useThemeStore } from '@navet/app/stores/theme-store';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { EntityCardStoryFrame, noopCardSizeChange } from '@navet/app/storybook/story-frames';
-import type { Decorator, Meta, StoryObj } from '@storybook/react';
+import type { Decorator, Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps, ReactNode } from 'react';
 import { useEffect } from 'react';
 import { expect } from 'storybook/test';

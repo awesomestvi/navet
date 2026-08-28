@@ -185,7 +185,7 @@ export const itMessages = {
     'Tutti segnano le faccende completate nello stesso posto, così si vede cosa è finito e cosa richiede ancora attenzione.',
   'household.setup.dialogTitle': 'Configura le faccende di casa',
   'household.setup.dialogDescription':
-    'Ti aiuteremo ad aggiungere le persone di casa, creare un lavoro che ritorna e scegliere promemoria e protezione facoltativi. Potrai cambiare tutto in seguito.',
+    'Aggiungi persone e faccende. Modifica le preferenze quando vuoi.',
   'household.setup.progressLabel': 'Avanzamento configurazione faccende',
   'household.setup.stepCount': 'Passaggio {current} di {total}',
   'household.setup.stepProfiles': 'Profili e promemoria',
@@ -540,6 +540,15 @@ export const itMessages = {
   'dashboard.multiple.group.rooms': 'Stanze',
   'dashboard.multiple.create.title': 'Crea dashboard',
   'dashboard.multiple.create.description': 'Scegli cosa mostrare e dove utilizzare la dashboard.',
+  'dashboard.multiple.create.nameTitle': 'Dai un nome alla dashboard',
+  'dashboard.multiple.create.nameDescription':
+    'Scegli un nome che renda questa vista facile da riconoscere.',
+  'dashboard.multiple.create.contentTitle': 'Scegli cosa includere',
+  'dashboard.multiple.create.contentDescription':
+    'Inizia dalle stanze, copia la dashboard attuale o parti da zero.',
+  'dashboard.multiple.create.displaysTitle': 'Scegli dove si apre',
+  'dashboard.multiple.create.displaysDescription':
+    'Assegnala a questo dispositivo o lasciala non assegnata per ora.',
   'dashboard.multiple.create.name': 'Nome',
   'dashboard.multiple.create.namePlaceholder': 'Piano superiore',
   'dashboard.multiple.create.startWith': 'Inizia con',
@@ -973,7 +982,7 @@ export const itMessages = {
   'dashboard.addCard.sort.default': 'Predefinito',
   'dashboard.addCard.sort.ascending': 'Crescente',
   'dashboard.addCard.sort.descending': 'Decrescente',
-  'dashboard.addCard.tab.widgets': 'Scheda personalizzata',
+  'dashboard.addCard.tab.widgets': 'Schede personalizzate',
   'dashboard.addCard.header.library': 'LIBRERIA ENTITÀ',
   'dashboard.addCard.header.widgets': 'WIDGET PERSONALIZZATI',
   'dashboard.addCard.tab.cardsHint': 'Sfoglia tutte le entità Home Assistant',

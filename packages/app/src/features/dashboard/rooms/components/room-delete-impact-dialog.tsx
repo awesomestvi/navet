@@ -92,18 +92,13 @@ export function RoomDeleteImpactDialog({
       onSubmit={onConfirm}
       footer={
         <>
-          <Button
-            variant="ghost"
-            className="min-h-11"
-            onClick={() => onOpenChange(false)}
-            disabled={isConfirming}
-          >
+          <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={isConfirming}>
             {cancelLabel}
           </Button>
           <Button
             type="submit"
             variant="soft"
-            className="min-h-11 border-red-500/30 bg-red-500/10 text-red-500 hover:bg-red-500/20"
+            className="border-red-500/30 bg-red-500/10 text-red-500 hover:bg-red-500/20"
             loading={isConfirming}
             disabled={isConfirming}
           >

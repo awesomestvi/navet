@@ -675,6 +675,7 @@ export function CameraLiveViewer({
   return (
     <BaseCardDialog
       variant="fullscreen"
+      persistentMobileDismiss={false}
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       title={name}

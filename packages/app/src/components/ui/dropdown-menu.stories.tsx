@@ -1,6 +1,6 @@
 import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
   Bell,
   Check,

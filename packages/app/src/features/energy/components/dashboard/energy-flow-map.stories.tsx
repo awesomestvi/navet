@@ -1,5 +1,5 @@
 import { getEnergyDashboardScenario } from '@navet/app/features/energy/data/mock-energy-dashboard';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { EnergyFlowMap } from './energy-flow-map';
 
 const scenario = getEnergyDashboardScenario('default').dashboard;

@@ -182,7 +182,7 @@ export const fiMessages = {
     'Kaikki merkitsevät askareet tehdyiksi samassa paikassa, joten näette, mikä on valmista ja mikä kaipaa vielä huomiota.',
   'household.setup.dialogTitle': 'Määritä kodin askareet',
   'household.setup.dialogDescription':
-    'Autamme lisäämään kodin jäsenet, luomaan yhden palaavan työn sekä valitsemaan valinnaiset muistutukset ja suojauksen. Kaikkea voi muuttaa myöhemmin.',
+    'Lisää henkilöt ja askareet. Muuta asetuksia milloin tahansa.',
   'household.setup.progressLabel': 'Askareiden määrityksen eteneminen',
   'household.setup.stepCount': 'Vaihe {current}/{total}',
   'household.setup.stepProfiles': 'Profiilit ja muistutukset',
@@ -530,6 +530,15 @@ export const fiMessages = {
   'dashboard.multiple.group.rooms': 'Huoneet',
   'dashboard.multiple.create.title': 'Luo kojelauta',
   'dashboard.multiple.create.description': 'Valitse, mitä näytetään ja missä kojelautaa käytetään.',
+  'dashboard.multiple.create.nameTitle': 'Nimeä kojelautasi',
+  'dashboard.multiple.create.nameDescription':
+    'Valitse nimi, jonka avulla tunnistat tämän näkymän helposti.',
+  'dashboard.multiple.create.contentTitle': 'Valitse sisältö',
+  'dashboard.multiple.create.contentDescription':
+    'Aloita huoneista, kopioi nykyinen kojelauta tai aloita tyhjästä.',
+  'dashboard.multiple.create.displaysTitle': 'Valitse, missä se avautuu',
+  'dashboard.multiple.create.displaysDescription':
+    'Määritä se tälle laitteelle tai jätä se toistaiseksi määrittämättä.',
   'dashboard.multiple.create.name': 'Nimi',
   'dashboard.multiple.create.namePlaceholder': 'Yläkerta',
   'dashboard.multiple.create.startWith': 'Aloita tästä',
@@ -1026,7 +1035,7 @@ export const fiMessages = {
   'dashboard.addCard.sort.default': 'Oletus',
   'dashboard.addCard.sort.ascending': 'Nouseva',
   'dashboard.addCard.sort.descending': 'Laskeva',
-  'dashboard.addCard.tab.widgets': 'Mukautettu kortti',
+  'dashboard.addCard.tab.widgets': 'Mukautetut kortit',
   'dashboard.addCard.header.library': 'KOKONAISUUDEN KIRJASTO',
   'dashboard.addCard.header.widgets': 'MUKAUTETUT widgetit',
   'dashboard.addCard.tab.cardsHint': 'Selaa kaikkia Home Assistant -kokonaisuuksia',

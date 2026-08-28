@@ -1,11 +1,10 @@
 import type { ChoreWorkspaceRecoveryInfo } from '@navet/app/services/chore-workspace.contract';
 import {
   configureChoreManagementPin,
-  loadChoreWorkspace,
+  getChoreWorkspaceTransport,
   recoverChoreWorkspace,
   resetChoreWorkspace,
   restoreChoreWorkspace,
-  sendChoreWorkspaceCommand,
   verifyChoreManagementPin,
 } from '@navet/app/services/chore-workspace.service';
 import type { ChoreInterchangeDocument } from '@navet/core/chore-interchange';
@@ -84,7 +83,7 @@ export const useChoreWorkspaceStore = create<ChoreWorkspaceState>((set, get) => 
       const current = get();
       if (!current.data) set({ error: null, status: 'loading' });
       try {
-        const result = await loadChoreWorkspace(
+        const result = await getChoreWorkspaceTransport().loadWorkspace(
           options?.force ? undefined : (current.revision ?? undefined)
         );
         if (result.unauthorized) {
@@ -151,7 +150,7 @@ export const useChoreWorkspaceStore = create<ChoreWorkspaceState>((set, get) => 
           }
         })();
         set({ data: optimisticData, error: null, status: 'saving' });
-        const result = await sendChoreWorkspaceCommand({
+        const result = await getChoreWorkspaceTransport().sendCommand({
           action,
           commandId,
           baseRevision: current.revision,

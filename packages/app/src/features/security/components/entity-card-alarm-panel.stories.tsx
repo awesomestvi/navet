@@ -2,7 +2,7 @@ import { AlarmPanelCard } from '@navet/app/features/security';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { EntityCardStoryFrame } from '@navet/app/storybook/story-frames';
 import type { NavetAlarmEntity } from '@navet/core/alarm-types';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 
 function AlarmPanelCardStory({
   alarms,

@@ -5,7 +5,7 @@ import type { TranslateFn, TranslationKey } from '@navet/app/i18n';
 import type { PrimaryColor } from '@navet/app/stores/theme-store';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import type { PlatformManageableRoomReference } from '@navet/core/provider-feature-models';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { type Dispatch, type ReactNode, type SetStateAction, useRef, useState } from 'react';
 import { Header } from './header';
 import type { MobileHeaderEditActions } from './mobile-header-actions';

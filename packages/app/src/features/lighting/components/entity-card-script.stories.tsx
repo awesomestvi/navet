@@ -1,7 +1,7 @@
 import { SwitchCard } from '@navet/app/features/lighting';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { EntityCardStoryFrame } from '@navet/app/storybook/story-frames';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps } from 'react';
 
 function ScriptCardStory(args: ComponentProps<typeof SwitchCard>) {

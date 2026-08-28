@@ -1,8 +1,8 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { EnergyQualityBar } from './energy-quality-bar';
 
 const meta = {
-  title: 'Pages/Energy/Charts/Quality Bar',
+  title: 'Components/Charts/Quality Bar',
   component: EnergyQualityBar,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

@@ -16,7 +16,7 @@ import type {
 import { defaultSettings, useSettingsStore } from '@navet/app/stores/settings-store';
 import type { ThemeMode } from '@navet/app/stores/theme-store';
 import { useThemeStore } from '@navet/app/stores/theme-store';
-import type { Decorator, Meta, StoryObj } from '@storybook/react';
+import type { Decorator, Meta, StoryObj } from '@storybook/react-vite';
 import { type ReactNode, useEffect } from 'react';
 import { expect, within } from 'storybook/test';
 import { EnergyDashboardPage } from './energy-dashboard-page';
@@ -510,21 +510,28 @@ export const EnergyCardsEmptyState: Story = {
 export const LiquidGlassTheme: Story = {
   ...buildScenarioStory('default'),
   decorators: [withTheme('glass')],
-  parameters: {
-    backgrounds: { default: 'canvas-glass' },
+  globals: {
+    backgrounds: {
+      value: 'canvas-glass',
+    },
   },
 };
 
 export const WallTablet: Story = {
   ...buildScenarioStory('solar-producing'),
-  parameters: { viewport: { defaultViewport: 'tabletLandscape' } },
+  globals: {
+    viewport: {
+      value: 'tabletLandscape',
+      isRotated: false,
+    },
+  },
 };
 
 export const WallTabletPortrait: Story = {
   ...buildScenarioStory('normal-household'),
   name: 'Wall tablet portrait',
+
   parameters: {
-    viewport: { defaultViewport: 'ipadMini' },
     docs: {
       description: {
         story:
@@ -532,23 +539,41 @@ export const WallTabletPortrait: Story = {
       },
     },
   },
+
+  globals: {
+    viewport: {
+      value: 'ipadMini',
+      isRotated: false,
+    },
+  },
 };
 
 export const Phone: Story = {
   ...buildScenarioStory('grid-importing'),
-  parameters: { viewport: { defaultViewport: 'iphone14' } },
+  globals: {
+    viewport: {
+      value: 'iphone14',
+      isRotated: false,
+    },
+  },
 };
 
 export const LightTheme: Story = {
   ...buildScenarioStory('default'),
   decorators: [withTheme('light')],
-  parameters: { backgrounds: { default: 'canvas-light' } },
+  globals: {
+    backgrounds: {
+      value: 'canvas-light',
+    },
+  },
 };
 
 export const BlackTheme: Story = {
   ...buildScenarioStory('default'),
   decorators: [withTheme('black')],
-  parameters: {
-    backgrounds: { default: 'canvas-black' },
+  globals: {
+    backgrounds: {
+      value: 'canvas-black',
+    },
   },
 };

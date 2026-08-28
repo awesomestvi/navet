@@ -1,8 +1,8 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { EnergyAreaChart } from './energy-area-chart';
 
 const meta = {
-  title: 'Pages/Energy/Charts/Area',
+  title: 'Components/Charts/Area',
   component: EnergyAreaChart,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

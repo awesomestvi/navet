@@ -1,5 +1,5 @@
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Heading } from './heading';
 import { Panel } from './panel';
 import { Text } from './text';

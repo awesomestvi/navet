@@ -181,7 +181,7 @@ export const daMessages = {
     'Alle markerer pligter som færdige samme sted, så I kan se, hvad der er gjort, og hvad der stadig kræver opmærksomhed.',
   'household.setup.dialogTitle': 'Indstil husstandens pligter',
   'household.setup.dialogDescription':
-    'Vi hjælper dig med at tilføje personerne derhjemme, oprette ét job, der vender tilbage, og vælge valgfrie påmindelser og beskyttelse. Alt kan ændres senere.',
+    'Tilføj personer og pligter. Tilpas indstillingerne når som helst.',
   'household.setup.progressLabel': 'Fremdrift for pligtopsætning',
   'household.setup.stepCount': 'Trin {current} af {total}',
   'household.setup.stepProfiles': 'Profiler og påmindelser',
@@ -529,6 +529,14 @@ export const daMessages = {
   'dashboard.multiple.create.title': 'Opret dashboard',
   'dashboard.multiple.create.description':
     'Vælg, hvad der skal vises, og hvor dashboardet skal bruges.',
+  'dashboard.multiple.create.nameTitle': 'Navngiv dit dashboard',
+  'dashboard.multiple.create.nameDescription': 'Vælg et navn, der gør visningen nem at genkende.',
+  'dashboard.multiple.create.contentTitle': 'Vælg, hvad der skal med',
+  'dashboard.multiple.create.contentDescription':
+    'Start med rum, kopiér det aktuelle dashboard, eller begynd tomt.',
+  'dashboard.multiple.create.displaysTitle': 'Vælg, hvor det åbnes',
+  'dashboard.multiple.create.displaysDescription':
+    'Tildel det til denne enhed, eller lad det være uden tildeling indtil videre.',
   'dashboard.multiple.create.name': 'Navn',
   'dashboard.multiple.create.namePlaceholder': 'Ovenpå',
   'dashboard.multiple.create.startWith': 'Start med',
@@ -1026,7 +1034,7 @@ export const daMessages = {
   'dashboard.addCard.sort.default': 'Standard',
   'dashboard.addCard.sort.ascending': 'Stigende',
   'dashboard.addCard.sort.descending': 'Faldende',
-  'dashboard.addCard.tab.widgets': 'Brugerdefineret kort',
+  'dashboard.addCard.tab.widgets': 'Brugerdefinerede kort',
   'dashboard.addCard.header.library': 'ENHEDSBIBLIOTEK',
   'dashboard.addCard.header.widgets': 'TILPASSEDE WIDGETS',
   'dashboard.addCard.tab.cardsHint': 'Gennemse alle Home Assistant-enheder',

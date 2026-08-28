@@ -99,7 +99,14 @@ const SECURITY_SECTION_DEVICE_KEYS = [
   'helpers',
 ] as const;
 const MEDIA_SECTION_DEVICE_KEYS = ['media'] as const;
-const CLIMATE_SECTION_DEVICE_KEYS = ['climate', 'hvac', 'fans', 'switches', 'sensors'] as const;
+const CLIMATE_SECTION_DEVICE_KEYS = [
+  'climate',
+  'hvac',
+  'fans',
+  'switches',
+  'sensors',
+  'weather',
+] as const;
 const LIGHTS_SECTION_DEVICE_KEYS = ['lights'] as const;
 const EMPTY_SECTION_DEVICE_KEYS: readonly DeviceCollectionKey[] = [];
 const FEATURE_COLLECTION_ENTITY_ID_PATTERN = /(?:^|:)(?:calendar|weather)\./;
@@ -730,7 +737,7 @@ function useDashboardSectionData({
       activeSection === 'climate'
         ? new Map(
             Array.from(deviceMap.entries()).filter(
-              ([, device]) => getClimateDashboardGroup(device) !== null
+              ([, device]) => getClimateDashboardGroup(device) !== null || device.type === 'weather'
             )
           )
         : new Map<string, DeviceWithType>(),
@@ -741,7 +748,7 @@ function useDashboardSectionData({
       activeSection === 'climate'
         ? new Map(
             Array.from(availableDeviceMap.entries()).filter(
-              ([, device]) => getClimateDashboardGroup(device) !== null
+              ([, device]) => getClimateDashboardGroup(device) !== null || device.type === 'weather'
             )
           )
         : new Map<string, DeviceWithType>(),

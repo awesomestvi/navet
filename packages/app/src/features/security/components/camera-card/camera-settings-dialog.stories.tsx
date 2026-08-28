@@ -2,7 +2,7 @@ import { Button } from '@navet/app/components/primitives/button';
 import type { PlatformEntitySnapshot } from '@navet/app/platform/provider-feature-models';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps } from 'react';
 import { useState } from 'react';
 import { CameraSettingsDialog, type SiblingEntity } from './camera-settings-dialog';

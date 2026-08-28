@@ -1,5 +1,5 @@
 import type { RoomWorkspaceImageReferenceV2 } from '@navet/app/features/dashboard/rooms';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { RoomAppearanceDialog } from './room-appearance-dialog';
 import { RoomDeleteImpactDialog } from './room-delete-impact-dialog';

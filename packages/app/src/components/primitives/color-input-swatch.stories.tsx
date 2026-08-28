@@ -1,6 +1,6 @@
 import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { ColorInputSwatch } from './color-input-swatch';
 

@@ -4,7 +4,7 @@ import { useThemeStore } from '@navet/app/stores/theme-store';
 import { noopCardSizeChange } from '@navet/app/storybook/story-frames';
 import type { CameraDevice, LockDevice, SensorDevice } from '@navet/app/types/device.types';
 import type { NavetAlarmEntity } from '@navet/core/alarm-types';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect } from 'storybook/test';
 import { buildSecurityCameraDashboardModel } from '../utils/security-camera-dashboard-model';
 import { SecurityCameraDashboard } from './security-camera-dashboard';
@@ -397,22 +397,30 @@ export const UnavailableOnly: Story = {
 };
 
 export const WallTablet: Story = {
-  parameters: { viewport: { defaultViewport: 'tabletLandscape' } },
+  globals: {
+    viewport: {
+      value: 'tabletLandscape',
+      isRotated: false,
+    },
+  },
 };
 
 export const TabletPortrait: Story = {
   globals: { viewport: { value: 'ipadPro', isRotated: false } },
-  parameters: { viewport: { defaultViewport: 'ipadPro' } },
 };
 
 export const Phone: Story = {
-  parameters: { viewport: { defaultViewport: 'iphone14' } },
+  globals: {
+    viewport: {
+      value: 'iphone14',
+      isRotated: false,
+    },
+  },
 };
 
 export const PhoneCritical: Story = {
   args: CriticalAlert.args,
   globals: { viewport: { value: 'iphone14', isRotated: false } },
-  parameters: { viewport: { defaultViewport: 'iphone14' } },
 };
 
 export const LightTheme: Story = {

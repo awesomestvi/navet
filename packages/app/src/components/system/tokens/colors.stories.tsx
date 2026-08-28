@@ -4,7 +4,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { useTheme } from '@navet/app/hooks/use-theme';
 import { generateThemeColors } from '@navet/app/hooks/use-theme-colors';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { navetSemanticColorTokens, navetTypographyTokens } from './foundations';

@@ -1,10 +1,10 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { EnergySparkline } from './energy-sparkline';
 
 const now = Date.now();
 
 const meta = {
-  title: 'Pages/Energy/Charts/Sparkline',
+  title: 'Components/Charts/Sparkline',
   component: EnergySparkline,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

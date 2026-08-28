@@ -9,6 +9,7 @@ import {
   BaseCardDialog,
   Button,
   ColorInputSwatch,
+  coverSheetHeaderClassName,
   IconButton,
   Input,
   InteractivePill,
@@ -465,7 +466,6 @@ export function AddPersonDialog({
               <Button
                 type="button"
                 variant="secondary"
-                size="compact"
                 onClick={() => setCurrentStep((step) => step - 1)}
               >
                 {t('login.actions.back')}
@@ -474,14 +474,13 @@ export function AddPersonDialog({
             {currentStep < personSteps.length - 1 ? (
               <Button
                 type="button"
-                size="compact"
                 disabled={!name.trim()}
                 onClick={() => setCurrentStep((step) => step + 1)}
               >
                 {t('dashboard.multiple.create.next')}
               </Button>
             ) : (
-              <Button type="submit" size="compact" loading={saving} disabled={!name.trim()}>
+              <Button type="submit" loading={saving} disabled={!name.trim()}>
                 {participant
                   ? t('household.personDialog.saveChanges')
                   : t('household.personDialog.save')}
@@ -953,16 +952,21 @@ export function AddChoreDialog({
       theme={theme}
       contentClassName={cn(
         'md:left-1/2 md:right-auto md:w-[calc(100%-4rem)] md:max-w-[900px] md:-translate-x-1/2',
+        'max-sm:!overflow-y-auto max-sm:overscroll-contain max-sm:touch-pan-y',
         'backdrop-blur-2xl',
         surface.shellPanel,
         surface.border
       )}
       shellBodyClassName="h-full min-h-0"
     >
-      <form className="flex h-full min-h-0 flex-col" onSubmit={submit}>
+      <form
+        className="flex h-full min-h-0 flex-col max-sm:h-auto max-sm:min-h-full"
+        onSubmit={submit}
+      >
         <header
           className={cn(
-            'flex items-start justify-between gap-4 border-b px-4 py-4 sm:px-6',
+            coverSheetHeaderClassName,
+            'flex items-start justify-between gap-3 border-b sm:gap-4 sm:px-6',
             surface.border
           )}
         >
@@ -975,6 +979,7 @@ export function AddChoreDialog({
             </p>
           </div>
           <IconButton
+            data-cover-sheet-inline-dismiss
             variant="ghost"
             label={t('common.close')}
             icon={<X aria-hidden="true" className={navetIconSizeTokens.sm} />}
@@ -983,7 +988,7 @@ export function AddChoreDialog({
           />
         </header>
 
-        <div className="scrollbar-hide min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y">
+        <div className="scrollbar-hide min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y max-sm:flex-none max-sm:overflow-visible max-sm:overscroll-auto max-sm:touch-auto">
           <main className="mx-auto w-full max-w-[50rem] px-4 py-6 sm:px-7 sm:py-8">
             <div
               className={cn(

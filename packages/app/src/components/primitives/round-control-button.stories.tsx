@@ -1,6 +1,6 @@
 import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MoreHorizontal, SunMedium } from 'lucide-react';
 import { RoundControlButton } from './round-control-button';
 

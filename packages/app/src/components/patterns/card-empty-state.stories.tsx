@@ -1,6 +1,6 @@
 import { BaseCard } from '@navet/app/components/primitives';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Gauge, Plus, Rss } from 'lucide-react';
 import { CardEmptyState } from './card-empty-state';
 

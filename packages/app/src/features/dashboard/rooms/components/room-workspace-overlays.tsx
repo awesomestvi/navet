@@ -52,6 +52,7 @@ export function RoomsWorkspaceDialog({
         layout={layout}
         headerTrailing={
           <IconButton
+            data-cover-sheet-inline-dismiss
             variant="ghost"
             label={labels.closeSheet}
             icon={<X className={navetIconSizeTokens.sm} aria-hidden="true" />}

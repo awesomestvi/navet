@@ -3,7 +3,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import * as Dialog from '@radix-ui/react-dialog';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Palette, Sliders } from 'lucide-react';
 import { useState } from 'react';
 import {

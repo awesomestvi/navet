@@ -94,7 +94,7 @@ export function BatterySettingsDialog({
             {t('widgets.battery.settings.noneAvailable')}
           </p>
         ) : (
-          <ul className="max-h-72 min-w-0 max-w-full space-y-1.5 overflow-x-hidden overflow-y-auto pr-1">
+          <ul className="min-w-0 max-w-full space-y-1.5 sm:max-h-72 sm:overflow-x-hidden sm:overflow-y-auto sm:pr-1">
             {batteries.map((battery) => {
               const isChecked = selectedIdSet.has(battery.id);
               return (
@@ -149,8 +149,8 @@ export function BatterySettingsDialog({
       theme={theme}
       maxWidth="md"
       height="capped"
-      scrollClassName="max-h-[85vh] w-full min-w-0"
-      bodyClassName="max-h-[85vh] w-full min-w-0"
+      scrollClassName="w-full min-w-0 sm:max-h-[85vh]"
+      bodyClassName="w-full min-w-0 sm:max-h-[85vh]"
     />
   );
 }

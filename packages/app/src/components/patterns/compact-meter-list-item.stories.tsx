@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { BatteryMedium } from 'lucide-react';
 import { CompactMeterListItem } from './compact-meter-list-item';
 

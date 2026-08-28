@@ -2,7 +2,7 @@ import { getCardReadableTextTokens } from '@navet/app/components/shared/theme/ca
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { getAccentCardShellTokens } from '@navet/app/components/system/tokens';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 
 const THEMES: ThemeType[] = ['glass', 'dark', 'light', 'black'];
 const ACCENTS = ['yellow', 'green', 'teal', 'blue', 'purple', 'amber', 'emerald'] as const;

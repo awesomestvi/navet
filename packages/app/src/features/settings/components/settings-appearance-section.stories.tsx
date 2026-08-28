@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useSettingsSectionController } from '../hooks/use-settings-section-controller';
 import { SettingsAppearanceSection } from './settings-appearance-section';
 
@@ -35,5 +35,10 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 
 export const Mobile: Story = {
-  parameters: { viewport: { defaultViewport: 'mobile1' } },
+  globals: {
+    viewport: {
+      value: 'mobile1',
+      isRotated: false,
+    },
+  },
 };

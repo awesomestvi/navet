@@ -10,7 +10,7 @@ allowBuilds:
   sharp: true
 
 overrides:
-  vite: 8.1.5
+  vite: 8.2.2
 
 minimumReleaseAgeExclude:
   - '@rolldown/binding-android-arm64@1.0.1'
@@ -41,4 +41,4 @@ minimumReleaseAgeExclude:
   - lucide-react@1.16.0
   - rolldown@1.0.1
   - storybook@10.4.0
-  - vite@8.0.13
+  - vite@8.2.2

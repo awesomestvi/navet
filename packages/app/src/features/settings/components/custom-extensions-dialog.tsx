@@ -372,10 +372,10 @@ export function CustomExtensionsDialog({
             </div>
 
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="small" onClick={handleClose}>
+              <Button variant="ghost" onClick={handleClose}>
                 {t('common.cancel')}
               </Button>
-              <Button variant="primary" size="small" onClick={handleSave} disabled={!canSave}>
+              <Button variant="primary" onClick={handleSave} disabled={!canSave}>
                 {draftExistingAction
                   ? t('settings.customExtensions.dialog.saveChanges')
                   : t('settings.customExtensions.sidebar.add')}

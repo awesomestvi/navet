@@ -3,7 +3,7 @@ import { useTheme } from '@navet/app/hooks';
 import type { WeatherForecastMode, WeatherMetricId } from '@navet/app/stores/settings-store';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { WeatherSettingsDialog } from './weather-settings-dialog';
 

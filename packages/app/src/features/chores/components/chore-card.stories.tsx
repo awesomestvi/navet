@@ -1,7 +1,7 @@
 import { createChoreDemoWorkspace } from '@navet/app/features/chores/chore-demo-fixture';
 import { SummaryBar } from '@navet/app/features/sensors';
 import type { ChoreOccurrence } from '@navet/core/chores';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ClipboardCheck } from 'lucide-react';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { ChoreFocusCard, ChoreListItem } from './chore-card';

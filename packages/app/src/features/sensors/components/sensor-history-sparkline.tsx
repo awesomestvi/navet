@@ -1,4 +1,4 @@
-import { EnergySparkline } from '@navet/app/features/energy/components/charts/energy-sparkline';
+import { TrendSparkline } from '@navet/app/components/charts/trend-sparkline';
 import { memo } from 'react';
 import type { SensorStatisticsPoint } from '../hooks/use-sensor-statistics-history';
 
@@ -7,6 +7,7 @@ interface SensorHistorySparklineProps {
   accentColor: string;
   className?: string;
   height?: number;
+  ariaLabel: string;
 }
 
 export const SensorHistorySparkline = memo(function SensorHistorySparkline({
@@ -14,6 +15,7 @@ export const SensorHistorySparkline = memo(function SensorHistorySparkline({
   accentColor,
   className,
   height = 120,
+  ariaLabel,
 }: SensorHistorySparklineProps) {
   if (data.length < 2) {
     return null;
@@ -21,9 +23,10 @@ export const SensorHistorySparkline = memo(function SensorHistorySparkline({
 
   return (
     <div data-testid="sensor-history-sparkline" className="absolute inset-0 z-20">
-      <EnergySparkline
+      <TrendSparkline
         data={data}
         accentColor={accentColor}
+        ariaLabel={ariaLabel}
         height={height}
         className={`h-full w-full ${className ?? ''}`.trim()}
         padX={0}

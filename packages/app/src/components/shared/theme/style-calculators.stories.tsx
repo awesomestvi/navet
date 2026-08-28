@@ -8,7 +8,7 @@ import {
 } from '@navet/app/components/system/tokens';
 import { type ThemeType, useTheme } from '@navet/app/hooks/use-theme';
 import { EntityCardStoryFrame } from '@navet/app/storybook/story-frames';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Pause, Play } from 'lucide-react';
 
 const THEMES: ThemeType[] = ['glass', 'dark', 'light', 'black'];
