@@ -96,10 +96,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build custom panel
+        run: pnpm build:ha-panel
+
       - name: Package custom panel artifact
         run: |
-          mkdir -p release-assets
-          tar -czf "release-assets/navet-panel-${GITHUB_REF_NAME}.tar.gz" platform/home-assistant/custom_components/navet/frontend
+          PANEL_STAGE="release-assets/panel/platform/home-assistant/custom_components/navet"
+          mkdir -p "$PANEL_STAGE"
+          cp -R apps/ha-panel/dist "$PANEL_STAGE/frontend"
+          tar -C release-assets/panel -czf "$GITHUB_WORKSPACE/release-assets/navet-panel-${GITHUB_REF_NAME}.tar.gz" platform/home-assistant/custom_components/navet/frontend
 
       - name: Upload custom panel artifact
         uses: actions/upload-artifact@v4

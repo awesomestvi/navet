@@ -1,4 +1,4 @@
-import type { Preview } from '@storybook/react';
+import type { Preview } from '@storybook/react-vite';
 import {
   Controls,
   Description,
@@ -282,6 +282,7 @@ function NavetDocsPage() {
 
 const preview: Preview = {
   tags: ['autodocs', 'test'],
+
   parameters: {
     layout: 'fullscreen',
     options: {
@@ -305,19 +306,19 @@ const preview: Preview = {
       page: NavetDocsPage,
     },
     backgrounds: {
-      default: 'canvas-dark',
-      values: [
-        { name: 'canvas-dark', value: '#09090b' },
-        { name: 'canvas-glass', value: '#050816' },
-        { name: 'canvas-light', value: '#f8fafc' },
-        { name: 'canvas-black', value: '#000000' },
-      ],
       grid: {
         disable: true,
       },
+
+      options: {
+        "canvas-dark": { name: 'canvas-dark', value: '#09090b' },
+        "canvas-glass": { name: 'canvas-glass', value: '#050816' },
+        "canvas-light": { name: 'canvas-light', value: '#f8fafc' },
+        "canvas-black": { name: 'canvas-black', value: '#000000' }
+      }
     },
     viewport: {
-      viewports: {
+      options: {
         iphone14: {
           name: 'iPhone 14',
           styles: {
@@ -393,6 +394,7 @@ const preview: Preview = {
     // Per-story touch simulation override
     // Use in stories: MyStory.parameters = { touchSimulator: { enabled: false } }
   },
+
   globalTypes: {
     theme: {
       name: 'Theme',
@@ -470,6 +472,7 @@ const preview: Preview = {
       },
     },
   },
+
   decorators: [
     (Story, context) => {
       const touchEnabled = context.parameters.touchSimulator?.enabled !== false;
@@ -502,6 +505,12 @@ const preview: Preview = {
       );
     },
   ],
+
+  initialGlobals: {
+    backgrounds: {
+      value: 'canvas-dark'
+    }
+  }
 };
 
 export default preview;

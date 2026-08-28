@@ -1119,7 +1119,6 @@ export function SecurityPanelCard({
           <CardDialogFooter className="mt-5 flex items-center justify-end gap-2">
             <Button
               variant="soft"
-              size="small"
               loading={pendingForSelectedAlarm?.action === draftAction}
               disabled={
                 unavailable ||

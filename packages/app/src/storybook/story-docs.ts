@@ -739,7 +739,7 @@ const STORY_DOCS: Record<string, string> = {
     ]
   ),
   'Cards/Custom/Map': doc(
-    'Custom map card rendering person and device_tracker entities with GPS on an interactive Leaflet map.',
+    'Custom map card rendering person and device_tracker entities with GPS on an interactive MapLibre map backed by OpenFreeMap vector tiles.',
     [
       'How GPS-bearing entities are aggregated into a single spatial overview card.',
       'The full-bleed map layout and overlay conventions for non-entity custom cards.',

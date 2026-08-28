@@ -1990,13 +1990,9 @@ export function MediaDashboard({
   useEffect(() => {
     onPromotedEntitiesChange?.(promotedEntityIdKey ? promotedEntityIdKey.split('\n') : []);
   }, [onPromotedEntitiesChange, promotedEntityIdKey]);
-  const nowPlayingTypeLabel =
-    selectedDeviceIsGrouped || nowPlayingDevice.deviceClass?.toLowerCase() === 'speaker'
-      ? t('media.type.speaker').toLowerCase()
-      : t('media.type.player').toLowerCase();
-  const nowPlayingCardSize = hasActiveMediaSession && !isSingleRowMediaLayout ? 'large' : 'medium';
+  const nowPlayingCardSize = 'large';
   const nowPlayingCardFootprint = getDashboardCardFootprint(nowPlayingCardSize, breakpointCols);
-  const nowPlayingColumnSpan = Math.min(hasActiveMediaSession ? 4 : 3, renderedGridCols);
+  const nowPlayingColumnSpan = Math.min(4, renderedGridCols);
   const browserColumnSpan = isSingleRowMediaLayout
     ? renderedGridCols
     : Math.max(2, renderedGridCols - nowPlayingColumnSpan);
@@ -2337,7 +2333,7 @@ export function MediaDashboard({
   const browserPanel = (
     <section
       data-testid="media-browser-panel"
-      className={`min-w-0 space-y-4 ${hasActiveMediaSession ? 'order-2' : 'order-1'}`}
+      className="order-2 min-w-0 space-y-4"
       style={{ gridColumn: `span ${browserColumnSpan} / span ${browserColumnSpan}` }}
     >
       {canBrowseMedia ? (
@@ -2498,20 +2494,15 @@ export function MediaDashboard({
               style={{ gridTemplateColumns: dashboardGridStyle.gridTemplateColumns }}
             >
               <section
-                className={`min-w-0 space-y-4 ${hasActiveMediaSession ? 'order-1 max-[899px]:sticky max-[899px]:top-2 max-[899px]:z-20' : 'order-2'}`}
+                className={`order-1 min-w-0 space-y-4 ${hasActiveMediaSession ? 'max-[899px]:sticky max-[899px]:top-2 max-[899px]:z-20' : ''}`}
                 style={{
                   gridColumn: `span ${nowPlayingColumnSpan} / span ${nowPlayingColumnSpan}`,
                 }}
               >
-                <div className="flex h-9 items-center gap-3">
+                <div className="flex h-9 items-center">
                   <h2 className={`text-lg font-semibold md:text-xl ${surface.textPrimary}`}>
-                    {playbackProviderLabel ??
-                      t(hasActiveMediaSession ? dashboardTitleKey : 'sections.media.audio.title')}
+                    {playbackProviderLabel ?? t(dashboardTitleKey)}
                   </h2>
-                  <span className={`text-xs md:text-sm ${surface.textSecondary}`}>
-                    {selectedGroupSize} {nowPlayingTypeLabel}
-                    {selectedGroupSize > 1 ? 's' : ''}
-                  </span>
                 </div>
                 {nowPlayingPanel}
               </section>

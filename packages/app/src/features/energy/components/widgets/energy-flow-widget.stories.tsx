@@ -1,5 +1,5 @@
 import { getMockEnergyOverview } from '@navet/app/features/energy/data/mock-energy-dashboard';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { EnergyFlowWidget } from './energy-flow-widget';
 
 const overview = getMockEnergyOverview('live');

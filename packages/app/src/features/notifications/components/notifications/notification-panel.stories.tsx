@@ -1,7 +1,7 @@
 import { NotificationPanel } from '@navet/app/features/notifications';
 import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Bell } from 'lucide-react';
 import type { ReactNode, RefObject } from 'react';
 import { useRef } from 'react';
@@ -211,12 +211,19 @@ export const Open: Story = {};
 
 export const MobileOpen: Story = {
   render: () => <NotificationPanelMobileStory />,
+
   parameters: {
-    viewport: { defaultViewport: 'mobile1' },
     docs: {
       story: {
         height: '44rem',
       },
+    },
+  },
+
+  globals: {
+    viewport: {
+      value: 'mobile1',
+      isRotated: false,
     },
   },
 };

@@ -1,6 +1,6 @@
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@navet/app/hooks/use-theme';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useMemo, useState } from 'react';
 import { expect } from 'storybook/test';
 import { SortableTableHeader, type TableSortDirection } from './sortable-table-header';

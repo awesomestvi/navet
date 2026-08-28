@@ -19,6 +19,8 @@ interface EntityCardHeaderIconProps {
   themeOverride?: ThemeType;
   inverseSurface?: boolean;
   ariaLabel?: string;
+  ariaPressed?: boolean;
+  disabled?: boolean;
   onClick?: ButtonHTMLAttributes<HTMLButtonElement>['onClick'];
   onPointerDown?: ButtonHTMLAttributes<HTMLButtonElement>['onPointerDown'];
   badgeClassName?: string;
@@ -36,6 +38,8 @@ export const EntityCardHeaderIcon = memo(function EntityCardHeaderIcon({
   themeOverride,
   inverseSurface = false,
   ariaLabel,
+  ariaPressed,
+  disabled = false,
   onClick,
   onPointerDown,
   badgeClassName: badgeClassNameOverride,
@@ -44,7 +48,7 @@ export const EntityCardHeaderIcon = memo(function EntityCardHeaderIcon({
 }: EntityCardHeaderIconProps) {
   const { theme, primaryColor, accentColor } = useTheme();
   const resolvedTheme = themeOverride ?? theme;
-  const isInteractive = Boolean(onClick);
+  const isInteractive = Boolean(onClick) || disabled;
   const { badgeClassName, badgeStyle, iconClassName, iconStyle } = getEntityIconPillStyles({
     isActive,
     isInteractive,
@@ -109,6 +113,8 @@ export const EntityCardHeaderIcon = memo(function EntityCardHeaderIcon({
     <button
       type="button"
       aria-label={ariaLabel}
+      aria-pressed={ariaPressed}
+      disabled={disabled}
       onClick={onClick}
       onPointerDown={onPointerDown}
       className={cn(

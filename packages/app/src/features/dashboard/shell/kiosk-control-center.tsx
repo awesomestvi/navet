@@ -698,7 +698,7 @@ export const KioskControlCenter = memo(function KioskControlCenter({
           data-kiosk-control-center
         >
           <NavigationWorkspace.Header
-            className="flex min-h-[calc(4.5rem+env(safe-area-inset-top,0px))] items-center justify-between gap-3 pb-3 pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] md:min-h-[4.5rem] md:px-5 md:py-3"
+            className="flex min-h-[calc(4.5rem+env(safe-area-inset-top,0px))] items-center justify-between gap-3 pb-3 pl-[calc(env(safe-area-inset-left,0px)+1rem)] pr-[calc(env(safe-area-inset-right,0px)+1rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] max-sm:pr-16 md:min-h-[4.5rem] md:px-5 md:py-3"
             data-kiosk-control-header
           >
             <div className="flex min-w-0 items-center gap-2">
@@ -725,6 +725,7 @@ export const KioskControlCenter = memo(function KioskControlCenter({
               </div>
             </div>
             <IconButton
+              data-cover-sheet-inline-dismiss
               variant="ghost"
               label={t('common.close')}
               icon={<X className={navetIconSizeTokens.sm} />}

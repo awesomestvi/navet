@@ -1,7 +1,7 @@
 import { ClimateCard } from '@navet/app/features/climate';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { EntityCardStoryFrame, noopCardSizeChange } from '@navet/app/storybook/story-frames';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps } from 'react';
 
 function ClimateCardStory(args: Omit<ComponentProps<typeof ClimateCard>, 'onSizeChange'>) {

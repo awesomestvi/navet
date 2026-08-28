@@ -1,128 +1,327 @@
-import 'leaflet/dist/leaflet.css';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import type { MapWidgetSurfaceTokens } from '@navet/app/components/shared/theme/map-widget-surface-tokens';
-import type { ThemeType } from '@navet/app/hooks/use-theme';
-import { AttributionControl, Circle, MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
-import { BoundsFitter } from './map-bounds-fitter';
-import { buildMarkerIcon } from './map-marker-icon';
-import { TILE_ATTRIBUTION } from './map-tiles';
+import {
+  LngLatBounds,
+  Map as MapLibreMap,
+  Marker as MapLibreMarker,
+  Popup as MapLibrePopup,
+} from 'maplibre-gl';
+import { useEffect, useRef } from 'react';
 import type { MapMarker } from './map-types';
+
+const ACCURACY_SOURCE_ID = 'navet-map-accuracy';
+const ACCURACY_FILL_LAYER_ID = 'navet-map-accuracy-fill';
+const ACCURACY_LINE_LAYER_ID = 'navet-map-accuracy-line';
+const ACCURACY_CIRCLE_POINT_COUNT = 48;
+const METERS_PER_LATITUDE_DEGREE = 111_320;
+
+interface AccuracyFeatureCollection {
+  type: 'FeatureCollection';
+  features: Array<{
+    type: 'Feature';
+    properties: Record<string, never>;
+    geometry: {
+      type: 'Polygon';
+      coordinates: number[][][];
+    };
+  }>;
+}
+
+function createMarkerElement(marker: MapMarker, accentHex: string) {
+  const size = 36;
+  const isHome = marker.state === 'home';
+  const wrapper = document.createElement('div');
+  const pin = document.createElement('div');
+  const dot = document.createElement('div');
+
+  wrapper.setAttribute('aria-label', `${marker.name}, ${marker.state}`);
+  wrapper.setAttribute('role', 'button');
+  wrapper.tabIndex = 0;
+  wrapper.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      wrapper.click();
+    }
+  });
+  Object.assign(wrapper.style, {
+    cursor: 'pointer',
+    height: `${size + 8}px`,
+    width: `${size}px`,
+  });
+  Object.assign(pin.style, {
+    alignItems: 'center',
+    backdropFilter: 'blur(4px)',
+    background: marker.entityPicture ? 'transparent' : isHome ? accentHex : 'rgba(30,30,40,0.85)',
+    border: `1px solid ${isHome ? accentHex : 'rgba(255,255,255,0.35)'}`,
+    borderRadius: '50%',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.45)',
+    display: 'flex',
+    height: `${size}px`,
+    justifyContent: 'center',
+    overflow: 'hidden',
+    width: `${size}px`,
+  });
+  Object.assign(dot.style, {
+    background: isHome ? accentHex : 'rgba(255,255,255,0.45)',
+    borderRadius: '50%',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
+    height: '6px',
+    margin: '-2px auto 0',
+    width: '6px',
+  });
+
+  if (marker.entityPicture) {
+    const image = document.createElement('img');
+    image.alt = '';
+    image.src = marker.entityPicture;
+    Object.assign(image.style, {
+      borderRadius: '50%',
+      height: '100%',
+      objectFit: 'cover',
+      width: '100%',
+    });
+    pin.append(image);
+  } else {
+    const initials = marker.name
+      .split(' ')
+      .slice(0, 2)
+      .map((word) => word[0]?.toUpperCase() ?? '')
+      .join('');
+    const label = document.createElement('span');
+    label.textContent = initials;
+    Object.assign(label.style, {
+      color: '#fff',
+      fontSize: '12px',
+      fontWeight: '700',
+      lineHeight: '1',
+    });
+    pin.append(label);
+  }
+
+  wrapper.append(pin, dot);
+  return wrapper;
+}
+
+function createPopupElement(marker: MapMarker) {
+  const content = document.createElement('div');
+  const title = document.createElement('div');
+  const state = document.createElement('div');
+
+  content.style.minWidth = '120px';
+  title.textContent = marker.name;
+  Object.assign(title.style, { fontWeight: '700', marginBottom: '2px' });
+  state.textContent = marker.state;
+  Object.assign(state.style, {
+    fontSize: '12px',
+    opacity: '0.7',
+    textTransform: 'capitalize',
+  });
+  content.append(title, state);
+
+  if (typeof marker.gpsAccuracy === 'number') {
+    const accuracy = document.createElement('div');
+    accuracy.textContent = `±${marker.gpsAccuracy} m`;
+    Object.assign(accuracy.style, { fontSize: '11px', marginTop: '2px', opacity: '0.55' });
+    content.append(accuracy);
+  }
+
+  return content;
+}
+
+function createAccuracyFeatureCollection(markers: readonly MapMarker[]): AccuracyFeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: markers.flatMap((marker) => {
+      if (!(typeof marker.gpsAccuracy === 'number' && marker.gpsAccuracy > 0)) {
+        return [];
+      }
+
+      const latitudeRadius = marker.gpsAccuracy / METERS_PER_LATITUDE_DEGREE;
+      const longitudeScale = Math.max(Math.cos((marker.latitude * Math.PI) / 180), 0.01);
+      const longitudeRadius = latitudeRadius / longitudeScale;
+      const coordinates: number[][] = [];
+
+      for (let index = 0; index <= ACCURACY_CIRCLE_POINT_COUNT; index += 1) {
+        const angle = (index / ACCURACY_CIRCLE_POINT_COUNT) * Math.PI * 2;
+        coordinates.push([
+          marker.longitude + Math.cos(angle) * longitudeRadius,
+          marker.latitude + Math.sin(angle) * latitudeRadius,
+        ]);
+      }
+
+      return [
+        {
+          type: 'Feature' as const,
+          properties: {},
+          geometry: {
+            type: 'Polygon' as const,
+            coordinates: [coordinates],
+          },
+        },
+      ];
+    }),
+  };
+}
+
+function addAccuracyLayers(map: MapLibreMap, markers: readonly MapMarker[], accentHex: string) {
+  const data = createAccuracyFeatureCollection(markers);
+  map.addSource(ACCURACY_SOURCE_ID, { type: 'geojson', data });
+  map.addLayer({
+    id: ACCURACY_FILL_LAYER_ID,
+    type: 'fill',
+    source: ACCURACY_SOURCE_ID,
+    paint: {
+      'fill-color': accentHex,
+      'fill-opacity': 0.08,
+    },
+  });
+  map.addLayer({
+    id: ACCURACY_LINE_LAYER_ID,
+    type: 'line',
+    source: ACCURACY_SOURCE_ID,
+    paint: {
+      'line-color': accentHex,
+      'line-width': 1,
+    },
+  });
+}
 
 interface MapWidgetLiveProps {
   accentHex: string;
   defaultCenter: [number, number];
   isSmallCard: boolean;
+  mapStyleUrl: string;
   mapWidgetSurface: MapWidgetSurfaceTokens;
   markers: readonly MapMarker[];
-  shouldReduceMapEffects: boolean;
-  theme: ThemeType;
-  tileUrl: string;
 }
 
 export function MapWidgetLive({
   accentHex,
   defaultCenter,
   isSmallCard,
+  mapStyleUrl,
   mapWidgetSurface,
   markers,
-  shouldReduceMapEffects,
-  theme,
-  tileUrl,
 }: MapWidgetLiveProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<MapLibreMap | null>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const map = new MapLibreMap({
+      attributionControl: false,
+      center: [defaultCenter[1], defaultCenter[0]],
+      container,
+      maxZoom: 19,
+      minZoom: 1,
+      style: mapStyleUrl,
+      zoom: 4,
+    });
+    mapRef.current = map;
+    map.setMissingStyleImageResolver((imageId) => {
+      if (!map.hasImage(imageId)) {
+        map.addImage(imageId, { width: 1, height: 1, data: new Uint8Array(4) });
+      }
+    });
+
+    return () => {
+      mapRef.current = null;
+      map.remove();
+    };
+  }, [defaultCenter, isSmallCard, mapStyleUrl]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) {
+      return;
+    }
+
+    let renderedMarkers: MapLibreMarker[] = [];
+    const renderMapContent = () => {
+      renderedMarkers = markers.map((marker) =>
+        new MapLibreMarker({
+          anchor: 'bottom',
+          element: createMarkerElement(marker, accentHex),
+        })
+          .setLngLat([marker.longitude, marker.latitude])
+          .setPopup(new MapLibrePopup({ offset: 24 }).setDOMContent(createPopupElement(marker)))
+          .addTo(map)
+      );
+      addAccuracyLayers(map, markers, accentHex);
+
+      if (markers.length === 1) {
+        map.jumpTo({ center: [markers[0].longitude, markers[0].latitude], zoom: 13 });
+      } else if (markers.length > 1) {
+        const bounds = new LngLatBounds();
+        for (const marker of markers) {
+          bounds.extend([marker.longitude, marker.latitude]);
+        }
+        map.fitBounds(bounds, { duration: 0, maxZoom: 15, padding: 32 });
+      }
+    };
+
+    if (map.isStyleLoaded()) {
+      renderMapContent();
+    } else {
+      map.once('style.load', renderMapContent);
+    }
+
+    return () => {
+      map.off('style.load', renderMapContent);
+      for (const marker of renderedMarkers) {
+        marker.remove();
+      }
+      renderedMarkers = [];
+
+      if (mapRef.current === map) {
+        if (map.getLayer(ACCURACY_LINE_LAYER_ID)) {
+          map.removeLayer(ACCURACY_LINE_LAYER_ID);
+        }
+        if (map.getLayer(ACCURACY_FILL_LAYER_ID)) {
+          map.removeLayer(ACCURACY_FILL_LAYER_ID);
+        }
+        if (map.getSource(ACCURACY_SOURCE_ID)) {
+          map.removeSource(ACCURACY_SOURCE_ID);
+        }
+      }
+    };
+  }, [accentHex, isSmallCard, mapStyleUrl, markers]);
+
   return (
     <>
-      <MapContainer
-        center={defaultCenter}
-        zoom={4}
-        zoomControl={false}
-        attributionControl={false}
+      <div
+        ref={containerRef}
         className="dashboard-map-widget h-full w-full overflow-hidden rounded-[inherit]"
-        scrollWheelZoom
-        style={{ height: '100%', width: '100%' }}
-      >
-        <TileLayer url={tileUrl} attribution={TILE_ATTRIBUTION} detectRetina={false} />
-        {!isSmallCard ? <AttributionControl prefix={false} position="bottomleft" /> : null}
-        <BoundsFitter markers={markers} />
-        {markers.map((marker) => (
-          <Marker
-            key={marker.id}
-            position={[marker.latitude, marker.longitude]}
-            icon={buildMarkerIcon(marker, accentHex)}
-          >
-            <Popup>
-              <div style={{ minWidth: 120 }}>
-                <div style={{ fontWeight: 700, marginBottom: 2 }}>{marker.name}</div>
-                <div style={{ fontSize: 12, opacity: 0.7, textTransform: 'capitalize' }}>
-                  {marker.state}
-                </div>
-                {typeof marker.gpsAccuracy === 'number' && (
-                  <div style={{ fontSize: 11, opacity: 0.55, marginTop: 2 }}>
-                    ±{marker.gpsAccuracy} m
-                  </div>
-                )}
-              </div>
-            </Popup>
-            {typeof marker.gpsAccuracy === 'number' && marker.gpsAccuracy > 0 && (
-              <Circle
-                center={[marker.latitude, marker.longitude]}
-                radius={marker.gpsAccuracy}
-                pathOptions={{
-                  color: accentHex,
-                  fillColor: accentHex,
-                  fillOpacity: 0.08,
-                  weight: 1,
-                }}
-              />
-            )}
-          </Marker>
-        ))}
-      </MapContainer>
+      />
 
       <style>{`
         .dashboard-map-widget,
-        .dashboard-map-widget.leaflet-container {
+        .dashboard-map-widget.maplibregl-map,
+        .dashboard-map-widget .maplibregl-canvas-container,
+        .dashboard-map-widget .maplibregl-canvas {
           border-radius: inherit;
           overflow: hidden;
-          background: transparent;
         }
 
-        .dashboard-map-widget .leaflet-pane,
-        .dashboard-map-widget .leaflet-map-pane,
-        .dashboard-map-widget .leaflet-tile-pane,
-        .dashboard-map-widget .leaflet-tile-container,
-        .dashboard-map-widget .leaflet-layer,
-        .dashboard-map-widget .leaflet-marker-pane,
-        .dashboard-map-widget .leaflet-overlay-pane {
-          border-radius: inherit;
-        }
-
-        .dashboard-map-widget .leaflet-tile-pane {
+        .dashboard-map-widget .maplibregl-canvas {
           opacity: ${mapWidgetSurface.tileOpacity};
           filter: ${mapWidgetSurface.tileFilter};
         }
 
-        .dashboard-map-widget .leaflet-control-attribution {
-          margin: 8px;
-          border-radius: 12px 12px 12px 20px;
-          padding: 3px 8px;
-          font-size: 10px;
-          line-height: 1.15;
-          background: ${mapWidgetSurface.attributionBg};
-          color: ${mapWidgetSurface.attributionText};
-          border: 1px solid ${mapWidgetSurface.attributionBorder};
-          backdrop-filter: ${theme === 'light' || shouldReduceMapEffects ? 'none' : 'blur(16px)'};
-        }
-
-        .dashboard-map-widget .leaflet-control-attribution a {
-          color: inherit;
-        }
-
-        .dashboard-map-widget .leaflet-popup-content-wrapper,
-        .dashboard-map-widget .leaflet-popup-tip {
+        .dashboard-map-widget .maplibregl-popup-content,
+        .dashboard-map-widget .maplibregl-popup-tip {
           background: ${mapWidgetSurface.popupBg};
           color: ${mapWidgetSurface.popupText};
           border: 1px solid ${mapWidgetSurface.popupBorder};
           box-shadow: ${mapWidgetSurface.popupShadow};
-          backdrop-filter: ${shouldReduceMapEffects ? 'none' : 'blur(16px)'};
+        }
+
+        .dashboard-map-widget .maplibregl-popup-content {
+          border-radius: 12px;
         }
       `}</style>
     </>

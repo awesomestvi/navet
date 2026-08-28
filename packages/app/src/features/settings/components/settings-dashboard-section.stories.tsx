@@ -5,7 +5,7 @@ import {
   sanitizeDashboardCollection,
 } from '@navet/app/features/dashboard/dashboards/dashboard-collection';
 import { useDashboardCollectionStore } from '@navet/app/features/dashboard/dashboards/dashboard-collection-store';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useState } from 'react';
 import { useSettingsSectionController } from '../hooks/use-settings-section-controller';
 import { SettingsDashboardSection } from './settings-dashboard-section';
@@ -115,7 +115,12 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 
 export const Mobile: Story = {
-  parameters: { viewport: { defaultViewport: 'mobile1' } },
+  globals: {
+    viewport: {
+      value: 'mobile1',
+      isRotated: false,
+    },
+  },
 };
 
 export const MultipleDashboards: Story = {

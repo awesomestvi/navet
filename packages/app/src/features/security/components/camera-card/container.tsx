@@ -38,6 +38,7 @@ import {
   useSyncExternalStore,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { isCameraFullscreenTelemetryAccessory } from './camera-accessory-visibility';
 import {
   useCameraLiveStreamSlot,
   useRetainedCameraStreamVisibility,
@@ -185,8 +186,8 @@ export const CameraCardContainer = memo(function CameraCardContainer({
     isDirectCameraStreamSource(cameraWebRtcStreamSource) &&
     normalizeCameraDirectStreamUrl(cameraDirectStreamUrl) !== null;
   const cameraFitMode = useSettingsStore(settingsSelectors.cameraFitModeForEntity(id));
-  const cameraFullscreenHiddenAccessoryIds = useSettingsStore(
-    settingsSelectors.cameraFullscreenHiddenAccessoryIdsForEntity(id)
+  const cameraFullscreenVisibleAccessoryIds = useSettingsStore(
+    settingsSelectors.cameraFullscreenVisibleAccessoryIdsForEntity(id)
   );
   const updateCameraViewMode = useSettingsStore(settingsSelectors.updateCameraViewMode);
   const updateCameraStreamPreference = useSettingsStore(
@@ -487,9 +488,19 @@ export const CameraCardContainer = memo(function CameraCardContainer({
   );
 
   const fullscreenAccessoryEntities = useMemo(() => {
-    const hiddenIds = new Set(cameraFullscreenHiddenAccessoryIds);
-    return siblingEntities.filter((accessory) => !hiddenIds.has(accessory.id));
-  }, [cameraFullscreenHiddenAccessoryIds, siblingEntities]);
+    const visibleIds = new Set(cameraFullscreenVisibleAccessoryIds);
+    return siblingEntities.filter(
+      (accessory) =>
+        accessory.id.replace(/^[^:]+:/, '').startsWith('light.') || visibleIds.has(accessory.id)
+    );
+  }, [cameraFullscreenVisibleAccessoryIds, siblingEntities]);
+  const cameraFullscreenHiddenAccessoryIds = useMemo(() => {
+    const visibleIds = new Set(cameraFullscreenVisibleAccessoryIds);
+    return siblingEntities
+      .filter(isCameraFullscreenTelemetryAccessory)
+      .filter((accessory) => !visibleIds.has(accessory.id))
+      .map((accessory) => accessory.id);
+  }, [cameraFullscreenVisibleAccessoryIds, siblingEntities]);
 
   const handleStreamError = useCallback(
     (kind: PlatformCameraTransport | 'snapshot', options?: { retryable?: boolean }) => {

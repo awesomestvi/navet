@@ -6,7 +6,7 @@ import { type CameraViewMode, useSettingsStore } from '@navet/app/stores/setting
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { EntityCardStoryFrame, noopCardSizeChange } from '@navet/app/storybook/story-frames';
 import type { NavetEntity } from '@navet/core/types';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps } from 'react';
 import { useEffect } from 'react';
 import { expect } from 'storybook/test';

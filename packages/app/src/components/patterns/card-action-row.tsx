@@ -29,6 +29,7 @@ interface CardActionOverflowItem {
 interface CardActionRowProps {
   theme: ThemeType;
   size?: CardActionRowSize;
+  className?: string;
   leftContent?: ReactNode;
   rightContent?: ReactNode;
   overflowItems?: CardActionOverflowItem[];
@@ -68,6 +69,7 @@ export function CardActionRowGroup({ children }: { children: ReactNode }) {
 export function CardActionRow({
   theme,
   size = 'default',
+  className,
   leftContent,
   rightContent,
   overflowItems = [],
@@ -76,7 +78,7 @@ export function CardActionRow({
   const gapClass = navetSpacingTokens.inline.xs;
 
   return (
-    <div className={`flex items-center ${gapClass}`}>
+    <div className={`flex items-center ${gapClass} ${className ?? ''}`}>
       <div className={`flex min-w-0 flex-1 items-center ${gapClass}`}>
         {leftContent}
         {overflowItems.length > 0 ? (

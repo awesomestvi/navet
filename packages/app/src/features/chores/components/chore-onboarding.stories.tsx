@@ -6,7 +6,7 @@ import type {
 } from '@navet/core/chore-experience';
 import { createChoreExperienceState } from '@navet/core/chore-experience';
 import type { ChoreDefinition, ChoreParticipant } from '@navet/core/chores';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { expect, userEvent, within } from 'storybook/test';
 import { ChoreOnboardingDialog, ChoreOnboardingWelcome } from './chore-onboarding';
@@ -103,7 +103,45 @@ type Story = StoryObj<typeof meta>;
 export const Desktop: Story = {};
 
 export const Mobile: Story = {
-  parameters: { viewport: { defaultViewport: 'mobile1' } },
+  play: async ({ canvas, canvasElement }) => {
+    const welcome = await canvas.findByRole('region', {
+      name: 'Make household work easier to share.',
+    });
+    await userEvent.click(within(welcome).getByRole('button', { name: 'Create your chore list' }));
+
+    const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Set up household chores',
+    });
+    const progressSidebar = dialog.querySelector('nav')?.closest('aside');
+
+    await expect(dialog.querySelector('header')).toHaveClass('py-3', 'sm:py-4');
+    await expect(progressSidebar).toHaveClass('hidden', 'md:block');
+    await expect(within(dialog).queryByRole('navigation')).not.toBeInTheDocument();
+    await expect(within(dialog).getByText('Step 1 of 6')).toBeVisible();
+
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Add person' }));
+    await userEvent.type(within(dialog).getByLabelText('Name'), 'Vishal');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Add person' }));
+
+    const roleSelect = within(dialog).getByLabelText('Role: Vishal');
+    await expect(roleSelect.closest('li')).toHaveClass(
+      'grid',
+      'grid-cols-[auto_minmax(0,1fr)_auto]',
+      'sm:flex'
+    );
+    await expect(roleSelect.parentElement).toHaveClass(
+      'max-sm:col-start-2',
+      'max-sm:col-end-4',
+      'max-sm:row-start-2',
+      'w-full'
+    );
+  },
+  globals: {
+    viewport: {
+      value: 'mobile1',
+      isRotated: false,
+    },
+  },
 };
 
 export const CompleteGuidedSetup: Story = {

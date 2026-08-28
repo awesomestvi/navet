@@ -1,5 +1,5 @@
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { expect, within } from 'storybook/test';
 import type { CardSize } from './card-size-selector';
@@ -88,11 +88,16 @@ export const RestrictedSizes: Story = {
 
 export const PhoneSheet: Story = {
   args: { allowedSizes: ['small', 'medium', 'large', 'extra-large'] },
-  parameters: { viewport: { defaultViewport: 'mobile1' } },
   play: async ({ canvasElement, userEvent }) => {
     const page = within(canvasElement.ownerDocument.body);
     await userEvent.click(page.getByRole('button', { name: 'Resize card' }));
     await expect(page.getByRole('dialog', { name: 'Resize card' })).toBeInTheDocument();
+  },
+  globals: {
+    viewport: {
+      value: 'mobile1',
+      isRotated: false,
+    },
   },
 };
 

@@ -546,6 +546,44 @@ export async function saveDashboardProfile(
   return writeDashboardProfile('PUT', profile, options);
 }
 
+export async function rebindDashboardProfileWorkspace(
+  profile: DashboardConfigPayload,
+  client: DashboardProfileClient
+): Promise<DashboardProfileSaveResult> {
+  if (isHomeAssistantPanelMode()) {
+    return unavailableWriteResult();
+  }
+
+  try {
+    const headers = new Headers();
+    headers.set('Content-Type', 'application/json');
+    applyClientHeaders(headers, client);
+    const response = await fetch(
+      resolveAddonLocalEndpointUrl(DASHBOARD_PROFILE_ENDPOINTS.rebindWorkspace),
+      {
+        method: 'POST',
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers,
+        body: JSON.stringify(profile),
+      }
+    );
+    const metadata = readResponseMetadata(response);
+    return {
+      saved: response.ok,
+      unauthorized: response.status === 401,
+      failureCode: readProfileErrorCode(response),
+      permanentFailure: isPermanentProfileFailure(response.status),
+      preconditionFailed: false,
+      preconditionRequired: false,
+      ...metadata,
+    };
+  } catch (error) {
+    console.warn('[DashboardProfile] Unable to recover shared dashboard sync:', error);
+    return { ...unavailableWriteResult(), permanentFailure: false };
+  }
+}
+
 export async function patchDashboardProfile(
   operations: DashboardProfilePatchOperation[],
   options: DashboardProfileWriteOptions

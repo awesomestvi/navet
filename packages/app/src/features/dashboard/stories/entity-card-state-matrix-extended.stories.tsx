@@ -8,7 +8,7 @@ import { GroupedSensorCard } from '@navet/app/features/sensors';
 import { VacuumCard } from '@navet/app/features/vacuum';
 import { WeatherCard } from '@navet/app/features/weather';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 
 function toIsoDate(dayOffset: number, hours: number, minutes = 0) {
   const date = new Date();

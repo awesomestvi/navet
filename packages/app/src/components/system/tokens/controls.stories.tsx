@@ -1,7 +1,7 @@
 import { Button, IconButton, Input, Panel, SurfacePanel } from '@navet/app/components/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@navet/app/hooks/use-theme';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Search, Settings2 } from 'lucide-react';
 import { navetControlTokens, navetDensityTokens, navetLayoutTokens } from './index';
 import { ThemeTokenShowcase } from './theme-token-showcase';

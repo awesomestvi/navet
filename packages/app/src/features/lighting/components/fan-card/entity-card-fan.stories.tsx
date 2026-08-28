@@ -2,7 +2,7 @@ import { FanCard } from '@navet/app/features/lighting';
 import { createPreviewStoryScenario, replacePreviewEntity } from '@navet/app/preview/runtime';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { EntityCardStoryFrame, noopCardSizeChange } from '@navet/app/storybook/story-frames';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps } from 'react';
 
 function FanCardStory(args: Omit<ComponentProps<typeof FanCard>, 'onSizeChange'>) {

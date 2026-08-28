@@ -573,31 +573,31 @@ function ActivityPanel({
                       ? onSelectCamera(event.device)
                       : onSelectEntity(event.device)
                   }
-                  className={`relative grid min-h-14 w-full grid-cols-[3rem_2rem_minmax(0,1fr)] items-start gap-x-3 px-3 pt-3 text-left [contain-intrinsic-size:auto_56px] [content-visibility:auto] ${surface.hoverBg} ${getThemeFocusRingClassName(theme)}`}
+                  className={`relative grid min-h-12 w-full grid-cols-[3rem_1.75rem_minmax(0,1fr)] items-start gap-x-2.5 px-3 pt-2 text-left [contain-intrinsic-size:auto_48px] [content-visibility:auto] ${surface.hoverBg} ${getThemeFocusRingClassName(theme)}`}
                 >
                   {eventIndex > 0 ? (
                     <span
                       aria-hidden="true"
-                      className={`pointer-events-none absolute left-[7.25rem] right-3 top-0 z-10 border-t opacity-50 ${surface.dividerBorder}`}
+                      className={`pointer-events-none absolute left-[6.75rem] right-3 top-0 z-10 border-t opacity-50 ${surface.dividerBorder}`}
                       data-testid="security-activity-same-time-divider"
                     />
                   ) : null}
                   {!isFirstEvent ? (
                     <span
                       aria-hidden="true"
-                      className={`pointer-events-none absolute left-[5.5rem] top-0 z-10 h-3 border-l ${surface.border}`}
+                      className={`pointer-events-none absolute left-[5.25rem] top-0 z-10 h-2 border-l ${surface.border}`}
                       data-testid="security-activity-timeline-line-incoming"
                     />
                   ) : null}
                   {!isLastEvent ? (
                     <span
                       aria-hidden="true"
-                      className={`pointer-events-none absolute bottom-0 left-[5.5rem] top-11 z-10 border-l ${surface.border}`}
+                      className={`pointer-events-none absolute bottom-0 left-[5.25rem] top-9 z-10 border-l ${surface.border}`}
                       data-testid="security-activity-timeline-line"
                     />
                   ) : null}
                   <span
-                    className={`pt-2 text-right text-[10px] leading-4 tabular-nums ${surface.textMuted}`}
+                    className={`pt-1.5 text-right text-[10px] leading-4 tabular-nums ${surface.textMuted}`}
                     data-testid={eventIndex === 0 ? 'security-activity-time' : undefined}
                     aria-hidden={eventIndex === 0 ? undefined : true}
                   >
@@ -608,7 +608,7 @@ function ActivityPanel({
                       : null}
                   </span>
                   <span
-                    className="flex h-8 w-8 justify-center"
+                    className="flex h-7 w-7 justify-center"
                     data-activity-tone={tone}
                     data-testid="security-activity-marker"
                   >
@@ -617,12 +617,12 @@ function ActivityPanel({
                       isActive
                       size="large"
                       tone={tone}
-                      badgeClassName="relative z-20 !h-8 !w-8 !shadow-none !drop-shadow-none"
+                      badgeClassName="relative z-20 !h-7 !w-7 !shadow-none !drop-shadow-none"
                       glyphClassName="!drop-shadow-none"
                     />
                   </span>
                   <span
-                    className={`min-w-0 self-stretch pb-3 ${showMinuteGroupDivider ? `border-b ${surface.dividerBorder}` : ''}`}
+                    className={`min-w-0 self-stretch pb-2 ${showMinuteGroupDivider ? `border-b ${surface.dividerBorder}` : ''}`}
                     data-testid="security-activity-event-content"
                   >
                     <span className={`block truncate text-xs font-medium ${surface.textPrimary}`}>

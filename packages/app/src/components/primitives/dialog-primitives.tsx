@@ -24,9 +24,15 @@ function getDialogPanelSurfaceClassName(className: string): string {
     .join(' ');
 }
 
+export const coverSheetHeaderClassName = 'px-4 py-3 max-sm:pr-16 sm:px-5 sm:py-4';
+
 export function DialogFooter({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`mt-6 flex flex-wrap justify-end gap-2 ${className ?? ''}`}>{children}</div>
+    <div
+      className={`mt-6 flex flex-nowrap items-center justify-end gap-2 [&>*:first-child:not(:only-child)]:mr-auto ${className ?? ''}`}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -34,9 +40,7 @@ export function DialogDoneFooter({ label }: { label: string }) {
   return (
     <DialogFooter>
       <Dialog.Close asChild>
-        <Button variant="soft" size="small">
-          {label}
-        </Button>
+        <Button variant="soft">{label}</Button>
       </Dialog.Close>
     </DialogFooter>
   );

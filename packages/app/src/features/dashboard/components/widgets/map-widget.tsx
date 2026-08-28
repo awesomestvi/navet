@@ -10,10 +10,10 @@ import {
 } from '@navet/app/components/shared/theme/map-widget-surface-tokens';
 import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { useI18n, usePrimaryColor, useThemeMode } from '@navet/app/hooks';
+import { useI18n, useIntegrationStore, usePrimaryColor, useThemeMode } from '@navet/app/hooks';
 import { useDeferredVisibility } from '@navet/app/hooks/use-deferred-visibility';
 import { normalizeResourceUrl } from '@navet/app/services/integration-resource.service';
-import { settingsSelectors } from '@navet/app/stores/selectors';
+import { integrationSelectors, settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { detectDeviceTier } from '@navet/app/utils/detect-device-tier';
 import { MapPin } from 'lucide-react';
@@ -21,8 +21,8 @@ import { lazy, memo, Suspense, useEffect, useMemo, useRef, useState } from 'reac
 import { useShallow } from 'zustand/react/shallow';
 import { resolveDashboardPerformanceProfile } from '../../hooks/use-dashboard-performance-mode';
 import { getCompactHomeAssistantImageUrl } from './map-image-url';
-import { mapMarkersEqual } from './map-markers';
-import { getTileUrl } from './map-tiles';
+import { applyCurrentUserAvatar, mapMarkersEqual } from './map-markers';
+import { getMapStyleUrl } from './map-tiles';
 import type { MapMarker } from './map-types';
 import { useProviderMapMarkers } from './use-provider-map-markers';
 import { getDashboardWidgetSurfaceTokens } from './widget-surface-tokens';
@@ -83,6 +83,8 @@ export const MapWidget = memo(function MapWidget({
   const theme = useThemeMode();
   const primaryColor = usePrimaryColor();
   const { t } = useI18n();
+  const currentProviderId = useIntegrationStore(integrationSelectors.currentProviderId);
+  const currentUser = useIntegrationStore(integrationSelectors.currentUser);
   const { disableAnimations, lowPowerMode, effectsQuality } = useSettingsStore(
     useShallow((state) => ({
       disableAnimations: state.disableAnimations,
@@ -113,7 +115,7 @@ export const MapWidget = memo(function MapWidget({
   const baseSurface = getThemeSurfaceTokens(theme);
   const cardShell = getCardShellSurfaceTokens(theme);
   const accentHex = normalizeCustomCardTint(tintColor) ?? getThemeColorValue(primaryColor);
-  const tileUrl = getTileUrl(theme);
+  const mapStyleUrl = getMapStyleUrl(theme);
   const isSmallCard = size === 'small';
   const mapWidgetSurface = useMemo(() => {
     const tokens = getMapWidgetSurfaceTokens(theme);
@@ -125,7 +127,6 @@ export const MapWidget = memo(function MapWidget({
       ...tokens,
       tileFilter: 'none',
       popupShadow: 'none',
-      lightOverlayBg: undefined,
     };
   }, [shouldReduceMapEffects, theme]);
   const mapControlSurface = getMapControlSurfaceTokens(theme, baseSurface, cardShell);
@@ -154,12 +155,13 @@ export const MapWidget = memo(function MapWidget({
   const markers = staticMarkers ?? homeAssistantMarkers;
   const stableResolvedMarkersRef = useRef<MapMarker[]>([]);
   const resolvedMarkers = useMemo(() => {
-    const nextMarkers = markers.map((marker) => ({
+    const markersWithCurrentUserAvatar = applyCurrentUserAvatar(markers, currentUser);
+    const nextMarkers = markersWithCurrentUserAvatar.map((marker) => ({
       ...marker,
       entityPicture: marker.entityPicture
         ? (normalizeResourceUrl(
             getCompactHomeAssistantImageUrl(marker.entityPicture),
-            'home_assistant'
+            currentProviderId
           ) ?? undefined)
         : undefined,
     }));
@@ -170,7 +172,7 @@ export const MapWidget = memo(function MapWidget({
 
     stableResolvedMarkersRef.current = nextMarkers;
     return nextMarkers;
-  }, [markers]);
+  }, [currentProviderId, currentUser, markers]);
   const shouldRenderLiveMap = resolvedMarkers.length > 0 && isMapVisible && isMapDeferredReady;
 
   const defaultCenter = useMemo<[number, number]>(() => [20, 0], []);
@@ -242,11 +244,9 @@ export const MapWidget = memo(function MapWidget({
                 accentHex={accentHex}
                 defaultCenter={defaultCenter}
                 isSmallCard={isSmallCard}
+                mapStyleUrl={mapStyleUrl}
                 mapWidgetSurface={mapWidgetSurface}
                 markers={resolvedMarkers}
-                shouldReduceMapEffects={shouldReduceMapEffects}
-                theme={theme}
-                tileUrl={tileUrl}
               />
             </Suspense>
           ) : (
@@ -268,40 +268,26 @@ export const MapWidget = memo(function MapWidget({
               className={`pointer-events-none absolute inset-0 z-[351] ${baseSurface.lightOverlay}`}
             />
           ) : null}
-          {shouldRenderLiveMap && mapWidgetSurface.lightOverlayBg ? (
-            <div
-              className="pointer-events-none absolute inset-0 z-[352]"
-              style={{ background: mapWidgetSurface.lightOverlayBg }}
-            />
-          ) : null}
-
-          {isSmallCard ? (
-            <div
-              className={`pointer-events-auto absolute z-[450] border ${mapControlSurface.smallAttributionClassName} ${mapControlSurface.attributionClassName}`}
+          <div
+            className={`pointer-events-auto absolute z-[450] ${mapControlSurface.attributionPositionClassName} ${mapControlSurface.attributionClassName}`}
+          >
+            <a
+              href="https://openmaptiles.org/"
+              target="_blank"
+              rel="noreferrer"
+              className={`whitespace-nowrap ${baseSurface.textSecondary}`}
             >
-              <a
-                href="https://www.openstreetmap.org/copyright"
-                target="_blank"
-                rel="noreferrer"
-                className={baseSurface.textSecondary}
-                aria-label="OpenStreetMap copyright"
-                title="OpenStreetMap contributors"
-              >
-                OSM
-              </a>{' '}
-              <span className={`mx-1 ${baseSurface.textMuted}`}>|</span>
-              <a
-                href="https://carto.com/attributions"
-                target="_blank"
-                rel="noreferrer"
-                className={baseSurface.textSecondary}
-                aria-label="CARTO attributions"
-                title="CARTO attributions"
-              >
-                CARTO
-              </a>
-            </div>
-          ) : null}
+              © OpenMapTiles
+            </a>
+            <a
+              href="https://www.openstreetmap.org/copyright"
+              target="_blank"
+              rel="noreferrer"
+              className={`whitespace-nowrap ${baseSurface.textSecondary}`}
+            >
+              © OpenStreetMap
+            </a>
+          </div>
         </div>
       </BaseCard>
     </RenderProfiler>

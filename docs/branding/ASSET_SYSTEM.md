@@ -108,13 +108,12 @@ public descriptor.
 
 ### Home Assistant panel and HACS integration
 
-`node scripts/build-ha-panel.mjs` builds the panel, replaces
-`platform/home-assistant/custom_components/navet/frontend/`, and explicitly copies
-`assets/public/logo.svg` to that frontend directory. It also copies the runtime wallpapers.
+`node scripts/build-ha-panel.mjs` builds the panel into `apps/ha-panel/dist/` and explicitly copies
+`assets/public/logo.svg` and the runtime wallpapers into that generated output.
 
-`node scripts/export-hacs-integration.mjs` then copies the whole committed custom component,
-including `brand/` and the panel frontend, to the sibling `navet-hacs` repository. The ignored
-`dist/home-assistant/hacs-repo/` tree is an export snapshot and is not authoritative.
+`node scripts/export-hacs-integration.mjs` assembles the committed integration source and fresh
+panel output in the sibling `navet-hacs` repository. The generated `frontend/` directory is tracked
+only in that published repository; the monorepo keeps `brand/` and the Python integration source.
 
 Home Assistant 2026.3 and later can read custom-integration images from the local `brand/`
 directory. Navet keeps those committed exports under

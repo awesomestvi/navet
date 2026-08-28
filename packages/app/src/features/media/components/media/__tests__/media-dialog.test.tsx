@@ -339,7 +339,7 @@ describe('MediaDialog', () => {
     });
   });
 
-  it('uses a fixed-height mobile dialog shell with a scrollable body', () => {
+  it('uses the shared mobile cover sheet with balanced playback controls', () => {
     entityRoomSelectorMock.mockClear();
     useThemeMock.mockReturnValue({ theme: 'dark' });
     useMediaArtworkColorsMock.mockReturnValue({
@@ -398,9 +398,28 @@ describe('MediaDialog', () => {
       />
     );
 
-    expect(screen.getByRole('dialog')).toHaveClass('flex', 'flex-col', 'max-h-[88vh]');
-    expect(screen.getByRole('dialog')).toHaveClass('max-sm:!h-[min(88dvh,calc(100dvh-1rem))]');
-    expect(screen.getByRole('dialog')).toHaveClass('max-sm:!overflow-hidden');
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveClass(
+      'flex',
+      'flex-col',
+      'max-h-[88vh]',
+      'max-sm:!h-[80dvh]',
+      'max-sm:!rounded-t-[30px]',
+      'max-sm:!overflow-hidden',
+      'max-sm:[&_[data-cover-sheet-inline-dismiss]]:!hidden'
+    );
+    const dismissButton = dialog.querySelector('[data-mobile-cover-sheet-dismiss]');
+    expect(dismissButton?.parentElement).toHaveClass('absolute', 'top-3', 'right-3', 'z-30');
+
+    const previousButton = screen.getByRole('button', { name: 'Previous track' });
+    expect(previousButton).toHaveClass('!h-14', '!w-14');
+    expect(previousButton.querySelector('svg')).toHaveClass('h-5', 'w-5');
+    const playButton = screen.getByRole('button', { name: 'Pause playback' });
+    expect(playButton).toHaveClass('!h-16', '!w-16');
+    expect(playButton.querySelector('svg')).toHaveClass('h-6', 'w-6');
+    expect(screen.getByRole('button', { name: 'Linear playback' })).toHaveClass('!h-11', '!w-11');
+    expect(screen.getByRole('button', { name: 'Repeat off' })).toHaveClass('!h-11', '!w-11');
+
     const dialogBody = document.body.querySelector('.media-dialog-body');
     expect(dialogBody).toHaveClass(
       'h-full',

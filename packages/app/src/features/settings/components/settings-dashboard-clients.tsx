@@ -6,13 +6,19 @@ import {
   renameDashboardClient,
 } from '@navet/app/features/dashboard/clients/dashboard-client-identity';
 import { useDashboardProfileRuntimeStore } from '@navet/app/features/dashboard/clients/dashboard-profile-runtime-store';
-import { DASHBOARD_PROFILE_REFRESH_EVENT } from '@navet/app/features/dashboard/hooks/use-dashboard-profile-sync';
+import {
+  DASHBOARD_PROFILE_REBIND_EVENT,
+  DASHBOARD_PROFILE_REFRESH_EVENT,
+} from '@navet/app/features/dashboard/hooks/use-dashboard-profile-sync';
 import { useI18n } from '@navet/app/hooks';
 import type {
   DashboardProfileHistoryEntry,
   DashboardProfileRevisionMetadata,
 } from '@navet/app/services/dashboard-profile.contract';
-import { DASHBOARD_PROFILE_HISTORY_LIMIT } from '@navet/app/services/dashboard-profile.contract';
+import {
+  DASHBOARD_PROFILE_ERROR_CODES,
+  DASHBOARD_PROFILE_HISTORY_LIMIT,
+} from '@navet/app/services/dashboard-profile.contract';
 import {
   loadDashboardProfileHistory,
   restoreDashboardProfileRevision,
@@ -106,6 +112,7 @@ export function SettingsDashboardClients({
     client,
     clients,
     error,
+    failureCode,
     lastActivity,
     lastSyncedAt,
     revision: currentRuntimeRevision,
@@ -116,6 +123,7 @@ export function SettingsDashboardClients({
       client: state.client,
       clients: state.clients,
       error: state.error,
+      failureCode: state.failureCode,
       lastActivity: state.lastActivity,
       lastSyncedAt: state.lastSyncedAt,
       revision: state.revision,
@@ -137,8 +145,10 @@ export function SettingsDashboardClients({
   const [restoreConfirmation, setRestoreConfirmation] = useState<number | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [rebindConfirmationOpen, setRebindConfirmationOpen] = useState(false);
   const otherClients = clients.filter(({ id }) => id !== resolvedClient.id);
   const hasNameChange = clientName.trim() !== resolvedClient.name;
+  const canRebindWorkspace = failureCode === DASHBOARD_PROFILE_ERROR_CODES.workspaceTenantMismatch;
 
   useEffect(() => {
     setClient(resolvedClient);
@@ -372,16 +382,67 @@ export function SettingsDashboardClients({
                 <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{error}</span>
               </div>
-              <Button
-                type="button"
-                variant="secondary"
-                size="small"
-                leading={<RefreshCw className="h-4 w-4" />}
-                onClick={() => window.dispatchEvent(new Event(DASHBOARD_PROFILE_REFRESH_EVENT))}
-                className="mt-3 rounded-full"
-              >
-                {t('settings.system.clients.retrySync')}
-              </Button>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="small"
+                  leading={<RefreshCw className="h-4 w-4" />}
+                  onClick={() => window.dispatchEvent(new Event(DASHBOARD_PROFILE_REFRESH_EVENT))}
+                  className="rounded-full"
+                >
+                  {t('settings.system.clients.retrySync')}
+                </Button>
+                {canRebindWorkspace && !rebindConfirmationOpen ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="small"
+                    onClick={() => setRebindConfirmationOpen(true)}
+                    className="rounded-full"
+                  >
+                    {t('settings.system.clients.rebindSync')}
+                  </Button>
+                ) : null}
+              </div>
+              {canRebindWorkspace && rebindConfirmationOpen ? (
+                <fieldset
+                  className={`mt-3 min-w-0 border-0 border-l-2 pl-3 ${styles.dividerBorderColor}`}
+                  aria-label={t('settings.system.clients.rebindSyncConfirm')}
+                >
+                  <p className={`text-sm font-medium ${styles.textColor}`}>
+                    {t('settings.system.clients.rebindSyncConfirm')}
+                  </p>
+                  <p className={`mt-1 text-xs leading-5 ${styles.subtleColor}`}>
+                    {t('settings.system.clients.rebindSyncDescription')}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="small"
+                      disabled={status === 'saving'}
+                      onClick={() => setRebindConfirmationOpen(false)}
+                      className="rounded-full"
+                    >
+                      {t('common.cancel')}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="small"
+                      disabled={status === 'saving'}
+                      onClick={() => {
+                        setRebindConfirmationOpen(false);
+                        window.dispatchEvent(new Event(DASHBOARD_PROFILE_REBIND_EVENT));
+                      }}
+                      className="rounded-full"
+                    >
+                      {t('settings.system.clients.rebindSyncStart')}
+                    </Button>
+                  </div>
+                </fieldset>
+              ) : null}
             </div>
           ) : null}
         </div>

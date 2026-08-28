@@ -2,7 +2,7 @@ import { BaseCard } from '@navet/app/components/primitives/base-card';
 import { getThemeSurfaceTokens } from '@navet/app/components/system/tokens';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
 import { EntityCardStoryFrame } from '@navet/app/storybook/story-frames';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 
 const THEMES: ThemeType[] = ['glass', 'dark', 'light', 'black'];
 const EFFECTS = ['high', 'medium', 'low'] as const;

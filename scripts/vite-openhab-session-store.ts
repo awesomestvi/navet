@@ -2,11 +2,11 @@ import path from 'node:path'
 import {
   createViteProviderSessionStore,
   type ViteProviderSessionStore,
-} from './vite-provider-session-store'
+} from './vite-provider-session-store.ts'
 import {
   createInstallationCookieNames,
   type InstallationCookieNames,
-} from './installation-cookie-scope'
+} from './installation-cookie-scope.ts'
 
 export const OPENHAB_SESSION_COOKIE_NAME = 'navet_openhab_session'
 const OPENHAB_SESSION_RECORD_MAX_BYTES = 16 * 1024

@@ -78,7 +78,38 @@ beforeEach(() => {
 });
 
 describe('CameraLiveViewer', () => {
-  it('opens camera accessory controls as a cover sheet on phones', async () => {
+  it('requests device-native fullscreen from the camera surface', async () => {
+    const requestFullscreen = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(HTMLElement.prototype, 'requestFullscreen', {
+      configurable: true,
+      value: requestFullscreen,
+    });
+    getCameraPlaybackPlanMock.mockResolvedValue({
+      cameraState: 'streaming',
+      snapshotResource: null,
+      supportsSnapshot: false,
+      liveTransports: [],
+      fallbackTransports: [],
+      selectedTransport: null,
+      selectedStreamResource: null,
+      supportsStreaming: false,
+      isSnapshotFallback: false,
+      shouldStartWithSnapshot: false,
+      motionDetectionEnabled: true,
+      refreshPolicy: { retryDelaysMs: [1_000] },
+    });
+
+    try {
+      renderWithProviders(<CameraLiveViewer {...defaultProps} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Open Focused camera viewer' }));
+      await waitFor(() => expect(requestFullscreen).toHaveBeenCalledTimes(1));
+    } finally {
+      delete (HTMLElement.prototype as { requestFullscreen?: () => Promise<void> })
+        .requestFullscreen;
+    }
+  });
+
+  it('groups camera controls in one More actions cover sheet on phones', async () => {
     setMediaQueryMatch('(max-width: 639px)', true);
     getCameraPlaybackPlanMock.mockResolvedValue({
       cameraState: 'streaming',
@@ -111,12 +142,18 @@ describe('CameraLiveViewer', () => {
       />
     );
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'IR light: On' }));
-    });
+    const moreActions = screen.getByRole('button', { name: 'More actions' });
+    expect(moreActions).not.toHaveTextContent('More actions');
+    expect(moreActions).toHaveClass('h-9', 'w-9', 'pointer-events-auto');
+    await act(async () => fireEvent.click(moreActions));
 
-    expect(screen.getByRole('dialog', { name: 'IR light' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Close IR light' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'More actions' })).toBeInTheDocument();
+    const sheetHeader = document.querySelector('[data-sheet-surface-header]');
+    expect(sheetHeader).toHaveClass('border-b');
+    expect(sheetHeader?.parentElement).not.toHaveClass('px-4');
+    expect(screen.getAllByRole('button', { name: 'Close dialog' })).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'IR light: On' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Camera view: Auto' })).not.toBeInTheDocument();
   });
 
   it('shows camera accessory information and controls in fullscreen', async () => {
@@ -371,7 +408,7 @@ describe('CameraLiveViewer', () => {
       <CameraLiveViewer {...defaultProps} cameraViewMode="live" onRefresh={onRefresh} />
     );
 
-    expect(await screen.findAllByText('Snapshot fallback')).toHaveLength(2);
+    expect(await screen.findAllByText('Snapshot fallback')).toHaveLength(1);
     expect(screen.getByRole('img', { name: 'Front Door' })).toHaveAttribute(
       'src',
       String(cameraEntityFixtures.relativeUrl.attributes.entity_picture)
@@ -421,6 +458,7 @@ describe('CameraLiveViewer', () => {
           authStrategy: 'bearer',
           url: '/api/hls/camera.front_door/master.m3u8',
         }}
+        name="Backyard perimeter camera with an intentionally long descriptive name"
         onOpenSettings={onOpenSettings}
         onOpenChange={onOpenChange}
       />
@@ -431,20 +469,30 @@ describe('CameraLiveViewer', () => {
     );
     expect(screen.getByTestId('camera-stream-player')).toHaveAttribute('data-fit-mode', 'contain');
     expect(screen.getByText('HLS')).toBeInTheDocument();
-    expect(screen.getByTestId('camera-viewer-top-controls')).toHaveClass('z-20');
-    expect(screen.getByTestId('camera-viewer-bottom-controls')).toHaveClass('z-20');
+    const topControls = screen.getByTestId('camera-viewer-top-controls');
+    const bottomControls = screen.getByTestId('camera-viewer-bottom-controls');
+    expect(topControls).toHaveClass('z-20');
+    expect(bottomControls).toHaveClass('z-20');
     expect(screen.getByRole('button', { name: 'Camera view: Auto' }).parentElement).toHaveClass(
       'ml-auto'
     );
-    expect(screen.getByTestId('camera-viewer-header-layout')).toHaveClass(
-      'grid',
-      'grid-cols-[minmax(0,1fr)_auto]',
-      'gap-y-2'
+    expect(screen.getByTestId('camera-viewer-header-layout')).toHaveClass('flex', 'justify-end');
+    const viewerIdentity = screen.getByTestId('camera-viewer-eyebrow');
+    expect(screen.getByTestId('camera-viewer-name')).toHaveClass('truncate');
+    expect(screen.getByTestId('camera-viewer-name')).toHaveTextContent(
+      'Backyard perimeter camera with an intentionally long descriptive name'
     );
-    expect(screen.getByTestId('camera-viewer-eyebrow')).toHaveTextContent('Front DoorEntranceHLS');
+    expect(viewerIdentity).toHaveTextContent('EntranceHLSLoading camera feed');
+    expect(viewerIdentity).toHaveClass('whitespace-nowrap');
+    expect(topControls).not.toContainElement(viewerIdentity);
+    expect(bottomControls).toContainElement(viewerIdentity);
     expect(document.querySelector('h2:not(.sr-only)')).not.toBeInTheDocument();
-    expect(screen.getByTestId('camera-viewer-status')).toHaveClass('col-span-2', 'row-start-2');
-    expect(screen.getByTestId('camera-viewer-live-status')).toHaveClass('h-9');
+    expect(screen.queryByTestId('camera-viewer-status')).not.toBeInTheDocument();
+    expect(screen.getByTestId('camera-viewer-live-status')).toHaveClass(
+      'inline-flex',
+      'shrink-0',
+      'whitespace-nowrap'
+    );
     expect(screen.getByRole('button', { name: 'Close' })).toHaveClass('h-9', 'w-9');
     expect(
       screen.queryByRole('button', { name: 'Refresh camera snapshot' })

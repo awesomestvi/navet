@@ -183,7 +183,7 @@ export const frMessages = {
     'Chacun marque les tâches terminées au même endroit, pour voir ce qui est fait et ce qui demande encore de l’attention.',
   'household.setup.dialogTitle': 'Configurer les tâches du foyer',
   'household.setup.dialogDescription':
-    'Nous vous aidons à ajouter les personnes du foyer, créer une tâche qui revient et choisir des rappels et une protection facultatifs. Tout pourra être modifié plus tard.',
+    'Ajoutez les personnes et les tâches. Modifiez les préférences à tout moment.',
   'household.setup.progressLabel': 'Progression de la configuration des tâches',
   'household.setup.stepCount': 'Étape {current} sur {total}',
   'household.setup.stepProfiles': 'Profils et rappels',
@@ -534,6 +534,15 @@ export const frMessages = {
   'dashboard.multiple.create.title': 'Créer un tableau de bord',
   'dashboard.multiple.create.description':
     'Choisissez ce qui sera affiché et où utiliser le tableau de bord.',
+  'dashboard.multiple.create.nameTitle': 'Nommez votre tableau de bord',
+  'dashboard.multiple.create.nameDescription':
+    'Choisissez un nom qui permet de reconnaître facilement cette vue.',
+  'dashboard.multiple.create.contentTitle': 'Choisissez les éléments à inclure',
+  'dashboard.multiple.create.contentDescription':
+    'Commencez avec des pièces, copiez le tableau de bord actuel ou partez de zéro.',
+  'dashboard.multiple.create.displaysTitle': 'Choisissez où il s’ouvre',
+  'dashboard.multiple.create.displaysDescription':
+    'Attribuez-le à cet appareil ou laissez-le non attribué pour le moment.',
   'dashboard.multiple.create.name': 'Nom',
   'dashboard.multiple.create.namePlaceholder': 'Étage',
   'dashboard.multiple.create.startWith': 'Commencer avec',
@@ -780,6 +789,11 @@ export const frMessages = {
   'settings.system.clients.status.disabled': 'Local uniquement',
   'settings.system.clients.status.error': 'Synchronisation à vérifier',
   'settings.system.clients.retrySync': 'Réessayer la synchronisation',
+  'settings.system.clients.rebindSync': 'Utiliser ce tableau de bord',
+  'settings.system.clients.rebindSyncConfirm': 'Démarrer une nouvelle synchronisation partagée ?',
+  'settings.system.clients.rebindSyncDescription':
+    'Cette action conserve le tableau de bord actuel de cet appareil, associe l’espace partagé à l’adresse Home Assistant actuelle et l’enregistre comme une nouvelle révision. Les autres appareils devront se reconnecter avec cette adresse.',
+  'settings.system.clients.rebindSyncStart': 'Démarrer la synchronisation',
   'settings.system.clients.status.idle': 'Prêt',
   'settings.system.clients.status.loading': 'Chargement',
   'settings.system.clients.status.offline': 'Hors ligne',
@@ -939,7 +953,7 @@ export const frMessages = {
   'dashboard.addCard.sort.default': 'Par défaut',
   'dashboard.addCard.sort.ascending': 'Croissant',
   'dashboard.addCard.sort.descending': 'Décroissant',
-  'dashboard.addCard.tab.widgets': 'Carte personnalisée',
+  'dashboard.addCard.tab.widgets': 'Cartes personnalisées',
   'dashboard.addCard.header.library': 'BIBLIOTHEQUE D ENTITES',
   'dashboard.addCard.header.widgets': 'WIDGETS PERSONNALISES',
   'dashboard.addCard.tab.cardsHint': 'Parcourir toutes les entites Home Assistant',
@@ -3138,6 +3152,7 @@ export const frMessages = {
   'homeSummary.playing': '{count} en lecture',
   'homeSummary.active': '{count} actifs',
   'homeSummary.climate': 'Climat',
+  'climate.comfort.mostlyComfortable': 'Globalement confortable',
   'dashboard.packs.section.access': 'Accès',
   'dashboard.packs.section.cameras': 'Caméras',
   'dashboard.packs.section.presence': 'Présence',

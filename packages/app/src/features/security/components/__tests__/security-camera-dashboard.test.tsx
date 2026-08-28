@@ -461,9 +461,9 @@ describe('SecurityCameraDashboard', () => {
     const activityRows = activity.getAllByRole('button', { name: /Motion at Garden Camera/i });
     expect(activityRows).toHaveLength(7);
     for (const activityRow of activityRows) {
-      expect(activityRow).toHaveClass('w-full', 'items-start', 'pt-3');
+      expect(activityRow).toHaveClass('w-full', 'items-start', 'pt-2');
       expect(activityRow).not.toHaveClass('border-b');
-      expect(activityRow).toHaveClass('min-h-14', '[contain-intrinsic-size:auto_56px]');
+      expect(activityRow).toHaveClass('min-h-12', '[contain-intrinsic-size:auto_48px]');
     }
     expect(activity.getAllByTestId('security-activity-day')).toHaveLength(2);
     const dayLabels = activity.getAllByTestId('security-activity-day-label');
@@ -483,7 +483,7 @@ describe('SecurityCameraDashboard', () => {
     expect(activity.queryByTestId('security-activity-floating-day-label')).not.toBeInTheDocument();
     expect(activity.getAllByTestId('security-activity-time')).toHaveLength(6);
     for (const timestamp of activity.getAllByTestId('security-activity-time')) {
-      expect(timestamp).toHaveClass('pt-2', 'text-right', 'tabular-nums');
+      expect(timestamp).toHaveClass('pt-1.5', 'text-right', 'tabular-nums');
     }
     expect(activity.queryByText('Recent activity')).not.toBeInTheDocument();
     expect(activity.queryByText('24 hours')).not.toBeInTheDocument();
@@ -509,11 +509,11 @@ describe('SecurityCameraDashboard', () => {
     );
     expect(activity.queryByTestId('security-activity-timeline-gutter')).not.toBeInTheDocument();
     for (const marker of activity.getAllByTestId('security-activity-marker')) {
-      expect(marker).toHaveClass('h-8', 'w-8');
+      expect(marker).toHaveClass('h-7', 'w-7');
       expect(marker.firstElementChild).toHaveClass(
         'rounded-full',
-        '!h-8',
-        '!w-8',
+        '!h-7',
+        '!w-7',
         '!shadow-none',
         '!drop-shadow-none'
       );
@@ -521,7 +521,7 @@ describe('SecurityCameraDashboard', () => {
     }
     const eventContent = activity.getAllByTestId('security-activity-event-content');
     for (const content of eventContent) {
-      expect(content).toHaveClass('self-stretch', 'pb-3');
+      expect(content).toHaveClass('self-stretch', 'pb-2');
     }
     expect(eventContent.filter((content) => content.classList.contains('border-b'))).toHaveLength(
       4
@@ -530,20 +530,20 @@ describe('SecurityCameraDashboard', () => {
     const sameTimeDividers = activity.getAllByTestId('security-activity-same-time-divider');
     expect(sameTimeDividers).toHaveLength(1);
     expect(sameTimeDividers[0]).toHaveClass(
-      'left-[7.25rem]',
+      'left-[6.75rem]',
       'right-3',
       'top-0',
       'border-t',
       'opacity-50'
     );
     for (const timelineLine of activity.getAllByTestId('security-activity-timeline-line')) {
-      expect(timelineLine).toHaveClass('border-l', 'top-11', 'bottom-0', 'left-[5.5rem]');
+      expect(timelineLine).toHaveClass('border-l', 'top-9', 'bottom-0', 'left-[5.25rem]');
       expect(timelineLine).not.toHaveClass('border-dashed');
     }
     for (const timelineLine of activity.getAllByTestId(
       'security-activity-timeline-line-incoming'
     )) {
-      expect(timelineLine).toHaveClass('border-l', 'top-0', 'h-3', 'left-[5.5rem]');
+      expect(timelineLine).toHaveClass('border-l', 'top-0', 'h-2', 'left-[5.25rem]');
       expect(timelineLine).not.toHaveClass('border-dashed');
     }
     expect(activity.getByTestId('security-activity-scroll')).toHaveAttribute('tabindex', '0');

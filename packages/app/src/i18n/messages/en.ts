@@ -112,6 +112,15 @@ export const enMessages = {
   'dashboard.multiple.create.title': 'Create dashboard',
   'dashboard.multiple.create.description':
     'Choose what belongs on this Home dashboard, then decide where it should open by default.',
+  'dashboard.multiple.create.nameTitle': 'Name your dashboard',
+  'dashboard.multiple.create.nameDescription':
+    'Choose a name that makes this view easy to recognize.',
+  'dashboard.multiple.create.contentTitle': 'Choose what to include',
+  'dashboard.multiple.create.contentDescription':
+    'Start with rooms, copy the current dashboard, or begin blank.',
+  'dashboard.multiple.create.displaysTitle': 'Choose where it opens',
+  'dashboard.multiple.create.displaysDescription':
+    'Assign it to this device or leave it unassigned for now.',
   'dashboard.multiple.create.name': 'Name',
   'dashboard.multiple.create.namePlaceholder': 'Upstairs',
   'dashboard.multiple.create.startWith': 'Start with',
@@ -458,6 +467,11 @@ export const enMessages = {
   'settings.system.clients.status.disabled': 'Local only',
   'settings.system.clients.status.error': 'Sync needs attention',
   'settings.system.clients.retrySync': 'Retry sync',
+  'settings.system.clients.rebindSync': 'Use this dashboard',
+  'settings.system.clients.rebindSyncConfirm': 'Start a new shared sync?',
+  'settings.system.clients.rebindSyncDescription':
+    'This keeps this device’s current dashboard, links the shared workspace to the current Home Assistant address, and saves it as a new revision. Other devices must reconnect through this address.',
+  'settings.system.clients.rebindSyncStart': 'Start new sync',
   'settings.system.clients.status.idle': 'Ready',
   'settings.system.clients.status.loading': 'Loading',
   'settings.system.clients.status.offline': 'Offline',
@@ -613,7 +627,7 @@ export const enMessages = {
   'dashboard.addCard.sort.default': 'Default',
   'dashboard.addCard.sort.ascending': 'Ascending',
   'dashboard.addCard.sort.descending': 'Descending',
-  'dashboard.addCard.tab.widgets': 'Custom card',
+  'dashboard.addCard.tab.widgets': 'Custom cards',
   'dashboard.addCard.header.library': 'ENTITY LIBRARY',
   'dashboard.addCard.header.widgets': 'CUSTOM WIDGETS',
   'dashboard.addCard.tab.cardsHint': 'Browse every Home Assistant entity',
@@ -1911,8 +1925,7 @@ export const enMessages = {
   'household.setup.featureRewardDescription':
     'Everyone marks chores complete in the same place, so you can see what is finished and what still needs attention.',
   'household.setup.dialogTitle': 'Set up household chores',
-  'household.setup.dialogDescription':
-    'We’ll help you add the people at home, create one job that comes back on schedule, and choose optional reminders and protection. You can change everything later.',
+  'household.setup.dialogDescription': 'Add people and chores. Adjust preferences anytime.',
   'household.setup.progressLabel': 'Chore setup progress',
   'household.setup.stepCount': 'Step {current} of {total}',
   'household.setup.stepProfiles': 'Profiles & reminders',
@@ -3136,6 +3149,7 @@ export const enMessages = {
   'homeSummary.playing': '{count} Playing',
   'homeSummary.active': '{count} Active',
   'homeSummary.climate': 'Climate',
+  'climate.comfort.mostlyComfortable': 'Mostly comfortable',
   'dashboard.packs.section.access': 'Access',
   'dashboard.packs.section.cameras': 'Cameras',
   'dashboard.packs.section.presence': 'Presence',

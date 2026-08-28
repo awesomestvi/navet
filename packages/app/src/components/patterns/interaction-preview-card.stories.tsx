@@ -1,7 +1,7 @@
 import { LightCard } from '@navet/app/features/lighting';
 import { useTheme } from '@navet/app/hooks';
 import { noopCardSizeChange } from '@navet/app/storybook/story-frames';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Paintbrush } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { getThemeSurfaceTokens } from '../shared/theme/theme-surface-tokens';

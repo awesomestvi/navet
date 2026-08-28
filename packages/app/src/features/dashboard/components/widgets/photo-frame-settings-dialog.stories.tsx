@@ -2,7 +2,7 @@ import { Button } from '@navet/app/components/primitives/button';
 import { PHOTO_FRAME_DEMO_URLS } from '@navet/app/demo/photo-frame-demo-images';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { PhotoFrameSettingsDialog } from './photo-frame-settings-dialog';
 import type { PhotoFrameSourceMode } from './photo-frame-types';

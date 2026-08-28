@@ -9,7 +9,8 @@ Use this file for maintainer and agent release work.
 - use `pnpm release:linear` or the Linear app as the preferred release-note source
 - keep release-managed files aligned for versioned releases
 - keep root `repository.yaml` in the monorepo
-- treat `platform/home-assistant/custom_components/navet/` as the HACS source of truth for export
+- treat `platform/home-assistant/custom_components/navet/` as the HACS integration source of truth
+- keep generated panel assets out of the monorepo; release automation assembles them into exports
 
 ## Release-Managed Files
 

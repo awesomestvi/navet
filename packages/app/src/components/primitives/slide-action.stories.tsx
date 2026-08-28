@@ -1,5 +1,5 @@
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { CarFront, Lock, Unlock } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { toast } from 'sonner';

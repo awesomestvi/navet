@@ -28,6 +28,7 @@ import {
   type ChoreWorkspaceResetRequest,
   type ChoreWorkspaceRestoreRequest,
 } from './chore-workspace.contract';
+import { homeAssistantService } from './home-assistant.service';
 
 export interface ChoreWorkspaceLoadResult {
   available: boolean;
@@ -55,6 +56,170 @@ export interface ChoreAutomationReadResult<T> {
   value: T | null;
 }
 
+export interface ChoreRuntimeCapabilities {
+  contractVersion: 1;
+  schemaVersion: 2;
+  authority: 'home_assistant_panel' | 'navet_addon' | 'standalone';
+  backgroundScheduling: boolean;
+  backgroundNotifications: boolean;
+  projectionOwnedByAuthority: boolean;
+  actionServices: boolean;
+  lastSchedulerRunAt?: string;
+  pendingDeliveryCount?: number;
+  lastDeliveryError?: string | null;
+}
+
+export interface ChoreWorkspaceTransport {
+  kind: 'home_assistant_websocket' | 'http';
+  loadCapabilities: () => Promise<ChoreRuntimeCapabilities | null>;
+  loadWorkspace: (revision?: number) => Promise<ChoreWorkspaceLoadResult>;
+  subscribe: (callback: (document: ChoreWorkspaceDocument) => void) => Promise<() => void>;
+  sendCommand: (request: ChoreWorkspaceCommandRequest) => Promise<ChoreWorkspaceCommandResult>;
+}
+
+/** Provider-neutral entry point used by the household store and background hooks. */
+export function getChoreWorkspaceTransport(): ChoreWorkspaceTransport {
+  return {
+    kind: isHomeAssistantPanelMode() ? 'home_assistant_websocket' : 'http',
+    loadCapabilities: loadChoreRuntimeCapabilities,
+    loadWorkspace: loadChoreWorkspace,
+    subscribe: subscribeChoreWorkspace,
+    sendCommand: sendChoreWorkspaceCommand,
+  };
+}
+
+const PANEL_COMMANDS = {
+  capabilities: 'navet/chores/info',
+  workspace: 'navet/chores/workspace/get',
+  subscribe: 'navet/chores/workspace/subscribe',
+  definitions: 'navet/chores/definitions/get',
+  occurrences: 'navet/chores/occurrences/get',
+  events: 'navet/chores/events/get',
+  history: 'navet/chores/history/get',
+  backup: 'navet/chores/backup/get',
+  command: 'navet/chores/command',
+  restore: 'navet/chores/restore',
+  reset: 'navet/chores/reset',
+  recovery: 'navet/chores/recovery',
+  pin: 'navet/chores/management/pin',
+  verify: 'navet/chores/management/verify',
+} as const;
+
+function getPanelConnection() {
+  return homeAssistantService.getConnection();
+}
+
+async function sendPanelCommand<T>(type: string, payload: Record<string, unknown> = {}) {
+  const connection = getPanelConnection();
+  if (!connection) throw new Error('Home Assistant panel connection is unavailable');
+  return await connection.sendMessagePromise<T>({ type, ...payload });
+}
+
+function panelErrorMessage(error: unknown, fallback: string) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : error &&
+          typeof error === 'object' &&
+          typeof (error as { message?: unknown }).message === 'string'
+        ? (error as { message: string }).message
+        : fallback;
+  if (/unknown command|not[_ ]ready|not found|unsupported.*navet\/chores/i.test(message)) {
+    return 'Update the Navet Home Assistant integration before using chores in the custom panel.';
+  }
+  if (/panel connection is unavailable/i.test(message)) {
+    return 'The Home Assistant panel connection is not ready. Reload Navet and try again.';
+  }
+  return message;
+}
+
+function panelRecoveryInfo(error: unknown): ChoreWorkspaceRecoveryInfo | null {
+  if (!error || typeof error !== 'object') return null;
+  const candidate = error as {
+    data?: { recovery?: Partial<ChoreWorkspaceRecoveryInfo> };
+    error?: { data?: { recovery?: Partial<ChoreWorkspaceRecoveryInfo> } };
+  };
+  const recovery = candidate.data?.recovery ?? candidate.error?.data?.recovery;
+  const reason = recovery?.reason;
+  if (
+    typeof recovery?.backupAvailable !== 'boolean' ||
+    typeof recovery.pinConfigured !== 'boolean' ||
+    (reason !== 'storage_unavailable' &&
+      reason !== 'workspace_invalid' &&
+      reason !== 'workspace_too_large')
+  ) {
+    return null;
+  }
+  return {
+    backupAvailable: recovery.backupAvailable,
+    pinConfigured: recovery.pinConfigured,
+    reason,
+  };
+}
+
+function panelErrorDetails(error: unknown): { code: string | null; revision: number | null } {
+  if (!error || typeof error !== 'object') return { code: null, revision: null };
+  const candidate = error as {
+    code?: unknown;
+    data?: { revision?: unknown };
+    error?: { code?: unknown; data?: { revision?: unknown } };
+  };
+  const code = candidate.code ?? candidate.error?.code;
+  const revision = candidate.data?.revision ?? candidate.error?.data?.revision;
+  return {
+    code: typeof code === 'string' ? code : null,
+    revision: typeof revision === 'number' && Number.isSafeInteger(revision) ? revision : null,
+  };
+}
+
+function panelCommandForEndpoint(endpoint: string) {
+  if (endpoint === CHORE_WORKSPACE_ENDPOINTS.definitions) return PANEL_COMMANDS.definitions;
+  if (endpoint === CHORE_WORKSPACE_ENDPOINTS.occurrences) return PANEL_COMMANDS.occurrences;
+  if (endpoint === CHORE_WORKSPACE_ENDPOINTS.events) return PANEL_COMMANDS.events;
+  if (endpoint === CHORE_WORKSPACE_ENDPOINTS.history) return PANEL_COMMANDS.history;
+  if (endpoint === CHORE_WORKSPACE_ENDPOINTS.backup) return PANEL_COMMANDS.backup;
+  throw new Error(`Unsupported panel chore endpoint: ${endpoint}`);
+}
+
+export async function loadChoreRuntimeCapabilities(): Promise<ChoreRuntimeCapabilities | null> {
+  if (isHomeAssistantPanelMode()) {
+    try {
+      return await sendPanelCommand<ChoreRuntimeCapabilities>(PANEL_COMMANDS.capabilities);
+    } catch {
+      return null;
+    }
+  }
+
+  try {
+    const response = await fetch(resolveAddonLocalEndpointUrl('/__navet_chores__/capabilities'), {
+      credentials: 'same-origin',
+    });
+    if (!response.ok) return null;
+    const value = (await response.json()) as Partial<ChoreRuntimeCapabilities>;
+    if (value.contractVersion !== 1 || value.schemaVersion !== 2) return null;
+    return value as ChoreRuntimeCapabilities;
+  } catch {
+    return null;
+  }
+}
+
+export async function subscribeChoreWorkspace(
+  callback: (document: ChoreWorkspaceDocument) => void
+): Promise<() => void> {
+  if (!isHomeAssistantPanelMode()) return () => {};
+  const connection = getPanelConnection();
+  if (!connection?.subscribeMessage) {
+    throw new Error('Home Assistant panel connection cannot subscribe to chores');
+  }
+  return await connection.subscribeMessage(
+    (value: ChoreWorkspaceDocument) => {
+      const document = parsePanelDocument(value);
+      if (document) callback(document);
+    },
+    { type: PANEL_COMMANDS.subscribe }
+  );
+}
+
 function endpointWithQuery(endpoint: string, query: Record<string, string | number | undefined>) {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
@@ -66,7 +231,18 @@ function endpointWithQuery(endpoint: string, query: Record<string, string | numb
 
 async function loadAutomationResource<T>(endpoint: string): Promise<ChoreAutomationReadResult<T>> {
   if (isHomeAssistantPanelMode()) {
-    return { available: false, unauthorized: false, value: null };
+    try {
+      const query = endpoint.includes('?')
+        ? Object.fromEntries(new URLSearchParams(endpoint.split('?', 2)[1]))
+        : {};
+      const value = await sendPanelCommand<T>(
+        panelCommandForEndpoint(endpoint.split('?', 1)[0]),
+        query
+      );
+      return { available: true, unauthorized: false, value };
+    } catch {
+      return { available: false, unauthorized: false, value: null };
+    }
   }
   try {
     const response = await fetch(resolveAddonLocalEndpointUrl(endpoint), {
@@ -161,14 +337,35 @@ async function sendChoreAdministrationRequest(
   request: ChoreWorkspaceRestoreRequest | ChoreWorkspaceResetRequest
 ): Promise<ChoreWorkspaceCommandResult> {
   if (isHomeAssistantPanelMode()) {
-    return {
-      saved: false,
-      unauthorized: false,
-      preconditionFailed: false,
-      error: 'Chore workspace administration is unavailable in Home Assistant panel mode',
-      revision: null,
-      document: null,
-    };
+    try {
+      const type =
+        endpoint === CHORE_WORKSPACE_ENDPOINTS.restore
+          ? PANEL_COMMANDS.restore
+          : PANEL_COMMANDS.reset;
+      const document = await sendPanelCommand<ChoreWorkspaceDocument>(
+        type,
+        request as unknown as Record<string, unknown>
+      );
+      return {
+        saved: Boolean(document),
+        unauthorized: false,
+        preconditionFailed: false,
+        error: null,
+        revision: document?.revision ?? null,
+        document: document ? parsePanelDocument(document) : null,
+      };
+    } catch (error) {
+      const details = panelErrorDetails(error);
+      return {
+        saved: false,
+        unauthorized: false,
+        preconditionFailed: details.code === 'stale_revision',
+        error: panelErrorMessage(error, 'Chore workspace administration failed'),
+        revision: details.revision,
+        document: null,
+        retryable: details.code !== 'stale_revision',
+      };
+    }
   }
   try {
     const response = await fetch(resolveAddonLocalEndpointUrl(endpoint), {
@@ -229,12 +426,29 @@ async function sendChoreManagementRequest(
   managementSessionToken?: string
 ): Promise<ChoreManagementSessionResult> {
   if (isHomeAssistantPanelMode()) {
-    return {
-      unlocked: false,
-      unauthorized: false,
-      error: 'Chore management is unavailable in Home Assistant panel mode',
-      document: null,
-    };
+    try {
+      const type =
+        endpoint === CHORE_WORKSPACE_ENDPOINTS.managementPin
+          ? PANEL_COMMANDS.pin
+          : PANEL_COMMANDS.verify;
+      const document = await sendPanelCommand<ChoreManagementSessionDocument>(type, {
+        ...request,
+        ...(managementSessionToken ? { managementSessionToken } : {}),
+      });
+      return {
+        unlocked: Boolean(document?.sessionToken),
+        unauthorized: false,
+        error: null,
+        document: document ?? null,
+      };
+    } catch (error) {
+      return {
+        unlocked: false,
+        unauthorized: false,
+        error: error instanceof Error ? error.message : 'Chore management could not be unlocked',
+        document: null,
+      };
+    }
   }
   try {
     const response = await fetch(resolveAddonLocalEndpointUrl(endpoint), {
@@ -315,6 +529,28 @@ async function parseDocument(response: Response): Promise<ChoreWorkspaceDocument
   }
 }
 
+function parsePanelDocument(value: unknown): ChoreWorkspaceDocument | null {
+  if (!value || typeof value !== 'object') return null;
+  const body = value as Partial<ChoreWorkspaceDocument>;
+  if (
+    typeof body.revision !== 'number' ||
+    !Number.isSafeInteger(body.revision) ||
+    typeof body.updatedAt !== 'string'
+  ) {
+    return null;
+  }
+  try {
+    return {
+      revision: body.revision,
+      updatedAt: body.updatedAt,
+      data: migrateChoreWorkspaceData(body.data),
+      management: { pinConfigured: body.management?.pinConfigured === true },
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function parseError(response: Response): Promise<string | null> {
   try {
     const body = (await response.json()) as { error?: unknown };
@@ -357,15 +593,43 @@ async function parseWorkspaceFailure(response: Response): Promise<{
 
 export async function loadChoreWorkspace(revision?: number): Promise<ChoreWorkspaceLoadResult> {
   if (isHomeAssistantPanelMode()) {
-    return {
-      available: false,
-      unauthorized: false,
-      notModified: false,
-      error: 'Chores are not available in Home Assistant panel mode',
-      recovery: null,
-      revision: null,
-      document: null,
-    };
+    try {
+      const result = await sendPanelCommand<ChoreWorkspaceDocument & { notModified?: boolean }>(
+        PANEL_COMMANDS.workspace,
+        revision === undefined ? {} : { revision }
+      );
+      if (result?.notModified) {
+        return {
+          available: true,
+          unauthorized: false,
+          notModified: true,
+          error: null,
+          recovery: null,
+          revision: result.revision ?? revision ?? null,
+          document: null,
+        };
+      }
+      const document = parsePanelDocument(result);
+      return {
+        available: document !== null,
+        unauthorized: false,
+        notModified: false,
+        error: document ? null : 'The Home Assistant chore workspace response was invalid',
+        recovery: null,
+        revision: document?.revision ?? null,
+        document,
+      };
+    } catch (error) {
+      return {
+        available: false,
+        unauthorized: false,
+        notModified: false,
+        error: panelErrorMessage(error, 'Chore storage could not be reached'),
+        recovery: panelRecoveryInfo(error),
+        revision: null,
+        document: null,
+      };
+    }
   }
 
   try {
@@ -438,14 +702,31 @@ export async function recoverChoreWorkspace(
   request: ChoreWorkspaceRecoveryRequest
 ): Promise<ChoreWorkspaceCommandResult> {
   if (isHomeAssistantPanelMode()) {
-    return {
-      saved: false,
-      unauthorized: false,
-      preconditionFailed: false,
-      error: 'Chore recovery is unavailable in Home Assistant panel mode',
-      revision: null,
-      document: null,
-    };
+    try {
+      const document = await sendPanelCommand<ChoreWorkspaceDocument>(
+        PANEL_COMMANDS.recovery,
+        request as unknown as Record<string, unknown>
+      );
+      const parsed = parsePanelDocument(document);
+      return {
+        saved: parsed !== null,
+        unauthorized: false,
+        preconditionFailed: false,
+        error: parsed ? null : 'The Home Assistant recovery response was invalid',
+        revision: parsed?.revision ?? null,
+        document: parsed,
+      };
+    } catch (error) {
+      return {
+        saved: false,
+        unauthorized: false,
+        preconditionFailed: false,
+        error: error instanceof Error ? error.message : 'Chore recovery could not be completed',
+        revision: null,
+        document: null,
+        retryable: true,
+      };
+    }
   }
   try {
     const response = await fetch(resolveAddonLocalEndpointUrl(CHORE_WORKSPACE_ENDPOINTS.recovery), {
@@ -486,14 +767,34 @@ export async function sendChoreWorkspaceCommand(
   request: ChoreWorkspaceCommandRequest
 ): Promise<ChoreWorkspaceCommandResult> {
   if (isHomeAssistantPanelMode()) {
-    return {
-      saved: false,
-      unauthorized: false,
-      preconditionFailed: false,
-      error: 'Chore workspace actions are unavailable in Home Assistant panel mode',
-      revision: null,
-      document: null,
-    };
+    try {
+      const document = await sendPanelCommand<ChoreWorkspaceDocument>(
+        PANEL_COMMANDS.command,
+        request as unknown as Record<string, unknown>
+      );
+      const parsed = parsePanelDocument(document);
+      return {
+        saved: parsed !== null,
+        unauthorized: false,
+        preconditionFailed: false,
+        error: parsed ? null : 'The Home Assistant chore command response was invalid',
+        revision: parsed?.revision ?? null,
+        document: parsed,
+      };
+    } catch (error) {
+      const message = panelErrorMessage(error, 'Chore workspace sync failed');
+      const details = panelErrorDetails(error);
+      return {
+        saved: false,
+        unauthorized: false,
+        preconditionFailed:
+          details.code === 'stale_revision' || /stale|revision|changed/i.test(message),
+        error: message,
+        revision: details.revision,
+        document: null,
+        retryable: details.code !== 'stale_revision',
+      };
+    }
   }
 
   try {

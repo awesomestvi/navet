@@ -181,7 +181,7 @@ export const svMessages = {
     'Alla markerar sysslor som klara på samma ställe, så ni ser vad som är gjort och vad som behöver uppmärksamhet.',
   'household.setup.dialogTitle': 'Ställ in hushållets sysslor',
   'household.setup.dialogDescription':
-    'Vi hjälper dig att lägga till personerna hemma, skapa ett jobb som återkommer och välja valfria påminnelser och skydd. Allt kan ändras senare.',
+    'Lägg till personer och sysslor. Anpassa inställningarna när du vill.',
   'household.setup.progressLabel': 'Förlopp för sysselinställning',
   'household.setup.stepCount': 'Steg {current} av {total}',
   'household.setup.stepProfiles': 'Profiler och påminnelser',
@@ -529,6 +529,14 @@ export const svMessages = {
   'dashboard.multiple.create.title': 'Skapa dashboard',
   'dashboard.multiple.create.description':
     'Välj vad som ska visas och var dashboarden ska användas.',
+  'dashboard.multiple.create.nameTitle': 'Namnge din dashboard',
+  'dashboard.multiple.create.nameDescription': 'Välj ett namn som gör vyn lätt att känna igen.',
+  'dashboard.multiple.create.contentTitle': 'Välj vad som ska ingå',
+  'dashboard.multiple.create.contentDescription':
+    'Börja med rum, kopiera den aktuella dashboarden eller börja tomt.',
+  'dashboard.multiple.create.displaysTitle': 'Välj var den öppnas',
+  'dashboard.multiple.create.displaysDescription':
+    'Tilldela den till den här enheten eller lämna den otilldelad tills vidare.',
   'dashboard.multiple.create.name': 'Namn',
   'dashboard.multiple.create.namePlaceholder': 'Övervåning',
   'dashboard.multiple.create.startWith': 'Börja med',
@@ -774,6 +782,11 @@ export const svMessages = {
   'settings.system.clients.status.disabled': 'Endast lokalt',
   'settings.system.clients.status.error': 'Synkronisering kräver åtgärd',
   'settings.system.clients.retrySync': 'Försök synkronisera igen',
+  'settings.system.clients.rebindSync': 'Använd den här dashboarden',
+  'settings.system.clients.rebindSyncConfirm': 'Starta en ny delad synkronisering?',
+  'settings.system.clients.rebindSyncDescription':
+    'Detta behåller enhetens nuvarande dashboard, kopplar den delade arbetsytan till den aktuella Home Assistant-adressen och sparar den som en ny revision. Andra enheter måste ansluta igen via den här adressen.',
+  'settings.system.clients.rebindSyncStart': 'Starta ny synkronisering',
   'settings.system.clients.status.idle': 'Redo',
   'settings.system.clients.status.loading': 'Läser in',
   'settings.system.clients.status.offline': 'Frånkopplad',
@@ -931,7 +944,7 @@ export const svMessages = {
   'dashboard.addCard.sort.default': 'Standard',
   'dashboard.addCard.sort.ascending': 'Stigande',
   'dashboard.addCard.sort.descending': 'Fallande',
-  'dashboard.addCard.tab.widgets': 'Anpassat kort',
+  'dashboard.addCard.tab.widgets': 'Anpassade kort',
   'dashboard.addCard.header.library': 'ENTITETSBIBLIOTEK',
   'dashboard.addCard.header.widgets': 'ANPASSADE WIDGETS',
   'dashboard.addCard.tab.cardsHint': 'Bladdra bland alla Home Assistant-entiteter',
@@ -3079,6 +3092,7 @@ export const svMessages = {
   'homeSummary.playing': '{count} spelar',
   'homeSummary.active': '{count} aktiva',
   'homeSummary.climate': 'Klimat',
+  'climate.comfort.mostlyComfortable': 'Mestadels behagligt',
   'dashboard.packs.section.access': 'Åtkomst',
   'dashboard.packs.section.cameras': 'Kameror',
   'dashboard.packs.section.presence': 'Närvaro',

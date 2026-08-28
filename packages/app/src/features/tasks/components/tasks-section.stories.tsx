@@ -2,7 +2,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { createPreviewStoryScenario } from '@navet/app/preview/runtime';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { type ThemeMode, useThemeStore } from '@navet/app/stores/theme-store';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect } from 'react';
 import { expect, within } from 'storybook/test';
 import { TasksSection } from './tasks-section';
@@ -100,12 +100,22 @@ export const Desktop: Story = {};
 
 export const TabletPortrait: Story = {
   args: { mode: 'default' },
-  parameters: { viewport: { defaultViewport: 'tablet' } },
+  globals: {
+    viewport: {
+      value: 'tablet',
+      isRotated: false,
+    },
+  },
 };
 
 export const Mobile: Story = {
   args: { mode: 'default' },
-  parameters: { viewport: { defaultViewport: 'mobile1' } },
+  globals: {
+    viewport: {
+      value: 'mobile1',
+      isRotated: false,
+    },
+  },
 };
 
 export const CompactAutomationRows: Story = {

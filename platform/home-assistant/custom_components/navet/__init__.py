@@ -14,11 +14,16 @@ from homeassistant.components.http import HomeAssistantView, StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
 
+from .chore_store import (
+    ChoreAuthority,
+    ChoreAuthorityError,
+    register_chore_websocket_commands,
+)
 from .const import (
-    CHORE_ACTION_REQUEST_EVENT,
     CHORE_ACTIONS,
     DOMAIN,
     FRONTEND_MODULE_URL,
@@ -188,6 +193,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     frontend_dir = Path(__file__).parent / "frontend"
     domain_data = hass.data.setdefault(DOMAIN, {})
 
+    authority = domain_data.get("chore_authority")
+    if not isinstance(authority, ChoreAuthority):
+        authority = ChoreAuthority(hass)
+        domain_data["chore_authority"] = authority
+    await authority.async_start()
+
+    if not domain_data.get("chore_websocket_registered"):
+        register_chore_websocket_commands(hass)
+        domain_data["chore_websocket_registered"] = True
+
     if not domain_data.get("static_path_registered"):
         await hass.http.async_register_static_paths(
             [
@@ -220,17 +235,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if not domain_data.get("chore_services_registered"):
         async def async_handle_chore_action(call: ServiceCall) -> None:
-            """Forward an authenticated Home Assistant action to the active Navet authority."""
-            data = {
-                "action": call.service,
-                "occurrenceId": call.data.get("occurrence_id"),
-                "participantId": call.data.get("participant_id"),
-            }
-            if call.data.get("reason"):
-                data["reason"] = call.data["reason"]
-            if call.data.get("assignee_ids"):
-                data["assigneeIds"] = call.data["assignee_ids"]
-            hass.bus.async_fire(CHORE_ACTION_REQUEST_EVENT, data, context=call.context)
+            """Apply an authenticated Home Assistant action to durable chores."""
+            try:
+                await authority.async_service_action(
+                    call.service,
+                    call.data,
+                    str(call.context.id),
+                )
+            except ChoreAuthorityError as err:
+                raise HomeAssistantError(str(err)) from err
 
         base_fields = {
             vol.Required("occurrence_id"): cv.string,
@@ -259,4 +272,13 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload Navet."""
     unloaded = await hass.config_entries.async_unload_platforms(entry, [Platform.SENSOR])
     async_remove_panel(hass, PANEL_FRONTEND_PATH, warn_if_unknown=False)
+    authority = hass.data.get(DOMAIN, {}).get("chore_authority")
+    if isinstance(authority, ChoreAuthority):
+        await authority.async_stop()
+    domain_data = hass.data.get(DOMAIN, {})
+    if domain_data.get("chore_services_registered"):
+        for action in CHORE_ACTIONS:
+            hass.services.async_remove(DOMAIN, action)
+        domain_data["chore_services_registered"] = False
+    domain_data.pop("chore_authority", None)
     return unloaded

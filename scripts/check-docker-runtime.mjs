@@ -37,18 +37,22 @@ function ensureDockerAvailable() {
 }
 
 function resolveHomeAssistantAddonTarget() {
-  const result = spawnSync(
-    'docker',
-    ['info', '--format', '{{.Architecture}}'],
-    { stdio: 'pipe', encoding: 'utf8' }
-  );
-  const architecture = result.stdout.trim().toLowerCase();
-  if (result.error || result.status !== 0) {
-    throw new Error(
-      result.error?.message ||
-        result.stderr?.trim() ||
-        'Unable to resolve the Docker host architecture'
+  const requestedArchitecture = process.env.NAVET_ADDON_TEST_ARCH?.trim().toLowerCase();
+  let architecture = requestedArchitecture;
+  if (!architecture) {
+    const result = spawnSync(
+      'docker',
+      ['info', '--format', '{{.Architecture}}'],
+      { stdio: 'pipe', encoding: 'utf8' }
     );
+    architecture = result.stdout.trim().toLowerCase();
+    if (result.error || result.status !== 0) {
+      throw new Error(
+        result.error?.message ||
+          result.stderr?.trim() ||
+          'Unable to resolve the Docker host architecture'
+      );
+    }
   }
   let target;
   if (architecture === 'amd64' || architecture === 'x86_64') {
@@ -112,6 +116,49 @@ function ensureSerializedProfileRuntime() {
     const source = readFileSync(file, 'utf8');
     if (/^ports(?:_description)?:/m.test(source)) {
       throw new Error(`${file} must remain Ingress-only without a published host port`);
+    }
+  }
+
+  const njsHandlerFiles = [
+    'docker/snippets/navet-auth-store.conf',
+    'docker/snippets/navet-chore-store.conf',
+    'docker/snippets/navet-chore-store-ingress.conf',
+    'docker/snippets/navet-homey-store.conf',
+    'docker/snippets/navet-openhab-store.conf',
+    'docker/snippets/navet-profile-store.conf',
+    'docker/snippets/navet-profile-store-ingress.conf',
+    'docker/snippets/navet-rss-proxy.conf',
+  ];
+  const runtimeConfigs = [
+    {
+      imports: 'docker/nginx.main.conf',
+      handlers: njsHandlerFiles,
+    },
+    {
+      imports: 'platform/home-assistant/addons/navet/rootfs/etc/nginx/nginx.conf',
+      handlers: [
+        ...njsHandlerFiles,
+        'platform/home-assistant/addons/navet/run.sh',
+        'platform/home-assistant/addons/navet/rootfs/etc/nginx/http.d/default.conf',
+      ],
+    },
+  ];
+  for (const runtime of runtimeConfigs) {
+    const importSource = readFileSync(runtime.imports, 'utf8');
+    const imports = new Set(
+      [...importSource.matchAll(/^\s*js_import\s+([A-Za-z0-9_]+)\s+from\s+/gm)].map(
+        (match) => match[1]
+      )
+    );
+    for (const handlerFile of runtime.handlers) {
+      const source = readFileSync(handlerFile, 'utf8');
+      for (const match of source.matchAll(/\bjs_(?:content|periodic)\s+([A-Za-z0-9_]+)\.[A-Za-z0-9_]+/g)) {
+        if (!imports.has(match[1])) {
+          throw new Error(
+            `${runtime.imports} must js_import ${match[1]} because ${handlerFile} references it`
+          );
+        }
+      }
     }
   }
 }
@@ -908,6 +955,73 @@ const addonIngressProbeSource = `
   });
 `;
 
+const addonChoreProbeSource = `
+  const baseUrl = 'http://navet-addon-check:8099';
+  const ingressOrigin = 'https://navet-addon-check:8099';
+  const headers = {
+    'X-Forwarded-Proto': 'https',
+    'X-Ingress-Path': process.env.NAVET_ADDON_INGRESS_PATH,
+    'X-Navet-Client-Id': 'actual-addon-panel-01',
+    'X-Navet-Client-Kind': 'wall_panel',
+    'X-Navet-Client-Name': 'Actual add-on panel',
+    'X-Remote-User-Id': 'actual-addon-user',
+    'X-Remote-User-Name': 'Actual add-on user'
+  };
+  async function run() {
+    const capabilitiesResponse = await fetch(baseUrl + '/__navet_chores__/capabilities', {
+      headers,
+      signal: AbortSignal.timeout(2000)
+    });
+    const capabilities = await capabilitiesResponse.json();
+    const workspaceResponse = await fetch(baseUrl + '/__navet_chores__/workspace', {
+      headers,
+      signal: AbortSignal.timeout(2000)
+    });
+    let workspace = await workspaceResponse.json();
+    if (process.env.NAVET_ADDON_CREATE_CHORE === 'true') {
+      const timestamp = new Date().toISOString();
+      const commandResponse = await fetch(baseUrl + '/__navet_chores__/commands', {
+        method: 'POST',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+          'Origin': ingressOrigin,
+          'X-Navet-Base-Revision': String(workspace.revision)
+        },
+        body: JSON.stringify({
+          commandId: 'actual-addon-runtime-participant',
+          baseRevision: workspace.revision,
+          action: {
+            type: 'participant_create',
+            participant: {
+              id: 'actual-addon-manager',
+              displayName: 'Actual add-on manager',
+              capabilities: ['complete', 'approve', 'manage'],
+              createdAt: timestamp,
+              updatedAt: timestamp
+            }
+          }
+        }),
+        signal: AbortSignal.timeout(2000)
+      });
+      workspace = await commandResponse.json();
+      if (!commandResponse.ok) {
+        throw new Error('Chore command failed: ' + JSON.stringify(workspace));
+      }
+    }
+    process.stdout.write(JSON.stringify({
+      capabilities,
+      capabilitiesStatus: capabilitiesResponse.status,
+      workspace,
+      workspaceStatus: workspaceResponse.status
+    }));
+  }
+  run().catch((error) => {
+    process.stderr.write(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });
+`;
+
 function readHomeAssistantAddonIngressProfile(probeContainerName, cookie = '') {
   const result = spawnSync(
     'docker',
@@ -937,6 +1051,46 @@ function readHomeAssistantAddonIngressProfile(probeContainerName, cookie = '') {
       error: `Add-on Ingress probe returned invalid JSON: ${result.stdout.trim()}`,
       response: null,
     };
+  }
+}
+
+function readHomeAssistantAddonIngressChores(probeContainerName, createChore = false) {
+  const result = spawnSync(
+    'docker',
+    [
+      'exec',
+      '-e',
+      `NAVET_ADDON_INGRESS_PATH=${addonIngressPath}`,
+      '-e',
+      `NAVET_ADDON_CREATE_CHORE=${createChore}`,
+      probeContainerName,
+      'node',
+      '-e',
+      addonChoreProbeSource,
+    ],
+    { stdio: 'pipe', encoding: 'utf8' }
+  );
+  if (result.error || result.status !== 0) {
+    throw new Error(
+      result.error?.message || result.stderr.trim() || result.stdout.trim()
+    );
+  }
+  return JSON.parse(result.stdout);
+}
+
+function assertHomeAssistantAddonChores(result, expectedRevision) {
+  if (
+    result.capabilitiesStatus !== 200 ||
+    result.capabilities?.authority !== 'navet_addon' ||
+    result.capabilities?.backgroundScheduling !== true ||
+    result.capabilities?.backgroundNotifications !== true ||
+    result.workspaceStatus !== 200 ||
+    result.workspace?.revision !== expectedRevision ||
+    !result.workspace?.data?.participantsById?.['actual-addon-manager']
+  ) {
+    throw new Error(
+      `Home Assistant add-on chore authority check failed: ${JSON.stringify(result)}`
+    );
   }
 }
 
@@ -1852,6 +2006,15 @@ try {
   const addonInstallationKey = readInstallationKey(addonContainerName);
   assertInstallationKeyOwner(addonContainerName);
   run('docker', ['exec', addonContainerName, 'nginx', '-t']);
+  const firstAddonChores = readHomeAssistantAddonIngressChores(
+    addonProbeContainerName,
+    true
+  );
+  assertHomeAssistantAddonChores(
+    firstAddonChores,
+    firstAddonChores.workspace.revision
+  );
+  const addonChoreRevision = firstAddonChores.workspace.revision;
 
   run('docker', ['rm', '-f', addonContainerName]);
   startHomeAssistantAddonContainer({
@@ -1878,6 +2041,10 @@ try {
   }
   assertInstallationKeyOwner(addonContainerName);
   run('docker', ['exec', addonContainerName, 'nginx', '-t']);
+  assertHomeAssistantAddonChores(
+    readHomeAssistantAddonIngressChores(addonProbeContainerName),
+    addonChoreRevision
+  );
 
   run('docker', ['volume', 'create', volumeName]);
   run('docker', ['network', 'create', networkName]);

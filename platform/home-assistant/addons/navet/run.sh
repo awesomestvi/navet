@@ -100,6 +100,11 @@ server {
   include /etc/nginx/snippets/navet-chore-store-ingress.conf;
   js_set \$navet_provider_proxy_request_allowed navet_homey_proxy.request_allowed;
 
+  location = /__navet_chore_scheduler__ {
+    internal;
+    js_periodic navet_chore_store.runPeriodic interval=60s;
+  }
+
   location /__navet_ha_proxy__/ {
     if (\$navet_provider_proxy_request_allowed = "") {
       return 403;

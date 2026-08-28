@@ -1,3 +1,4 @@
+import { CardActionRow } from '@navet/app/components/patterns/card-action-row';
 import { RoundControlButton } from '@navet/app/components/primitives/round-control-button';
 import { Slider } from '@navet/app/components/primitives/slider';
 import { getCardActionControlSizes } from '@navet/app/components/shared/card-action-control-sizes';
@@ -437,7 +438,7 @@ export function MediaMediumView({
                           event.stopPropagation();
                           onToggleShuffle();
                         }}
-                        className="h-7.5 w-7.5 backdrop-blur-xl transition-colors"
+                        className="h-7.5 w-7.5 backdrop-blur-xl transition-colors [@media(any-pointer:coarse)]:hidden"
                         iconStyle={controlIconStyle}
                         style={
                           subduedFallback
@@ -478,7 +479,7 @@ export function MediaMediumView({
                           event.stopPropagation();
                           onCycleRepeat();
                         }}
-                        className="h-7.5 w-7.5 backdrop-blur-xl transition-colors"
+                        className="h-7.5 w-7.5 backdrop-blur-xl transition-colors [@media(any-pointer:coarse)]:hidden"
                         iconStyle={controlIconStyle}
                         style={
                           subduedFallback
@@ -531,6 +532,48 @@ export function MediaMediumView({
                     >
                       <SkipForward className={controlSizes.icon} />
                     </RoundControlButton>
+
+                    {canShuffle || canRepeat ? (
+                      <CardActionRow
+                        theme={theme}
+                        size="small"
+                        className="hidden shrink-0 [@media(any-pointer:coarse)]:flex"
+                        overflowItems={[
+                          ...(canShuffle
+                            ? [
+                                {
+                                  key: 'shuffle',
+                                  label: shuffleEnabled
+                                    ? t('media.linearPlayback')
+                                    : t('media.shuffle'),
+                                  onSelect: onToggleShuffle,
+                                  icon: Shuffle,
+                                },
+                              ]
+                            : []),
+                          ...(canRepeat
+                            ? [
+                                {
+                                  key: 'repeat',
+                                  label:
+                                    repeatMode === 'one'
+                                      ? t('media.repeatOff')
+                                      : repeatMode === 'all'
+                                        ? t('media.repeatOne')
+                                        : t('media.repeatAll'),
+                                  onSelect: onCycleRepeat,
+                                  icon:
+                                    repeatMode === 'one'
+                                      ? Repeat1
+                                      : repeatMode === 'all'
+                                        ? Repeat
+                                        : RepeatOff,
+                                },
+                              ]
+                            : []),
+                        ]}
+                      />
+                    ) : null}
                   </>
                 ) : null}
               </div>

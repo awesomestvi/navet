@@ -227,7 +227,7 @@ export function MediaDialogPlaybackControls({
           aria-label={shuffleEnabled ? t('media.shuffle') : t('media.linearPlayback')}
           aria-pressed={shuffleEnabled}
           onClick={onToggleShuffle}
-          className={`h-10 w-10 transition-colors ${shuffleEnabled ? '!border-0' : ''}`}
+          className={`!h-11 !w-11 transition-colors ${shuffleEnabled ? '!border-0' : ''}`}
           iconStyle={transportIconStyle}
           style={shuffleEnabled ? controller.activeMiniControlStyle : controller.subtleControlStyle}
         >
@@ -247,11 +247,11 @@ export function MediaDialogPlaybackControls({
           aria-label={t('media.previousTrack')}
           disabled={!canPreviousTrack}
           onClick={onPrevious}
-          className="h-14 w-14 backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+          className="!h-14 !w-14 backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
           iconStyle={transportIconStyle}
           style={controller.activeMiniControlStyle}
         >
-          <SkipBack className="h-6.5 w-6.5" />
+          <SkipBack className="h-5 w-5" />
         </RoundControlButton>
         <RoundControlButton
           theme={controller.theme}
@@ -263,14 +263,14 @@ export function MediaDialogPlaybackControls({
             if (!canTogglePlayback) return;
             onTogglePlay();
           }}
-          className="h-20 w-20 backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+          className="!h-16 !w-16 backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
           iconStyle={transportIconStyle}
           style={controller.activeTransportStyle}
         >
           {isPlaying ? (
-            <Pause className="h-8 w-8" fill="currentColor" />
+            <Pause className="h-6 w-6" fill="currentColor" />
           ) : (
-            <Play className="ml-0.5 h-8 w-8" fill="currentColor" />
+            <Play className="ml-0.5 h-6 w-6" fill="currentColor" />
           )}
         </RoundControlButton>
         <RoundControlButton
@@ -280,11 +280,11 @@ export function MediaDialogPlaybackControls({
           aria-label={t('media.nextTrack')}
           disabled={!canNextTrack}
           onClick={onNext}
-          className="h-14 w-14 backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+          className="!h-14 !w-14 backdrop-blur-xl transition-colors disabled:cursor-not-allowed disabled:opacity-45"
           iconStyle={transportIconStyle}
           style={controller.activeMiniControlStyle}
         >
-          <SkipForward className="h-6.5 w-6.5" />
+          <SkipForward className="h-5 w-5" />
         </RoundControlButton>
         <RoundControlButton
           theme={controller.theme}
@@ -299,7 +299,7 @@ export function MediaDialogPlaybackControls({
           }
           aria-pressed={repeatMode !== 'off'}
           onClick={onCycleRepeat}
-          className={`h-10 w-10 transition-colors ${repeatMode !== 'off' ? '!border-0' : ''}`}
+          className={`!h-11 !w-11 transition-colors ${repeatMode !== 'off' ? '!border-0' : ''}`}
           iconStyle={transportIconStyle}
           style={
             repeatMode !== 'off' ? controller.activeMiniControlStyle : controller.subtleControlStyle

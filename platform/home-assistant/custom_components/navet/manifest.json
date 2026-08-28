@@ -8,7 +8,8 @@
   "dependencies": [
     "frontend",
     "http",
-    "panel_custom"
+    "panel_custom",
+    "websocket_api"
   ],
   "documentation": "https://github.com/awesomestvi/navet",
   "iot_class": "local_push",

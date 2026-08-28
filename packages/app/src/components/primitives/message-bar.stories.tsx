@@ -1,5 +1,5 @@
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { AlertTriangle, CheckCircle2, Info as InfoIcon, WifiOff } from 'lucide-react';
 import { MessageBar } from './message-bar';
 

@@ -637,10 +637,11 @@ export function RoomWorkspaceHeader({
   actions,
   surface,
   trailingAction,
-}: WorkspacePanelProps & { trailingAction?: ReactNode }) {
+  showModeAction = true,
+}: WorkspacePanelProps & { trailingAction?: ReactNode; showModeAction?: boolean }) {
   return (
     <NavigationWorkspaceHeader className="pb-3 pl-[calc(env(safe-area-inset-left,0px)+0.75rem)] pr-[calc(env(safe-area-inset-right,0px)+0.75rem)] pt-[calc(env(safe-area-inset-top,0px)+0.75rem)] md:px-5 md:py-4">
-      <div className="flex min-w-0 items-start justify-between gap-3">
+      <div className="flex min-w-0 items-start justify-between gap-3 max-sm:pr-14">
         <div className="min-w-0 flex-1">
           <h1 className={cn(navetTypographyTokens.pageHeading, surface.textPrimary)}>
             {labels.title}
@@ -657,21 +658,25 @@ export function RoomWorkspaceHeader({
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          <Button
-            variant={viewModel.mode === 'manage' ? 'ghost' : 'primary'}
-            size="compact"
-            leading={
-              viewModel.mode === 'manage' ? (
-                <ArrowLeft className={navetIconSizeTokens.xs} aria-hidden="true" />
-              ) : (
-                <Edit3 className={navetIconSizeTokens.xs} aria-hidden="true" />
-              )
-            }
-            onClick={() => actions.onModeChange(viewModel.mode === 'manage' ? 'browse' : 'manage')}
-            className="h-[30px] shrink-0 rounded-full px-2.5 motion-reduce:transition-none md:h-8 md:px-3"
-          >
-            {viewModel.mode === 'manage' ? labels.browseMode : labels.manageMode}
-          </Button>
+          {showModeAction ? (
+            <Button
+              variant={viewModel.mode === 'manage' ? 'ghost' : 'primary'}
+              size="compact"
+              leading={
+                viewModel.mode === 'manage' ? (
+                  <ArrowLeft className={navetIconSizeTokens.xs} aria-hidden="true" />
+                ) : (
+                  <Edit3 className={navetIconSizeTokens.xs} aria-hidden="true" />
+                )
+              }
+              onClick={() =>
+                actions.onModeChange(viewModel.mode === 'manage' ? 'browse' : 'manage')
+              }
+              className="h-[30px] shrink-0 rounded-full px-2.5 motion-reduce:transition-none md:h-8 md:px-3"
+            >
+              {viewModel.mode === 'manage' ? labels.browseMode : labels.manageMode}
+            </Button>
+          ) : null}
           {trailingAction}
         </div>
       </div>
@@ -876,7 +881,7 @@ export function RoomOutline({
               ) : null
             }
             containerClassName="min-w-0"
-            inputClassName="[&::-webkit-search-cancel-button]:appearance-none motion-reduce:transition-none"
+            inputClassName="!text-sm !font-normal placeholder:!font-normal [&::-webkit-search-cancel-button]:appearance-none motion-reduce:transition-none"
           />
         </div>
 
@@ -1265,7 +1270,7 @@ export function RoomBrowsePanel({
             onChange={(event) => setDeviceQuery(event.currentTarget.value)}
             leading={<Search className={navetIconSizeTokens.sm} aria-hidden="true" />}
             containerClassName="ml-auto w-full sm:w-56"
-            inputClassName="[&::-webkit-search-cancel-button]:appearance-none motion-reduce:transition-none"
+            inputClassName="!text-sm !font-normal placeholder:!font-normal [&::-webkit-search-cancel-button]:appearance-none motion-reduce:transition-none"
           />
         </CardDialogTabList>
         <section
@@ -1753,7 +1758,7 @@ export function RoomDeviceSelectionPanel({
           onChange={(event) => actions.onDeviceQueryChange(event.currentTarget.value)}
           leading={<Search className={navetIconSizeTokens.sm} aria-hidden="true" />}
           containerClassName="w-full min-w-0"
-          inputClassName="min-h-11 motion-reduce:transition-none"
+          inputClassName="min-h-11 !text-sm !font-normal placeholder:!font-normal motion-reduce:transition-none"
         />
         {viewModel.selectionSummary ? (
           <p aria-live="polite" className={cn('mt-3 text-sm', surface.textMuted)}>

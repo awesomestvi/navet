@@ -46,9 +46,14 @@ export function RoomOperationDialogFrame({
       maxWidth={maxWidth}
       height="capped"
       bodyPadding={false}
+      shellBodyClassName="flex min-h-0 flex-1 flex-col"
+      bodyClassName="flex min-h-0 flex-1 flex-col"
       contentClassName={contentClassName}
     >
-      <form onSubmit={handleSubmit} className="flex max-h-[min(85dvh,46rem)] min-h-0 flex-col">
+      <form
+        onSubmit={handleSubmit}
+        className="flex min-h-0 flex-1 flex-col sm:max-h-[min(85dvh,46rem)]"
+      >
         <header className={cn('border-b px-5 py-5 max-sm:px-4 max-sm:py-4', surface.border)}>
           <h2 className={cn(navetTypographyTokens.featureHeading, surface.textPrimary)}>{title}</h2>
           {description ? (
@@ -58,14 +63,13 @@ export function RoomOperationDialogFrame({
           ) : null}
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 max-sm:px-4 max-sm:py-4">
+        <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 py-5 [-webkit-overflow-scrolling:touch] max-sm:px-4 max-sm:py-4">
           {children}
         </div>
 
         <footer
           className={cn(
-            'flex shrink-0 flex-col-reverse gap-2 border-t px-5 py-4 sm:flex-row sm:justify-end',
-            'max-sm:pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]',
+            'flex shrink-0 flex-nowrap items-center justify-end gap-2 border-t px-4 py-3 sm:px-5 sm:py-4 [&>*:first-child:not(:only-child)]:mr-auto',
             surface.border
           )}
         >

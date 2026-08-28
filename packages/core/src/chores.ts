@@ -3,7 +3,7 @@ import {
   type ChoreMission,
   createChoreExperienceState,
   isChoreExperienceState,
-} from './chore-experience';
+} from './chore-experience.ts';
 
 export const CHORE_WORKSPACE_SCHEMA_VERSION = 2 as const;
 

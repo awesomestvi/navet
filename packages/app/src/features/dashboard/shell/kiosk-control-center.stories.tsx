@@ -9,7 +9,7 @@ import { useDashboardCollectionStore } from '@navet/app/features/dashboard/dashb
 import { useSettingsStore } from '@navet/app/stores';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import type { PlatformManageableRoomReference } from '@navet/core/provider-feature-models';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useMemo, useState } from 'react';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { KioskControlCenter } from './kiosk-control-center';
@@ -150,7 +150,7 @@ type Story = StoryObj<typeof meta>;
 
 export const DesktopNavigation: Story = {
   globals: { viewport: { value: 'desktop1080p', isRotated: false } },
-  parameters: { viewport: { defaultViewport: 'desktop1080p' } },
+
   play: async ({ canvasElement }) => {
     const page = within(canvasElement.ownerDocument.body);
     const dialog = await page.findByRole('dialog', { name: 'Kiosk control' });
@@ -172,12 +172,11 @@ export const DesktopNavigation: Story = {
 
 export const TabletPortrait: Story = {
   globals: { viewport: { value: 'ipadPro', isRotated: false } },
-  parameters: { viewport: { defaultViewport: 'ipadPro' } },
 };
 
 export const MobileIndex: Story = {
   globals: { viewport: { value: 'iphone14', isRotated: false } },
-  parameters: { viewport: { defaultViewport: 'iphone14' } },
+
   play: async ({ canvasElement }) => {
     const page = within(canvasElement.ownerDocument.body);
     const dialog = await page.findByRole('dialog', { name: 'Kiosk control' });
@@ -196,7 +195,7 @@ export const MobileIndex: Story = {
 
 export const KioskBehavior: Story = {
   globals: { viewport: { value: 'desktop1080p', isRotated: false } },
-  parameters: { viewport: { defaultViewport: 'desktop1080p' } },
+
   play: async ({ canvasElement }) => {
     const page = within(canvasElement.ownerDocument.body);
     await userEvent.click(await page.findByRole('button', { name: 'Kiosk behavior' }));
@@ -207,7 +206,7 @@ export const KioskBehavior: Story = {
 
 export const ManageRoomsHandoff: Story = {
   globals: { viewport: { value: 'desktop1080p', isRotated: false } },
-  parameters: { viewport: { defaultViewport: 'desktop1080p' } },
+
   play: async ({ canvasElement }) => {
     const page = within(canvasElement.ownerDocument.body);
     await userEvent.click(await page.findByRole('button', { name: 'Manage Rooms' }));
@@ -219,13 +218,12 @@ export const ManageRoomsHandoff: Story = {
 export const ManyRooms: Story = {
   args: { manyRooms: true },
   globals: { viewport: { value: 'desktop1080p', isRotated: false } },
-  parameters: { viewport: { defaultViewport: 'desktop1080p' } },
 };
 
 export const MobileScrollableRooms: Story = {
   args: { manyRooms: true },
   globals: { viewport: { value: 'iphone14', isRotated: false } },
-  parameters: { viewport: { defaultViewport: 'iphone14' } },
+
   play: async ({ canvasElement }) => {
     const page = within(canvasElement.ownerDocument.body);
     await userEvent.click(await page.findByRole('button', { name: 'Home' }));

@@ -3,17 +3,11 @@ export interface ClimateModeControlOption {
   mode: string;
 }
 
-const DEFAULT_Climate_MODE_CONTROLS: ClimateModeControlOption[] = [
-  { key: 'cool', mode: 'cool' },
-  { key: 'heat', mode: 'heat' },
-  { key: 'fan', mode: 'fan' },
-];
-
 export function resolveClimateModeControlOptions(
   supportedClimateModes?: string[]
 ): ClimateModeControlOption[] {
   if (!supportedClimateModes) {
-    return DEFAULT_Climate_MODE_CONTROLS;
+    return [];
   }
 
   const supportedModes = new Set(supportedClimateModes.map((mode) => mode.toLowerCase()));

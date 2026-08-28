@@ -21,6 +21,7 @@ import { emptyDeviceDisplayProfilePolicy } from '@navet/app/features/dashboard/c
 import { useDeviceDisplayProfileRuntimeStore } from '@navet/app/features/dashboard/clients/device-display-profile-runtime-store';
 import { createLegacyDashboardCollection } from '@navet/app/features/dashboard/dashboards';
 import {
+  DASHBOARD_PROFILE_REBIND_EVENT,
   DASHBOARD_PROFILE_REFRESH_EVENT,
   useDashboardProfileSync,
 } from '@navet/app/features/dashboard/hooks/use-dashboard-profile-sync';
@@ -48,6 +49,7 @@ const {
   loadDashboardPreferences,
   loadDashboardProfile,
   loadDashboardProfileClients,
+  rebindDashboardProfileWorkspace,
   saveDashboardPreferences,
   saveDashboardDisplayProfiles,
   saveDashboardProfile,
@@ -67,6 +69,7 @@ const {
     loadDashboardPreferences: vi.fn(),
     loadDashboardProfile: vi.fn(),
     loadDashboardProfileClients: vi.fn(),
+    rebindDashboardProfileWorkspace: vi.fn(),
     saveDashboardPreferences: vi.fn(),
     saveDashboardDisplayProfiles: vi.fn(),
     saveDashboardProfile: vi.fn(),
@@ -84,6 +87,7 @@ vi.mock('@navet/app/services/dashboard-profile.service', async (importOriginal) 
     loadDashboardDisplayProfiles,
     loadDashboardProfile,
     loadDashboardProfileClients,
+    rebindDashboardProfileWorkspace,
     saveDashboardPreferences,
     saveDashboardDisplayProfiles,
     saveDashboardProfile,
@@ -439,6 +443,8 @@ describe('useDashboardProfileSync', () => {
     });
     saveDashboardDisplayProfiles.mockReset();
     saveDashboardProfile.mockReset();
+    rebindDashboardProfileWorkspace.mockReset();
+    rebindDashboardProfileWorkspace.mockImplementation(async (profile) => savedResult(profile));
     touchDashboardClientWithStatus.mockReset();
     touchDashboardClientWithStatus.mockResolvedValue({
       failureCode: null,
@@ -1454,8 +1460,41 @@ describe('useDashboardProfileSync', () => {
     expect(loadDashboardProfile).toHaveBeenCalledTimes(1);
     expect(useDashboardProfileRuntimeStore.getState()).toMatchObject({
       status: 'error',
+      failureCode: DASHBOARD_PROFILE_ERROR_CODES.workspaceTenantMismatch,
       error:
         'This shared dashboard belongs to a different Home Assistant address. Connect through the same Home Assistant address used to set up this Navet installation. Local settings are preserved.',
+    });
+  });
+
+  it('rebinds a mismatched workspace to this registered browser and publishes local changes', async () => {
+    const localProfile = buildProfile({ settings: { showWeatherInHeader: false } });
+    currentProfile = localProfile;
+    loadDashboardProfile
+      .mockResolvedValueOnce({
+        ...unavailableResult(),
+        failureCode: DASHBOARD_PROFILE_ERROR_CODES.workspaceTenantMismatch,
+      })
+      .mockResolvedValueOnce(activeResult(localProfile, 2));
+
+    renderHookWithProviders(() => useDashboardProfileSync());
+    await flushEffects();
+
+    window.dispatchEvent(new Event(DASHBOARD_PROFILE_REBIND_EVENT));
+    await flushEffects();
+
+    expect(rebindDashboardProfileWorkspace).toHaveBeenCalledWith(
+      localProfile,
+      expect.objectContaining({
+        id: CURRENT_CLIENT.id,
+        name: CURRENT_CLIENT.name,
+      })
+    );
+    expect(loadDashboardProfile).toHaveBeenCalledTimes(2);
+    expect(useDashboardProfileRuntimeStore.getState()).toMatchObject({
+      status: 'synced',
+      failureCode: null,
+      revision: 2,
+      workspaceId: WORKSPACE.workspaceId,
     });
   });
 

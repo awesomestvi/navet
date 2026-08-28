@@ -2,7 +2,7 @@ import { ClimateCard } from '@navet/app/features/climate';
 import { FanCard, LightCard } from '@navet/app/features/lighting';
 import { MediaCard } from '@navet/app/features/media';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 
 function StateMatrixPage() {
   return (

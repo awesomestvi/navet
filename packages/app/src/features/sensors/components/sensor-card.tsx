@@ -1,3 +1,4 @@
+import { QualityBar } from '@navet/app/components/charts/quality-bar';
 import { BaseCard } from '@navet/app/components/primitives';
 import { CardMetric } from '@navet/app/components/primitives/card-metric';
 import { EntityCardHeader } from '@navet/app/components/primitives/entity-card-header';
@@ -14,6 +15,7 @@ import { useI18n, useProviderEntityModel, useTheme } from '@navet/app/hooks';
 import { inferSensorDisplayIcon } from '@navet/app/hooks/device-mappers';
 import { settingsSelectors } from '@navet/app/stores/selectors';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
+import type { SecuritySeverity } from '@navet/app/types/device.types';
 import { type KeyboardEvent, memo, useMemo, useState } from 'react';
 import {
   type SensorStatisticsPoint,
@@ -21,6 +23,7 @@ import {
 } from '../hooks/use-sensor-statistics-history';
 import { buildInfoDisplayModel, INFO_TONE_CLASSES } from './info-display-model';
 import { SensorHistorySparkline } from './sensor-history-sparkline';
+import { getSensorQualityModel } from './sensor-quality-model';
 import { SensorSettingsDialog } from './sensor-settings-dialog';
 import type { SensorIconType } from './sensors';
 import { useSensorCardAppearance } from './use-sensor-card-appearance';
@@ -35,6 +38,7 @@ export interface InfoCardProps {
   subtitle?: string;
   deviceClass?: string;
   status?: 'measurement' | 'active' | 'clear' | 'unavailable';
+  securitySeverity?: SecuritySeverity;
   lastUpdated?: string;
   size: CardSize;
   onSizeChange: (id: string, size: CardSize) => void;
@@ -54,6 +58,7 @@ export const InfoCard = memo(function InfoCard({
   subtitle,
   deviceClass,
   status = 'measurement',
+  securitySeverity,
   lastUpdated: _lastUpdated,
   size,
   onSizeChange: _onSizeChange,
@@ -96,7 +101,10 @@ export const InfoCard = memo(function InfoCard({
   );
   const cardShell = getCardShellSurfaceTokens(theme);
   const toneClasses = INFO_TONE_CLASSES[displayModel.tone];
-  const defaultSparklineHistory = useSensorStatisticsHistory(sparklineData ? undefined : id);
+  const isTemperatureSensor = displayModel.deviceClass === 'temperature';
+  const defaultSparklineHistory = useSensorStatisticsHistory(
+    sparklineData || !isTemperatureSensor ? undefined : id
+  );
   const isVeryCompact = isTinyCardSize(size) || isExtraSmallCardSize(size);
   const isSmall = size === 'small';
   const subtitleText = displayModel.eyebrow || t('sensors.single');
@@ -108,13 +116,26 @@ export const InfoCard = memo(function InfoCard({
   const resolvedSparklineData =
     sparklineData ??
     (defaultSparklineHistory.hasHistory ? defaultSparklineHistory.points : undefined);
+  const qualityModel = getSensorQualityModel(
+    displayModel.deviceClass,
+    displayModel.value,
+    displayModel.unit,
+    securitySeverity
+  );
+  const shouldShowQualityBar =
+    !isVeryCompact && displayModel.status !== 'unavailable' && qualityModel !== null;
   const shouldShowSparkline =
     !isVeryCompact &&
-    !isSmall &&
+    isTemperatureSensor &&
+    !shouldShowQualityBar &&
     displayModel.status !== 'unavailable' &&
     (resolvedSparklineData?.length ?? 0) >= 2;
   const sparklineLayerClassName =
-    size === 'large' ? 'absolute inset-x-0 top-24 bottom-0' : 'absolute inset-x-0 top-20 bottom-0';
+    size === 'large'
+      ? 'absolute inset-x-0 top-24 bottom-0'
+      : isSmall
+        ? 'absolute inset-x-0 top-16 bottom-0'
+        : 'absolute inset-x-0 top-20 bottom-0';
   const sparklineTickFormatter = useMemo(
     () =>
       new Intl.DateTimeFormat(locale, {
@@ -124,7 +145,8 @@ export const InfoCard = memo(function InfoCard({
       }),
     [locale, use24HourTime]
   );
-  const sparklineTickIndexes = size === 'large' ? [0, 1 / 3, 2 / 3, 1] : [0, 1 / 2, 1];
+  const sparklineTickIndexes =
+    size === 'large' ? [0, 1 / 3, 2 / 3, 1] : isSmall ? [] : [0, 1 / 2, 1];
   const sparklineTicks = (resolvedSparklineData ?? [])
     .filter((_point, index, data) => {
       if (data.length === 0) {
@@ -180,7 +202,42 @@ export const InfoCard = memo(function InfoCard({
 
   return (
     <>
-      {shouldShowSparkline ? (
+      {shouldShowQualityBar && qualityModel ? (
+        <BaseCard
+          size={size}
+          role="button"
+          tabIndex={0}
+          aria-label={t('entityCardInteraction.openSettings', { name })}
+          onClick={openSettings}
+          onKeyDown={handleCardKeyDown}
+          interactive
+          title={displayModel.title}
+          subtitle={subtitleText}
+          headerLayout="eyebrow-first"
+          headerTone="neutral"
+          headerLeading={headerIconNode}
+          frameClassName={cardShell.rootFrameClassName}
+          disableDefaultSheen={theme !== 'light'}
+          contentClassName="flex min-h-0 flex-col"
+        >
+          <div
+            className={`relative z-10 mt-auto min-w-0 truncate text-3xl font-light leading-none tracking-normal ${valueColor}`}
+            title={`${displayModel.value}${unitText}`}
+          >
+            {displayModel.value}
+            {displayModel.unit ? (
+              <span className="align-baseline text-base">{unitText}</span>
+            ) : null}
+          </div>
+          <QualityBar
+            value={qualityModel.percentage}
+            accentColor={qualityModel.accentColor}
+            labels={qualityModel.labels}
+            ariaLabel={`${displayModel.title}: ${displayModel.value}${unitText}`}
+            className="mt-4"
+          />
+        </BaseCard>
+      ) : shouldShowSparkline ? (
         <BaseCard
           size={size}
           role="button"
@@ -199,7 +256,8 @@ export const InfoCard = memo(function InfoCard({
             <SensorHistorySparkline
               data={resolvedSparklineData ?? []}
               accentColor={displayModel.baseColor}
-              height={size === 'large' ? 176 : 152}
+              ariaLabel={`${displayModel.title}: ${displayModel.value}${unitText}`}
+              height={size === 'large' ? 176 : isSmall ? 104 : 152}
               className="opacity-95"
             />
           </div>
@@ -210,20 +268,16 @@ export const InfoCard = memo(function InfoCard({
                 : 'bg-linear-to-b from-slate-950/22 via-slate-950/8 to-transparent'
             }`}
           />
-          <div
-            className={`pointer-events-none absolute inset-x-0 border-t border-dashed ${
-              theme === 'light' ? 'border-slate-400/70' : 'border-white/65'
-            } ${size === 'large' ? 'top-[45%]' : 'top-[43%]'}`}
-          />
-
           <div className="pointer-events-none relative z-10 flex h-full flex-col p-3">
-            <div className="flex items-start justify-between gap-4">
+            <div
+              className={`flex min-w-0 items-start justify-between ${isSmall ? 'gap-2' : 'gap-4'}`}
+            >
               <EntityCardHeader
                 title={displayModel.title}
                 subtitle={subtitleText}
                 size={size}
                 layout="eyebrow-first"
-                className="mb-0"
+                className="mb-0 min-w-0 flex-1"
                 marginBottomClassName="mb-0"
                 leading={headerIconNode}
               />
@@ -232,7 +286,14 @@ export const InfoCard = memo(function InfoCard({
                   <>
                     {displayModel.value}
                     {displayModel.unit ? (
-                      <span className="align-baseline text-xl">{unitText}</span>
+                      isSmall ? (
+                        <span className="align-baseline text-sm tracking-normal">
+                          {' '}
+                          {displayModel.unit.replace(/^°/, '')}
+                        </span>
+                      ) : (
+                        <span className="align-baseline text-xl">{unitText}</span>
+                      )
                     ) : null}
                   </>
                 }

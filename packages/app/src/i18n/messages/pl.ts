@@ -181,7 +181,7 @@ export const plMessages = {
     'Wszyscy oznaczają ukończone obowiązki w jednym miejscu, więc widać, co jest gotowe, a co nadal wymaga uwagi.',
   'household.setup.dialogTitle': 'Skonfiguruj obowiązki domowe',
   'household.setup.dialogDescription':
-    'Pomożemy dodać domowników, utworzyć jedną powracającą pracę oraz wybrać opcjonalne przypomnienia i ochronę. Wszystko można później zmienić.',
+    'Dodaj domowników i obowiązki. Ustawienia możesz zmienić w każdej chwili.',
   'household.setup.progressLabel': 'Postęp konfiguracji obowiązków',
   'household.setup.stepCount': 'Krok {current} z {total}',
   'household.setup.stepProfiles': 'Profile i przypomnienia',
@@ -530,6 +530,15 @@ export const plMessages = {
   'dashboard.multiple.create.title': 'Utwórz pulpit',
   'dashboard.multiple.create.description':
     'Wybierz, co ma się wyświetlać i gdzie pulpit będzie używany.',
+  'dashboard.multiple.create.nameTitle': 'Nazwij swój pulpit',
+  'dashboard.multiple.create.nameDescription':
+    'Wybierz nazwę, dzięki której łatwo rozpoznasz ten widok.',
+  'dashboard.multiple.create.contentTitle': 'Wybierz, co uwzględnić',
+  'dashboard.multiple.create.contentDescription':
+    'Zacznij od pomieszczeń, skopiuj bieżący pulpit lub rozpocznij od zera.',
+  'dashboard.multiple.create.displaysTitle': 'Wybierz, gdzie ma się otwierać',
+  'dashboard.multiple.create.displaysDescription':
+    'Przypisz go do tego urządzenia lub na razie pozostaw bez przypisania.',
   'dashboard.multiple.create.name': 'Nazwa',
   'dashboard.multiple.create.namePlaceholder': 'Piętro',
   'dashboard.multiple.create.startWith': 'Rozpocznij od',
@@ -870,6 +879,11 @@ export const plMessages = {
   'settings.system.clients.status.disabled': 'Tylko lokalnie',
   'settings.system.clients.status.error': 'Synchronizacja wymaga uwagi',
   'settings.system.clients.retrySync': 'Ponów synchronizację',
+  'settings.system.clients.rebindSync': 'Użyj tego panelu',
+  'settings.system.clients.rebindSyncConfirm': 'Rozpocząć nową wspólną synchronizację?',
+  'settings.system.clients.rebindSyncDescription':
+    'Zachowa to bieżący panel tego urządzenia, połączy wspólny obszar roboczy z aktualnym adresem Home Assistant i zapisze go jako nową wersję. Inne urządzenia będą musiały połączyć się ponownie przez ten adres.',
+  'settings.system.clients.rebindSyncStart': 'Rozpocznij nową synchronizację',
   'settings.system.clients.status.idle': 'Gotowe',
   'settings.system.clients.status.loading': 'Wczytywanie',
   'settings.system.clients.status.offline': 'Brak połączenia',
@@ -1023,7 +1037,7 @@ export const plMessages = {
   'dashboard.addCard.sort.default': 'Domyślne',
   'dashboard.addCard.sort.ascending': 'Rosnąco',
   'dashboard.addCard.sort.descending': 'Malejąco',
-  'dashboard.addCard.tab.widgets': 'Karta niestandardowa',
+  'dashboard.addCard.tab.widgets': 'Karty niestandardowe',
   'dashboard.addCard.header.library': 'BIBLIOTEKA ENCJI',
   'dashboard.addCard.header.widgets': 'WIDŻETY NIESTANDARDOWE',
   'dashboard.addCard.tab.cardsHint': 'Przeglądaj wszystkie encje Home Assistant',
@@ -3103,6 +3117,7 @@ export const plMessages = {
   'homeSummary.playing': 'Odtwarzanie: {count}',
   'homeSummary.active': 'Aktywne: {count}',
   'homeSummary.climate': 'Klimat',
+  'climate.comfort.mostlyComfortable': 'W większości komfortowo',
   'dashboard.packs.section.access': 'Dostęp',
   'dashboard.packs.section.cameras': 'Kamery',
   'dashboard.packs.section.presence': 'Obecność',

@@ -1,11 +1,5 @@
-import {
-  CARTO_DARK_TILE_URL,
-  CARTO_LIGHT_TILE_URL,
-  MAP_ATTRIBUTION_HTML,
-} from '@navet/app/constants';
+import { OPENFREEMAP_DARK_STYLE_URL, OPENFREEMAP_LIGHT_STYLE_URL } from '@navet/app/constants';
 
-export function getTileUrl(theme: string): string {
-  return theme === 'light' ? CARTO_LIGHT_TILE_URL : CARTO_DARK_TILE_URL;
+export function getMapStyleUrl(theme: string): string {
+  return theme === 'light' ? OPENFREEMAP_LIGHT_STYLE_URL : OPENFREEMAP_DARK_STYLE_URL;
 }
-
-export const TILE_ATTRIBUTION = MAP_ATTRIBUTION_HTML;

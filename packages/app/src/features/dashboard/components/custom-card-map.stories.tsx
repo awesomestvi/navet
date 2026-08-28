@@ -2,7 +2,7 @@ import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { createPreviewStoryScenario, replacePreviewEntity } from '@navet/app/preview/runtime';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { buildCustomCard, CustomWidgetStoryFrame } from '@navet/app/storybook/story-frames';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 
 type MapStoryArgs = {
   size: CardSize;

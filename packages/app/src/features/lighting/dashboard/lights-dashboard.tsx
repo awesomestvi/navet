@@ -1,11 +1,13 @@
 import { dispatchEntityCommand } from '@navet/app/commands';
+import { DashboardEmptyState } from '@navet/app/components/patterns';
 import { BaseCard, Button } from '@navet/app/components/primitives';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { RoundControlButton } from '@navet/app/components/primitives/round-control-button';
 import { CardEditActionButton } from '@navet/app/components/shared/card-edit-action-button';
-import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { getEnergyChartSurfaceTokens } from '@navet/app/components/shared/theme/energy-widget-surface-tokens';
 import { getThemeFocusRingClassName } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
+import { useFitDashboardGrid } from '@navet/app/features/dashboard/hooks/use-fit-dashboard-grid';
 import { LightCard } from '@navet/app/features/lighting/components/light-card';
 import type { HomeStatusSummaryItem } from '@navet/app/features/sensors/components/home-status-summary-model';
 import {
@@ -14,6 +16,7 @@ import {
 } from '@navet/app/features/sensors/components/info-badge-strip';
 import type { QuickActionRoutine } from '@navet/app/features/tasks/types';
 import { useI18n, useTheme } from '@navet/app/hooks';
+import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { useProviderEntityModels } from '@navet/app/hooks/use-provider-device';
 import type { DeviceWithType } from '@navet/app/types/device.types';
 import { darkenColor } from '@navet/app/utils/color-utils';
@@ -21,16 +24,14 @@ import { UNKNOWN_ROOM_LABEL } from '@navet/app/utils/device-location';
 import {
   ChevronDown,
   ChevronRight,
-  ChevronsDown,
-  ChevronsUp,
   CircleAlert,
   Lightbulb,
+  LoaderCircle,
   Power,
   Sparkles,
-  SunMedium,
   X,
 } from 'lucide-react';
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, memo, useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { type LightBatchActionResult, setLightsPower } from './light-dashboard-actions';
 import {
@@ -47,10 +48,6 @@ interface LightsDashboardProps {
   scenes: QuickActionRoutine[];
   isEditMode: boolean;
   onRemoveEntity?: (entityId: string) => void;
-}
-
-function isLightRoomExpandedByDefault(room: LightRoomSummary) {
-  return room.activeCount > 0 || room.unavailableCount > 0;
 }
 
 function showBatchIssue(result: LightBatchActionResult, t: ReturnType<typeof useI18n>['t']) {
@@ -77,12 +74,12 @@ const RoomLightCard = memo(function RoomLightCard({
 }) {
   const { t } = useI18n();
   const { theme } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
+  const separatorClassName = getEnergyChartSurfaceTokens(theme).axisLineColor;
 
   return (
     <div
-      className={`relative min-w-0 border-b last:border-b-0 ${surface.border} ${
-        isEditMode ? 'pr-10' : ''
+      className={`relative min-w-0 border-b border-dashed last:border-b-0 ${separatorClassName} ${
+        isEditMode ? 'pr-10' : 'pr-2'
       }`}
       data-light-state={light.available ? (light.isOn ? 'on' : 'off') : 'unavailable'}
     >
@@ -144,54 +141,55 @@ const RoomLightCard = memo(function RoomLightCard({
 
 const LightsRoomSection = memo(function LightsRoomSection({
   room,
-  manualExpanded,
+  expanded,
   onExpandedChange,
+  onPower,
+  powerPending,
+  actionsDisabled,
   isEditMode,
   onRemoveEntity,
 }: {
   room: LightRoomSummary;
-  manualExpanded?: boolean;
+  expanded: boolean;
   onExpandedChange: (room: string, expanded: boolean) => void;
+  onPower: (room: LightRoomSummary) => void;
+  powerPending: boolean;
+  actionsDisabled: boolean;
   isEditMode: boolean;
   onRemoveEntity?: (entityId: string) => void;
 }) {
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
-  const expanded = manualExpanded ?? isLightRoomExpandedByDefault(room);
-  const [pendingPower, setPendingPower] = useState(false);
+  const separatorClassName = getEnergyChartSurfaceTokens(theme).axisLineColor;
   const displayName =
     room.room === UNKNOWN_ROOM_LABEL ? t('lighting.dashboard.otherLights') : room.room;
   const availableCount = room.totalCount - room.unavailableCount;
   const allUnavailable = availableCount === 0;
 
-  const handlePower = async () => {
-    setPendingPower(true);
-    try {
-      showBatchIssue(await setLightsPower(room.lights, room.activeCount > 0 ? 'off' : 'on'), t);
-    } finally {
-      setPendingPower(false);
-    }
-  };
-
-  const roomSummary = t('lighting.dashboard.roomAria', {
-    room: displayName,
-    active: room.activeCount,
-    total: room.totalCount,
-    brightness: room.averageBrightness ?? 0,
-  });
-  const roomStateSummary = `${
+  const roomStateParts = [
     allUnavailable
       ? t('lighting.dashboard.roomUnavailable')
       : t('lighting.dashboard.roomState', {
           active: room.activeCount,
           total: room.totalCount,
-        })
-  }${
-    room.unavailableCount > 0
-      ? ` · ${t('lighting.dashboard.unavailableCount', { count: room.unavailableCount })}`
-      : ''
-  }`;
+        }),
+  ];
+  if (!allUnavailable && typeof room.averageBrightness === 'number') {
+    roomStateParts.push(
+      t('lighting.dashboard.averageBrightness', { brightness: room.averageBrightness })
+    );
+  }
+  if (room.unavailableCount > 0) {
+    roomStateParts.push(t('lighting.dashboard.unavailableCount', { count: room.unavailableCount }));
+  }
+  const roomStateSummary = roomStateParts.join(' · ');
+  const roomSummary = `${displayName}, ${roomStateSummary}`;
+  const roomPowerLabel = t(
+    room.activeCount > 0
+      ? 'lighting.dashboard.turnRoomOffAria'
+      : 'lighting.dashboard.turnRoomOnAria',
+    { room: displayName }
+  );
 
   return (
     <section
@@ -205,32 +203,22 @@ const LightsRoomSection = memo(function LightsRoomSection({
         subtitle={roomStateSummary}
         headerLayout="title-first"
         headerVariant="large"
-        isActive={room.activeCount > 0}
-        activeColor={accentColor}
         accentColor={accentColor}
         headerMarginBottomClassName={expanded ? undefined : 'mb-0'}
         headerLeading={
           <EntityCardHeaderIcon
-            IconComponent={Lightbulb}
+            IconComponent={powerPending ? LoaderCircle : Lightbulb}
             isActive={room.activeCount > 0}
             size="large"
             tone={room.activeCount > 0 ? 'primary' : 'neutral'}
             baseColor={accentColor}
             variant="large"
-            ariaLabel={
-              room.activeCount > 0
-                ? t('lighting.dashboard.turnAllOff')
-                : t('lighting.dashboard.turnAllOn')
-            }
-            onClick={
-              allUnavailable || isEditMode || pendingPower
-                ? undefined
-                : (event) => {
-                    event.stopPropagation();
-                    void handlePower();
-                  }
-            }
-            onPointerDown={(event) => event.stopPropagation()}
+            ariaLabel={roomPowerLabel}
+            ariaPressed={room.activeCount > 0}
+            disabled={allUnavailable || isEditMode || actionsDisabled}
+            onClick={() => onPower(room)}
+            badgeClassName="min-h-9 min-w-9 disabled:cursor-not-allowed disabled:opacity-50"
+            glyphClassName={powerPending ? 'motion-safe:animate-spin' : undefined}
           />
         }
         surfaceVariant={room.activeCount === 0 ? 'muted' : 'default'}
@@ -242,8 +230,9 @@ const LightsRoomSection = memo(function LightsRoomSection({
             onClick={() => onExpandedChange(room.room, !expanded)}
             aria-expanded={expanded}
             data-lights-room-toggle="true"
-            aria-label={roomSummary}
-            title={roomSummary}
+            aria-label={t('lighting.dashboard.detailsDescription', { name: displayName })}
+            title={t('lighting.dashboard.detailsDescription', { name: displayName })}
+            className="min-h-9 min-w-9"
           >
             {expanded ? (
               <ChevronDown className="h-4 w-4" aria-hidden="true" />
@@ -256,7 +245,7 @@ const LightsRoomSection = memo(function LightsRoomSection({
         {expanded ? (
           <div className="flex h-full min-h-0 flex-col">
             <div
-              className={`mt-3 border-t ${surface.border}`}
+              className={`border-t ${separatorClassName}`}
               data-testid={`lights-room-grid-${room.room}`}
             >
               {room.lights.map((light) => (
@@ -285,7 +274,9 @@ export const LightsDashboard = memo(function LightsDashboard({
 }: LightsDashboardProps) {
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
+  const breakpointCols = useBreakpointCols();
+  const { outerRef, innerRef, outerContainerStyle, innerContainerStyle, isAutoScaled, gridStyle } =
+    useFitDashboardGrid(breakpointCols);
   const sceneChipClassName =
     theme === 'light'
       ? 'border-slate-200/70 bg-white/55 text-slate-900 shadow-[0_12px_28px_-24px_rgba(15,23,42,0.28)] hover:bg-white/75'
@@ -314,50 +305,26 @@ export const LightsDashboard = memo(function LightsDashboard({
     return next;
   }, [cardOrders, deviceMap, entities, rooms]);
   const [expandedRooms, setExpandedRooms] = useState<Record<string, boolean>>({});
-  const [allPowerPending, setAllPowerPending] = useState(false);
+  const [pendingBatch, setPendingBatch] = useState<'all' | string | null>(null);
   const [runningSceneId, setRunningSceneId] = useState<string | null>(null);
+  const actionPendingRef = useRef(false);
   const allLights = useMemo(() => model.rooms.flatMap((room) => room.lights), [model.rooms]);
-  const averageBrightness = useMemo(() => {
-    const activeBrightnessValues = allLights.flatMap((light) =>
-      light.available &&
-      light.isOn &&
-      light.supportsBrightness &&
-      typeof light.brightness === 'number'
-        ? [light.brightness]
-        : []
-    );
-
-    if (activeBrightnessValues.length === 0) return undefined;
-
-    return Math.round(
-      activeBrightnessValues.reduce((total, brightness) => total + brightness, 0) /
-        activeBrightnessValues.length
-    );
-  }, [allLights]);
+  const actionPending = pendingBatch !== null || runningSceneId !== null;
   const summaryItems = useMemo<HomeStatusSummaryItem[]>(() => {
     const items: HomeStatusSummaryItem[] = [
       {
         id: 'lights-on',
         title: t('lighting.dashboard.title'),
-        value: t('lighting.dashboard.roomState', {
+        value: t('lighting.dashboard.summary', {
           active: model.activeCount,
           total: model.totalCount,
+          rooms: model.activeRoomCount,
         }),
         icon: Lightbulb,
         iconColor: '#facc15',
         tone: 'neutral',
       },
     ];
-
-    if (typeof averageBrightness === 'number') {
-      items.push({
-        id: 'average-brightness',
-        title: t('interactionPreview.preview.brightness'),
-        value: `${averageBrightness}%`,
-        icon: SunMedium,
-        iconColor: '#fbbf24',
-      });
-    }
 
     if (model.unavailableCount > 0) {
       items.push({
@@ -366,13 +333,12 @@ export const LightsDashboard = memo(function LightsDashboard({
         value: t('lighting.dashboard.unavailableCount', { count: model.unavailableCount }),
         icon: CircleAlert,
         iconColor: '#f59e0b',
-        priority: 'attention',
         tone: 'warning',
       });
     }
 
     return items;
-  }, [averageBrightness, model.activeCount, model.totalCount, model.unavailableCount, t]);
+  }, [model.activeCount, model.activeRoomCount, model.totalCount, model.unavailableCount, t]);
   const displayRooms = useMemo(
     () =>
       model.rooms
@@ -388,29 +354,41 @@ export const LightsDashboard = memo(function LightsDashboard({
   const handleExpandedChange = useCallback((roomName: string, expanded: boolean) => {
     setExpandedRooms((current) => ({ ...current, [roomName]: expanded }));
   }, []);
-  const allRoomsCollapsed = useMemo(
-    () =>
-      model.rooms.length > 0 &&
-      model.rooms.every(
-        (room) => !(expandedRooms[room.room] ?? isLightRoomExpandedByDefault(room))
-      ),
-    [expandedRooms, model.rooms]
-  );
-  const toggleAllRooms = useCallback(() => {
-    setExpandedRooms(Object.fromEntries(model.rooms.map((room) => [room.room, allRoomsCollapsed])));
-  }, [allRoomsCollapsed, model.rooms]);
 
   const handleWholeHomePower = async () => {
-    setAllPowerPending(true);
+    if (actionPendingRef.current || model.activeCount === 0) return;
+    actionPendingRef.current = true;
+    setPendingBatch('all');
     try {
-      const result = await setLightsPower(allLights, model.activeCount > 0 ? 'off' : 'on');
+      const result = await setLightsPower(
+        allLights.filter((light) => light.isOn && light.available && light.supportsToggle),
+        'off'
+      );
       showBatchIssue(result, t);
     } finally {
-      setAllPowerPending(false);
+      actionPendingRef.current = false;
+      setPendingBatch(null);
     }
   };
 
+  const handleRoomPower = useCallback(
+    async (room: LightRoomSummary) => {
+      if (actionPendingRef.current) return;
+      actionPendingRef.current = true;
+      setPendingBatch(room.room);
+      try {
+        showBatchIssue(await setLightsPower(room.lights, room.activeCount > 0 ? 'off' : 'on'), t);
+      } finally {
+        actionPendingRef.current = false;
+        setPendingBatch(null);
+      }
+    },
+    [t]
+  );
+
   const runScene = async (scene: QuickActionRoutine) => {
+    if (actionPendingRef.current) return;
+    actionPendingRef.current = true;
     setRunningSceneId(scene.id);
     try {
       const result = await dispatchEntityCommand({ type: 'turn_on', entityId: scene.id });
@@ -418,6 +396,7 @@ export const LightsDashboard = memo(function LightsDashboard({
     } catch {
       toast.error(t('scene.activateFailed'));
     } finally {
+      actionPendingRef.current = false;
       setRunningSceneId(null);
     }
   };
@@ -440,8 +419,9 @@ export const LightsDashboard = memo(function LightsDashboard({
                   <button
                     key={scene.id}
                     type="button"
-                    disabled={runningSceneId !== null}
+                    disabled={actionPending}
                     onClick={() => void runScene(scene)}
+                    data-lights-scene={scene.id}
                     className={cn(
                       'group inline-grid h-8 shrink-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-1 rounded-full border px-1.5 py-1 pr-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 md:h-10 md:gap-1.5 md:px-2 md:py-1.5 md:pr-3',
                       sceneChipClassName,
@@ -463,62 +443,66 @@ export const LightsDashboard = memo(function LightsDashboard({
                 ))}
               </div>
             ) : null}
-            <div className="ml-auto flex shrink-0 items-center gap-1.5 md:gap-2">
-              {summaryItems.length > 2 ? (
-                <span
-                  className={`mr-0.5 h-6 shrink-0 border-l ${surface.border}`}
-                  aria-hidden="true"
-                />
-              ) : null}
-              <Button
-                variant="secondary"
-                size="compact"
-                leading={
-                  allRoomsCollapsed ? (
-                    <ChevronsDown className="h-4 w-4" aria-hidden="true" />
-                  ) : (
-                    <ChevronsUp className="h-4 w-4" aria-hidden="true" />
-                  )
-                }
-                disabled={model.rooms.length === 0}
-                onClick={toggleAllRooms}
-                className="h-9 shrink-0"
-              >
-                {allRoomsCollapsed
-                  ? t('lighting.dashboard.expandAll')
-                  : t('lighting.dashboard.collapseAll')}
-              </Button>
-              <Button
-                variant="secondary"
-                size="compact"
-                leading={<Power className="h-4 w-4" aria-hidden="true" />}
-                loading={allPowerPending}
-                disabled={model.totalCount === model.unavailableCount || isEditMode}
-                onClick={() => void handleWholeHomePower()}
-                className="h-9 shrink-0"
-              >
-                {model.activeCount > 0
-                  ? t('lighting.dashboard.turnOffAllLights')
-                  : t('lighting.dashboard.turnOnAllLights')}
-              </Button>
-            </div>
+            {model.activeCount > 0 ? (
+              <div className="ml-auto flex shrink-0 items-center">
+                <Button
+                  variant="secondary"
+                  size="compact"
+                  leading={<Power className="h-4 w-4" aria-hidden="true" />}
+                  loading={pendingBatch === 'all'}
+                  disabled={actionPending || isEditMode}
+                  onClick={() => void handleWholeHomePower()}
+                  data-lights-whole-home-power="true"
+                  className="h-9 shrink-0"
+                >
+                  {t('lighting.dashboard.turnOffAllLights')}
+                </Button>
+              </div>
+            ) : null}
           </>
         }
       />
 
-      <div className="grid w-full grid-cols-1 items-start gap-3 sm:grid-cols-2 xl:grid-cols-3 lg:gap-4">
-        {displayRooms.map((room) => (
-          <div key={room.room} data-lights-room-id={room.room} className="scroll-mt-4">
-            <LightsRoomSection
-              room={room}
-              manualExpanded={expandedRooms[room.room]}
-              onExpandedChange={handleExpandedChange}
-              isEditMode={isEditMode}
-              onRemoveEntity={onRemoveEntity}
-            />
+      {displayRooms.length > 0 ? (
+        <div ref={outerRef} className="relative w-full" style={outerContainerStyle}>
+          <div
+            ref={innerRef}
+            className={cn('w-full', isAutoScaled && 'absolute left-0 top-0 origin-top-left')}
+            style={innerContainerStyle}
+          >
+            <div
+              className="grid w-full grid-flow-row-dense items-start gap-2 md:gap-3 lg:gap-4"
+              style={{ ...gridStyle, gridAutoRows: 'auto' } as CSSProperties}
+            >
+              {displayRooms.map((room) => (
+                <div
+                  key={room.room}
+                  data-lights-room-id={room.room}
+                  className="col-span-4 scroll-mt-4"
+                >
+                  <LightsRoomSection
+                    room={room}
+                    expanded={expandedRooms[room.room] ?? false}
+                    onExpandedChange={handleExpandedChange}
+                    onPower={handleRoomPower}
+                    powerPending={pendingBatch === room.room}
+                    actionsDisabled={actionPending}
+                    isEditMode={isEditMode}
+                    onRemoveEntity={onRemoveEntity}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
-        ))}
-      </div>
+        </div>
+      ) : (
+        <DashboardEmptyState
+          icon={Lightbulb}
+          title={t('sections.lights.emptyTitle')}
+          description={t('sections.lights.emptyDescription')}
+          className="w-full"
+        />
+      )}
     </SummaryBarStack>
   );
 });

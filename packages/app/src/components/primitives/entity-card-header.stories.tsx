@@ -1,6 +1,6 @@
 import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ChevronRight, Lightbulb } from 'lucide-react';
 import { EntityCardHeader, type EntityCardHeaderVariant } from './entity-card-header';
 import { EntityCardHeaderIcon } from './entity-card-header-icon';

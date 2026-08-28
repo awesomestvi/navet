@@ -1,5 +1,5 @@
 import { createChoreDemoWorkspace } from '@navet/app/features/chores/chore-demo-fixture';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, userEvent, within } from 'storybook/test';
 import { AddChoreDialog, AddPersonDialog } from './chore-setup-dialogs';
 
@@ -82,15 +82,28 @@ type Story = StoryObj<typeof meta>;
 export const DesktopDetails: Story = {};
 
 export const MobileContinuousEditor: Story = {
-  parameters: { viewport: { defaultViewport: 'mobile1' } },
   play: async ({ canvasElement }) => {
     saveChore.mockClear();
     const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
       name: 'Add a chore',
     });
-    await expect(dialog).toHaveClass('max-sm:!rounded-[30px]', 'max-sm:!bottom-2');
+    await expect(dialog).toHaveClass(
+      'max-sm:!h-[80dvh]',
+      'max-sm:!rounded-t-[30px]',
+      'max-sm:!rounded-b-none',
+      'max-sm:!bottom-0'
+    );
+    await expect(dialog).toHaveClass('max-sm:!overflow-y-auto', 'max-sm:overscroll-contain');
+    await expect(dialog.querySelector('form')).toHaveClass('max-sm:h-auto', 'max-sm:min-h-full');
+    await expect(dialog.querySelector('header')).toHaveClass('py-3', 'sm:py-4');
+    await expect(dialog.querySelector('main')?.parentElement).toHaveClass(
+      'max-sm:flex-none',
+      'max-sm:overflow-visible'
+    );
     await expect(
-      within(canvasElement.ownerDocument.body).getByRole('button', { name: 'Close dialog' })
+      within(canvasElement.ownerDocument.body).getByRole('button', {
+        name: 'Drag dialog to fullscreen or close',
+      })
     ).toBeInTheDocument();
     await expect(
       within(dialog).getAllByRole('heading', { name: 'The chore' })[0]
@@ -113,6 +126,12 @@ export const MobileContinuousEditor: Story = {
     await userEvent.click(within(dialog).getByLabelText('More options: The chore'));
     await expect(within(dialog).getByLabelText('Instructions')).toBeVisible();
     await expect(within(dialog).getByLabelText('Require approval')).not.toBeVisible();
+  },
+  globals: {
+    viewport: {
+      value: 'mobile1',
+      isRotated: false,
+    },
   },
 };
 
@@ -196,7 +215,6 @@ export const LightTheme: Story = {
 
 export const PersonStepperCreation: Story = {
   render: () => <PersonCreationStory />,
-  parameters: { viewport: { defaultViewport: 'mobile1' } },
   play: async ({ canvasElement }) => {
     const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
       name: 'Add a person',
@@ -236,5 +254,11 @@ export const PersonStepperCreation: Story = {
     await expect(reminderSwitch).toBeInTheDocument();
     await expect(reminderSwitch).toHaveClass('h-7', 'w-11');
     await expect(reminderSwitch.firstElementChild).toHaveClass('translate-x-[14px]');
+  },
+  globals: {
+    viewport: {
+      value: 'mobile1',
+      isRotated: false,
+    },
   },
 };

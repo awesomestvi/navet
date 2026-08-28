@@ -181,8 +181,7 @@ export const nlMessages = {
   'household.setup.featureRewardDescription':
     'Iedereen markeert voltooide klusjes op dezelfde plek, zodat je ziet wat klaar is en wat nog aandacht nodig heeft.',
   'household.setup.dialogTitle': 'Huishoudelijke klusjes instellen',
-  'household.setup.dialogDescription':
-    'We helpen je de mensen thuis toe te voegen, één terugkerende taak te maken en optionele herinneringen en bescherming te kiezen. Alles kan later worden aangepast.',
+  'household.setup.dialogDescription': 'Voeg mensen en klusjes toe. Pas voorkeuren altijd aan.',
   'household.setup.progressLabel': 'Voortgang klusjes instellen',
   'household.setup.stepCount': 'Stap {current} van {total}',
   'household.setup.stepProfiles': 'Profielen en herinneringen',
@@ -533,6 +532,15 @@ export const nlMessages = {
   'dashboard.multiple.create.title': 'Dashboard maken',
   'dashboard.multiple.create.description':
     'Kies wat er wordt getoond en waar het dashboard wordt gebruikt.',
+  'dashboard.multiple.create.nameTitle': 'Geef je dashboard een naam',
+  'dashboard.multiple.create.nameDescription':
+    'Kies een naam waaraan je deze weergave gemakkelijk herkent.',
+  'dashboard.multiple.create.contentTitle': 'Kies wat je wilt toevoegen',
+  'dashboard.multiple.create.contentDescription':
+    'Begin met kamers, kopieer het huidige dashboard of begin leeg.',
+  'dashboard.multiple.create.displaysTitle': 'Kies waar het wordt geopend',
+  'dashboard.multiple.create.displaysDescription':
+    'Wijs het toe aan dit apparaat of laat het voorlopig niet toegewezen.',
   'dashboard.multiple.create.name': 'Naam',
   'dashboard.multiple.create.namePlaceholder': 'Bovenverdieping',
   'dashboard.multiple.create.startWith': 'Beginnen met',
@@ -873,6 +881,11 @@ export const nlMessages = {
   'settings.system.clients.status.disabled': 'Alleen lokaal',
   'settings.system.clients.status.error': 'Synchronisatie vereist aandacht',
   'settings.system.clients.retrySync': 'Synchronisatie opnieuw proberen',
+  'settings.system.clients.rebindSync': 'Dit dashboard gebruiken',
+  'settings.system.clients.rebindSyncConfirm': 'Een nieuwe gedeelde synchronisatie starten?',
+  'settings.system.clients.rebindSyncDescription':
+    'Hiermee blijft het huidige dashboard van dit apparaat behouden, wordt de gedeelde werkruimte aan het huidige Home Assistant-adres gekoppeld en als nieuwe revisie opgeslagen. Andere apparaten moeten via dit adres opnieuw verbinden.',
+  'settings.system.clients.rebindSyncStart': 'Nieuwe synchronisatie starten',
   'settings.system.clients.status.idle': 'Gereed',
   'settings.system.clients.status.loading': 'Laden',
   'settings.system.clients.status.offline': 'Niet verbonden',
@@ -1031,7 +1044,7 @@ export const nlMessages = {
   'dashboard.addCard.sort.default': 'Standaard',
   'dashboard.addCard.sort.ascending': 'Oplopend',
   'dashboard.addCard.sort.descending': 'Aflopend',
-  'dashboard.addCard.tab.widgets': 'Aangepaste kaart',
+  'dashboard.addCard.tab.widgets': 'Aangepaste kaarten',
   'dashboard.addCard.header.library': 'ENTITEITENBIBLIOTHEEK',
   'dashboard.addCard.header.widgets': 'AANGEPASTE WIDGETS',
   'dashboard.addCard.tab.cardsHint': 'Blader door elke Home Assistant-entiteit',
@@ -3126,6 +3139,7 @@ export const nlMessages = {
   'homeSummary.playing': '{count} Afspelen',
   'homeSummary.active': '{count} Actief',
   'homeSummary.climate': 'Klimaat',
+  'climate.comfort.mostlyComfortable': 'Meestal comfortabel',
   'dashboard.packs.section.access': 'Toegang',
   'dashboard.packs.section.cameras': "Camera's",
   'dashboard.packs.section.presence': 'Aanwezigheid',

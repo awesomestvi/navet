@@ -5,7 +5,7 @@ import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { buildCustomCard, CustomWidgetStoryFrame } from '@navet/app/storybook/story-frames';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { RSSItem, RSSProvider } from './types';
 import { RSSFeedCardView } from './view';
 

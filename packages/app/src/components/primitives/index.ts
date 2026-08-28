@@ -24,6 +24,7 @@ export { ColorInputSwatch, type ColorInputSwatchProps } from './color-input-swat
 export { Combobox, type ComboboxProps } from './combobox';
 export {
   CustomDialogDoneButton,
+  coverSheetHeaderClassName,
   customCardDialogSurfaceProps,
   DialogDoneButton,
   DialogDoneFooter,

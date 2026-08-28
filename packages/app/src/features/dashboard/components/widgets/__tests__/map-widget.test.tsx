@@ -1,3 +1,4 @@
+import { integrationStore } from '@navet/app/stores/integration-store';
 import { renderWithProviders } from '@navet/app/test/render';
 import { act, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,7 +10,9 @@ const { useProviderMapMarkersMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('../map-widget-live', () => ({
-  MapWidgetLive: () => <div data-testid="live-map" />,
+  MapWidgetLive: ({ markers }: { markers: MapMarker[] }) => (
+    <div data-testid="live-map" data-marker-picture={markers[0]?.entityPicture ?? ''} />
+  ),
 }));
 
 vi.mock('../use-provider-map-markers', () => ({
@@ -26,6 +29,9 @@ const MARKERS: MapMarker[] = [
     entityPicture: '/api/image/serve/person-vishal/512x512',
   },
 ];
+const MARKERS_WITHOUT_PICTURE = MARKERS.map(
+  ({ entityPicture: _entityPicture, ...marker }) => marker
+);
 
 describe('MapWidget', () => {
   beforeEach(() => {
@@ -33,6 +39,11 @@ describe('MapWidget', () => {
     vi.stubGlobal('IntersectionObserver', undefined);
     useProviderMapMarkersMock.mockClear();
     useProviderMapMarkersMock.mockReturnValue([]);
+    integrationStore.setState({
+      ...integrationStore.getState(),
+      currentProviderId: 'home_assistant',
+      currentUser: null,
+    });
   });
 
   it('renders the placeholder immediately before mounting the live map', () => {
@@ -41,6 +52,14 @@ describe('MapWidget', () => {
     expect(screen.getByText('Trackers')).toBeInTheDocument();
     expect(screen.getByText('1 tracked')).toBeInTheDocument();
     expect(screen.getByTestId('map-widget-viewport').className).toContain('rounded-[inherit]');
+    expect(screen.getByRole('link', { name: '© OpenMapTiles' })).toHaveAttribute(
+      'href',
+      'https://openmaptiles.org/'
+    );
+    expect(screen.getByRole('link', { name: '© OpenStreetMap' })).toHaveAttribute(
+      'href',
+      'https://www.openstreetmap.org/copyright'
+    );
     expect(screen.queryByTestId('live-map')).not.toBeInTheDocument();
     expect(useProviderMapMarkersMock).toHaveBeenLastCalledWith(false);
   });
@@ -57,6 +76,30 @@ describe('MapWidget', () => {
     });
 
     expect(screen.getByTestId('live-map')).toBeInTheDocument();
+  });
+
+  it('passes the matching signed-in user profile photo to the live marker', async () => {
+    integrationStore.setState({
+      ...integrationStore.getState(),
+      currentUser: {
+        id: 'user-vishal',
+        name: 'Vishal Gupta',
+        avatarUrl: 'https://images.example.com/vishal.png',
+      },
+    });
+    renderWithProviders(<MapWidget markers={MARKERS_WITHOUT_PICTURE} />);
+
+    act(() => {
+      vi.advanceTimersByTime(1_200);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByTestId('live-map')).toHaveAttribute(
+      'data-marker-picture',
+      'https://images.example.com/vishal.png'
+    );
   });
 
   it('subscribes to provider markers only while a dynamic map is near the viewport', () => {

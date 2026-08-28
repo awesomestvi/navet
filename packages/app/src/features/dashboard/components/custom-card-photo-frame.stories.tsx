@@ -11,7 +11,7 @@ import nightOutWebp from '@assets/reference/photo-frame/night-out.webp';
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { getCardSizeOverlayStyle } from '@navet/app/components/shared/card-size-selector';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { PhotoFrameImage } from './widgets/photo-frame-image';
 import { PhotoFrameWidget } from './widgets/photo-frame-widget';
 

@@ -40,7 +40,7 @@ describe('VacuumSettingsDialog', () => {
     );
   });
 
-  it('uses a constrained scroll shell so long mobile content can scroll', () => {
+  it('uses the shared mobile cover sheet so long content can scroll', () => {
     renderWithProviders(
       <VacuumSettingsDialog
         entityId="vacuum.roborock"
@@ -77,7 +77,27 @@ describe('VacuumSettingsDialog', () => {
       />
     );
 
-    expect(screen.getByRole('dialog')).toHaveClass('flex', 'flex-col', 'max-h-[85vh]');
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveClass(
+      'flex',
+      'flex-col',
+      'max-h-[85vh]',
+      'max-sm:!h-[80dvh]',
+      'max-sm:!rounded-t-[30px]',
+      'max-sm:[&_[data-cover-sheet-inline-dismiss]]:!hidden'
+    );
+    expect(
+      screen.getByRole('button', { name: 'Drag dialog to fullscreen or close' })
+    ).toBeInTheDocument();
+    const dismissButton = dialog.querySelector('[data-mobile-cover-sheet-dismiss]');
+    expect(dismissButton?.parentElement).toHaveClass('absolute', 'top-3', 'right-3', 'z-30');
+    expect(dialog.querySelector('[data-card-dialog-header]')).toHaveClass(
+      'px-4',
+      'py-3',
+      'max-sm:pt-2',
+      'max-sm:pr-4',
+      'border-b'
+    );
     expect(
       document.body.querySelector('.relative.flex.min-h-0.flex-1.flex-col.overflow-y-auto')
     ).not.toBeNull();
@@ -121,6 +141,7 @@ describe('VacuumSettingsDialog', () => {
     );
 
     const startButton = screen.getByRole('button', { name: 'Start Cleaning' });
+    const cancelButton = screen.getByRole('button', { name: 'Cancel' });
     const scrollRoot = document.body.querySelector(
       '.relative.flex.min-h-0.flex-1.flex-col.overflow-y-auto'
     );
@@ -129,6 +150,8 @@ describe('VacuumSettingsDialog', () => {
     expect(scrollRoot).not.toBeNull();
     expect(scrollRoot?.contains(startButton)).toBe(true);
     expect(footer).not.toBeNull();
+    expect(footer?.firstElementChild).toBe(cancelButton);
+    expect(footer?.lastElementChild).toBe(startButton);
   });
 
   it('renders the map tab only when map support is available', () => {

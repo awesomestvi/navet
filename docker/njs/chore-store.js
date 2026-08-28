@@ -46,6 +46,8 @@ const HEADERS = {
 let managementSessions = [];
 let failedManagementAttempts = 0;
 let managementBlockedUntil = 0;
+let lastSchedulerRunAt = null;
+let lastDeliveryError = null;
 
 let fsModule = fs;
 let principalResolver = function (r, options) {
@@ -68,6 +70,8 @@ function resetChoreStoreForTests() {
   managementSessions = [];
   failedManagementAttempts = 0;
   managementBlockedUntil = 0;
+  lastSchedulerRunAt = null;
+  lastDeliveryError = null;
   principalResolver = function (r, options) {
     if (!authStore || typeof authStore.resolveAuthenticatedPrincipal !== 'function') {
       return null;
@@ -2176,6 +2180,7 @@ function persistDocument(previous, next) {
 
 function applyScheduledState(document) {
   const timestamp = nowIso();
+  lastSchedulerRunAt = timestamp;
   const scheduled = runWorkspaceScheduler(document.data, timestamp);
   if (scheduled.activities.length === 0 && scheduled.outboxItems.length === 0) {
     appendEventHistory(document.data.activity, document.data.historyRetention);
@@ -2189,6 +2194,139 @@ function applyScheduledState(document) {
   persistDocument(document, nextDocument);
   appendEventHistory(nextDocument.data.activity, nextDocument.data.historyRetention);
   return nextDocument;
+}
+
+function sameObjectKeys(left, right) {
+  const leftKeys = Object.keys(left).sort();
+  const rightKeys = Object.keys(right).sort();
+  if (leftKeys.length !== rightKeys.length) return false;
+  for (let index = 0; index < leftKeys.length; index += 1) {
+    if (leftKeys[index] !== rightKeys[index]) return false;
+  }
+  return true;
+}
+
+function materializePeriodicWindow(document, timestamp) {
+  const now = Date.parse(timestamp);
+  const commandId = 'periodic:materialize:' + timestamp;
+  const candidate = applyWorkspaceAction(document.data, commandId, {
+    type: 'materialize_occurrences',
+    rangeStart: new Date(now - 90 * 86400000).toISOString(),
+    rangeEnd: new Date(now + 45 * 86400000).toISOString(),
+  }, timestamp);
+  if (sameObjectKeys(candidate.occurrencesById, document.data.occurrencesById)) {
+    return document;
+  }
+  const next = {
+    contractVersion: CONTRACT_VERSION,
+    revision: document.revision + 1,
+    updatedAt: timestamp,
+    data: candidate,
+  };
+  persistDocument(document, next);
+  appendEventHistory(next.data.activity, next.data.historyRetention);
+  return next;
+}
+
+function pendingHomeAssistantReminders(document, timestamp) {
+  const now = Date.parse(timestamp);
+  return document.data.outbox.filter(function (item) {
+    return (
+      String(item.eventType).indexOf('reminder_') === 0 &&
+      item.destination === 'home_assistant' &&
+      (item.status === 'pending' || item.status === 'failed') &&
+      Date.parse(item.nextAttemptAt) <= now
+    );
+  }).slice(0, 10);
+}
+
+function reminderPayload(document, item) {
+  const occurrence = document.data.occurrencesById[item.occurrenceId] || {};
+  const definition = document.data.definitionsById[occurrence.definitionId] || {};
+  const title = definition.title || 'Navet chore';
+  return {
+    title,
+    message: title,
+    data: {
+      choreOccurrenceId: item.occurrenceId,
+      choreDefinitionId: occurrence.definitionId,
+    },
+  };
+}
+
+async function deliverHomeAssistantReminder(document, item) {
+  const token = process.env.SUPERVISOR_TOKEN || '';
+  if (!token) throw new Error('Home Assistant Supervisor access is unavailable');
+  const target = typeof item.destinationTarget === 'string'
+    ? item.destinationTarget.replace(/^notify\./, '')
+    : '';
+  if (target && !/^[a-z0-9_]{1,128}$/.test(target)) {
+    throw new Error('Home Assistant notification target is invalid');
+  }
+  const servicePath = target
+    ? '/api/services/notify/' + target
+    : '/api/services/persistent_notification/create';
+  const payload = reminderPayload(document, item);
+  if (!target) payload.notification_id = 'navet_chore_' + item.id;
+  const response = await ngx.fetch('http://supervisor/core' + servicePath, {
+    method: 'POST',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error('Home Assistant reminder delivery failed with status ' + response.status);
+  }
+}
+
+function recordPeriodicDelivery(item, status, errorMessage) {
+  const current = readDocument();
+  const currentItem = current.data.outbox.find(function (candidate) {
+    return candidate.id === item.id;
+  });
+  if (!currentItem || (currentItem.status !== 'pending' && currentItem.status !== 'failed')) {
+    return;
+  }
+  const timestamp = nowIso();
+  const commandId = 'periodic:delivery:' + item.id + ':' + (currentItem.attempts + 1);
+  const nextData = applyWorkspaceAction(current.data, commandId, {
+    type: 'outbox_delivery_update',
+    outboxId: item.id,
+    status,
+    error: errorMessage,
+  }, timestamp);
+  const next = {
+    contractVersion: CONTRACT_VERSION,
+    revision: current.revision + 1,
+    updatedAt: timestamp,
+    data: nextData,
+  };
+  persistDocument(current, next);
+  appendEventHistory(next.data.activity, next.data.historyRetention);
+}
+
+async function runPeriodic(_session) {
+  const timestamp = nowIso();
+  lastSchedulerRunAt = timestamp;
+  let document = materializePeriodicWindow(readDocument(), timestamp);
+  document = applyScheduledState(document);
+  const reminders = pendingHomeAssistantReminders(document, timestamp);
+  for (let index = 0; index < reminders.length; index += 1) {
+    try {
+      await deliverHomeAssistantReminder(document, reminders[index]);
+      recordPeriodicDelivery(reminders[index], 'delivered');
+      lastDeliveryError = null;
+    } catch (error) {
+      lastDeliveryError = error && error.message ? error.message : 'Reminder delivery failed';
+      try {
+        recordPeriodicDelivery(reminders[index], 'failed', lastDeliveryError);
+      } catch (_recordError) {
+        // The next periodic run reloads the workspace and retries the pending item.
+      }
+    }
+  }
 }
 
 function readDocument() {
@@ -2346,6 +2484,7 @@ function sendManagementSession(r, tenantId) {
 
 function publicDocument(document, tenantId) {
   return {
+    contractVersion: CONTRACT_VERSION,
     revision: document.revision,
     updatedAt: document.updatedAt,
     data: document.data,
@@ -2856,7 +2995,7 @@ function commitAdministration(r, principal, operation) {
   sendJson(r, 200, publicDocument(next, principal.tenantId));
 }
 
-function routeRequest(r, principal) {
+function routeRequest(r, principal, options) {
   if (!authorizeWorkspacePrincipal(principal)) {
     sendJson(r, 403, { error: 'This chore workspace belongs to another installation' });
     return;
@@ -2867,6 +3006,28 @@ function routeRequest(r, principal) {
   }
 
   const uri = typeof r.uri === 'string' ? r.uri.replace(/\/+$/, '') : '';
+  if (uri === '/__navet_chores__/capabilities' && r.method === 'GET') {
+    const document = readDocument();
+    sendJson(r, 200, {
+      contractVersion: CONTRACT_VERSION,
+      schemaVersion: SCHEMA_VERSION,
+      authority: options && options.trustIngressHeaders ? 'navet_addon' : 'standalone',
+      backgroundScheduling: Boolean(options && options.trustIngressHeaders),
+      backgroundNotifications: Boolean(options && options.trustIngressHeaders),
+      projectionOwnedByAuthority: false,
+      actionServices: false,
+      lastSchedulerRunAt,
+      pendingDeliveryCount: document.data.outbox.filter(function (item) {
+        return (
+          String(item.eventType).indexOf('reminder_') === 0 &&
+          item.destination === 'home_assistant' &&
+          (item.status === 'pending' || item.status === 'failed')
+        );
+      }).length,
+      lastDeliveryError,
+    });
+    return;
+  }
   if (uri === '/__navet_chores__/workspace' && r.method === 'GET') {
     loadWorkspace(r, principal);
     return;
@@ -2930,7 +3091,7 @@ function handleWithOptions(r, options) {
     return;
   }
   try {
-    routeRequest(r, principal);
+    routeRequest(r, principal, options);
   } catch (error) {
     if (error && error.code === 'NAVET_CHORE_WRITE_LIMIT') {
       let pinConfigured = false;
@@ -2985,8 +3146,10 @@ export default {
   handle,
   handleIngress,
   isValidChoreWorkspaceData,
+  materializeDefinitionForTests: materializeDefinition,
   resetChoreStoreForTests,
   routeRequest,
+  runPeriodic,
   setChoreStoreFsForTests,
   setChoreStorePrincipalResolverForTests,
 };

@@ -184,7 +184,7 @@ export const deMessages = {
     'Alle markieren Aufgaben am selben Ort als erledigt. So ist sichtbar, was fertig ist und was noch Aufmerksamkeit braucht.',
   'household.setup.dialogTitle': 'Haushaltsaufgaben einrichten',
   'household.setup.dialogDescription':
-    'Wir helfen dir, die Personen zu Hause hinzuzufügen, eine wiederkehrende Arbeit anzulegen und optionale Erinnerungen und Schutz auszuwählen. Alles lässt sich später ändern.',
+    'Füge Personen und Aufgaben hinzu. Passe Einstellungen jederzeit an.',
   'household.setup.progressLabel': 'Fortschritt der Aufgabeneinrichtung',
   'household.setup.stepCount': 'Schritt {current} von {total}',
   'household.setup.stepProfiles': 'Profile und Erinnerungen',
@@ -535,6 +535,15 @@ export const deMessages = {
   'dashboard.multiple.create.title': 'Dashboard erstellen',
   'dashboard.multiple.create.description':
     'Wähle aus, was angezeigt wird und wo das Dashboard verwendet werden soll.',
+  'dashboard.multiple.create.nameTitle': 'Benenne dein Dashboard',
+  'dashboard.multiple.create.nameDescription':
+    'Wähle einen Namen, an dem du diese Ansicht leicht erkennst.',
+  'dashboard.multiple.create.contentTitle': 'Wähle die Inhalte aus',
+  'dashboard.multiple.create.contentDescription':
+    'Beginne mit Räumen, kopiere das aktuelle Dashboard oder starte leer.',
+  'dashboard.multiple.create.displaysTitle': 'Wähle aus, wo es geöffnet wird',
+  'dashboard.multiple.create.displaysDescription':
+    'Weise es diesem Gerät zu oder lasse es vorerst nicht zugewiesen.',
   'dashboard.multiple.create.name': 'Name',
   'dashboard.multiple.create.namePlaceholder': 'Obergeschoss',
   'dashboard.multiple.create.startWith': 'Beginnen mit',
@@ -783,6 +792,11 @@ export const deMessages = {
   'settings.system.clients.status.disabled': 'Nur lokal',
   'settings.system.clients.status.error': 'Synchronisierung prüfen',
   'settings.system.clients.retrySync': 'Synchronisierung erneut versuchen',
+  'settings.system.clients.rebindSync': 'Dieses Dashboard verwenden',
+  'settings.system.clients.rebindSyncConfirm': 'Neue gemeinsame Synchronisierung starten?',
+  'settings.system.clients.rebindSyncDescription':
+    'Dadurch bleibt das aktuelle Dashboard dieses Geräts erhalten, der gemeinsame Arbeitsbereich wird mit der aktuellen Home-Assistant-Adresse verknüpft und als neue Revision gespeichert. Andere Geräte müssen sich über diese Adresse neu verbinden.',
+  'settings.system.clients.rebindSyncStart': 'Neue Synchronisierung starten',
   'settings.system.clients.status.idle': 'Bereit',
   'settings.system.clients.status.loading': 'Wird geladen',
   'settings.system.clients.status.offline': 'Nicht verbunden',
@@ -942,7 +956,7 @@ export const deMessages = {
   'dashboard.addCard.sort.default': 'Standard',
   'dashboard.addCard.sort.ascending': 'Aufsteigend',
   'dashboard.addCard.sort.descending': 'Absteigend',
-  'dashboard.addCard.tab.widgets': 'Eigene Karte',
+  'dashboard.addCard.tab.widgets': 'Eigene Karten',
   'dashboard.addCard.header.library': 'ENTITATSBIBLIOTHEK',
   'dashboard.addCard.header.widgets': 'BENUTZERDEFINIERTE WIDGETS',
   'dashboard.addCard.tab.cardsHint': 'Alle Home-Assistant-Entitaten durchsuchen',
@@ -3141,6 +3155,7 @@ export const deMessages = {
   'homeSummary.playing': '{count} spielen',
   'homeSummary.active': '{count} aktiv',
   'homeSummary.climate': 'Klima',
+  'climate.comfort.mostlyComfortable': 'Überwiegend angenehm',
   'dashboard.packs.section.access': 'Zugang',
   'dashboard.packs.section.cameras': 'Kameras',
   'dashboard.packs.section.presence': 'Anwesenheit',

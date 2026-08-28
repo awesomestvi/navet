@@ -3,7 +3,7 @@ import { TEMP_OPTIONS } from '@navet/app/constants/light-constants';
 import { defaultTranslate } from '@navet/app/i18n';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { SettingsDialogStoryFrame } from '@navet/app/storybook/story-frames';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Sun, SunDim, SunMedium } from 'lucide-react';
 import { useState } from 'react';
 import { expect, within } from 'storybook/test';

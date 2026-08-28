@@ -603,6 +603,13 @@ describe('EnergyDashboardPage', () => {
 
     const sheet = screen.getByRole('dialog');
     expect(within(sheet).getByRole('heading', { name: 'Custom range' })).toBeInTheDocument();
+    expect(sheet.querySelector('[data-sheet-surface-header]')).toHaveClass(
+      'px-4',
+      'py-3',
+      'max-sm:pt-2',
+      'max-sm:pr-4',
+      'border-b'
+    );
     expect(within(sheet).getByLabelText('From')).toBeInTheDocument();
     expect(within(sheet).getByLabelText('To')).toBeInTheDocument();
     expect(within(sheet).getAllByRole('button', { name: /close custom range/i })).toHaveLength(2);

@@ -1,4 +1,5 @@
 import type { PlatformEntitySnapshotMap } from '@navet/app/platform/provider-feature-models';
+import type { IntegrationUser } from '@navet/app/types/integration-user';
 import type { MapMarker } from './map-types';
 
 export function normalizeMarkerName(value: string | undefined) {
@@ -25,6 +26,7 @@ export function selectMapMarkersFromEntities(
 
   const personPicturesByName = new Map<string, string>();
   const personPicturesByFirstName = new Map<string, string>();
+  const personPicturesByTrackerId = new Map<string, string>();
   const markers: MapMarker[] = [];
 
   for (const [id, entity] of Object.entries(entities)) {
@@ -35,6 +37,7 @@ export function selectMapMarkersFromEntities(
         typeof attrs.friendly_name === 'string' ? attrs.friendly_name : id.replace(/_/g, ' ');
       const normalizedName = normalizeMarkerName(friendlyName);
       const firstName = getFirstName(friendlyName);
+      const source = typeof attrs.source === 'string' ? attrs.source : undefined;
 
       if (entityPicture && normalizedName) {
         personPicturesByName.set(normalizedName, entityPicture);
@@ -42,6 +45,10 @@ export function selectMapMarkersFromEntities(
 
       if (entityPicture && firstName && !personPicturesByFirstName.has(firstName)) {
         personPicturesByFirstName.set(firstName, entityPicture);
+      }
+
+      if (entityPicture && source) {
+        personPicturesByTrackerId.set(source, entityPicture);
       }
     }
 
@@ -77,10 +84,44 @@ export function selectMapMarkersFromEntities(
     return {
       ...marker,
       entityPicture:
+        personPicturesByTrackerId.get(marker.id) ??
         personPicturesByName.get(normalizedMarkerName) ??
         personPicturesByFirstName.get(markerFirstName),
     };
   });
+}
+
+export function applyCurrentUserAvatar(
+  markers: readonly MapMarker[],
+  currentUser: IntegrationUser | null
+): MapMarker[] {
+  const avatarUrl = currentUser?.avatarUrl?.trim();
+  const normalizedUserName = normalizeMarkerName(currentUser?.name);
+  if (!avatarUrl || !normalizedUserName) {
+    return [...markers];
+  }
+
+  const exactMatches = markers.filter(
+    (marker) => normalizeMarkerName(marker.name) === normalizedUserName
+  );
+  const matchedIds = new Set(exactMatches.map((marker) => marker.id));
+
+  if (matchedIds.size === 0) {
+    const userFirstName = getFirstName(normalizedUserName);
+    const firstNameMatches = markers.filter(
+      (marker) => getFirstName(marker.name) === userFirstName
+    );
+
+    if (firstNameMatches.length === 1 && firstNameMatches[0]) {
+      matchedIds.add(firstNameMatches[0].id);
+    }
+  }
+
+  return markers.map((marker) =>
+    matchedIds.has(marker.id) && !marker.entityPicture
+      ? { ...marker, entityPicture: avatarUrl }
+      : marker
+  );
 }
 
 export function mapMarkersEqual(a: readonly MapMarker[], b: readonly MapMarker[]): boolean {

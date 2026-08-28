@@ -1,7 +1,7 @@
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { getEntityIconPillStyles } from '@navet/app/components/system/tokens';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Lightbulb } from 'lucide-react';
 
 const THEMES: ThemeType[] = ['glass', 'dark', 'light', 'black'];

@@ -10,7 +10,7 @@ import {
 } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
-import type { InstallationCookieNames } from './installation-cookie-scope'
+import type { InstallationCookieNames } from './installation-cookie-scope.ts'
 
 const COOKIE_ID_PATTERN = /^[a-f0-9]{64}$/
 const SESSION_IDLE_TTL_MS = 90 * 24 * 60 * 60 * 1000

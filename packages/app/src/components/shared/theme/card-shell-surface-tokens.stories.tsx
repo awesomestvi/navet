@@ -1,7 +1,7 @@
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { getCardShellSurfaceTokens } from '@navet/app/components/system/tokens';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 
 const THEMES: ThemeType[] = ['glass', 'dark', 'light', 'black'];
 

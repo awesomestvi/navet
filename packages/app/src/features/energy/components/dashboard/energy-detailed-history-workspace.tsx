@@ -999,7 +999,7 @@ function EnergyKpiPicker({
             description="Choose and order the four metrics shown above Energy usage."
             closeLabel="Close Energy KPIs"
             onClose={() => onOpenChange(false)}
-            className="px-5 py-4 md:px-6"
+            className="md:px-6"
           />
         </NavigationWorkspace.Header>
 

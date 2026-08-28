@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import { useSettingsSectionController } from '../hooks/use-settings-section-controller';
 import { SettingsProjectSection } from './settings-project-section';

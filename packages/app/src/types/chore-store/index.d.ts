@@ -21,8 +21,17 @@ declare module '@docker/njs/chore-store.js' {
     handle(request: NjsChoreRequest): void;
     handleIngress(request: NjsChoreRequest): void;
     isValidChoreWorkspaceData(value: unknown): boolean;
+    materializeDefinitionForTests(
+      definition: Record<string, unknown>,
+      participantsById: Record<string, Record<string, unknown>>,
+      rangeStart: string,
+      rangeEnd: string,
+      existingOccurrences: Record<string, unknown>,
+      latestCompletedAt?: string
+    ): Array<{ scheduledAt: string; assigneeIds: string[] }>;
     resetChoreStoreForTests(): void;
     routeRequest(request: NjsChoreRequest, principal: ChorePrincipal): void;
+    runPeriodic(session: unknown): Promise<void>;
     setChoreStoreFsForTests(mockFs: {
       statSync: (path: string) => { size: number };
       readFileSync: (path: string, encoding?: string) => string;

@@ -230,7 +230,7 @@ function ButtonSettingsDialog({
       maxWidth="sm"
       footerContent={
         <DialogFooter>
-          <Button onClick={handleSave} variant="soft" size="small" className="rounded-xl px-4">
+          <Button onClick={handleSave} variant="soft" className="rounded-xl px-4">
             {t('widgets.button.configure')}
           </Button>
         </DialogFooter>

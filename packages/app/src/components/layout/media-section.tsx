@@ -1,8 +1,7 @@
-import { DashboardEmptyState } from '@navet/app/components/patterns';
+import { DashboardEmptyState, DashboardGroupingNavigation } from '@navet/app/components/patterns';
 import { InteractivePill } from '@navet/app/components/primitives/interactive-pill';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
-import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import { useDashboardEntitiesStore } from '@navet/app/features/dashboard/stores/dashboard-entities-store';
 import {
   getMediaEntityTypeKey,
@@ -14,10 +13,10 @@ import {
   useEditMode,
   useI18n,
   useMediaQuery,
-  usePersistedState,
   useTheme,
 } from '@navet/app/hooks';
 import type { MediaDevice } from '@navet/app/types/device.types';
+import { getDeviceRoomLabel } from '@navet/app/utils/device-location';
 import { getProviderNativeId } from '@navet/app/utils/provider-ids';
 import { Plus, Tv } from 'lucide-react';
 import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
@@ -32,6 +31,7 @@ const AddEntityDialog = lazy(async () => {
 });
 
 type MediaSectionDevice = MediaDevice & { type: 'media' };
+type MediaGroupingMode = 'type' | 'room';
 
 type MediaSectionGroup = {
   key: string;
@@ -176,6 +176,34 @@ export function buildMediaSections(
   return groupedSections;
 }
 
+export function buildMediaRoomSections(
+  mediaDevices: MediaSectionDevice[],
+  singularLabel: string,
+  pluralLabel: string
+): MediaSectionGroup[] {
+  const devicesByRoom = new Map<string, MediaSectionDevice[]>();
+
+  for (const device of mediaDevices) {
+    const room = getDeviceRoomLabel(device);
+    const roomDevices = devicesByRoom.get(room);
+    if (roomDevices) {
+      roomDevices.push(device);
+    } else {
+      devicesByRoom.set(room, [device]);
+    }
+  }
+
+  return [...devicesByRoom.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([room, roomDevices]) => ({
+      key: `room-${encodeURIComponent(room)}`,
+      title: room,
+      singularLabel,
+      pluralLabel,
+      devices: roomDevices,
+    }));
+}
+
 export function excludePromotedMediaDevices(
   mediaDevices: MediaSectionDevice[],
   promotedEntityIds: string[],
@@ -205,10 +233,11 @@ export function MediaSection() {
   const { isEditMode, toggleEditMode } = useEditMode();
   const [isAddEntityDialogOpen, setIsAddEntityDialogOpen] = useState(false);
   const [promotedMediaEntityIds, setPromotedMediaEntityIds] = useState<string[]>([]);
-  const [collapsedSections, setCollapsedSections] = usePersistedState<Record<string, boolean>>(
-    STORAGE_KEYS.mediaCollapsedSections,
-    {}
-  );
+  const [groupingMode, setGroupingMode] = useState<MediaGroupingMode>('type');
+  const [selectedGroupIds, setSelectedGroupIds] = useState<Record<MediaGroupingMode, string>>({
+    type: '',
+    room: '',
+  });
   const { hiddenEntityIds, hideEntity, showEntity } = useDashboardEntitiesStore(
     useShallow((state) => ({
       hiddenEntityIds: state.hiddenEntityIds,
@@ -288,16 +317,6 @@ export function MediaSection() {
         : entityIds
     );
   }, []);
-  const toggleSectionCollapse = useCallback(
-    (sectionId: string) => {
-      setCollapsedSections((current) => ({
-        ...current,
-        [sectionId]: !current[sectionId],
-      }));
-    },
-    [setCollapsedSections]
-  );
-
   const featuredMediaDevice = useMemo(
     () =>
       mediaDevices.find((device) => device.state === 'playing' && isActiveAudioDevice(device)) ??
@@ -314,37 +333,58 @@ export function MediaSection() {
     [featuredMediaDevice, promotedMediaEntityIds]
   );
 
-  const sections = useMemo(() => {
-    const sectionDevices = isEditMode
-      ? groupedMediaPresentation.devices
-      : excludePromotedMediaDevices(
-          groupedMediaPresentation.devices.filter((device) => !isSpotifyAccountDevice(device)),
-          promotedEntityIdsForSections,
-          mediaDevices
-        );
-
-    return buildMediaSections(sectionDevices, {
-      audioTitle,
-      audioSingular,
+  const sectionDevices = useMemo(
+    () =>
+      isEditMode
+        ? groupedMediaPresentation.devices
+        : excludePromotedMediaDevices(
+            groupedMediaPresentation.devices.filter((device) => !isSpotifyAccountDevice(device)),
+            promotedEntityIdsForSections,
+            mediaDevices
+          ),
+    [groupedMediaPresentation.devices, isEditMode, mediaDevices, promotedEntityIdsForSections]
+  );
+  const typeSections = useMemo(
+    () =>
+      buildMediaSections(sectionDevices, {
+        audioTitle,
+        audioSingular,
+        audioPlural,
+        tvTitle,
+        tvSingular,
+        tvPlural,
+        typeLabels,
+      }),
+    [
       audioPlural,
-      tvTitle,
-      tvSingular,
+      audioSingular,
+      audioTitle,
+      sectionDevices,
       tvPlural,
+      tvSingular,
+      tvTitle,
       typeLabels,
-    });
-  }, [
-    audioPlural,
-    audioSingular,
-    audioTitle,
-    isEditMode,
-    groupedMediaPresentation.devices,
-    mediaDevices,
-    promotedEntityIdsForSections,
-    tvPlural,
-    tvSingular,
-    tvTitle,
-    typeLabels,
-  ]);
+    ]
+  );
+  const roomSections = useMemo(
+    () =>
+      buildMediaRoomSections(
+        sectionDevices,
+        t('sections.media.singular'),
+        t('sections.media.plural')
+      ),
+    [sectionDevices, t]
+  );
+  const sections = groupingMode === 'type' ? typeSections : roomSections;
+  const requestedGroupId = selectedGroupIds[groupingMode];
+  const selectedSection =
+    sections.find((section) => section.key === requestedGroupId) ?? sections[0] ?? null;
+  const handleGroupChange = useCallback(
+    (groupId: string) => {
+      setSelectedGroupIds((current) => ({ ...current, [groupingMode]: groupId }));
+    },
+    [groupingMode]
+  );
   if (allMediaDevices.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-6">
@@ -377,7 +417,7 @@ export function MediaSection() {
     <SectionCustomizeShell
       isEditMode={isEditMode}
       onToggle={toggleEditMode}
-      className="relative space-y-8"
+      className="relative space-y-6 md:space-y-7"
       actions={isMobileViewport ? null : addHiddenEntityAction}
       showCustomizeButton={false}
     >
@@ -389,34 +429,46 @@ export function MediaSection() {
         />
       ) : null}
 
-      {sections.length > 0 ? (
-        sections.map((section) => (
-          <EntityGrid
-            key={section.key}
-            devices={section.devices}
-            rawDevices={devices}
-            title={section.title}
-            singularLabel={section.singularLabel}
-            pluralLabel={section.pluralLabel}
-            isEditMode={isEditMode}
-            cardSizeStorageKey="mediaSectionCardSizes"
-            onRemoveEntity={handleRemoveEntity}
-            allowEntityRemoval
-            usesHideAction
-            cardVariantById={groupedMediaPresentation.cardVariantById}
-            sectionId={section.key}
-            isCollapsed={
-              section.key === 'audio' || section.key === 'tv'
-                ? (collapsedSections[section.key] ?? false)
-                : false
-            }
-            onToggleCollapse={
-              section.key === 'audio' || section.key === 'tv'
-                ? () => toggleSectionCollapse(section.key)
-                : undefined
-            }
+      {selectedSection ? (
+        <div className="space-y-4">
+          <DashboardGroupingNavigation
+            ariaLabel={t('sections.media.title')}
+            groupingLabel={t('dashboard.roomNav.grouping.label')}
+            idPrefix="media-group"
+            items={sections.map((section) => ({ id: section.key, label: section.title }))}
+            modes={[
+              { id: 'type', label: t('dashboard.roomNav.grouping.type') },
+              { id: 'room', label: t('dashboard.roomNav.grouping.room') },
+            ]}
+            selectedItemId={selectedSection.key}
+            selectedModeId={groupingMode}
+            onModeChange={(modeId) => {
+              if (modeId === 'type' || modeId === 'room') setGroupingMode(modeId);
+            }}
+            onItemChange={handleGroupChange}
           />
-        ))
+          <div
+            role="tabpanel"
+            id={`media-group-panel-${selectedSection.key}`}
+            aria-labelledby={`media-group-tab-${selectedSection.key}`}
+          >
+            <EntityGrid
+              devices={selectedSection.devices}
+              rawDevices={devices}
+              title={selectedSection.title}
+              singularLabel={selectedSection.singularLabel}
+              pluralLabel={selectedSection.pluralLabel}
+              isEditMode={isEditMode}
+              cardSizeStorageKey="mediaSectionCardSizes"
+              onRemoveEntity={handleRemoveEntity}
+              allowEntityRemoval
+              usesHideAction
+              cardVariantById={groupedMediaPresentation.cardVariantById}
+              sectionId={selectedSection.key}
+              showHeader={false}
+            />
+          </div>
+        </div>
       ) : isEditMode ? (
         <div className="flex h-full items-center justify-center p-6 pt-14">
           <DashboardEmptyState

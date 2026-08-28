@@ -1,7 +1,7 @@
 import { IconButton } from '@navet/app/components/primitives';
 import { navetIconSizeTokens } from '@navet/app/components/system/tokens';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { expect, userEvent, within } from 'storybook/test';
@@ -961,18 +961,63 @@ export const PhoneFullScreen: Story = {
       selectedRoomId: null,
     },
   },
-  parameters: {
-    viewport: { defaultViewport: 'mobile1' },
-  },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const workspace = canvas.getByRole('region', { name: 'Rooms' });
     const header = canvas.getByRole('heading', { name: 'Rooms' }).closest('header');
+    const footer = workspace.querySelector('[data-room-workspace-phone-footer]');
     await expect(workspace).toHaveClass('min-h-0', 'max-h-full');
     await expect(workspace).not.toHaveClass('min-h-[36rem]');
     await expect(header?.className).toContain('safe-area-inset-top');
     await expect(header?.className).toContain('safe-area-inset-left');
     await expect(header?.className).toContain('safe-area-inset-right');
+    await expect(canvas.getByRole('searchbox', { name: 'Search rooms or groups' })).toHaveClass(
+      '!text-sm',
+      '!font-normal'
+    );
+    await expect(footer).not.toBeNull();
+    await expect(
+      within(header as HTMLElement).queryByRole('button', { name: 'Edit rooms' })
+    ).toBeNull();
+    await expect(
+      within(footer as HTMLElement).getByRole('button', { name: 'Edit rooms' })
+    ).toBeVisible();
+  },
+  globals: {
+    viewport: {
+      value: 'mobile1',
+      isRotated: false,
+    },
+  },
+};
+
+export const PhoneRoomDetailActions: Story = {
+  args: {
+    layout: 'phone',
+    phoneFrame: true,
+    initialViewModel: roomWorkspaceBaseViewModel,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const workspace = canvas.getByRole('region', { name: 'Rooms' });
+    const header = canvas.getByRole('heading', { name: 'Rooms' }).closest('header');
+    const footer = workspace.querySelector('[data-room-workspace-phone-footer]');
+    await expect(footer).not.toBeNull();
+    await expect(
+      within(header as HTMLElement).queryByRole('button', { name: 'Edit rooms' })
+    ).toBeNull();
+    const backButton = within(footer as HTMLElement).getByRole('button', { name: 'Back' });
+    const editButton = within(footer as HTMLElement).getByRole('button', { name: 'Edit rooms' });
+    await expect(backButton).toBeVisible();
+    await expect(backButton).toHaveClass('h-10');
+    await expect(editButton).toBeVisible();
+    await expect(editButton).toHaveClass('h-10');
+  },
+  globals: {
+    viewport: {
+      value: 'mobile1',
+      isRotated: false,
+    },
   },
 };
 
@@ -986,14 +1031,24 @@ export const PhoneCoverSheetDialog: Story = {
       stage: 'structure',
     },
   },
-  parameters: {
-    viewport: { defaultViewport: 'mobile1' },
-  },
   play: async ({ canvasElement }) => {
     const page = within(canvasElement.ownerDocument.body);
     const dialog = await page.findByRole('dialog', { name: 'Rooms' });
-    await expect(dialog).toHaveClass('max-sm:!rounded-[30px]', 'max-sm:!bottom-2');
-    await expect(page.getByRole('button', { name: 'Close dialog' })).toBeInTheDocument();
+    await expect(dialog).toHaveClass(
+      'max-sm:!h-[80dvh]',
+      'max-sm:!rounded-t-[30px]',
+      'max-sm:!rounded-b-none',
+      'max-sm:!bottom-0'
+    );
+    await expect(
+      page.getByRole('button', { name: 'Drag dialog to fullscreen or close' })
+    ).toBeInTheDocument();
+  },
+  globals: {
+    viewport: {
+      value: 'mobile1',
+      isRotated: false,
+    },
   },
 };
 
@@ -1006,9 +1061,6 @@ export const PhoneRoomEditor: Story = {
       mode: 'manage',
       stage: 'structure',
     },
-  },
-  parameters: {
-    viewport: { defaultViewport: 'mobile1' },
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -1028,6 +1080,12 @@ export const PhoneRoomEditor: Story = {
     await expect(roomNameInput).toHaveValue('Lounge');
     await expect(canvas.queryByRole('dialog', { name: 'Edit room' })).not.toBeInTheDocument();
     await expect(canvas.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+  },
+  globals: {
+    viewport: {
+      value: 'mobile1',
+      isRotated: false,
+    },
   },
 };
 

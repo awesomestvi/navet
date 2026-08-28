@@ -2,7 +2,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/system/tokens';
 import { DASHBOARD_CARD_TYPES } from '@navet/app/features/dashboard';
 import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ArrowRight, Layers3 } from 'lucide-react';
 
 const CUSTOM_CARD_TYPES = new Set(['helpers', 'grouped-sensors', 'weather', 'calendars']);

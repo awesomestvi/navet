@@ -77,17 +77,17 @@ export const MobileSectionOrbitSheet = memo(function MobileSectionOrbitSheet({
       accentColor={accentColor}
       overlayClassName={`animate-in fade-in bg-black/45 backdrop-blur-[2px] md:hidden ${surface.dialogBackdrop}`}
       contentClassName={`${surface.panel} ${surface.border}`}
-      bodyClassName="px-4"
     >
-      <div className="space-y-3 pb-1">
+      <div className="pb-1">
         <SheetSurfaceHeader
           title={t('sidebar.orbitTitle')}
           description={t('sidebar.orbitDescription')}
           closeLabel={t('common.close')}
           onClose={() => onOpenChange(false)}
+          className={`border-b max-sm:pt-2 ${surface.border}`}
         />
 
-        <section>
+        <section className="p-4">
           <div className="grid grid-cols-2 gap-2">
             {orbitItems.map((item) => {
               const isActive = !hasCustomActiveDestination && activeSection === item.section;

@@ -1,4 +1,7 @@
 import { getDashboardClientIdentity } from '@navet/app/features/dashboard/clients/dashboard-client-identity';
+import { SettingsSection } from '@navet/app/features/settings';
+import { SETTINGS_DETAIL_HISTORY_KEY } from '@navet/app/features/settings/settings-navigation';
+import { useNavigationStore } from '@navet/app/stores/navigation-store';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
@@ -16,6 +19,7 @@ describe('DashboardSwitcherPill', () => {
 
   beforeEach(async () => {
     await resetAppStores();
+    window.history.replaceState({}, '', '/');
     clientId = getDashboardClientIdentity().id;
     const home = createDashboardDefinition({ id: 'home', name: 'Home' });
     const upstairs = createDashboardDefinition({ id: 'upstairs', name: 'Upstairs lights' });
@@ -82,5 +86,23 @@ describe('DashboardSwitcherPill', () => {
       activeSource: 'assignment',
     });
     expect(state.collection.dashboardIdByClientId[clientId]).toBe('upstairs');
+  });
+
+  it('opens the dashboard section when managing dashboards', async () => {
+    renderWithProviders(<DashboardSwitcherPill active onShowHome={() => {}} />);
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: /Open dashboards/ }));
+    await waitFor(() => expect(screen.getByRole('menu')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Manage dashboards' }));
+
+    expect(useNavigationStore.getState().activeSection).toBe('settings');
+    expect(localStorage.getItem('navet-settings-active-tab')).toBe(JSON.stringify('dashboard'));
+    expect(window.history.state).toMatchObject({ [SETTINGS_DETAIL_HISTORY_KEY]: true });
+
+    renderWithProviders(<SettingsSection layout="mobile" />);
+    await waitFor(() =>
+      expect(screen.queryByRole('navigation', { name: 'Settings' })).not.toBeInTheDocument()
+    );
+    expect(document.getElementById('dashboard-settings-title')).toHaveTextContent('Dashboard');
   });
 });

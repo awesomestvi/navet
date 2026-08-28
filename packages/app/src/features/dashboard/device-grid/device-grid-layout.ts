@@ -13,6 +13,110 @@ export interface DashboardGridPlacement {
   row: number;
 }
 
+interface DashboardGridPackingMember {
+  id: string;
+  columnOffset: number;
+  rowOffset: number;
+}
+
+interface DashboardGridPackingUnit {
+  sourceIndex: number;
+  width: number;
+  height: number;
+  members: DashboardGridPackingMember[];
+}
+
+function buildMicroCardPackingUnits(
+  items: Array<DashboardGridLayoutItem & { sourceIndex: number }>
+): DashboardGridPackingUnit[] {
+  const tinyItems = items.filter((item) => item.size === 'tiny');
+  const extraSmallItems = items.filter((item) => item.size === 'extra-small');
+  const bundledIds = new Set<string>();
+  const units: DashboardGridPackingUnit[] = [];
+  const bundleCount = Math.min(Math.floor(tinyItems.length / 2), extraSmallItems.length);
+
+  for (let index = 0; index < bundleCount; index += 1) {
+    const firstTiny = tinyItems[index * 2];
+    const secondTiny = tinyItems[index * 2 + 1];
+    const extraSmall = extraSmallItems[index];
+
+    if (!firstTiny || !secondTiny || !extraSmall) continue;
+
+    bundledIds.add(firstTiny.id);
+    bundledIds.add(secondTiny.id);
+    bundledIds.add(extraSmall.id);
+    units.push({
+      sourceIndex: Math.min(firstTiny.sourceIndex, secondTiny.sourceIndex, extraSmall.sourceIndex),
+      width: 2,
+      height: 2,
+      members: [
+        { id: firstTiny.id, columnOffset: 0, rowOffset: 0 },
+        { id: secondTiny.id, columnOffset: 1, rowOffset: 0 },
+        { id: extraSmall.id, columnOffset: 0, rowOffset: 1 },
+      ],
+    });
+  }
+
+  for (const item of items) {
+    if (bundledIds.has(item.id)) continue;
+
+    const span = getDashboardCardGridSpan(item.size);
+    units.push({
+      sourceIndex: item.sourceIndex,
+      width: span.cols,
+      height: span.rows,
+      members: [{ id: item.id, columnOffset: 0, rowOffset: 0 }],
+    });
+  }
+
+  return units.sort((left, right) => left.sourceIndex - right.sourceIndex);
+}
+
+function buildPackingUnits(
+  items: DashboardGridLayoutItem[],
+  columnCount: number
+): DashboardGridPackingUnit[] {
+  const units: DashboardGridPackingUnit[] = [];
+  let runStart = 0;
+
+  while (runStart < items.length) {
+    const firstItem = items[runStart];
+    if (!firstItem) break;
+
+    if (columnCount >= 2 && (firstItem.size === 'tiny' || firstItem.size === 'extra-small')) {
+      let runEnd = runStart + 1;
+      while (
+        runEnd < items.length &&
+        (items[runEnd]?.size === 'tiny' || items[runEnd]?.size === 'extra-small')
+      ) {
+        runEnd += 1;
+      }
+
+      units.push(
+        ...buildMicroCardPackingUnits(
+          items.slice(runStart, runEnd).map((item, offset) => ({
+            ...item,
+            sourceIndex: runStart + offset,
+          }))
+        )
+      );
+      runStart = runEnd;
+      continue;
+    }
+
+    const span = getDashboardCardGridSpan(firstItem.size);
+    units.push({
+      sourceIndex: runStart,
+      width: span.cols,
+      height: span.rows,
+      members: [{ id: firstItem.id, columnOffset: 0, rowOffset: 0 }],
+    });
+    runStart += 1;
+  }
+
+  return units;
+}
+
 function canPlace(
   occupied: boolean[][],
   column: number,
@@ -64,9 +168,10 @@ function getFragmentationScore(
 /**
  * Produces stable explicit positions for the automatic room grid.
  *
- * Items retain their source priority. When an item can fit in several places on the same earliest
- * row, the least-fragmenting position wins. This keeps tall cards against an occupied edge instead
- * of splitting the following row into narrow holes that no standard card can use.
+ * Items retain their source priority at the card-block level. Within a consecutive run of micro
+ * cards, two tiny cards and one extra-small card form a complete 2x2 block. When a block can fit in
+ * several places on the same earliest row, the least-fragmenting position wins. This keeps mixed
+ * card grids harmonious without splitting following rows into narrow unusable holes.
  */
 export function packDashboardGridItems(
   items: DashboardGridLayoutItem[],
@@ -75,11 +180,11 @@ export function packDashboardGridItems(
   const safeColumnCount = Math.max(1, Math.round(columnCount));
   const occupied: boolean[][] = [];
   const placements = new Map<string, DashboardGridPlacement>();
+  const packingUnits = buildPackingUnits(items, safeColumnCount);
 
-  for (const item of items) {
-    const span = getDashboardCardGridSpan(item.size);
-    const width = Math.min(safeColumnCount, span.cols);
-    const height = Math.max(1, span.rows);
+  for (const unit of packingUnits) {
+    const width = Math.min(safeColumnCount, unit.width);
+    const height = Math.max(1, unit.height);
     let row = 0;
 
     while (true) {
@@ -102,7 +207,12 @@ export function packDashboardGridItems(
           for (let x = column; x < column + width; x += 1) occupied[y][x] = true;
         }
 
-        placements.set(item.id, { column: column + 1, row: row + 1 });
+        for (const member of unit.members) {
+          placements.set(member.id, {
+            column: column + member.columnOffset + 1,
+            row: row + member.rowOffset + 1,
+          });
+        }
         break;
       }
 

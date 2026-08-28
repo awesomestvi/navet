@@ -5,7 +5,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { EntityCardStoryFrame } from '@navet/app/storybook/story-frames';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Lightbulb, Moon, Sparkles, SunMedium } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { BaseCard } from './base-card';

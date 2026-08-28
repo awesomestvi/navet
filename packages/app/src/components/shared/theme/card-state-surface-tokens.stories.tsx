@@ -7,7 +7,7 @@ import {
 import { getEntityIconPillStyles } from '@navet/app/components/shared/theme/entity-icon-pill-styles';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import type { ThemeType } from '@navet/app/hooks/use-theme';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { AlertTriangle, Lightbulb, ShieldCheck, Zap } from 'lucide-react';
 
 const THEMES: ThemeType[] = ['glass', 'dark', 'light', 'black'];

@@ -185,7 +185,7 @@ export const itMessages = {
     'Tutti segnano le faccende completate nello stesso posto, così si vede cosa è finito e cosa richiede ancora attenzione.',
   'household.setup.dialogTitle': 'Configura le faccende di casa',
   'household.setup.dialogDescription':
-    'Ti aiuteremo ad aggiungere le persone di casa, creare un lavoro che ritorna e scegliere promemoria e protezione facoltativi. Potrai cambiare tutto in seguito.',
+    'Aggiungi persone e faccende. Modifica le preferenze quando vuoi.',
   'household.setup.progressLabel': 'Avanzamento configurazione faccende',
   'household.setup.stepCount': 'Passaggio {current} di {total}',
   'household.setup.stepProfiles': 'Profili e promemoria',
@@ -540,6 +540,15 @@ export const itMessages = {
   'dashboard.multiple.group.rooms': 'Stanze',
   'dashboard.multiple.create.title': 'Crea dashboard',
   'dashboard.multiple.create.description': 'Scegli cosa mostrare e dove utilizzare la dashboard.',
+  'dashboard.multiple.create.nameTitle': 'Dai un nome alla dashboard',
+  'dashboard.multiple.create.nameDescription':
+    'Scegli un nome che renda questa vista facile da riconoscere.',
+  'dashboard.multiple.create.contentTitle': 'Scegli cosa includere',
+  'dashboard.multiple.create.contentDescription':
+    'Inizia dalle stanze, copia la dashboard attuale o parti da zero.',
+  'dashboard.multiple.create.displaysTitle': 'Scegli dove si apre',
+  'dashboard.multiple.create.displaysDescription':
+    'Assegnala a questo dispositivo o lasciala non assegnata per ora.',
   'dashboard.multiple.create.name': 'Nome',
   'dashboard.multiple.create.namePlaceholder': 'Piano superiore',
   'dashboard.multiple.create.startWith': 'Inizia con',
@@ -786,6 +795,11 @@ export const itMessages = {
   'settings.system.clients.status.disabled': 'Solo locale',
   'settings.system.clients.status.error': 'Sincronizzazione da controllare',
   'settings.system.clients.retrySync': 'Riprova la sincronizzazione',
+  'settings.system.clients.rebindSync': 'Usa questa dashboard',
+  'settings.system.clients.rebindSyncConfirm': 'Avviare una nuova sincronizzazione condivisa?',
+  'settings.system.clients.rebindSyncDescription':
+    'Questa operazione mantiene la dashboard attuale del dispositivo, collega lo spazio condiviso all’indirizzo Home Assistant corrente e la salva come nuova revisione. Gli altri dispositivi dovranno riconnettersi tramite questo indirizzo.',
+  'settings.system.clients.rebindSyncStart': 'Avvia nuova sincronizzazione',
   'settings.system.clients.status.idle': 'Pronto',
   'settings.system.clients.status.loading': 'Caricamento',
   'settings.system.clients.status.offline': 'Non in linea',
@@ -973,7 +987,7 @@ export const itMessages = {
   'dashboard.addCard.sort.default': 'Predefinito',
   'dashboard.addCard.sort.ascending': 'Crescente',
   'dashboard.addCard.sort.descending': 'Decrescente',
-  'dashboard.addCard.tab.widgets': 'Scheda personalizzata',
+  'dashboard.addCard.tab.widgets': 'Schede personalizzate',
   'dashboard.addCard.header.library': 'LIBRERIA ENTITÀ',
   'dashboard.addCard.header.widgets': 'WIDGET PERSONALIZZATI',
   'dashboard.addCard.tab.cardsHint': 'Sfoglia tutte le entità Home Assistant',
@@ -3099,6 +3113,7 @@ export const itMessages = {
   'homeSummary.playing': '{count} in riproduzione',
   'homeSummary.active': '{count} attivi',
   'homeSummary.climate': 'Clima',
+  'climate.comfort.mostlyComfortable': 'Perlopiù confortevole',
   'dashboard.packs.section.access': 'Accesso',
   'dashboard.packs.section.cameras': 'Telecamere',
   'dashboard.packs.section.presence': 'Presenza',

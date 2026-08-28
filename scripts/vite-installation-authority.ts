@@ -16,7 +16,7 @@ import path from 'node:path'
 import {
   createInstallationCookieNames,
   type InstallationCookieNames,
-} from './installation-cookie-scope'
+} from './installation-cookie-scope.ts'
 
 export const INSTALLATION_KEY_HEADER = 'X-Navet-Installation-Key'
 const INSTALLATION_KEY_PATTERN = /^[a-f0-9]{64}$/

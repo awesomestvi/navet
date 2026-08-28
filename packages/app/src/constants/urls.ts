@@ -15,8 +15,9 @@ export const EXAMPLE_PHOTO_URL = 'https://example.com/photo.jpg';
 /** OpenStreetMap copyright URL */
 export const OPENSTREETMAP_COPYRIGHT_URL = 'https://www.openstreetmap.org/copyright';
 
-/** CARTO attribution URL */
-export const CARTO_ATTRIBUTION_URL = 'https://carto.com/attributions';
+/** Open basemap attribution URLs */
+export const OPENFREEMAP_URL = 'https://openfreemap.org/';
+export const OPENMAPTILES_URL = 'https://openmaptiles.org/';
 
 /** GitHub repository URL */
 export const GITHUB_REPO_URL = 'https://github.com/awesomestvi/navet';

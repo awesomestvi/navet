@@ -12,6 +12,7 @@ import {
 import { cn } from '@navet/app/components/ui/utils';
 import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
 import { getDashboardClientIdentity } from '@navet/app/features/dashboard/clients/dashboard-client-identity';
+import { openSettingsTab } from '@navet/app/features/settings/settings-navigation';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import { dashboardToPath } from '@navet/app/navigation/sections';
 import { useNavigationStore } from '@navet/app/stores/navigation-store';
@@ -85,12 +86,7 @@ export function DashboardSwitcherMenuContent({
     onClose?.();
   };
   const openManager = () => {
-    try {
-      window.localStorage.setItem('navet-settings-active-tab', JSON.stringify('dashboard'));
-    } catch {
-      // The Settings page still opens even when local persistence is unavailable.
-    }
-    useNavigationStore.getState().setActiveSection('settings');
+    openSettingsTab('dashboard');
   };
 
   return (

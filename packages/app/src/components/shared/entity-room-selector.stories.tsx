@@ -1,6 +1,6 @@
 import { RoomEyebrow } from '@navet/app/components/primitives/room-eyebrow';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps, ReactNode } from 'react';
 import { EntityRoomSelector } from './entity-room-selector';
 

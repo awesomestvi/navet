@@ -3,7 +3,7 @@ import type {
   ChoreActivityType,
   ChoreHistoryRetentionPolicy,
   ChoreWorkspaceData,
-} from './chores';
+} from './chores.ts';
 
 export interface ChoreHistoryFilter {
   from?: string;

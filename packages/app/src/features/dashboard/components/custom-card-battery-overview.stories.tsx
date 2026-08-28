@@ -8,7 +8,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { useTheme } from '@navet/app/hooks';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import { EntityCardStoryFrame } from '@navet/app/storybook/story-frames';
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Battery, Settings2 } from 'lucide-react';
 import { BatteryList, getLevelColor } from './widgets/battery-list';
 

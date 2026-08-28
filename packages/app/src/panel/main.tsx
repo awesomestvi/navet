@@ -20,14 +20,14 @@ import navetPanelStylesUrl from '@navet/app/styles/index.css?url';
 import { resolveEffectsQuality } from '@navet/app/utils/effects-quality';
 import { clearViewportCssVars, syncViewportCssVars } from '@navet/app/utils/viewport';
 import type { HassConfig, HassEntities, HassUser } from 'home-assistant-js-websocket';
-import leafletStylesUrl from 'leaflet/dist/leaflet.css?url';
+import mapLibreStylesUrl from 'maplibre-gl/dist/maplibre-gl.css?url';
 import { useCallback, useEffect, useLayoutEffect } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { useShallow } from 'zustand/react/shallow';
 
 window.__NAVET_PANEL__ = true;
 
-const PANEL_STYLESHEET_IDS = ['navet-panel-styles', 'navet-panel-leaflet-styles'] as const;
+const PANEL_STYLESHEET_IDS = ['navet-panel-styles', 'navet-panel-maplibre-styles'] as const;
 const PANEL_STYLESHEET_LOAD_TIMEOUT_MS = 3000;
 let panelStylesReadyPromise: Promise<void> | null = null;
 
@@ -57,7 +57,7 @@ function ensurePanelStyles() {
 
   const stylesheets = [
     { id: PANEL_STYLESHEET_IDS[0], href: navetPanelStylesUrl },
-    { id: PANEL_STYLESHEET_IDS[1], href: leafletStylesUrl },
+    { id: PANEL_STYLESHEET_IDS[1], href: mapLibreStylesUrl },
   ];
   const links: HTMLLinkElement[] = [];
 

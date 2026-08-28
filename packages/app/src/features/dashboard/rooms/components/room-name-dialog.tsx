@@ -51,20 +51,10 @@ export function RoomNameDialog({
       }}
       footer={
         <>
-          <Button
-            variant="ghost"
-            className="min-h-11"
-            onClick={() => onOpenChange(false)}
-            disabled={isConfirming}
-          >
+          <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={isConfirming}>
             {cancelLabel}
           </Button>
-          <Button
-            type="submit"
-            className="min-h-11"
-            loading={isConfirming}
-            disabled={isConfirmDisabled}
-          >
+          <Button type="submit" loading={isConfirming} disabled={isConfirmDisabled}>
             {confirmLabel}
           </Button>
         </>

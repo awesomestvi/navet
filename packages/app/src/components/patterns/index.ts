@@ -20,6 +20,12 @@ export {
   type CompactMeterListItemProps,
 } from './compact-meter-list-item';
 export { DashboardEmptyState, type DashboardEmptyStateProps } from './dashboard-empty-state';
+export {
+  type DashboardGroupingItem,
+  DashboardGroupingNavigation,
+  type DashboardGroupingNavigationProps,
+  type DashboardGroupingOption,
+} from './dashboard-grouping-navigation';
 export { DashboardHeroSection, type DashboardHeroSectionProps } from './dashboard-hero-section';
 export { FieldBlock, type FieldBlockProps } from './field-block';
 export {
