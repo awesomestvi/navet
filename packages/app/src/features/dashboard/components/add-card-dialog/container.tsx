@@ -1,6 +1,8 @@
 import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
 import { useI18n, useTheme } from '@navet/app/hooks';
+import { useIntegrationStore } from '@navet/app/hooks/use-integration-store';
+import { integrationSelectors } from '@navet/app/stores/selectors';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DashboardLibraryCard, DashboardLibraryEntityType } from '../dashboard-library-list';
 import { createCardTemplates } from './templates';
@@ -33,6 +35,8 @@ export function AddCardDialogContainer({
 }: AddCardDialogContainerProps) {
   const { locale, t } = useI18n();
   const { theme, primaryColor } = useTheme();
+  const providerSessions = useIntegrationStore(integrationSelectors.providerSessions);
+  const hasHomeAssistantSession = Boolean(providerSessions.home_assistant);
   const [activeTab, setActiveTab] = useState<'cards' | 'widgets'>(
     showCardsTab ? 'cards' : 'widgets'
   );
@@ -47,14 +51,17 @@ export function AddCardDialogContainer({
   const cardTemplates = useMemo(() => {
     const templates = createCardTemplates(t);
     const allowedIds = allowedTemplateIds?.length ? new Set(allowedTemplateIds) : null;
+    const providerEligibleTemplates = hasHomeAssistantSession
+      ? templates
+      : templates.filter((template) => template.id !== 'assist');
     const visibleTemplates = allowedIds
-      ? templates.filter((template) => allowedIds.has(template.id))
-      : templates;
+      ? providerEligibleTemplates.filter((template) => allowedIds.has(template.id))
+      : providerEligibleTemplates;
 
     return visibleTemplates.sort((left, right) =>
       t(left.nameKey).localeCompare(t(right.nameKey), locale)
     );
-  }, [allowedTemplateIds, locale, t]);
+  }, [allowedTemplateIds, hasHomeAssistantSession, locale, t]);
 
   useEffect(() => {
     if (!open) {

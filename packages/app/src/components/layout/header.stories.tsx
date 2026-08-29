@@ -2,11 +2,20 @@ import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-col
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { useTheme } from '@navet/app/hooks';
 import type { TranslateFn, TranslationKey } from '@navet/app/i18n';
+import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
+import { integrationStore } from '@navet/app/stores/integration-store';
 import type { PrimaryColor } from '@navet/app/stores/theme-store';
 import { getStoryDocsDescription } from '@navet/app/storybook/story-docs';
 import type { PlatformManageableRoomReference } from '@navet/core/provider-feature-models';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { type Dispatch, type ReactNode, type SetStateAction, useRef, useState } from 'react';
+import {
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { Header } from './header';
 import type { MobileHeaderEditActions } from './mobile-header-actions';
 import type { MobileRoomNavigation } from './mobile-room-dropdown';
@@ -73,6 +82,81 @@ const translateHeaderStory: TranslateFn = (key, params) => {
       return STORY_TEXT[key] ?? key;
   }
 };
+
+function ConnectedAssistFixture({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    const previous = integrationStore.getState();
+    const registration = getProviderRuntimeRegistration('home_assistant');
+    const previousConversationFeatureService = registration.conversationFeatureService;
+    registration.conversationFeatureService = {
+      getPipelines: async () => ({
+        preferredPipelineId: 'home-assistant',
+        pipelines: [
+          {
+            id: 'home-assistant',
+            name: 'Home Assistant',
+            language: 'en',
+            conversationEngineId: 'conversation.home_assistant',
+            supportsSpeechToText: true,
+            supportsTextToSpeech: true,
+          },
+        ],
+      }),
+      startTextConversation: async (_request, listener) => {
+        queueMicrotask(() => {
+          listener({
+            type: 'run-start',
+            pipelineId: 'home-assistant',
+            conversationId: 'storybook-conversation',
+          });
+          listener({
+            type: 'response',
+            conversationId: 'storybook-conversation',
+            text: 'The living room lights are on.',
+            responseType: 'action_done',
+            continueConversation: true,
+          });
+          listener({ type: 'run-end' });
+        });
+        return { cancel: () => undefined };
+      },
+      startVoiceConversation: async () => ({
+        cancel: () => undefined,
+        sendAudio: () => undefined,
+        finishAudio: () => undefined,
+      }),
+    };
+    integrationStore.setState({
+      ...previous,
+      currentProviderId: 'home_assistant',
+      providerSessions: {
+        ...previous.providerSessions,
+        home_assistant: {
+          providerId: 'home_assistant',
+          connected: true,
+          runtime: 'storybook',
+        },
+      },
+      providerHealth: {
+        ...previous.providerHealth,
+        home_assistant: {
+          ...previous.providerHealth.home_assistant,
+          connected: true,
+          connecting: false,
+          reconnecting: false,
+          lastError: null,
+        },
+      },
+    });
+
+    return () => {
+      integrationStore.setState(previous);
+      registration.conversationFeatureService = previousConversationFeatureService;
+    };
+  }, []);
+
+  return children;
+}
 
 function createHeaderStoryController(args: {
   desktopNotificationButtonRef: HeaderController['desktopNotificationButtonRef'];
@@ -192,10 +276,12 @@ function HeaderStoryFrame({ children, mobile = false }: { children: ReactNode; m
 
 function HeaderStoryPreview({
   editMode = false,
+  mobileFrame = true,
   roomLabel = 'Living Room',
   unreadCount = 2,
 }: {
   editMode?: boolean;
+  mobileFrame?: boolean;
   roomLabel?: string;
   unreadCount?: number;
 }) {
@@ -238,13 +324,15 @@ function HeaderStoryPreview({
   const mobileEditActions = createStoryMobileEditActions(isEditMode, setIsEditMode);
 
   return (
-    <HeaderStoryFrame mobile>
-      <Header
-        controller={controller}
-        mobileEditActions={mobileEditActions}
-        mobileRoomNavigation={mobileRoomNavigation}
-      />
-    </HeaderStoryFrame>
+    <ConnectedAssistFixture>
+      <HeaderStoryFrame mobile={mobileFrame}>
+        <Header
+          controller={controller}
+          mobileEditActions={mobileEditActions}
+          mobileRoomNavigation={mobileRoomNavigation}
+        />
+      </HeaderStoryFrame>
+    </ConnectedAssistFixture>
   );
 }
 
@@ -280,6 +368,10 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+export const GlobalAssist: Story = {
+  render: () => <HeaderStoryPreview mobileFrame={false} />,
+};
 
 export const MobileUtilityDefault: Story = {
   render: () => <HeaderStoryPreview />,

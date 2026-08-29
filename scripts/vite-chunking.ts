@@ -2,6 +2,7 @@ import path from 'node:path'
 
 export const LAZY_HTML_PRELOAD_CHUNKS = [
   'dashboard-card-item-draggable',
+  'dashboard-widget-assist',
   'dashboard-widget-battery',
   'dashboard-widget-button',
   'dashboard-widget-energy',
@@ -211,6 +212,13 @@ export function getAppChunkName(id: string) {
     return 'dashboard-widget-map'
   }
 
+  if (
+    moduleId.includes('/packages/app/src/components/assistant-ui/') ||
+    moduleId.includes('/packages/app/src/features/dashboard/components/widgets/assist-')
+  ) {
+    return 'dashboard-widget-assist'
+  }
+
   if (moduleId.includes('/packages/app/src/features/dashboard/components/widgets/photo-frame')) {
     return 'dashboard-widget-photo'
   }
@@ -304,6 +312,14 @@ export function getVendorChunkName(id: string) {
 
   if (packageName === 'lucide-react') {
     return 'icons-vendor'
+  }
+
+  if (
+    packageName.startsWith('@assistant-ui/') ||
+    packageName === 'assistant-cloud' ||
+    packageName === 'assistant-stream'
+  ) {
+    return 'assistant-ui-vendor'
   }
 
   if (packageName === 'leaflet' || packageName === 'react-leaflet') {

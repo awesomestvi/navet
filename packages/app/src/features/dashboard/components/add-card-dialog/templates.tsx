@@ -1,5 +1,5 @@
 import type { TranslateFn } from '@navet/app/hooks';
-import { Zap as EnergyIcon, Gauge, Sparkles } from 'lucide-react';
+import { Zap as EnergyIcon, Gauge, MessageCircle, Sparkles } from 'lucide-react';
 import type { SVGProps } from 'react';
 import type { ButtonWidgetData } from '../widgets/button-widget';
 import type { CardTemplate } from './types';
@@ -219,6 +219,16 @@ export function createCardTemplates(t: TranslateFn): CardTemplate[] {
       icon: <Zap className="w-5 h-5" />,
       defaultSize: 'small',
       supportedSizes: ['tiny', 'extra-small', 'small'],
+    },
+    {
+      id: 'assist',
+      cardType: 'assist',
+      nameKey: 'dashboard.addCard.templates.assist.name',
+      descriptionKey: 'dashboard.addCard.templates.assist.description',
+      icon: <MessageCircle className="w-5 h-5" />,
+      defaultSize: 'small',
+      supportedSizes: ['tiny', 'extra-small', 'small'],
+      initialData: { providerId: 'home_assistant' },
     },
     {
       id: 'scene',

@@ -1671,6 +1671,7 @@ const previewProviderPackageRegistration: ProviderPackageRegistration = {
       weather: true,
       notifications: false,
       tasks: true,
+      conversation: false,
     },
     lightFeatureService: previewLightFeatureService,
     mediaFeatureService: previewMediaFeatureService,

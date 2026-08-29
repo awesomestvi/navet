@@ -6,6 +6,7 @@ import { settingsSelectors } from '@navet/app/stores/selectors';
 import { Bell, CalendarDays, Check, Clock3, Edit3, Menu, Search } from 'lucide-react';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { HeaderDesktopActions } from './header-actions';
+import { HeaderAssistAction } from './header-assist-action';
 import { HeaderSearchInput } from './header-search-input';
 import { resolveHeaderTitle } from './header-title';
 import type { MobileHeaderEditActions } from './mobile-header-actions';
@@ -155,6 +156,7 @@ function HeaderView({
             </div>
           ) : null}
         </div>
+        <HeaderAssistAction hoverBg={hoverBg} textSecondary={textSecondary} />
         {mobileAvailability && !kioskMode ? (
           <button
             type="button"
@@ -286,6 +288,8 @@ function HeaderView({
                 </button>
               )}
             </div>
+
+            <HeaderAssistAction hoverBg={hoverBg} textSecondary={textSecondary} />
 
             <HeaderDesktopActions
               activeColorValue={activeColorValue}

@@ -322,6 +322,18 @@ class HomeAssistantService {
     return this.connectionService.getConnection();
   }
 
+  sendWebSocketBinary(data: Uint8Array): void {
+    const connection =
+      this.panelAdapter?.getHass().connection ?? this.connectionService.getConnection();
+    const socket = (connection as (Connection & { socket?: WebSocket }) | null)?.socket;
+
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      throw new Error('Home Assistant websocket is not connected');
+    }
+
+    socket.send(new Uint8Array(data).buffer);
+  }
+
   async callApi<T = unknown>(
     method: string,
     path: string,

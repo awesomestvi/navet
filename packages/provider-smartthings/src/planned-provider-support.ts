@@ -74,6 +74,7 @@ export function createPlannedProviderRuntimeRegistration(
       weather: false,
       notifications: false,
       tasks: false,
+      conversation: false,
     },
     roomManagementCapabilities: createProviderRoomManagementCapabilities(
       registration.contract.providerId

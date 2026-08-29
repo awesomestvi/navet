@@ -74,8 +74,8 @@ they are app-internal support code. Do not treat them as the preferred shared su
 | SmartThings | planned | provider contract + registration entry only |
 
 Feature-service support is narrower than implementation status. Home Assistant registers the
-advanced climate, media, camera, energy, calendar, weather, notification, task, history, security,
-and administration services. Homey and openHAB currently register rooms, realtime entities,
+advanced climate, media, camera, energy, calendar, weather, notification, task, conversation,
+history, security, and administration services. Homey and openHAB currently register rooms, realtime entities,
 lighting, switches, and sensors.
 
 ## Working Rule

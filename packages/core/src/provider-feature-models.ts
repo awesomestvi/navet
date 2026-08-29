@@ -76,6 +76,59 @@ export interface PlatformMessageClient {
   ): Promise<() => void>;
 }
 
+export interface PlatformConversationPipeline {
+  id: string;
+  name: string;
+  language: string;
+  conversationEngineId?: string;
+  supportsSpeechToText: boolean;
+  supportsTextToSpeech: boolean;
+}
+
+export interface PlatformConversationPipelineCollection {
+  pipelines: PlatformConversationPipeline[];
+  preferredPipelineId: string | null;
+}
+
+export interface PlatformConversationTextRequest {
+  text: string;
+  pipelineId?: string;
+  conversationId?: string;
+}
+
+export interface PlatformConversationVoiceRequest {
+  sampleRate: number;
+  pipelineId?: string;
+  conversationId?: string;
+  playAudioResponse?: boolean;
+}
+
+export type PlatformConversationEvent =
+  | {
+      type: 'run-start';
+      pipelineId: string;
+      conversationId?: string;
+    }
+  | { type: 'speech-start' }
+  | { type: 'speech-end'; text: string }
+  | { type: 'response-delta'; text?: string; thinkingText?: string }
+  | {
+      type: 'response';
+      conversationId?: string;
+      text: string;
+      responseType?: string;
+      continueConversation: boolean;
+    }
+  | { type: 'audio-output'; url: string; mimeType?: string }
+  | { type: 'error'; code: string; message: string }
+  | { type: 'run-end' };
+
+export interface PlatformConversationRunHandle {
+  sendAudio?: (chunk: Int16Array) => void;
+  finishAudio?: () => void;
+  cancel: () => void;
+}
+
 export interface PlatformEntitySnapshot {
   entityId: string;
   state: string;

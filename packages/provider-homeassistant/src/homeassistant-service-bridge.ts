@@ -94,6 +94,7 @@ export interface HomeAssistantServiceBridge {
   isConnected(): boolean;
   getPanelHass(): HomeAssistantPanelHass | null;
   getConnection(): PlatformMessageClient | null;
+  sendWebSocketBinary(data: Uint8Array): void;
   getEntities(): HassEntities | null;
   getEntityRegistry(): HomeAssistantEntityRegistryEntry[];
   getConfig(): HassConfig | null;
@@ -217,6 +218,10 @@ export function getHomeAssistantPanelHass() {
 
 export function getHomeAssistantConnection() {
   return getBridge().getConnection();
+}
+
+export function sendHomeAssistantWebSocketBinary(data: Uint8Array) {
+  getBridge().sendWebSocketBinary(data);
 }
 
 export function getHomeAssistantEntities() {

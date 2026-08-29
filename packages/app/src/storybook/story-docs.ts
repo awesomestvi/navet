@@ -738,6 +738,21 @@ const STORY_DOCS: Record<string, string> = {
       'Check that the card stays concise enough for dashboard use.',
     ]
   ),
+  'Cards/Custom/Assist': doc(
+    'Home Assistant Assist card for opening Navet’s text and microphone conversation surface.',
+    [
+      'The tiny, extra-small, and small treatments for a provider-bound conversation action.',
+      'How Assist availability and its primary tap affordance fit the existing custom-card grammar.',
+    ],
+    [
+      'Use this story when changing Assist card hierarchy, status copy, or compact sizing.',
+      'Review it with the Action card before changing shared shortcut-card geometry.',
+    ],
+    [
+      'Check that the card reads as a conversation entry point rather than a generic service button.',
+      'Check light, dark, glass, touch, keyboard focus, and all three supported sizes.',
+    ]
+  ),
   'Cards/Custom/Map': doc(
     'Custom map card rendering person and device_tracker entities with GPS on an interactive MapLibre map backed by OpenFreeMap vector tiles.',
     [

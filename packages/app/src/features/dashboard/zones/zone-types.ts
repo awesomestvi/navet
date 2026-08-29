@@ -40,5 +40,6 @@ export const ZONE_DEFAULTS_BY_DEVICE_TYPE: Record<string, ZoneName> = {
   note: 'status',
   battery: 'status',
   button: 'actions',
+  assist: 'actions',
   presence: 'status',
 };

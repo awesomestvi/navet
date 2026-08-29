@@ -279,10 +279,20 @@ const cardTypes = new Set<CardType>([
   'energy-now',
   'media-stack',
   'button',
+  'assist',
   'map',
   'entity',
 ]);
-const cardSizes = new Set(['small', 'medium', 'large', 'extra-large']);
+const cardSizes = new Set([
+  'tiny',
+  'extra-small',
+  'small',
+  'medium',
+  'medium-vertical',
+  'large',
+  'extra-large',
+  'extra-wide',
+]);
 const MAX_IMPORTED_CARDS = 200;
 const MAX_IMPORTED_RECORD_KEYS = 500;
 
@@ -436,6 +446,15 @@ function sanitizeCustomCardData(
       entityId: sanitizeButtonEntityId(stringValue(data.entityId)),
       icon: stringValue(data.icon, 80),
       serviceData,
+      tintColor: stringValue(data.tintColor, 40),
+    });
+  }
+
+  if (type === 'assist') {
+    return omitUndefinedEntries({
+      providerId: data.providerId === 'home_assistant' ? 'home_assistant' : undefined,
+      pipelineId: stringValue(data.pipelineId, 160),
+      label: stringValue(data.label, 80),
       tintColor: stringValue(data.tintColor, 40),
     });
   }

@@ -14,6 +14,7 @@ Navet already has:
 - `@navet/provider-openhab` as a working standalone provider
 - `@navet/app` for product wiring, runtime selection, settings, and persistence
 - multi-provider session retention and selected-provider aggregation in shared dashboard collections
+- a provider-neutral conversation feature service with a Home Assistant Assist implementation
 
 Current implementation note:
 

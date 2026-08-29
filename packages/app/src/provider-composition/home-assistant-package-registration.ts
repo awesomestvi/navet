@@ -39,6 +39,7 @@ export function createHomeAssistantAppProviderPackageRegistration({
         isConnected: () => homeAssistantService.isConnected(),
         getPanelHass: () => homeAssistantService.getPanelHass(),
         getConnection: () => homeAssistantService.getConnection(),
+        sendWebSocketBinary: (data) => homeAssistantService.sendWebSocketBinary(data),
         getEntities: () => homeAssistantService.getEntities(),
         getEntityRegistry: () => homeAssistantService.getEntityRegistry(),
         getConfig: () => homeAssistantService.getConfig(),

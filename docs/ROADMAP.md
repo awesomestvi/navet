@@ -22,7 +22,7 @@ Navet currently ships:
 - dashboard editing with card ordering, sizing, locking, visibility, import/export, undo/redo, and
   Home overview layout packs
 - addable widgets for info summaries, RSS, photos, notes, battery and UPS status, live energy,
-  action buttons, maps, and generic provider entities
+  action buttons, Home Assistant Assist, maps, and generic provider entities
 - entity-card families for lights, switches, fans, climate and HVAC, humidifiers, covers, locks,
   alarm panels, cameras, media, weather, calendars, people, sensors, sensor groups, scenes, helpers,
   vacuums, and lawn mowers
@@ -36,7 +36,8 @@ Navet currently ships:
 - PWA install support, themes, localization, and public demo and Storybook publishing
 
 Provider capabilities are not equal: Home Assistant currently supplies the advanced climate,
-media, camera, energy, calendar, weather, notification, task, history, security, and administration
+media, camera, energy, calendar, weather, notification, task, Assist conversation, history,
+security, and administration
 services. Homey and openHAB currently supply rooms, lighting, switches, sensors, and realtime state.
 
 ## Likely Next

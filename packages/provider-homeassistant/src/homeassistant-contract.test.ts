@@ -106,6 +106,7 @@ beforeEach(() => {
     isConnected: () => homeAssistantState.connected,
     getPanelHass: () => null,
     getConnection: () => null,
+    sendWebSocketBinary: vi.fn(),
     getEntities: () => homeAssistantState.entities as never,
     getEntityRegistry: () => [],
     getConfig: () => null,

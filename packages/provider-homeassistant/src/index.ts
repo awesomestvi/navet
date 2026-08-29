@@ -5,6 +5,7 @@ export * from './homeassistant-calendar-feature.service';
 export * from './homeassistant-camera-feature.service';
 export * from './homeassistant-camera-runtime';
 export * from './homeassistant-climate-feature.service';
+export * from './homeassistant-conversation-feature.service';
 export * from './homeassistant-energy-feature.service';
 export * from './homeassistant-entity-runtime.service';
 export * from './homeassistant-history-feature.service';
@@ -56,6 +57,7 @@ export {
   selectHomeAssistantMediaPlayerSoundMode,
   selectHomeAssistantMediaPlayerSource,
   sendHomeAssistantRemoteCommand,
+  sendHomeAssistantWebSocketBinary,
   signHomeAssistantPath,
   subscribeHomeAssistantCameraWebRtcOffer,
   subscribeHomeAssistantStore,

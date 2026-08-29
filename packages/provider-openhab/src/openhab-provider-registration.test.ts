@@ -10,7 +10,7 @@ runProviderPackageRegistrationTests({
     }),
   expectedStatus: 'implemented',
   supportedFeatures: ['rooms', 'lighting', 'sensors'],
-  unsupportedFeatures: ['mediaBrowse', 'calendar', 'weather', 'notifications'],
+  unsupportedFeatures: ['mediaBrowse', 'calendar', 'weather', 'notifications', 'conversation'],
   expectedRoomManagementCapabilities: {
     discover: true,
     create: false,

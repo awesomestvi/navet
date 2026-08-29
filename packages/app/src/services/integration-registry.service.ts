@@ -48,6 +48,7 @@ const FEATURE_MESSAGES: Record<IntegrationProviderFeature, string> = {
   weather: 'Weather support is not implemented yet',
   notifications: 'Notifications are not implemented yet',
   tasks: 'Task support is not implemented yet',
+  conversation: 'Assist is not implemented yet',
 };
 
 function createIntegrationProviderAdapter(

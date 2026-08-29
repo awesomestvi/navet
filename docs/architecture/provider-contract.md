@@ -52,7 +52,8 @@ type NavetProviderContract = {
 `IntegrationProviderRuntimeRegistration` sits beside the small contract. It declares whether a
 provider is implemented or planned, publishes the dashboard feature matrix, and may register
 provider-owned services for media, lights, native actions, cameras, security, climate, rooms and
-entities, history, energy, calendars, weather, notifications, tasks, and entity runtime access.
+entities, history, energy, calendars, weather, notifications, tasks, conversations, and entity
+runtime access.
 
 Keeping these services out of `NavetProviderContract` prevents the base contract from growing into
 a mirror of Home Assistant. Shared feature UI asks the app/runtime seam for an optional service and
@@ -115,6 +116,7 @@ Current runtime feature scope:
 | rooms, realtime entities, lighting, switches, sensors | Yes | Yes | Yes |
 | climate, media, cameras, energy, calendar, weather | Yes | No | No |
 | notifications, tasks, history, security, administration | Yes | No | No |
+| Assist conversations | Yes | No | No |
 
 The app may keep multiple implemented sessions connected at once. Provider-scoped IDs and
 provider-owned state remain separate; selected provider collections are merged for dashboard use,

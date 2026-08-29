@@ -113,6 +113,7 @@ describe('homeassistant-adapter', () => {
       isConnected: vi.fn(() => true),
       getPanelHass: vi.fn(() => null),
       getConnection: vi.fn(() => null),
+      sendWebSocketBinary: vi.fn(),
       getEntities: vi.fn(() => ({
         'light.kitchen': lightEntityFactory(),
         'alarm_control_panel.home': alarmEntityFactory(),

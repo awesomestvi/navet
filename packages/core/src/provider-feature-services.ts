@@ -10,6 +10,11 @@ import type {
   PlatformCameraLiveState,
   PlatformCameraStream,
   PlatformCameraStreamType,
+  PlatformConversationEvent,
+  PlatformConversationPipelineCollection,
+  PlatformConversationRunHandle,
+  PlatformConversationTextRequest,
+  PlatformConversationVoiceRequest,
   PlatformEnergyEntityMap,
   PlatformEnergyEntityRegistryEntry,
   PlatformEntityHistoriesRequest,
@@ -33,6 +38,18 @@ import type {
   PlatformWebRtcClientConfiguration,
   PlatformWebRtcOfferEvent,
 } from './provider-feature-models';
+
+export interface ProviderConversationFeatureService {
+  getPipelines: () => Promise<PlatformConversationPipelineCollection>;
+  startTextConversation: (
+    request: PlatformConversationTextRequest,
+    listener: (event: PlatformConversationEvent) => void
+  ) => Promise<PlatformConversationRunHandle>;
+  startVoiceConversation: (
+    request: PlatformConversationVoiceRequest,
+    listener: (event: PlatformConversationEvent) => void
+  ) => Promise<PlatformConversationRunHandle>;
+}
 
 export interface ProviderMediaFeatureService {
   playMedia: (

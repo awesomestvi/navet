@@ -38,6 +38,7 @@ export function createOpenHABRuntimeRegistration(
       weather: false,
       notifications: false,
       tasks: false,
+      conversation: false,
     },
     roomManagementCapabilities: openHABRoomManagementCapabilities,
     entityRuntimeService: openhabEntityRuntimeService,

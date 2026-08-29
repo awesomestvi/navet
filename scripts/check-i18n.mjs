@@ -231,6 +231,8 @@ const allowedIdenticalValuesByLanguage = {
 const allowedIdenticalKeys = new Set([
   'login.providerUrlLabel',
   'security.alarm.action.pending',
+  'widgets.assist.title',
+  'dashboard.addCard.templates.assist.name',
 ]);
 
 function isAllowedIdentical(language, key, value) {

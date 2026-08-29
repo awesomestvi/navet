@@ -34,6 +34,7 @@ still depend on the entity types a provider exposes and maps successfully.
 | Calendar and weather data | Yes | No | No |
 | Persistent notifications, updates, and restart actions | Yes | No | No |
 | Automation/task details and habit-created automations | Yes | No | No |
+| Assist text, microphone, and response audio | Yes | No | No |
 | Provider room and entity administration | Yes | No | No |
 
 `No` means that Navet has no provider feature-service registration for that capability today. It
@@ -42,20 +43,20 @@ does not mean the underlying platform itself lacks the feature.
 ### Home Assistant
 
 Navet maps Home Assistant rooms and realtime entities for lights, switches, sensors, climate,
-media players, cameras, energy, calendars, weather, notifications, updates, and supported task or
-automation surfaces. Home Assistant also provides the advanced dashboard and administration
+media players, cameras, energy, calendars, weather, notifications, updates, Assist pipelines, and
+supported task or automation surfaces. Home Assistant also provides the advanced dashboard and administration
 services marked **Yes** in the matrix above.
 
 ### Homey
 
 Navet currently maps Homey rooms and realtime entities for lights, switches, and sensors. Climate,
-media, cameras, energy, calendars, weather, notifications, and provider administration are not yet
+media, cameras, energy, calendars, weather, notifications, Assist, and provider administration are not yet
 registered as Homey feature services in Navet.
 
 ### openHAB
 
 Navet currently maps openHAB rooms and realtime items for lights, switches, and sensors. Climate,
-media, cameras, energy, calendars, weather, notifications, and provider administration are not yet
+media, cameras, energy, calendars, weather, notifications, Assist, and provider administration are not yet
 registered as openHAB feature services in Navet.
 
 ### Planned providers
