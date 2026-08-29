@@ -318,7 +318,6 @@ export const LightsDashboard = memo(function LightsDashboard({
         value: t('lighting.dashboard.summary', {
           active: model.activeCount,
           total: model.totalCount,
-          rooms: model.activeRoomCount,
         }),
         icon: Lightbulb,
         iconColor: '#facc15',
@@ -338,7 +337,7 @@ export const LightsDashboard = memo(function LightsDashboard({
     }
 
     return items;
-  }, [model.activeCount, model.activeRoomCount, model.totalCount, model.unavailableCount, t]);
+  }, [model.activeCount, model.totalCount, model.unavailableCount, t]);
   const displayRooms = useMemo(
     () =>
       model.rooms
@@ -408,7 +407,6 @@ export const LightsDashboard = memo(function LightsDashboard({
         className="ios-pwa-scroll-repaint"
         ariaLabel={t('lighting.dashboard.summary', {
           active: model.activeCount,
-          rooms: model.activeRoomCount,
           total: model.totalCount,
         })}
         trailingContent={
@@ -423,7 +421,7 @@ export const LightsDashboard = memo(function LightsDashboard({
                     onClick={() => void runScene(scene)}
                     data-lights-scene={scene.id}
                     className={cn(
-                      'group inline-grid h-8 shrink-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-1 rounded-full border px-1.5 py-1 pr-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 md:h-10 md:gap-1.5 md:px-2 md:py-1.5 md:pr-3',
+                      'group inline-grid min-h-9 shrink-0 self-stretch grid-cols-[auto_minmax(0,1fr)] items-center gap-1 rounded-full border px-1.5 py-1 pr-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 md:gap-1.5 md:px-2 md:py-1.5 md:pr-3',
                       sceneChipClassName,
                       getThemeFocusRingClassName(theme)
                     )}

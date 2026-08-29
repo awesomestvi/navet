@@ -321,7 +321,7 @@ export function AddCardDialogView({
                         query={libraryQuery}
                         textPrimary={textColor}
                         textSecondary={mutedColor}
-                        widthClassName={`rounded-[18px] !text-sm !font-normal placeholder:!font-normal sm:pr-40 ${borderColor}`}
+                        widthClassName={`rounded-[18px] placeholder:font-normal sm:pr-40 ${borderColor}`}
                       />
                       {!hasLibraryQuery ? (
                         <span

@@ -650,7 +650,9 @@ export function ChoreOnboardingDialog({
 
   const selectSetupRepeat = (value: SetupRepeat) => {
     setRepeat(value);
-    setScheduleInterval(value === 'biweekly' ? 2 : value === 'triweekly' ? 3 : 1);
+    setScheduleInterval(
+      value === 'biweekly' ? 2 : value === 'triweekly' ? 3 : value === 'custom' ? 2 : 1
+    );
   };
 
   const saveChore = async () => {
@@ -684,47 +686,66 @@ export function ChoreOnboardingDialog({
             time: dueTime,
             timeZone,
           }
-        : repeat === 'weekly' || repeat === 'biweekly' || repeat === 'triweekly'
+        : repeat === 'weekdays' || repeat === 'weekends'
           ? {
-              frequency: 'weekly',
+              frequency: 'daily',
               startDate,
               time: dueTime,
               timeZone,
-              daysOfWeek: [startDateValue.getDay()],
-              intervalWeeks:
-                repeat === 'biweekly'
-                  ? 2
-                  : repeat === 'triweekly'
-                    ? 3
-                    : Math.max(1, scheduleInterval),
+              daysOfWeek: repeat === 'weekdays' ? [1, 2, 3, 4, 5] : [0, 6],
+              intervalDays: 1,
               ...scheduleOptions,
             }
-          : repeat === 'monthly'
+          : repeat === 'custom'
             ? {
-                frequency: 'monthly',
+                frequency: 'daily',
                 startDate,
                 time: dueTime,
                 timeZone,
-                dayOfMonth: startDateValue.getDate(),
+                intervalDays: Math.max(2, scheduleInterval),
                 ...scheduleOptions,
               }
-            : repeat === 'after_completion'
+            : repeat === 'weekly' || repeat === 'biweekly' || repeat === 'triweekly'
               ? {
-                  frequency: 'after_completion',
+                  frequency: 'weekly',
                   startDate,
                   time: dueTime,
                   timeZone,
-                  intervalDays: Math.max(1, scheduleInterval),
+                  daysOfWeek: [startDateValue.getDay()],
+                  intervalWeeks:
+                    repeat === 'biweekly'
+                      ? 2
+                      : repeat === 'triweekly'
+                        ? 3
+                        : Math.max(1, scheduleInterval),
                   ...scheduleOptions,
                 }
-              : {
-                  frequency: 'daily',
-                  startDate,
-                  time: dueTime,
-                  timeZone,
-                  intervalDays: Math.max(1, scheduleInterval),
-                  ...scheduleOptions,
-                };
+              : repeat === 'monthly'
+                ? {
+                    frequency: 'monthly',
+                    startDate,
+                    time: dueTime,
+                    timeZone,
+                    dayOfMonth: startDateValue.getDate(),
+                    ...scheduleOptions,
+                  }
+                : repeat === 'after_completion'
+                  ? {
+                      frequency: 'after_completion',
+                      startDate,
+                      time: dueTime,
+                      timeZone,
+                      intervalDays: Math.max(1, scheduleInterval),
+                      ...scheduleOptions,
+                    }
+                  : {
+                      frequency: 'daily',
+                      startDate,
+                      time: dueTime,
+                      timeZone,
+                      intervalDays: Math.max(1, scheduleInterval),
+                      ...scheduleOptions,
+                    };
     setSaving(true);
     const saved = await onSaveChore(
       {

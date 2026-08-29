@@ -47,6 +47,14 @@ function localDateKey(date = new Date()) {
   return new Date(date.getTime() - offset).toISOString().slice(0, 10);
 }
 
+const ALL_WEEK_DAYS = [0, 1, 2, 3, 4, 5, 6];
+const WEEKDAYS = [1, 2, 3, 4, 5];
+const WEEKENDS = [0, 6];
+
+function hasExactlyDays(days: number[], expected: number[]) {
+  return days.length === expected.length && expected.every((day) => days.includes(day));
+}
+
 function createEntityId(prefix: string, label: string) {
   const slug = label
     .trim()
@@ -603,7 +611,7 @@ export function AddChoreDialog({
   const [scheduleStartDate, setScheduleStartDate] = useState(localDateKey());
   const [scheduleEndDate, setScheduleEndDate] = useState('');
   const [scheduleInterval, setScheduleInterval] = useState(1);
-  const [weeklyDays, setWeeklyDays] = useState<number[]>([new Date().getDay()]);
+  const [weeklyDays, setWeeklyDays] = useState<number[]>(ALL_WEEK_DAYS);
   const [dayOfMonth, setDayOfMonth] = useState(new Date().getDate());
   const [extraTimes, setExtraTimes] = useState('');
   const [excludedDates, setExcludedDates] = useState('');
@@ -669,9 +677,11 @@ export function AddChoreDialog({
             : 1
       );
       setWeeklyDays(
-        definition?.schedule.frequency === 'daily' || definition?.schedule.frequency === 'weekly'
-          ? (definition.schedule.daysOfWeek ?? [new Date().getDay()])
-          : [new Date().getDay()]
+        definition?.schedule.frequency === 'daily'
+          ? (definition.schedule.daysOfWeek ?? ALL_WEEK_DAYS)
+          : definition?.schedule.frequency === 'weekly'
+            ? definition.schedule.daysOfWeek
+            : ALL_WEEK_DAYS
       );
       setDayOfMonth(
         definition?.schedule.frequency === 'monthly'
@@ -719,7 +729,7 @@ export function AddChoreDialog({
       setScheduleStartDate(localDateKey());
       setScheduleEndDate('');
       setScheduleInterval(1);
-      setWeeklyDays([new Date().getDay()]);
+      setWeeklyDays(ALL_WEEK_DAYS);
       setDayOfMonth(new Date().getDate());
       setExtraTimes('');
       setExcludedDates('');
@@ -768,6 +778,16 @@ export function AddChoreDialog({
       times:
         extraScheduleTimes.length > 0 ? [...new Set([time, ...extraScheduleTimes])] : undefined,
     };
+    const selectedRepeat =
+      frequency === 'daily' && scheduleInterval === 1 && hasExactlyDays(weeklyDays, WEEKDAYS)
+        ? 'weekdays'
+        : frequency === 'daily' && scheduleInterval === 1 && hasExactlyDays(weeklyDays, WEEKENDS)
+          ? 'weekends'
+          : frequency === 'daily' &&
+              scheduleInterval > 1 &&
+              hasExactlyDays(weeklyDays, ALL_WEEK_DAYS)
+            ? 'custom'
+            : frequency;
     const schedule: ChoreSchedule =
       frequency === 'once'
         ? { frequency, date: startDate, time, timeZone }
@@ -806,8 +826,18 @@ export function AddChoreDialog({
                   startDate,
                   time,
                   timeZone,
-                  daysOfWeek: weeklyDays.length === 7 ? undefined : weeklyDays,
-                  intervalDays: Math.max(1, scheduleInterval),
+                  daysOfWeek:
+                    selectedRepeat === 'weekdays'
+                      ? WEEKDAYS
+                      : selectedRepeat === 'weekends'
+                        ? WEEKENDS
+                        : selectedRepeat === 'custom' || weeklyDays.length === 7
+                          ? undefined
+                          : weeklyDays,
+                  intervalDays:
+                    selectedRepeat === 'custom'
+                      ? Math.max(2, scheduleInterval)
+                      : Math.max(1, scheduleInterval),
                   ...scheduleOptions,
                 };
     const participantIds =
@@ -906,20 +936,42 @@ export function AddChoreDialog({
     title.trim().length > 0 &&
     completers.length > 0 &&
     (assignmentMode !== 'person' || participantId.length > 0);
-  const repeatValue =
-    frequency === 'weekly' && scheduleInterval === 2
-      ? 'biweekly'
-      : frequency === 'weekly' && scheduleInterval === 3
-        ? 'triweekly'
-        : frequency;
+  const repeatValue: ChoreCreationRepeat =
+    frequency === 'daily' && scheduleInterval === 1 && hasExactlyDays(weeklyDays, WEEKDAYS)
+      ? 'weekdays'
+      : frequency === 'daily' && scheduleInterval === 1 && hasExactlyDays(weeklyDays, WEEKENDS)
+        ? 'weekends'
+        : frequency === 'daily' && scheduleInterval > 1 && hasExactlyDays(weeklyDays, ALL_WEEK_DAYS)
+          ? 'custom'
+          : frequency === 'weekly' && scheduleInterval === 2
+            ? 'biweekly'
+            : frequency === 'weekly' && scheduleInterval === 3
+              ? 'triweekly'
+              : frequency;
 
   const selectRepeat = (value: ChoreCreationRepeat) => {
+    if (value === 'weekdays' || value === 'weekends' || value === 'custom') {
+      setFrequency('daily');
+      setWeeklyDays(
+        value === 'weekdays' ? WEEKDAYS : value === 'weekends' ? WEEKENDS : ALL_WEEK_DAYS
+      );
+      setScheduleInterval(value === 'custom' ? 2 : 1);
+      return;
+    }
+
     if (value === 'biweekly' || value === 'triweekly') {
+      if (frequency !== 'weekly') {
+        setWeeklyDays([new Date(`${scheduleStartDate || localDateKey()}T12:00:00`).getDay()]);
+      }
       setFrequency('weekly');
       setScheduleInterval(value === 'biweekly' ? 2 : 3);
       return;
     }
 
+    if (value === 'daily') setWeeklyDays(ALL_WEEK_DAYS);
+    if (value === 'weekly' && frequency !== 'weekly') {
+      setWeeklyDays([new Date(`${scheduleStartDate || localDateKey()}T12:00:00`).getDay()]);
+    }
     setFrequency(value);
     setScheduleInterval(1);
   };
@@ -932,15 +984,21 @@ export function AddChoreDialog({
       ? t('household.schedule.once')
       : repeatValue === 'daily'
         ? t('household.schedule.daily')
-        : repeatValue === 'weekly'
-          ? t('household.schedule.weekly')
-          : repeatValue === 'biweekly'
-            ? t('household.schedule.biweekly')
-            : repeatValue === 'triweekly'
-              ? t('household.schedule.triweekly')
-              : repeatValue === 'monthly'
-                ? t('household.schedule.monthly')
-                : t('household.schedule.afterCompletion');
+        : repeatValue === 'weekdays'
+          ? t('household.schedule.weekdays')
+          : repeatValue === 'weekends'
+            ? t('household.schedule.weekends')
+            : repeatValue === 'weekly'
+              ? t('household.schedule.weekly')
+              : repeatValue === 'biweekly'
+                ? t('household.schedule.biweekly')
+                : repeatValue === 'triweekly'
+                  ? t('household.schedule.triweekly')
+                  : repeatValue === 'monthly'
+                    ? t('household.schedule.monthly')
+                    : repeatValue === 'custom'
+                      ? t('household.schedule.custom')
+                      : t('household.schedule.afterCompletion');
 
   return (
     <BaseCardDialog
@@ -1055,7 +1113,6 @@ export function AddChoreDialog({
               interval={scheduleInterval}
               excludedDates={excludedDates}
               showTemplates={!definition}
-              showCustomInterval
               onTitleChange={setTitle}
               onIconChange={setChoreIcon}
               onRoomChange={setRoomLabel}
@@ -1219,40 +1276,6 @@ export function AddChoreDialog({
                 ) : null}
               </ChoreCreationSectionOptions>
               <ChoreCreationSectionOptions section="schedule">
-                {frequency === 'daily' || frequency === 'weekly' ? (
-                  <CardDialogSection
-                    className="mb-0 sm:col-span-2"
-                    label={t('household.choreDialog.weekdays')}
-                  >
-                    <div className="flex flex-wrap gap-1.5">
-                      {Array.from({ length: 7 }, (_, day) => {
-                        const selected = weeklyDays.includes(day);
-                        const label = new Intl.DateTimeFormat(undefined, {
-                          weekday: 'short',
-                        }).format(new Date(Date.UTC(2026, 7, 2 + day)));
-                        return (
-                          <Button
-                            key={day}
-                            type="button"
-                            size="compact"
-                            variant={selected ? 'secondary' : 'ghost'}
-                            className="min-h-9 min-w-9 px-2"
-                            aria-pressed={selected}
-                            onClick={() =>
-                              setWeeklyDays((current) =>
-                                selected
-                                  ? current.filter((candidate) => candidate !== day)
-                                  : [...current, day].sort()
-                              )
-                            }
-                          >
-                            {label}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  </CardDialogSection>
-                ) : null}
                 <CardDialogSection className="mb-0" label={t('household.choreDialog.dueWindow')}>
                   <Input
                     aria-label={t('household.choreDialog.dueWindow')}

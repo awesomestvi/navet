@@ -64,6 +64,7 @@ export const navetTypographyTokens = {
   compactHelper: 'text-xs leading-4',
   label: 'text-sm font-medium',
   control: 'text-sm font-medium',
+  fieldValue: 'text-sm font-normal leading-5',
   caption: 'text-xs leading-4',
   dense: 'text-xs leading-5',
   compactMetadata: 'text-xs leading-4',

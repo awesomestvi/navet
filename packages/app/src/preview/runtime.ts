@@ -1,3 +1,4 @@
+import previewMediaArtwork from '@assets/reference/media/artworks-original.avif';
 import { mapNavetEntitiesToDeviceCollection } from '@navet/app/core/navet-device-collections';
 import { setProviderPackageRegistrationOverride } from '@navet/app/provider-package-registry';
 import { resetProviderRuntimeRegistrationCache } from '@navet/app/provider-runtime-registry';
@@ -469,6 +470,8 @@ function createPreviewScenario(): PreviewRuntimeScenario {
         title: 'Morning Mix',
         artist: 'Navet Radio',
         entityType: 'Speaker',
+        entityPicture: previewMediaArtwork,
+        entity_picture: previewMediaArtwork,
         source: 'Spotify',
         sourceList: ['Spotify', 'AirPlay', 'Radio'],
         volume: 42,

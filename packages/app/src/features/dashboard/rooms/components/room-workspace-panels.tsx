@@ -881,7 +881,7 @@ export function RoomOutline({
               ) : null
             }
             containerClassName="min-w-0"
-            inputClassName="!text-sm !font-normal placeholder:!font-normal [&::-webkit-search-cancel-button]:appearance-none motion-reduce:transition-none"
+            inputClassName="placeholder:font-normal [&::-webkit-search-cancel-button]:appearance-none motion-reduce:transition-none"
           />
         </div>
 
@@ -1270,7 +1270,7 @@ export function RoomBrowsePanel({
             onChange={(event) => setDeviceQuery(event.currentTarget.value)}
             leading={<Search className={navetIconSizeTokens.sm} aria-hidden="true" />}
             containerClassName="ml-auto w-full sm:w-56"
-            inputClassName="!text-sm !font-normal placeholder:!font-normal [&::-webkit-search-cancel-button]:appearance-none motion-reduce:transition-none"
+            inputClassName="placeholder:font-normal [&::-webkit-search-cancel-button]:appearance-none motion-reduce:transition-none"
           />
         </CardDialogTabList>
         <section
@@ -1758,7 +1758,7 @@ export function RoomDeviceSelectionPanel({
           onChange={(event) => actions.onDeviceQueryChange(event.currentTarget.value)}
           leading={<Search className={navetIconSizeTokens.sm} aria-hidden="true" />}
           containerClassName="w-full min-w-0"
-          inputClassName="min-h-11 !text-sm !font-normal placeholder:!font-normal motion-reduce:transition-none"
+          inputClassName="min-h-11 placeholder:font-normal motion-reduce:transition-none"
         />
         {viewModel.selectionSummary ? (
           <p aria-live="polite" className={cn('mt-3 text-sm', surface.textMuted)}>

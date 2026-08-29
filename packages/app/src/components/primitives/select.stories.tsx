@@ -29,7 +29,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Status: in-progress. Minimal single-select wrapper for ordinary form choices. Use a richer app-specific control when options need previews or domain-specific behavior.',
+          'Status: in-progress. Minimal single-select wrapper for ordinary form choices with normal-weight, body-sized option text. Use a richer app-specific control when options need previews or domain-specific behavior.',
       },
     },
   },

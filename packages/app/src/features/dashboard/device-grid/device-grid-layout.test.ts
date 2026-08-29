@@ -50,4 +50,20 @@ describe('packDashboardGridItems', () => {
     expect(placements.get('feed-mowgli')).toEqual({ column: 1, row: 2 });
     expect(placements.get('island-lights')).toEqual({ column: 3, row: 1 });
   });
+
+  it('keeps sparse filtered results aligned from the left when requested', () => {
+    const placements = packDashboardGridItems(
+      [
+        { id: 'entry-sensor', size: 'small' },
+        { id: 'front-door-lock', size: 'small' },
+        { id: 'front-door-camera', size: 'large' },
+      ],
+      12,
+      { placementPreference: 'leftmost' }
+    );
+
+    expect(placements.get('entry-sensor')).toEqual({ column: 1, row: 1 });
+    expect(placements.get('front-door-lock')).toEqual({ column: 3, row: 1 });
+    expect(placements.get('front-door-camera')).toEqual({ column: 5, row: 1 });
+  });
 });

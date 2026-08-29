@@ -324,6 +324,9 @@ export const AttentionOnly: Story = {
     const alertPanel = await canvas.findByTestId('security-alerts-panel');
     await expect(alertPanel).toHaveAttribute('data-alert-tone', 'yellow');
     await expect(canvas.getByText(/2 attention/i)).toBeVisible();
+    const summaryAlertIcon = canvas.getByTestId('info-badge-strip-icon-security-attention');
+    await expect(summaryAlertIcon).toHaveClass('border-amber-400/38', 'bg-amber-500/16');
+    await expect(summaryAlertIcon.querySelector('svg')).toHaveClass('lucide-circle-alert');
   },
 };
 

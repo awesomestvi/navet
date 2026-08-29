@@ -266,6 +266,12 @@ describe('SecurityCameraDashboard', () => {
     const alerts = screen.getByTestId('security-alerts-panel');
     expect(alerts).toHaveAttribute('data-alert-tone', 'red');
     expect(alerts).toHaveTextContent(/1 critical/i);
+    const summaryAlertIcon = screen.getByTestId('info-badge-strip-icon-security-attention');
+    expect(summaryAlertIcon).toHaveClass('border-red-400/45', 'bg-red-500/22');
+    expect(summaryAlertIcon.querySelector('svg')).toHaveClass('lucide-triangle-alert');
+    expect(
+      screen.getByTestId('info-badge-strip-icon-pulse-security-attention')
+    ).toBeInTheDocument();
     expect(within(alerts).queryByTestId('security-alert-count')).not.toBeInTheDocument();
     expect(within(alerts).getByRole('heading', { name: 'Needs attention' })).toHaveClass(
       'text-lg',
@@ -326,6 +332,77 @@ describe('SecurityCameraDashboard', () => {
     });
 
     expect(screen.getByRole('button', { name: 'Side Door: Unavailable' })).toBeInTheDocument();
+  });
+
+  it('pins the unavailable device in its existing group from the summary pill', async () => {
+    renderDashboard({
+      cameras: [camera({ id: 'camera.front', name: 'Front Door' })],
+      sensors: [
+        sensor({
+          id: 'binary_sensor.side_door',
+          name: 'Side Door',
+          securityKind: 'door',
+          securitySeverity: 'unknown',
+          status: 'unavailable',
+          value: 'Unavailable',
+        }),
+      ],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Unavailable' }));
+
+    expect(screen.getByRole('tab', { name: 'Doors & windows' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
+    const unavailableCard = screen.getByTestId('detail-card:binary_sensor.side_door');
+    const unavailableCardAnchor = unavailableCard.closest<HTMLElement>('[data-security-entity-id]');
+    await waitFor(() => expect(unavailableCardAnchor).toHaveFocus());
+    expect(scrollIntoViewMock).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+  });
+
+  it('pins the first attention device in its existing group from the summary pill', async () => {
+    localStorage.setItem('navet-security-dashboard-selected-group', JSON.stringify('cameras'));
+    renderDashboard({
+      cameras: [camera({ id: 'camera.front', name: 'Front Door' })],
+      locks: [lock({ id: 'lock.back', name: 'Back Door Lock', state: false })],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Attention' }));
+
+    expect(screen.getByRole('tab', { name: 'Locks' })).toHaveAttribute('aria-selected', 'true');
+    const attentionCard = screen.getByTestId('detail-card:lock.back');
+    const attentionCardAnchor = attentionCard.closest<HTMLElement>('[data-security-entity-id]');
+    await waitFor(() => expect(attentionCardAnchor).toHaveFocus());
+    expect(scrollIntoViewMock).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+  });
+
+  it('groups security cards by type by default and can regroup them by room', () => {
+    renderDashboard({
+      cameras: [camera({ id: 'camera.garage', name: 'Garage Camera', room: 'Garage' })],
+      locks: [lock({ id: 'lock.front', name: 'Front Door Lock', room: 'Entrance' })],
+      sensors: [
+        sensor({
+          id: 'binary_sensor.patio_door',
+          name: 'Patio Door',
+          room: 'Garden',
+          securityKind: 'door',
+          securitySeverity: 'warning',
+          value: 'Open',
+        }),
+      ],
+    });
+
+    const groupingTrigger = screen.getByRole('button', { name: 'Group cards by: Type' });
+    expect(screen.getByRole('tab', { name: 'Doors & windows' })).toBeInTheDocument();
+
+    fireEvent.pointerDown(groupingTrigger, { button: 0, ctrlKey: false });
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Room' }));
+
+    expect(screen.getByRole('button', { name: 'Group cards by: Room' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'Garden' }));
+    expect(screen.getByTestId('detail-card:binary_sensor.patio_door')).toBeInTheDocument();
+    expect(screen.queryByTestId('detail-card:lock.front')).not.toBeInTheDocument();
   });
 
   it('renders a manually ordered mix of security entity types', () => {
@@ -397,6 +474,31 @@ describe('SecurityCameraDashboard', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Motion at Garden Camera/i }));
     expect(screen.getByText('Viewer:Garden Camera')).toBeInTheDocument();
+  });
+
+  it('shows an unassigned label when an activity device has no room', () => {
+    const motionCamera = camera({ id: 'camera.backyard', name: 'Movement Backyard', room: '' });
+    activityEventsMock.events = [
+      {
+        id: 'current:camera.backyard:motion',
+        entityId: motionCamera.id,
+        device: { ...motionCamera, type: 'cameras' },
+        kind: 'motion',
+        source: 'current',
+        state: 'detected',
+        timestampMs: null,
+      },
+    ];
+
+    renderDashboard({ cameras: [motionCamera] });
+
+    const activity = within(screen.getByTestId('security-activity-panel'));
+    expect(activity.getByText('Unassigned')).toHaveClass(
+      'mt-0.5',
+      'block',
+      'truncate',
+      'text-[10px]'
+    );
   });
 
   it('does not offer older history when the activity state is empty', () => {

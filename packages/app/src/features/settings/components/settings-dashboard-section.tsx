@@ -186,7 +186,7 @@ export function SettingsDashboardSection({ controller }: SettingsDashboardSectio
                   }
                   placeholder={t('settings.dashboard.headerTitle.customPlaceholder')}
                   aria-label={t('settings.dashboard.headerTitle.customText')}
-                  className={`h-11 w-full rounded-[16px] border px-4 text-sm outline-none transition-colors ${styles.borderColor} ${styles.softBg} ${styles.textColor}`}
+                  className={`h-11 w-full rounded-[16px] border px-4 text-sm font-normal outline-none transition-colors ${styles.borderColor} ${styles.softBg} ${styles.textColor}`}
                 />
                 <p className={`text-sm leading-relaxed ${styles.subtleColor}`}>
                   {t('settings.dashboard.headerTitle.customHint')}

@@ -85,7 +85,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           navetRadiusTokens.field,
           sizeTokens.heightClassName,
           sizeTokens.insetClassName,
-          navetTypographyTokens.control,
+          navetTypographyTokens.fieldValue,
           leading ? sizeTokens.leadingPaddingClassName : sizeTokens.idlePaddingLeftClassName,
           trailing ? sizeTokens.trailingPaddingClassName : sizeTokens.idlePaddingRightClassName,
           variant === 'soft' ? softVariantClassName : fieldTokens.fieldClassName,

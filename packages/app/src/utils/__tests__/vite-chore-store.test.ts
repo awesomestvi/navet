@@ -158,6 +158,39 @@ afterEach(() => {
 });
 
 describe('Vite chore workspace store', () => {
+  it('reports authenticated standalone runtime capabilities', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'navet-chore-store-'));
+    tempDirs.push(directory);
+    const handler = createViteChoreStoreRequestHandler({
+      filePath: join(directory, 'chores.json'),
+      resolvePrincipal: () => PRINCIPAL,
+    });
+
+    const capabilities = createResponse();
+    await handler(createRequest('GET', '/capabilities'), capabilities.response);
+
+    expect(capabilities.status).toBe(200);
+    expect(JSON.parse(capabilities.body)).toEqual({
+      contractVersion: 1,
+      schemaVersion: 2,
+      authority: 'standalone',
+      backgroundScheduling: false,
+      backgroundNotifications: false,
+      projectionOwnedByAuthority: false,
+      actionServices: false,
+    });
+
+    const unauthorizedHandler = createViteChoreStoreRequestHandler({
+      filePath: join(directory, 'unauthorized-chores.json'),
+      resolvePrincipal: () => null,
+    });
+    const unauthorized = createResponse();
+    await unauthorizedHandler(createRequest('GET', '/capabilities'), unauthorized.response);
+
+    expect(unauthorized.status).toBe(401);
+    expect(JSON.parse(unauthorized.body)).toEqual({ error: 'Authentication required' });
+  });
+
   it('mirrors revision, conditional reads, conflict, and idempotency behavior', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'navet-chore-store-'));
     tempDirs.push(directory);

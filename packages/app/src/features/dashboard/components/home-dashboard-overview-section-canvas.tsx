@@ -122,7 +122,7 @@ export const SectionCanvas = memo(function SectionCanvas({
           onChange={(event) => onRenameSection(sectionId, event.target.value)}
           onFocus={() => onSelectSection(sectionId)}
           onClick={(event) => event.stopPropagation()}
-          className={`min-w-0 flex-1 bg-transparent text-lg font-semibold outline-none ${surface.textPrimary}`}
+          className={`min-w-0 flex-1 bg-transparent text-sm font-normal outline-none ${surface.textPrimary}`}
         />
         {rowSiblingCount > 1 ? (
           <>

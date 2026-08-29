@@ -248,7 +248,7 @@ export function MediaSpotifyPlayback({
             onChange={(event) => setMediaContentId(event.target.value)}
             placeholder={t('media.spotify.uriPlaceholder')}
             aria-label={t('media.spotify.uri')}
-            inputClassName="text-sm placeholder:opacity-70"
+            inputClassName="placeholder:opacity-70"
             style={fieldStyle}
           />
           <Button

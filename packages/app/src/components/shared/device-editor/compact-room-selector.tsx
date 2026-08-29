@@ -33,7 +33,7 @@ export const CompactRoomSelector = memo(function CompactRoomSelector({
           aria-label={t('common.room')}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none bg-white text-slate-900 opacity-0 disabled:cursor-not-allowed"
+          className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none bg-white text-sm font-normal text-slate-900 opacity-0 disabled:cursor-not-allowed"
         >
           {options.map((option) => (
             <option key={option.value} value={option.value}>

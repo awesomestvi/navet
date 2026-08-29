@@ -266,11 +266,18 @@ export const Mobile: Story = {
     const participantPicker = panel.getByLabelText('Using this screen');
     await expect(participantPicker).toBeInTheDocument();
     await expect(within(participantPicker).getByText('Everyone')).toBeVisible();
+    const pulse = panel
+      .getByRole('heading', { name: 'Needs attention', level: 1 })
+      .closest('[data-house-pulse-layout="responsive"]');
+    await expect(pulse).toBeVisible();
+    await expect(pulse?.closest('[data-chore-today-layout="true"]')).toHaveClass('space-y-4');
+    const focusHeading = panel
+      .getByRole('heading', { name: 'Needs attention', level: 2 })
+      .closest('[data-chore-section-heading="true"]');
+    await expect(focusHeading).toHaveClass('mb-2', 'min-h-8');
     await expect(
-      panel
-        .getByRole('heading', { name: 'Needs attention', level: 1 })
-        .closest('[data-house-pulse-layout="responsive"]')
-    ).toBeVisible();
+      focusHeading?.querySelector('[data-chore-section-count="true"]')?.parentElement
+    ).toHaveClass('inline-flex', 'border', 'px-2', 'py-0.5');
     await expect(panel.getByText('Missions and rewards')).toBeVisible();
     await expect(
       panel.getAllByRole('heading', { name: 'Unload dishwasher' }).length

@@ -84,7 +84,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
           'w-full appearance-none border outline-none transition-[border-color,box-shadow,background-color] disabled:cursor-not-allowed disabled:opacity-50',
           navetRadiusTokens.field,
           SELECT_SIZE_CLASS_NAMES[size],
-          navetTypographyTokens.control,
+          navetTypographyTokens.fieldValue,
           themeClassName,
           selectClassName
         )}

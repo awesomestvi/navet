@@ -9,6 +9,7 @@ import type {
 } from '../packages/core/src/chores.ts'
 import {
   applyChoreWorkspaceAction,
+  CHORE_WORKSPACE_SCHEMA_VERSION,
   createChoreOutboxItem,
   createEmptyChoreWorkspace,
   DEFAULT_CHORE_HISTORY_RETENTION,
@@ -552,6 +553,19 @@ export function createViteChoreStoreRequestHandler(options: {
         if (route !== '/recovery' || method !== 'POST') throw error
       }
       const pinConfigured = Boolean(managementSecurity)
+
+      if (route === '/capabilities' && method === 'GET') {
+        sendJson(res, 200, {
+          contractVersion: CONTRACT_VERSION,
+          schemaVersion: CHORE_WORKSPACE_SCHEMA_VERSION,
+          authority: 'standalone',
+          backgroundScheduling: false,
+          backgroundNotifications: false,
+          projectionOwnedByAuthority: false,
+          actionServices: false,
+        })
+        return
+      }
 
       if (route === '/recovery' && method === 'POST') {
         let request: Record<string, unknown>

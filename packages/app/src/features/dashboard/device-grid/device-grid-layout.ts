@@ -13,6 +13,10 @@ export interface DashboardGridPlacement {
   row: number;
 }
 
+export interface DashboardGridPackingOptions {
+  placementPreference?: 'least-fragmented' | 'leftmost';
+}
+
 interface DashboardGridPackingMember {
   id: string;
   columnOffset: number;
@@ -175,7 +179,8 @@ function getFragmentationScore(
  */
 export function packDashboardGridItems(
   items: DashboardGridLayoutItem[],
-  columnCount: number
+  columnCount: number,
+  options: DashboardGridPackingOptions = {}
 ): Map<string, DashboardGridPlacement> {
   const safeColumnCount = Math.max(1, Math.round(columnCount));
   const occupied: boolean[][] = [];
@@ -199,7 +204,11 @@ export function packDashboardGridItems(
       }
 
       if (candidates.length > 0) {
-        candidates.sort((left, right) => left.score - right.score || left.column - right.column);
+        candidates.sort((left, right) =>
+          options.placementPreference === 'leftmost'
+            ? left.column - right.column || left.score - right.score
+            : left.score - right.score || left.column - right.column
+        );
         const column = candidates[0]?.column ?? 0;
 
         for (let y = row; y < row + height; y += 1) {

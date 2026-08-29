@@ -628,11 +628,9 @@ function ActivityPanel({
                     <span className={`block truncate text-xs font-medium ${surface.textPrimary}`}>
                       {formatActivityTitle(event, t)}
                     </span>
-                    {room !== UNKNOWN_ROOM_LABEL ? (
-                      <span className={`mt-0.5 block truncate text-[10px] ${surface.textMuted}`}>
-                        {room}
-                      </span>
-                    ) : null}
+                    <span className={`mt-0.5 block truncate text-[10px] ${surface.textMuted}`}>
+                      {room}
+                    </span>
                   </span>
                 </button>
               );

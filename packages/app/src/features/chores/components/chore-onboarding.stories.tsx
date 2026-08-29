@@ -8,7 +8,7 @@ import { createChoreExperienceState } from '@navet/core/chore-experience';
 import type { ChoreDefinition, ChoreParticipant } from '@navet/core/chores';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, fireEvent, userEvent, within } from 'storybook/test';
 import { ChoreOnboardingDialog, ChoreOnboardingWelcome } from './chore-onboarding';
 
 function OnboardingWelcomeStory() {
@@ -204,6 +204,11 @@ export const CompleteGuidedSetup: Story = {
     await expect(within(dialog).getByLabelText('Days after completion')).toBeVisible();
     await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'biweekly');
     await expect(within(dialog).queryByLabelText('Days after completion')).not.toBeInTheDocument();
+    await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'custom');
+    fireEvent.change(within(dialog).getByLabelText('Repeat every (days)'), {
+      target: { value: '10' },
+    });
+    await expect(within(dialog).queryByText('Days of the week')).not.toBeInTheDocument();
     await userEvent.type(within(dialog).getByLabelText('End date'), '2026-12-31');
     await userEvent.type(within(dialog).getByLabelText('Dates to skip'), '2026-12-24');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Add this chore' }));

@@ -1,5 +1,5 @@
 import { DashboardEmptyState } from '@navet/app/components/patterns';
-import { Button } from '@navet/app/components/primitives';
+import { Badge, Button } from '@navet/app/components/primitives';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import {
   getThemeFocusRingClassName,
@@ -43,12 +43,17 @@ function SectionHeading({ id, title, count }: { id?: string; title: string; coun
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   return (
-    <div className="mb-3 flex min-h-10 items-center gap-3 lg:landscape:mb-2 lg:landscape:min-h-8 xl:mb-3 xl:min-h-10">
+    <div
+      className="mb-2 flex min-h-8 items-center gap-3 md:mb-3 md:min-h-10 lg:landscape:mb-2 lg:landscape:min-h-8 xl:mb-3 xl:min-h-10"
+      data-chore-section-heading="true"
+    >
       <h2 id={id} className={cn(navetTypographyTokens.sectionHeading, surface.textPrimary)}>
         {title}
       </h2>
       {count !== undefined ? (
-        <span className={cn('text-xs font-medium', surface.textSecondary)}>{count}</span>
+        <Badge size="small" tone="neutral" className="shrink-0">
+          <span data-chore-section-count="true">{count}</span>
+        </Badge>
       ) : null}
       <div className={cn('h-px flex-1', surface.borderStrong)} />
     </div>
@@ -233,7 +238,10 @@ export function ChoreTodayView({
   };
 
   return (
-    <div className="space-y-5 md:space-y-6 lg:landscape:space-y-4 xl:space-y-6">
+    <div
+      className="space-y-4 md:space-y-6 lg:landscape:space-y-4 xl:space-y-6"
+      data-chore-today-layout="true"
+    >
       <HousePulse
         pulse={pulse}
         showPoints={experience.gamificationMode !== 'off'}

@@ -474,7 +474,7 @@ export function LoginPage({ initialError = '' }: { initialError?: string }) {
                             type="text"
                             defaultValue={initialUrl.current}
                             placeholder={urlPlaceholder}
-                            className={`min-h-11 w-full rounded-xl border py-2.5 pl-10 pr-3 text-sm outline-none transition-[border-color,box-shadow] focus-visible:border-orange-400/50 focus-visible:ring-2 focus-visible:ring-orange-400/25 ${fieldInputClassName}`}
+                            className={`min-h-11 w-full rounded-xl border py-2.5 pl-10 pr-3 text-sm font-normal outline-none transition-[border-color,box-shadow] focus-visible:border-orange-400/50 focus-visible:ring-2 focus-visible:ring-orange-400/25 ${fieldInputClassName}`}
                             disabled={isLoading}
                           />
                         </div>
@@ -496,7 +496,7 @@ export function LoginPage({ initialError = '' }: { initialError?: string }) {
                               onChange={(event) => setOpenhabUsername(event.target.value)}
                               autoComplete="username"
                               placeholder={t('login.username')}
-                              className={`min-h-11 w-full rounded-xl border px-3 py-2.5 text-sm outline-none transition-[border-color,box-shadow] focus-visible:border-orange-400/50 focus-visible:ring-2 focus-visible:ring-orange-400/25 ${fieldInputClassName}`}
+                              className={`min-h-11 w-full rounded-xl border px-3 py-2.5 text-sm font-normal outline-none transition-[border-color,box-shadow] focus-visible:border-orange-400/50 focus-visible:ring-2 focus-visible:ring-orange-400/25 ${fieldInputClassName}`}
                               disabled={isLoading}
                             />
                           </div>
@@ -515,7 +515,7 @@ export function LoginPage({ initialError = '' }: { initialError?: string }) {
                               onChange={(event) => setOpenhabPassword(event.target.value)}
                               autoComplete="current-password"
                               placeholder={t('login.password')}
-                              className={`min-h-11 w-full rounded-xl border px-3 py-2.5 text-sm outline-none transition-[border-color,box-shadow] focus-visible:border-orange-400/50 focus-visible:ring-2 focus-visible:ring-orange-400/25 ${fieldInputClassName}`}
+                              className={`min-h-11 w-full rounded-xl border px-3 py-2.5 text-sm font-normal outline-none transition-[border-color,box-shadow] focus-visible:border-orange-400/50 focus-visible:ring-2 focus-visible:ring-orange-400/25 ${fieldInputClassName}`}
                               disabled={isLoading}
                             />
                           </div>
@@ -591,7 +591,7 @@ export function LoginPage({ initialError = '' }: { initialError?: string }) {
                   }
                 }}
                 aria-label={t('settings.localization.language.title')}
-                className="h-8 w-full appearance-none rounded-full border border-transparent bg-transparent px-2.5 pr-7 text-sm text-white/72 outline-none backdrop-blur-sm focus-visible:border-orange-400/45 focus-visible:ring-2 focus-visible:ring-orange-400/25"
+                className="h-8 w-full appearance-none rounded-full border border-transparent bg-transparent px-2.5 pr-7 text-sm font-normal text-white/72 outline-none backdrop-blur-sm focus-visible:border-orange-400/45 focus-visible:ring-2 focus-visible:ring-orange-400/25"
               >
                 {languageOptions.map((option) => (
                   <option key={option.value} value={option.value}>

@@ -1090,6 +1090,39 @@ function buildGroupSummaries(
     .filter((group): group is SecurityGroupSummary => group !== null);
 }
 
+export function buildSecurityRoomGroupSummaries(
+  allEntities: DeviceWithType[],
+  t: TranslateFn = defaultTranslate
+): SecurityGroupSummary[] {
+  const entitiesByRoom = new Map<string, DeviceWithType[]>();
+
+  for (const entity of allEntities) {
+    const room = getDeviceRoomLabel(entity);
+    const roomEntities = entitiesByRoom.get(room) ?? [];
+    roomEntities.push(entity);
+    entitiesByRoom.set(room, roomEntities);
+  }
+
+  return [...entitiesByRoom.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([room, roomEntities]) => {
+      const entities = [...roomEntities].sort(compareSecurityDevices);
+      const severityCounts = countBySeverity(entities);
+      const severity = getGroupSeverity(entities);
+
+      return {
+        id: `room-${encodeURIComponent(room)}`,
+        label: room,
+        severity,
+        total: entities.length,
+        ...severityCounts,
+        summaryText: buildSeverityBreakdownText(entities, t),
+        entities,
+        defaultExpanded: severity === 'critical' || severity === 'warning',
+      } satisfies SecurityGroupSummary;
+    });
+}
+
 export function buildSecurityCameraDashboardModel(
   devices: SecurityDashboardDeviceCollection,
   t: TranslateFn = defaultTranslate

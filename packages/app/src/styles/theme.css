@@ -138,7 +138,7 @@
   }
 
   /**
-   * Default typography styles for HTML elements (h1-h4, p, label, button, input).
+   * Default typography styles for HTML elements (h1-h4, p, label, button, and form fields).
    * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
    */
 
@@ -248,8 +248,10 @@
     outline: none;
   }
 
-  input {
-    font-size: var(--text-base);
+  input,
+  select,
+  textarea {
+    font-size: var(--text-sm);
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
   }
@@ -429,7 +431,7 @@
       ):not([type="button"]):not([type="submit"]):not([type="reset"]),
     textarea,
     select {
-      font-size: 16px;
+      font-size: var(--text-sm);
     }
   }
 

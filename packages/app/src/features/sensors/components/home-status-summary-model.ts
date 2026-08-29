@@ -30,6 +30,7 @@ export interface HomeStatusSummaryItem {
   tone?: OperationalTone;
   targetSection?: Section;
   targetUrl?: string;
+  onSelect?: () => void;
 }
 
 export interface StatusSummaryOptions {

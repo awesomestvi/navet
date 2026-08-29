@@ -668,7 +668,7 @@ function EnergyCustomRangeForm({
             max={draftRange.end || maxDate}
             onChange={(event) => onChange({ ...draftRange, start: event.target.value })}
             className={cn(
-              'h-10 w-full min-w-0 rounded-xl border px-3 text-sm outline-none',
+              'h-10 w-full min-w-0 rounded-xl border px-3 text-sm font-normal outline-none',
               surface.inputBg,
               surface.border,
               surface.textPrimary,
@@ -685,7 +685,7 @@ function EnergyCustomRangeForm({
             max={maxDate}
             onChange={(event) => onChange({ ...draftRange, end: event.target.value })}
             className={cn(
-              'h-10 w-full min-w-0 rounded-xl border px-3 text-sm outline-none',
+              'h-10 w-full min-w-0 rounded-xl border px-3 text-sm font-normal outline-none',
               surface.inputBg,
               surface.border,
               surface.textPrimary,

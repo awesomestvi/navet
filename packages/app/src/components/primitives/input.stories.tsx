@@ -17,7 +17,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Status: ready. Canonical single-line input primitive for new forms and search rows.',
+          'Status: ready. Canonical single-line input primitive for new forms and search rows. Field values use normal-weight, body-sized text across every input type.',
       },
     },
   },

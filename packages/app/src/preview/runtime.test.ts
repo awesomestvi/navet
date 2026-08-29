@@ -1,7 +1,12 @@
 import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
 import { integrationStore } from '@navet/app/stores/integration-store';
 import { afterEach, describe, expect, it } from 'vitest';
-import { getPreviewRuntimeScenario, installPreviewRuntime, resetPreviewRuntime } from './runtime';
+import {
+  getPreviewDeviceCollection,
+  getPreviewRuntimeScenario,
+  installPreviewRuntime,
+  resetPreviewRuntime,
+} from './runtime';
 
 describe('preview runtime', () => {
   afterEach(() => {
@@ -68,6 +73,15 @@ describe('preview runtime', () => {
         }),
       ])
     );
+  });
+
+  it('provides artwork for the featured demo media card', () => {
+    const devices = getPreviewDeviceCollection(getPreviewRuntimeScenario('demo'));
+    const featuredSpeaker = devices.media.find((device) =>
+      device.id.endsWith('media_player.living_room_speaker')
+    );
+
+    expect(featuredSpeaker?.entityPicture).toContain('artworks-original');
   });
 
   it('provides staggered security history for realistic activity previews', async () => {

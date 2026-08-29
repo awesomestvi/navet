@@ -53,7 +53,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
           navetSizeTokens.textareaMinHeight,
           navetRadiusTokens.field,
           navetSizeTokens.fieldInset,
-          navetTypographyTokens.control,
+          navetTypographyTokens.fieldValue,
           fieldTokens.fieldClassName,
           textareaClassName
         )}

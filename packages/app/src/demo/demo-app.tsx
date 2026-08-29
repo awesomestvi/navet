@@ -3,7 +3,7 @@ import cameraSampleImageAvif from '@assets/reference/media/camera-sample.avif';
 import cameraSampleImageWebp from '@assets/reference/media/camera-sample.webp';
 import { RUNTIME_SAMPLE_SCREENSHOTS } from '@navet/app/assets/runtime-sample-images';
 import { AuthProvider } from '@navet/app/auth/AuthProvider';
-import { buildMediaSections } from '@navet/app/components/layout/media-section';
+import { MediaSection } from '@navet/app/components/layout/media-section';
 import { RoomNav } from '@navet/app/components/layout/room-nav';
 import type { RoomNavigationGroup } from '@navet/app/components/layout/room-nav.utils';
 import {
@@ -14,17 +14,15 @@ import {
   getDashboardGridColumnCount,
 } from '@navet/app/components/shared/card-size-selector';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import {
-  getMediaPlayerCapabilities,
-  MEDIA_PLAYER_FEATURES,
-} from '@navet/app/constants/media-player-features';
 import { ALL_ROOMS_ID, isAllRooms } from '@navet/app/constants/rooms';
 import { CalendarCard } from '@navet/app/features/calendar/components/calendar-card';
 import { createChoreDemoWorkspace } from '@navet/app/features/chores/chore-demo-fixture';
 import { useChoreWorkspaceStore } from '@navet/app/features/chores/chore-workspace-store';
 import { HouseholdSection } from '@navet/app/features/chores/components/household-section';
 import { ClimateCard } from '@navet/app/features/climate/components/climate-card';
+import { ClimateDashboard } from '@navet/app/features/climate/components/climate-dashboard';
 import { HumidifierCard } from '@navet/app/features/climate/components/humidifier-card';
+import type { ClimateDashboardSection } from '@navet/app/features/climate/types/climate-dashboard';
 import { type CustomCard, DashboardLayout, WidgetCard } from '@navet/app/features/dashboard';
 import { useProgressiveBatching } from '@navet/app/features/dashboard/hooks/use-progressive-batching';
 import { EnergyDashboardPage } from '@navet/app/features/energy/components/dashboard/energy-dashboard-page';
@@ -38,7 +36,6 @@ import { LightCard } from '@navet/app/features/lighting/components/light-card';
 import { SwitchCard } from '@navet/app/features/lighting/components/switch-card';
 import { LightsDashboard } from '@navet/app/features/lighting/dashboard/lights-dashboard';
 import { MediaCard } from '@navet/app/features/media/components/media-card';
-import { MediaDashboard } from '@navet/app/features/media/components/media-dashboard/media-dashboard';
 import { PersonCard } from '@navet/app/features/person/components/person-card';
 import { SceneCard } from '@navet/app/features/scenes/components/scene-card';
 import { AlarmPanelCard } from '@navet/app/features/security/components/alarm-panel-card';
@@ -47,9 +44,12 @@ import { CoverCard } from '@navet/app/features/security/components/cover-card';
 import { LockCard } from '@navet/app/features/security/components/lock-card';
 import { SecurityCameraDashboard } from '@navet/app/features/security/components/security-camera-dashboard';
 import { buildSecurityCameraDashboardModel } from '@navet/app/features/security/utils/security-camera-dashboard-model';
-import { SummaryBar } from '@navet/app/features/sensors';
 import { GroupedSensorCard } from '@navet/app/features/sensors/components/grouped-sensor-card';
 import type { HomeStatusSummaryItem } from '@navet/app/features/sensors/components/home-status-summary-model';
+import {
+  SummaryBar,
+  SummaryBarStack,
+} from '@navet/app/features/sensors/components/info-badge-strip';
 import { SensorCard } from '@navet/app/features/sensors/components/sensor-card';
 import { SettingsSection } from '@navet/app/features/settings/components/settings-section';
 import { VacuumCard } from '@navet/app/features/vacuum/components/vacuum-card';
@@ -70,18 +70,13 @@ import { useThemeStore } from '@navet/app/stores/theme-store';
 import type { NavetAlarmEntity } from '@navet/core/alarm-types';
 import { Fan, Lightbulb, ShieldCheck, Speaker, Zap } from 'lucide-react';
 import { Children, type CSSProperties, type ReactNode, useEffect, useState } from 'react';
-import type {
-  CameraDevice,
-  DeviceWithType,
-  LockDevice,
-  MediaDevice,
-  SensorDevice,
-} from '../types/device.types';
+import type { CameraDevice, DeviceWithType, LockDevice, SensorDevice } from '../types/device.types';
 import { PHOTO_FRAME_DEMO_IMAGES } from './photo-frame-demo-images';
 
 type DemoSection = Section;
 
 const noopCardSizeChange = () => {};
+const noopRemoveEntity = () => {};
 const DEMO_ROOMS = [
   'Basement',
   'Bathroom',
@@ -142,6 +137,148 @@ const {
   securityTablet: demoSecurityImage,
 } = RUNTIME_SAMPLE_SCREENSHOTS;
 const demoEntityTimestamp = '2026-05-16T08:00:00+00:00';
+const demoClimateDevices = [
+  {
+    id: 'climate.main_floor',
+    type: 'climate',
+    name: 'Main floor',
+    room: 'Hallway',
+    size: 'medium',
+    temperature: 22,
+    currentTemperature: 21,
+    temperatureUnit: 'celsius',
+    mode: 'heat',
+    action: 'heating',
+    supportedClimateModes: ['off', 'heat', 'cool', 'auto'],
+    providerId: 'home_assistant',
+  },
+  {
+    id: 'fan.bedroom_ceiling',
+    type: 'fans',
+    name: 'Bedroom fan',
+    room: 'Bedroom',
+    size: 'small',
+    state: true,
+    percentage: 66,
+    providerId: 'home_assistant',
+  },
+  {
+    id: 'humidifier.bedroom',
+    type: 'switches',
+    name: 'Bedroom humidifier',
+    room: 'Bedroom',
+    size: 'medium',
+    state: true,
+    entityType: 'Humidifier',
+    deviceClass: 'humidifier',
+    serviceDomain: 'humidifier',
+    currentHumidity: 43,
+    targetHumidity: 46,
+    minHumidity: 30,
+    maxHumidity: 70,
+    targetHumidityStep: 1,
+    mode: 'auto',
+    availableModes: ['auto', 'eco', 'sleep'],
+    providerId: 'home_assistant',
+  },
+  {
+    id: 'sensor.living_room_temp',
+    type: 'sensors',
+    name: 'Living room temperature',
+    room: 'Living Room',
+    size: 'small',
+    value: '22.4',
+    unit: '°C',
+    icon: 'thermometer',
+    deviceClass: 'temperature',
+    status: 'measurement',
+    providerId: 'home_assistant',
+  },
+  {
+    id: 'sensor.living_room_humidity',
+    type: 'sensors',
+    name: 'Living room humidity',
+    room: 'Living Room',
+    size: 'small',
+    value: '47',
+    unit: '%',
+    icon: 'droplets',
+    deviceClass: 'humidity',
+    status: 'measurement',
+    providerId: 'home_assistant',
+  },
+  {
+    id: 'sensor.living_room_co2',
+    type: 'sensors',
+    name: 'Living room CO2',
+    room: 'Living Room',
+    size: 'small',
+    value: '510',
+    unit: 'ppm',
+    icon: 'gauge',
+    deviceClass: 'carbon_dioxide',
+    status: 'measurement',
+    providerId: 'home_assistant',
+  },
+  {
+    id: 'weather.home',
+    type: 'weather',
+    name: 'Home weather',
+    room: 'Outside',
+    size: 'medium',
+    temperature: 18,
+    temperatureUnit: 'celsius',
+    feelsLikeTemperature: 17,
+    feelsLikeTemperatureUnit: 'celsius',
+    location: 'Stockholm',
+    condition: 'partlycloudy',
+    humidity: 58,
+    windSpeed: 12,
+    pressure: 1014,
+    precipitation: 0.4,
+    precipitationUnit: 'mm',
+    sunrise: '05:08',
+    sunset: '20:51',
+    daylight: '15h 43m',
+    rainForecast: 'Light rain possible later',
+    highTemp: 22,
+    lowTemp: 13,
+    forecastMode: 'weekly',
+    forecast: [],
+    providerId: 'home_assistant',
+  },
+] satisfies DeviceWithType[];
+const demoClimateDeviceMap = new Map<string, DeviceWithType>(
+  demoClimateDevices.map((device) => [device.id, device])
+);
+const demoClimateSections: ClimateDashboardSection[] = [
+  {
+    key: 'climate',
+    titleKey: 'sections.climate.title',
+    orderedIds: ['climate.main_floor'],
+  },
+  {
+    key: 'fans',
+    titleKey: 'sections.climate.fans.title',
+    orderedIds: ['fan.bedroom_ceiling'],
+  },
+  {
+    key: 'temperature',
+    titleKey: 'sections.climate.temperature.title',
+    orderedIds: ['sensor.living_room_temp'],
+  },
+  {
+    key: 'humidity',
+    titleKey: 'sections.climate.humidity.title',
+    orderedIds: ['humidifier.bedroom', 'sensor.living_room_humidity'],
+  },
+  {
+    key: 'airQuality',
+    titleKey: 'sections.climate.airQuality.title',
+    orderedIds: ['sensor.living_room_co2'],
+  },
+];
+const demoClimateCardSizes: Record<string, CardSize> = {};
 const demoLightDevices = [
   {
     id: 'light.kitchen_island',
@@ -211,275 +348,6 @@ const demoLightScenes = [
   { id: 'scene.evening', type: 'scene', name: 'Evening', room: 'Unassigned', state: 'off' },
   { id: 'scene.movie', type: 'scene', name: 'Movie', room: 'Living room', state: 'off' },
 ] as const;
-const demoMediaCapabilities = getMediaPlayerCapabilities(
-  MEDIA_PLAYER_FEATURES.PAUSE |
-    MEDIA_PLAYER_FEATURES.SEEK |
-    MEDIA_PLAYER_FEATURES.VOLUME_SET |
-    MEDIA_PLAYER_FEATURES.VOLUME_MUTE |
-    MEDIA_PLAYER_FEATURES.PREVIOUS_TRACK |
-    MEDIA_PLAYER_FEATURES.NEXT_TRACK |
-    MEDIA_PLAYER_FEATURES.PLAY_MEDIA |
-    MEDIA_PLAYER_FEATURES.SELECT_SOURCE |
-    MEDIA_PLAYER_FEATURES.PLAY |
-    MEDIA_PLAYER_FEATURES.SHUFFLE_SET |
-    MEDIA_PLAYER_FEATURES.BROWSE_MEDIA |
-    MEDIA_PLAYER_FEATURES.REPEAT_SET |
-    MEDIA_PLAYER_FEATURES.GROUPING
-);
-const demoMediaDevices = [
-  {
-    id: 'media_player.demo_spotify',
-    name: 'Spotify',
-    room: 'Whole home',
-    title: 'Olalla',
-    artist: 'Blanco White',
-    album: 'On the Other Side',
-    entityType: 'Media Player',
-    source: 'Bathroom',
-    sourceList: ['Bathroom', 'Kitchen', 'Living room', 'Bedroom'],
-    entityPicture: sampleArtworkImage,
-    state: 'playing',
-    volume: 36,
-    isMuted: false,
-    elapsedSeconds: 35,
-    durationSeconds: 248,
-    mediaCapabilities: demoMediaCapabilities,
-    supportsGrouping: false,
-    supportsPreviousTrack: true,
-    supportsNextTrack: true,
-    groupMembers: [],
-    size: 'medium',
-    type: 'media',
-  },
-  {
-    id: 'media_player.demo_kitchen',
-    name: 'Kitchen',
-    room: 'Kitchen',
-    title: 'Olalla',
-    artist: 'Blanco White',
-    album: 'On the Other Side',
-    entityType: 'Speaker',
-    deviceClass: 'speaker',
-    source: 'Spotify',
-    sourceList: ['Spotify', 'AirPlay', 'Radio'],
-    entityPicture: sampleArtworkImage,
-    state: 'playing',
-    volume: 36,
-    isMuted: false,
-    elapsedSeconds: 35,
-    durationSeconds: 248,
-    mediaCapabilities: demoMediaCapabilities,
-    supportsGrouping: true,
-    supportsPreviousTrack: true,
-    supportsNextTrack: true,
-    groupMembers: [
-      'media_player.demo_kitchen',
-      'media_player.demo_living_room',
-      'media_player.demo_bedroom',
-    ],
-    size: 'medium',
-    type: 'media',
-  },
-  {
-    id: 'media_player.demo_living_room',
-    name: 'Living room',
-    room: 'Living room',
-    title: 'Olalla',
-    artist: 'Blanco White',
-    album: 'On the Other Side',
-    entityType: 'Speaker',
-    deviceClass: 'speaker',
-    source: 'Spotify',
-    sourceList: ['Spotify', 'AirPlay', 'Radio'],
-    entityPicture: sampleArtworkImage,
-    state: 'playing',
-    volume: 31,
-    isMuted: false,
-    elapsedSeconds: 35,
-    durationSeconds: 248,
-    mediaCapabilities: demoMediaCapabilities,
-    supportsGrouping: true,
-    supportsPreviousTrack: true,
-    supportsNextTrack: true,
-    groupMembers: [
-      'media_player.demo_kitchen',
-      'media_player.demo_living_room',
-      'media_player.demo_bedroom',
-    ],
-    size: 'medium',
-    type: 'media',
-  },
-  {
-    id: 'media_player.demo_bedroom',
-    name: 'Bedroom',
-    room: 'Bedroom',
-    title: 'Olalla',
-    artist: 'Blanco White',
-    album: 'On the Other Side',
-    entityType: 'Speaker',
-    deviceClass: 'speaker',
-    source: 'Spotify',
-    sourceList: ['Spotify', 'AirPlay', 'Radio'],
-    entityPicture: sampleArtworkImage,
-    state: 'playing',
-    volume: 24,
-    isMuted: false,
-    elapsedSeconds: 35,
-    durationSeconds: 248,
-    mediaCapabilities: demoMediaCapabilities,
-    supportsGrouping: true,
-    supportsPreviousTrack: true,
-    supportsNextTrack: true,
-    groupMembers: [
-      'media_player.demo_kitchen',
-      'media_player.demo_living_room',
-      'media_player.demo_bedroom',
-    ],
-    size: 'medium',
-    type: 'media',
-  },
-  {
-    id: 'media_player.demo_bathroom',
-    name: 'Bathroom',
-    room: 'Bathroom',
-    title: 'Bathroom',
-    artist: '',
-    entityType: 'Speaker',
-    deviceClass: 'speaker',
-    source: 'AirPlay',
-    sourceList: ['Spotify', 'AirPlay', 'Radio'],
-    state: 'idle',
-    volume: 20,
-    isMuted: false,
-    mediaCapabilities: demoMediaCapabilities,
-    supportsGrouping: true,
-    supportsPreviousTrack: true,
-    supportsNextTrack: true,
-    groupMembers: [],
-    size: 'medium',
-    type: 'media',
-  },
-  {
-    id: 'media_player.demo_kitchen_display',
-    name: 'Kitchen display',
-    room: 'Kitchen',
-    title: 'Kitchen display',
-    artist: '',
-    entityType: 'Cast display',
-    deviceClass: 'receiver',
-    source: 'Google Cast',
-    sourceList: ['Google Cast', 'Spotify', 'YouTube'],
-    state: 'idle',
-    volume: 28,
-    isMuted: false,
-    mediaCapabilities: demoMediaCapabilities,
-    supportsGrouping: true,
-    supportsPreviousTrack: true,
-    supportsNextTrack: true,
-    groupMembers: [],
-    size: 'medium',
-    type: 'media',
-  },
-  {
-    id: 'media_player.demo_office_cast',
-    name: 'Office Cast',
-    room: 'Office',
-    title: 'Office Cast',
-    artist: '',
-    entityType: 'Cast receiver',
-    deviceClass: 'receiver',
-    source: 'Google Cast',
-    sourceList: ['Google Cast', 'Spotify', 'YouTube Music'],
-    state: 'idle',
-    volume: 18,
-    isMuted: false,
-    mediaCapabilities: demoMediaCapabilities,
-    supportsGrouping: true,
-    supportsPreviousTrack: true,
-    supportsNextTrack: true,
-    groupMembers: [],
-    size: 'medium',
-    type: 'media',
-  },
-  {
-    id: 'media_player.demo_apple_tv',
-    name: 'Apple TV 4K',
-    room: 'Living room',
-    title: 'Apple TV 4K',
-    artist: '',
-    entityType: 'Streaming box',
-    deviceClass: 'streaming_box',
-    source: 'Apple TV',
-    sourceList: ['Apple TV', 'AirPlay', 'Disney+', 'Netflix'],
-    state: 'idle',
-    volume: 24,
-    isMuted: false,
-    mediaCapabilities: demoMediaCapabilities,
-    supportsGrouping: false,
-    supportsPreviousTrack: true,
-    supportsNextTrack: true,
-    groupMembers: [],
-    size: 'medium',
-    type: 'media',
-  },
-  {
-    id: 'media_player.demo_playstation_5',
-    name: 'PlayStation 5',
-    room: 'Living room',
-    title: "Astro's Playroom",
-    artist: 'PlayStation 5',
-    entityType: 'Media player',
-    deviceClass: 'player',
-    source: 'PlayStation 5',
-    sourceList: ['PlayStation 5', 'Blu-ray', 'Media'],
-    state: 'playing',
-    volume: 30,
-    isMuted: false,
-    elapsedSeconds: 1280,
-    durationSeconds: 0,
-    mediaCapabilities: demoMediaCapabilities,
-    supportsGrouping: false,
-    supportsPreviousTrack: false,
-    supportsNextTrack: false,
-    groupMembers: [],
-    size: 'medium',
-    type: 'media',
-  },
-  {
-    id: 'media_player.demo_living_room_tv',
-    name: 'Living room TV',
-    room: 'Living room',
-    title: 'Samsung TV Plus',
-    artist: 'Live',
-    entityType: 'TV',
-    deviceClass: 'tv',
-    source: 'HDMI 1',
-    sourceList: ['HDMI 1', 'Apple TV', 'TV'],
-    state: 'idle',
-    volume: 18,
-    isMuted: false,
-    mediaCapabilities: demoMediaCapabilities,
-    supportsGrouping: false,
-    supportsPreviousTrack: true,
-    supportsNextTrack: true,
-    groupMembers: [],
-    size: 'medium',
-    type: 'media',
-  },
-] satisfies Array<MediaDevice & { type: 'media' }>;
-const demoMediaCatalogDeviceIds = [
-  'media_player.demo_bathroom',
-  'media_player.demo_living_room_tv',
-  'media_player.demo_kitchen_display',
-  'media_player.demo_office_cast',
-  'media_player.demo_apple_tv',
-  'media_player.demo_playstation_5',
-];
-const demoMediaCatalogDevices = demoMediaCatalogDeviceIds.flatMap((entityId) => {
-  const device = demoMediaDevices.find((candidate) => candidate.id === entityId);
-  return device ? [device] : [];
-});
-
 const demoSummaryItems: HomeStatusSummaryItem[] = [
   {
     id: 'energy',
@@ -1001,37 +869,6 @@ function CardSlot({ size, children }: { size: CardSize; children: ReactNode }) {
   );
 }
 
-function SectionBlock({
-  eyebrow,
-  title,
-  children,
-}: {
-  eyebrow?: string;
-  title: string;
-  children: ReactNode;
-}) {
-  const { theme } = useTheme();
-  const surface = getThemeSurfaceTokens(theme);
-
-  return (
-    <section className="space-y-3">
-      <div>
-        {eyebrow ? (
-          <div className={`text-xs font-semibold uppercase tracking-[0.16em] ${surface.textMuted}`}>
-            {eyebrow}
-          </div>
-        ) : null}
-        <h2
-          className={`${eyebrow ? 'mt-1' : ''} text-lg font-semibold tracking-tight ${surface.textPrimary}`}
-        >
-          {title}
-        </h2>
-      </div>
-      {children}
-    </section>
-  );
-}
-
 function getRoomEntitySlug(room: string) {
   return room.toLowerCase().replace(/\s+/g, '_');
 }
@@ -1332,12 +1169,12 @@ function ProductGrid() {
   });
 
   return (
-    <div className="space-y-4 md:space-y-5">
+    <SummaryBarStack>
       <DemoSummaryRow />
       <DashboardGrid>
         {reduceRenderingWork ? cards.slice(0, visibleCardCount) : cards}
       </DashboardGrid>
-    </div>
+    </SummaryBarStack>
   );
 }
 
@@ -1359,88 +1196,25 @@ function EnergyShot() {
 }
 
 function ClimateShot() {
-  const { t } = useI18n();
+  const reduceRenderingWork = useSettingsStore(
+    (state) =>
+      state.effectsQuality === 'low' ||
+      state.lowPowerMode === true ||
+      state.disableAnimations === true
+  );
 
   return (
-    <div className="space-y-6">
-      <SectionBlock title={t('sections.climate.title')}>
-        <DashboardGrid>
-          <CardSlot size="medium">
-            <ClimateCard
-              id="climate.main_floor"
-              name="Main Floor"
-              room="Hallway"
-              initialTemp={22}
-              initialCurrentTemp={21}
-              initialMode="heat"
-              initialAction="heating"
-              initialState
-              size="medium"
-              onSizeChange={noopCardSizeChange}
-              isEditMode={false}
-            />
-          </CardSlot>
-        </DashboardGrid>
-      </SectionBlock>
-
-      <SectionBlock title={t('sections.climate.fans.title')}>
-        <DashboardGrid>
-          <CardSlot size="small">
-            <FanCard
-              id="fan.bedroom_ceiling"
-              name="Bedroom Fan"
-              room="Bedroom"
-              initialState
-              initialPercentage={54}
-              size="small"
-              onSizeChange={noopCardSizeChange}
-              isEditMode={false}
-            />
-          </CardSlot>
-        </DashboardGrid>
-      </SectionBlock>
-
-      <SectionBlock title={t('sections.climate.humidity.title')}>
-        <DashboardGrid>
-          <CardSlot size="medium">
-            <HumidifierCard
-              id="humidifier.bedroom"
-              name="Bedroom Humidifier"
-              room="Bedroom"
-              entityType="Humidifier"
-              deviceClass="humidifier"
-              initialState
-              initialTargetHumidity={46}
-              minHumidity={30}
-              maxHumidity={70}
-              targetHumidityStep={1}
-              initialMode="auto"
-              availableModes={['auto', 'eco', 'sleep']}
-              size="medium"
-              onSizeChange={noopCardSizeChange}
-              isEditMode={false}
-            />
-          </CardSlot>
-        </DashboardGrid>
-      </SectionBlock>
-
-      <SectionBlock title={t('sections.climate.airQuality.title')}>
-        <DashboardGrid>
-          <CardSlot size="medium">
-            <GroupedSensorCard
-              id="grouped_sensors.living_room_air"
-              name="Living Room Air"
-              room="Living Room"
-              sensors={groupedSensors}
-              accentColor="teal"
-              size="medium"
-              onSizeChange={noopCardSizeChange}
-              isEditMode={false}
-            />
-          </CardSlot>
-        </DashboardGrid>
-      </SectionBlock>
-    </div>
+    <ClimateDashboard
+      deviceMap={demoClimateDeviceMap}
+      sections={demoClimateSections}
+      temperatureUnit="celsius"
+      cardSizes={demoClimateCardSizes}
+      updateCardSize={noopCardSizeChange}
+      isEditMode={false}
+      onRemoveEntity={noopRemoveEntity}
+      densePerformanceMode={reduceRenderingWork}
+      optimizeOffscreenPaint={reduceRenderingWork}
+    />
   );
 }
 
@@ -1486,68 +1260,7 @@ function SettingsShot() {
 }
 
 function MediaShot() {
-  const { t } = useI18n();
-  const mediaSections = buildMediaSections(demoMediaCatalogDevices, {
-    audioTitle: t('sections.media.audio.title'),
-    audioSingular: t('sections.media.audio.singular'),
-    audioPlural: t('sections.media.audio.plural'),
-    tvTitle: t('sections.media.tv.title'),
-    tvSingular: t('sections.media.tv.singular'),
-    tvPlural: t('sections.media.tv.plural'),
-    typeLabels: {
-      'media.type.player': t('media.type.player'),
-      'media.type.tv': t('media.type.tv'),
-      'media.type.speaker': t('media.type.speaker'),
-      'media.type.receiver': t('media.type.receiver'),
-      'media.type.setTopBox': t('media.type.setTopBox'),
-      'media.type.streamingBox': t('media.type.streamingBox'),
-      'media.type.soundbar': t('media.type.soundbar'),
-    },
-  });
-
-  return (
-    <div className="space-y-8">
-      <MediaDashboard devices={demoMediaDevices} initialDeviceId="media_player.demo_spotify" />
-
-      {mediaSections.map((section) => (
-        <SectionBlock key={section.key} title={section.title}>
-          <DashboardGrid>
-            {section.devices.map((device) => (
-              <CardSlot key={device.id} size="medium">
-                <MediaCard
-                  id={device.id}
-                  name={device.name}
-                  room={device.room}
-                  title={device.title}
-                  artist={device.artist}
-                  album={device.album}
-                  entityType={device.entityType}
-                  deviceClass={device.deviceClass}
-                  source={device.source}
-                  sourceList={device.sourceList}
-                  entityPicture={device.entityPicture}
-                  state={device.state}
-                  volume={device.volume}
-                  isMuted={device.isMuted}
-                  elapsedSeconds={device.elapsedSeconds}
-                  durationSeconds={device.durationSeconds}
-                  mediaCapabilities={device.mediaCapabilities}
-                  supportsGrouping={device.supportsGrouping}
-                  supportsPreviousTrack={device.supportsPreviousTrack}
-                  supportsNextTrack={device.supportsNextTrack}
-                  groupMembers={device.groupMembers}
-                  size="medium"
-                  onSizeChange={noopCardSizeChange}
-                  isEditMode={false}
-                  simulateTvRemote={device.deviceClass === 'tv'}
-                />
-              </CardSlot>
-            ))}
-          </DashboardGrid>
-        </SectionBlock>
-      ))}
-    </div>
-  );
+  return <MediaSection />;
 }
 
 function TasksShot() {
@@ -1935,7 +1648,7 @@ function DemoContent() {
           : undefined
       }
     >
-      <div className="flex w-full flex-col gap-4 min-[1025px]:gap-6">
+      <div className="flex w-full flex-col gap-2 md:gap-4 min-[1025px]:gap-6">
         {section === 'home' ? (
           <RoomNav
             rooms={DEMO_ROOMS}

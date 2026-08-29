@@ -1,4 +1,4 @@
-import { InteractivePill } from '@navet/app/components/primitives';
+import { DashboardGroupingNavigation } from '@navet/app/components/patterns';
 import {
   type CardSize,
   getCardGridAutoRowsStyle,
@@ -22,7 +22,6 @@ import { useProviderCameraTopology } from '@navet/app/hooks';
 import { useBreakpointCols } from '@navet/app/hooks/use-breakpoint-cols';
 import { usePersistedState } from '@navet/app/hooks/use-persisted-state';
 import { useProviderEntityModel } from '@navet/app/hooks/use-provider-device';
-import { type ThemeType, useTheme } from '@navet/app/hooks/use-theme';
 import { useI18n } from '@navet/app/i18n';
 import { integrationCameraFeatureService } from '@navet/app/services/integration-camera-feature.service';
 import { normalizeResourceUrl } from '@navet/app/services/integration-resource.service';
@@ -54,6 +53,7 @@ import type {
   CameraDashboardModel,
   SecurityGroupSummary,
 } from '../utils/security-camera-dashboard-model';
+import { buildSecurityRoomGroupSummaries } from '../utils/security-camera-dashboard-model';
 import {
   DEFAULT_SECURITY_OVERVIEW_PREFERENCE,
   getAutomaticSecurityOverviewEntityIds,
@@ -89,81 +89,12 @@ interface SecurityCameraDashboardProps {
 }
 
 const SECURITY_DASHBOARD_SELECTED_GROUP_KEY = 'navet-security-dashboard-selected-group';
+type SecurityGroupingMode = 'type' | 'room';
 
-function getIndicatorDotClassName(group: SecurityGroupSummary, theme: ThemeType) {
-  const isLightTheme = theme === 'light';
-  const usesLockAlertColor = group.id === 'locks' && group.warning > 0;
-  const usesSirenCriticalColor = group.id === 'sirens' && group.critical > 0;
-
-  if (usesSirenCriticalColor) {
-    return isLightTheme ? 'bg-red-600' : 'bg-red-500';
-  }
-
-  if (usesLockAlertColor) {
-    return isLightTheme ? 'bg-amber-500' : 'bg-amber-400';
-  }
-
-  if (group.critical > 0) {
-    return isLightTheme ? 'bg-rose-600' : 'bg-rose-500';
-  }
-
-  if (group.warning > 0) {
-    return isLightTheme ? 'bg-amber-500' : 'bg-amber-400';
-  }
-
-  if (group.unknown > 0) {
-    return isLightTheme ? 'bg-slate-400' : 'bg-zinc-400';
-  }
-
-  if (group.active > 0) {
-    if (group.id === 'cameras') {
-      return isLightTheme ? 'bg-sky-500' : 'bg-sky-400';
-    }
-
-    if (group.id === 'motion-occupancy') {
-      return isLightTheme ? 'bg-amber-500' : 'bg-amber-300';
-    }
-
-    return isLightTheme ? 'bg-sky-500' : 'bg-sky-400';
-  }
-
-  return isLightTheme ? 'bg-slate-400' : 'bg-zinc-400';
-}
-
-function getDetailsPillClassName(
-  isActive: boolean,
-  theme: ThemeType,
-  surface: ReturnType<typeof getThemeSurfaceTokens>
-) {
-  if (isActive) {
-    if (theme === 'light') {
-      return `border ${surface.borderStrong} bg-white text-slate-950 shadow-sm`;
-    }
-
-    if (theme === 'glass') {
-      return 'border-white/14 bg-slate-950/88 text-white shadow-none';
-    }
-
-    if (theme === 'black') {
-      return 'border-white/10 bg-zinc-950 text-white shadow-none';
-    }
-
-    return 'border-[rgba(161,161,170,0.22)] bg-[rgba(18,18,21,0.98)] text-white shadow-none';
-  }
-
-  if (theme === 'light') {
-    return `border border-transparent bg-transparent ${surface.hoverBg} text-slate-700`;
-  }
-
-  if (theme === 'glass') {
-    return 'border-transparent bg-transparent hover:bg-white/8 text-white/80';
-  }
-
-  if (theme === 'black') {
-    return 'border-transparent bg-transparent hover:bg-zinc-950 text-zinc-300';
-  }
-
-  return 'border-transparent bg-transparent hover:bg-zinc-800/82 text-zinc-300';
+function getGroupIndicatorTone(group: SecurityGroupSummary) {
+  if (group.critical > 0) return 'critical' as const;
+  if (group.warning > 0 || group.unknown > 0) return 'attention' as const;
+  return undefined;
 }
 
 function readImageUrl(value: unknown): string | undefined {
@@ -398,7 +329,8 @@ function DetailsGrid({
     () =>
       packDashboardGridItems(
         resolvedCards.map(({ device, gridSize: size }) => ({ id: device.id, size })),
-        columnCount
+        columnCount,
+        { placementPreference: 'leftmost' }
       ),
     [columnCount, resolvedCards]
   );
@@ -515,25 +447,26 @@ function MobileOverviewCarousel({
 function DetailsSection({
   groupSummaries,
   selectedGroupId,
+  groupingMode,
   onSelectGroup,
+  onGroupingModeChange,
   cardSizes,
   updateCardSize,
   isEditMode,
   onRemoveEntity,
-  surface,
   embeddedColumnCount,
 }: {
   groupSummaries: SecurityGroupSummary[];
   selectedGroupId: string;
+  groupingMode: SecurityGroupingMode;
   onSelectGroup: (groupId: string) => void;
+  onGroupingModeChange: (mode: SecurityGroupingMode) => void;
   cardSizes: Record<string, CardSize>;
   updateCardSize: (id: string, size: CardSize) => void;
   isEditMode: boolean;
   onRemoveEntity?: (entityId: string) => void;
-  surface: ReturnType<typeof getThemeSurfaceTokens>;
   embeddedColumnCount?: number;
 }) {
-  const { theme } = useTheme();
   const { t } = useI18n();
   const selectedGroup =
     groupSummaries.find((group) => group.id === selectedGroupId) ?? groupSummaries[0] ?? null;
@@ -544,47 +477,26 @@ function DetailsSection({
 
   return (
     <div className="space-y-4">
-      <div
-        role="tablist"
-        aria-label={t('security.overview.detailGroups')}
-        className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        <div className="flex w-max min-w-full flex-nowrap gap-2">
-          {groupSummaries.map((group) => {
-            const isActive = group.id === selectedGroup.id;
-            const attentionCount = group.critical + group.warning + group.unknown;
-            const indicatorCount = group.id === 'presence' ? 0 : attentionCount + group.active;
-
-            return (
-              <InteractivePill
-                key={group.id}
-                role="tab"
-                aria-selected={isActive}
-                aria-controls={`security-details-panel-${group.id}`}
-                id={`security-details-tab-${group.id}`}
-                active={isActive}
-                size="small"
-                intent="navigation"
-                variant="ghost"
-                onClick={() => onSelectGroup(group.id)}
-                className={`shrink-0 rounded-[22px] gap-2 whitespace-nowrap border transition-colors ${getDetailsPillClassName(
-                  isActive,
-                  theme,
-                  surface
-                )}`}
-              >
-                {indicatorCount > 0 ? (
-                  <span
-                    aria-hidden="true"
-                    className={`h-2 w-2 shrink-0 rounded-full ${getIndicatorDotClassName(group, theme)}`}
-                  />
-                ) : null}
-                <span>{group.label}</span>
-              </InteractivePill>
-            );
-          })}
-        </div>
-      </div>
+      <DashboardGroupingNavigation
+        ariaLabel={t('security.overview.detailGroups')}
+        groupingLabel={t('dashboard.roomNav.grouping.label')}
+        idPrefix="security-details"
+        items={groupSummaries.map((group) => ({
+          id: group.id,
+          label: group.label,
+          indicatorTone: group.id === 'presence' ? undefined : getGroupIndicatorTone(group),
+        }))}
+        modes={[
+          { id: 'type', label: t('dashboard.roomNav.grouping.type') },
+          { id: 'room', label: t('dashboard.roomNav.grouping.room') },
+        ]}
+        selectedItemId={selectedGroup.id}
+        selectedModeId={groupingMode}
+        onModeChange={(modeId) => {
+          if (modeId === 'type' || modeId === 'room') onGroupingModeChange(modeId);
+        }}
+        onItemChange={onSelectGroup}
+      />
 
       <div
         role="tabpanel"
@@ -636,8 +548,130 @@ export function SecurityCameraDashboard({
     () => resolveSecurityOverviewEntities(overviewPreference, model.allEntities),
     [model.allEntities, overviewPreference]
   );
+  const roomGroupSummaries = useMemo(
+    () => buildSecurityRoomGroupSummaries(model.allEntities, t),
+    [model.allEntities, t]
+  );
+  const defaultTypeGroupId = useMemo(
+    () =>
+      model.summary.groupSummaries.find((group) => group.defaultExpanded)?.id ??
+      model.summary.groupSummaries[0]?.id ??
+      '',
+    [model.summary.groupSummaries]
+  );
+  const [groupingMode, setGroupingMode] = useState<SecurityGroupingMode>('type');
+  const [selectedTypeGroupId, setSelectedTypeGroupId] = usePersistedState(
+    SECURITY_DASHBOARD_SELECTED_GROUP_KEY,
+    defaultTypeGroupId
+  );
+  const [selectedRoomGroupId, setSelectedRoomGroupId] = useState(
+    () => roomGroupSummaries[0]?.id ?? ''
+  );
+  const groupSummaries =
+    groupingMode === 'type' ? model.summary.groupSummaries : roomGroupSummaries;
+  const selectedGroupId = groupingMode === 'type' ? selectedTypeGroupId : selectedRoomGroupId;
+  const selectGroup = useCallback(
+    (groupId: string) => {
+      if (groupingMode === 'type') {
+        setSelectedTypeGroupId(groupId);
+      } else {
+        setSelectedRoomGroupId(groupId);
+      }
+    },
+    [groupingMode, setSelectedTypeGroupId]
+  );
+
+  useEffect(() => {
+    setSelectedTypeGroupId((current) => {
+      if (current && model.summary.groupSummaries.some((group) => group.id === current)) {
+        return current;
+      }
+
+      return defaultTypeGroupId;
+    });
+  }, [defaultTypeGroupId, model.summary.groupSummaries, setSelectedTypeGroupId]);
+
+  useEffect(() => {
+    setSelectedRoomGroupId((current) => {
+      if (current && roomGroupSummaries.some((group) => group.id === current)) {
+        return current;
+      }
+
+      return roomGroupSummaries[0]?.id ?? '';
+    });
+  }, [roomGroupSummaries]);
+
+  useEffect(() => {
+    if (!pendingNavigationEntityId) return;
+
+    const frame = requestAnimationFrame(() => {
+      const detailCards = detailsRef.current?.querySelectorAll<HTMLElement>(
+        '[data-security-entity-id]'
+      );
+      const target = Array.from(detailCards ?? []).find(
+        (card) => card.dataset.securityEntityId === pendingNavigationEntityId
+      );
+
+      if (target) {
+        target.focus({ preventScroll: true });
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      setPendingNavigationEntityId(null);
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [pendingNavigationEntityId, selectedGroupId]);
+
+  const navigateToEntity = useCallback(
+    (device: DeviceWithType) => {
+      const secureSummaryGroupId =
+        groupingMode === 'type' ? readSecureSummaryGroupId(device) : null;
+      if (secureSummaryGroupId) {
+        selectGroup(secureSummaryGroupId);
+        setPendingNavigationEntityId(device.id);
+        return;
+      }
+
+      const targetGroup = groupSummaries.find((group) =>
+        group.entities.some((entity) => entity.id === device.id)
+      );
+      if (!targetGroup) {
+        return;
+      }
+
+      selectGroup(targetGroup.id);
+      setPendingNavigationEntityId(device.id);
+    },
+    [groupSummaries, groupingMode, selectGroup]
+  );
+
+  const handleAttentionItemClick = (device: DeviceWithType) => {
+    navigateToEntity(device);
+  };
+
+  const handleUnavailableSummaryClick = useCallback(() => {
+    const firstUnavailableDevice = model.summary.unknownItems[0];
+    if (firstUnavailableDevice) {
+      navigateToEntity(firstUnavailableDevice);
+    }
+  }, [model.summary.unknownItems, navigateToEntity]);
+
+  const handleAttentionSummaryClick = useCallback(() => {
+    const firstAttentionDevice = model.summary.attentionEntities.find(
+      (entity) => entity.securitySeverity !== 'critical' && entity.securitySeverity !== 'unknown'
+    );
+    if (firstAttentionDevice) {
+      navigateToEntity(firstAttentionDevice);
+    }
+  }, [model.summary.attentionEntities, navigateToEntity]);
+
   const summaryItems = useMemo<HomeStatusSummaryItem[]>(() => {
     const items: HomeStatusSummaryItem[] = [];
+    const hasDangerAttention = model.summary.attentionEntities.some(
+      (entity) => entity.type === 'locks' && entity.state === false
+    );
     if (model.summary.liveItems.length > 0) {
       items.push({
         id: 'security-live',
@@ -663,10 +697,11 @@ export function SecurityCameraDashboard({
         id: 'security-attention',
         title: t('security.severity.attention'),
         value: t('security.summary.alerts', { count: model.summary.warningCount }),
-        icon: CircleAlert,
-        iconColor: '#f59e0b',
-        priority: 'attention',
-        tone: 'warning',
+        icon: hasDangerAttention ? TriangleAlert : CircleAlert,
+        iconColor: hasDangerAttention ? '#ef4444' : '#f59e0b',
+        priority: hasDangerAttention ? 'critical' : 'attention',
+        tone: hasDangerAttention ? 'danger' : 'warning',
+        onSelect: handleAttentionSummaryClick,
       });
     }
     if (model.summary.unknownCount > 0) {
@@ -678,6 +713,7 @@ export function SecurityCameraDashboard({
         iconColor: '#94a3b8',
         priority: 'attention',
         tone: 'neutral',
+        onSelect: handleUnavailableSummaryClick,
       });
     }
     if (model.summary.normalCount > 0) {
@@ -690,74 +726,7 @@ export function SecurityCameraDashboard({
       });
     }
     return items;
-  }, [model.summary, t]);
-  const defaultGroupId = useMemo(
-    () =>
-      model.summary.groupSummaries.find((group) => group.defaultExpanded)?.id ??
-      model.summary.groupSummaries[0]?.id ??
-      '',
-    [model.summary.groupSummaries]
-  );
-  const [selectedGroupId, setSelectedGroupId] = usePersistedState(
-    SECURITY_DASHBOARD_SELECTED_GROUP_KEY,
-    defaultGroupId
-  );
-
-  useEffect(() => {
-    setSelectedGroupId((current) => {
-      if (current && model.summary.groupSummaries.some((group) => group.id === current)) {
-        return current;
-      }
-
-      return defaultGroupId;
-    });
-  }, [defaultGroupId, model.summary.groupSummaries]);
-
-  useEffect(() => {
-    if (!pendingNavigationEntityId) return;
-
-    const frame = requestAnimationFrame(() => {
-      const detailCards = detailsRef.current?.querySelectorAll<HTMLElement>(
-        '[data-security-entity-id]'
-      );
-      const target = Array.from(detailCards ?? []).find(
-        (card) => card.dataset.securityEntityId === pendingNavigationEntityId
-      );
-
-      if (target) {
-        target.focus({ preventScroll: true });
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      } else {
-        detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-      setPendingNavigationEntityId(null);
-    });
-
-    return () => cancelAnimationFrame(frame);
-  }, [pendingNavigationEntityId, selectedGroupId]);
-
-  const navigateToEntity = (device: DeviceWithType) => {
-    const secureSummaryGroupId = readSecureSummaryGroupId(device);
-    if (secureSummaryGroupId) {
-      setSelectedGroupId(secureSummaryGroupId);
-      setPendingNavigationEntityId(device.id);
-      return;
-    }
-
-    const targetGroup = model.summary.groupSummaries.find((group) =>
-      group.entities.some((entity) => entity.id === device.id)
-    );
-    if (!targetGroup) {
-      return;
-    }
-
-    setSelectedGroupId(targetGroup.id);
-    setPendingNavigationEntityId(device.id);
-  };
-
-  const handleAttentionItemClick = (device: DeviceWithType) => {
-    navigateToEntity(device);
-  };
+  }, [handleAttentionSummaryClick, handleUnavailableSummaryClick, model.summary, t]);
 
   return (
     <div className="space-y-7">
@@ -791,14 +760,15 @@ export function SecurityCameraDashboard({
               ? (columnCount) => (
                   <div ref={detailsRef}>
                     <DetailsSection
-                      groupSummaries={model.summary.groupSummaries}
+                      groupSummaries={groupSummaries}
                       selectedGroupId={selectedGroupId}
-                      onSelectGroup={setSelectedGroupId}
+                      groupingMode={groupingMode}
+                      onSelectGroup={selectGroup}
+                      onGroupingModeChange={setGroupingMode}
                       cardSizes={cardSizes}
                       updateCardSize={updateCardSize}
                       isEditMode={isEditMode}
                       onRemoveEntity={onRemoveEntity}
-                      surface={surface}
                       embeddedColumnCount={columnCount}
                     />
                   </div>

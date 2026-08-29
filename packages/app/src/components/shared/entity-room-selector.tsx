@@ -235,7 +235,7 @@ export const EntityRoomSelector = memo(function EntityRoomSelector({
                 setIsCompactFocused(event.currentTarget.matches(':focus-visible'))
               }
               onBlur={() => setIsCompactFocused(false)}
-              className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none opacity-0 disabled:cursor-not-allowed"
+              className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none text-sm font-normal opacity-0 disabled:cursor-not-allowed"
             >
               <option value="">{t('common.noRoom')}</option>
               {assignableRooms.map((room) => (

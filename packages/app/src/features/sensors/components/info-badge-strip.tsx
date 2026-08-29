@@ -51,7 +51,9 @@ export const SummaryBar = memo(function SummaryBar({
             : theme === 'light'
               ? darkenColor(item.iconColor, 68)
               : item.iconColor;
-          const isInteractive = Boolean(item.targetUrl || (item.targetSection && onNavigate));
+          const isInteractive = Boolean(
+            item.onSelect || item.targetUrl || (item.targetSection && onNavigate)
+          );
           const contentGridClassName = 'grid-cols-[auto_minmax(0,1fr)]';
           const focusClassName = isDanger
             ? 'focus-visible:outline-red-400/60'
@@ -146,6 +148,11 @@ export const SummaryBar = memo(function SummaryBar({
               key={item.id}
               type="button"
               onClick={() => {
+                if (item.onSelect) {
+                  item.onSelect();
+                  return;
+                }
+
                 if (item.targetUrl) {
                   openCustomExtensionUrl(item.targetUrl);
                   return;

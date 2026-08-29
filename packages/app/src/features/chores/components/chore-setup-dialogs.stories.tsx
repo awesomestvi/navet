@@ -114,7 +114,8 @@ export const MobileContinuousEditor: Story = {
     ).toBeInTheDocument();
     await expect(within(dialog).getByLabelText('Chore name')).toHaveValue('');
     await expect(within(dialog).getByLabelText('Room')).toBeInTheDocument();
-    await expect(within(dialog).getAllByLabelText('Repeat every')).toHaveLength(1);
+    await expect(within(dialog).queryByLabelText('Repeat every (days)')).toBeNull();
+    await expect(within(dialog).queryByText('Days of the week')).toBeNull();
     await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Water the plants');
     await expect(dialog.querySelector('[aria-live="polite"]')).toHaveTextContent(
       'Water the plants'
@@ -164,6 +165,19 @@ export const DesktopContinuousCreation: Story = {
     await expect(repeatSelect).toHaveValue('biweekly');
     await userEvent.selectOptions(repeatSelect, 'triweekly');
     await expect(repeatSelect).toHaveValue('triweekly');
+    await userEvent.selectOptions(repeatSelect, 'weekdays');
+    await expect(repeatSelect).toHaveValue('weekdays');
+    await userEvent.selectOptions(repeatSelect, 'weekends');
+    await expect(repeatSelect).toHaveValue('weekends');
+    await userEvent.selectOptions(repeatSelect, 'custom');
+    await expect(repeatSelect).toHaveValue('custom');
+    const customInterval = within(dialog).getByLabelText('Repeat every (days)');
+    await expect(repeatSelect.parentElement?.parentElement?.nextElementSibling).toBe(
+      customInterval.parentElement?.parentElement
+    );
+    fireEvent.change(customInterval, {
+      target: { value: '10' },
+    });
     fireEvent.change(within(dialog).getByLabelText('Start date'), {
       target: { value: '2026-12-07' },
     });
@@ -171,7 +185,7 @@ export const DesktopContinuousCreation: Story = {
     await userEvent.type(within(dialog).getByLabelText('Dates to skip'), '2026-12-24');
     await userEvent.click(within(dialog).getByLabelText('More options: The chore'));
     await userEvent.click(within(dialog).getByLabelText('More options: When it repeats'));
-    await expect(within(dialog).queryByLabelText('Repeat every')).toBeNull();
+    await expect(within(dialog).queryByText('Days of the week')).toBeNull();
     await expect(dialog.querySelectorAll('input[type="color"]')).toHaveLength(1);
     await expect(within(dialog).getByLabelText('Instructions')).toBeInTheDocument();
     await expect(within(dialog).getByLabelText('When missed')).toBeInTheDocument();
@@ -179,10 +193,57 @@ export const DesktopContinuousCreation: Story = {
     await expect(saveChore).toHaveBeenCalledWith(
       expect.objectContaining({
         schedule: expect.objectContaining({
-          frequency: 'weekly',
-          intervalWeeks: 3,
+          frequency: 'daily',
+          intervalDays: 10,
+          daysOfWeek: undefined,
           endDate: '2026-12-31',
           excludedDates: ['2026-12-24'],
+        }),
+      }),
+      expect.any(Object)
+    );
+  },
+};
+
+export const WeekdaySchedule: Story = {
+  play: async ({ canvasElement }) => {
+    saveChore.mockClear();
+    const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Add a chore',
+    });
+    await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Empty the dishwasher');
+    await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'weekdays');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Add chore' }));
+
+    await expect(saveChore).toHaveBeenCalledWith(
+      expect.objectContaining({
+        schedule: expect.objectContaining({
+          frequency: 'daily',
+          daysOfWeek: [1, 2, 3, 4, 5],
+          intervalDays: 1,
+        }),
+      }),
+      expect.any(Object)
+    );
+  },
+};
+
+export const WeekendSchedule: Story = {
+  play: async ({ canvasElement }) => {
+    saveChore.mockClear();
+    const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Add a chore',
+    });
+    await userEvent.type(within(dialog).getByLabelText('Chore name'), 'Water the garden');
+    await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'weekends');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Add chore' }));
+
+    await expect(saveChore).toHaveBeenCalledWith(
+      expect.objectContaining({
+        schedule: expect.objectContaining({
+          frequency: 'daily',
+          daysOfWeek: [0, 6],
+          intervalDays: 1,
         }),
       }),
       expect.any(Object)

@@ -1,7 +1,7 @@
 import { useThemeStore } from '@navet/app/stores/theme-store';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { Shield, Speaker } from 'lucide-react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SummaryBar } from './info-badge-strip';
@@ -83,5 +83,28 @@ describe('SummaryBar', () => {
 
     expect(screen.getByRole('navigation', { name: 'Energy' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Week' })).toBeInTheDocument();
+  });
+
+  it('supports actions within the current dashboard', () => {
+    const onSelect = vi.fn();
+
+    renderWithProviders(
+      <SummaryBar
+        items={[
+          {
+            id: 'unavailable',
+            title: 'Unavailable',
+            value: '1 unavailable',
+            icon: Shield,
+            iconColor: '#94a3b8',
+            onSelect,
+          },
+        ]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Unavailable' }));
+
+    expect(onSelect).toHaveBeenCalledOnce();
   });
 });

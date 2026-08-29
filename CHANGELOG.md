@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.15.0 - 2026-08-29
+
+## New features
+
+- Redesigned the Climate dashboard with comfort guidance, room and device grouping, trend charts, and faster mode controls.
+- Expanded shared chores with Home Assistant persistence plus weekday, weekend, and custom interval schedules.
+
+## Improvements and bug fixes
+
+- Improved the Lights dashboard with room controls, whole-home shutoff, and responsive layouts.
+- Upgraded live maps and cameras with clearer locations, automatic framing, and smoother playback recovery.
+- Improved dashboard creation and profile recovery across phones, tablets, and shared displays.
+
 ## 0.14.0 - 2026-08-25
 
 ## New features
