@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "postbuild": "node ../../scripts/check-built-module-syntax.mjs dist",
     "preview": "vite preview"
   }
 }

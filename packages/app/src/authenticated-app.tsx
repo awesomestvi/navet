@@ -33,10 +33,7 @@ import { initializeSearchStore } from './stores/search-store';
 import { appErrorSelectors, integrationSelectors, settingsSelectors } from './stores/selectors';
 import { clearViewportCssVars, syncViewportCssVars } from './utils/viewport';
 
-const DashboardPage = lazy(async () => {
-  const module = await import('./features/dashboard/page');
-  return { default: module.DashboardPage };
-});
+const DashboardPage = lazy(() => import('./features/dashboard/dashboard-page.lazy'));
 const HomeySelectionPage = lazy(async () => {
   const module = await import('./features/auth/homey-selection-page');
   return { default: module.HomeySelectionPage };
