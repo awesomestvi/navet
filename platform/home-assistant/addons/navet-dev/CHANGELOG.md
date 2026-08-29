@@ -2,5 +2,5 @@
 
 ## In Progress
 
-- Current Navet Dev scope since `v0.14.0`.
-- Advance dashboard UX and household services (#155)
+- Current Navet Dev scope since `navet-dev-0.14.0-dev.20260828231929`.
+- Buildfix
