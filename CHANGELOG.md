@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.15.1 - 2026-08-31
+
+## New features
+
+- Added backup import to first-time chore setup, restoring the household without repeating onboarding.
+
+## Improvements and bug fixes
+
+- Added bug fixes and safeguards that recover chore setup if a management PIN error leaves it unusable.
+
 ## 0.15.0 - 2026-08-29
 
 ## New features
