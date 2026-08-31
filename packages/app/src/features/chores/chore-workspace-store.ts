@@ -3,6 +3,7 @@ import {
   configureChoreManagementPin,
   getChoreWorkspaceTransport,
   recoverChoreWorkspace,
+  removeChoreManagementPin,
   resetChoreWorkspace,
   restoreChoreWorkspace,
   verifyChoreManagementPin,
@@ -44,6 +45,7 @@ interface ChoreWorkspaceState {
   deleteAll: (actorParticipantId: string) => Promise<boolean>;
   recover: (action: 'restore_backup' | 'reset') => Promise<boolean>;
   configureManagementPin: (actorParticipantId: string, pin: string) => Promise<boolean>;
+  removeManagementPin: (actorParticipantId: string) => Promise<boolean>;
   unlockManagement: (pin: string) => Promise<boolean>;
   lockManagement: () => void;
   reset: () => void;
@@ -301,7 +303,11 @@ export const useChoreWorkspaceStore = create<ChoreWorkspaceState>((set, get) => 
       managementSessionToken ?? undefined
     );
     if (!result.unlocked || !result.document) {
-      set({ managementError: result.error ?? 'Management PIN could not be saved' });
+      const managementLocked = relockManagementIfNeeded(result.error);
+      set({
+        managementError: result.error ?? 'Management PIN could not be saved',
+        managementUnlocked: managementLocked ? false : get().managementUnlocked,
+      });
       return false;
     }
     managementSessionToken = result.document.sessionToken;
@@ -309,6 +315,32 @@ export const useChoreWorkspaceStore = create<ChoreWorkspaceState>((set, get) => 
       managementError: null,
       managementPinConfigured: result.document.pinConfigured,
       managementUnlocked: true,
+    });
+    return true;
+  },
+  removeManagementPin: async (actorParticipantId) => {
+    set({ managementError: null });
+    if (!managementSessionToken) {
+      set({
+        managementError: 'Unlock chore management before removing its PIN',
+        managementUnlocked: false,
+      });
+      return false;
+    }
+    const result = await removeChoreManagementPin({ actorParticipantId }, managementSessionToken);
+    if (!result.removed || !result.document) {
+      const managementLocked = relockManagementIfNeeded(result.error);
+      set({
+        managementError: result.error ?? 'Management PIN could not be removed',
+        managementUnlocked: managementLocked ? false : get().managementUnlocked,
+      });
+      return false;
+    }
+    managementSessionToken = null;
+    set({
+      managementError: null,
+      managementPinConfigured: false,
+      managementUnlocked: false,
     });
     return true;
   },

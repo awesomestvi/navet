@@ -1090,41 +1090,120 @@ function useSpotifyTrackMetadata(item: PlatformMediaItem) {
   return metadata;
 }
 
-interface MediaBrowserTileProps {
+interface MediaBrowserDirectoryTileProps {
   accentColor: string;
-  artworkIcon?: LucideIcon;
-  compact?: boolean;
   item: PlatformMediaItem;
-  mediaTileClassName: string;
-  mediaTileArtworkClassName: string;
+  className: string;
   onSelect: (item: PlatformMediaItem) => void;
-  providerId?: IntegrationProviderId;
-  preferIconArtwork?: boolean;
   showSpotifyIcon?: boolean;
   statusLabel?: string;
   surface: ReturnType<typeof getThemeSurfaceTokens>;
   theme: ReturnType<typeof useTheme>['theme'];
 }
 
-function MediaBrowserTile({
+function MediaBrowserDirectoryTile({
   accentColor,
-  artworkIcon,
+  item,
+  className,
+  onSelect,
+  showSpotifyIcon = false,
+  statusLabel,
+  surface,
+  theme,
+}: MediaBrowserDirectoryTileProps) {
+  const DirectoryIcon = getMediaLibraryDirectoryIcon(item);
+  const itemTitle = item.title ?? item.mediaContentId;
+  const iconWellStyle = {
+    background: `radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, ${accentColor} ${
+      theme === 'light' ? '7%' : '8%'
+    }, transparent) 0%, transparent 62%)`,
+  };
+  const tileSurfaceClassName =
+    theme === 'light'
+      ? 'bg-white/72 shadow-[0_10px_24px_-22px_rgba(15,23,42,0.32)] hover:border-slate-300 hover:bg-white'
+      : theme === 'glass'
+        ? 'bg-white/[0.045] shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_12px_28px_-26px_rgba(0,0,0,0.6)] backdrop-blur-xl hover:border-white/20 hover:bg-white/[0.075]'
+        : theme === 'black'
+          ? 'bg-white/[0.025] hover:border-zinc-700 hover:bg-white/[0.045]'
+          : 'bg-white/[0.04] hover:border-zinc-600 hover:bg-white/[0.065]';
+  const iconWellClassName =
+    theme === 'light'
+      ? 'border-slate-200/80 bg-slate-100/72 text-slate-600'
+      : 'border-white/10 bg-white/[0.045] text-white/78';
+
+  return (
+    <button
+      type="button"
+      className={`group flex min-h-[72px] min-w-0 items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-[background-color,border-color,box-shadow] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${surface.border} ${tileSurfaceClassName} ${
+        theme === 'light'
+          ? 'focus-visible:ring-slate-400 focus-visible:ring-offset-white'
+          : 'focus-visible:ring-white/40 focus-visible:ring-offset-zinc-950'
+      } ${className}`}
+      onClick={() => onSelect(item)}
+    >
+      <span
+        data-testid="media-library-directory-icon"
+        className={`relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border ${iconWellClassName}`}
+        style={iconWellStyle}
+      >
+        {showSpotifyIcon ? (
+          <svg
+            data-testid="spotify-library-icon"
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="h-5 w-5 text-[#1DB954]"
+          >
+            <path d={SPOTIFY_ICON_PATH} />
+          </svg>
+        ) : (
+          <DirectoryIcon className="h-[18px] w-[18px]" aria-hidden="true" />
+        )}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span
+          className={`line-clamp-2 text-[13px] font-semibold leading-[1.15] ${surface.textPrimary}`}
+        >
+          {itemTitle}
+        </span>
+        {statusLabel ? (
+          <span
+            role="status"
+            aria-label={statusLabel}
+            className={`mt-1 block text-[11px] leading-none ${surface.textSecondary}`}
+          >
+            {statusLabel}
+          </span>
+        ) : null}
+      </span>
+    </button>
+  );
+}
+
+interface MediaBrowserTileProps {
+  compact?: boolean;
+  item: PlatformMediaItem;
+  mediaTileClassName: string;
+  mediaTileArtworkClassName: string;
+  onSelect: (item: PlatformMediaItem) => void;
+  providerId?: IntegrationProviderId;
+  surface: ReturnType<typeof getThemeSurfaceTokens>;
+  theme: ReturnType<typeof useTheme>['theme'];
+}
+
+function MediaBrowserTile({
   compact = false,
   item,
   mediaTileClassName,
   mediaTileArtworkClassName,
   onSelect,
   providerId,
-  preferIconArtwork = false,
-  showSpotifyIcon = false,
-  statusLabel,
   surface,
   theme,
 }: MediaBrowserTileProps) {
   const isDirectory = item.canExpand && !item.canPlay;
   const isArtist = isArtistMediaItem(item);
   const ItemIcon = isArtist ? UserRound : isDirectory ? Folder : ListMusic;
-  const ArtworkIcon = artworkIcon ?? ItemIcon;
   const itemInitials = getMediaItemInitials(item);
   const providerThumbnailUrl = resolveMediaBrowserThumbnailUrl(item, providerId);
   const openArtwork = useOpenMediaBrowserArtwork(item);
@@ -1134,28 +1213,13 @@ function MediaBrowserTile({
     getResolvedMediaBrowserArtist(item, openArtwork, spotifyMetadata) ??
     getMediaBrowserItemAlbum(item, openArtwork) ??
     spotifyMetadata.albumTitle;
-  const itemSubtitle = statusLabel ? undefined : resolvedItemSubtitle;
+  const itemSubtitle = resolvedItemSubtitle;
   const [failedArtworkUrls, setFailedArtworkUrls] = useState<Set<string>>(() => new Set());
   const artworkUrl =
     [providerThumbnailUrl, ...spotifyMetadata.artworkUrls, ...openArtwork.artworkUrls].find(
       (candidateUrl): candidateUrl is string =>
         typeof candidateUrl === 'string' && !failedArtworkUrls.has(candidateUrl)
     ) ?? null;
-  const directoryAtmosphereStyle = {
-    background: `radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, ${accentColor} ${
-      theme === 'light' ? '7%' : '9%'
-    }, transparent) 0%, transparent 58%), radial-gradient(100% 75% at 100% 100%, ${
-      theme === 'light' ? 'rgba(148,163,184,0.07)' : 'rgba(255,255,255,0.035)'
-    } 0%, transparent 66%)`,
-    boxShadow:
-      theme === 'light'
-        ? 'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -18px 32px rgba(148,163,184,0.045)'
-        : 'inset 0 1px 0 rgba(255,255,255,0.065), inset 0 -18px 32px rgba(0,0,0,0.14)',
-  };
-  const directoryIconStyle = {
-    color: theme === 'light' ? '#475569' : 'rgba(255,255,255,0.88)',
-  };
-
   useEffect(() => {
     setFailedArtworkUrls(new Set());
   }, [
@@ -1169,7 +1233,7 @@ function MediaBrowserTile({
   return (
     <button type="button" className={mediaTileClassName} onClick={() => onSelect(item)}>
       <span className={mediaTileArtworkClassName}>
-        {artworkUrl && !preferIconArtwork ? (
+        {artworkUrl ? (
           <img
             src={artworkUrl}
             alt=""
@@ -1211,34 +1275,6 @@ function MediaBrowserTile({
                   {itemInitials || <UserRound className="h-9 w-9" />}
                 </span>
               </span>
-            ) : preferIconArtwork ? (
-              <span
-                data-testid="media-library-main-icon"
-                className="absolute inset-0 flex items-center justify-center"
-              >
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0"
-                  style={directoryAtmosphereStyle}
-                />
-                {showSpotifyIcon ? (
-                  <svg
-                    data-testid="spotify-library-icon"
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className="relative h-9 w-9 text-[#1DB954]"
-                  >
-                    <path d={SPOTIFY_ICON_PATH} />
-                  </svg>
-                ) : (
-                  <ArtworkIcon
-                    className="relative h-9 w-9"
-                    aria-hidden="true"
-                    style={directoryIconStyle}
-                  />
-                )}
-              </span>
             ) : (
               <ItemIcon className={`h-10 w-10 ${surface.textSecondary}`} />
             )}
@@ -1251,17 +1287,11 @@ function MediaBrowserTile({
       >
         {itemTitle}
       </span>
-      {itemSubtitle || statusLabel ? (
+      {itemSubtitle ? (
         <span
           className={`mt-0.5 block w-full whitespace-normal break-words text-xs leading-tight ${surface.textSecondary}`}
         >
           {itemSubtitle}
-          {itemSubtitle && statusLabel ? ' · ' : null}
-          {statusLabel ? (
-            <span role="status" aria-label={statusLabel}>
-              {statusLabel}
-            </span>
-          ) : null}
         </span>
       ) : null}
     </button>
@@ -2275,6 +2305,10 @@ export function MediaDashboard({
   const compactMediaTileWidthClassName = isSingleRowMediaLayout
     ? 'w-[100px] shrink-0'
     : 'w-[100px]';
+  const mediaDirectoryGridClassName = isSingleRowMediaLayout
+    ? 'flex items-stretch gap-2.5 overflow-x-auto overflow-y-hidden pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+    : 'grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] content-start items-stretch gap-3';
+  const mediaDirectoryTileWidthClassName = isSingleRowMediaLayout ? 'w-[168px] shrink-0' : 'w-full';
   const selectBrowserItem = (item: PlatformMediaItem) => {
     const isDirectory = item.canExpand && !item.canPlay;
     if (isDirectory) {
@@ -2393,7 +2427,7 @@ export function MediaDashboard({
               {browseDirectoryItems.length > 0 ? (
                 <div
                   data-testid="media-browser-directory-grid"
-                  className={compactMediaTileGridClassName}
+                  className={mediaDirectoryGridClassName}
                 >
                   {browseDirectoryItems.map((item) => {
                     const directoryCount = mediaLibraryEntityId
@@ -2407,17 +2441,12 @@ export function MediaDashboard({
                         : `${directoryCount} ${directoryCount === 1 ? 'item' : 'items'}`;
 
                     return (
-                      <MediaBrowserTile
+                      <MediaBrowserDirectoryTile
                         key={getMediaItemKey(item)}
                         accentColor={accentColor}
-                        artworkIcon={getMediaLibraryDirectoryIcon(item)}
-                        compact
+                        className={mediaDirectoryTileWidthClassName}
                         item={item}
-                        mediaTileArtworkClassName={mediaTileArtworkClassName}
-                        mediaTileClassName={`${mediaTileClassName} ${compactMediaTileWidthClassName}`}
                         onSelect={selectBrowserItem}
-                        preferIconArtwork
-                        providerId={selectedDevice.providerId}
                         showSpotifyIcon={showSpotifyIcon}
                         statusLabel={statusLabel}
                         surface={surface}
@@ -2440,7 +2469,6 @@ export function MediaDashboard({
                   {browseTileItems.map((item, index) => (
                     <MediaBrowserTile
                       key={`${index}:${getMediaItemKey(item)}`}
-                      accentColor={accentColor}
                       compact={useCompactFolderGrid}
                       item={item}
                       mediaTileArtworkClassName={mediaTileArtworkClassName}

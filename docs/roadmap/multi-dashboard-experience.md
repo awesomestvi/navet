@@ -32,7 +32,7 @@ boundary.
   connected dashboard clients.
 
 No new palette, font, radius, shadow, page shell, or material treatment is needed. The experience
-reuses Navet's current theme tokens, system typography, `InteractivePill`, `ModalSurface`,
+reuses Navet's current theme tokens, Inter typography, `InteractivePill`, `ModalSurface`,
 `SheetSurface`, settings rows, and Home card grammar.
 
 ## Product references

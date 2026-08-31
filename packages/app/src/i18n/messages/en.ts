@@ -1988,6 +1988,14 @@ export const enMessages = {
   'household.management.description':
     'Enter the management PIN to change people, chores, rewards, or settings.',
   'household.management.pinLabel': 'Management PIN',
+  'household.management.newPinLabel': 'New management PIN',
+  'household.management.confirmNewPinLabel': 'Confirm new management PIN',
+  'household.management.setPin': 'Set PIN',
+  'household.management.changePin': 'Change PIN',
+  'household.management.removePin': 'Remove PIN',
+  'household.management.removePinTitle': 'Remove management PIN?',
+  'household.management.removePinDescription':
+    'Chore management will no longer require a PIN. Anyone with dashboard access can change chores and household settings.',
   'household.management.unlock': 'Unlock',
   'household.today.emptyTitle': 'Nothing needs doing today',
   'household.today.emptyDescription': 'Upcoming chores will appear here when their day arrives.',
@@ -2162,6 +2170,7 @@ export const enMessages = {
   'household.schedule.weekly': 'Every week',
   'household.schedule.biweekly': 'Bi-weekly',
   'household.schedule.triweekly': 'Tri-weekly',
+  'household.schedule.fourWeekly': 'Every 4 weeks',
   'household.schedule.monthly': 'Every month',
   'household.schedule.custom': 'Custom',
   'household.schedule.afterCompletion': 'After completion',

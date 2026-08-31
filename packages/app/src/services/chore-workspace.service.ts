@@ -17,7 +17,9 @@ import {
   type ChoreDefinitionListDocument,
   type ChoreEventFeedDocument,
   type ChoreHistoryDocument,
+  type ChoreManagementPinRemoveRequest,
   type ChoreManagementPinRequest,
+  type ChoreManagementPinStateDocument,
   type ChoreManagementSessionDocument,
   type ChoreManagementVerifyRequest,
   type ChoreOccurrenceListDocument,
@@ -102,6 +104,7 @@ const PANEL_COMMANDS = {
   reset: 'navet/chores/reset',
   recovery: 'navet/chores/recovery',
   pin: 'navet/chores/management/pin',
+  removePin: 'navet/chores/management/pin/remove',
   verify: 'navet/chores/management/verify',
 } as const;
 
@@ -496,6 +499,71 @@ export function configureChoreManagementPin(
 
 export function verifyChoreManagementPin(request: ChoreManagementVerifyRequest) {
   return sendChoreManagementRequest(CHORE_WORKSPACE_ENDPOINTS.managementVerify, request);
+}
+
+export interface ChoreManagementPinRemovalResult {
+  removed: boolean;
+  unauthorized: boolean;
+  error: string | null;
+  document: ChoreManagementPinStateDocument | null;
+}
+
+export async function removeChoreManagementPin(
+  request: ChoreManagementPinRemoveRequest,
+  managementSessionToken: string
+): Promise<ChoreManagementPinRemovalResult> {
+  if (isHomeAssistantPanelMode()) {
+    try {
+      const document = await sendPanelCommand<ChoreManagementPinStateDocument>(
+        PANEL_COMMANDS.removePin,
+        { ...request, managementSessionToken }
+      );
+      return {
+        removed: document?.pinConfigured === false,
+        unauthorized: false,
+        error: null,
+        document: document ?? null,
+      };
+    } catch (error) {
+      return {
+        removed: false,
+        unauthorized: false,
+        error: error instanceof Error ? error.message : 'Management PIN could not be removed',
+        document: null,
+      };
+    }
+  }
+
+  try {
+    const response = await fetch(
+      resolveAddonLocalEndpointUrl(CHORE_WORKSPACE_ENDPOINTS.managementPin),
+      {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          [CHORE_WORKSPACE_HEADERS.managementSession]: managementSessionToken,
+        },
+        body: JSON.stringify(request),
+      }
+    );
+    const document = response.ok
+      ? ((await response.json()) as ChoreManagementPinStateDocument)
+      : null;
+    return {
+      removed: response.ok && document?.pinConfigured === false,
+      unauthorized: response.status === 401 || response.status === 403,
+      error: response.ok ? null : await parseError(response),
+      document,
+    };
+  } catch {
+    return {
+      removed: false,
+      unauthorized: false,
+      error: 'Management PIN could not be removed',
+      document: null,
+    };
+  }
 }
 
 function parseRevision(response: Response) {

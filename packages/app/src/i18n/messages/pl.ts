@@ -244,6 +244,14 @@ export const plMessages = {
   'household.management.description':
     'Wpisz PIN, aby zmienić osoby, obowiązki, nagrody lub ustawienia.',
   'household.management.pinLabel': 'PIN zarządzania',
+  'household.management.newPinLabel': 'Nowy PIN zarządzania',
+  'household.management.confirmNewPinLabel': 'Potwierdź nowy PIN zarządzania',
+  'household.management.setPin': 'Ustaw PIN',
+  'household.management.changePin': 'Zmień PIN',
+  'household.management.removePin': 'Usuń PIN',
+  'household.management.removePinTitle': 'Usunąć PIN zarządzania?',
+  'household.management.removePinDescription':
+    'Zarządzanie obowiązkami nie będzie już wymagać kodu PIN. Każda osoba z dostępem do panelu będzie mogła zmieniać obowiązki i ustawienia gospodarstwa domowego.',
   'household.management.unlock': 'Odblokuj',
   'household.today.emptyTitle': 'Na dziś nie ma nic do zrobienia',
   'household.today.emptyDescription': 'Nadchodzące obowiązki pojawią się tutaj we właściwym dniu.',
@@ -420,6 +428,7 @@ export const plMessages = {
   'household.schedule.weekly': 'Co tydzień',
   'household.schedule.biweekly': 'Co dwa tygodnie',
   'household.schedule.triweekly': 'Co trzy tygodnie',
+  'household.schedule.fourWeekly': 'Co cztery tygodnie',
   'household.schedule.monthly': 'Co miesiąc',
   'household.schedule.custom': 'Niestandardowo',
   'household.schedule.afterCompletion': 'Po ukończeniu',

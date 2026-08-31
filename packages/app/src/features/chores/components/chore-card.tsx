@@ -1,5 +1,6 @@
 import { Button } from '@navet/app/components/primitives';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
+import { getCardReadableTextTokens } from '@navet/app/components/shared/theme/card-readable-text-tokens';
 import { themeColorValues } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { Avatar, AvatarFallback, AvatarImage } from '@navet/app/components/ui/avatar';
@@ -113,7 +114,7 @@ function localDayNumber(value: Date) {
   return Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()) / 86_400_000;
 }
 
-function upcomingScheduleLabel(
+function occurrenceScheduleLabel(
   occurrence: ChoreOccurrence,
   now: Date,
   i18n: ReturnType<typeof useI18n>
@@ -124,9 +125,11 @@ function upcomingScheduleLabel(
   const daysAway = localDayNumber(scheduledAt) - localDayNumber(now);
   const day = isSameLocalDay(scheduledAt, now)
     ? i18n.t('household.tabs.today')
-    : daysAway > 0 && daysAway < 7
-      ? i18n.formatDate(scheduledAt, { weekday: 'short' })
-      : i18n.formatDate(scheduledAt, { month: 'short', day: 'numeric' });
+    : daysAway === -1
+      ? new Intl.RelativeTimeFormat(i18n.locale, { numeric: 'auto' }).format(-1, 'day')
+      : daysAway > 0 && daysAway < 7
+        ? i18n.formatDate(scheduledAt, { weekday: 'short' })
+        : i18n.formatDate(scheduledAt, { month: 'short', day: 'numeric' });
 
   return `${day} · ${i18n.formatTime(scheduledAt)}`;
 }
@@ -155,7 +158,7 @@ function statusDetails(occurrence: ChoreOccurrence, now: Date, i18n: ReturnType<
   }
   return {
     label:
-      timing === 'due' ? t('household.today.due') : upcomingScheduleLabel(occurrence, now, i18n),
+      timing === 'due' ? t('household.today.due') : occurrenceScheduleLabel(occurrence, now, i18n),
     tone: 'neutral' as const,
     Icon: Circle,
   };
@@ -257,8 +260,14 @@ function ChoreAssigneeSummary({
 
 function ChoreEarnedPoints({ points }: { points: number }) {
   const { t } = useI18n();
+  const { theme } = useTheme();
   const earnedLabel = t('household.card.earned');
   const pointsLabel = t('household.card.points', { count: points });
+  const readableColor = getCardReadableTextTokens({
+    theme,
+    tone: 'green',
+    baseColor: themeColorValues.green,
+  }).titleColor;
 
   return (
     <span
@@ -267,7 +276,7 @@ function ChoreEarnedPoints({ points }: { points: number }) {
       style={{
         backgroundColor: `${themeColorValues.green}14`,
         borderColor: `${themeColorValues.green}52`,
-        color: themeColorValues.green,
+        color: readableColor,
       }}
       title={`${pointsLabel} · ${earnedLabel}`}
     >
@@ -308,6 +317,8 @@ export function ChoreFocusCard({
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const status = statusDetails(occurrence, now, i18n);
+  const missedScheduleLabel =
+    occurrence.status === 'missed' ? occurrenceScheduleLabel(occurrence, now, i18n) : undefined;
   const completed = occurrence.status === 'done';
   const title = childMode && presentation?.childTitle ? presentation.childTitle : definition.title;
   const ChoreIcon = resolveChoreIconComponent(presentation?.icon);
@@ -337,6 +348,25 @@ export function ChoreFocusCard({
           : status.tone === 'accent'
             ? themeColorValues.purple
             : undefined;
+  const statusReadableColor = statusColor
+    ? getCardReadableTextTokens({
+        theme,
+        tone:
+          status.tone === 'danger'
+            ? 'red'
+            : status.tone === 'warning'
+              ? 'yellow'
+              : status.tone === 'success'
+                ? 'green'
+                : 'purple',
+        baseColor: statusColor,
+      }).titleColor
+    : undefined;
+  const metricReadableColor = getCardReadableTextTokens({
+    theme,
+    tone: 'primary',
+    baseColor: stateGradient.primary,
+  }).titleColor;
   const cardEdgeStyle = isOverdue
     ? {
         borderColor: themeColorValues.red,
@@ -358,9 +388,15 @@ export function ChoreFocusCard({
               <span aria-hidden="true"> · </span>
             </span>
           ) : null}
-          <span data-chore-status="true" style={{ color: statusColor }}>
+          <span data-chore-status="true" style={{ color: statusReadableColor }}>
             {status.label}
           </span>
+          {missedScheduleLabel ? (
+            <>
+              <span aria-hidden="true"> · </span>
+              <span data-chore-scheduled-time="true">{missedScheduleLabel}</span>
+            </>
+          ) : null}
         </>
       }
       leading={
@@ -381,7 +417,7 @@ export function ChoreFocusCard({
                 style={{
                   backgroundColor: `${stateGradient.primary}14`,
                   borderColor: `${stateGradient.primary}52`,
-                  color: stateGradient.primary,
+                  color: metricReadableColor,
                 }}
                 title={t('household.card.minutes', {
                   count: presentation.estimatedMinutes,

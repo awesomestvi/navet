@@ -83,7 +83,7 @@ export const CalendarCard = memo(function CalendarCard({
         disableDefaultSheen={!isGlassTheme}
         overlay={
           <>
-            {hasCustomTint || isGlassTheme ? (
+            {hasCustomTint && !isGlassTheme ? (
               <div
                 className={`pointer-events-none absolute inset-0 rounded-[inherit] ${overlayBg}`}
               />
@@ -97,15 +97,6 @@ export const CalendarCard = memo(function CalendarCard({
             {hasCustomTint && tintSurface.overlayClassName ? (
               <div
                 className={`pointer-events-none absolute inset-0 rounded-[inherit] ${tintSurface.overlayClassName}`}
-              />
-            ) : null}
-            {!hasCustomTint && isGlassTheme ? (
-              <div
-                className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-34"
-                style={{
-                  background:
-                    'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 100%)',
-                }}
               />
             ) : null}
           </>

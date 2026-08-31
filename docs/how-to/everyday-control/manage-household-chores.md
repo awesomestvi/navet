@@ -55,7 +55,9 @@ history stay saved, so choosing **On** later restores the feature with its exist
 Open **Settings** and configure a management PIN when a shared wall screen should allow completion
 but not planning changes. The PIN protects people, definitions, motivation, retention, restore, and
 reset actions. It is a household-screen boundary, not an account password, and it is not included
-in chores backups.
+in chores backups. To replace it later, open **Household → Settings → Management PIN**, choose
+**Change PIN**, and confirm the new 4–8 digit PIN. Navet asks for the current PIN first whenever
+management is locked.
 
 ## Finish setup after a management PIN error
 
@@ -70,8 +72,9 @@ already entered are still saved.
 4. Navet retries the final setup step automatically and opens **Today** when it succeeds.
 
 If the PIN is rejected, check the digits and wait 30 seconds after five unsuccessful attempts. If
-the unlock succeeds but the same sync error returns, restart the Navet add-on, reopen its
-**Web UI**, and repeat the steps above. Restarting does not remove the saved chore workspace.
+the correct PIN unlocks the dialog but the same prompt immediately returns, update Navet to the
+latest add-on version, restart the add-on once, reopen its **Web UI**, and repeat the steps above.
+Restarting or updating the add-on does not remove the saved chore workspace in `/data`.
 
 ## Restore a backup during first setup
 

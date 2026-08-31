@@ -978,6 +978,7 @@ const addonChoreProbeSource = `
       signal: AbortSignal.timeout(2000)
     });
     let workspace = await workspaceResponse.json();
+    let managementSessionStatus = null;
     if (process.env.NAVET_ADDON_CREATE_CHORE === 'true') {
       const timestamp = new Date().toISOString();
       const commandResponse = await fetch(baseUrl + '/__navet_chores__/commands', {
@@ -1008,10 +1009,67 @@ const addonChoreProbeSource = `
       if (!commandResponse.ok) {
         throw new Error('Chore command failed: ' + JSON.stringify(workspace));
       }
+      const managementHeaders = {
+        ...headers,
+        'Content-Type': 'application/json',
+        'Origin': ingressOrigin
+      };
+      const configureResponse = await fetch(baseUrl + '/__navet_chores__/management/pin', {
+        method: 'POST',
+        headers: managementHeaders,
+        body: JSON.stringify({
+          actorParticipantId: 'actual-addon-manager',
+          pin: '1234'
+        }),
+        signal: AbortSignal.timeout(2000)
+      });
+      if (!configureResponse.ok) {
+        throw new Error('Management PIN configuration failed: ' + await configureResponse.text());
+      }
+      const verifyResponse = await fetch(baseUrl + '/__navet_chores__/management/verify', {
+        method: 'POST',
+        headers: managementHeaders,
+        body: JSON.stringify({ pin: '1234' }),
+        signal: AbortSignal.timeout(2000)
+      });
+      const verifiedSession = await verifyResponse.json();
+      if (!verifyResponse.ok || !verifiedSession.sessionToken) {
+        throw new Error('Management PIN verification failed: ' + JSON.stringify(verifiedSession));
+      }
+      const protectedCommandResponse = await fetch(baseUrl + '/__navet_chores__/commands', {
+        method: 'POST',
+        headers: {
+          ...managementHeaders,
+          'X-Navet-Base-Revision': String(workspace.revision),
+          'X-Navet-Chore-Management-Session': verifiedSession.sessionToken
+        },
+        body: JSON.stringify({
+          commandId: 'actual-addon-runtime-protected-participant',
+          baseRevision: workspace.revision,
+          action: {
+            type: 'participant_create',
+            actorParticipantId: 'actual-addon-manager',
+            participant: {
+              id: 'actual-addon-member',
+              displayName: 'Actual add-on member',
+              capabilities: ['complete'],
+              createdAt: timestamp,
+              updatedAt: timestamp
+            }
+          }
+        }),
+        signal: AbortSignal.timeout(2000)
+      });
+      workspace = await protectedCommandResponse.json();
+      managementSessionStatus = protectedCommandResponse.status;
+      if (!protectedCommandResponse.ok) {
+        throw new Error('Protected chore command failed: ' + JSON.stringify(workspace));
+      }
     }
     process.stdout.write(JSON.stringify({
       capabilities,
       capabilitiesStatus: capabilitiesResponse.status,
+      managementSessionStatus,
       workspace,
       workspaceStatus: workspaceResponse.status
     }));
@@ -1086,7 +1144,10 @@ function assertHomeAssistantAddonChores(result, expectedRevision) {
     result.capabilities?.backgroundNotifications !== true ||
     result.workspaceStatus !== 200 ||
     result.workspace?.revision !== expectedRevision ||
-    !result.workspace?.data?.participantsById?.['actual-addon-manager']
+    !result.workspace?.data?.participantsById?.['actual-addon-manager'] ||
+    (result.managementSessionStatus !== null &&
+      (result.managementSessionStatus !== 200 ||
+        !result.workspace?.data?.participantsById?.['actual-addon-member']))
   ) {
     throw new Error(
       `Home Assistant add-on chore authority check failed: ${JSON.stringify(result)}`
@@ -2324,7 +2385,7 @@ try {
       addonTarget.exactBase
         ? 'the exact Home Assistant base image'
         : 'the explicit Alpine with-contenv/bashio compatibility fallback'
-    }, exact standalone build metadata, no anonymous record minting, OAuth rotation, proxied token renewal, verified alternate browser routes, two-installation host cookie isolation, runtime hostname resolution, provider confinement, stable parallel profile binding, njs-safe two-client profile ordering, and persisted auth/profile state after container replacement.`
+    }, exact standalone build metadata, no anonymous record minting, OAuth rotation, proxied token renewal, verified alternate browser routes, two-installation host cookie isolation, runtime hostname resolution, provider confinement, stable parallel profile binding, njs-safe two-client profile ordering, cross-request chore management PIN sessions, and persisted auth/profile state after container replacement.`
   );
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

@@ -30,6 +30,20 @@ const socialGeneratorPath = path.join(
   repoRoot,
   'apps/website/scripts/generate-social-card.mjs'
 );
+const interAssets = [
+  [
+    'assets/public/fonts/inter/inter-latin-wght-normal.woff2',
+    '3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62',
+  ],
+  [
+    'assets/public/fonts/inter/inter-latin-ext-wght-normal.woff2',
+    '34b9c504cab7a73e37b746343a449132e56cf7b5481af2cb81dc74dcff25c956',
+  ],
+  [
+    'assets/public/fonts/inter/LICENSE.txt',
+    '262481e844521b326f5ecd053e59b98c8b2da78c8ee1bdbb6e8174305e54935a',
+  ],
+];
 const publishedBrandRoutes = [
   ['docs/branding/README.md', 'brand/index', '/brand/'],
   ['docs/branding/BRAND_FOUNDATIONS.md', 'brand/foundations', '/brand/foundations/'],
@@ -132,8 +146,8 @@ function validateTokenShape(tokens) {
   assert(tokens.colors.atmosphere.blue === '#3b82f6', 'The established blue atmosphere must remain #3b82f6.');
   assert(
     tokens.typography.family ===
-      'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    'The established system typography stack has changed.'
+      '"Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    'The established Inter typography stack has changed.'
   );
   assert(tokens.shape?.cardRadiusPx === 24, 'The established card radius token must remain 24px.');
   assert(tokens.shape?.controlRadiusPx === 20, 'The established control radius token must remain 20px.');
@@ -281,6 +295,23 @@ function validateStandaloneManifestSource(configSource, pwaCacheConfigSource) {
 }
 
 async function validateBrandSourceAlignment(tokens) {
+  for (const [fontAsset, approvedHash] of interAssets) {
+    assert(
+      (await sha256(resolveRepoPath(fontAsset))) === approvedHash,
+      `${fontAsset} has drifted from the approved Inter source.`
+    );
+  }
+
+  const fontStyles = await readFile(
+    resolveRepoPath('assets/public/fonts/inter/inter.css'),
+    'utf8'
+  );
+  assert(
+    fontStyles.includes('font-family: "Inter"') &&
+      fontStyles.includes('font-display: swap'),
+    'The Inter webfont stylesheet is missing its canonical family or loading behavior.'
+  );
+
   const docsStyles = await readFile(docsStylesPath, 'utf8');
   assert(
     docsStyles.includes(`--navet-accent: ${tokens.colors.brand.orangeStart};`),
@@ -296,7 +327,7 @@ async function validateBrandSourceAlignment(tokens) {
   );
   assert(
     docsStyles.includes(`--sl-font: ${tokens.typography.family};`),
-    'The docs typography has drifted from the Navet system stack.'
+    'The docs typography has drifted from the Navet Inter stack.'
   );
   assert(
     docsStyles.toLowerCase().includes(tokens.colors.atmosphere.blue),

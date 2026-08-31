@@ -244,6 +244,14 @@ export const svMessages = {
   'household.management.description':
     'Ange PIN-koden för att ändra personer, sysslor, belöningar eller inställningar.',
   'household.management.pinLabel': 'PIN-kod för hantering',
+  'household.management.newPinLabel': 'Ny PIN-kod för hantering',
+  'household.management.confirmNewPinLabel': 'Bekräfta ny PIN-kod',
+  'household.management.setPin': 'Ange PIN-kod',
+  'household.management.changePin': 'Ändra PIN-kod',
+  'household.management.removePin': 'Ta bort PIN-kod',
+  'household.management.removePinTitle': 'Ta bort PIN-koden för hantering?',
+  'household.management.removePinDescription':
+    'Sysselhantering kräver inte längre en PIN-kod. Alla med åtkomst till instrumentpanelen kan ändra sysslor och hushållsinställningar.',
   'household.management.unlock': 'Lås upp',
   'household.today.emptyTitle': 'Inget behöver göras i dag',
   'household.today.emptyDescription': 'Kommande sysslor visas här när deras dag kommer.',
@@ -420,6 +428,7 @@ export const svMessages = {
   'household.schedule.weekly': 'Varje vecka',
   'household.schedule.biweekly': 'Varannan vecka',
   'household.schedule.triweekly': 'Var tredje vecka',
+  'household.schedule.fourWeekly': 'Var fjärde vecka',
   'household.schedule.monthly': 'Varje månad',
   'household.schedule.custom': 'Anpassat',
   'household.schedule.afterCompletion': 'Efter slutförande',

@@ -25,6 +25,10 @@ const paths = {
   logo: path.join(repoRoot, 'assets/public/logo.svg'),
   logoHorizontal: path.join(repoRoot, 'assets/public/logo-horizontal.svg'),
   logoHorizontalLight: path.join(repoRoot, 'assets/public/logo-horizontal-light.svg'),
+  inter: path.join(
+    repoRoot,
+    'assets/public/fonts/inter/inter-latin-wght-normal.woff2'
+  ),
   homeAssistant: path.join(repoRoot, 'packages/app/src/assets/providers/home-assistant.svg'),
   demoHome: path.join(
     repoRoot,
@@ -35,6 +39,8 @@ const paths = {
 function dataUri(mimeType, bytes) {
   return `data:${mimeType};base64,${Buffer.from(bytes).toString('base64')}`;
 }
+
+const interDataUri = dataUri('font/woff2', await readFile(paths.inter));
 
 function image(href, x, y, width, height, extra = '') {
   return `<image href="${href}" x="${x}" y="${y}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet" ${extra}/>`;
@@ -76,7 +82,13 @@ function documentShell({ width, height, title, description, metadata, body }) {
       <feDropShadow dx="0" dy="12" stdDeviation="20" flood-color="#000000" flood-opacity="0.24"/>
     </filter>
     <style>
-      text { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      @font-face {
+        font-family: "Inter";
+        src: url("${interDataUri}") format("woff2");
+        font-style: normal;
+        font-weight: 400 700;
+      }
+      text { font-family: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
       .eyebrow { font-size: 11px; font-weight: 720; letter-spacing: 0.9px; }
       .label { font-size: 15px; font-weight: 680; }
       .detail { font-size: 12px; font-weight: 470; }

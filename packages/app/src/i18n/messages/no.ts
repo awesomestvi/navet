@@ -243,6 +243,14 @@ export const noMessages = {
   'household.management.description':
     'Skriv inn PIN-koden for å endre personer, oppgaver, belønninger eller innstillinger.',
   'household.management.pinLabel': 'PIN-kode for administrasjon',
+  'household.management.newPinLabel': 'Ny PIN-kode for administrasjon',
+  'household.management.confirmNewPinLabel': 'Bekreft ny PIN-kode',
+  'household.management.setPin': 'Angi PIN-kode',
+  'household.management.changePin': 'Endre PIN-kode',
+  'household.management.removePin': 'Fjern PIN-kode',
+  'household.management.removePinTitle': 'Fjerne PIN-koden for administrasjon?',
+  'household.management.removePinDescription':
+    'Administrasjon av gjøremål krever ikke lenger en PIN-kode. Alle med tilgang til dashbordet kan endre gjøremål og husholdningsinnstillinger.',
   'household.management.unlock': 'Lås opp',
   'household.today.emptyTitle': 'Ingenting må gjøres i dag',
   'household.today.emptyDescription': 'Kommende oppgaver vises her når dagen kommer.',
@@ -418,6 +426,7 @@ export const noMessages = {
   'household.schedule.weekly': 'Hver uke',
   'household.schedule.biweekly': 'Annenhver uke',
   'household.schedule.triweekly': 'Hver tredje uke',
+  'household.schedule.fourWeekly': 'Hver fjerde uke',
   'household.schedule.monthly': 'Hver måned',
   'household.schedule.custom': 'Egendefinert',
   'household.schedule.afterCompletion': 'Etter fullføring',

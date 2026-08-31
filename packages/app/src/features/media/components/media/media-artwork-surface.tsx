@@ -199,6 +199,7 @@ export function MediaArtworkSurface({
           <MediaFallbackArtwork
             palette={palette}
             compact={layout !== 'split'}
+            transparentSurface={useSoftGlassFallback}
             className={`relative h-full w-full ${useSubduedFallback ? 'opacity-42' : ''}`}
           />
         </div>

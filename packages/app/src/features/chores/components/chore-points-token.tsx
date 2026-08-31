@@ -1,3 +1,4 @@
+import { getCardReadableTextTokens } from '@navet/app/components/shared/theme/card-readable-text-tokens';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import { Star } from 'lucide-react';
 
@@ -13,8 +14,13 @@ export function ChorePointsToken({
   color?: string;
 }) {
   const { t } = useI18n();
-  const { accentColor } = useTheme();
+  const { accentColor, theme } = useTheme();
   const resolvedColor = color ?? accentColor;
+  const readableColor = getCardReadableTextTokens({
+    theme,
+    tone: 'primary',
+    baseColor: resolvedColor,
+  }).titleColor;
   const label =
     total === undefined
       ? t('household.card.points', { count: points })
@@ -26,7 +32,7 @@ export function ChorePointsToken({
       style={{
         backgroundColor: `${resolvedColor}14`,
         borderColor: `${resolvedColor}52`,
-        color: resolvedColor,
+        color: readableColor,
       }}
       title={label}
     >

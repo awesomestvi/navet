@@ -1,6 +1,7 @@
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@navet/app/components/ui/utils';
 import type { ThemeType } from '@navet/app/hooks';
+import type { CSSProperties } from 'react';
 
 export type UiKitPanelVariant = 'default' | 'muted' | 'elevated';
 
@@ -62,4 +63,14 @@ export function getUiKitGlassSheetGlowClassName(theme: ThemeType) {
   return theme === 'glass'
     ? 'pointer-events-none bg-[linear-gradient(180deg,rgba(255,255,255,0.14),transparent_42%)]'
     : undefined;
+}
+
+export function getUiKitGlassWorkspaceGlowClassName(theme: ThemeType) {
+  return theme === 'glass'
+    ? 'pointer-events-none bg-[radial-gradient(circle_at_18%_-12%,rgba(255,255,255,0.24),transparent_36%),linear-gradient(145deg,rgba(255,255,255,0.09),transparent_54%)]'
+    : undefined;
+}
+
+export function getUiKitGlassSurfaceFoundationStyle(theme: ThemeType): CSSProperties | undefined {
+  return theme === 'glass' ? { backgroundColor: 'rgba(15, 23, 42, 0.88)' } : undefined;
 }

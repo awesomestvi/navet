@@ -15,6 +15,7 @@ export type ChoreCreationRepeat =
   | 'weekends'
   | 'biweekly'
   | 'triweekly'
+  | 'fourweekly'
   | 'custom';
 export type ChoreCreationSection = 'details' | 'assignment' | 'schedule';
 
@@ -279,6 +280,7 @@ export function ChoreCreationFormGroups({
             <option value="weekly">{t('household.schedule.weekly')}</option>
             <option value="biweekly">{t('household.schedule.biweekly')}</option>
             <option value="triweekly">{t('household.schedule.triweekly')}</option>
+            <option value="fourweekly">{t('household.schedule.fourWeekly')}</option>
             <option value="monthly">{t('household.schedule.monthly')}</option>
             <option value="custom">{t('household.schedule.custom')}</option>
             <option value="after_completion">{t('household.schedule.afterCompletion')}</option>

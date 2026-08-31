@@ -513,6 +513,30 @@ class ChoreAuthorityTests(unittest.IsolatedAsyncioTestCase):
             restarted._session_valid(session["sessionToken"], "ha-user-1")
         )
 
+    async def test_management_pin_can_be_removed_by_an_unlocked_manager(self):
+        await self._create_manager()
+        session = await self.authority.async_configure_pin(
+            "manager", "2468", None, "ha-user-1"
+        )
+
+        with self.assertRaisesRegex(
+            chores.ChoreAuthorityError,
+            "Unlock chore management before removing its PIN",
+        ):
+            await self.authority.async_remove_pin(
+                "manager", "wrong-session", "ha-user-1"
+            )
+
+        result = await self.authority.async_remove_pin(
+            "manager", session["sessionToken"], "ha-user-1"
+        )
+        self.assertEqual(result, {"pinConfigured": False})
+        self.assertEqual(
+            self.authority._public_document()["management"],
+            {"pinConfigured": False},
+        )
+        self.assertNotIn(chores.SECURITY_KEY, _Store.values)
+
     async def test_service_action_updates_chores_without_a_panel(self):
         await self._create_manager()
         timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")

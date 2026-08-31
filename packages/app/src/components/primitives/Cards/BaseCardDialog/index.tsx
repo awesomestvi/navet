@@ -453,6 +453,7 @@ function BaseCardDialogRoot({
           ) : null}
           {contentGlowClassName || contentGlowStyle ? (
             <div
+              data-dialog-content-glow
               className={`absolute inset-0 ${contentGlowClassName ?? ''}`}
               style={contentGlowStyle}
             />
@@ -813,6 +814,10 @@ function BaseCardDialogFullscreenVariant({
   overlayClassName,
   contentClassName,
   contentStyle,
+  contentGlowClassName,
+  contentGlowStyle,
+  contentOverlayClassName,
+  contentOverlayStyle,
   disableOpenAutoFocus = false,
   shellBodyClassName,
   children,
@@ -833,10 +838,15 @@ function BaseCardDialogFullscreenVariant({
       contentTitle={contentTitle ?? title}
       contentDescription={contentDescription ?? description}
       contentClassName={cn(
-        'fixed inset-3 z-50 overflow-hidden rounded-[28px] border border-white/10 bg-black shadow-2xl outline-none animate-in fade-in zoom-in-95 duration-200 md:inset-8',
+        'fixed inset-3 z-50 overflow-hidden rounded-[28px] border border-white/10 shadow-2xl outline-none animate-in fade-in zoom-in-95 duration-200 md:inset-8',
+        theme === 'glass' ? 'bg-slate-950/55' : 'bg-black',
         contentClassName
       )}
       contentStyle={contentStyle}
+      contentGlowClassName={contentGlowClassName}
+      contentGlowStyle={contentGlowStyle}
+      contentOverlayClassName={contentOverlayClassName}
+      contentOverlayStyle={contentOverlayStyle}
       bodyClassName={shellBodyClassName}
     >
       {children}

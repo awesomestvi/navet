@@ -246,6 +246,14 @@ export const frMessages = {
   'household.management.description':
     'Saisissez le code PIN pour modifier les personnes, les tâches, les récompenses ou les réglages.',
   'household.management.pinLabel': 'Code PIN de gestion',
+  'household.management.newPinLabel': 'Nouveau code PIN de gestion',
+  'household.management.confirmNewPinLabel': 'Confirmer le nouveau code PIN',
+  'household.management.setPin': 'Définir le code PIN',
+  'household.management.changePin': 'Modifier le code PIN',
+  'household.management.removePin': 'Supprimer le code PIN',
+  'household.management.removePinTitle': 'Supprimer le code PIN de gestion ?',
+  'household.management.removePinDescription':
+    'La gestion des tâches ne nécessitera plus de code PIN. Toute personne ayant accès au tableau de bord pourra modifier les tâches et les réglages du foyer.',
   'household.management.unlock': 'Déverrouiller',
   'household.today.emptyTitle': "Rien à faire aujourd'hui",
   'household.today.emptyDescription': 'Les prochaines tâches apparaîtront ici le jour venu.',
@@ -422,6 +430,7 @@ export const frMessages = {
   'household.schedule.weekly': 'Chaque semaine',
   'household.schedule.biweekly': 'Toutes les deux semaines',
   'household.schedule.triweekly': 'Toutes les trois semaines',
+  'household.schedule.fourWeekly': 'Toutes les quatre semaines',
   'household.schedule.monthly': 'Chaque mois',
   'household.schedule.custom': 'Personnalisé',
   'household.schedule.afterCompletion': 'Après réalisation',

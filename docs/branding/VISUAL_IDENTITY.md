@@ -26,7 +26,7 @@ The identity comes from the combination of:
 - the orange hub mark
 - near-black, white, and slate neutral surfaces
 - restrained amber and blue atmosphere
-- compact system typography with strong state hierarchy
+- compact Inter typography with strong state hierarchy
 - rounded modular geometry and pill-shaped controls
 - real Navet cards, screenshots, and warm home imagery
 - purposeful motion that respects the device and the user
@@ -41,7 +41,7 @@ These decisions are established and should be preserved:
 - the hub mark and its eight connected outer nodes
 - the orange logo gradient from `#f97316` to `#ea580c`
 - the name `Navet`, with its current capitalization
-- the system sans-serif typography direction
+- the self-hosted Inter typography direction
 - the four product themes: `glass`, `dark`, `light`, and `black`
 - rounded, compact, tactile product geometry
 - user-selectable accent color
@@ -250,15 +250,17 @@ to every section. Avoid neon cyber palettes, purple-blue SaaS gradients, and unr
 
 ### Family
 
-Navet uses the native system sans-serif stack:
+Navet uses self-hosted Inter, followed by native fallbacks for scripts it does not cover:
 
 ```css
-ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
+"Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 ```
 
-Technical content uses the established system monospace stack. Do not introduce a display font or
-replace the product stack for a campaign. Navet's personality comes from scale, weight, spacing,
-and restraint rather than a novelty typeface.
+Inter is bundled with Navet under the SIL Open Font License 1.1 so the product keeps the
+same reading voice across standalone, Home Assistant, demo, website, and documentation surfaces
+without a third-party font request. Technical content uses the established system monospace stack.
+Do not introduce a display font or replace the product stack for a campaign. Navet's personality
+comes from scale, weight, spacing, and restraint rather than a novelty typeface.
 
 ### Operational typography
 

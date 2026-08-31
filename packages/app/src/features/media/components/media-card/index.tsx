@@ -197,6 +197,7 @@ export const MediaCard = memo(function MediaCard({
     handleVolumeChange,
     groupMembers,
     isOff,
+    isPlaybackActive,
     isPlaying,
     isMuted,
     isOpen,
@@ -251,7 +252,6 @@ export const MediaCard = memo(function MediaCard({
     initialSupportsNextTrack,
     initialGroupMembers,
   });
-  const stateSurface = getCardStateSurfaceTokens(theme, !isOff);
   const stableArtwork = useStableMediaArtwork(resolvedAlbumArt);
   const stackPaletteArtwork = getMediaArtworkPaletteSource(stableArtwork, artworkResource);
   const stackPalette = useMediaArtworkColors(
@@ -279,6 +279,8 @@ export const MediaCard = memo(function MediaCard({
   const isGlass = theme === 'glass';
   const hasArtwork = Boolean(resolvedAlbumArt);
   const isActiveTv = isTv && !isOff;
+  const isActiveMediaSurface = isActiveTv || isPlaybackActive;
+  const stateSurface = getCardStateSurfaceTokens(theme, isActiveMediaSurface);
   const [dialogInitialTab, setDialogInitialTab] = useState<string | undefined>(undefined);
   const inactiveShellBorder = surface.border;
   const cardBorder =
@@ -318,7 +320,7 @@ export const MediaCard = memo(function MediaCard({
     entityTypeKey: mediaEntityTypeKey,
     title: displayTitle,
     artist: displayArtist,
-    isActive: !isOff,
+    isActive: isActiveMediaSurface,
     isPlaying,
     volume,
     isMuted,

@@ -247,6 +247,14 @@ export const deMessages = {
   'household.management.description':
     'Gib die Verwaltungs-PIN ein, um Personen, Aufgaben, Belohnungen oder Einstellungen zu ändern.',
   'household.management.pinLabel': 'Verwaltungs-PIN',
+  'household.management.newPinLabel': 'Neue Verwaltungs-PIN',
+  'household.management.confirmNewPinLabel': 'Neue Verwaltungs-PIN bestätigen',
+  'household.management.setPin': 'PIN festlegen',
+  'household.management.changePin': 'PIN ändern',
+  'household.management.removePin': 'PIN entfernen',
+  'household.management.removePinTitle': 'Verwaltungs-PIN entfernen?',
+  'household.management.removePinDescription':
+    'Die Aufgabenverwaltung erfordert dann keine PIN mehr. Alle Personen mit Dashboard-Zugriff können Aufgaben und Haushaltseinstellungen ändern.',
   'household.management.unlock': 'Entsperren',
   'household.today.emptyTitle': 'Heute ist nichts zu erledigen',
   'household.today.emptyDescription': 'Anstehende Aufgaben erscheinen hier am jeweiligen Tag.',
@@ -423,6 +431,7 @@ export const deMessages = {
   'household.schedule.weekly': 'Jede Woche',
   'household.schedule.biweekly': 'Zweiwöchentlich',
   'household.schedule.triweekly': 'Alle drei Wochen',
+  'household.schedule.fourWeekly': 'Alle vier Wochen',
   'household.schedule.monthly': 'Jeden Monat',
   'household.schedule.custom': 'Benutzerdefiniert',
   'household.schedule.afterCompletion': 'Nach Erledigung',

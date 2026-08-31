@@ -13,7 +13,7 @@ import {
 } from '@navet/core/chores';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { expect, fireEvent, userEvent, within } from 'storybook/test';
+import { expect, fireEvent, userEvent, waitFor, within } from 'storybook/test';
 import { ChoreOnboardingDialog, ChoreOnboardingWelcome } from './chore-onboarding';
 
 const WALKTHROUGH_STEP_PAUSE_MS = 1_500;
@@ -22,8 +22,8 @@ function pauseWalkthrough(duration = WALKTHROUGH_STEP_PAUSE_MS) {
   return new Promise<void>((resolve) => window.setTimeout(resolve, duration));
 }
 
-function OnboardingWelcomeStory() {
-  const [open, setOpen] = useState(false);
+function OnboardingWelcomeStory({ initiallyOpen = false }: { initiallyOpen?: boolean }) {
+  const [open, setOpen] = useState(initiallyOpen);
   const [complete, setComplete] = useState(false);
   const [participants, setParticipants] = useState<ChoreParticipant[]>([]);
   const [definitions, setDefinitions] = useState<ChoreDefinition[]>([]);
@@ -139,6 +139,24 @@ type Story = StoryObj<typeof meta>;
 
 export const Desktop: Story = {};
 
+export const LiquidGlassDialog: Story = {
+  args: { initiallyOpen: true },
+  globals: { theme: 'glass' },
+  play: async ({ canvasElement }) => {
+    const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Set up household chores',
+    });
+    const glow = dialog.querySelector('[data-dialog-content-glow]');
+    const footer = dialog.querySelector('[data-chore-onboarding-footer]');
+    await expect(dialog).toHaveClass('bg-slate-950/55', 'backdrop-blur-2xl');
+    await expect(footer).toHaveClass('border-t', 'bg-transparent');
+    await expect(footer?.className).not.toContain('linear-gradient');
+    await expect(footer?.className).not.toContain('shadow');
+    await expect(glow).toHaveClass('pointer-events-none');
+    await expect(glow?.className).toContain('radial-gradient');
+  },
+};
+
 export const RestoreSavedBackup: Story = {
   parameters: {
     docs: {
@@ -214,7 +232,7 @@ export const Mobile: Story = {
     await expect(dialog.querySelector('header')).toHaveClass('py-3', 'sm:py-4');
     await expect(progressSidebar).toHaveClass('hidden', 'md:block');
     await expect(within(dialog).queryByRole('navigation')).not.toBeInTheDocument();
-    await expect(within(dialog).getByText('Step 1 of 6')).toBeVisible();
+    await waitFor(() => expect(within(dialog).getByText('Step 1 of 6')).toBeVisible());
 
     await userEvent.click(within(dialog).getByRole('button', { name: 'Add person' }));
     await userEvent.type(within(dialog).getByLabelText('Name'), 'Vishal');
@@ -298,6 +316,8 @@ function createCompleteGuidedSetupPlay(paced: boolean): NonNullable<Story['play'
     await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'after_completion');
     await expect(within(dialog).getByLabelText('Days after completion')).toBeVisible();
     await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'biweekly');
+    await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'fourweekly');
+    await expect(within(dialog).getByLabelText('Repeat')).toHaveValue('fourweekly');
     await expect(within(dialog).queryByLabelText('Days after completion')).not.toBeInTheDocument();
     await userEvent.selectOptions(within(dialog).getByLabelText('Repeat'), 'custom');
     fireEvent.change(within(dialog).getByLabelText('Repeat every (days)'), {

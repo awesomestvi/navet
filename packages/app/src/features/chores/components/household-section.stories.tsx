@@ -108,6 +108,20 @@ function HouseholdRecoveryStory() {
   return <HouseholdSection syncEnabled={false} />;
 }
 
+function HouseholdProtectedStory() {
+  useEffect(() => {
+    useChoreWorkspaceStore.getState().setPreviewDocument({
+      data: createChoreDemoWorkspace({ copy: DEMO_COPY }),
+    });
+    useChoreWorkspaceStore.setState({
+      managementPinConfigured: true,
+      managementUnlocked: true,
+    });
+    return () => useChoreWorkspaceStore.getState().reset();
+  }, []);
+  return <HouseholdSection syncEnabled={false} />;
+}
+
 const meta = {
   title: 'Pages/Household/Today',
   component: HouseholdStory,
@@ -333,9 +347,7 @@ export const EmptyHousehold: Story = {
       within(welcome).getByText('Routine jobs are harder to forget')
     ).toBeInTheDocument();
     await expect(within(welcome).getByText('See progress without checking in')).toBeInTheDocument();
-    const actions = within(welcome).getAllByRole('button');
-    await expect(actions).toHaveLength(1);
-    await userEvent.click(actions[0]);
+    await userEvent.click(within(welcome).getByRole('button', { name: 'Create your chore list' }));
     const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
       name: 'Set up household chores',
     });
@@ -512,6 +524,16 @@ export const ChoreLibrary: Story = {
     await expect(panel.queryByText('Chore library')).not.toBeInTheDocument();
     const toolbar = within(panel.getByRole('region', { name: 'Chore library' }));
     await expect(toolbar.getByRole('searchbox')).toBeInTheDocument();
+    const filterTrigger = toolbar.getByRole('button', { name: 'Filter' });
+    await expect(filterTrigger).toBeInTheDocument();
+    await userEvent.click(filterTrigger);
+    const filterMenu = within(canvasElement.ownerDocument.body).getByRole('menu');
+    await expect(within(filterMenu).queryByRole('searchbox')).not.toBeInTheDocument();
+    await expect(within(filterMenu).getByLabelText('Filter by room')).toBeInTheDocument();
+    await expect(within(filterMenu).getByLabelText('Filter by person')).toBeInTheDocument();
+    await expect(within(filterMenu).getByLabelText('Filter by schedule')).toBeInTheDocument();
+    await expect(within(filterMenu).getByLabelText('Filter by status')).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
     await expect(toolbar.getByRole('button', { name: 'Add chore' })).toBeInTheDocument();
     const dishwasherCard = panel
       .getByRole('heading', { name: 'Unload dishwasher' })
@@ -545,8 +567,8 @@ export const MissionManagement: Story = {
     ).not.toBeInTheDocument();
     const toolbar = within(panel.getByRole('region', { name: 'Household missions' }));
     await expect(toolbar.getByRole('searchbox')).toBeInTheDocument();
-    const statusFilter = toolbar.getByLabelText('Filter by status');
-    await expect(statusFilter).toBeInTheDocument();
+    const filterTrigger = toolbar.getByRole('button', { name: 'Filter' });
+    await expect(filterTrigger).toBeInTheDocument();
     await expect(toolbar.getByRole('button', { name: 'Add mission' })).toBeInTheDocument();
     const missionCard = panel
       .getByRole('heading', { name: 'Saturday reset' })
@@ -559,9 +581,14 @@ export const MissionManagement: Story = {
     await expect(
       within(missionCard as HTMLElement).getByRole('button', { name: 'More actions' })
     ).toBeVisible();
+    await userEvent.click(filterTrigger);
+    const filterMenu = within(canvasElement.ownerDocument.body).getByRole('menu');
+    const statusFilter = within(filterMenu).getByLabelText('Filter by status');
     await userEvent.selectOptions(statusFilter, 'complete');
     await expect(panel.queryByRole('heading', { name: 'Saturday reset' })).not.toBeInTheDocument();
+    await expect(toolbar.getByText('1')).toHaveAttribute('data-active-filter-count', 'true');
     await userEvent.selectOptions(statusFilter, 'all');
+    await userEvent.keyboard('{Escape}');
     await userEvent.click(toolbar.getByRole('button', { name: 'Add mission' }));
     const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
       name: 'Create mission',
@@ -571,7 +598,7 @@ export const MissionManagement: Story = {
 };
 
 export const RewardManagement: Story = {
-  play: async ({ canvas, userEvent }) => {
+  play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByRole('region', { name: 'Today' });
     await userEvent.click(canvas.getByRole('button', { name: 'Rewards' }));
     const panel = within(canvas.getByRole('region', { name: 'Rewards' }));
@@ -581,8 +608,8 @@ export const RewardManagement: Story = {
     ).not.toBeInTheDocument();
     const toolbar = within(panel.getByRole('region', { name: 'Reward goals' }));
     await expect(toolbar.getByRole('searchbox')).toBeInTheDocument();
-    const typeFilter = toolbar.getByLabelText('Goal type');
-    await expect(typeFilter).toBeInTheDocument();
+    const filterTrigger = toolbar.getByRole('button', { name: 'Filter' });
+    await expect(filterTrigger).toBeInTheDocument();
     await expect(toolbar.getByRole('button', { name: 'Add reward' })).toBeInTheDocument();
     const rewardCard = panel
       .getByRole('heading', { name: 'Choose our next family outing' })
@@ -595,10 +622,14 @@ export const RewardManagement: Story = {
     await expect(
       within(rewardCard as HTMLElement).getByRole('button', { name: 'More actions' })
     ).toBeVisible();
+    await userEvent.click(filterTrigger);
+    const filterMenu = within(canvasElement.ownerDocument.body).getByRole('menu');
+    const typeFilter = within(filterMenu).getByLabelText('Goal type');
     await userEvent.selectOptions(typeFilter, 'instant');
     await expect(
       panel.queryByRole('heading', { name: 'Choose our next family outing' })
     ).not.toBeInTheDocument();
+    await expect(toolbar.getByText('1')).toHaveAttribute('data-active-filter-count', 'true');
   },
 };
 
@@ -655,5 +686,38 @@ export const SettingsAndRecovery: Story = {
     await expect(
       within(recoveryPanel).queryByRole('combobox', { name: 'Motivation style' })
     ).toBeNull();
+  },
+};
+
+export const ManagementPinSettings: Story = {
+  render: () => <HouseholdProtectedStory />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('region', { name: 'Today' });
+    await userEvent.click(canvas.getByRole('button', { name: 'Settings' }));
+    const workspace = within(canvas.getByRole('region', { name: 'Settings' })).getByRole('region', {
+      name: 'Chore settings',
+    });
+    const navigation = within(workspace).getByRole('navigation', { name: 'Chore settings' });
+    await userEvent.click(within(navigation).getByRole('button', { name: 'Management PIN' }));
+    const protectionPanel = within(workspace).getByRole('main', { name: 'Management PIN' });
+    await expect(within(protectionPanel).getByText('On')).toBeVisible();
+    const removePin = within(protectionPanel).getByRole('button', { name: 'Remove PIN' });
+    await expect(removePin).toBeVisible();
+    await userEvent.click(removePin);
+    const confirmation = within(canvasElement.ownerDocument.body).getByRole('alertdialog', {
+      name: 'Remove management PIN?',
+    });
+    await expect(
+      within(confirmation).getByText(/Anyone with dashboard access can change chores/)
+    ).toBeVisible();
+    await userEvent.click(within(confirmation).getByRole('button', { name: 'Cancel' }));
+    await userEvent.click(within(protectionPanel).getByRole('button', { name: 'Change PIN' }));
+    const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', {
+      name: 'Change PIN',
+    });
+    await waitFor(() => expect(within(dialog).getByLabelText('New management PIN')).toBeVisible());
+    await waitFor(() =>
+      expect(within(dialog).getByLabelText('Confirm new management PIN')).toBeVisible()
+    );
   },
 };

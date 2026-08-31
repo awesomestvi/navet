@@ -245,6 +245,14 @@ export const ptMessages = {
   'household.management.description':
     'Introduza o PIN para alterar pessoas, tarefas, recompensas ou definições.',
   'household.management.pinLabel': 'PIN de gestão',
+  'household.management.newPinLabel': 'Novo PIN de gestão',
+  'household.management.confirmNewPinLabel': 'Confirmar novo PIN de gestão',
+  'household.management.setPin': 'Definir PIN',
+  'household.management.changePin': 'Alterar PIN',
+  'household.management.removePin': 'Remover PIN',
+  'household.management.removePinTitle': 'Remover o PIN de gestão?',
+  'household.management.removePinDescription':
+    'A gestão de tarefas deixará de exigir um PIN. Qualquer pessoa com acesso ao painel poderá alterar tarefas e definições do agregado familiar.',
   'household.management.unlock': 'Desbloquear',
   'household.today.emptyTitle': 'Nada para fazer hoje',
   'household.today.emptyDescription': 'As próximas tarefas aparecerão aqui no dia certo.',
@@ -420,6 +428,7 @@ export const ptMessages = {
   'household.schedule.weekly': 'Todas as semanas',
   'household.schedule.biweekly': 'Quinzenal',
   'household.schedule.triweekly': 'A cada três semanas',
+  'household.schedule.fourWeekly': 'A cada quatro semanas',
   'household.schedule.monthly': 'Todos os meses',
   'household.schedule.custom': 'Personalizado',
   'household.schedule.afterCompletion': 'Após a conclusão',

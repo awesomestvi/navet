@@ -3013,7 +3013,7 @@ export default defineConfig(({ command, mode }) => {
             'index.html',
             'offline.html',
             'boot-i18n.js',
-            'assets/*.{css,js,svg}',
+            'assets/*.{css,js,svg,woff2}',
           ],
           manifestTransforms: [
             pwaCachePolicy.manifestTransform as VitePwaManifestTransform,

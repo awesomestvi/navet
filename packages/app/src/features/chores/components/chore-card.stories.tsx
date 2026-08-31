@@ -1,3 +1,5 @@
+import { getCardReadableTextTokens } from '@navet/app/components/shared/theme/card-readable-text-tokens';
+import { themeColorValues } from '@navet/app/components/shared/theme/theme-colors';
 import { createChoreDemoWorkspace } from '@navet/app/features/chores/chore-demo-fixture';
 import { SummaryBar } from '@navet/app/features/sensors';
 import type { ChoreOccurrence } from '@navet/core/chores';
@@ -39,6 +41,16 @@ const sharedOccurrence = workspace.occurrencesById['today-hallway'];
 const sharedPresentation = workspace.experience?.presentationByDefinitionId.hallway;
 if (!sharedDefinition || !sharedOccurrence)
   throw new Error('Shared chore story fixture is incomplete');
+const glassDangerTextColor = getCardReadableTextTokens({
+  theme: 'glass',
+  tone: 'red',
+  baseColor: themeColorValues.red,
+}).titleColor;
+const glassBlueTextColor = getCardReadableTextTokens({
+  theme: 'glass',
+  tone: 'primary',
+  baseColor: '#2563eb',
+}).titleColor;
 
 const meta = {
   title: 'Cards/Household/Chore',
@@ -76,7 +88,7 @@ export const DueNow: Story = {
     await expect(title).toHaveClass('text-[12px]', 'leading-[18px]');
     await expect(title.previousElementSibling).toHaveTextContent('Kitchen · Overdue');
     await expect(canvasElement.querySelector('[data-chore-status]')).toHaveStyle({
-      color: '#ef4444',
+      color: glassDangerTextColor,
     });
     await expect(canvasElement.querySelector('[data-chore-artwork]')).not.toBeInTheDocument();
     const assignment = canvasElement.querySelector('[data-chore-assignment]');
@@ -106,6 +118,26 @@ export const Overdue: Story = {
       scheduledAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
       dueAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     },
+  },
+};
+
+export const MissedYesterday: Story = {
+  args: {
+    now: new Date('2026-08-18T12:00:00'),
+    occurrence: {
+      ...occurrence,
+      status: 'missed',
+      scheduledAt: '2026-08-17T18:00:00',
+      dueAt: '2026-08-17T20:00:00',
+      missedAt: '2026-08-17T21:00:00',
+    },
+    action: { label: 'Mark done', kind: 'complete', onSelect: fn() },
+  },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('[data-chore-status]')).toHaveTextContent('Missed');
+    await expect(canvasElement.querySelector('[data-chore-scheduled-time]')).toHaveTextContent(
+      /^yesterday · /i
+    );
   },
 };
 
@@ -152,8 +184,8 @@ export const ColorOverride: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByTitle('15 points')).toHaveStyle({ color: '#2563eb' });
-    await expect(canvas.getByTitle('About 4 min')).toHaveStyle({ color: '#2563eb' });
+    await expect(canvas.getByTitle('15 points')).toHaveStyle({ color: glassBlueTextColor });
+    await expect(canvas.getByTitle('About 4 min')).toHaveStyle({ color: glassBlueTextColor });
   },
 };
 

@@ -28,11 +28,7 @@ export function useCalendarTheme(
   const textPrimary = tintTextPrimary ?? textTokens.titleColor;
   const textSecondary = tintTextSecondary ?? textTokens.subtitleColor;
   const overlayBg =
-    theme === 'light'
-      ? 'bg-white/60 backdrop-blur-sm'
-      : theme === 'glass'
-        ? 'bg-white/[0.03] backdrop-blur-sm'
-        : 'bg-black/20 backdrop-blur-sm';
+    theme === 'light' ? 'bg-white/60 backdrop-blur-sm' : 'bg-black/20 backdrop-blur-sm';
   const iconBg =
     theme === 'light'
       ? 'bg-indigo-100'

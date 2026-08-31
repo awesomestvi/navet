@@ -46,8 +46,8 @@ function createFrameSvg(options: {
       <rect width="${width}" height="${height}" rx="${radius}" fill="url(#glowB)" />
       <g opacity="0.9">
         <rect x="${isPhone ? 44 : 56}" y="${isPhone ? 52 : 56}" width="${isPhone ? width - 88 : width - 112}" height="72" rx="28" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.08)" />
-        <text x="${isPhone ? 84 : 96}" y="${isPhone ? 98 : 102}" fill="rgba(255,255,255,0.96)" font-family="system-ui, sans-serif" font-size="${isPhone ? 32 : 34}" font-weight="700">${title}</text>
-        <text x="${isPhone ? 84 : 96}" y="${isPhone ? 134 : 138}" fill="rgba(255,255,255,0.54)" font-family="system-ui, sans-serif" font-size="${isPhone ? 18 : 20}">${subtitle}</text>
+        <text x="${isPhone ? 84 : 96}" y="${isPhone ? 98 : 102}" fill="rgba(255,255,255,0.96)" font-family="Inter, system-ui, sans-serif" font-size="${isPhone ? 32 : 34}" font-weight="700">${title}</text>
+        <text x="${isPhone ? 84 : 96}" y="${isPhone ? 134 : 138}" fill="rgba(255,255,255,0.54)" font-family="Inter, system-ui, sans-serif" font-size="${isPhone ? 18 : 20}">${subtitle}</text>
       </g>
       ${
         isAlbum

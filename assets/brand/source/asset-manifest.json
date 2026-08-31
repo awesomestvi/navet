@@ -17,7 +17,7 @@
     {
       "id": "wordmark-dark-text",
       "source": "assets/public/logo-horizontal.svg",
-      "sourceSha256": "a203f88528d393d5b24cd01f2b5dbe310dff7d6cf8cff474ed53524f233d3e9c",
+      "sourceSha256": "1eb1a3374eddaf2594bce54e89efcdced771471ad68a6573578b9f10371c5fd5",
       "outputs": [
         {
           "path": "assets/public/logo-horizontal.svg",
@@ -30,7 +30,7 @@
     {
       "id": "wordmark-light-text",
       "source": "assets/public/logo-horizontal-light.svg",
-      "sourceSha256": "0d9b44b5864ce8b48edc843804815cb726746d2f339096bbd7a88a538abcd9d4",
+      "sourceSha256": "93ee65f09675c9158f34acacdb51e56449471eca1b8ce287cbb148fdf9d860b3",
       "outputs": [
         {
           "path": "assets/public/logo-horizontal-light.svg",
@@ -139,7 +139,7 @@
     {
       "id": "reference-logo-system",
       "source": "docs/branding/media/logo-system.svg",
-      "sourceSha256": "c94bd50ba94f1111dbb2e2038af745097ff9f6e5e0102e751d322dc018be6597",
+      "sourceSha256": "e551de117926d171119a2e7e42a22915f684eb638bbe73415c9cff23afc571c1",
       "outputs": [
         {
           "path": "docs/branding/media/logo-system.svg",
@@ -152,7 +152,7 @@
     {
       "id": "reference-color-architecture",
       "source": "docs/branding/media/color-architecture.svg",
-      "sourceSha256": "726c338f503383e3565228a1017e10017e031bc7ce6e34a9370db367cf2f8dd1",
+      "sourceSha256": "e92c8429d6e96c7aa62d11d2376f9afa868f08c0fdfc697ef7a5dfe46559c0bf",
       "outputs": [
         {
           "path": "docs/branding/media/color-architecture.svg",
@@ -165,7 +165,7 @@
     {
       "id": "reference-card-anatomy",
       "source": "docs/branding/media/card-anatomy.svg",
-      "sourceSha256": "df1878bc657c2f5cec345f59589c1cfacfb7376ba3e0f1e8fe8079923ac38f23",
+      "sourceSha256": "ef8968f713927b53f6a6b1e84416fedbfadb9499393285293a2865c83ec5a418",
       "outputs": [
         {
           "path": "docs/branding/media/card-anatomy.svg",
@@ -178,7 +178,7 @@
     {
       "id": "template-social-announcement",
       "source": "assets/brand/templates/social-announcement.svg",
-      "sourceSha256": "46fb68f26b2427039fcb8f0784f4bb4519ea5c797e583b5d0f9d19e7ccff5900",
+      "sourceSha256": "782b15b58445b08d0d7ca6bb3e316bc2b65895c303ce34e2668a49f1ec77248e",
       "outputs": [
         {
           "path": "assets/brand/templates/social-announcement.svg",
@@ -191,7 +191,7 @@
     {
       "id": "template-video-title-card",
       "source": "assets/brand/templates/video-title-card.svg",
-      "sourceSha256": "b6502ffea850a0d0c526ca143ae77b74f6aee4f811d218e9fa79cd08e9458340",
+      "sourceSha256": "75b2c57a8751efc701ebe9c39a215308853cf680a532c61eabce2a49dd37d91e",
       "outputs": [
         {
           "path": "assets/brand/templates/video-title-card.svg",
@@ -204,7 +204,7 @@
     {
       "id": "template-presentation-title-slide",
       "source": "assets/brand/templates/presentation-title-slide.svg",
-      "sourceSha256": "f7334c363d51d19f888bcbd6dedf75eed0578a4397d72f667a8ec8945efae4e2",
+      "sourceSha256": "29b21e7d8981755f3f3a9d0b1f54f5ac690e1a0665944a56de35fcda3bafb617",
       "outputs": [
         {
           "path": "assets/brand/templates/presentation-title-slide.svg",
@@ -217,7 +217,7 @@
     {
       "id": "template-readme-banner",
       "source": "assets/brand/templates/readme-banner.svg",
-      "sourceSha256": "0c8915917ea1c107a8b26343ee0201595b251077fe66f36fe7c5337ca6bba8ef",
+      "sourceSha256": "4e41c1e13cc9280c63704bbc5d314eb49059eab323b993b465d8c719134e58f9",
       "outputs": [
         {
           "path": "assets/brand/templates/readme-banner.svg",

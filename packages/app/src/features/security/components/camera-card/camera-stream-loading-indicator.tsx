@@ -19,7 +19,10 @@ export function CameraStreamLoadingIndicator({
   fitMode: 'cover' | 'contain';
 }) {
   return (
-    <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden bg-black">
+    <div
+      className="pointer-events-none absolute inset-0 z-10 overflow-hidden bg-black"
+      data-camera-media-surface="true"
+    >
       {posterUrl ? (
         <CameraSnapshotImage
           src={posterUrl}

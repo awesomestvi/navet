@@ -49,6 +49,7 @@ describe('Vite PWA cache policy', () => {
         isEntry: true,
         referencedFiles: ['assets/homey.svg'],
         viteMetadata: {
+          importedAssets: new Set(['assets/inter-latin-wght-normal.woff2']),
           importedCss: new Set(['assets/index.css']),
         },
       },
@@ -84,11 +85,16 @@ describe('Vite PWA cache policy', () => {
         type: 'asset',
         fileName: 'assets/homey.svg',
       },
+      'assets/inter-latin-wght-normal.woff2': {
+        type: 'asset',
+        fileName: 'assets/inter-latin-wght-normal.woff2',
+      },
     } as unknown as ViteOutputBundle;
 
     expect([...collectViteAppShellBundleFiles(bundle)]).toEqual([
       'assets/index-entry.js',
       'assets/index.css',
+      'assets/inter-latin-wght-normal.woff2',
       'assets/homey.svg',
       'assets/react-vendor.js',
       'assets/runtime.js',
@@ -100,6 +106,7 @@ describe('Vite PWA cache policy', () => {
       'assets/index-entry.js',
       'assets/react-vendor.js',
       'assets/index.css',
+      'assets/inter-latin-wght-normal.woff2',
     ]);
     const manifest = [
       { revision: 'a', size: 100, url: 'index.html' },
@@ -108,6 +115,7 @@ describe('Vite PWA cache policy', () => {
       { revision: null, size: 100, url: 'assets/index-entry.js' },
       { revision: null, size: 100, url: 'assets/react-vendor.js' },
       { revision: null, size: 100, url: 'assets/index.css' },
+      { revision: null, size: 100, url: 'assets/inter-latin-wght-normal.woff2' },
       { revision: null, size: 100, url: 'assets/authenticated-app.js' },
       { revision: null, size: 100, url: 'assets/media-stream-vendor.js' },
       { revision: null, size: 100, url: 'assets/fr.js' },
@@ -122,6 +130,7 @@ describe('Vite PWA cache policy', () => {
       'assets/index-entry.js',
       'assets/react-vendor.js',
       'assets/index.css',
+      'assets/inter-latin-wght-normal.woff2',
     ]);
   });
 
@@ -136,6 +145,7 @@ describe('Vite PWA cache policy', () => {
     expect(matches('/assets/authenticated-app-a1b2c3.js')).toBe(true);
     expect(matches('/wall/assets/dashboard-a1b2c3.css')).toBe(true);
     expect(matches('/assets/homey-a1b2c3.svg')).toBe(true);
+    expect(matches('/assets/inter-latin-wght-normal-a1b2c3.woff2')).toBe(true);
     expect(matches('/assets/authenticated-app-a1b2c3.js', false)).toBe(false);
     expect(matches('/assets/authenticated-app-a1b2c3.js', true, 'POST')).toBe(false);
     expect(matches('/assets/unhashed.js')).toBe(false);

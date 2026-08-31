@@ -78,8 +78,7 @@ export const Pulse: Story = {
       'pb-3'
     );
     await expect(canvasElement.querySelector('[data-house-pulse-metrics="true"]')).toHaveClass(
-      'grid-cols-1',
-      'sm:grid-cols-2',
+      'grid-cols-2',
       'lg:landscape:grid-cols-3',
       'xl:grid-cols-3'
     );
@@ -96,7 +95,8 @@ export const Pulse: Story = {
       );
     }
     await expect(metrics[0]).toHaveClass('lg:landscape:pl-5', 'xl:pl-5');
-    await expect(metrics[2]).toHaveClass('sm:col-span-2', 'xl:col-span-1');
+    await expect(metrics[1]).toHaveClass('border-l');
+    await expect(metrics[2]).toHaveClass('col-span-2', 'xl:col-span-1');
   },
 };
 
@@ -153,13 +153,12 @@ export const PortraitTablet: Story = {
     const metrics = canvasElement.querySelectorAll('[data-pulse-metric="true"]');
     await expect(metrics).toHaveLength(4);
     await expect(canvasElement.querySelector('[data-house-pulse-metrics="true"]')).toHaveClass(
-      'grid-cols-1',
-      'sm:grid-cols-2',
+      'grid-cols-2',
       'lg:landscape:grid-cols-4',
       'xl:grid-cols-4'
     );
-    await expect(metrics[1]).toHaveClass('sm:border-l');
-    await expect(metrics[3]).toHaveClass('sm:border-l');
+    await expect(metrics[1]).toHaveClass('border-l');
+    await expect(metrics[3]).toHaveClass('border-l');
   },
 };
 

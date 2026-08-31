@@ -804,7 +804,10 @@ export function DirectGo2RtcCameraPlayer({
   }, [endpoint, onError]);
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-black">
+    <div
+      className="relative h-full w-full overflow-hidden bg-black"
+      data-camera-media-surface="true"
+    >
       {!hasLoadedFrame ? (
         <CameraStreamLoadingIndicator
           label={loadingLabel}

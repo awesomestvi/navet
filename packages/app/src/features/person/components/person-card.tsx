@@ -126,7 +126,7 @@ export const PersonCard = memo(function PersonCard({
       size={size}
       fullBleed
       frameClassName={`${cardShell.rootFrameClassName} ${cardColors.border} ${surface.containerShadowClassName}`}
-      disableDefaultSheen
+      disableDefaultSheen={theme !== 'glass'}
       overlay={
         <>
           {hasPortrait ? (
@@ -142,14 +142,22 @@ export const PersonCard = memo(function PersonCard({
             >
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.22),transparent_55%)]" />
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="rounded-full border border-white/12 bg-black/10 p-4 backdrop-blur-sm">
+                <div
+                  className={`rounded-full border p-4 backdrop-blur-sm ${surface.fallbackIconContainerClassName}`}
+                >
                   <User className={`h-7 w-7 ${surface.fallbackIconClassName}`} />
                 </div>
               </div>
             </div>
           )}
           <div className={`absolute inset-0 bg-gradient-to-t ${cardColors.glow} to-transparent`} />
-          <div className="absolute inset-x-0 bottom-0 h-[62%] bg-gradient-to-t from-black/88 via-black/38 to-transparent" />
+          <div
+            className={`absolute inset-x-0 bottom-0 h-[62%] bg-gradient-to-t ${
+              hasPortrait
+                ? 'from-black/88 via-black/38 to-transparent'
+                : surface.fallbackScrimClassName
+            }`}
+          />
           {surface.overlayClassName ? (
             <div className={`absolute inset-0 ${surface.overlayClassName}`} />
           ) : null}

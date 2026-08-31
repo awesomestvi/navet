@@ -136,7 +136,7 @@ export function HousePulse({
           className={cn(
             '-mx-3 -mb-3 grid',
             showPoints
-              ? 'grid-cols-1 sm:grid-cols-2'
+              ? 'grid-cols-2'
               : onSeeRewards
                 ? 'grid-cols-2 sm:grid-cols-3'
                 : 'grid-cols-2 sm:grid-cols-2',
@@ -286,9 +286,9 @@ function PulseMetric({
   const className = cn(
     'flex min-h-14 min-w-0 items-center gap-2 border-t border-current/10 px-3 py-3.5 sm:px-4 md:px-5',
     mobileDivider && 'border-l',
+    compactDivider && (mobileSpanFull ? 'sm:border-l' : 'border-l'),
     mobileSpanFull && 'col-span-2 sm:col-span-1',
-    compactDivider && 'sm:border-l',
-    compactSpanFull && 'sm:col-span-2',
+    compactSpanFull && 'col-span-2',
     'lg:landscape:col-span-1 lg:landscape:min-h-14 lg:landscape:px-3 lg:landscape:py-3.5 xl:col-span-1 xl:min-h-14 xl:px-4 xl:py-3.5 2xl:px-6',
     alignStart && 'lg:landscape:pl-5 xl:pl-5',
     inlineWithHeader &&

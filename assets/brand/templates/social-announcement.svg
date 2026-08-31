@@ -43,7 +43,7 @@
         <circle cx="30" cy="48" r="2.5"/><circle cx="17.27" cy="42.73" r="2.5"/>
         <circle cx="12" cy="30" r="2.5"/><circle cx="17.27" cy="17.27" r="2.5"/>
       </g>
-      <text x="70" y="40" fill="white" font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="28" font-weight="600" letter-spacing="-0.5">Navet</text>
+      <text x="70" y="40" fill="white" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="28" font-weight="600" letter-spacing="-0.5">Navet</text>
     </symbol>
   </defs>
 
@@ -55,7 +55,7 @@
     <use href="#navet-lockup" x="72" y="54" width="160" height="48"/>
   </g>
 
-  <g id="editable-content" font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+  <g id="editable-content" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
     <g id="editable-eyebrow">
       <circle cx="80" cy="190" r="5" fill="#F97316"/>
       <text x="96" y="197" fill="white" fill-opacity="0.68" font-size="18" font-weight="600">Release · vX.Y.Z</text>
@@ -80,13 +80,13 @@
       <g fill="none" stroke="white" stroke-opacity="0.11" stroke-width="2">
         <rect x="684" y="176" width="400" height="260" rx="24" stroke-dasharray="8 10"/>
       </g>
-      <g font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" text-anchor="middle">
+      <g font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" text-anchor="middle">
         <text x="884" y="294" fill="white" fill-opacity="0.78" font-size="21" font-weight="650">Current product image</text>
         <text x="884" y="327" fill="white" fill-opacity="0.48" font-size="16">Replace this group with a public-safe capture</text>
       </g>
       <rect x="684" y="462" width="150" height="38" rx="19" fill="white" fill-opacity="0.07" stroke="white" stroke-opacity="0.1"/>
       <circle cx="705" cy="481" r="5" fill="#F97316"/>
-      <text x="720" y="487" fill="white" fill-opacity="0.7" font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="600">Product proof</text>
+      <text x="720" y="487" fill="white" fill-opacity="0.7" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="600">Product proof</text>
     </g>
   </g>
 

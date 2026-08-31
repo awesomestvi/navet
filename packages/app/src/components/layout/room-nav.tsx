@@ -451,8 +451,10 @@ export const RoomNav = memo(function RoomNav({
     const rootFontSize =
       Number.parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
     const fontSizePx = rootFontSize * ROOM_NAV_FONT_SIZE_REM;
-    const fontFamily = roomList ? window.getComputedStyle(roomList).fontFamily : 'system-ui';
-    const font = `${ROOM_NAV_FONT_WEIGHT} ${fontSizePx}px ${fontFamily || 'system-ui'}`;
+    const fontFamily = roomList
+      ? window.getComputedStyle(roomList).fontFamily
+      : '"Inter", system-ui';
+    const font = `${ROOM_NAV_FONT_WEIGHT} ${fontSizePx}px ${fontFamily || '"Inter", system-ui'}`;
 
     if (!measurementContextRef.current && typeof CanvasRenderingContext2D !== 'undefined') {
       try {

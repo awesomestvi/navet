@@ -244,6 +244,14 @@ export const nlMessages = {
   'household.management.description':
     'Voer de beheerpincode in om personen, klusjes, beloningen of instellingen te wijzigen.',
   'household.management.pinLabel': 'Beheerpincode',
+  'household.management.newPinLabel': 'Nieuwe beheerpincode',
+  'household.management.confirmNewPinLabel': 'Nieuwe beheerpincode bevestigen',
+  'household.management.setPin': 'Pincode instellen',
+  'household.management.changePin': 'Pincode wijzigen',
+  'household.management.removePin': 'Pincode verwijderen',
+  'household.management.removePinTitle': 'Beheerpincode verwijderen?',
+  'household.management.removePinDescription':
+    'Voor taakbeheer is dan geen pincode meer nodig. Iedereen met toegang tot het dashboard kan taken en huishoudinstellingen wijzigen.',
   'household.management.unlock': 'Ontgrendelen',
   'household.today.emptyTitle': 'Vandaag hoeft er niets te gebeuren',
   'household.today.emptyDescription': 'Komende klusjes verschijnen hier op de juiste dag.',
@@ -420,6 +428,7 @@ export const nlMessages = {
   'household.schedule.weekly': 'Elke week',
   'household.schedule.biweekly': 'Tweewekelijks',
   'household.schedule.triweekly': 'Elke drie weken',
+  'household.schedule.fourWeekly': 'Elke vier weken',
   'household.schedule.monthly': 'Elke maand',
   'household.schedule.custom': 'Aangepast',
   'household.schedule.afterCompletion': 'Na voltooiing',

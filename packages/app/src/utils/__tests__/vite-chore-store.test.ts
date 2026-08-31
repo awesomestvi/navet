@@ -588,6 +588,31 @@ describe('Vite chore workspace store', () => {
       allowed.response
     );
     expect(allowed.status).toBe(200);
+
+    const remove = createResponse();
+    await handler(
+      createRequest(
+        'DELETE',
+        '/management/pin',
+        { 'x-navet-chore-management-session': managementSession },
+        JSON.stringify({ actorParticipantId: 'maya' })
+      ),
+      remove.response
+    );
+    expect(remove.status).toBe(200);
+    expect(JSON.parse(remove.body)).toEqual({ pinConfigured: false });
+
+    const unprotected = createResponse();
+    await handler(
+      createRequest(
+        'POST',
+        '/commands',
+        { 'x-navet-base-revision': '2' },
+        experienceActionBody('unprotected-experience', 2)
+      ),
+      unprotected.response
+    );
+    expect(unprotected.status).toBe(200);
   });
 
   it('migrates a persisted schema version 1 workspace before serving it', async () => {

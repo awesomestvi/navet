@@ -1,7 +1,7 @@
 # Navet brand templates
 
 These SVG templates turn the established Navet identity into repeatable working files. They use
-the current hub mark geometry, system typography, `#06080d` canvas, orange identity accent,
+the current hub mark geometry, Inter typography, `#06080d` canvas, orange identity accent,
 restrained blue atmosphere, fine borders, and the rounded modular geometry seen across
 `navet.app`, `docs.navet.app`, and the Navet product cards.
 
@@ -66,9 +66,10 @@ JPG before distribution so relative image paths cannot break.
   through explicit brand review.
 - Keep clear space around the lockup equal to at least 10% of its height.
 - Do not reduce the square mark below 32 px in a final digital asset.
-- Keep the system stack: `ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`.
-- If an editor substitutes a font, export from a platform with a native system sans or outline
-  only the finished campaign text. Keep an editable source copy.
+- Keep the Navet stack: `"Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`.
+- Install the bundled Inter files from `assets/public/fonts/inter/` before
+  editing. If an editor cannot preserve the font, outline only the finished campaign text and keep
+  an editable source copy.
 
 ## Accessibility and contrast
 

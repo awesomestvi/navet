@@ -11,7 +11,11 @@ import {
 } from '@navet/app/components/primitives';
 import { themeColorValues } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
-import { navetIconSizeTokens, navetTypographyTokens } from '@navet/app/components/system/tokens';
+import {
+  getUiKitGlassWorkspaceGlowClassName,
+  navetIconSizeTokens,
+  navetTypographyTokens,
+} from '@navet/app/components/system/tokens';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -403,11 +407,8 @@ function StepPanel({
         <div className="mt-7">{children}</div>
       </div>
       <div
-        className={cn(
-          'sticky bottom-0 border-t px-4 py-3 sm:px-7',
-          surface.border,
-          surface.shellPanel
-        )}
+        data-chore-onboarding-footer
+        className={cn('sticky bottom-0 border-t bg-transparent px-4 py-3 sm:px-7', surface.border)}
       >
         <div className="flex w-full items-center justify-between gap-3">{footer}</div>
       </div>
@@ -785,7 +786,15 @@ export function ChoreOnboardingDialog({
   const selectSetupRepeat = (value: SetupRepeat) => {
     setRepeat(value);
     setScheduleInterval(
-      value === 'biweekly' ? 2 : value === 'triweekly' ? 3 : value === 'custom' ? 2 : 1
+      value === 'biweekly'
+        ? 2
+        : value === 'triweekly'
+          ? 3
+          : value === 'fourweekly'
+            ? 4
+            : value === 'custom'
+              ? 2
+              : 1
     );
   };
 
@@ -839,7 +848,10 @@ export function ChoreOnboardingDialog({
                 intervalDays: Math.max(2, scheduleInterval),
                 ...scheduleOptions,
               }
-            : repeat === 'weekly' || repeat === 'biweekly' || repeat === 'triweekly'
+            : repeat === 'weekly' ||
+                repeat === 'biweekly' ||
+                repeat === 'triweekly' ||
+                repeat === 'fourweekly'
               ? {
                   frequency: 'weekly',
                   startDate,
@@ -851,7 +863,9 @@ export function ChoreOnboardingDialog({
                       ? 2
                       : repeat === 'triweekly'
                         ? 3
-                        : Math.max(1, scheduleInterval),
+                        : repeat === 'fourweekly'
+                          ? 4
+                          : Math.max(1, scheduleInterval),
                   ...scheduleOptions,
                 }
               : repeat === 'monthly'
@@ -1019,6 +1033,7 @@ export function ChoreOnboardingDialog({
           surface.shellPanel,
           surface.border
         )}
+        contentGlowClassName={getUiKitGlassWorkspaceGlowClassName(theme)}
         shellBodyClassName="h-full min-h-0"
       >
         <NavigationWorkspace.Frame

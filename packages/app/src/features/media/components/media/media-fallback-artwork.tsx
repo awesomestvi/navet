@@ -9,6 +9,7 @@ interface MediaFallbackArtworkProps {
   style?: CSSProperties;
   compact?: boolean;
   icon?: 'disc' | 'spotify';
+  transparentSurface?: boolean;
 }
 
 export function MediaFallbackArtwork({
@@ -17,6 +18,7 @@ export function MediaFallbackArtwork({
   style,
   compact = false,
   icon = 'disc',
+  transparentSurface = false,
 }: MediaFallbackArtworkProps) {
   const iconClassName = `absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 ${
     compact ? 'h-[42%] w-[42%]' : 'h-[44%] w-[44%]'
@@ -28,26 +30,30 @@ export function MediaFallbackArtwork({
       aria-hidden="true"
       className={`pointer-events-none overflow-hidden ${className}`}
       style={{
-        background: `radial-gradient(circle at 26% 18%, ${withAlpha(
-          palette.highlight,
-          0.22
-        )} 0%, transparent 24%), linear-gradient(160deg, ${withAlpha(
-          palette.dominant,
-          0.88
-        )} 0%, ${withAlpha(palette.darkMuted, 0.94)} 100%)`,
+        background: transparentSurface
+          ? 'transparent'
+          : `radial-gradient(circle at 26% 18%, ${withAlpha(
+              palette.highlight,
+              0.22
+            )} 0%, transparent 24%), linear-gradient(160deg, ${withAlpha(
+              palette.dominant,
+              0.88
+            )} 0%, ${withAlpha(palette.darkMuted, 0.94)} 100%)`,
         ...style,
       }}
     >
       <div
         className="absolute inset-0"
         style={{
-          background: `radial-gradient(circle at 50% 52%, ${withAlpha(
-            palette.highlight,
-            compact ? 0.14 : 0.1
-          )} 0%, transparent 22%), radial-gradient(circle at 50% 52%, ${withAlpha(
-            palette.vibrant,
-            compact ? 0.14 : 0.12
-          )} 0%, transparent 42%)`,
+          background: transparentSurface
+            ? 'none'
+            : `radial-gradient(circle at 50% 52%, ${withAlpha(
+                palette.highlight,
+                compact ? 0.14 : 0.1
+              )} 0%, transparent 22%), radial-gradient(circle at 50% 52%, ${withAlpha(
+                palette.vibrant,
+                compact ? 0.14 : 0.12
+              )} 0%, transparent 42%)`,
         }}
       />
 

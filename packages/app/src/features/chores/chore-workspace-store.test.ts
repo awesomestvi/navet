@@ -7,18 +7,28 @@ const {
   restoreChoreWorkspace,
   resetChoreWorkspace,
   recoverChoreWorkspace,
+  configureChoreManagementPin,
+  removeChoreManagementPin,
 } = vi.hoisted(() => ({
   sendChoreWorkspaceCommand: vi.fn(),
   loadChoreWorkspace: vi.fn(),
   restoreChoreWorkspace: vi.fn(),
   resetChoreWorkspace: vi.fn(),
   recoverChoreWorkspace: vi.fn(),
+  configureChoreManagementPin: vi.fn(),
+  removeChoreManagementPin: vi.fn(),
 }));
 
 vi.mock('@navet/app/services/chore-workspace.service', () => ({
+  getChoreWorkspaceTransport: () => ({
+    loadWorkspace: loadChoreWorkspace,
+    sendCommand: sendChoreWorkspaceCommand,
+  }),
   loadChoreWorkspace,
   resetChoreWorkspace,
   recoverChoreWorkspace,
+  configureChoreManagementPin,
+  removeChoreManagementPin,
   restoreChoreWorkspace,
   sendChoreWorkspaceCommand,
 }));
@@ -63,6 +73,61 @@ describe('chore workspace store', () => {
       error: 'This chore occurrence is stale',
       revision: 4,
       status: 'ready',
+    });
+  });
+
+  it('relocks management when the session expires before changing the PIN', async () => {
+    useChoreWorkspaceStore.setState({
+      managementPinConfigured: true,
+      managementUnlocked: true,
+    });
+    configureChoreManagementPin.mockResolvedValue({
+      unlocked: false,
+      unauthorized: true,
+      error: 'Unlock chore management before changing its PIN',
+      document: null,
+    });
+
+    const saved = await useChoreWorkspaceStore.getState().configureManagementPin('maya', '1357');
+
+    expect(saved).toBe(false);
+    expect(useChoreWorkspaceStore.getState()).toMatchObject({
+      managementError: 'Unlock chore management before changing its PIN',
+      managementPinConfigured: true,
+      managementUnlocked: false,
+    });
+  });
+
+  it('removes management PIN protection and clears the browser session', async () => {
+    configureChoreManagementPin.mockResolvedValue({
+      unlocked: true,
+      unauthorized: false,
+      error: null,
+      document: {
+        pinConfigured: true,
+        sessionToken: 'manager-session',
+        expiresAt: '2026-08-15T20:30:00.000Z',
+      },
+    });
+    removeChoreManagementPin.mockResolvedValue({
+      removed: true,
+      unauthorized: false,
+      error: null,
+      document: { pinConfigured: false },
+    });
+
+    await useChoreWorkspaceStore.getState().configureManagementPin('maya', '2468');
+    const removed = await useChoreWorkspaceStore.getState().removeManagementPin('maya');
+
+    expect(removed).toBe(true);
+    expect(removeChoreManagementPin).toHaveBeenCalledWith(
+      { actorParticipantId: 'maya' },
+      'manager-session'
+    );
+    expect(useChoreWorkspaceStore.getState()).toMatchObject({
+      managementError: null,
+      managementPinConfigured: false,
+      managementUnlocked: false,
     });
   });
 

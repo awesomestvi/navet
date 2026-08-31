@@ -75,6 +75,19 @@ function createMockFs() {
   };
 }
 
+function createMockSharedDict() {
+  const values = new Map<string, string>();
+  const dictionary = {
+    delete: vi.fn((key: string) => values.delete(key)),
+    get: vi.fn((key: string) => values.get(key)),
+    set: vi.fn((key: string, value: string) => {
+      values.set(key, value);
+      return dictionary;
+    }),
+  };
+  return dictionary;
+}
+
 function seededData(commandId: string) {
   const timestamp = '2026-08-10T08:00:00.000Z';
   return {
@@ -1022,5 +1035,159 @@ describe('NJS chore workspace store', () => {
     choreStore.handle(unlocked);
     expect(unlocked.return).toHaveBeenCalledWith(200, expect.any(String));
     expect(parseResponse(unlocked).data.participantsById.sofia.displayName).toBe('Sofia');
+  });
+
+  it('changes the management PIN only for an unlocked manager session', () => {
+    const mockFs = createMockFs();
+    choreStore.setChoreStoreFsForTests(mockFs);
+    choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
+    choreStore.handle(
+      createActionRequest('setup-manager', 0, {
+        type: 'participant_create',
+        participant: managerParticipant(),
+      })
+    );
+
+    const configure = createRequest({
+      method: 'POST',
+      uri: '/__navet_chores__/management/pin',
+      requestText: JSON.stringify({ actorParticipantId: 'maya', pin: '2468' }),
+    });
+    choreStore.handle(configure);
+    const sessionToken = parseResponse(configure).sessionToken;
+
+    const blockedChange = createRequest({
+      method: 'POST',
+      uri: '/__navet_chores__/management/pin',
+      requestText: JSON.stringify({ actorParticipantId: 'maya', pin: '1357' }),
+    });
+    choreStore.handle(blockedChange);
+    expect(blockedChange.return).toHaveBeenCalledWith(
+      403,
+      JSON.stringify({ error: 'Unlock chore management before changing its PIN' })
+    );
+
+    const change = createRequest({
+      method: 'POST',
+      uri: '/__navet_chores__/management/pin',
+      headersIn: { 'X-Navet-Chore-Management-Session': sessionToken },
+      requestText: JSON.stringify({ actorParticipantId: 'maya', pin: '1357' }),
+    });
+    choreStore.handle(change);
+    expect(change.return).toHaveBeenCalledWith(200, expect.any(String));
+
+    const oldPin = createRequest({
+      method: 'POST',
+      uri: '/__navet_chores__/management/verify',
+      requestText: JSON.stringify({ pin: '2468' }),
+    });
+    choreStore.handle(oldPin);
+    expect(oldPin.return).toHaveBeenCalledWith(
+      403,
+      JSON.stringify({ error: 'The management PIN is incorrect' })
+    );
+
+    const newPin = createRequest({
+      method: 'POST',
+      uri: '/__navet_chores__/management/verify',
+      requestText: JSON.stringify({ pin: '1357' }),
+    });
+    choreStore.handle(newPin);
+    expect(newPin.return).toHaveBeenCalledWith(200, expect.any(String));
+  });
+
+  it('removes management PIN protection only for an unlocked active manager', () => {
+    const mockFs = createMockFs();
+    choreStore.setChoreStoreFsForTests(mockFs);
+    choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
+    choreStore.handle(
+      createActionRequest('setup-manager', 0, {
+        type: 'participant_create',
+        participant: managerParticipant(),
+      })
+    );
+    const configure = createRequest({
+      method: 'POST',
+      uri: '/__navet_chores__/management/pin',
+      requestText: JSON.stringify({ actorParticipantId: 'maya', pin: '2468' }),
+    });
+    choreStore.handle(configure);
+    const sessionToken = parseResponse(configure).sessionToken;
+
+    const blockedRemoval = createRequest({
+      method: 'DELETE',
+      uri: '/__navet_chores__/management/pin',
+      requestText: JSON.stringify({ actorParticipantId: 'maya' }),
+    });
+    choreStore.handle(blockedRemoval);
+    expect(blockedRemoval.return).toHaveBeenCalledWith(
+      403,
+      JSON.stringify({ error: 'Unlock chore management before removing its PIN' })
+    );
+
+    const removal = createRequest({
+      method: 'DELETE',
+      uri: '/__navet_chores__/management/pin',
+      headersIn: { 'X-Navet-Chore-Management-Session': sessionToken },
+      requestText: JSON.stringify({ actorParticipantId: 'maya' }),
+    });
+    choreStore.handle(removal);
+    expect(removal.return).toHaveBeenCalledWith(200, JSON.stringify({ pinConfigured: false }));
+
+    const workspace = createRequest({ method: 'GET', uri: '/__navet_chores__/workspace' });
+    choreStore.handle(workspace);
+    expect(parseResponse(workspace).management).toEqual({ pinConfigured: false });
+  });
+
+  it('keeps a verified management session across isolated njs request contexts', () => {
+    const mockFs = createMockFs();
+    const sharedSessions = createMockSharedDict();
+    vi.stubGlobal('ngx', {
+      shared: { navet_chore_management_sessions: sharedSessions },
+    });
+    choreStore.setChoreStoreFsForTests(mockFs);
+    choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
+    choreStore.handle(
+      createActionRequest('setup-manager', 0, {
+        type: 'participant_create',
+        participant: managerParticipant(),
+      })
+    );
+
+    const configure = createRequest({
+      method: 'POST',
+      uri: '/__navet_chores__/management/pin',
+      requestText: JSON.stringify({ actorParticipantId: 'maya', pin: '2468' }),
+    });
+    choreStore.handle(configure);
+    const sessionToken = parseResponse(configure).sessionToken;
+    expect(sharedSessions.set).toHaveBeenCalledWith(TENANT_ID, sessionToken, 30 * 60 * 1000);
+
+    // Production njs creates a fresh JavaScript VM for the next request.
+    choreStore.resetChoreStoreForTests();
+    choreStore.setChoreStoreFsForTests(mockFs);
+    choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
+
+    const protectedCommand = createRequest({
+      method: 'POST',
+      uri: '/__navet_chores__/commands',
+      headersIn: {
+        'X-Navet-Base-Revision': '1',
+        'X-Navet-Chore-Management-Session': sessionToken,
+      },
+      requestText: JSON.stringify({
+        commandId: 'protected-profile',
+        baseRevision: 1,
+        action: {
+          type: 'participant_create',
+          actorParticipantId: 'maya',
+          participant: managerParticipant('sofia'),
+        },
+      }),
+    });
+    choreStore.handle(protectedCommand);
+
+    expect(protectedCommand.return).toHaveBeenCalledWith(200, expect.any(String));
+    expect(parseResponse(protectedCommand).data.participantsById.sofia.displayName).toBe('Sofia');
   });
 });

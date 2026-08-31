@@ -245,6 +245,14 @@ export const fiMessages = {
   'household.management.description':
     'Syötä PIN-koodi muuttaaksesi henkilöitä, kotitöitä, palkintoja tai asetuksia.',
   'household.management.pinLabel': 'Hallinnan PIN-koodi',
+  'household.management.newPinLabel': 'Uusi hallinnan PIN-koodi',
+  'household.management.confirmNewPinLabel': 'Vahvista uusi hallinnan PIN-koodi',
+  'household.management.setPin': 'Aseta PIN-koodi',
+  'household.management.changePin': 'Vaihda PIN-koodi',
+  'household.management.removePin': 'Poista PIN-koodi',
+  'household.management.removePinTitle': 'Poistetaanko hallinnan PIN-koodi?',
+  'household.management.removePinDescription':
+    'Tehtävien hallinta ei enää vaadi PIN-koodia. Kaikki hallintapaneeliin pääsevät voivat muuttaa tehtäviä ja kotitalouden asetuksia.',
   'household.management.unlock': 'Avaa',
   'household.today.emptyTitle': 'Tänään ei ole tehtävää',
   'household.today.emptyDescription': 'Tulevat kotityöt näkyvät täällä oikeana päivänä.',
@@ -419,6 +427,7 @@ export const fiMessages = {
   'household.schedule.weekly': 'Joka viikko',
   'household.schedule.biweekly': 'Joka toinen viikko',
   'household.schedule.triweekly': 'Joka kolmas viikko',
+  'household.schedule.fourWeekly': 'Joka neljäs viikko',
   'household.schedule.monthly': 'Joka kuukausi',
   'household.schedule.custom': 'Mukautettu',
   'household.schedule.afterCompletion': 'Valmistumisen jälkeen',

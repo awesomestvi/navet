@@ -1,7 +1,7 @@
 # Navet Public Assets
 
 This folder contains Navet's public logos, install icons, social-preview asset, web manifest, and
-small runtime bootstrap/fallback files. Brand guidance applies to the logo and social assets;
+small runtime bootstrap/fallback files. Brand guidance applies to the logo, font, and social assets;
 `config.js`, `boot-i18n.js`, `offline.html`, and `site.webmanifest` are application runtime files.
 
 ## Files
@@ -25,6 +25,14 @@ small runtime bootstrap/fallback files. Brand guidance applies to the logo and s
 ### Social Preview
 
 - **navet-social-card.jpg** - Open Graph and social-link preview image
+
+### Typography
+
+- **fonts/inter/** - Self-hosted Latin and Latin-extended variable Inter webfont subsets,
+  shared stylesheet, and the upstream SIL Open Font License 1.1. The subset binaries come from
+  Fontsource's open-source font-files distribution of Inter.
+- Keep the font license file with redistributed font files. Navet's code license does not replace the font
+  license.
 
 ### Runtime Files
 

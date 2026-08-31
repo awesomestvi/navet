@@ -48,6 +48,7 @@ export {
 } from './motion';
 export {
   getUiKitGlassSheetGlowClassName,
+  getUiKitGlassWorkspaceGlowClassName,
   getUiKitModalContentClassName,
   getUiKitPanelSurfaceClassName,
   getUiKitSheetContentClassName,

@@ -92,7 +92,7 @@ describe('useMediaArtworkColors', () => {
     await waitFor(() => {
       expect(resolveArtworkPaletteMock).toHaveBeenCalled();
     });
-    expect(result.current.dominant).toBe('rgb(142, 136, 126)');
+    expect(result.current.dominant).toBe('rgb(100, 116, 139)');
   });
 
   it('tries primary media-player thumbnail artwork before proxy fallback', async () => {

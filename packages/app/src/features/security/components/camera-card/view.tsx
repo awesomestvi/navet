@@ -134,6 +134,7 @@ export function CameraCardView({
   const surface = getThemeSurfaceTokens(theme);
   const isCompact = isCompactCardSize(size);
   const isLightTheme = theme === 'light';
+  const isGlassTheme = theme === 'glass';
   const isUnavailable = cameraState === 'unavailable';
   const isRunning = cameraState !== 'off' && !isUnavailable;
   const effectiveImageUrl = snapshotFailed ? undefined : imageUrl;
@@ -207,8 +208,16 @@ export function CameraCardView({
   const emptyStateClassName = isLightTheme
     ? 'absolute inset-0 flex flex-col items-center justify-center gap-1'
     : 'absolute inset-0 flex flex-col items-center justify-center gap-1';
-  const emptyStateIconClassName = isLightTheme ? 'h-8 w-8 text-slate-400' : 'h-8 w-8 text-zinc-500';
-  const emptyStateTextClassName = isLightTheme ? 'text-xs text-slate-500' : 'text-xs text-zinc-500';
+  const emptyStateIconClassName = isLightTheme
+    ? 'h-8 w-8 text-slate-400'
+    : isGlassTheme
+      ? 'h-8 w-8 text-white/42'
+      : 'h-8 w-8 text-zinc-500';
+  const emptyStateTextClassName = isLightTheme
+    ? 'text-xs text-slate-500'
+    : isGlassTheme
+      ? 'text-xs text-white/58'
+      : 'text-xs text-zinc-500';
   const snapshotFallback = (
     <div className={emptyStateClassName} data-testid="camera-snapshot-fallback">
       <Camera className={emptyStateIconClassName} />
@@ -225,8 +234,8 @@ export function CameraCardView({
         className="isolate"
         fullBleed
         interactive={!isEditMode}
-        frameClassName={isLightTheme ? surface.cardShadow : 'bg-zinc-900'}
-        disableDefaultSheen
+        frameClassName={isLightTheme ? surface.cardShadow : isGlassTheme ? '' : 'bg-zinc-900'}
+        disableDefaultSheen={!isGlassTheme}
         role={!isEditMode ? 'button' : undefined}
         tabIndex={!isEditMode ? 0 : undefined}
         onClick={!isEditMode ? onOpenViewer : undefined}
@@ -261,7 +270,7 @@ export function CameraCardView({
             ) : null}
 
             {hasLiveStream && streamHost ? (
-              <CameraStreamHostSlot host={streamHost} />
+              <CameraStreamHostSlot host={streamHost} transparentMediaSurface={isGlassTheme} />
             ) : (
               !effectiveImageUrl && snapshotFallback
             )}
@@ -273,11 +282,15 @@ export function CameraCardView({
           <>
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-x-0 top-0 z-10 h-20 bg-gradient-to-b from-black/55 via-black/20 to-transparent"
+              className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-20 bg-gradient-to-b to-transparent ${
+                isGlassTheme ? 'from-slate-950/38 via-slate-950/12' : 'from-black/55 via-black/20'
+              }`}
             />
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-24 bg-gradient-to-t from-black/75 via-black/40 to-transparent"
+              className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 h-24 bg-gradient-to-t to-transparent ${
+                isGlassTheme ? 'from-slate-950/58 via-slate-950/24' : 'from-black/75 via-black/40'
+              }`}
             />
           </>
         ) : null}

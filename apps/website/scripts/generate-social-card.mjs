@@ -16,6 +16,10 @@ const dashboardPath = path.join(
 const logoPath = path.join(repoRoot, 'assets/public/logo-horizontal-light.svg');
 const outputPath = path.join(repoRoot, 'assets/public/navet-social-card.jpg');
 const tokensPath = path.join(repoRoot, 'assets/brand/source/brand-tokens.json');
+const fontPath = path.join(
+  repoRoot,
+  'assets/public/fonts/inter/inter-latin-wght-normal.woff2'
+);
 
 const tokens = JSON.parse(await readFile(tokensPath, 'utf8'));
 const darkCanvas = tokens.colors.canvas.dark;
@@ -23,6 +27,7 @@ const warmStart = tokens.colors.atmosphere.warmStart;
 const warmEnd = tokens.colors.atmosphere.warmEnd;
 const blue = tokens.colors.atmosphere.blue;
 const fontFamily = tokens.typography.family.replaceAll('"', "'");
+const fontDataUri = `data:font/woff2;base64,${(await readFile(fontPath)).toString('base64')}`;
 
 const dashboard = await sharp(dashboardPath).resize({ width: 620 }).png().toBuffer();
 const logo = await sharp(logoPath).resize({ width: 180 }).png().toBuffer();
@@ -30,6 +35,14 @@ const logo = await sharp(logoPath).resize({ width: 180 }).png().toBuffer();
 const treatment = Buffer.from(`
   <svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
     <defs>
+      <style>
+        @font-face {
+          font-family: 'Inter';
+          src: url('${fontDataUri}') format('woff2');
+          font-style: normal;
+          font-weight: 400 700;
+        }
+      </style>
       <linearGradient id="shade" x1="0" y1="0" x2="1" y2="0">
         <stop offset="0" stop-color="${darkCanvas}" stop-opacity="0.96" />
         <stop offset="0.48" stop-color="${darkCanvas}" stop-opacity="0.82" />

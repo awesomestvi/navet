@@ -1103,6 +1103,23 @@ class ChoreAuthority:
         await self._stores["security"].async_save(self._security)
         return await self.async_verify_pin(pin, user_id)
 
+    async def async_remove_pin(
+        self,
+        actor_id: str,
+        token: str | None,
+        user_id: str | None,
+    ) -> dict[str, Any]:
+        await self.async_initialize()
+        _require_manager(self.data, actor_id)
+        if not self._security:
+            raise ChoreAuthorityError("A management PIN has not been configured")
+        if not self._session_valid(token or "", user_id):
+            raise ChoreAuthorityError("Unlock chore management before removing its PIN")
+        self._security = None
+        self._sessions.clear()
+        await self._stores["security"].async_remove()
+        return {"pinConfigured": False}
+
     async def async_recover(self, request: Mapping[str, Any], user_id: str | None) -> dict[str, Any]:
         await self.async_initialize()
         if str(request.get("action")) not in {"restore_backup", "reset"}:
@@ -1452,6 +1469,8 @@ class ChoreAuthority:
             return await self.async_verify_pin(str(message.get("pin", "")), user_id)
         if message_type == "navet/chores/management/pin":
             return await self.async_configure_pin(str(message.get("actorParticipantId", "")), str(message.get("pin", "")), str(message.get("managementSessionToken", "")) or None, user_id)
+        if message_type == "navet/chores/management/pin/remove":
+            return await self.async_remove_pin(str(message.get("actorParticipantId", "")), str(message.get("managementSessionToken", "")) or None, user_id)
         raise ChoreAuthorityError("Unsupported Navet chores command")
 
     async def async_service_action(
@@ -1503,6 +1522,7 @@ def register_chore_websocket_commands(hass: HomeAssistant) -> None:
         "navet/chores/reset",
         "navet/chores/recovery",
         "navet/chores/management/pin",
+        "navet/chores/management/pin/remove",
         "navet/chores/management/verify",
     ):
         schema = websocket_api.BASE_COMMAND_MESSAGE_SCHEMA.extend(

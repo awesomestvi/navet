@@ -246,6 +246,14 @@ export const esMessages = {
   'household.management.description':
     'Introduce el PIN para cambiar personas, tareas, recompensas o ajustes.',
   'household.management.pinLabel': 'PIN de gestión',
+  'household.management.newPinLabel': 'Nuevo PIN de gestión',
+  'household.management.confirmNewPinLabel': 'Confirmar nuevo PIN de gestión',
+  'household.management.setPin': 'Establecer PIN',
+  'household.management.changePin': 'Cambiar PIN',
+  'household.management.removePin': 'Eliminar PIN',
+  'household.management.removePinTitle': '¿Eliminar el PIN de gestión?',
+  'household.management.removePinDescription':
+    'La gestión de tareas dejará de requerir un PIN. Cualquier persona con acceso al panel podrá cambiar las tareas y los ajustes del hogar.',
   'household.management.unlock': 'Desbloquear',
   'household.today.emptyTitle': 'No hay nada que hacer hoy',
   'household.today.emptyDescription': 'Las próximas tareas aparecerán aquí cuando llegue su día.',
@@ -422,6 +430,7 @@ export const esMessages = {
   'household.schedule.weekly': 'Cada semana',
   'household.schedule.biweekly': 'Cada dos semanas',
   'household.schedule.triweekly': 'Cada tres semanas',
+  'household.schedule.fourWeekly': 'Cada cuatro semanas',
   'household.schedule.monthly': 'Cada mes',
   'household.schedule.custom': 'Personalizado',
   'household.schedule.afterCompletion': 'Después de completarla',

@@ -8,12 +8,14 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@navet/app/components/ui/dropdown-menu';
 import { cn } from '@navet/app/components/ui/utils';
 import { isEmojiLightIcon, resolveLightIconComponent } from '@navet/app/constants/icon-map';
 import {
   SettingsEmbeddedSurface,
+  SettingsItem,
   SettingsSectionShell,
 } from '@navet/app/features/settings/components/settings-section-shell';
 import { getSettingsSectionStyles } from '@navet/app/features/settings/hooks/settings-section-styles';
@@ -37,6 +39,7 @@ import {
   DatabaseBackup,
   Gift,
   HeartHandshake,
+  ListFilter,
   MoreHorizontal,
   Pause,
   Pencil,
@@ -44,6 +47,7 @@ import {
   Plus,
   RotateCcw,
   Search,
+  ShieldCheck,
   Sparkles,
   Trash2,
   Users,
@@ -115,6 +119,7 @@ function choreScheduleLabel(definition: ChoreDefinition, t: ReturnType<typeof us
   if (definition.schedule.frequency === 'weekly') {
     if (definition.schedule.intervalWeeks === 2) return t('household.schedule.biweekly');
     if (definition.schedule.intervalWeeks === 3) return t('household.schedule.triweekly');
+    if (definition.schedule.intervalWeeks === 4) return t('household.schedule.fourWeekly');
     return t('household.schedule.weekly');
   }
   if (definition.schedule.frequency === 'monthly') return t('household.schedule.monthly');
@@ -158,6 +163,91 @@ function LibraryAssignmentSummary({
         {assignmentLabel(definition, participants, t)}
       </span>
     </div>
+  );
+}
+
+function ChoreFilterFields({
+  room,
+  onRoomChange,
+  roomOptions,
+  person,
+  onPersonChange,
+  participants,
+  recurrence,
+  onRecurrenceChange,
+  status,
+  onStatusChange,
+}: {
+  room: string;
+  onRoomChange: (value: string) => void;
+  roomOptions: ReadonlyArray<readonly [string, string]>;
+  person: string;
+  onPersonChange: (value: string) => void;
+  participants: Record<string, ChoreParticipant>;
+  recurrence: string;
+  onRecurrenceChange: (value: string) => void;
+  status: string;
+  onStatusChange: (value: string) => void;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <>
+      <Select
+        size="small"
+        aria-label={t('household.filters.room')}
+        value={room}
+        onChange={(event) => onRoomChange(event.target.value)}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
+        <option value="all">{t('household.filters.allRooms')}</option>
+        {roomOptions.map(([id, label]) => (
+          <option key={id} value={id}>
+            {label}
+          </option>
+        ))}
+      </Select>
+      <Select
+        size="small"
+        aria-label={t('household.filters.person')}
+        value={person}
+        onChange={(event) => onPersonChange(event.target.value)}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
+        <option value="all">{t('household.personPicker.all')}</option>
+        {Object.values(participants).map((participant) => (
+          <option key={participant.id} value={participant.id}>
+            {participant.displayName}
+          </option>
+        ))}
+      </Select>
+      <Select
+        size="small"
+        aria-label={t('household.filters.recurrence')}
+        value={recurrence}
+        onChange={(event) => onRecurrenceChange(event.target.value)}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
+        <option value="all">{t('household.filters.allSchedules')}</option>
+        <option value="once">{t('household.schedule.once')}</option>
+        <option value="daily">{t('household.schedule.daily')}</option>
+        <option value="weekly">{t('household.schedule.weekly')}</option>
+        <option value="monthly">{t('household.schedule.monthly')}</option>
+        <option value="after_completion">{t('household.schedule.afterCompletion')}</option>
+      </Select>
+      <Select
+        size="small"
+        aria-label={t('household.filters.status')}
+        value={status}
+        onChange={(event) => onStatusChange(event.target.value)}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
+        <option value="all">{t('household.filters.allStatuses')}</option>
+        <option value="active">{t('household.chores.active')}</option>
+        <option value="paused">{t('household.chores.paused')}</option>
+        <option value="archived">{t('household.chores.archived')}</option>
+      </Select>
+    </>
   );
 }
 
@@ -225,14 +315,17 @@ export function AllChoresView({
   const archivedDefinitions = Object.values(data.definitionsById)
     .filter((definition) => Boolean(definition.archivedAt))
     .sort((left, right) => left.title.localeCompare(right.title));
+  const activeFilterCount =
+    Number(room !== 'all') +
+    Number(person !== 'all') +
+    Number(recurrence !== 'all') +
+    Number(statusFilter !== 'all');
 
   return (
     <div>
-      <Panel
-        as="section"
+      <section
         aria-label={t('household.chores.title')}
-        muted
-        className="mb-4 grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-[minmax(15rem,1fr)_repeat(4,minmax(8rem,0.4fr))_auto]"
+        className="mb-4 flex min-w-0 items-center gap-2"
       >
         <Input
           type="search"
@@ -242,66 +335,64 @@ export function AllChoresView({
           leading={<Search className="h-4 w-4" aria-hidden="true" />}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          containerClassName="min-w-0 flex-1 sm:max-w-sm"
         />
-        <Select
-          size="small"
-          aria-label={t('household.filters.room')}
-          value={room}
-          onChange={(event) => setRoom(event.target.value)}
-        >
-          <option value="all">{t('household.filters.allRooms')}</option>
-          {roomOptions.map(([id, label]) => (
-            <option key={id} value={id}>
-              {label}
-            </option>
-          ))}
-        </Select>
-        <Select
-          size="small"
-          aria-label={t('household.filters.person')}
-          value={person}
-          onChange={(event) => setPerson(event.target.value)}
-        >
-          <option value="all">{t('household.personPicker.all')}</option>
-          {Object.values(data.participantsById).map((participant) => (
-            <option key={participant.id} value={participant.id}>
-              {participant.displayName}
-            </option>
-          ))}
-        </Select>
-        <Select
-          size="small"
-          aria-label={t('household.filters.recurrence')}
-          value={recurrence}
-          onChange={(event) => setRecurrence(event.target.value)}
-        >
-          <option value="all">{t('household.filters.allSchedules')}</option>
-          <option value="once">{t('household.schedule.once')}</option>
-          <option value="daily">{t('household.schedule.daily')}</option>
-          <option value="weekly">{t('household.schedule.weekly')}</option>
-          <option value="monthly">{t('household.schedule.monthly')}</option>
-          <option value="after_completion">{t('household.schedule.afterCompletion')}</option>
-        </Select>
-        <Select
-          size="small"
-          aria-label={t('household.filters.status')}
-          value={statusFilter}
-          onChange={(event) => setStatusFilter(event.target.value)}
-        >
-          <option value="all">{t('household.filters.allStatuses')}</option>
-          <option value="active">{t('household.chores.active')}</option>
-          <option value="paused">{t('household.chores.paused')}</option>
-          <option value="archived">{t('household.chores.archived')}</option>
-        </Select>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              size="small"
+              variant="secondary"
+              className="relative h-9 w-9 shrink-0 justify-center p-0"
+              aria-label={t('dashboard.addCard.filter.label')}
+            >
+              <ListFilter className="h-4 w-4" aria-hidden="true" />
+              {activeFilterCount > 0 ? (
+                <span
+                  data-active-filter-count="true"
+                  className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold leading-none"
+                  style={{
+                    backgroundColor: theme === 'light' ? '#111827' : '#ffffff',
+                    color: theme === 'light' ? '#ffffff' : '#111827',
+                  }}
+                >
+                  {activeFilterCount}
+                </span>
+              ) : null}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            sideOffset={8}
+            className="w-80 max-w-[calc(100vw-2rem)] overflow-visible p-2"
+          >
+            <DropdownMenuLabel className="px-1 pt-1 pb-2 text-xs font-semibold">
+              {t('dashboard.addCard.filter.label')}
+            </DropdownMenuLabel>
+            <div className="grid gap-2">
+              <ChoreFilterFields
+                room={room}
+                onRoomChange={setRoom}
+                roomOptions={roomOptions}
+                person={person}
+                onPersonChange={setPerson}
+                participants={data.participantsById}
+                recurrence={recurrence}
+                onRecurrenceChange={setRecurrence}
+                status={statusFilter}
+                onStatusChange={setStatusFilter}
+              />
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Button
           size="small"
-          className="w-full xl:w-auto"
+          className="shrink-0"
           leading={<Plus className="h-4 w-4" aria-hidden="true" />}
           onClick={onAdd}
         >
           {t('household.chores.add')}
         </Button>
-      </Panel>
+      </section>
       {statusFilter === 'archived' ? null : definitions.length === 0 ? (
         <DashboardEmptyState
           compact
@@ -485,6 +576,7 @@ export function MissionsView({
   onDelete: (mission: ChoreMission) => void;
 }) {
   const { t } = useI18n();
+  const { theme } = useTheme();
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | ChoreMission['status']>('all');
   const allMissions = getMissionProgressList(data);
@@ -500,11 +592,9 @@ export function MissionsView({
     .filter(({ mission }) => statusFilter === 'all' || mission.status === statusFilter);
   return (
     <div>
-      <Panel
-        as="section"
+      <section
         aria-label={t('household.missions.title')}
-        muted
-        className="mb-4 grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-[minmax(15rem,1fr)_minmax(10rem,0.4fr)_auto]"
+        className="mb-4 flex min-w-0 items-center gap-2"
       >
         <Input
           type="search"
@@ -514,29 +604,63 @@ export function MissionsView({
           leading={<Search className="h-4 w-4" aria-hidden="true" />}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          containerClassName="min-w-0 flex-1 sm:max-w-sm"
         />
-        <Select
-          size="small"
-          aria-label={t('household.filters.status')}
-          value={statusFilter}
-          onChange={(event) =>
-            setStatusFilter(event.target.value as 'all' | ChoreMission['status'])
-          }
-        >
-          <option value="all">{t('household.filters.allStatuses')}</option>
-          <option value="active">{t('household.missions.active')}</option>
-          <option value="upcoming">{t('household.missions.upcoming')}</option>
-          <option value="complete">{t('household.missions.complete')}</option>
-        </Select>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              size="small"
+              variant="secondary"
+              className="relative h-9 w-9 shrink-0 justify-center p-0"
+              aria-label={t('dashboard.addCard.filter.label')}
+            >
+              <ListFilter className="h-4 w-4" aria-hidden="true" />
+              {statusFilter !== 'all' ? (
+                <span
+                  data-active-filter-count="true"
+                  className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold leading-none"
+                  style={{
+                    backgroundColor: theme === 'light' ? '#111827' : '#ffffff',
+                    color: theme === 'light' ? '#ffffff' : '#111827',
+                  }}
+                >
+                  1
+                </span>
+              ) : null}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            sideOffset={8}
+            className="w-80 max-w-[calc(100vw-2rem)] overflow-visible p-2"
+          >
+            <DropdownMenuLabel className="px-1 pt-1 pb-2 text-xs font-semibold">
+              {t('dashboard.addCard.filter.label')}
+            </DropdownMenuLabel>
+            <Select
+              size="small"
+              aria-label={t('household.filters.status')}
+              value={statusFilter}
+              onChange={(event) =>
+                setStatusFilter(event.target.value as 'all' | ChoreMission['status'])
+              }
+            >
+              <option value="all">{t('household.filters.allStatuses')}</option>
+              <option value="active">{t('household.missions.active')}</option>
+              <option value="upcoming">{t('household.missions.upcoming')}</option>
+              <option value="complete">{t('household.missions.complete')}</option>
+            </Select>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Button
           size="small"
-          className="w-full sm:col-span-2 xl:col-span-1 xl:w-auto"
+          className="shrink-0"
           leading={<Plus className="h-4 w-4" aria-hidden="true" />}
           onClick={onAdd}
         >
           {t('household.missions.add')}
         </Button>
-      </Panel>
+      </section>
       {missions.length === 0 ? (
         <DashboardEmptyState
           compact
@@ -613,6 +737,7 @@ export function RewardsView({
   onDelete: (reward: ChoreRewardGoal) => void;
 }) {
   const { t } = useI18n();
+  const { theme } = useTheme();
   const [query, setQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | ChoreRewardGoal['type']>('all');
   const allRewards = getRewardProgressList(data);
@@ -624,11 +749,9 @@ export function RewardsView({
     .filter(({ goal }) => typeFilter === 'all' || goal.type === typeFilter);
   return (
     <div>
-      <Panel
-        as="section"
+      <section
         aria-label={t('household.rewards.title')}
-        muted
-        className="mb-4 grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-[minmax(15rem,1fr)_minmax(10rem,0.4fr)_auto]"
+        className="mb-4 flex min-w-0 items-center gap-2"
       >
         <Input
           type="search"
@@ -638,28 +761,64 @@ export function RewardsView({
           leading={<Search className="h-4 w-4" aria-hidden="true" />}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          containerClassName="min-w-0 flex-1 sm:max-w-sm"
         />
-        <Select
-          size="small"
-          aria-label={t('household.rewardDialog.type')}
-          value={typeFilter}
-          onChange={(event) => setTypeFilter(event.target.value as 'all' | ChoreRewardGoal['type'])}
-        >
-          <option value="all">{t('household.rewards.allTypes')}</option>
-          <option value="instant">{t('household.rewards.type.instant')}</option>
-          <option value="saving">{t('household.rewards.type.saving')}</option>
-          <option value="family">{t('household.rewards.type.family')}</option>
-          <option value="experience">{t('household.rewards.type.experience')}</option>
-        </Select>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              size="small"
+              variant="secondary"
+              className="relative h-9 w-9 shrink-0 justify-center p-0"
+              aria-label={t('dashboard.addCard.filter.label')}
+            >
+              <ListFilter className="h-4 w-4" aria-hidden="true" />
+              {typeFilter !== 'all' ? (
+                <span
+                  data-active-filter-count="true"
+                  className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold leading-none"
+                  style={{
+                    backgroundColor: theme === 'light' ? '#111827' : '#ffffff',
+                    color: theme === 'light' ? '#ffffff' : '#111827',
+                  }}
+                >
+                  1
+                </span>
+              ) : null}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            sideOffset={8}
+            className="w-80 max-w-[calc(100vw-2rem)] overflow-visible p-2"
+          >
+            <DropdownMenuLabel className="px-1 pt-1 pb-2 text-xs font-semibold">
+              {t('dashboard.addCard.filter.label')}
+            </DropdownMenuLabel>
+            <Select
+              size="small"
+              aria-label={t('household.rewardDialog.type')}
+              value={typeFilter}
+              onChange={(event) =>
+                setTypeFilter(event.target.value as 'all' | ChoreRewardGoal['type'])
+              }
+            >
+              <option value="all">{t('household.rewards.allTypes')}</option>
+              <option value="instant">{t('household.rewards.type.instant')}</option>
+              <option value="saving">{t('household.rewards.type.saving')}</option>
+              <option value="family">{t('household.rewards.type.family')}</option>
+              <option value="experience">{t('household.rewards.type.experience')}</option>
+            </Select>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Button
           size="small"
-          className="w-full sm:col-span-2 xl:col-span-1 xl:w-auto"
+          className="shrink-0"
           leading={<Plus className="h-4 w-4" aria-hidden="true" />}
           onClick={onAdd}
         >
           {t('household.rewards.add')}
         </Button>
-      </Panel>
+      </section>
       {rewards.length === 0 ? (
         <DashboardEmptyState
           compact
@@ -785,12 +944,18 @@ export function ChoreSettingsView({
   onModeChange,
   onAddPerson,
   onEditPerson,
+  managementPinConfigured,
+  onManagePin,
+  onRemovePin,
   recoveryContent,
 }: {
   data: ChoreWorkspaceData;
   onModeChange: (mode: 'off' | 'light' | 'family' | 'adventure') => void;
   onAddPerson: () => void;
   onEditPerson: (participant: ChoreParticipant) => void;
+  managementPinConfigured: boolean;
+  onManagePin: () => void;
+  onRemovePin: () => void;
   recoveryContent?: ReactNode;
 }) {
   const { t } = useI18n();
@@ -798,9 +963,9 @@ export function ChoreSettingsView({
   const styles = getSettingsSectionStyles(theme, primaryColor);
   const experience = normalizeChoreExperienceState(data.experience);
   const isMobile = useMediaQuery('(max-width: 767px)');
-  const [activeSection, setActiveSection] = useState<'motivation' | 'people' | 'recovery'>(
-    'motivation'
-  );
+  const [activeSection, setActiveSection] = useState<
+    'motivation' | 'people' | 'protection' | 'recovery'
+  >('motivation');
   const sections = [
     {
       id: 'motivation' as const,
@@ -808,6 +973,11 @@ export function ChoreSettingsView({
       label: t('household.settings.gamification'),
     },
     { id: 'people' as const, icon: Users, label: t('household.members.title') },
+    {
+      id: 'protection' as const,
+      icon: ShieldCheck,
+      label: t('household.management.pinLabel'),
+    },
     { id: 'recovery' as const, icon: DatabaseBackup, label: t('household.data.title') },
   ];
   const activeSectionMeta = sections.find((section) => section.id === activeSection) ?? sections[0];
@@ -899,6 +1069,50 @@ export function ChoreSettingsView({
               </div>
             ))}
           </div>
+        </SettingsSectionShell>
+      </SettingsEmbeddedSurface>
+    ) : activeSection === 'protection' ? (
+      <SettingsEmbeddedSurface>
+        <SettingsSectionShell
+          id="household-protection"
+          icon={ShieldCheck}
+          title={t('household.management.pinLabel')}
+          description={t('household.setup.securityDescription')}
+          styles={styles}
+        >
+          <SettingsItem
+            title={t('household.management.pinLabel')}
+            description={t('household.setup.pinHelper')}
+            styles={styles}
+          >
+            <div className="flex min-h-10 flex-wrap items-center justify-between gap-3">
+              <span className={cn('text-sm font-medium', styles.subtleColor)}>
+                {managementPinConfigured ? t('common.on') : t('common.off')}
+              </span>
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button
+                  size="compact"
+                  variant="secondary"
+                  className="min-h-10 shrink-0"
+                  onClick={onManagePin}
+                >
+                  {managementPinConfigured
+                    ? t('household.management.changePin')
+                    : t('household.management.setPin')}
+                </Button>
+                {managementPinConfigured ? (
+                  <Button
+                    size="compact"
+                    variant="destructive"
+                    className="min-h-10 shrink-0"
+                    onClick={onRemovePin}
+                  >
+                    {t('household.management.removePin')}
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          </SettingsItem>
         </SettingsSectionShell>
       </SettingsEmbeddedSurface>
     ) : (

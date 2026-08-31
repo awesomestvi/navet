@@ -80,7 +80,7 @@ export function RSSFeedCardView({
               style={rssSurface.glowStyle}
             />
           ) : null}
-          {shouldUseCustomCardSurface || isGlassTheme ? (
+          {shouldUseCustomCardSurface ? (
             <div
               className={`pointer-events-none absolute inset-0 rounded-[inherit] ${rssSurface.overlayClassName}`}
             />

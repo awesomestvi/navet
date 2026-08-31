@@ -248,6 +248,14 @@ export const itMessages = {
   'household.management.description':
     'Inserisci il PIN per modificare persone, faccende, ricompense o impostazioni.',
   'household.management.pinLabel': 'PIN di gestione',
+  'household.management.newPinLabel': 'Nuovo PIN di gestione',
+  'household.management.confirmNewPinLabel': 'Conferma il nuovo PIN di gestione',
+  'household.management.setPin': 'Imposta PIN',
+  'household.management.changePin': 'Cambia PIN',
+  'household.management.removePin': 'Rimuovi PIN',
+  'household.management.removePinTitle': 'Rimuovere il PIN di gestione?',
+  'household.management.removePinDescription':
+    'La gestione delle attività non richiederà più un PIN. Chiunque abbia accesso alla dashboard potrà modificare attività e impostazioni della famiglia.',
   'household.management.unlock': 'Sblocca',
   'household.today.emptyTitle': 'Niente da fare oggi',
   'household.today.emptyDescription': 'Le prossime faccende appariranno qui nel giorno previsto.',
@@ -425,6 +433,7 @@ export const itMessages = {
   'household.schedule.weekly': 'Ogni settimana',
   'household.schedule.biweekly': 'Ogni due settimane',
   'household.schedule.triweekly': 'Ogni tre settimane',
+  'household.schedule.fourWeekly': 'Ogni quattro settimane',
   'household.schedule.monthly': 'Ogni mese',
   'household.schedule.custom': 'Personalizzato',
   'household.schedule.afterCompletion': 'Dopo il completamento',

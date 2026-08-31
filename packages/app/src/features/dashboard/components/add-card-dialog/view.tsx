@@ -12,6 +12,7 @@ import { type CardSize, getCardSizeRatio } from '@navet/app/components/shared/ca
 import { getAddCardDialogSurfaceTokens } from '@navet/app/components/shared/theme/add-card-dialog-surface-tokens';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { getThemeFocusRingClassName } from '@navet/app/components/system/tokens';
+import { getUiKitGlassSurfaceFoundationStyle } from '@navet/app/components/system/tokens/ui-kit-surfaces';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -158,11 +159,12 @@ export function AddCardDialogView({
       theme={theme}
       disableOpenAutoFocus
       contentClassName={`md:left-1/2 md:right-auto md:w-[calc(100%-4rem)] md:max-w-[1200px] md:-translate-x-1/2 ${surface.shellPanel} ${surface.border}`}
+      contentStyle={getUiKitGlassSurfaceFoundationStyle(theme)}
       shellBodyClassName="h-full min-h-0"
     >
       <NavigationWorkspace.Frame
         aria-label={t('dashboard.addCard.title')}
-        className="h-full max-h-full rounded-none border-0 bg-transparent shadow-none"
+        className="h-full max-h-full rounded-none border-0 bg-none bg-transparent shadow-none"
       >
         <NavigationWorkspace.Header
           data-add-card-header

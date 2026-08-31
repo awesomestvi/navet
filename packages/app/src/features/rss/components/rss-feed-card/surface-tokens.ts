@@ -39,9 +39,7 @@ export function getRSSFeedCardSurfaceTokens(
     textPrimaryColor,
     textSecondaryColor,
     containerShadowClassName: '',
-    overlayClassName:
-      tintSurface.overlayClassName ??
-      (theme === 'light' ? '' : theme === 'glass' ? 'bg-white/[0.03] backdrop-blur-sm' : ''),
+    overlayClassName: tintSurface.overlayClassName ?? '',
     textSecondaryClassName: '',
     dividerClassName:
       theme === 'light' ? 'bg-gray-200/90' : theme === 'glass' ? 'bg-white/12' : 'bg-white/8',

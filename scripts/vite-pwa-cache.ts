@@ -68,7 +68,7 @@ export function isNavetRuntimeAssetRequest({
   return (
     sameOrigin &&
     request.method === 'GET' &&
-    /\/assets\/[^/?]+-[A-Za-z0-9_-]{6,}\.(?:css|js|svg)$/.test(url.pathname)
+    /\/assets\/[^/?]+-[A-Za-z0-9_-]{6,}\.(?:css|js|svg|woff2)$/.test(url.pathname)
   );
 }
 

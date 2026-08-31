@@ -159,6 +159,7 @@ export function useMediaCardController({
   const [groupMembers, setGroupMembers] = useState<string[]>(resolvedInitialGroupMembers);
 
   const isPlaying = state === 'playing';
+  const isPlaybackActive = isPlaying || state === 'paused';
   const canTogglePlayback = isPlaying
     ? (mediaCapabilities?.canPause ?? true)
     : (mediaCapabilities?.canPlay ?? true);
@@ -436,6 +437,7 @@ export function useMediaCardController({
     handleVolumeChange,
     mediaCapabilities: effectiveMediaCapabilities,
     isOff: state === 'off',
+    isPlaybackActive,
     isMuted,
     isOpen,
     isPlaying,

@@ -4,9 +4,14 @@ import { useLayoutEffect, useRef } from 'react';
 interface CameraStreamHostSlotProps {
   host: HTMLDivElement;
   className?: string;
+  transparentMediaSurface?: boolean;
 }
 
-export function CameraStreamHostSlot({ host, className }: CameraStreamHostSlotProps) {
+export function CameraStreamHostSlot({
+  host,
+  className,
+  transparentMediaSurface = false,
+}: CameraStreamHostSlotProps) {
   const slotRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -21,5 +26,14 @@ export function CameraStreamHostSlot({ host, className }: CameraStreamHostSlotPr
     };
   }, [host]);
 
-  return <div ref={slotRef} className={cn('absolute inset-0 h-full w-full', className)} />;
+  return (
+    <div
+      ref={slotRef}
+      className={cn(
+        'absolute inset-0 h-full w-full',
+        transparentMediaSurface && '[&_[data-camera-media-surface]]:bg-transparent',
+        className
+      )}
+    />
+  );
 }

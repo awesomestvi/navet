@@ -832,6 +832,40 @@ export function createViteChoreStoreRequestHandler(options: {
         return
       }
 
+      if (route === '/management/pin' && method === 'DELETE') {
+        let request: Record<string, unknown>
+        try {
+          request = JSON.parse(await readBody(req)) as Record<string, unknown>
+        } catch {
+          sendJson(res, 400, { error: 'Management PIN removal must be valid JSON' })
+          return
+        }
+        const actor =
+          typeof request.actorParticipantId === 'string'
+            ? document.data.participantsById[request.actorParticipantId]
+            : undefined
+        if (!actor?.capabilities.includes('manage') || actor.pausedAt) {
+          sendJson(res, 403, { error: 'Management PIN removal requires an active manager' })
+          return
+        }
+        if (!managementSecurity) {
+          sendJson(res, 409, { error: 'A management PIN has not been configured' })
+          return
+        }
+        if (!managementSessionIsValid(req, principal.tenantId)) {
+          sendJson(res, 403, { error: 'Unlock chore management before removing its PIN' })
+          return
+        }
+        unlinkSync(managementSecurityPath)
+        managementSessions = managementSessions.filter(
+          (session) => session.tenantId !== principal.tenantId
+        )
+        failedManagementAttempts = 0
+        managementBlockedUntil = 0
+        sendJson(res, 200, { pinConfigured: false })
+        return
+      }
+
       if ((route === '/restore' || route === '/reset') && method === 'POST') {
         let request: Partial<ChoreWorkspaceRestoreRequest & ChoreWorkspaceResetRequest> &
           Record<string, unknown>

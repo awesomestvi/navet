@@ -68,6 +68,22 @@ export const Speaker: Story = {
   },
 };
 
+export const SpeakerIdle: Story = {
+  args: {
+    id: 'media_player.story_idle_speaker',
+    name: 'Idle Speaker',
+    room: 'Living Room',
+    entityPicture: '',
+    state: 'idle',
+    title: 'Living Room',
+    artist: 'Ready to play',
+    elapsedSeconds: 0,
+    durationSeconds: 0,
+    positionUpdatedAt: undefined,
+    size: 'medium',
+  },
+};
+
 export const SpeakerDialog: Story = {
   args: {
     size: 'medium',

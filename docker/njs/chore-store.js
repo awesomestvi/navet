@@ -107,6 +107,29 @@ function getHeader(r, name) {
   return '';
 }
 
+function getSharedManagementSessions() {
+  if (
+    typeof ngx !== 'undefined' &&
+    ngx &&
+    ngx.shared &&
+    ngx.shared.navet_chore_management_sessions
+  ) {
+    return ngx.shared.navet_chore_management_sessions;
+  }
+  return null;
+}
+
+function clearManagementSession(tenantId) {
+  const sharedSessions = getSharedManagementSessions();
+  if (sharedSessions) {
+    sharedSessions.delete(tenantId);
+    return;
+  }
+  managementSessions = managementSessions.filter(function (session) {
+    return session.tenantId !== tenantId;
+  });
+}
+
 function sendJson(r, statusCode, payload) {
   r.headersOut['Cache-Control'] = 'no-store';
   r.headersOut['Content-Type'] = 'application/json; charset=utf-8';
@@ -2458,11 +2481,15 @@ function requiresManagementSession(action) {
 }
 
 function managementSessionIsValid(r, tenantId) {
+  const token = getHeader(r, HEADERS.managementSession);
+  const sharedSessions = getSharedManagementSessions();
+  if (sharedSessions) {
+    return Boolean(token) && sharedSessions.get(tenantId) === token;
+  }
   const timestamp = Date.now();
   managementSessions = managementSessions.filter(function (session) {
     return session.expiresAt > timestamp;
   });
-  const token = getHeader(r, HEADERS.managementSession);
   return Boolean(token) && managementSessions.some(function (session) {
     return session.token === token && session.tenantId === tenantId;
   });
@@ -2471,10 +2498,15 @@ function managementSessionIsValid(r, tenantId) {
 function sendManagementSession(r, tenantId) {
   const token = createOpaqueId('cms') + createOpaqueId('cms');
   const expiresAt = Date.now() + MANAGEMENT_SESSION_DURATION_MS;
-  managementSessions = managementSessions
-    .filter(function (session) { return session.tenantId !== tenantId; })
-    .concat([{ token, tenantId, expiresAt }])
-    .slice(-20);
+  const sharedSessions = getSharedManagementSessions();
+  if (sharedSessions) {
+    sharedSessions.set(tenantId, token, MANAGEMENT_SESSION_DURATION_MS);
+  } else {
+    managementSessions = managementSessions
+      .filter(function (session) { return session.tenantId !== tenantId; })
+      .concat([{ token, tenantId, expiresAt }])
+      .slice(-20);
+  }
   sendJson(r, 200, {
     pinConfigured: true,
     sessionToken: token,
@@ -2682,10 +2714,43 @@ function configureManagementPin(r, principal) {
     pinHash: hashManagementPin(request.pin, salt),
     updatedAt: nowIso(),
   }, MAX_CHORE_MANAGEMENT_SECURITY_BYTES);
-  managementSessions = managementSessions.filter(function (session) {
-    return session.tenantId !== principal.tenantId;
-  });
+  clearManagementSession(principal.tenantId);
   sendManagementSession(r, principal.tenantId);
+}
+
+function removeManagementPin(r, principal) {
+  let request;
+  try {
+    request = JSON.parse(r.requestText || '');
+  } catch (_error) {
+    sendJson(r, 400, { error: 'Management PIN removal must be valid JSON' });
+    return;
+  }
+  const current = readDocument();
+  const actor = isRecord(request) && typeof request.actorParticipantId === 'string'
+    ? current.data.participantsById[request.actorParticipantId]
+    : null;
+  if (
+    !isRecord(actor) ||
+    actor.pausedAt !== undefined ||
+    !includesValue(actor.capabilities, 'manage')
+  ) {
+    sendJson(r, 403, { error: 'Management PIN removal requires an active manager' });
+    return;
+  }
+  if (!readManagementSecurity(principal.tenantId)) {
+    sendJson(r, 409, { error: 'A management PIN has not been configured' });
+    return;
+  }
+  if (!managementSessionIsValid(r, principal.tenantId)) {
+    sendJson(r, 403, { error: 'Unlock chore management before removing its PIN' });
+    return;
+  }
+  deleteFile(CHORE_MANAGEMENT_SECURITY_PATH);
+  clearManagementSession(principal.tenantId);
+  failedManagementAttempts = 0;
+  managementBlockedUntil = 0;
+  sendJson(r, 200, { pinConfigured: false });
 }
 
 function recoverWorkspace(r, principal) {
@@ -2751,9 +2816,7 @@ function recoverWorkspace(r, principal) {
   deleteFile(CHORE_EVENT_HISTORY_PATH);
   deleteFile(CHORE_LAST_GOOD_WORKSPACE_PATH);
   deleteFile(CHORE_MANAGEMENT_SECURITY_PATH);
-  managementSessions = managementSessions.filter(function (session) {
-    return session.tenantId !== principal.tenantId;
-  });
+  clearManagementSession(principal.tenantId);
   const recovered = {
     contractVersion: CONTRACT_VERSION,
     revision: 0,
@@ -2987,9 +3050,7 @@ function commitAdministration(r, principal, operation) {
   replaceEventHistory(nextEvents);
   if (operation === 'reset') {
     deleteFile(CHORE_MANAGEMENT_SECURITY_PATH);
-    managementSessions = managementSessions.filter(function (session) {
-      return session.tenantId !== principal.tenantId;
-    });
+    clearManagementSession(principal.tenantId);
   }
   applyRevisionHeader(r, next.revision);
   sendJson(r, 200, publicDocument(next, principal.tenantId));
@@ -3058,6 +3119,10 @@ function routeRequest(r, principal, options) {
   }
   if (uri === '/__navet_chores__/management/pin' && r.method === 'POST') {
     configureManagementPin(r, principal);
+    return;
+  }
+  if (uri === '/__navet_chores__/management/pin' && r.method === 'DELETE') {
+    removeManagementPin(r, principal);
     return;
   }
   if (uri === '/__navet_chores__/recovery' && r.method === 'POST') {

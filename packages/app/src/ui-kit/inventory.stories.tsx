@@ -37,6 +37,7 @@ const exportDescriptions: Record<string, string> = {
   getThemeFocusRingClassName: 'theme-aware focus ring class',
   getThemeSurfaceTokens: 'theme surface recipes for panels and text',
   getUiKitGlassSheetGlowClassName: 'glass-sheet accent glow helper',
+  getUiKitGlassWorkspaceGlowClassName: 'glass workspace specular highlight helper',
   getUiKitModalContentClassName: 'modal surface class composition',
   getUiKitPanelSurfaceClassName: 'panel surface class composition',
   getUiKitSheetContentClassName: 'sheet content class composition',

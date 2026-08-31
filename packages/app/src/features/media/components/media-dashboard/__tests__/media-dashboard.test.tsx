@@ -787,14 +787,13 @@ describe('MediaDashboard', () => {
     expect(screen.getByTestId('media-browser-panel')).toHaveClass('order-2');
     expect(screen.getByTestId('media-now-playing-card')).toHaveStyle({ height: '368px' });
     const directoryGrid = await screen.findByTestId('media-browser-directory-grid');
-    expect(directoryGrid).toHaveClass('grid-cols-[repeat(auto-fill,100px)]');
+    expect(directoryGrid).toHaveClass('grid-cols-[repeat(auto-fill,minmax(150px,1fr))]');
     const albumDirectory = screen.getByRole('button', { name: /^Albums/ });
-    expect(albumDirectory).toHaveClass('w-[100px]');
-    expect(albumDirectory.querySelector('span')).toHaveClass(
-      'h-[100px]',
-      'max-h-[100px]',
-      'w-[100px]',
-      'max-w-[100px]'
+    expect(albumDirectory).toHaveClass('w-full', 'min-h-[72px]');
+    expect(screen.getByTestId('media-library-directory-icon')).toHaveClass('h-9', 'w-9');
+    expect(screen.getByTestId('media-library-directory-icon').querySelector('svg')).toHaveClass(
+      'h-[18px]',
+      'w-[18px]'
     );
     expect(screen.getByText('Albums')).toHaveClass('line-clamp-2');
     fireEvent.click(await screen.findByText('Albums'));

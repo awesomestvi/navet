@@ -152,7 +152,6 @@ export function SettingsItem({ title, description, styles, children }: SettingsI
         'scroll-mt-4 px-4 py-4 outline-none md:px-5 md:py-5',
         'focus-visible:ring-2 focus-visible:ring-inset',
         styles.ringClass,
-        styles.hoverBg,
         'transition-colors motion-reduce:transition-none'
       )}
       data-settings-search-label={title}

@@ -244,6 +244,14 @@ export const daMessages = {
   'household.management.description':
     'Indtast PIN-koden for at ændre personer, pligter, belønninger eller indstillinger.',
   'household.management.pinLabel': 'PIN-kode til administration',
+  'household.management.newPinLabel': 'Ny PIN-kode til administration',
+  'household.management.confirmNewPinLabel': 'Bekræft ny PIN-kode',
+  'household.management.setPin': 'Angiv PIN-kode',
+  'household.management.changePin': 'Skift PIN-kode',
+  'household.management.removePin': 'Fjern PIN-kode',
+  'household.management.removePinTitle': 'Fjern PIN-koden til administration?',
+  'household.management.removePinDescription':
+    'Administration af pligter kræver ikke længere en PIN-kode. Alle med adgang til dashboardet kan ændre pligter og husstandsindstillinger.',
   'household.management.unlock': 'Lås op',
   'household.today.emptyTitle': 'Intet skal gøres i dag',
   'household.today.emptyDescription': 'Kommende pligter vises her, når dagen kommer.',
@@ -420,6 +428,7 @@ export const daMessages = {
   'household.schedule.weekly': 'Hver uge',
   'household.schedule.biweekly': 'Hver anden uge',
   'household.schedule.triweekly': 'Hver tredje uge',
+  'household.schedule.fourWeekly': 'Hver fjerde uge',
   'household.schedule.monthly': 'Hver måned',
   'household.schedule.custom': 'Brugerdefineret',
   'household.schedule.afterCompletion': 'Efter færdiggørelse',

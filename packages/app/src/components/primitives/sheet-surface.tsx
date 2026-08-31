@@ -4,6 +4,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { navetTypographyTokens } from '@navet/app/components/system/tokens';
 import {
   getUiKitGlassSheetGlowClassName,
+  getUiKitGlassSurfaceFoundationStyle,
   getUiKitSheetContentClassName,
   getUiKitSheetOverlayClassName,
 } from '@navet/app/components/system/tokens/ui-kit-surfaces';
@@ -126,7 +127,7 @@ export function SheetSurface({
       overlayClassName={overlayClassName ?? getUiKitSheetOverlayClassName(theme)}
       contentClassName={cn(getUiKitSheetContentClassName(theme), contentClassName)}
       contentGlowClassName={contentGlowClassName ?? getUiKitGlassSheetGlowClassName(theme)}
-      contentStyle={contentStyle}
+      contentStyle={{ ...getUiKitGlassSurfaceFoundationStyle(theme), ...contentStyle }}
       accentColor={accentColor}
       bodyClassName={bodyClassName}
       closeLabel={closeLabel}

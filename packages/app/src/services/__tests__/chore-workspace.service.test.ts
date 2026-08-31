@@ -10,6 +10,7 @@ import {
   loadChoreRuntimeCapabilities,
   loadChoreWorkspace,
   recoverChoreWorkspace,
+  removeChoreManagementPin,
   resetChoreWorkspace,
   restoreChoreWorkspace,
   sendChoreWorkspaceCommand,
@@ -395,6 +396,53 @@ describe('chore workspace service', () => {
         'X-Navet-Chore-Management-Session': 'manager-session',
       }),
       body: JSON.stringify({ action: 'restore_backup', confirmation: 'REPAIR CHORES' }),
+    });
+  });
+
+  it('removes the management PIN with the active management session', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ pinConfigured: false }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
+
+    await expect(
+      removeChoreManagementPin({ actorParticipantId: 'maya' }, 'manager-session')
+    ).resolves.toMatchObject({
+      removed: true,
+      document: { pinConfigured: false },
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${window.location.origin}/__navet_chores__/management/pin`,
+      expect.objectContaining({
+        method: 'DELETE',
+        headers: expect.objectContaining({
+          'X-Navet-Chore-Management-Session': 'manager-session',
+        }),
+        body: JSON.stringify({ actorParticipantId: 'maya' }),
+      })
+    );
+  });
+
+  it('removes the management PIN through the authenticated panel transport', async () => {
+    window.__NAVET_PANEL__ = true;
+    resetRuntimeContextForTests();
+    const callWS = vi.fn().mockResolvedValue({ pinConfigured: false });
+    homeAssistantService.setPanelHass({
+      states: {},
+      config: {},
+      callService: vi.fn(),
+      callWS,
+    } as never);
+
+    await expect(
+      removeChoreManagementPin({ actorParticipantId: 'maya' }, 'manager-session')
+    ).resolves.toMatchObject({ removed: true });
+    expect(callWS).toHaveBeenCalledWith({
+      type: 'navet/chores/management/pin/remove',
+      actorParticipantId: 'maya',
+      managementSessionToken: 'manager-session',
     });
   });
 

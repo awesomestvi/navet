@@ -191,15 +191,18 @@ export function resolveVacuumIllustrationSurface({
       theme === 'light'
         ? 'rgba(244,244,245,0.96)'
         : theme === 'glass'
-          ? 'rgba(24,24,27,0.86)'
+          ? 'rgba(255,255,255,0.055)'
           : 'rgba(24,24,27,0.96)';
-    const restingBaseColor = theme === 'light' ? '#f4f4f5' : '#18181b';
+    const restingBaseColor =
+      theme === 'light' ? '#f4f4f5' : theme === 'glass' ? 'rgba(255,255,255,0.055)' : '#18181b';
 
     return {
       background:
         theme === 'light'
           ? `radial-gradient(circle at top, rgba(255,255,255,0.92), ${restingBase} 68%)`
-          : `radial-gradient(circle at top, rgba(255,255,255,0.06), ${restingBase} 68%)`,
+          : theme === 'glass'
+            ? `radial-gradient(circle at 30% 18%, rgba(255,255,255,0.18), ${restingBase} 68%)`
+            : `radial-gradient(circle at top, rgba(255,255,255,0.06), ${restingBase} 68%)`,
       baseColor: restingBaseColor,
       shadow: `0 18px 38px -28px ${titleColor}1f`,
     };

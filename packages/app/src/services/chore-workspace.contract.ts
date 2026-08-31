@@ -44,6 +44,14 @@ export interface ChoreManagementPinRequest {
   pin: string;
 }
 
+export interface ChoreManagementPinRemoveRequest {
+  actorParticipantId: string;
+}
+
+export interface ChoreManagementPinStateDocument {
+  pinConfigured: boolean;
+}
+
 export interface ChoreManagementVerifyRequest {
   pin: string;
 }
