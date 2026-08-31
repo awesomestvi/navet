@@ -3476,6 +3476,8 @@ export const frMessages = {
   'widgets.assist.navetAiNoAnswer': 'Je n’ai pas pu interpréter cette demande.',
   'widgets.assist.navetAiLightsOn': 'Lumières allumées : {count}',
   'widgets.assist.navetAiLightsOnInRoom': 'Lumières allumées dans {room} : {count}',
+  'widgets.assist.navetAiTemperature': 'Température : {readings}',
+  'widgets.assist.navetAiTemperatureInRoom': 'Température dans {room} : {readings}',
   'widgets.assist.loadFailed':
     'Les assistants ne peuvent pas être chargés. Vérifiez la connexion Home Assistant.',
   'widgets.assist.noPipelines': 'Aucun assistant disponible',

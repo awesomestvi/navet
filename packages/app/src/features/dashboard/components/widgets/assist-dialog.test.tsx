@@ -78,6 +78,13 @@ describe('AssistDialog assistant switcher', () => {
     vi.restoreAllMocks();
   });
 
+  it('focuses the composer when the dialog opens', async () => {
+    renderWithProviders(<AssistDialog open onOpenChange={vi.fn()} providerId="home_assistant" />);
+
+    const input = screen.getByRole('textbox');
+    await waitFor(() => expect(input).toHaveFocus());
+  });
+
   it('executes a direct Navet AI chat command and reports the completed action', async () => {
     vi.spyOn(navetAiService, 'chat').mockResolvedValue({
       contract: 'navet.ai.chat',
@@ -181,5 +188,39 @@ describe('AssistDialog assistant switcher', () => {
 
     await waitFor(() => expect(navetAiService.chat).toHaveBeenCalledOnce());
     expect(await screen.findByText('Lights on in Office: 1')).toBeInTheDocument();
+  });
+
+  it('renders verified room temperature readings from the entity snapshot', async () => {
+    vi.spyOn(navetAiService, 'chat').mockResolvedValue({
+      contract: 'navet.ai.chat',
+      version: 1,
+      modelId: 'qwen3.5-2b',
+      reply: '',
+      answer: {
+        kind: 'temperature',
+        room: 'Bathroom',
+        readings: [{ name: 'Bathroom temperature', value: 22.4, unit: '°C' }],
+      },
+      readOnly: true,
+      executionRequested: false,
+      suggestions: [],
+    });
+
+    renderWithProviders(<AssistDialog open onOpenChange={vi.fn()} providerId="home_assistant" />);
+
+    fireEvent.pointerDown(
+      screen.getByRole('button', { name: 'Choose assistant: Home Assistant' }),
+      {
+        button: 0,
+        ctrlKey: false,
+      }
+    );
+    fireEvent.click(await screen.findByRole('menuitemradio', { name: 'Navet AI' }));
+    const input = screen.getByRole('textbox', { name: 'Ask Navet AI…' });
+    fireEvent.change(input, { target: { value: 'What is the temperature in the bathroom?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send request' }));
+
+    await waitFor(() => expect(navetAiService.chat).toHaveBeenCalledOnce());
+    expect(await screen.findByText('Temperature in Bathroom: 22.4 °C')).toBeInTheDocument();
   });
 });

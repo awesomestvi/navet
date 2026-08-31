@@ -172,16 +172,22 @@ function sanitizeChatText(value: unknown, limit: number) {
 function sanitizeChatEntity(value: unknown): IntelligenceEntityReference | null {
   if (!value || typeof value !== 'object') return null;
   const entity = value as Record<string, unknown>;
-  if (entity.type !== 'light' && entity.type !== 'switch') return null;
   const id = sanitizeChatText(entity.id, 512);
   const providerId = sanitizeChatText(entity.providerId, 80);
   const name = sanitizeChatText(entity.name, 120);
   if (!id || !providerId || !name) return null;
+  const room = sanitizeChatText(entity.room, 120) || undefined;
+  if (entity.type === 'temperature') {
+    if (typeof entity.value !== 'number' || !Number.isFinite(entity.value)) return null;
+    if (entity.unit !== '°C' && entity.unit !== '°F' && entity.unit !== 'K') return null;
+    return { id, providerId, name, room, type: 'temperature', value: entity.value, unit: entity.unit };
+  }
+  if (entity.type !== 'light' && entity.type !== 'switch') return null;
   return {
     id,
     providerId,
     name,
-    room: sanitizeChatText(entity.room, 120) || undefined,
+    room,
     type: entity.type,
     state: entity.state === 'on' || entity.state === 'off' ? entity.state : 'unknown',
   };

@@ -3411,6 +3411,8 @@ export const svMessages = {
   'widgets.assist.navetAiNoAnswer': 'Jag kunde inte tolka den frågan.',
   'widgets.assist.navetAiLightsOn': 'Tända lampor: {count}',
   'widgets.assist.navetAiLightsOnInRoom': 'Tända lampor i {room}: {count}',
+  'widgets.assist.navetAiTemperature': 'Temperatur: {readings}',
+  'widgets.assist.navetAiTemperatureInRoom': 'Temperatur i {room}: {readings}',
   'widgets.assist.loadFailed':
     'Assistenter kunde inte läsas in. Kontrollera anslutningen till Home Assistant.',
   'widgets.assist.noPipelines': 'Inga assistenter tillgängliga',

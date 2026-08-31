@@ -3439,6 +3439,8 @@ export const plMessages = {
   'widgets.assist.navetAiNoAnswer': 'Nie udało mi się zinterpretować tej prośby.',
   'widgets.assist.navetAiLightsOn': 'Włączone światła: {count}',
   'widgets.assist.navetAiLightsOnInRoom': 'Włączone światła w {room}: {count}',
+  'widgets.assist.navetAiTemperature': 'Temperatura: {readings}',
+  'widgets.assist.navetAiTemperatureInRoom': 'Temperatura w {room}: {readings}',
   'widgets.assist.loadFailed':
     'Nie udało się wczytać asystentów. Sprawdź połączenie z Home Assistant.',
   'widgets.assist.noPipelines': 'Brak dostępnych asystentów',

@@ -216,6 +216,41 @@ if (build.status !== 0) {
     ) {
       fail('read-only chat did not answer the expected light state question');
     }
+    const temperatureQuestionResponse = await fetch(
+      `http://127.0.0.1:${port}/__navet_ai__/chat`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          text: 'What is the temperature in the bathroom?',
+          locale: 'en',
+          history: [],
+          entities: [
+            {
+              id: 'home_assistant:sensor.bathroom_temperature',
+              providerId: 'home_assistant',
+              name: 'Bathroom temperature',
+              room: 'Bathroom',
+              type: 'temperature',
+              value: 22.4,
+              unit: '°C',
+            },
+          ],
+        }),
+      }
+    );
+    const temperatureQuestionResult = await temperatureQuestionResponse.json();
+    if (
+      !temperatureQuestionResponse.ok ||
+      temperatureQuestionResult.readOnly !== true ||
+      temperatureQuestionResult.executionRequested !== false ||
+      temperatureQuestionResult.answer?.kind !== 'temperature' ||
+      temperatureQuestionResult.answer?.room !== 'Bathroom' ||
+      temperatureQuestionResult.answer?.readings?.[0]?.value !== 22.4 ||
+      temperatureQuestionResult.answer?.readings?.[0]?.unit !== '°C'
+    ) {
+      fail('read-only chat did not answer the expected temperature question');
+    }
     const rssMb = readRssMb(service.pid);
     const rssLimitMb = requireModel ? 2_800 : 256;
     if (rssMb !== null && rssMb > rssLimitMb) {

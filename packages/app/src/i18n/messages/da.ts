@@ -3421,6 +3421,8 @@ export const daMessages = {
   'widgets.assist.navetAiNoAnswer': 'Jeg kunne ikke fortolke den anmodning.',
   'widgets.assist.navetAiLightsOn': 'Tændte lys: {count}',
   'widgets.assist.navetAiLightsOnInRoom': 'Tændte lys i {room}: {count}',
+  'widgets.assist.navetAiTemperature': 'Temperatur: {readings}',
+  'widgets.assist.navetAiTemperatureInRoom': 'Temperatur i {room}: {readings}',
   'widgets.assist.loadFailed':
     'Assistenter kunne ikke indlæses. Kontrollér forbindelsen til Home Assistant.',
   'widgets.assist.noPipelines': 'Ingen assistenter tilgængelige',

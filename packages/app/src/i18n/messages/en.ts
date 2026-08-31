@@ -3403,6 +3403,8 @@ export const enMessages = {
   'widgets.assist.navetAiNoAnswer': 'I could not interpret that request.',
   'widgets.assist.navetAiLightsOn': 'Lights on: {count}',
   'widgets.assist.navetAiLightsOnInRoom': 'Lights on in {room}: {count}',
+  'widgets.assist.navetAiTemperature': 'Temperature: {readings}',
+  'widgets.assist.navetAiTemperatureInRoom': 'Temperature in {room}: {readings}',
   'widgets.assist.loadFailed':
     'Assistants could not be loaded. Check the Home Assistant connection.',
   'widgets.assist.noPipelines': 'No assistants available',

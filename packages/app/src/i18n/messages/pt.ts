@@ -3443,6 +3443,8 @@ export const ptMessages = {
   'widgets.assist.navetAiNoAnswer': 'Não consegui interpretar esse pedido.',
   'widgets.assist.navetAiLightsOn': 'Luzes acesas: {count}',
   'widgets.assist.navetAiLightsOnInRoom': 'Luzes acesas em {room}: {count}',
+  'widgets.assist.navetAiTemperature': 'Temperatura: {readings}',
+  'widgets.assist.navetAiTemperatureInRoom': 'Temperatura em {room}: {readings}',
   'widgets.assist.loadFailed':
     'Não foi possível carregar os assistentes. Verifique a ligação ao Home Assistant.',
   'widgets.assist.noPipelines': 'Nenhum assistente disponível',

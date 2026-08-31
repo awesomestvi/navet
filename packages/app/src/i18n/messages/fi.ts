@@ -3438,6 +3438,8 @@ export const fiMessages = {
   'widgets.assist.navetAiNoAnswer': 'En pystynyt tulkitsemaan pyyntöä.',
   'widgets.assist.navetAiLightsOn': 'Päällä olevat valot: {count}',
   'widgets.assist.navetAiLightsOnInRoom': 'Päällä olevat valot huoneessa {room}: {count}',
+  'widgets.assist.navetAiTemperature': 'Lämpötila: {readings}',
+  'widgets.assist.navetAiTemperatureInRoom': 'Lämpötila huoneessa {room}: {readings}',
   'widgets.assist.loadFailed': 'Avustajia ei voitu ladata. Tarkista Home Assistant -yhteys.',
   'widgets.assist.noPipelines': 'Avustajia ei ole saatavilla',
   'widgets.assist.conversation': 'Keskustelu',

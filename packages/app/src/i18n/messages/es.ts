@@ -3465,6 +3465,8 @@ export const esMessages = {
   'widgets.assist.navetAiNoAnswer': 'No pude interpretar esa solicitud.',
   'widgets.assist.navetAiLightsOn': 'Luces encendidas: {count}',
   'widgets.assist.navetAiLightsOnInRoom': 'Luces encendidas en {room}: {count}',
+  'widgets.assist.navetAiTemperature': 'Temperatura: {readings}',
+  'widgets.assist.navetAiTemperatureInRoom': 'Temperatura en {room}: {readings}',
   'widgets.assist.loadFailed':
     'No se pudieron cargar los asistentes. Comprueba la conexión con Home Assistant.',
   'widgets.assist.noPipelines': 'No hay asistentes disponibles',

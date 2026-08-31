@@ -3437,6 +3437,8 @@ export const itMessages = {
   'widgets.assist.navetAiNoAnswer': 'Non sono riuscito a interpretare la richiesta.',
   'widgets.assist.navetAiLightsOn': 'Luci accese: {count}',
   'widgets.assist.navetAiLightsOnInRoom': 'Luci accese in {room}: {count}',
+  'widgets.assist.navetAiTemperature': 'Temperatura: {readings}',
+  'widgets.assist.navetAiTemperatureInRoom': 'Temperatura in {room}: {readings}',
   'widgets.assist.loadFailed':
     'Impossibile caricare gli assistenti. Controlla la connessione a Home Assistant.',
   'widgets.assist.noPipelines': 'Nessun assistente disponibile',

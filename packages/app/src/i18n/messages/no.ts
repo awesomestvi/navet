@@ -3421,6 +3421,8 @@ export const noMessages = {
   'widgets.assist.navetAiNoAnswer': 'Jeg kunne ikke tolke den forespørselen.',
   'widgets.assist.navetAiLightsOn': 'Lys som er på: {count}',
   'widgets.assist.navetAiLightsOnInRoom': 'Lys som er på i {room}: {count}',
+  'widgets.assist.navetAiTemperature': 'Temperatur: {readings}',
+  'widgets.assist.navetAiTemperatureInRoom': 'Temperatur i {room}: {readings}',
   'widgets.assist.loadFailed':
     'Assistenter kunne ikke lastes. Kontroller tilkoblingen til Home Assistant.',
   'widgets.assist.noPipelines': 'Ingen assistenter tilgjengelig',

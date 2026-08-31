@@ -3164,6 +3164,8 @@ export const zhMessages = {
   'widgets.assist.navetAiNoAnswer': '我无法理解该请求。',
   'widgets.assist.navetAiLightsOn': '已开启的灯：{count}',
   'widgets.assist.navetAiLightsOnInRoom': '{room}中已开启的灯：{count}',
+  'widgets.assist.navetAiTemperature': '温度：{readings}',
+  'widgets.assist.navetAiTemperatureInRoom': '{room}的温度：{readings}',
   'widgets.assist.loadFailed': '无法加载助手。请检查 Home Assistant 连接。',
   'widgets.assist.noPipelines': '没有可用的助手',
   'widgets.assist.conversation': '对话',

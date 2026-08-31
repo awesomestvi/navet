@@ -3477,6 +3477,8 @@ export const deMessages = {
   'widgets.assist.navetAiNoAnswer': 'Ich konnte diese Anfrage nicht interpretieren.',
   'widgets.assist.navetAiLightsOn': 'Eingeschaltete Lichter: {count}',
   'widgets.assist.navetAiLightsOnInRoom': 'Eingeschaltete Lichter in {room}: {count}',
+  'widgets.assist.navetAiTemperature': 'Temperatur: {readings}',
+  'widgets.assist.navetAiTemperatureInRoom': 'Temperatur in {room}: {readings}',
   'widgets.assist.loadFailed':
     'Assistenten konnten nicht geladen werden. Prüfe die Home-Assistant-Verbindung.',
   'widgets.assist.noPipelines': 'Keine Assistenten verfügbar',

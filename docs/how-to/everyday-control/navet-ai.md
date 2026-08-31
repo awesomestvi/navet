@@ -53,10 +53,12 @@ the office lights” or “turn off the desk lamp” through Navet's provider-ne
 reports which devices changed and any targets that failed. Questions and advisory requests remain
 suggestions and do not change devices.
 
-The first version recognizes on/off commands for lights and switches. Navet sends only a small,
-sanitized device context to the local model: device name, room, type, provider, and current on/off
-state. The local AI service remains unable to call a provider; the authenticated Assist client
-executes only a validated direct command from the current user message.
+Navet recognizes on/off commands for lights and switches and can answer current-temperature
+questions for a named room. Temperature answers use only available temperature sensors and current
+climate readings in Navet's normalized entity snapshot. Navet sends only a small, sanitized device
+context to the local model: device name, room, type, provider, and the relevant current state. The
+local AI service remains unable to call a provider; the authenticated Assist client executes only a
+validated direct command from the current user message.
 
 ## Private data boundary
 

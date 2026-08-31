@@ -3462,6 +3462,8 @@ export const nlMessages = {
   'widgets.assist.navetAiNoAnswer': 'Ik kon dat verzoek niet interpreteren.',
   'widgets.assist.navetAiLightsOn': 'Ingeschakelde lampen: {count}',
   'widgets.assist.navetAiLightsOnInRoom': 'Ingeschakelde lampen in {room}: {count}',
+  'widgets.assist.navetAiTemperature': 'Temperatuur: {readings}',
+  'widgets.assist.navetAiTemperatureInRoom': 'Temperatuur in {room}: {readings}',
   'widgets.assist.loadFailed':
     'Assistenten konden niet worden geladen. Controleer de Home Assistant-verbinding.',
   'widgets.assist.noPipelines': 'Geen assistenten beschikbaar',

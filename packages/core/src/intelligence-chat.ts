@@ -1,24 +1,47 @@
 export type IntelligenceControlOperation = 'turn_on' | 'turn_off';
 
-export interface IntelligenceEntityReference {
+interface IntelligenceEntityReferenceBase {
   id: string;
   providerId: string;
   name: string;
   room?: string;
+}
+
+export interface IntelligenceControlEntityReference extends IntelligenceEntityReferenceBase {
   type: 'light' | 'switch';
   state: 'on' | 'off' | 'unknown';
 }
+
+export interface IntelligenceTemperatureEntityReference extends IntelligenceEntityReferenceBase {
+  type: 'temperature';
+  value: number;
+  unit: '°C' | '°F' | 'K';
+}
+
+export type IntelligenceEntityReference =
+  | IntelligenceControlEntityReference
+  | IntelligenceTemperatureEntityReference;
 
 export interface IntelligenceControlSuggestion {
   operation: IntelligenceControlOperation;
   entityIds: string[];
 }
 
-export interface IntelligenceStateAnswer {
-  kind: 'lights_on_count';
-  count: number;
-  room?: string;
-}
+export type IntelligenceStateAnswer =
+  | {
+      kind: 'lights_on_count';
+      count: number;
+      room?: string;
+    }
+  | {
+      kind: 'temperature';
+      room?: string;
+      readings: Array<{
+        name: string;
+        value: number;
+        unit: IntelligenceTemperatureEntityReference['unit'];
+      }>;
+    };
 
 function normalize(value: string) {
   return value
@@ -121,6 +144,38 @@ export function interpretSimpleStateQuestion(
   entities: readonly IntelligenceEntityReference[]
 ): IntelligenceStateAnswer | null {
   const normalizedRequest = normalize(request);
+  if (/\b(temperature|temp)\b/.test(normalizedRequest)) {
+    const temperatureEntities = entities.filter(
+      (entity): entity is IntelligenceTemperatureEntityReference => entity.type === 'temperature'
+    );
+    const room = temperatureEntities
+      .map((entity) => entity.room)
+      .find(
+        (candidate) => candidate && includesWholePhrase(normalizedRequest, normalize(candidate))
+      );
+    const exactNameMatches = temperatureEntities.filter((entity) =>
+      includesWholePhrase(normalizedRequest, normalize(entity.name))
+    );
+    const matchingTemperatures = room
+      ? temperatureEntities.filter((entity) => entity.room === room)
+      : exactNameMatches.length > 0
+        ? exactNameMatches
+        : temperatureEntities.length === 1
+          ? temperatureEntities
+          : [];
+
+    if (matchingTemperatures.length === 0) return null;
+    return {
+      kind: 'temperature',
+      room,
+      readings: matchingTemperatures.slice(0, 5).map(({ name, value, unit }) => ({
+        name,
+        value,
+        unit,
+      })),
+    };
+  }
+
   if (!/\bhow many\b/.test(normalizedRequest)) return null;
   if (!/\b(lights?|lamps?)\b/.test(normalizedRequest) || !/\bon\b/.test(normalizedRequest)) {
     return null;
@@ -130,7 +185,8 @@ export function interpretSimpleStateQuestion(
     .map((entity) => entity.room)
     .find((candidate) => candidate && includesWholePhrase(normalizedRequest, normalize(candidate)));
   const matchingLights = entities.filter(
-    (entity) => entity.type === 'light' && (!room || entity.room === room)
+    (entity): entity is IntelligenceControlEntityReference =>
+      entity.type === 'light' && (!room || entity.room === room)
   );
 
   return {
@@ -148,7 +204,10 @@ export function interpretSimpleControlSuggestion(
   const operation = resolveOperation(normalizedRequest);
   if (!operation) return [];
 
-  const available = entities.filter((entity) => entity.id && entity.name);
+  const available = entities.filter(
+    (entity): entity is IntelligenceControlEntityReference =>
+      (entity.type === 'light' || entity.type === 'switch') && Boolean(entity.id && entity.name)
+  );
   const mentionsAll = /\b(all|every)\b/.test(normalizedRequest);
   const mentionsMultipleLights = /\b(lights|lamps)\b/.test(normalizedRequest);
   const mentionedRooms = new Set(
@@ -173,7 +232,10 @@ export function interpretSimpleControlSuggestion(
 
   const distinctiveRequestTokens = getDistinctiveRequestTokens(normalizedRequest, mentionedRooms);
   if (distinctiveRequestTokens.length > 0) {
-    const matchesDistinctiveName = (entity: IntelligenceEntityReference, allowTypo: boolean) => {
+    const matchesDistinctiveName = (
+      entity: IntelligenceControlEntityReference,
+      allowTypo: boolean
+    ) => {
       if (mentionedRooms.size > 0 && !mentionedRooms.has(normalize(entity.room ?? ''))) {
         return false;
       }
@@ -219,7 +281,11 @@ export function validateControlSuggestions(
   entities: readonly IntelligenceEntityReference[]
 ): IntelligenceControlSuggestion[] {
   if (!Array.isArray(value)) return [];
-  const allowedIds = new Set(entities.map((entity) => entity.id));
+  const allowedIds = new Set(
+    entities
+      .filter((entity) => entity.type === 'light' || entity.type === 'switch')
+      .map((entity) => entity.id)
+  );
 
   return value.slice(0, 3).flatMap((item) => {
     if (!item || typeof item !== 'object') return [];

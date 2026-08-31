@@ -11,6 +11,7 @@ import {
   type CSSProperties,
   type KeyboardEvent,
   type ReactNode,
+  type Ref,
   useCallback,
   useEffect,
   useRef,
@@ -26,6 +27,7 @@ interface AssistantThreadProps {
   isRunning: boolean;
   placeholder: string;
   promptHistory?: readonly string[];
+  inputRef?: Ref<HTMLTextAreaElement>;
   sendLabel: string;
   status?: ReactNode;
   tools?: ReactNode;
@@ -117,12 +119,14 @@ function usePromptHistory(promptHistory: readonly string[]) {
 
 interface AssistantComposerInputProps {
   disabled: boolean;
+  inputRef?: Ref<HTMLTextAreaElement>;
   placeholder: string;
   promptHistory: readonly string[];
 }
 
 function AssistantComposerInput({
   disabled,
+  inputRef,
   placeholder,
   promptHistory,
 }: AssistantComposerInputProps) {
@@ -130,6 +134,7 @@ function AssistantComposerInput({
 
   return (
     <ComposerPrimitive.Input
+      ref={inputRef}
       onKeyDown={handlePromptHistoryKeyDown}
       className="max-h-32 min-h-12 w-full resize-none bg-transparent px-2 py-2 text-sm outline-none placeholder:opacity-55 disabled:cursor-not-allowed disabled:opacity-50"
       placeholder={placeholder}
@@ -170,6 +175,7 @@ export function AssistantThread({
   conversationLabel,
   starterMessage,
   inputDisabled = false,
+  inputRef,
   isRunning,
   placeholder,
   promptHistory = [],
@@ -222,6 +228,7 @@ export function AssistantThread({
         <AssistantComposerInput
           placeholder={placeholder}
           disabled={inputDisabled}
+          inputRef={inputRef}
           promptHistory={promptHistory}
         />
         <div className="flex items-center justify-between gap-2">

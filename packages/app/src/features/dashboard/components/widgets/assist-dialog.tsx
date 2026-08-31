@@ -91,6 +91,8 @@ export function AssistDialog({
   const runHandleRef = useRef<PlatformConversationRunHandle | null>(null);
   const recorderRef = useRef<AssistAudioRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const composerInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const hasFocusedComposerRef = useRef(false);
   const pendingAssistantIdRef = useRef<string | undefined>(undefined);
   const navetAiAbortControllerRef = useRef<AbortController | null>(null);
   const { navetAiState, navetAiLoading, initializeNavetAi } = useNavetAiStore(
@@ -253,15 +255,33 @@ export function AssistDialog({
     result: Awaited<ReturnType<typeof navetAiService.chat>>,
     execution: AssistNavetAiExecutionResult | null
   ) => {
-    const stateAnswer =
-      result.answer?.kind === 'lights_on_count'
-        ? result.answer.room
+    const stateAnswer = (() => {
+      if (result.answer?.kind === 'lights_on_count') {
+        return result.answer.room
           ? t('widgets.assist.navetAiLightsOnInRoom', {
               count: result.answer.count,
               room: result.answer.room,
             })
-          : t('widgets.assist.navetAiLightsOn', { count: result.answer.count })
-        : null;
+          : t('widgets.assist.navetAiLightsOn', { count: result.answer.count });
+      }
+      if (result.answer?.kind !== 'temperature') return null;
+      const answer = result.answer;
+
+      const numberFormatter = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
+      const listFormatter = new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' });
+      const readings = listFormatter.format(
+        answer.readings.map((reading) => {
+          const value = `${numberFormatter.format(reading.value)} ${reading.unit}`;
+          return answer.readings.length === 1 ? value : `${reading.name}: ${value}`;
+        })
+      );
+      return answer.room
+        ? t('widgets.assist.navetAiTemperatureInRoom', {
+            readings,
+            room: answer.room,
+          })
+        : t('widgets.assist.navetAiTemperature', { readings });
+    })();
     const sections = stateAnswer ? [stateAnswer] : result.reply ? [result.reply] : [];
     const formatTargets = (targets: AssistNavetAiActionTarget[]) => {
       const listFormatter = new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' });
@@ -470,6 +490,21 @@ export function AssistDialog({
     />
   );
   const inputAvailable = assistantMode === 'navet_ai' ? navetAiReady : pipelines.length > 0;
+  useEffect(() => {
+    if (!open) {
+      hasFocusedComposerRef.current = false;
+      return;
+    }
+    if (!inputAvailable || hasFocusedComposerRef.current) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      const input = composerInputRef.current;
+      if (!input || input.disabled) return;
+      input.focus({ preventScroll: true });
+      hasFocusedComposerRef.current = true;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [inputAvailable, open]);
   const runtime = useExternalStoreRuntime({
     messages,
     convertMessage: (message) => ({
@@ -558,6 +593,7 @@ export function AssistDialog({
                   cancelLabel={t('common.cancel')}
                   conversationLabel={t('widgets.assist.conversation')}
                   inputDisabled={!inputAvailable}
+                  inputRef={composerInputRef}
                   isRunning={isRunning}
                   placeholder={t(
                     assistantMode === 'navet_ai'

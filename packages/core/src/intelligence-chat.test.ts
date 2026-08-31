@@ -34,6 +34,36 @@ const entities: IntelligenceEntityReference[] = [
   },
 ];
 
+const temperatureEntities: IntelligenceEntityReference[] = [
+  {
+    id: 'home_assistant:sensor.bathroom_temperature',
+    providerId: 'home_assistant',
+    name: 'Bathroom temperature',
+    room: 'Bathroom',
+    type: 'temperature',
+    value: 22.4,
+    unit: '°C',
+  },
+  {
+    id: 'home_assistant:climate.bathroom',
+    providerId: 'home_assistant',
+    name: 'Bathroom thermostat',
+    room: 'Bathroom',
+    type: 'temperature',
+    value: 22,
+    unit: '°C',
+  },
+  {
+    id: 'home_assistant:sensor.bedroom_temperature',
+    providerId: 'home_assistant',
+    name: 'Bedroom temperature',
+    room: 'Bedroom',
+    type: 'temperature',
+    value: 68,
+    unit: '°F',
+  },
+];
+
 describe('read-only intelligence control suggestions', () => {
   it('distinguishes a direct command from a question or autonomous suggestion', () => {
     expect(isExplicitIntelligenceControlRequest('Turn off the office lights')).toBe(true);
@@ -155,5 +185,38 @@ describe('read-only intelligence control suggestions', () => {
         )
       )
     ).toEqual({ kind: 'lights_on_count', count: 1, room: 'Office' });
+  });
+
+  it('answers a room temperature question from every verified reading in that room', () => {
+    expect(
+      interpretSimpleStateQuestion('What is the temperature in the bathroom?', temperatureEntities)
+    ).toEqual({
+      kind: 'temperature',
+      room: 'Bathroom',
+      readings: [
+        { name: 'Bathroom temperature', value: 22.4, unit: '°C' },
+        { name: 'Bathroom thermostat', value: 22, unit: '°C' },
+      ],
+    });
+  });
+
+  it('does not guess a temperature when the requested room is unknown', () => {
+    expect(
+      interpretSimpleStateQuestion('What is the temperature in the garage?', temperatureEntities)
+    ).toBeNull();
+  });
+
+  it('never treats a temperature reference as a controllable entity', () => {
+    expect(
+      validateControlSuggestions(
+        [
+          {
+            operation: 'turn_off',
+            entityIds: ['home_assistant:sensor.bathroom_temperature'],
+          },
+        ],
+        temperatureEntities
+      )
+    ).toEqual([]);
   });
 });
