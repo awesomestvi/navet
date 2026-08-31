@@ -169,6 +169,8 @@ export const nlMessages = {
   'household.setup.welcomeTitle': 'Verdeel het werk in huis gemakkelijker.',
   'household.setup.welcomeDescription':
     'Klusjes zijn dagelijkse taken, zoals de vaatwasser uitruimen, planten water geven of recycling buitenzetten. Navet maakt er een gedeeld plan van, zodat iedereen ziet wat er moet gebeuren, wie aan de beurt is en wanneer.',
+  'household.setup.restoreDescription':
+    'Hiermee wordt de huidige klusjesconfiguratie vervangen door de personen, klusjes, voorkeuren en geschiedenis uit deze back-up.',
   'household.setup.start': 'Maak je klusjeslijst',
   'household.setup.benefitsTitle': 'Waarom klusjes gebruiken?',
   'household.setup.featureAssignTitle': 'Niet meer vragen wie wat doet',

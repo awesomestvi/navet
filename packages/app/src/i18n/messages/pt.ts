@@ -169,6 +169,8 @@ export const ptMessages = {
   'household.setup.welcomeTitle': 'Partilhe o trabalho de casa com mais facilidade.',
   'household.setup.welcomeDescription':
     'As tarefas são trabalhos do dia a dia, como esvaziar a máquina da loiça, regar as plantas ou levar a reciclagem. O Navet transforma-os num plano partilhado, para todos verem o que há para fazer, de quem é a vez e para quando.',
+  'household.setup.restoreDescription':
+    'Isto substitui a configuração atual de tarefas pelas pessoas, tarefas, preferências e histórico desta cópia de segurança.',
   'household.setup.start': 'Criar a sua lista de tarefas',
   'household.setup.benefitsTitle': 'Porquê usar tarefas?',
   'household.setup.featureAssignTitle': 'Deixe de perguntar quem faz o quê',

@@ -261,6 +261,7 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
   const managementError = useChoreWorkspaceStore((state) => state.managementError);
   const configureManagementPin = useChoreWorkspaceStore((state) => state.configureManagementPin);
   const unlockManagement = useChoreWorkspaceStore((state) => state.unlockManagement);
+  const restoreBackup = useChoreWorkspaceStore((state) => state.restoreBackup);
   const pendingManagementActionRef = useRef<(() => void) | null>(null);
   const roomDescriptors = useSyncExternalStore(
     integrationStore.subscribe,
@@ -682,6 +683,10 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
             setSetupDialogOpen(true);
             if (participants.length > 0) void markSetupStarted();
           }}
+          onRestoreBackup={({ actorParticipantId, document }) =>
+            restoreBackup({ actorParticipantId, document, mode: 'replace' })
+          }
+          restoreError={error}
         />
         <ChoreOnboardingDialog
           isOpen={setupDialogOpen}
@@ -703,6 +708,10 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
           }}
           onSaveRewards={saveSetupRewards}
           onConfigurePin={configureManagementPin}
+          managementPinConfigured={managementPinConfigured}
+          managementUnlocked={managementUnlocked}
+          managementError={managementError}
+          onUnlockManagement={unlockManagement}
           onComplete={completeSetup}
         />
       </div>

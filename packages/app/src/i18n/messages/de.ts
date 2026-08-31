@@ -171,6 +171,8 @@ export const deMessages = {
   'household.setup.welcomeTitle': 'Hausarbeit lässt sich leichter teilen.',
   'household.setup.welcomeDescription':
     'Aufgaben sind alltägliche Arbeiten wie die Spülmaschine ausräumen, Pflanzen gießen oder Recycling hinausbringen. Navet macht daraus einen gemeinsamen Plan, damit alle sehen, was ansteht, wer dran ist und wann es fällig ist.',
+  'household.setup.restoreDescription':
+    'Dadurch wird die aktuelle Aufgabeneinrichtung durch die Personen, Aufgaben, Einstellungen und den Verlauf aus dieser Sicherung ersetzt.',
   'household.setup.start': 'Aufgabenliste erstellen',
   'household.setup.benefitsTitle': 'Warum Aufgaben verwenden?',
   'household.setup.featureAssignTitle': 'Nicht mehr fragen, wer was macht',

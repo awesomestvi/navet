@@ -1913,6 +1913,8 @@ export const enMessages = {
   'household.setup.welcomeTitle': 'Make household work easier to share.',
   'household.setup.welcomeDescription':
     'Chores are everyday jobs—like unloading the dishwasher, watering plants, or taking out recycling. Navet turns them into a shared plan, so everyone can see what needs doing, whose job it is, and when it is due.',
+  'household.setup.restoreDescription':
+    'This replaces the current chore setup with the people, chores, preferences, and history in this backup.',
   'household.setup.start': 'Create your chore list',
   'household.setup.benefitsTitle': 'Why use chores?',
   'household.setup.featureAssignTitle': 'No more asking who is doing what',

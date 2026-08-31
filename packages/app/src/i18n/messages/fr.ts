@@ -170,6 +170,8 @@ export const frMessages = {
   'household.setup.welcomeTitle': 'Partagez plus facilement les tâches du foyer.',
   'household.setup.welcomeDescription':
     'Les tâches sont les petits travaux du quotidien, comme vider le lave-vaisselle, arroser les plantes ou sortir le tri. Navet en fait un plan partagé pour que chacun voie ce qu’il faut faire, à qui c’est le tour et pour quand.',
+  'household.setup.restoreDescription':
+    'Cela remplace la configuration actuelle des tâches par les personnes, tâches, préférences et l’historique de cette sauvegarde.',
   'household.setup.start': 'Créer votre liste de tâches',
   'household.setup.benefitsTitle': 'Pourquoi utiliser les tâches ?',
   'household.setup.featureAssignTitle': 'Plus besoin de demander qui fait quoi',

@@ -168,6 +168,8 @@ export const daMessages = {
   'household.setup.welcomeTitle': 'Gør det lettere at deles om arbejdet derhjemme.',
   'household.setup.welcomeDescription':
     'Pligter er hverdagsopgaver som at tømme opvaskemaskinen, vande planter eller tage genbrug ud. Navet gør dem til en fælles plan, så alle kan se, hvad der skal gøres, hvem der har tur, og hvornår det skal være færdigt.',
+  'household.setup.restoreDescription':
+    'Dette erstatter den aktuelle opgaveopsætning med personer, opgaver, indstillinger og historik fra denne sikkerhedskopi.',
   'household.setup.start': 'Opret jeres pligtliste',
   'household.setup.benefitsTitle': 'Hvorfor bruge pligter?',
   'household.setup.featureAssignTitle': 'Slut med at spørge, hvem der gør hvad',

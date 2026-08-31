@@ -12,6 +12,15 @@ import {
 import { themeColorValues } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { navetIconSizeTokens, navetTypographyTokens } from '@navet/app/components/system/tokens';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@navet/app/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@navet/app/components/ui/avatar';
 import { cn } from '@navet/app/components/ui/utils';
 import { isEmojiLightIcon, resolveLightIconComponent } from '@navet/app/constants/icon-map';
@@ -23,6 +32,10 @@ import type {
   ChorePresentationMetadata,
   ChoreRewardGoal,
 } from '@navet/core/chore-experience';
+import {
+  type ChoreInterchangeDocument,
+  parseChoreInterchangeDocument,
+} from '@navet/core/chore-interchange';
 import type {
   ChoreAssignmentMode,
   ChoreDefinition,
@@ -43,6 +56,7 @@ import {
   SlidersHorizontal,
   Sparkles,
   Trash2,
+  Upload,
   UserPlus,
   UserRound,
   UsersRound,
@@ -52,6 +66,7 @@ import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from '
 import { ChoreCreationFormGroups, type ChoreCreationRepeat } from './chore-creation-form-groups';
 import { resolveChoreIconComponent } from './chore-icon';
 import { ChoreProfileAppearanceEditor } from './chore-profile-appearance-editor';
+import { ChoreManagementPinDialog } from './chore-setup-dialogs';
 
 type SetupStepId = 'person' | 'customize' | 'chores' | 'rewards' | 'security' | 'ready';
 type SetupParticipantRole = 'member' | 'manager';
@@ -80,6 +95,10 @@ interface ChoreOnboardingDialogProps {
   onRemoveChore: (definition: ChoreDefinition) => Promise<boolean>;
   onSaveRewards: (mode: ChoreGamificationMode, reward?: ChoreRewardGoal) => Promise<boolean>;
   onConfigurePin: (actorParticipantId: string, pin: string) => Promise<boolean>;
+  managementPinConfigured?: boolean;
+  managementUnlocked?: boolean;
+  managementError?: string | null;
+  onUnlockManagement?: (pin: string) => Promise<boolean>;
   onComplete: () => Promise<boolean>;
 }
 
@@ -151,10 +170,29 @@ function AvatarFallbackIdentity({
   );
 }
 
-export function ChoreOnboardingWelcome({ onStart }: { onStart: () => void }) {
+export function ChoreOnboardingWelcome({
+  onStart,
+  onRestoreBackup,
+  restoreError,
+}: {
+  onStart: () => void;
+  onRestoreBackup: (input: {
+    actorParticipantId: string;
+    document: ChoreInterchangeDocument;
+  }) => Promise<boolean>;
+  restoreError?: string | null;
+}) {
   const { t } = useI18n();
   const { theme, accentColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const backupInputRef = useRef<HTMLInputElement>(null);
+  const [pendingBackup, setPendingBackup] = useState<{
+    actorParticipantId: string;
+    document: ChoreInterchangeDocument;
+  } | null>(null);
+  const [backupFeedback, setBackupFeedback] = useState<string | null>(null);
+  const [restoringBackup, setRestoringBackup] = useState(false);
+  const [restoreFailed, setRestoreFailed] = useState(false);
   const features = [
     {
       title: t('household.setup.featureAssignTitle'),
@@ -173,76 +211,166 @@ export function ChoreOnboardingWelcome({ onStart }: { onStart: () => void }) {
     },
   ];
 
+  const readBackup = async (file: File | undefined) => {
+    if (!file) return;
+    setBackupFeedback(null);
+    setRestoreFailed(false);
+    try {
+      const document = parseChoreInterchangeDocument(JSON.parse(await file.text()) as unknown);
+      const manager = Object.values(document.workspace.participantsById).find(
+        (participant) => !participant.pausedAt && participant.capabilities.includes('manage')
+      );
+      if (!manager) throw new Error('Backup does not contain an active household manager');
+      setPendingBackup({ actorParticipantId: manager.id, document });
+    } catch {
+      setBackupFeedback(t('household.data.invalidBackup'));
+    } finally {
+      if (backupInputRef.current) backupInputRef.current.value = '';
+    }
+  };
+
   return (
-    <section
-      aria-labelledby="chore-setup-welcome-title"
-      className={cn(
-        'relative mx-auto flex min-h-[32rem] max-w-5xl items-center overflow-hidden rounded-[28px] border px-5 py-8 sm:px-8 lg:px-12',
-        surface.shellPanel,
-        surface.border,
-        surface.cardShadow
-      )}
-    >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -top-24 -right-20 h-72 w-72 rounded-full opacity-10 blur-3xl"
-        style={{ backgroundColor: accentColor }}
-      />
-      <div className="relative grid w-full gap-9 lg:grid-cols-[minmax(0,0.95fr)_minmax(24rem,1.05fr)] lg:items-center lg:gap-12">
-        <div className="min-w-0">
-          <span
-            className={cn(
-              'mb-5 flex h-12 w-12 items-center justify-center rounded-[20px] border',
-              surface.iconBg,
-              surface.borderStrong,
-              surface.textPrimary
-            )}
-          >
-            <ClipboardCheck aria-hidden="true" className={navetIconSizeTokens.lg} />
-          </span>
-          <h1
-            id="chore-setup-welcome-title"
-            className={cn(
-              'max-w-xl text-3xl font-semibold tracking-tight sm:text-4xl',
-              surface.textPrimary
-            )}
-          >
-            {t('household.setup.welcomeTitle')}
-          </h1>
-          <p
-            className={cn(
-              'mt-4 max-w-xl text-base leading-7 sm:text-lg sm:leading-8',
-              surface.textSecondary
-            )}
-          >
-            {t('household.setup.welcomeDescription')}
-          </p>
-          <Button
-            className="mt-7 min-h-11 motion-reduce:transition-none"
-            trailing={<ArrowRight aria-hidden="true" className={navetIconSizeTokens.sm} />}
-            onClick={onStart}
-          >
-            {t('household.setup.start')}
-          </Button>
-        </div>
+    <>
+      <section
+        aria-labelledby="chore-setup-welcome-title"
+        className={cn(
+          'relative mx-auto flex min-h-[32rem] max-w-5xl items-center overflow-hidden rounded-[28px] border px-5 py-8 sm:px-8 lg:px-12',
+          surface.shellPanel,
+          surface.border,
+          surface.cardShadow
+        )}
+      >
         <div
-          className={cn(
-            'rounded-[24px] border p-5 sm:p-7 lg:p-8',
-            surface.subtleBg,
-            surface.borderStrong
-          )}
-        >
-          <h2 className={cn(navetTypographyTokens.titleSm, surface.textPrimary)}>
-            {t('household.setup.benefitsTitle')}
-          </h2>
-          <div className="mt-6 grid gap-6">
-            {features.map((feature) => (
-              <SetupFeature key={feature.title} {...feature} />
-            ))}
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-24 -right-20 h-72 w-72 rounded-full opacity-10 blur-3xl"
+          style={{ backgroundColor: accentColor }}
+        />
+        <div className="relative grid w-full gap-9 lg:grid-cols-[minmax(0,0.95fr)_minmax(24rem,1.05fr)] lg:items-center lg:gap-12">
+          <div className="min-w-0">
+            <span
+              className={cn(
+                'mb-5 flex h-12 w-12 items-center justify-center rounded-[20px] border',
+                surface.iconBg,
+                surface.borderStrong,
+                surface.textPrimary
+              )}
+            >
+              <ClipboardCheck aria-hidden="true" className={navetIconSizeTokens.lg} />
+            </span>
+            <h1
+              id="chore-setup-welcome-title"
+              className={cn(
+                'max-w-xl text-3xl font-semibold tracking-tight sm:text-4xl',
+                surface.textPrimary
+              )}
+            >
+              {t('household.setup.welcomeTitle')}
+            </h1>
+            <p
+              className={cn(
+                'mt-4 max-w-xl text-base leading-7 sm:text-lg sm:leading-8',
+                surface.textSecondary
+              )}
+            >
+              {t('household.setup.welcomeDescription')}
+            </p>
+            <div className="mt-7 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              <Button
+                className="h-11 min-h-11 motion-reduce:transition-none"
+                trailing={<ArrowRight aria-hidden="true" className={navetIconSizeTokens.sm} />}
+                onClick={onStart}
+              >
+                {t('household.setup.start')}
+              </Button>
+              <Button
+                variant="secondary"
+                className="h-11 min-h-11 motion-reduce:transition-none"
+                leading={<Upload aria-hidden="true" className={navetIconSizeTokens.sm} />}
+                onClick={() => backupInputRef.current?.click()}
+              >
+                {t('household.data.import')}
+              </Button>
+            </div>
+            <input
+              ref={backupInputRef}
+              className="sr-only"
+              type="file"
+              accept="application/json,.json"
+              aria-label={t('household.data.import')}
+              onChange={(event) => void readBackup(event.target.files?.[0])}
+            />
+            {backupFeedback ? (
+              <p
+                className={cn(
+                  'mt-3 max-w-xl rounded-xl px-3 py-2 text-xs',
+                  surface.subtleBg,
+                  surface.textSecondary
+                )}
+                role="status"
+              >
+                {backupFeedback}
+              </p>
+            ) : null}
+          </div>
+          <div
+            className={cn(
+              'rounded-[24px] border p-5 sm:p-7 lg:p-8',
+              surface.subtleBg,
+              surface.borderStrong
+            )}
+          >
+            <h2 className={cn(navetTypographyTokens.titleSm, surface.textPrimary)}>
+              {t('household.setup.benefitsTitle')}
+            </h2>
+            <div className="mt-6 grid gap-6">
+              {features.map((feature) => (
+                <SetupFeature key={feature.title} {...feature} />
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <AlertDialog
+        open={pendingBackup !== null}
+        onOpenChange={(open) => {
+          if (!open && !restoringBackup) setPendingBackup(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('household.data.importTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('household.setup.restoreDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {restoreFailed ? (
+            <MessageBar tone="error" title={t('household.error.title')}>
+              {restoreError ?? t('household.error.description')}
+            </MessageBar>
+          ) : null}
+          <AlertDialogFooter>
+            <AlertDialogCancel className="min-h-10" disabled={restoringBackup}>
+              {t('common.cancel')}
+            </AlertDialogCancel>
+            <Button
+              className="min-h-10"
+              disabled={restoringBackup}
+              onClick={async () => {
+                if (!pendingBackup) return;
+                setRestoringBackup(true);
+                const saved = await onRestoreBackup(pendingBackup);
+                setRestoringBackup(false);
+                setRestoreFailed(!saved);
+                if (saved) setPendingBackup(null);
+              }}
+            >
+              {t('household.data.import')}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -313,6 +441,10 @@ export function ChoreOnboardingDialog({
   onRemoveChore,
   onSaveRewards,
   onConfigurePin,
+  managementPinConfigured = false,
+  managementUnlocked = false,
+  managementError,
+  onUnlockManagement,
   onComplete,
 }: ChoreOnboardingDialogProps) {
   const { t } = useI18n();
@@ -403,6 +535,7 @@ export function ChoreOnboardingDialog({
   const [managementPinConfirmation, setManagementPinConfirmation] = useState('');
   const [pinError, setPinError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [managementPinDialogOpen, setManagementPinDialogOpen] = useState(false);
   const wasOpenRef = useRef(false);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const activeStepButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -421,6 +554,7 @@ export function ChoreOnboardingDialog({
     setSetupRoster(participants);
     setAddingPerson(false);
     setAddingChore(false);
+    setManagementPinDialogOpen(false);
     setNewPersonRole(participants.length === 0 ? 'manager' : 'member');
     setParticipantId(firstManager?.id ?? '');
     setName(firstManager?.displayName ?? '');
@@ -840,12 +974,33 @@ export function ChoreOnboardingDialog({
     if (saved) moveTo(5);
   };
 
-  const finishSetup = async () => {
+  const finishSetupNow = async () => {
     setSaving(true);
     const saved = await onComplete();
     setSaving(false);
     if (saved) onOpenChange(false);
+    return saved;
   };
+
+  const finishSetup = async () => {
+    if (managementPinConfigured && !managementUnlocked && onUnlockManagement) {
+      setManagementPinDialogOpen(true);
+      return;
+    }
+    await finishSetupNow();
+  };
+
+  useEffect(() => {
+    if (
+      isOpen &&
+      managementPinConfigured &&
+      !managementUnlocked &&
+      onUnlockManagement &&
+      error?.startsWith('Unlock chore management')
+    ) {
+      setManagementPinDialogOpen(true);
+    }
+  }, [error, isOpen, managementPinConfigured, managementUnlocked, onUnlockManagement]);
 
   const currentStep = steps[stepIndex] ?? steps[0];
 
@@ -1622,6 +1777,20 @@ export function ChoreOnboardingDialog({
           </NavigationWorkspace.Body>
         </NavigationWorkspace.Frame>
       </BaseCardDialog>
+      {onUnlockManagement ? (
+        <ChoreManagementPinDialog
+          isOpen={managementPinDialogOpen}
+          error={managementError}
+          onOpenChange={setManagementPinDialogOpen}
+          onUnlock={async (pin) => {
+            const unlocked = await onUnlockManagement(pin);
+            if (!unlocked) return false;
+            setManagementPinDialogOpen(false);
+            await finishSetupNow();
+            return true;
+          }}
+        />
+      ) : null}
     </Fragment>
   );
 }

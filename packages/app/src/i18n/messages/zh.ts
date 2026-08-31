@@ -160,6 +160,8 @@ export const zhMessages = {
   'household.setup.welcomeTitle': '让家务更容易一起分担。',
   'household.setup.welcomeDescription':
     '家务是每天要做的事，比如清空洗碗机、给植物浇水或倒可回收物。Navet 把它们变成共享计划，让每个人都能看到要做什么、轮到谁，以及何时完成。',
+  'household.setup.restoreDescription':
+    '这会用此备份中的成员、家务、偏好设置和历史记录替换当前家务设置。',
   'household.setup.start': '创建家务清单',
   'household.setup.benefitsTitle': '为什么使用家务？',
   'household.setup.featureAssignTitle': '不用再问谁来做什么',

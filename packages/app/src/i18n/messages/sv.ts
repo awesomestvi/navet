@@ -168,6 +168,8 @@ export const svMessages = {
   'household.setup.welcomeTitle': 'Gör det lättare att dela på jobbet hemma.',
   'household.setup.welcomeDescription':
     'Sysslor är vardagsjobb som att tömma diskmaskinen, vattna växter eller ta ut återvinningen. Navet gör dem till en gemensam plan där alla ser vad som behöver göras, vems tur det är och när det ska vara klart.',
+  'household.setup.restoreDescription':
+    'Detta ersätter den nuvarande sysslekonfigurationen med personer, sysslor, inställningar och historik från säkerhetskopian.',
   'household.setup.start': 'Skapa er syssellista',
   'household.setup.benefitsTitle': 'Varför använda sysslor?',
   'household.setup.featureAssignTitle': 'Slipp fråga vem som gör vad',

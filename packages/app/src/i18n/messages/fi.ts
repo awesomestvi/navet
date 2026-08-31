@@ -169,6 +169,8 @@ export const fiMessages = {
   'household.setup.welcomeTitle': 'Jaa kotityöt helpommin.',
   'household.setup.welcomeDescription':
     'Askareet ovat arjen töitä, kuten astianpesukoneen tyhjentäminen, kasvien kastelu tai kierrätyksen vieminen. Navet tekee niistä yhteisen suunnitelman, josta kaikki näkevät, mitä pitää tehdä, kenen vuoro on ja milloin työ on tehtävä.',
+  'household.setup.restoreDescription':
+    'Tämä korvaa nykyisen askarekokoonpanon tämän varmuuskopion henkilöillä, askareilla, asetuksilla ja historialla.',
   'household.setup.start': 'Luo askarelista',
   'household.setup.benefitsTitle': 'Miksi käyttää askareita?',
   'household.setup.featureAssignTitle': 'Ei enää kyselyä siitä, kuka tekee mitä',

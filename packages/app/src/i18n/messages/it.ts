@@ -172,6 +172,8 @@ export const itMessages = {
   'household.setup.welcomeTitle': 'Condividi più facilmente i lavori di casa.',
   'household.setup.welcomeDescription':
     'Le faccende sono i lavori di ogni giorno, come svuotare la lavastoviglie, annaffiare le piante o portare fuori la raccolta differenziata. Navet le trasforma in un piano condiviso, così tutti vedono cosa c’è da fare, a chi tocca e quando.',
+  'household.setup.restoreDescription':
+    'Sostituisce la configurazione attuale delle faccende con persone, faccende, preferenze e cronologia presenti in questo backup.',
   'household.setup.start': 'Crea la tua lista di faccende',
   'household.setup.benefitsTitle': 'Perché usare le faccende?',
   'household.setup.featureAssignTitle': 'Basta chiedere chi fa cosa',

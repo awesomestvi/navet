@@ -57,6 +57,36 @@ but not planning changes. The PIN protects people, definitions, motivation, rete
 reset actions. It is a household-screen boundary, not an account password, and it is not included
 in chores backups.
 
+## Finish setup after a management PIN error
+
+If **Open Today** reports **Unlock chore management to continue**, the PIN was saved but the
+temporary management session was lost before setup finished. The people, chores, and rewards
+already entered are still saved.
+
+1. Keep the setup window open. If it was closed, return to **Household**, choose
+   **Create your chore list**, and advance to the final review.
+2. Choose **Open Today**. Navet opens **Unlock chore management** when the saved PIN is locked.
+3. Enter the management PIN created during setup and choose **Unlock**.
+4. Navet retries the final setup step automatically and opens **Today** when it succeeds.
+
+If the PIN is rejected, check the digits and wait 30 seconds after five unsuccessful attempts. If
+the unlock succeeds but the same sync error returns, restart the Navet add-on, reopen its
+**Web UI**, and repeat the steps above. Restarting does not remove the saved chore workspace.
+
+## Restore a backup during first setup
+
+If this is a new Navet installation and you already have a Navet chores backup, you do not need to
+repeat the guided setup.
+
+1. Open **Household**.
+2. On the welcome screen, choose **Import backup**.
+3. Select the saved Navet chores JSON file.
+4. Review the confirmation and choose **Import backup**.
+
+Navet validates the backup before replacing the empty workspace. The backup must contain an active
+household manager. A completed backup opens the restored household directly; an incomplete backup
+returns to the appropriate setup state.
+
 ## Download a backup
 
 1. Open **Household → Settings**.

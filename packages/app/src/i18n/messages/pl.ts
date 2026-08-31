@@ -168,6 +168,8 @@ export const plMessages = {
   'household.setup.welcomeTitle': 'Łatwiej dzielcie się obowiązkami domowymi.',
   'household.setup.welcomeDescription':
     'Obowiązki to codzienne prace, takie jak opróżnianie zmywarki, podlewanie roślin czy wynoszenie odpadów do recyklingu. Navet zamienia je we wspólny plan, aby każdy widział, co trzeba zrobić, czyja jest kolej i na kiedy.',
+  'household.setup.restoreDescription':
+    'Spowoduje to zastąpienie bieżącej konfiguracji obowiązków osobami, obowiązkami, preferencjami i historią z tej kopii zapasowej.',
   'household.setup.start': 'Utwórz listę obowiązków',
   'household.setup.benefitsTitle': 'Dlaczego warto używać obowiązków?',
   'household.setup.featureAssignTitle': 'Koniec pytań, kto co robi',

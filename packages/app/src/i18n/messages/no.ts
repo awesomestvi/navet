@@ -167,6 +167,8 @@ export const noMessages = {
   'household.setup.welcomeTitle': 'Gjør det enklere å dele på arbeidet hjemme.',
   'household.setup.welcomeDescription':
     'Oppgaver er hverdagsjobber som å tømme oppvaskmaskinen, vanne planter eller ta ut resirkuleringen. Navet gjør dem til en felles plan, slik at alle ser hva som må gjøres, hvem sin tur det er og når det skal være ferdig.',
+  'household.setup.restoreDescription':
+    'Dette erstatter det nåværende gjøremålsoppsettet med personer, gjøremål, innstillinger og historikk fra denne sikkerhetskopien.',
   'household.setup.start': 'Lag oppgavelisten deres',
   'household.setup.benefitsTitle': 'Hvorfor bruke oppgaver?',
   'household.setup.featureAssignTitle': 'Slipp å spørre hvem som gjør hva',
