@@ -90,7 +90,7 @@ export function getAppChunkName(id: string) {
     return 'auth-flow'
   }
 
-  if (moduleId.includes('/packages/app/src/features/habits/')) {
+  if (moduleId.includes('/packages/app/src/features/navet-ai/')) {
     return 'app-shell'
   }
 

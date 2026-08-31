@@ -12,7 +12,7 @@ This document defines that language. It does not replace component APIs, design 
 stories, or implementation guidance. For implementation, use:
 
 - [Navet UI guidelines](https://github.com/awesomestvi/navet/blob/main/docs/design-system/UI-GUIDELINES.md)
-- [AI design context](https://github.com/awesomestvi/navet/blob/main/docs/design-system/AI-DESIGN-CONTEXT.md)
+- [Navet UX workflow](https://github.com/awesomestvi/navet/blob/main/ai/skills/navet-ux.md)
 - Storybook's `Components/Primitives/Cards/BaseCard` and `Cards/Overview/*` surfaces
 - the exact neighboring feature card and its stories
 

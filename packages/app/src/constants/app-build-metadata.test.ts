@@ -40,7 +40,7 @@ describe('APP_BUILD_METADATA', () => {
     expect(getAppBuildChannelLabel('1.0.0')).toBe('Dev');
   });
 
-  it('exposes local habits only for development and local builds', () => {
+  it('detects development and local build channels', () => {
     expect(isDevOrLocalBuild('development')).toBe(true);
     expect(isDevOrLocalBuild('dev')).toBe(true);
     expect(isDevOrLocalBuild('local')).toBe(true);

@@ -9,6 +9,5 @@ the Home summary bar. Each of those settings can still be adjusted separately.
 
 ## Guides
 
-- [Set up kiosk and Wall Display mode](/guide/wall-displays/kiosk-mode/)
+- [Set up and recover kiosk and Wall Display mode](/guide/wall-displays/kiosk-mode/)
 - [Optimize Navet for low-power displays](/guide/wall-displays/low-power/)
-- [Recover kiosk access and keep-awake](/guide/wall-displays/recovery/)

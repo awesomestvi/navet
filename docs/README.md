@@ -2,6 +2,16 @@
 
 Use this page as the map for the documentation set.
 
+## Documentation Policy
+
+- Keep one canonical document for each policy, architecture boundary, workflow, or user task.
+- Prefer current behavior and durable decisions over implementation diaries, completed plans, and
+  copied interfaces or file inventories.
+- Delete superseded guidance after updating its active inbound links. Git history is the archive.
+- Keep released changelogs intact even when their terminology is no longer current.
+- Public pages are selected explicitly in `apps/docs/src/content.config.ts`; internal docs should
+  not duplicate their user-facing instructions.
+
 ## Start Here
 
 - If you want to run Navet: start with the provider setup guides.
@@ -38,16 +48,14 @@ Use this page as the map for the documentation set.
   Onboarding, local setup, and validation flow.
 - [agents/commands.md](agents/commands.md)
   Repo command policy and commit-message rules.
-- [agents/architecture.md](agents/architecture.md)
-  Short architecture overview.
 - [architecture/package-boundaries.md](architecture/package-boundaries.md)
   What belongs in `@navet/core`, `@navet/ui`, provider packages, and `@navet/app`.
 - [architecture/provider-contract.md](architecture/provider-contract.md)
   Shared provider contract and responsibilities.
-- [architecture/provider-neutral-ui.md](architecture/provider-neutral-ui.md)
-  Shared UI boundary rules.
 - [architecture/dashboard-profile-ownership.md](architecture/dashboard-profile-ownership.md)
   Multi-dashboard settings ownership, revision sync, recovery, and credential-session boundaries.
+- [architecture/household-chores.md](architecture/household-chores.md)
+  Chore domain ownership, authority, persistence, recovery, and provider boundaries.
 - [architecture/media-dashboard-provider-limitations.md](architecture/media-dashboard-provider-limitations.md)
   Media dashboard contract, Home Assistant behavior, artwork handling, and current limits.
 - [architecture/marketing-website.md](architecture/marketing-website.md)
@@ -60,21 +68,13 @@ Use this page as the map for the documentation set.
   Story placement and review workflow.
 - [testing/provider-testing-strategy.md](testing/provider-testing-strategy.md)
   Testing layers and boundary expectations.
-- [testing/test-tier-inventory.md](testing/test-tier-inventory.md)
-  Current tier inventory by subsystem.
 
 ## Maintainer Docs
 
 - [release-workflow.md](release-workflow.md)
   Release lanes, artifact surfaces, and version alignment.
-- [agents/release-and-publishing.md](agents/release-and-publishing.md)
-  Maintainer and agent release policy.
-- [rollback.md](rollback.md)
-  Rollback guidance for Docker, add-on, and custom panel surfaces.
 - [VERSIONING.md](VERSIONING.md)
   Release-line and versioning policy.
-- [roadmap/provider-platform-roadmap.md](roadmap/provider-platform-roadmap.md)
-  Internal provider-platform follow-up roadmap.
 
 ## AI And Agent Docs
 
@@ -117,11 +117,8 @@ Shared UI reality check:
 
 - [../CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md)
 - [../SECURITY.md](../SECURITY.md)
-- [design-system/FEATURES.md](design-system/FEATURES.md)
 - [branding/README.md](branding/README.md)
   Canonical brand foundations, voice, visual identity, product card grammar, assets, and governance.
-- [branding/BRANDING_ASSETS.md](branding/BRANDING_ASSETS.md)
-  Quick asset-path reference.
 - [branding/TRADEMARK_POLICY.md](branding/TRADEMARK_POLICY.md)
 - [TERMS_OF_USE.md](TERMS_OF_USE.md)
 - [ATTRIBUTIONS.md](ATTRIBUTIONS.md)

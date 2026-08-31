@@ -159,7 +159,7 @@ non-main branch publish, replace `dev` with an exact version from a `navet-dev-*
 for example:
 
 ```yaml
-image: ghcr.io/awesomestvi/navet:0.8.0-dev.YYYYMMDDHHMMSS
+image: ghcr.io/awesomestvi/navet:<version>-dev.<timestamp>
 ```
 
 Use a real published version in place of the example timestamp, then run:

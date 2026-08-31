@@ -488,4 +488,4 @@ Use these sources rather than copying values out of this guide into feature-loca
 - docs expression: `apps/docs/src/styles/navet.css`
 - product card expression: [Card grammar](https://docs.navet.app/brand/cards/)
 - component rules: [UI guidelines](https://github.com/awesomestvi/navet/blob/main/docs/design-system/UI-GUIDELINES.md)
-- fast UI reference: [AI design context](https://github.com/awesomestvi/navet/blob/main/docs/design-system/AI-DESIGN-CONTEXT.md)
+- UI implementation workflow: [Navet UX](https://github.com/awesomestvi/navet/blob/main/ai/skills/navet-ux.md)

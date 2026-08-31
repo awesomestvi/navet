@@ -8,8 +8,6 @@ authoring layers and curated export surfaces.
 ## Guidance Ownership
 
 - [`UI-GUIDELINES.md`](UI-GUIDELINES.md) is the canonical visual and interaction standard.
-- [`AI-DESIGN-CONTEXT.md`](AI-DESIGN-CONTEXT.md) is the compact pre-implementation packet; it must
-  stay consistent with the full guidelines.
 - [`../../ai/skills/navet-ux.md`](../../ai/skills/navet-ux.md) is the operational workflow an agent
   follows for a UI task.
 - Storybook and the current product are implementation evidence. A target screen's immediate
@@ -85,7 +83,5 @@ Storybook is the main review surface for:
 
 ## Related Docs
 
-- [AI-DESIGN-CONTEXT.md](AI-DESIGN-CONTEXT.md)
-- [FEATURES.md](FEATURES.md)
 - [UI-GUIDELINES.md](UI-GUIDELINES.md)
 - [../STORYBOOK_WORKFLOW.md](../STORYBOOK_WORKFLOW.md)

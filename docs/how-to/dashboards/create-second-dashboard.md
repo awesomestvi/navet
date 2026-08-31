@@ -60,5 +60,5 @@ or duplicate and repurpose an existing one.
 ## Next steps
 
 - [Customize your Home dashboard](/guide/dashboards/customize-home/)
-- [Assign the dashboard to another device](/guide/dashboards/assign-to-device/)
+- [Assign the dashboard to another device](/guide/dashboards/switch-and-manage/#assign-a-dashboard-to-devices)
 - [Switch and manage dashboards](/guide/dashboards/switch-and-manage/)

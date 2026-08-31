@@ -15,8 +15,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@navet/app/components/ui/alert-dialog';
-import { HabitInsightsPanel } from '@navet/app/features/habits/components/habit-insights-panel';
-import { useLocalHabitsFeature } from '@navet/app/features/habits/local-habits-feature';
 import { TasksSection } from '@navet/app/features/tasks/components/tasks-section';
 import { useI18n } from '@navet/app/hooks';
 import { isHomeAssistantPanelMode } from '@navet/app/runtime/app-mode';
@@ -74,8 +72,7 @@ type HouseholdView =
   | 'rewards'
   | 'progress'
   | 'settings'
-  | 'routines'
-  | 'habits';
+  | 'routines';
 
 function HouseholdViewPanel({
   value,
@@ -242,7 +239,6 @@ function HouseholdUnavailable({
 
 export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean }) {
   const { t } = useI18n();
-  const [habitsVisible] = useLocalHabitsFeature();
   const [view, setView] = useState<HouseholdView>('today');
   const [selectedParticipantId, setSelectedParticipantId] = useState('all');
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
@@ -302,11 +298,6 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
     panelAuthority || runtimeCapabilities?.projectionOwnedByAuthority === true;
   const authorityHandlesActions = panelAuthority || runtimeCapabilities?.actionServices === true;
 
-  useEffect(() => {
-    if (!habitsVisible && view === 'habits') {
-      setView('routines');
-    }
-  }, [habitsVisible, view]);
   const roomOptions = useMemo(
     () =>
       roomDescriptors.map((room) => ({
@@ -748,9 +739,6 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
             { value: 'progress' as const, label: t('household.tabs.progress') },
             { value: 'settings' as const, label: t('household.tabs.settings') },
             { value: 'routines' as const, label: t('household.tabs.routines') },
-            ...(habitsVisible
-              ? [{ value: 'habits' as const, label: t('settings.nav.habits') }]
-              : []),
           ].map((item) => {
             const isActive = view === item.value;
             return (
@@ -934,11 +922,6 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
       <HouseholdViewPanel value="routines" activeValue={view}>
         <TasksSection />
       </HouseholdViewPanel>
-      {habitsVisible ? (
-        <HouseholdViewPanel value="habits" activeValue={view}>
-          <HabitInsightsPanel />
-        </HouseholdViewPanel>
-      ) : null}
 
       <AddPersonDialog
         isOpen={personDialogOpen}

@@ -41,7 +41,6 @@ export default defineConfig({
         {
           label: "Installation",
           items: [
-            { label: "Choose an installation", link: "/install/" },
             { label: "Home Assistant", link: "/install/home-assistant/" },
             { label: "Navet Dev", link: "/install/navet-dev/" },
             { label: "Homey", link: "/install/homey/" },
@@ -66,7 +65,6 @@ export default defineConfig({
                 { label: "Quick start overview", link: "/guide/quick-start/" },
                 { label: "Your first 15 minutes", link: "/guide/quick-start/first-15-minutes/" },
                 { label: "Phone and tablet", link: "/guide/quick-start/phone-and-tablet/" },
-                { label: "Install the PWA", link: "/guide/quick-start/install-pwa/" },
               ],
             },
             {
@@ -78,7 +76,6 @@ export default defineConfig({
                   link: "/guide/dashboards/create-second-dashboard/",
                 },
                 { label: "Switch and manage", link: "/guide/dashboards/switch-and-manage/" },
-                { label: "Assign to a device", link: "/guide/dashboards/assign-to-device/" },
                 { label: "Customize Home", link: "/guide/dashboards/customize-home/" },
                 { label: "Add cards and widgets", link: "/guide/dashboards/add-cards/" },
                 { label: "Layout packs", link: "/guide/dashboards/layout-packs/" },
@@ -88,7 +85,6 @@ export default defineConfig({
                 },
                 { label: "Back up and restore", link: "/guide/dashboards/backup-and-restore/" },
                 { label: "Restore entities", link: "/guide/dashboards/restore-entities/" },
-                { label: "Resolve sync conflicts", link: "/guide/dashboards/sync-conflicts/" },
               ],
             },
             {
@@ -101,7 +97,6 @@ export default defineConfig({
                   label: "Advanced room management",
                   link: "/guide/rooms/advanced-room-management/",
                 },
-                { label: "Room appearance", link: "/guide/rooms/room-appearance/" },
               ],
             },
             {
@@ -110,7 +105,6 @@ export default defineConfig({
                 { label: "Wall display guides", link: "/guide/wall-displays/" },
                 { label: "Kiosk and Wall Display", link: "/guide/wall-displays/kiosk-mode/" },
                 { label: "Low-power displays", link: "/guide/wall-displays/low-power/" },
-                { label: "Kiosk recovery", link: "/guide/wall-displays/recovery/" },
               ],
             },
             {
@@ -143,11 +137,7 @@ export default defineConfig({
                   label: "Actions, maps, and status",
                   link: "/guide/everyday-control/actions-maps-status/",
                 },
-                { label: "Local Habits", link: "/guide/everyday-control/local-habits/" },
-                {
-                  label: "Home Assistant Energy sources",
-                  link: "/guide/everyday-control/manual-energy-setup/",
-                },
+                { label: "Navet AI", link: "/guide/everyday-control/navet-ai/" },
               ],
             },
             {
@@ -180,7 +170,6 @@ export default defineConfig({
         {
           label: "Developers",
           items: [
-            { label: "Developer overview", link: "/developers/" },
             { label: "Contributing", link: "/developers/contributing/" },
             { label: "Code of Conduct", link: "/developers/code-of-conduct/" },
           ],

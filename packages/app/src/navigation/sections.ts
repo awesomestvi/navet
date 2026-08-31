@@ -6,6 +6,7 @@ export type Section =
   | 'tasks'
   | 'lights'
   | 'media'
+  | 'ai'
   | 'settings';
 
 export const NAVIGATION_SECTIONS = [
@@ -16,11 +17,14 @@ export const NAVIGATION_SECTIONS = [
   'lights',
   'media',
   'tasks',
+  'ai',
   'settings',
 ] as const satisfies readonly Section[];
 
-export const isSection = (value: unknown): value is Section =>
-  typeof value === 'string' && NAVIGATION_SECTIONS.includes(value as Section);
+export const isSection = (value: unknown): value is Section => {
+  if (typeof value !== 'string' || !NAVIGATION_SECTIONS.includes(value as Section)) return false;
+  return !(value === 'ai' && typeof window !== 'undefined' && window.__NAVET_PANEL__ === true);
+};
 
 export type NavigationDestination =
   | { kind: 'section'; section: Section }

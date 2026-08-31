@@ -86,6 +86,10 @@ const AssistWidget = lazy(async () => {
   const module = await import('./widgets/assist-widget');
   return { default: module.AssistWidget };
 });
+const NavetAiInsightsWidget = lazy(async () => {
+  const module = await import('./widgets/navet-ai-insights-widget');
+  return { default: module.NavetAiInsightsWidget };
+});
 
 const MapWidget = lazy(async () => {
   const module = await import('./widgets/map-widget');
@@ -314,6 +318,9 @@ export function WidgetCard({
           openSettingsRequestKey={resolvedOpenSettingsRequestKey}
         />
       );
+      break;
+    case 'ai-insights':
+      widgetContent = <NavetAiInsightsWidget size={card.size} />;
       break;
     case 'map':
       widgetContent = (

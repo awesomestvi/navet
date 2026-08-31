@@ -63,6 +63,24 @@ they are app-internal support code. Do not treat them as the preferred shared su
    service when the interaction needs a richer contract.
 6. The matching provider package translates that work into provider-native requests.
 
+## Shared UI Contract
+
+Shared UI renders normalized entities, rooms, dashboard layout, runtime status, resources, and
+provider-neutral view models. It emits generic `NavetCommand` values or calls a typed feature
+service; provider-native translation remains outside the component.
+
+Collections may include entities from several selected providers. Preserve provider-scoped and
+canonical identity and route actions to the entity's owning provider rather than assuming every
+visible entity belongs to the active provider.
+
+Do not import provider packages or raw backend payload types into shared UI, emit service-shaped
+payloads from components, or make backend naming conventions the primary behavior model. Media,
+camera resources, history, energy, and notifications may use provider-aware services, but shared
+cards still consume normalized state or a stable view model.
+
+These rules also apply to current app-owned shared UI under `packages/app/src/components/*` and
+`packages/app/src/ui-kit/*` while extraction to `@navet/ui` remains incomplete.
+
 ## Provider Status
 
 | Provider | Status | Notes |
@@ -79,6 +97,11 @@ history, security, and administration services. Homey and openHAB currently regi
 lighting, switches, and sensors.
 
 ## Working Rule
+
+Before changing a boundary, identify the current owner and import path, the target owner, the
+existing callers and provider knowledge crossing the boundary, and the smallest extraction that
+improves dependency direction. Do not move code to an aspirational package merely to make the
+folder tree look complete.
 
 If you are not sure where code belongs, ask two questions:
 

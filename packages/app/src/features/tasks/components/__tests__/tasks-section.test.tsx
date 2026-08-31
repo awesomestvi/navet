@@ -240,7 +240,7 @@ describe('TasksSection', () => {
     expect(screen.getAllByText('Needs attention').length).toBeGreaterThan(0);
   });
 
-  it('keeps habit suggestions out of the full-width routines workspace', () => {
+  it('keeps Navet AI observations out of the full-width routines workspace', () => {
     setRoutineEntities();
 
     renderWithProviders(<TasksSection />);

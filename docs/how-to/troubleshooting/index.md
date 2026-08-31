@@ -11,8 +11,8 @@ step explicitly says that it resets or replaces configuration.
 
 - [Camera does not play live video](/guide/troubleshooting/camera-playback/)
 - [Rooms, devices, or entities are missing](/guide/troubleshooting/missing-entities/)
-- [Dashboard changes conflict across devices](/guide/dashboards/sync-conflicts/)
+- [Dashboard changes conflict across devices](/guide/dashboards/sync-across-devices/#resolve-a-synchronization-conflict)
 - [Chore setup is blocked after adding a management PIN](/guide/everyday-control/manage-household-chores/#finish-setup-after-a-management-pin-error)
 - [Connection or sign-in fails](/guide/troubleshooting/connection/)
 - [A feature is unavailable](/guide/troubleshooting/unavailable-features/)
-- [Kiosk, wake-lock, or embedded browser problems](/guide/wall-displays/recovery/)
+- [Kiosk, wake-lock, or embedded browser problems](/guide/wall-displays/kiosk-mode/#leave-kiosk-mode)

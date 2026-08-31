@@ -33,7 +33,7 @@ still depend on the entity types a provider exposes and maps successfully.
 | Energy configuration, live energy, and history/statistics | Yes | No | No |
 | Calendar and weather data | Yes | No | No |
 | Persistent notifications, updates, and restart actions | Yes | No | No |
-| Automation/task details and habit-created automations | Yes | No | No |
+| Automation/task details and triggering | Yes | No | No |
 | Assist text, microphone, and response audio | Yes | No | No |
 | Provider room and entity administration | Yes | No | No |
 

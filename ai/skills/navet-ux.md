@@ -1,9 +1,10 @@
 # Navet UX
 
 Read this file before changing dashboard layout, card behavior, section composition, settings,
-dialogs, navigation, or visual hierarchy. Also read the compact
-[`AI-DESIGN-CONTEXT.md`](../../docs/design-system/AI-DESIGN-CONTEXT.md) packet. When the work changes
-how Navet communicates visually or through cards, also use the canonical
+dialogs, navigation, or visual hierarchy. When the work changes a shared visual or interaction
+rule, also read the full
+[`UI-GUIDELINES.md`](../../docs/design-system/UI-GUIDELINES.md). When the work changes how Navet
+communicates visually or through cards, also use the canonical
 [brand system](../../docs/branding/README.md) and
 [product card grammar](../../docs/branding/CARD_GRAMMAR.md).
 
@@ -29,6 +30,11 @@ Reference order:
 
 Do not treat a marketing page, an isolated experimental story, or a generic design trend as a
 dashboard reference.
+
+Stable docs and Storybook imports come from `@navet/app/ui-kit/primitives`,
+`@navet/app/ui-kit/patterns`, and `@navet/app/ui-kit/tokens`. Start review in the UI-kit inventory
+and recipes, the relevant theme foundation, the matching primitive or pattern story, and the card
+catalog or state matrix when card behavior is involved.
 
 ## Product Direction
 

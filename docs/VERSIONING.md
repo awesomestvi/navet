@@ -53,5 +53,5 @@ Keep historical changelog entries intact. When release framing changes, update t
 version references rather than rewriting older release notes.
 
 Write new entries using the concise, user-focused rules in
-[`docs/agents/release-and-publishing.md`](agents/release-and-publishing.md). Prefer short outcomes
+[`docs/release-workflow.md`](release-workflow.md). Prefer short outcomes
 over implementation details or commit summaries.

@@ -21,8 +21,7 @@ Classify existing tests before editing them:
 - `Rewrite`
 - `Delete`
 
-Use `ai/testing-review.md` as the audit baseline when it already covers the file.
-Use `docs/testing/test-tier-inventory.md` for the grouped tier map.
+Use `scripts/test-tier-manifest.mjs` for executable Tier 1 and Tier 2 membership.
 
 ## Fixture Rules
 
@@ -36,5 +35,4 @@ Use `docs/testing/test-tier-inventory.md` for the grouped tier map.
 
 Also read:
 
-- `docs/agents/testing.md`
 - `docs/testing/provider-testing-strategy.md`

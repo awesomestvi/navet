@@ -83,6 +83,7 @@ import {
   setViteProviderSessionCookie,
 } from '../../scripts/vite-provider-session-store.ts'
 import { getVendorChunkName, isLazyHtmlPreload } from '../../scripts/vite-chunking.ts'
+import { viteNavetAiServicePlugin } from '../../scripts/vite-navet-ai-service.ts'
 import {
   createVitePwaCachePolicy,
   deferVitePwaGenerationUntilWriteBundle,
@@ -2927,6 +2928,14 @@ export default defineConfig(({ command, mode }) => {
         }
       ).api?.resolveAuthenticatedPrincipal?.(req, { trustIngressHeaders: false }) ?? null
     const choresPlugin = choreStorePlugin(resolveAuthenticatedPrincipal)
+    const navetAiPlugin = viteNavetAiServicePlugin({
+      repositoryRoot: repoRoot,
+      resolvePrincipal: resolveAuthenticatedPrincipal,
+      environment: {
+        ...process.env,
+        NAVET_AI_MEMORY_GB: env.NAVET_AI_MEMORY_GB?.trim(),
+      },
+    })
     const homeySessionPlugin = homeySessionStorePlugin(installationAuthority)
     const openhabSessionPlugin = openhabSessionStorePlugin(
       installationAuthority
@@ -2944,6 +2953,7 @@ export default defineConfig(({ command, mode }) => {
       authSessionPlugin,
       dashboardProfilePlugin,
       choresPlugin,
+      navetAiPlugin,
       homeySessionPlugin,
       openhabSessionPlugin,
       homeAssistantProxyPlugin(

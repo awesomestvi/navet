@@ -74,6 +74,10 @@ const SettingsSection = lazy(async () => {
   const module = await import('@navet/app/features/settings/components/settings-section');
   return { default: module.SettingsSection };
 });
+const NavetAiSection = lazy(async () => {
+  const module = await import('@navet/app/features/navet-ai/components/navet-ai-section');
+  return { default: module.NavetAiSection };
+});
 const LightsDashboard = lazy(async () => {
   const module = await import('@navet/app/features/lighting/dashboard/lights-dashboard');
   return { default: module.LightsDashboard };
@@ -565,6 +569,14 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
     sectionContent = (
       <Suspense fallback={<LoadingSpinner />}>
         <MediaSection />
+      </Suspense>
+    );
+  } else if (activeSection === 'ai') {
+    sectionContent = (
+      <Suspense fallback={<LoadingSpinner message="Loading Navet AI" />}>
+        <RenderProfiler id="NavetAiSection">
+          <NavetAiSection />
+        </RenderProfiler>
       </Suspense>
     );
   } else if (activeSection === 'settings') {

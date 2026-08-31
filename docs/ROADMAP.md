@@ -21,13 +21,15 @@ Navet currently ships:
   sections
 - dashboard editing with card ordering, sizing, locking, visibility, import/export, undo/redo, and
   Home overview layout packs
+- multiple named dashboards with shared layouts, direct links, and per-device defaults
 - addable widgets for info summaries, RSS, photos, notes, battery and UPS status, live energy,
-  action buttons, Home Assistant Assist, maps, and generic provider entities
+  action buttons, Home Assistant Assist, Navet AI observations, maps, and generic provider entities
 - entity-card families for lights, switches, fans, climate and HVAC, humidifiers, covers, locks,
   alarm panels, cameras, media, weather, calendars, people, sensors, sensor groups, scenes, helpers,
   vacuums, and lawn mowers
-- task automation details, dependency summaries, and habit-suggested routine creation for providers
-  that expose the automation creation capability
+- task automation details and dependency summaries for providers that expose automation services
+- installation-local Navet AI observations in Docker and the Home Assistant add-on; these are
+  read-only and never create or trigger provider routines
 - custom sidebar extensions with embedded pages and up to five quick actions
 - dashboard profile presets for standard and wall-display setups, including kiosk mode and kiosk
   navigation
@@ -44,7 +46,6 @@ services. Homey and openHAB currently supply rooms, lighting, switches, sensors,
 
 ### Layout And Navigation
 
-- [ ] Multiple dashboards
 - [ ] Multiple views per dashboard
 - [ ] User-configurable full-width views
 - [ ] Per-view column count

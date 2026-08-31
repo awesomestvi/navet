@@ -25,7 +25,7 @@ Current provider capability baseline:
 
 - read the relevant skill file before changing code, tests, fixtures, or docs in that area
 - for architecture, state, integration, provider, auth/runtime, or larger refactor work, read
-  [`/docs/agents/architecture.md`](../docs/agents/architecture.md)
+  [`/docs/architecture/package-boundaries.md`](../docs/architecture/package-boundaries.md)
 - Home Assistant official documentation is the source of truth for Home Assistant adapter behavior
 - use `/homeassistant/core` as the local implementation reference for Home Assistant edge cases,
   payload shapes, service behavior, and undocumented runtime details
@@ -104,9 +104,9 @@ preferred public model for a new provider-neutral boundary.
 - dashboard UX and layout: [`/ai/skills/navet-ux.md`](skills/navet-ux.md)
 - performance and kiosk constraints: [`/ai/skills/performance.md`](skills/performance.md)
 
-For any dashboard UI task, the UX skill routes next to the compact
-[AI design context](../docs/design-system/AI-DESIGN-CONTEXT.md) and the full
-[UI guidelines](../docs/design-system/UI-GUIDELINES.md).
+For any dashboard UI task, the UX skill routes to the full
+[UI guidelines](../docs/design-system/UI-GUIDELINES.md) when a shared visual or interaction rule
+is changing.
 
 ## Repo Layout
 
@@ -134,9 +134,7 @@ Path rules:
 
 ## Read Next
 
-- [../docs/agents/architecture.md](../docs/agents/architecture.md)
 - [../docs/architecture/package-boundaries.md](../docs/architecture/package-boundaries.md)
-- [../docs/architecture/provider-neutral-ui.md](../docs/architecture/provider-neutral-ui.md)
 - [../docs/architecture/provider-contract.md](../docs/architecture/provider-contract.md)
 - [../docs/testing/provider-testing-strategy.md](../docs/testing/provider-testing-strategy.md)
 - [../docs/design-system/UI-GUIDELINES.md](../docs/design-system/UI-GUIDELINES.md)
@@ -149,4 +147,6 @@ When auditing or touching tests, classify them first:
 - `Rewrite`
 - `Delete`
 
-Use [`/ai/testing-review.md`](testing-review.md) for the audit baseline.
+Use [`docs/testing/provider-testing-strategy.md`](../docs/testing/provider-testing-strategy.md) for
+the tier and classification rules; executable Tier 1 and Tier 2 membership lives in
+`scripts/test-tier-manifest.mjs`.

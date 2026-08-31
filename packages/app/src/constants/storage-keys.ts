@@ -37,6 +37,7 @@ export const STORAGE_KEYS = {
   dashboardClientIdentity: 'navet-dashboard-client-identity',
   settingsProfileScopes: 'navet-settings-profile-scopes',
   assistPromptHistory: 'navet-assist-prompt-history',
+  assistAssistantMode: 'navet-assist-assistant-mode',
 } as const;
 
 export const LEGACY_STORAGE_KEYS = {

@@ -131,8 +131,8 @@ Every implemented provider should cover:
 - entity lookup and entity diffing through state subscriptions
 - add, update, remove, and unsubscribe behavior in state updates
 - resource resolution and fallback behavior where supported
-- feature-service behavior exposed by that provider, such as task automation details, automation
-  triggering, and optional habit-rule automation creation
+- feature-service behavior exposed by that provider, such as task automation details and
+  automation triggering
 - provider unavailable and malformed payload behavior
 
 Every adapter-layer command surface should cover:

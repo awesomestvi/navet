@@ -144,6 +144,8 @@ for (const language of languages.slice(1)) {
 
 const universallyAllowedIdenticalValues = new Set([
   'Navet',
+  'Navet AI',
+  'Home Assistant',
   'UV',
   'Spotify',
   'Spotify Connect',

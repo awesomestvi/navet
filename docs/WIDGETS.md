@@ -27,6 +27,7 @@ Widgets are included in dashboard export and import.
 | `ups` | UPS status overview |
 | `energy-now` | live energy snapshot |
 | `media-stack` | responsive media summary retained in saved and imported dashboard profiles |
+| `ai-insights` | read-only Navet AI observations for supported server-backed installations |
 | `button` | custom action button |
 | `assist` | text and microphone access to a Home Assistant Assist pipeline |
 | `map` | people and tracker locations |
@@ -52,7 +53,7 @@ Widget sizing is per widget type, not global.
 | `button`, `assist` | `tiny`, `extra-small`, `small` |
 | `photo`, `note` | `small`, `medium`, `large`, `extra-large` |
 | `info`, `entity` | `extra-small`, `small`, `medium`, `large` |
-| `battery`, `ups`, `energy-now`, `media-stack`, `map` | `small`, `medium`, `large` |
+| `battery`, `ups`, `energy-now`, `media-stack`, `ai-insights`, `map` | `small`, `medium`, `large` |
 | `rss` | `medium`, `large` in the Add card flow |
 
 ## Placement
@@ -70,12 +71,12 @@ directly.
 ## Limits And Notes
 
 - Widgets are part of Navet itself, not provider-native card definitions.
-- The Widgets tab offers twelve choices when Home Assistant is connected. Ten create the base
-  `info`, `rss`, `photo`, `note`, `battery`, `ups`, `energy-now`, `button`, `assist`, and `map`
-  types; scene and energy-metric are presets of `button` and `info`. The `assist` choice is hidden
-  when no Home Assistant session is configured. Generic `entity` cards come from the Cards library
-  rather than the Widgets
-  tab. `media-stack` remains runtime-supported
+- The Widgets tab exposes the base `info`, `rss`, `photo`, `note`, `battery`, `ups`, `energy-now`,
+  `button`, `assist`, `ai-insights`, and `map` types where their required runtime is available;
+  scene and energy-metric are presets of `button` and `info`. The `assist` choice requires a Home
+  Assistant session. `ai-insights` requires the Navet AI service available in standalone Docker
+  and the Home Assistant add-on; it is hidden in the browser-only custom panel. Generic `entity`
+  cards come from the Cards library rather than the Widgets tab. `media-stack` remains runtime-supported
   for compatible saved and imported dashboard profiles, but is intentionally hidden from the
   custom-widget chooser.
 - RSS uses Navet's same-origin proxy instead of direct browser fetches.

@@ -45,7 +45,8 @@ most useful before you leave edit mode.
 Choose **Done**. Navet saves the active Home layout to the dashboard profile.
 
 If another registered device is editing the shared profile at the same time, Navet may ask which
-version to keep. See [Resolve a synchronization conflict](/guide/dashboards/sync-conflicts/).
+version to keep. See
+[Resolve a synchronization conflict](/guide/dashboards/sync-across-devices/#resolve-a-synchronization-conflict).
 
 ## Restore a hidden card
 

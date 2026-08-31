@@ -42,6 +42,7 @@ pnpm check:ui-kit
 pnpm check:provider-boundaries
 pnpm check:bundle-budget
 pnpm check:docker
+pnpm check:navet-ai-pi
 pnpm check:lockfile
 pnpm check:brand
 pnpm validate
@@ -70,6 +71,7 @@ pnpm wallpapers:check
 
 - app behavior change: `pnpm test:tier2`
 - provider contract or auth/runtime change: `pnpm test:tier1`
+- Navet AI service or Raspberry Pi profile change: `pnpm check:navet-ai-pi`
 - Storybook or UI-kit work: `pnpm check:stories` and `pnpm test:storybook`
 - website or marketing work: `pnpm website:build`
 - public documentation work: `pnpm docs:build`
@@ -120,4 +122,4 @@ baseline workaround.
 ## Related Guidance
 
 - Storybook-specific workflow: [../STORYBOOK_WORKFLOW.md](../STORYBOOK_WORKFLOW.md)
-- release and publishing policy: [release-and-publishing.md](release-and-publishing.md)
+- release and publishing policy: [../release-workflow.md](../release-workflow.md)

@@ -5,7 +5,6 @@ import { docsSchema } from "@astrojs/starlight/schema";
 const routeIds = new Map([
   ["docs/index.md", "index"],
   ["docs/getting-started.md", "getting-started"],
-  ["docs/installation.md", "install/index"],
   ["docs/HOME_ASSISTANT.md", "install/home-assistant"],
   ["docs/NAVET_DEV.md", "install/navet-dev"],
   ["docs/HOMEY.md", "install/homey"],
@@ -26,7 +25,6 @@ const routeIds = new Map([
   ["docs/branding/ASSET_SYSTEM.md", "brand/assets"],
   ["docs/branding/GOVERNANCE.md", "brand/governance"],
   ["docs/branding/TRADEMARK_POLICY.md", "brand/trademark"],
-  ["docs/developers.md", "developers/index"],
   ["CONTRIBUTING.md", "developers/contributing"],
   ["CODE_OF_CONDUCT.md", "developers/code-of-conduct"],
   ["SECURITY.md", "security"],

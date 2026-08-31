@@ -10,7 +10,6 @@ import type { IntegrationProviderId } from '@navet/app/types/provider';
 import type { NavetProviderSession } from '@navet/core/provider-contract';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { PwaUpdatePrompt } from './components/shared/pwa-update-prompt';
-import { useLocalHabitsFeature } from './features/habits/local-habits-feature';
 import {
   useAccentColor,
   useCurrentIntegrationConnectionState,
@@ -103,7 +102,6 @@ function AppContent() {
   );
   const setProviderSessions = useCurrentIntegrationStore(integrationSelectors.setProviderSessions);
   const accentColor = useAccentColor();
-  const [localHabitsFeatureEnabled] = useLocalHabitsFeature();
   const keepDeviceAwake = useSettingsStore(settingsSelectors.keepDeviceAwake);
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === 'undefined' ? true : navigator.onLine
@@ -468,27 +466,19 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    if (!isAuthenticated || !localHabitsFeatureEnabled) {
-      return;
-    }
-
+    if (!isAuthenticated || runtime === 'ha-panel') return;
     let cancelled = false;
-    let stopHabitEngine: (() => void) | null = null;
-
-    void import('./features/habits/habit-engine').then((module) => {
-      if (cancelled) {
-        return;
-      }
-
-      module.initializeHabitEngine();
-      stopHabitEngine = module.stopHabitEngine;
+    let stop: (() => void) | null = null;
+    void import('./features/navet-ai/navet-ai-engine').then((module) => {
+      if (cancelled) return;
+      module.initializeNavetAiEngine();
+      stop = module.stopNavetAiEngine;
     });
-
     return () => {
       cancelled = true;
-      stopHabitEngine?.();
+      stop?.();
     };
-  }, [isAuthenticated, localHabitsFeatureEnabled]);
+  }, [isAuthenticated, runtime]);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);

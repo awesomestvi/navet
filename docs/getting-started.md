@@ -7,16 +7,19 @@ editUrl: https://github.com/awesomestvi/navet/edit/main/docs/getting-started.md
 Navet is a local-first smart-home dashboard. It provides one visual layer for the smart-home
 platform you already use; it does not replace that platform or move your home into a hosted cloud.
 
-## Start with your provider
+## Choose an installation
 
-- **Home Assistant:** use the [Home Assistant installation guide](/install/home-assistant/).
+- **Home Assistant:** use the [Home Assistant installation guide](/install/home-assistant/). Choose
+  the HACS custom panel if you already use HACS, the Home Assistant App when Home Assistant OS
+  should run Navet, or standalone Docker when you manage containers yourself.
 - **Homey:** use the [Homey setup guide](/install/homey/).
 - **openHAB:** use the [openHAB setup guide](/install/openhab/).
 - **Development builds:** use [Navet Dev](/install/navet-dev/) when you explicitly want the newest
-  in-progress build.
+  unfinished changes and accept that they can break more often than a normal release.
 
-If you are unsure which Home Assistant route fits, compare them in
-[Choose an installation](/install/).
+With standalone Docker, browsers can use a LAN address at home or a VPN, Tailscale, or external
+address while away. After the first trusted Home Assistant server is approved, each browser
+address does not need separate provider pairing.
 
 ## After Navet opens
 

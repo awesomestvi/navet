@@ -3,7 +3,9 @@ import type { IntegrationProviderId } from '@navet/app/types/provider';
 
 const MAX_PROMPTS_PER_PROVIDER = 50;
 
-type AssistPromptHistory = Partial<Record<IntegrationProviderId, string[]>>;
+export type AssistPromptHistoryKey = IntegrationProviderId | 'navet_ai';
+
+type AssistPromptHistory = Partial<Record<AssistPromptHistoryKey, string[]>>;
 
 function readStoredHistory(): AssistPromptHistory {
   if (typeof window === 'undefined') return {};
@@ -42,12 +44,12 @@ function writeStoredHistory(history: AssistPromptHistory) {
   }
 }
 
-export function readAssistPromptHistory(providerId: IntegrationProviderId): string[] {
+export function readAssistPromptHistory(providerId: AssistPromptHistoryKey): string[] {
   return readStoredHistory()[providerId] ?? [];
 }
 
 export function rememberAssistPrompt(
-  providerId: IntegrationProviderId,
+  providerId: AssistPromptHistoryKey,
   submittedText: string
 ): string[] {
   const prompt = submittedText.trim();

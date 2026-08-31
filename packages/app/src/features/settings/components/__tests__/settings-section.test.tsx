@@ -1,33 +1,158 @@
+import { useNavetAiStore } from '@navet/app/features/navet-ai/navet-ai-store';
 import { setMediaQueryMatch } from '@navet/app/test/browser-mocks';
 import { renderWithProviders } from '@navet/app/test/render';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SettingsSection } from '../settings-section';
 
 describe('SettingsSection', () => {
   beforeEach(() => {
     localStorage.clear();
+    window.__NAVET_PANEL__ = undefined;
     document.documentElement.style.scrollbarGutter = '';
   });
 
-  it('shows the habits tab after enabling the production-safe experimental feature', () => {
+  it('shows Navet AI as a first-class settings destination', () => {
+    useNavetAiStore.setState({
+      loading: false,
+      error: null,
+      state: {
+        contract: 'navet.ai',
+        version: 1,
+        settings: {
+          enabled: true,
+          dailyGenerationEnabled: true,
+          locale: 'en',
+          modelDownloadConsented: false,
+        },
+        capabilities: {
+          available: true,
+          readOnly: true,
+          supportsHistoryBackfill: true,
+          storageOwner: 'installation',
+          rawRetentionDays: 30,
+          aggregateRetentionMonths: 12,
+          model: { status: 'not_downloaded', selectedId: 'qwen3.5-0.8b' },
+        },
+        insights: [],
+        feedback: [],
+        eventCount: 0,
+        lastGeneratedAt: null,
+        historyBackfilledAt: null,
+      },
+    });
     renderWithProviders(<SettingsSection />);
+    fireEvent.click(screen.getByRole('button', { name: 'Navet AI' }));
+    expect(screen.getByRole('heading', { name: 'Navet AI' })).toBeInTheDocument();
+    expect(screen.getByText(/can only read and suggest/i)).toBeInTheDocument();
+    expect(screen.getByText(/model not downloaded/i)).toBeInTheDocument();
+    expect(screen.queryByText(/not_downloaded/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Download' })).toHaveClass('h-9', 'rounded-full');
+  });
 
-    expect(screen.queryByRole('button', { name: 'Habits' })).not.toBeInTheDocument();
+  it('does not offer Navet AI in the browser-only Home Assistant panel', () => {
+    window.__NAVET_PANEL__ = true;
+    renderWithProviders(<SettingsSection />);
+    expect(screen.queryByRole('button', { name: 'Navet AI' })).not.toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Experimental' }));
+  it('shows model download progress and cancellation in settings', () => {
+    useNavetAiStore.setState({
+      loading: false,
+      error: null,
+      state: {
+        contract: 'navet.ai',
+        version: 1,
+        settings: {
+          enabled: true,
+          dailyGenerationEnabled: true,
+          locale: 'en',
+          modelDownloadConsented: true,
+        },
+        capabilities: {
+          available: true,
+          readOnly: true,
+          supportsHistoryBackfill: true,
+          storageOwner: 'installation',
+          rawRetentionDays: 30,
+          aggregateRetentionMonths: 12,
+          model: {
+            status: 'downloading',
+            selectedId: 'qwen3.5-2b',
+            downloadBytes: 1_396_198_496,
+            downloadedBytes: 698_099_248,
+          },
+        },
+        insights: [],
+        feedback: [],
+        eventCount: 0,
+        lastGeneratedAt: null,
+        historyBackfilledAt: null,
+      },
+    });
 
-    expect(screen.getByRole('heading', { name: 'Experimental' })).toBeInTheDocument();
-    fireEvent.click(
-      within(screen.getByRole('group', { name: 'Local habits' })).getByRole('button', {
-        name: 'On',
-      })
+    renderWithProviders(<SettingsSection />);
+    fireEvent.click(screen.getByRole('button', { name: 'Navet AI' }));
+
+    expect(screen.getByRole('progressbar', { name: 'Model download progress' })).toHaveAttribute(
+      'aria-valuenow',
+      '50'
     );
+    expect(screen.getByRole('button', { name: 'Cancel download' })).toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Habits' }));
+  it('shows installed model identity, storage details, and guarded removal', () => {
+    const deleteModel = vi.fn();
+    useNavetAiStore.setState({
+      loading: false,
+      error: null,
+      deleteModel,
+      state: {
+        contract: 'navet.ai',
+        version: 1,
+        settings: {
+          enabled: true,
+          dailyGenerationEnabled: true,
+          locale: 'en',
+          modelDownloadConsented: true,
+        },
+        capabilities: {
+          available: true,
+          readOnly: true,
+          supportsHistoryBackfill: true,
+          storageOwner: 'installation',
+          rawRetentionDays: 30,
+          aggregateRetentionMonths: 12,
+          model: {
+            status: 'ready',
+            selectedId: 'qwen3.5-2b',
+            downloadBytes: 1_396_198_496,
+            downloadedBytes: 1_396_198_496,
+          },
+        },
+        insights: [],
+        feedback: [],
+        eventCount: 0,
+        lastGeneratedAt: null,
+        historyBackfilledAt: null,
+      },
+    });
 
-    expect(screen.getByRole('heading', { name: 'Local habits' })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: 'Enable local habits' })).toBeInTheDocument();
+    renderWithProviders(<SettingsSection />);
+    fireEvent.click(screen.getByRole('button', { name: 'Navet AI' }));
+
+    expect(screen.getByText('Qwen 3.5')).toBeInTheDocument();
+    expect(screen.getByText('2B · Q4_K_M')).toBeInTheDocument();
+    expect(screen.getByText('1.3 GB')).toBeInTheDocument();
+    expect(screen.getByText('Apache-2.0')).toBeInTheDocument();
+    expect(screen.getByText('This installation')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove model' }));
+    expect(screen.getByRole('heading', { name: 'Remove the local model?' })).toBeInTheDocument();
+    fireEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Remove model' })
+    );
+    expect(deleteModel).toHaveBeenCalledTimes(1);
   });
 
   it('restores the persisted tab after remounting', async () => {

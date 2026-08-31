@@ -1,15 +1,5 @@
-import { useLocalHabitsFeature } from '@navet/app/features/habits';
 import { useI18n, useMediaQuery, usePersistedState } from '@navet/app/hooks';
-import {
-  Brain,
-  FlaskConical,
-  Hand,
-  Info,
-  Languages,
-  LayoutGrid,
-  Palette,
-  Server,
-} from 'lucide-react';
+import { Brain, Hand, Info, Languages, LayoutGrid, Palette, Server } from 'lucide-react';
 import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import { useSettingsSectionController } from '../hooks/use-settings-section-controller';
 import {
@@ -19,10 +9,9 @@ import {
 } from '../settings-navigation';
 import { SettingsAppearanceSection } from './settings-appearance-section';
 import { SettingsDashboardSection } from './settings-dashboard-section';
-import { SettingsExperimentalSection } from './settings-experimental-section';
-import { SettingsHabitsSection } from './settings-habits-section';
 import { SettingsInteractionSection } from './settings-interaction-section';
 import { SettingsLocalizationSection } from './settings-localization-section';
+import { SettingsNavetAiSection } from './settings-navet-ai-section';
 import { type SettingsNavigationGroup, SettingsNavigationShell } from './settings-navigation-shell';
 import { SettingsProjectSection } from './settings-project-section';
 import { createSettingsSearchItems } from './settings-search-items';
@@ -42,8 +31,14 @@ export function SettingsSection({
 }: SettingsSectionProps) {
   const { t } = useI18n();
   const controller = useSettingsSectionController();
-  const hiddenTabSet = useMemo(() => new Set<string>(hiddenTabs), [hiddenTabs]);
-  const [localHabitsEnabled, setLocalHabitsEnabled] = useLocalHabitsFeature();
+  const hiddenTabSet = useMemo(
+    () =>
+      new Set<string>([
+        ...hiddenTabs,
+        ...(typeof window !== 'undefined' && window.__NAVET_PANEL__ ? ['ai'] : []),
+      ]),
+    [hiddenTabs]
+  );
   const responsiveIsMobile = useMediaQuery('(max-width: 767px)');
   const isMobile = layout === 'mobile' || (layout === 'auto' && responsiveIsMobile);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
@@ -57,14 +52,11 @@ export function SettingsSection({
         { id: 'localization', label: t('settings.nav.localization'), icon: Languages },
         { id: 'interaction', label: t('settings.nav.interaction'), icon: Hand },
         { id: 'dashboard', label: t('settings.nav.dashboard'), icon: LayoutGrid },
-        ...(localHabitsEnabled
-          ? [{ id: 'habits', label: t('settings.nav.habits'), icon: Brain }]
-          : []),
-        { id: 'experimental', label: t('settings.nav.experimental'), icon: FlaskConical },
+        { id: 'ai', label: t('sidebar.ai'), icon: Brain },
         { id: 'system', label: t('settings.nav.system'), icon: Server },
         { id: 'project', label: t('settings.project.sectionTitle'), icon: Info },
       ].filter(({ id }) => !hiddenTabSet.has(id)),
-    [hiddenTabSet, localHabitsEnabled, t]
+    [hiddenTabSet, t]
   );
   const fallbackTab = (navItems[0]?.id ?? 'appearance') as SettingsTabId;
   const [persistedTab, setPersistedTab] = usePersistedState<SettingsTabId>(
@@ -114,16 +106,13 @@ export function SettingsSection({
 
     return [
       createGroup('personal', ['appearance', 'localization', 'interaction']),
-      createGroup('dashboard', ['dashboard', 'habits'], t('settings.nav.dashboard')),
-      createGroup('navet', ['system', 'experimental', 'project'], 'Navet'),
+      createGroup('dashboard', ['dashboard'], t('settings.nav.dashboard')),
+      createGroup('navet', ['ai', 'system', 'project'], 'Navet'),
     ].filter((group) => group.items.length > 0);
   }, [navItems, t]);
   const searchItems = useMemo(
-    () =>
-      createSettingsSearchItems(t, localHabitsEnabled).filter(
-        (item) => !hiddenTabSet.has(item.sectionId)
-      ),
-    [hiddenTabSet, localHabitsEnabled, t]
+    () => createSettingsSearchItems(t).filter((item) => !hiddenTabSet.has(item.sectionId)),
+    [hiddenTabSet, t]
   );
 
   const selectTab = (value: string) => {
@@ -187,14 +176,8 @@ export function SettingsSection({
       <SettingsInteractionSection controller={controller} />
     ) : activeTab === 'dashboard' ? (
       <SettingsDashboardSection controller={controller} />
-    ) : activeTab === 'habits' && localHabitsEnabled ? (
-      <SettingsHabitsSection controller={controller} />
-    ) : activeTab === 'experimental' ? (
-      <SettingsExperimentalSection
-        controller={controller}
-        localHabitsEnabled={localHabitsEnabled}
-        onLocalHabitsEnabledChange={setLocalHabitsEnabled}
-      />
+    ) : activeTab === 'ai' ? (
+      <SettingsNavetAiSection controller={controller} />
     ) : activeTab === 'system' && !hiddenTabSet.has('system') ? (
       <SettingsSystemSection controller={controller} />
     ) : (

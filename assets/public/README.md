@@ -147,7 +147,3 @@ They are governed by Navet brand usage rules:
 - [../../docs/branding/README.md](../../docs/branding/README.md)
 - [../../docs/branding/ASSET_SYSTEM.md](../../docs/branding/ASSET_SYSTEM.md)
 - [../../docs/branding/TRADEMARK_POLICY.md](../../docs/branding/TRADEMARK_POLICY.md)
-
----
-
-**Last Updated:** July 22, 2026

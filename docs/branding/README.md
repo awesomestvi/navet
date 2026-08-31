@@ -28,10 +28,6 @@ rebrand.
   deprecation.
 - [Brand and trademark policy](https://docs.navet.app/brand/trademark/) defines permitted use of the Navet name and marks.
 
-[The legacy brand reference](https://github.com/awesomestvi/navet/blob/main/docs/branding/BRANDING.md) and [asset quick reference](https://github.com/awesomestvi/navet/blob/main/docs/branding/BRANDING_ASSETS.md) remain useful quick
-references for the name, logo, and existing files. When a quick reference and a specialized
-document differ, use the specialized document for that concern.
-
 ## Preservation Charter
 
 The following parts of Navet are established and must be preserved unless the maintainers
@@ -124,10 +120,10 @@ Use the source that owns the question instead of choosing whichever wording is e
 | How should a card communicate? | [Product card grammar](https://docs.navet.app/brand/cards/) | [demo.navet.app](https://demo.navet.app/), current app cards, and Storybook |
 | Which asset should be used? | [Brand asset system](https://docs.navet.app/brand/assets/) | [Asset source reference](https://github.com/awesomestvi/navet/blob/main/assets/brand/README.md) and `assets/public/` distributions |
 | Which recurring layout should be used? | [Brand templates](https://github.com/awesomestvi/navet/tree/main/assets/brand/templates/) | [Visual identity](https://docs.navet.app/brand/visual/) and current product captures |
-| May the name or logo be used? | [Brand and trademark policy](https://docs.navet.app/brand/trademark/) | [Brand quick reference](https://github.com/awesomestvi/navet/blob/main/docs/branding/BRANDING.md) |
+| May the name or logo be used? | [Brand and trademark policy](https://docs.navet.app/brand/trademark/) | [Brand asset system](https://docs.navet.app/brand/assets/) |
 | What can the product do today? | [Integration capability matrix](https://docs.navet.app/integrations/) and current implementation | [Repository overview](https://github.com/awesomestvi/navet#readme), user guide, installation guides, and release notes |
 | What is planned? | [Public roadmap](https://docs.navet.app/roadmap/) | Current project and issue status |
-| How should shared UI be implemented? | [UI guidelines](https://github.com/awesomestvi/navet/blob/main/docs/design-system/UI-GUIDELINES.md) | [AI design context](https://github.com/awesomestvi/navet/blob/main/docs/design-system/AI-DESIGN-CONTEXT.md), Storybook, and product neighbors |
+| How should shared UI be implemented? | [UI guidelines](https://github.com/awesomestvi/navet/blob/main/docs/design-system/UI-GUIDELINES.md) | [Navet UX workflow](https://github.com/awesomestvi/navet/blob/main/ai/skills/navet-ux.md), Storybook, and product neighbors |
 | What may marketing claim? | [Claims discipline](https://docs.navet.app/brand/voice/#claims-discipline) | Current product truth and a dated primary source |
 
 `.agents/product-marketing.md` is a working context document for marketing tasks. It may summarize

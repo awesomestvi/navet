@@ -3,8 +3,9 @@
 Navet chores are an app-owned, provider-neutral household domain. They are not Home Assistant todo
 entities and do not expose provider service payloads to shared UI.
 
-The staged product and engineering backlog is tracked in
-[`docs/roadmap/household-chores-wip.md`](../roadmap/household-chores-wip.md).
+The current user-facing behavior is documented in the
+[household chores guide](../chores.md). This document owns the durable domain, authority, storage,
+and provider-boundary decisions behind that behavior.
 
 ## Ownership
 

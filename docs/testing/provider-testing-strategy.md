@@ -15,7 +15,21 @@ Navet's automated test surface is split into four tiers:
 - `Tier 4: Rewrite/Delete candidates`
   Existing suites that should be rewritten against stronger fixtures or removed.
 
-Use [test-tier-inventory.md](test-tier-inventory.md) for the grouped inventory.
+Executable Tier 1 and Tier 2 membership lives in
+[`../../scripts/test-tier-manifest.mjs`](../../scripts/test-tier-manifest.mjs). Tier 3 is the broad
+regression remainder. Tier 4 is a review classification, not a runnable gate or a place for new
+tests.
+
+## Working Rules
+
+- classify an existing test as keep, rewrite, or delete before changing it
+- ground assertions in product requirements, Navet contracts, realistic provider payloads,
+  official provider documentation, or a known regression
+- do not weaken a valid test to match implementation drift
+- reuse shared fixtures instead of repeating hand-shaped objects
+- require a release, runtime, security, or provider justification for new Tier 1 membership
+- require a stable store, service, or platform contract justification for new Tier 2 membership
+- rewrite or remove a weak test instead of adding it to Tier 4
 
 ## Test Layers
 
@@ -81,6 +95,27 @@ feature parity.
 
 These suites are Tier 1 by default.
 
+### Provider onboarding
+
+A provider package exposes stable package-root surfaces for its contract or adapter, runtime
+registration, package registration, and—when it accepts native snapshots—its state builder.
+
+Implemented providers must pass `runProviderContractTests`,
+`runProviderPackageRegistrationTests`, and provider-specific payload/runtime tests. Planned
+providers must assert `implementationStatus: 'planned'` and explicitly reject unsupported feature
+behavior.
+
+Before an implementation is considered ready, verify that:
+
+- the package does not import `@navet/app`
+- its package root exports the registration used by `@navet/app`
+- its contract returns normalized `NavetProviderState`
+- runtime registration declares capabilities and its feature matrix explicitly
+- contract, adapter, and runtime-registration references stay aligned
+- implemented providers cover connect, disconnect, lookup, updates, malformed payloads, and
+  unsupported commands
+- planned providers remain scaffold-only and do not claim unsupported features
+
 ### `@navet/app`
 
 Test:
@@ -118,4 +153,4 @@ Validation should keep failing if:
 ## Release Validation
 
 The focused release-oriented workflow lives in
-[../agents/release-and-publishing.md](../agents/release-and-publishing.md).
+[../release-workflow.md](../release-workflow.md).

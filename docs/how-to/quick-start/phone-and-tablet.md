@@ -1,6 +1,6 @@
 ---
 title: Use Navet on a phone or tablet
-description: Navigate sections, rooms, search, and card controls on smaller screens.
+description: Navigate on smaller screens, install the PWA, and prepare a dedicated tablet.
 editUrl: https://github.com/awesomestvi/navet/edit/main/docs/how-to/quick-start/phone-and-tablet.md
 ---
 
@@ -45,6 +45,33 @@ individually. It enables kiosk mode, keep-awake, a clock header, denser spacing,
 summary bar.
 
 See [Set up kiosk and Wall Display mode](/guide/wall-displays/kiosk-mode/).
+
+## Add Navet to your Home Screen
+
+Installing Navet as a PWA gives it an app icon and opens it without normal browser controls. Open
+Navet from its trusted address, sign in, and confirm the dashboard works first. HTTPS is normally
+required outside local development.
+
+### iPhone
+
+1. Open Navet in Safari.
+2. Open the Share menu and choose **Add to Home Screen**.
+3. Confirm the name and choose **Add**.
+
+### Android
+
+1. Open Navet in a supported browser.
+2. Open the browser menu and choose **Install app** or **Add to Home screen**.
+3. Confirm the installation.
+
+![Navet opened from a phone's Home Screen without browser controls.](/docs/how-to/quick-start/pwa-installed.webp)
+
+When Navet reports an update, finish unsaved edits, choose the update action, and allow the app to
+reload.
+
+If installation is not offered, use the normal Navet address rather than an embedded preview,
+confirm HTTPS where required, and reload after the first successful connection. Home Assistant
+Ingress installation behavior can differ from standalone Navet.
 
 ## If controls feel too dense
 

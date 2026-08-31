@@ -1,5 +1,5 @@
 import type { TranslateFn } from '@navet/app/hooks';
-import { Zap as EnergyIcon, Gauge, MessageCircle, Sparkles } from 'lucide-react';
+import { Brain, Zap as EnergyIcon, Gauge, MessageCircle, Sparkles } from 'lucide-react';
 import type { SVGProps } from 'react';
 import type { ButtonWidgetData } from '../widgets/button-widget';
 import type { CardTemplate } from './types';
@@ -135,7 +135,7 @@ function createScenePresetData(t: TranslateFn): Record<string, unknown> {
 }
 
 export function createCardTemplates(t: TranslateFn): CardTemplate[] {
-  return [
+  const templates: CardTemplate[] = [
     {
       id: 'info',
       cardType: 'info',
@@ -231,6 +231,15 @@ export function createCardTemplates(t: TranslateFn): CardTemplate[] {
       initialData: { providerId: 'home_assistant' },
     },
     {
+      id: 'ai-insights',
+      cardType: 'ai-insights',
+      nameKey: 'dashboard.addCard.templates.aiInsights.name',
+      descriptionKey: 'dashboard.addCard.templates.aiInsights.description',
+      icon: <Brain className="w-5 h-5" />,
+      defaultSize: 'medium',
+      supportedSizes: ['small', 'medium', 'large'],
+    },
+    {
       id: 'scene',
       cardType: 'button',
       nameKey: 'dashboard.addCard.templates.scene.name',
@@ -250,4 +259,7 @@ export function createCardTemplates(t: TranslateFn): CardTemplate[] {
       supportedSizes: ['small', 'medium', 'large'],
     },
   ];
+  return typeof window !== 'undefined' && window.__NAVET_PANEL__ === true
+    ? templates.filter((template) => template.cardType !== 'ai-insights')
+    : templates;
 }

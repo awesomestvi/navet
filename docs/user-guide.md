@@ -35,6 +35,10 @@ provider. The first screen is designed for glanceable state and common household
 - **Household** puts native chores into an attention-first Today list, keeps completed cards visible,
   exposes optional missions and rewards from House pulse, manages recurring work and people in
   dedicated views, and preserves provider automations and scripts under Routines.
+- **Navet AI** shows installation-local, evidence-backed observations for supported lighting,
+  switch, and energy patterns in standalone Docker and the Home Assistant add-on. It never acts
+  automatically or creates routines and automations; explicit on/off commands submitted in its
+  Assist chat are routed through the connected provider.
 - **Settings** controls appearance, dashboard profiles, kiosk behavior, interactions, providers,
   extensions, import/export, and project information.
 

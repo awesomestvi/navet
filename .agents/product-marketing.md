@@ -1,12 +1,12 @@
 # Product Marketing Context
 
-*Last updated: July 22, 2026*
+*Last updated: August 30, 2026*
 
 ## Product Overview
 
 **One-liner:** Navet is a polished, local-first smart-home dashboard for Home Assistant, Homey, and openHAB across wall panels, tablets, desktops, and phones.
 
-**What it does:** Navet turns supported smart-home platforms into one room-first interface for everyday control. It gives households glanceable dashboards for lights, climate, media, energy, security, tasks, and settings while keeping provider-specific connection and command behavior behind the shared experience.
+**What it does:** Navet turns supported smart-home platforms into one room-first interface for everyday control. It gives households glanceable dashboards for lights, climate, media, energy, security, chores, routines, and settings while keeping provider-specific connection and command behavior behind the shared experience. Supported server-backed installations can also show private, read-only Navet AI observations.
 
 **Product category:** Self-hosted smart-home dashboard.
 
@@ -28,6 +28,8 @@
 - Give household members a consistent interface across wall panels, tablets, phones, and desktops.
 - Keep smart-home data and provider sessions local while using an open-source dashboard.
 - Bring selected entities from more than one implemented provider into shared dashboard collections.
+- Coordinate recurring household chores without making a connected provider the persistence owner.
+- Review installation-local pattern observations without granting an AI device-control authority.
 
 **Use cases:**
 
@@ -68,6 +70,8 @@
 - Local-first, self-hosted operation with provider credentials kept on the user's device or server.
 - Three implemented provider runtimes with selected-provider aggregation in supported standalone flows.
 - A mature Home Assistant experience spanning panel, add-on, and standalone modes.
+- Installation-owned household chores and read-only Navet AI observations in supported server-backed
+  modes.
 - Open-source code and a documented provider-neutral package direction.
 
 **How Navet does it differently:** Shared dashboard UI consumes normalized Navet entities and capabilities while provider packages own authentication, transport, state mapping, and command translation.
@@ -145,6 +149,8 @@ with the complete identity system in [`docs/branding/README.md`](../docs/brandin
 | Local by default | Provider data, dashboard state, and credentials remain on the user's device or server. |
 | Provider choice | Implemented Home Assistant, Homey, and openHAB runtimes with a published capability matrix. |
 | Mature Home Assistant path | Custom panel, add-on, and standalone deployment guides. |
+| Household coordination | Installation-owned chores with shared schedules, assignments, history, and recovery. |
+| Private observations | Navet AI stores bounded observation data locally and cannot issue entity or automation commands. |
 | Open and extensible | AGPL-3.0-only codebase with provider, core, UI, app, Storybook, demo, website, and docs workspaces. |
 
 ## Goals

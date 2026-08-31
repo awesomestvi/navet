@@ -98,6 +98,7 @@ server {
   include /etc/nginx/snippets/navet-openhab-store.conf;
   include /etc/nginx/snippets/navet-profile-store-ingress.conf;
   include /etc/nginx/snippets/navet-chore-store-ingress.conf;
+  include /etc/nginx/snippets/navet-ai-ingress.conf;
   js_set \$navet_provider_proxy_request_allowed navet_homey_proxy.request_allowed;
 
   location = /__navet_chore_scheduler__ {
@@ -307,4 +308,7 @@ ${PROXY_AUTH_DIRECTIVE}
 }
 EOF
 
+mkdir -p /data/navet-ai
+chown -R nginx:nginx /data/navet-ai 2>/dev/null || true
+su-exec nginx node /opt/navet/navet-ai-server.mjs &
 nginx -g 'daemon off;'

@@ -20,7 +20,7 @@ The AGPL-3.0 license does **not** grant rights to use the **Navet** name, logo, 
 Brand usage is governed separately by:
 
 - [docs/branding/TRADEMARK_POLICY.md](docs/branding/TRADEMARK_POLICY.md)
-- [docs/branding/BRANDING.md](docs/branding/BRANDING.md)
+- [docs/branding/README.md](docs/branding/README.md)
 
 ## Third-Party Materials
 

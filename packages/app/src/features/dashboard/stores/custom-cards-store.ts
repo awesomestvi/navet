@@ -25,6 +25,7 @@ export type CardType =
   | 'media-stack'
   | 'button'
   | 'assist'
+  | 'ai-insights'
   | 'map'
   | 'entity';
 
@@ -127,6 +128,15 @@ export function normalizeCustomCard(card: NormalizableCustomCard): CustomCard {
 
   if (
     normalizedCard.type === 'media-stack' &&
+    normalizedCard.size !== 'small' &&
+    normalizedCard.size !== 'medium' &&
+    normalizedCard.size !== 'large'
+  ) {
+    return { ...normalizedCard, size: 'medium' };
+  }
+
+  if (
+    normalizedCard.type === 'ai-insights' &&
     normalizedCard.size !== 'small' &&
     normalizedCard.size !== 'medium' &&
     normalizedCard.size !== 'large'

@@ -18,7 +18,7 @@ phone or browser opens another.
 
 ## Use dashboards across screens
 
-- [Assign a dashboard to a device](/guide/dashboards/assign-to-device/)
+- [Assign a dashboard to a device](/guide/dashboards/switch-and-manage/#assign-a-dashboard-to-devices)
 - [Keep dashboards synchronized](/guide/dashboards/sync-across-devices/)
 - [Back up and restore configuration](/guide/dashboards/backup-and-restore/)
-- [Resolve a synchronization conflict](/guide/dashboards/sync-conflicts/)
+- [Resolve a synchronization conflict](/guide/dashboards/sync-across-devices/#resolve-a-synchronization-conflict)

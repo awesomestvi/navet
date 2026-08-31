@@ -22,13 +22,9 @@ Before making changes, read [`/ai/agents.md`](ai/agents.md).
 
 For architecture, state, provider, integration, auth/runtime, or larger refactor work, also read:
 
-- [`/docs/agents/architecture.md`](docs/agents/architecture.md)
 - [`/docs/architecture/package-boundaries.md`](docs/architecture/package-boundaries.md)
-- [`/docs/architecture/provider-neutral-ui.md`](docs/architecture/provider-neutral-ui.md)
 - [`/docs/architecture/provider-contract.md`](docs/architecture/provider-contract.md)
-- [`/docs/architecture/home-assistant-decoupling-audit.md`](docs/architecture/home-assistant-decoupling-audit.md)
 - [`/docs/testing/provider-testing-strategy.md`](docs/testing/provider-testing-strategy.md)
-- [`/docs/roadmap/provider-platform-roadmap.md`](docs/roadmap/provider-platform-roadmap.md)
 
 Read the relevant skill file for the area you are touching:
 
@@ -42,9 +38,10 @@ Read the relevant skill file for the area you are touching:
 
 For dashboard UI work, reading `navet-ux.md` is mandatory, not optional based on task size. Before
 writing JSX or styles, also inspect the exact neighboring product surface and the relevant
-Storybook primitive, pattern, or card story. Use
-[`/docs/design-system/AI-DESIGN-CONTEXT.md`](docs/design-system/AI-DESIGN-CONTEXT.md) as the short
-reference packet; do not infer Navet's visual language from words such as "premium" or "glass."
+Storybook primitive, pattern, or card story. Use the full
+[`/docs/design-system/UI-GUIDELINES.md`](docs/design-system/UI-GUIDELINES.md) when changing a shared
+visual or interaction rule; do not infer Navet's visual language from words such as "premium" or
+"glass."
 
 ## Repo Layout
 

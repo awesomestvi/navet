@@ -7,8 +7,7 @@ export type SettingsTabId =
   | 'localization'
   | 'interaction'
   | 'dashboard'
-  | 'habits'
-  | 'experimental'
+  | 'ai'
   | 'system'
   | 'project';
 

@@ -10,6 +10,9 @@ import { CompactRoomSelector } from '@navet/app/components/shared/device-editor/
 import { getThemeColorValue } from '@navet/app/components/shared/theme/theme-colors';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@navet/app/components/ui/utils';
+import { navetAiService } from '@navet/app/features/navet-ai/navet-ai.service';
+import { buildNavetAiChatContext } from '@navet/app/features/navet-ai/navet-ai-chat-context';
+import { useNavetAiStore } from '@navet/app/features/navet-ai/navet-ai-store';
 import { useI18n, useTheme } from '@navet/app/hooks';
 import type {
   PlatformConversationEvent,
@@ -24,8 +27,23 @@ import {
 import type { IntegrationProviderId } from '@navet/app/types/provider';
 import { Ellipsis, Mic, Square } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import {
+  readAssistAssistantMode,
+  rememberAssistAssistantMode,
+} from './assist-assistant-preference';
+import { AssistAssistantSwitcher, type AssistMode } from './assist-assistant-switcher';
 import { AssistAudioRecorder } from './assist-audio-recorder';
-import { readAssistPromptHistory, rememberAssistPrompt } from './assist-prompt-history';
+import {
+  type AssistNavetAiActionTarget,
+  type AssistNavetAiExecutionResult,
+  executeExplicitNavetAiCommand,
+} from './assist-navet-ai-command';
+import {
+  type AssistPromptHistoryKey,
+  readAssistPromptHistory,
+  rememberAssistPrompt,
+} from './assist-prompt-history';
 
 interface AssistMessage {
   id: string;
@@ -54,11 +72,12 @@ export function AssistDialog({
   onPipelineChange,
   settingsOnly = false,
 }: AssistDialogProps) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const { theme, primaryColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const accentColor = getThemeColorValue(primaryColor);
   const [pipelines, setPipelines] = useState<PlatformConversationPipeline[]>([]);
+  const [assistantMode, setAssistantMode] = useState<AssistMode>(readAssistAssistantMode);
   const [selectedPipelineId, setSelectedPipelineId] = useState(pipelineId ?? '');
   const [messages, setMessages] = useState<AssistMessage[]>([]);
   const [promptHistory, setPromptHistory] = useState<string[]>(() =>
@@ -73,10 +92,20 @@ export function AssistDialog({
   const recorderRef = useRef<AssistAudioRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const pendingAssistantIdRef = useRef<string | undefined>(undefined);
+  const navetAiAbortControllerRef = useRef<AbortController | null>(null);
+  const { navetAiState, navetAiLoading, initializeNavetAi } = useNavetAiStore(
+    useShallow((store) => ({
+      navetAiState: store.state,
+      navetAiLoading: store.loading,
+      initializeNavetAi: store.initialize,
+    }))
+  );
 
   const stopActiveRun = useCallback(async () => {
     runHandleRef.current?.cancel();
     runHandleRef.current = null;
+    navetAiAbortControllerRef.current?.abort();
+    navetAiAbortControllerRef.current = null;
     await recorderRef.current?.dispose();
     recorderRef.current = null;
     audioRef.current?.pause();
@@ -84,6 +113,10 @@ export function AssistDialog({
     setIsRunning(false);
     setIsListening(false);
   }, []);
+
+  useEffect(() => {
+    if (open && !navetAiState && !navetAiLoading) void initializeNavetAi();
+  }, [initializeNavetAi, navetAiLoading, navetAiState, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -200,17 +233,129 @@ export function AssistDialog({
     const id = makeMessageId();
     pendingAssistantIdRef.current = id;
     setMessages((current) => [...current, { id, role: 'assistant', text: '' }]);
+    return id;
+  };
+
+  const switchAssistant = (nextMode: AssistMode) => {
+    if (nextMode === assistantMode || isRunning) return;
+    void stopActiveRun();
+    rememberAssistAssistantMode(nextMode);
+    setAssistantMode(nextMode);
+    setMessages([]);
+    setError(null);
+    pendingAssistantIdRef.current = undefined;
+    conversationIdRef.current = undefined;
+    const historyKey: AssistPromptHistoryKey = nextMode === 'navet_ai' ? 'navet_ai' : providerId;
+    setPromptHistory(readAssistPromptHistory(historyKey));
+  };
+
+  const formatNavetAiResponse = (
+    result: Awaited<ReturnType<typeof navetAiService.chat>>,
+    execution: AssistNavetAiExecutionResult | null
+  ) => {
+    const stateAnswer =
+      result.answer?.kind === 'lights_on_count'
+        ? result.answer.room
+          ? t('widgets.assist.navetAiLightsOnInRoom', {
+              count: result.answer.count,
+              room: result.answer.room,
+            })
+          : t('widgets.assist.navetAiLightsOn', { count: result.answer.count })
+        : null;
+    const sections = stateAnswer ? [stateAnswer] : result.reply ? [result.reply] : [];
+    const formatTargets = (targets: AssistNavetAiActionTarget[]) => {
+      const listFormatter = new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' });
+      return listFormatter.format(
+        targets.map((target) => (target.room ? `${target.name} (${target.room})` : target.name))
+      );
+    };
+    if (execution) {
+      if (execution.successful.length > 0) {
+        sections.push(t('widgets.assist.navetAiActionCompleted'));
+        for (const operation of ['turn_on', 'turn_off'] as const) {
+          const targets = execution.successful.filter((target) => target.operation === operation);
+          if (targets.length === 0) continue;
+          sections.push(
+            t(
+              operation === 'turn_on'
+                ? 'widgets.assist.navetAiTurnedOn'
+                : 'widgets.assist.navetAiTurnedOff',
+              { targets: formatTargets(targets) }
+            )
+          );
+        }
+      }
+      if (execution.failed.length > 0) {
+        sections.push(
+          t(
+            execution.successful.length > 0
+              ? 'widgets.assist.navetAiActionPartiallyFailed'
+              : 'widgets.assist.navetAiActionFailed',
+            { targets: formatTargets(execution.failed) }
+          )
+        );
+      }
+    } else if (result.suggestions.length > 0) {
+      const suggestions = result.suggestions.map((suggestion) =>
+        t(
+          suggestion.operation === 'turn_on'
+            ? 'widgets.assist.navetAiTurnOn'
+            : 'widgets.assist.navetAiTurnOff',
+          {
+            targets: new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(
+              suggestion.targets.map((target) =>
+                target.room ? `${target.name} (${target.room})` : target.name
+              )
+            ),
+          }
+        )
+      );
+      sections.push(`${t('widgets.assist.navetAiSuggestedAction')}\n${suggestions.join('\n')}`);
+      sections.push(t('widgets.assist.navetAiNotExecuted'));
+    }
+    return sections.join('\n\n') || t('widgets.assist.navetAiNoAnswer');
   };
 
   const sendText = async (submittedText: string) => {
     const text = submittedText.trim();
     if (!text || isRunning) return;
-    setPromptHistory(rememberAssistPrompt(providerId, text));
+    const historyKey: AssistPromptHistoryKey =
+      assistantMode === 'navet_ai' ? 'navet_ai' : providerId;
+    setPromptHistory(rememberAssistPrompt(historyKey, text));
     setError(null);
     setMessages((current) => [...current, { id: makeMessageId(), role: 'user', text }]);
-    beginAssistantMessage();
+    const pendingAssistantId = beginAssistantMessage();
     setIsRunning(true);
     try {
+      if (assistantMode === 'navet_ai') {
+        const controller = new AbortController();
+        navetAiAbortControllerRef.current = controller;
+        const result = await navetAiService.chat(
+          {
+            text,
+            locale,
+            history: messages.slice(-8).map((message) => ({
+              role: message.role,
+              text: message.text,
+            })),
+            entities: buildNavetAiChatContext(),
+          },
+          controller.signal
+        );
+        if (controller.signal.aborted) return;
+        const execution = await executeExplicitNavetAiCommand(result);
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === pendingAssistantId
+              ? { ...message, text: formatNavetAiResponse(result, execution) }
+              : message
+          )
+        );
+        pendingAssistantIdRef.current = undefined;
+        navetAiAbortControllerRef.current = null;
+        setIsRunning(false);
+        return;
+      }
       runHandleRef.current = await startIntegrationTextConversation(
         providerId,
         {
@@ -221,9 +366,15 @@ export function AssistDialog({
         handleConversationEvent
       );
     } catch (cause) {
+      if (cause instanceof DOMException && cause.name === 'AbortError') return;
       console.error('[AssistDialog] Text request failed:', cause);
       discardEmptyAssistantMessage();
-      setError(t('widgets.assist.runFailed'));
+      setError(
+        t(
+          assistantMode === 'navet_ai' ? 'widgets.assist.navetAiFailed' : 'widgets.assist.runFailed'
+        )
+      );
+      navetAiAbortControllerRef.current = null;
       setIsRunning(false);
     }
   };
@@ -276,6 +427,8 @@ export function AssistDialog({
   };
 
   const selectedPipeline = pipelines.find((item) => item.id === selectedPipelineId);
+  const navetAiReady =
+    navetAiState?.settings.enabled === true && navetAiState.capabilities.model.status === 'ready';
   const pipelineOptions = pipelines.map((pipeline) => ({
     label: `${pipeline.name} · ${pipeline.language}`,
     value: pipeline.id,
@@ -284,6 +437,7 @@ export function AssistDialog({
     ? t('common.loading')
     : (selectedPipeline?.name ?? t('widgets.assist.noPipelines'));
   const microphoneSupported =
+    assistantMode === 'home_assistant' &&
     typeof navigator !== 'undefined' &&
     Boolean(navigator.mediaDevices?.getUserMedia) &&
     selectedPipeline?.supportsSpeechToText === true;
@@ -305,6 +459,17 @@ export function AssistDialog({
       iconClassName="h-4 w-4"
     />
   );
+  const assistantSelector = (
+    <AssistAssistantSwitcher
+      value={assistantMode}
+      ariaLabel={t('widgets.assist.assistant')}
+      homeAssistantLabel={t('widgets.assist.homeAssistant')}
+      navetAiLabel={t('widgets.assist.navetAi')}
+      disabled={isRunning}
+      onChange={switchAssistant}
+    />
+  );
+  const inputAvailable = assistantMode === 'navet_ai' ? navetAiReady : pipelines.length > 0;
   const runtime = useExternalStoreRuntime({
     messages,
     convertMessage: (message) => ({
@@ -319,7 +484,7 @@ export function AssistDialog({
           : undefined,
     }),
     isRunning,
-    isSendDisabled: isRunning || pipelines.length === 0,
+    isSendDisabled: isRunning || !inputAvailable,
     onNew: async (message: AppendMessage) => {
       const text = message.content
         .filter((part) => part.type === 'text')
@@ -345,7 +510,11 @@ export function AssistDialog({
         settingsOnly ? undefined : 'flex h-full flex-1 flex-col'
       )}
       mobileCoverSheet
-      mobileCoverSheetActions={<div className="pointer-events-auto">{pipelineSelector}</div>}
+      mobileCoverSheetActions={
+        assistantMode === 'home_assistant' ? (
+          <div className="pointer-events-auto">{pipelineSelector}</div>
+        ) : undefined
+      }
     >
       <div className={cn('flex min-h-0 flex-1 flex-col', surface.textPrimary)}>
         <header
@@ -367,7 +536,11 @@ export function AssistDialog({
             editableTitle={false}
             theme={theme}
             className="mb-0 max-sm:pr-0"
-            trailing={<div className="max-sm:hidden">{pipelineSelector}</div>}
+            trailing={
+              assistantMode === 'home_assistant' ? (
+                <div className="max-sm:hidden">{pipelineSelector}</div>
+              ) : undefined
+            }
           />
         </header>
 
@@ -384,14 +557,26 @@ export function AssistDialog({
                   accentColor={accentColor}
                   cancelLabel={t('common.cancel')}
                   conversationLabel={t('widgets.assist.conversation')}
-                  inputDisabled={pipelines.length === 0}
+                  inputDisabled={!inputAvailable}
                   isRunning={isRunning}
-                  placeholder={t('widgets.assist.placeholder')}
+                  placeholder={t(
+                    assistantMode === 'navet_ai'
+                      ? 'widgets.assist.navetAiPlaceholder'
+                      : 'widgets.assist.placeholder'
+                  )}
                   promptHistory={promptHistory}
                   sendLabel={t('widgets.assist.send')}
-                  starterMessage={t('widgets.assist.emptyTitle')}
+                  starterMessage={t(
+                    assistantMode === 'navet_ai'
+                      ? 'widgets.assist.navetAiEmptyTitle'
+                      : 'widgets.assist.emptyTitle'
+                  )}
                   status={
-                    isListening ? (
+                    assistantMode === 'navet_ai' && !navetAiReady ? (
+                      <p className="text-sm opacity-70" role="status">
+                        {t('widgets.assist.navetAiUnavailable')}
+                      </p>
+                    ) : isListening ? (
                       <div
                         className="flex items-center justify-center gap-1"
                         role="status"
@@ -419,30 +604,35 @@ export function AssistDialog({
                     ) : null
                   }
                   tools={
-                    isListening ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="compact"
-                        onClick={() => void stopListening()}
-                        iconOnly
-                        label={t('widgets.assist.stopListening')}
-                      >
-                        <Square className="size-4" />
-                      </Button>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="compact"
-                        onClick={() => void startListening()}
-                        disabled={!microphoneSupported || isRunning}
-                        iconOnly
-                        label={t('widgets.assist.startListening')}
-                      >
-                        <Mic className="size-4" />
-                      </Button>
-                    )
+                    <>
+                      {assistantSelector}
+                      {assistantMode === 'home_assistant' ? (
+                        isListening ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="compact"
+                            onClick={() => void stopListening()}
+                            iconOnly
+                            label={t('widgets.assist.stopListening')}
+                          >
+                            <Square className="size-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="compact"
+                            onClick={() => void startListening()}
+                            disabled={!microphoneSupported || isRunning}
+                            iconOnly
+                            label={t('widgets.assist.startListening')}
+                          >
+                            <Mic className="size-4" />
+                          </Button>
+                        )
+                      ) : null}
+                    </>
                   }
                 />
               </AssistantRuntimeProvider>

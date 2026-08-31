@@ -2,6 +2,13 @@
 
 Navet uses one repo, one shared version, and multiple release artifacts.
 
+## Assisted Release Boundary
+
+During assisted release work, the agent prepares and checks the release surfaces but does not run
+release or publishing commands. The maintainer runs the listed `pnpm release:*` commands, creates
+and pushes tags, and verifies published artifacts. Normal release preparation does not include a
+local `pnpm build:ha-panel`; release automation builds and packages that artifact.
+
 Versioned release surfaces:
 
 - standalone app image
@@ -207,6 +214,19 @@ Behavior:
 Cloudflare Pages remains a continuous documentation, demo, Storybook, and marketing surface. It is
 not part of tagged release promotion in phase 1.
 
+## Release Notes
+
+Use Linear issues in `Ready for Release` as the preferred scope, with commits since the previous
+tag as the fallback. Write for people using Navet rather than contributors reading a diff:
+
+- use only non-empty `New features`, `Improvements and bug fixes`, and `Security` sections
+- keep one user outcome per short bullet and prefer three to five bullets
+- omit issue IDs, file names, test coverage, internal architecture, and commit narration
+- combine related work instead of producing one bullet per issue or commit
+- avoid vague claims such as “more reliably” unless the result says what is now dependable
+- write `No user-facing changes in this release.` when that is the honest outcome
+- keep the add-on changelog limited to changes that affect add-on users
+
 ## Maintainer Flow
 
 1. Decide the release bump and update `package.json`.
@@ -253,3 +273,20 @@ Optional immutable Navet Dev publish:
 - choosing when to publish an immutable branch build and when to promote `main` to the shared Navet
   Dev channels
 - rollback execution if a bad release escapes
+
+## Rollback
+
+Rollback is artifact-based. Keep the last known-good stable tag and prefer exact Docker tags or
+digests in production.
+
+- **Docker:** redeploy the previous exact tag or digest while keeping the same Compose project and
+  named volume. Never use `docker compose down -v` for a normal rollback; it removes credential
+  sessions and the dashboard profile.
+- **Home Assistant add-on:** redeploy the earlier published image for the matching architecture,
+  using the previous GitHub release to identify its exact tag when repository metadata has moved.
+- **Custom panel:** reinstall the panel archive attached to the earlier release tag.
+- **Website, demo, Storybook, and docs:** use the affected Cloudflare Pages project's previous
+  known-good deployment. These continuous surfaces roll back independently.
+
+After rollback, verify the affected runtime directly, including Home Assistant Ingress, panel, or
+add-on behavior where applicable, and publish follow-up guidance when users need to take action.

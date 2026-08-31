@@ -1,6 +1,7 @@
 import type { TranslateFn, TranslationKey } from '@navet/app/i18n';
 import type { Section } from '@navet/app/navigation/sections';
 import {
+  Brain,
   ClipboardCheck,
   Fan,
   Home,
@@ -30,6 +31,7 @@ const SECTION_NAVIGATION_CONFIG: Array<{
   { icon: Lightbulb, labelKey: 'sidebar.lights', section: 'lights' },
   { icon: Speaker, labelKey: 'sidebar.media', section: 'media' },
   { icon: ClipboardCheck, labelKey: 'sidebar.tasks', section: 'tasks' },
+  { icon: Brain, labelKey: 'sidebar.ai', section: 'ai' },
   { icon: Settings, labelKey: 'sidebar.settings', section: 'settings' },
 ];
 
@@ -43,6 +45,7 @@ export const MOBILE_SECTION_ORBIT_ORDER: Section[] = [
   'lights',
   'media',
   'tasks',
+  'ai',
   'settings',
 ];
 
@@ -50,11 +53,14 @@ export function getSectionNavigationItems(
   t: TranslateFn,
   choresEnabled = true
 ): SectionNavigationItem[] {
-  return SECTION_NAVIGATION_CONFIG.map(({ icon, labelKey, section }) => ({
-    icon,
-    label: t(section === 'tasks' && !choresEnabled ? 'sections.tasks.title' : labelKey),
-    section,
-  }));
+  const customPanel = typeof window !== 'undefined' && window.__NAVET_PANEL__ === true;
+  return SECTION_NAVIGATION_CONFIG.filter(({ section }) => section !== 'ai' || !customPanel).map(
+    ({ icon, labelKey, section }) => ({
+      icon,
+      label: t(section === 'tasks' && !choresEnabled ? 'sections.tasks.title' : labelKey),
+      section,
+    })
+  );
 }
 
 export function getSectionNavigationItemMap(t: TranslateFn, choresEnabled = true) {

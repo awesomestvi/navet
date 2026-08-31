@@ -6,8 +6,7 @@ type SearchSectionId =
   | 'localization'
   | 'interaction'
   | 'dashboard'
-  | 'habits'
-  | 'experimental'
+  | 'ai'
   | 'system'
   | 'project';
 
@@ -46,14 +45,9 @@ const SECTIONS: SearchSectionDefinition[] = [
     descriptionKey: 'settings.dashboard.sectionDescription',
   },
   {
-    id: 'habits',
-    labelKey: 'habits.settings.sectionTitle',
-    descriptionKey: 'habits.settings.sectionDescription',
-  },
-  {
-    id: 'experimental',
-    labelKey: 'settings.experimental.sectionTitle',
-    descriptionKey: 'settings.experimental.sectionDescription',
+    id: 'ai',
+    labelKey: 'sidebar.ai',
+    descriptionKey: 'dashboard.addCard.templates.aiInsights.description',
   },
   {
     id: 'system',
@@ -183,34 +177,10 @@ const SETTINGS: SearchSettingDefinition[] = [
     descriptionKey: 'settings.dashboard.backup.description',
   },
   {
-    id: 'habits-enable',
-    sectionId: 'habits',
-    labelKey: 'habits.settings.enable.title',
-    descriptionKey: 'habits.settings.enable.description',
-  },
-  {
-    id: 'habits-privacy',
-    sectionId: 'habits',
-    labelKey: 'habits.settings.privacy.title',
-    descriptionKey: 'habits.settings.privacy.description',
-  },
-  {
-    id: 'habits-rules',
-    sectionId: 'habits',
-    labelKey: 'habits.settings.rules.title',
-    descriptionKey: 'habits.settings.rules.description',
-  },
-  {
-    id: 'habits-debug',
-    sectionId: 'habits',
-    labelKey: 'habits.settings.debug.title',
-    descriptionKey: 'habits.settings.debug.description',
-  },
-  {
-    id: 'experimental-local-habits',
-    sectionId: 'experimental',
-    labelKey: 'settings.experimental.localHabits.title',
-    descriptionKey: 'settings.experimental.localHabits.description',
+    id: 'ai-local-model',
+    sectionId: 'ai',
+    labelKey: 'sidebar.ai',
+    descriptionKey: 'dashboard.addCard.templates.aiInsights.description',
   },
   {
     id: 'system-providers',
@@ -262,13 +232,8 @@ const SETTINGS: SearchSettingDefinition[] = [
   },
 ];
 
-export function createSettingsSearchItems(
-  t: TranslateFn,
-  localHabitsEnabled: boolean
-): SettingsSearchItem[] {
-  const availableSections = SECTIONS.filter(
-    (section) => section.id !== 'habits' || localHabitsEnabled
-  );
+export function createSettingsSearchItems(t: TranslateFn): SettingsSearchItem[] {
+  const availableSections = SECTIONS;
   const sectionById = new Map(availableSections.map((section) => [section.id, section]));
   const sectionItems = availableSections.map((section) => ({
     id: `section-${section.id}`,

@@ -40,7 +40,28 @@ duplicated, or mapped to the wrong sensor, then reopen Energy in Navet.
 
 ## If source discovery is incomplete
 
-Follow [Configure Home Assistant Energy sources](/guide/everyday-control/manual-energy-setup/).
+Configure Home Assistant's Energy sources as described below.
+
+## Configure Home Assistant Energy sources
+
+Open Home Assistant's **Settings → Dashboards → Energy** and configure the sources available for
+your setup. Use sensors with the device class, state class, and units expected by Home Assistant.
+
+Add the applicable solar power and cumulative energy, battery state of charge and power, grid
+import and export, cumulative imported energy, and current whole-home load sources. Follow the
+battery sign convention shown by Home Assistant; reversed charging and discharging values produce
+a misleading flow.
+
+Add individual-device energy sensors for devices that should appear in Navet's device totals and
+top-consumer views, and remove mappings for entities that no longer exist.
+
+After saving:
+
+1. Return to Navet and open **Energy → Live**.
+2. Compare home load, grid flow, solar, and battery direction with Home Assistant.
+3. Check **Day** after history has accumulated.
+
+Correct a wrong source entity or unit in Home Assistant instead of compensating for it in Navet.
 
 ## Provider availability
 

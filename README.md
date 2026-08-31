@@ -16,7 +16,7 @@
   <p>
     <a href="https://demo.navet.app/"><strong>Explore the demo</strong></a>
     ·
-    <a href="https://docs.navet.app/install/">Choose an installation</a>
+    <a href="https://docs.navet.app/getting-started/">Get started</a>
     ·
     <a href="https://docs.navet.app/">Read the docs</a>
   </p>
@@ -33,8 +33,8 @@
 ## Everyday control without admin-screen clutter
 
 Navet keeps live state and common actions close at hand while your connected platform remains the
-source of truth. Rooms, lights, climate, media, energy, security, and routines stay easy to reach
-without making every household member navigate a configuration interface.
+source of truth. Rooms, lights, climate, media, energy, security, household work, and routines stay
+easy to reach without making every household member navigate a configuration interface.
 
 - **Room-first control.** See what matters where it happens, then act without digging through
   entity lists.
@@ -62,6 +62,11 @@ platform supports them.
 Shape the Home view around your household with editable layouts, dashboard profiles, widgets,
 themes, wallpapers, adaptive visual effects, and localization.
 
+Standalone Docker and the Home Assistant add-on can also keep installation-local, read-only Navet
+AI observations about supported lighting, switch, and energy patterns. Navet AI never acts
+automatically or creates and triggers routines; explicit on/off commands submitted in Assist can
+be routed to the connected provider.
+
 ## Works with the platform you already use
 
 | Provider | Current support | Ways to run Navet |
@@ -88,7 +93,7 @@ Hubitat and SmartThings are planned and are not supported today. Follow the
 | openHAB | [Connect Navet to your openHAB instance](https://docs.navet.app/install/openhab/) |
 | A development build | [Install Navet Dev](https://docs.navet.app/install/navet-dev/) |
 
-Not sure which route fits? [Compare every installation option](https://docs.navet.app/install/).
+Not sure which route fits? [Choose your setup](https://docs.navet.app/getting-started/).
 
 ## Local by default
 

@@ -69,5 +69,24 @@ record; it does not erase the active dashboard collection.
 
 ## If two devices edit at once
 
-Follow [Resolve a synchronization conflict](/guide/dashboards/sync-conflicts/). Do not repeatedly
-reload both screens while deciding which version should win.
+Do not repeatedly reload both screens while deciding which version should win.
+
+## Resolve a synchronization conflict
+
+A conflict means the shared profile changed elsewhere while the current device had a different
+local version. It does not usually mean the profile is corrupted.
+
+- Choose **Keep mine** when the current device contains the changes you want to save.
+- Choose the remote or reload action when the other device's saved version should replace the
+  current local state.
+
+Make the decision on one device first, wait for its status to return to **Synced**, then reload the
+other device and confirm both show the intended dashboard.
+
+If the wrong version was kept, open **Settings → System → Connected devices → Revision history**,
+find the revision immediately before the conflict, and choose **Restore**. Restoring creates a new
+current revision rather than erasing history.
+
+If conflict notices keep returning, confirm both devices can reach the profile endpoint, stop
+editing on the older or offline device, and reload it after the chosen version synchronizes.
+Remove a device record only when that browser is no longer used.

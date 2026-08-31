@@ -49,3 +49,21 @@ explains the limitation.
 Use provider-backed rooms as the starting point. Navet groups, favorites, visibility, and
 appearance can refine daily navigation without turning provider-specific room data into the shared
 UI model.
+
+## Change room icons and images
+
+Room appearance belongs to Navet and does not change the devices assigned to a room.
+
+![The Room appearance dialog with symbol and room image controls.](/docs/how-to/rooms/room-appearance-dialog.webp)
+
+1. Open the Rooms workspace and select a room.
+2. Choose **Room appearance**.
+3. Choose a symbol and, optionally, a built-in image or an `http` or `https` image address.
+4. Review the preview and apply the appearance.
+
+External images can fail when their source blocks embedding, requires authentication, or becomes
+unavailable. Choose **Remove image** to return to the theme-native surface.
+
+Prefer images with a clear center and moderate contrast, avoid embedded text, and keep the room
+name understandable without the image. Check light, dark, black, and glass themes when household
+screens use different themes.

@@ -11,8 +11,8 @@ entities in the same dashboard.
 
 ## Start here
 
-- **New to Navet?** Begin with [Getting started](/getting-started/).
-- **Ready to install?** [Choose the setup](/install/) that matches your provider and deployment.
+- **New to Navet or ready to install?** [Choose your setup](/getting-started/) and connect the
+  provider already running your home.
 - **Already running Navet?** Open the [user guide](/guide/) or browse the
   [widget reference](/guide/widgets/).
 - **Comparing providers?** Check the [capability matrix](/integrations/); the dashboard shell is
@@ -24,4 +24,5 @@ entities in the same dashboard.
 - [Homey](/install/homey/)
 - [openHAB](/install/openhab/)
 
-For repository setup and provider architecture, continue to the [developer guide](/developers/).
+For repository setup and provider architecture, continue to the
+[contributing guide](/developers/contributing/).
