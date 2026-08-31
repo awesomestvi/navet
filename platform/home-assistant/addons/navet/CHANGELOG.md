@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.15.2
+
+## New features
+
+- Added controls to set, change, or remove chore management PIN protection after onboarding.
+- Added every-four-weeks scheduling for recurring chores.
+
+## Improvements and bug fixes
+
+- Made chore and mission management easier to scan with compact search, filters, and action controls.
+- Refined media browsing with clearer folder rows, artwork, subtitles, and active playback styling.
+- Improved glass-theme legibility across cameras, people, calendar, media, RSS, and vacuum cards.
+
 ## 0.15.1
 
 ## New features
