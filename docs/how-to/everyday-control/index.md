@@ -18,6 +18,7 @@ device. An unavailable control is not replaced with a provider-specific command.
 - [Understand Energy usage and KPIs](/guide/everyday-control/energy/)
 - [Run automations and scripts](/guide/everyday-control/automations-and-scripts/)
 - [Use notifications and provider actions](/guide/everyday-control/notifications/)
+- [Use Home Assistant Assist from Navet](/guide/everyday-control/home-assistant-assist/)
 
 ## Dashboard content
 

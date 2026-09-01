@@ -1,0 +1,62 @@
+schemaVersion: 1
+id: 2026-09-01-assist-0-15-4
+createdOn: 2026-09-01
+kind: feature
+title: Use Home Assistant Assist from Navet
+oneIdea: Navet now keeps Home Assistant Assist close to the dashboard through text, microphone, pipeline selection, and response audio.
+audience: People using Navet with Home Assistant who want a direct way to ask about or control the home.
+searchIntent: How to use Home Assistant Assist in Navet
+
+maintainerSeed:
+  problem: Assist was not previously available as a direct text and voice surface inside Navet.
+  whyItMatters: "PENDING: Add why bringing Assist into the everyday dashboard mattered to you personally."
+  specificDetail: People can choose a Home Assistant Assist pipeline and open Assist from navigation or a dashboard widget.
+  limitation: Assist is currently registered through the Home Assistant integration, not Homey or openHAB.
+  desiredConversation: Which Assist task would you most want available from a wall panel or phone?
+
+providerScope:
+  - home-assistant
+
+evidence:
+  - id: release-assist
+    source: CHANGELOG.md
+    locator: "## 0.15.4 - 2026-09-01"
+    claim: Navet 0.15.4 added Home Assistant Assist with text, voice, selectable pipelines, and navigation or dashboard-widget access.
+    verifiedOn: 2026-09-01
+  - id: capability-assist
+    source: docs/integrations.md
+    locator: "| Assist text, microphone, and response audio | Yes | No | No |"
+    claim: Assist text, microphone, and response audio are currently registered for Home Assistant only.
+    verifiedOn: 2026-09-01
+  - id: voice-standard
+    source: docs/branding/VOICE_AND_MESSAGING.md
+    locator: "### Social and community"
+    claim: Navet community posts use one idea, one concrete proof point, and one next action.
+    verifiedOn: 2026-09-01
+
+canonicalDocs:
+  path: docs/how-to/everyday-control/home-assistant-assist.md
+  status: ready
+  angle: Show where to open Assist, choose a pipeline, use text or microphone input, and understand the Home Assistant-only capability boundary.
+
+cta:
+  label: Read the Home Assistant installation guide
+  url: https://docs.navet.app/install/home-assistant/
+
+asset:
+  kind: video-and-screenshot
+  scenario: storybook-assist-small
+  fixtureSource: packages/app/src/features/dashboard/components/custom-card-assist.stories.tsx
+  fixtureLocator: export const Small
+  sourcePolicy: provider-free-demo-only
+  altText: Navet Assist open over the dashboard with text input, microphone access, and a Home Assistant pipeline selector.
+
+channels:
+  - navet-subreddit
+  - navet-discord
+  - youtube
+
+publishing:
+  cadence: release-fast-lane
+  externalCommunity: false
+  humanApprovalRequired: true

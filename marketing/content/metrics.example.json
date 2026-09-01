@@ -1,0 +1,19 @@
+{
+  "after24Hours": {
+    "impressions": null,
+    "linkClicks": null,
+    "demoVisits": null,
+    "installGuideVisits": null,
+    "explicitInstallReports": null,
+    "substantiveComments": null
+  },
+  "after7Days": {
+    "impressions": null,
+    "linkClicks": null,
+    "demoVisits": null,
+    "installGuideVisits": null,
+    "explicitInstallReports": null,
+    "substantiveComments": null
+  },
+  "notes": []
+}

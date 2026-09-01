@@ -1,0 +1,86 @@
+name: Prepare Community Content Pack
+
+on:
+  workflow_dispatch:
+    inputs:
+      brief:
+        description: Repository-relative path to a reviewed content brief
+        required: true
+        type: string
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: community-content-${{ github.event.release.tag_name || inputs.brief || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  prepare-draft:
+    name: Prepare inspectable draft pack
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      NAVET_CONTENT_MODEL: ${{ vars.NAVET_CONTENT_MODEL || 'gpt-5.4-mini' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve brief
+        id: brief
+        shell: bash
+        env:
+          MANUAL_BRIEF: ${{ inputs.brief }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            BRIEF="$MANUAL_BRIEF"
+          else
+            VERSION="$RELEASE_TAG"
+            VERSION="${VERSION#v}"
+            BRIEF="marketing/content/briefs/release-${VERSION}.yml"
+          fi
+          echo "path=${BRIEF}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate draft pack
+        id: generate
+        shell: bash
+        run: |
+          BRIEF="${{ steps.brief.outputs.path }}"
+          if [[ -f "$BRIEF" ]]; then
+            pnpm marketing:content:generate -- --brief "$BRIEF" --output .cache/navet-content/workflow-pack
+            echo "brief_found=true" >> "$GITHUB_OUTPUT"
+          else
+            mkdir -p .cache/navet-content/workflow-pack
+            printf '# Release content brief needed\n\nNo reviewed brief exists at `%s`. Add the maintainer seed and evidence before generating publishable drafts.\n' "$BRIEF" > .cache/navet-content/workflow-pack/README.md
+            echo "brief_found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check publishability
+        if: steps.generate.outputs.brief_found == 'true'
+        continue-on-error: true
+        run: pnpm marketing:content:check -- --pack .cache/navet-content/workflow-pack
+
+      - name: Upload private draft pack
+        uses: actions/upload-artifact@v4
+        with:
+          name: community-content-${{ github.event.release.tag_name || github.run_number }}
+          path: .cache/navet-content/workflow-pack
+          if-no-files-found: error
+          retention-days: 14
