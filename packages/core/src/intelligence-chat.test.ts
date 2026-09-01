@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  type IntelligenceControlEntityReference,
   type IntelligenceEntityReference,
   interpretSimpleControlSuggestion,
   interpretSimpleStateQuestion,
@@ -7,7 +8,7 @@ import {
   validateControlSuggestions,
 } from './intelligence-chat';
 
-const entities: IntelligenceEntityReference[] = [
+const entities: IntelligenceControlEntityReference[] = [
   {
     id: 'home_assistant:light.office_ceiling',
     providerId: 'home_assistant',
