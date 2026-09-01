@@ -21,12 +21,10 @@ if (rootRuleStart === -1 || rootRuleEnd === -1) {
 }
 
 const rootRule = sharedHeaders.slice(rootRuleStart, rootRuleEnd);
-const surfaceRootRule = rootRule
-  .replace("script-src 'self' ", "script-src 'self' 'unsafe-inline' ")
-  .replace(
-    "img-src 'self' data: blob:;",
-    "img-src 'self' data: blob: https://*.basemaps.cartocdn.com;"
-  );
+const surfaceRootRule = rootRule.replace(
+  "script-src 'self' ",
+  "script-src 'self' 'unsafe-inline' "
+);
 
 if (rootRule === surfaceRootRule) {
   throw new Error('Could not update the root script-src directive');

@@ -94,6 +94,20 @@ for (const requiredHeader of [
   if (!headers.includes(requiredHeader)) fail(`missing required header: ${requiredHeader}`);
 }
 
+const rootContentSecurityPolicy = headers
+  .slice(headers.indexOf('\n/\n'), headers.indexOf('\n\n/roadmap/*'))
+  .split(/\r?\n/)
+  .find((line) => line.includes('Content-Security-Policy:'));
+if (!rootContentSecurityPolicy) fail('homepage Content-Security-Policy is missing');
+for (const directive of ['img-src', 'connect-src']) {
+  const directiveValue = rootContentSecurityPolicy
+    .split(';')
+    .find((value) => value.trimStart().startsWith(`${directive} `));
+  if (!directiveValue?.includes('https://tiles.openfreemap.org')) {
+    fail(`${directive} must allow the OpenFreeMap production tile origin`);
+  }
+}
+
 for (const line of headers.split(/\r?\n/)) {
   if (line.length > 2_000) fail('a _headers rule exceeds Cloudflare Pages’ 2,000-character limit');
 }
