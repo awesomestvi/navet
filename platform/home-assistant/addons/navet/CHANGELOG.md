@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.15.4
+
+## New features
+
+- Added Home Assistant Assist with text, voice, selectable pipelines, and access from navigation or dashboard widgets.
+
 ## 0.15.3
 
 ## Hotfix

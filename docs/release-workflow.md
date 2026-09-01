@@ -213,8 +213,8 @@ not part of tagged release promotion in phase 1.
 2. Run `pnpm release:version-sync`.
 3. Fetch Linear issues in the `Ready for Release` workflow state with `pnpm release:linear` and
    treat them as the primary release-note source.
-4. Draft the changelog section for the target version from those Linear issues. If no matching
-   issues exist, fall back to commit history since the previous release tag.
+4. Draft one short bullet per user-visible topic from those Linear issues. If no matching issues
+   exist, fall back to commit history since the previous release tag.
 5. Update `platform/home-assistant/addons/navet/CHANGELOG.md` for the release version.
 6. Run `pnpm release:check`.
    Do not run `pnpm build:ha-panel` as part of local release prep. The automated release/HACS workflow

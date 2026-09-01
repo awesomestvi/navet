@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.15.4 - 2026-09-01
+
+## New features
+
+- Added Home Assistant Assist with text, voice, selectable pipelines, and access from navigation or dashboard widgets.
+
 ## 0.15.3 - 2026-09-01
 
 ## Hotfix

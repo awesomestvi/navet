@@ -93,12 +93,13 @@ Writing style:
 - Use plain, direct language. Write for people using Navet, not contributors reading the diff.
 - Use only headings that have entries: `New features`, `Improvements and bug fixes`, and
   `Security`.
-- Keep each bullet to one outcome, one short sentence, and aim for 20 words or fewer.
-- Prefer three to five bullets. Add more only when combining them would hide distinct user changes.
+- Give each distinct user-visible topic one bullet, even when several commits contributed to it.
+- Keep every bullet to one physical Markdown line, one short sentence, and 20 words or fewer.
+- Default to one bullet for a single-topic release and one to three bullets otherwise.
 - Start with a clear verb such as `Added`, `Improved`, or `Fixed`, or state what Navet now does.
-- Say what changed and why it matters. Omit implementation details, internal architecture, file
-  names, test coverage, and commit-by-commit narration.
-- Combine related work into one bullet. Do not create a bullet for every issue or commit.
+- State the primary user outcome, then stop. Omit secondary details, implementation, file names,
+  test coverage, and commit-by-commit narration.
+- Combine related features, fixes, privacy details, and polish into their topic's single bullet.
 - Avoid vague qualifiers such as `more reliably`, `more consistently`, or `clearer` unless the
   bullet says what is now reliable, consistent, or clear.
 - Do not add boilerplate such as `Updated Navet to X`; the release heading already provides the
