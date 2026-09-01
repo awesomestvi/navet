@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.15.3 - 2026-09-01
+
+## Hotfix
+
+- Fixed an Nginx startup error affecting standalone and Home Assistant add-on installations.
+
 ## 0.15.2 - 2026-09-01
 
 ## New features

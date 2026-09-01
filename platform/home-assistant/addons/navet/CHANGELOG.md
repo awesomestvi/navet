@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.15.3
+
+## Hotfix
+
+- Fixed an Nginx startup error that prevented the Home Assistant add-on from starting.
+
 ## 0.15.2
 
 ## New features

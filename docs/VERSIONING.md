@@ -7,7 +7,7 @@ Navet currently uses pre-`1.0` semantic versioning.
 
 ## Current Line
 
-- current version: `0.15.2`
+- current version: `0.15.3`
 - current phase: public beta
 - shared release line: standalone app, custom panel, and add-on ship from the same tagged version
 - release channels: main-backed `edge` and `dev`, immutable branch-capable dev tags as

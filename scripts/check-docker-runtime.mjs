@@ -106,6 +106,15 @@ function ensureSerializedProfileRuntime() {
     if (!/^\s*worker_processes\s+1\s*;/m.test(source)) {
       throw new Error(`${file} must serialize local profile-store writes with one Nginx worker`);
     }
+    if (
+      !/^\s*js_shared_dict_zone\s+zone=navet_chore_management_sessions:1m\s+timeout=30m\s+evict\s*;/m.test(
+        source
+      )
+    ) {
+      throw new Error(
+        `${file} must reserve a 1m Nginx shared dictionary for chore management sessions`
+      );
+    }
   }
 
   const addonConfigs = [
