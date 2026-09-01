@@ -60,12 +60,10 @@ describe('RotaryKnob', () => {
     }
 
     expect(dashRingSurface).toHaveClass('rounded-full', 'touch-none');
-    expect(dashRingSurface).toHaveStyle({
-      height: '17.8rem',
-      minHeight: '100%',
-      minWidth: '100%',
-      width: '17.8rem',
-    });
+    expect(dashRingSurface.style.height).toBe('17.8rem');
+    expect(dashRingSurface.style.minHeight).toBe('100%');
+    expect(dashRingSurface.style.minWidth).toBe('100%');
+    expect(dashRingSurface.style.width).toBe('17.8rem');
 
     vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
       bottom: 184,

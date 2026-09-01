@@ -1769,6 +1769,7 @@ export const enMessages = {
   'household.rooms.title': 'Around the house',
   'household.rooms.allDone': 'All done today',
   'household.rooms.remaining': '{count} remaining',
+  'household.rooms.overdue': '{count} overdue',
   'household.rooms.open': 'Show chores in {room}',
   'household.card.minutes': 'About {count} min',
   'household.card.compactMinutes': '{count} min',

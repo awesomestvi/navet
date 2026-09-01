@@ -156,7 +156,6 @@ function HeaderView({
             </div>
           ) : null}
         </div>
-        <HeaderAssistAction hoverBg={hoverBg} textSecondary={textSecondary} />
         {mobileAvailability && !kioskMode ? (
           <button
             type="button"

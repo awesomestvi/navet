@@ -11,7 +11,7 @@ interface CompactRoomSelectorProps {
   onChange?: (room: string) => void;
   ariaLabel?: string;
   disabled?: boolean;
-  variant?: 'plain' | 'soft';
+  variant?: 'plain' | 'soft' | 'ghost';
   contentClassName?: string;
   labelClassName?: string;
   iconClassName?: string;
@@ -48,6 +48,7 @@ export const CompactRoomSelector = memo(function CompactRoomSelector({
           surface.hoverBg,
           surface.ringOffset,
         ],
+        variant === 'ghost' && ['h-9 rounded-full px-3', !disabled && surface.hoverBg],
         iconOnly && 'w-10 justify-center px-0',
         disabled && 'opacity-50'
       )}
@@ -58,7 +59,7 @@ export const CompactRoomSelector = memo(function CompactRoomSelector({
           value={value}
           disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
-          className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none bg-white text-sm font-normal text-slate-900 opacity-0 disabled:cursor-not-allowed"
+          className="peer absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none bg-white text-sm font-normal text-slate-900 opacity-0 disabled:cursor-not-allowed"
         >
           {options.map((option) => (
             <option key={option.value} value={option.value}>
@@ -68,11 +69,19 @@ export const CompactRoomSelector = memo(function CompactRoomSelector({
         </select>
       ) : null}
       <div
-        className={`inline-flex min-w-0 items-center gap-2 text-sm ${surface.textPrimary} ${contentClassName ?? ''}`}
+        className={cn(
+          'inline-flex min-w-0 items-center gap-2',
+          variant === 'ghost' ? 'text-xs' : 'text-sm',
+          surface.textPrimary,
+          variant === 'ghost' &&
+            'peer-focus-visible:[&_span]:underline peer-focus-visible:[&_span]:decoration-1 peer-focus-visible:[&_span]:underline-offset-4',
+          contentClassName
+        )}
       >
         <span
           className={cn(
-            'max-w-[12rem] truncate font-medium',
+            'max-w-[12rem] truncate',
+            variant === 'ghost' ? 'font-normal' : 'font-medium',
             iconOnly && 'sr-only',
             labelClassName
           )}

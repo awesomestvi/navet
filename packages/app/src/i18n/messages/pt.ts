@@ -26,6 +26,7 @@ export const ptMessages = {
   'household.rooms.title': 'Pela casa',
   'household.rooms.allDone': 'Tudo feito hoje',
   'household.rooms.remaining': 'Faltam {count}',
+  'household.rooms.overdue': '{count} atrasadas',
   'household.rooms.open': 'Mostrar tarefas em {room}',
   'household.card.minutes': 'Cerca de {count} min',
   'household.card.compactMinutes': '{count} min.',

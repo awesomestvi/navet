@@ -26,6 +26,7 @@ export const fiMessages = {
   'household.rooms.title': 'Kodin eri puolilla',
   'household.rooms.allDone': 'Kaikki tehty tänään',
   'household.rooms.remaining': '{count} jäljellä',
+  'household.rooms.overdue': '{count} myöhässä',
   'household.rooms.open': 'Näytä huoneen {room} kotityöt',
   'household.card.minutes': 'Noin {count} min',
   'household.card.compactMinutes': '{count} min.',

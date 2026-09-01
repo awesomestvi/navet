@@ -2,7 +2,7 @@ import { useI18n, useIntegrationStore } from '@navet/app/hooks';
 import { getProviderRuntimeRegistration } from '@navet/app/provider-runtime-registry';
 import { INTEGRATION_PROVIDER_IDS, type IntegrationProviderId } from '@navet/app/types/provider';
 import { MessageCircle } from 'lucide-react';
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, type ReactNode, Suspense, useEffect, useState } from 'react';
 
 const AssistDialog = lazy(async () => {
   const module = await import('@navet/app/features/dashboard/components/widgets/assist-dialog');
@@ -14,11 +14,16 @@ function supportsAssist(providerId: IntegrationProviderId) {
 }
 
 interface HeaderAssistActionProps {
-  hoverBg: string;
-  textSecondary: string;
+  hoverBg?: string;
+  renderTrigger?: (props: { isOpen: boolean; onClick: () => void }) => ReactNode;
+  textSecondary?: string;
 }
 
-export function HeaderAssistAction({ hoverBg, textSecondary }: HeaderAssistActionProps) {
+export function HeaderAssistAction({
+  hoverBg = '',
+  renderTrigger,
+  textSecondary = '',
+}: HeaderAssistActionProps) {
   const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const [pipelineId, setPipelineId] = useState<string>();
@@ -44,18 +49,24 @@ export function HeaderAssistAction({ hoverBg, textSecondary }: HeaderAssistActio
 
   if (!providerId) return null;
 
+  const trigger = renderTrigger ? (
+    renderTrigger({ isOpen, onClick: () => setIsOpen(true) })
+  ) : (
+    <button
+      type="button"
+      onClick={() => setIsOpen(true)}
+      className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-[22px] ${hoverBg} transition-colors`}
+      aria-label={t('widgets.assist.open')}
+      aria-haspopup="dialog"
+      aria-expanded={isOpen}
+    >
+      <MessageCircle className={`h-5 w-5 ${textSecondary}`} />
+    </button>
+  );
+
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-[22px] ${hoverBg} transition-colors`}
-        aria-label={t('widgets.assist.open')}
-        aria-haspopup="dialog"
-        aria-expanded={isOpen}
-      >
-        <MessageCircle className={`h-5 w-5 ${textSecondary}`} />
-      </button>
+      {trigger}
 
       {isOpen ? (
         <Suspense fallback={null}>

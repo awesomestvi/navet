@@ -108,8 +108,8 @@ describe('BaseCardDialog', () => {
     );
 
     const editButton = screen.getByRole('button', { name: /edit plant light/i });
-    expect(editButton.parentElement).toHaveClass('items-baseline');
-    expect(editButton).toHaveClass('-my-1', 'py-1', 'after:-inset-y-2');
+    expect(editButton.parentElement).toHaveClass('items-center');
+    expect(editButton).toHaveClass('h-7', 'after:-inset-y-2');
     expect(editButton).not.toHaveClass('min-h-9');
     expect(editButton.parentElement?.parentElement?.parentElement).toHaveClass('max-sm:pr-0');
 

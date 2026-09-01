@@ -26,6 +26,7 @@ export const noMessages = {
   'household.rooms.title': 'Rundt i hjemmet',
   'household.rooms.allDone': 'Alt ferdig i dag',
   'household.rooms.remaining': '{count} gjenstår',
+  'household.rooms.overdue': '{count} forsinket',
   'household.rooms.open': 'Vis oppgaver i {room}',
   'household.card.minutes': 'Omtrent {count} min',
   'household.card.compactMinutes': '{count} min.',

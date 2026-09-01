@@ -27,6 +27,7 @@ export const frMessages = {
   'household.rooms.title': 'Dans la maison',
   'household.rooms.allDone': 'Tout est fait aujourd’hui',
   'household.rooms.remaining': '{count} restantes',
+  'household.rooms.overdue': '{count} en retard',
   'household.rooms.open': 'Afficher les tâches de {room}',
   'household.card.minutes': 'Environ {count} min',
   'household.card.compactMinutes': '{count} min.',

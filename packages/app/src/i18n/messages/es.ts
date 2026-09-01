@@ -26,6 +26,7 @@ export const esMessages = {
   'household.rooms.title': 'Por toda la casa',
   'household.rooms.allDone': 'Todo hecho hoy',
   'household.rooms.remaining': 'Quedan {count}',
+  'household.rooms.overdue': '{count} atrasadas',
   'household.rooms.open': 'Mostrar tareas de {room}',
   'household.card.minutes': 'Unos {count} min',
   'household.card.compactMinutes': '{count} min.',

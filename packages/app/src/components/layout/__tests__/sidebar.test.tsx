@@ -174,7 +174,7 @@ describe('Sidebar mobile navigation', () => {
     expect(screen.queryByText('Recent sections')).not.toBeInTheDocument();
   });
 
-  it('labels the household destination as tasks when chores are disabled', () => {
+  it('labels the household destination as routines when chores are disabled', () => {
     useSettingsStore.getState().updateSettings({ choresEnabled: false });
     const { container } = renderWithProviders(
       <Sidebar mobileRoomNavigation={mobileRoomNavigation} />
@@ -183,7 +183,7 @@ describe('Sidebar mobile navigation', () => {
     fireEvent.click(within(getMobileDock(container)).getByRole('button', { name: 'More' }));
 
     const dialog = screen.getByRole('dialog');
-    expect(within(dialog).getByRole('button', { name: /^Tasks/ })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /^Routines/ })).toBeInTheDocument();
     expect(within(dialog).queryByRole('button', { name: /^Household/ })).not.toBeInTheDocument();
   });
 

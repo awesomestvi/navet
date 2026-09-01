@@ -22,7 +22,7 @@ import {
   startIntegrationVoiceConversation,
 } from '@navet/app/services/integration-conversation-feature.service';
 import type { IntegrationProviderId } from '@navet/app/types/provider';
-import { Ellipsis, Mic, Square } from 'lucide-react';
+import { Mic, Square } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AssistAudioRecorder } from './assist-audio-recorder';
 import { readAssistPromptHistory, rememberAssistPrompt } from './assist-prompt-history';
@@ -293,16 +293,15 @@ export function AssistDialog({
       label={selectedPipelineLabel}
       ariaLabel={t('widgets.assist.pipeline')}
       disabled={isLoadingPipelines || pipelines.length === 0 || isRunning}
-      variant="soft"
-      iconOnly
-      IconComponent={Ellipsis}
+      variant={settingsOnly ? 'soft' : 'ghost'}
       options={pipelineOptions}
       onChange={(nextId) => {
         setSelectedPipelineId(nextId);
         onPipelineChange?.(nextId || undefined);
       }}
-      contentClassName="gap-0"
-      iconClassName="h-4 w-4"
+      contentClassName="gap-1.5"
+      labelClassName="max-w-[7rem] sm:max-w-[12rem]"
+      iconClassName="h-3.5 w-3.5"
     />
   );
   const runtime = useExternalStoreRuntime({
@@ -345,7 +344,9 @@ export function AssistDialog({
         settingsOnly ? undefined : 'flex h-full flex-1 flex-col'
       )}
       mobileCoverSheet
-      mobileCoverSheetActions={<div className="pointer-events-auto">{pipelineSelector}</div>}
+      mobileCoverSheetActions={
+        settingsOnly ? <div className="pointer-events-auto">{pipelineSelector}</div> : undefined
+      }
     >
       <div className={cn('flex min-h-0 flex-1 flex-col', surface.textPrimary)}>
         <header
@@ -367,7 +368,9 @@ export function AssistDialog({
             editableTitle={false}
             theme={theme}
             className="mb-0 max-sm:pr-0"
-            trailing={<div className="max-sm:hidden">{pipelineSelector}</div>}
+            trailing={
+              settingsOnly ? <div className="max-sm:hidden">{pipelineSelector}</div> : undefined
+            }
           />
         </header>
 
@@ -418,31 +421,34 @@ export function AssistDialog({
                       </p>
                     ) : null
                   }
-                  tools={
-                    isListening ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="compact"
-                        onClick={() => void stopListening()}
-                        iconOnly
-                        label={t('widgets.assist.stopListening')}
-                      >
-                        <Square className="size-4" />
-                      </Button>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="compact"
-                        onClick={() => void startListening()}
-                        disabled={!microphoneSupported || isRunning}
-                        iconOnly
-                        label={t('widgets.assist.startListening')}
-                      >
-                        <Mic className="size-4" />
-                      </Button>
-                    )
+                  composerActions={
+                    <>
+                      {pipelineSelector}
+                      {isListening ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="compact"
+                          onClick={() => void stopListening()}
+                          iconOnly
+                          label={t('widgets.assist.stopListening')}
+                        >
+                          <Square className="size-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="compact"
+                          onClick={() => void startListening()}
+                          disabled={!microphoneSupported || isRunning}
+                          iconOnly
+                          label={t('widgets.assist.startListening')}
+                        >
+                          <Mic className="size-4" />
+                        </Button>
+                      )}
+                    </>
                   }
                 />
               </AssistantRuntimeProvider>

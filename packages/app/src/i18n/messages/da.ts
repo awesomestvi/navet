@@ -26,6 +26,7 @@ export const daMessages = {
   'household.rooms.title': 'Rundt i hjemmet',
   'household.rooms.allDone': 'Alt færdigt i dag',
   'household.rooms.remaining': '{count} tilbage',
+  'household.rooms.overdue': '{count} forsinkede',
   'household.rooms.open': 'Vis pligter i {room}',
   'household.card.minutes': 'Cirka {count} min',
   'household.card.compactMinutes': '{count} min.',

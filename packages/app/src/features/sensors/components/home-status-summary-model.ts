@@ -260,7 +260,7 @@ function getChoreSummary(
     title: t('household.tabs.chores'),
     value:
       (overdueChoreCount ?? 0) > 0
-        ? `${t('household.today.overdue')} · ${t('household.rooms.remaining', { count: pendingChoreCount })}`
+        ? t('household.rooms.overdue', { count: overdueChoreCount ?? 0 })
         : pendingChoreCount === 0
           ? t('household.rooms.allDone')
           : t('household.rooms.remaining', { count: pendingChoreCount }),

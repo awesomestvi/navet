@@ -26,6 +26,7 @@ export const zhMessages = {
   'household.rooms.title': '家中各处',
   'household.rooms.allDone': '今天全部完成',
   'household.rooms.remaining': '剩余 {count} 项',
+  'household.rooms.overdue': '{count} 项逾期',
   'household.rooms.open': '显示 {room} 的家务',
   'household.card.minutes': '约 {count} 分钟',
   'household.card.compactMinutes': '{count} 分钟',

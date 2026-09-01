@@ -27,6 +27,7 @@ export const deMessages = {
   'household.rooms.title': 'Im ganzen Haus',
   'household.rooms.allDone': 'Heute alles erledigt',
   'household.rooms.remaining': '{count} übrig',
+  'household.rooms.overdue': '{count} überfällig',
   'household.rooms.open': 'Aufgaben in {room} anzeigen',
   'household.card.minutes': 'Etwa {count} Min.',
   'household.card.compactMinutes': '{count} Min.',

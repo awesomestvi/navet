@@ -26,6 +26,7 @@ export const svMessages = {
   'household.rooms.title': 'Runt om i hemmet',
   'household.rooms.allDone': 'Allt klart i dag',
   'household.rooms.remaining': '{count} kvar',
+  'household.rooms.overdue': '{count} försenade',
   'household.rooms.open': 'Visa sysslor i {room}',
   'household.card.minutes': 'Cirka {count} min',
   'household.card.compactMinutes': '{count} min.',

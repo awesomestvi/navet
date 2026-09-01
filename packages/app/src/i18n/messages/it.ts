@@ -29,6 +29,7 @@ export const itMessages = {
   'household.rooms.title': 'In tutta la casa',
   'household.rooms.allDone': 'Tutto fatto oggi',
   'household.rooms.remaining': '{count} rimanenti',
+  'household.rooms.overdue': '{count} in ritardo',
   'household.rooms.open': 'Mostra le attività in {room}',
   'household.card.minutes': 'Circa {count} min',
   'household.card.compactMinutes': '{count} min.',

@@ -26,6 +26,7 @@ export const nlMessages = {
   'household.rooms.title': 'Door het hele huis',
   'household.rooms.allDone': 'Alles klaar voor vandaag',
   'household.rooms.remaining': 'Nog {count}',
+  'household.rooms.overdue': '{count} te laat',
   'household.rooms.open': 'Toon klusjes in {room}',
   'household.card.minutes': 'Ongeveer {count} min',
   'household.card.compactMinutes': '{count} min.',

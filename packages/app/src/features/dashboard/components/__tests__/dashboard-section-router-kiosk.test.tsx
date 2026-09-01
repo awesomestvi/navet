@@ -4,7 +4,7 @@ import { useSettingsStore } from '@navet/app/stores';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import type { DeviceWithType } from '@navet/app/types/device.types';
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DashboardSectionRouter } from '../dashboard-section-router';
@@ -140,11 +140,15 @@ describe('DashboardSectionRouter kiosk mode', () => {
 
     renderWithProviders(<DashboardSectionRouter controller={controller} />);
 
-    expect(await screen.findByRole('heading', { name: 'Living Room' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Hallway' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Humidity' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Climate' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Fans' })).not.toBeInTheDocument();
+    const groupingTrigger = await screen.findByRole('button', { name: 'Group cards by: Type' });
+    fireEvent.pointerDown(groupingTrigger, { button: 0, ctrlKey: false });
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Room' }));
+
+    expect(await screen.findByRole('tab', { name: 'Living Room' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Hallway' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Kitchen' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Climate' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Fans' })).not.toBeInTheDocument();
   });
 
   it('does not rerender the lights section for unrelated home-layout controller churn', async () => {

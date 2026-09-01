@@ -28,7 +28,7 @@ interface AssistantThreadProps {
   promptHistory?: readonly string[];
   sendLabel: string;
   status?: ReactNode;
-  tools?: ReactNode;
+  composerActions?: ReactNode;
 }
 
 interface PromptHistoryBrowseState {
@@ -127,9 +127,15 @@ function AssistantComposerInput({
   promptHistory,
 }: AssistantComposerInputProps) {
   const handlePromptHistoryKeyDown = usePromptHistory(promptHistory);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!disabled) inputRef.current?.focus();
+  }, [disabled]);
 
   return (
     <ComposerPrimitive.Input
+      ref={inputRef}
       onKeyDown={handlePromptHistoryKeyDown}
       className="max-h-32 min-h-12 w-full resize-none bg-transparent px-2 py-2 text-sm outline-none placeholder:opacity-55 disabled:cursor-not-allowed disabled:opacity-50"
       placeholder={placeholder}
@@ -175,7 +181,7 @@ export function AssistantThread({
   promptHistory = [],
   sendLabel,
   status,
-  tools,
+  composerActions,
 }: AssistantThreadProps) {
   return (
     <ThreadPrimitive.Root
@@ -224,8 +230,8 @@ export function AssistantThread({
           disabled={inputDisabled}
           promptHistory={promptHistory}
         />
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1">{tools}</div>
+        <div className="flex items-center justify-end gap-1">
+          {composerActions}
           {isRunning ? (
             <ComposerPrimitive.Cancel asChild>
               <Button size="compact" type="button" variant="primary" iconOnly label={cancelLabel}>
