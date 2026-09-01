@@ -58,6 +58,7 @@ runProviderPackageRegistrationTests({
         isConnected: () => false,
         getPanelHass: () => null,
         getConnection: () => null,
+        sendWebSocketBinary: vi.fn(),
         getEntities: () => null,
         getEntityRegistry: () => [],
         getConfig: () => null,
@@ -118,7 +119,14 @@ runProviderPackageRegistrationTests({
       },
     }),
   expectedStatus: 'implemented',
-  supportedFeatures: ['rooms', 'lighting', 'mediaControls', 'cameraStreams', 'notifications'],
+  supportedFeatures: [
+    'rooms',
+    'lighting',
+    'mediaControls',
+    'cameraStreams',
+    'notifications',
+    'conversation',
+  ],
   expectedRoomManagementCapabilities: {
     discover: true,
     create: true,

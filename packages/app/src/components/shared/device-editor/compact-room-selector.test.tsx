@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { MessageCircle } from 'lucide-react';
 import { describe, expect, it, vi } from 'vitest';
 import { CompactRoomSelector } from './compact-room-selector';
 
@@ -59,5 +60,38 @@ describe('CompactRoomSelector', () => {
     });
 
     expect(onChange).toHaveBeenCalledWith('living-room');
+  });
+
+  it('supports a non-room accessible label and disabled state', () => {
+    render(
+      <CompactRoomSelector
+        value="home-assistant"
+        label="Home Assistant"
+        ariaLabel="Assistant"
+        disabled
+        options={[{ label: 'Home Assistant · en', value: 'home-assistant' }]}
+        onChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('combobox', { name: 'Assistant' })).toBeDisabled();
+  });
+
+  it('supports an icon-only selector without removing its accessible label', () => {
+    render(
+      <CompactRoomSelector
+        value="home-assistant"
+        label="Home Assistant"
+        ariaLabel="Assistant"
+        iconOnly
+        IconComponent={MessageCircle}
+        options={[{ label: 'Home Assistant · en', value: 'home-assistant' }]}
+        onChange={vi.fn()}
+      />
+    );
+
+    const select = screen.getByRole('combobox', { name: 'Assistant' });
+    expect(select.parentElement).toHaveClass('w-10', 'justify-center', 'px-0');
+    expect(screen.getByText('Home Assistant')).toHaveClass('sr-only');
   });
 });

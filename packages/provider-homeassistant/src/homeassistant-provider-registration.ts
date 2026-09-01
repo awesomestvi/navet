@@ -117,6 +117,7 @@ export interface HomeAssistantProviderDependencies {
     isConnected: HomeAssistantServiceBridge['isConnected'];
     getPanelHass: HomeAssistantServiceBridge['getPanelHass'];
     getConnection: HomeAssistantServiceBridge['getConnection'];
+    sendWebSocketBinary: HomeAssistantServiceBridge['sendWebSocketBinary'];
     getEntities: HomeAssistantServiceBridge['getEntities'];
     getEntityRegistry: HomeAssistantServiceBridge['getEntityRegistry'];
     getConfig: HomeAssistantServiceBridge['getConfig'];
@@ -205,6 +206,7 @@ function createHomeAssistantServiceBridgeFromDependencies(
     isConnected: () => dependencies.homeAssistantService.isConnected(),
     getPanelHass: () => dependencies.homeAssistantService.getPanelHass(),
     getConnection: () => dependencies.homeAssistantService.getConnection(),
+    sendWebSocketBinary: (data) => dependencies.homeAssistantService.sendWebSocketBinary(data),
     getEntities: () => dependencies.homeAssistantService.getEntities(),
     getEntityRegistry: () => dependencies.homeAssistantService.getEntityRegistry(),
     getConfig: () => dependencies.homeAssistantService.getConfig(),

@@ -97,6 +97,42 @@ describe('dashboard-config import hardening', () => {
     expect(cards[1]?.size).toBe('small');
   });
 
+  it('keeps only provider binding and pipeline preferences for Assist cards', () => {
+    importDashboardConfig({
+      ...baseConfig,
+      customCards: [
+        {
+          id: 'assist-card',
+          type: 'assist',
+          size: 'extra-small',
+          room: 'all',
+          data: {
+            providerId: 'home_assistant',
+            pipelineId: 'pipeline-1',
+            label: 'Ask the house',
+            tintColor: '#f97316',
+            transcript: [{ role: 'user', text: 'unlock the door' }],
+            audio: 'private recording',
+          },
+        },
+      ],
+    });
+
+    expect(useCustomCardsStore.getState().cards).toEqual([
+      expect.objectContaining({
+        id: 'assist-card',
+        type: 'assist',
+        size: 'extra-small',
+        data: {
+          providerId: 'home_assistant',
+          pipelineId: 'pipeline-1',
+          label: 'Ask the house',
+          tintColor: '#f97316',
+        },
+      }),
+    ]);
+  });
+
   it('sanitizes imported storage records before persistence', () => {
     importDashboardConfig({
       ...baseConfig,

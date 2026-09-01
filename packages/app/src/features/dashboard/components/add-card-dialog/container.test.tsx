@@ -1,3 +1,4 @@
+import { integrationStore } from '@navet/app/stores/integration-store';
 import { renderWithProviders } from '@navet/app/test/render';
 import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
@@ -327,6 +328,36 @@ describe('AddCardDialogContainer', () => {
     );
 
     expect(screen.queryByText('Media Stack')).not.toBeInTheDocument();
+  });
+
+  it('shows Assist only when a Home Assistant session is configured', () => {
+    const previous = integrationStore.getState();
+    integrationStore.setState({
+      ...previous,
+      providerSessions: {
+        ...previous.providerSessions,
+        home_assistant: {
+          providerId: 'home_assistant',
+          connected: true,
+          runtime: 'test',
+        },
+      },
+    });
+
+    renderWithProviders(
+      <AddCardDialogContainer
+        open
+        onClose={() => {}}
+        onAddCard={vi.fn()}
+        onAddLibraryCard={() => {}}
+        currentRoom="Living Room"
+        libraryCards={demoLibraryCards}
+        showCardsTab={false}
+      />
+    );
+
+    expect(screen.getByText('Assist')).toBeInTheDocument();
+    integrationStore.setState(previous);
   });
 
   it('sorts custom cards by translated name in ascending order', () => {

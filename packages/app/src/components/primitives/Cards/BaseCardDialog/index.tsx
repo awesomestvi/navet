@@ -95,6 +95,7 @@ interface BaseCardDialogModalProps extends BaseCardDialogSharedProps {
   bodyPadding?: boolean;
   mobileCoverSheet?: boolean;
   persistentMobileDismiss?: boolean;
+  mobileCoverSheetActions?: ReactNode;
 }
 
 interface BaseCardDialogSheetProps extends BaseCardDialogSharedProps {
@@ -130,6 +131,7 @@ interface BaseCardDialogRootProps {
   disableOpenAutoFocus?: boolean;
   mobileCoverSheet?: boolean;
   persistentMobileDismiss?: boolean;
+  mobileCoverSheetActions?: ReactNode;
   mobileDismissLabel?: string;
   mobileDismissStyle?: CSSProperties;
   contentStyle?: CSSProperties;
@@ -191,6 +193,7 @@ function BaseCardDialogRoot({
   disableOpenAutoFocus = false,
   mobileCoverSheet = true,
   persistentMobileDismiss = false,
+  mobileCoverSheetActions,
   mobileDismissLabel,
   mobileDismissStyle,
   contentStyle,
@@ -416,7 +419,8 @@ function BaseCardDialogRoot({
             </Dialog.Description>
           ) : null}
           {persistentMobileDismiss ? (
-            <div className="pointer-events-none absolute top-3 right-3 z-30 hidden max-sm:block">
+            <div className="pointer-events-none absolute top-3 right-3 z-30 hidden items-center gap-2 max-sm:flex">
+              {mobileCoverSheetActions}
               <button
                 type="button"
                 data-mobile-cover-sheet-dismiss
@@ -708,6 +712,7 @@ function BaseCardDialogModalVariant({
   bodyPadding = true,
   mobileCoverSheet = false,
   persistentMobileDismiss = false,
+  mobileCoverSheetActions,
 }: BaseCardDialogModalProps) {
   const surface = getThemeSurfaceTokens(theme);
 
@@ -737,6 +742,7 @@ function BaseCardDialogModalVariant({
       bodyClassName={shellBodyClassName}
       mobileCoverSheet={mobileCoverSheet}
       persistentMobileDismiss={persistentMobileDismiss}
+      mobileCoverSheetActions={mobileCoverSheetActions}
     >
       <div
         className={cn(

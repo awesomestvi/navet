@@ -679,7 +679,7 @@ function getAllowedSizes(
     if (card.type === 'info' && isSingleSensorInfoCard(card)) {
       return ['extra-small', 'small', 'medium', 'large'];
     }
-    if (card.type === 'button') {
+    if (card.type === 'button' || card.type === 'assist') {
       return ['tiny', 'extra-small', 'small'];
     }
     if (extraLargeAllowed && (card.type === 'photo' || card.type === 'rss')) {
@@ -794,9 +794,17 @@ function supportsCustomCardEditModeSettingsDock(card?: CustomCard) {
     return false;
   }
 
-  return ['info', 'rss', 'photo', 'battery', 'ups', 'energy-now', 'media-stack', 'button'].includes(
-    card.type
-  );
+  return [
+    'info',
+    'rss',
+    'photo',
+    'battery',
+    'ups',
+    'energy-now',
+    'media-stack',
+    'button',
+    'assist',
+  ].includes(card.type);
 }
 
 function getDeviceTypeEditLabel(type: DeviceWithType['type'], t: ReturnType<typeof useI18n>['t']) {

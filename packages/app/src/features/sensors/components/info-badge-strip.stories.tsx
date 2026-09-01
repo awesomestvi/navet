@@ -127,7 +127,7 @@ export const OverdueChores: Story = {
       item.id === 'chores'
         ? {
             ...item,
-            value: 'Overdue · 4 remaining',
+            value: '4 overdue',
             iconColor: '#f87171',
             tone: 'danger',
           }

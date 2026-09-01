@@ -1,6 +1,7 @@
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { cn } from '@navet/app/components/ui/utils';
 import { useI18n, useTheme } from '@navet/app/hooks';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, type LucideIcon } from 'lucide-react';
 import { memo } from 'react';
 
 interface CompactRoomSelectorProps {
@@ -8,9 +9,14 @@ interface CompactRoomSelectorProps {
   label: string;
   options: Array<{ label: string; value: string }>;
   onChange?: (room: string) => void;
+  ariaLabel?: string;
+  disabled?: boolean;
+  variant?: 'plain' | 'soft' | 'ghost';
   contentClassName?: string;
   labelClassName?: string;
   iconClassName?: string;
+  iconOnly?: boolean;
+  IconComponent?: LucideIcon;
 }
 
 export const CompactRoomSelector = memo(function CompactRoomSelector({
@@ -18,22 +24,42 @@ export const CompactRoomSelector = memo(function CompactRoomSelector({
   label,
   options,
   onChange,
+  ariaLabel,
+  disabled = false,
+  variant = 'plain',
   contentClassName,
   labelClassName,
   iconClassName,
+  iconOnly = false,
+  IconComponent = ChevronDown,
 }: CompactRoomSelectorProps) {
   const { theme } = useTheme();
   const { t } = useI18n();
   const surface = getThemeSurfaceTokens(theme);
 
   return (
-    <div className="relative inline-flex items-center">
+    <div
+      className={cn(
+        'relative inline-flex items-center transition-colors',
+        variant === 'soft' && [
+          'h-10 rounded-full border px-3 focus-within:ring-2 focus-within:ring-orange-400/35 focus-within:ring-offset-2',
+          surface.border,
+          surface.subtleBg,
+          surface.hoverBg,
+          surface.ringOffset,
+        ],
+        variant === 'ghost' && ['h-9 rounded-full px-3', !disabled && surface.hoverBg],
+        iconOnly && 'w-10 justify-center px-0',
+        disabled && 'opacity-50'
+      )}
+    >
       {onChange ? (
         <select
-          aria-label={t('common.room')}
+          aria-label={ariaLabel ?? t('common.room')}
           value={value}
+          disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
-          className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none bg-white text-sm font-normal text-slate-900 opacity-0 disabled:cursor-not-allowed"
+          className="peer absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none bg-white text-sm font-normal text-slate-900 opacity-0 disabled:cursor-not-allowed"
         >
           {options.map((option) => (
             <option key={option.value} value={option.value}>
@@ -43,12 +69,29 @@ export const CompactRoomSelector = memo(function CompactRoomSelector({
         </select>
       ) : null}
       <div
-        className={`inline-flex min-w-0 items-center gap-2 text-sm ${surface.textPrimary} ${contentClassName ?? ''}`}
+        className={cn(
+          'inline-flex min-w-0 items-center gap-2',
+          variant === 'ghost' ? 'text-xs' : 'text-sm',
+          surface.textPrimary,
+          variant === 'ghost' &&
+            'peer-focus-visible:[&_span]:underline peer-focus-visible:[&_span]:decoration-1 peer-focus-visible:[&_span]:underline-offset-4',
+          contentClassName
+        )}
       >
-        <span className={`max-w-[12rem] truncate font-medium ${labelClassName ?? ''}`}>
+        <span
+          className={cn(
+            'max-w-[12rem] truncate',
+            variant === 'ghost' ? 'font-normal' : 'font-medium',
+            iconOnly && 'sr-only',
+            labelClassName
+          )}
+        >
           {label}
         </span>
-        <ChevronDown className={`h-4 w-4 ${surface.textSecondary} ${iconClassName ?? ''}`} />
+        <IconComponent
+          aria-hidden="true"
+          className={`h-4 w-4 ${surface.textSecondary} ${iconClassName ?? ''}`}
+        />
       </div>
     </div>
   );

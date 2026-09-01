@@ -4,7 +4,7 @@ import { gzipSync } from 'node:zlib';
 import { appPaths, repoRoot } from './repo-paths.mjs';
 
 const MAX_INITIAL_CODE_GZIP_BYTES = 650 * 1024;
-const TARGET_STYLESHEET_GZIP_BYTES = 65 * 1024;
+const TARGET_STYLESHEET_GZIP_BYTES = 68 * 1024;
 const STYLESHEET_GZIP_TOLERANCE_BYTES = 1024;
 const MAX_STYLESHEET_GZIP_BYTES =
   TARGET_STYLESHEET_GZIP_BYTES + STYLESHEET_GZIP_TOLERANCE_BYTES;
@@ -92,6 +92,20 @@ for (const requiredHeader of [
   'X-Frame-Options: SAMEORIGIN',
 ]) {
   if (!headers.includes(requiredHeader)) fail(`missing required header: ${requiredHeader}`);
+}
+
+const rootContentSecurityPolicy = headers
+  .slice(headers.indexOf('\n/\n'), headers.indexOf('\n\n/roadmap/*'))
+  .split(/\r?\n/)
+  .find((line) => line.includes('Content-Security-Policy:'));
+if (!rootContentSecurityPolicy) fail('homepage Content-Security-Policy is missing');
+for (const directive of ['img-src', 'connect-src']) {
+  const directiveValue = rootContentSecurityPolicy
+    .split(';')
+    .find((value) => value.trimStart().startsWith(`${directive} `));
+  if (!directiveValue?.includes('https://tiles.openfreemap.org')) {
+    fail(`${directive} must allow the OpenFreeMap production tile origin`);
+  }
 }
 
 for (const line of headers.split(/\r?\n/)) {

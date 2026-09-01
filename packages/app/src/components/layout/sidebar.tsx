@@ -37,6 +37,7 @@ import {
   DoorOpen,
   LogOut,
   type LucideIcon,
+  MessageCircle,
   PanelLeftClose,
   PanelLeftOpen,
   Pencil,
@@ -47,6 +48,7 @@ import {
 import { lazy, memo, type RefObject, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
+import { HeaderAssistAction } from './header-assist-action';
 import type { MobileRoomNavigation } from './mobile-room-dropdown';
 import { getVisibleRoomNavRooms } from './room-nav.utils';
 import {
@@ -586,6 +588,21 @@ export const Sidebar = memo(function Sidebar({
                 pill={getMobileTabPill(isMobileSearchOpen)}
                 ariaExpanded={isMobileSearchOpen}
               />
+              {isMobile ? (
+                <HeaderAssistAction
+                  renderTrigger={({ isOpen, onClick }) => (
+                    <MobileDockButton
+                      icon={MessageCircle}
+                      isActive={isOpen}
+                      label={t('widgets.assist.title')}
+                      onClick={onClick}
+                      pill={getMobileTabPill(isOpen)}
+                      ariaExpanded={isOpen}
+                      ariaHasPopup="dialog"
+                    />
+                  )}
+                />
+              ) : null}
             </div>
           </div>
         )}
@@ -653,6 +670,7 @@ export const Sidebar = memo(function Sidebar({
 
 function MobileDockButton({
   ariaExpanded,
+  ariaHasPopup,
   icon: Icon,
   isActive,
   label,
@@ -660,6 +678,7 @@ function MobileDockButton({
   pill,
 }: {
   ariaExpanded?: boolean;
+  ariaHasPopup?: 'dialog';
   icon: LucideIcon;
   isActive: boolean;
   label: string;
@@ -670,6 +689,7 @@ function MobileDockButton({
     <button
       onClick={onClick}
       aria-expanded={ariaExpanded}
+      aria-haspopup={ariaHasPopup}
       aria-label={label}
       aria-current={isActive ? 'page' : undefined}
       type="button"

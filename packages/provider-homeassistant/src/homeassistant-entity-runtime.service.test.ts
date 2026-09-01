@@ -63,6 +63,7 @@ describe('homeAssistantEntityRuntimeService', () => {
       isConnected: vi.fn(() => true),
       getPanelHass: vi.fn(() => null),
       getConnection: vi.fn(() => null),
+      sendWebSocketBinary: vi.fn(),
       getEntities: () => state.entities as never,
       getEntityRegistry: () => state.entityRegistry as never,
       getConfig: () => state.config,

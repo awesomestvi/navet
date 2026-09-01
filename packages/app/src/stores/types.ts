@@ -139,6 +139,7 @@ export type CardType =
   | 'energy-now'
   | 'media-stack'
   | 'button'
+  | 'assist'
   | 'map'
   | 'entity';
 

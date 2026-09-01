@@ -9,7 +9,8 @@ const MAX_ENTRY_JS_BYTES = 48 * 1024;
 const MAX_EAGER_CHUNK_BYTES = 256 * 1024;
 const MAX_TOTAL_EAGER_JS_BYTES = 768 * 1024;
 const MAX_AUTHENTICATED_TRANSITION_JS_BYTES = 320 * 1024;
-const MAX_MAIN_CSS_BYTES = 550 * 1024;
+// Assist adds the shared conversation surface while keeping the stylesheet below 560 KiB.
+const MAX_MAIN_CSS_BYTES = 560 * 1024;
 const FORBIDDEN_AUTHENTICATED_TRANSITION_PREFIXES = ['dnd-vendor', 'primitives-'];
 const LAZY_CHUNK_PREFIXES = [
   'dashboard-card-item-draggable-',

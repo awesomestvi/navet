@@ -774,7 +774,7 @@ describe('MediaDashboard', () => {
 
     renderWithProviders(<MediaDashboard devices={[createMediaDevice()]} />);
 
-    expect(screen.getByRole('heading', { name: 'Now playing' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Spotify' })).toBeInTheDocument();
     expect(screen.queryByText('1 media player')).not.toBeInTheDocument();
     const dashboardLayout = screen.getByTestId('media-dashboard-layout');
     expect(dashboardLayout).toHaveStyle({
@@ -792,8 +792,8 @@ describe('MediaDashboard', () => {
     expect(albumDirectory).toHaveClass('w-full', 'min-h-[72px]');
     expect(screen.getByTestId('media-library-directory-icon')).toHaveClass('h-9', 'w-9');
     expect(screen.getByTestId('media-library-directory-icon').querySelector('svg')).toHaveClass(
-      'h-[18px]',
-      'w-[18px]'
+      'h-5',
+      'w-5'
     );
     expect(screen.getByText('Albums')).toHaveClass('line-clamp-2');
     fireEvent.click(await screen.findByText('Albums'));

@@ -18,7 +18,7 @@ describe('CardSizeSelector', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Resize card' }));
 
     expect(screen.getByRole('dialog', { name: 'Resize card' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Close Resize card' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument();
   });
 
   it('keeps the compact anchored selector on wider screens', () => {

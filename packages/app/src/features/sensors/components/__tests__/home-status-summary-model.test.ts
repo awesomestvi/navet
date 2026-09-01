@@ -95,7 +95,7 @@ describe('home status summary model', () => {
     expect(items).toEqual([
       expect.objectContaining({
         id: 'chores',
-        value: 'Overdue · 4 remaining',
+        value: '1 overdue',
         tone: 'danger',
       }),
     ]);

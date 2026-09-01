@@ -6,6 +6,7 @@ import { useI18n } from '@navet/app/i18n';
 import { Component, lazy, type ReactNode, Suspense, useState } from 'react';
 import type { CustomCard } from '../stores/custom-cards-store';
 import { useCustomCardsStore } from '../stores/custom-cards-store';
+import type { AssistWidgetData } from './widgets/assist-widget';
 import type { BatteryOverviewWidgetData } from './widgets/battery-overview-widget';
 import type { EnergyNowWidgetData } from './widgets/energy-now-dashboard-widget';
 import type { GenericEntityWidgetData } from './widgets/generic-entity-widget';
@@ -79,6 +80,11 @@ const MediaStackWidget = lazy(async () => {
 const ButtonWidget = lazy(async () => {
   const module = await import('./widgets/button-widget');
   return { default: module.ButtonWidget };
+});
+
+const AssistWidget = lazy(async () => {
+  const module = await import('./widgets/assist-widget');
+  return { default: module.AssistWidget };
 });
 
 const MapWidget = lazy(async () => {
@@ -292,6 +298,17 @@ export function WidgetCard({
                 }
               | undefined
           }
+          onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
+          isEditMode={isEditMode}
+          openSettingsRequestKey={resolvedOpenSettingsRequestKey}
+        />
+      );
+      break;
+    case 'assist':
+      widgetContent = (
+        <AssistWidget
+          size={card.size}
+          data={card.data as AssistWidgetData | undefined}
           onUpdate={(data) => handleCardUpdate(card.id, { data: { ...card.data, ...data } })}
           isEditMode={isEditMode}
           openSettingsRequestKey={resolvedOpenSettingsRequestKey}

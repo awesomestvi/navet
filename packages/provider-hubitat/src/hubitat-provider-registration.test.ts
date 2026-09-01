@@ -17,6 +17,7 @@ runProviderPackageRegistrationTests({
     'calendar',
     'weather',
     'notifications',
+    'conversation',
   ],
   expectedRoomManagementCapabilities: {
     discover: false,

@@ -24,6 +24,7 @@ export type CardType =
   | 'energy-now'
   | 'media-stack'
   | 'button'
+  | 'assist'
   | 'map'
   | 'entity';
 
@@ -86,7 +87,7 @@ export function normalizeCustomCard(card: NormalizableCustomCard): CustomCard {
       : { ...card, type: normalizedType, data: normalizedData };
 
   if (
-    normalizedCard.type === 'button' &&
+    (normalizedCard.type === 'button' || normalizedCard.type === 'assist') &&
     normalizedCard.size !== 'tiny' &&
     normalizedCard.size !== 'extra-small' &&
     normalizedCard.size !== 'small'

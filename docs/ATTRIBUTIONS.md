@@ -5,6 +5,12 @@
 ### shadcn/ui
 This project includes components from [shadcn/ui](https://ui.shadcn.com/) used under [MIT license](https://github.com/shadcn-ui/ui/blob/main/LICENSE.md).
 
+### assistant-ui
+
+The Assist chat surface uses [assistant-ui](https://github.com/assistant-ui/assistant-ui) under the
+MIT License. Its external-store runtime and thread primitives are integrated with Navet's own
+provider-neutral conversation runtime and design-system primitives.
+
 ## Open Source Libraries
 
 Representative libraries used by the current app and public surfaces include:

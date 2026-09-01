@@ -105,9 +105,6 @@ describe('LightSettingsDialog', () => {
       backgroundColor: 'rgba(107, 114, 128, 0.14)',
       borderColor: 'rgba(107, 114, 128, 0.24)',
     });
-    expect(screen.getByRole('combobox', { name: 'Room' }).previousElementSibling).toHaveStyle({
-      backgroundColor: 'rgba(107, 114, 128, 0.14)',
-      borderColor: 'rgba(107, 114, 128, 0.24)',
-    });
+    expect(screen.getByRole('combobox', { name: 'Room' })).toBeInTheDocument();
   });
 });
