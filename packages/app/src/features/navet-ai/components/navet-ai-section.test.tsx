@@ -7,12 +7,24 @@ import { NavetAiSection } from './navet-ai-section';
 
 const state: NavetAiState = {
   contract: 'navet.ai',
-  version: 1,
+  version: 2,
   settings: {
     enabled: true,
     dailyGenerationEnabled: true,
     locale: 'en',
     modelDownloadConsented: false,
+    priorityFeedEnabled: true,
+    learningEnabled: true,
+    historyBackfillEnabled: false,
+    prioritySources: {
+      security: true,
+      chores: true,
+      weather: true,
+      calendar: true,
+      maintenance: true,
+      energy: true,
+    },
+    privateDetails: { calendarTitles: false, notificationText: false },
   },
   capabilities: {
     available: true,
@@ -28,6 +40,7 @@ const state: NavetAiState = {
   eventCount: 0,
   lastGeneratedAt: null,
   historyBackfilledAt: null,
+  priorityFeedback: [],
 };
 
 describe('NavetAiSection', () => {

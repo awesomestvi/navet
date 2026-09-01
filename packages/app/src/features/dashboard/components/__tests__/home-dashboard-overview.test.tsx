@@ -10,6 +10,16 @@ const overviewMocks = vi.hoisted(() => ({
   useHomeEnergySummary: vi.fn(() => ({
     gridImportTodayKWh: undefined,
   })),
+  choreWorkspace: null as unknown,
+}));
+
+vi.mock('@navet/app/features/chores/chore-workspace-store', () => ({
+  useChoreWorkspaceStore: (selector: (state: { data: unknown }) => unknown) =>
+    selector({ data: overviewMocks.choreWorkspace }),
+}));
+
+vi.mock('@navet/app/features/chores/use-chore-workspace-sync', () => ({
+  useChoreWorkspaceSync: () => undefined,
 }));
 
 vi.mock('@navet/app/hooks', async () => {
@@ -93,6 +103,81 @@ describe('HomeDashboardOverview', () => {
     overviewMocks.showHomeSummaryBar = true;
     overviewMocks.choresEnabled = true;
     overviewMocks.useHomeEnergySummary.mockClear();
+    overviewMocks.choreWorkspace = null;
+  });
+
+  it('shows a due-today chore above the summary without mutating presentation and hides it in edit mode', async () => {
+    overviewMocks.choreWorkspace = {
+      definitionsById: {
+        trash: {
+          id: 'trash',
+          title: 'Take out trash',
+          enabled: true,
+          approval: { required: false, approverIds: [] },
+        },
+      },
+      occurrencesById: {
+        trash: {
+          id: 'trash',
+          definitionId: 'trash',
+          scheduledAt: new Date().toISOString(),
+          dueAt: new Date(Date.now() + 60_000).toISOString(),
+          assigneeIds: [],
+          assignmentSlot: 'all',
+          status: 'available',
+          updatedAt: new Date().toISOString(),
+        },
+      },
+    };
+    const props = {
+      deviceMap: new Map<string, DeviceWithType>(),
+      summaryDeviceMap: new Map<string, DeviceWithType>(),
+      cardSizes: {},
+      updateCardSize: vi.fn(),
+      hiddenEntityCount: 0,
+      allCustomCards: [],
+      homeLayout: {
+        mode: 'flow' as const,
+        showHero: true,
+        cardIds: [],
+        sections: [],
+        cardSectionAssignments: {},
+      },
+      removeHomeCard: vi.fn(),
+      moveHomeCard: vi.fn(),
+      setHomeLayoutMode: vi.fn(),
+      addHomeSection: vi.fn(),
+      addHomeColumnSection: vi.fn(),
+      addHomeSectionBelow: vi.fn(),
+      moveHomeSection: vi.fn(),
+      moveHomeColumn: vi.fn(),
+      renameHomeSection: vi.fn(),
+      removeHomeSection: vi.fn(),
+      resizeHomeSection: vi.fn(),
+      onNavigateSection: vi.fn(),
+    };
+    const { rerender } = renderWithProviders(
+      <HomeDashboardOverview {...props} isEditMode={false} />
+    );
+
+    const attention = screen.getByLabelText('priorities.ariaLabel');
+    const summary = screen.getByLabelText('Status summary');
+    expect(attention).toHaveTextContent('Take out trash');
+    expect(
+      attention.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(screen.getByTestId('home-presentation')).toBeInTheDocument();
+    expect(props.homeLayout).toEqual({
+      mode: 'flow',
+      showHero: true,
+      cardIds: [],
+      sections: [],
+      cardSectionAssignments: {},
+    });
+
+    rerender(<HomeDashboardOverview {...props} isEditMode />);
+    expect(screen.queryByLabelText('What needs attention')).not.toBeInTheDocument();
+    expect(await screen.findByTestId('home-edit')).toBeInTheDocument();
   });
 
   it('builds the home summary bar from the visible summary map instead of hidden raw devices', () => {

@@ -1,5 +1,5 @@
 import type { TranslateFn } from '@navet/app/hooks';
-import { Brain, Zap as EnergyIcon, Gauge, MessageCircle, Sparkles } from 'lucide-react';
+import { Zap as EnergyIcon, Gauge, MessageCircle, Sparkles, Telescope } from 'lucide-react';
 import type { SVGProps } from 'react';
 import type { ButtonWidgetData } from '../widgets/button-widget';
 import type { CardTemplate } from './types';
@@ -235,7 +235,7 @@ export function createCardTemplates(t: TranslateFn): CardTemplate[] {
       cardType: 'ai-insights',
       nameKey: 'dashboard.addCard.templates.aiInsights.name',
       descriptionKey: 'dashboard.addCard.templates.aiInsights.description',
-      icon: <Brain className="w-5 h-5" />,
+      icon: <Telescope className="w-5 h-5" />,
       defaultSize: 'medium',
       supportedSizes: ['small', 'medium', 'large'],
     },

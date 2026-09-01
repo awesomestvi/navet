@@ -12,7 +12,7 @@ describe('SettingsSection', () => {
     document.documentElement.style.scrollbarGutter = '';
   });
 
-  it('shows Navet AI as a first-class settings destination', () => {
+  it('shows Smart features as a first-class settings destination', () => {
     useNavetAiStore.setState({
       loading: false,
       error: null,
@@ -42,18 +42,18 @@ describe('SettingsSection', () => {
       },
     });
     renderWithProviders(<SettingsSection />);
-    fireEvent.click(screen.getByRole('button', { name: 'Navet AI' }));
-    expect(screen.getByRole('heading', { name: 'Navet AI' })).toBeInTheDocument();
-    expect(screen.getByText(/can only read and suggest/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Smart features' }));
+    expect(screen.getByRole('heading', { level: 2, name: 'Smart features' })).toBeInTheDocument();
+    expect(screen.getByText(/help Navet notice, prioritize, and explain/i)).toBeInTheDocument();
     expect(screen.getByText(/model not downloaded/i)).toBeInTheDocument();
     expect(screen.queryByText(/not_downloaded/i)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Download' })).toHaveClass('h-9', 'rounded-full');
   });
 
-  it('does not offer Navet AI in the browser-only Home Assistant panel', () => {
+  it('does not offer Smart features in the browser-only Home Assistant panel', () => {
     window.__NAVET_PANEL__ = true;
     renderWithProviders(<SettingsSection />);
-    expect(screen.queryByRole('button', { name: 'Navet AI' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Smart features' })).not.toBeInTheDocument();
   });
 
   it('shows model download progress and cancellation in settings', () => {
@@ -92,7 +92,7 @@ describe('SettingsSection', () => {
     });
 
     renderWithProviders(<SettingsSection />);
-    fireEvent.click(screen.getByRole('button', { name: 'Navet AI' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Smart features' }));
 
     expect(screen.getByRole('progressbar', { name: 'Model download progress' })).toHaveAttribute(
       'aria-valuenow',
@@ -139,7 +139,7 @@ describe('SettingsSection', () => {
     });
 
     renderWithProviders(<SettingsSection />);
-    fireEvent.click(screen.getByRole('button', { name: 'Navet AI' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Smart features' }));
 
     expect(screen.getByText('Qwen 3.5')).toBeInTheDocument();
     expect(screen.getByText('2B · Q4_K_M')).toBeInTheDocument();

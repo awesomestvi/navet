@@ -144,7 +144,7 @@ for (const language of languages.slice(1)) {
 
 const universallyAllowedIdenticalValues = new Set([
   'Navet',
-  'Navet AI',
+  'Navet Assist',
   'Home Assistant',
   'UV',
   'Spotify',
@@ -232,6 +232,7 @@ const allowedIdenticalValuesByLanguage = {
 };
 const allowedIdenticalKeys = new Set([
   'login.providerUrlLabel',
+  'navetAi.settings.installedHere',
   'security.alarm.action.pending',
   'widgets.assist.title',
   'dashboard.addCard.templates.assist.name',

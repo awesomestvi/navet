@@ -6,6 +6,8 @@ import {
   isNavetAiBackfillReady,
   loadNavetAiBackfillHistories,
   selectHourlyMaximumPowerPoints,
+  shouldBackfillNavetAiHistory,
+  shouldStartNavetAiLearning,
   splitNavetAiBackfillEvents,
   uploadNavetAiBackfill,
 } from './navet-ai-engine';
@@ -26,6 +28,15 @@ function event(index: number, state: HomeEvent['currentState'] = 'on'): HomeEven
 }
 
 describe('Navet AI history backfill', () => {
+  it('does not start a live subscription or history import before explicit opt in', () => {
+    expect(shouldStartNavetAiLearning(undefined)).toBe(false);
+    expect(shouldStartNavetAiLearning({ learningEnabled: false })).toBe(false);
+    expect(shouldStartNavetAiLearning({ enabled: false, learningEnabled: true })).toBe(false);
+    expect(shouldBackfillNavetAiHistory({ learningEnabled: true })).toBe(false);
+    expect(
+      shouldBackfillNavetAiHistory({ learningEnabled: true, historyBackfillEnabled: true })
+    ).toBe(true);
+  });
   it('reduces frequent power history to one maximum reading per hour', () => {
     const points = [
       { state: '320', changedAt: '2026-08-30T12:05:00.000Z' },

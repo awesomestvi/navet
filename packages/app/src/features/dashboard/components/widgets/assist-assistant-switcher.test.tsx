@@ -11,12 +11,12 @@ describe('AssistAssistantSwitcher', () => {
         value="navet_ai"
         ariaLabel="Choose assistant"
         homeAssistantLabel="Home Assistant"
-        navetAiLabel="Navet AI"
+        navetAiLabel="Navet Assist"
         onChange={onChange}
       />
     );
 
-    const trigger = screen.getByRole('button', { name: 'Choose assistant: Navet AI' });
+    const trigger = screen.getByRole('button', { name: 'Choose assistant: Navet Assist' });
     expect(trigger).toHaveClass('h-9', 'w-9');
     expect(container.querySelector('[data-assistant-logo="navet_ai"]')).toBeInTheDocument();
 

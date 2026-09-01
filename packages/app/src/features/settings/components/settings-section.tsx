@@ -1,5 +1,5 @@
 import { useI18n, useMediaQuery, usePersistedState } from '@navet/app/hooks';
-import { Brain, Hand, Info, Languages, LayoutGrid, Palette, Server } from 'lucide-react';
+import { Hand, Info, Languages, LayoutGrid, Palette, Server, Telescope } from 'lucide-react';
 import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import { useSettingsSectionController } from '../hooks/use-settings-section-controller';
 import {
@@ -52,7 +52,7 @@ export function SettingsSection({
         { id: 'localization', label: t('settings.nav.localization'), icon: Languages },
         { id: 'interaction', label: t('settings.nav.interaction'), icon: Hand },
         { id: 'dashboard', label: t('settings.nav.dashboard'), icon: LayoutGrid },
-        { id: 'ai', label: t('sidebar.ai'), icon: Brain },
+        { id: 'ai', label: t('navetAi.settings.sectionTitle'), icon: Telescope },
         { id: 'system', label: t('settings.nav.system'), icon: Server },
         { id: 'project', label: t('settings.project.sectionTitle'), icon: Info },
       ].filter(({ id }) => !hiddenTabSet.has(id)),

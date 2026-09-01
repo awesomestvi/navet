@@ -16,19 +16,19 @@ controls, status, and routines you use most.
 Home Assistant saves Navet's data automatically. Normal add-on restarts and updates keep your
 dashboard. Navet also uses your current Home Assistant sign-in.
 
-## Navet AI
+## Smart features
 
-Navet AI can learn supported lighting, switch, and energy patterns and show read-only observations.
-It cannot control devices, create or trigger automations, or send notifications. Its SQLite data is
-kept in the add-on's installation storage.
+Home insights can learn supported lighting, switch, and energy patterns and show read-only
+observations. It cannot control devices, create or trigger automations, or send notifications. Its
+SQLite data is kept in the add-on's installation storage.
 
-Pattern detection works without a model. If you choose **Download** in **Settings → Navet AI**, the
-add-on downloads a local, integrity-checked Qwen model. A 4 GB Raspberry Pi 5 selects the roughly
-563 MB 0.8B model; installations with more memory select the roughly 1.4 GB 2B model. The download
-never begins without that explicit choice.
+Pattern detection works without a model. If you choose **Download** in **Settings → Smart
+features**, the add-on downloads a local, integrity-checked Qwen model. A 4 GB Raspberry Pi 5
+selects the roughly 563 MB 0.8B model; installations with more memory select the roughly 1.4 GB 2B
+model. The download never begins without that explicit choice.
 
 Raw observations are kept for 30 days and daily aggregates for 12 months. Camera and audio content,
-credentials, tokens, and free-form private text are not stored by Navet AI.
+credentials, tokens, and free-form private text are not stored by smart features.
 
 ## If Navet Does Not Open
 

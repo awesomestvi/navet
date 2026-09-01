@@ -64,6 +64,27 @@ const temperatureEntities: IntelligenceEntityReference[] = [
   },
 ];
 
+const humidityEntities: IntelligenceEntityReference[] = [
+  {
+    id: 'home_assistant:sensor.basement_humidity',
+    providerId: 'home_assistant',
+    name: 'Basement humidity',
+    room: 'Basement',
+    type: 'humidity',
+    value: 61,
+    unit: '%',
+  },
+  {
+    id: 'home_assistant:sensor.bathroom_humidity',
+    providerId: 'home_assistant',
+    name: 'Bathroom humidity',
+    room: 'Bathroom',
+    type: 'humidity',
+    value: 48,
+    unit: '%',
+  },
+];
+
 describe('read-only intelligence control suggestions', () => {
   it('distinguishes a direct command from a question or autonomous suggestion', () => {
     expect(isExplicitIntelligenceControlRequest('Turn off the office lights')).toBe(true);
@@ -187,6 +208,35 @@ describe('read-only intelligence control suggestions', () => {
     ).toEqual({ kind: 'lights_on_count', count: 1, room: 'Office' });
   });
 
+  it('answers which room an active light is in from verified state', () => {
+    expect(
+      interpretSimpleStateQuestion(
+        'Which room is the light on in?',
+        entities.map((entity, index) =>
+          index === 0 ? { ...entity, state: 'on' as const } : entity
+        )
+      )
+    ).toEqual({
+      kind: 'lights_on_locations',
+      lights: [{ name: 'Ceiling light', room: 'Office' }],
+    });
+  });
+
+  it('lists every active light and preserves missing room assignments', () => {
+    expect(
+      interpretSimpleStateQuestion('Where are the lights running?', [
+        { ...entities[0], state: 'on' },
+        { ...entities[1], state: 'on', room: undefined },
+      ])
+    ).toEqual({
+      kind: 'lights_on_locations',
+      lights: [
+        { name: 'Ceiling light', room: 'Office' },
+        { name: 'Desk lamp', room: undefined },
+      ],
+    });
+  });
+
   it('answers a room temperature question from every verified reading in that room', () => {
     expect(
       interpretSimpleStateQuestion('What is the temperature in the bathroom?', temperatureEntities)
@@ -194,8 +244,22 @@ describe('read-only intelligence control suggestions', () => {
       kind: 'temperature',
       room: 'Bathroom',
       readings: [
-        { name: 'Bathroom temperature', value: 22.4, unit: '°C' },
-        { name: 'Bathroom thermostat', value: 22, unit: '°C' },
+        { name: 'Bathroom temperature', room: 'Bathroom', value: 22.4, unit: '°C' },
+        { name: 'Bathroom thermostat', room: 'Bathroom', value: 22, unit: '°C' },
+      ],
+    });
+  });
+
+  it('answers a whole-home temperature question with the room for every verified reading', () => {
+    expect(
+      interpretSimpleStateQuestion('What are the temperature in the home?', temperatureEntities)
+    ).toEqual({
+      kind: 'temperature',
+      room: undefined,
+      readings: [
+        { name: 'Bathroom temperature', room: 'Bathroom', value: 22.4, unit: '°C' },
+        { name: 'Bathroom thermostat', room: 'Bathroom', value: 22, unit: '°C' },
+        { name: 'Bedroom temperature', room: 'Bedroom', value: 68, unit: '°F' },
       ],
     });
   });
@@ -203,6 +267,33 @@ describe('read-only intelligence control suggestions', () => {
   it('does not guess a temperature when the requested room is unknown', () => {
     expect(
       interpretSimpleStateQuestion('What is the temperature in the garage?', temperatureEntities)
+    ).toBeNull();
+  });
+
+  it('answers a room humidity question from verified sensor state', () => {
+    expect(
+      interpretSimpleStateQuestion('What is the humidity in the basement?', humidityEntities)
+    ).toEqual({
+      kind: 'humidity',
+      room: 'Basement',
+      readings: [{ name: 'Basement humidity', room: 'Basement', value: 61, unit: '%' }],
+    });
+  });
+
+  it('answers a whole-home humidity question with room labels', () => {
+    expect(interpretSimpleStateQuestion('What is the humidity?', humidityEntities)).toEqual({
+      kind: 'humidity',
+      room: undefined,
+      readings: [
+        { name: 'Basement humidity', room: 'Basement', value: 61, unit: '%' },
+        { name: 'Bathroom humidity', room: 'Bathroom', value: 48, unit: '%' },
+      ],
+    });
+  });
+
+  it('does not guess humidity when the requested room is unknown', () => {
+    expect(
+      interpretSimpleStateQuestion('What is the humidity in the garage?', humidityEntities)
     ).toBeNull();
   });
 
@@ -216,6 +307,20 @@ describe('read-only intelligence control suggestions', () => {
           },
         ],
         temperatureEntities
+      )
+    ).toEqual([]);
+  });
+
+  it('never treats a humidity reference as a controllable entity', () => {
+    expect(
+      validateControlSuggestions(
+        [
+          {
+            operation: 'turn_off',
+            entityIds: ['home_assistant:sensor.basement_humidity'],
+          },
+        ],
+        humidityEntities
       )
     ).toEqual([]);
   });

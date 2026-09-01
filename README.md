@@ -62,8 +62,8 @@ platform supports them.
 Shape the Home view around your household with editable layouts, dashboard profiles, widgets,
 themes, wallpapers, adaptive visual effects, and localization.
 
-Standalone Docker and the Home Assistant add-on can also keep installation-local, read-only Navet
-AI observations about supported lighting, switch, and energy patterns. Navet AI never acts
+Standalone Docker and the Home Assistant add-on can also keep installation-local, read-only Home
+insights about supported lighting, switch, and energy patterns. Navet never acts
 automatically or creates and triggers routines; explicit on/off commands submitted in Assist can
 be routed to the connected provider.
 

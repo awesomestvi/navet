@@ -111,7 +111,7 @@ export function createViteNavetAiProxyHandler(options: {
       response.end(Buffer.from(await upstream.arrayBuffer()));
     } catch (error) {
       sendJson(response, 503, {
-        error: 'Navet AI local service is unavailable',
+        error: 'The local smart features service is unavailable',
         detail: error instanceof Error ? error.message : String(error),
       });
     }

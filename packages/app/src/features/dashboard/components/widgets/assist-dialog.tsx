@@ -264,22 +264,65 @@ export function AssistDialog({
             })
           : t('widgets.assist.navetAiLightsOn', { count: result.answer.count });
       }
-      if (result.answer?.kind !== 'temperature') return null;
+      if (result.answer?.kind === 'lights_on_locations') {
+        if (result.answer.lights.length === 0) {
+          return t('widgets.assist.navetAiLightsOn', { count: 0 });
+        }
+        const listFormatter = new Intl.ListFormat(locale, {
+          style: 'long',
+          type: 'conjunction',
+        });
+        const rooms = [...new Set(result.answer.lights.flatMap((light) => light.room ?? []))];
+        const unassignedLights = result.answer.lights.filter((light) => !light.room);
+        const sections: string[] = [];
+        if (rooms.length === 1 && result.answer.lights.length === 1) {
+          sections.push(t('widgets.assist.navetAiLightOnInRoom', { room: rooms[0] }));
+        } else if (rooms.length > 0) {
+          sections.push(
+            t('widgets.assist.navetAiLightsOnInRooms', { rooms: listFormatter.format(rooms) })
+          );
+        }
+        if (unassignedLights.length > 0) {
+          sections.push(
+            t('widgets.assist.navetAiLightsOnRoomUnknown', {
+              lights: listFormatter.format(unassignedLights.map((light) => light.name)),
+            })
+          );
+        }
+        return sections.join(' ');
+      }
+      if (result.answer?.kind !== 'temperature' && result.answer?.kind !== 'humidity') return null;
       const answer = result.answer;
 
       const numberFormatter = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
       const listFormatter = new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' });
+      const roomCounts = new Map<string, number>();
+      for (const reading of answer.readings) {
+        if (reading.room) roomCounts.set(reading.room, (roomCounts.get(reading.room) ?? 0) + 1);
+      }
       const readings = listFormatter.format(
         answer.readings.map((reading) => {
-          const value = `${numberFormatter.format(reading.value)} ${reading.unit}`;
-          return answer.readings.length === 1 ? value : `${reading.name}: ${value}`;
+          const formattedNumber = numberFormatter.format(reading.value);
+          const value =
+            reading.unit === '%' ? `${formattedNumber}%` : `${formattedNumber} ${reading.unit}`;
+          if (answer.room) {
+            return answer.readings.length === 1 ? value : `${reading.name}: ${value}`;
+          }
+          const label = reading.room
+            ? roomCounts.get(reading.room) === 1
+              ? reading.room
+              : `${reading.room} (${reading.name})`
+            : reading.name;
+          return `${label}: ${value}`;
         })
       );
+      if (answer.kind === 'humidity') {
+        return answer.room
+          ? t('widgets.assist.navetAiHumidityInRoom', { readings, room: answer.room })
+          : t('widgets.assist.navetAiHumidity', { readings });
+      }
       return answer.room
-        ? t('widgets.assist.navetAiTemperatureInRoom', {
-            readings,
-            room: answer.room,
-          })
+        ? t('widgets.assist.navetAiTemperatureInRoom', { readings, room: answer.room })
         : t('widgets.assist.navetAiTemperature', { readings });
     })();
     const sections = stateAnswer ? [stateAnswer] : result.reply ? [result.reply] : [];

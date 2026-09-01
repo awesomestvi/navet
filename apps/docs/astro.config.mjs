@@ -137,7 +137,7 @@ export default defineConfig({
                   label: "Actions, maps, and status",
                   link: "/guide/everyday-control/actions-maps-status/",
                 },
-                { label: "Navet AI", link: "/guide/everyday-control/navet-ai/" },
+                { label: "Home insights", link: "/guide/everyday-control/navet-ai/" },
               ],
             },
             {

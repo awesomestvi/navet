@@ -16,12 +16,14 @@ export interface AttentionBandItem {
   priority: Extract<OperationalPriority, 'critical' | 'attention'>;
   icon: LucideIcon;
   actionLabel?: string;
+  secondaryActions?: Array<{ id: string; label: string }>;
 }
 
 export interface AttentionBandProps {
   items: readonly AttentionBandItem[];
   ariaLabel: string;
   onSelect?: (item: AttentionBandItem) => void;
+  onAction?: (item: AttentionBandItem, actionId: string) => void;
   className?: string;
   maxVisibleItems?: number;
 }
@@ -51,6 +53,7 @@ export const AttentionBand = memo(function AttentionBand({
   items,
   ariaLabel,
   onSelect,
+  onAction,
   className,
   maxVisibleItems = 4,
 }: AttentionBandProps) {
@@ -113,19 +116,45 @@ export const AttentionBand = memo(function AttentionBand({
             </>
           );
 
-          return onSelect ? (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onSelect(item)}
-              className={cn(
-                'flex min-h-12 w-full items-center gap-3 px-3 py-2.5 text-left transition-colors md:px-4',
-                surface.hoverBg,
-                getThemeFocusRingClassName(theme)
+          return onSelect || (onAction && item.secondaryActions?.length) ? (
+            <div key={item.id} className="flex min-h-12 flex-col sm:flex-row sm:items-center">
+              {onSelect ? (
+                <button
+                  type="button"
+                  onClick={() => onSelect(item)}
+                  className={cn(
+                    'flex min-h-12 w-full min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left transition-colors md:px-4',
+                    surface.hoverBg,
+                    getThemeFocusRingClassName(theme)
+                  )}
+                >
+                  {content}
+                </button>
+              ) : (
+                <div className="flex min-h-12 w-full min-w-0 flex-1 items-center gap-3 px-3 py-2.5 md:px-4">
+                  {content}
+                </div>
               )}
-            >
-              {content}
-            </button>
+              {onAction && item.secondaryActions?.length ? (
+                <div className="flex flex-wrap gap-1 px-3 pb-2.5 sm:shrink-0 sm:px-3 sm:py-2.5">
+                  {item.secondaryActions.map((action) => (
+                    <button
+                      key={action.id}
+                      type="button"
+                      onClick={() => onAction(item, action.id)}
+                      className={cn(
+                        'min-h-8 rounded-full px-2.5 text-xs font-semibold transition-colors',
+                        surface.hoverBg,
+                        surface.textSecondary,
+                        getThemeFocusRingClassName(theme)
+                      )}
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
           ) : (
             <div key={item.id} className="flex min-h-12 items-center gap-3 px-3 py-2.5 md:px-4">
               {content}

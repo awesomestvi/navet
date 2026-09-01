@@ -14,6 +14,7 @@ import { useNavetAiStore } from './navet-ai-store';
 
 let initialized = false;
 let unsubscribe: (() => void) | null = null;
+let removeSettingsListener: (() => void) | null = null;
 let queuedEvents: HomeEvent[] = [];
 let flushTimer: number | null = null;
 let powerFlushTimer: number | null = null;
@@ -36,6 +37,21 @@ type EventAppender<Result> = (batch: {
   events: HomeEvent[];
   backfillComplete?: boolean;
 }) => Promise<Result>;
+
+export function shouldStartNavetAiLearning(settings?: {
+  enabled?: boolean;
+  learningEnabled?: boolean;
+  historyBackfillEnabled?: boolean;
+}) {
+  return settings?.enabled !== false && settings?.learningEnabled === true;
+}
+
+export function shouldBackfillNavetAiHistory(settings?: {
+  learningEnabled?: boolean;
+  historyBackfillEnabled?: boolean;
+}) {
+  return shouldStartNavetAiLearning(settings) && settings?.historyBackfillEnabled === true;
+}
 
 export function isNavetAiBackfillReady(options: {
   inProgress: boolean;
@@ -145,6 +161,7 @@ export function coalesceHourlyPowerEvent(
 }
 
 async function migrateLegacyHabitEvidence() {
+  if (!shouldStartNavetAiLearning(useNavetAiStore.getState().state?.settings)) return;
   if (typeof indexedDB === 'undefined') return;
   const request = indexedDB.open('navet-habits');
   const database = await new Promise<IDBDatabase | null>((resolve) => {
@@ -328,6 +345,8 @@ function queueObservedEvent(event: HomeEvent) {
 }
 
 async function backfillHistory() {
+  const settings = useNavetAiStore.getState().state?.settings;
+  if (!shouldBackfillNavetAiHistory(settings)) return;
   if (
     !isNavetAiBackfillReady({
       inProgress: backfillStarted,
@@ -438,15 +457,9 @@ function scheduleFlush() {
   }, 1_500);
 }
 
-export function initializeNavetAiEngine() {
-  if (initialized || typeof window === 'undefined') return;
-  initialized = true;
-  void useNavetAiStore
-    .getState()
-    .initialize()
-    .then(migrateLegacyHabitEvidence)
-    .then(backfillHistory)
-    .catch(() => undefined);
+function startLearningSubscription() {
+  if (unsubscribe || !shouldStartNavetAiLearning(useNavetAiStore.getState().state?.settings))
+    return;
   unsubscribe = integrationStore.subscribe((state, previousState) => {
     void backfillHistory();
     const context = buildContext(state.providerEntitiesByCanonicalId);
@@ -498,9 +511,41 @@ export function initializeNavetAiEngine() {
   });
 }
 
+export function initializeNavetAiEngine() {
+  if (initialized || typeof window === 'undefined') return;
+  initialized = true;
+  void useNavetAiStore
+    .getState()
+    .initialize()
+    .then(() => {
+      startLearningSubscription();
+      return migrateLegacyHabitEvidence();
+    })
+    .then(backfillHistory)
+    .catch(() => undefined);
+  const handleSettingsChanged = () => {
+    if (!shouldStartNavetAiLearning(useNavetAiStore.getState().state?.settings)) {
+      unsubscribe?.();
+      unsubscribe = null;
+      queuedEvents = [];
+      pendingPowerEvents.clear();
+      return;
+    }
+    startLearningSubscription();
+    void migrateLegacyHabitEvidence()
+      .then(backfillHistory)
+      .catch(() => undefined);
+  };
+  window.addEventListener('navet-ai-settings-changed', handleSettingsChanged);
+  removeSettingsListener = () =>
+    window.removeEventListener('navet-ai-settings-changed', handleSettingsChanged);
+}
+
 export function stopNavetAiEngine() {
   unsubscribe?.();
   unsubscribe = null;
+  removeSettingsListener?.();
+  removeSettingsListener = null;
   initialized = false;
   backfillStarted = false;
   backfillRetryAfter = 0;

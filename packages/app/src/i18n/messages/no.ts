@@ -2107,7 +2107,7 @@ export const noMessages = {
   'sidebar.climate': 'Klima',
   'sidebar.security': 'Sikkerhet',
   'sidebar.tasks': 'Husstand',
-  'sidebar.ai': 'Navet AI',
+  'sidebar.ai': 'Hjemmeinnsikt',
   'navetAi.page.eyebrow': 'Privat intelligens',
   'navetAi.page.description':
     'Forstår mønstre i hjemmet og forklarer hva den ser. Den kan ikke styre enheter, kjøre rutiner eller sende varsler.',
@@ -2118,9 +2118,9 @@ export const noMessages = {
   'navetAi.model.downloading': 'Laster ned',
   'navetAi.model.error': 'Modellfeil',
   'navetAi.model.not_downloaded': 'Modellen er ikke lastet ned',
-  'navetAi.unavailable.title': 'Navet AI er ikke tilgjengelig i dette miljøet',
+  'navetAi.unavailable.title': 'Hjemmeinnsikt er ikke tilgjengelig i dette miljøet',
   'navetAi.unavailable.description':
-    'Navet AI krever den frittstående Docker-appen eller Home Assistant-tillegget. Paneler som bare kjører i nettleseren forblir deaktivert.',
+    'Smarte funksjoner krever den frittstående Docker-appen eller Home Assistant-tillegget. Paneler som bare kjører i nettleseren forblir deaktivert.',
   'navetAi.model.retryTitle': 'Prøv å laste ned den lokale modellen igjen',
   'navetAi.model.downloadTitle': 'Last ned den lokale modellen',
   'navetAi.model.downloadDescription':
@@ -2138,6 +2138,27 @@ export const noMessages = {
   'navetAi.feedback.helpful': 'Nyttig',
   'navetAi.feedback.notUseful': 'Ikke nyttig',
   'navetAi.feedback.hideSimilar': 'Skjul lignende',
+  'navetAi.priorities.title': 'Smarte prioriteringer',
+  'navetAi.priorities.description': 'Velg hva Navet kan vise og lære lokalt.',
+  'navetAi.priorities.feedTitle': 'Vis viktige elementer på Hjem',
+  'navetAi.priorities.feedDescription': 'Bruker verifisert status uten å lagre atferdshistorikk.',
+  'navetAi.priorities.learningTitle': 'Lær av aktivitet i denne installasjonen',
+  'navetAi.priorities.learningDescription':
+    'Av som standard. Aktivitet forblir lokal, og påloggingsinformasjon når aldri modellen.',
+  'navetAi.priorities.historyTitle': 'Importer opptil 30 dager med historikk',
+  'navetAi.priorities.historyDescription':
+    'Separat fra læring. La den være av for å starte ved samtykke.',
+  'navetAi.priorities.detailsTitle': 'Prioritetskilder og private detaljer',
+  'navetAi.priorities.calendarTitles': 'Vis nøyaktige kalendertitler på delte skjermer',
+  'navetAi.priorities.notificationText': 'Vis varslingstekst på delte skjermer',
+  'navetAi.priorities.excluded': 'Tilstedeværelse og kamerabilder inkluderes aldri.',
+  'navetAi.priorities.knowledge': 'Hva Navet vet: {feedback} valg og {events} lærte hendelser.',
+  'navetAi.priorities.deleteFeedback': 'Slett prioritetsvalg',
+  'priorities.ariaLabel': 'Det som trenger oppmerksomhet',
+  'priorities.weatherTitle': 'Ugunstig vær i nærheten',
+  'priorities.maintenanceTitle': 'Vedlikehold av smarthjemmet',
+  'priorities.energyTitle': 'Energibruken er høyere enn vanlig',
+  'navetAi.settings.sectionTitle': 'Smarte funksjoner',
   'navetAi.settings.description':
     'Lokal mønsterlæring for hele installasjonen som bare kan lese og foreslå.',
   'navetAi.settings.unavailable': 'Tjenesten er utilgjengelig',
@@ -2147,7 +2168,7 @@ export const noMessages = {
   'navetAi.settings.modelSize': 'Modellstørrelse',
   'navetAi.settings.modelLicense': 'Lisens',
   'navetAi.settings.modelStorage': 'Lagring',
-  'navetAi.settings.installedHere': 'Denne installasjonen',
+  'navetAi.settings.installedHere': 'Lokalt',
   'navetAi.settings.removeModel': 'Fjern modell',
   'navetAi.settings.removeModelConfirmTitle': 'Fjerne den lokale modellen?',
   'navetAi.settings.removeModelConfirmDescription':
@@ -2175,13 +2196,16 @@ export const noMessages = {
   'navetAi.settings.privateTitle': 'Privat innhold',
   'navetAi.settings.privateDescription':
     'Kamera- og lydinnhold, påloggingsdata, tokener og privat fritekst er ekskludert som standard.',
-  'navetAi.settings.resetTitle': 'Tilbakestill Navet AI',
+  'navetAi.settings.resetTitle': 'Smarte funksjoner',
   'navetAi.settings.resetDescription':
-    'Slett lærte hendelser, aggregater, tilbakemeldinger og genererte innsikter fra installasjonen.',
-  'navetAi.settings.resetConfirmTitle': 'Tilbakestille Navet AI?',
+    'Slå av alle smarte funksjoner, og slett den valgfrie lokale AI-modellen og alle lagrede data permanent.',
+  'navetAi.settings.disabledDescription':
+    'Smarte funksjoner er slått av. Ingen lokal AI-modell eller lærte data er lagret i installasjonen.',
+  'navetAi.settings.enableAction': 'Slå på smarte funksjoner',
+  'navetAi.settings.resetConfirmTitle': 'Slå av smarte funksjoner?',
   'navetAi.settings.resetConfirmDescription':
-    'Dette sletter lærte observasjoner, aggregater, tilbakemeldinger og innsikter permanent. Den lokale modellen beholdes.',
-  'navetAi.settings.resetAction': 'Tilbakestill Navet AI',
+    'Dette slår av alle smarte funksjoner og sletter permanent den lokale AI-modellen, lærte observasjoner, aggregater, tilbakemeldinger, prioritetsvalg og genererte innsikter.',
+  'navetAi.settings.resetAction': 'Slå av smarte funksjoner',
   'navetAi.widget.learning': 'Lærer fortsatt mønstrene dine',
   'navetAi.widget.description': 'Innsikter vises når Navet har nok bekreftede bevis.',
   'navetAi.widget.readOnly': 'Bare lesing',
@@ -3396,19 +3420,19 @@ export const noMessages = {
   'security.overview.customize.moveLater': 'Flytt {name} senere',
   'security.overview.customize.previewLabel': 'Enheter i sikkerhetsoversikten',
   'widgets.assist.title': 'Assist',
-  'widgets.assist.description': 'Spør Home Assistant eller Navet AI med tekst eller tale.',
+  'widgets.assist.description': 'Spør Home Assistant eller Navet Assist med tekst eller tale.',
   'widgets.assist.settingsTitle': 'Assist-innstillinger',
   'widgets.assist.settingsDescription': 'Velg assistenten dette kortet bruker.',
   'widgets.assist.pipeline': 'Assistent',
   'widgets.assist.assistant': 'Velg assistent',
   'widgets.assist.homeAssistant': 'Home Assistant',
-  'widgets.assist.navetAi': 'Navet AI',
+  'widgets.assist.navetAi': 'Navet Assist',
   'widgets.assist.navetAiUnavailable':
-    'Last ned den lokale modellen i Navet AI-innstillingene for å begynne å chatte.',
+    'Last ned den valgfrie lokale AI-modellen under Smarte funksjoner for å begynne å chatte.',
   'widgets.assist.navetAiEmptyTitle':
     'Jeg kan forklare hjemmet ditt og utføre kommandoer du ber om. Jeg handler aldri automatisk.',
-  'widgets.assist.navetAiPlaceholder': 'Spør Navet AI…',
-  'widgets.assist.navetAiFailed': 'Navet AI kunne ikke svare. Prøv igjen.',
+  'widgets.assist.navetAiPlaceholder': 'Spør Navet Assist…',
+  'widgets.assist.navetAiFailed': 'Navet Assist kunne ikke svare. Prøv igjen.',
   'widgets.assist.navetAiSuggestedAction': 'Foreslått handling',
   'widgets.assist.navetAiTurnOn': 'Slå på {targets}',
   'widgets.assist.navetAiTurnOff': 'Slå av {targets}',
@@ -3421,8 +3445,14 @@ export const noMessages = {
   'widgets.assist.navetAiNoAnswer': 'Jeg kunne ikke tolke den forespørselen.',
   'widgets.assist.navetAiLightsOn': 'Lys som er på: {count}',
   'widgets.assist.navetAiLightsOnInRoom': 'Lys som er på i {room}: {count}',
+  'widgets.assist.navetAiLightOnInRoom': 'Lyset er på i {room}.',
+  'widgets.assist.navetAiLightsOnInRooms': 'Det er lys på i {rooms}.',
+  'widgets.assist.navetAiLightsOnRoomUnknown':
+    'Disse lysene er på, men er ikke tilordnet et rom: {lights}.',
   'widgets.assist.navetAiTemperature': 'Temperatur: {readings}',
   'widgets.assist.navetAiTemperatureInRoom': 'Temperatur i {room}: {readings}',
+  'widgets.assist.navetAiHumidity': 'Fuktighet: {readings}',
+  'widgets.assist.navetAiHumidityInRoom': 'Fuktighet i {room}: {readings}',
   'widgets.assist.loadFailed':
     'Assistenter kunne ikke lastes. Kontroller tilkoblingen til Home Assistant.',
   'widgets.assist.noPipelines': 'Ingen assistenter tilgjengelig',
@@ -3442,9 +3472,9 @@ export const noMessages = {
   'widgets.assist.unavailable': 'Home Assistant er utilgjengelig',
   'widgets.assist.open': 'Åpne Assist',
   'dashboard.addCard.templates.assist.name': 'Assist',
-  'dashboard.addCard.templates.aiInsights.name': 'Navet AI-innsikt',
+  'dashboard.addCard.templates.aiInsights.name': 'Hjemmeinnsikt',
   'dashboard.addCard.templates.aiInsights.description':
-    'Vis den nyeste skrivebeskyttede observasjonen fra Navet AI.',
+    'Vis den nyeste skrivebeskyttede observasjonen Navet har bekreftet.',
   'dashboard.addCard.templates.assist.description':
-    'Skriv eller snakk med Home Assistant eller Navet AI.',
+    'Skriv eller snakk med Home Assistant eller Navet Assist.',
 } as const;

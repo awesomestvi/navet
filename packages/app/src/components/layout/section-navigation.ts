@@ -1,7 +1,6 @@
 import type { TranslateFn, TranslationKey } from '@navet/app/i18n';
 import type { Section } from '@navet/app/navigation/sections';
 import {
-  Brain,
   ClipboardCheck,
   Fan,
   Home,
@@ -10,6 +9,7 @@ import {
   Settings,
   Shield,
   Speaker,
+  Telescope,
   Zap,
 } from 'lucide-react';
 
@@ -31,7 +31,7 @@ const SECTION_NAVIGATION_CONFIG: Array<{
   { icon: Lightbulb, labelKey: 'sidebar.lights', section: 'lights' },
   { icon: Speaker, labelKey: 'sidebar.media', section: 'media' },
   { icon: ClipboardCheck, labelKey: 'sidebar.tasks', section: 'tasks' },
-  { icon: Brain, labelKey: 'sidebar.ai', section: 'ai' },
+  { icon: Telescope, labelKey: 'sidebar.ai', section: 'ai' },
   { icon: Settings, labelKey: 'sidebar.settings', section: 'settings' },
 ];
 
@@ -51,21 +51,26 @@ export const MOBILE_SECTION_ORBIT_ORDER: Section[] = [
 
 export function getSectionNavigationItems(
   t: TranslateFn,
-  choresEnabled = true
+  choresEnabled = true,
+  navetAiEnabled = true
 ): SectionNavigationItem[] {
   const customPanel = typeof window !== 'undefined' && window.__NAVET_PANEL__ === true;
-  return SECTION_NAVIGATION_CONFIG.filter(({ section }) => section !== 'ai' || !customPanel).map(
-    ({ icon, labelKey, section }) => ({
-      icon,
-      label: t(section === 'tasks' && !choresEnabled ? 'sections.tasks.title' : labelKey),
-      section,
-    })
-  );
+  return SECTION_NAVIGATION_CONFIG.filter(
+    ({ section }) => section !== 'ai' || (!customPanel && navetAiEnabled)
+  ).map(({ icon, labelKey, section }) => ({
+    icon,
+    label: t(section === 'tasks' && !choresEnabled ? 'sections.tasks.title' : labelKey),
+    section,
+  }));
 }
 
-export function getSectionNavigationItemMap(t: TranslateFn, choresEnabled = true) {
+export function getSectionNavigationItemMap(
+  t: TranslateFn,
+  choresEnabled = true,
+  navetAiEnabled = true
+) {
   return new Map<Section, SectionNavigationItem>(
-    getSectionNavigationItems(t, choresEnabled).map(
+    getSectionNavigationItems(t, choresEnabled, navetAiEnabled).map(
       (item) => [item.section, item] satisfies [Section, SectionNavigationItem]
     )
   );
@@ -74,9 +79,10 @@ export function getSectionNavigationItemMap(t: TranslateFn, choresEnabled = true
 export function getOrderedSectionNavigationItems(
   t: TranslateFn,
   order: Section[],
-  choresEnabled = true
+  choresEnabled = true,
+  navetAiEnabled = true
 ): SectionNavigationItem[] {
-  const itemMap = getSectionNavigationItemMap(t, choresEnabled);
+  const itemMap = getSectionNavigationItemMap(t, choresEnabled, navetAiEnabled);
   return order
     .map((section) => itemMap.get(section))
     .filter((item): item is SectionNavigationItem => item !== undefined);
@@ -86,9 +92,10 @@ export function getRecentSectionNavigationItems(
   t: TranslateFn,
   recentSections: Section[],
   lastNonHomeSection: Section | null,
-  choresEnabled = true
+  choresEnabled = true,
+  navetAiEnabled = true
 ): SectionNavigationItem[] {
-  const itemMap = getSectionNavigationItemMap(t, choresEnabled);
+  const itemMap = getSectionNavigationItemMap(t, choresEnabled, navetAiEnabled);
 
   if (recentSections.length > 0) {
     return recentSections

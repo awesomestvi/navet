@@ -16,6 +16,7 @@ export * from './integration-providers';
 export * from './integration-service-target';
 export * from './intelligence';
 export * from './intelligence-chat';
+export * from './intelligence-priorities';
 export * from './provider-contract';
 export * from './provider-feature-models';
 export * from './provider-feature-services';

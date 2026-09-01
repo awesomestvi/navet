@@ -3,7 +3,7 @@ import type { CardSize } from '@navet/app/components/shared/card-size-selector';
 import { useNavetAiStore } from '@navet/app/features/navet-ai/navet-ai-store';
 import { useI18n } from '@navet/app/hooks';
 import { useNavigationStore } from '@navet/app/stores/navigation-store';
-import { Brain, ChevronRight, ShieldCheck } from 'lucide-react';
+import { ChevronRight, ShieldCheck, Telescope } from 'lucide-react';
 import { useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -36,7 +36,7 @@ export function NavetAiInsightsWidget({ size }: { size: CardSize }) {
       <div className="flex h-full flex-col justify-between gap-3 p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm font-semibold">
-            <Brain className="h-4 w-4" aria-hidden="true" /> {t('sidebar.ai')}
+            <Telescope className="h-4 w-4" aria-hidden="true" /> {t('sidebar.ai')}
           </div>
           <Badge tone="neutral">{state?.insights.length ?? 0}</Badge>
         </div>

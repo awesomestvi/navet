@@ -23,5 +23,5 @@ device. An unavailable control is not replaced with a provider-specific command.
 
 - [Add notes, photos, and RSS feeds](/guide/everyday-control/notes-photos-rss/)
 - [Create actions, maps, and status widgets](/guide/everyday-control/actions-maps-status/)
-- [Understand Navet AI observations](/guide/everyday-control/navet-ai/)
+- [Understand Home insights and smart features](/guide/everyday-control/navet-ai/)
 - [Configure Home Assistant Energy sources](/guide/everyday-control/energy/#configure-home-assistant-energy-sources)

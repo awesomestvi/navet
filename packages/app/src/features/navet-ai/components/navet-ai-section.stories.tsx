@@ -5,12 +5,24 @@ import { NavetAiSection } from './navet-ai-section';
 
 const storyState: NavetAiState = {
   contract: 'navet.ai',
-  version: 1,
+  version: 2,
   settings: {
     enabled: true,
     dailyGenerationEnabled: true,
     locale: 'en',
     modelDownloadConsented: true,
+    priorityFeedEnabled: true,
+    learningEnabled: true,
+    historyBackfillEnabled: false,
+    prioritySources: {
+      security: true,
+      chores: true,
+      weather: true,
+      calendar: true,
+      maintenance: true,
+      energy: true,
+    },
+    privateDetails: { calendarTitles: false, notificationText: false },
   },
   capabilities: {
     available: true,
@@ -51,6 +63,7 @@ const storyState: NavetAiState = {
   eventCount: 184,
   lastGeneratedAt: '2026-08-30T05:30:00.000Z',
   historyBackfilledAt: '2026-08-29T18:00:00.000Z',
+  priorityFeedback: [],
 };
 
 function NavetAiSectionStory() {
@@ -63,7 +76,7 @@ function NavetAiSectionStory() {
 }
 
 const meta = {
-  title: 'Pages/Navet AI/Insights',
+  title: 'Pages/Home insights/Insights',
   component: NavetAiSectionStory,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof NavetAiSectionStory>;

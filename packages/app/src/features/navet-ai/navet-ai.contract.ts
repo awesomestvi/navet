@@ -5,6 +5,11 @@ import type {
   IntelligenceEntityReference,
   IntelligenceStateAnswer,
 } from '@navet/core/intelligence-chat';
+import type {
+  IntelligencePriorityRankRequest,
+  IntelligencePriorityRankResponse,
+  PriorityFeedback,
+} from '@navet/core/intelligence-priorities';
 
 export const NAVET_AI_ENDPOINTS = {
   capabilities: '/__navet_ai__/capabilities',
@@ -18,6 +23,8 @@ export const NAVET_AI_ENDPOINTS = {
   modelCancel: '/__navet_ai__/model-cancel',
   model: '/__navet_ai__/model',
   reset: '/__navet_ai__/reset',
+  priorityRank: '/__navet_ai__/priorities/rank',
+  priorityFeedback: '/__navet_ai__/priorities/feedback',
 } as const;
 
 export interface NavetAiSettings {
@@ -25,6 +32,14 @@ export interface NavetAiSettings {
   dailyGenerationEnabled: boolean;
   locale: string;
   modelDownloadConsented: boolean;
+  priorityFeedEnabled?: boolean;
+  learningEnabled?: boolean;
+  historyBackfillEnabled?: boolean;
+  prioritySources?: Record<
+    'security' | 'chores' | 'weather' | 'calendar' | 'maintenance' | 'energy',
+    boolean
+  >;
+  privateDetails?: { calendarTitles: boolean; notificationText: boolean };
 }
 
 export interface NavetAiCapabilities {
@@ -44,7 +59,7 @@ export interface NavetAiCapabilities {
 
 export interface NavetAiState {
   contract: 'navet.ai';
-  version: 1;
+  version: 1 | 2;
   settings: NavetAiSettings;
   capabilities: NavetAiCapabilities;
   insights: NavetInsight[];
@@ -52,7 +67,11 @@ export interface NavetAiState {
   eventCount: number;
   lastGeneratedAt: string | null;
   historyBackfilledAt: string | null;
+  priorityFeedback?: PriorityFeedback[];
 }
+
+export type NavetAiPriorityRankRequest = IntelligencePriorityRankRequest;
+export type NavetAiPriorityRankResponse = IntelligencePriorityRankResponse;
 
 export interface NavetAiEventBatch {
   events: HomeEvent[];

@@ -2009,7 +2009,7 @@ export const svMessages = {
   'sidebar.climate': 'Klimat',
   'sidebar.security': 'Säkerhet',
   'sidebar.tasks': 'Hushåll',
-  'sidebar.ai': 'Navet AI',
+  'sidebar.ai': 'Heminsikter',
   'navetAi.page.eyebrow': 'Privat intelligens',
   'navetAi.page.description':
     'Förstår mönster i hemmet och förklarar vad den ser. Den kan inte styra enheter, köra rutiner eller skicka aviseringar.',
@@ -2020,9 +2020,9 @@ export const svMessages = {
   'navetAi.model.downloading': 'Hämtar',
   'navetAi.model.error': 'Modellfel',
   'navetAi.model.not_downloaded': 'Modellen är inte hämtad',
-  'navetAi.unavailable.title': 'Navet AI är inte tillgängligt i denna körmiljö',
+  'navetAi.unavailable.title': 'Heminsikter är inte tillgängliga i denna körmiljö',
   'navetAi.unavailable.description':
-    'Navet AI kräver den fristående Docker-appen eller Home Assistant-tillägget. Webbläsarbaserade anpassade paneler är fortsatt inaktiverade.',
+    'Smarta funktioner kräver den fristående Docker-appen eller Home Assistant-tillägget. Webbläsarbaserade anpassade paneler är fortsatt inaktiverade.',
   'navetAi.model.retryTitle': 'Försök hämta den lokala modellen igen',
   'navetAi.model.downloadTitle': 'Hämta den lokala modellen',
   'navetAi.model.downloadDescription':
@@ -2040,6 +2040,29 @@ export const svMessages = {
   'navetAi.feedback.helpful': 'Hjälpsamt',
   'navetAi.feedback.notUseful': 'Inte hjälpsamt',
   'navetAi.feedback.hideSimilar': 'Dölj liknande',
+  'navetAi.priorities.title': 'Smarta prioriteringar',
+  'navetAi.priorities.description': 'Välj vad Navet får visa och om lokal aktivitet får läras in.',
+  'navetAi.priorities.feedTitle': 'Visa viktiga saker på Hem',
+  'navetAi.priorities.feedDescription':
+    'Använder verifierad status utan att lagra beteendehistorik.',
+  'navetAi.priorities.learningTitle': 'Lär av aktivitet i den här installationen',
+  'navetAi.priorities.learningDescription':
+    'Av som standard. Aktivitet stannar lokalt och inloggningsuppgifter når aldrig modellen.',
+  'navetAi.priorities.historyTitle': 'Importera upp till 30 dagars historik',
+  'navetAi.priorities.historyDescription':
+    'Separat från inlärning. Lämna av för att börja när du väljer att delta.',
+  'navetAi.priorities.detailsTitle': 'Prioritetskällor och privata detaljer',
+  'navetAi.priorities.calendarTitles': 'Visa exakta kalenderrubriker på delade skärmar',
+  'navetAi.priorities.notificationText': 'Visa aviseringstext på delade skärmar',
+  'navetAi.priorities.excluded': 'Närvaro och kamerabilder ingår aldrig i smarta prioriteringar.',
+  'navetAi.priorities.knowledge':
+    'Vad Navet vet: {feedback} aktiva val och {events} inlärda händelser.',
+  'navetAi.priorities.deleteFeedback': 'Radera prioriteringsval',
+  'priorities.ariaLabel': 'Det som behöver uppmärksamhet',
+  'priorities.weatherTitle': 'Besvärligt väder i närheten',
+  'priorities.maintenanceTitle': 'Underhåll av det smarta hemmet',
+  'priorities.energyTitle': 'Energianvändningen är högre än vanligt',
+  'navetAi.settings.sectionTitle': 'Smarta funktioner',
   'navetAi.settings.description':
     'Lokal mönsterinlärning för hela installationen som bara kan läsa och föreslå.',
   'navetAi.settings.unavailable': 'Tjänsten är inte tillgänglig',
@@ -2049,7 +2072,7 @@ export const svMessages = {
   'navetAi.settings.modelSize': 'Modellstorlek',
   'navetAi.settings.modelLicense': 'Licens',
   'navetAi.settings.modelStorage': 'Lagring',
-  'navetAi.settings.installedHere': 'Den här installationen',
+  'navetAi.settings.installedHere': 'Lokalt',
   'navetAi.settings.removeModel': 'Ta bort modell',
   'navetAi.settings.removeModelConfirmTitle': 'Ta bort den lokala modellen?',
   'navetAi.settings.removeModelConfirmDescription':
@@ -2077,13 +2100,16 @@ export const svMessages = {
   'navetAi.settings.privateTitle': 'Privat innehåll',
   'navetAi.settings.privateDescription':
     'Kamera- och ljudinnehåll, inloggningsuppgifter, token och privat fritext utesluts som standard.',
-  'navetAi.settings.resetTitle': 'Nollställ Navet AI',
+  'navetAi.settings.resetTitle': 'Smarta funktioner',
   'navetAi.settings.resetDescription':
-    'Radera inlärda händelser, aggregat, återkoppling och skapade insikter från installationen.',
-  'navetAi.settings.resetConfirmTitle': 'Nollställ Navet AI?',
+    'Stäng av alla smarta funktioner och radera den valfria lokala AI-modellen och all sparad data permanent.',
+  'navetAi.settings.disabledDescription':
+    'Smarta funktioner är avstängda. Ingen lokal AI-modell eller inlärd data finns sparad i installationen.',
+  'navetAi.settings.enableAction': 'Slå på smarta funktioner',
+  'navetAi.settings.resetConfirmTitle': 'Stäng av smarta funktioner?',
   'navetAi.settings.resetConfirmDescription':
-    'Detta raderar permanent inlärda observationer, aggregat, återkoppling och skapade insikter. Den lokala modellen behålls.',
-  'navetAi.settings.resetAction': 'Nollställ Navet AI',
+    'Detta stänger av alla smarta funktioner och raderar permanent den lokala AI-modellen, inlärda observationer, aggregat, återkoppling, prioriteringsval och skapade insikter.',
+  'navetAi.settings.resetAction': 'Stäng av smarta funktioner',
   'navetAi.widget.learning': 'Lär sig fortfarande dina mönster',
   'navetAi.widget.description': 'Insikter visas när Navet har tillräckligt med verifierade belägg.',
   'navetAi.widget.readOnly': 'Endast läsning',
@@ -3386,19 +3412,20 @@ export const svMessages = {
   'security.overview.customize.previewLabel': 'Entiteter i säkerhetsöversikten',
   'security.alarm.controls': 'Larmkontroller',
   'widgets.assist.title': 'Assist',
-  'widgets.assist.description': 'Fråga Home Assistant eller Navet AI genom att skriva eller prata.',
+  'widgets.assist.description':
+    'Fråga Home Assistant eller Navet Assist genom att skriva eller prata.',
   'widgets.assist.settingsTitle': 'Assist-inställningar',
   'widgets.assist.settingsDescription': 'Välj assistenten som kortet använder.',
   'widgets.assist.pipeline': 'Assistent',
   'widgets.assist.assistant': 'Välj assistent',
   'widgets.assist.homeAssistant': 'Home Assistant',
-  'widgets.assist.navetAi': 'Navet AI',
+  'widgets.assist.navetAi': 'Navet Assist',
   'widgets.assist.navetAiUnavailable':
-    'Hämta den lokala modellen i Navet AI-inställningarna för att börja chatta.',
+    'Hämta den valfria lokala AI-modellen under Smarta funktioner för att börja chatta.',
   'widgets.assist.navetAiEmptyTitle':
     'Jag kan förklara ditt hem och utföra kommandon du ber om. Jag agerar aldrig automatiskt.',
-  'widgets.assist.navetAiPlaceholder': 'Fråga Navet AI…',
-  'widgets.assist.navetAiFailed': 'Navet AI kunde inte svara. Försök igen.',
+  'widgets.assist.navetAiPlaceholder': 'Fråga Navet Assist…',
+  'widgets.assist.navetAiFailed': 'Navet Assist kunde inte svara. Försök igen.',
   'widgets.assist.navetAiSuggestedAction': 'Föreslagen åtgärd',
   'widgets.assist.navetAiTurnOn': 'Slå på {targets}',
   'widgets.assist.navetAiTurnOff': 'Stäng av {targets}',
@@ -3411,8 +3438,14 @@ export const svMessages = {
   'widgets.assist.navetAiNoAnswer': 'Jag kunde inte tolka den frågan.',
   'widgets.assist.navetAiLightsOn': 'Tända lampor: {count}',
   'widgets.assist.navetAiLightsOnInRoom': 'Tända lampor i {room}: {count}',
+  'widgets.assist.navetAiLightOnInRoom': 'Lampan är tänd i {room}.',
+  'widgets.assist.navetAiLightsOnInRooms': 'Lampor är tända i {rooms}.',
+  'widgets.assist.navetAiLightsOnRoomUnknown':
+    'Dessa lampor är tända men inte tilldelade ett rum: {lights}.',
   'widgets.assist.navetAiTemperature': 'Temperatur: {readings}',
   'widgets.assist.navetAiTemperatureInRoom': 'Temperatur i {room}: {readings}',
+  'widgets.assist.navetAiHumidity': 'Luftfuktighet: {readings}',
+  'widgets.assist.navetAiHumidityInRoom': 'Luftfuktighet i {room}: {readings}',
   'widgets.assist.loadFailed':
     'Assistenter kunde inte läsas in. Kontrollera anslutningen till Home Assistant.',
   'widgets.assist.noPipelines': 'Inga assistenter tillgängliga',
@@ -3432,9 +3465,9 @@ export const svMessages = {
   'widgets.assist.unavailable': 'Home Assistant är inte tillgängligt',
   'widgets.assist.open': 'Öppna Assist',
   'dashboard.addCard.templates.assist.name': 'Assist',
-  'dashboard.addCard.templates.aiInsights.name': 'Navet AI-insikter',
+  'dashboard.addCard.templates.aiInsights.name': 'Heminsikter',
   'dashboard.addCard.templates.aiInsights.description':
-    'Visa den senaste skrivskyddade observationen från Navet AI.',
+    'Visa den senaste skrivskyddade observationen som Navet har verifierat.',
   'dashboard.addCard.templates.assist.description':
-    'Skriv eller prata med Home Assistant eller Navet AI.',
+    'Skriv eller prata med Home Assistant eller Navet Assist.',
 } as const;

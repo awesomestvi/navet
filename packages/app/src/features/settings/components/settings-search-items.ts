@@ -46,7 +46,7 @@ const SECTIONS: SearchSectionDefinition[] = [
   },
   {
     id: 'ai',
-    labelKey: 'sidebar.ai',
+    labelKey: 'navetAi.settings.sectionTitle',
     descriptionKey: 'dashboard.addCard.templates.aiInsights.description',
   },
   {
@@ -179,7 +179,7 @@ const SETTINGS: SearchSettingDefinition[] = [
   {
     id: 'ai-local-model',
     sectionId: 'ai',
-    labelKey: 'sidebar.ai',
+    labelKey: 'navetAi.settings.sectionTitle',
     descriptionKey: 'dashboard.addCard.templates.aiInsights.description',
   },
   {

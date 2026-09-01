@@ -20,6 +20,7 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { navetIconSizeTokens, navetTypographyTokens } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
 import { getDashboardRoomLabel } from '@navet/app/constants/rooms';
+import { useNavetAiStore } from '@navet/app/features/navet-ai/navet-ai-store';
 import { useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
 import type { TranslationKey } from '@navet/app/i18n';
 import type { Section } from '@navet/app/navigation/sections';
@@ -561,11 +562,15 @@ export const KioskControlCenter = memo(function KioskControlCenter({
     settingsSelectors.advancedCustomizationEnabled
   );
   const choresEnabled = useSettingsStore(settingsSelectors.choresEnabled);
+  const navetAiEnabled = useNavetAiStore((state) => state.state?.settings.enabled === true);
   const customSidebarActions = useSettingsStore(settingsSelectors.customSidebarActions);
   const updateSettings = useSettingsStore(settingsSelectors.updateSettings);
-  const sectionItems = getSectionNavigationItems(t, choresEnabled);
+  const sectionItems = getSectionNavigationItems(t, choresEnabled, navetAiEnabled);
   const customActionItems = (advancedCustomizationEnabled ? customSidebarActions : [])
     .filter((item) => isSidebarActionVisible(item, true))
+    .filter(
+      (item) => navetAiEnabled || item.targetType !== 'section' || item.targetSection !== 'ai'
+    )
     .map((item) => ({
       active:
         item.targetType === 'section'

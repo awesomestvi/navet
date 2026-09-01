@@ -5,6 +5,8 @@ import {
   sanitizeDashboardCollection,
 } from '@navet/app/features/dashboard/dashboards/dashboard-collection';
 import { useDashboardCollectionStore } from '@navet/app/features/dashboard/dashboards/dashboard-collection-store';
+import type { NavetAiState } from '@navet/app/features/navet-ai/navet-ai.contract';
+import { useNavetAiStore } from '@navet/app/features/navet-ai/navet-ai-store';
 import type { NavetHomeAssistantShellListener } from '@navet/app/infrastructure/home-assistant/runtime/navet-ha-shell-api';
 import { NAVET_HOME_ASSISTANT_SHELL_GLOBAL } from '@navet/app/infrastructure/home-assistant/runtime/navet-ha-shell-api';
 import { resetRuntimeContextForTests } from '@navet/app/infrastructure/home-assistant/runtime/runtime-detector';
@@ -26,6 +28,11 @@ describe('Sidebar mobile navigation', () => {
     await resetAppStores();
     setMediaQueryMatch('(max-width: 767px)', true);
     window.__NAVET_PANEL__ = false;
+    useNavetAiStore.setState({
+      state: { settings: { enabled: true } } as NavetAiState,
+      loading: false,
+      error: null,
+    });
     resetRuntimeContextForTests();
     vi.spyOn(window, 'open').mockImplementation(() => null);
   });
@@ -185,6 +192,19 @@ describe('Sidebar mobile navigation', () => {
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getByRole('button', { name: /^Tasks/ })).toBeInTheDocument();
     expect(within(dialog).queryByRole('button', { name: /^Household/ })).not.toBeInTheDocument();
+  });
+
+  it('removes Home insights from desktop and mobile navigation when smart features are off', () => {
+    useNavetAiStore.setState({ state: { settings: { enabled: false } } as NavetAiState });
+    const { container } = renderWithProviders(
+      <Sidebar mobileRoomNavigation={mobileRoomNavigation} />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Home insights' })).not.toBeInTheDocument();
+    fireEvent.click(within(getMobileDock(container)).getByRole('button', { name: 'More' }));
+    expect(
+      within(screen.getByRole('dialog')).queryByRole('button', { name: /^Home insights/ })
+    ).not.toBeInTheDocument();
   });
 
   it('renders home, more, and search in the centered dock', () => {

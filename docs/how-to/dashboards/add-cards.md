@@ -19,7 +19,7 @@ already present in the target area where duplicates would not be useful.
 
 - Use **All cards** for devices and other normalized provider entities.
 - Use **Custom card** for Navet content such as notes, RSS, photos, actions, maps, battery summaries,
-  UPS status, energy summaries, and Navet AI observations when that service is available.
+  UPS status, energy summaries, and Home insights when smart features are available.
 - Search by the visible device or room name.
 - Use an explicit native identifier when you need to find one exact provider entity.
 
@@ -55,5 +55,5 @@ Choose the add or save action. Navet places the card in the target area.
 
 - [Add notes, photos, and RSS feeds](/guide/everyday-control/notes-photos-rss/)
 - [Create actions, maps, and status widgets](/guide/everyday-control/actions-maps-status/)
-- [Understand Navet AI observations](/guide/everyday-control/navet-ai/)
+- [Understand Home insights and smart features](/guide/everyday-control/navet-ai/)
 - [Widget reference](/guide/widgets/)

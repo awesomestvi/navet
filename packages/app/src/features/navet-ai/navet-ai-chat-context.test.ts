@@ -16,7 +16,7 @@ function entity(input: Partial<NavetEntity> & Pick<NavetEntity, 'canonicalId' | 
 }
 
 describe('Navet AI chat context', () => {
-  it('includes sanitized available controls and verified temperature readings', () => {
+  it('includes sanitized controls and verified temperature and humidity readings', () => {
     const values = [
       entity({
         canonicalId: 'home_assistant:light.desk',
@@ -94,6 +94,15 @@ describe('Navet AI chat context', () => {
         room: 'Office',
         type: 'light',
         state: 'on',
+      },
+      {
+        id: 'home_assistant:sensor.bathroom_humidity',
+        providerId: 'home_assistant',
+        name: 'Bathroom humidity',
+        room: 'Bathroom',
+        type: 'humidity',
+        value: 48,
+        unit: '%',
       },
       {
         id: 'home_assistant:sensor.bathroom_temperature',

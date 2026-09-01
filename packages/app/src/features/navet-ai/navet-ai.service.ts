@@ -1,10 +1,13 @@
 import type { InsightFeedback } from '@navet/core/intelligence';
+import type { PriorityFeedback } from '@navet/core/intelligence-priorities';
 import {
   NAVET_AI_ENDPOINTS,
   type NavetAiCapabilities,
   type NavetAiChatRequest,
   type NavetAiChatResponse,
   type NavetAiEventBatch,
+  type NavetAiPriorityRankRequest,
+  type NavetAiPriorityRankResponse,
   type NavetAiSettings,
   type NavetAiState,
 } from './navet-ai.contract';
@@ -15,7 +18,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { 'content-type': 'application/json', ...init?.headers },
     ...init,
   });
-  if (!response.ok) throw new Error(`Navet AI request failed (${response.status})`);
+  if (!response.ok) throw new Error(`Smart features request failed (${response.status})`);
   return (await response.json()) as T;
 }
 
@@ -44,6 +47,19 @@ export const navetAiService = {
       body: JSON.stringify(input),
       signal,
     }),
+  rankPriorities: (input: NavetAiPriorityRankRequest, signal?: AbortSignal) =>
+    request<NavetAiPriorityRankResponse>(NAVET_AI_ENDPOINTS.priorityRank, {
+      method: 'POST',
+      body: JSON.stringify(input),
+      signal,
+    }),
+  addPriorityFeedback: (feedback: Omit<PriorityFeedback, 'timestamp'>) =>
+    request<{ stored: true }>(NAVET_AI_ENDPOINTS.priorityFeedback, {
+      method: 'POST',
+      body: JSON.stringify(feedback),
+    }),
+  deletePriorityFeedback: () =>
+    request<{ deleted: true }>(NAVET_AI_ENDPOINTS.priorityFeedback, { method: 'DELETE' }),
   updateSettings: (settings: Partial<NavetAiSettings>) =>
     request<NavetAiState>(NAVET_AI_ENDPOINTS.settings, {
       method: 'PATCH',

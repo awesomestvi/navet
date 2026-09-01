@@ -27,7 +27,7 @@ Widgets are included in dashboard export and import.
 | `ups` | UPS status overview |
 | `energy-now` | live energy snapshot |
 | `media-stack` | responsive media summary retained in saved and imported dashboard profiles |
-| `ai-insights` | read-only Navet AI observations for supported server-backed installations |
+| `ai-insights` | read-only Home insights for supported server-backed installations |
 | `button` | custom action button |
 | `assist` | text and microphone access to a Home Assistant Assist pipeline |
 | `map` | people and tracker locations |
@@ -74,7 +74,7 @@ directly.
 - The Widgets tab exposes the base `info`, `rss`, `photo`, `note`, `battery`, `ups`, `energy-now`,
   `button`, `assist`, `ai-insights`, and `map` types where their required runtime is available;
   scene and energy-metric are presets of `button` and `info`. The `assist` choice requires a Home
-  Assistant session. `ai-insights` requires the Navet AI service available in standalone Docker
+  Assistant session. `ai-insights` requires smart features available in standalone Docker
   and the Home Assistant add-on; it is hidden in the browser-only custom panel. Generic `entity`
   cards come from the Cards library rather than the Widgets tab. `media-stack` remains runtime-supported
   for compatible saved and imported dashboard profiles, but is intentionally hidden from the

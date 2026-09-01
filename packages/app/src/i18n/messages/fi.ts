@@ -2113,7 +2113,7 @@ export const fiMessages = {
   'sidebar.climate': 'Ilmasto',
   'sidebar.security': 'Turvallisuus',
   'sidebar.tasks': 'Kotitalous',
-  'sidebar.ai': 'Navet AI',
+  'sidebar.ai': 'Kodin havainnot',
   'navetAi.page.eyebrow': 'Yksityinen äly',
   'navetAi.page.description':
     'Tunnistaa kodin käyttötapoja ja selittää havaintonsa. Se ei voi ohjata laitteita, suorittaa rutiineja tai lähettää ilmoituksia.',
@@ -2124,9 +2124,9 @@ export const fiMessages = {
   'navetAi.model.downloading': 'Ladataan',
   'navetAi.model.error': 'Mallivirhe',
   'navetAi.model.not_downloaded': 'Mallia ei ole ladattu',
-  'navetAi.unavailable.title': 'Navet AI ei ole käytettävissä tässä ympäristössä',
+  'navetAi.unavailable.title': 'Kodin havainnot eivät ole käytettävissä tässä ympäristössä',
   'navetAi.unavailable.description':
-    'Navet AI vaatii erillisen Docker-sovelluksen tai Home Assistant -lisäosan. Vain selaimessa toimivat mukautetut paneelit pysyvät poissa käytöstä.',
+    'Älykkäät ominaisuudet vaativat erillisen Docker-sovelluksen tai Home Assistant -lisäosan. Vain selaimessa toimivat mukautetut paneelit pysyvät poissa käytöstä.',
   'navetAi.model.retryTitle': 'Yritä paikallisen mallin latausta uudelleen',
   'navetAi.model.downloadTitle': 'Lataa paikallinen malli',
   'navetAi.model.downloadDescription':
@@ -2144,6 +2144,29 @@ export const fiMessages = {
   'navetAi.feedback.helpful': 'Hyödyllinen',
   'navetAi.feedback.notUseful': 'Ei hyödyllinen',
   'navetAi.feedback.hideSimilar': 'Piilota samanlaiset',
+  'navetAi.priorities.title': 'Älykkäät prioriteetit',
+  'navetAi.priorities.description': 'Valitse, mitä Navet saa näyttää ja oppia paikallisesti.',
+  'navetAi.priorities.feedTitle': 'Näytä tärkeät asiat Koti-näkymässä',
+  'navetAi.priorities.feedDescription':
+    'Käyttää vahvistettua tilaa tallentamatta toimintahistoriaa.',
+  'navetAi.priorities.learningTitle': 'Opi tämän asennuksen toiminnasta',
+  'navetAi.priorities.learningDescription':
+    'Oletuksena pois käytöstä. Toiminta pysyy paikallisena eivätkä tunnukset päädy mallille.',
+  'navetAi.priorities.historyTitle': 'Tuo enintään 30 päivän historia',
+  'navetAi.priorities.historyDescription':
+    'Erillinen oppimisesta. Jätä pois, jos haluat aloittaa suostumuksesta.',
+  'navetAi.priorities.detailsTitle': 'Prioriteettilähteet ja yksityiset tiedot',
+  'navetAi.priorities.calendarTitles': 'Näytä tarkat kalenterin otsikot jaetuilla näytöillä',
+  'navetAi.priorities.notificationText': 'Näytä ilmoitusteksti jaetuilla näytöillä',
+  'navetAi.priorities.excluded': 'Läsnäoloa ja kamerakuvia ei koskaan sisällytetä.',
+  'navetAi.priorities.knowledge':
+    'Mitä Navet tietää: {feedback} valintaa ja {events} opittua tapahtumaa.',
+  'navetAi.priorities.deleteFeedback': 'Poista prioriteettivalinnat',
+  'priorities.ariaLabel': 'Huomiota vaativat asiat',
+  'priorities.weatherTitle': 'Vaikeaa säätä lähistöllä',
+  'priorities.maintenanceTitle': 'Älykodin ylläpito',
+  'priorities.energyTitle': 'Energiankulutus on tavallista suurempi',
+  'navetAi.settings.sectionTitle': 'Älykkäät ominaisuudet',
   'navetAi.settings.description':
     'Paikallinen, koko asennuksen käyttötapojen oppiminen, joka voi vain lukea ja ehdottaa.',
   'navetAi.settings.unavailable': 'Palvelu ei ole käytettävissä',
@@ -2153,7 +2176,7 @@ export const fiMessages = {
   'navetAi.settings.modelSize': 'Mallin koko',
   'navetAi.settings.modelLicense': 'Lisenssi',
   'navetAi.settings.modelStorage': 'Tallennus',
-  'navetAi.settings.installedHere': 'Tämä asennus',
+  'navetAi.settings.installedHere': 'Paikallinen',
   'navetAi.settings.removeModel': 'Poista malli',
   'navetAi.settings.removeModelConfirmTitle': 'Poistetaanko paikallinen malli?',
   'navetAi.settings.removeModelConfirmDescription':
@@ -2181,13 +2204,16 @@ export const fiMessages = {
   'navetAi.settings.privateTitle': 'Yksityinen sisältö',
   'navetAi.settings.privateDescription':
     'Kamera- ja äänisisältö, tunnukset, tunnisteet ja vapaa yksityinen teksti jätetään oletuksena pois.',
-  'navetAi.settings.resetTitle': 'Nollaa Navet AI',
+  'navetAi.settings.resetTitle': 'Älykkäät ominaisuudet',
   'navetAi.settings.resetDescription':
-    'Poista opitut tapahtumat, koosteet, palaute ja luodut havainnot tästä asennuksesta.',
-  'navetAi.settings.resetConfirmTitle': 'Nollataanko Navet AI?',
+    'Poista kaikki älykkäät ominaisuudet käytöstä ja poista valinnainen paikallinen AI-malli sekä kaikki tallennetut tiedot pysyvästi.',
+  'navetAi.settings.disabledDescription':
+    'Älykkäät ominaisuudet ovat pois käytöstä. Tähän asennukseen ei ole tallennettu paikallista AI-mallia tai opittuja tietoja.',
+  'navetAi.settings.enableAction': 'Ota älykkäät ominaisuudet käyttöön',
+  'navetAi.settings.resetConfirmTitle': 'Poistetaanko älykkäät ominaisuudet käytöstä?',
   'navetAi.settings.resetConfirmDescription':
-    'Tämä poistaa opitut havainnot, koosteet, palautteen ja luodut tiedot pysyvästi. Paikallinen malli säilytetään.',
-  'navetAi.settings.resetAction': 'Nollaa Navet AI',
+    'Tämä poistaa kaikki älykkäät ominaisuudet käytöstä ja poistaa pysyvästi paikallisen AI-mallin, opitut havainnot, koosteet, palautteen, prioriteettivalinnat ja luodut tiedot.',
+  'navetAi.settings.resetAction': 'Poista älykkäät ominaisuudet käytöstä',
   'navetAi.widget.learning': 'Opettelee yhä käyttötapojasi',
   'navetAi.widget.description':
     'Havainnot näkyvät, kun Navetilla on riittävästi vahvistettua näyttöä.',
@@ -3413,19 +3439,19 @@ export const fiMessages = {
   'security.overview.customize.previewLabel': 'Turvallisuusnäkymän entiteetit',
   'widgets.assist.title': 'Assist',
   'widgets.assist.description':
-    'Kysy Home Assistantilta tai Navet AI:lta kirjoittamalla tai puhumalla.',
+    'Kysy Home Assistantilta tai Navet Assistilta kirjoittamalla tai puhumalla.',
   'widgets.assist.settingsTitle': 'Assist-asetukset',
   'widgets.assist.settingsDescription': 'Valitse kortin käyttämä avustaja.',
   'widgets.assist.pipeline': 'Avustaja',
   'widgets.assist.assistant': 'Valitse avustaja',
   'widgets.assist.homeAssistant': 'Home Assistant',
-  'widgets.assist.navetAi': 'Navet AI',
+  'widgets.assist.navetAi': 'Navet Assist',
   'widgets.assist.navetAiUnavailable':
-    'Lataa paikallinen malli Navet AI -asetuksissa aloittaaksesi keskustelun.',
+    'Lataa valinnainen paikallinen AI-malli Älykkäät ominaisuudet -asetuksissa aloittaaksesi keskustelun.',
   'widgets.assist.navetAiEmptyTitle':
     'Voin selittää kotisi tilanteen ja suorittaa pyytämäsi komennot. En koskaan toimi automaattisesti.',
-  'widgets.assist.navetAiPlaceholder': 'Kysy Navet AI:lta…',
-  'widgets.assist.navetAiFailed': 'Navet AI ei pystynyt vastaamaan. Yritä uudelleen.',
+  'widgets.assist.navetAiPlaceholder': 'Kysy Navet Assistilta…',
+  'widgets.assist.navetAiFailed': 'Navet Assist ei pystynyt vastaamaan. Yritä uudelleen.',
   'widgets.assist.navetAiSuggestedAction': 'Ehdotettu toiminto',
   'widgets.assist.navetAiTurnOn': 'Kytke päälle {targets}',
   'widgets.assist.navetAiTurnOff': 'Kytke pois {targets}',
@@ -3438,8 +3464,14 @@ export const fiMessages = {
   'widgets.assist.navetAiNoAnswer': 'En pystynyt tulkitsemaan pyyntöä.',
   'widgets.assist.navetAiLightsOn': 'Päällä olevat valot: {count}',
   'widgets.assist.navetAiLightsOnInRoom': 'Päällä olevat valot huoneessa {room}: {count}',
+  'widgets.assist.navetAiLightOnInRoom': 'Valo on päällä huoneessa {room}.',
+  'widgets.assist.navetAiLightsOnInRooms': 'Valoja on päällä huoneissa {rooms}.',
+  'widgets.assist.navetAiLightsOnRoomUnknown':
+    'Näillä päällä olevilla valoilla ei ole määritettyä huonetta: {lights}.',
   'widgets.assist.navetAiTemperature': 'Lämpötila: {readings}',
   'widgets.assist.navetAiTemperatureInRoom': 'Lämpötila huoneessa {room}: {readings}',
+  'widgets.assist.navetAiHumidity': 'Kosteus: {readings}',
+  'widgets.assist.navetAiHumidityInRoom': 'Kosteus huoneessa {room}: {readings}',
   'widgets.assist.loadFailed': 'Avustajia ei voitu ladata. Tarkista Home Assistant -yhteys.',
   'widgets.assist.noPipelines': 'Avustajia ei ole saatavilla',
   'widgets.assist.conversation': 'Keskustelu',
@@ -3457,9 +3489,9 @@ export const fiMessages = {
   'widgets.assist.unavailable': 'Home Assistant ei ole käytettävissä',
   'widgets.assist.open': 'Avaa Assist',
   'dashboard.addCard.templates.assist.name': 'Assist',
-  'dashboard.addCard.templates.aiInsights.name': 'Navet AI -havainnot',
+  'dashboard.addCard.templates.aiInsights.name': 'Kodin havainnot',
   'dashboard.addCard.templates.aiInsights.description':
-    'Näytä Navet AI:n uusin vain luku -havainto.',
+    'Näytä Navetin uusin vahvistettu vain luku -havainto.',
   'dashboard.addCard.templates.assist.description':
-    'Kirjoita tai puhu Home Assistantille tai Navet AI:lle.',
+    'Kirjoita tai puhu Home Assistantille tai Navet Assistille.',
 } as const;

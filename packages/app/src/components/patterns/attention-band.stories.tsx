@@ -31,6 +31,11 @@ const items: AttentionBandItem[] = [
     priority: 'attention',
     icon: ShieldAlert,
     actionLabel: 'Review',
+    secondaryActions: [
+      { id: 'dismissed', label: 'Dismiss' },
+      { id: 'snoozed', label: 'Not now' },
+      { id: 'show_fewer', label: 'Show fewer' },
+    ],
   },
   {
     id: 'smoke',
@@ -56,6 +61,8 @@ const meta = {
   args: {
     ariaLabel: 'Needs attention',
     items,
+    onSelect: () => undefined,
+    onAction: () => undefined,
   },
   decorators: [withTheme('glass')],
 } satisfies Meta<typeof AttentionBand>;
@@ -73,6 +80,10 @@ export const LightTheme: Story = {
   decorators: [withTheme('light')],
 };
 
+export const DarkTheme: Story = {
+  decorators: [withTheme('dark')],
+};
+
 export const BlackTheme: Story = {
   decorators: [withTheme('black')],
 };
@@ -83,5 +94,15 @@ export const Phone: Story = {
       value: 'iphone14',
       isRotated: false,
     },
+  },
+};
+
+export const LongTranslation: Story = {
+  args: {
+    items: items.map((item) => ({
+      ...item,
+      title: `${item.title} — household attention information with a longer translated label`,
+      detail: `${item.detail ?? ''} This explanation remains factual and may wrap onto another line.`,
+    })),
   },
 };

@@ -2,6 +2,9 @@ import { ALL_ROOMS_ID } from '@navet/app/constants/rooms';
 import { createChoreDemoWorkspace } from '@navet/app/features/chores/chore-demo-fixture';
 import { useChoreWorkspaceStore } from '@navet/app/features/chores/chore-workspace-store';
 import type { DashboardController } from '@navet/app/features/dashboard/hooks/use-dashboard-controller';
+import type { NavetAiState } from '@navet/app/features/navet-ai/navet-ai.contract';
+import { useNavetAiStore } from '@navet/app/features/navet-ai/navet-ai-store';
+import { useNavigationStore } from '@navet/app/stores/navigation-store';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
@@ -83,6 +86,22 @@ describe('DashboardSectionRouter home controls', () => {
     dashboardLayoutMock.mockClear();
     deviceGridPropsMock.mockClear();
     deviceGridMountCount = 0;
+    useNavetAiStore.setState({
+      state: { settings: { enabled: true } } as NavetAiState,
+      loading: false,
+      error: null,
+    });
+  });
+
+  it('redirects a stale Home insights destination to Home when smart features are off', async () => {
+    useNavetAiStore.setState({ state: { settings: { enabled: false } } as NavetAiState });
+    const controller = createController();
+    controller.activeSection = 'ai';
+
+    renderWithProviders(<DashboardSectionRouter controller={controller} />);
+
+    await waitFor(() => expect(useNavigationStore.getState().activeSection).toBe('home'));
+    expect(screen.queryByText('Home insights')).not.toBeInTheDocument();
   });
 
   it('suppresses duplicated edit actions for the all-rooms command bar', async () => {

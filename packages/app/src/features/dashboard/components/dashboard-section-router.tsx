@@ -17,6 +17,7 @@ import {
   getEnergyOverviewTemplateLayout,
   useEnergyOverviewLayout,
 } from '@navet/app/features/energy/components/dashboard/energy-overview-layout';
+import { useNavetAiStore } from '@navet/app/features/navet-ai/navet-ai-store';
 import { buildRoomStatusSummaryItems } from '@navet/app/features/sensors/components/home-status-summary-model';
 import {
   SummaryBar,
@@ -117,6 +118,7 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
   const kioskMode = useSettingsStore(settingsSelectors.kioskMode);
   const showSummaryBar = useSettingsStore(settingsSelectors.showHomeSummaryBar);
   const choresEnabled = useSettingsStore(settingsSelectors.choresEnabled);
+  const navetAiEnabled = useNavetAiStore((state) => state.state?.settings.enabled);
   const roomWorkspace = useRoomWorkspaceStore((state) => state.workspace);
   const choreWorkspace = useChoreWorkspaceStore((state) => state.data);
   const activeCustomSidebarActionId = useNavigationStore(
@@ -172,6 +174,11 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
       setIsSecurityOverviewCustomizationOpen(false);
     }
   }, [activeSection, isEditMode]);
+  useEffect(() => {
+    if (activeSection === 'ai' && navetAiEnabled === false) {
+      setActiveSection('home');
+    }
+  }, [activeSection, navetAiEnabled, setActiveSection]);
   useChoreWorkspaceSync(choresEnabled && activeSection === 'home' && !isAllRooms(activeRoom));
   const activeRoomWorkspace = useMemo(
     () => roomWorkspace?.rooms.find((room) => room.displayName === activeRoom),
@@ -571,14 +578,16 @@ function DashboardSectionRouterComponent({ controller }: DashboardSectionRouterP
         <MediaSection />
       </Suspense>
     );
-  } else if (activeSection === 'ai') {
+  } else if (activeSection === 'ai' && navetAiEnabled === true) {
     sectionContent = (
-      <Suspense fallback={<LoadingSpinner message="Loading Navet AI" />}>
+      <Suspense fallback={<LoadingSpinner message={t('common.loading')} />}>
         <RenderProfiler id="NavetAiSection">
           <NavetAiSection />
         </RenderProfiler>
       </Suspense>
     );
+  } else if (activeSection === 'ai') {
+    sectionContent = <LoadingSpinner />;
   } else if (activeSection === 'settings') {
     sectionContent = (
       <Suspense fallback={<LoadingSpinner message={t('dashboard.shell.loadingSettings')} />}>

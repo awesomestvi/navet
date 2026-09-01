@@ -18,9 +18,16 @@ export interface IntelligenceTemperatureEntityReference extends IntelligenceEnti
   unit: '°C' | '°F' | 'K';
 }
 
+export interface IntelligenceHumidityEntityReference extends IntelligenceEntityReferenceBase {
+  type: 'humidity';
+  value: number;
+  unit: '%';
+}
+
 export type IntelligenceEntityReference =
   | IntelligenceControlEntityReference
-  | IntelligenceTemperatureEntityReference;
+  | IntelligenceTemperatureEntityReference
+  | IntelligenceHumidityEntityReference;
 
 export interface IntelligenceControlSuggestion {
   operation: IntelligenceControlOperation;
@@ -34,12 +41,27 @@ export type IntelligenceStateAnswer =
       room?: string;
     }
   | {
+      kind: 'lights_on_locations';
+      lights: Array<{ name: string; room?: string }>;
+    }
+  | {
       kind: 'temperature';
       room?: string;
       readings: Array<{
         name: string;
+        room?: string;
         value: number;
         unit: IntelligenceTemperatureEntityReference['unit'];
+      }>;
+    }
+  | {
+      kind: 'humidity';
+      room?: string;
+      readings: Array<{
+        name: string;
+        room?: string;
+        value: number;
+        unit: IntelligenceHumidityEntityReference['unit'];
       }>;
     };
 
@@ -156,28 +178,88 @@ export function interpretSimpleStateQuestion(
     const exactNameMatches = temperatureEntities.filter((entity) =>
       includesWholePhrase(normalizedRequest, normalize(entity.name))
     );
+    const hasUnresolvedRoomScope =
+      /\b(?:in|inside)\b/.test(normalizedRequest) &&
+      !/\b(?:home|house|rooms)\b/.test(normalizedRequest);
     const matchingTemperatures = room
       ? temperatureEntities.filter((entity) => entity.room === room)
       : exactNameMatches.length > 0
         ? exactNameMatches
-        : temperatureEntities.length === 1
-          ? temperatureEntities
-          : [];
+        : hasUnresolvedRoomScope
+          ? []
+          : temperatureEntities;
 
     if (matchingTemperatures.length === 0) return null;
     return {
       kind: 'temperature',
       room,
-      readings: matchingTemperatures.slice(0, 5).map(({ name, value, unit }) => ({
+      readings: matchingTemperatures
+        .slice(0, 5)
+        .map(({ name, room: readingRoom, value, unit }) => ({
+          name,
+          room: readingRoom,
+          value,
+          unit,
+        })),
+    };
+  }
+
+  if (/\bhumid(?:ity)?\b/.test(normalizedRequest)) {
+    const humidityEntities = entities.filter(
+      (entity): entity is IntelligenceHumidityEntityReference => entity.type === 'humidity'
+    );
+    const room = humidityEntities
+      .map((entity) => entity.room)
+      .find(
+        (candidate) => candidate && includesWholePhrase(normalizedRequest, normalize(candidate))
+      );
+    const exactNameMatches = humidityEntities.filter((entity) =>
+      includesWholePhrase(normalizedRequest, normalize(entity.name))
+    );
+    const hasUnresolvedRoomScope =
+      /\b(?:in|inside)\b/.test(normalizedRequest) &&
+      !/\b(?:home|house|rooms)\b/.test(normalizedRequest);
+    const matchingHumidity = room
+      ? humidityEntities.filter((entity) => entity.room === room)
+      : exactNameMatches.length > 0
+        ? exactNameMatches
+        : hasUnresolvedRoomScope
+          ? []
+          : humidityEntities;
+
+    if (matchingHumidity.length === 0) return null;
+    return {
+      kind: 'humidity',
+      room,
+      readings: matchingHumidity.slice(0, 5).map(({ name, room: readingRoom, value, unit }) => ({
         name,
+        room: readingRoom,
         value,
         unit,
       })),
     };
   }
 
+  const mentionsLights = /\b(lights?|lamps?)\b/.test(normalizedRequest);
+  const asksWhereLightsAreOn =
+    mentionsLights &&
+    /\b(?:on|running)\b/.test(normalizedRequest) &&
+    /\bwhere\b|\b(?:which|what) rooms?\b/.test(normalizedRequest);
+  if (asksWhereLightsAreOn) {
+    return {
+      kind: 'lights_on_locations',
+      lights: entities
+        .filter(
+          (entity): entity is IntelligenceControlEntityReference =>
+            entity.type === 'light' && entity.state === 'on'
+        )
+        .slice(0, 20)
+        .map(({ name, room }) => ({ name, room })),
+    };
+  }
+
   if (!/\bhow many\b/.test(normalizedRequest)) return null;
-  if (!/\b(lights?|lamps?)\b/.test(normalizedRequest) || !/\bon\b/.test(normalizedRequest)) {
+  if (!mentionsLights || !/\bon\b/.test(normalizedRequest)) {
     return null;
   }
 

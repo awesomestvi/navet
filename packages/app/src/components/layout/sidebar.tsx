@@ -19,6 +19,7 @@ import {
   DashboardSwitcherMenuContent,
   useDashboardSwitcher,
 } from '@navet/app/features/dashboard/dashboards/dashboard-switcher';
+import { useNavetAiStore } from '@navet/app/features/navet-ai/navet-ai-store';
 import { useHomeAssistantPanelShell, useI18n, useMediaQuery, useTheme } from '@navet/app/hooks';
 import { useEditModeStore, useNavigationStore, useSettingsStore } from '@navet/app/stores';
 import { settingsSelectors } from '@navet/app/stores/selectors';
@@ -125,6 +126,7 @@ export const Sidebar = memo(function Sidebar({
   );
   const customSidebarActions = useSettingsStore(settingsSelectors.customSidebarActions);
   const isEditMode = useEditModeStore((state) => state.isEditMode);
+  const navetAiEnabled = useNavetAiStore((state) => state.state?.settings.enabled === true);
   const resolvedEffectsQuality = resolveEffectsQuality(effectsQuality, lowPowerMode);
   const surface = useMemo(
     () => getThemeSurfaceTokens(theme, resolvedEffectsQuality),
@@ -180,17 +182,20 @@ export const Sidebar = memo(function Sidebar({
 
   const menuItems = useMemo(
     () =>
-      getSectionNavigationItems(t, choresEnabled).map((item) => ({
+      getSectionNavigationItems(t, choresEnabled, navetAiEnabled).map((item) => ({
         id: item.section,
         ...item,
         onClick: () => setActiveSection(item.section),
       })),
-    [choresEnabled, setActiveSection, t]
+    [choresEnabled, navetAiEnabled, setActiveSection, t]
   );
   const customMenuItems = useMemo(
     () =>
       (advancedCustomizationEnabled ? customSidebarActions : [])
         .filter((item) => isSidebarActionVisible(item, isMobile))
+        .filter(
+          (item) => navetAiEnabled || item.targetType !== 'section' || item.targetSection !== 'ai'
+        )
         .map((item) => ({
           active:
             item.targetType === 'section'
@@ -233,6 +238,7 @@ export const Sidebar = memo(function Sidebar({
       customSidebarActions,
       isEditMode,
       isMobile,
+      navetAiEnabled,
       activeCustomSidebarActionId,
       setActiveSection,
       setActiveCustomSidebarAction,
@@ -245,11 +251,16 @@ export const Sidebar = memo(function Sidebar({
     isShortDesktopViewport || customMenuItems.length + (canAddCustomSidebarAction ? 1 : 0) >= 4;
   const dockItems = useMemo(
     () =>
-      getOrderedSectionNavigationItems(t, MOBILE_SECTION_DOCK_ORDER, choresEnabled).map((item) => ({
+      getOrderedSectionNavigationItems(
+        t,
+        MOBILE_SECTION_DOCK_ORDER,
+        choresEnabled,
+        navetAiEnabled
+      ).map((item) => ({
         ...item,
         onClick: () => setActiveSection(item.section),
       })),
-    [choresEnabled, setActiveSection, t]
+    [choresEnabled, navetAiEnabled, setActiveSection, t]
   );
   const HomeAssistantSidebarIcon =
     homeAssistantShell.isKioskEnabled === true ? PanelLeftOpen : PanelLeftClose;
@@ -598,6 +609,7 @@ export const Sidebar = memo(function Sidebar({
       <MobileSectionOrbitSheet
         activeSection={activeSection}
         choresEnabled={choresEnabled}
+        navetAiEnabled={navetAiEnabled}
         hasCustomActiveDestination={activeCustomSidebarActionId !== null}
         customItems={customMenuItems}
         homeAssistantAction={

@@ -27,6 +27,7 @@ interface MobileSectionOrbitSheetProps {
     onClick: () => void;
   };
   isOpen: boolean;
+  navetAiEnabled?: boolean;
   onOpenChange: (open: boolean) => void;
   onCustomizeSidebar?: () => void;
   onSelectSection: (section: Section) => void;
@@ -39,6 +40,7 @@ export const MobileSectionOrbitSheet = memo(function MobileSectionOrbitSheet({
   customItems = [],
   homeAssistantAction,
   isOpen,
+  navetAiEnabled = true,
   onOpenChange,
   onCustomizeSidebar,
   onSelectSection,
@@ -59,8 +61,14 @@ export const MobileSectionOrbitSheet = memo(function MobileSectionOrbitSheet({
     [accentColor, primaryColor, theme]
   );
   const orbitItems = useMemo(
-    () => getOrderedSectionNavigationItems(t, MOBILE_SECTION_ORBIT_ORDER, choresEnabled),
-    [choresEnabled, t]
+    () =>
+      getOrderedSectionNavigationItems(
+        t,
+        MOBILE_SECTION_ORBIT_ORDER,
+        choresEnabled,
+        navetAiEnabled
+      ),
+    [choresEnabled, navetAiEnabled, t]
   );
 
   const handleSelectSection = (section: Section) => {

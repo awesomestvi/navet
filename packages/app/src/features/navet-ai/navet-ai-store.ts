@@ -15,6 +15,8 @@ interface NavetAiStore {
   cancelModelDownload: () => Promise<void>;
   deleteModel: () => Promise<void>;
   reset: () => Promise<void>;
+  updateSettings: (settings: Parameters<typeof navetAiService.updateSettings>[0]) => Promise<void>;
+  deletePriorityFeedback: () => Promise<void>;
 }
 
 async function run(
@@ -26,7 +28,7 @@ async function run(
     set({ state: await operation(), loading: false });
   } catch (error) {
     set({
-      error: error instanceof Error ? error.message : 'Navet AI is unavailable',
+      error: error instanceof Error ? error.message : 'Smart features are unavailable',
       loading: false,
     });
   }
@@ -72,5 +74,30 @@ export const useNavetAiStore = create<NavetAiStore>((set) => ({
     modelDownloadPollId += 1;
     await run(set, navetAiService.deleteModel);
   },
-  reset: async () => run(set, navetAiService.reset),
+  reset: async () => {
+    modelDownloadPollId += 1;
+    await run(set, navetAiService.reset);
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('navet.priority-feedback.v1');
+      window.dispatchEvent(new Event('navet-priority-feedback-cleared'));
+      window.dispatchEvent(new Event('navet-ai-settings-changed'));
+      if (typeof indexedDB !== 'undefined') indexedDB.deleteDatabase('navet-habits');
+    }
+  },
+  updateSettings: async (settings) => {
+    await run(set, () => navetAiService.updateSettings(settings));
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('navet-ai-settings-changed'));
+  },
+  deletePriorityFeedback: async () => {
+    set({ loading: true, error: null });
+    try {
+      await navetAiService.deletePriorityFeedback();
+      set({ state: await navetAiService.getState(), loading: false });
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Could not delete priority feedback',
+        loading: false,
+      });
+    }
+  },
 }));

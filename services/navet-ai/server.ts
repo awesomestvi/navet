@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import {
   createReadStream,
   createWriteStream,
+  chmodSync,
   existsSync,
   mkdirSync,
   renameSync,
@@ -31,6 +32,13 @@ import {
   type InsightFeedback,
   type NavetInsight,
 } from '../../packages/core/src/intelligence';
+import type {
+  IntelligencePriorityRankItem,
+  IntelligencePriorityRankResponse,
+  PriorityFeedback,
+} from '../../packages/core/src/intelligence-priorities';
+
+process.umask(0o077);
 
 const DATA_DIRECTORY = process.env.NAVET_AI_DATA_DIRECTORY || '/data/navet-ai';
 const MODEL_DIRECTORY = join(DATA_DIRECTORY, 'models');
@@ -64,11 +72,14 @@ const MODEL_MANIFEST = {
   },
 } as const;
 
-mkdirSync(MODEL_DIRECTORY, { recursive: true });
+mkdirSync(MODEL_DIRECTORY, { recursive: true, mode: 0o700 });
+chmodSync(DATA_DIRECTORY, 0o700);
+chmodSync(MODEL_DIRECTORY, 0o700);
 const db = new DatabaseSync(DATABASE_PATH);
 db.exec(`
   PRAGMA journal_mode=WAL;
   PRAGMA synchronous=NORMAL;
+  PRAGMA secure_delete=ON;
   CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS events (
     id TEXT PRIMARY KEY, provider_id TEXT NOT NULL, entity_id TEXT NOT NULL,
@@ -77,10 +88,12 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS events_timestamp ON events(timestamp);
   CREATE TABLE IF NOT EXISTS feedback (id TEXT PRIMARY KEY, evidence_id TEXT NOT NULL, timestamp TEXT NOT NULL, payload TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS priority_feedback (id TEXT PRIMARY KEY, candidate_id TEXT NOT NULL, timestamp TEXT NOT NULL, payload TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS insights (id TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, locale TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(id, locale));
   CREATE INDEX IF NOT EXISTS insights_created_at ON insights(created_at);
   CREATE TABLE IF NOT EXISTS aggregates (bucket TEXT PRIMARY KEY, updated_at TEXT NOT NULL, payload TEXT NOT NULL);
 `);
+chmodSync(DATABASE_PATH, 0o600);
 
 function setting(key: string, fallback: string) {
   const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value?: string } | undefined;
@@ -104,6 +117,9 @@ if (existsSync(partialModelPath)) unlinkSync(partialModelPath);
 let modelStatus: 'not_downloaded' | 'downloading' | 'ready' | 'error' = existsSync(modelPath)
   ? 'ready'
   : 'not_downloaded';
+if (existsSync(modelPath)) chmodSync(modelPath, 0o600);
+const activeModelProcesses = new Set<ReturnType<typeof spawn>>();
+let shutdownRevision = 0;
 let modelDownloadedBytes = modelStatus === 'ready' ? MODEL_MANIFEST[modelId].downloadBytes : 0;
 let modelDownloadController: AbortController | null = null;
 
@@ -132,20 +148,109 @@ function listInsights(locale = setting('locale', 'en')): NavetInsight[] {
   });
 }
 
+function listPriorityFeedback(): PriorityFeedback[] {
+  return (db.prepare('SELECT payload FROM priority_feedback ORDER BY timestamp').all() as Array<{ payload: string }>).flatMap((row) => {
+    try { return [JSON.parse(row.payload) as PriorityFeedback]; } catch { return []; }
+  });
+}
+
 function state(locale = setting('locale', 'en')) {
   return {
-    contract: 'navet.ai' as const, version: 1 as const,
+    contract: 'navet.ai' as const, version: 2 as const,
     settings: {
       enabled: setting('enabled', 'true') === 'true',
       dailyGenerationEnabled: setting('daily_generation', 'true') === 'true',
       locale: setting('locale', 'en'),
       modelDownloadConsented: setting('model_consent', 'false') === 'true',
+      priorityFeedEnabled: setting('priority_feed_enabled', 'true') === 'true',
+      learningEnabled: setting('learning_enabled', 'false') === 'true',
+      historyBackfillEnabled: setting('history_backfill_enabled', 'false') === 'true',
+      prioritySources: {
+        security: setting('priority_source_security', 'true') === 'true',
+        chores: setting('priority_source_chores', 'true') === 'true',
+        weather: setting('priority_source_weather', 'true') === 'true',
+        calendar: setting('priority_source_calendar', 'true') === 'true',
+        maintenance: setting('priority_source_maintenance', 'true') === 'true',
+        energy: setting('priority_source_energy', 'true') === 'true',
+      },
+      privateDetails: {
+        calendarTitles: setting('private_calendar_titles', 'false') === 'true',
+        notificationText: setting('private_notification_text', 'false') === 'true',
+      },
     },
     capabilities: capabilities(), insights: listInsights(locale), feedback: listFeedback(),
+    priorityFeedback: listPriorityFeedback(),
     eventCount: Number((db.prepare('SELECT COUNT(*) count FROM events').get() as { count: number }).count),
     lastGeneratedAt: setting('last_generated_at', '') || null,
     historyBackfilledAt: setting('history_backfilled_at', '') || null,
   };
+}
+
+const PRIORITY_SOURCES = new Set(['security', 'chores', 'weather', 'calendar', 'maintenance', 'energy']);
+const PRIORITY_REASONS = new Set([
+  'security_critical', 'security_warning', 'security_active', 'safety_device_unavailable',
+  'chore_overdue', 'chore_approval', 'chore_due_today', 'weather_adverse_soon',
+  'calendar_due_soon', 'calendar_all_day_today', 'battery_critical', 'repair_warning',
+  'repair_error', 'energy_higher_than_usual',
+]);
+const PRIORITY_GROUPS = new Set([
+  'active_critical_safety', 'overdue_or_approval', 'due_soon', 'due_today', 'advisory',
+]);
+const PRIORITY_TIME_BUCKETS = new Set([
+  'now', 'within_2_hours', 'within_6_hours', 'today', 'overdue', 'advisory',
+]);
+
+function sanitizePriorityRankItems(input: unknown): IntelligencePriorityRankItem[] | null {
+  if (!input || typeof input !== 'object') return null;
+  const request = input as Record<string, unknown>;
+  if (request.contract !== 'navet.ai.priorities.rank' || request.version !== 1 || !Array.isArray(request.candidates)) return null;
+  if (request.candidates.length === 0 || request.candidates.length > 12) return null;
+  const tokens = new Set<string>();
+  const items: IntelligencePriorityRankItem[] = [];
+  for (const value of request.candidates) {
+    if (!value || typeof value !== 'object') return null;
+    const item = value as Record<string, unknown>;
+    const token = typeof item.token === 'string' ? item.token : '';
+    if (!/^[A-Za-z0-9_-]{8,64}$/.test(token) || tokens.has(token)) return null;
+    if (!PRIORITY_SOURCES.has(String(item.source)) || !PRIORITY_REASONS.has(String(item.reasonCode)) ||
+      !PRIORITY_GROUPS.has(String(item.urgencyGroup)) || !PRIORITY_TIME_BUCKETS.has(String(item.timeBucket))) return null;
+    const feedback = item.feedback && typeof item.feedback === 'object'
+      ? item.feedback as Record<string, unknown>
+      : {};
+    const count = (name: string) => Math.max(0, Math.min(100, Number(feedback[name]) || 0));
+    tokens.add(token);
+    items.push({
+      token,
+      source: item.source as IntelligencePriorityRankItem['source'],
+      reasonCode: item.reasonCode as IntelligencePriorityRankItem['reasonCode'],
+      urgencyGroup: item.urgencyGroup as IntelligencePriorityRankItem['urgencyGroup'],
+      timeBucket: item.timeBucket as IntelligencePriorityRankItem['timeBucket'],
+      feedback: { dismissed: count('dismissed'), snoozed: count('snoozed'), showFewer: count('showFewer') },
+    });
+  }
+  return items;
+}
+
+async function rankPriorities(input: unknown, signal?: AbortSignal): Promise<IntelligencePriorityRankResponse | null> {
+  const items = sanitizePriorityRankItems(input);
+  if (!items) return null;
+  const fallback = items.map((item) => item.token);
+  const prompt = `Order these smart-home attention tokens by household usefulness. You may reorder only adjacent items with the same urgencyGroup. Return only a JSON array containing every token exactly once. Do not explain. Candidates: ${JSON.stringify(items)}`;
+  const output = await runModelPrompt(prompt, 180, signal);
+  let orderedTokens = fallback;
+  try {
+    const parsed = output ? JSON.parse(output.trim()) as unknown : null;
+    if (Array.isArray(parsed) && parsed.every((token) => typeof token === 'string')) {
+      const proposed = parsed as string[];
+      const itemByToken = new Map(items.map((item) => [item.token, item]));
+      const valid = proposed.length === items.length && new Set(proposed).size === proposed.length &&
+        proposed.every((token, index) => itemByToken.has(token) && itemByToken.get(token)?.urgencyGroup === items[index].urgencyGroup);
+      if (valid) orderedTokens = proposed;
+    }
+  } catch {
+    // Deterministic input order remains authoritative.
+  }
+  return { contract: 'navet.ai.priorities.rank', version: 1, orderedTokens };
 }
 
 function send(response: ServerResponse, status: number, value: unknown) {
@@ -181,6 +286,11 @@ function sanitizeChatEntity(value: unknown): IntelligenceEntityReference | null 
     if (typeof entity.value !== 'number' || !Number.isFinite(entity.value)) return null;
     if (entity.unit !== '°C' && entity.unit !== '°F' && entity.unit !== 'K') return null;
     return { id, providerId, name, room, type: 'temperature', value: entity.value, unit: entity.unit };
+  }
+  if (entity.type === 'humidity') {
+    if (typeof entity.value !== 'number' || !Number.isFinite(entity.value)) return null;
+    if (entity.unit !== '%') return null;
+    return { id, providerId, name, room, type: 'humidity', value: entity.value, unit: '%' };
   }
   if (entity.type !== 'light' && entity.type !== 'switch') return null;
   return {
@@ -383,11 +493,13 @@ async function runModelPrompt(
       ],
       { stdio: ['ignore', 'pipe', 'ignore'] }
     );
+    activeModelProcesses.add(child);
     let output = '';
     let settled = false;
     const finish = (value: string | null) => {
       if (settled) return;
       settled = true;
+      activeModelProcesses.delete(child);
       clearTimeout(timeout);
       signal?.removeEventListener('abort', abort);
       resolve(value);
@@ -460,7 +572,7 @@ async function chat(input: unknown, signal?: AbortSignal) {
     : [];
   const deterministicSuggestions = interpretSimpleControlSuggestion(text, entities);
   const deterministicAnswer = interpretSimpleStateQuestion(text, entities);
-  const prompt = `You are Navet AI, a local read-only smart-home assistant. Answer in locale ${locale}. You may explain current entity state and interpret a request into suggestions, but you never execute, trigger, schedule, or claim to have changed anything. Use only the supplied entities. Return only JSON with shape {"reply":"short answer","suggestions":[{"operation":"turn_on|turn_off","entityIds":["known id"]}]}. If the user requests control, describe the interpretation as a suggestion. Conversation: ${JSON.stringify(history)}. Entities: ${JSON.stringify(entities)}. User: ${JSON.stringify(text)}`;
+  const prompt = `You are Navet Assist, a local read-only smart-home assistant. Answer in locale ${locale}. You may explain current entity state and interpret a request into suggestions, but you never execute, trigger, schedule, or claim to have changed anything. Use only the supplied entities. Return only JSON with shape {"reply":"short answer","suggestions":[{"operation":"turn_on|turn_off","entityIds":["known id"]}]}. If the user requests control, describe the interpretation as a suggestion. Conversation: ${JSON.stringify(history)}. Entities: ${JSON.stringify(entities)}. User: ${JSON.stringify(text)}`;
   const output = await runModelPrompt(prompt, 360, signal);
   const parsed = output ? parseJsonObject(output) : null;
   const modelSuggestions = validateControlSuggestions(parsed?.suggestions, entities);
@@ -489,12 +601,14 @@ async function chat(input: unknown, signal?: AbortSignal) {
 
 async function generate(locale: string) {
   if (setting('enabled', 'true') !== 'true') return;
+  const runRevision = shutdownRevision;
   retain();
   const evidence = detectInsightEvidence({ events: loadEvents(), feedback: listFeedback(), profile: hardware });
   const now = new Date();
   const insert = db.prepare('INSERT INTO insights(id, status, created_at, locale, payload) VALUES (?, ?, ?, ?, ?) ON CONFLICT(id, locale) DO UPDATE SET status=excluded.status, created_at=excluded.created_at, payload=excluded.payload');
   const selectedEvidence = evidence.slice(0, hardware.tier === 'low' ? 5 : 12);
   const narrated = await runLlama(selectedEvidence, locale);
+  if (runRevision !== shutdownRevision || setting('enabled', 'true') !== 'true') return;
   const narrationById = new Map(narrated.map((item) => [item.evidenceId, item]));
   const rankById = new Map(narrated.map((item, index) => [item.evidenceId, index]));
   const rankedEvidence = [...selectedEvidence].sort(
@@ -549,6 +663,7 @@ async function downloadModel() {
       if (hash.digest('hex') !== manifest.sha256) throw new Error('model_checksum_mismatch');
     }
     renameSync(partialModelPath, modelPath);
+    chmodSync(modelPath, 0o600);
     modelStatus = 'ready';
   } catch {
     if (existsSync(partialModelPath)) unlinkSync(partialModelPath);
@@ -569,10 +684,42 @@ function cancelModelDownload() {
 
 function deleteModel() {
   cancelModelDownload();
+  for (const child of activeModelProcesses) child.kill('SIGKILL');
+  activeModelProcesses.clear();
   if (existsSync(modelPath)) unlinkSync(modelPath);
+  if (existsSync(partialModelPath)) unlinkSync(partialModelPath);
   modelStatus = 'not_downloaded';
   modelDownloadedBytes = 0;
   setSetting('model_consent', 'false');
+}
+
+function turnOffNavetAi() {
+  shutdownRevision += 1;
+  deleteModel();
+  db.exec('BEGIN IMMEDIATE;');
+  try {
+    db.exec(
+      'DELETE FROM events; DELETE FROM feedback; DELETE FROM priority_feedback; DELETE FROM insights; DELETE FROM aggregates; DELETE FROM settings;'
+    );
+    for (const [key, value] of [
+      ['enabled', 'false'],
+      ['daily_generation', 'false'],
+      ['priority_feed_enabled', 'false'],
+      ['learning_enabled', 'false'],
+      ['history_backfill_enabled', 'false'],
+      ['model_consent', 'false'],
+      ['private_calendar_titles', 'false'],
+      ['private_notification_text', 'false'],
+    ] as const) {
+      setSetting(key, value);
+    }
+    for (const source of PRIORITY_SOURCES) setSetting(`priority_source_${source}`, 'false');
+    db.exec('COMMIT;');
+  } catch (error) {
+    db.exec('ROLLBACK;');
+    throw error;
+  }
+  db.exec('PRAGMA wal_checkpoint(TRUNCATE); VACUUM;');
 }
 
 async function route(request: IncomingMessage, response: ServerResponse) {
@@ -580,7 +727,52 @@ async function route(request: IncomingMessage, response: ServerResponse) {
   const path = url.pathname.replace(/^\/__navet_ai__/, '');
   if (request.method === 'GET' && path === '/capabilities') return send(response, 200, capabilities());
   if (request.method === 'GET' && path === '/state') return send(response, 200, state((url.searchParams.get('locale') || 'en').slice(0, 35)));
+  if (request.method === 'POST' && path === '/priorities/rank') {
+    if (setting('enabled', 'true') !== 'true') {
+      if (!response.destroyed) return send(response, 403, { error: 'Smart features are disabled' });
+      return;
+    }
+    const abortController = new AbortController();
+    response.once('close', () => abortController.abort());
+    const result = await rankPriorities(await body(request), abortController.signal);
+    if (setting('enabled', 'true') !== 'true') {
+      if (!response.destroyed) return send(response, 403, { error: 'Smart features are disabled' });
+      return;
+    }
+    if (!result) return send(response, 400, { error: 'Invalid priority rank request' });
+    if (!response.destroyed) return send(response, 200, result);
+    return;
+  }
+  if (request.method === 'POST' && path === '/priorities/feedback') {
+    if (setting('enabled', 'true') !== 'true') return send(response, 403, { error: 'Smart features are disabled' });
+    const input = await body(request) as Record<string, unknown>;
+    if (typeof input.candidateId !== 'string' || input.candidateId.length > 512 ||
+      !PRIORITY_SOURCES.has(String(input.source)) || !PRIORITY_REASONS.has(String(input.reasonCode)) ||
+      !['dismissed', 'snoozed', 'show_fewer'].includes(String(input.outcome))) {
+      return send(response, 400, { error: 'Invalid priority feedback' });
+    }
+    const timestamp = new Date().toISOString();
+    const feedback = {
+      candidateId: input.candidateId,
+      source: input.source,
+      reasonCode: input.reasonCode,
+      outcome: input.outcome,
+      timestamp,
+      expiresAt: typeof input.expiresAt === 'string' && Number.isFinite(Date.parse(input.expiresAt))
+        ? input.expiresAt
+        : undefined,
+    };
+    db.prepare('INSERT INTO priority_feedback(id, candidate_id, timestamp, payload) VALUES (?, ?, ?, ?)')
+      .run(`priority-feedback:${Date.now()}:${Math.random().toString(36).slice(2)}`, feedback.candidateId, timestamp, JSON.stringify(feedback));
+    return send(response, 200, { stored: true });
+  }
+  if (request.method === 'DELETE' && path === '/priorities/feedback') {
+    db.exec('DELETE FROM priority_feedback; PRAGMA wal_checkpoint(TRUNCATE);');
+    return send(response, 200, { deleted: true });
+  }
   if (request.method === 'POST' && path === '/events') {
+    if (setting('enabled', 'true') !== 'true') return send(response, 403, { error: 'Smart features are disabled' });
+    if (setting('learning_enabled', 'false') !== 'true') return send(response, 403, { error: 'Learning is disabled' });
     const input = (await body(request)) as { events?: unknown[]; backfillComplete?: boolean };
     const insert = db.prepare('INSERT OR IGNORE INTO events(id, provider_id, entity_id, room_id, domain, observed_change, timestamp, payload) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     const selectPayload = db.prepare('SELECT payload FROM events WHERE id = ?');
@@ -648,6 +840,7 @@ async function route(request: IncomingMessage, response: ServerResponse) {
     return send(response, 200, state());
   }
   if (request.method === 'POST' && path === '/feedback') {
+    if (setting('enabled', 'true') !== 'true') return send(response, 403, { error: 'Smart features are disabled' });
     const input = await body(request) as Partial<InsightFeedback>;
     if (typeof input.insightId !== 'string' || typeof input.evidenceId !== 'string' || !['helpful', 'not_useful', 'hide_similar', 'snoozed', 'dismissed'].includes(String(input.outcome))) return send(response, 400, { error: 'Invalid feedback' });
     const timestamp = new Date().toISOString();
@@ -657,18 +850,26 @@ async function route(request: IncomingMessage, response: ServerResponse) {
     return send(response, 200, state());
   }
   if (request.method === 'POST' && path === '/generate') {
+    if (setting('enabled', 'true') !== 'true') return send(response, 403, { error: 'Smart features are disabled' });
+    if (setting('learning_enabled', 'false') !== 'true') return send(response, 403, { error: 'Learning is disabled' });
     const input = await body(request) as { locale?: string };
     await generate(typeof input.locale === 'string' ? input.locale.slice(0, 35) : 'en');
     return send(response, 200, state());
   }
   if (request.method === 'POST' && path === '/chat') {
+    if (setting('enabled', 'true') !== 'true') return send(response, 403, { error: 'Smart features are disabled' });
     const abortController = new AbortController();
     response.once('close', () => abortController.abort());
     const result = await chat(await body(request), abortController.signal);
+    if (setting('enabled', 'true') !== 'true') {
+      if (!response.destroyed) return send(response, 403, { error: 'Smart features are disabled' });
+      return;
+    }
     if (!response.destroyed) return send(response, 200, result);
     return;
   }
   if (request.method === 'POST' && path === '/model-consent') {
+    if (setting('enabled', 'true') !== 'true') return send(response, 403, { error: 'Smart features are disabled' });
     setSetting('model_consent', 'true'); void downloadModel(); return send(response, 202, state());
   }
   if (request.method === 'POST' && path === '/model-cancel') {
@@ -683,24 +884,38 @@ async function route(request: IncomingMessage, response: ServerResponse) {
     const input = await body(request) as Record<string, unknown>;
     if (typeof input.enabled === 'boolean') setSetting('enabled', String(input.enabled));
     if (typeof input.dailyGenerationEnabled === 'boolean') setSetting('daily_generation', String(input.dailyGenerationEnabled));
+    if (typeof input.priorityFeedEnabled === 'boolean') setSetting('priority_feed_enabled', String(input.priorityFeedEnabled));
+    if (typeof input.learningEnabled === 'boolean') setSetting('learning_enabled', String(input.learningEnabled));
+    if (typeof input.historyBackfillEnabled === 'boolean') setSetting('history_backfill_enabled', String(input.historyBackfillEnabled));
+    if (input.prioritySources && typeof input.prioritySources === 'object') {
+      for (const source of PRIORITY_SOURCES) {
+        const enabled = (input.prioritySources as Record<string, unknown>)[source];
+        if (typeof enabled === 'boolean') setSetting(`priority_source_${source}`, String(enabled));
+      }
+    }
+    if (input.privateDetails && typeof input.privateDetails === 'object') {
+      const details = input.privateDetails as Record<string, unknown>;
+      if (typeof details.calendarTitles === 'boolean') setSetting('private_calendar_titles', String(details.calendarTitles));
+      if (typeof details.notificationText === 'boolean') setSetting('private_notification_text', String(details.notificationText));
+    }
     return send(response, 200, state());
   }
   if (request.method === 'POST' && path === '/reset') {
-    db.exec('DELETE FROM events; DELETE FROM feedback; DELETE FROM insights; DELETE FROM aggregates;');
+    turnOffNavetAi();
     return send(response, 200, state());
   }
-  return send(response, 404, { error: 'Navet AI resource not found' });
+  return send(response, 404, { error: 'Smart features resource not found' });
 }
 
 createServer((request, response) => {
-  void route(request, response).catch((error) => send(response, error instanceof Error && error.message === 'request_too_large' ? 413 : 500, { error: 'Navet AI service error' }));
+  void route(request, response).catch((error) => send(response, error instanceof Error && error.message === 'request_too_large' ? 413 : 500, { error: 'Smart features service error' }));
 }).listen(PORT, '127.0.0.1');
 
 let lastDailyKey = '';
 setInterval(() => {
   const now = new Date();
   const key = now.toISOString().slice(0, 10);
-  if (setting('daily_generation', 'true') === 'true' && now.getHours() === 5 && now.getMinutes() >= 30 && key !== lastDailyKey) {
+  if (setting('learning_enabled', 'false') === 'true' && setting('daily_generation', 'true') === 'true' && now.getHours() === 5 && now.getMinutes() >= 30 && key !== lastDailyKey) {
     lastDailyKey = key;
     void generate(setting('locale', 'en'));
   }

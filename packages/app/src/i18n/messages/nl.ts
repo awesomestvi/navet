@@ -2123,7 +2123,7 @@ export const nlMessages = {
   'sidebar.climate': 'Klimaat',
   'sidebar.security': 'Beveiliging',
   'sidebar.tasks': 'Huishouden',
-  'sidebar.ai': 'Navet AI',
+  'sidebar.ai': 'Woninginzichten',
   'navetAi.page.eyebrow': 'Privé-intelligentie',
   'navetAi.page.description':
     'Herkent patronen in je huis en legt uit wat het opmerkt. Het kan geen apparaten bedienen, routines uitvoeren of meldingen sturen.',
@@ -2134,9 +2134,9 @@ export const nlMessages = {
   'navetAi.model.downloading': 'Downloaden',
   'navetAi.model.error': 'Modelfout',
   'navetAi.model.not_downloaded': 'Model niet gedownload',
-  'navetAi.unavailable.title': 'Navet AI is niet beschikbaar in deze omgeving',
+  'navetAi.unavailable.title': 'Woninginzichten zijn niet beschikbaar in deze omgeving',
   'navetAi.unavailable.description':
-    'Navet AI vereist de zelfstandige Docker-app of Home Assistant-add-on. Aangepaste browserpanelen blijven uitgeschakeld.',
+    'Slimme functies vereisen de zelfstandige Docker-app of Home Assistant-add-on. Aangepaste browserpanelen blijven uitgeschakeld.',
   'navetAi.model.retryTitle': 'Lokale modeldownload opnieuw proberen',
   'navetAi.model.downloadTitle': 'Lokaal model downloaden',
   'navetAi.model.downloadDescription':
@@ -2154,6 +2154,29 @@ export const nlMessages = {
   'navetAi.feedback.helpful': 'Nuttig',
   'navetAi.feedback.notUseful': 'Niet nuttig',
   'navetAi.feedback.hideSimilar': 'Vergelijkbare verbergen',
+  'navetAi.priorities.title': 'Slimme prioriteiten',
+  'navetAi.priorities.description': 'Kies wat Navet lokaal mag tonen en leren.',
+  'navetAi.priorities.feedTitle': 'Belangrijke items op Home tonen',
+  'navetAi.priorities.feedDescription':
+    'Gebruikt geverifieerde status zonder gedragshistorie op te slaan.',
+  'navetAi.priorities.learningTitle': 'Leren van activiteit in deze installatie',
+  'navetAi.priorities.learningDescription':
+    'Standaard uit. Activiteit blijft lokaal en inloggegevens bereiken het model nooit.',
+  'navetAi.priorities.historyTitle': 'Tot 30 dagen geschiedenis importeren',
+  'navetAi.priorities.historyDescription':
+    'Los van leren. Laat uit om bij toestemming te beginnen.',
+  'navetAi.priorities.detailsTitle': 'Prioriteitsbronnen en privégegevens',
+  'navetAi.priorities.calendarTitles': 'Exacte agendatitels op gedeelde schermen tonen',
+  'navetAi.priorities.notificationText': 'Meldingstekst op gedeelde schermen tonen',
+  'navetAi.priorities.excluded': 'Aanwezigheid en camerabeelden worden nooit opgenomen.',
+  'navetAi.priorities.knowledge':
+    'Wat Navet weet: {feedback} keuzes en {events} geleerde gebeurtenissen.',
+  'navetAi.priorities.deleteFeedback': 'Prioriteitskeuzes verwijderen',
+  'priorities.ariaLabel': 'Wat aandacht nodig heeft',
+  'priorities.weatherTitle': 'Slecht weer in de buurt',
+  'priorities.maintenanceTitle': 'Onderhoud van het slimme huis',
+  'priorities.energyTitle': 'Het energiegebruik is hoger dan normaal',
+  'navetAi.settings.sectionTitle': 'Slimme functies',
   'navetAi.settings.description':
     'Lokale patroonherkenning voor de hele installatie die alleen kan lezen en voorstellen.',
   'navetAi.settings.unavailable': 'Service niet beschikbaar',
@@ -2163,7 +2186,7 @@ export const nlMessages = {
   'navetAi.settings.modelSize': 'Modelgrootte',
   'navetAi.settings.modelLicense': 'Licentie',
   'navetAi.settings.modelStorage': 'Opslag',
-  'navetAi.settings.installedHere': 'Deze installatie',
+  'navetAi.settings.installedHere': 'Lokaal',
   'navetAi.settings.removeModel': 'Model verwijderen',
   'navetAi.settings.removeModelConfirmTitle': 'Lokaal model verwijderen?',
   'navetAi.settings.removeModelConfirmDescription':
@@ -2191,13 +2214,16 @@ export const nlMessages = {
   'navetAi.settings.privateTitle': 'Privé-inhoud',
   'navetAi.settings.privateDescription':
     'Camera- en audio-inhoud, inloggegevens, tokens en vrije privétekst worden standaard uitgesloten.',
-  'navetAi.settings.resetTitle': 'Navet AI resetten',
+  'navetAi.settings.resetTitle': 'Slimme functies',
   'navetAi.settings.resetDescription':
-    'Verwijder geleerde gebeurtenissen, aggregaten, feedback en gegenereerde inzichten uit deze installatie.',
-  'navetAi.settings.resetConfirmTitle': 'Navet AI resetten?',
+    'Schakel alle slimme functies uit en verwijder het optionele lokale AI-model en alle opgeslagen gegevens permanent.',
+  'navetAi.settings.disabledDescription':
+    'Slimme functies staan uit. Op deze installatie zijn geen lokaal AI-model of geleerde gegevens opgeslagen.',
+  'navetAi.settings.enableAction': 'Slimme functies inschakelen',
+  'navetAi.settings.resetConfirmTitle': 'Slimme functies uitschakelen?',
   'navetAi.settings.resetConfirmDescription':
-    'Dit verwijdert geleerde observaties, aggregaten, feedback en inzichten permanent. Het lokale model blijft behouden.',
-  'navetAi.settings.resetAction': 'Navet AI resetten',
+    'Dit schakelt alle slimme functies uit en verwijdert permanent het lokale AI-model, geleerde observaties, aggregaten, feedback, prioriteitskeuzes en gegenereerde inzichten.',
+  'navetAi.settings.resetAction': 'Slimme functies uitschakelen',
   'navetAi.widget.learning': 'Je patronen worden nog geleerd',
   'navetAi.widget.description':
     'Inzichten verschijnen zodra Navet voldoende bevestigd bewijs heeft.',
@@ -3436,19 +3462,19 @@ export const nlMessages = {
   'security.overview.customize.previewLabel': 'Entiteiten in het beveiligingsoverzicht',
   'security.alarm.controls': 'Alarmbediening',
   'widgets.assist.title': 'Assist',
-  'widgets.assist.description': 'Vraag Home Assistant of Navet AI via tekst of spraak.',
+  'widgets.assist.description': 'Vraag Home Assistant of Navet Assist via tekst of spraak.',
   'widgets.assist.settingsTitle': 'Assist-instellingen',
   'widgets.assist.settingsDescription': 'Kies de assistent voor deze kaart.',
   'widgets.assist.pipeline': 'Assistent',
   'widgets.assist.assistant': 'Assistent kiezen',
   'widgets.assist.homeAssistant': 'Home Assistant',
-  'widgets.assist.navetAi': 'Navet AI',
+  'widgets.assist.navetAi': 'Navet Assist',
   'widgets.assist.navetAiUnavailable':
-    'Download het lokale model in de Navet AI-instellingen om te beginnen met chatten.',
+    'Download het optionele lokale AI-model onder Slimme functies om te beginnen met chatten.',
   'widgets.assist.navetAiEmptyTitle':
     'Ik kan je huis uitleggen en opdrachten uitvoeren die je geeft. Ik handel nooit automatisch.',
-  'widgets.assist.navetAiPlaceholder': 'Vraag Navet AI…',
-  'widgets.assist.navetAiFailed': 'Navet AI kon niet antwoorden. Probeer het opnieuw.',
+  'widgets.assist.navetAiPlaceholder': 'Vraag Navet Assist…',
+  'widgets.assist.navetAiFailed': 'Navet Assist kon niet antwoorden. Probeer het opnieuw.',
   'widgets.assist.navetAiSuggestedAction': 'Voorgestelde actie',
   'widgets.assist.navetAiTurnOn': '{targets} inschakelen',
   'widgets.assist.navetAiTurnOff': '{targets} uitschakelen',
@@ -3462,8 +3488,14 @@ export const nlMessages = {
   'widgets.assist.navetAiNoAnswer': 'Ik kon dat verzoek niet interpreteren.',
   'widgets.assist.navetAiLightsOn': 'Ingeschakelde lampen: {count}',
   'widgets.assist.navetAiLightsOnInRoom': 'Ingeschakelde lampen in {room}: {count}',
+  'widgets.assist.navetAiLightOnInRoom': 'De lamp is aan in {room}.',
+  'widgets.assist.navetAiLightsOnInRooms': 'Er zijn lampen aan in {rooms}.',
+  'widgets.assist.navetAiLightsOnRoomUnknown':
+    'Deze lampen zijn aan maar niet aan een kamer toegewezen: {lights}.',
   'widgets.assist.navetAiTemperature': 'Temperatuur: {readings}',
   'widgets.assist.navetAiTemperatureInRoom': 'Temperatuur in {room}: {readings}',
+  'widgets.assist.navetAiHumidity': 'Vochtigheid: {readings}',
+  'widgets.assist.navetAiHumidityInRoom': 'Vochtigheid in {room}: {readings}',
   'widgets.assist.loadFailed':
     'Assistenten konden niet worden geladen. Controleer de Home Assistant-verbinding.',
   'widgets.assist.noPipelines': 'Geen assistenten beschikbaar',
@@ -3483,8 +3515,9 @@ export const nlMessages = {
   'widgets.assist.unavailable': 'Home Assistant niet beschikbaar',
   'widgets.assist.open': 'Assist openen',
   'dashboard.addCard.templates.assist.name': 'Assist',
-  'dashboard.addCard.templates.aiInsights.name': 'Navet AI-inzichten',
+  'dashboard.addCard.templates.aiInsights.name': 'Woninginzichten',
   'dashboard.addCard.templates.aiInsights.description':
-    'Toon de nieuwste alleen-lezen observatie van Navet AI.',
-  'dashboard.addCard.templates.assist.description': 'Typ of praat met Home Assistant of Navet AI.',
+    'Toon de nieuwste alleen-lezen observatie die Navet heeft geverifieerd.',
+  'dashboard.addCard.templates.assist.description':
+    'Typ of praat met Home Assistant of Navet Assist.',
 } as const;

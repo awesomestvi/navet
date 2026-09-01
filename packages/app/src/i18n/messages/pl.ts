@@ -2111,7 +2111,7 @@ export const plMessages = {
   'sidebar.climate': 'Klimat',
   'sidebar.security': 'Bezpieczeństwo',
   'sidebar.tasks': 'Dom',
-  'sidebar.ai': 'Navet AI',
+  'sidebar.ai': 'Informacje o domu',
   'navetAi.page.eyebrow': 'Prywatna inteligencja',
   'navetAi.page.description':
     'Rozpoznaje wzorce w domu i wyjaśnia swoje obserwacje. Nie może sterować urządzeniami, uruchamiać procedur ani wysyłać powiadomień.',
@@ -2122,9 +2122,9 @@ export const plMessages = {
   'navetAi.model.downloading': 'Pobieranie',
   'navetAi.model.error': 'Błąd modelu',
   'navetAi.model.not_downloaded': 'Model niepobrany',
-  'navetAi.unavailable.title': 'Navet AI nie jest dostępny w tym środowisku',
+  'navetAi.unavailable.title': 'Informacje o domu nie są dostępne w tym środowisku',
   'navetAi.unavailable.description':
-    'Navet AI wymaga samodzielnej aplikacji Docker lub dodatku Home Assistant. Panele działające tylko w przeglądarce pozostają wyłączone.',
+    'Inteligentne funkcje wymagają samodzielnej aplikacji Docker lub dodatku Home Assistant. Panele działające tylko w przeglądarce pozostają wyłączone.',
   'navetAi.model.retryTitle': 'Ponów pobieranie modelu lokalnego',
   'navetAi.model.downloadTitle': 'Pobierz model lokalny',
   'navetAi.model.downloadDescription':
@@ -2142,6 +2142,29 @@ export const plMessages = {
   'navetAi.feedback.helpful': 'Pomocne',
   'navetAi.feedback.notUseful': 'Nieprzydatne',
   'navetAi.feedback.hideSimilar': 'Ukryj podobne',
+  'navetAi.priorities.title': 'Inteligentne priorytety',
+  'navetAi.priorities.description':
+    'Wybierz, co Navet może pokazywać i czego może uczyć się lokalnie.',
+  'navetAi.priorities.feedTitle': 'Pokazuj ważne elementy na ekranie głównym',
+  'navetAi.priorities.feedDescription':
+    'Używa zweryfikowanego stanu bez zapisywania historii zachowań.',
+  'navetAi.priorities.learningTitle': 'Ucz się z aktywności tej instalacji',
+  'navetAi.priorities.learningDescription':
+    'Domyślnie wyłączone. Aktywność pozostaje lokalna, a dane logowania nie trafiają do modelu.',
+  'navetAi.priorities.historyTitle': 'Importuj do 30 dni historii',
+  'navetAi.priorities.historyDescription':
+    'Niezależne od uczenia. Pozostaw wyłączone, aby zacząć od chwili zgody.',
+  'navetAi.priorities.detailsTitle': 'Źródła priorytetów i dane prywatne',
+  'navetAi.priorities.calendarTitles': 'Pokazuj dokładne tytuły kalendarza na wspólnych ekranach',
+  'navetAi.priorities.notificationText': 'Pokazuj treść powiadomień na wspólnych ekranach',
+  'navetAi.priorities.excluded': 'Obecność i obrazy z kamer nigdy nie są uwzględniane.',
+  'navetAi.priorities.knowledge': 'Co wie Navet: {feedback} wyborów i {events} poznanych zdarzeń.',
+  'navetAi.priorities.deleteFeedback': 'Usuń wybory priorytetów',
+  'priorities.ariaLabel': 'Co wymaga uwagi',
+  'priorities.weatherTitle': 'Niekorzystna pogoda w pobliżu',
+  'priorities.maintenanceTitle': 'Konserwacja inteligentnego domu',
+  'priorities.energyTitle': 'Zużycie energii jest wyższe niż zwykle',
+  'navetAi.settings.sectionTitle': 'Inteligentne funkcje',
   'navetAi.settings.description':
     'Lokalne rozpoznawanie wzorców w całej instalacji, ograniczone do odczytu i sugestii.',
   'navetAi.settings.unavailable': 'Usługa niedostępna',
@@ -2151,7 +2174,7 @@ export const plMessages = {
   'navetAi.settings.modelSize': 'Rozmiar modelu',
   'navetAi.settings.modelLicense': 'Licencja',
   'navetAi.settings.modelStorage': 'Pamięć',
-  'navetAi.settings.installedHere': 'Ta instalacja',
+  'navetAi.settings.installedHere': 'Lokalnie',
   'navetAi.settings.removeModel': 'Usuń model',
   'navetAi.settings.removeModelConfirmTitle': 'Usunąć model lokalny?',
   'navetAi.settings.removeModelConfirmDescription':
@@ -2179,13 +2202,16 @@ export const plMessages = {
   'navetAi.settings.privateTitle': 'Treści prywatne',
   'navetAi.settings.privateDescription':
     'Obraz z kamer, dźwięk, dane logowania, tokeny i prywatny tekst dowolny są domyślnie wykluczone.',
-  'navetAi.settings.resetTitle': 'Zresetuj Navet AI',
+  'navetAi.settings.resetTitle': 'Inteligentne funkcje',
   'navetAi.settings.resetDescription':
-    'Usuń wyuczone zdarzenia, agregaty, opinie i wygenerowane spostrzeżenia z tej instalacji.',
-  'navetAi.settings.resetConfirmTitle': 'Zresetować Navet AI?',
+    'Wyłącz wszystkie inteligentne funkcje i trwale usuń opcjonalny lokalny model AI oraz zapisane dane.',
+  'navetAi.settings.disabledDescription':
+    'Inteligentne funkcje są wyłączone. W tej instalacji nie ma lokalnego modelu AI ani wyuczonych danych.',
+  'navetAi.settings.enableAction': 'Włącz inteligentne funkcje',
+  'navetAi.settings.resetConfirmTitle': 'Wyłączyć inteligentne funkcje?',
   'navetAi.settings.resetConfirmDescription':
-    'Spowoduje to trwałe usunięcie wyuczonych obserwacji, agregatów, opinii i spostrzeżeń. Model lokalny zostanie zachowany.',
-  'navetAi.settings.resetAction': 'Zresetuj Navet AI',
+    'Spowoduje to wyłączenie wszystkich inteligentnych funkcji oraz trwałe usunięcie lokalnego modelu AI, wyuczonych obserwacji, agregatów, opinii, wyborów priorytetów i wygenerowanych spostrzeżeń.',
+  'navetAi.settings.resetAction': 'Wyłącz inteligentne funkcje',
   'navetAi.widget.learning': 'Nadal uczy się Twoich wzorców',
   'navetAi.widget.description':
     'Spostrzeżenia pojawią się, gdy Navet zbierze wystarczające zweryfikowane dowody.',
@@ -3413,19 +3439,19 @@ export const plMessages = {
   'security.overview.customize.previewLabel': 'Encje przeglądu bezpieczeństwa',
   'security.alarm.controls': 'Sterowanie alarmem',
   'widgets.assist.title': 'Assist',
-  'widgets.assist.description': 'Zapytaj Home Assistant lub Navet AI, pisząc albo mówiąc.',
+  'widgets.assist.description': 'Zapytaj Home Assistant lub Navet Assist, pisząc albo mówiąc.',
   'widgets.assist.settingsTitle': 'Ustawienia Assist',
   'widgets.assist.settingsDescription': 'Wybierz asystenta używanego przez tę kartę.',
   'widgets.assist.pipeline': 'Asystent',
   'widgets.assist.assistant': 'Wybierz asystenta',
   'widgets.assist.homeAssistant': 'Home Assistant',
-  'widgets.assist.navetAi': 'Navet AI',
+  'widgets.assist.navetAi': 'Navet Assist',
   'widgets.assist.navetAiUnavailable':
-    'Pobierz model lokalny w ustawieniach Navet AI, aby rozpocząć rozmowę.',
+    'Pobierz opcjonalny lokalny model AI w sekcji Inteligentne funkcje, aby rozpocząć rozmowę.',
   'widgets.assist.navetAiEmptyTitle':
     'Mogę objaśniać stan domu i wykonywać polecenia, o które prosisz. Nigdy nie działam automatycznie.',
-  'widgets.assist.navetAiPlaceholder': 'Zapytaj Navet AI…',
-  'widgets.assist.navetAiFailed': 'Navet AI nie mógł odpowiedzieć. Spróbuj ponownie.',
+  'widgets.assist.navetAiPlaceholder': 'Zapytaj Navet Assist…',
+  'widgets.assist.navetAiFailed': 'Navet Assist nie mógł odpowiedzieć. Spróbuj ponownie.',
   'widgets.assist.navetAiSuggestedAction': 'Sugerowane działanie',
   'widgets.assist.navetAiTurnOn': 'Włącz {targets}',
   'widgets.assist.navetAiTurnOff': 'Wyłącz {targets}',
@@ -3439,8 +3465,14 @@ export const plMessages = {
   'widgets.assist.navetAiNoAnswer': 'Nie udało mi się zinterpretować tej prośby.',
   'widgets.assist.navetAiLightsOn': 'Włączone światła: {count}',
   'widgets.assist.navetAiLightsOnInRoom': 'Włączone światła w {room}: {count}',
+  'widgets.assist.navetAiLightOnInRoom': 'Światło jest włączone w {room}.',
+  'widgets.assist.navetAiLightsOnInRooms': 'Światła są włączone w {rooms}.',
+  'widgets.assist.navetAiLightsOnRoomUnknown':
+    'Te światła są włączone, ale nie przypisano ich do żadnego pomieszczenia: {lights}.',
   'widgets.assist.navetAiTemperature': 'Temperatura: {readings}',
   'widgets.assist.navetAiTemperatureInRoom': 'Temperatura w {room}: {readings}',
+  'widgets.assist.navetAiHumidity': 'Wilgotność: {readings}',
+  'widgets.assist.navetAiHumidityInRoom': 'Wilgotność w {room}: {readings}',
   'widgets.assist.loadFailed':
     'Nie udało się wczytać asystentów. Sprawdź połączenie z Home Assistant.',
   'widgets.assist.noPipelines': 'Brak dostępnych asystentów',
@@ -3460,9 +3492,9 @@ export const plMessages = {
   'widgets.assist.unavailable': 'Home Assistant niedostępny',
   'widgets.assist.open': 'Otwórz Assist',
   'dashboard.addCard.templates.assist.name': 'Assist',
-  'dashboard.addCard.templates.aiInsights.name': 'Spostrzeżenia Navet AI',
+  'dashboard.addCard.templates.aiInsights.name': 'Informacje o domu',
   'dashboard.addCard.templates.aiInsights.description':
-    'Pokaż najnowszą obserwację tylko do odczytu z Navet AI.',
+    'Pokaż najnowszą obserwację tylko do odczytu zweryfikowaną przez Navet.',
   'dashboard.addCard.templates.assist.description':
-    'Pisz lub rozmawiaj z Home Assistant albo Navet AI.',
+    'Pisz lub rozmawiaj z Home Assistant albo Navet Assist.',
 } as const;

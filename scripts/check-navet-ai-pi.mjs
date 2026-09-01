@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -79,6 +79,64 @@ if (build.status !== 0) {
     }
     if (requireModel && initialState.capabilities.model.status !== 'ready') {
       fail('NAVET_AI_PI_REQUIRE_MODEL=true but the 0.8B model is not ready');
+    }
+    if (
+      initialState.version !== 2 ||
+      initialState.settings.learningEnabled !== false ||
+      initialState.settings.historyBackfillEnabled !== false
+    ) {
+      fail('privacy-first learning consent defaults are not active');
+    }
+    const disabledIngest = await fetch(`http://127.0.0.1:${port}/__navet_ai__/events`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ events: [] }),
+    });
+    if (disabledIngest.status !== 403) {
+      fail('event ingestion was available before learning consent');
+    }
+    const learningResponse = await fetch(`http://127.0.0.1:${port}/__navet_ai__/settings`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ learningEnabled: true }),
+    });
+    if (!learningResponse.ok) fail('could not enable learning for the acceptance fixture');
+    const priorityRankResponse = await fetch(
+      `http://127.0.0.1:${port}/__navet_ai__/priorities/rank`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          contract: 'navet.ai.priorities.rank',
+          version: 1,
+          candidates: [
+            {
+              token: 'opaque_token_a',
+              source: 'chores',
+              reasonCode: 'chore_due_today',
+              urgencyGroup: 'due_today',
+              timeBucket: 'today',
+              feedback: { dismissed: 0, snoozed: 0, showFewer: 0 },
+            },
+            {
+              token: 'opaque_token_b',
+              source: 'calendar',
+              reasonCode: 'calendar_all_day_today',
+              urgencyGroup: 'due_today',
+              timeBucket: 'today',
+              feedback: { dismissed: 0, snoozed: 0, showFewer: 0 },
+            },
+          ],
+        }),
+      }
+    );
+    const priorityRank = await priorityRankResponse.json();
+    if (
+      !priorityRankResponse.ok ||
+      priorityRank.contract !== 'navet.ai.priorities.rank' ||
+      priorityRank.orderedTokens?.join(',') !== 'opaque_token_a,opaque_token_b'
+    ) {
+      fail('priority ranking did not retain deterministic fallback order');
     }
 
     const events = [21, 14, 7].map((daysAgo, index) => {
@@ -216,6 +274,36 @@ if (build.status !== 0) {
     ) {
       fail('read-only chat did not answer the expected light state question');
     }
+    const lightLocationResponse = await fetch(`http://127.0.0.1:${port}/__navet_ai__/chat`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        text: 'Which room is the light on in?',
+        locale: 'en',
+        history: [],
+        entities: [
+          {
+            id: 'home_assistant:light.bathroom',
+            providerId: 'home_assistant',
+            name: 'Ceiling light',
+            room: 'Bathroom',
+            type: 'light',
+            state: 'on',
+          },
+        ],
+      }),
+    });
+    const lightLocationResult = await lightLocationResponse.json();
+    if (
+      !lightLocationResponse.ok ||
+      lightLocationResult.readOnly !== true ||
+      lightLocationResult.executionRequested !== false ||
+      lightLocationResult.answer?.kind !== 'lights_on_locations' ||
+      lightLocationResult.answer?.lights?.[0]?.name !== 'Ceiling light' ||
+      lightLocationResult.answer?.lights?.[0]?.room !== 'Bathroom'
+    ) {
+      fail('read-only chat did not answer the expected light location question');
+    }
     const temperatureQuestionResponse = await fetch(
       `http://127.0.0.1:${port}/__navet_ai__/chat`,
       {
@@ -251,10 +339,94 @@ if (build.status !== 0) {
     ) {
       fail('read-only chat did not answer the expected temperature question');
     }
+    const humidityQuestionResponse = await fetch(
+      `http://127.0.0.1:${port}/__navet_ai__/chat`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          text: 'What is the humidity in the basement?',
+          locale: 'en',
+          history: [],
+          entities: [
+            {
+              id: 'home_assistant:sensor.basement_humidity',
+              providerId: 'home_assistant',
+              name: 'Basement humidity',
+              room: 'Basement',
+              type: 'humidity',
+              value: 61,
+              unit: '%',
+            },
+          ],
+        }),
+      }
+    );
+    const humidityQuestionResult = await humidityQuestionResponse.json();
+    if (
+      !humidityQuestionResponse.ok ||
+      humidityQuestionResult.readOnly !== true ||
+      humidityQuestionResult.executionRequested !== false ||
+      humidityQuestionResult.answer?.kind !== 'humidity' ||
+      humidityQuestionResult.answer?.room !== 'Basement' ||
+      humidityQuestionResult.answer?.readings?.[0]?.room !== 'Basement' ||
+      humidityQuestionResult.answer?.readings?.[0]?.value !== 61 ||
+      humidityQuestionResult.answer?.readings?.[0]?.unit !== '%'
+    ) {
+      fail('read-only chat did not answer the expected humidity question');
+    }
     const rssMb = readRssMb(service.pid);
     const rssLimitMb = requireModel ? 2_800 : 256;
     if (rssMb !== null && rssMb > rssLimitMb) {
       fail(`server and AI used ${rssMb.toFixed(1)} MB RSS (limit: ${rssLimitMb} MB)`);
+    }
+    let shutdownVerified = false;
+    if (!process.env.NAVET_AI_PI_DATA_DIRECTORY) {
+      const modelPath = join(dataDirectory, 'models', 'qwen3.5-0.8b-q4_0.gguf');
+      mkdirSync(join(dataDirectory, 'models'), { recursive: true });
+      writeFileSync(modelPath, 'acceptance-fixture');
+      const resetResponse = await fetch(`http://127.0.0.1:${port}/__navet_ai__/reset`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: '{}',
+      });
+      const resetState = await resetResponse.json();
+      const resetDatabase = new DatabaseSync(join(dataDirectory, 'navet-ai.sqlite'), {
+        readOnly: true,
+      });
+      const remainingRows = ['events', 'feedback', 'priority_feedback', 'insights', 'aggregates']
+        .map((table) => Number(resetDatabase.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get().count))
+        .reduce((sum, count) => sum + count, 0);
+      resetDatabase.close();
+      const disabledChat = await fetch(`http://127.0.0.1:${port}/__navet_ai__/chat`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ text: 'test', locale: 'en', history: [], entities: [] }),
+      });
+      shutdownVerified =
+        resetResponse.ok &&
+        resetState.settings.enabled === false &&
+        resetState.settings.priorityFeedEnabled === false &&
+        resetState.settings.learningEnabled === false &&
+        resetState.settings.historyBackfillEnabled === false &&
+        resetState.settings.modelDownloadConsented === false &&
+        resetState.capabilities.model.status === 'not_downloaded' &&
+        Object.values(resetState.settings.prioritySources ?? {}).every((value) => value === false) &&
+        remainingRows === 0 &&
+        !existsSync(modelPath) &&
+        disabledChat.status === 403;
+      if (!shutdownVerified) {
+        fail(
+          `master shutdown did not disable features and remove local data: ${JSON.stringify({
+            resetOk: resetResponse.ok,
+            settings: resetState.settings,
+            modelStatus: resetState.capabilities?.model?.status,
+            remainingRows,
+            modelExists: existsSync(modelPath),
+            disabledChatStatus: disabledChat.status,
+          })}`
+        );
+      }
     }
     if (!process.exitCode) {
       console.log(
@@ -268,8 +440,11 @@ if (build.status !== 0) {
             aggregateBucketCount,
             chatSuggestion: chatResult.suggestions?.[0]?.operation ?? 'missing',
             chatStateAnswer: stateQuestionResult.answer?.count ?? 'missing',
+            chatLightLocation: lightLocationResult.answer?.lights?.[0]?.room ?? 'missing',
+            chatHumidityAnswer: humidityQuestionResult.answer?.readings?.[0]?.value ?? 'missing',
             serviceAndAiRssMb: rssMb === null ? 'unavailable' : Number(rssMb.toFixed(1)),
             browserIncluded: false,
+            shutdownVerified,
           },
           null,
           2
