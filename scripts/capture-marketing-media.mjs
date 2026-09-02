@@ -12,6 +12,7 @@ const DEFAULT_BASE_URL = `http://${CAPTURE_HOST}:${CAPTURE_PORT}`;
 const CAPTURE_CACHE_DIR = resolve(repoRoot, '.cache/marketing-media-capture');
 const SCREENSHOT_TEMP_DIR = resolve(CAPTURE_CACHE_DIR, 'screenshots');
 const VIDEO_TEMP_DIR = resolve(CAPTURE_CACHE_DIR, 'videos');
+const COMMUNITY_MEDIA_OUTPUT_DIR = resolve(repoRoot, '.cache/navet-content/media');
 const WALKTHROUGH_OUTPUT_DIR = resolve(
   assetPaths.marketingRoot,
   'campaigns/live-product-tutorials/recordings/final'
@@ -22,6 +23,12 @@ const SCREENSHOT_SCENARIOS = [
     name: 'navet-ipad-landscape-home',
     pathname: '/demo/home',
     viewport: { width: 1448, height: 1012 },
+  },
+  {
+    name: 'navet-community-home',
+    pathname: '/demo/home',
+    viewport: { width: 1366, height: 1024 },
+    output: 'community-cache',
   },
   {
     name: 'navet-tablet-portrait-home',
@@ -41,14 +48,32 @@ const SCREENSHOT_SCENARIOS = [
     viewport: { width: 1536, height: 1024 },
   },
   {
+    name: 'navet-community-energy',
+    pathname: '/demo/energy',
+    viewport: { width: 1366, height: 1024 },
+    output: 'community-cache',
+  },
+  {
     name: 'navet-ipad-landscape-climate',
     pathname: '/demo/climate',
     viewport: { width: 1536, height: 1024 },
   },
   {
+    name: 'navet-community-climate',
+    pathname: '/demo/climate',
+    viewport: { width: 1366, height: 1024 },
+    output: 'community-cache',
+  },
+  {
     name: 'navet-ipad-landscape-security',
     pathname: '/demo/security',
     viewport: { width: 1536, height: 1024 },
+  },
+  {
+    name: 'navet-community-security',
+    pathname: '/demo/security',
+    viewport: { width: 1366, height: 1024 },
+    output: 'community-cache',
   },
   {
     name: 'navet-mobile-pwa-media-or-lights',
@@ -69,6 +94,12 @@ const SCREENSHOT_SCENARIOS = [
     name: 'navet-ipad-landscape-household',
     pathname: '/demo/tasks',
     viewport: { width: 1536, height: 1024 },
+  },
+  {
+    name: 'navet-community-chores',
+    pathname: '/demo/tasks',
+    viewport: { width: 1366, height: 1024 },
+    output: 'community-cache',
   },
   {
     name: 'navet-ipad-landscape-routines',
@@ -256,6 +287,7 @@ async function writeScreenshotVariants(pngPath, outputBasePath) {
 async function captureScreenshots(browser, baseUrl) {
   await mkdir(SCREENSHOT_TEMP_DIR, { recursive: true });
   await mkdir(assetPaths.marketingScreenshots, { recursive: true });
+  await mkdir(COMMUNITY_MEDIA_OUTPUT_DIR, { recursive: true });
 
   for (const scenario of getScreenshotScenarios()) {
     const context = await browser.newContext({
@@ -267,7 +299,11 @@ async function captureScreenshots(browser, baseUrl) {
     });
     const page = await context.newPage();
     const pngPath = resolve(SCREENSHOT_TEMP_DIR, `${scenario.name}.png`);
-    const outputBasePath = resolve(assetPaths.marketingScreenshots, scenario.name);
+    const outputDirectory =
+      scenario.output === 'community-cache'
+        ? COMMUNITY_MEDIA_OUTPUT_DIR
+        : assetPaths.marketingScreenshots;
+    const outputBasePath = resolve(outputDirectory, scenario.name);
 
     await stabilizePage(page, baseUrl, scenario.pathname);
     if (scenario.prepare) {

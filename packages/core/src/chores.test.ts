@@ -141,6 +141,37 @@ describe('chores domain', () => {
     expect(occurrences.map((occurrence) => occurrence.scheduledAt)).toEqual(expected);
   });
 
+  it.each([
+    [2, ['2026-08-27T09:00:00.000Z', '2026-09-10T09:00:00.000Z', '2026-09-24T09:00:00.000Z']],
+    [3, ['2026-08-27T09:00:00.000Z', '2026-09-17T09:00:00.000Z']],
+    [4, ['2026-08-27T09:00:00.000Z', '2026-09-24T09:00:00.000Z']],
+  ])(
+    'keeps an every-%s-weeks schedule anchored to its August 27 start',
+    (intervalWeeks, expected) => {
+      const occurrences = materializeChoreOccurrences({
+        definition: makeDefinition({
+          assignment: { mode: 'person', participantIds: ['alice'] },
+          schedule: {
+            frequency: 'weekly',
+            startDate: '2026-08-27',
+            time: '09:00',
+            timeZone: 'UTC',
+            daysOfWeek: [4],
+            intervalWeeks,
+          },
+        }),
+        participantsById: { alice },
+        rangeStart: '2026-08-27T00:00:00.000Z',
+        rangeEnd: '2026-09-30T00:00:00.000Z',
+      });
+
+      expect(occurrences.map((occurrence) => occurrence.scheduledAt)).toEqual(expected);
+      expect(
+        occurrences.some((occurrence) => occurrence.scheduledAt.startsWith('2026-09-02'))
+      ).toBe(false);
+    }
+  );
+
   it('creates one occurrence per active participant for everyone assignments', () => {
     const occurrences = materializeChoreOccurrences({
       definition: makeDefinition({
@@ -337,6 +368,113 @@ describe('chores domain', () => {
     expect(migrateChoreWorkspaceData(persisted).experience?.setupStartedAt).toBe(
       '2026-08-01T09:00:00.000Z'
     );
+  });
+
+  it('removes stale available occurrences and undelivered reminders when a schedule changes', () => {
+    const currentDefinition = makeDefinition({
+      assignment: { mode: 'person', participantIds: ['alice'] },
+      schedule: {
+        frequency: 'weekly',
+        startDate: '2026-08-01',
+        time: '09:00',
+        timeZone: 'UTC',
+        daysOfWeek: [3],
+      },
+    });
+    const staleOccurrence = makeOccurrence({
+      id: `${currentDefinition.id}:2026-09-02T09:00:00.000Z:alice`,
+      scheduledAt: '2026-09-02T09:00:00.000Z',
+      dueAt: '2026-09-02T12:00:00.000Z',
+      assigneeIds: ['alice'],
+      assignmentSlot: 'alice',
+    });
+    const workspace = {
+      ...createEmptyChoreWorkspace(),
+      participantsById: { alice },
+      definitionsById: { [currentDefinition.id]: currentDefinition },
+      occurrencesById: { [staleOccurrence.id]: staleOccurrence },
+      outbox: [
+        {
+          id: 'outbox:stale-reminder',
+          activityId: 'activity:stale-reminder',
+          eventType: 'reminder_due' as const,
+          status: 'pending' as const,
+          attempts: 0,
+          createdAt: '2026-09-02T09:00:00.000Z',
+          nextAttemptAt: '2026-09-02T09:00:00.000Z',
+          occurrenceId: staleOccurrence.id,
+          participantId: 'alice',
+          destination: 'home_assistant' as const,
+        },
+      ],
+    };
+    const updatedDefinition = {
+      ...currentDefinition,
+      schedule: {
+        frequency: 'weekly' as const,
+        startDate: '2026-08-27',
+        time: '09:00',
+        timeZone: 'UTC',
+        daysOfWeek: [4],
+        intervalWeeks: 2,
+      },
+      updatedAt: '2026-08-27T10:00:00.000Z',
+    };
+
+    const result = applyChoreWorkspaceAction({
+      commandId: 'update-every-two-weeks',
+      action: {
+        type: 'definition_update',
+        actorParticipantId: 'alice',
+        definition: updatedDefinition,
+      },
+      timestamp: '2026-08-27T10:00:00.000Z',
+      workspace,
+    });
+
+    expect(result.data.occurrencesById).toEqual({});
+    expect(result.data.outbox).toEqual([]);
+  });
+
+  it('reconciles a persisted stale September 2 occurrence against the current schedule', () => {
+    const definition = makeDefinition({
+      assignment: { mode: 'person', participantIds: ['alice'] },
+      schedule: {
+        frequency: 'weekly',
+        startDate: '2026-08-27',
+        time: '09:00',
+        timeZone: 'UTC',
+        daysOfWeek: [4],
+        intervalWeeks: 2,
+      },
+    });
+    const staleOccurrence = makeOccurrence({
+      id: `${definition.id}:2026-09-02T09:00:00.000Z:alice`,
+      scheduledAt: '2026-09-02T09:00:00.000Z',
+      dueAt: '2026-09-02T12:00:00.000Z',
+      assigneeIds: ['alice'],
+      assignmentSlot: 'alice',
+    });
+    const result = applyChoreWorkspaceAction({
+      commandId: 'reconcile-every-two-weeks',
+      action: {
+        type: 'materialize_occurrences',
+        rangeStart: '2026-08-27T00:00:00.000Z',
+        rangeEnd: '2026-09-30T00:00:00.000Z',
+      },
+      timestamp: '2026-09-02T08:00:00.000Z',
+      workspace: {
+        ...createEmptyChoreWorkspace(),
+        participantsById: { alice },
+        definitionsById: { [definition.id]: definition },
+        occurrencesById: { [staleOccurrence.id]: staleOccurrence },
+      },
+    });
+
+    expect(result.data.occurrencesById[staleOccurrence.id]).toBeUndefined();
+    expect(
+      Object.values(result.data.occurrencesById).map((occurrence) => occurrence.scheduledAt)
+    ).toEqual(['2026-08-27T09:00:00.000Z', '2026-09-10T09:00:00.000Z', '2026-09-24T09:00:00.000Z']);
   });
 
   it('preserves an existing occurrence when a range is materialized again', () => {

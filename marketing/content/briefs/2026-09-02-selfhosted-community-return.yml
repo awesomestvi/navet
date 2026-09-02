@@ -1,0 +1,52 @@
+schemaVersion: 1
+id: 2026-09-02-selfhosted-community-return
+createdOn: 2026-09-02
+kind: release
+title: Self-hosting is not finished if everyone else avoids the interface
+oneIdea: A self-hosted smart home should preserve local ownership without making the household use another admin panel.
+audience: Self-hosters who want a polished smart-home interface without adding a vendor cloud account.
+maintainerSeed:
+  problem: Self-hosting gives the operator control but can leave everyone else with another technical interface to learn.
+  whyItMatters: Local ownership should extend to an interface the whole household can use confidently.
+  specificDetail: Navet keeps daily control room-first and simple while provider sessions and dashboard state stay on the user's own device or server.
+  limitation: Navet is a control surface, not a replacement for the connected smart-home platform, and Home Assistant currently provides the deepest feature coverage.
+  desiredConversation: I want to learn what has made a self-hosted interface genuinely usable for everyone in other people's homes.
+providerScope:
+  - provider-neutral
+  - home-assistant
+  - homey
+  - openhab
+evidence:
+  - id: local-first-boundary
+    source: .agents/product-marketing.md
+    locator: Provider data, dashboard state, and credentials remain on the user's device or server rather than Navet servers.
+    claim: Navet does not require a Navet-operated cloud account for provider data, dashboard state, or credentials.
+    verifiedOn: 2026-09-02
+  - id: multi-provider-support
+    source: docs/integrations.md
+    locator: Navet can store more than one implemented provider session in runtimes that expose provider
+    claim: Standalone Navet can retain multiple implemented provider sessions with honest capability differences.
+    verifiedOn: 2026-09-02
+  - id: multi-dashboard-release
+    source: CHANGELOG.md
+    locator: Navet now supports multiple dashboards.
+    claim: Navet supports multiple dashboards and has improved device/profile recovery since the early releases.
+    verifiedOn: 2026-09-02
+canonicalDocs:
+  path: ''
+  status: not-applicable
+  angle: A production-oriented self-hosting update with concrete architecture and recovery boundaries.
+cta:
+  label: Explore the demo and installation docs
+  url: https://demo.navet.app/
+asset:
+  kind: screenshot
+  scenario: navet-community-energy
+  sourcePolicy: provider-free-demo-only
+  altText: Navet Energy dashboard showing live demand, grid import, solar production, battery level, cost, device breakdown, and a usage chart in a dark tablet layout.
+channels:
+  - selfhosted-reddit
+publishing:
+  cadence: release-update
+  externalCommunity: true
+  humanApprovalRequired: true

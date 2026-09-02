@@ -1,0 +1,124 @@
+schemaVersion: 1
+
+allowedLinkHosts:
+  - navet.app
+  - demo.navet.app
+  - docs.navet.app
+  - github.com
+
+channels:
+  navet-subreddit:
+    label: Navet subreddit
+    kind: owned-community
+    audience: People using, evaluating, or contributing to Navet
+    format: native-reddit-post
+    maxCharacters: 12000
+    maxTitleCharacters: 80
+    maxBodyCharacters: 700
+    destinationUrl: https://www.reddit.com/r/navet/
+    requiresAffiliationDisclosure: false
+    requiresRulePreflight: false
+    publishing: manual
+  navet-discord:
+    label: Navet Discord
+    kind: owned-community
+    audience: Current community members and people actively trying Navet
+    format: discord-message
+    maxCharacters: 2000
+    maxTitleCharacters: 60
+    maxBodyCharacters: 450
+    destinationUrl: https://discord.com/channels/1540491864325623892
+    requiresAffiliationDisclosure: false
+    requiresRulePreflight: false
+    publishing: manual
+  youtube:
+    label: Navet YouTube
+    kind: owned-video
+    audience: People who want to see Navet working before installing it
+    format: narrated-screen-video
+    maxCharacters: 5000
+    maxTitleCharacters: 70
+    maxBodyCharacters: 600
+    destinationUrl: https://www.youtube.com/@navetapp
+    requiresAffiliationDisclosure: false
+    requiresRulePreflight: false
+    publishing: manual
+  homeassistant-reddit:
+    label: Home Assistant subreddit
+    kind: external-community
+    audience: Home Assistant operators
+    provider: home-assistant
+    format: native-reddit-post
+    maxCharacters: 12000
+    maxTitleCharacters: 80
+    maxBodyCharacters: 900
+    destinationUrl: https://www.reddit.com/r/homeassistant/
+    requiresAffiliationDisclosure: true
+    requiredDisclosure: I work on Navet
+    requiresRulePreflight: true
+    rulesUrl: https://www.reddit.com/r/homeassistant/about/rules
+    rulesCheckedOn: 2026-09-01
+    publishing: manual
+  homeassistant-community:
+    label: Home Assistant Community
+    kind: external-community
+    audience: Home Assistant operators following the existing Navet project topic
+    provider: home-assistant
+    format: discourse-topic-update
+    maxCharacters: 32000
+    maxTitleCharacters: 120
+    maxBodyCharacters: 1800
+    destinationUrl: https://community.home-assistant.io/t/navet-a-smart-home-dashboard-for-wall-panels-tablets-and-phones/1010760
+    requiresAffiliationDisclosure: true
+    requiredDisclosure: I work on Navet
+    requiresRulePreflight: true
+    rulesUrl: https://community.home-assistant.io/guidelines
+    rulesCheckedOn: 2026-09-02
+    publishing: manual
+  homey-reddit:
+    label: Homey subreddit
+    kind: external-community
+    audience: Homey operators
+    provider: homey
+    format: native-reddit-post
+    maxCharacters: 12000
+    maxTitleCharacters: 80
+    maxBodyCharacters: 900
+    destinationUrl: https://www.reddit.com/r/homey/
+    requiresAffiliationDisclosure: true
+    requiredDisclosure: I work on Navet
+    requiresRulePreflight: true
+    rulesUrl: https://www.reddit.com/r/homey/about/rules
+    rulesCheckedOn: 2026-09-01
+    publishing: manual
+  openhab-reddit:
+    label: openHAB subreddit
+    kind: external-community
+    audience: openHAB operators
+    provider: openhab
+    format: native-reddit-post
+    maxCharacters: 12000
+    maxTitleCharacters: 80
+    maxBodyCharacters: 900
+    destinationUrl: https://www.reddit.com/r/openhab/
+    requiresAffiliationDisclosure: true
+    requiredDisclosure: I work on Navet
+    requiresRulePreflight: true
+    rulesUrl: https://www.reddit.com/r/openhab/about/rules
+    rulesCheckedOn: 2026-09-01
+    publishing: manual
+  selfhosted-reddit:
+    label: self-hosted subreddit
+    kind: external-community
+    audience: People evaluating production-ready self-hosted software
+    format: native-reddit-post
+    maxCharacters: 12000
+    maxTitleCharacters: 80
+    maxBodyCharacters: 1200
+    destinationUrl: https://www.reddit.com/r/selfhosted/
+    requiresAffiliationDisclosure: true
+    requiredDisclosure: I work on Navet
+    requiresRulePreflight: true
+    rulesUrl: https://www.reddit.com/r/selfhosted/about/rules
+    rulesCheckedOn: 2026-09-01
+    publishing: manual
