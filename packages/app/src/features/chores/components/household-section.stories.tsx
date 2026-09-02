@@ -3,8 +3,10 @@ import {
   createChoreDemoWorkspace,
 } from '@navet/app/features/chores/chore-demo-fixture';
 import { useChoreWorkspaceStore } from '@navet/app/features/chores/chore-workspace-store';
+import { normalizeChoreExperienceState } from '@navet/core/chore-experience';
+import { applyChoreWorkspaceAction } from '@navet/core/chores';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { HouseholdSection } from './household-section';
 
@@ -120,6 +122,91 @@ function HouseholdProtectedStory() {
     return () => useChoreWorkspaceStore.getState().reset();
   }, []);
   return <HouseholdSection syncEnabled={false} />;
+}
+
+function HouseholdPointsStory() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const store = useChoreWorkspaceStore.getState();
+    const originalExecute = store.execute;
+    const originalUnlockManagement = store.unlockManagement;
+    const workspace = createChoreDemoWorkspace({ copy: DEMO_COPY });
+    const experience = normalizeChoreExperienceState(workspace.experience);
+    const data = {
+      ...workspace,
+      experience: {
+        ...experience,
+        earnedPointsByParticipant: { maya: 25, sam: 99 },
+      },
+      activity: [
+        {
+          id: 'activity:maya-birthday',
+          commandId: 'story:maya-birthday',
+          timestamp: '2026-08-30T12:00:00.000Z',
+          type: 'points_adjusted' as const,
+          participantId: 'maya',
+          actorParticipantId: 'alex',
+          pointsDelta: 10,
+          reason: 'Birthday bonus',
+        },
+        {
+          id: 'activity:sam-private',
+          commandId: 'story:sam-private',
+          timestamp: '2026-08-31T12:00:00.000Z',
+          type: 'points_adjusted' as const,
+          participantId: 'sam',
+          actorParticipantId: 'alex',
+          pointsDelta: 99,
+          reason: 'Sam only',
+        },
+      ],
+    };
+    store.setPreviewDocument({ data });
+    useChoreWorkspaceStore.setState({
+      managementPinConfigured: true,
+      managementUnlocked: false,
+      unlockManagement: async (pin) => {
+        if (pin !== '1234') {
+          useChoreWorkspaceStore.setState({ managementError: 'PIN was not accepted' });
+          return false;
+        }
+        useChoreWorkspaceStore.setState({ managementError: null, managementUnlocked: true });
+        return true;
+      },
+      execute: async (action) => {
+        const current = useChoreWorkspaceStore.getState();
+        if (!current.data || current.revision === null) return false;
+        try {
+          const result = applyChoreWorkspaceAction({
+            action,
+            commandId: `story:${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            workspace: current.data,
+          });
+          useChoreWorkspaceStore.setState({
+            data: {
+              ...result.data,
+              activity: [...result.data.activity, result.activity],
+            },
+            revision: current.revision + 1,
+            status: 'ready',
+          });
+          return true;
+        } catch {
+          return false;
+        }
+      },
+    });
+    setReady(true);
+    return () => {
+      useChoreWorkspaceStore.setState({
+        execute: originalExecute,
+        unlockManagement: originalUnlockManagement,
+      });
+      useChoreWorkspaceStore.getState().reset();
+    };
+  }, []);
+  return ready ? <HouseholdSection syncEnabled={false} /> : null;
 }
 
 const meta = {
@@ -634,7 +721,9 @@ export const RewardManagement: Story = {
 };
 
 export const ProgressManagement: Story = {
-  play: async ({ canvas, userEvent }) => {
+  render: () => <HouseholdPointsStory />,
+  globals: { viewport: { value: 'desktop1440p', isRotated: false } },
+  play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByRole('region', { name: 'Today' });
     await userEvent.click(canvas.getByRole('button', { name: 'Progress' }));
     const panel = within(canvas.getByRole('region', { name: 'Progress' }));
@@ -643,14 +732,104 @@ export const ProgressManagement: Story = {
       panel.queryByText('See each person’s contribution without ranking the family.')
     ).not.toBeInTheDocument();
     const personCard = panel
-      .getByRole('heading', { name: 'Alex' })
+      .getByRole('heading', { name: 'Maya' })
       .closest('[data-chore-base-card]');
-    await expect(personCard).not.toBeNull();
-    await expect(within(personCard as HTMLElement).getByText(/completed chores/)).toBeVisible();
+    if (!(personCard instanceof HTMLElement)) throw new Error('Expected Maya progress card');
+    const personCardScope = within(personCard);
+    await expect(personCardScope.getByText(/completed chores/)).toBeVisible();
+    const addPoints = personCardScope.getByRole('button', { name: 'Add points for Maya' });
+    const removePoints = personCardScope.getByRole('button', {
+      name: 'Remove points for Maya',
+    });
+    await expect(addPoints).toBeVisible();
+    await expect(removePoints).toBeVisible();
+    await expect(addPoints.closest('[data-point-adjustment-control]')).toBe(
+      removePoints.closest('[data-point-adjustment-control]')
+    );
+    await expect(personCardScope.getByRole('button', { name: 'Point history' })).toBeVisible();
+    await userEvent.click(addPoints);
+    const body = within(canvasElement.ownerDocument.body);
+    const pinInput = await body.findByLabelText('Management PIN');
+    const pinDialog = pinInput.closest('[role="dialog"]');
+    if (!(pinDialog instanceof HTMLElement)) throw new Error('Expected management PIN dialog');
+    await userEvent.type(pinInput, '1234');
+    await userEvent.click(within(pinDialog).getByRole('button', { name: 'Unlock' }));
+    const addDialog = await body.findByRole('dialog', { name: 'Add points for Maya' });
+    await expect(within(addDialog).queryByRole('button', { name: 'Add' })).not.toBeInTheDocument();
     await expect(
-      within(personCard as HTMLElement).getByRole('button', { name: 'Edit' })
-    ).toBeVisible();
+      within(addDialog).queryByRole('button', { name: 'Remove' })
+    ).not.toBeInTheDocument();
+    const amount = within(addDialog).getByLabelText('Amount');
+    await waitFor(() => expect(amount).toHaveFocus());
+    await userEvent.clear(amount);
+    await userEvent.type(amount, '0');
+    await expect(within(addDialog).getByRole('button', { name: 'Add points' })).toBeDisabled();
+    await userEvent.clear(amount);
+    await userEvent.type(amount, '30');
+    const saveAddition = within(addDialog).getByRole('button', {
+      name: 'Add points',
+    });
+    await expect(saveAddition).toBeEnabled();
+    const addedBalancePreview = within(addDialog).getByText('New balance: 55');
+    await expect(addedBalancePreview).toBeVisible();
+    await userEvent.click(saveAddition);
+    await waitFor(() => expect(body.queryByText('Add points for Maya')).not.toBeInTheDocument());
+    await expect(personCardScope.getByText('55')).toBeVisible();
+
+    await userEvent.click(removePoints);
+    const removeDialog = await body.findByRole('dialog', { name: 'Remove points for Maya' });
+    const removeAmount = within(removeDialog).getByLabelText('Amount');
+    await userEvent.clear(removeAmount);
+    await userEvent.type(removeAmount, '60');
+    await userEvent.type(
+      within(removeDialog).getByLabelText('Reason (optional)'),
+      'Corrected total'
+    );
+    const balancePreview = within(removeDialog).getByText('New balance: -5');
+    await expect(balancePreview).toBeVisible();
+    await expect(balancePreview).toHaveAttribute('data-point-balance-preview', 'true');
+    await userEvent.click(within(removeDialog).getByRole('button', { name: 'Remove points' }));
+    await waitFor(() => expect(body.queryByText('Remove points for Maya')).not.toBeInTheDocument());
+    await expect(personCardScope.getByText('-5')).toBeVisible();
+
+    await userEvent.click(personCardScope.getByRole('button', { name: 'Point history' }));
+    const pointsSheet = await body.findByRole('dialog', { name: 'Maya points' });
+    const viewport = canvasElement.ownerDocument.defaultView;
+    if (viewport && viewport.innerWidth >= 768) {
+      const bounds = pointsSheet.getBoundingClientRect();
+      await expect(Math.abs(bounds.left + bounds.width / 2 - viewport.innerWidth / 2)).toBeLessThan(
+        2
+      );
+      await expect(
+        Math.abs(bounds.top + bounds.height / 2 - viewport.innerHeight / 2)
+      ).toBeLessThan(2);
+    }
+    await expect(within(pointsSheet).getByText('Birthday bonus')).toBeVisible();
+    await expect(within(pointsSheet).getByText('Earlier balance')).toBeVisible();
+    await expect(within(pointsSheet).queryByText('Sam only')).not.toBeInTheDocument();
+    await expect(within(pointsSheet).getByText('Corrected total')).toBeVisible();
+    await expect(within(pointsSheet).getAllByText('-5').length).toBeGreaterThan(0);
   },
+};
+
+export const ProgressPointsMobile: Story = {
+  ...ProgressManagement,
+  globals: { viewport: { value: 'mobile1', isRotated: false } },
+};
+
+export const ProgressPointsLightTheme: Story = {
+  ...ProgressManagement,
+  globals: { theme: 'light', viewport: { value: 'mobile1', isRotated: false } },
+};
+
+export const ProgressPointsDarkTheme: Story = {
+  ...ProgressManagement,
+  globals: { theme: 'dark', viewport: { value: 'mobile1', isRotated: false } },
+};
+
+export const ProgressPointsBlackTheme: Story = {
+  ...ProgressManagement,
+  globals: { theme: 'black', viewport: { value: 'mobile1', isRotated: false } },
 };
 
 export const SettingsAndRecovery: Story = {

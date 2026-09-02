@@ -272,6 +272,9 @@ function isValidActivity(value) {
     (value.definitionId === undefined || typeof value.definitionId === 'string') &&
     (value.participantId === undefined || typeof value.participantId === 'string') &&
     (value.actorParticipantId === undefined || typeof value.actorParticipantId === 'string') &&
+    (value.reason === undefined || typeof value.reason === 'string') &&
+    (value.pointsDelta === undefined ||
+      (Number.isSafeInteger(value.pointsDelta) && Math.abs(value.pointsDelta) <= 10000)) &&
     typeof value.type === 'string' &&
     typeof value.timestamp === 'string' &&
     Number.isFinite(Date.parse(value.timestamp))
@@ -377,6 +380,10 @@ function isOptionalBoundedInteger(value, maximum) {
   return value === undefined || (Number.isSafeInteger(value) && value >= 0 && value <= maximum);
 }
 
+function isOptionalSignedBoundedInteger(value, maximum) {
+  return value === undefined || (Number.isSafeInteger(value) && Math.abs(value) <= maximum);
+}
+
 function isValidChoreExperience(value) {
   if (
     !isRecord(value) ||
@@ -449,7 +456,7 @@ function isValidChoreExperience(value) {
   if (value.earnedPointsByParticipant !== undefined) {
     for (const participantId in value.earnedPointsByParticipant) {
       if (!Object.prototype.hasOwnProperty.call(value.earnedPointsByParticipant, participantId)) continue;
-      if (!isOptionalBoundedInteger(value.earnedPointsByParticipant[participantId], 1000000000)) {
+      if (!isOptionalSignedBoundedInteger(value.earnedPointsByParticipant[participantId], 1000000000)) {
         return false;
       }
     }
@@ -1350,6 +1357,16 @@ function isValidWorkspaceAction(value) {
       isValidChoreExperience(value.experience)
     );
   }
+  if (value.type === 'experience_points_adjust') {
+    return (
+      typeof value.actorParticipantId === 'string' &&
+      typeof value.participantId === 'string' &&
+      Number.isSafeInteger(value.pointsDelta) &&
+      value.pointsDelta !== 0 &&
+      Math.abs(value.pointsDelta) <= 10000 &&
+      (value.reason === undefined || typeof value.reason === 'string')
+    );
+  }
   if (value.type === 'reminder_acknowledge') {
     return typeof value.outboxId === 'string' && typeof value.actorParticipantId === 'string';
   }
@@ -1436,10 +1453,8 @@ function updateExperiencePoints(data, previousOccurrence, nextOccurrence) {
   let nextExperience = experience;
   if (points && typeof participantId === 'string' && (becameFinal || stoppedBeingFinal)) {
     const balances = getExperiencePointBalances(data, experience);
-    balances[participantId] = Math.max(
-      0,
-      (balances[participantId] || 0) + (becameFinal ? points : -points)
-    );
+    balances[participantId] =
+      (balances[participantId] || 0) + (becameFinal ? points : -points);
     nextExperience = Object.assign({}, nextExperience, { earnedPointsByParticipant: balances });
   }
   const awardedMissionIds = (experience.awardedMissionIds || []).slice();
@@ -1655,8 +1670,26 @@ function applyOccurrenceAction(data, commandId, workspaceAction, timestamp) {
     definitionId: definition.id,
     type: activityType,
     actorParticipantId: action.participantId,
+    participantId: action.participantId,
     timestamp,
   };
+  const experience = updateExperiencePoints(data, occurrence, nextOccurrence);
+  const pointRecipientId =
+    occurrence.status !== 'done' && nextOccurrence.status === 'done'
+      ? nextOccurrence.completedBy
+      : occurrence.status === 'done' && nextOccurrence.status !== 'done'
+        ? occurrence.completedBy
+        : undefined;
+  const pointMetadata = isRecord(data.experience) && isRecord(data.experience.presentationByDefinitionId)
+    ? data.experience.presentationByDefinitionId[definition.id]
+    : null;
+  const awardedPoints = isRecord(pointMetadata) && Number.isSafeInteger(pointMetadata.points)
+    ? pointMetadata.points
+    : 0;
+  if (awardedPoints && typeof pointRecipientId === 'string') {
+    activity.participantId = pointRecipientId;
+    activity.pointsDelta = nextOccurrence.status === 'done' ? awardedPoints : -awardedPoints;
+  }
   if (typeof action.reason === 'string' && action.reason.trim().length > 0) {
     activity.reason = action.reason.trim();
   }
@@ -1668,7 +1701,7 @@ function applyOccurrenceAction(data, commandId, workspaceAction, timestamp) {
   nextOccurrences[nextOccurrence.id] = nextOccurrence;
   return Object.assign({}, data, {
     occurrencesById: nextOccurrences,
-    experience: updateExperiencePoints(data, occurrence, nextOccurrence),
+    experience,
     activity: data.activity.concat([activity]).slice(-MAX_ACTIVITY_ITEMS),
     outbox: data.outbox.concat([createOutboxItem(activity)]).slice(-MAX_OUTBOX_ITEMS),
   });
@@ -1974,6 +2007,42 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
       buildWorkspaceActivity(commandId, timestamp, 'experience_updated', {
         actorParticipantId: action.actorParticipantId,
       })
+    );
+  }
+
+  if (action.type === 'experience_points_adjust') {
+    assertManager(data, action.actorParticipantId);
+    if (!data.participantsById[action.participantId]) {
+      throw new Error('Chore participant is no longer available');
+    }
+    if (
+      !Number.isSafeInteger(action.pointsDelta) ||
+      action.pointsDelta === 0 ||
+      Math.abs(action.pointsDelta) > 10000
+    ) {
+      throw new Error('Point adjustment must be a non-zero whole number up to 10000');
+    }
+    const reason = typeof action.reason === 'string' ? action.reason.trim() || undefined : undefined;
+    const experience = isValidChoreExperience(data.experience)
+      ? data.experience
+      : createEmptyChoreExperience();
+    const balances = getExperiencePointBalances(data, experience);
+    const nextBalance = (balances[action.participantId] || 0) + action.pointsDelta;
+    if (Math.abs(nextBalance) > 1000000000) {
+      throw new Error('Point balance must stay between -1000000000 and 1000000000');
+    }
+    balances[action.participantId] = nextBalance;
+    return appendWorkspaceActivity(
+      Object.assign({}, data, {
+        experience: Object.assign({}, experience, { earnedPointsByParticipant: balances }),
+      }),
+      buildWorkspaceActivity(commandId, timestamp, 'points_adjusted', {
+        actorParticipantId: action.actorParticipantId,
+        participantId: action.participantId,
+        reason,
+        pointsDelta: action.pointsDelta,
+      }),
+      false
     );
   }
 
@@ -2477,6 +2546,7 @@ function requiresManagementSession(action) {
     'definition_restore',
     'retention_update',
     'experience_update',
+    'experience_points_adjust',
   ].indexOf(action.type) !== -1;
 }
 

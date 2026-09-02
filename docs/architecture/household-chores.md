@@ -178,6 +178,13 @@ retained final occurrences before the next experience mutation. A mission's shar
 once when its final required chore completes; the awarded mission ID is retained so reopening and
 re-completing work cannot duplicate the household reward.
 
+Each participant has a provider-neutral point-history projection built from automatic completion
+and reopen deltas plus manager-authored manual adjustments. Manual adjustments require a non-zero
+whole-number delta within 10,000 points and a reason, allow balances to become negative, and remain
+in activity history without entering the public automation event feed. When a stored balance
+predates detailed point activities, the projection exposes the difference as one synthetic earlier
+balance instead of inventing chore-level history.
+
 The richer motivation contract remains a provider-neutral extension boundary for reward claims,
 manager adjustments, badges, and time-boxed challenges. Its ledger prevents repeated completion
 awards and defines audited reversal/refund behavior. Those deeper workflows are not required by the
@@ -202,7 +209,8 @@ manager as an explicit recovery path; that exception cannot be used for other ma
 
 Archive, skip, reopen, and reassignment are manager actions. Skip, reopen, and reassignment require a
 non-empty reason, which is retained on the activity entry; reassignment also records the previous and
-new assignees. A configured approver can approve or reject normally. An active manager outside the
+new assignees. Manual point adjustments may include an optional reason, which is retained when
+provided. A configured approver can approve or reject normally. An active manager outside the
 approver list may override that decision only by declaring the override and supplying an audited
 reason.
 

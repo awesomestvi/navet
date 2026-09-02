@@ -529,6 +529,21 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
       rewardGoalsById: { ...experience.rewardGoalsById, [reward.id]: reward },
     }));
 
+  const adjustParticipantPoints = (
+    participant: ChoreParticipant,
+    pointsDelta: number,
+    reason: string
+  ) => {
+    if (!managerActorId) return Promise.resolve(false);
+    return execute({
+      type: 'experience_points_adjust',
+      actorParticipantId: managerActorId,
+      participantId: participant.id,
+      pointsDelta,
+      reason,
+    });
+  };
+
   const markSetupStarted = async () => {
     const current = useChoreWorkspaceStore.getState().data;
     if (!current) return false;
@@ -892,10 +907,8 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
           data ? (
             <ProgressView
               data={data}
-              onEditPerson={(participant) => {
-                setParticipantToEdit(participant);
-                setPersonDialogOpen(true);
-              }}
+              onAdjustPoints={adjustParticipantPoints}
+              requestManagementAccess={withManagementAccess}
             />
           ) : null
         )}

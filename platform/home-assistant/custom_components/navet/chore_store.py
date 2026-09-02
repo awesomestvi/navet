@@ -197,6 +197,14 @@ def _valid_activity(value: Any) -> bool:
         and 0 < len(value["commandId"]) <= 200
         and isinstance(value.get("type"), str)
         and _valid_timestamp(value.get("timestamp"))
+        and (
+            "pointsDelta" not in value
+            or (
+                isinstance(value["pointsDelta"], int)
+                and not isinstance(value["pointsDelta"], bool)
+                and abs(value["pointsDelta"]) <= 10_000
+            )
+        )
         and all(
             key not in value or isinstance(value[key], str)
             for key in (
@@ -204,6 +212,7 @@ def _valid_activity(value: Any) -> bool:
                 "definitionId",
                 "participantId",
                 "actorParticipantId",
+                "reason",
             )
         )
     )
@@ -662,6 +671,54 @@ def _materialize(data: dict[str, Any], range_start: str, range_end: str, timesta
     return {**data, "occurrencesById": occurrences}, additions
 
 
+def _experience_point_balances(data: Mapping[str, Any], experience: Mapping[str, Any]) -> dict[str, int]:
+    persisted = experience.get("earnedPointsByParticipant")
+    if isinstance(persisted, Mapping) and persisted:
+        return {
+            str(key): int(value)
+            for key, value in persisted.items()
+            if isinstance(value, int) and not isinstance(value, bool)
+        }
+    balances: dict[str, int] = {}
+    presentation = experience.get("presentationByDefinitionId", {})
+    for occurrence in data.get("occurrencesById", {}).values():
+        if occurrence.get("status") != "done" or not occurrence.get("completedBy"):
+            continue
+        metadata = presentation.get(occurrence.get("definitionId"), {})
+        points = metadata.get("points", 0) if isinstance(metadata, Mapping) else 0
+        if isinstance(points, int) and not isinstance(points, bool):
+            participant_id = str(occurrence["completedBy"])
+            balances[participant_id] = balances.get(participant_id, 0) + points
+    return balances
+
+
+def _update_experience_points(
+    data: Mapping[str, Any],
+    previous: Mapping[str, Any],
+    current: Mapping[str, Any],
+) -> tuple[dict[str, Any], str | None, int]:
+    experience = dict(data.get("experience") or _empty_data()["experience"])
+    if experience.get("gamificationMode") == "off":
+        return experience, None, 0
+    metadata = experience.get("presentationByDefinitionId", {}).get(previous.get("definitionId"), {})
+    points = metadata.get("points", 0) if isinstance(metadata, Mapping) else 0
+    became_final = previous.get("status") != "done" and current.get("status") == "done"
+    stopped_being_final = previous.get("status") == "done" and current.get("status") != "done"
+    participant_id = current.get("completedBy") if became_final else previous.get("completedBy") if stopped_being_final else None
+    if (
+        not isinstance(points, int)
+        or isinstance(points, bool)
+        or not points
+        or not isinstance(participant_id, str)
+    ):
+        return experience, None, 0
+    points_delta = points if became_final else -points
+    balances = _experience_point_balances(data, experience)
+    balances[participant_id] = balances.get(participant_id, 0) + points_delta
+    experience["earnedPointsByParticipant"] = balances
+    return experience, participant_id, points_delta
+
+
 def _apply_occurrence(data: dict[str, Any], occurrence_id: str, command: Mapping[str, Any], timestamp: str, command_id: str) -> dict[str, Any]:
     occurrence = data["occurrencesById"].get(occurrence_id)
     if not occurrence:
@@ -735,8 +792,27 @@ def _apply_occurrence(data: dict[str, Any], occurrence_id: str, command: Mapping
     else:
         raise ChoreAuthorityError("Unsupported chore action")
     next_occurrence["updatedAt"] = timestamp
-    data = {**data, "occurrencesById": {**data["occurrencesById"], occurrence_id: next_occurrence}}
-    return data, _activity(command_id, timestamp, event_type, occurrenceId=occurrence_id, definitionId=definition["id"], participantId=participant_id, actorParticipantId=participant_id, reason=str(command.get("reason", "")).strip() or None, assigneeIds=next_occurrence.get("assigneeIds") if action_type == "reassign" else None, previousAssigneeIds=occurrence.get("assigneeIds") if action_type == "reassign" else None)
+    experience, point_participant_id, points_delta = _update_experience_points(
+        data, occurrence, next_occurrence
+    )
+    data = {
+        **data,
+        "occurrencesById": {**data["occurrencesById"], occurrence_id: next_occurrence},
+        "experience": experience,
+    }
+    return data, _activity(
+        command_id,
+        timestamp,
+        event_type,
+        occurrenceId=occurrence_id,
+        definitionId=definition["id"],
+        participantId=point_participant_id or participant_id,
+        actorParticipantId=participant_id,
+        pointsDelta=points_delta or None,
+        reason=str(command.get("reason", "")).strip() or None,
+        assigneeIds=next_occurrence.get("assigneeIds") if action_type == "reassign" else None,
+        previousAssigneeIds=occurrence.get("assigneeIds") if action_type == "reassign" else None,
+    )
 
 
 class ChoreAuthority:
@@ -943,7 +1019,12 @@ class ChoreAuthority:
         self._history.extend(activity for activity in activities if activity["id"] not in {item.get("id") for item in self._history})
         data["activity"] = (list(data.get("activity", [])) + activities)[-MAX_ACTIVITY_ITEMS:]
         existing_outbox = {item.get("id") for item in data.get("outbox", [])}
-        additions = [_outbox(activity) for activity in activities if _outbox(activity)["id"] not in existing_outbox]
+        additions = [
+            _outbox(activity)
+            for activity in activities
+            if activity["type"] != "points_adjusted"
+            and _outbox(activity)["id"] not in existing_outbox
+        ]
         data["outbox"] = (list(data.get("outbox", [])) + additions)[-MAX_OUTBOX_ITEMS:]
         next_document = {"contractVersion": CONTRACT_VERSION, "revision": self.revision + 1, "updatedAt": timestamp, "data": data}
         if command_id:
@@ -985,7 +1066,7 @@ class ChoreAuthority:
 
     @staticmethod
     def _requires_management(action: Mapping[str, Any]) -> bool:
-        return str(action.get("type")) in {"participant_create", "participant_update", "definition_create", "definition_update", "definition_archive", "definition_restore", "retention_update", "experience_update"}
+        return str(action.get("type")) in {"participant_create", "participant_update", "definition_create", "definition_update", "definition_archive", "definition_restore", "retention_update", "experience_update", "experience_points_adjust"}
 
     def _apply_workspace_action(self, data: dict[str, Any], action: Mapping[str, Any], timestamp: str, command_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
         action_type = str(action.get("type"))
@@ -1049,6 +1130,40 @@ class ChoreAuthority:
             _require_manager(data, actor)
             data["experience"] = dict(action.get("experience", {}))
             return data, _activity(command_id, timestamp, "experience_updated", actorParticipantId=actor)
+        if action_type == "experience_points_adjust":
+            _require_manager(data, actor)
+            participant_id = str(action.get("participantId", ""))
+            if participant_id not in data["participantsById"]:
+                raise ChoreAuthorityError("Chore participant is no longer available")
+            points_delta = action.get("pointsDelta")
+            if (
+                not isinstance(points_delta, int)
+                or isinstance(points_delta, bool)
+                or points_delta == 0
+                or abs(points_delta) > 10_000
+            ):
+                raise ChoreAuthorityError("Point adjustment must be a non-zero whole number up to 10000")
+            reason_value = action.get("reason")
+            if reason_value is not None and not isinstance(reason_value, str):
+                raise ChoreAuthorityError("Point adjustment reason must be text")
+            reason = reason_value.strip() if isinstance(reason_value, str) else None
+            experience = dict(data.get("experience") or _empty_data()["experience"])
+            balances = _experience_point_balances(data, experience)
+            next_balance = balances.get(participant_id, 0) + points_delta
+            if abs(next_balance) > 1_000_000_000:
+                raise ChoreAuthorityError("Point balance must stay between -1000000000 and 1000000000")
+            balances[participant_id] = next_balance
+            experience["earnedPointsByParticipant"] = balances
+            data["experience"] = experience
+            return data, _activity(
+                command_id,
+                timestamp,
+                "points_adjusted",
+                actorParticipantId=actor,
+                participantId=participant_id,
+                pointsDelta=points_delta,
+                reason=reason or None,
+            )
         if action_type == "reminder_acknowledge":
             actor_record = _require_capability(data, actor, "complete")
             outbox_id = str(action.get("outboxId", ""))
@@ -1353,7 +1468,15 @@ class ChoreAuthority:
             if data != self.data or activities or reminders:
                 if activities:
                     data["activity"] = (data.get("activity", []) + activities)[-MAX_ACTIVITY_ITEMS:]
-                    data["outbox"] = (data.get("outbox", []) + [_outbox(item) for item in activities if _outbox(item)["id"] not in existing_outbox])[-MAX_OUTBOX_ITEMS:]
+                    data["outbox"] = (
+                        data.get("outbox", [])
+                        + [
+                            _outbox(item)
+                            for item in activities
+                            if item["type"] != "points_adjusted"
+                            and _outbox(item)["id"] not in existing_outbox
+                        ]
+                    )[-MAX_OUTBOX_ITEMS:]
                 if reminders:
                     data["outbox"] = (data.get("outbox", []) + reminders)[-MAX_OUTBOX_ITEMS:]
                 previous = dict(self._document or {})

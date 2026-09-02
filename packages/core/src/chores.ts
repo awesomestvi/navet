@@ -192,6 +192,7 @@ export type ChoreActivityType =
   | 'workspace_reset'
   | 'retention_updated'
   | 'experience_updated'
+  | 'points_adjusted'
   | 'occurrence_created'
   | 'due'
   | 'overdue'
@@ -215,6 +216,7 @@ export interface ChoreActivity {
   type: ChoreActivityType;
   actorParticipantId?: string;
   reason?: string;
+  pointsDelta?: number;
   previousAssigneeIds?: string[];
   assigneeIds?: string[];
   outboxId?: string;
@@ -350,6 +352,14 @@ export interface ChoreWorkspaceExperienceUpdateAction {
   experience: ChoreExperienceState;
 }
 
+export interface ChoreWorkspaceExperiencePointsAdjustAction {
+  type: 'experience_points_adjust';
+  actorParticipantId: string;
+  participantId: string;
+  pointsDelta: number;
+  reason?: string;
+}
+
 export type ChoreWorkspaceAction =
   | ChoreWorkspaceOccurrenceAction
   | ChoreWorkspaceParticipantCreateAction
@@ -362,7 +372,8 @@ export type ChoreWorkspaceAction =
   | ChoreWorkspaceReminderAcknowledgeAction
   | ChoreWorkspaceOutboxDeliveryAction
   | ChoreWorkspaceRetentionUpdateAction
-  | ChoreWorkspaceExperienceUpdateAction;
+  | ChoreWorkspaceExperienceUpdateAction
+  | ChoreWorkspaceExperiencePointsAdjustAction;
 
 export interface ApplyChoreCommandInput {
   commandId: string;
@@ -926,6 +937,7 @@ function isChoreActivity(value: unknown) {
       'workspace_reset',
       'retention_updated',
       'experience_updated',
+      'points_adjusted',
       'occurrence_created',
       'due',
       'overdue',
@@ -946,6 +958,8 @@ function isChoreActivity(value: unknown) {
     (value.participantId === undefined || typeof value.participantId === 'string') &&
     (value.actorParticipantId === undefined || typeof value.actorParticipantId === 'string') &&
     (value.reason === undefined || typeof value.reason === 'string') &&
+    (value.pointsDelta === undefined ||
+      (Number.isSafeInteger(value.pointsDelta) && Math.abs(Number(value.pointsDelta)) <= 10_000)) &&
     (value.previousAssigneeIds === undefined ||
       (Array.isArray(value.previousAssigneeIds) &&
         value.previousAssigneeIds.every((id) => typeof id === 'string'))) &&
@@ -974,6 +988,7 @@ function isChoreOutboxItem(value: unknown) {
       'workspace_reset',
       'retention_updated',
       'experience_updated',
+      'points_adjusted',
       'occurrence_created',
       'due',
       'overdue',
@@ -1485,6 +1500,7 @@ function buildActivity(input: ApplyChoreCommandInput, type: ChoreActivityType): 
     definitionId: input.definition.id,
     type,
     actorParticipantId: input.command.participantId,
+    participantId: input.command.participantId,
     reason: reason || undefined,
     previousAssigneeIds:
       input.command.type === 'reassign' ? input.occurrence.assigneeIds : undefined,
@@ -1757,6 +1773,8 @@ function buildWorkspaceActivity(input: {
   actorParticipantId?: string;
   participantId?: string;
   definitionId?: string;
+  reason?: string;
+  pointsDelta?: number;
 }): ChoreActivity {
   return {
     id: `activity:${input.commandId}`,
@@ -1766,6 +1784,8 @@ function buildWorkspaceActivity(input: {
     actorParticipantId: input.actorParticipantId,
     participantId: input.participantId,
     definitionId: input.definitionId,
+    reason: input.reason,
+    pointsDelta: input.pointsDelta,
   };
 }
 
@@ -1845,12 +1865,11 @@ export function applyChoreWorkspaceAction(
         ? previousOccurrence.completedBy
         : undefined;
     let nextExperience = experience;
+    const pointsDelta =
+      points && participantId ? (becameFinal ? points : stoppedBeingFinal ? -points : 0) : 0;
     if (points && participantId && (becameFinal || stoppedBeingFinal)) {
       const balances = getChoreExperiencePointBalances(workspace);
-      balances[participantId] = Math.max(
-        0,
-        (balances[participantId] ?? 0) + (becameFinal ? points : -points)
-      );
+      balances[participantId] = (balances[participantId] ?? 0) + pointsDelta;
       nextExperience = { ...nextExperience, earnedPointsByParticipant: balances };
     }
     const awardedMissionIds = [...(experience.awardedMissionIds ?? [])];
@@ -1874,9 +1893,12 @@ export function applyChoreWorkspaceAction(
     ) {
       nextExperience = { ...nextExperience, householdBonusPoints, awardedMissionIds };
     }
-    if (nextExperience === experience) return { activity: result.activity, data: result.data };
+    const activity = pointsDelta
+      ? { ...result.activity, participantId, pointsDelta }
+      : result.activity;
+    if (nextExperience === experience) return { activity, data: result.data };
     return {
-      activity: result.activity,
+      activity,
       data: {
         ...result.data,
         experience: nextExperience,
@@ -2100,6 +2122,43 @@ export function applyChoreWorkspaceAction(
         actorParticipantId: action.actorParticipantId,
       }),
       data: { ...workspace, experience: action.experience },
+    };
+  }
+
+  if (action.type === 'experience_points_adjust') {
+    assertWorkspaceManager(workspace, action.actorParticipantId);
+    if (!workspace.participantsById[action.participantId]) {
+      throw new Error('Chore participant is no longer available');
+    }
+    if (
+      !Number.isSafeInteger(action.pointsDelta) ||
+      action.pointsDelta === 0 ||
+      Math.abs(action.pointsDelta) > 10_000
+    ) {
+      throw new Error('Point adjustment must be a non-zero whole number up to 10000');
+    }
+    const reason = action.reason?.trim() || undefined;
+    const experience = workspace.experience ?? createChoreExperienceState();
+    const balances = getChoreExperiencePointBalances(workspace);
+    const nextBalance = (balances[action.participantId] ?? 0) + action.pointsDelta;
+    if (Math.abs(nextBalance) > 1_000_000_000) {
+      throw new Error('Point balance must stay between -1000000000 and 1000000000');
+    }
+    balances[action.participantId] = nextBalance;
+    return {
+      activity: buildWorkspaceActivity({
+        commandId,
+        timestamp,
+        type: 'points_adjusted',
+        actorParticipantId: action.actorParticipantId,
+        participantId: action.participantId,
+        reason,
+        pointsDelta: action.pointsDelta,
+      }),
+      data: {
+        ...workspace,
+        experience: { ...experience, earnedPointsByParticipant: balances },
+      },
     };
   }
 

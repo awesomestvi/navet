@@ -26,6 +26,8 @@ export interface SheetSurfaceProps {
   closeLabel?: string;
   contentStyle?: CSSProperties;
   contentGlowClassName?: string;
+  /** Keep the sheet available above the mobile breakpoint for focused detail surfaces. */
+  responsive?: boolean;
 }
 
 export interface SheetSurfaceHeaderProps {
@@ -112,6 +114,7 @@ export function SheetSurface({
   closeLabel,
   contentStyle,
   contentGlowClassName,
+  responsive = false,
 }: SheetSurfaceProps) {
   const { theme } = useTheme();
   return (
@@ -124,8 +127,16 @@ export function SheetSurface({
       theme={theme}
       contentTitle={title}
       contentDescription={description}
-      overlayClassName={overlayClassName ?? getUiKitSheetOverlayClassName(theme)}
-      contentClassName={cn(getUiKitSheetContentClassName(theme), contentClassName)}
+      overlayClassName={cn(
+        overlayClassName ?? getUiKitSheetOverlayClassName(theme),
+        responsive && 'md:block'
+      )}
+      contentClassName={cn(
+        getUiKitSheetContentClassName(theme),
+        responsive &&
+          'md:top-1/2 md:right-auto md:bottom-auto md:left-1/2 md:mx-0 md:mb-0 md:block md:w-[min(92vw,32rem)] md:max-w-lg md:-translate-x-1/2 md:-translate-y-1/2',
+        contentClassName
+      )}
       contentGlowClassName={contentGlowClassName ?? getUiKitGlassSheetGlowClassName(theme)}
       contentStyle={{ ...getUiKitGlassSurfaceFoundationStyle(theme), ...contentStyle }}
       accentColor={accentColor}
