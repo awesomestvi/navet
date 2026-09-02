@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getHousePulse,
   getMissionProgressList,
+  getParticipantPointHistory,
   getRewardProgressList,
   getRoomChoreSummaries,
   getRoomTodayChores,
@@ -196,6 +197,57 @@ describe('chore dashboard selectors', () => {
     data.experience.earnedPointsByParticipant = { maya: 25 };
     data.experience.householdBonusPoints = 50;
     expect(getRewardProgressList(data)[0]).toMatchObject({ points: 75, percent: 75 });
+    data.experience.earnedPointsByParticipant = { maya: -25 };
+    data.experience.householdBonusPoints = 0;
+    expect(getRewardProgressList(data)[0]).toMatchObject({ points: -25, percent: 0 });
+  });
+
+  it('builds isolated participant point history with an inferred earlier balance', () => {
+    const data = workspace();
+    if (!data.experience) throw new Error('Expected chore experience');
+    data.experience.earnedPointsByParticipant = { maya: -5, alex: 50 };
+    data.activity = [
+      {
+        id: 'activity:earned',
+        commandId: 'earned',
+        type: 'completed',
+        participantId: 'maya',
+        definitionId: 'dishes',
+        pointsDelta: 15,
+        timestamp: '2026-08-15T09:00:00.000Z',
+      },
+      {
+        id: 'activity:adjusted',
+        commandId: 'adjusted',
+        type: 'points_adjusted',
+        participantId: 'maya',
+        actorParticipantId: 'alex',
+        reason: 'Replacement cost',
+        pointsDelta: -30,
+        timestamp: '2026-08-15T10:00:00.000Z',
+      },
+      {
+        id: 'activity:other',
+        commandId: 'other',
+        type: 'points_adjusted',
+        participantId: 'alex',
+        pointsDelta: 50,
+        reason: 'Bonus',
+        timestamp: '2026-08-15T11:00:00.000Z',
+      },
+    ];
+    expect(getParticipantPointHistory(data, 'maya')).toEqual({
+      balance: -5,
+      entries: [
+        expect.objectContaining({ id: 'activity:adjusted', pointsDelta: -30 }),
+        expect.objectContaining({ id: 'activity:earned', pointsDelta: 15 }),
+        expect.objectContaining({
+          id: 'points-earlier:maya',
+          pointsDelta: 10,
+          type: 'earlier',
+        }),
+      ],
+    });
   });
 
   it('keeps chores without a room in Today without inventing a room summary', () => {

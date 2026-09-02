@@ -64,6 +64,10 @@ function isOptionalBoundedInteger(value: unknown, maximum: number) {
   );
 }
 
+function isOptionalSignedBoundedInteger(value: unknown, maximum: number) {
+  return value === undefined || (Number.isSafeInteger(value) && Math.abs(Number(value)) <= maximum);
+}
+
 function isOptionalTimestamp(value: unknown) {
   return value === undefined || (typeof value === 'string' && Number.isFinite(Date.parse(value)));
 }
@@ -151,7 +155,7 @@ export function isChoreExperienceState(value: unknown): value is ChoreExperience
     (value.earnedPointsByParticipant === undefined ||
       (isRecord(value.earnedPointsByParticipant) &&
         Object.values(value.earnedPointsByParticipant).every((points) =>
-          isOptionalBoundedInteger(points, 1_000_000_000)
+          isOptionalSignedBoundedInteger(points, 1_000_000_000)
         ))) &&
     isOptionalBoundedInteger(value.householdBonusPoints, 1_000_000_000) &&
     (value.awardedMissionIds === undefined ||

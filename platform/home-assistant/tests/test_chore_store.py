@@ -323,6 +323,60 @@ class ChoreAuthorityTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(chores.ChoreStorageError):
             chores._normalize_data(malformed)
 
+    async def test_completion_and_reopen_record_exact_point_deltas(self):
+        data = chores._empty_data()
+        data["participantsById"] = {"manager": _participant()}
+        data["definitionsById"] = {
+            "dishes": {
+                "id": "dishes",
+                "title": "Empty dishes",
+                "enabled": True,
+                "assignment": {"mode": "person", "participantIds": ["manager"]},
+                "approval": {"required": False, "approverIds": []},
+            }
+        }
+        data["occurrencesById"] = {
+            "dishes:today:manager": {
+                "id": "dishes:today:manager",
+                "definitionId": "dishes",
+                "scheduledAt": "2026-08-28T08:00:00.000Z",
+                "assigneeIds": ["manager"],
+                "assignmentSlot": "manager",
+                "status": "available",
+                "updatedAt": "2026-08-28T08:00:00.000Z",
+            }
+        }
+        data["experience"] = {
+            **data["experience"],
+            "gamificationMode": "light",
+            "presentationByDefinitionId": {"dishes": {"points": 15}},
+        }
+        completed, completion = chores._apply_occurrence(
+            data,
+            "dishes:today:manager",
+            {"type": "complete", "participantId": "manager"},
+            "2026-08-28T09:00:00.000Z",
+            "complete-with-points",
+        )
+        self.assertEqual(
+            completed["experience"]["earnedPointsByParticipant"], {"manager": 15}
+        )
+        self.assertEqual(completion["pointsDelta"], 15)
+        self.assertEqual(completion["participantId"], "manager")
+
+        reopened, reversal = chores._apply_occurrence(
+            completed,
+            "dishes:today:manager",
+            {"type": "reopen", "participantId": "manager", "reason": "Redo"},
+            "2026-08-28T09:05:00.000Z",
+            "reopen-with-points",
+        )
+        self.assertEqual(
+            reopened["experience"]["earnedPointsByParticipant"], {"manager": 0}
+        )
+        self.assertEqual(reversal["pointsDelta"], -15)
+        self.assertEqual(reversal["participantId"], "manager")
+
     async def test_durable_history_applies_workspace_retention(self):
         await self.authority.async_initialize()
         self.authority._history = [
@@ -511,6 +565,62 @@ class ChoreAuthorityTests(unittest.IsolatedAsyncioTestCase):
         await restarted.async_initialize()
         self.assertFalse(
             restarted._session_valid(session["sessionToken"], "ha-user-1")
+        )
+
+    async def test_signed_point_adjustment_requires_management_and_keeps_audit_details(self):
+        await self._create_manager()
+        session = await self.authority.async_configure_pin(
+            "manager", "2468", None, "ha-user-1"
+        )
+        request = {
+            "commandId": "adjust-manager-points",
+            "baseRevision": self.authority.revision,
+            "action": {
+                "type": "experience_points_adjust",
+                "actorParticipantId": "manager",
+                "participantId": "manager",
+                "pointsDelta": -20,
+            },
+        }
+        with self.assertRaisesRegex(
+            chores.ChoreAuthorityError, "Unlock chore management"
+        ):
+            await self.authority.async_command(request, "ha-user-1")
+
+        document = await self.authority.async_command(
+            {**request, "managementSessionToken": session["sessionToken"]},
+            "ha-user-1",
+        )
+        self.assertEqual(
+            document["data"]["experience"]["earnedPointsByParticipant"],
+            {"manager": -20},
+        )
+        self.assertEqual(
+            document["data"]["activity"][-1],
+            {
+                "id": "activity:adjust-manager-points",
+                "commandId": "adjust-manager-points",
+                "type": "points_adjusted",
+                "timestamp": document["data"]["activity"][-1]["timestamp"],
+                "actorParticipantId": "manager",
+                "participantId": "manager",
+                "pointsDelta": -20,
+            },
+        )
+        self.assertFalse(
+            any(
+                item["eventType"] == "points_adjusted"
+                for item in document["data"]["outbox"]
+            )
+        )
+        retried = await self.authority.async_command(
+            {**request, "managementSessionToken": session["sessionToken"]},
+            "ha-user-1",
+        )
+        self.assertEqual(retried["revision"], document["revision"])
+        self.assertEqual(
+            retried["data"]["experience"]["earnedPointsByParticipant"],
+            {"manager": -20},
         )
 
     async def test_management_pin_can_be_removed_by_an_unlocked_manager(self):

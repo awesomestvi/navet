@@ -141,6 +141,16 @@ function isChoreWorkspaceAction(value: unknown): value is ChoreWorkspaceAction {
       isChoreExperienceState(value.experience)
     )
   }
+  if (value.type === 'experience_points_adjust') {
+    return (
+      typeof value.actorParticipantId === 'string' &&
+      typeof value.participantId === 'string' &&
+      Number.isSafeInteger(value.pointsDelta) &&
+      value.pointsDelta !== 0 &&
+      Math.abs(Number(value.pointsDelta)) <= 10_000 &&
+      (value.reason === undefined || typeof value.reason === 'string')
+    )
+  }
   if (value.type === 'reminder_acknowledge') {
     return typeof value.outboxId === 'string' && typeof value.actorParticipantId === 'string'
   }
@@ -208,6 +218,7 @@ function requiresManagementSession(action: ChoreWorkspaceAction): boolean {
     'definition_restore',
     'retention_update',
     'experience_update',
+    'experience_points_adjust',
   ].includes(action.type)
 }
 
@@ -1082,7 +1093,9 @@ export function createViteChoreStoreRequestHandler(options: {
                 ? result.data.outbox
                 : [
                     ...result.data.outbox,
-                    ...activities.map(createChoreOutboxItem),
+                    ...activities
+                      .filter((activity) => activity.type !== 'points_adjusted')
+                      .map(createChoreOutboxItem),
                   ].slice(-MAX_OUTBOX_ITEMS),
           }
         } catch (error) {

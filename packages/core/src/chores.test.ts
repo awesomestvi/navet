@@ -1169,6 +1169,7 @@ describe('chores domain', () => {
       workspace,
     });
     expect(completed.data.experience?.earnedPointsByParticipant).toEqual({ bob: 15 });
+    expect(completed.activity).toMatchObject({ participantId: 'bob', pointsDelta: 15 });
     expect(completed.data.experience).toMatchObject({
       householdBonusPoints: 50,
       awardedMissionIds: ['reset'],
@@ -1185,6 +1186,104 @@ describe('chores domain', () => {
       workspace: completed.data,
     });
     expect(reopened.data.experience?.earnedPointsByParticipant).toEqual({ bob: 0 });
+    expect(reopened.activity).toMatchObject({ participantId: 'bob', pointsDelta: -15 });
     expect(reopened.data.experience?.householdBonusPoints).toBe(50);
+  });
+
+  it('lets managers add or remove participant points with an auditable reason', () => {
+    const workspace = {
+      ...createEmptyChoreWorkspace(),
+      participantsById: { alice, bob },
+      experience: {
+        ...createChoreExperienceState(),
+        gamificationMode: 'light' as const,
+        earnedPointsByParticipant: { bob: 5 },
+      },
+    };
+    const adjusted = applyChoreWorkspaceAction({
+      commandId: 'adjust-bob-points',
+      action: {
+        type: 'experience_points_adjust',
+        actorParticipantId: 'alice',
+        participantId: 'bob',
+        pointsDelta: -15,
+        reason: 'Replaced broken item',
+      },
+      timestamp: '2026-08-10T18:00:00.000Z',
+      workspace,
+    });
+    expect(adjusted.data.experience?.earnedPointsByParticipant).toEqual({ bob: -10 });
+    expect(adjusted.activity).toMatchObject({
+      type: 'points_adjusted',
+      participantId: 'bob',
+      actorParticipantId: 'alice',
+      pointsDelta: -15,
+      reason: 'Replaced broken item',
+    });
+  });
+
+  it.each([0, 1.5, 10_001, -10_001])('rejects invalid point adjustment %s', (pointsDelta) => {
+    expect(() =>
+      applyChoreWorkspaceAction({
+        commandId: `invalid-adjustment-${pointsDelta}`,
+        action: {
+          type: 'experience_points_adjust',
+          actorParticipantId: 'alice',
+          participantId: 'bob',
+          pointsDelta,
+          reason: 'Invalid',
+        },
+        timestamp: '2026-08-10T18:00:00.000Z',
+        workspace: { ...createEmptyChoreWorkspace(), participantsById: { alice, bob } },
+      })
+    ).toThrow('non-zero whole number');
+  });
+
+  it('rejects point adjustments without a manager or participant', () => {
+    const workspace = { ...createEmptyChoreWorkspace(), participantsById: { alice, bob } };
+    const action = {
+      type: 'experience_points_adjust' as const,
+      actorParticipantId: 'alice',
+      participantId: 'bob',
+      pointsDelta: 5,
+      reason: 'Bonus',
+    };
+    expect(() =>
+      applyChoreWorkspaceAction({
+        commandId: 'non-manager-adjustment',
+        action: { ...action, actorParticipantId: 'bob' },
+        timestamp: '2026-08-10T18:00:00.000Z',
+        workspace,
+      })
+    ).toThrow('manager');
+    expect(() =>
+      applyChoreWorkspaceAction({
+        commandId: 'missing-person-adjustment',
+        action: { ...action, participantId: 'missing' },
+        timestamp: '2026-08-10T18:00:00.000Z',
+        workspace,
+      })
+    ).toThrow('no longer available');
+  });
+
+  it('allows point adjustments without a reason', () => {
+    const adjusted = applyChoreWorkspaceAction({
+      commandId: 'adjustment-without-reason',
+      action: {
+        type: 'experience_points_adjust',
+        actorParticipantId: 'alice',
+        participantId: 'bob',
+        pointsDelta: 5,
+      },
+      timestamp: '2026-08-10T18:00:00.000Z',
+      workspace: { ...createEmptyChoreWorkspace(), participantsById: { alice, bob } },
+    });
+    expect(adjusted.data.experience?.earnedPointsByParticipant).toEqual({ bob: 5 });
+    expect(adjusted.activity).toMatchObject({
+      type: 'points_adjusted',
+      participantId: 'bob',
+      pointsDelta: 5,
+    });
+    expect(adjusted.activity.reason).toBeUndefined();
   });
 });

@@ -75,6 +75,11 @@ Core chores work with motivation turned off. **Light points**, **Family goals**,
 completion history unchanged. Missions and rewards are supporting surfaces, not prerequisites for
 using Today.
 
+Progress cards open an individual points view with the person's current balance and point history.
+Balances may be negative when points have been reversed or removed. Household managers can add or
+remove points with an optional note after unlocking management; every adjustment remains in the
+person's immutable history.
+
 ## Data, history, and recovery
 
 Chore changes are shared across authenticated Navet screens connected to the same installation.

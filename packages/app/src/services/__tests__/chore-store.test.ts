@@ -492,9 +492,25 @@ describe('NJS chore workspace store', () => {
 
     seedOccurrenceWorkspace();
 
+    const experience = createActionRequest('experience', 3, {
+      type: 'experience_update',
+      actorParticipantId: 'maya',
+      experience: {
+        version: 1,
+        gamificationMode: 'light',
+        presentationByDefinitionId: { dishes: { points: 15 } },
+        missionsById: {},
+        rewardGoalsById: {},
+        earnedPointsByParticipant: {},
+        householdBonusPoints: 0,
+        awardedMissionIds: [],
+      },
+    });
+    choreStore.handle(experience);
+
     const actionBody = JSON.stringify({
       commandId: 'complete',
-      baseRevision: 3,
+      baseRevision: 4,
       action: {
         type: 'occurrence_action',
         occurrenceId: OCCURRENCE_ID,
@@ -504,14 +520,14 @@ describe('NJS chore workspace store', () => {
     const complete = createRequest({
       method: 'POST',
       uri: '/__navet_chores__/commands',
-      headersIn: { 'X-Navet-Base-Revision': '3' },
+      headersIn: { 'X-Navet-Base-Revision': '4' },
       requestText: actionBody,
     });
     choreStore.handle(complete);
 
     const completedDocument = parseResponse(complete);
     expect(complete.return).toHaveBeenCalledWith(200, expect.any(String));
-    expect(completedDocument.revision).toBe(4);
+    expect(completedDocument.revision).toBe(5);
     expect(completedDocument.data.occurrencesById[OCCURRENCE_ID]).toMatchObject({
       status: 'done',
       completedBy: 'maya',
@@ -520,7 +536,10 @@ describe('NJS chore workspace store', () => {
       commandId: 'complete',
       type: 'completed',
       actorParticipantId: 'maya',
+      participantId: 'maya',
+      pointsDelta: 15,
     });
+    expect(completedDocument.data.experience.earnedPointsByParticipant).toEqual({ maya: 15 });
     expect(completedDocument.data.outbox.at(-1)).toMatchObject({
       activityId: 'activity:complete',
       eventType: 'completed',
@@ -530,11 +549,24 @@ describe('NJS chore workspace store', () => {
     const retry = createRequest({
       method: 'POST',
       uri: '/__navet_chores__/commands',
-      headersIn: { 'X-Navet-Base-Revision': '3' },
+      headersIn: { 'X-Navet-Base-Revision': '4' },
       requestText: actionBody,
     });
     choreStore.handle(retry);
-    expect(parseResponse(retry).revision).toBe(4);
+    expect(parseResponse(retry).revision).toBe(5);
+
+    const reopen = createActionRequest('reopen', 5, {
+      type: 'occurrence_action',
+      occurrenceId: OCCURRENCE_ID,
+      action: { type: 'reopen', participantId: 'maya', reason: 'Redo' },
+    });
+    choreStore.handle(reopen);
+    expect(parseResponse(reopen).data.activity.at(-1)).toMatchObject({
+      type: 'reopened',
+      participantId: 'maya',
+      pointsDelta: -15,
+    });
+    expect(parseResponse(reopen).data.experience.earnedPointsByParticipant).toEqual({ maya: 0 });
   });
 
   it('records a missed occurrence as completed late', () => {
@@ -983,7 +1015,50 @@ describe('NJS chore workspace store', () => {
     });
   });
 
-  it('requires a verified management PIN for chore and profile changes', () => {
+  it('persists signed point adjustments and their immutable audit details', () => {
+    const mockFs = createMockFs();
+    choreStore.setChoreStoreFsForTests(mockFs);
+    choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
+    choreStore.handle(
+      createActionRequest('points-manager', 0, {
+        type: 'participant_create',
+        participant: managerParticipant(),
+      })
+    );
+    const adjustment = createActionRequest('points-adjustment', 1, {
+      type: 'experience_points_adjust',
+      actorParticipantId: 'maya',
+      participantId: 'maya',
+      pointsDelta: -25,
+      reason: 'Replacement cost',
+    });
+    choreStore.handle(adjustment);
+
+    expect(adjustment.return).toHaveBeenCalledWith(200, expect.any(String));
+    expect(parseResponse(adjustment).data.experience.earnedPointsByParticipant).toEqual({
+      maya: -25,
+    });
+    expect(parseResponse(adjustment).data.activity.at(-1)).toMatchObject({
+      type: 'points_adjusted',
+      participantId: 'maya',
+      actorParticipantId: 'maya',
+      pointsDelta: -25,
+      reason: 'Replacement cost',
+    });
+    expect(parseResponse(adjustment).data.outbox).toHaveLength(1);
+
+    const retry = createActionRequest('points-adjustment', 1, {
+      type: 'experience_points_adjust',
+      actorParticipantId: 'maya',
+      participantId: 'maya',
+      pointsDelta: -25,
+      reason: 'Replacement cost',
+    });
+    choreStore.handle(retry);
+    expect(parseResponse(retry).data.experience.earnedPointsByParticipant).toEqual({ maya: -25 });
+  });
+
+  it('requires a verified management PIN for point adjustments', () => {
     const mockFs = createMockFs();
     choreStore.setChoreStoreFsForTests(mockFs);
     choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
@@ -1004,10 +1079,12 @@ describe('NJS chore workspace store', () => {
     const sessionToken = parseResponse(configure).sessionToken;
     expect(sessionToken).toEqual(expect.any(String));
 
-    const blocked = createActionRequest('blocked-profile', 1, {
-      type: 'participant_create',
+    const blocked = createActionRequest('blocked-adjustment', 1, {
+      type: 'experience_points_adjust',
       actorParticipantId: 'maya',
-      participant: managerParticipant('sofia'),
+      participantId: 'maya',
+      pointsDelta: 20,
+      reason: 'Bonus',
     });
     choreStore.handle(blocked);
     expect(blocked.return).toHaveBeenCalledWith(
@@ -1023,18 +1100,20 @@ describe('NJS chore workspace store', () => {
         'X-Navet-Chore-Management-Session': sessionToken,
       },
       requestText: JSON.stringify({
-        commandId: 'unlocked-profile',
+        commandId: 'unlocked-adjustment',
         baseRevision: 1,
         action: {
-          type: 'participant_create',
+          type: 'experience_points_adjust',
           actorParticipantId: 'maya',
-          participant: managerParticipant('sofia'),
+          participantId: 'maya',
+          pointsDelta: 20,
         },
       }),
     });
     choreStore.handle(unlocked);
     expect(unlocked.return).toHaveBeenCalledWith(200, expect.any(String));
-    expect(parseResponse(unlocked).data.participantsById.sofia.displayName).toBe('Sofia');
+    expect(parseResponse(unlocked).data.experience.earnedPointsByParticipant.maya).toBe(20);
+    expect(parseResponse(unlocked).data.activity.at(-1)).not.toHaveProperty('reason');
   });
 
   it('changes the management PIN only for an unlocked manager session', () => {

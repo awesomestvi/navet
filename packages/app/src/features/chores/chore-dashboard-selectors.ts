@@ -45,6 +45,22 @@ export interface ChoreRewardProgress {
   percent: number;
 }
 
+export interface ChoreParticipantPointHistoryEntry {
+  id: string;
+  timestamp?: string;
+  pointsDelta: number;
+  reason?: string;
+  type: 'completed' | 'reopened' | 'adjusted' | 'earlier';
+  actorParticipantId?: string;
+  definitionId?: string;
+  synthetic?: boolean;
+}
+
+export interface ChoreParticipantPointHistory {
+  balance: number;
+  entries: ChoreParticipantPointHistoryEntry[];
+}
+
 function startOfLocalDay(value: Date) {
   return new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime();
 }
@@ -317,13 +333,57 @@ export function getRewardProgressList(data: ChoreWorkspaceData): ChoreRewardProg
       return {
         goal,
         points,
-        percent: Math.min(100, Math.round((points / goal.targetPoints) * 100)),
+        percent: Math.max(0, Math.min(100, Math.round((points / goal.targetPoints) * 100))),
       };
     })
     .sort(
       (left, right) =>
         right.percent - left.percent || left.goal.title.localeCompare(right.goal.title)
     );
+}
+
+export function getParticipantPointHistory(
+  data: ChoreWorkspaceData,
+  participantId: string
+): ChoreParticipantPointHistory {
+  const balance = getChoreExperiencePointBalances(data)[participantId] ?? 0;
+  const entries: ChoreParticipantPointHistoryEntry[] = data.activity
+    .filter(
+      (activity) =>
+        activity.participantId === participantId &&
+        activity.pointsDelta !== undefined &&
+        activity.pointsDelta !== 0
+    )
+    .map<ChoreParticipantPointHistoryEntry>((activity) => ({
+      id: activity.id,
+      timestamp: activity.timestamp,
+      pointsDelta: activity.pointsDelta ?? 0,
+      reason: activity.reason,
+      type:
+        activity.type === 'points_adjusted'
+          ? 'adjusted'
+          : activity.type === 'reopened'
+            ? 'reopened'
+            : 'completed',
+      actorParticipantId: activity.actorParticipantId,
+      definitionId: activity.definitionId,
+    }))
+    .sort(
+      (left, right) =>
+        (right.timestamp ? Date.parse(right.timestamp) : 0) -
+        (left.timestamp ? Date.parse(left.timestamp) : 0)
+    );
+  const recordedTotal = entries.reduce((total, entry) => total + entry.pointsDelta, 0);
+  const earlierBalance = balance - recordedTotal;
+  if (earlierBalance !== 0) {
+    entries.push({
+      id: `points-earlier:${participantId}`,
+      pointsDelta: earlierBalance,
+      type: 'earlier',
+      synthetic: true,
+    });
+  }
+  return { balance, entries };
 }
 
 export function getDefinition(

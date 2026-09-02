@@ -1,5 +1,21 @@
-import { DashboardEmptyState, NavigationWorkspace } from '@navet/app/components/patterns';
-import { Button, Input, Panel, Select } from '@navet/app/components/primitives';
+import {
+  CardDialogBody,
+  CardDialogFooter,
+  CardDialogHeader,
+  CardDialogSection,
+  DashboardEmptyState,
+  NavigationWorkspace,
+} from '@navet/app/components/patterns';
+import {
+  BaseCardDialog,
+  Button,
+  Input,
+  Panel,
+  Select,
+  SheetSurface,
+  SheetSurfaceHeader,
+  Textarea,
+} from '@navet/app/components/primitives';
 import { EntityCardHeaderIcon } from '@navet/app/components/primitives/entity-card-header-icon';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { navetIconSizeTokens, navetTypographyTokens } from '@navet/app/components/system/tokens';
@@ -40,6 +56,7 @@ import {
   Gift,
   HeartHandshake,
   ListFilter,
+  Minus,
   MoreHorizontal,
   Pause,
   Pencil,
@@ -52,8 +69,12 @@ import {
   Trash2,
   Users,
 } from 'lucide-react';
-import { type ReactNode, useEffect, useState } from 'react';
-import { getMissionProgressList, getRewardProgressList } from '../chore-dashboard-selectors';
+import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react';
+import {
+  getMissionProgressList,
+  getParticipantPointHistory,
+  getRewardProgressList,
+} from '../chore-dashboard-selectors';
 import { ChoreBaseCard } from './chore-base-card';
 import { ChoreDashboardGrid } from './chore-dashboard-grid';
 import { resolveChoreIconComponent } from './chore-icon';
@@ -885,12 +906,23 @@ export function RewardsView({
 
 export function ProgressView({
   data,
-  onEditPerson,
+  onAdjustPoints,
+  requestManagementAccess,
 }: {
   data: ChoreWorkspaceData;
-  onEditPerson: (participant: ChoreParticipant) => void;
+  onAdjustPoints: (
+    participant: ChoreParticipant,
+    pointsDelta: number,
+    reason: string
+  ) => Promise<boolean>;
+  requestManagementAccess: (action: () => void) => void;
 }) {
   const { t } = useI18n();
+  const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
+  const [pointAdjustment, setPointAdjustment] = useState<{
+    participantId: string;
+    direction: 'add' | 'remove';
+  } | null>(null);
   const gamificationEnabled =
     normalizeChoreExperienceState(data.experience).gamificationMode !== 'off';
   const completed = Object.values(data.occurrencesById).filter(
@@ -907,8 +939,17 @@ export function ProgressView({
       points: balances[participant.id] ?? 0,
     };
   });
+  const selectedParticipant = selectedParticipantId
+    ? data.participantsById[selectedParticipantId]
+    : undefined;
+  const adjustmentParticipant = pointAdjustment
+    ? data.participantsById[pointAdjustment.participantId]
+    : undefined;
+  const requestPointAdjustment = (participantId: string, direction: 'add' | 'remove') => {
+    requestManagementAccess(() => setPointAdjustment({ participantId, direction }));
+  };
   return (
-    <div>
+    <>
       <ChoreDashboardGrid>
         {people.map(({ participant, completions, points }) => (
           <ChoreBaseCard
@@ -921,21 +962,313 @@ export function ProgressView({
             metrics={
               gamificationEnabled ? <ChorePointsToken points={points} showPlus={false} /> : null
             }
+            footerLeading={
+              gamificationEnabled ? (
+                <div className="flex items-center gap-1.5" data-point-adjustment-control="true">
+                  <Button
+                    iconOnly
+                    label={t('household.points.addFor', {
+                      name: participant.displayName,
+                    })}
+                    size="compact"
+                    variant="secondary"
+                    onClick={() => requestPointAdjustment(participant.id, 'add')}
+                  >
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                  <Button
+                    iconOnly
+                    label={t('household.points.removeFor', {
+                      name: participant.displayName,
+                    })}
+                    size="compact"
+                    variant="secondary"
+                    onClick={() => requestPointAdjustment(participant.id, 'remove')}
+                  >
+                    <Minus className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                </div>
+              ) : null
+            }
             footerAction={
               <Button
                 size="compact"
                 variant="secondary"
                 className="min-w-20 justify-center px-3"
-                leading={<Pencil className="h-4 w-4" />}
-                onClick={() => onEditPerson(participant)}
+                leading={<Clock3 className="h-4 w-4" />}
+                onClick={() => setSelectedParticipantId(participant.id)}
               >
-                {t('household.actions.edit')}
+                {t('household.points.view')}
               </Button>
             }
           />
         ))}
       </ChoreDashboardGrid>
-    </div>
+      {selectedParticipant ? (
+        <ParticipantPointsSheet
+          data={data}
+          participant={selectedParticipant}
+          isOpen
+          onOpenChange={(open) => {
+            if (!open) setSelectedParticipantId(null);
+          }}
+        />
+      ) : null}
+      {adjustmentParticipant && pointAdjustment ? (
+        <PointAdjustmentDialog
+          isOpen
+          participant={adjustmentParticipant}
+          direction={pointAdjustment.direction}
+          currentBalance={getChoreExperiencePointBalances(data)[adjustmentParticipant.id] ?? 0}
+          onOpenChange={(open) => {
+            if (!open) setPointAdjustment(null);
+          }}
+          onSave={(pointsDelta, reason) =>
+            onAdjustPoints(adjustmentParticipant, pointsDelta, reason)
+          }
+        />
+      ) : null}
+    </>
+  );
+}
+
+function ParticipantPointsSheet({
+  data,
+  participant,
+  isOpen,
+  onOpenChange,
+}: {
+  data: ChoreWorkspaceData;
+  participant: ChoreParticipant;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const i18n = useI18n();
+  const { t } = i18n;
+  const { accentColor, theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
+  const history = useMemo(
+    () => getParticipantPointHistory(data, participant.id),
+    [data, participant.id]
+  );
+  const completedCount = Object.values(data.occurrencesById).filter(
+    (occurrence) => occurrence.status === 'done' && occurrence.completedBy === participant.id
+  ).length;
+  return (
+    <SheetSurface
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      title={t('household.points.title', { name: participant.displayName })}
+      description={t('household.points.description')}
+      closeLabel={t('household.points.close')}
+      accentColor={participant.color ?? accentColor}
+      responsive
+      contentClassName="sm:max-w-lg"
+      bodyClassName="pb-[max(1rem,env(safe-area-inset-bottom))]"
+    >
+      <SheetSurfaceHeader
+        title={participant.displayName}
+        description={t('household.points.description')}
+        closeLabel={t('household.points.close')}
+        onClose={() => onOpenChange(false)}
+        className={cn('border-b', surface.border)}
+      />
+      <div className="px-4 pt-4 sm:px-5">
+        <div
+          className={cn(
+            'flex items-center gap-3 rounded-2xl border p-4',
+            surface.border,
+            surface.subtleBg
+          )}
+        >
+          <ProgressParticipantAvatar participant={participant} />
+          <div className="min-w-0 flex-1">
+            <p className={cn('text-sm font-semibold', surface.textPrimary)}>
+              {t('household.points.currentBalance')}
+            </p>
+            <p className={cn('mt-0.5 text-xs', surface.textSecondary)}>
+              {t('household.progress.completedCount', { count: completedCount })}
+            </p>
+          </div>
+          <span className={cn('text-2xl font-semibold tabular-nums', surface.textPrimary)}>
+            {history.balance}
+          </span>
+        </div>
+        <section className="mt-6" aria-labelledby="participant-point-history-title">
+          <h2
+            id="participant-point-history-title"
+            className={cn(navetTypographyTokens.sectionHeading, surface.textPrimary)}
+          >
+            {t('household.points.history')}
+          </h2>
+          {history.entries.length === 0 ? (
+            <p className={cn('mt-3 text-sm', surface.textSecondary)}>
+              {t('household.points.emptyHistory')}
+            </p>
+          ) : (
+            <div className={cn('mt-2 divide-y', surface.border)}>
+              {history.entries.map((entry) => {
+                const definitionTitle = entry.definitionId
+                  ? data.definitionsById[entry.definitionId]?.title
+                  : undefined;
+                const label =
+                  entry.type === 'earlier'
+                    ? t('household.points.earlierBalance')
+                    : entry.type === 'adjusted'
+                      ? (entry.reason ?? t('household.points.manualAdjustment'))
+                      : entry.type === 'reopened'
+                        ? t('household.points.choreReopened', {
+                            name: definitionTitle ?? t('household.points.chore'),
+                          })
+                        : t('household.points.choreCompleted', {
+                            name: definitionTitle ?? t('household.points.chore'),
+                          });
+                return (
+                  <div key={entry.id} className="flex min-h-14 items-center gap-3 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className={cn('truncate text-sm font-medium', surface.textPrimary)}>
+                        {label}
+                      </p>
+                      {entry.timestamp ? (
+                        <p className={cn('mt-0.5 text-xs', surface.textSecondary)}>
+                          {i18n.formatDate(new Date(entry.timestamp), {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}{' '}
+                          · {i18n.formatTime(new Date(entry.timestamp))}
+                        </p>
+                      ) : null}
+                    </div>
+                    <span
+                      className={cn(
+                        'text-sm font-semibold tabular-nums',
+                        entry.pointsDelta >= 0 ? 'text-emerald-500' : 'text-rose-500'
+                      )}
+                    >
+                      {entry.pointsDelta > 0 ? '+' : ''}
+                      {entry.pointsDelta}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </div>
+    </SheetSurface>
+  );
+}
+
+function PointAdjustmentDialog({
+  isOpen,
+  participant,
+  direction,
+  currentBalance,
+  onOpenChange,
+  onSave,
+}: {
+  isOpen: boolean;
+  participant: ChoreParticipant;
+  direction: 'add' | 'remove';
+  currentBalance: number;
+  onOpenChange: (open: boolean) => void;
+  onSave: (pointsDelta: number, reason: string) => Promise<boolean>;
+}) {
+  const { t } = useI18n();
+  const { theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
+  const [amount, setAmount] = useState(1);
+  const [reason, setReason] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+  useEffect(() => {
+    if (!isOpen) return;
+    setAmount(1);
+    setReason('');
+    setSaveError(false);
+  }, [direction, isOpen]);
+  const pointsDelta = direction === 'add' ? Math.round(amount) : -Math.round(amount);
+  const validAmount = Number.isSafeInteger(amount) && amount >= 1 && amount <= 10_000;
+  const projectedBalance = currentBalance + (validAmount ? pointsDelta : 0);
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!validAmount) return;
+    setSaving(true);
+    setSaveError(false);
+    const saved = await onSave(pointsDelta, reason.trim());
+    setSaving(false);
+    setSaveError(!saved);
+    if (saved) onOpenChange(false);
+  };
+  return (
+    <BaseCardDialog
+      variant="modal"
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      title={t(direction === 'add' ? 'household.points.addFor' : 'household.points.removeFor', {
+        name: participant.displayName,
+      })}
+      description={t('household.points.adjustDescription')}
+      theme={theme}
+      maxWidth="sm"
+      bodyPadding={false}
+    >
+      <form onSubmit={submit}>
+        <CardDialogBody>
+          <CardDialogHeader
+            title={t(
+              direction === 'add' ? 'household.points.addFor' : 'household.points.removeFor',
+              { name: participant.displayName }
+            )}
+            description={t('household.points.adjustDescription')}
+            showRoomSelector={false}
+          />
+          <CardDialogSection label={t('household.points.amount')}>
+            <Input
+              autoFocus
+              aria-label={t('household.points.amount')}
+              type="number"
+              min={1}
+              max={10000}
+              step={1}
+              value={amount}
+              invalid={!validAmount}
+              onChange={(event) => setAmount(Number(event.target.value))}
+            />
+          </CardDialogSection>
+          <CardDialogSection label={t('household.points.reason')}>
+            <Textarea
+              aria-label={t('household.points.reason')}
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+            />
+          </CardDialogSection>
+          <output
+            aria-live="polite"
+            data-point-balance-preview="true"
+            className={cn(
+              'flex min-h-11 items-center rounded-xl border px-3 py-2.5 text-sm font-semibold tabular-nums',
+              surface.borderStrong,
+              surface.subtleBg,
+              surface.textPrimary
+            )}
+          >
+            {t('household.points.projectedBalance', { count: projectedBalance })}
+          </output>
+          {saveError ? (
+            <p className="text-sm text-red-500" role="alert">
+              {t('household.points.saveFailed')}
+            </p>
+          ) : null}
+          <CardDialogFooter>
+            <Button type="submit" loading={saving} disabled={!validAmount || saving}>
+              {t(direction === 'add' ? 'household.points.saveAdd' : 'household.points.saveRemove')}
+            </Button>
+          </CardDialogFooter>
+        </CardDialogBody>
+      </form>
+    </BaseCardDialog>
   );
 }
 
