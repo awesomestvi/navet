@@ -1,0 +1,49 @@
+schemaVersion: 1
+id: 2026-09-02-homeassistant-forum-return
+createdOn: 2026-09-02
+kind: release
+title: How much Home Assistant knowledge should everyday control require?
+oneIdea: Household members should be able to use the smart home without learning the system that powers it.
+audience: Home Assistant Community members following or evaluating the Navet project.
+maintainerSeed:
+  problem: A powerful Home Assistant setup can still leave everyday users facing an interface designed around configuration concepts.
+  whyItMatters: A household dashboard should be understandable from the room, state, and action on screen.
+  specificDetail: Navet separates the daily-control layer from the Home Assistant administration layer while keeping Home Assistant as the source of truth.
+  limitation: Home Assistant is Navet's most mature provider, while entity and service coverage still varies between real homes.
+  desiredConversation: I want examples of the places where a household member still needs help to use a smart-home dashboard.
+providerScope:
+  - home-assistant
+evidence:
+  - id: redesigned-energy
+    source: CHANGELOG.md
+    locator: Redesigned the Energy dashboard with live demand, historical trends, period comparisons, and breakdowns by source, room, and device.
+    claim: Navet has a redesigned provider-backed Energy dashboard.
+    verifiedOn: 2026-09-02
+  - id: release-0154
+    source: CHANGELOG.md
+    locator: Added Home Assistant Assist with text, voice, selectable pipelines, and access from navigation or dashboard widgets.
+    claim: Navet 0.15.4 adds provider-backed Home Assistant Assist with text and voice.
+    verifiedOn: 2026-09-02
+  - id: home-assistant-capabilities
+    source: docs/integrations.md
+    locator: Navet maps Home Assistant rooms and realtime entities for lights, switches, sensors, climate,
+    claim: Home Assistant is the broadest current provider integration.
+    verifiedOn: 2026-09-02
+canonicalDocs:
+  path: ''
+  status: not-applicable
+  angle: Reply to the existing project topic with current proof and an honest feedback request.
+cta:
+  label: Try the public demo with sample data
+  url: https://demo.navet.app/
+asset:
+  kind: screenshot
+  scenario: navet-community-security
+  sourcePolicy: provider-free-demo-only
+  altText: Navet Security dashboard showing live cameras, attention states, alarm controls, and a recent activity timeline in a dark tablet layout.
+channels:
+  - homeassistant-community
+publishing:
+  cadence: release-update
+  externalCommunity: true
+  humanApprovalRequired: true

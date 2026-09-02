@@ -1,6 +1,7 @@
 import { useI18n } from '@navet/app/hooks';
 import { integrationNotificationFeatureService } from '@navet/app/services/integration-notification-feature.service';
 import { useEffect, useRef } from 'react';
+import { materializeChoreWorkspace } from './chore-workspace-model';
 import { useChoreWorkspaceStore } from './chore-workspace-store';
 
 export function useChoreReminderDelivery(enabled = true) {
@@ -12,7 +13,8 @@ export function useChoreReminderDelivery(enabled = true) {
   useEffect(() => {
     if (!enabled || !data || !integrationNotificationFeatureService.sendNotification) return;
     const now = Date.now();
-    const item = data.outbox.find(
+    const reconciledData = materializeChoreWorkspace(data, new Date(now)).data;
+    const item = reconciledData.outbox.find(
       (candidate) =>
         candidate.eventType.startsWith('reminder_') &&
         candidate.destination === 'home_assistant' &&
@@ -21,8 +23,10 @@ export function useChoreReminderDelivery(enabled = true) {
         !attempts.current.has(`${candidate.id}:${candidate.attempts}`)
     );
     if (!item?.occurrenceId) return;
-    const occurrence = data.occurrencesById[item.occurrenceId];
-    const definition = occurrence ? data.definitionsById[occurrence.definitionId] : undefined;
+    const occurrence = reconciledData.occurrencesById[item.occurrenceId];
+    const definition = occurrence
+      ? reconciledData.definitionsById[occurrence.definitionId]
+      : undefined;
     if (!occurrence || !definition) return;
 
     const attemptKey = `${item.id}:${item.attempts}`;

@@ -531,6 +531,18 @@ function scheduleStartDate(schedule: ChoreSchedule) {
   return schedule.frequency === 'once' ? schedule.date : schedule.startDate;
 }
 
+function definitionMaterializationChanged(current: ChoreDefinition, next: ChoreDefinition) {
+  return (
+    JSON.stringify(current.schedule) !== JSON.stringify(next.schedule) ||
+    JSON.stringify(current.assignment) !== JSON.stringify(next.assignment) ||
+    current.dueWindowMinutes !== next.dueWindowMinutes
+  );
+}
+
+function canDiscardForRematerialization(occurrence: ChoreOccurrence) {
+  return occurrence.status === 'available' && occurrence.carriedForwardFrom === undefined;
+}
+
 function isScheduledOnDate(
   schedule: Exclude<ChoreSchedule, { frequency: 'after_completion' }>,
   dateKey: string
@@ -1953,6 +1965,31 @@ export function applyChoreWorkspaceAction(
       throw new Error('Chore creation time cannot be changed');
     }
     assertDefinitionReferences(workspace, action.definition);
+    const shouldRematerialize =
+      action.type === 'definition_update' &&
+      current !== undefined &&
+      definitionMaterializationChanged(current, action.definition);
+    const removedOccurrenceIds = new Set<string>();
+    const occurrencesById = shouldRematerialize
+      ? Object.fromEntries(
+          Object.entries(workspace.occurrencesById).filter(([id, occurrence]) => {
+            const shouldRemove =
+              occurrence.definitionId === action.definition.id &&
+              canDiscardForRematerialization(occurrence);
+            if (shouldRemove) removedOccurrenceIds.add(id);
+            return !shouldRemove;
+          })
+        )
+      : workspace.occurrencesById;
+    const outbox =
+      removedOccurrenceIds.size > 0
+        ? workspace.outbox.filter(
+            (item) =>
+              item.status === 'delivered' ||
+              !item.occurrenceId ||
+              !removedOccurrenceIds.has(item.occurrenceId)
+          )
+        : workspace.outbox;
     return {
       activity: buildWorkspaceActivity({
         commandId,
@@ -1963,6 +2000,8 @@ export function applyChoreWorkspaceAction(
       }),
       data: {
         ...workspace,
+        occurrencesById,
+        outbox,
         definitionsById: {
           ...workspace.definitionsById,
           [action.definition.id]: action.definition,
@@ -2164,6 +2203,7 @@ export function applyChoreWorkspaceAction(
     throw new Error('Chore materialization range is invalid');
   }
   const occurrencesById = { ...workspace.occurrencesById };
+  const scheduledOccurrenceIdsByDefinition = new Map<string, Set<string>>();
   const occurrenceCreatedActivities: ChoreActivity[] = [];
   for (const definition of Object.values(workspace.definitionsById)) {
     const latestCompletedAt = Object.values(occurrencesById)
@@ -2182,6 +2222,10 @@ export function applyChoreWorkspaceAction(
       rangeStart: action.rangeStart,
       rangeEnd: action.rangeEnd,
     });
+    scheduledOccurrenceIdsByDefinition.set(
+      definition.id,
+      new Set(materialized.map((occurrence) => occurrence.id))
+    );
     if (Object.keys(occurrencesById).length + materialized.length > 5000) {
       throw new Error('Too many chore occurrences');
     }
@@ -2224,6 +2268,21 @@ export function applyChoreWorkspaceAction(
       }
     }
   }
+  const removedOccurrenceIds = new Set<string>();
+  for (const [id, occurrence] of Object.entries(occurrencesById)) {
+    const scheduledIds = scheduledOccurrenceIdsByDefinition.get(occurrence.definitionId);
+    const scheduledAt = Date.parse(occurrence.scheduledAt);
+    if (
+      scheduledIds &&
+      scheduledAt >= rangeStart &&
+      scheduledAt <= rangeEnd &&
+      !scheduledIds.has(id) &&
+      canDiscardForRematerialization(occurrence)
+    ) {
+      delete occurrencesById[id];
+      removedOccurrenceIds.add(id);
+    }
+  }
   const retentionBoundary = Date.parse(timestamp) - 90 * 86_400_000;
   for (const occurrence of Object.values(occurrencesById)) {
     if (
@@ -2236,7 +2295,19 @@ export function applyChoreWorkspaceAction(
   return {
     activity: buildWorkspaceActivity({ commandId, timestamp, type: 'workspace_materialized' }),
     additionalActivities: occurrenceCreatedActivities,
-    data: { ...workspace, occurrencesById },
+    data: {
+      ...workspace,
+      occurrencesById,
+      outbox:
+        removedOccurrenceIds.size === 0
+          ? workspace.outbox
+          : workspace.outbox.filter(
+              (item) =>
+                item.status === 'delivered' ||
+                !item.occurrenceId ||
+                !removedOccurrenceIds.has(item.occurrenceId)
+            ),
+    },
   };
 }
 

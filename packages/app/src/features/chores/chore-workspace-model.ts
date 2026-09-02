@@ -23,6 +23,9 @@ export function materializeChoreWorkspace(
 ): { changed: boolean; data: ChoreWorkspaceData } {
   const { rangeStart, rangeEnd } = getChoreMaterializationRange(now);
   const occurrencesById = { ...data.occurrencesById };
+  const scheduledOccurrenceIdsByDefinition = new Map<string, Set<string>>();
+  const rangeStartTime = Date.parse(rangeStart);
+  const rangeEndTime = Date.parse(rangeEnd);
   let changed = false;
 
   for (const definition of Object.values(data.definitionsById)) {
@@ -42,11 +45,33 @@ export function materializeChoreWorkspace(
       rangeStart,
       rangeEnd,
     });
+    scheduledOccurrenceIdsByDefinition.set(
+      definition.id,
+      new Set(occurrences.map((occurrence) => occurrence.id))
+    );
     for (const occurrence of occurrences) {
       if (!occurrencesById[occurrence.id]) {
         occurrencesById[occurrence.id] = occurrence;
         changed = true;
       }
+    }
+  }
+
+  const removedOccurrenceIds = new Set<string>();
+  for (const [id, occurrence] of Object.entries(occurrencesById)) {
+    const scheduledIds = scheduledOccurrenceIdsByDefinition.get(occurrence.definitionId);
+    const scheduledAt = Date.parse(occurrence.scheduledAt);
+    if (
+      scheduledIds &&
+      scheduledAt >= rangeStartTime &&
+      scheduledAt <= rangeEndTime &&
+      !scheduledIds.has(id) &&
+      occurrence.status === 'available' &&
+      occurrence.carriedForwardFrom === undefined
+    ) {
+      delete occurrencesById[id];
+      removedOccurrenceIds.add(id);
+      changed = true;
     }
   }
 
@@ -61,5 +86,22 @@ export function materializeChoreWorkspace(
     }
   }
 
-  return changed ? { changed, data: { ...data, occurrencesById } } : { changed, data };
+  return changed
+    ? {
+        changed,
+        data: {
+          ...data,
+          occurrencesById,
+          outbox:
+            removedOccurrenceIds.size === 0
+              ? data.outbox
+              : data.outbox.filter(
+                  (item) =>
+                    item.status === 'delivered' ||
+                    !item.occurrenceId ||
+                    !removedOccurrenceIds.has(item.occurrenceId)
+                ),
+        },
+      }
+    : { changed, data };
 }

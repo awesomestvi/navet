@@ -483,6 +483,11 @@ Give a safe next action and say when an update will follow only if that commitme
 Use one idea, one concrete proof point, and one next action. Avoid engagement bait, manufactured
 urgency, and a corporate voice that does not match the open project.
 
+Write for a fast mobile scan. Lead with the outcome, use no more than three compact points, and
+stop. One post gets one current, topic-matched screenshot or clip. If a release has several visual
+topics, publish a short index and separate focused posts instead of a long release monologue with a
+detached gallery.
+
 ## Copy Review
 
 Before shipping copy, check that it:

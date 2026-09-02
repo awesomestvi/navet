@@ -1328,7 +1328,7 @@ const ADDITIONAL_STORY_DOCS: Record<string, string> = {
     'Four-step creation surface for adding a chore after onboarding, with the same fields available as one navigable editor when the chore is changed later.',
     [
       'Chore identity, Lucide icon preview, automatic or custom card color, room, estimated time, points, and optional instructions.',
-      'Assignment, once/daily/weekly/bi-weekly/tri-weekly/monthly/after-completion schedules, reminders, and missed-work behavior.',
+      'Assignment, once/daily/weekly/every-2-weeks/every-3-weeks/monthly/after-completion schedules, reminders, and missed-work behavior.',
       'Phone and desktop behavior for long configuration forms.',
     ],
     [

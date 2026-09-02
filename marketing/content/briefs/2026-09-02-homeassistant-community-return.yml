@@ -1,0 +1,49 @@
+schemaVersion: 1
+id: 2026-09-02-homeassistant-community-return
+createdOn: 2026-09-02
+kind: release
+title: Should a Home Assistant dashboard need an instruction manual?
+oneIdea: Home Assistant can run the home while Navet gives the household a simpler everyday interface.
+audience: Home Assistant users with wall panels, tablets, phones, or shared household dashboards.
+maintainerSeed:
+  problem: Home Assistant dashboards often grow around the person who configured them rather than everyone who uses the home.
+  whyItMatters: Everyday control should not require household members to understand entities, services, cards, or dashboard configuration.
+  specificDetail: Navet puts rooms, current state, and common actions first while Home Assistant remains the source of truth underneath.
+  limitation: Home Assistant is Navet's most mature provider, and real-world entity coverage still depends on each Home Assistant setup.
+  desiredConversation: I want to learn where people's current dashboards still need explanation before someone else can use them.
+providerScope:
+  - home-assistant
+evidence:
+  - id: release-0154
+    source: CHANGELOG.md
+    locator: Added Home Assistant Assist with text, voice, selectable pipelines, and access from navigation or dashboard widgets.
+    claim: Navet 0.15.4 adds provider-backed Home Assistant Assist with text and voice.
+    verifiedOn: 2026-09-02
+  - id: redesigned-dashboards
+    source: CHANGELOG.md
+    locator: Redesigned the Energy dashboard with live demand, historical trends, period comparisons, and breakdowns by source, room, and device.
+    claim: Recent releases redesigned Energy, Security, Climate, and Lights around focused daily control.
+    verifiedOn: 2026-09-02
+  - id: home-assistant-capabilities
+    source: docs/integrations.md
+    locator: Navet maps Home Assistant rooms and realtime entities for lights, switches, sensors, climate,
+    claim: Home Assistant is the broadest current provider integration.
+    verifiedOn: 2026-09-02
+canonicalDocs:
+  path: ''
+  status: not-applicable
+  angle: A community update to the existing Navet project conversation.
+cta:
+  label: Try the public demo with sample data
+  url: https://demo.navet.app/
+asset:
+  kind: screenshot
+  scenario: navet-community-home
+  sourcePolicy: provider-free-demo-only
+  altText: Navet Home dashboard showing room navigation, household status, lighting, climate, weather, and media cards in a dark tablet layout.
+channels:
+  - homeassistant-reddit
+publishing:
+  cadence: release-update
+  externalCommunity: true
+  humanApprovalRequired: true
