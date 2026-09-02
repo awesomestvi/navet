@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.15.5 - 2026-09-03
+
+## New features
+
+- Added per-person point histories and manager controls to add or remove points.
+
+## Improvements and bug fixes
+
+- Future chores and reminders now update when schedules, assignments, or due times change.
+
 ## 0.15.4 - 2026-09-01
 
 ## New features
