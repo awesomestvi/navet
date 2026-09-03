@@ -323,6 +323,58 @@ class ChoreAuthorityTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(chores.ChoreStorageError):
             chores._normalize_data(malformed)
 
+    async def test_definition_delete_removes_the_chore_and_generated_occurrences(self):
+        await self._create_manager()
+        timestamp = "2026-08-28T08:00:00.000Z"
+        await self.authority.async_command(
+            {
+                "commandId": "definition-create",
+                "baseRevision": self.authority.revision,
+                "action": {
+                    "type": "definition_create",
+                    "actorParticipantId": "manager",
+                    "definition": {
+                        "id": "dishes",
+                        "title": "Empty dishes",
+                        "enabled": True,
+                        "assignment": {"mode": "person", "participantIds": ["manager"]},
+                        "schedule": {
+                            "frequency": "once",
+                            "date": "2026-08-28",
+                            "time": "08:00",
+                            "timeZone": "UTC",
+                        },
+                        "dueWindowMinutes": 60,
+                        "approval": {"required": False, "approverIds": []},
+                        "createdAt": timestamp,
+                        "updatedAt": timestamp,
+                    },
+                },
+            },
+            "ha-user-1",
+        )
+        self.authority.data["occurrencesById"]["dishes:one"] = {
+            "id": "dishes:one",
+            "definitionId": "dishes",
+        }
+
+        result = await self.authority.async_command(
+            {
+                "commandId": "definition-delete",
+                "baseRevision": self.authority.revision,
+                "action": {
+                    "type": "definition_delete",
+                    "definitionId": "dishes",
+                    "actorParticipantId": "manager",
+                },
+            },
+            "ha-user-1",
+        )
+
+        self.assertEqual(result["data"]["definitionsById"], {})
+        self.assertEqual(result["data"]["occurrencesById"], {})
+        self.assertEqual(result["data"]["activity"][-1]["type"], "definition_deleted")
+
     async def test_completion_and_reopen_record_exact_point_deltas(self):
         data = chores._empty_data()
         data["participantsById"] = {"manager": _participant()}
@@ -904,6 +956,10 @@ class ChoreAuthorityTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(reset["revision"], 8)
         self.assertIsNone(authority._recovery)
+        self.assertEqual(authority.data, chores._empty_data())
+        self.assertNotIn(chores.LAST_GOOD_KEY, _Store.values)
+        self.assertNotIn(chores.HISTORY_KEY, _Store.values)
+        self.assertNotIn(chores.JOURNAL_KEY, _Store.values)
 
     async def test_merge_restore_remaps_collisions_and_never_replays_imported_outbox(self):
         await self._create_manager()

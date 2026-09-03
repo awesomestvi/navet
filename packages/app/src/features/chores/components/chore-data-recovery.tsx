@@ -24,9 +24,11 @@ import { useChoreWorkspaceStore } from '../chore-workspace-store';
 export function ChoreDataRecovery({
   managerActorId,
   participants,
+  onImportComplete,
 }: {
   managerActorId: string;
   participants: ChoreParticipant[];
+  onImportComplete: () => void;
 }) {
   const { t } = useI18n();
   const { theme } = useTheme();
@@ -191,7 +193,10 @@ export function ChoreDataRecovery({
                   mode: 'merge',
                 });
                 setPendingImport(null);
-                if (saved) setFeedback(t('household.data.imported'));
+                if (saved) {
+                  setFeedback(t('household.data.imported'));
+                  onImportComplete();
+                }
               }}
             >
               {t('household.data.merge')}
@@ -206,7 +211,10 @@ export function ChoreDataRecovery({
                   mode: 'replace',
                 });
                 setPendingImport(null);
-                if (saved) setFeedback(t('household.data.imported'));
+                if (saved) {
+                  setFeedback(t('household.data.imported'));
+                  onImportComplete();
+                }
               }}
             >
               {t('household.data.replace')}

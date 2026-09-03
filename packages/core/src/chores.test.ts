@@ -1065,6 +1065,68 @@ describe('chores domain', () => {
     expect(updated.activity.type).toBe('retention_updated');
   });
 
+  it('deletes a chore and its live dependent data while retaining immutable activity', () => {
+    const definition = makeDefinition();
+    const occurrence = makeOccurrence();
+    const priorActivity = {
+      id: 'activity:completed',
+      commandId: 'completed',
+      occurrenceId: occurrence.id,
+      definitionId: definition.id,
+      type: 'completed' as const,
+      timestamp: '2026-08-10T19:00:00.000Z',
+    };
+    const workspace = {
+      ...createEmptyChoreWorkspace(),
+      participantsById: { alice, bob },
+      definitionsById: { [definition.id]: definition },
+      occurrencesById: { [occurrence.id]: occurrence },
+      activity: [priorActivity],
+      outbox: [createChoreOutboxItem(priorActivity)],
+      experience: {
+        ...createChoreExperienceState(),
+        presentationByDefinitionId: { [definition.id]: { points: 10 } },
+        missionsById: {
+          reset: {
+            id: 'reset',
+            title: 'Weekend reset',
+            definitionIds: [definition.id],
+            status: 'active' as const,
+            createdAt: '2026-08-01T08:00:00.000Z',
+            updatedAt: '2026-08-01T08:00:00.000Z',
+          },
+        },
+        awardedMissionIds: ['reset'],
+      },
+    };
+
+    const deleted = applyChoreWorkspaceAction({
+      commandId: 'delete-definition',
+      action: {
+        type: 'definition_delete',
+        definitionId: definition.id,
+        actorParticipantId: 'alice',
+      },
+      timestamp: '2026-08-11T08:00:00.000Z',
+      workspace,
+    });
+
+    expect(deleted.activity).toMatchObject({
+      type: 'definition_deleted',
+      definitionId: definition.id,
+    });
+    expect(deleted.data.definitionsById).toEqual({});
+    expect(deleted.data.occurrencesById).toEqual({});
+    expect(deleted.data.outbox).toEqual([]);
+    const deletedExperience = deleted.data.experience;
+    expect(deletedExperience).toBeDefined();
+    if (!deletedExperience) throw new Error('Expected deletion to retain chore experience state');
+    expect(deletedExperience.presentationByDefinitionId).toEqual({});
+    expect(deletedExperience.missionsById).toEqual({});
+    expect(deletedExperience.awardedMissionIds).toEqual([]);
+    expect(deleted.data.activity).toEqual([priorActivity]);
+  });
+
   it('updates versioned experience data through manager policy and validates references', () => {
     const definition = makeDefinition();
     const workspace = {

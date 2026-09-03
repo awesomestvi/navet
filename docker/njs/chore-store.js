@@ -1345,7 +1345,11 @@ function isValidWorkspaceAction(value) {
   if (value.type === 'definition_create' || value.type === 'definition_update') {
     return isRecord(value.definition) && typeof value.actorParticipantId === 'string';
   }
-  if (value.type === 'definition_archive' || value.type === 'definition_restore') {
+  if (
+    value.type === 'definition_archive' ||
+    value.type === 'definition_restore' ||
+    value.type === 'definition_delete'
+  ) {
     return typeof value.definitionId === 'string' && typeof value.actorParticipantId === 'string';
   }
   if (value.type === 'retention_update') {
@@ -1960,6 +1964,75 @@ function applyWorkspaceAction(data, commandId, action, timestamp) {
     );
   }
 
+  if (action.type === 'definition_delete') {
+    assertManager(data, action.actorParticipantId);
+    if (!isRecord(data.definitionsById[action.definitionId])) {
+      throw new Error('Chore is no longer available');
+    }
+    const definitionsById = Object.assign({}, data.definitionsById);
+    delete definitionsById[action.definitionId];
+    const occurrencesById = {};
+    const removedOccurrenceIds = {};
+    for (const occurrenceId in data.occurrencesById) {
+      if (!Object.prototype.hasOwnProperty.call(data.occurrencesById, occurrenceId)) continue;
+      const occurrence = data.occurrencesById[occurrenceId];
+      if (occurrence.definitionId === action.definitionId) {
+        removedOccurrenceIds[occurrenceId] = true;
+      } else {
+        occurrencesById[occurrenceId] = occurrence;
+      }
+    }
+    const removedActivityIds = {};
+    for (let activityIndex = 0; activityIndex < data.activity.length; activityIndex += 1) {
+      const activity = data.activity[activityIndex];
+      if (activity.occurrenceId && removedOccurrenceIds[activity.occurrenceId]) {
+        removedActivityIds[activity.id] = true;
+      }
+    }
+    const presentationByDefinitionId = Object.assign(
+      {},
+      data.experience.presentationByDefinitionId
+    );
+    delete presentationByDefinitionId[action.definitionId];
+    const missionsById = {};
+    for (const missionId in data.experience.missionsById) {
+      if (!Object.prototype.hasOwnProperty.call(data.experience.missionsById, missionId)) continue;
+      const mission = data.experience.missionsById[missionId];
+      const definitionIds = mission.definitionIds.filter(function (definitionId) {
+        return definitionId !== action.definitionId;
+      });
+      if (definitionIds.length > 0) {
+        missionsById[missionId] = Object.assign({}, mission, { definitionIds });
+      }
+    }
+    const experience = Object.assign({}, data.experience, {
+      presentationByDefinitionId,
+      missionsById,
+      awardedMissionIds: Array.isArray(data.experience.awardedMissionIds)
+        ? data.experience.awardedMissionIds.filter(function (missionId) {
+            return Boolean(missionsById[missionId]);
+          })
+        : undefined,
+    });
+    return appendWorkspaceActivity(
+      Object.assign({}, data, {
+        definitionsById,
+        occurrencesById,
+        outbox: data.outbox.filter(function (item) {
+          return (
+            (!item.occurrenceId || !removedOccurrenceIds[item.occurrenceId]) &&
+            !removedActivityIds[item.activityId]
+          );
+        }),
+        experience,
+      }),
+      buildWorkspaceActivity(commandId, timestamp, 'definition_deleted', {
+        actorParticipantId: action.actorParticipantId,
+        definitionId: action.definitionId,
+      })
+    );
+  }
+
   if (action.type === 'retention_update') {
     assertManager(data, action.actorParticipantId);
     if (!isValidHistoryRetention(action.policy)) {
@@ -2544,6 +2617,7 @@ function requiresManagementSession(action) {
     'definition_update',
     'definition_archive',
     'definition_restore',
+    'definition_delete',
     'retention_update',
     'experience_update',
     'experience_points_adjust',
@@ -3096,9 +3170,7 @@ function commitAdministration(r, principal, operation) {
       return;
     }
     nextData = emptyData();
-    nextData.activity = [activity];
-    nextData.outbox = [createOutboxItem(activity)];
-    nextEvents = [activity];
+    nextEvents = [];
   }
 
   const next = {
@@ -3107,20 +3179,25 @@ function commitAdministration(r, principal, operation) {
     updatedAt: timestamp,
     data: nextData,
   };
-  const nextJournal = {
-    contractVersion: CONTRACT_VERSION,
-    commands: journal.commands.concat([{
-      commandId: request.commandId,
-      revision: next.revision,
-      timestamp,
-    }]).slice(-MAX_COMMAND_JOURNAL_ITEMS),
-  };
-  persistDocument(current, next);
-  writeJson(CHORE_JOURNAL_PATH, nextJournal, MAX_CHORE_JOURNAL_BYTES);
-  replaceEventHistory(nextEvents);
   if (operation === 'reset') {
+    writeJson(CHORE_WORKSPACE_PATH, next, MAX_CHORE_WORKSPACE_BYTES);
+    deleteFile(CHORE_JOURNAL_PATH);
+    deleteFile(CHORE_EVENT_HISTORY_PATH);
+    deleteFile(CHORE_LAST_GOOD_WORKSPACE_PATH);
     deleteFile(CHORE_MANAGEMENT_SECURITY_PATH);
     clearManagementSession(principal.tenantId);
+  } else {
+    const nextJournal = {
+      contractVersion: CONTRACT_VERSION,
+      commands: journal.commands.concat([{
+        commandId: request.commandId,
+        revision: next.revision,
+        timestamp,
+      }]).slice(-MAX_COMMAND_JOURNAL_ITEMS),
+    };
+    persistDocument(current, next);
+    writeJson(CHORE_JOURNAL_PATH, nextJournal, MAX_CHORE_JOURNAL_BYTES);
+    replaceEventHistory(nextEvents);
   }
   applyRevisionHeader(r, next.revision);
   sendJson(r, 200, publicDocument(next, principal.tenantId));

@@ -780,6 +780,7 @@ export function AddChoreDialog({
   const [remindBeforeMinutes, setRemindBeforeMinutes] = useState(30);
   const [overdueEveryMinutes, setOverdueEveryMinutes] = useState(60);
   const [saving, setSaving] = useState(false);
+  const initializedSessionRef = useRef<string | null>(null);
   const completers = useMemo(
     () => participants.filter((participant) => participant.capabilities.includes('complete')),
     [participants]
@@ -801,6 +802,9 @@ export function AddChoreDialog({
   );
 
   useEffect(() => {
+    const sessionKey = definition?.id ?? 'new';
+    if (isOpen && initializedSessionRef.current === sessionKey) return;
+    initializedSessionRef.current = isOpen ? sessionKey : null;
     if (isOpen) {
       setTitle(definition?.title ?? '');
       setChoreIcon(presentation?.icon ?? 'ListChecks');

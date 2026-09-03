@@ -4,9 +4,10 @@ import {
 } from '@navet/app/features/chores/chore-demo-fixture';
 import { useChoreWorkspaceStore } from '@navet/app/features/chores/chore-workspace-store';
 import { normalizeChoreExperienceState } from '@navet/core/chore-experience';
+import { createChoreInterchangeDocument } from '@navet/core/chore-interchange';
 import { applyChoreWorkspaceAction } from '@navet/core/chores';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useEffect, useState } from 'react';
+import { act, useEffect, useState } from 'react';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { HouseholdSection } from './household-section';
 
@@ -203,6 +204,27 @@ function HouseholdPointsStory() {
         execute: originalExecute,
         unlockManagement: originalUnlockManagement,
       });
+      useChoreWorkspaceStore.getState().reset();
+    };
+  }, []);
+  return ready ? <HouseholdSection syncEnabled={false} /> : null;
+}
+
+function HouseholdImportNavigationStory() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const store = useChoreWorkspaceStore.getState();
+    const originalRestoreBackup = store.restoreBackup;
+    store.setPreviewDocument({ data: createChoreDemoWorkspace({ copy: DEMO_COPY }) });
+    useChoreWorkspaceStore.setState({
+      restoreBackup: async ({ document }) => {
+        useChoreWorkspaceStore.getState().setPreviewDocument({ data: document.workspace });
+        return true;
+      },
+    });
+    setReady(true);
+    return () => {
+      useChoreWorkspaceStore.setState({ restoreBackup: originalRestoreBackup });
       useChoreWorkspaceStore.getState().reset();
     };
   }, []);
@@ -637,9 +659,14 @@ export const ChoreLibrary: Story = {
     });
     await expect(moreActions).toBeVisible();
     await userEvent.click(moreActions);
+    const actionsMenu = within(canvasElement.ownerDocument.body).getByRole('menu');
+    await expect(within(actionsMenu).getByRole('menuitem', { name: 'Pause' })).toBeVisible();
+    await userEvent.click(within(actionsMenu).getByRole('menuitem', { name: 'Delete' }));
+    const deleteDialog = within(canvasElement.ownerDocument.body).getByRole('alertdialog');
     await expect(
-      within(canvasElement.ownerDocument.body).getByRole('menuitem', { name: 'Pause' })
+      within(deleteDialog).getByRole('heading', { name: 'Delete “Unload dishwasher”?' })
     ).toBeVisible();
+    await userEvent.click(within(deleteDialog).getByRole('button', { name: 'Cancel' }));
   },
 };
 
@@ -865,6 +892,67 @@ export const SettingsAndRecovery: Story = {
     await expect(
       within(recoveryPanel).queryByRole('combobox', { name: 'Motivation style' })
     ).toBeNull();
+  },
+};
+
+export const ReturnsToTodayAfterSetupAndImport: Story = {
+  render: () => <HouseholdImportNavigationStory />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Completing setup after a reset and importing a backup from Settings both return the household to Today.',
+      },
+    },
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('region', { name: 'Today' });
+    await userEvent.click(canvas.getByRole('button', { name: 'Settings' }));
+
+    const completedWorkspace = useChoreWorkspaceStore.getState().data;
+    if (!completedWorkspace) throw new Error('Expected the completed chore workspace');
+    const experience = normalizeChoreExperienceState(completedWorkspace.experience);
+    await act(async () => {
+      useChoreWorkspaceStore.getState().setPreviewDocument({
+        data: {
+          ...completedWorkspace,
+          experience: {
+            ...experience,
+            setupStartedAt: experience.setupStartedAt ?? '2026-08-15T08:00:00.000Z',
+            setupCompletedAt: undefined,
+          },
+        },
+      });
+    });
+    await canvas.findByRole('region', { name: 'Make household work easier to share.' });
+
+    await act(async () => {
+      useChoreWorkspaceStore.getState().setPreviewDocument({ data: completedWorkspace });
+    });
+    await waitFor(() =>
+      expect(canvas.getByRole('button', { name: 'Today' })).toHaveAttribute('aria-current', 'page')
+    );
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Settings' }));
+    const settings = within(canvas.getByRole('region', { name: 'Settings' }));
+    const workspace = settings.getByRole('region', { name: 'Chore settings' });
+    await userEvent.click(within(workspace).getByRole('button', { name: 'Data and recovery' }));
+    const backup = createChoreInterchangeDocument({
+      workspace: completedWorkspace,
+      events: [],
+      exportedAt: '2026-08-15T08:30:00.000Z',
+    });
+    await userEvent.upload(
+      within(workspace).getByLabelText('Import backup'),
+      new File([JSON.stringify(backup)], 'navet-chores.json', { type: 'application/json' })
+    );
+    const confirmation = within(canvasElement.ownerDocument.body).getByRole('alertdialog', {
+      name: 'Restore chores backup?',
+    });
+    await userEvent.click(within(confirmation).getByRole('button', { name: 'Replace' }));
+    await waitFor(() =>
+      expect(canvas.getByRole('button', { name: 'Today' })).toHaveAttribute('aria-current', 'page')
+    );
   },
 };
 

@@ -254,8 +254,10 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
   const [managementPinEditorOpen, setManagementPinEditorOpen] = useState(false);
   const [managementPinRemovalOpen, setManagementPinRemovalOpen] = useState(false);
   const [removingManagementPin, setRemovingManagementPin] = useState(false);
+  const [deletingChore, setDeletingChore] = useState(false);
   const [participantToEdit, setParticipantToEdit] = useState<ChoreParticipant | null>(null);
   const [definitionToEdit, setDefinitionToEdit] = useState<ChoreDefinition | null>(null);
+  const [definitionToDelete, setDefinitionToDelete] = useState<ChoreDefinition | null>(null);
   const [missionToEdit, setMissionToEdit] = useState<ChoreMission | null>(null);
   const [rewardToEdit, setRewardToEdit] = useState<ChoreRewardGoal | null>(null);
   const data = useChoreWorkspaceStore((state) => state.data);
@@ -672,6 +674,13 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
   const legacySetupComplete =
     !experience.setupStartedAt && participants.length > 0 && activeDefinitions.length > 0;
   const setupComplete = Boolean(experience.setupCompletedAt) || legacySetupComplete;
+  const previousSetupCompleteRef = useRef(setupComplete);
+  useEffect(() => {
+    if (!previousSetupCompleteRef.current && setupComplete) {
+      setView('today');
+    }
+    previousSetupCompleteRef.current = setupComplete;
+  }, [setupComplete]);
 
   if (loading) {
     return (
@@ -838,6 +847,7 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
                   definitionId: definition.id,
                 });
               }}
+              onDelete={setDefinitionToDelete}
               onRestore={(definition) => {
                 if (!managerActorId) return;
                 void execute({
@@ -937,6 +947,7 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
                   <ChoreDataRecovery
                     managerActorId={managerActorId}
                     participants={allParticipants}
+                    onImportComplete={() => setView('today')}
                   />
                 ) : null
               }
@@ -1018,6 +1029,47 @@ export function HouseholdSection({ syncEnabled = true }: { syncEnabled?: boolean
               }}
             >
               {t('household.management.removePin')}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog
+        open={Boolean(definitionToDelete)}
+        onOpenChange={(open) => {
+          if (!open && !deletingChore) setDefinitionToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('household.chores.deleteTitle', { name: definitionToDelete?.title ?? '' })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('household.chores.deleteDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="min-h-10" disabled={deletingChore}>
+              {t('common.cancel')}
+            </AlertDialogCancel>
+            <Button
+              variant="destructive"
+              className="min-h-10"
+              loading={deletingChore}
+              disabled={deletingChore}
+              onClick={async () => {
+                if (!managerActorId || !definitionToDelete) return;
+                setDeletingChore(true);
+                const deleted = await execute({
+                  type: 'definition_delete',
+                  actorParticipantId: managerActorId,
+                  definitionId: definitionToDelete.id,
+                });
+                setDeletingChore(false);
+                if (deleted) setDefinitionToDelete(null);
+              }}
+            >
+              {t('household.chores.delete')}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

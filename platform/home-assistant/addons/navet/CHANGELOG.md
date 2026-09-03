@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.15.6
+
+## New features
+
+- Added permanent chore deletion with confirmation and cleanup of linked schedules and missions.
+
+## Improvements and bug fixes
+
+- Resetting chores now clears saved history, backups, and management protection for a clean restart.
+- Chore templates now stay selected while household data refreshes.
+- Successful setup and backup imports now return to Today.
+
 ## 0.15.5
 
 ## New features

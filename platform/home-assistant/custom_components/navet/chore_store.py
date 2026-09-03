@@ -1032,6 +1032,27 @@ class ChoreAuthority:
         await self._save(next_document, previous)
         return self._public_document()
 
+    async def _reset_locked(self, timestamp: str) -> dict[str, Any]:
+        previous = dict(self._document or {})
+        previous["data"] = json.loads(json.dumps(self.data))
+        self._history = []
+        self._journal = []
+        self._security = None
+        self._sessions.clear()
+        next_document = {
+            "contractVersion": CONTRACT_VERSION,
+            "revision": self.revision + 1,
+            "updatedAt": timestamp,
+            "data": _empty_data(),
+        }
+        await self._save(next_document, previous)
+        for store_name in ("last_good", "history", "journal"):
+            await self._stores[store_name].async_remove()
+        await self._stores["security"].async_remove()
+        result = self._public_document()
+        result["management"] = {"pinConfigured": False}
+        return result
+
     async def async_command(self, request: Mapping[str, Any], user_id: str | None = None) -> dict[str, Any]:
         await self.async_initialize()
         self._raise_if_recovery_required()
@@ -1066,7 +1087,7 @@ class ChoreAuthority:
 
     @staticmethod
     def _requires_management(action: Mapping[str, Any]) -> bool:
-        return str(action.get("type")) in {"participant_create", "participant_update", "definition_create", "definition_update", "definition_archive", "definition_restore", "retention_update", "experience_update", "experience_points_adjust"}
+        return str(action.get("type")) in {"participant_create", "participant_update", "definition_create", "definition_update", "definition_archive", "definition_restore", "definition_delete", "retention_update", "experience_update", "experience_points_adjust"}
 
     def _apply_workspace_action(self, data: dict[str, Any], action: Mapping[str, Any], timestamp: str, command_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
         action_type = str(action.get("type"))
@@ -1119,6 +1140,46 @@ class ChoreAuthority:
                 next_definition.pop("archivedAt", None)
             data["definitionsById"] = {**data["definitionsById"], definition_id: next_definition}
             return data, _activity(command_id, timestamp, "definition_archived" if action_type == "definition_archive" else "definition_updated", definitionId=definition_id, actorParticipantId=actor)
+        if action_type == "definition_delete":
+            _require_manager(data, actor)
+            definition_id = str(action.get("definitionId", ""))
+            if definition_id not in data["definitionsById"]:
+                raise ChoreAuthorityError("Chore is no longer available")
+            data["definitionsById"].pop(definition_id)
+            removed_occurrence_ids = {
+                occurrence_id
+                for occurrence_id, occurrence in data["occurrencesById"].items()
+                if occurrence.get("definitionId") == definition_id
+            }
+            removed_activity_ids = {
+                activity.get("id")
+                for activity in data.get("activity", [])
+                if activity.get("occurrenceId") in removed_occurrence_ids
+            }
+            data["occurrencesById"] = {
+                occurrence_id: occurrence
+                for occurrence_id, occurrence in data["occurrencesById"].items()
+                if occurrence_id not in removed_occurrence_ids
+            }
+            data["outbox"] = [
+                item
+                for item in data.get("outbox", [])
+                if (not item.get("occurrenceId") or item.get("occurrenceId") not in removed_occurrence_ids)
+                and item.get("activityId") not in removed_activity_ids
+            ]
+            experience = data.get("experience", {})
+            experience.get("presentationByDefinitionId", {}).pop(definition_id, None)
+            missions = {}
+            for mission_id, mission in experience.get("missionsById", {}).items():
+                definition_ids = [item for item in mission.get("definitionIds", []) if item != definition_id]
+                if definition_ids:
+                    missions[mission_id] = {**mission, "definitionIds": definition_ids}
+            experience["missionsById"] = missions
+            if "awardedMissionIds" in experience:
+                experience["awardedMissionIds"] = [
+                    mission_id for mission_id in experience["awardedMissionIds"] if mission_id in missions
+                ]
+            return data, _activity(command_id, timestamp, "definition_deleted", definitionId=definition_id, actorParticipantId=actor)
         if action_type == "retention_update":
             _require_manager(data, actor)
             policy = dict(action.get("policy", {}))
@@ -1252,14 +1313,13 @@ class ChoreAuthority:
                     raise ChoreAuthorityError("No healthy chore backup is available")
                 data = _normalize_data(backup.get("data"))
             else:
-                data = _empty_data()
-            result = await self._commit_locked(data, [_activity(f"recovery:{timestamp}", timestamp, "workspace_reset" if request.get("action") == "reset" else "workspace_imported")], "", timestamp)
-            if request.get("action") == "reset":
-                self._security = None
-                self._sessions.clear()
-                await self._stores["security"].async_remove()
-                result["management"] = {"pinConfigured": False}
-            return result
+                return await self._reset_locked(timestamp)
+            return await self._commit_locked(
+                data,
+                [_activity(f"recovery:{timestamp}", timestamp, "workspace_imported")],
+                "",
+                timestamp,
+            )
 
     async def async_restore(self, request: Mapping[str, Any], user_id: str | None) -> dict[str, Any]:
         await self.async_initialize()
@@ -1324,17 +1384,7 @@ class ChoreAuthority:
                 raise ChoreConflictError("Chore workspace changed on another client")
             _require_manager(self.data, str(request.get("actorParticipantId", "")))
             timestamp = _iso(_now())
-            result = await self._commit_locked(
-                _empty_data(),
-                [_activity(command_id, timestamp, "workspace_reset")],
-                command_id,
-                timestamp,
-            )
-            self._security = None
-            self._sessions.clear()
-            await self._stores["security"].async_remove()
-            result["management"] = {"pinConfigured": False}
-            return result
+            return await self._reset_locked(timestamp)
 
     async def async_tick(self, _when: datetime | None = None) -> None:
         await self.async_initialize()

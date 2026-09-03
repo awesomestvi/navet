@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -511,8 +511,17 @@ describe('Vite chore workspace store', () => {
     );
     expect(JSON.parse(reset.body)).toMatchObject({
       revision: 5,
-      data: { participantsById: {}, definitionsById: {}, occurrencesById: {} },
+      data: {
+        participantsById: {},
+        definitionsById: {},
+        occurrencesById: {},
+        activity: [],
+        outbox: [],
+      },
     });
+    expect(existsSync(join(directory, 'chores.json.last-good'))).toBe(false);
+    expect(existsSync(join(directory, 'chores.json.journal'))).toBe(false);
+    expect(existsSync(join(directory, 'chores.json.events'))).toBe(false);
 
     const restore = createResponse();
     await handler(

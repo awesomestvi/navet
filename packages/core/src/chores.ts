@@ -187,6 +187,7 @@ export type ChoreActivityType =
   | 'definition_created'
   | 'definition_updated'
   | 'definition_archived'
+  | 'definition_deleted'
   | 'workspace_materialized'
   | 'workspace_imported'
   | 'workspace_reset'
@@ -321,6 +322,12 @@ export interface ChoreWorkspaceDefinitionRestoreAction {
   actorParticipantId: string;
 }
 
+export interface ChoreWorkspaceDefinitionDeleteAction {
+  type: 'definition_delete';
+  definitionId: string;
+  actorParticipantId: string;
+}
+
 export interface ChoreWorkspaceMaterializeAction {
   type: 'materialize_occurrences';
   rangeStart: string;
@@ -368,6 +375,7 @@ export type ChoreWorkspaceAction =
   | ChoreWorkspaceDefinitionUpdateAction
   | ChoreWorkspaceDefinitionArchiveAction
   | ChoreWorkspaceDefinitionRestoreAction
+  | ChoreWorkspaceDefinitionDeleteAction
   | ChoreWorkspaceMaterializeAction
   | ChoreWorkspaceReminderAcknowledgeAction
   | ChoreWorkspaceOutboxDeliveryAction
@@ -932,6 +940,7 @@ function isChoreActivity(value: unknown) {
       'definition_created',
       'definition_updated',
       'definition_archived',
+      'definition_deleted',
       'workspace_materialized',
       'workspace_imported',
       'workspace_reset',
@@ -983,6 +992,7 @@ function isChoreOutboxItem(value: unknown) {
       'definition_created',
       'definition_updated',
       'definition_archived',
+      'definition_deleted',
       'workspace_materialized',
       'workspace_imported',
       'workspace_reset',
@@ -2069,6 +2079,75 @@ export function applyChoreWorkspaceAction(
           [action.definitionId]: nextDefinition,
         },
         occurrencesById,
+      },
+    };
+  }
+
+  if (action.type === 'definition_delete') {
+    assertWorkspaceManager(workspace, action.actorParticipantId);
+    if (!workspace.definitionsById[action.definitionId]) {
+      throw new Error('Chore is no longer available');
+    }
+
+    const definitionsById = { ...workspace.definitionsById };
+    delete definitionsById[action.definitionId];
+    const removedOccurrenceIds = new Set(
+      Object.values(workspace.occurrencesById)
+        .filter((occurrence) => occurrence.definitionId === action.definitionId)
+        .map((occurrence) => occurrence.id)
+    );
+    const removedActivityIds = new Set(
+      workspace.activity
+        .filter(
+          (activity) => activity.occurrenceId && removedOccurrenceIds.has(activity.occurrenceId)
+        )
+        .map((activity) => activity.id)
+    );
+    const occurrencesById = Object.fromEntries(
+      Object.entries(workspace.occurrencesById).filter(
+        ([, occurrence]) => occurrence.definitionId !== action.definitionId
+      )
+    );
+    const experience = workspace.experience ?? createChoreExperienceState();
+    const presentationByDefinitionId = {
+      ...experience.presentationByDefinitionId,
+    };
+    delete presentationByDefinitionId[action.definitionId];
+    const missionsById: ChoreExperienceState['missionsById'] = Object.fromEntries(
+      Object.entries(experience.missionsById).flatMap(([id, mission]) => {
+        const definitionIds = mission.definitionIds.filter(
+          (definitionId) => definitionId !== action.definitionId
+        );
+        return definitionIds.length > 0 ? [[id, { ...mission, definitionIds }]] : [];
+      })
+    );
+    const awardedMissionIds = experience.awardedMissionIds?.filter((missionId) =>
+      Boolean(missionsById[missionId])
+    );
+
+    return {
+      activity: buildWorkspaceActivity({
+        commandId,
+        timestamp,
+        type: 'definition_deleted',
+        actorParticipantId: action.actorParticipantId,
+        definitionId: action.definitionId,
+      }),
+      data: {
+        ...workspace,
+        definitionsById,
+        occurrencesById,
+        outbox: workspace.outbox.filter(
+          (item) =>
+            (!item.occurrenceId || !removedOccurrenceIds.has(item.occurrenceId)) &&
+            !removedActivityIds.has(item.activityId)
+        ),
+        experience: {
+          ...experience,
+          presentationByDefinitionId,
+          missionsById,
+          awardedMissionIds,
+        },
       },
     };
   }

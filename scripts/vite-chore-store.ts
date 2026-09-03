@@ -124,7 +124,11 @@ function isChoreWorkspaceAction(value: unknown): value is ChoreWorkspaceAction {
   if (value.type === 'definition_create' || value.type === 'definition_update') {
     return isRecord(value.definition) && typeof value.actorParticipantId === 'string'
   }
-  if (value.type === 'definition_archive' || value.type === 'definition_restore') {
+  if (
+    value.type === 'definition_archive' ||
+    value.type === 'definition_restore' ||
+    value.type === 'definition_delete'
+  ) {
     return typeof value.definitionId === 'string' && typeof value.actorParticipantId === 'string'
   }
   if (value.type === 'retention_update') {
@@ -216,6 +220,7 @@ function requiresManagementSession(action: ChoreWorkspaceAction): boolean {
     'definition_update',
     'definition_archive',
     'definition_restore',
+    'definition_delete',
     'retention_update',
     'experience_update',
     'experience_points_adjust',
@@ -986,12 +991,8 @@ export function createViteChoreStoreRequestHandler(options: {
             sendJson(res, 403, { error: 'Chore reset requires an active manager confirmation' })
             return
           }
-          nextData = {
-            ...createEmptyChoreWorkspace(),
-            activity: [activity],
-            outbox: [createChoreOutboxItem(activity)],
-          }
-          nextEvents = [activity]
+          nextData = createEmptyChoreWorkspace()
+          nextEvents = []
         }
 
         const next: PersistedChoreWorkspaceDocument = {
@@ -1001,21 +1002,30 @@ export function createViteChoreStoreRequestHandler(options: {
           updatedAt: timestamp,
           data: nextData,
         }
-        const nextJournal: ChoreCommandJournal = {
-          contractVersion: CONTRACT_VERSION,
-          commands: [
-            ...journal.commands,
-            { commandId: request.commandId, revision: next.revision, timestamp },
-          ].slice(-MAX_JOURNAL_ITEMS),
-        }
-        persistDocument(document, next)
-        writeJson(journalPath, nextJournal, MAX_JOURNAL_BYTES)
-        replaceEventHistory(nextEvents)
-        if (route === '/reset' && managementSecurity) {
-          unlinkSync(managementSecurityPath)
+        if (route === '/reset') {
+          writeJson(filePath, next, MAX_DOCUMENT_BYTES)
+          for (const stalePath of [journalPath, eventHistoryPath, lastGoodWorkspacePath]) {
+            try {
+              unlinkSync(stalePath)
+            } catch (error) {
+              if (!isMissingFile(error)) throw error
+            }
+          }
+          if (managementSecurity) unlinkSync(managementSecurityPath)
           managementSessions = managementSessions.filter(
             (session) => session.tenantId !== principal.tenantId
           )
+        } else {
+          const nextJournal: ChoreCommandJournal = {
+            contractVersion: CONTRACT_VERSION,
+            commands: [
+              ...journal.commands,
+              { commandId: request.commandId, revision: next.revision, timestamp },
+            ].slice(-MAX_JOURNAL_ITEMS),
+          }
+          persistDocument(document, next)
+          writeJson(journalPath, nextJournal, MAX_JOURNAL_BYTES)
+          replaceEventHistory(nextEvents)
         }
         res.setHeader(CHORE_WORKSPACE_HEADERS.revision, String(next.revision))
         sendJson(res, 200, publicDocument(next, route === '/restore' && pinConfigured))

@@ -280,6 +280,7 @@ export function AllChoresView({
   onDuplicate,
   onToggleEnabled,
   onArchive,
+  onDelete,
   onRestore,
 }: {
   data: ChoreWorkspaceData;
@@ -289,6 +290,7 @@ export function AllChoresView({
   onDuplicate: (definition: ChoreDefinition) => void;
   onToggleEnabled: (definition: ChoreDefinition) => void;
   onArchive: (definition: ChoreDefinition) => void;
+  onDelete: (definition: ChoreDefinition) => void;
   onRestore: (definition: ChoreDefinition) => void;
 }) {
   const { t } = useI18n();
@@ -533,6 +535,13 @@ export function AllChoresView({
                         <DropdownMenuItem onSelect={() => onArchive(definition)}>
                           <Archive className="h-4 w-4" aria-hidden="true" />
                           {t('household.chores.archive')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onSelect={() => onDelete(definition)}
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
+                          {t('household.chores.delete')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

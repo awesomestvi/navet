@@ -681,8 +681,17 @@ describe('NJS chore workspace store', () => {
     choreStore.handle(reset);
     expect(parseResponse(reset)).toMatchObject({
       revision: 4,
-      data: { participantsById: {}, definitionsById: {} },
+      data: {
+        participantsById: {},
+        definitionsById: {},
+        occurrencesById: {},
+        activity: [],
+        outbox: [],
+      },
     });
+    expect(mockFs.getFile('/data/navet-chore-workspace.last-good.json')).toBeUndefined();
+    expect(mockFs.getFile('/data/navet-chore-command-journal.json')).toBeUndefined();
+    expect(mockFs.getFile('/data/navet-chore-events.json')).toBeUndefined();
 
     const restore = createRequest({
       method: 'POST',
@@ -719,6 +728,33 @@ describe('NJS chore workspace store', () => {
     choreStore.handle(alias);
     expect(parseResponse(alias).data.occurrencesById[OCCURRENCE_ID]).toMatchObject({
       status: 'done',
+    });
+  });
+
+  it('permanently deletes a chore and its generated data', () => {
+    const mockFs = createMockFs();
+    choreStore.setChoreStoreFsForTests(mockFs);
+    choreStore.setChoreStorePrincipalResolverForTests(() => PRINCIPAL);
+    seedOccurrenceWorkspace();
+
+    const remove = createActionRequest('delete-definition', 3, {
+      type: 'definition_delete',
+      actorParticipantId: 'maya',
+      definitionId: 'dishes',
+    });
+    choreStore.handle(remove);
+
+    expect(remove.return).toHaveBeenCalledWith(200, expect.any(String));
+    expect(parseResponse(remove)).toMatchObject({
+      revision: 4,
+      data: {
+        definitionsById: {},
+        occurrencesById: {},
+      },
+    });
+    expect(parseResponse(remove).data.activity.at(-1)).toMatchObject({
+      type: 'definition_deleted',
+      definitionId: 'dishes',
     });
   });
 

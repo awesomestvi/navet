@@ -1,5 +1,6 @@
 import { createChoreDemoWorkspace } from '@navet/app/features/chores/chore-demo-fixture';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { useState } from 'react';
 import { expect, fireEvent, fn, userEvent, within } from 'storybook/test';
 import {
   AddChoreDialog,
@@ -63,6 +64,24 @@ function ChoreEditingStory() {
   );
 }
 
+function ChoreTemplateRefreshStory() {
+  const [participants, setParticipants] = useState(() => Object.values(workspace.participantsById));
+  return (
+    <>
+      <button
+        data-testid="refresh-workspace"
+        type="button"
+        onClick={() =>
+          setParticipants((current) => current.map((participant) => ({ ...participant })))
+        }
+      >
+        Refresh workspace
+      </button>
+      <AddChoreDialog isOpen onOpenChange={fn()} participants={participants} onSave={saveChore} />
+    </>
+  );
+}
+
 function PersonCreationStory() {
   return <AddPersonDialog isOpen onOpenChange={fn()} onSave={async () => true} />;
 }
@@ -108,6 +127,25 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const DesktopDetails: Story = {};
+
+export const TemplateSelectionSurvivesWorkspaceRefresh: Story = {
+  render: () => <ChoreTemplateRefreshStory />,
+  play: async ({ canvasElement }) => {
+    const body = within(canvasElement.ownerDocument.body);
+    const dialog = body.getByRole('dialog', { name: 'Add a chore' });
+    const template = within(dialog).getByRole('button', { name: 'Unload dishwasher' });
+    await userEvent.click(template);
+    await expect(template).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(
+      canvasElement.querySelector('[data-testid="refresh-workspace"]') as HTMLElement
+    );
+    await expect(within(dialog).getByRole('button', { name: 'Unload dishwasher' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    await expect(within(dialog).getByLabelText('Chore name')).toHaveValue('Unload dishwasher');
+  },
+};
 
 export const MobileContinuousEditor: Story = {
   play: async ({ canvasElement }) => {
