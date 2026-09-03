@@ -451,6 +451,7 @@ export const ptMessages = {
   'household.assignment.rotation': 'Alternar entre pessoas',
   'household.schedule.once': 'Uma vez',
   'household.schedule.daily': 'Todos os dias',
+  'household.schedule.everyDays': 'A cada {count} dias',
   'household.schedule.weekdays': 'Dias úteis',
   'household.schedule.weekends': 'Fins de semana',
   'household.schedule.weekly': 'Todas as semanas',

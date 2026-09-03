@@ -43,6 +43,38 @@ function HouseholdStory({ mode = 'default' }: { mode?: ChoreDemoFixtureMode }) {
   return <HouseholdSection syncEnabled={false} />;
 }
 
+function HouseholdCustomIntervalStory() {
+  useEffect(() => {
+    const data = createChoreDemoWorkspace({ copy: DEMO_COPY });
+    const plants = data.definitionsById.plants;
+    useChoreWorkspaceStore.getState().setPreviewDocument({
+      data: plants
+        ? {
+            ...data,
+            definitionsById: {
+              ...data.definitionsById,
+              plants: {
+                ...plants,
+                schedule: {
+                  frequency: 'daily',
+                  startDate:
+                    plants.schedule.frequency === 'once'
+                      ? plants.schedule.date
+                      : plants.schedule.startDate,
+                  time: plants.schedule.time,
+                  timeZone: plants.schedule.timeZone,
+                  intervalDays: 10,
+                },
+              },
+            },
+          }
+        : data,
+    });
+    return () => useChoreWorkspaceStore.getState().reset();
+  }, []);
+  return <HouseholdSection syncEnabled={false} />;
+}
+
 function HouseholdEdgeCaseStory() {
   useEffect(() => {
     const data = createChoreDemoWorkspace({ copy: DEMO_COPY });
@@ -545,6 +577,11 @@ export const MotivationOff: Story = {
     await expect(navigation.queryByRole('button', { name: 'Rewards' })).not.toBeInTheDocument();
     await expect(today.queryByText('Missions and rewards')).not.toBeInTheDocument();
 
+    await userEvent.click(navigation.getByRole('button', { name: 'Progress' }));
+    const progress = within(canvas.getByRole('region', { name: 'Progress' }));
+    await expect(progress.queryByRole('button', { name: 'Point history' })).not.toBeInTheDocument();
+    await expect(progress.queryByLabelText(/points for/i)).not.toBeInTheDocument();
+
     await userEvent.click(navigation.getByRole('button', { name: 'Chores' }));
     const chores = within(canvas.getByRole('region', { name: 'Chores' }));
     const dishwasherCard = chores
@@ -612,6 +649,7 @@ export const ApprovalQueue: Story = {
 };
 
 export const ChoreLibrary: Story = {
+  render: () => <HouseholdCustomIntervalStory />,
   parameters: {
     docs: {
       description: {
@@ -649,11 +687,23 @@ export const ChoreLibrary: Story = {
       .closest('[data-chore-base-card]');
     await expect(dishwasherCard).not.toBeNull();
     await expect(within(dishwasherCard as HTMLElement).getByText('Kitchen')).toBeVisible();
+    await expect(within(dishwasherCard as HTMLElement).getByText('Maya')).toHaveClass(
+      'text-xs',
+      'font-normal'
+    );
+    await expect(within(dishwasherCard as HTMLElement).getByText('Maya')).not.toHaveClass(
+      'font-semibold'
+    );
     await expect(within(dishwasherCard as HTMLElement).getByTitle('About 4 min')).toBeVisible();
     await expect(within(dishwasherCard as HTMLElement).getByTitle('15 points')).toBeVisible();
     await expect(
       within(dishwasherCard as HTMLElement).getByRole('button', { name: 'Edit' })
     ).toBeVisible();
+    const plantsCard = panel
+      .getByRole('heading', { name: 'Water the plants' })
+      .closest('[data-chore-base-card]');
+    await expect(plantsCard).not.toBeNull();
+    await expect(within(plantsCard as HTMLElement).getByText('Every 10 days')).toBeVisible();
     const moreActions = within(dishwasherCard as HTMLElement).getByRole('button', {
       name: 'More actions',
     });
@@ -833,6 +883,9 @@ export const ProgressManagement: Story = {
     }
     await expect(within(pointsSheet).getByText('Birthday bonus')).toBeVisible();
     await expect(within(pointsSheet).getByText('Earlier balance')).toBeVisible();
+    const historyTable = within(pointsSheet).getByRole('table', { name: 'Point history' });
+    await expect(historyTable).toBeVisible();
+    await expect(within(historyTable).getAllByRole('row')).toHaveLength(5);
     await expect(within(pointsSheet).queryByText('Sam only')).not.toBeInTheDocument();
     await expect(within(pointsSheet).getByText('Corrected total')).toBeVisible();
     await expect(within(pointsSheet).getAllByText('-5').length).toBeGreaterThan(0);
@@ -842,6 +895,27 @@ export const ProgressManagement: Story = {
 export const ProgressPointsMobile: Story = {
   ...ProgressManagement,
   globals: { viewport: { value: 'mobile1', isRotated: false } },
+};
+
+export const EmptyPointHistory: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('region', { name: 'Today' });
+    await userEvent.click(canvas.getByRole('button', { name: 'Progress' }));
+    const panel = within(canvas.getByRole('region', { name: 'Progress' }));
+    const personCard = panel
+      .getByRole('heading', { name: 'Maya' })
+      .closest('[data-chore-base-card]');
+    if (!(personCard instanceof HTMLElement)) throw new Error('Expected Maya progress card');
+    await userEvent.click(within(personCard).getByRole('button', { name: 'Point history' }));
+    const pointsSheet = await within(canvasElement.ownerDocument.body).findByRole('dialog', {
+      name: 'Maya points',
+    });
+    await expect(within(pointsSheet).getByText('Current balance')).toBeVisible();
+    await expect(
+      within(pointsSheet).queryByRole('heading', { name: 'Point history' })
+    ).not.toBeInTheDocument();
+    await expect(within(pointsSheet).queryByText('No point changes yet.')).not.toBeInTheDocument();
+  },
 };
 
 export const ProgressPointsLightTheme: Story = {

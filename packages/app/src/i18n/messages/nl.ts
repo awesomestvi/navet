@@ -450,6 +450,7 @@ export const nlMessages = {
   'household.assignment.rotation': 'Om de beurt',
   'household.schedule.once': 'Eenmalig',
   'household.schedule.daily': 'Elke dag',
+  'household.schedule.everyDays': 'Elke {count} dagen',
   'household.schedule.weekdays': 'Weekdagen',
   'household.schedule.weekends': 'Weekenden',
   'household.schedule.weekly': 'Elke week',

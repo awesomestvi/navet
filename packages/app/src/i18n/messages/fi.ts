@@ -449,6 +449,7 @@ export const fiMessages = {
   'household.assignment.rotation': 'Vuorottele henkilöiden välillä',
   'household.schedule.once': 'Kerran',
   'household.schedule.daily': 'Joka päivä',
+  'household.schedule.everyDays': '{count} päivän välein',
   'household.schedule.weekdays': 'Arkipäivisin',
   'household.schedule.weekends': 'Viikonloppuisin',
   'household.schedule.weekly': 'Joka viikko',

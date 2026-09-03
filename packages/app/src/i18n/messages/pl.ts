@@ -450,6 +450,7 @@ export const plMessages = {
   'household.assignment.rotation': 'Na zmianę',
   'household.schedule.once': 'Jeden raz',
   'household.schedule.daily': 'Codziennie',
+  'household.schedule.everyDays': 'Co {count} dni',
   'household.schedule.weekdays': 'Dni robocze',
   'household.schedule.weekends': 'Weekendy',
   'household.schedule.weekly': 'Co tydzień',

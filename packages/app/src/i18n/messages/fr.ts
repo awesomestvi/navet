@@ -453,6 +453,7 @@ export const frMessages = {
   'household.assignment.rotation': 'Alterner entre les personnes',
   'household.schedule.once': 'Une fois',
   'household.schedule.daily': 'Chaque jour',
+  'household.schedule.everyDays': 'Tous les {count} jours',
   'household.schedule.weekdays': 'En semaine',
   'household.schedule.weekends': 'Le week-end',
   'household.schedule.weekly': 'Chaque semaine',

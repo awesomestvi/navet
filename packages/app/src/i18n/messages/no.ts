@@ -448,6 +448,7 @@ export const noMessages = {
   'household.assignment.rotation': 'Bytt på mellom personer',
   'household.schedule.once': 'Én gang',
   'household.schedule.daily': 'Hver dag',
+  'household.schedule.everyDays': 'Hver {count}. dag',
   'household.schedule.weekdays': 'Ukedager',
   'household.schedule.weekends': 'Helger',
   'household.schedule.weekly': 'Hver uke',

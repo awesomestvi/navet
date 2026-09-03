@@ -453,6 +453,7 @@ export const deMessages = {
   'household.assignment.rotation': 'Zwischen Personen wechseln',
   'household.schedule.once': 'Einmal',
   'household.schedule.daily': 'Jeden Tag',
+  'household.schedule.everyDays': 'Alle {count} Tage',
   'household.schedule.weekdays': 'Wochentags',
   'household.schedule.weekends': 'An Wochenenden',
   'household.schedule.weekly': 'Jede Woche',

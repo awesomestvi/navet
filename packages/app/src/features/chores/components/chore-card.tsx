@@ -249,7 +249,7 @@ function ChoreAssigneeSummary({
           )}
         </div>
         <div className="min-w-0 @max-[160px]/chore-footer:hidden" data-chore-assignee-name="true">
-          <p className={cn('truncate text-sm font-semibold', surface.textPrimary)}>
+          <p className={cn('truncate text-xs font-normal leading-4', surface.textSecondary)}>
             {assigneeLabel(occurrence, participantsById, t)}
           </p>
         </div>

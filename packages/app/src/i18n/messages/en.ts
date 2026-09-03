@@ -2192,6 +2192,7 @@ export const enMessages = {
   'household.assignment.rotation': 'Rotate between people',
   'household.schedule.once': 'Once',
   'household.schedule.daily': 'Every day',
+  'household.schedule.everyDays': 'Every {count} days',
   'household.schedule.weekdays': 'Weekdays',
   'household.schedule.weekends': 'Weekends',
   'household.schedule.weekly': 'Every week',

@@ -450,6 +450,7 @@ export const svMessages = {
   'household.assignment.rotation': 'Turas om',
   'household.schedule.once': 'En gång',
   'household.schedule.daily': 'Varje dag',
+  'household.schedule.everyDays': 'Med {count} dagars mellanrum',
   'household.schedule.weekdays': 'Vardagar',
   'household.schedule.weekends': 'Helger',
   'household.schedule.weekly': 'Varje vecka',

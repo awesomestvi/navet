@@ -455,6 +455,7 @@ export const itMessages = {
   'household.assignment.rotation': 'A turno tra le persone',
   'household.schedule.once': 'Una volta',
   'household.schedule.daily': 'Ogni giorno',
+  'household.schedule.everyDays': 'Ogni {count} giorni',
   'household.schedule.weekdays': 'Giorni feriali',
   'household.schedule.weekends': 'Fine settimana',
   'household.schedule.weekly': 'Ogni settimana',

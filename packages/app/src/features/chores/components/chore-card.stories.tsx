@@ -94,7 +94,8 @@ export const DueNow: Story = {
     const assignment = canvasElement.querySelector('[data-chore-assignment]');
     await expect(assignment).toBeVisible();
     await expect(assignment?.closest('footer')).toBeInTheDocument();
-    await expect(canvas.getByText('Maya')).toHaveClass('text-sm', 'font-semibold');
+    await expect(canvas.getByText('Maya')).toHaveClass('text-xs', 'font-normal');
+    await expect(canvas.getByText('Maya')).not.toHaveClass('font-semibold');
     await expect(canvas.getByText('4 min').closest('[data-chore-header]')).toBeInTheDocument();
     await expect(canvas.getByTitle('About 4 min')).toHaveClass('h-6', 'rounded-full');
     await expect(canvas.getByTitle('15 points').closest('[data-chore-header]')).toBeInTheDocument();

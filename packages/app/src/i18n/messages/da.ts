@@ -450,6 +450,7 @@ export const daMessages = {
   'household.assignment.rotation': 'Skift mellem personer',
   'household.schedule.once': 'Én gang',
   'household.schedule.daily': 'Hver dag',
+  'household.schedule.everyDays': 'Hver {count}. dag',
   'household.schedule.weekdays': 'Hverdage',
   'household.schedule.weekends': 'Weekender',
   'household.schedule.weekly': 'Hver uge',

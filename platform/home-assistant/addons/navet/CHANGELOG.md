@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.15.7
+
+## Improvements and bug fixes
+
+- Improved chore management with accurate multi-day schedules, cleaner point history, and controls that respect motivation settings.
+
 ## 0.15.6
 
 ## New features

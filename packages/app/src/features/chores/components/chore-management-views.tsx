@@ -5,6 +5,7 @@ import {
   CardDialogSection,
   DashboardEmptyState,
   NavigationWorkspace,
+  TableCellContent,
 } from '@navet/app/components/patterns';
 import {
   BaseCardDialog,
@@ -136,7 +137,12 @@ function ProgressParticipantAvatar({ participant }: { participant: ChoreParticip
 
 function choreScheduleLabel(definition: ChoreDefinition, t: ReturnType<typeof useI18n>['t']) {
   if (definition.schedule.frequency === 'once') return t('household.schedule.once');
-  if (definition.schedule.frequency === 'daily') return t('household.schedule.daily');
+  if (definition.schedule.frequency === 'daily') {
+    const intervalDays = definition.schedule.intervalDays ?? 1;
+    return intervalDays > 1
+      ? t('household.schedule.everyDays', { count: intervalDays })
+      : t('household.schedule.daily');
+  }
   if (definition.schedule.frequency === 'weekly') {
     if (definition.schedule.intervalWeeks === 2) return t('household.schedule.biweekly');
     if (definition.schedule.intervalWeeks === 3) return t('household.schedule.triweekly');
@@ -180,7 +186,7 @@ function LibraryAssignmentSummary({
           <Users className="h-3.5 w-3.5" />
         </span>
       )}
-      <span className={cn('min-w-0 truncate text-sm font-semibold', surface.textPrimary)}>
+      <span className={cn('min-w-0 truncate text-xs font-normal leading-4', surface.textSecondary)}>
         {assignmentLabel(definition, participants, t)}
       </span>
     </div>
@@ -1000,15 +1006,17 @@ export function ProgressView({
               ) : null
             }
             footerAction={
-              <Button
-                size="compact"
-                variant="secondary"
-                className="min-w-20 justify-center px-3"
-                leading={<Clock3 className="h-4 w-4" />}
-                onClick={() => setSelectedParticipantId(participant.id)}
-              >
-                {t('household.points.view')}
-              </Button>
+              gamificationEnabled ? (
+                <Button
+                  size="compact"
+                  variant="secondary"
+                  className="min-w-20 justify-center px-3"
+                  leading={<Clock3 className="h-4 w-4" />}
+                  onClick={() => setSelectedParticipantId(participant.id)}
+                >
+                  {t('household.points.view')}
+                </Button>
+              ) : null
             }
           />
         ))}
@@ -1103,67 +1111,88 @@ function ParticipantPointsSheet({
             {history.balance}
           </span>
         </div>
-        <section className="mt-6" aria-labelledby="participant-point-history-title">
-          <h2
-            id="participant-point-history-title"
-            className={cn(navetTypographyTokens.sectionHeading, surface.textPrimary)}
-          >
-            {t('household.points.history')}
-          </h2>
-          {history.entries.length === 0 ? (
-            <p className={cn('mt-3 text-sm', surface.textSecondary)}>
-              {t('household.points.emptyHistory')}
-            </p>
-          ) : (
-            <div className={cn('mt-2 divide-y', surface.border)}>
-              {history.entries.map((entry) => {
-                const definitionTitle = entry.definitionId
-                  ? data.definitionsById[entry.definitionId]?.title
-                  : undefined;
-                const label =
-                  entry.type === 'earlier'
-                    ? t('household.points.earlierBalance')
-                    : entry.type === 'adjusted'
-                      ? (entry.reason ?? t('household.points.manualAdjustment'))
-                      : entry.type === 'reopened'
-                        ? t('household.points.choreReopened', {
-                            name: definitionTitle ?? t('household.points.chore'),
-                          })
-                        : t('household.points.choreCompleted', {
-                            name: definitionTitle ?? t('household.points.chore'),
-                          });
-                return (
-                  <div key={entry.id} className="flex min-h-14 items-center gap-3 py-3">
-                    <div className="min-w-0 flex-1">
-                      <p className={cn('truncate text-sm font-medium', surface.textPrimary)}>
-                        {label}
-                      </p>
-                      {entry.timestamp ? (
-                        <p className={cn('mt-0.5 text-xs', surface.textSecondary)}>
-                          {i18n.formatDate(new Date(entry.timestamp), {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}{' '}
-                          · {i18n.formatTime(new Date(entry.timestamp))}
-                        </p>
-                      ) : null}
-                    </div>
-                    <span
-                      className={cn(
-                        'text-sm font-semibold tabular-nums',
-                        entry.pointsDelta >= 0 ? 'text-emerald-500' : 'text-rose-500'
-                      )}
-                    >
-                      {entry.pointsDelta > 0 ? '+' : ''}
-                      {entry.pointsDelta}
-                    </span>
-                  </div>
-                );
-              })}
+        {history.entries.length > 0 ? (
+          <section className="mt-6" aria-labelledby="participant-point-history-title">
+            <h2
+              id="participant-point-history-title"
+              className={cn(navetTypographyTokens.sectionHeading, surface.textPrimary)}
+            >
+              {t('household.points.history')}
+            </h2>
+            <div
+              className={cn(
+                'mt-2 overflow-hidden rounded-[22px] border',
+                surface.border,
+                surface.panelMuted
+              )}
+            >
+              <table className="w-full table-fixed text-left text-xs">
+                <caption className="sr-only">{t('household.points.history')}</caption>
+                <thead className="sr-only">
+                  <tr>
+                    <th scope="col">{t('household.points.history')}</th>
+                    <th scope="col">{t('household.points.change')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.entries.map((entry, index) => {
+                    const definitionTitle = entry.definitionId
+                      ? data.definitionsById[entry.definitionId]?.title
+                      : undefined;
+                    const label =
+                      entry.type === 'earlier'
+                        ? t('household.points.earlierBalance')
+                        : entry.type === 'adjusted'
+                          ? (entry.reason ?? t('household.points.manualAdjustment'))
+                          : entry.type === 'reopened'
+                            ? t('household.points.choreReopened', {
+                                name: definitionTitle ?? t('household.points.chore'),
+                              })
+                            : t('household.points.choreCompleted', {
+                                name: definitionTitle ?? t('household.points.chore'),
+                              });
+                    const timestamp = entry.timestamp ? new Date(entry.timestamp) : null;
+                    return (
+                      <tr
+                        key={entry.id}
+                        className={cn(
+                          'h-14',
+                          index > 0 && 'border-t',
+                          index % 2 === 0 && surface.subtleBg,
+                          surface.border
+                        )}
+                      >
+                        <td className="min-w-0 px-3 py-2">
+                          <TableCellContent
+                            primary={label}
+                            secondary={
+                              timestamp
+                                ? `${i18n.formatDate(timestamp, {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                  })} · ${i18n.formatTime(timestamp)}`
+                                : undefined
+                            }
+                          />
+                        </td>
+                        <td
+                          className={cn(
+                            'w-20 px-3 py-2 text-right text-sm font-semibold tabular-nums',
+                            entry.pointsDelta >= 0 ? 'text-emerald-500' : 'text-rose-500'
+                          )}
+                        >
+                          {entry.pointsDelta > 0 ? '+' : ''}
+                          {entry.pointsDelta}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          )}
-        </section>
+          </section>
+        ) : null}
       </div>
     </SheetSurface>
   );

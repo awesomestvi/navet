@@ -434,6 +434,7 @@ export const zhMessages = {
   'household.assignment.rotation': '成员轮流完成',
   'household.schedule.once': '一次',
   'household.schedule.daily': '每天',
+  'household.schedule.everyDays': '每 {count} 天',
   'household.schedule.weekdays': '工作日',
   'household.schedule.weekends': '周末',
   'household.schedule.weekly': '每周',

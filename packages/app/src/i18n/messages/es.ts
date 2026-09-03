@@ -452,6 +452,7 @@ export const esMessages = {
   'household.assignment.rotation': 'Turnarse entre personas',
   'household.schedule.once': 'Una vez',
   'household.schedule.daily': 'Cada día',
+  'household.schedule.everyDays': 'Cada {count} días',
   'household.schedule.weekdays': 'Días laborables',
   'household.schedule.weekends': 'Fines de semana',
   'household.schedule.weekly': 'Cada semana',
