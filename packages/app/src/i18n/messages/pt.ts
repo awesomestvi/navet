@@ -910,6 +910,11 @@ export const ptMessages = {
     'Mantenedor do projeto e links de atribuição para ativos, bibliotecas e agradecimentos.',
   'settings.project.credits.viewAttributions': 'Ver atribuições',
   'settings.project.credits.community': 'Feedback da comunidade do Home Assistant',
+  'settings.project.community.title': 'Comunidade',
+  'settings.project.community.description':
+    'Receba novidades do projeto, partilhe feedback e conheça outros utilizadores do Navet.',
+  'settings.project.community.discord': 'Junte-se ao Discord',
+  'settings.project.community.reddit': 'Visite r/navet',
   'settings.project.localData.title': 'Dados locais',
   'settings.project.localData.description':
     'Limpa as configurações do Navet, o estado local do dashboard, preferências de interface em cache e chaves locais antigas armazenadas neste dispositivo.',

@@ -46,6 +46,15 @@ describe('MarketingWebsiteShell', () => {
     );
     expect(within(header).getByRole('link', { name: 'Storybook' })).toBeInTheDocument();
     expect(within(header).getByRole('link', { name: /GitHub/i })).toBeInTheDocument();
+    const communityLinks = screen.getByRole('navigation', { name: 'Community' });
+    expect(within(communityLinks).getByRole('link', { name: 'Navet on Discord' })).toHaveAttribute(
+      'href',
+      'https://discord.com/channels/1540491864325623892'
+    );
+    expect(within(communityLinks).getByRole('link', { name: 'Navet on Reddit' })).toHaveAttribute(
+      'href',
+      'https://www.reddit.com/r/navet/'
+    );
   });
 
   it('adds an explicit Home link on secondary marketing pages', () => {

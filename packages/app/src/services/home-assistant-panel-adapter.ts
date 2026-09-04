@@ -128,21 +128,7 @@ export class HomeAssistantPanelAdapter {
       return await this.hass.callApi<T>(method, normalizedPath, parameters);
     }
 
-    const normalizedMethod = method.toUpperCase();
-    const hasBody =
-      parameters !== undefined && normalizedMethod !== 'GET' && normalizedMethod !== 'HEAD';
-    const response = await fetch(`/api/${normalizedPath}`, {
-      method: normalizedMethod,
-      credentials: 'same-origin',
-      headers: hasBody ? { 'Content-Type': 'application/json' } : undefined,
-      ...(hasBody ? { body: JSON.stringify(parameters) } : {}),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Home Assistant API request failed with ${response.status}`);
-    }
-
-    return (await response.json()) as T;
+    throw new Error('Home Assistant panel REST requests require the authenticated hass API bridge');
   }
 
   async saveAutomationConfig(configKey: string, config: Record<string, unknown>): Promise<void> {

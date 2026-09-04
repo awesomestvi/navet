@@ -912,6 +912,11 @@ export const esMessages = {
     'Mantenedor del proyecto y enlaces de atribucion para recursos, bibliotecas y reconocimientos.',
   'settings.project.credits.viewAttributions': 'Ver atribuciones',
   'settings.project.credits.community': 'Feedback de la comunidad de Home Assistant',
+  'settings.project.community.title': 'Comunidad',
+  'settings.project.community.description':
+    'Recibe novedades del proyecto, comparte comentarios y conecta con otros usuarios de Navet.',
+  'settings.project.community.discord': 'Únete a Discord',
+  'settings.project.community.reddit': 'Visita r/navet',
   'settings.project.localData.title': 'Datos locales',
   'settings.project.localData.description':
     'Borra los ajustes de Navet, el estado local del panel, las preferencias de interfaz en caché y las claves locales antiguas guardadas en este dispositivo.',

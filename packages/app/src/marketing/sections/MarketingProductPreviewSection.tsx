@@ -1,3 +1,4 @@
+import { Button } from '@navet/app/components/primitives/button';
 import { isCompactCardSize } from '@navet/app/components/shared/card-size-selector';
 import { cn } from '@navet/app/components/ui/utils';
 import { CalendarCard } from '@navet/app/features/calendar';
@@ -28,7 +29,8 @@ import { MarketingSectionShell } from '@navet/app/marketing/shell/MarketingSecti
 import { homeAssistantStore } from '@navet/app/stores/home-assistant-store';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { BorderBeam } from '@website/components/effects/border-beam';
-import { type CSSProperties, useCallback, useEffect, useRef } from 'react';
+import { Pause, Play } from 'lucide-react';
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import { type BentoCardKey, getMarketingBentoCardSize } from './bento-card-size';
 
 const noopCardSizeChange = () => undefined;
@@ -471,6 +473,7 @@ function MarketingBentoSequence({ sequenceIndex }: { sequenceIndex: number }) {
 }
 
 export function MarketingProductPreviewSection({ className }: { className?: string }) {
+  const [isPaused, setIsPaused] = useState(false);
   const marqueeViewportRef = useRef<HTMLDivElement | null>(null);
   const marqueeTrackRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<{
@@ -508,14 +511,11 @@ export function MarketingProductPreviewSection({ className }: { className?: stri
       return;
     }
 
-    marqueeOffsetRef.current = -BENTO_LOOP_SPAN_PX;
     applyMarqueeTransform();
     const prefersReducedMotion =
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) {
-      return;
-    }
+      typeof window.matchMedia === 'function'
+        ? window.matchMedia('(prefers-reduced-motion: reduce)')
+        : null;
 
     const autoplaySpeedPxPerMs = BENTO_LOOP_SPAN_PX / 280000;
     let isInView = typeof window.IntersectionObserver !== 'function';
@@ -539,7 +539,12 @@ export function MarketingProductPreviewSection({ className }: { className?: stri
         applyMarqueeTransform();
       }
 
-      if (isInView && document.visibilityState !== 'hidden') {
+      if (
+        !isPaused &&
+        !prefersReducedMotion?.matches &&
+        isInView &&
+        document.visibilityState !== 'hidden'
+      ) {
         autoplayFrameRef.current = window.requestAnimationFrame(step);
       }
     };
@@ -553,7 +558,13 @@ export function MarketingProductPreviewSection({ className }: { className?: stri
     };
 
     const startAutoplay = () => {
-      if (autoplayFrameRef.current == null && isInView && document.visibilityState !== 'hidden') {
+      if (
+        !isPaused &&
+        !prefersReducedMotion?.matches &&
+        autoplayFrameRef.current == null &&
+        isInView &&
+        document.visibilityState !== 'hidden'
+      ) {
         autoplayFrameRef.current = window.requestAnimationFrame(step);
       }
     };
@@ -582,14 +593,20 @@ export function MarketingProductPreviewSection({ className }: { className?: stri
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    const handleMotionChange = () => {
+      if (prefersReducedMotion?.matches) stopAutoplay();
+      else startAutoplay();
+    };
+    prefersReducedMotion?.addEventListener('change', handleMotionChange);
     startAutoplay();
 
     return () => {
       observer?.disconnect();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      prefersReducedMotion?.removeEventListener('change', handleMotionChange);
       stopAutoplay();
     };
-  }, [applyMarqueeTransform, normalizeMarqueeOffset]);
+  }, [applyMarqueeTransform, normalizeMarqueeOffset, isPaused]);
 
   return (
     <MarketingSectionShell
@@ -607,7 +624,7 @@ export function MarketingProductPreviewSection({ className }: { className?: stri
       <div
         ref={marqueeViewportRef}
         aria-hidden="true"
-        className="marketing-bento-marquee relative left-1/2 right-1/2 mt-4 w-[calc(100vw/0.82)] -translate-x-1/2 scale-[0.82] overflow-hidden px-0 py-1.5 origin-top cursor-grab select-none active:cursor-grabbing touch-none sm:left-auto sm:right-auto sm:w-auto sm:translate-x-0 sm:-mx-8 sm:-mt-3 sm:scale-100 sm:px-8 lg:-mx-28 lg:px-28 xl:-mx-36 xl:px-36"
+        className="marketing-bento-marquee relative left-1/2 right-1/2 mt-4 w-[calc(100vw/0.82)] -translate-x-1/2 scale-[0.82] overflow-hidden px-0 py-1.5 origin-top cursor-grab select-none active:cursor-grabbing touch-pan-y sm:left-auto sm:right-auto sm:w-auto sm:translate-x-0 sm:-mx-8 sm:-mt-3 sm:scale-100 sm:px-8 lg:-mx-28 lg:px-28 xl:-mx-36 xl:px-36"
         style={
           {
             '--marketing-bento-marquee-height': `${BENTO_SEQUENCE_HEIGHT_PX + 12}px`,
@@ -691,6 +708,25 @@ export function MarketingProductPreviewSection({ className }: { className?: stri
             <MarketingBentoSequence key={`sequence-${index}`} sequenceIndex={index} />
           ))}
         </div>
+      </div>
+      <div className="mt-5 flex items-center justify-between gap-4 text-sm text-white/60">
+        <span>Drag to explore the cards</span>
+        <Button
+          variant="ghost"
+          size="compact"
+          aria-label={isPaused ? 'Resume card animation' : 'Pause card animation'}
+          onClick={() => setIsPaused((paused) => !paused)}
+          className="gap-2 motion-reduce:hidden"
+          leading={
+            isPaused ? (
+              <Play size={14} aria-hidden="true" />
+            ) : (
+              <Pause size={14} aria-hidden="true" />
+            )
+          }
+        >
+          {isPaused ? 'Resume' : 'Pause'}
+        </Button>
       </div>
     </MarketingSectionShell>
   );

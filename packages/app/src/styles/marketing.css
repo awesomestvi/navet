@@ -69,7 +69,6 @@
     filter: blur(72px);
     opacity: 0.46;
     pointer-events: none;
-    will-change: transform, opacity;
   }
 
   .marketing-aurora--amber {
@@ -83,7 +82,6 @@
       rgb(251 191 36 / 0.24) 30%,
       transparent 68%
     );
-    animation: marketing-aurora-drift 18s ease-in-out infinite;
   }
 
   .marketing-aurora--blue {
@@ -97,13 +95,11 @@
       rgb(14 165 233 / 0.18) 38%,
       transparent 68%
     );
-    animation: marketing-aurora-drift 22s ease-in-out infinite reverse;
   }
 
   .marketing-glow {
     position: absolute;
     pointer-events: none;
-    will-change: transform, opacity;
   }
 
   .marketing-glow--center {
@@ -340,9 +336,9 @@
     }
 
     .marketing-hero-background-image {
-      left: -90px;
+      left: -280px;
       right: auto;
-      width: calc(100% + 90px);
+      width: calc(100% + 280px);
       max-width: none;
       object-position: center;
     }
@@ -449,5 +445,381 @@
     .sitefx-shine-border::before {
       animation: none;
     }
+  }
+}
+
+@layer utilities {
+  .marketing-reveal {
+    transition: opacity 700ms ease, transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .marketing-reveal[data-reveal="pending"] {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+
+  .marketing-reveal:focus-within {
+    opacity: 1;
+    transform: none;
+  }
+
+  .marketing-playground-layout {
+    display: grid;
+    align-items: center;
+    gap: 32px;
+  }
+
+  .marketing-moment-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 28px 0 16px;
+  }
+
+  .marketing-moment-picker button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 8px 14px;
+    border: 1px solid currentColor;
+    border-color: color-mix(in srgb, currentColor 16%, transparent);
+    border-radius: 999px;
+    color: inherit;
+    background: transparent;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 180ms ease, transform 180ms ease;
+  }
+
+  .marketing-moment-picker button[aria-pressed="true"] {
+    background: rgb(249 115 22 / 0.14);
+    border-color: rgb(249 115 22 / 0.55);
+  }
+
+  .marketing-moment-picker button:focus-visible,
+  .marketing-support-details summary:focus-visible {
+    outline: 2px solid #f97316;
+    outline-offset: 4px;
+  }
+
+  .marketing-moment-stage {
+    position: relative;
+    isolation: isolate;
+    width: 100%;
+    max-width: 620px;
+    min-width: 0;
+    height: 536px;
+    margin-inline: auto;
+  }
+
+  .marketing-moment-atmosphere {
+    position: absolute;
+    inset: 0 -8% -3%;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, color-mix(in srgb, var(--moment-color) 12%, transparent), transparent 68%);
+  }
+
+  .marketing-moment-room {
+    position: absolute;
+    inset: 0 24px auto;
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+  }
+
+  .marketing-moment-card {
+    position: absolute;
+    transition: transform 650ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .marketing-moment-climate {
+    top: 52px;
+    left: 20px;
+    width: 360px;
+    height: 184px;
+    transform: rotate(-4deg);
+  }
+
+  .marketing-moment-energy {
+    top: 270px;
+    left: 40px;
+    width: 216px;
+    height: 190px;
+    transform: rotate(-5deg);
+  }
+
+  .marketing-moment-light {
+    top: 194px;
+    right: 8px;
+    z-index: 1;
+    width: 244px;
+    height: 216px;
+    transform: rotate(5deg);
+  }
+
+  [data-moment="morning"] .marketing-moment-climate { transform: translateY(8px) rotate(-2deg); }
+  [data-moment="morning"] .marketing-moment-energy { transform: translateY(-6px) rotate(3deg); }
+  [data-moment="morning"] .marketing-moment-light { transform: translateY(-10px) rotate(-3deg); }
+  [data-moment="night"] .marketing-moment-climate { transform: translateY(8px) rotate(0deg); }
+  [data-moment="night"] .marketing-moment-energy { transform: translateY(8px) rotate(-2deg); }
+  [data-moment="night"] .marketing-moment-light { transform: translateY(14px) rotate(2deg); }
+
+  .marketing-moment-stage .marketing-moment-light:focus-within { transform: rotate(0deg); }
+
+  .marketing-moment-hint {
+    position: absolute;
+    inset: auto 12px 0;
+    text-align: center;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .marketing-device-tablet,
+  .marketing-device-phone {
+    transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .marketing-device-tablet { transform: rotate(-2deg); }
+  .marketing-device-phone { transform: translateY(12px) rotate(5deg); }
+  [data-reveal="pending"] .marketing-device-tablet { transform: translateY(36px) rotate(-6deg); }
+  [data-reveal="pending"] .marketing-device-phone { transform: translateY(70px) rotate(10deg); }
+
+  @media (hover: hover) and (pointer: fine) {
+    .marketing-moment-picker button:hover { background: rgb(249 115 22 / 0.12); transform: translateY(-2px); }
+    .marketing-moment-stage .marketing-moment-light:hover { transform: translateY(-6px) rotate(0deg); }
+    .marketing-device-showcase:hover .marketing-device-tablet { transform: rotate(0deg); }
+    .marketing-device-showcase:hover .marketing-device-phone { transform: translateY(0) rotate(0deg); }
+  }
+
+  @media (min-width: 1024px) {
+    .marketing-playground-layout { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 48px; }
+  }
+
+  @media (max-width: 639px) {
+    .marketing-playground-layout { gap: 28px; }
+    .marketing-moment-stage { height: 490px; }
+    .marketing-moment-room { inset-inline: 4px; }
+    .marketing-moment-climate { top: 42px; left: 0; width: 100%; height: 176px; }
+    .marketing-moment-energy { top: 242px; left: 0; width: calc(50% - 6px); height: 194px; }
+    .marketing-moment-light { top: 234px; right: 0; width: calc(50% - 6px); height: 206px; }
+    .marketing-moment-stage .marketing-moment-card { transform: none; }
+    .marketing-moment-hint { inset-inline: 0; font-size: 12px; }
+    .marketing-moment-picker { gap: 6px; }
+    .marketing-moment-picker button { padding-inline: 10px; font-size: 13px; }
+    .marketing-moment-picker button svg { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marketing-reveal,
+    .marketing-reveal[data-reveal],
+    .marketing-moment-stage .marketing-moment-card,
+    .marketing-moment-picker button,
+    .marketing-device-showcase .marketing-device-tablet,
+    .marketing-device-showcase .marketing-device-phone {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+
+  html[data-effects-quality="low"] .marketing-reveal,
+  html[data-no-animation="true"] .marketing-reveal,
+  html[data-effects-quality="low"] .marketing-moment-card,
+  html[data-no-animation="true"] .marketing-moment-card {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+@layer utilities {
+  @keyframes marketing-hero-glint {
+    from { transform: translateX(-140%) skewX(-18deg); }
+    to { transform: translateX(140%) skewX(-18deg); }
+  }
+
+  @keyframes marketing-hero-touch {
+    from { opacity: 0.8; transform: scale(0.6); }
+    to { opacity: 0; transform: scale(1.8); }
+  }
+
+  .marketing-hero-room-off,
+  .marketing-hero-room-shade {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .marketing-hero-room-off {
+    opacity: 0;
+    transition: opacity 250ms ease;
+  }
+
+  .marketing-hero-shell[data-room-light="off"] .marketing-hero-room-off {
+    opacity: 1;
+  }
+
+  .marketing-hero-room-shade {
+    background:
+      linear-gradient(90deg, rgb(6 8 13 / 0.84), rgb(6 8 13 / 0.6) 30%, rgb(6 8 13 / 0.06) 64%),
+      linear-gradient(180deg, rgb(6 8 13 / 0.2), transparent 52%, rgb(6 8 13 / 0.42) 82%, #06080d 100%);
+  }
+
+  .marketing-hero-wall-panel {
+    position: relative;
+    isolation: isolate;
+    padding: 12px;
+    border: 1px solid rgb(255 255 255 / 0.45);
+    border-radius: 28px;
+    background: #070809;
+    box-shadow:
+      inset 0 0 0 2px rgb(255 255 255 / 0.06),
+      0 3px 0 1px rgb(0 0 0 / 0.7),
+      0 8px 12px -3px rgb(0 0 0 / 0.6),
+      0 32px 50px -25px rgb(0 0 0 / 0.7);
+    text-align: left;
+  }
+
+  .marketing-hero-panel-screen {
+    position: relative;
+    aspect-ratio: 999 / 791;
+    overflow: hidden;
+    border-radius: 16px;
+  }
+
+  .marketing-hero-light-hotspot {
+    position: absolute;
+    left: 7.9079%;
+    top: 24.7788%;
+    width: 21.5215%;
+    height: 22.5032%;
+  }
+
+  .marketing-hero-dashboard-off {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    transition: opacity 250ms ease;
+  }
+
+  .marketing-hero-light-hotspot,
+  .marketing-hero-light-hotspot:hover {
+    padding: 0;
+    border: 0;
+    border-radius: 11% / 13%;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .marketing-hero-light-hotspot:focus-visible {
+    outline: 2px solid #ffd18a;
+    outline-offset: 3px;
+  }
+
+  .marketing-hero-sheen {
+    position: absolute;
+    inset: 1px;
+    overflow: hidden;
+    border-radius: 27px;
+    pointer-events: none;
+  }
+
+  .marketing-hero-sheen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 20%, rgb(255 255 255 / 0.1), transparent 80%);
+    transform: translateX(140%) skewX(-18deg);
+    animation: marketing-hero-glint 1600ms 450ms ease-out backwards;
+  }
+
+  .marketing-hero-touch-ring {
+    position: absolute;
+    left: 9%;
+    top: 26.5%;
+    width: 3.5%;
+    aspect-ratio: 1;
+    border: 1px solid #ffd18a;
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0;
+    animation: marketing-hero-touch 900ms 1200ms ease-out 2;
+  }
+
+  .marketing-hero-panel-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    color: rgb(255 255 255 / 0.72);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  @media (min-width: 68.751rem) {
+    .marketing-hero-background-image {
+      left: -220px;
+      width: calc(100% + 220px);
+      max-width: none;
+    }
+  }
+
+  @media (min-width: 80rem) {
+    .marketing-hero-visual-frame:not(.marketing-hero-visual-frame--mobile) {
+      /* Give the wall-mounted panel more clearance as desktop space opens up. */
+      translate: calc(8% + clamp(0px, 6vw - 5.4rem, 3rem)) -2rem;
+    }
+  }
+
+  @media (max-width: 63.999rem) {
+    .marketing-hero-background-image {
+      object-position: 76% center;
+    }
+
+    .marketing-hero-room-shade {
+      background: linear-gradient(180deg, rgb(6 8 13 / 0.78), rgb(6 8 13 / 0.64) 40%, rgb(6 8 13 / 0.06) 62%, rgb(6 8 13 / 0.12) 78%, #06080d 100%);
+    }
+
+    .marketing-hero-visual-frame--mobile {
+      width: calc(100% + 12px);
+      margin-left: -6px;
+    }
+
+    .marketing-hero-wall-panel {
+      padding: 8px;
+      border-radius: 24px;
+    }
+
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marketing-hero-sheen,
+    .marketing-hero-touch-ring {
+      display: none;
+    }
+
+    .marketing-hero-room-off,
+    .marketing-hero-dashboard-off {
+      transition: none;
+    }
+  }
+
+  html[data-effects-quality="low"] .marketing-hero-sheen,
+  html[data-no-animation="true"] .marketing-hero-sheen,
+  html[data-effects-quality="low"] .marketing-hero-touch-ring,
+  html[data-no-animation="true"] .marketing-hero-touch-ring {
+    display: none;
+  }
+
+  html[data-effects-quality="low"] .marketing-hero-room-off,
+  html[data-no-animation="true"] .marketing-hero-room-off,
+  html[data-effects-quality="low"] .marketing-hero-dashboard-off,
+  html[data-no-animation="true"] .marketing-hero-dashboard-off {
+    transition: none;
   }
 }

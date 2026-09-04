@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.15.8 - 2026-09-05
+
+## Improvements and bug fixes
+
+- Fixed history and automation requests in Home Assistant panels by using the authenticated Home Assistant session.
+
 ## 0.15.7 - 2026-09-03
 
 ## Improvements and bug fixes

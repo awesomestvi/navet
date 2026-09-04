@@ -1,9 +1,11 @@
 import { AppReleaseBadge } from '@navet/app/components/shared/app-release-badge';
+import { DiscordMark, RedditMark } from '@navet/app/components/shared/social-marks';
 import {
   APP_BUILD_METADATA,
   getAppBuildChannelLabel,
 } from '@navet/app/constants/app-build-metadata';
 import { APP_VERSION } from '@navet/app/constants/app-version';
+import { COMMUNITY_URLS } from '@navet/app/constants/urls';
 import { useI18n } from '@navet/app/hooks';
 import { ExternalLink, FileText, Info, Scale } from 'lucide-react';
 import type { ReactNode, SVGProps } from 'react';
@@ -164,6 +166,33 @@ export function SettingsProjectSection({ controller }: SettingsProjectSectionPro
                 <ExternalLink className={`h-3.5 w-3.5 ${styles.subtleColor}`} />
               </a>
             </div>
+          </div>
+        </SettingsItem>
+
+        <SettingsItem
+          title={t('settings.project.community.title')}
+          description={t('settings.project.community.description')}
+          styles={styles}
+        >
+          <div className="flex flex-wrap items-center gap-2.5">
+            <a
+              href={COMMUNITY_URLS.discord}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor} ${styles.ringClass}`}
+            >
+              <DiscordMark className="h-4 w-4" />
+              <span>{t('settings.project.community.discord')}</span>
+            </a>
+            <a
+              href={COMMUNITY_URLS.reddit}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${styles.borderColor} ${styles.softBg} ${styles.hoverBg} ${styles.textColor} ${styles.ringClass}`}
+            >
+              <RedditMark className="h-4 w-4" />
+              <span>{t('settings.project.community.reddit')}</span>
+            </a>
           </div>
         </SettingsItem>
       </SettingsSectionGroup>

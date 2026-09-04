@@ -15,6 +15,7 @@ interface ParentHassLike {
   user?: HomeAssistantPanelHass['user'];
   connection?: HomeAssistantPanelHass['connection'];
   callService?: HomeAssistantPanelHass['callService'];
+  callApi?: HomeAssistantPanelHass['callApi'];
   callWS?: HomeAssistantPanelHass['callWS'];
 }
 
@@ -547,6 +548,7 @@ export function resolveParentHomeAssistantBridge(): HomeAssistantPanelHass | nul
     if (!parentHass || !connection) {
       return null;
     }
+    const callApi = parentHass.callApi;
 
     return {
       states: parentHass.states,
@@ -559,6 +561,10 @@ export function resolveParentHomeAssistantBridge(): HomeAssistantPanelHass | nul
         (async (domain, service, serviceData = {}, target) => {
           await callHassService(connection as never, domain, service, serviceData, target);
         }),
+      callApi: callApi
+        ? async <T = unknown>(method: string, path: string, parameters?: Record<string, unknown>) =>
+            callApi.call(parentHass, method, path, parameters) as Promise<T>
+        : undefined,
       callWS:
         parentHass.callWS ??
         (async <T = unknown>(message: Record<string, unknown>) => {

@@ -22,6 +22,12 @@ export const OPENMAPTILES_URL = 'https://openmaptiles.org/';
 /** GitHub repository URL */
 export const GITHUB_REPO_URL = 'https://github.com/awesomestvi/navet';
 
+/** Navet-owned community destinations */
+export const COMMUNITY_URLS = {
+  discord: 'https://discord.com/channels/1540491864325623892',
+  reddit: 'https://www.reddit.com/r/navet/',
+} as const;
+
 /** Documentation URLs */
 export const DOCS_URLS = {
   homeAssistant: 'https://www.home-assistant.io/',

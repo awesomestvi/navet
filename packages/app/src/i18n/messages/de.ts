@@ -917,6 +917,11 @@ export const deMessages = {
     'Projekt-Maintainer und Attributions-Links zu Assets, Bibliotheken und Danksagungen.',
   'settings.project.credits.viewAttributions': 'Attributions anzeigen',
   'settings.project.credits.community': 'Feedback aus der Home-Assistant-Community',
+  'settings.project.community.title': 'Gemeinschaft',
+  'settings.project.community.description':
+    'Erhalte Projektneuigkeiten, teile Feedback und tausche dich mit anderen Navet-Nutzern aus.',
+  'settings.project.community.discord': 'Discord beitreten',
+  'settings.project.community.reddit': 'r/navet besuchen',
   'settings.project.localData.title': 'Lokale Daten',
   'settings.project.localData.description':
     'Entfernt Navet-Einstellungen, lokales Dashboard-Layout, zwischengespeicherte UI-Präferenzen und alte lokale Schlüssel auf diesem Gerät.',

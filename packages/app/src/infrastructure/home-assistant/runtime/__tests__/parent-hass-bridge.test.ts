@@ -39,6 +39,7 @@ function createParentDocument() {
   const panelAppShadowRoot = panelApp.attachShadow({ mode: 'open' });
   const panelAppHeader = parentDocument.createElement('div');
   const panelAppFrame = parentDocument.createElement('iframe');
+  const callApi = vi.fn(async () => [[{ state: 'on' }]]);
 
   homeAssistantRoot.hass = {
     states: { 'light.kitchen': { entity_id: 'light.kitchen', state: 'on' } },
@@ -49,6 +50,7 @@ function createParentDocument() {
       subscribeMessage: vi.fn(async () => vi.fn()),
     },
     callService: vi.fn(async () => undefined),
+    callApi,
     callWS: vi.fn(async () => ({ ok: true })),
   };
 
@@ -71,7 +73,16 @@ function createParentDocument() {
   homeAssistantShadowRoot.append(homeAssistantMain);
   parentDocument.body.append(homeAssistantRoot);
 
-  return { appContent, drawer, header, panelAppHeader, parentDocument, sidebar, sidebarShell };
+  return {
+    appContent,
+    callApi,
+    drawer,
+    header,
+    panelAppHeader,
+    parentDocument,
+    sidebar,
+    sidebarShell,
+  };
 }
 
 function createShellApi() {
@@ -149,6 +160,23 @@ describe('resolveParentHomeAssistantBridge', () => {
 
     await expect(bridge?.shell?.openHomeAssistantSidebar()).resolves.toBe(true);
     expect(api.openSidebar).toHaveBeenCalled();
+  });
+
+  it('forwards REST calls through the authenticated parent Home Assistant session', async () => {
+    const { callApi, parentDocument } = createParentDocument();
+
+    attachParentWindow({ document: parentDocument });
+
+    const bridge = resolveParentHomeAssistantBridge();
+
+    await expect(
+      bridge?.callApi?.('GET', 'history/period?filter_entity_id=lock.front_door')
+    ).resolves.toEqual([[{ state: 'on' }]]);
+    expect(callApi).toHaveBeenCalledWith(
+      'GET',
+      'history/period?filter_entity_id=lock.front_door',
+      undefined
+    );
   });
 
   it('falls back to direct parent DOM kiosk controls when the parent shell API is missing', async () => {

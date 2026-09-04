@@ -1,60 +1,42 @@
-import { Button, Panel, Text } from '@navet/app/components/primitives';
-import { MarketingResponsiveImage } from '@navet/app/marketing/components/MarketingResponsiveImage';
+import { Button } from '@navet/app/components/primitives/button';
+import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
+import { cn } from '@navet/app/components/ui/utils';
+import { useTheme } from '@navet/app/hooks/use-theme';
+import {
+  MarketingHeadline,
+  MarketingSupportText,
+} from '@navet/app/marketing/components/MarketingEditorial';
+import { MarketingReveal } from '@navet/app/marketing/components/MarketingReveal';
 import { MARKETING_URLS } from '@navet/app/marketing/constants/marketingLinks';
-import { MARKETING_SCREENSHOTS } from '@navet/app/marketing/data/marketingDemoData';
-import { MarketingSectionShell } from '@navet/app/marketing/shell/MarketingSectionShell';
 import { ArrowUpRight } from 'lucide-react';
 
 export function MarketingDemoCtaSection({ className }: { className?: string }) {
-  const heroScreenshot = MARKETING_SCREENSHOTS[0];
+  const { theme } = useTheme();
+  const surface = getThemeSurfaceTokens(theme);
 
   return (
-    <MarketingSectionShell
-      title="Use the demo. Then run it at home."
-      description="The public demo uses realistic sample data and the actual Navet interface, so you can explore the product before connecting your smart-home platform."
-      variant="editorial"
-      compactMobile
-      className={className}
-    >
-      <Panel className="grid gap-0 overflow-hidden p-0 lg:grid-cols-[1.1fr_0.9fr]">
-        <MarketingResponsiveImage
-          src={heroScreenshot.src}
-          sources={heroScreenshot.sources}
-          alt={heroScreenshot.alt}
-          className="h-full min-h-[220px] w-full object-cover sm:min-h-[260px] lg:min-h-[280px]"
-          loading="lazy"
-          sizes="(max-width: 639px) 100vw, (max-width: 1023px) 80vw, 50vw"
-        />
-        <div className="space-y-3 p-4 sm:space-y-4 sm:p-6 md:p-8">
-          <Text className="text-base font-semibold">Sample data. Real Navet UI.</Text>
-          <Text tone="muted">
-            Explore the layout, cards, widgets, and theme surfaces without signing into a provider
-            first.
-          </Text>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button
-              className="w-full justify-center sm:w-auto sm:justify-start"
-              onClick={() => {
-                window.location.assign(MARKETING_URLS.demo);
-              }}
-            >
-              <span className="inline-flex items-center gap-2">
-                Open demo
-                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-              </span>
-            </Button>
-            <Button
-              variant="secondary"
-              className="w-full justify-center sm:w-auto sm:justify-start"
-              onClick={() => {
-                window.location.assign(MARKETING_URLS.install.page);
-              }}
-            >
-              How to install
-            </Button>
-          </div>
+    <section className={cn('relative py-8 sm:py-14', className)}>
+      <MarketingReveal className="flex flex-col items-center text-center">
+        <MarketingHeadline compactMobile className={cn('max-w-[16ch]', surface.textPrimary)}>
+          Use the demo. Then run it at home.
+        </MarketingHeadline>
+        <MarketingSupportText className={cn('mt-5 max-w-[38ch]', surface.textSecondary)}>
+          A whole home to explore. Real Navet cards, sample data, and no account needed.
+        </MarketingSupportText>
+        <div className="mt-7 flex flex-wrap justify-center gap-3">
+          <Button onClick={() => window.location.assign(MARKETING_URLS.demo)}>
+            <span className="inline-flex items-center gap-2">
+              Open demo <ArrowUpRight size={16} aria-hidden="true" />
+            </span>
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => window.location.assign(MARKETING_URLS.install.page)}
+          >
+            How to install
+          </Button>
         </div>
-      </Panel>
-    </MarketingSectionShell>
+      </MarketingReveal>
+    </section>
   );
 }

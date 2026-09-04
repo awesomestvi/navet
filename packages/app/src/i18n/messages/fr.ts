@@ -916,6 +916,11 @@ export const frMessages = {
     'Mainteneur du projet et liens d attribution pour ressources, bibliotheques et remerciements.',
   'settings.project.credits.viewAttributions': 'Voir les attributions',
   'settings.project.credits.community': 'Retours de la communauté Home Assistant',
+  'settings.project.community.title': 'Communauté',
+  'settings.project.community.description':
+    'Suivez le projet, partagez vos avis et échangez avec d’autres utilisateurs de Navet.',
+  'settings.project.community.discord': 'Rejoindre Discord',
+  'settings.project.community.reddit': 'Visiter r/navet',
   'settings.project.localData.title': 'Données locales',
   'settings.project.localData.description':
     'Efface les réglages Navet, l état local du tableau de bord, les préférences d interface en cache et les anciennes clés stockées sur cet appareil.',

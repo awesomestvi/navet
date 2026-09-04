@@ -1,184 +1,250 @@
-import navetLogo from '@assets/public/logo.svg';
-import homeAssistantLogo from '@navet/app/assets/providers/home-assistant.svg';
-import homeyLogoAvif from '@navet/app/assets/providers/homey.avif';
-import homeyLogo from '@navet/app/assets/providers/homey.png';
-import homeyLogoWebp from '@navet/app/assets/providers/homey.webp';
-import openhabLogo from '@navet/app/assets/providers/openhab.svg';
-import { Link, Panel, Text } from '@navet/app/components/primitives';
+import { BaseCard } from '@navet/app/components/primitives/base-card';
+import { Link } from '@navet/app/components/primitives/link';
+import { getCardShellSurfaceTokens } from '@navet/app/components/shared/theme/card-shell-surface-tokens';
+import { getLightCardSurfaceTokens } from '@navet/app/components/shared/theme/light-card-surface-tokens';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { cn } from '@navet/app/components/ui/utils';
-import { useTheme } from '@navet/app/hooks';
-import { MarketingResponsiveImage } from '@navet/app/marketing/components/MarketingResponsiveImage';
+import { ClimateCard } from '@navet/app/features/climate/components/climate-card';
+import { EnergyNowCardView } from '@navet/app/features/energy/components/widgets/energy-now-card-view';
+import { LightCardSmall } from '@navet/app/features/lighting/components/light-card/light-card-small';
+import { useTheme } from '@navet/app/hooks/use-theme';
+import {
+  MarketingHeadline,
+  MarketingSupportText,
+} from '@navet/app/marketing/components/MarketingEditorial';
+import { MarketingReveal } from '@navet/app/marketing/components/MarketingReveal';
 import { MARKETING_URLS } from '@navet/app/marketing/constants/marketingLinks';
-import { MarketingSectionShell } from '@navet/app/marketing/shell/MarketingSectionShell';
-import { ArrowDown, ArrowRight, Check } from 'lucide-react';
+import { MARKETING_BENTO_ENERGY_TREND } from '@navet/app/marketing/data/marketingDemoData';
+import { Coffee, Lightbulb, Moon, Sofa, SunMedium } from 'lucide-react';
+import { type CSSProperties, useState } from 'react';
 
-const PROVIDERS = [
+const MOMENTS = [
   {
-    name: 'Home Assistant',
-    src: homeAssistantLogo,
-    alt: 'Home Assistant logo',
+    id: 'morning',
+    label: 'Slow morning',
+    icon: Coffee,
+    brightness: 80,
+    color: '#ffb85c',
+    temperature: 22,
+    load: 486,
+    time: '08:24',
+    description: 'A bright start, with the room warming up.',
   },
   {
-    name: 'Homey',
-    src: homeyLogo,
-    alt: 'Homey logo',
-    sources: [
-      { srcSet: homeyLogoAvif, type: 'image/avif' as const },
-      { srcSet: homeyLogoWebp, type: 'image/webp' as const },
-    ],
+    id: 'evening',
+    label: 'Wind down',
+    icon: Sofa,
+    brightness: 35,
+    color: '#ff884d',
+    temperature: 21,
+    load: 316,
+    time: '19:42',
+    description: 'Softer lights. A comfortable room. Time to settle in.',
   },
   {
-    name: 'openHAB',
-    src: openhabLogo,
-    alt: 'openHAB logo',
+    id: 'night',
+    label: 'Lights out',
+    icon: Moon,
+    brightness: 0,
+    color: '#9bbcff',
+    temperature: 19,
+    load: 124,
+    time: '23:06',
+    description: 'Lights off, heating turned down. Ready for tomorrow.',
   },
 ] as const;
 
-const DASHBOARD_OUTCOMES = [
-  'Find daily controls by room and purpose.',
-  'Use familiar interactions for lights, climate, media, and security.',
-  'Move between a wall panel, tablet, desktop, and phone without relearning the layout.',
-] as const;
+const ENERGY_TREND = [...MARKETING_BENTO_ENERGY_TREND];
+const NOOP = () => undefined;
+const BRIGHTNESS_PRESETS = [
+  { key: 'night' as const, label: 'Low', brightness: 20, icon: Moon },
+  { key: 'dim' as const, label: 'Medium', brightness: 50, icon: SunMedium },
+  { key: 'bright' as const, label: 'High', brightness: 100, icon: Lightbulb },
+];
+
+/** The product's light presentation, with ephemeral state and no device connection. */
+function SampleLightCard({
+  brightness,
+  color,
+  onBrightnessChange,
+}: {
+  brightness: number;
+  color: string;
+  onBrightnessChange: (value: number) => void;
+}) {
+  const { theme } = useTheme();
+  const isOn = brightness > 0;
+  const shell = getCardShellSurfaceTokens(theme);
+  const surface = getLightCardSurfaceTokens({ theme, isOn, selectedColor: color });
+
+  return (
+    <BaseCard
+      size="small"
+      frameClassName={cn(shell.rootFrameClassName, surface.cardClassName)}
+      style={surface.cardStyle}
+      disableDefaultSheen
+      contentClassName="h-full"
+    >
+      <div className="relative flex h-full flex-col">
+        <LightCardSmall
+          name="Reading light"
+          room="Living room"
+          size="small"
+          brightness={brightness}
+          isOn={isOn}
+          currentColor={color}
+          colorSwatchColor={color}
+          activeColor={surface.contentAccentColor}
+          IconComponent={Lightbulb}
+          colorTemp={3200}
+          currentTempColor={color}
+          minColorTemp={2700}
+          maxColorTemp={6500}
+          brightnessPresets={BRIGHTNESS_PRESETS}
+          effectOptions={[]}
+          isKelvinMode={false}
+          isColorMode={false}
+          currentEffect={null}
+          supportsBrightness
+          supportsEffects={false}
+          supportsColorControl={false}
+          supportsColorTemperature={false}
+          onBrightnessChange={onBrightnessChange}
+          onBrightnessCommit={onBrightnessChange}
+          onKelvinToggle={NOOP}
+          onColorActivate={NOOP}
+          onColorChange={NOOP}
+          onEffectSelect={NOOP}
+          onTempChange={NOOP}
+          onTempCommit={NOOP}
+          iconButtonProps={{
+            'aria-label': isOn ? 'Turn reading light off' : 'Turn reading light on',
+            onClick: () => onBrightnessChange(isOn ? 0 : 65),
+          }}
+          settingsButtonProps={{}}
+          showSettingsButton={false}
+        />
+      </div>
+    </BaseCard>
+  );
+}
 
 export function MarketingFeatureGridSection({ className }: { className?: string }) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
+  const [momentIndex, setMomentIndex] = useState(1);
+  const [brightness, setBrightness] = useState<number>(MOMENTS[1].brightness);
+  const moment = MOMENTS[momentIndex];
 
   return (
-    <MarketingSectionShell
-      title="Your platform runs the home. Navet makes it easier to use."
-      description="Keep Home Assistant, Homey, or openHAB as the system behind your devices. Navet turns that setup into a focused daily dashboard for the people and screens in your home."
-      variant="editorial"
-      compactMobile
-      className={className}
+    <section
+      className={cn('marketing-home-playground', className)}
+      aria-labelledby="home-playground-title"
     >
-      <Panel className="relative overflow-hidden p-5 sm:p-8 lg:p-10">
-        <div className="relative grid items-stretch gap-5 lg:grid-cols-[minmax(0,1fr)_9rem_minmax(0,1fr)] lg:gap-7">
-          <div
-            className={cn(
-              'rounded-[1.5rem] border p-5 sm:p-6',
-              surface.border,
-              theme === 'light' ? 'bg-white/70' : 'bg-black/16'
-            )}
+      <MarketingReveal className="marketing-playground-layout">
+        <div className="marketing-playground-copy">
+          <MarketingHeadline compactMobile className={cn('max-w-[16ch]', surface.textPrimary)}>
+            <span id="home-playground-title">
+              A little touch.
+              <br />A different mood.
+            </span>
+          </MarketingHeadline>
+          <MarketingSupportText className={cn('mt-5 max-w-[33ch]', surface.textSecondary)}>
+            Bring the lights down. Get the room just right. Navet puts the everyday things within
+            reach.
+          </MarketingSupportText>
+          <fieldset className="marketing-moment-picker" aria-label="Preview a moment at home">
+            {MOMENTS.map((item, index) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-pressed={momentIndex === index && brightness === item.brightness}
+                onClick={() => {
+                  setMomentIndex(index);
+                  setBrightness(item.brightness);
+                }}
+              >
+                <item.icon size={18} aria-hidden="true" />
+                {item.label}
+              </button>
+            ))}
+          </fieldset>
+          <p
+            className={cn('min-h-12 max-w-[32ch] text-sm leading-6', surface.textSecondary)}
+            aria-live="polite"
           >
-            <Text
-              className={cn('text-xs font-semibold uppercase tracking-[0.16em]', surface.textMuted)}
-            >
-              Your existing setup
-            </Text>
-            <Text
-              className={cn('mt-3 text-xl font-semibold tracking-[-0.025em]', surface.textPrimary)}
-            >
-              Keep the platform you already trust.
-            </Text>
-            <Text tone="muted" className="mt-2 text-sm leading-6">
-              Navet connects to your current smart-home system instead of asking you to rebuild it.
-            </Text>
-
-            <div className="mt-6 space-y-2.5">
-              {PROVIDERS.map((provider) => (
-                <div
-                  key={provider.name}
-                  className={cn(
-                    'flex items-center gap-3 rounded-2xl border px-3.5 py-3',
-                    surface.border,
-                    theme === 'light' ? 'bg-slate-50/85' : 'bg-white/[0.035]'
-                  )}
-                >
-                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-400/10">
-                    <MarketingResponsiveImage
-                      src={provider.src}
-                      sources={'sources' in provider ? provider.sources : undefined}
-                      alt={provider.alt}
-                      width={20}
-                      height={20}
-                      className="h-5 w-5 object-contain"
-                    />
-                  </span>
-                  <Text className={cn('font-semibold', surface.textPrimary)}>{provider.name}</Text>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center justify-center gap-4 py-1 lg:flex-row lg:gap-2 lg:py-0">
-            <ArrowDown className="h-5 w-5 text-orange-400 lg:hidden" aria-hidden="true" />
-            <ArrowRight
-              className="hidden h-5 w-5 shrink-0 text-orange-400 lg:block"
-              aria-hidden="true"
-            />
-            <div className="relative flex items-center justify-center">
-              <div className="absolute h-24 w-24 rounded-full bg-orange-500/15 blur-2xl" />
-              <img
-                src={navetLogo}
-                alt="Navet"
-                width={72}
-                height={72}
-                className="relative h-16 w-16 drop-shadow-[0_16px_32px_rgba(249,115,22,0.24)] sm:h-[4.5rem] sm:w-[4.5rem]"
-              />
-            </div>
-            <ArrowDown className="h-5 w-5 text-orange-400 lg:hidden" aria-hidden="true" />
-            <ArrowRight
-              className="hidden h-5 w-5 shrink-0 text-orange-400 lg:block"
-              aria-hidden="true"
-            />
-          </div>
-
-          <div
-            className={cn(
-              'rounded-[1.5rem] border p-5 sm:p-6',
-              surface.border,
-              theme === 'light'
-                ? 'bg-[linear-gradient(145deg,rgba(255,255,255,0.94),rgba(255,247,237,0.82))]'
-                : 'bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.13),transparent_42%),rgba(255,255,255,0.035)]'
-            )}
+            {brightness === moment.brightness
+              ? moment.description
+              : brightness > 0
+                ? `Reading light set to ${brightness}%.`
+                : 'Reading light is off.'}
+          </p>
+          <Link
+            href={MARKETING_URLS.demo}
+            target="_blank"
+            rel="noopener noreferrer"
+            showExternalIcon
+            className="mt-5"
           >
-            <Text className="text-xs font-semibold uppercase tracking-[0.16em] text-orange-400">
-              Your Navet dashboard
-            </Text>
-            <Text
-              className={cn('mt-3 text-xl font-semibold tracking-[-0.025em]', surface.textPrimary)}
-            >
-              Give everyday control a simpler home.
-            </Text>
-            <Text tone="muted" className="mt-2 text-sm leading-6">
-              Provider details stay in the background while the controls people use remain close at
-              hand.
-            </Text>
-
-            <ul className="mt-6 space-y-4">
-              {DASHBOARD_OUTCOMES.map((outcome) => (
-                <li key={outcome} className="flex gap-3">
-                  <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-400/12 text-emerald-400">
-                    <Check className="h-3 w-3" strokeWidth={2.5} aria-hidden="true" />
-                  </span>
-                  <Text className={cn('text-sm leading-6', surface.textSecondary)}>{outcome}</Text>
-                </li>
-              ))}
-            </ul>
-          </div>
+            Explore the whole home
+          </Link>
         </div>
 
         <div
-          className={cn(
-            'mt-6 flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between',
-            surface.border
-          )}
+          className="marketing-moment-stage"
+          data-moment={moment.id}
+          style={{ '--moment-color': moment.color } as CSSProperties}
         >
-          <Text tone="muted" className="text-sm">
-            Explore a sample home before connecting your own devices.
-          </Text>
-          <div className="flex flex-wrap gap-x-5 gap-y-3">
-            <Link href={MARKETING_URLS.demo} target="_blank" showExternalIcon>
-              Open the live demo
-            </Link>
-            <Link href={MARKETING_URLS.install.page} target="_blank" showExternalIcon>
-              Choose an installation
-            </Link>
+          <div className="marketing-moment-atmosphere" aria-hidden="true" />
+          <div className={cn('marketing-moment-room', surface.textSecondary)}>
+            <span className="flex items-center gap-2">
+              <Sofa size={16} aria-hidden="true" /> Living room
+            </span>
+            <span className="tabular-nums">{moment.time}</span>
           </div>
+          <div className="marketing-moment-card marketing-moment-climate" aria-hidden="true" inert>
+            <ClimateCard
+              key={moment.id}
+              id="climate.marketing_sample_room"
+              name="Living room"
+              room="Living room"
+              initialTemp={moment.temperature}
+              initialCurrentTemp={moment.id === 'night' ? 19 : 21}
+              temperatureUnit="celsius"
+              initialMode="heat"
+              initialAction={moment.temperature > 21 ? 'heating' : 'idle'}
+              initialState
+              size="medium"
+              isEditMode={false}
+              onSizeChange={NOOP}
+            />
+          </div>
+          <div className="marketing-moment-card marketing-moment-energy" aria-hidden="true" inert>
+            <EnergyNowCardView
+              title="Energy today"
+              currentLoadW={moment.load}
+              todayUsageKWh={8.4}
+              trend={ENERGY_TREND}
+              accentColor="#f97316"
+              size="small"
+            />
+          </div>
+          <div className="marketing-moment-card marketing-moment-light">
+            <SampleLightCard
+              brightness={brightness}
+              color={moment.color}
+              onBrightnessChange={setBrightness}
+            />
+          </div>
+          <p className={cn('marketing-moment-hint', surface.textMuted)}>
+            Try the light. It’s a sample home.
+          </p>
+          <p className="sr-only" aria-live="polite">
+            Reading light {brightness > 0 ? `at ${brightness}%` : 'off'}. Thermostat set to{' '}
+            {moment.temperature} degrees Celsius. Sample home energy use {moment.load} watts.
+          </p>
         </div>
-      </Panel>
-    </MarketingSectionShell>
+      </MarketingReveal>
+    </section>
   );
 }

@@ -1002,6 +1002,11 @@ export const fiMessages = {
     'Projektin ylläpito- ja attribuutiolinkit resursseille, kirjastoille ja tunnustuksille.',
   'settings.project.credits.viewAttributions': 'Näytä attribuutit',
   'settings.project.credits.community': 'Kotiavustajan yhteisön palaute',
+  'settings.project.community.title': 'Yhteisö',
+  'settings.project.community.description':
+    'Seuraa projektin kuulumisia, jaa palautetta ja tutustu muihin Navet-käyttäjiin.',
+  'settings.project.community.discord': 'Liity Discordiin',
+  'settings.project.community.reddit': 'Käy r/navetissa',
   'settings.project.localData.title': 'Paikalliset tiedot',
   'settings.project.localData.description':
     'Tyhjennä Navet-asetukset, kojelaudan asettelun tila, välimuistissa olevat käyttöliittymäasetukset ja tähän laitteeseen tallennetut vanhat paikalliset avaimet.',

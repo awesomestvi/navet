@@ -1003,6 +1003,11 @@ export const plMessages = {
     'Opiekun projektu oraz informacje o autorach zasobów, bibliotek i innych wykorzystanych prac.',
   'settings.project.credits.viewAttributions': 'Zobacz informacje o autorach',
   'settings.project.credits.community': 'Opinie społeczności Home Assistant',
+  'settings.project.community.title': 'Społeczność',
+  'settings.project.community.description':
+    'Śledź aktualności projektu, dziel się opiniami i poznawaj innych użytkowników Navet.',
+  'settings.project.community.discord': 'Dołącz do Discorda',
+  'settings.project.community.reddit': 'Odwiedź r/navet',
   'settings.project.localData.title': 'Dane lokalne',
   'settings.project.localData.description':
     'Wyczyść ustawienia Navet, układ panelu, zapisane preferencje interfejsu i starsze dane lokalne na tym urządzeniu.',

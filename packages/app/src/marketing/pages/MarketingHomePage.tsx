@@ -18,8 +18,17 @@ const MarketingProductPreviewSection = lazy(async () => {
 });
 
 const MarketingFeatureGridSection = lazy(async () => {
-  const module = await import('@navet/app/marketing/sections/MarketingFeatureGridSection');
-  return { default: module.MarketingFeatureGridSection };
+  const [sectionModule, i18nModule] = await Promise.all([
+    import('@navet/app/marketing/sections/MarketingFeatureGridSection'),
+    import('@navet/app/i18n/i18n-provider'),
+  ]);
+  return {
+    default: ({ className }: { className?: string }) => (
+      <i18nModule.I18nProvider>
+        <sectionModule.MarketingFeatureGridSection className={className} />
+      </i18nModule.I18nProvider>
+    ),
+  };
 });
 
 const MarketingThemeShowcaseSection = lazy(async () => {
@@ -86,19 +95,11 @@ export function MarketingHomePage() {
         <MarketingProductPreviewSection />
       </MarketingDeferredSection>
       <MarketingDeferredSection
-        fallback={<DeferredSectionFallback minHeightClassName="min-h-[280px] sm:min-h-[320px]" />}
-      >
-        <MarketingDemoCtaSection />
-      </MarketingDeferredSection>
-      <MarketingDeferredSection
-        fallback={<DeferredSectionFallback minHeightClassName="min-h-[560px] sm:min-h-[720px]" />}
+        fallback={
+          <DeferredSectionFallback minHeightClassName="min-h-[850px] sm:min-h-[940px] lg:min-h-[536px]" />
+        }
       >
         <MarketingFeatureGridSection />
-      </MarketingDeferredSection>
-      <MarketingDeferredSection
-        fallback={<DeferredSectionFallback minHeightClassName="min-h-[220px] sm:min-h-[240px]" />}
-      >
-        <MarketingPrivacySection />
       </MarketingDeferredSection>
       <MarketingDeferredSection
         fallback={<DeferredSectionFallback minHeightClassName="min-h-[340px] sm:min-h-[420px]" />}
@@ -106,9 +107,19 @@ export function MarketingHomePage() {
         <MarketingThemeShowcaseSection />
       </MarketingDeferredSection>
       <MarketingDeferredSection
+        fallback={<DeferredSectionFallback minHeightClassName="min-h-[220px] sm:min-h-[240px]" />}
+      >
+        <MarketingPrivacySection />
+      </MarketingDeferredSection>
+      <MarketingDeferredSection
         fallback={<DeferredSectionFallback minHeightClassName="min-h-[260px] sm:min-h-[280px]" />}
       >
         <MarketingCurrentSupportSection />
+      </MarketingDeferredSection>
+      <MarketingDeferredSection
+        fallback={<DeferredSectionFallback minHeightClassName="min-h-[280px] sm:min-h-[320px]" />}
+      >
+        <MarketingDemoCtaSection />
       </MarketingDeferredSection>
     </>
   );

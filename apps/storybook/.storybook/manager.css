@@ -127,6 +127,27 @@ body {
   border-radius: 9px !important;
 }
 
+.navet-storybook-community-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.navet-storybook-community-link {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  color: var(--navet-storybook-secondary);
+  transition: color 140ms ease, background-color 140ms ease;
+}
+
+.navet-storybook-community-link:hover {
+  color: var(--navet-storybook-text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
 button[title*="Theme"],
 button[title*="Accent"],
 button[title*="Card Size"] {
@@ -150,7 +171,8 @@ input:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #storybook-explorer-tree [role="treeitem"] {
+  #storybook-explorer-tree [role="treeitem"],
+  .navet-storybook-community-link {
     transition: none;
   }
 }

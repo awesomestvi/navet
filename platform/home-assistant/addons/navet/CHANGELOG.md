@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.15.8
+
+No user-facing changes in this release.
+
 ## 0.15.7
 
 ## Improvements and bug fixes

@@ -120,6 +120,19 @@ describe('HomeAssistantPanelAdapter', () => {
     );
   });
 
+  it('does not make an unauthenticated REST request when the hass API bridge is unavailable', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const adapter = new HomeAssistantPanelAdapter(createPanelHass());
+
+    await expect(
+      adapter.callApi('GET', '/api/history/period?filter_entity_id=light.kitchen')
+    ).rejects.toThrow('require the authenticated hass API bridge');
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    vi.unstubAllGlobals();
+  });
+
   it('loads registries with Home Assistant websocket commands', async () => {
     const callWS = createCallWS([
       [{ area_id: 'kitchen', name: 'Kitchen' }],

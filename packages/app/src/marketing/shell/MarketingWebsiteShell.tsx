@@ -1,5 +1,6 @@
 import logoHorizontalLight from '@assets/public/logo-horizontal-light.svg';
 import { Text } from '@navet/app/components/primitives/text';
+import { DiscordMark, RedditMark } from '@navet/app/components/shared/social-marks';
 import {
   getThemeFocusRingClassName,
   navetSpacingTokens,
@@ -136,6 +137,29 @@ function GithubNavLink({
           </span>
         ) : null}
       </span>
+    </a>
+  );
+}
+
+function SocialIconLink({ href, label, icon }: { href: string; label: string; icon: ReactNode }) {
+  const { theme } = useTheme();
+
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`Navet on ${label}`}
+      title={label}
+      className={cn(
+        getThemeFocusRingClassName(theme),
+        'inline-flex h-9 w-9 items-center justify-center rounded-full border transition-[color,background-color,border-color] motion-reduce:transition-none',
+        theme === 'light'
+          ? 'border-slate-200 bg-white/72 text-slate-600 hover:border-slate-300 hover:bg-white hover:text-slate-950'
+          : 'border-white/10 bg-white/[0.045] text-white/62 hover:border-white/16 hover:bg-white/[0.08] hover:text-white'
+      )}
+    >
+      {icon}
     </a>
   );
 }
@@ -414,37 +438,51 @@ export function MarketingWebsiteShell({
             isLightTheme ? 'border-slate-200' : 'border-white/10'
           )}
         >
-          <div className="flex flex-wrap gap-5">
-            <WebsiteNavLink href={MARKETING_URLS.demo} className="min-h-0 px-0">
-              Demo
-            </WebsiteNavLink>
-            <WebsiteNavLink href={MARKETING_URLS.install.page} className="min-h-0 px-0">
-              Install
-            </WebsiteNavLink>
-            <WebsiteNavLink href={MARKETING_URLS.docsIndex} className="min-h-0 px-0">
-              Docs
-            </WebsiteNavLink>
-            <WebsiteNavLink href={MARKETING_URLS.changelog} className="min-h-0 px-0">
-              Changelog
-            </WebsiteNavLink>
-            <WebsiteNavLink
-              href={`${MARKETING_URLS.github}/releases/tag/v${APP_VERSION}`}
-              className="min-h-0 px-0"
-            >
-              Latest: v{APP_VERSION}
-            </WebsiteNavLink>
-            <WebsiteNavLink href={MARKETING_URLS.resources} className="min-h-0 px-0">
-              Resources
-            </WebsiteNavLink>
-            <WebsiteNavLink href={MARKETING_URLS.github} className="min-h-0 px-0">
-              GitHub
-            </WebsiteNavLink>
-            <WebsiteNavLink href={getMarketingWebsitePath('/roadmap/')} className="min-h-0 px-0">
-              Roadmap
-            </WebsiteNavLink>
-            <WebsiteNavLink href={MARKETING_URLS.storybook} className="min-h-0 px-0">
-              Storybook
-            </WebsiteNavLink>
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <nav aria-label="Footer" className="flex flex-wrap gap-5">
+              <WebsiteNavLink href={MARKETING_URLS.demo} className="min-h-0 px-0">
+                Demo
+              </WebsiteNavLink>
+              <WebsiteNavLink href={MARKETING_URLS.install.page} className="min-h-0 px-0">
+                Install
+              </WebsiteNavLink>
+              <WebsiteNavLink href={MARKETING_URLS.docsIndex} className="min-h-0 px-0">
+                Docs
+              </WebsiteNavLink>
+              <WebsiteNavLink href={MARKETING_URLS.changelog} className="min-h-0 px-0">
+                Changelog
+              </WebsiteNavLink>
+              <WebsiteNavLink
+                href={`${MARKETING_URLS.github}/releases/tag/v${APP_VERSION}`}
+                className="min-h-0 px-0"
+              >
+                Latest: v{APP_VERSION}
+              </WebsiteNavLink>
+              <WebsiteNavLink href={MARKETING_URLS.resources} className="min-h-0 px-0">
+                Resources
+              </WebsiteNavLink>
+              <WebsiteNavLink href={MARKETING_URLS.github} className="min-h-0 px-0">
+                GitHub
+              </WebsiteNavLink>
+              <WebsiteNavLink href={getMarketingWebsitePath('/roadmap/')} className="min-h-0 px-0">
+                Roadmap
+              </WebsiteNavLink>
+              <WebsiteNavLink href={MARKETING_URLS.storybook} className="min-h-0 px-0">
+                Storybook
+              </WebsiteNavLink>
+            </nav>
+            <nav aria-label="Community" className="flex items-center gap-2">
+              <SocialIconLink
+                href={MARKETING_URLS.discord}
+                label="Discord"
+                icon={<DiscordMark className="h-4 w-4" />}
+              />
+              <SocialIconLink
+                href={MARKETING_URLS.reddit}
+                label="Reddit"
+                icon={<RedditMark className="h-4 w-4" />}
+              />
+            </nav>
           </div>
           <Text tone="muted">
             Navet is a provider-neutral smart-home dashboard focused on a cleaner product experience

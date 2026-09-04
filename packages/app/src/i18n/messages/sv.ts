@@ -907,6 +907,11 @@ export const svMessages = {
     'Projektets maintainer och attribueringslankar for tillgangar, bibliotek och erkannanden.',
   'settings.project.credits.viewAttributions': 'Visa attribueringar',
   'settings.project.credits.community': 'Feedback från Home Assistant-communityt',
+  'settings.project.community.title': 'Gemenskap',
+  'settings.project.community.description':
+    'Få projektnyheter, dela feedback och kom i kontakt med andra Navet-användare.',
+  'settings.project.community.discord': 'Gå med i Discord',
+  'settings.project.community.reddit': 'Besök r/navet',
   'settings.project.localData.title': 'Lokal data',
   'settings.project.localData.description':
     'Rensar Navet-installningar, lokal dashboard-layout, cachade gränssnittspreferenser och gamla lokala nycklar som lagras på den här enheten.',

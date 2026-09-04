@@ -5,13 +5,20 @@ import type { ReactNode } from 'react';
 
 export interface TextProps {
   as?: 'p' | 'span' | 'div';
+  id?: string;
   tone?: 'default' | 'muted' | 'subtle' | 'danger';
   className?: string;
   children: ReactNode;
 }
 
 // Status: proposed. Narrow typography primitive for body copy and helper text.
-export function Text({ as: Component = 'p', tone = 'default', className, children }: TextProps) {
+export function Text({
+  as: Component = 'p',
+  id,
+  tone = 'default',
+  className,
+  children,
+}: TextProps) {
   const { theme } = useTheme();
 
   const toneClassName =
@@ -34,7 +41,7 @@ export function Text({ as: Component = 'p', tone = 'default', className, childre
             : 'text-white';
 
   return (
-    <Component className={cn(navetTypographyTokens.body, toneClassName, className)}>
+    <Component id={id} className={cn(navetTypographyTokens.body, toneClassName, className)}>
       {children}
     </Component>
   );

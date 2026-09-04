@@ -1006,6 +1006,11 @@ export const nlMessages = {
     'Projectbeheerders en attributielinks voor assets, bibliotheken en dankbetuigingen.',
   'settings.project.credits.viewAttributions': 'Bekijk attributies',
   'settings.project.credits.community': 'Feedback van de Home Assistant-community',
+  'settings.project.community.title': 'Gemeenschap',
+  'settings.project.community.description':
+    'Ontvang projectupdates, deel feedback en kom in contact met andere Navet-gebruikers.',
+  'settings.project.community.discord': 'Word lid van Discord',
+  'settings.project.community.reddit': 'Bezoek r/navet',
   'settings.project.localData.title': 'Lokale gegevens',
   'settings.project.localData.description':
     'Wis de Navet-instellingen, de status van de dashboardindeling, de in de cache opgeslagen UI-voorkeuren en oude lokale sleutels die op dit apparaat zijn opgeslagen.',

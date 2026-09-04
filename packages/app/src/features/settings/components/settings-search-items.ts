@@ -249,6 +249,12 @@ const SETTINGS: SearchSettingDefinition[] = [
     descriptionKey: 'settings.project.credits.description',
   },
   {
+    id: 'project-community',
+    sectionId: 'project',
+    labelKey: 'settings.project.community.title',
+    descriptionKey: 'settings.project.community.description',
+  },
+  {
     id: 'project-license',
     sectionId: 'project',
     labelKey: 'settings.project.license.title',

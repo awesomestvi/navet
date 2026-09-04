@@ -8,8 +8,7 @@ describe('MarketingHeroSection', () => {
     renderWithProviders(<MarketingHeroSection />);
 
     expect(
-      screen.getAllByAltText('Navet dashboard product preview shown on a tablet-style device')
-        .length
+      screen.getAllByRole('group', { name: 'Navet wall panel sample home' }).length
     ).toBeGreaterThan(0);
     expect(
       screen.getByRole('heading', { name: /A smart home dashboard for every screen/i })

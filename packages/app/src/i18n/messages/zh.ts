@@ -685,6 +685,7 @@ export const zhMessages = {
   'settings.project.about.version': '版本',
   'settings.project.about.build': '构建',
   'settings.project.credits.title': '致谢',
+  'settings.project.community.title': '社区',
   'settings.project.localData.title': '本地数据',
   'settings.project.localData.description':
     '清除这个设备上 Navet 的设置、仪表板本地状态、缓存的界面偏好和旧的本地键。',
@@ -1493,6 +1494,9 @@ export const zhMessages = {
   'settings.project.credits.description': '设置项目致谢说明',
   'settings.project.credits.viewAttributions': '设置项目致谢',
   'settings.project.credits.community': 'Home Assistant 社区反馈',
+  'settings.project.community.description': '获取项目更新、分享反馈并与其他 Navet 用户交流。',
+  'settings.project.community.discord': '加入 Discord',
+  'settings.project.community.reddit': '访问 r/navet',
   'settings.project.license.description': '设置项目许可证说明',
   'settings.project.license.show': '设置项目许可证',
   'settings.project.license.hide': '设置项目许可证',

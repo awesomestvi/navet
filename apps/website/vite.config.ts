@@ -21,11 +21,8 @@ const buildMetadata = {
   releaseChannel: (process.env.NAVET_RELEASE_CHANNEL ?? 'development').trim(),
   buildVersion: (process.env.NAVET_BUILD_VERSION ?? appVersion).trim(),
 };
-const REACT_COMPILER_INCLUDE = [
-  /[\\/]src[\\/]/,
-  /[\\/]packages[\\/][^\\/]+[\\/]src[\\/]/,
-  /[\\/]apps[\\/]website[\\/]src[\\/]/,
-];
+// Restrict the compiler to source modules: its content filter can also match CSS comments.
+const REACT_COMPILER_INCLUDE = [/[\\/]src[\\/].*\.(?:[jt]sx?|[cm][jt]s)(?:$|\?)/];
 const REACT_COMPILER_EXCLUDE = [/[\\/]node_modules[\\/]/, /[\\/]\.cache[\\/]vite[^\\/]*[\\/]deps[\\/]/];
 
 export default defineConfig({

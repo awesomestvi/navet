@@ -1000,6 +1000,11 @@ export const daMessages = {
     'Projektvedligeholder og tilskrivningslinks til aktiver, biblioteker og anerkendelser.',
   'settings.project.credits.viewAttributions': 'Se tilskrivninger',
   'settings.project.credits.community': 'Hjemmeassistent-fællesskabsfeedback',
+  'settings.project.community.title': 'Fællesskab',
+  'settings.project.community.description':
+    'Få projektnyheder, del feedback, og kom i kontakt med andre Navet-brugere.',
+  'settings.project.community.discord': 'Deltag på Discord',
+  'settings.project.community.reddit': 'Besøg r/navet',
   'settings.project.localData.title': 'Lokale data',
   'settings.project.localData.description':
     'Ryd Navet-indstillinger, dashboardlayouttilstand, cachelagrede UI-præferencer og ældre lokale nøgler, der er gemt på denne enhed.',

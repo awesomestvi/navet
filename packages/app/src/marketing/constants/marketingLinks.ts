@@ -1,4 +1,4 @@
-import { GITHUB_REPO_URL } from '@navet/app/constants/urls';
+import { COMMUNITY_URLS, GITHUB_REPO_URL } from '@navet/app/constants/urls';
 
 const DEFAULT_PUBLIC_SITE_URL = 'https://navet.app/';
 const DEMO_SITE_URL = 'https://demo.navet.app/';
@@ -28,6 +28,8 @@ export const MARKETING_URLS = {
   demo: DEMO_SITE_URL,
   storybook: STORYBOOK_SITE_URL,
   github: GITHUB_REPO_URL,
+  discord: COMMUNITY_URLS.discord,
+  reddit: COMMUNITY_URLS.reddit,
   roadmapDoc: joinUrl(DOCS_SITE_URL, 'roadmap/'),
   docsIndex: DOCS_SITE_URL,
   gettingStarted: joinUrl(DOCS_SITE_URL, 'getting-started/'),

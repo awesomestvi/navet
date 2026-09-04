@@ -8,14 +8,15 @@ import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-
 import { cn } from '@navet/app/components/ui/utils';
 import { useTheme } from '@navet/app/hooks';
 import {
-  MarketingEyebrow,
   MarketingHeadline,
   MarketingPillGroup,
   MarketingSupportText,
 } from '@navet/app/marketing/components/MarketingEditorial';
 import { MarketingResponsiveImage } from '@navet/app/marketing/components/MarketingResponsiveImage';
+import { MarketingReveal } from '@navet/app/marketing/components/MarketingReveal';
 import { MARKETING_CURRENT_SUPPORT } from '@navet/app/marketing/data/marketingContent';
 import { MarketingSectionShell } from '@navet/app/marketing/shell/MarketingSectionShell';
+import { ChevronDown } from 'lucide-react';
 
 type SupportedProviderLogo = {
   name: string;
@@ -49,24 +50,13 @@ const SUPPORTED_PROVIDER_LOGOS: readonly SupportedProviderLogo[] = [
   },
 ];
 
-function SupportEditorialColumn({
-  kicker,
-  title,
-  items,
-}: {
-  kicker: string;
-  title: string;
-  items: readonly string[];
-}) {
+function SupportEditorialColumn({ title, items }: { title: string; items: readonly string[] }) {
   const { theme } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
 
   return (
     <div className="space-y-3 sm:space-y-4">
       <div className="space-y-2">
-        <MarketingEyebrow compactMobile className={surface.textMuted}>
-          {kicker}
-        </MarketingEyebrow>
         <Text
           className={cn(
             'max-w-[18ch] text-[1.35rem] font-semibold tracking-[-0.03em] sm:text-2xl',
@@ -87,9 +77,7 @@ export function MarketingCurrentSupportSection({ className }: { className?: stri
 
   return (
     <MarketingSectionShell variant="editorial" compactMobile className={className}>
-      <section className="relative px-0.5 py-1 sm:px-1 sm:py-2 md:px-0">
-        <div className="pointer-events-none absolute bottom-0 left-[18%] h-32 w-32 rounded-full bg-[radial-gradient(circle,rgba(249,115,22,0.09),transparent_70%)] blur-3xl" />
-
+      <MarketingReveal className="relative px-0.5 py-1 sm:px-1 sm:py-2 md:px-0">
         <div className="relative z-[1] space-y-7 sm:space-y-10 md:space-y-12">
           <div className="grid gap-6 sm:gap-8 xl:grid-cols-2 xl:items-end">
             <div className="space-y-2.5 sm:space-y-3">
@@ -145,35 +133,35 @@ export function MarketingCurrentSupportSection({ className }: { className?: stri
             </div>
           </div>
 
-          <div
-            className={cn(
-              'grid gap-6 border-t pt-6 sm:gap-8 sm:pt-8 md:gap-10 md:pt-10 xl:grid-cols-2',
-              surface.border
-            )}
-          >
-            <SupportEditorialColumn
-              kicker={`${MARKETING_CURRENT_SUPPORT.dashboardSections.length} dashboard sections`}
-              title="Rooms for the routines people actually use."
-              items={MARKETING_CURRENT_SUPPORT.dashboardSections}
-            />
-            <SupportEditorialColumn
-              kicker={`${MARKETING_CURRENT_SUPPORT.cards.length} entity card families`}
-              title="Coverage across the core smart-home controls."
-              items={MARKETING_CURRENT_SUPPORT.cards}
-            />
-            <SupportEditorialColumn
-              kicker={`${MARKETING_CURRENT_SUPPORT.widgets.length} custom widgets`}
-              title="Utility surfaces for the details that don’t fit a basic card."
-              items={MARKETING_CURRENT_SUPPORT.widgets}
-            />
-            <SupportEditorialColumn
-              kicker={`${MARKETING_CURRENT_SUPPORT.providers.length} supported platforms`}
-              title="Start with the smart-home platform you already use."
-              items={MARKETING_CURRENT_SUPPORT.providers.map((provider) => provider.name)}
-            />
-          </div>
+          <details className={cn('marketing-support-details group border-y py-5', surface.border)}>
+            <summary
+              className={cn(
+                'flex cursor-pointer list-none items-center justify-between gap-4 rounded-sm text-sm font-medium [&::-webkit-details-marker]:hidden',
+                surface.textSecondary
+              )}
+            >
+              Explore the cards, widgets, and dashboard sections
+              <ChevronDown
+                size={18}
+                className="shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none"
+                aria-hidden="true"
+              />
+            </summary>
+            <p className={cn('mt-5 max-w-2xl text-sm leading-6', surface.textSecondary)}>
+              Home Assistant supports the full feature set. Homey and openHAB currently cover rooms,
+              lights, switches, and sensors.
+            </p>
+            <div className="grid gap-6 pt-6 sm:gap-8 xl:grid-cols-3">
+              <SupportEditorialColumn
+                title="Dashboard sections"
+                items={MARKETING_CURRENT_SUPPORT.dashboardSections}
+              />
+              <SupportEditorialColumn title="Cards" items={MARKETING_CURRENT_SUPPORT.cards} />
+              <SupportEditorialColumn title="Widgets" items={MARKETING_CURRENT_SUPPORT.widgets} />
+            </div>
+          </details>
         </div>
-      </section>
+      </MarketingReveal>
     </MarketingSectionShell>
   );
 }

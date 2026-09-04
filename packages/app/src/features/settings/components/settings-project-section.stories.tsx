@@ -36,6 +36,14 @@ export const Default: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvasElement.querySelectorAll('[data-settings-detail-group]')).toHaveLength(2);
+    await expect(canvas.getByRole('link', { name: 'Join Discord' })).toHaveAttribute(
+      'href',
+      'https://discord.com/channels/1540491864325623892'
+    );
+    await expect(canvas.getByRole('link', { name: 'Visit r/navet' })).toHaveAttribute(
+      'href',
+      'https://www.reddit.com/r/navet/'
+    );
     const licenseButton = canvas.getByRole('button', { name: 'View license details' });
     await expect(licenseButton).toHaveAttribute('aria-expanded', 'false');
     await userEvent.click(licenseButton);
