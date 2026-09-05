@@ -51,7 +51,10 @@ route to the trusted LAN address.
 
 - **Navet could not reach Home Assistant to finish sign-in** means the browser completed the Home
   Assistant step, but the Navet server could not redeem the response against its trusted upstream.
-  Check the route from the Navet host or container, not only the route from the browser.
+  This message also covers an HTTP error returned by the token endpoint; it does not prove the
+  server is unreachable. Check the route from the Navet host or container and confirm that the
+  entered address and saved upstream lead to the same Home Assistant installation. A successful
+  login against a different installation cannot authorize the saved upstream.
 - **Home Assistant returned an invalid sign-in response** means the OAuth response cannot be
   reused. Return to login and start a fresh sign-in instead of retrying the old browser return.
 
@@ -77,13 +80,19 @@ from a LAN-only address to a Tailscale address for the same Home Assistant insta
    docker exec navet cat /data/navet-installation-key
    ```
 
-3. Append `#navet_pairing=<key>` to the trusted Navet URL and open that complete URL once.
+3. Append `#navet_pairing=<key>` to the trusted Navet URL and load that complete URL once. If you
+   only change the fragment in an already open Navet tab, reload the page so Navet can consume it.
 4. Continue in that same tab, choose **Home Assistant**, enter the replacement address, and finish
    sign-in. Navet removes the key from the address immediately and updates the trusted upstream
    only after Home Assistant accepts the sign-in.
 
 Keep the installation key private. If `NAVET_HASS_URL` pins the upstream in Compose, update that
 setting and recreate the container instead; pairing cannot override a configured pin.
+
+**Restart onboarding** in Dashboard settings only reopens dashboard setup. It does not clear the
+trusted upstream or repair this connection mismatch. Local development also retains installation
+and sign-in state in its working directory's `.cache`; starting on another port alone does not
+create a fresh installation.
 
 ## Stuck on Starting your dashboard
 

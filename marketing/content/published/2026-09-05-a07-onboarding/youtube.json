@@ -1,0 +1,47 @@
+{
+  "episodeId": "A07",
+  "channel": "youtube",
+  "channelName": "Navet Dashboard",
+  "channelId": "UCDDpIjVNAGLWoxGmvp-triA",
+  "videoId": "XEjrLwt5xiQ",
+  "url": "https://youtu.be/XEjrLwt5xiQ",
+  "title": "Navet Setup Guide: Login, Onboarding & Your First Dashboard",
+  "description": "Set up Navet from login to your first Home card. This real application walkthrough covers connecting standalone Navet to Home Assistant, choosing a starting layout, setting language and appearance, navigating rooms, and restarting onboarding.\n\nRecorded with Navet 0.15.8 in Dark theme with an Orange accent. Navet should already be installed. Credential entry is omitted. Blank and YAML import are explained, not applied.\n\nExplore Navet: https://navet.app\n\nChapters\n00:00 Your first Home\n00:13 Connect and sign in\n01:02 Three starting points\n01:49 Start with all entities\n02:08 Language and formats\n02:48 Dark theme and Orange accent\n03:34 Finish setup\n03:54 Find your way around\n04:32 Add your first Home card\n05:10 Change preferences later\n05:36 Restart onboarding\n06:12 Next: build your dashboard\n\nEnglish captions included. Narration uses an AI-generated Juniper voice; the application footage is real.\n\n#Navet #SmartHome #HomeAssistant",
+  "visibility": "public",
+  "publishedDate": "2026-09-05",
+  "verifiedAt": "2026-09-05T20:32:33Z",
+  "authorization": "User accepted the pilot and explicitly requested adding it to the Navet YouTube channel.",
+  "method": "YouTube Studio UI; publication confirmation and Public channel-content row verified.",
+  "checks": {
+    "copyright": "No issues found",
+    "communityGuidelines": "No issues found"
+  },
+  "captions": {
+    "language": "English",
+    "cues": 104,
+    "upload": "Timed SRT",
+    "savedStatus": "English by you",
+    "sha256": "17f45823e1a193710a98eb5a3dd823a990bd2b34e8d9b2e495c2ed445d13289c"
+  },
+  "chapters": 12,
+  "thumbnail": {
+    "kind": "Actual onboarding frame from the approved video",
+    "sha256": "f923676a2edcfd4235fca7ee4ef5598395ba9fe63c2cfb5a1c126cb3c2e888a6"
+  },
+  "uploadedMaster": {
+    "sha256": "8e48727459fffe8037b42afa312976895b77f2c7f7442a10ae977994301e8f96",
+    "bytes": 22002405,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "durationSeconds": 388.287696,
+    "videoCodec": "H.264",
+    "audioCodec": "AAC"
+  },
+  "youtubeDisplayedDuration": "6:29",
+  "aiDisclosure": true,
+  "madeForKids": false,
+  "category": "Science & Technology",
+  "metrics": null,
+  "archiveNote": "YouTube hosts the public video. The editable master/source cache still needs separate durable archival storage."
+}

@@ -106,7 +106,9 @@ recovery screen can retry the connection or return to login for a fresh sign-in.
 
 The Home Assistant add-on is Ingress-only so its trusted Home Assistant user headers are never
 accepted from a directly exposed add-on port. Use standalone Docker for direct browser access and
-per-browser OAuth sessions.
+per-browser OAuth sessions. If a direct add-on address shows **403 Forbidden**, open Navet through
+**Open Web UI** or the Home Assistant sidebar. See the
+[recovery steps](https://docs.navet.app/install/home-assistant/#a-direct-app-address-shows-403-forbidden).
 
 A public deployment is still a sensitive control surface. Use HTTPS, least-privilege provider
 accounts, and the guidance in the [security policy](https://docs.navet.app/security/).

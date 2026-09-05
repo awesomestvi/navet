@@ -1,0 +1,70 @@
+{
+  "publishedDate": "2026-09-06",
+  "verifiedAt": "2026-09-05T22:49:48.537936+00:00",
+  "videoUrl": "https://youtu.be/CSv5DL7rIjU",
+  "channelUrl": "https://www.youtube.com/@navetapp",
+  "title": "Navet \u2014 Your Smart Home, in One Place | 1-Minute Tour",
+  "description": "Meet Navet: an open-source, self-hosted smart home dashboard for every screen.\n\nExplore the live demo: https://demo.navet.app/\nInstall Navet: https://docs.navet.app/install/\n\nThis one-minute product film shows Navet's real demo interface: Home, Lighting, Climate, Security, Energy, Media, Household chores, Routines, and Appearance settings \u2014 followed by desktop, tablet, and phone layouts.\n\nNavet works with Home Assistant, Homey, and openHAB. Feature availability varies by provider: https://docs.navet.app/integrations/\n\nWebsite: https://navet.app/\nDocumentation: https://docs.navet.app/\nSource code and contributions: https://github.com/awesomestvi/navet\nCommunity: https://www.reddit.com/r/navet/\n\nNew to Navet? Watch the setup guide: https://youtu.be/XEjrLwt5xiQ\n\nVisuals use authentic Navet demo data. Narration and instrumental music were created with ElevenLabs: https://elevenlabs.io/\n\n#Navet #SmartHome #HomeAssistant",
+  "channelDescription": "A smart home dashboard for every screen. Open source. Self-hosted.\n\nNavet brings everyday control of your home to wall panels, tablets, desktops, and phones. Connect Home Assistant, Homey, or openHAB and build a dashboard that fits your household. Feature availability varies by provider.\n\nThis is the official Navet channel: product tours, installation and setup guides, practical walkthroughs, and updates from the project.\n\nExplore the live demo to see Navet in action. Use the documentation to get started, or join the community to share ideas and contribute.",
+  "links": [
+    {
+      "title": "Explore the demo",
+      "url": "https://demo.navet.app/"
+    },
+    {
+      "title": "Navet website",
+      "url": "https://navet.app/"
+    },
+    {
+      "title": "Install & documentation",
+      "url": "https://docs.navet.app/install/"
+    },
+    {
+      "title": "GitHub \u00b7 source & issues",
+      "url": "https://github.com/awesomestvi/navet"
+    },
+    {
+      "title": "Navet community",
+      "url": "https://www.reddit.com/r/navet/"
+    }
+  ],
+  "previousTour": {
+    "url": "https://youtu.be/L4_pKOI6Ni8",
+    "visibility": "unlisted",
+    "descriptionLinksToReplacement": true
+  },
+  "channelTrailer": "CSv5DL7rIjU",
+  "englishTimedCaptions": true,
+  "typography": {
+    "reference": "https://navet.app/",
+    "font": "Inter",
+    "weight": 600,
+    "letterSpacingEm": -0.06,
+    "lineHeight": 0.94,
+    "accent": "every screen, warm gradient"
+  },
+  "assets": [
+    {
+      "name": "navet-channel-banner.png",
+      "sha256": "1e7749a1f7ac4eb022bbe469ef7dfada02287a4728fcdd21fd69a7cacb94c136"
+    },
+    {
+      "name": "navet-film-thumbnail.jpg",
+      "sha256": "ce8d420bdf0ee7f3461e42e9a32bcbddf6dde095e938a5240928c40237962111"
+    }
+  ],
+  "bannerRevision": {
+    "composition": "Tilted collage of nine authentic Navet demo screens with dark overlay and two-line headline",
+    "accent": "every screen, warm gradient",
+    "safeArea": "1544x422 centered within 2560x1440",
+    "provenance": "Existing tour-v7 demo captures: home, energy, media, security, lights, climate, household, routines, settings"
+  },
+  "thumbnailRevision": {
+    "composition": "One tablet with generous separation from left headline",
+    "source": "Navet website hero dashboard light-on capture",
+    "dimensions": [
+      1920,
+      1080
+    ]
+  }
+}

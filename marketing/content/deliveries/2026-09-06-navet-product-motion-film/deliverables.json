@@ -1,0 +1,954 @@
+{
+  "id": "navet-product-motion-film",
+  "title": "Navet — 60-second product motion film",
+  "revision": 2,
+  "status": "ready for local review",
+  "createdAt": "2026-09-05T22:19:02.977490+00:00",
+  "brief": "/Users/vishal/Development/Github/Navet/navet/marketing/content/briefs/2026-09-06-navet-product-motion-film.md",
+  "productionDirectory": "/Users/vishal/Development/Github/Navet/navet/.cache/navet-content/navet-product-motion-film",
+  "reviewUrl": "http://127.0.0.1:4180/video-review.html",
+  "outputs": {
+    "cleanVideo": {
+      "path": "/Users/vishal/Development/Github/Navet/navet/.cache/navet-content/navet-product-motion-film/navet-product-motion-film-1080p60.mp4",
+      "bytes": 45571260,
+      "sha256": "a205d9b5d2a26fc89d15122f22323cc860f446c6bf2e2e98b256d0ab2dba7b31",
+      "durationSeconds": 60.0,
+      "width": 1920,
+      "height": 1080,
+      "fps": 60,
+      "frames": 3600,
+      "videoCodec": "h264",
+      "pixelFormat": "yuv420p",
+      "sampleAspectRatio": "1:1",
+      "audioCodec": "aac",
+      "audioSampleRate": 48000,
+      "audioChannels": 2,
+      "fullDecode": "passed"
+    },
+    "captionedVideo": {
+      "path": "/Users/vishal/Development/Github/Navet/navet/.cache/navet-content/navet-product-motion-film/navet-product-motion-film-captioned-1080p60.mp4",
+      "bytes": 21245020,
+      "sha256": "f5cd2947ad933446f8e0ee36efc4cddf82a6160a9b45bba2ed3d244f574a1d15",
+      "durationSeconds": 60.0,
+      "width": 1920,
+      "height": 1080,
+      "fps": 60,
+      "frames": 3600,
+      "videoCodec": "h264",
+      "pixelFormat": "yuv420p",
+      "sampleAspectRatio": "1:1",
+      "audioCodec": "aac",
+      "audioSampleRate": 48000,
+      "audioChannels": 2,
+      "fullDecode": "passed"
+    },
+    "captions": {
+      "path": "/Users/vishal/Development/Github/Navet/navet/.cache/navet-content/navet-product-motion-film/navet-product-motion-film.srt",
+      "bytes": 548,
+      "sha256": "af293e636d69daf5ef4ff9d989db5378a48d10b3033f1787e9af8f4e7bbb33af",
+      "language": "en",
+      "cues": 10
+    },
+    "poster": {
+      "path": "/Users/vishal/Development/Github/Navet/navet/.cache/navet-content/navet-product-motion-film/poster.jpg",
+      "bytes": 206475,
+      "sha256": "1a9f6eb436cbd269653e26061fbad15c37a84ea58eedb599692f659acbf065d0",
+      "width": 1920,
+      "height": 1080,
+      "sourceTimeSeconds": 55.8
+    },
+    "editableProject": {
+      "path": "/Users/vishal/Development/Github/Navet/navet/.cache/navet-content/navet-product-motion-film/navet-product-motion-film-editable.zip",
+      "bytes": 42847713,
+      "sha256": "3c470cb7a437bd75bdec9a140202cf72d23e4f312b2d2b6a35da830412541229",
+      "files": 115,
+      "crcCheck": "passed"
+    }
+  },
+  "scenes": [
+    {
+      "start": 0,
+      "end": 3,
+      "view": "Logo",
+      "narration": "Meet Navet."
+    },
+    {
+      "start": 3,
+      "end": 8,
+      "view": "Home",
+      "narration": "Your home, at a glance."
+    },
+    {
+      "start": 8,
+      "end": 14,
+      "view": "Lighting",
+      "narration": "Set the mood."
+    },
+    {
+      "start": 14,
+      "end": 20,
+      "view": "Climate",
+      "narration": "Get comfortable."
+    },
+    {
+      "start": 20,
+      "end": 26,
+      "view": "Security",
+      "narration": "Keep an eye on home."
+    },
+    {
+      "start": 26,
+      "end": 34,
+      "view": "Energy",
+      "narration": "See where the energy goes."
+    },
+    {
+      "start": 34,
+      "end": 40,
+      "view": "Media",
+      "narration": "Put some music on."
+    },
+    {
+      "start": 40,
+      "end": 45,
+      "view": "Household",
+      "narration": "Make room for the everyday."
+    },
+    {
+      "start": 45,
+      "end": 49,
+      "view": "Routines",
+      "narration": ""
+    },
+    {
+      "start": 49,
+      "end": 53,
+      "view": "Settings",
+      "narration": "Make it yours."
+    },
+    {
+      "start": 53,
+      "end": 57,
+      "view": "Responsive layouts",
+      "narration": "A smart home dashboard for every screen."
+    },
+    {
+      "start": 57,
+      "end": 60,
+      "view": "End card",
+      "narration": ""
+    }
+  ],
+  "revisionRequest": "Correct chopped ambient light, summary pills, and Media headings. Remove all editorial eyebrows; retain only restrained subtitles.",
+  "assetProvenance": {
+    "revision": 2,
+    "productionDates": [
+      "2026-09-05",
+      "2026-09-06"
+    ],
+    "assets": [
+      {
+        "asset": "assets/framed/home.png",
+        "source": "/Users/vishal/Development/Github/Navet/navet/.cache/navet-content/navet-motion-promo/tour-v7/assets/tour/home.png",
+        "sourceRectCSS": [
+          64,
+          88,
+          1376,
+          500
+        ],
+        "sourceScale": 3,
+        "verification": "Current demo compared on 2026-09-05. Revised crop includes complete labels, summary pills, card borders, and background margins.",
+        "bytes": 2448063,
+        "sha256": "50f3de71433e8b31d9646f0f37436422fd412f706b2da92b941a923d4b1bd94a"
+      },
+      {
+        "asset": "assets/framed/lights.png",
+        "source": "/Users/vishal/Development/Github/Navet/navet/.cache/navet-content/navet-motion-promo/tour-v7/assets/tour/lights.png",
+        "sourceRectCSS": [
+          80,
+          90,
+          1344,
+          322
+        ],
+        "sourceScale": 3,
+        "verification": "Current demo compared on 2026-09-05. Revised crop includes complete labels, summary pills, card borders, and background margins.",
+        "bytes": 421453,
+        "sha256": "02d12019658e408b595feb16608838122659822d5a56f62112aa8fa180f04fae"
+      },
+      {
+        "asset": "assets/framed/climate.png",
+        "source": "/Users/vishal/Development/Github/Navet/navet/.cache/navet-content/navet-motion-promo/tour-v7/assets/tour/climate.png",
+        "sourceRectCSS": [
+          80,
+          90,
+          1344,
+          404
+        ],
+        "sourceScale": 3,
+        "verification": "Current demo compared on 2026-09-05. Revised crop includes complete labels, summary pills, card borders, and background margins.",
+        "bytes": 1734740,
+        "sha256": "e6520634b32ed73a8dce4521b69e3340288de840010dc03ac4153ea9571a691b"
+      },
+      {
+        "asset": "assets/framed/security.png",
+        "source": "/Users/vishal/Development/Github/Navet/navet/.cache/navet-content/navet-motion-promo/tour-v7/assets/tour/security.png",
+        "sourceRectCSS": [
+          80,
+          90,
+          1344,
+          804
+        ],
+        "sourceScale": 3,
+        "verification": "Current demo compared on 2026-09-05. Revised crop includes complete labels, summary pills, card borders, and background margins.",
+        "bytes": 4699100,
+        "sha256": "70b410d40e670198566c2ce6d9bd244e1139a03c2c0c233770f8369184abc038"
+      },
+      {
+        "asset": "assets/framed/cameras.png",
+        "source": "/Users/vishal/Development/Github/Navet/navet/.cache/navet-content/navet-motion-promo/tour-v7/assets/tour/security.png",
+        "sourceRectCSS": [
+          88,
+          150,
+          885,
+          384
+        ],
+        "sourceScale": 3,
+        "verification": "Current demo compared on 2026-09-05. Revised crop includes complete labels, summary pills, card borders, and background margins.",
+        "bytes": 3681899,
+        "sha256": "a23f98dfaea9b982c197d33f34bbe19a238fa818847196288fc6b361ae5b4455"
+      },
+      {
+        "asset": "assets/framed/doors.png",
+        "source": "/Users/vishal/Development/Github/Navet/navet/.cache/navet-content/navet-motion-promo/tour-v7/assets/tour/security.png",
+        "sourceRectCSS": [
+          88,
+          548,
+          885,
+          242
+        ],
+        "sourceScale": 3,
+        "verification": "Current demo compared on 2026-09-05. Revised crop includes complete labels, summary pills, card borders, and background margins.",
+        "bytes": 152016,
+        "sha256": "e8eb5a9914ed1d00cd26c04ee880db31ecced31a62728353ce353cb48cf2ab33"
+      },
+      {
+        "asset": "assets/framed/energy-stats.png",
+        "source": "/Users/vishal/Development/Github/Navet/navet/.cache/navet-content/navet-motion-promo/tour-v7/assets/tour/energy.png",
+        "sourceRectCSS": [
+          531,
+          144,
+          885,
+          194
+        ],
+        "sourceScale": 3,
+        "verification": "Current demo compared on 2026-09-05. Revised crop includes complete labels, summary pills, card borders, and background margins.",
+        "bytes": 233471,
+        "sha256": "369fe46de7b74bfee15053c4b85dd171f660978dc20179e55c21def7fc6c3ab0"
+      },
+      {
+        "asset": "assets/framed/energy-periods.png",
+        "source": "/Users/vishal/Development/Github/Navet/navet/.cache/navet-content/navet-motion-promo/tour-v7/assets/tour/energy.png",
+        "sourceRectCSS": [
+          88,
+          96,
+          352,
+          50
+        ],
+        "sourceScale": 3,
+        "verification": "Current demo compared on 2026-09-05. Revised crop includes complete labels, summary pills, card borders, and background margins.",
+        "bytes": 16399,
+        "sha256": "7d7b708c5465337c4079028b73f4dad9e400ec111e266059ca133b0ecefd322a"
+      },
+      {
+        "asset": "assets/framed/energy-graph.png",
+        "source": "/Users/vishal/Development/Github/Navet/navet/.cache/navet-content/navet-motion-promo/tour-v7/assets/tour/energy.png",
+        "sourceRectCSS": [
+          531,
+          338,
+          885,
+          382
+        ],
+        "sourceScale": 3,
+        "verification": "Current demo compared on 2026-09-05. Revised crop includes complete labels, summary pills, card borders, and background margins.",
+        "bytes": 375878,
+        "sha256": "0873757f20e6f7257309ea4b29aef59c1606acc001660f82274bdb0e3331b546"
+      },
+      {
+        "asset": "assets/framed/media-overview.png",
+        "source": "/Users/vishal/Development/Github/Navet/navet/.cache/navet-content/navet-motion-promo/tour-v7/assets/tour/media.png",
+        "sourceRectCSS": [
+          80,
+          104,
+          1344,
+          440
+        ],
+        "sourceScale": 3,
+        "verification": "Current demo compared on 2026-09-05. Revised crop includes complete labels, summary pills, card borders, and background margins.",
+        "bytes": 899855,
+        "sha256": "4736427275473a43a6b5e6007d663162c5f2d97bdc6996568900d50da8a72516"
+      },
+      {
+        "asset": "assets/framed/media-player.png",
+        "source": "/Users/vishal/Development/Github/Navet/navet/.cache/navet-content/navet-motion-promo/tour-v7/assets/tour/media.png",
+        "sourceRectCSS": [
+          88,
+          148,
+          442,
+          392
+        ],
+        "sourceScale": 3,
+        "verification": "Current demo compared on 2026-09-05. Revised crop includes complete labels, summary pills, card borders, and background margins.",
+        "bytes": 655000,
+        "sha256": "5736148519d6ea2bc03d3788857055b771140293ed10b19c2924246bcb648fd4"
+      },
+      {
+        "asset": "assets/framed/media-speakers.png",
+        "source": "/Users/vishal/Development/Github/Navet/navet/.cache/navet-content/navet-motion-promo/tour-v7/assets/tour/media.png",
+        "sourceRectCSS": [
+          88,
+          552,
+          664,
+          244
+        ],
+        "sourceScale": 3,
+        "verification": "Current demo compared on 2026-09-05. Revised crop includes complete labels, summary pills, card borders, and background margins.",
+        "bytes": 480029,
+        "sha256": "338f65baec4aa5406e72a1eab67334c1e260ec400de565bdf85f4ac55511abc4"
+      },
+      {
+        "asset": "assets/framed/routines.png",
+        "source": "/Users/vishal/Development/Github/Navet/navet/.cache/navet-content/navet-motion-promo/tour-v7/assets/tour/routines.png",
+        "sourceRectCSS": [
+          80,
+          90,
+          1344,
+          590
+        ],
+        "sourceScale": 3,
+        "verification": "Current demo compared on 2026-09-05. Revised crop includes complete labels, summary pills, card borders, and background margins.",
+        "bytes": 309007,
+        "sha256": "e599c87c68f6ea4221a47902db7a3ac50a4226d9687720b9be967ae7da9dd04a"
+      },
+      {
+        "asset": "assets/framed/household-before.png",
+        "source": "assets/captures/household-before.png",
+        "normalizedWidth": 1440,
+        "sourceRectCSS": [
+          80,
+          88,
+          1344,
+          444
+        ],
+        "verification": "Real local demo before/after interaction capture; complete visible sections isolated without changing product content.",
+        "bytes": 262521,
+        "sha256": "81db91b946bc2a238b26ce83ba7ac9c20ca612ef1d511fe33b19e3784029addc"
+      },
+      {
+        "asset": "assets/framed/household-after.png",
+        "source": "assets/captures/household-after.png",
+        "normalizedWidth": 1440,
+        "sourceRectCSS": [
+          80,
+          88,
+          1344,
+          444
+        ],
+        "verification": "Real local demo before/after interaction capture; complete visible sections isolated without changing product content.",
+        "bytes": 242524,
+        "sha256": "0a16b94aa703a139cd7fcd26ebe92f3fe07a7e0202214d383aeb5a5a8d5c06fe"
+      },
+      {
+        "asset": "assets/framed/household-done.png",
+        "source": "assets/captures/household-after.png",
+        "normalizedWidth": 1440,
+        "sourceRectCSS": [
+          80,
+          536,
+          680,
+          228
+        ],
+        "verification": "Real local demo before/after interaction capture; complete visible sections isolated without changing product content.",
+        "bytes": 77044,
+        "sha256": "f8211def95afa3b52d8880a845585d97e1e9d837583796b76a7ae6fbd3b7e55f"
+      },
+      {
+        "asset": "assets/framed/appearance-dark.png",
+        "source": "assets/captures/settings-dark.png",
+        "normalizedWidth": 1440,
+        "sourceRectCSS": [
+          758,
+          321,
+          516,
+          507
+        ],
+        "verification": "Real local demo before/after interaction capture; complete visible sections isolated without changing product content.",
+        "bytes": 175641,
+        "sha256": "cd760685d882f0b539d16327cee1ce4076c9d9ba0a94e510938022706495ee60"
+      },
+      {
+        "asset": "assets/framed/appearance-light.png",
+        "source": "assets/captures/settings-light.png",
+        "normalizedWidth": 1440,
+        "sourceRectCSS": [
+          758,
+          321,
+          516,
+          507
+        ],
+        "verification": "Real local demo before/after interaction capture; complete visible sections isolated without changing product content.",
+        "bytes": 160991,
+        "sha256": "1c9072ca978a863706c13bd94e08e1d3c0d00b828e8f578b82b8806aeea238fd"
+      },
+      {
+        "asset": "assets/captures/home.png",
+        "role": "comparison reference",
+        "verification": "Compared the current local demo with the retained high-resolution tour capture before production.",
+        "bytes": 124767,
+        "sha256": "baf09d3b9dfe7abd110a83470d30242e707d76b12705d41768128ff2154d4a93"
+      },
+      {
+        "asset": "assets/captures/security.png",
+        "role": "comparison reference",
+        "verification": "Compared the current local demo with the retained high-resolution tour capture before production.",
+        "bytes": 162372,
+        "sha256": "f1e4cb13a3816369825c01ef56a6437701cb8cdba3c44e28638031879c0d885e"
+      },
+      {
+        "asset": "assets/captures/energy.png",
+        "role": "comparison reference",
+        "verification": "Compared the current local demo with the retained high-resolution tour capture before production.",
+        "bytes": 104061,
+        "sha256": "dea43a825b8906914cf383933ad3a56c65e60dee7b60bf89a1a4e5cedb51f751"
+      },
+      {
+        "asset": "assets/captures/media.png",
+        "role": "comparison reference",
+        "verification": "Compared the current local demo with the retained high-resolution tour capture before production.",
+        "bytes": 92829,
+        "sha256": "782b05d7f58d22d216c8c6fe004054373d55611d6627aa120b51bf64d092d6de"
+      },
+      {
+        "asset": "assets/captures/routines.png",
+        "role": "comparison reference",
+        "verification": "Compared the current local demo with the retained high-resolution tour capture before production.",
+        "bytes": 78830,
+        "sha256": "6701d08f2fbb42bc5d28d1353b440a8883de1c5852a8ff3912d51b500be5b333"
+      },
+      {
+        "asset": "assets/captures/light-vector-00.json",
+        "source": "http://127.0.0.1:4178/demo/lights",
+        "method": "Actual DOM and computed styles captured after each real brightness interaction",
+        "state": {
+          "brightnessPercent": 100
+        },
+        "bytes": 74913,
+        "sha256": "7271e5c68edc747cee8b4d91c5997259bb3e6bd9260c64e78c219f0bd4bcb8ad"
+      },
+      {
+        "asset": "assets/captures/light-vector-01.json",
+        "source": "http://127.0.0.1:4178/demo/lights",
+        "method": "Actual DOM and computed styles captured after each real brightness interaction",
+        "state": {
+          "brightnessPercent": 95
+        },
+        "bytes": 74938,
+        "sha256": "769ff38f03f0511420334a499ba81f39e4b87798e8d63c794875baa20bdd60e3"
+      },
+      {
+        "asset": "assets/captures/light-vector-02.json",
+        "source": "http://127.0.0.1:4178/demo/lights",
+        "method": "Actual DOM and computed styles captured after each real brightness interaction",
+        "state": {
+          "brightnessPercent": 90
+        },
+        "bytes": 74939,
+        "sha256": "7ad6ceca87a4b12164cba115fa8534949c68c67d79c2150cda1d3a90133f5491"
+      },
+      {
+        "asset": "assets/captures/light-vector-03.json",
+        "source": "http://127.0.0.1:4178/demo/lights",
+        "method": "Actual DOM and computed styles captured after each real brightness interaction",
+        "state": {
+          "brightnessPercent": 85
+        },
+        "bytes": 74934,
+        "sha256": "0d4b212bed062a9fbd948074c77f82010929cec5f70ec092d074a3f920d9b67b"
+      },
+      {
+        "asset": "assets/captures/light-vector-04.json",
+        "source": "http://127.0.0.1:4178/demo/lights",
+        "method": "Actual DOM and computed styles captured after each real brightness interaction",
+        "state": {
+          "brightnessPercent": 80
+        },
+        "bytes": 74937,
+        "sha256": "ba79fa0c894bf5046218e6ccab4ee862084ac86ed39e045392807f1c20b38f2c"
+      },
+      {
+        "asset": "assets/captures/light-vector-05.json",
+        "source": "http://127.0.0.1:4178/demo/lights",
+        "method": "Actual DOM and computed styles captured after each real brightness interaction",
+        "state": {
+          "brightnessPercent": 75
+        },
+        "bytes": 74937,
+        "sha256": "f89d733047bbf51a77b9e4941633631f3cca56b07c517942583a6e33c37f8f93"
+      },
+      {
+        "asset": "assets/captures/light-vector-06.json",
+        "source": "http://127.0.0.1:4178/demo/lights",
+        "method": "Actual DOM and computed styles captured after each real brightness interaction",
+        "state": {
+          "brightnessPercent": 70
+        },
+        "bytes": 74932,
+        "sha256": "380853e13ec92da7c11646a581bde2fd935f17afcc7e3142a56b730ab58393c8"
+      },
+      {
+        "asset": "assets/captures/light-vector-07.json",
+        "source": "http://127.0.0.1:4178/demo/lights",
+        "method": "Actual DOM and computed styles captured after each real brightness interaction",
+        "state": {
+          "brightnessPercent": 65
+        },
+        "bytes": 74937,
+        "sha256": "87bee3cdd1657667a26925dc440910f83dd3e2c9b4d521e01faec815a4e4ca16"
+      },
+      {
+        "asset": "assets/captures/light-vector-08.json",
+        "source": "http://127.0.0.1:4178/demo/lights",
+        "method": "Actual DOM and computed styles captured after each real brightness interaction",
+        "state": {
+          "brightnessPercent": 60
+        },
+        "bytes": 74937,
+        "sha256": "4d32311255208c5ad9ea9de35cf8bf2eedb2b30f1f68c6edbd353fbc5d48ff97"
+      },
+      {
+        "asset": "assets/captures/light-vector-09.json",
+        "source": "http://127.0.0.1:4178/demo/lights",
+        "method": "Actual DOM and computed styles captured after each real brightness interaction",
+        "state": {
+          "brightnessPercent": 55
+        },
+        "bytes": 74937,
+        "sha256": "1aa135b96b7fe38772bf839f822bec25c3470825c5efaa7501a916a957675b35"
+      },
+      {
+        "asset": "assets/captures/light-vector-10.json",
+        "source": "http://127.0.0.1:4178/demo/lights",
+        "method": "Actual DOM and computed styles captured after each real brightness interaction",
+        "state": {
+          "brightnessPercent": 50
+        },
+        "bytes": 74937,
+        "sha256": "1a10ba698554152b2bb7207e423dc5296dda0a6159438036ef7a0057060f554f"
+      },
+      {
+        "asset": "assets/captures/light-vector-11.json",
+        "source": "http://127.0.0.1:4178/demo/lights",
+        "method": "Actual DOM and computed styles captured after each real brightness interaction",
+        "state": {
+          "brightnessPercent": 45
+        },
+        "bytes": 74937,
+        "sha256": "9fa881c00f2dfb8f4a14cbc0a652e9d198eee632a1a146b84a001b7b28c7a01c"
+      },
+      {
+        "asset": "assets/captures/light-vector-12.json",
+        "source": "http://127.0.0.1:4178/demo/lights",
+        "method": "Actual DOM and computed styles captured after each real brightness interaction",
+        "state": {
+          "brightnessPercent": 40
+        },
+        "bytes": 74937,
+        "sha256": "a58de81e823445c3382bc1534c86d86bdc15d059aba024e20f7fe9b69d7194d0"
+      },
+      {
+        "asset": "assets/captures/climate-vector-before.json",
+        "source": "http://127.0.0.1:4178/demo/climate",
+        "method": "Actual DOM and computed styles from the working demo climate control",
+        "state": {
+          "targetCelsius": 22,
+          "currentCelsius": 21,
+          "displayedTarget": 22
+        },
+        "bytes": 142253,
+        "sha256": "8350f7d395ae7c7fa2c0552959cf0b6cc12a1a9d67afd1f63ad6de5daa69a4f6"
+      },
+      {
+        "asset": "assets/captures/climate-vector-after.json",
+        "source": "http://127.0.0.1:4178/demo/climate",
+        "method": "Actual DOM and computed styles from the working demo climate control",
+        "state": {
+          "targetCelsius": 22.5,
+          "currentCelsius": 21,
+          "displayedTarget": 23
+        },
+        "bytes": 142262,
+        "sha256": "e9c3e202b51aad3b2d0ebb77d38963cee991471e3594e6b193ba1f3483ae3275"
+      },
+      {
+        "asset": "assets/captures/energy-orb-dom.json",
+        "source": "http://127.0.0.1:4178/demo/energy",
+        "method": "Actual native SVG particle geometry and text metrics. Replay retains the captured drift properties.",
+        "bytes": 81963,
+        "sha256": "cc7b20a9e4db33c940b1f43b8d5a9f08bcb124370955cce33388b700594731ff"
+      },
+      {
+        "asset": "assets/captures/desktop.png",
+        "source": "http://127.0.0.1:4178/demo",
+        "method": "Independently captured responsive layout at its actual viewport. Capture API uniformly scales the returned image.",
+        "cssViewport": [
+          1440,
+          960
+        ],
+        "imagePixels": [
+          1429,
+          953
+        ],
+        "aspectRatioRetained": true,
+        "bytes": 124726,
+        "sha256": "10006f733dc952b274b01784a40bfa936e3b55f37991b0d8efa9aa28743463d4"
+      },
+      {
+        "asset": "assets/captures/tablet.png",
+        "source": "http://127.0.0.1:4178/demo",
+        "method": "Independently captured responsive layout at its actual viewport. Capture API uniformly scales the returned image.",
+        "cssViewport": [
+          834,
+          1112
+        ],
+        "imagePixels": [
+          823,
+          1097
+        ],
+        "aspectRatioRetained": true,
+        "bytes": 95672,
+        "sha256": "c67699b94b5e23d46c540b94896895de9fcb29049822871b4b6e317711182c04"
+      },
+      {
+        "asset": "assets/captures/phone.png",
+        "source": "http://127.0.0.1:4178/demo",
+        "method": "Independently captured responsive layout at its actual viewport. Capture API uniformly scales the returned image.",
+        "cssViewport": [
+          390,
+          844
+        ],
+        "imagePixels": [
+          379,
+          820
+        ],
+        "aspectRatioRetained": true,
+        "bytes": 40611,
+        "sha256": "7660fe7ce59300a0804a4a7a2bb7f3de93e981e745eeb48c7efb5409f7a62507"
+      },
+      {
+        "asset": "assets/logo.svg",
+        "source": "../navet-motion-promo/tour-v7/assets/logo.svg",
+        "method": "Unmodified official Navet brand asset",
+        "bytes": 1893,
+        "sha256": "d52ce9df84d1a14bad59b40d5c3be63a487ce90e94552afbe7e248ec4067aa08"
+      },
+      {
+        "asset": "assets/logo-horizontal.svg",
+        "source": "../navet-motion-promo/tour-v7/assets/logo-horizontal.svg",
+        "method": "Unmodified official Navet brand asset",
+        "bytes": 66165,
+        "sha256": "0359eb444faf02e3a08d7351f6893d61e89128147c1e5324fa0d26421b1f40a7"
+      },
+      {
+        "asset": "assets/fonts/inter.woff2",
+        "source": "Navet bundled Inter variable font, retained tour assets/fonts/inter/inter-latin-wght-normal.woff2",
+        "license": "assets/fonts/LICENSE.txt",
+        "websiteComparison": "website-typography-reference.json",
+        "bytes": 48256,
+        "sha256": "3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62"
+      },
+      {
+        "asset": "assets/gsap.min.js",
+        "source": "GSAP 3.15.0 installed npm package",
+        "license": "https://gsap.com/standard-license/",
+        "bytes": 72927,
+        "sha256": "92bb9a96476f983d212a2bc4f54c889039c1696dd4461d40a736860938570fbb"
+      }
+    ],
+    "audio": "audio-provenance.json",
+    "notes": [
+      "Product imagery is authentic demo data; no generated replacement UI.",
+      "Source imagery embedded by the Navet demo retains its original product-source provenance.",
+      "See framed-asset-provenance.json for exact source crop rectangles."
+    ]
+  },
+  "audioProvenance": {
+    "narration": {
+      "service": "ElevenLabs",
+      "voice": "Juniper — Grounded and Professional",
+      "model": "Eleven v3",
+      "newTake": true,
+      "source": "assets/audio/juniper-source.mp3",
+      "speed": 1,
+      "pronunciationInput": "Nah-vet",
+      "sourceDuration": 16.58775,
+      "credits": 237
+    },
+    "music": {
+      "service": "ElevenLabs",
+      "model": "Music v2",
+      "title": "Architectural Harmony",
+      "projectId": "2awh5XEiszmTUSen7XtD",
+      "songId": "621nBQKdr7XrpTO9P04A",
+      "source": "assets/audio/music-source.m4a",
+      "requestedBPM": 120,
+      "duration": 60,
+      "newGeneration": true,
+      "variantsGenerated": 2,
+      "credits": 1800,
+      "tempoEvidence": "review/music-tempo-estimate.json"
+    },
+    "soundDesign": "Original restrained clicks and filtered-noise transitions generated by mix-audio.py",
+    "mix": {
+      "sampleRate": 48000,
+      "channels": 2,
+      "duration": 60,
+      "samplePeakDBFS": -3.053708076477051,
+      "duckingDB": -6.02,
+      "voiceSpeedAndPitch": "unchanged",
+      "finalEncodedMeasurement": {
+        "integratedLUFS": -17.4,
+        "truePeakDBFS": -3.1,
+        "clipping": false,
+        "sampleRate": 48000,
+        "channels": 2,
+        "speechDuckingDB": 6.02
+      }
+    },
+    "purchasesOrUpgrades": false
+  },
+  "typography": {
+    "url": "https://navet.app/",
+    "measuredAt": "2026-09-05T21:49:40.359Z",
+    "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", sans-serif",
+    "fontSize": "60px",
+    "fontWeight": "600",
+    "letterSpacing": "-3.6px",
+    "lineHeight": "56.4px",
+    "text": "A smart home dashboard for every screen"
+  },
+  "verification": {
+    "exports": {
+      "navet-product-motion-film-1080p60.mp4": {
+        "durationSeconds": 60.0,
+        "width": 1920,
+        "height": 1080,
+        "fps": 60,
+        "frames": 3600,
+        "videoCodec": "h264",
+        "pixelFormat": "yuv420p",
+        "sampleAspectRatio": "1:1",
+        "audioCodec": "aac",
+        "audioSampleRate": 48000,
+        "audioChannels": 2,
+        "fullDecode": "passed",
+        "bytes": 45571260
+      },
+      "navet-product-motion-film-captioned-1080p60.mp4": {
+        "durationSeconds": 60.0,
+        "width": 1920,
+        "height": 1080,
+        "fps": 60,
+        "frames": 3600,
+        "videoCodec": "h264",
+        "pixelFormat": "yuv420p",
+        "sampleAspectRatio": "1:1",
+        "audioCodec": "aac",
+        "audioSampleRate": 48000,
+        "audioChannels": 2,
+        "fullDecode": "passed",
+        "bytes": 21245020
+      }
+    },
+    "method": "FFprobe format inspection, full FFmpeg audio/video decode with -xerror, all-frame luminance and continuity scan, EBU R128 audio measurement.",
+    "continuity": {
+      "framesScanned": 3600,
+      "flatOrBlankFrames": 0,
+      "minimumSpatialStandardDeviation": 1.3493030285643905,
+      "minimumPixelsAbove30": 32,
+      "largestAdjacentFrameDeltas": [
+        {
+          "time": 50.75,
+          "meanAbsoluteGrayDelta": 46.1848
+        },
+        {
+          "time": 30.65,
+          "meanAbsoluteGrayDelta": 6.4017
+        },
+        {
+          "time": 30.66667,
+          "meanAbsoluteGrayDelta": 6.3349
+        },
+        {
+          "time": 21.75,
+          "meanAbsoluteGrayDelta": 6.245
+        },
+        {
+          "time": 21.76667,
+          "meanAbsoluteGrayDelta": 6.1992
+        },
+        {
+          "time": 21.73333,
+          "meanAbsoluteGrayDelta": 6.137
+        },
+        {
+          "time": 34.93333,
+          "meanAbsoluteGrayDelta": 6.1296
+        },
+        {
+          "time": 21.78333,
+          "meanAbsoluteGrayDelta": 6.1211
+        },
+        {
+          "time": 30.63333,
+          "meanAbsoluteGrayDelta": 6.089
+        },
+        {
+          "time": 30.68333,
+          "meanAbsoluteGrayDelta": 6.0171
+        },
+        {
+          "time": 21.8,
+          "meanAbsoluteGrayDelta": 6.0101
+        },
+        {
+          "time": 21.81667,
+          "meanAbsoluteGrayDelta": 5.8576
+        },
+        {
+          "time": 34.91667,
+          "meanAbsoluteGrayDelta": 5.8497
+        },
+        {
+          "time": 30.61667,
+          "meanAbsoluteGrayDelta": 5.769
+        },
+        {
+          "time": 30.7,
+          "meanAbsoluteGrayDelta": 5.765
+        },
+        {
+          "time": 21.83333,
+          "meanAbsoluteGrayDelta": 5.687
+        },
+        {
+          "time": 21.71667,
+          "meanAbsoluteGrayDelta": 5.6669
+        },
+        {
+          "time": 34.95,
+          "meanAbsoluteGrayDelta": 5.6248
+        },
+        {
+          "time": 34.96667,
+          "meanAbsoluteGrayDelta": 5.5683
+        },
+        {
+          "time": 30.6,
+          "meanAbsoluteGrayDelta": 5.5089
+        }
+      ],
+      "workerBoundaryDeltas": {
+        "15": 0.0744,
+        "30": 0.1949,
+        "45": 0.499
+      },
+      "note": "Pixel deltas are screening evidence; final transition and crop quality also receive visual inspection."
+    },
+    "audio": {
+      "integratedLUFS": -17.4,
+      "truePeakDBFS": -3.1,
+      "clipping": false,
+      "sampleRate": 48000,
+      "channels": 2,
+      "speechDuckingDB": 6.02
+    },
+    "status": "passed",
+    "visualReview": "visual-review.json",
+    "browserPlayback": "Both versions played from the beginning to ended=true at 60 seconds without a media error."
+  },
+  "visualReview": {
+    "revision": 2,
+    "reviewedAt": "2026-09-05T22:16:36.254042+00:00",
+    "framesInspected": 41,
+    "sourceFramesAlsoInspected": 38,
+    "frames": "inspected-frames.json",
+    "corrections": {
+      "eyebrowHeadings": "Removed all editorial eyebrow elements. One 38px subtitle per scene.",
+      "home": "Complete room tabs, five summary pills, and two full card rows. Captured ambient background retained with empty-margin feathering.",
+      "lighting": "All summary pills fit in overview; complete Kitchen control section is isolated and enlarged.",
+      "climate": "Full climate card and complete overview summary preserved; resulting Heat to 23C state retained.",
+      "security": "Full overview, two entire camera cards, and four entire door/window cards.",
+      "energy": "Full metric cards and usage graph. Only decorative particles expand beyond the frame; orb numbers fade before that move.",
+      "media": "Spotify and Media Library headings retain their full height. Complete artwork/player and three complete grouped-speaker cards.",
+      "household": "All before/after summary and first-row cards fit. Full Done section reveals the real completed chore.",
+      "routines": "Complete list, controls, tabs, and summary pills remain visible.",
+      "appearance": "Complete native theme-control card, measured at 516 by 506.5 CSS pixels with 28px radius; actual Dark and Light captures.",
+      "responsive": "Independently captured desktop/tablet/phone images retain their image aspect ratios and complete outer frames. Native app viewport scrolling boundaries remain part of the authentic screenshots.",
+      "transitions": "Reviewed sampled transition frames and all-frame delta screening. No blank frames or worker-boundary discontinuity. Scene subtitles fade sequentially to avoid overlapping text."
+    },
+    "captionReview": {
+      "cues": 10,
+      "placement": "Full sentence captions remain inside the 1920x1080 frame with bottom margin.",
+      "sourceWords": "All 10 cuts fully retain measured source word intervals; review/narration-alignment.json",
+      "audio": "Original new take and soundtrack retained across revision; final mix -17.4 LUFS, -3.1 dBFS true peak."
+    },
+    "browserPlayback": {
+      "clean": {
+        "duration": 60,
+        "currentTime": 60,
+        "ended": true,
+        "videoWidth": 1920,
+        "videoHeight": 1080,
+        "readyState": 4,
+        "error": null
+      },
+      "captioned": {
+        "duration": 60,
+        "currentTime": 60,
+        "ended": true,
+        "videoWidth": 1920,
+        "videoHeight": 1080,
+        "readyState": 4,
+        "error": null
+      }
+    }
+  },
+  "demoSupport": {
+    "tests": {
+      "command": "pnpm exec vitest run packages/app/src/demo/demo-chore-actions.test.ts packages/app/src/preview/runtime.test.ts packages/app/src/demo/demo-app.test.tsx",
+      "filesPassed": 3,
+      "testsPassed": 8
+    },
+    "browser": {
+      "lighting": "13 observed brightness states from 100% to 40%",
+      "climate": "Target 22 to 22.5 degrees; actual displayed result Heat to 23°C",
+      "household": "Unload dishwasher completed for Maya; 2/6 to 3/6, 15 points earned",
+      "appearance": "Dark to Light using actual Appearance theme picker"
+    },
+    "scope": "Preview climate feature-service registration and demo-only chore action lifecycle. No API or schema changes."
+  },
+  "render": {
+    "runtime": "Hyperframes 0.8.27 / GSAP 3.15.0",
+    "duration": 60,
+    "frames": 3600,
+    "fps": 60,
+    "width": 1920,
+    "height": 1080,
+    "strict": true,
+    "lint": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "instructions": "/Users/vishal/Development/Github/Navet/navet/.cache/navet-content/navet-product-motion-film/README.md"
+  },
+  "publication": "Local review only; no publication or website integration requested."
+}

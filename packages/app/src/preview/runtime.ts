@@ -14,6 +14,7 @@ import type {
   PlatformTaskRuntimeSnapshot,
 } from '@navet/core/provider-feature-models';
 import type {
+  ProviderClimateFeatureService,
   ProviderHistoryFeatureService,
   ProviderLightFeatureService,
   ProviderMediaFeatureService,
@@ -1256,6 +1257,24 @@ const previewLightFeatureService: ProviderLightFeatureService = {
   },
 };
 
+const previewClimateFeatureService: ProviderClimateFeatureService = {
+  setTargetTemperature: async (entityId, update) => {
+    updatePreviewEntity(entityId, (entity) => ({
+      ...entity,
+      attributes: {
+        ...entity.attributes,
+        ...(typeof update.temperature === 'number' ? { temperature: update.temperature } : {}),
+        ...(typeof update.targetTemperatureLow === 'number'
+          ? { targetTemperatureLow: update.targetTemperatureLow }
+          : {}),
+        ...(typeof update.targetTemperatureHigh === 'number'
+          ? { targetTemperatureHigh: update.targetTemperatureHigh }
+          : {}),
+      },
+    }));
+  },
+};
+
 const PREVIEW_MEDIA_LIBRARY: PlatformMediaBrowseResult = {
   title: 'Media Library',
   mediaClass: 'directory',
@@ -1674,6 +1693,7 @@ const previewProviderPackageRegistration: ProviderPackageRegistration = {
       conversation: false,
     },
     lightFeatureService: previewLightFeatureService,
+    climateFeatureService: previewClimateFeatureService,
     mediaFeatureService: previewMediaFeatureService,
     securityFeatureService: previewSecurityFeatureService,
     historyFeatureService: previewHistoryFeatureService,

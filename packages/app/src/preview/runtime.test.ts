@@ -75,6 +75,22 @@ describe('preview runtime', () => {
     );
   });
 
+  it('retains a demo temperature adjustment in the provider snapshot', async () => {
+    installPreviewRuntime(getPreviewRuntimeScenario('demo'));
+    const climate = getProviderRuntimeRegistration('home_assistant').climateFeatureService;
+    expect(climate).toBeDefined();
+    await climate!.setTargetTemperature('climate.main_floor', {
+      serviceDomain: 'climate',
+      temperature: 22.5,
+    });
+    const entity =
+      integrationStore.getState().providerEntitiesByProviderId.home_assistant?.[
+        'home_assistant:climate.main_floor'
+      ];
+    expect(entity?.attributes.temperature).toBe(22.5);
+    expect(entity?.attributes.currentTemperature).toBe(21);
+  });
+
   it('provides artwork for the featured demo media card', () => {
     const devices = getPreviewDeviceCollection(getPreviewRuntimeScenario('demo'));
     const featuredSpeaker = devices.media.find((device) =>

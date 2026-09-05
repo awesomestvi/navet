@@ -73,6 +73,10 @@ account, Home Assistant address, or access token.
 Your rooms and devices should appear automatically. You do not need to enter a Home Assistant
 address or access token.
 
+The App opens inside Home Assistant through Ingress. Always use **Open Web UI** or the sidebar;
+a direct address such as `http://homeassistant.local:8234` is blocked. Choose standalone Docker
+below if you need a separate dashboard URL.
+
 ## Option 3: Install with Docker
 
 Choose this option only if you are comfortable using Docker.
@@ -117,7 +121,8 @@ Choose this option only if you are comfortable using Docker.
 3. If you did not set `NAVET_HASS_URL` and this is a fresh installation, run
    `docker compose logs navet`, copy the URL containing
    `#navet_pairing=<64-character-key>`, and open that complete URL once. Navet removes the key
-   from the address immediately and keeps it only until the first server is approved.
+   from the address immediately and keeps it only until the first server is approved. If adding
+   the fragment to an already open Navet tab does not remove it, reload that complete URL.
 4. Open [`http://localhost:8080`](http://localhost:8080) when Docker runs on this computer. From
    another device, replace `localhost` with the Docker host's LAN, VPN, or public name.
 5. Choose **Home Assistant**, enter an address that the current browser can reach, and sign in.
@@ -223,6 +228,20 @@ create a second `frontend:` section.
 2. Check that its status is **Running**.
 3. Open the **Log** tab and read the first error.
 4. Restart the App and try **Open Web UI** again.
+
+### A direct App address shows 403 Forbidden
+
+The Home Assistant App accepts connections through Home Assistant Ingress only. Mapping its
+internal port to a host port does not enable a standalone dashboard.
+
+1. Update Navet if an older installation still offers a network port setting, and remove any
+   manually configured port mapping.
+2. Go to **Settings → Apps → Navet** and choose **Open Web UI**, or open Navet from the sidebar.
+3. Replace bookmarks such as `http://homeassistant.local:8234` with the Home Assistant page you
+   just opened.
+
+For direct browser access on a separate port, follow [Option 3: Install with Docker](#option-3-install-with-docker).
+The Docker installation has its own Home Assistant sign-in.
 
 ### Docker cannot connect to Home Assistant
 

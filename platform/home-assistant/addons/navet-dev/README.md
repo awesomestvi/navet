@@ -18,6 +18,12 @@ will appear in the other.
 
 ## When Something Breaks
 
+If a direct address such as `http://homeassistant.local:8234` shows **403 Forbidden**, open Navet
+Dev with **Open Web UI** or the Home Assistant sidebar. The add-on supports Ingress only. Remove
+any manually configured port mapping and replace bookmarks that point to that port. For a separate
+dashboard URL, use
+[standalone Docker](https://docs.navet.app/install/home-assistant/#option-3-install-with-docker).
+
 1. Confirm the add-on status is **Running**.
 2. Open the **Log** tab and capture the first relevant error.
 3. Restart the add-on and repeat the action once.

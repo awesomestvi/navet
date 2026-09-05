@@ -20,7 +20,14 @@ If you are unsure which Home Assistant route fits, compare them in
 
 ## After Navet opens
 
-Check that your rooms and devices appear. Then try these steps:
+If the startup wizard appears, choose **Start with all entities**, **Start with a blank dashboard**,
+or **Import a config file**. The first two routes continue through language, formats, and appearance;
+import restores a saved Navet YAML configuration directly. Follow
+[Complete the startup wizard](/guide/quick-start/first-15-minutes/#complete-the-startup-wizard)
+for the exact steps.
+
+Check that your rooms and devices appear, or add the cards you want if you chose a blank dashboard.
+Then try these steps:
 
 1. Use **Customize** on Home to reorder, resize, hide, lock, or manually add cards.
 2. Try a Home layout pack or build sections and columns yourself.

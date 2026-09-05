@@ -71,6 +71,7 @@ import type { NavetAlarmEntity } from '@navet/core/alarm-types';
 import { Fan, Lightbulb, ShieldCheck, Speaker, Zap } from 'lucide-react';
 import { Children, type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import type { CameraDevice, DeviceWithType, LockDevice, SensorDevice } from '../types/device.types';
+import { installDemoChoreActions } from './demo-chore-actions';
 import { PHOTO_FRAME_DEMO_IMAGES } from './photo-frame-demo-images';
 
 type DemoSection = Section;
@@ -1358,7 +1359,11 @@ function TasksShot() {
         },
       }),
     });
-    return () => useChoreWorkspaceStore.getState().reset();
+    const restoreChoreActions = installDemoChoreActions();
+    return () => {
+      restoreChoreActions();
+      useChoreWorkspaceStore.getState().reset();
+    };
   }, [t]);
   return <HouseholdSection syncEnabled={false} />;
 }

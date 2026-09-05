@@ -22,12 +22,28 @@ edit mode.
 
 ## Restart onboarding
 
-Choose **Restart onboarding** when you want to repeat the initial dashboard choices rather than
-restore every hidden entity directly.
+1. Open **Settings → Dashboard**.
+2. Under **Maintenance → Entity visibility**, choose **Restart onboarding**.
+3. Read the confirmation, then choose **Restart**.
+4. Navet returns to Home and reopens the startup wizard when provider entities are loaded.
+
+Choose **Start with all entities**, **Start with a blank dashboard**, or **Import a config file**.
+The first two routes continue through language, formats, and appearance. Import applies a saved
+Navet YAML configuration directly. See
+[Complete the startup wizard](/guide/quick-start/first-15-minutes/#complete-the-startup-wizard).
 
 ![The confirmation for restoring entities or restarting onboarding.](/docs/how-to/dashboards/entity-visibility-confirmation.webp)
 
-Restarting onboarding changes the dashboard setup flow; it does not reset provider credentials.
+Restarting alone reopens setup; it does not reset provider credentials or clear your layout.
+It also does not change the installation's trusted Home Assistant server or recreate a fresh
+installation. See [Connection or sign-in fails](/guide/troubleshooting/connection/) for connection
+or installation-pairing problems.
+Finishing the **blank** route clears the Home layout and custom cards and hides the loaded entities.
+Importing can replace current configuration. [Export a backup](/guide/dashboards/backup-and-restore/)
+first if you want to preserve an existing setup.
+
+The public demo renders a preset dashboard without the startup wizard. Use an installed Navet
+instance to repeat onboarding.
 
 ## If one entity still does not appear
 

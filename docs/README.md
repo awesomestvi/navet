@@ -2,6 +2,18 @@
 
 Use this page as the map for the documentation set.
 
+## Keep guidance matched to the product
+
+Before writing or reusing product instructions, tutorials, or marketing claims, cross-check the
+current implementation and supported provider/deployment behavior. Inspect the running product
+or the exact Storybook component when practical. Existing Markdown, screenshots, and plans are
+references to verify, not evidence that a feature still behaves as described.
+
+When a discrepancy is found, update the affected current guide and any working tutorial or plan
+that repeats it. Record the implementation reference and what was verified. Distinguish a
+component preview or preset demo from a complete workflow on a connected installation. Keep
+historical changelog entries as historical records.
+
 ## Start Here
 
 - If you want to run Navet: start with the provider setup guides.

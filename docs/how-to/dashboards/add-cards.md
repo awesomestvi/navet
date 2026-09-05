@@ -13,12 +13,16 @@ already present in the target area where duplicates would not be useful.
 
 1. Open the target dashboard and room.
 2. Enter edit mode.
-3. Choose **Add card**.
+3. Choose **Add Card**.
+
+Home has its own layout. After choosing **Start with all entities** during onboarding, room
+dashboards can contain automatically generated cards while Home is still empty. Add the cards you
+want to Home through this library.
 
 ## Find what you need
 
 - Use **All cards** for devices and other normalized provider entities.
-- Use **Custom card** for Navet content such as notes, RSS, photos, actions, maps, battery summaries,
+- Use **Custom cards** for Navet content such as notes, RSS, photos, actions, maps, battery summaries,
   UPS status, and energy summaries.
 - Search by the visible device or room name.
 - Use an explicit native identifier when you need to find one exact provider entity.

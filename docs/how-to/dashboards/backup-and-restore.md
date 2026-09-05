@@ -22,12 +22,16 @@ The export contains dashboard configuration. It is not a backup of your smart-ho
 
 1. Return to **Local config backup**.
 2. Choose **Import config**.
-3. Select a Navet configuration export.
-4. Review the confirmation.
-5. Import the file and allow the dashboard to refresh.
+3. Select a Navet `.yaml` or `.yml` configuration export.
+4. A valid file is applied immediately after selection. Wait for the success message and dashboard
+   refresh; there is no separate review confirmation.
 
 Import can replace current local configuration. Export the current state first if you may want it
 back.
+
+The startup wizard also offers **Import a config file**. It restores configuration directly instead
+of continuing through the language and appearance steps. Standalone Navet refreshes afterward;
+the Home Assistant custom panel reveals the imported dashboard in place.
 
 ## Restore a revision
 
