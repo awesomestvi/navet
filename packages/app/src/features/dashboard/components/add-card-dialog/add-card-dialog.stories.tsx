@@ -102,6 +102,11 @@ export const PhoneCoverSheet: Story = {
     const backButton = page.getByRole('button', { name: 'Back' });
     const addWidgetButton = page.getByRole('button', { name: 'Add Widget' });
     await expect(backButton.parentElement).toHaveClass('!flex-nowrap', '!justify-between');
+    await expect(backButton).toHaveClass('h-10');
+    await expect(addWidgetButton).toHaveClass('h-10');
+    await expect(backButton.getBoundingClientRect().height).toBe(
+      addWidgetButton.getBoundingClientRect().height
+    );
     await expect(backButton).not.toHaveClass('w-full');
     await expect(addWidgetButton).not.toHaveClass('w-full');
     await expect(

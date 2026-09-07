@@ -33,6 +33,8 @@ const OAUTH_ERROR_CODES = {
   not_authorized: true,
   session_changed: true,
   temporarily_unavailable: true,
+  target_unreachable: true,
+  authorization_rejected: true,
 };
 
 function getHeader(headers, name) {
@@ -485,7 +487,8 @@ function isValidAuthData(value) {
     typeof value.access_token === 'string' &&
     value.access_token.length > 0 &&
     typeof value.expires_in === 'number' &&
-    Number.isFinite(value.expires_in)
+    Number.isFinite(value.expires_in) &&
+    (value.tenantId === undefined || /^hat_[a-f0-9]{64}$/.test(value.tenantId))
   );
 }
 
@@ -522,8 +525,12 @@ function isValidStoredSession(value) {
         value.authRevision < Number.MAX_SAFE_INTEGER)) &&
     (value.auth === null || isValidAuthData(value.auth)) &&
     (value.pending === null || isValidPendingOAuth(value.pending)) &&
-    value.userId === null &&
-    value.userName === null
+    (value.userId === null ||
+      (typeof value.userId === 'string' &&
+        value.userId.length > 0 &&
+        value.userId.length <= 128)) &&
+    (value.userName === null ||
+      (typeof value.userName === 'string' && value.userName.length <= 120))
   );
 }
 
@@ -624,8 +631,8 @@ function sanitizeSession(session) {
     clientId: auth ? auth.clientId : null,
     expiresAt: auth ? auth.expires : null,
     expiresIn: auth ? auth.expires_in : null,
-    userId: null,
-    userName: null,
+    userId: session.userId,
+    userName: session.userName,
   };
 }
 
@@ -1134,6 +1141,7 @@ function createAuthSessionStore(options) {
       sendJson(r, 409, { error: 'OAuth refresh cannot change the Home Assistant target' });
       return;
     }
+    auth.tenantId = context.session.auth.tenantId;
 
     const revisionHeader = getHeader(r && r.headersIn, AUTH_REVISION_HEADER).trim();
     const legacyRefresh = revisionHeader === '';
@@ -1201,6 +1209,40 @@ function createAuthSessionStore(options) {
       pending: null,
       userId: null,
       userName: null,
+    });
+    try {
+      writeSession(context.cookieId, next);
+    } catch (error) {
+      if (sendSessionStoreError(r, error)) {
+        return;
+      }
+      throw error;
+    }
+    setSessionCookie(r, context.cookieId);
+    sendJson(r, 200, sanitizeSession(next));
+  }
+
+  function handleIdentityPut(r) {
+    const context = getBoundRequestSession(r, false);
+    if (!context || !context.session.auth) {
+      sendJson(r, 401, { error: 'Authenticated browser session is required' });
+      return;
+    }
+    if (!isSameOriginMutation(r)) {
+      sendJson(r, 403, { error: 'Cross-origin identity mutation is not allowed' });
+      return;
+    }
+    const body = parseJson(r.requestText || '') || {};
+    const userId = typeof body.userId === 'string' ? body.userId.trim() : '';
+    const userName = typeof body.userName === 'string' ? body.userName.trim() : '';
+    if (!userId || userId.length > 128 || userName.length > 120) {
+      sendJson(r, 400, { error: 'Invalid Home Assistant user identity' });
+      return;
+    }
+    const next = cloneSession(context.session, {
+      updatedAt: Date.now(),
+      userId: userId,
+      userName: userName || null,
     });
     try {
       writeSession(context.cookieId, next);
@@ -1313,19 +1355,32 @@ function createAuthSessionStore(options) {
       sendJson(r, 400, { error: 'A valid Home Assistant URL is required' });
       return;
     }
-    const installationAccess = installationAuthority.authorizeHomeAssistant(
-      r,
-      hassUrl,
-      normalizeHassUrl
+    const replacingAuthenticatedTarget = Boolean(
+      context.session.auth &&
+        normalizeHassUrl(context.session.auth.hassUrl) !== hassUrl
     );
+    const installationAccess = replacingAuthenticatedTarget
+      ? typeof installationAuthority.authorizeHomeAssistantChange === 'function'
+        ? installationAuthority.authorizeHomeAssistantChange(
+            r,
+            hassUrl,
+            normalizeHassUrl
+          )
+        : { allowed: true, pairingVerified: true }
+      : installationAuthority.authorizeHomeAssistant(
+          r,
+          hassUrl,
+          normalizeHassUrl
+        );
     if (!installationAccess.allowed) {
       sendJson(r, 403, {
-        error: 'Operator pairing is required for this Home Assistant installation',
+        error:
+          'This Navet server is configured for a different Home Assistant address. Update NAVET_HASS_URL to use this address.',
       });
       return;
     }
     const upstreamHassUrl =
-      installationAccess.upstreamTarget === undefined
+      replacingAuthenticatedTarget || installationAccess.upstreamTarget === undefined
         ? hassUrl
         : normalizeHassUrl(installationAccess.upstreamTarget);
     if (!upstreamHassUrl) {
@@ -1449,11 +1504,11 @@ function createAuthSessionStore(options) {
           '&grant_type=authorization_code',
       });
     } catch (_error) {
-      redirectFailure('temporarily_unavailable');
+      redirectFailure('target_unreachable');
       return;
     }
     if (!response.ok) {
-      redirectFailure('temporarily_unavailable');
+      redirectFailure('authorization_rejected');
       return;
     }
 
@@ -1464,6 +1519,29 @@ function createAuthSessionStore(options) {
       redirectFailure('invalid_response');
       return;
     }
+    const previousAuth = context.session.auth;
+    let tenantId = createHomeAssistantTenantId(pending.hassUrl);
+    if (
+      previousAuth &&
+      normalizeHassUrl(previousAuth.hassUrl) !== pending.hassUrl
+    ) {
+      // Present only the candidate credential to the previously trusted route.
+      // Acceptance proves both addresses reach the same Home Assistant.
+      try {
+        const proof = await fetchImpl(previousAuth.hassUrl + '/api/', {
+          headers: {
+            Authorization: 'Bearer ' + String(token.access_token || ''),
+          },
+        });
+        if (proof.ok) {
+          tenantId =
+            previousAuth.tenantId ||
+            createHomeAssistantTenantId(previousAuth.hassUrl);
+        }
+      } catch (_error) {
+        // Isolate the new route when the old route cannot verify it.
+      }
+    }
     const auth = {
       hassUrl: pending.hassUrl,
       clientId: pending.clientId,
@@ -1471,6 +1549,7 @@ function createAuthSessionStore(options) {
       refresh_token: token.refresh_token,
       access_token: token.access_token,
       expires_in: Number(token.expires_in || 0),
+      tenantId: tenantId,
     };
     if (!isValidAuthData(auth)) {
       redirectFailure('invalid_response');
@@ -1554,6 +1633,16 @@ function createAuthSessionStore(options) {
       return;
     }
 
+    if (uri === '/__navet_auth__/session/identity') {
+      if (r.method !== 'PUT') {
+        r.headersOut.Allow = 'PUT';
+        sendJson(r, 405, { error: 'Method not allowed' });
+        return;
+      }
+      handleIdentityPut(r);
+      return;
+    }
+
     if (uri !== '/__navet_auth__/session') {
       sendJson(r, 404, { error: 'Unknown Home Assistant auth endpoint' });
       return;
@@ -1631,10 +1720,12 @@ function createAuthSessionStore(options) {
     return {
       providerId: 'home_assistant',
       source: 'standalone_session',
-      tenantId: createHomeAssistantTenantId(context.session.auth.hassUrl),
+      tenantId:
+        context.session.auth.tenantId ||
+        createHomeAssistantTenantId(context.session.auth.hassUrl),
       sessionId: context.session.sessionId,
-      userId: null,
-      userName: null,
+      userId: context.session.userId,
+      userName: context.session.userName,
     };
   }
 

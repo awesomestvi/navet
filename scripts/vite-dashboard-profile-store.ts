@@ -2645,11 +2645,39 @@ function sendPrecondition(
 export function createViteDashboardProfileRequestHandler(options: {
   cookieNames?: InstallationCookieNames
   store?: ViteDashboardProfileStore
+  profileFilePath?: string
   resolvePrincipal: (
     request: IncomingMessage
   ) => ViteDashboardProfilePrincipal | null | Promise<ViteDashboardProfilePrincipal | null>
 }) {
-  const store = options.store ?? createViteDashboardProfileStore()
+  const tenantStores = new Map<string, ViteDashboardProfileStore>()
+  const legacyProfileFilePath =
+    options.profileFilePath ??
+    path.resolve(process.cwd(), '.cache', 'navet-dashboard-profile.json')
+  const resolveTenantStore = (tenantId: string) => {
+    const existing = tenantStores.get(tenantId)
+    if (existing) {
+      return existing
+    }
+
+    let useLegacyPath = false
+    try {
+      const workspace = JSON.parse(
+        readFileSync(`${legacyProfileFilePath}.workspace`, 'utf8')
+      ) as PersistedDashboardWorkspace
+      useLegacyPath = workspace.tenantBinding?.tenantId === tenantId
+    } catch {
+      // A missing legacy workspace means the first authenticated tenant owns
+      // the historical profile path. Other tenants receive isolated files.
+      useLegacyPath = tenantStores.size === 0
+    }
+    const profileFilePath = useLegacyPath
+      ? legacyProfileFilePath
+      : `${legacyProfileFilePath}.${tenantId}`
+    const created = createViteDashboardProfileStore(profileFilePath)
+    tenantStores.set(tenantId, created)
+    return created
+  }
   const cookieNames =
     options.cookieNames ?? {
       currentName: CLIENT_BINDING_COOKIE_NAME,
@@ -2666,6 +2694,7 @@ export function createViteDashboardProfileRequestHandler(options: {
       sendJson(res, 401, { error: 'Authentication required' })
       return
     }
+    const store = options.store ?? resolveTenantStore(principal.tenantId)
     const route = normalizedProfilePath(req)
     const method = req.method ?? 'GET'
     if (route === '/workspace/rebind') {

@@ -29,6 +29,7 @@ keep the migration and move the review forward.
 | Chore workspace schema | `packages/app/src/services/chore-workspace.service.ts` | Chore workspace schema version 1 | 0.19 | Every supported persisted workspace is schema version 2 and both service/store upgrade fixtures can be retired |
 | Built-in wallpaper paths | `packages/app/src/constants/built-in-wallpapers.ts` | Previous built-in IDs and asset paths | 0.18 | No supported release writes the old identifiers and theme-store upgrade coverage is no longer required |
 | OAuth callback parameter | `packages/app/src/auth/adapters/standaloneOAuthAuth.ts` | `auth_callback=1` | 0.18 | All supported OAuth initiators use the current callback marker and an end-to-end callback test covers that path |
+| Home Assistant tenant namespace | `scripts/vite-auth-session-store.ts`, `docker/njs/auth-store.js`, and dashboard profile stores | OAuth records without `tenantId` and the unsuffixed dashboard profile files | 0.20 | Every supported session carries a tenant ID and each supported workspace has been opened through the tenant-aware store |
 
 ## Updating the ledger
 

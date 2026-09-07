@@ -92,6 +92,11 @@ const SYSTEM_AUTHOR = {
 };
 
 let fsModule = fs;
+let activeTenantSuffix = '';
+
+function storagePath(value) {
+  return activeTenantSuffix ? value + '.' + activeTenantSuffix : value;
+}
 let principalResolver = function (r, options) {
   if (!authStore || typeof authStore.resolveAuthenticatedPrincipal !== 'function') {
     return null;
@@ -522,6 +527,7 @@ function createProfileStorageWriteError(path, cause) {
 }
 
 function readJson(path, fallback, maxBytes) {
+  path = storagePath(path);
   try {
     if (
       Number.isSafeInteger(maxBytes) &&
@@ -543,6 +549,7 @@ function readJson(path, fallback, maxBytes) {
 }
 
 function writeJson(path, value) {
+  path = storagePath(path);
   const temporaryPath = path + '.tmp';
   try {
     fsModule.writeFileSync(temporaryPath, JSON.stringify(value), 'utf8');
@@ -553,6 +560,7 @@ function writeJson(path, value) {
 }
 
 function removeFile(path) {
+  path = storagePath(path);
   try {
     fsModule.unlinkSync(path);
   } catch (error) {
@@ -670,11 +678,12 @@ function hashDashboardProfile(profile) {
 
 function readProfileFile() {
   try {
-    const stat = fsModule.statSync(PROFILE_PATH);
+    const resolvedProfilePath = storagePath(PROFILE_PATH);
+    const stat = fsModule.statSync(resolvedProfilePath);
     if (typeof stat.size === 'number' && stat.size > MAX_PROFILE_BYTES) {
       throw createStorageReadError(PROFILE_PATH);
     }
-    const profile = JSON.parse(fsModule.readFileSync(PROFILE_PATH, 'utf8'));
+    const profile = JSON.parse(fsModule.readFileSync(resolvedProfilePath, 'utf8'));
     if (!isValidProfile(profile)) {
       return { status: 'invalid', profile: null, profileHash: null };
     }
@@ -3373,6 +3382,23 @@ function handleWithOptions(r, options) {
     sendUnauthorized(r);
     return;
   }
+  let tenantSuffix = '';
+  try {
+    const legacyWorkspace = JSON.parse(
+      fsModule.readFileSync(WORKSPACE_PATH, 'utf8')
+    );
+    if (
+      legacyWorkspace &&
+      legacyWorkspace.tenantBinding &&
+      legacyWorkspace.tenantBinding.tenantId !== principal.tenantId
+    ) {
+      tenantSuffix = principal.tenantId;
+    }
+  } catch (_error) {
+    // The first authenticated tenant retains the legacy paths so upgrades keep
+    // their existing dashboard. Later tenants receive isolated path suffixes.
+  }
+  activeTenantSuffix = tenantSuffix;
   try {
     routeRequest(r, principal);
   } catch (error) {
@@ -3389,6 +3415,8 @@ function handleWithOptions(r, options) {
       return;
     }
     throw error;
+  } finally {
+    activeTenantSuffix = '';
   }
 }
 

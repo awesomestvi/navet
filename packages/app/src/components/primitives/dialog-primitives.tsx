@@ -29,7 +29,7 @@ export const coverSheetHeaderClassName = 'px-4 py-3 max-sm:pr-16 sm:px-5 sm:py-4
 export function DialogFooter({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <div
-      className={`mt-6 flex flex-nowrap items-center justify-end gap-2 [&>*:first-child:not(:only-child)]:mr-auto ${className ?? ''}`}
+      className={`mt-6 flex flex-nowrap items-center justify-end gap-2 [&>button]:h-10 [&>*:first-child:not(:only-child)]:mr-auto ${className ?? ''}`}
     >
       {children}
     </div>

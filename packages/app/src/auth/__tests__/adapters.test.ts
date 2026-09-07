@@ -592,20 +592,20 @@ describe('auth adapters', () => {
     expect(getInstallationPairingHeaders()).toEqual({});
   });
 
-  it('surfaces Home Assistant pairing rejection and retains the ephemeral key', async () => {
+  it('surfaces a fixed Home Assistant URL rejection and retains the key for other providers', async () => {
     window.history.replaceState({}, '', `/#navet_pairing=${INSTALLATION_KEY}`);
     captureInstallationPairingKeyFromFragment();
     mockStandaloneSessionFetch({
       authenticated: false,
       authorizeStatus: 403,
-      authorizeError: 'Operator pairing is required',
+      authorizeError: 'This Navet server is configured for a different Home Assistant address',
     });
 
     await expect(
       standaloneOAuthAuth.login?.({
         hassUrl: 'http://homeassistant.local:8123',
       })
-    ).rejects.toThrow('Operator pairing is required');
+    ).rejects.toThrow('This Navet server is configured for a different Home Assistant address');
     expect(getInstallationPairingHeaders()).toEqual({
       'X-Navet-Installation-Key': INSTALLATION_KEY,
     });
@@ -710,10 +710,27 @@ describe('auth adapters', () => {
     const fetchMock = mockStandaloneSessionFetch({ authenticated: false });
 
     await expect(standaloneOAuthAuth.init()).rejects.toThrow(
-      'Navet could not reach Home Assistant to finish sign-in. Check that Home Assistant is reachable from this Navet server, then try again.'
+      'Home Assistant could not finish sign-in. Open the address you entered, confirm Home Assistant is running, and start sign-in again.'
     );
 
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
+    expect(window.location.search).toBe('');
+  });
+
+  it.each([
+    [
+      'target_unreachable',
+      'Navet cannot reach the Home Assistant address you entered. Check the address from the Navet server, including its port and VPN connection, then try again.',
+    ],
+    [
+      'authorization_rejected',
+      'Home Assistant rejected the sign-in code. Confirm the address is the same one shown on the Home Assistant login page, then start a fresh sign-in.',
+    ],
+  ])('explains how to recover from %s', async (code, message) => {
+    window.history.replaceState({}, '', `/?navet_oauth_error=${code}`);
+    mockStandaloneSessionFetch({ authenticated: false });
+
+    await expect(standaloneOAuthAuth.init()).rejects.toThrow(message);
     expect(window.location.search).toBe('');
   });
 

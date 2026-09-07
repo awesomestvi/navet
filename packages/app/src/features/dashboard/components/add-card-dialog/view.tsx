@@ -66,9 +66,17 @@ interface AddCardDialogViewProps {
   setSelectedLibraryRoom: (room: string | null) => void;
   librarySortDirection: 'asc' | 'desc' | null;
   setLibrarySortDirection: (direction: 'asc' | 'desc' | null) => void;
+  customCardQuery: string;
+  setCustomCardQuery: (query: string) => void;
+  customCardSortDirection: 'asc' | 'desc' | null;
+  setCustomCardSortDirection: (direction: 'asc' | 'desc' | null) => void;
+  customCardSizes: CardSize[];
+  selectedCustomCardSize: CardSize | null;
+  setSelectedCustomCardSize: (size: CardSize | null) => void;
   theme: ThemeType;
   primaryColor: string;
   cardTemplates: CardTemplate[];
+  filteredCardTemplates: CardTemplate[];
   selectedType: CardTemplateId | null;
   setSelectedType: (type: CardTemplateId | null) => void;
   selectedSize: CardSize;
@@ -98,9 +106,17 @@ export function AddCardDialogView({
   setSelectedLibraryRoom,
   librarySortDirection,
   setLibrarySortDirection,
+  customCardQuery,
+  setCustomCardQuery,
+  customCardSortDirection,
+  setCustomCardSortDirection,
+  customCardSizes,
+  selectedCustomCardSize,
+  setSelectedCustomCardSize,
   theme,
   primaryColor,
   cardTemplates,
+  filteredCardTemplates,
   selectedType,
   setSelectedType,
   selectedSize,
@@ -136,6 +152,30 @@ export function AddCardDialogView({
     librarySortDirection === 'asc'
       ? t('dashboard.addCard.sort.ascending')
       : librarySortDirection === 'desc'
+        ? t('dashboard.addCard.sort.descending')
+        : t('dashboard.addCard.sort.default');
+  const customCardCountLabel = t(
+    cardTemplates.length === 1
+      ? 'dashboard.multiple.manager.card'
+      : 'dashboard.multiple.manager.cards',
+    { count: cardTemplates.length }
+  );
+  const filteredCustomCardCountLabel = t(
+    filteredCardTemplates.length === 1
+      ? 'dashboard.multiple.manager.card'
+      : 'dashboard.multiple.manager.cards',
+    { count: filteredCardTemplates.length }
+  );
+  const CustomSortIcon =
+    customCardSortDirection === 'asc'
+      ? ArrowDownAZ
+      : customCardSortDirection === 'desc'
+        ? ArrowUpZA
+        : ArrowUpDown;
+  const customSortStateLabel =
+    customCardSortDirection === 'asc'
+      ? t('dashboard.addCard.sort.ascending')
+      : customCardSortDirection === 'desc'
         ? t('dashboard.addCard.sort.descending')
         : t('dashboard.addCard.sort.default');
   const selectedTemplate = cardTemplates.find((template) => template.id === selectedType);
@@ -250,6 +290,25 @@ export function AddCardDialogView({
                     </NavigationWorkspace.ItemButton>
                   </NavigationWorkspace.Item>
 
+                  <NavigationWorkspace.Item active={!cardsTabActive} accentColor={accent}>
+                    <NavigationWorkspace.ItemButton
+                      aria-current={!cardsTabActive ? 'page' : undefined}
+                      onClick={() => setActiveTab('widgets')}
+                    >
+                      <NavigationWorkspace.ItemIcon>
+                        <Sparkles className="h-4 w-4" />
+                      </NavigationWorkspace.ItemIcon>
+                      <NavigationWorkspace.ItemText
+                        title={
+                          <span className="font-normal">{t('dashboard.addCard.tab.widgets')}</span>
+                        }
+                        description={customCardCountLabel}
+                      />
+                    </NavigationWorkspace.ItemButton>
+                  </NavigationWorkspace.Item>
+
+                  <NavigationWorkspace.Separator className="my-2" />
+
                   {libraryEntityTypes.map((entityType) => {
                     const EntityTypeIcon = entityType.icon ?? Layers2;
                     const active = cardsTabActive && selectedLibraryEntityType === entityType.key;
@@ -280,24 +339,6 @@ export function AddCardDialogView({
                       </NavigationWorkspace.Item>
                     );
                   })}
-
-                  <NavigationWorkspace.Separator className="my-2" />
-
-                  <NavigationWorkspace.Item active={!cardsTabActive} accentColor={accent}>
-                    <NavigationWorkspace.ItemButton
-                      aria-current={!cardsTabActive ? 'page' : undefined}
-                      onClick={() => setActiveTab('widgets')}
-                    >
-                      <NavigationWorkspace.ItemIcon>
-                        <Sparkles className="h-4 w-4" />
-                      </NavigationWorkspace.ItemIcon>
-                      <NavigationWorkspace.ItemText
-                        title={
-                          <span className="font-normal">{t('dashboard.addCard.tab.widgets')}</span>
-                        }
-                      />
-                    </NavigationWorkspace.ItemButton>
-                  </NavigationWorkspace.Item>
                 </nav>
               </NavigationWorkspace.ScrollArea>
             </NavigationWorkspace.Sidebar>
@@ -323,7 +364,7 @@ export function AddCardDialogView({
                         query={libraryQuery}
                         textPrimary={textColor}
                         textSecondary={mutedColor}
-                        widthClassName={`rounded-[18px] placeholder:font-normal sm:pr-40 ${borderColor}`}
+                        widthClassName={`rounded-[18px] !text-sm !font-normal placeholder:font-normal sm:pr-40 ${borderColor}`}
                       />
                       {!hasLibraryQuery ? (
                         <span
@@ -465,56 +506,145 @@ export function AddCardDialogView({
                       </div>
                     </div>
                   ) : (
-                    <div className="animate-in slide-in-from-left-4 fade-in duration-200">
-                      <h3 className={`mb-3 text-sm font-medium ${textColor}`}>
-                        {t('dashboard.addCard.chooseType')}
-                      </h3>
-                      <div
-                        className={cn('overflow-hidden rounded-[24px] border', surface.border)}
-                        data-custom-card-list
-                      >
-                        {cardTemplates.map((template, index) => (
-                          <button
-                            type="button"
-                            key={template.id}
-                            onClick={() => {
-                              setSelectedType(template.id);
-                              setSelectedSize(template.defaultSize);
-                            }}
-                            className={cn(
-                              'flex min-h-14 w-full items-start gap-3 px-4 py-3 text-left transition-colors motion-reduce:transition-none',
-                              hoverBg,
-                              getThemeFocusRingClassName(theme),
-                              index > 0 ? `border-t ${surface.border}` : ''
-                            )}
-                          >
+                    <div className="animate-in slide-in-from-left-4 fade-in flex h-full min-h-0 flex-col duration-200">
+                      <div className="flex shrink-0 items-center gap-2.5">
+                        <div className="relative min-w-0 flex-1">
+                          <HeaderSearchInput
+                            activeColorValue={accent}
+                            hoverBg={hoverBg}
+                            inputBg={cardBg}
+                            isSearchActive={customCardQuery.trim().length > 0}
+                            isSearchFocused={isSearchFocused}
+                            onBlur={() => setIsSearchFocused(false)}
+                            onChange={setCustomCardQuery}
+                            onClear={() => setCustomCardQuery('')}
+                            onFocus={() => setIsSearchFocused(true)}
+                            placeholder={t('sidebar.search')}
+                            query={customCardQuery}
+                            textPrimary={textColor}
+                            textSecondary={mutedColor}
+                            widthClassName={`rounded-[18px] !text-sm !font-normal placeholder:font-normal sm:pr-40 ${borderColor}`}
+                          />
+                          {customCardQuery.trim().length === 0 ? (
                             <span
-                              className={cn(
-                                'flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border [&_svg]:h-4 [&_svg]:w-4',
-                                surface.iconBg,
-                                surface.borderStrong,
-                                surface.textSecondary
-                              )}
-                              aria-hidden="true"
+                              className={`pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 text-[0.7rem] font-medium sm:block ${mutedColor}`}
                             >
-                              {template.icon}
+                              {filteredCustomCardCountLabel}
                             </span>
-                            <div className="min-w-0 flex-1">
-                              <h4 className={`truncate text-sm font-medium ${textColor}`}>
-                                {t(template.nameKey)}
-                              </h4>
-                              <p
-                                className={`mt-1 whitespace-normal break-words text-xs leading-4 ${surface.textMuted}`}
-                              >
-                                {t(template.descriptionKey)}
-                              </p>
-                            </div>
-                            <ChevronRight
-                              className={cn('mt-2.5 h-4 w-4 shrink-0', surface.textMuted)}
-                              aria-hidden="true"
+                          ) : null}
+                        </div>
+
+                        <IconButton
+                          label={`${t('dashboard.addCard.sort.label')}: ${customSortStateLabel}`}
+                          icon={<CustomSortIcon className="h-4 w-4" aria-hidden="true" />}
+                          size="small"
+                          variant={customCardSortDirection === null ? 'subtle' : 'secondary'}
+                          data-sort-direction={customCardSortDirection ?? 'none'}
+                          aria-pressed={customCardSortDirection !== null}
+                          onClick={() =>
+                            setCustomCardSortDirection(
+                              customCardSortDirection === null
+                                ? 'asc'
+                                : customCardSortDirection === 'asc'
+                                  ? 'desc'
+                                  : null
+                            )
+                          }
+                          className="shrink-0"
+                        />
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <IconButton
+                              label={
+                                selectedCustomCardSize
+                                  ? `${t('dashboard.addCard.filter.label')}: ${t(cardSizeKey(selectedCustomCardSize))}`
+                                  : t('dashboard.addCard.filter.label')
+                              }
+                              icon={<ListFilter className="h-4 w-4" aria-hidden="true" />}
+                              size="small"
+                              variant={selectedCustomCardSize === null ? 'subtle' : 'secondary'}
+                              className="shrink-0"
                             />
-                          </button>
-                        ))}
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" sideOffset={8} className="min-w-48">
+                            <DropdownMenuLabel>
+                              {t('dashboard.addCard.filter.label')}
+                            </DropdownMenuLabel>
+                            <DropdownMenuRadioGroup
+                              value={selectedCustomCardSize ?? '__all__'}
+                              onValueChange={(size) =>
+                                setSelectedCustomCardSize(
+                                  size === '__all__' ? null : (size as CardSize)
+                                )
+                              }
+                            >
+                              <DropdownMenuRadioItem value="__all__">
+                                {t('dashboard.addCard.tab.widgets')}
+                              </DropdownMenuRadioItem>
+                              {customCardSizes.map((size) => (
+                                <DropdownMenuRadioItem key={size} value={size}>
+                                  {t(cardSizeKey(size))}
+                                </DropdownMenuRadioItem>
+                              ))}
+                            </DropdownMenuRadioGroup>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+
+                      <div className="min-h-0 flex-1 overflow-y-auto pt-3">
+                        <div
+                          className={cn('overflow-hidden rounded-[24px] border', surface.border)}
+                          data-custom-card-list
+                        >
+                          {filteredCardTemplates.map((template, index) => (
+                            <button
+                              type="button"
+                              key={template.id}
+                              onClick={() => {
+                                setSelectedType(template.id);
+                                setSelectedSize(template.defaultSize);
+                              }}
+                              className={cn(
+                                'flex min-h-14 w-full items-start gap-3 px-4 py-3 text-left transition-colors motion-reduce:transition-none',
+                                hoverBg,
+                                getThemeFocusRingClassName(theme),
+                                index > 0 ? `border-t ${surface.border}` : ''
+                              )}
+                            >
+                              <span
+                                className={cn(
+                                  'flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border [&_svg]:h-4 [&_svg]:w-4',
+                                  surface.iconBg,
+                                  surface.borderStrong,
+                                  surface.textSecondary
+                                )}
+                                aria-hidden="true"
+                              >
+                                {template.icon}
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <h4 className={`truncate text-sm font-medium ${textColor}`}>
+                                  {t(template.nameKey)}
+                                </h4>
+                                <p
+                                  className={`mt-1 whitespace-normal break-words text-xs leading-4 ${surface.textMuted}`}
+                                >
+                                  {t(template.descriptionKey)}
+                                </p>
+                              </div>
+                              <ChevronRight
+                                className={cn('mt-2.5 h-4 w-4 shrink-0', surface.textMuted)}
+                                aria-hidden="true"
+                              />
+                            </button>
+                          ))}
+                          {filteredCardTemplates.length === 0 ? (
+                            <p className={`px-4 py-8 text-center text-sm ${surface.textMuted}`}>
+                              {t('household.filters.tryAgain')}
+                            </p>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -529,13 +659,14 @@ export function AddCardDialogView({
                 <Button
                   type="button"
                   variant="secondary"
+                  size="default"
                   leading={<ArrowLeft className="h-4 w-4" aria-hidden="true" />}
                   onClick={() => setSelectedType(null)}
                   className="shrink-0"
                 >
                   {t('dashboard.onboarding.back')}
                 </Button>
-                <Button type="button" onClick={handleAdd} className="shrink-0">
+                <Button type="button" size="default" onClick={handleAdd} className="shrink-0">
                   {t('dashboard.addCard.action')}
                 </Button>
               </DialogFooter>

@@ -1,4 +1,5 @@
 import { BrightnessSlider } from '@navet/app/components/shared/device-editor';
+import { getEntityIconPillStyles } from '@navet/app/components/shared/theme/entity-icon-pill-styles';
 import { getThemeSurfaceTokens } from '@navet/app/components/shared/theme/theme-surface-tokens';
 import { getThemeFocusRingClassName } from '@navet/app/components/system/tokens';
 import { cn } from '@navet/app/components/ui/utils';
@@ -38,16 +39,29 @@ export const LightCardTableRow = memo(function LightCardTableRow({
   isEditMode,
 }: LightCardTableRowProps) {
   const { t } = useI18n();
-  const { theme, accentColor } = useTheme();
+  const { theme, accentColor, primaryColor } = useTheme();
   const surface = getThemeSurfaceTokens(theme);
   const ToggleIcon = IconComponent ?? Lightbulb;
+  const iconPill = getEntityIconPillStyles({
+    isActive: isOn,
+    isInteractive: false,
+    primaryColor,
+    accentColor,
+    baseColor: activeColor,
+    size: 'extra-small',
+    theme,
+    tone: isOn ? 'primary' : 'neutral',
+  });
 
   return (
     <div
       {...cardInteraction.cardProps}
-      className={`flex min-h-12 w-full min-w-0 items-center gap-3 py-1 text-left transition-colors motion-reduce:transition-none ${
-        isEditMode ? '' : `cursor-pointer ${surface.hoverBg}`
-      }`}
+      className={cn(
+        'flex min-h-12 w-full min-w-0 items-center gap-3 py-1 text-left transition-colors motion-reduce:transition-none',
+        !isEditMode && 'cursor-pointer rounded-xl',
+        !isEditMode && surface.hoverBg
+      )}
+      data-light-table-row
     >
       <button
         type="button"
@@ -57,16 +71,29 @@ export const LightCardTableRow = memo(function LightCardTableRow({
         onPointerDown={iconButtonProps.onPointerDown}
         className={cn(
           '-ml-[5px] flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-opacity hover:opacity-75',
-          getThemeFocusRingClassName(theme),
-          isOn ? '' : surface.textMuted
+          getThemeFocusRingClassName(theme)
         )}
-        style={isOn ? { color: activeColor ?? accentColor } : undefined}
       >
-        {iconText ? (
-          <span className="text-xs font-semibold">{iconText}</span>
-        ) : (
-          <ToggleIcon className="h-4 w-4" aria-hidden="true" />
-        )}
+        <span
+          className={cn(iconPill.badgeClassName, 'navet-card-header-control-dense')}
+          style={iconPill.badgeStyle}
+          data-light-row-icon-pill
+        >
+          {iconText ? (
+            <span
+              className={cn('text-xs font-semibold', iconPill.iconClassName)}
+              style={iconPill.iconStyle}
+            >
+              {iconText}
+            </span>
+          ) : (
+            <ToggleIcon
+              className={iconPill.iconClassName}
+              style={iconPill.iconStyle}
+              aria-hidden="true"
+            />
+          )}
+        </span>
       </button>
 
       <span

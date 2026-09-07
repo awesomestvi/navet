@@ -1124,12 +1124,14 @@ function MediaBrowserDirectoryTile({
       : theme === 'glass'
         ? 'bg-white/[0.045] shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_12px_28px_-26px_rgba(0,0,0,0.6)] backdrop-blur-xl hover:border-white/20 hover:bg-white/[0.075]'
         : theme === 'black'
-          ? 'bg-white/[0.025] hover:border-zinc-700 hover:bg-white/[0.045]'
-          : 'bg-white/[0.04] hover:border-zinc-600 hover:bg-white/[0.065]';
+          ? 'bg-black hover:border-zinc-700 hover:bg-zinc-950'
+          : 'bg-[rgba(24,24,27,0.97)] hover:border-zinc-600 hover:bg-zinc-800';
   const iconWellClassName =
     theme === 'light'
       ? 'border-slate-200/80 bg-slate-100/72 text-slate-600'
-      : 'border-white/10 bg-white/[0.045] text-white/78';
+      : theme === 'glass'
+        ? 'border-white/10 bg-white/[0.045] text-white/78'
+        : `${surface.borderStrong} ${surface.iconBg} text-white/78`;
 
   return (
     <button

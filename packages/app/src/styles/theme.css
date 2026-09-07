@@ -775,8 +775,8 @@
     bottom: var(--mobile-bottom-dock-offset);
   }
 
-  :root[data-navet-runtime='ha-panel'],
-  :root[data-navet-runtime='ha-ingress'] {
+  /* Home Assistant owns the inset around its Ingress iframe; only the edge-to-edge panel needs it here. */
+  :root[data-navet-runtime='ha-panel'] {
     --navet-safe-area-top-offset: max(env(safe-area-inset-top), 0px);
   }
 

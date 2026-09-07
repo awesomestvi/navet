@@ -45,6 +45,11 @@ export function AddCardDialogContainer({
   const [selectedLibraryEntityType, setSelectedLibraryEntityType] = useState<string | null>(null);
   const [selectedLibraryRoom, setSelectedLibraryRoom] = useState<string | null>(null);
   const [librarySortDirection, setLibrarySortDirection] = useState<'asc' | 'desc' | null>(null);
+  const [customCardQuery, setCustomCardQuery] = useState('');
+  const [customCardSortDirection, setCustomCardSortDirection] = useState<'asc' | 'desc' | null>(
+    null
+  );
+  const [selectedCustomCardSize, setSelectedCustomCardSize] = useState<CardSize | null>(null);
   const [selectedType, setSelectedType] = useState<CardTemplateId | null>(null);
   const [selectedSize, setSelectedSize] = useState<CardSize>('medium');
   const resolveColorValue = (color: string) => getThemeColorValue(color as typeof primaryColor);
@@ -74,6 +79,9 @@ export function AddCardDialogContainer({
     setSelectedLibraryEntityType(null);
     setSelectedLibraryRoom(null);
     setLibrarySortDirection(null);
+    setCustomCardQuery('');
+    setCustomCardSortDirection(null);
+    setSelectedCustomCardSize(null);
     setSelectedType(null);
     setSelectedSize('medium');
   }, [open, showCardsTab]);
@@ -211,6 +219,59 @@ export function AddCardDialogContainer({
   ]);
 
   const hasLibraryQuery = libraryQuery.trim().length > 0;
+  const customCardSizes = useMemo(
+    () =>
+      (
+        [
+          'tiny',
+          'extra-small',
+          'small',
+          'medium',
+          'medium-vertical',
+          'large',
+          'extra-large',
+          'extra-wide',
+        ] as CardSize[]
+      ).filter((size) => cardTemplates.some((template) => template.supportedSizes.includes(size))),
+    [cardTemplates]
+  );
+  const effectiveSelectedCustomCardSize = customCardSizes.includes(
+    selectedCustomCardSize as CardSize
+  )
+    ? selectedCustomCardSize
+    : null;
+  const filteredCardTemplates = useMemo(() => {
+    const normalizedQuery = normalizeSearchText(customCardQuery);
+    const matches = cardTemplates.filter((template) => {
+      if (
+        effectiveSelectedCustomCardSize &&
+        !template.supportedSizes.includes(effectiveSelectedCustomCardSize)
+      ) {
+        return false;
+      }
+      if (!normalizedQuery) {
+        return true;
+      }
+      return normalizeSearchText(`${t(template.nameKey)} ${t(template.descriptionKey)}`).includes(
+        normalizedQuery
+      );
+    });
+    if (customCardSortDirection === null) {
+      return matches;
+    }
+    return [...matches].sort((left, right) => {
+      const order = t(left.nameKey).localeCompare(t(right.nameKey), locale);
+      return customCardSortDirection === 'asc' ? order : -order;
+    });
+  }, [
+    cardTemplates,
+    customCardQuery,
+    customCardSortDirection,
+    effectiveSelectedCustomCardSize,
+    locale,
+    normalizeSearchText,
+    t,
+  ]);
 
   return (
     <AddCardDialogView
@@ -233,9 +294,17 @@ export function AddCardDialogContainer({
       setSelectedLibraryRoom={setSelectedLibraryRoom}
       librarySortDirection={librarySortDirection}
       setLibrarySortDirection={setLibrarySortDirection}
+      customCardQuery={customCardQuery}
+      setCustomCardQuery={setCustomCardQuery}
+      customCardSortDirection={customCardSortDirection}
+      setCustomCardSortDirection={setCustomCardSortDirection}
+      customCardSizes={customCardSizes}
+      selectedCustomCardSize={effectiveSelectedCustomCardSize}
+      setSelectedCustomCardSize={setSelectedCustomCardSize}
       theme={theme}
       primaryColor={primaryColor}
       cardTemplates={cardTemplates}
+      filteredCardTemplates={filteredCardTemplates}
       selectedType={selectedType}
       setSelectedType={setSelectedType}
       selectedSize={selectedSize}

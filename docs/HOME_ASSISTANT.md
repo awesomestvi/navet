@@ -121,31 +121,26 @@ Choose this option only if you are comfortable using Docker.
    docker compose up -d
    ```
 
-3. If you did not set `NAVET_HASS_URL` and this is a fresh installation, run
-   `docker compose logs navet`, copy the URL containing
-   `#navet_pairing=<64-character-key>`, and open that complete URL once. Navet removes the key
-   from the address immediately and keeps it only until the first server is approved. If adding
-   the fragment to an already open Navet tab does not remove it, reload that complete URL.
-4. Open [`http://localhost:8080`](http://localhost:8080) when Docker runs on this computer. From
+3. Open [`http://localhost:8080`](http://localhost:8080) when Docker runs on this computer. From
    another device, replace `localhost` with the Docker host's LAN, VPN, or public name.
-5. Choose **Home Assistant**, enter an address that the current browser can reach, and sign in.
-6. Approve the Home Assistant login when asked.
+4. Choose **Home Assistant**, enter an address that the current browser can reach, and sign in.
+5. Approve the Home Assistant login when asked.
 
 Keep the `navet-data` volume. It stores your Navet dashboard and browser sign-ins when the
 container is updated or recreated.
 
 ### Sign in at home or through a VPN
 
-After the first trusted Home Assistant server is approved, each browser can use the address that
-works from its current network. Enter a LAN address at home or a VPN, Tailscale, or external
-address while away.
+Open **Settings → System → Home Assistant** and choose **Edit URL** when moving between a LAN,
+VPN, Tailscale, or external address. Navet starts a fresh Home Assistant login at the new address;
+an address change never inherits the previous access token.
 
-You do not need to add every address to Docker Compose or pair each address separately. The
-browser address opens the Home Assistant authorization page, while Navet verifies the completed
-login and proxies dashboard API calls, WebSocket traffic, access-token renewal, and
-provider-managed HTTP camera resources through its trusted server connection. After sign-in, the
-remote browser does not need a route to the saved LAN address. An address for a different Home
-Assistant installation cannot silently replace it.
+After login, Navet presents only the newly issued token to the old trusted route. If the old route
+accepts it, Navet has proved that both addresses reach the same Home Assistant and keeps the same
+dashboard workspace. If the old route rejects the token or cannot be reached, Navet isolates the
+new address in its own workspace. This prevents an unverified server from reading the existing
+home's dashboard data. Returning to an address used before restores the workspace associated with
+that address.
 
 A camera **direct-stream URL** that you explicitly configure in Navet is the exception: that custom
 URL is intentionally opened by the browser and must be reachable from the browser's current
@@ -153,32 +148,22 @@ network. Home Assistant-provided snapshots, HLS, and fallback paths remain behin
 Native WebRTC can still negotiate a separate media path supplied by Home Assistant; when that path
 is not usable across the current network, Navet falls back to another provider-supported transport.
 
-### Optional: set the trusted Home Assistant server
+### Optional: fix Navet to one Home Assistant address
 
-`NAVET_HASS_URL` is **not required**. If your Navet installation already connects to Home Assistant,
-leave your Compose file as it is. Navet remembers the approved server in the `navet-data` volume.
+`NAVET_HASS_URL` is **not required**. Without it, each browser can enter a Home Assistant address
+and complete Home Assistant's normal login. Use this setting only when the operator intentionally
+wants to prevent users from choosing another address.
 
-For a brand-new installation, setting the address is the simplest way to approve the exact Home
-Assistant server. Add these lines under `restart: unless-stopped`:
+To fix Navet to one address, add these lines under `restart: unless-stopped`:
 
 ```yaml
 environment:
   NAVET_HASS_URL: "http://homeassistant.local:8123"
 ```
 
-Replace the example with an address that works from the Navet container. A browser may use another
-LAN, VPN, Tailscale, or external address for the same Home Assistant installation.
-
-If you leave the setting out, Navet tries common local Home Assistant addresses. A completely new
-installation requires the one-time pairing link shown in the container log before it can approve
-the first server. Existing installations with saved `navet-data` do not need to do this again.
-
-If the remembered upstream becomes permanently unreachable, recover the installation key with
-`docker exec navet cat /data/navet-installation-key`, reopen Navet once with
-`#navet_pairing=<key>`, and complete a fresh Home Assistant sign-in in that same tab using the new
-route. This changes the trusted route only after Home Assistant accepts the sign-in. Keep the key
-private. When `NAVET_HASS_URL` is configured, update the pinned value and recreate the container
-instead.
+Replace the example with an address that works from the Navet container. When the setting is
+present, users must sign in through that exact normalized address. Update the value and recreate
+the container when the address changes.
 
 ### Update the Docker installation
 
@@ -250,12 +235,13 @@ The Docker installation has its own Home Assistant sign-in.
 
 1. If the Home Assistant sign-in page does not open, make sure the address entered in Navet works
    from the current browser and that its VPN or external route is connected.
-2. If Home Assistant accepts the sign-in but Navet does not connect, make sure the trusted server
-   or `NAVET_HASS_URL` works from the Navet container.
+2. If Home Assistant accepts the sign-in but Navet says the address is unreachable, make sure the
+   exact address and port work from the Navet container. If it says the sign-in code was rejected,
+   confirm the address shown on the Home Assistant login page matches the address entered in Navet
+   and start a fresh sign-in.
 3. If the server uses HTTPS, make sure the container trusts its certificate.
-4. If Navet says operator pairing is required on an existing installation, make sure the original
-   `navet-data` volume is mounted. For a new installation, use the one-time link in the container
-   log or set `NAVET_HASS_URL`.
+4. If Navet says it is configured for another address, update or remove `NAVET_HASS_URL` and
+   recreate the container.
 5. Run `docker compose up -d` again after changing the Compose file.
 
 ### Navet stays on Starting your dashboard

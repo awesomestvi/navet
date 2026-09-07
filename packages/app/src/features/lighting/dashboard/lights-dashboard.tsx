@@ -79,7 +79,7 @@ const RoomLightCard = memo(function RoomLightCard({
   return (
     <div
       className={`relative min-w-0 border-b border-dashed last:border-b-0 ${separatorClassName} ${
-        isEditMode ? 'pr-10' : 'pr-2'
+        isEditMode ? 'pr-10' : ''
       }`}
       data-light-state={light.available ? (light.isOn ? 'on' : 'off') : 'unavailable'}
     >
@@ -101,10 +101,16 @@ const RoomLightCard = memo(function RoomLightCard({
       ) : (
         <div className="flex min-h-12 items-center gap-3 py-1">
           <div className="-ml-[5px] flex h-11 w-11 shrink-0 items-center justify-center">
-            <CircleAlert
-              className={`h-4 w-4 ${theme === 'light' ? 'text-red-600' : 'text-red-300'}`}
-              aria-hidden="true"
-            />
+            <span
+              className={`navet-card-header-control-dense flex items-center justify-center rounded-full border ${
+                theme === 'light'
+                  ? 'border-red-200 bg-red-50 text-red-600'
+                  : 'border-red-400/25 bg-red-500/10 text-red-300'
+              }`}
+              data-light-row-icon-pill
+            >
+              <CircleAlert className="h-4 w-4" aria-hidden="true" />
+            </span>
           </div>
           <span
             className={`-ml-[3px] min-w-0 flex-1 truncate text-sm font-medium ${

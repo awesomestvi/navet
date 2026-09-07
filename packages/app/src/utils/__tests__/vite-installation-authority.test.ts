@@ -161,7 +161,7 @@ describe('Vite installation authority', () => {
     });
   });
 
-  it('uses enrolled authority as the upstream for an alternate browser route', () => {
+  it('lets a different unpinned Home Assistant route start OAuth', () => {
     const { authority, paths } = createFixture();
     const authorized = authority.authorizeHomeAssistant(
       request(INSTALLATION_KEY),
@@ -179,14 +179,10 @@ describe('Vite installation authority', () => {
 
     expect(
       authority.authorizeHomeAssistant(request(), 'https://ha-b.example.com', normalizeTarget)
-    ).toEqual({
-      allowed: true,
-      pairingVerified: false,
-      upstreamTarget: 'https://ha-a.example.com',
-    });
+    ).toEqual({ allowed: true, pairingVerified: true });
   });
 
-  it('keeps alternate-route authorization specific to Home Assistant OAuth', () => {
+  it('does not treat an alternate browser route as an exact provider pin', () => {
     const { authority } = createFixture({
       hassUrlPin: 'http://homeassistant.local:8123',
       openhabUrlPin: 'http://openhab.local:8080',
@@ -194,14 +190,28 @@ describe('Vite installation authority', () => {
 
     expect(
       authority.authorizeHomeAssistant(request(), 'http://100.77.118.32:8123', normalizeTarget)
-    ).toEqual({
-      allowed: true,
-      pairingVerified: false,
-      upstreamTarget: 'http://homeassistant.local:8123',
-    });
+    ).toEqual({ allowed: false, pairingVerified: false });
     expect(
       authority.authorizeOpenHAB(request(), 'http://100.64.0.10:8080', normalizeTarget)
     ).toEqual({ allowed: false, pairingVerified: false });
+    expect(
+      authority.authorizeHomeAssistantChange?.(
+        request(),
+        'http://100.77.118.32:8123',
+        normalizeTarget
+      )
+    ).toEqual({ allowed: false, pairingVerified: false });
+  });
+
+  it('lets an authenticated browser authorize a fresh unpinned Home Assistant target', () => {
+    const { authority } = createFixture();
+    expect(
+      authority.authorizeHomeAssistantChange?.(
+        request(),
+        'https://demo-ha.example.com',
+        normalizeTarget
+      )
+    ).toEqual({ allowed: true, pairingVerified: true });
   });
 
   it('rejects disjoint Homey evidence and never grows trust through overlap', () => {
@@ -234,6 +244,6 @@ describe('Vite installation authority', () => {
 
     expect(
       authority.authorizeHomeAssistant(request(), 'https://ha.example.com', normalizeTarget)
-    ).toEqual({ allowed: true, pairingVerified: false });
+    ).toEqual({ allowed: true, pairingVerified: true });
   });
 });

@@ -46,19 +46,50 @@ describe('AddCardDialogContainer', () => {
     expect(allCardsButton).toHaveAttribute('aria-current', 'page');
     expect(within(allCardsButton).getByText('2 entities')).toBeInTheDocument();
     expect(within(allCardsButton).getByText('All cards')).toHaveClass('font-normal');
-    expect(within(sidebar).getByRole('button', { name: 'Custom cards' })).toBeInTheDocument();
+    expect(within(sidebar).getByRole('button', { name: /Custom cards/ })).toBeInTheDocument();
     expect(within(sidebar).getByRole('button', { name: /Light/ })).toBeInTheDocument();
     expect(within(sidebar).getByRole('button', { name: /Sensor/ })).toBeInTheDocument();
     const separator = sidebar.querySelector('[data-navigation-workspace-separator]');
-    const customCardButton = within(sidebar).getByRole('button', { name: 'Custom cards' });
+    const customCardButton = within(sidebar).getByRole('button', { name: /Custom cards/ });
+    const lightButton = within(sidebar).getByRole('button', { name: /Light/ });
     expect(within(customCardButton).getByText('Custom cards')).toHaveClass('font-normal');
+    expect(within(customCardButton).getByText(/\d+ cards/)).toBeInTheDocument();
     expect(separator).toBeInTheDocument();
     expect(
-      (separator?.compareDocumentPosition(customCardButton) ?? 0) & Node.DOCUMENT_POSITION_FOLLOWING
+      (customCardButton.compareDocumentPosition(separator as Node) ?? 0) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      (separator?.compareDocumentPosition(lightButton) ?? 0) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
     expect(screen.getByRole('dialog', { name: 'Add Card' })).toHaveClass('md:max-w-[1200px]');
 
     fireEvent.click(customCardButton);
+    expect(screen.queryByText('Choose a widget type')).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Search')).toBeInTheDocument();
+    const customSortButton = screen.getByRole('button', { name: 'Sort: Default' });
+    expect(customSortButton).toHaveAttribute('data-sort-direction', 'none');
+    fireEvent.click(customSortButton);
+    expect(customSortButton).toHaveAttribute('data-sort-direction', 'asc');
+
+    fireEvent.change(screen.getByPlaceholderText('Search'), { target: { value: 'Photo' } });
+    expect(screen.getByText('Photo')).toBeInTheDocument();
+    expect(screen.queryByText('Info')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText('Search'), { target: { value: '' } });
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Filter' }), {
+      button: 0,
+      ctrlKey: false,
+    });
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'tiny' }));
+    expect(screen.getByText('Action')).toBeInTheDocument();
+    expect(screen.queryByText('Photo')).not.toBeInTheDocument();
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Filter: tiny' }), {
+      button: 0,
+      ctrlKey: false,
+    });
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Custom cards' }));
+
     expect(screen.getByText('Info').closest('[data-custom-card-list]')).toHaveClass(
       'rounded-[24px]',
       'border'

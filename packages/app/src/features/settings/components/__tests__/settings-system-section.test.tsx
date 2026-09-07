@@ -247,6 +247,25 @@ describe('SettingsSystemSection', () => {
     ]);
   });
 
+  it('starts a fresh Home Assistant connection from its current address', () => {
+    renderWithProviders(<SettingsSystemSection controller={controller} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit URL' }));
+    const urlInput = screen.getByLabelText('URL');
+    expect(urlInput).toHaveValue('https://ha.example.com');
+    fireEvent.change(urlInput, {
+      target: { value: 'http://100.77.118.32:8123' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+
+    expect(controller.handleConnectProvider).toHaveBeenCalledWith(
+      'home_assistant',
+      'http://100.77.118.32:8123',
+      undefined,
+      undefined
+    );
+  });
+
   it('uses the configured Home Assistant URL when the connected provider omits its base URL', () => {
     controller.providerCards = controller.providerCards.map((provider) =>
       provider.id === 'home_assistant' ? { ...provider, baseUrl: null } : provider

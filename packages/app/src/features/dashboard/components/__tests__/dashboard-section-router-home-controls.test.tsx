@@ -6,7 +6,7 @@ import { useSettingsStore } from '@navet/app/stores/settings-store';
 import { renderWithProviders } from '@navet/app/test/render';
 import { resetAppStores } from '@navet/app/test/store-reset';
 import type { DeviceWithType } from '@navet/app/types/device.types';
-import { screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -15,6 +15,7 @@ import { DashboardSectionRouter, shouldSubscribeTaskRoutines } from '../dashboar
 const roomNavMock = vi.fn();
 const dashboardLayoutMock = vi.fn();
 const deviceGridPropsMock = vi.fn();
+const homeDashboardPropsMock = vi.fn();
 let deviceGridMountCount = 0;
 
 const choreCopy = {
@@ -54,7 +55,10 @@ vi.mock('@navet/app/features/dashboard/shell', () => ({
 }));
 
 vi.mock('../home-dashboard-overview', () => ({
-  HomeDashboardOverview: () => <main>Home dashboard</main>,
+  HomeDashboardOverview: (props: unknown) => {
+    homeDashboardPropsMock(props);
+    return <main>Home dashboard</main>;
+  },
 }));
 
 vi.mock('@navet/app/features/chores/components/household-section', () => ({
@@ -82,6 +86,7 @@ describe('DashboardSectionRouter home controls', () => {
     roomNavMock.mockClear();
     dashboardLayoutMock.mockClear();
     deviceGridPropsMock.mockClear();
+    homeDashboardPropsMock.mockClear();
     deviceGridMountCount = 0;
   });
 
@@ -212,6 +217,29 @@ describe('DashboardSectionRouter home controls', () => {
       mobileEditActions?: Record<string, unknown>;
     };
     expect(layoutProps.mobileEditActions).toBeUndefined();
+  });
+
+  it('completes navigation from the home Chores summary to the household workspace', async () => {
+    const controller = createController();
+    const { rerender } = renderWithProviders(<DashboardSectionRouter controller={controller} />);
+    const homeProps = homeDashboardPropsMock.mock.calls.at(-1)?.[0] as {
+      onNavigateSection: (section: 'tasks') => void;
+    };
+
+    act(() => homeProps.onNavigateSection('tasks'));
+
+    expect(controller.setActiveSection).toHaveBeenCalledWith('tasks');
+
+    rerender(
+      <DashboardSectionRouter
+        controller={{
+          ...controller,
+          activeSection: 'tasks',
+        }}
+      />
+    );
+
+    await screen.findByText('Household dashboard');
   });
 
   it('rerenders when independently consumed controller inputs change', async () => {

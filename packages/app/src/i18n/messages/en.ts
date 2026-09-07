@@ -3031,7 +3031,8 @@ export const enMessages = {
   'settings.system.providers.connectDescription': 'Enter the connection details for {provider}.',
   'settings.system.providers.credentialsHelp':
     'Enter the URL, username, and password to sign in from Settings.',
-  'settings.system.providers.urlHelp': 'Enter the URL to sign in from Settings.',
+  'settings.system.providers.urlHelp':
+    'Changing this address starts a fresh sign-in. Navet reuses this dashboard only after it verifies that both addresses reach the same Home Assistant.',
   'settings.system.providers.url': 'URL',
   'settings.system.providers.username': 'Username',
   'settings.system.providers.password': 'Password',

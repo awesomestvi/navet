@@ -511,9 +511,15 @@ export const DamagedWorkspaceRecovery: Story = {
     },
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await expect(canvas.getByText('Chores need attention')).toBeInTheDocument();
-    await expect(canvas.getByRole('button', { name: 'Repair chores' })).toBeInTheDocument();
-    await userEvent.click(canvas.getByRole('button', { name: 'Start over' }));
+    const recovery = canvas.getByText('Chores need attention').closest('[class*="rounded-[24px]"]');
+    await expect(recovery).not.toBeNull();
+    const recoverySurface = within(recovery as HTMLElement);
+    await expect(recoverySurface.queryByText('What happened')).toBeNull();
+    await expect(recoverySurface.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+    await expect(
+      recoverySurface.getByRole('button', { name: 'Repair chores' })
+    ).toBeInTheDocument();
+    await userEvent.click(recoverySurface.getByRole('button', { name: 'Start over' }));
     await expect(
       within(canvasElement.ownerDocument.body).getByRole('alertdialog', {
         name: 'Start chores over?',

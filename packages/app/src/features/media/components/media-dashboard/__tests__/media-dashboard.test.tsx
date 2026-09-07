@@ -5,6 +5,7 @@ import {
 import { STORAGE_KEYS } from '@navet/app/constants/storage-keys';
 import type { PlatformEntityRegistryEntry } from '@navet/app/platform/provider-feature-models';
 import { useSettingsStore } from '@navet/app/stores/settings-store';
+import { useThemeStore } from '@navet/app/stores/theme-store';
 import { setMediaQueryMatch, setVisualViewportSize } from '@navet/app/test/browser-mocks';
 import { renderWithProviders } from '@navet/app/test/render';
 import type { MediaDevice } from '@navet/app/types/device.types';
@@ -142,6 +143,33 @@ describe('MediaDashboard', () => {
       ],
     });
     liveMediaEntityMock.mockReturnValue(undefined);
+    useThemeStore.getState().setTheme('glass');
+  });
+
+  it('uses opaque media source tiles in dark theme', async () => {
+    useThemeStore.getState().setTheme('dark');
+    browseMediaPlayerMock.mockResolvedValue({
+      title: 'Media Library',
+      children: [
+        {
+          title: 'Albums',
+          mediaContentId: 'spotify:directory:albums',
+          mediaContentType: 'album',
+          mediaClass: 'directory',
+          canExpand: true,
+          canPlay: false,
+        },
+      ],
+    });
+
+    renderWithProviders(<MediaDashboard devices={[createMediaDevice()]} />);
+
+    const sourceTile = await screen.findByRole('button', { name: /^Albums/ });
+    expect(sourceTile).toHaveClass('bg-[rgba(24,24,27,0.97)]');
+    expect(sourceTile).not.toHaveClass('backdrop-blur-xl', 'bg-white/[0.04]');
+    expect(screen.getByTestId('media-library-directory-icon')).toHaveClass(
+      'bg-[rgba(39,39,42,0.94)]'
+    );
   });
 
   afterEach(() => {

@@ -479,19 +479,11 @@ async function startHomeAssistantOAuth(
         returnTo: '/wall-panel?view=home&code=stale&state=stale#lights',
       }),
     });
-  for (const rejectedKey of [null, 'b'.repeat(64)]) {
-    const rejected = await requestStart(rejectedKey);
-    if (rejected.status !== 403) {
-      throw new Error(
-        `Unknown Home Assistant target accepted ${
-          rejectedKey ? 'an incorrect key' : 'without pairing'
-        }`
-      );
-    }
-  }
-  const response = await requestStart(installationKey);
+  const response = await requestStart();
   if (response.status !== 200) {
-    throw new Error(`Docker NJS OAuth authorize endpoint failed with ${response.status}`);
+    throw new Error(
+      `Docker NJS OAuth authorize endpoint did not start Home Assistant login: ${response.status}`
+    );
   }
 
   const payload = await response.json();
@@ -552,12 +544,6 @@ async function startHomeAssistantOAuthThroughAlternateBrowserRoute(
       returnTo: '/wall-panel?view=home#lights',
     }),
   });
-  if (response.status !== 200) {
-    throw new Error(
-      `Trusted Home Assistant rejected an alternate browser route with ${response.status}`
-    );
-  }
-
   const payload = await response.json();
   const authorizeUrl = new URL(payload.authorizeUrl);
   const cookieId = cookieValue(browserSession.cookie);
@@ -572,21 +558,23 @@ async function startHomeAssistantOAuthThroughAlternateBrowserRoute(
     { stdio: 'pipe', encoding: 'utf8' }
   );
   const pendingSession =
-    !pendingResult.error && pendingResult.status === 0
-      ? JSON.parse(pendingResult.stdout)
-      : null;
+    !pendingResult.error && pendingResult.status === 0 ? JSON.parse(pendingResult.stdout) : null;
   if (
-    authorizeUrl.origin !== browserHassUrl ||
+    response.status !== 200 ||
+    authorizeUrl.origin !== new URL(browserHassUrl).origin ||
     authorizeUrl.pathname !== '/auth/authorize' ||
-    pendingSession?.pending?.hassUrl !== 'http://provider-check:8080/ha' ||
-    pendingSession?.pending?.browserHassUrl !== browserHassUrl ||
-    !/^[a-f0-9]{64}$/.test(authorizeUrl.searchParams.get('state') ?? '')
+    authorizeUrl.searchParams.get('response_type') !== 'code' ||
+    authorizeUrl.searchParams.get('client_id') !== `${baseUrl}/` ||
+    authorizeUrl.searchParams.get('redirect_uri') !== `${baseUrl}/__navet_auth__/callback` ||
+    !/^[a-f0-9]{64}$/.test(authorizeUrl.searchParams.get('state') ?? '') ||
+    pendingSession?.pending?.state !== authorizeUrl.searchParams.get('state') ||
+    pendingSession?.pending?.hassUrl !== browserHassUrl ||
+    pendingSession?.pending?.browserHassUrl !== browserHassUrl
   ) {
     throw new Error(
-      `Alternate Home Assistant browser route changed trusted upstream authority: ${JSON.stringify(payload)}`
+      `Alternate Home Assistant route did not start its own login: ${response.status} ${JSON.stringify(payload)}`
     );
   }
-  return authorizeUrl.searchParams.get('state');
 }
 
 async function completeHomeAssistantOAuth(baseUrl, browserSession, state) {
@@ -2292,22 +2280,11 @@ try {
     Authorization: 'Bearer must-not-reach-feed',
     'X-Navet-Installation-Key': 'must-not-reach-feed',
   }, 'provider-check', rssFixture.url);
-  const alternateState = await startHomeAssistantOAuthThroughAlternateBrowserRoute(
+  await startHomeAssistantOAuthThroughAlternateBrowserRoute(
     baseUrl,
     containerName,
     secondBrowser
   );
-  const alternateAuthenticatedCookie = await completeHomeAssistantOAuth(
-    baseUrl,
-    secondBrowser,
-    alternateState
-  );
-  const alternateMetadata = await fetch(`${baseUrl}/__navet_auth__/session`, {
-    headers: { Cookie: alternateAuthenticatedCookie },
-  }).then((response) => response.json());
-  if (alternateMetadata.hassUrl !== 'http://provider-check:8080/ha') {
-    throw new Error('Alternate browser route replaced the trusted Home Assistant upstream');
-  }
   await verifyHomeAssistantProxyTokenRefresh(baseUrl, authenticatedCookie);
   const authRefresh = await verifyHomeAssistantRefreshRevision(
     baseUrl,
@@ -2495,7 +2472,7 @@ try {
       addonTarget.exactBase
         ? 'the exact Home Assistant base image'
         : 'the explicit Alpine with-contenv/bashio compatibility fallback'
-    }, exact standalone build metadata, no anonymous record minting, OAuth rotation, proxied token renewal, verified alternate browser routes, two-installation host cookie isolation, runtime hostname resolution, pinned RSS HTTPS with private-DNS rejection and isolated credentials, bounded XML, transport supervision/recovery, provider confinement, stable parallel profile binding, njs-safe two-client profile ordering, cross-request chore management PIN sessions, and persisted auth/profile state after container replacement.`
+    }, exact standalone build metadata, no anonymous record minting, OAuth rotation, proxied token renewal, direct alternate-target Home Assistant login, two-installation host cookie isolation, runtime hostname resolution, pinned RSS HTTPS with private-DNS rejection and isolated credentials, bounded XML, transport supervision/recovery, provider confinement, stable parallel profile binding, njs-safe two-client profile ordering, cross-request chore management PIN sessions, and persisted auth/profile state after container replacement.`
   );
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
